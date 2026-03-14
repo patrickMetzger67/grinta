@@ -1,164 +1,150 @@
-import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:intl/intl.dart';
-import 'dummyData.dart';
+import 'package:grinta/util/app_theme.dart';
 
+void main() {
+  WidgetsFlutterBinding.ensureInitialized();
+  runApp(MyApp());
+}
 
-void main() => runApp(MyApp());
-class MyApp extends StatelessWidget {
+class MyApp extends StatefulWidget {
+  static _MyAppState of(BuildContext context) =>
+      context.findAncestorStateOfType<_MyAppState>()!;
+
+  @override
+  _MyAppState createState() => _MyAppState();
+}
+
+class _MyAppState extends State<MyApp> {
+
+  ThemeMode _themeMode = ThemeMode.light;
+
+  void toggleTheme() {
+    setState(() {
+      if (_themeMode == ThemeMode.light) {
+        _themeMode = ThemeMode.dark;
+      } else {
+        _themeMode = ThemeMode.light;
+      }
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
-    return CupertinoApp(
-    debugShowCheckedModeBanner: false,
-    localizationsDelegates: <LocalizationsDelegate<dynamic>>[
-    DefaultMaterialLocalizations.delegate,
-    DefaultWidgetsLocalizations.delegate,
-    DefaultCupertinoLocalizations.delegate,
-    ],
-    title: 'Flutter Demo',
-    theme: CupertinoThemeData(brightness: Brightness.light),
-    home: MaterialPage(),
+
+    return MaterialApp(
+      debugShowCheckedModeBanner: false,
+      title: 'Mon application',
+      theme: AppTheme.lightTheme,
+      darkTheme: AppTheme.darkTheme,
+      themeMode: _themeMode,
+      home: const HomePage(),
     );
   }
 }
-class MaterialPage extends StatefulWidget {
-  final String title;
 
-  MaterialPage({Key key, this.title}) : super(key: key);
-  @override
-  _MaterialPageState createState() {
-      return _MaterialPageState();
-  }
-}
+class HomePage extends StatelessWidget {
+  const HomePage({Key? key}) : super(key: key);
 
-class _MaterialPageState extends State<MaterialPage> {
   @override
   Widget build(BuildContext context) {
+
+    final colors = context.appColors;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
     return Scaffold(
       appBar: AppBar(
-        title: Text('Recettes'),
-        actions: <Widget>[
-        IconButton(
-          icon: const Icon(Icons.add),
-          tooltip: 'Ajouter une recette',
-          onPressed: () {
-          },
-        ),
-        ]
-      ),
-
-      body: _buildBody(context),
-
-    );
-  }
-
-  Widget _buildBody(BuildContext context) {
-    // TODO A récupérer de cloud firestore
-   return _buildList(context, dummyMonthResults);
-  }
-  Widget _buildList(BuildContext context, List<Map> snapshot ) {
-    return ListView(
-      padding: const EdgeInsets.only(top: 20.0),
-      children: snapshot.map((data) => _buildListItem(context, data)).toList(),
-    );
-  }
-  Widget _buildListItem(BuildContext context, Map data) {
-    final record = Record.fromMap(data);
-    var f = new NumberFormat("###,###.00", "fr_FR");
-    return
-      Card(
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: <Widget>[
-          ListTile(
-            leading: Icon(Icons.album),
-            title: Text(record.month.toString()),
-            subtitle: Text(f.format(record.clubHouse).toString()),
-          ),
-          ButtonBar(
-            children: <Widget>[
-              FlatButton(
-                child: const Text('BUY TICKETS'),
-                onPressed: () {
-                  Navigator.of(context).push(
-                    CupertinoPageRoute(
-                      builder: (context) => CupertinoPage(
-                        title: "Cupertino Page",
-                      ),
-                    ),
-                  );
-                }, // OnPressed
-              ),
-              FlatButton(
-                child: const Text('LISTEN'),
-                onPressed: () {
-                  Navigator.of(context).push(
-                    CupertinoPageRoute(
-                      builder: (context) => CupertinoPage(
-                        title: "Cupertino Page",
-                      ),
-                    ),
-                  );
-                }, // OnPressed
-              ),
-            ],
+        title: const Text('Accueil'),
+        actions: [
+          IconButton(
+            icon: Icon(
+              isDark ? Icons.light_mode : Icons.dark_mode,
+            ),
+            onPressed: () {
+              MyApp.of(context).toggleTheme();
+            },
           ),
         ],
       ),
-    );
-  }
-}
-class CupertinoPage extends StatelessWidget {
-  CupertinoPage({Key key, this.title}) : super(key: key);
-  final String title;
-  @override
-  Widget build(BuildContext context) {
-    return CupertinoPageScaffold(
-      navigationBar: CupertinoNavigationBar(
-        middle: Text(title),
+
+      floatingActionButton: FloatingActionButton(
+        onPressed: () {},
+        child: const Icon(Icons.add),
       ),
-      child:
-      Center(
-          child:
-          CupertinoButton.filled(
-            child: Icon(Icons.add),
-            onPressed: () {
-              Navigator.of(context).push(
-                CupertinoPageRoute(
-                  builder: (context) => MaterialPage(
-                    title: "Second Page Sir",
-                  ),
+
+      body: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+
+            Text(
+              'Bienvenue',
+              style: Theme.of(context).textTheme.headlineMedium?.copyWith(
+                color: colors.textPrimary,
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+
+            const SizedBox(height: 8),
+
+            Text(
+              'Thème SF + couleur principale personnalisée',
+              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                color: colors.textSecondary,
+              ),
+            ),
+
+            const SizedBox(height: 24),
+
+            Card(
+              child: Padding(
+                padding: const EdgeInsets.all(16),
+                child: Row(
+                  children: [
+
+                    Icon(
+                      Icons.palette_outlined,
+                      color: colors.primary,
+                    ),
+
+                    const SizedBox(width: 12),
+
+                    Expanded(
+                      child: Text(
+                        'La couleur principale est bien appliquée.',
+                        style: TextStyle(
+                          color: colors.textPrimary,
+                          fontSize: 16,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
-              );
-            },
-          )
+              ),
+            ),
+
+            const SizedBox(height: 16),
+
+            TextField(
+              decoration: const InputDecoration(
+                labelText: 'Nom',
+                hintText: 'Saisir votre nom',
+              ),
+            ),
+
+            const SizedBox(height: 16),
+
+            SizedBox(
+              width: double.infinity,
+              child: ElevatedButton(
+                onPressed: () {},
+                child: const Text('Continuer'),
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
-}
-
-class Record {
-  final String month;
-  final double clubHouse;
-  final double recetteEquipe1;
-  final double recetteEquipe2;
-
-  final DocumentReference reference;
-
-  Record.fromMap(Map<String, dynamic> map, {this.reference})
-      : assert(map['month'] != null),
-        assert(map['clubHouse'] != null),
-        assert(map['RecetteEquipe1'] != null),
-        assert(map['RecetteEquipe2'] != null),
-        month = map['month'],
-        clubHouse = map['clubHouse'],
-        recetteEquipe1 = map['RecetteEquipe1'],
-        recetteEquipe2 = map['RecetteEquipe2'];
-
-      Record.fromSnapshot(DocumentSnapshot snapshot)
-      : this.fromMap(snapshot.data, reference: snapshot.reference);
-
-  @override
-  String toString() => "Record<$month:$clubHouse:$recetteEquipe1:$recetteEquipe2>";
 }
