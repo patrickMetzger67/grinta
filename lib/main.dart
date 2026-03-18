@@ -3,6 +3,7 @@ import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
 
 import 'firebase_options.dart';
+import 'login_screen.dart';
 import 'util/app_theme.dart';
 
 Future<void> main() async {
@@ -50,13 +51,30 @@ class _MyAppState extends State<MyApp> {
       darkTheme: AppTheme.darkTheme,
       themeMode: _themeMode,
       navigatorObservers: [_analyticsObserver],
-      initialRoute: '/',
+      home: const AuthGate(),
       routes: {
-        '/': (context) => const HomeScreen(),
+        '/login': (context) => const LoginScreen(),
+        '/home': (context) => const HomeScreen(),
         '/product': (context) => const ProductScreen(),
         '/cart': (context) => const CartScreen(),
       },
     );
+  }
+}
+
+class AuthGate extends StatelessWidget {
+  const AuthGate({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    // Exemple simple sans Firebase :
+    final bool isLoggedIn = false;
+
+    if (isLoggedIn) {
+      return const HomeScreen();
+    }
+
+    return const LoginScreen();
   }
 }
 
