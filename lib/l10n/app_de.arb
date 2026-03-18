@@ -1,0 +1,21 @@
+{
+  "@@locale": "de",
+  "appName": "Grinta",
+  "heroTitle": "Verwalten Sie Ihre sportlichen Aktivitäten ganz einfach",
+  "heroSubtitle": "Organisieren Sie Ihre Veranstaltungen, verwalten Sie Ihre Mitglieder und verfolgen Sie Ihre Aktivitäten über eine klare, moderne und responsive Benutzeroberfläche.",
+  "loginTitle": "Anmelden",
+  "loginSubtitle": "Melden Sie sich an, um auf Ihren Bereich zuzugreifen.",
+  "email": "E-Mail-Adresse",
+  "password": "Passwort",
+  "forgotPassword": "Passwort vergessen?",
+  "signIn": "Anmelden",
+  "createAccount": "Konto erstellen",
+  "or": "oder",
+  "continueWithGoogle": "Mit Google fortfahren",
+  "slide1Title": "Verwalten Sie Ihr Team",
+  "slide1Subtitle": "Zentralisieren Sie Ihre Mitglieder, Informationen und Organisation in einer einzigen Anwendung.",
+  "slide2Title": "Planen Sie Ihre Spiele",
+  "slide2Subtitle": "Erstellen Sie Ihre Veranstaltungen, laden Sie Ihre Spieler ein und verfolgen Sie deren Verfügbarkeit ganz einfach.",
+  "slide3Title": "Verfolgen Sie Ihre Leistung",
+  "slide3Subtitle": "Sehen Sie Statistiken, Aktivitäten und Ergebnisse über eine klare Benutzeroberfläche ein."
+}

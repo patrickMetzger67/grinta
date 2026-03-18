@@ -2,6 +2,9 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:grinta/util/app_theme.dart';
 
+import 'core/extensions/l10n_extension.dart';
+import 'main.dart';
+
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
 
@@ -18,26 +21,25 @@ class _LoginScreenState extends State<LoginScreen> {
   bool _obscurePassword = true;
   bool _isLoading = false;
 
-  final List<_OnboardingItem> _items = const [
-    _OnboardingItem(
-      title: 'Gérez votre équipe',
-      subtitle:
-      'Centralisez vos membres, vos informations et votre organisation dans une seule application.',
-      icon: Icons.groups_rounded,
-    ),
-    _OnboardingItem(
-      title: 'Planifiez vos matchs',
-      subtitle:
-      'Créez vos événements, convoquez vos joueurs et suivez facilement les disponibilités.',
-      icon: Icons.calendar_month_rounded,
-    ),
-    _OnboardingItem(
-      title: 'Suivez vos performances',
-      subtitle:
-      'Consultez les statistiques, l’activité et les résultats depuis une interface claire.',
-      icon: Icons.insights_rounded,
-    ),
-  ];
+  List<_OnboardingItem> _buildItems(BuildContext context) {
+    return [
+      _OnboardingItem(
+        title: context.l10n.slide1Title,
+        subtitle: context.l10n.slide1Subtitle,
+        icon: Icons.groups_rounded,
+      ),
+      _OnboardingItem(
+        title: context.l10n.slide2Title,
+        subtitle: context.l10n.slide2Subtitle,
+        icon: Icons.calendar_month_rounded,
+      ),
+      _OnboardingItem(
+        title: context.l10n.slide3Title,
+        subtitle: context.l10n.slide3Subtitle,
+        icon: Icons.insights_rounded,
+      ),
+    ];
+  }
 
   @override
   void initState() {
@@ -55,10 +57,10 @@ class _LoginScreenState extends State<LoginScreen> {
     super.dispose();
   }
 
-  void _goNextPage() {
-    if (!_pageController.hasClients) return;
+  void _goNextPage(int itemCount) {
+    if (!_pageController.hasClients || itemCount == 0) return;
 
-    final next = (_currentPage + 1).clamp(0, _items.length - 1);
+    final next = (_currentPage + 1).clamp(0, itemCount - 1);
     _pageController.animateToPage(
       next,
       duration: const Duration(milliseconds: 280),
@@ -66,10 +68,10 @@ class _LoginScreenState extends State<LoginScreen> {
     );
   }
 
-  void _goPreviousPage() {
-    if (!_pageController.hasClients) return;
+  void _goPreviousPage(int itemCount) {
+    if (!_pageController.hasClients || itemCount == 0) return;
 
-    final previous = (_currentPage - 1).clamp(0, _items.length - 1);
+    final previous = (_currentPage - 1).clamp(0, itemCount - 1);
     _pageController.animateToPage(
       previous,
       duration: const Duration(milliseconds: 280),
@@ -130,10 +132,11 @@ class _LoginScreenState extends State<LoginScreen> {
   @override
   Widget build(BuildContext context) {
     final width = MediaQuery.of(context).size.width;
+    final items = _buildItems(context);
 
     if (kIsWeb || width >= 900) {
       return _WebLoginLayout(
-        items: _items,
+        items: items,
         currentPage: _currentPage,
         pageController: _pageController,
         emailCtrl: _emailCtrl,
@@ -145,25 +148,19 @@ class _LoginScreenState extends State<LoginScreen> {
           setState(() => _obscurePassword = !_obscurePassword);
         },
         onSubmit: _submit,
-        onCreateAccount: () {
-          // TODO: navigation create account
-        },
-        onForgotPassword: () {
-          // TODO: forgot password
-        },
-        onPreviousPage: _goPreviousPage,
-        onNextPage: _goNextPage,
+        onCreateAccount: () {},
+        onForgotPassword: () {},
+        onPreviousPage: () => _goPreviousPage(items.length),
+        onNextPage: () => _goNextPage(items.length),
       );
     }
 
     return _MobileLoginLayout(
-      items: _items,
+      items: items,
       currentPage: _currentPage,
       pageController: _pageController,
       onPageChanged: (index) => setState(() => _currentPage = index),
-      onCreateAccount: () {
-        // TODO: navigation create account
-      },
+      onCreateAccount: () {},
       onLogin: _goToLoginSheet,
     );
   }
@@ -207,8 +204,6 @@ class _WebLoginLayout extends StatelessWidget {
     final colors = context.appColors;
 
 
-    final screenHeight = MediaQuery.of(context).size.height;
-    final carouselHeight = screenHeight * 0.5;
 
     return Scaffold(
       body: Row(
@@ -217,14 +212,14 @@ class _WebLoginLayout extends StatelessWidget {
             flex: 6,
             child: Container(
               decoration: BoxDecoration(
-                color: colors.background,
+                color: colors.primary,
                 gradient: LinearGradient(
                   begin: Alignment.topLeft,
                   end: Alignment.bottomRight,
                   colors: [
-                    colors.primary.withValues(alpha: 0.12),
+                    colors.primary,
                     colors.background,
-                    colors.secondary.withValues(alpha: 0.08),
+                    colors.secondary,
                   ],
                 ),
               ),
@@ -234,57 +229,59 @@ class _WebLoginLayout extends StatelessWidget {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      _BrandHeader(),
-                      const SizedBox(height: 40),
+                      const SizedBox(
+                        height: 72,
+                        child: Align(
+                          alignment: Alignment.topCenter,
+                          child: _BrandHeader(),
+                        ),
+                      ),
+                      const SizedBox(height: 16),
                       Expanded(
-                        child: SingleChildScrollView(
+                        child: Align(
+                          alignment: Alignment.topCenter,
                           child: ConstrainedBox(
-                            constraints: BoxConstraints(
-                              minHeight: MediaQuery.of(context).size.height - 120,
-                            ),
-                            child: Row(
+                            constraints: const BoxConstraints(maxWidth: 620),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
-                                Expanded(
-                                  child: ConstrainedBox(
-                                    constraints: const BoxConstraints(maxWidth: 620),
-                                    child: Column(
-                                      crossAxisAlignment: CrossAxisAlignment.start,
-                                      mainAxisAlignment: MainAxisAlignment.center,
-                                      children: [
-                                        Text(
-                                          'Pilotez votre activité sportive simplement',
-                                          style: Theme.of(context).textTheme.displaySmall?.copyWith(
-                                            fontWeight: FontWeight.w700,
-                                            height: 1.1,
-                                          ),
-                                        ),
-                                        const SizedBox(height: 18),
-                                        Text(
-                                          'Organisez vos événements, gérez vos membres et suivez votre activité depuis une interface claire, moderne et responsive.',
-                                          style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                                            color: colors.textSecondary,
-                                            height: 1.5,
-                                          ),
-                                        ),
-                                        const SizedBox(height: 32),
-                                        SizedBox(
-                                          height: carouselHeight.clamp(280.0, 520.0),
-                                          child: _OnboardingCardCarousel(
-                                            items: items,
-                                            controller: pageController,
-                                            currentPage: currentPage,
-                                            onPageChanged: onPageChanged,
-                                          ),
-                                        ),
-                                        const SizedBox(height: 28),
-                                        _DesktopCarouselControls(
-                                          itemCount: items.length,
-                                          currentPage: currentPage,
-                                          onPrevious: onPreviousPage,
-                                          onNext: onNextPage,
-                                        ),
-                                      ],
-                                    ),
+                                Text(
+                                  context.l10n.heroTitle,
+                                  style: Theme.of(context).textTheme.displaySmall?.copyWith(
+                                    fontWeight: FontWeight.w700,
+                                    height: 1.1,
+                                  ),
+                                  maxLines: 2,
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                                const SizedBox(height: 18),
+                                Text(
+                                  context.l10n.heroSubtitle,
+                                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                                    color: colors.textSecondary,
+                                    height: 1.5,
+                                  ),
+                                  maxLines: 3,
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                                const SizedBox(height: 24),
+                                SizedBox(
+                                  height: 420,
+                                  child: _OnboardingCardCarousel(
+                                    items: items,
+                                    controller: pageController,
+                                    currentPage: currentPage,
+                                    onPageChanged: onPageChanged,
+                                  ),
+                                ),
+                                const SizedBox(height: 20),
+                                SizedBox(
+                                  height: 56,
+                                  child: _DesktopCarouselControls(
+                                    itemCount: items.length,
+                                    currentPage: currentPage,
+                                    onPrevious: onPreviousPage,
+                                    onNext: onNextPage,
                                   ),
                                 ),
                               ],
@@ -316,6 +313,9 @@ class _WebLoginLayout extends StatelessWidget {
                       onSubmit: onSubmit,
                       onCreateAccount: onCreateAccount,
                       onForgotPassword: onForgotPassword,
+                      onLocaleChanged: (locale) {
+                        // à brancher sur ton système de changement de langue
+                      },
                     ),
                   ),
                 ),
@@ -328,6 +328,34 @@ class _WebLoginLayout extends StatelessWidget {
   }
 }
 
+class _BrandHeader extends StatelessWidget {
+  final bool isMobile;
+
+  const _BrandHeader({
+    this.isMobile = false,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final screenWidth = MediaQuery.of(context).size.width;
+
+    double logoWidth;
+    if (isMobile) {
+      logoWidth = screenWidth * 0.82;
+    } else if (screenWidth < 1200) {
+      logoWidth = screenWidth * 0.30;
+    } else {
+      logoWidth = screenWidth * 0.24;
+    }
+
+    return Image.asset(
+      'assets/images/logoFondOrange.png',
+      width: logoWidth.clamp(280.0, 760.0),
+      fit: BoxFit.contain,
+      filterQuality: FilterQuality.high,
+    );
+  }
+}
 class _DesktopCarouselControls extends StatelessWidget {
   final int itemCount;
   final int currentPage;
@@ -459,12 +487,12 @@ class _MobileLoginLayout extends StatelessWidget {
     return Scaffold(
       body: Container(
         decoration: BoxDecoration(
-          color: colors.background,
+          color: colors.primary,
           gradient: LinearGradient(
             begin: Alignment.topCenter,
             end: Alignment.bottomCenter,
             colors: [
-              colors.primary.withValues(alpha: 0.10),
+              colors.primary,
               colors.background,
               colors.background,
             ],
@@ -473,12 +501,15 @@ class _MobileLoginLayout extends StatelessWidget {
         child: SafeArea(
           child: Column(
             children: [
-              Padding(
-                padding: EdgeInsets.symmetric(
-                  horizontal: isTablet ? 32 : 20,
-                  vertical: 12,
+              Transform.translate(
+                offset: const Offset(0, -18),
+                child: SizedBox(
+                  height: MediaQuery.of(context).size.height * 0.10,
+                  child: const Align(
+                    alignment: Alignment.topCenter,
+                    child: _BrandHeader(isMobile: true),
+                  ),
                 ),
-                child: const _BrandHeader(),
               ),
               Expanded(
                 child: Padding(
@@ -512,7 +543,7 @@ class _MobileLoginLayout extends StatelessWidget {
                               width: double.infinity,
                               child: ElevatedButton(
                                 onPressed: onCreateAccount,
-                                child: const Text('Créer un compte'),
+                                child: Text(context.l10n.createAccount),
                               ),
                             ),
                             const SizedBox(height: 12),
@@ -520,7 +551,7 @@ class _MobileLoginLayout extends StatelessWidget {
                               width: double.infinity,
                               child: OutlinedButton(
                                 onPressed: onLogin,
-                                child: const Text('Connexion'),
+                                child: Text(context.l10n.loginTitle),
                               ),
                             ),
                             const SizedBox(height: 20),
@@ -548,6 +579,7 @@ class _LoginCard extends StatelessWidget {
   final VoidCallback onSubmit;
   final VoidCallback onCreateAccount;
   final VoidCallback onForgotPassword;
+  final ValueChanged<Locale> onLocaleChanged;
 
   const _LoginCard({
     required this.emailCtrl,
@@ -558,6 +590,7 @@ class _LoginCard extends StatelessWidget {
     required this.onSubmit,
     required this.onCreateAccount,
     required this.onForgotPassword,
+    required this.onLocaleChanged,
   });
 
   @override
@@ -570,15 +603,24 @@ class _LoginCard extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(
-              'Connexion',
-              style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-                fontWeight: FontWeight.w700,
-              ),
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.center,
+              children: [
+                Expanded(
+                  child: Text(
+                    context.l10n.loginTitle,
+                    style: Theme.of(context).textTheme.headlineMedium?.copyWith(
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 12),
+                const _LanguageDropdown(),
+              ],
             ),
             const SizedBox(height: 8),
             Text(
-              'Connectez-vous pour accéder à votre espace.',
+              context.l10n.loginSubtitle,
               style: Theme.of(context).textTheme.bodyLarge?.copyWith(
                 color: colors.textSecondary,
               ),
@@ -587,10 +629,10 @@ class _LoginCard extends StatelessWidget {
             TextField(
               controller: emailCtrl,
               keyboardType: TextInputType.emailAddress,
-              decoration: const InputDecoration(
-                labelText: 'Adresse email',
-                hintText: 'vous@exemple.com',
-                prefixIcon: Icon(Icons.mail_outline_rounded),
+              decoration: InputDecoration(
+                labelText:  context.l10n.email,
+                hintText: context.l10n.you,
+                prefixIcon: const Icon(Icons.mail_outline_rounded),
               ),
             ),
             const SizedBox(height: 14),
@@ -598,7 +640,7 @@ class _LoginCard extends StatelessWidget {
               controller: passwordCtrl,
               obscureText: obscurePassword,
               decoration: InputDecoration(
-                labelText: 'Mot de passe',
+                labelText: context.l10n.password,
                 hintText: '••••••••',
                 prefixIcon: const Icon(Icons.lock_outline_rounded),
                 suffixIcon: IconButton(
@@ -616,7 +658,7 @@ class _LoginCard extends StatelessWidget {
               alignment: Alignment.centerRight,
               child: TextButton(
                 onPressed: onForgotPassword,
-                child: const Text('Mot de passe oublié ?'),
+                child: Text(context.l10n.forgotPassword),
               ),
             ),
             const SizedBox(height: 12),
@@ -630,7 +672,21 @@ class _LoginCard extends StatelessWidget {
                   height: 22,
                   child: CircularProgressIndicator(strokeWidth: 2),
                 )
-                    : const Text('Se connecter'),
+                    : Text(context.l10n.signIn),
+              ),
+            ),
+            const SizedBox(height: 12),
+            SizedBox(
+              width: double.infinity,
+              child: OutlinedButton(
+                onPressed: isLoading ? null : onSubmit,
+                child: isLoading
+                    ? const SizedBox(
+                  width: 22,
+                  height: 22,
+                  child: CircularProgressIndicator(strokeWidth: 2),
+                )
+                    : Text(context.l10n.hasATeamCode),
               ),
             ),
             const SizedBox(height: 12),
@@ -638,7 +694,7 @@ class _LoginCard extends StatelessWidget {
               width: double.infinity,
               child: OutlinedButton(
                 onPressed: onCreateAccount,
-                child: const Text('Créer un compte'),
+                child: Text(context.l10n.createAccount),
               ),
             ),
             const SizedBox(height: 22),
@@ -648,7 +704,7 @@ class _LoginCard extends StatelessWidget {
                 Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 12),
                   child: Text(
-                    'ou',
+                    context.l10n.or,
                     style: TextStyle(color: colors.textSecondary),
                   ),
                 ),
@@ -663,7 +719,7 @@ class _LoginCard extends StatelessWidget {
                   // TODO: Google Sign-In
                 },
                 icon: const Icon(Icons.g_mobiledata_rounded),
-                label: const Text('Continuer avec Google'),
+                label: Text(context.l10n.continueWithGoogle),
               ),
             ),
           ],
@@ -727,6 +783,9 @@ class _LoginBottomSheet extends StatelessWidget {
                 onSubmit: onSubmit,
                 onCreateAccount: onCreateAccount,
                 onForgotPassword: onForgotPassword,
+                onLocaleChanged: (locale) {
+                  // à brancher sur ton système de changement de langue
+                },
               ),
             ],
           ),
@@ -819,8 +878,8 @@ class _OnboardingCardCarousel extends StatelessWidget {
           curve: Curves.easeOut,
           padding: EdgeInsets.only(
             right: 16,
-            top: isActive ? 4 : 18,
-            bottom: isActive ? 4 : 18,
+            top: isActive ? 4 : 8,
+            bottom: isActive ? 4 : 8,
           ),
           child: AnimatedScale(
             duration: const Duration(milliseconds: 220),
@@ -835,7 +894,6 @@ class _OnboardingCardCarousel extends StatelessWidget {
     );
   }
 }
-
 class _FeatureShowcaseCard extends StatelessWidget {
   final _OnboardingItem item;
   final bool mobileMode;
@@ -854,6 +912,7 @@ class _FeatureShowcaseCard extends StatelessWidget {
       child: LayoutBuilder(
         builder: (context, constraints) {
           final bool compact = constraints.maxHeight < 420;
+          final bool ultraCompact = constraints.maxHeight < 240;
 
           return Container(
             decoration: BoxDecoration(
@@ -867,142 +926,153 @@ class _FeatureShowcaseCard extends StatelessWidget {
                 ],
               ),
             ),
-            child: SingleChildScrollView(
-              padding: EdgeInsets.all(compact ? 16 : (mobileMode ? 20 : 28)),
-              child: ConstrainedBox(
-                constraints: BoxConstraints(
-                  minHeight: constraints.maxHeight -
-                      (compact ? 32 : (mobileMode ? 40 : 56)),
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Center(
-                      child: Container(
-                        constraints: BoxConstraints(
-                          maxWidth: 320,
-                          minHeight: compact ? 180 : 250,
-                        ),
-                        padding: const EdgeInsets.all(20),
-                        decoration: BoxDecoration(
-                          color: colors.surface,
-                          borderRadius: BorderRadius.circular(28),
-                          border: Border.all(color: colors.border),
-                          boxShadow: [
-                            BoxShadow(
-                              color: Colors.black.withValues(alpha: 0.04),
-                              blurRadius: 18,
-                              offset: const Offset(0, 10),
-                            ),
-                          ],
-                        ),
-                        child: Column(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Align(
-                              alignment: Alignment.centerLeft,
-                              child: Container(
-                                width: 52,
-                                height: 52,
-                                decoration: BoxDecoration(
-                                  color: colors.primary.withValues(alpha: 0.12),
-                                  shape: BoxShape.circle,
-                                ),
-                                child: Icon(
-                                  item.icon,
-                                  color: colors.primary,
-                                  size: 28,
-                                ),
+            child: Padding(
+              padding: EdgeInsets.all(
+                ultraCompact ? 10 : (compact ? 16 : (mobileMode ? 20 : 28)),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Expanded(
+                    child: Center(
+                      child: FittedBox(
+                        fit: BoxFit.scaleDown,
+                        alignment: Alignment.topCenter,
+                        child: SizedBox(
+                          width: ultraCompact ? 220 : 320,
+                          child: Container(
+                            padding: EdgeInsets.all(ultraCompact ? 12 : 20),
+                            decoration: BoxDecoration(
+                              color: colors.surface,
+                              borderRadius: BorderRadius.circular(
+                                ultraCompact ? 20 : 28,
                               ),
+                              border: Border.all(color: colors.border),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: Colors.black.withValues(alpha: 0.04),
+                                  blurRadius: 18,
+                                  offset: const Offset(0, 10),
+                                ),
+                              ],
                             ),
-                            SizedBox(height: compact ? 12 : 20),
-                            Container(
-                              width: double.infinity,
-                              padding: const EdgeInsets.all(16),
-                              decoration: BoxDecoration(
-                                color: colors.background,
-                                borderRadius: BorderRadius.circular(18),
-                                border: Border.all(color: colors.border),
-                              ),
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  Container(
-                                    height: 12,
-                                    width: 110,
+                            child: Column(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Align(
+                                  alignment: Alignment.centerLeft,
+                                  child: Container(
+                                    width: ultraCompact ? 40 : 52,
+                                    height: ultraCompact ? 40 : 52,
                                     decoration: BoxDecoration(
-                                      color: colors.primary.withValues(alpha: 0.18),
-                                      borderRadius: BorderRadius.circular(99),
+                                      color: colors.primary.withValues(alpha: 0.12),
+                                      shape: BoxShape.circle,
+                                    ),
+                                    child: Icon(
+                                      item.icon,
+                                      color: colors.primary,
+                                      size: ultraCompact ? 22 : 28,
                                     ),
                                   ),
-                                  const SizedBox(height: 12),
-                                  Container(
-                                    height: 10,
-                                    width: double.infinity,
-                                    decoration: BoxDecoration(
-                                      color: colors.border.withValues(alpha: 0.8),
-                                      borderRadius: BorderRadius.circular(99),
+                                ),
+                                SizedBox(height: ultraCompact ? 10 : (compact ? 12 : 20)),
+                                Container(
+                                  width: double.infinity,
+                                  padding: EdgeInsets.all(ultraCompact ? 10 : 16),
+                                  decoration: BoxDecoration(
+                                    color: colors.background,
+                                    borderRadius: BorderRadius.circular(
+                                      ultraCompact ? 14 : 18,
                                     ),
+                                    border: Border.all(color: colors.border),
                                   ),
-                                  const SizedBox(height: 8),
-                                  Container(
-                                    height: 10,
-                                    width: 160,
-                                    decoration: BoxDecoration(
-                                      color: colors.border.withValues(alpha: 0.8),
-                                      borderRadius: BorderRadius.circular(99),
-                                    ),
-                                  ),
-                                  SizedBox(height: compact ? 12 : 16),
-                                  Row(
+                                  child: Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    mainAxisSize: MainAxisSize.min,
                                     children: [
-                                      Expanded(
-                                        child: Container(
-                                          height: 44,
-                                          decoration: BoxDecoration(
-                                            color: colors.primary.withValues(alpha: 0.12),
-                                            borderRadius: BorderRadius.circular(14),
-                                          ),
+                                      Container(
+                                        height: ultraCompact ? 10 : 12,
+                                        width: ultraCompact ? 90 : 110,
+                                        decoration: BoxDecoration(
+                                          color: colors.primary.withValues(alpha: 0.18),
+                                          borderRadius: BorderRadius.circular(99),
                                         ),
                                       ),
-                                      const SizedBox(width: 12),
-                                      Expanded(
-                                        child: Container(
-                                          height: 44,
-                                          decoration: BoxDecoration(
-                                            color: colors.surface,
-                                            borderRadius: BorderRadius.circular(14),
-                                            border: Border.all(color: colors.border),
-                                          ),
+                                      SizedBox(height: ultraCompact ? 8 : 12),
+                                      Container(
+                                        height: 10,
+                                        width: double.infinity,
+                                        decoration: BoxDecoration(
+                                          color: colors.border.withValues(alpha: 0.8),
+                                          borderRadius: BorderRadius.circular(99),
                                         ),
+                                      ),
+                                      const SizedBox(height: 8),
+                                      Container(
+                                        height: 10,
+                                        width: ultraCompact ? 120 : 160,
+                                        decoration: BoxDecoration(
+                                          color: colors.border.withValues(alpha: 0.8),
+                                          borderRadius: BorderRadius.circular(99),
+                                        ),
+                                      ),
+                                      SizedBox(height: ultraCompact ? 10 : (compact ? 12 : 16)),
+                                      Row(
+                                        children: [
+                                          Expanded(
+                                            child: Container(
+                                              height: ultraCompact ? 32 : 44,
+                                              decoration: BoxDecoration(
+                                                color: colors.primary.withValues(alpha: 0.12),
+                                                borderRadius: BorderRadius.circular(14),
+                                              ),
+                                            ),
+                                          ),
+                                          const SizedBox(width: 12),
+                                          Expanded(
+                                            child: Container(
+                                              height: ultraCompact ? 32 : 44,
+                                              decoration: BoxDecoration(
+                                                color: colors.surface,
+                                                borderRadius: BorderRadius.circular(14),
+                                                border: Border.all(color: colors.border),
+                                              ),
+                                            ),
+                                          ),
+                                        ],
                                       ),
                                     ],
                                   ),
-                                ],
-                              ),
+                                ),
+                              ],
                             ),
-                          ],
+                          ),
                         ),
                       ),
                     ),
-                    SizedBox(height: compact ? 16 : 20),
-                    Text(
-                      item.title,
-                      style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                        fontWeight: FontWeight.w700,
-                      ),
+                  ),
+                  SizedBox(height: ultraCompact ? 8 : (compact ? 12 : 20)),
+                  Text(
+                    item.title,
+                    maxLines: ultraCompact ? 1 : 2,
+                    overflow: TextOverflow.ellipsis,
+                    style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                      fontWeight: FontWeight.w700,
+                      fontSize: ultraCompact ? 16 : null,
                     ),
-                    const SizedBox(height: 10),
-                    Text(
-                      item.subtitle,
-                      style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                        color: colors.textSecondary,
-                        height: 1.5,
-                      ),
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    item.subtitle,
+                    maxLines: ultraCompact ? 2 : (compact ? 3 : 4),
+                    overflow: TextOverflow.ellipsis,
+                    style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                      color: colors.textSecondary,
+                      height: 1.45,
+                      fontSize: ultraCompact ? 12 : null,
                     ),
-                  ],
-                ),
+                  ),
+                ],
               ),
             ),
           );
@@ -1012,36 +1082,124 @@ class _FeatureShowcaseCard extends StatelessWidget {
   }
 }
 
-class _BrandHeader extends StatelessWidget {
-  const _BrandHeader();
+class _FeatureVisual extends StatelessWidget {
+  final _OnboardingItem item;
+  final bool compact;
+
+  const _FeatureVisual({
+    required this.item,
+    required this.compact,
+  });
 
   @override
   Widget build(BuildContext context) {
     final colors = context.appColors;
 
-    return Row(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        Container(
-          width: 42,
-          height: 42,
-          decoration: BoxDecoration(
-            color: colors.primary,
-            borderRadius: BorderRadius.circular(14),
+    return Container(
+      constraints: BoxConstraints(
+        maxWidth: compact ? 260 : 320,
+      ),
+      padding: EdgeInsets.all(compact ? 14 : 18),
+      decoration: BoxDecoration(
+        color: colors.surface,
+        borderRadius: BorderRadius.circular(compact ? 22 : 28),
+        border: Border.all(color: colors.border),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.04),
+            blurRadius: compact ? 12 : 18,
+            offset: const Offset(0, 10),
           ),
-          child: const Icon(
-            Icons.sports_soccer_rounded,
-            color: Colors.white,
+        ],
+      ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Align(
+            alignment: Alignment.centerLeft,
+            child: Container(
+              width: compact ? 42 : 52,
+              height: compact ? 42 : 52,
+              decoration: BoxDecoration(
+                color: colors.primary.withValues(alpha: 0.12),
+                shape: BoxShape.circle,
+              ),
+              child: Icon(
+                item.icon,
+                color: colors.primary,
+                size: compact ? 22 : 28,
+              ),
+            ),
           ),
-        ),
-        const SizedBox(width: 12),
-        Text(
-          'Mon App',
-          style: Theme.of(context).textTheme.titleLarge?.copyWith(
-            fontWeight: FontWeight.w700,
+          SizedBox(height: compact ? 10 : 16),
+          Container(
+            width: double.infinity,
+            padding: EdgeInsets.all(compact ? 12 : 16),
+            decoration: BoxDecoration(
+              color: colors.background,
+              borderRadius: BorderRadius.circular(compact ? 14 : 18),
+              border: Border.all(color: colors.border),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Container(
+                  height: compact ? 10 : 12,
+                  width: compact ? 90 : 110,
+                  decoration: BoxDecoration(
+                    color: colors.primary.withValues(alpha: 0.18),
+                    borderRadius: BorderRadius.circular(99),
+                  ),
+                ),
+                SizedBox(height: compact ? 10 : 12),
+                Container(
+                  height: 10,
+                  width: double.infinity,
+                  decoration: BoxDecoration(
+                    color: colors.border.withValues(alpha: 0.8),
+                    borderRadius: BorderRadius.circular(99),
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Container(
+                  height: 10,
+                  width: compact ? 120 : 160,
+                  decoration: BoxDecoration(
+                    color: colors.border.withValues(alpha: 0.8),
+                    borderRadius: BorderRadius.circular(99),
+                  ),
+                ),
+                SizedBox(height: compact ? 10 : 14),
+                Row(
+                  children: [
+                    Expanded(
+                      child: Container(
+                        height: compact ? 36 : 44,
+                        decoration: BoxDecoration(
+                          color: colors.primary.withValues(alpha: 0.12),
+                          borderRadius: BorderRadius.circular(14),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: Container(
+                        height: compact ? 36 : 44,
+                        decoration: BoxDecoration(
+                          color: colors.surface,
+                          borderRadius: BorderRadius.circular(14),
+                          border: Border.all(color: colors.border),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
           ),
-        ),
-      ],
+        ],
+      ),
     );
   }
 }
@@ -1055,5 +1213,83 @@ class _OnboardingItem {
     required this.title,
     required this.subtitle,
     required this.icon,
+  });
+}
+class _LanguageDropdown extends StatelessWidget {
+  const _LanguageDropdown();
+
+  static const List<_LanguageItem> _languages = [
+    _LanguageItem(locale: Locale('fr'), flag: '🇫🇷', label: 'FR'),
+    _LanguageItem(locale: Locale('en'), flag: '🇬🇧', label: 'EN'),
+    _LanguageItem(locale: Locale('de'), flag: '🇩🇪', label: 'DE'),
+    _LanguageItem(locale: Locale('es'), flag: '🇪🇸', label: 'ES'),
+    _LanguageItem(locale: Locale('it'), flag: '🇮🇹', label: 'IT'),
+  ];
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = context.appColors;
+    final currentLocale = Localizations.localeOf(context);
+
+    final selected = _languages.firstWhere(
+          (e) => e.locale.languageCode == currentLocale.languageCode,
+      orElse: () => _languages.first,
+    );
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10),
+      decoration: BoxDecoration(
+        color: colors.surface,
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: colors.border),
+      ),
+      child: DropdownButtonHideUnderline(
+        child: DropdownButton<String>(
+          value: selected.locale.languageCode,
+          icon: const Icon(Icons.keyboard_arrow_down_rounded),
+          borderRadius: BorderRadius.circular(14),
+          style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+            color: colors.textPrimary,
+            fontWeight: FontWeight.w600,
+          ),
+          items: _languages.map((language) {
+            return DropdownMenuItem<String>(
+              value: language.locale.languageCode,
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    language.flag,
+                    style: const TextStyle(fontSize: 18),
+                  ),
+                  const SizedBox(width: 8),
+                  Text(language.label),
+                ],
+              ),
+            );
+          }).toList(),
+          onChanged: (value) {
+            if (value == null) return;
+
+            final locale = _languages.firstWhere(
+                  (e) => e.locale.languageCode == value,
+            ).locale;
+            MyApp.of(context).changeLocale(locale);
+          },
+        ),
+      ),
+    );
+  }
+}
+
+class _LanguageItem {
+  final Locale locale;
+  final String flag;
+  final String label;
+
+  const _LanguageItem({
+    required this.locale,
+    required this.flag,
+    required this.label,
   });
 }

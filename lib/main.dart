@@ -1,10 +1,13 @@
 import 'package:firebase_analytics/firebase_analytics.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
 
 import 'firebase_options.dart';
+import 'l10n/app_localizations.dart';
 import 'login_screen.dart';
 import 'util/app_theme.dart';
+
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -34,6 +37,14 @@ class _MyAppState extends State<MyApp> {
 
   ThemeMode _themeMode = ThemeMode.light;
 
+  Locale? _locale;
+
+  void changeLocale(Locale locale) {
+    setState(() {
+      _locale = locale;
+    });
+  }
+
   void toggleTheme(bool isDark) {
     setState(() {
       _themeMode = isDark ? ThemeMode.dark : ThemeMode.light;
@@ -51,6 +62,20 @@ class _MyAppState extends State<MyApp> {
       darkTheme: AppTheme.darkTheme,
       themeMode: _themeMode,
       navigatorObservers: [_analyticsObserver],
+      locale: _locale,
+      localizationsDelegates: const [
+        AppLocalizations.delegate,
+        GlobalMaterialLocalizations.delegate,
+        GlobalWidgetsLocalizations.delegate,
+        GlobalCupertinoLocalizations.delegate,
+      ],
+      supportedLocales: const [
+        Locale('fr'),
+        Locale('en'),
+        Locale('de'),
+        Locale('es'),
+        Locale('it'),
+      ],
       home: const AuthGate(),
       routes: {
         '/login': (context) => const LoginScreen(),
