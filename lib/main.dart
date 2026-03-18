@@ -1,148 +1,290 @@
+import 'package:firebase_analytics/firebase_analytics.dart';
+import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
-import 'package:grinta/util/app_theme.dart';
 
-void main() {
+import 'firebase_options.dart';
+import 'util/app_theme.dart';
+
+Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  runApp(MyApp());
+
+  await Firebase.initializeApp(
+    options: DefaultFirebaseOptions.currentPlatform,
+  );
+
+  runApp(const MyApp());
 }
 
 class MyApp extends StatefulWidget {
+  const MyApp({super.key});
+
   static _MyAppState of(BuildContext context) =>
       context.findAncestorStateOfType<_MyAppState>()!;
 
   @override
-  _MyAppState createState() => _MyAppState();
+  State<MyApp> createState() => _MyAppState();
 }
 
 class _MyAppState extends State<MyApp> {
+  final FirebaseAnalytics _analytics = FirebaseAnalytics.instance;
+
+  late final FirebaseAnalyticsObserver _analyticsObserver =
+  FirebaseAnalyticsObserver(analytics: _analytics);
 
   ThemeMode _themeMode = ThemeMode.light;
 
-  void toggleTheme() {
+  void toggleTheme(bool isDark) {
     setState(() {
-      if (_themeMode == ThemeMode.light) {
-        _themeMode = ThemeMode.dark;
-      } else {
-        _themeMode = ThemeMode.light;
-      }
+      _themeMode = isDark ? ThemeMode.dark : ThemeMode.light;
     });
   }
 
+  bool get isDarkMode => _themeMode == ThemeMode.dark;
+
   @override
   Widget build(BuildContext context) {
-
     return MaterialApp(
       debugShowCheckedModeBanner: false,
-      title: 'Mon application',
+      title: 'Grinta',
       theme: AppTheme.lightTheme,
       darkTheme: AppTheme.darkTheme,
       themeMode: _themeMode,
-      home: const HomePage(),
+      navigatorObservers: [_analyticsObserver],
+      initialRoute: '/',
+      routes: {
+        '/': (context) => const HomeScreen(),
+        '/product': (context) => const ProductScreen(),
+        '/cart': (context) => const CartScreen(),
+      },
     );
   }
 }
 
-class HomePage extends StatelessWidget {
-  const HomePage({Key? key}) : super(key: key);
+class HomeScreen extends StatelessWidget {
+  const HomeScreen({super.key});
+
+  Future<void> _logOpenProduct() async {
+    await FirebaseAnalytics.instance.logEvent(
+      name: 'open_product',
+      parameters: {
+        'source': 'home',
+      },
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
-
+    final app = MyApp.of(context);
     final colors = context.appColors;
-    final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Accueil'),
-        actions: [
-          IconButton(
-            icon: Icon(
-              isDark ? Icons.light_mode : Icons.dark_mode,
+      appBar: AppBar(title: const Text("Accueil")),
+      body: ListView(
+        padding: const EdgeInsets.all(16),
+        children: [
+          Card(
+            child: SwitchListTile(
+              title: const Text("Mode sombre"),
+              value: app.isDarkMode,
+              onChanged: (value) {
+                app.toggleTheme(value);
+              },
             ),
-            onPressed: () {
-              MyApp.of(context).toggleTheme();
-            },
+          ),
+          const SizedBox(height: 16),
+          Card(
+            child: Padding(
+              padding: const EdgeInsets.all(20),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    'Bienvenue',
+                    style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                      fontWeight: FontWeight.w700,
+                      color: colors.textPrimary,
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  Text(
+                    'Exemple avec Firebase Analytics.',
+                    textAlign: TextAlign.center,
+                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                      color: colors.textSecondary,
+                    ),
+                  ),
+                  const SizedBox(height: 20),
+                  ElevatedButton(
+                    onPressed: () async {
+                      await _logOpenProduct();
+
+                      if (!context.mounted) return;
+                      Navigator.pushNamed(context, '/product');
+                    },
+                    child: const Text('Aller vers produit'),
+                  ),
+                ],
+              ),
+            ),
           ),
         ],
       ),
+    );
+  }
+}
 
-      floatingActionButton: FloatingActionButton(
-        onPressed: () {},
-        child: const Icon(Icons.add),
+class ProductScreen extends StatefulWidget {
+  const ProductScreen({super.key});
+
+  @override
+  State<ProductScreen> createState() => _ProductScreenState();
+}
+
+class _ProductScreenState extends State<ProductScreen> {
+  @override
+  void initState() {
+    super.initState();
+    _logViewItem();
+  }
+
+  Future<void> _logViewItem() async {
+    await FirebaseAnalytics.instance.logViewItem(
+      currency: 'EUR',
+      value: 49.90,
+      items: [
+        AnalyticsEventItem(
+          itemId: '123',
+          itemName: 'Maillot domicile',
+          itemCategory: 'eshop',
+          price: 49.90,
+        ),
+      ],
+    );
+  }
+
+  Future<void> _logAddToCart() async {
+    await FirebaseAnalytics.instance.logAddToCart(
+      currency: 'EUR',
+      value: 49.90,
+      items: [
+        AnalyticsEventItem(
+          itemId: '123',
+          itemName: 'Maillot domicile',
+          itemCategory: 'eshop',
+          price: 49.90,
+          quantity: 1,
+        ),
+      ],
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = context.appColors;
+
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('Produit'),
       ),
-
-      body: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-
-            Text(
-              'Bienvenue',
-              style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-                color: colors.textPrimary,
-                fontWeight: FontWeight.w700,
-              ),
-            ),
-
-            const SizedBox(height: 8),
-
-            Text(
-              'Thème SF + couleur principale personnalisée',
-              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                color: colors.textSecondary,
-              ),
-            ),
-
-            const SizedBox(height: 24),
-
-            Card(
-              child: Padding(
-                padding: const EdgeInsets.all(16),
-                child: Row(
-                  children: [
-
-                    Icon(
-                      Icons.palette_outlined,
-                      color: colors.primary,
-                    ),
-
-                    const SizedBox(width: 12),
-
-                    Expanded(
-                      child: Text(
-                        'La couleur principale est bien appliquée.',
-                        style: TextStyle(
-                          color: colors.textPrimary,
-                          fontSize: 16,
-                          fontWeight: FontWeight.w500,
-                        ),
-                      ),
-                    ),
-                  ],
+      body: Center(
+        child: Card(
+          child: Padding(
+            padding: const EdgeInsets.all(20),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  'Maillot domicile',
+                  style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                    fontWeight: FontWeight.w700,
+                    color: colors.textPrimary,
+                  ),
                 ),
-              ),
+                const SizedBox(height: 8),
+                Text(
+                  '49,90 €',
+                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                    color: colors.primary,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+                const SizedBox(height: 20),
+                ElevatedButton(
+                  onPressed: () async {
+                    await _logAddToCart();
+
+                    if (!context.mounted) return;
+                    Navigator.pushNamed(context, '/cart');
+                  },
+                  child: const Text('Ajouter au panier'),
+                ),
+              ],
             ),
+          ),
+        ),
+      ),
+    );
+  }
+}
 
-            const SizedBox(height: 16),
+class CartScreen extends StatelessWidget {
+  const CartScreen({super.key});
 
-            TextField(
-              decoration: const InputDecoration(
-                labelText: 'Nom',
-                hintText: 'Saisir votre nom',
-              ),
+  Future<void> _logBeginCheckout() async {
+    await FirebaseAnalytics.instance.logBeginCheckout(
+      value: 49.90,
+      currency: 'EUR',
+      items: [
+        AnalyticsEventItem(
+          itemId: '123',
+          itemName: 'Maillot domicile',
+          itemCategory: 'eshop',
+          price: 49.90,
+          quantity: 1,
+        ),
+      ],
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = context.appColors;
+
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('Panier'),
+      ),
+      body: Center(
+        child: Card(
+          child: Padding(
+            padding: const EdgeInsets.all(20),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  'Votre panier',
+                  style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                    fontWeight: FontWeight.w700,
+                    color: colors.textPrimary,
+                  ),
+                ),
+                const SizedBox(height: 12),
+                Text(
+                  '1 article - 49,90 €',
+                  style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                    color: colors.textSecondary,
+                  ),
+                ),
+                const SizedBox(height: 20),
+                ElevatedButton(
+                  onPressed: () async {
+                    await _logBeginCheckout();
+                  },
+                  child: const Text('Commencer le paiement'),
+                ),
+              ],
             ),
-
-            const SizedBox(height: 16),
-
-            SizedBox(
-              width: double.infinity,
-              child: ElevatedButton(
-                onPressed: () {},
-                child: const Text('Continuer'),
-              ),
-            ),
-          ],
+          ),
         ),
       ),
     );

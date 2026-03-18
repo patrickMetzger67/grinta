@@ -1,0 +1,47 @@
+{
+  "project_info": {
+    "project_number": "626293600533",
+    "firebase_url": "https://aserstein-2453e.firebaseio.com",
+    "project_id": "aserstein-2453e",
+    "storage_bucket": "aserstein-2453e.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:626293600533:android:85812718c2da4a6ea8791c",
+        "android_client_info": {
+          "package_name": "com.tome4.asersteinv2"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "626293600533-f0b98hpalojmvalqgjuam24jjbsa43o4.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDVH6-cWa529FOnCYPE4166rpxOSX2i7HY"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "626293600533-f0b98hpalojmvalqgjuam24jjbsa43o4.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "626293600533-1p7cg2f2u7v65bn5ae1s8cpulttg2m4m.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.example.aseweb"
+              }
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
