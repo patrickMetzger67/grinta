@@ -40,6 +40,33 @@ class AppLocalizationsEs extends AppLocalizations {
   String get signIn => 'Iniciar sesión';
 
   @override
+  String get emailAndPasswordRequired => 'Email et mot de passe requis';
+
+  @override
+  String get signInError => 'Erreur de connexion';
+
+  @override
+  String get userNotFound => 'Aucun utilisateur trouvé pour cet email';
+
+  @override
+  String get wrongPassword => 'Mot de passe incorrect';
+
+  @override
+  String get invalidEmail => 'Adresse email invalide';
+
+  @override
+  String get invalidCredential => 'Identifiants invalides';
+
+  @override
+  String get tooManyRequests => 'Trop de tentatives. Réessaie plus tard';
+
+  @override
+  String get userDisabled => 'Ce compte a été désactivé';
+
+  @override
+  String get unexpectedError => 'Erreur inattendue';
+
+  @override
   String get createAccount => 'Crear cuenta';
 
   @override

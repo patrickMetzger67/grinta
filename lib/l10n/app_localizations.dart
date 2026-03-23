@@ -164,6 +164,60 @@ abstract class AppLocalizations {
   /// **'Se connecter'**
   String get signIn;
 
+  /// No description provided for @emailAndPasswordRequired.
+  ///
+  /// In fr, this message translates to:
+  /// **'Email et mot de passe requis'**
+  String get emailAndPasswordRequired;
+
+  /// No description provided for @signInError.
+  ///
+  /// In fr, this message translates to:
+  /// **'Erreur de connexion'**
+  String get signInError;
+
+  /// No description provided for @userNotFound.
+  ///
+  /// In fr, this message translates to:
+  /// **'Aucun utilisateur trouvé pour cet email'**
+  String get userNotFound;
+
+  /// No description provided for @wrongPassword.
+  ///
+  /// In fr, this message translates to:
+  /// **'Mot de passe incorrect'**
+  String get wrongPassword;
+
+  /// No description provided for @invalidEmail.
+  ///
+  /// In fr, this message translates to:
+  /// **'Adresse email invalide'**
+  String get invalidEmail;
+
+  /// No description provided for @invalidCredential.
+  ///
+  /// In fr, this message translates to:
+  /// **'Identifiants invalides'**
+  String get invalidCredential;
+
+  /// No description provided for @tooManyRequests.
+  ///
+  /// In fr, this message translates to:
+  /// **'Trop de tentatives. Réessaie plus tard'**
+  String get tooManyRequests;
+
+  /// No description provided for @userDisabled.
+  ///
+  /// In fr, this message translates to:
+  /// **'Ce compte a été désactivé'**
+  String get userDisabled;
+
+  /// No description provided for @unexpectedError.
+  ///
+  /// In fr, this message translates to:
+  /// **'Erreur inattendue'**
+  String get unexpectedError;
+
   /// No description provided for @createAccount.
   ///
   /// In fr, this message translates to:

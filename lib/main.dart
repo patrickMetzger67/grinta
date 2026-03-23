@@ -1,13 +1,15 @@
 import 'package:firebase_analytics/firebase_analytics.dart';
 import 'package:firebase_core/firebase_core.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 
+import 'asi_converter_screen.dart';
+import 'asi_downloader_screen.dart';
 import 'firebase_options.dart';
 import 'l10n/app_localizations.dart';
 import 'login_screen.dart';
 import 'util/app_theme.dart';
-
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -80,6 +82,7 @@ class _MyAppState extends State<MyApp> {
       routes: {
         '/login': (context) => const LoginScreen(),
         '/home': (context) => const HomeScreen(),
+        '/asi-converter': (context) => const AsiConverterScreen(),
         '/product': (context) => const ProductScreen(),
         '/cart': (context) => const CartScreen(),
       },
@@ -131,6 +134,49 @@ class HomeScreen extends StatelessWidget {
               value: app.isDarkMode,
               onChanged: (value) {
                 app.toggleTheme(value);
+              },
+            ),
+          ),
+          if (kIsWeb) ...[
+            const SizedBox(height: 16),
+            Card(
+              child: ListTile(
+                leading: const Icon(Icons.usb),
+                title: const Text(
+                  'ASI Downloader (USB Chrome)',
+                  style: TextStyle(
+                    decoration: TextDecoration.underline,
+                  ),
+                ),
+                subtitle: const Text(
+                  'Accès USB via WebUSB (Chrome uniquement)',
+                ),
+                onTap: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) => const AsiDownloaderScreen(),
+                    ),
+                  );
+                },
+              ),
+            ),
+          ],
+          const SizedBox(height: 16),
+          Card(
+            child: ListTile(
+              leading: const Icon(Icons.file_open_outlined),
+              title: const Text(
+                'Convertisseur ASI vers CSV',
+                style: TextStyle(
+                  decoration: TextDecoration.underline,
+                ),
+              ),
+              subtitle: const Text(
+                'Sélectionner un fichier .asi et lancer la conversion',
+              ),
+              onTap: () {
+                Navigator.pushNamed(context, '/asi-converter');
               },
             ),
           ),

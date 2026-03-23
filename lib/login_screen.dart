@@ -1,3 +1,4 @@
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:grinta/util/app_theme.dart';
@@ -82,23 +83,71 @@ class _LoginScreenState extends State<LoginScreen> {
   Future<void> _submit() async {
     FocusScope.of(context).unfocus();
 
+    final email = _emailCtrl.text.trim();
+    final password = _passwordCtrl.text.trim();
+
+    if (email.isEmpty || password.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(context.l10n.emailAndPasswordRequired),
+        ),
+      );
+      return;
+    }
+
     setState(() => _isLoading = true);
 
     try {
-      await Future.delayed(const Duration(milliseconds: 800));
+      await FirebaseAuth.instance.signInWithEmailAndPassword(
+        email: email,
+        password: password,
+      );
 
-      // TODO: branchement Firebase Auth / backend
-      // await FirebaseAuth.instance.signInWithEmailAndPassword(
-      //   email: _emailCtrl.text.trim(),
-      //   password: _passwordCtrl.text.trim(),
-      // );
+      if (!mounted) return;
+
+      Navigator.of(context, rootNavigator: true)
+          .pushReplacementNamed('/home');
+    } on FirebaseAuthException catch (e) {
+      String message = context.l10n.signInError;
+
+      switch (e.code) {
+        case 'user-not-found':
+          message = context.l10n.userNotFound;
+          break;
+        case 'wrong-password':
+          message = context.l10n.wrongPassword;
+          break;
+        case 'invalid-email':
+          message = context.l10n.invalidEmail;
+          break;
+        case 'invalid-credential':
+          message = context.l10n.invalidCredential;
+          break;
+        case 'too-many-requests':
+          message = context.l10n.tooManyRequests;
+          break;
+        case 'user-disabled':
+          message = context.l10n.userDisabled;
+          break;
+      }
+
+      if (!mounted) return;
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(message)),
+      );
+    } catch (e) {
+      if (!mounted) return;
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('${context.l10n.unexpectedError} : $e')),
+      );
     } finally {
       if (mounted) {
         setState(() => _isLoading = false);
       }
     }
   }
-
   void _goToLoginSheet() {
     final isTabletOrMobile = MediaQuery.of(context).size.width < 900;
 
@@ -1082,127 +1131,6 @@ class _FeatureShowcaseCard extends StatelessWidget {
   }
 }
 
-class _FeatureVisual extends StatelessWidget {
-  final _OnboardingItem item;
-  final bool compact;
-
-  const _FeatureVisual({
-    required this.item,
-    required this.compact,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final colors = context.appColors;
-
-    return Container(
-      constraints: BoxConstraints(
-        maxWidth: compact ? 260 : 320,
-      ),
-      padding: EdgeInsets.all(compact ? 14 : 18),
-      decoration: BoxDecoration(
-        color: colors.surface,
-        borderRadius: BorderRadius.circular(compact ? 22 : 28),
-        border: Border.all(color: colors.border),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.04),
-            blurRadius: compact ? 12 : 18,
-            offset: const Offset(0, 10),
-          ),
-        ],
-      ),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Align(
-            alignment: Alignment.centerLeft,
-            child: Container(
-              width: compact ? 42 : 52,
-              height: compact ? 42 : 52,
-              decoration: BoxDecoration(
-                color: colors.primary.withValues(alpha: 0.12),
-                shape: BoxShape.circle,
-              ),
-              child: Icon(
-                item.icon,
-                color: colors.primary,
-                size: compact ? 22 : 28,
-              ),
-            ),
-          ),
-          SizedBox(height: compact ? 10 : 16),
-          Container(
-            width: double.infinity,
-            padding: EdgeInsets.all(compact ? 12 : 16),
-            decoration: BoxDecoration(
-              color: colors.background,
-              borderRadius: BorderRadius.circular(compact ? 14 : 18),
-              border: Border.all(color: colors.border),
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Container(
-                  height: compact ? 10 : 12,
-                  width: compact ? 90 : 110,
-                  decoration: BoxDecoration(
-                    color: colors.primary.withValues(alpha: 0.18),
-                    borderRadius: BorderRadius.circular(99),
-                  ),
-                ),
-                SizedBox(height: compact ? 10 : 12),
-                Container(
-                  height: 10,
-                  width: double.infinity,
-                  decoration: BoxDecoration(
-                    color: colors.border.withValues(alpha: 0.8),
-                    borderRadius: BorderRadius.circular(99),
-                  ),
-                ),
-                const SizedBox(height: 8),
-                Container(
-                  height: 10,
-                  width: compact ? 120 : 160,
-                  decoration: BoxDecoration(
-                    color: colors.border.withValues(alpha: 0.8),
-                    borderRadius: BorderRadius.circular(99),
-                  ),
-                ),
-                SizedBox(height: compact ? 10 : 14),
-                Row(
-                  children: [
-                    Expanded(
-                      child: Container(
-                        height: compact ? 36 : 44,
-                        decoration: BoxDecoration(
-                          color: colors.primary.withValues(alpha: 0.12),
-                          borderRadius: BorderRadius.circular(14),
-                        ),
-                      ),
-                    ),
-                    const SizedBox(width: 10),
-                    Expanded(
-                      child: Container(
-                        height: compact ? 36 : 44,
-                        decoration: BoxDecoration(
-                          color: colors.surface,
-                          borderRadius: BorderRadius.circular(14),
-                          border: Border.all(color: colors.border),
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
 
 class _OnboardingItem {
   final String title;
