@@ -3,13 +3,18 @@ import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
+import 'package:grinta/tracker/tracker_hub_view.dart';
 
 import 'asi_converter_screen.dart';
 import 'asi_downloader_screen.dart';
 import 'firebase_options.dart';
+import 'homeScreen.dart';
 import 'l10n/app_localizations.dart';
 import 'login_screen.dart';
 import 'util/app_theme.dart';
+
+import 'package:provider/provider.dart';
+import '../provider/current_season_provider.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -18,7 +23,16 @@ Future<void> main() async {
     options: DefaultFirebaseOptions.currentPlatform,
   );
 
-  runApp(const MyApp());
+  runApp(
+    MultiProvider(
+      providers: [
+        ChangeNotifierProvider<CurrentSeasonProvider>(
+          create: (_) => CurrentSeasonProvider(),
+        ),
+      ],
+      child: const MyApp(),
+    ),
+  );
 }
 
 class MyApp extends StatefulWidget {
@@ -83,6 +97,16 @@ class _MyAppState extends State<MyApp> {
         '/login': (context) => const LoginScreen(),
         '/home': (context) => const HomeScreen(),
         '/asi-converter': (context) => const AsiConverterScreen(),
+        '/hub-view': (context) => const TrackerHubView(
+          trackerIds: [
+            'TRACKER_001',
+            'TRACKER_002',
+            'TRACKER_003',
+            'TRACKER_004',
+            'TRACKER_005',
+            'TRACKER_006',
+          ],
+        ),
         '/product': (context) => const ProductScreen(),
         '/cart': (context) => const CartScreen(),
       },
@@ -103,122 +127,6 @@ class AuthGate extends StatelessWidget {
     }
 
     return const LoginScreen();
-  }
-}
-
-class HomeScreen extends StatelessWidget {
-  const HomeScreen({super.key});
-
-  Future<void> _logOpenProduct() async {
-    await FirebaseAnalytics.instance.logEvent(
-      name: 'open_product',
-      parameters: {
-        'source': 'home',
-      },
-    );
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final app = MyApp.of(context);
-    final colors = context.appColors;
-
-    return Scaffold(
-      appBar: AppBar(title: const Text("Accueil")),
-      body: ListView(
-        padding: const EdgeInsets.all(16),
-        children: [
-          Card(
-            child: SwitchListTile(
-              title: const Text("Mode sombre"),
-              value: app.isDarkMode,
-              onChanged: (value) {
-                app.toggleTheme(value);
-              },
-            ),
-          ),
-          if (kIsWeb) ...[
-            const SizedBox(height: 16),
-            Card(
-              child: ListTile(
-                leading: const Icon(Icons.usb),
-                title: const Text(
-                  'ASI Downloader (USB Chrome)',
-                  style: TextStyle(
-                    decoration: TextDecoration.underline,
-                  ),
-                ),
-                subtitle: const Text(
-                  'Accès USB via WebUSB (Chrome uniquement)',
-                ),
-                onTap: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (_) => const AsiDownloaderScreen(),
-                    ),
-                  );
-                },
-              ),
-            ),
-          ],
-          const SizedBox(height: 16),
-          Card(
-            child: ListTile(
-              leading: const Icon(Icons.file_open_outlined),
-              title: const Text(
-                'Convertisseur ASI vers CSV',
-                style: TextStyle(
-                  decoration: TextDecoration.underline,
-                ),
-              ),
-              subtitle: const Text(
-                'Sélectionner un fichier .asi et lancer la conversion',
-              ),
-              onTap: () {
-                Navigator.pushNamed(context, '/asi-converter');
-              },
-            ),
-          ),
-          const SizedBox(height: 16),
-          Card(
-            child: Padding(
-              padding: const EdgeInsets.all(20),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Text(
-                    'Bienvenue',
-                    style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                      fontWeight: FontWeight.w700,
-                      color: colors.textPrimary,
-                    ),
-                  ),
-                  const SizedBox(height: 12),
-                  Text(
-                    'Exemple avec Firebase Analytics.',
-                    textAlign: TextAlign.center,
-                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                      color: colors.textSecondary,
-                    ),
-                  ),
-                  const SizedBox(height: 20),
-                  ElevatedButton(
-                    onPressed: () async {
-                      await _logOpenProduct();
-
-                      if (!context.mounted) return;
-                      Navigator.pushNamed(context, '/product');
-                    },
-                    child: const Text('Aller vers produit'),
-                  ),
-                ],
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
   }
 }
 

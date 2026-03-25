@@ -28,7 +28,7 @@ class AppColors extends ThemeExtension<AppColors> {
   });
 
   static const AppColors light = AppColors(
-    primary: Color(0xFFE76637),
+    primary: Color(0xFFF95C1B),
     secondary: Color(0xFFFF8A5B),
     background: Color(0xFFF7F7F8),
     surface: Color(0xFFFFFFFF),
@@ -42,7 +42,7 @@ class AppColors extends ThemeExtension<AppColors> {
   );
 
   static const AppColors dark = AppColors(
-    primary: Color(0xFFE76637),
+    primary: Color(0xFFF95C1B),
     secondary: Color(0xFFFF8A5B),
     background: Color(0xFF111214),
     surface: Color(0xFF1A1B1E),

@@ -1,7 +1,9 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:grinta/provider/current_season_provider.dart';
 import 'package:grinta/util/app_theme.dart';
+import 'package:provider/provider.dart';
 
 import 'core/extensions/l10n_extension.dart';
 import 'main.dart';
@@ -102,6 +104,10 @@ class _LoginScreenState extends State<LoginScreen> {
         email: email,
         password: password,
       );
+
+      if (!mounted) return;
+
+      await context.read<CurrentSeasonProvider>().loadCurrentSeason();
 
       if (!mounted) return;
 
@@ -401,7 +407,7 @@ class _BrandHeader extends StatelessWidget {
       'assets/images/logoFondOrange.png',
       width: logoWidth.clamp(280.0, 760.0),
       fit: BoxFit.contain,
-      filterQuality: FilterQuality.high,
+   //   filterQuality: FilterQuality.high,
     );
   }
 }
