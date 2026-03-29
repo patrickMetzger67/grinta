@@ -1,4 +1,5 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:flutter/material.dart';
 import '../model/training.dart';
 
 class TrainingService {
@@ -591,5 +592,58 @@ class TrainingService {
     } catch (e) {
       rethrow;
     }
+  }
+  /// GET TRAININGS BY TEAM + withTracker = true + isTrackerDataUploaded = false
+  Future<List<Training>> getTrainingsToUploadTrackerData(String teamId) async {
+    try {
+      final query = await _collection
+          .where(keyTgTeamId, isEqualTo: teamId)
+          .where(keyTgWithTracker, isEqualTo: true)
+          .where(keyTgIsTrackerDataUploaded, isEqualTo: false)
+          .orderBy(keyTgDateTime, descending: false)
+          .get();
+
+      return query.docs
+          .map((doc) => Training.fromDocumentSnapshot(doc))
+          .toList();
+    } on FirebaseException catch (e) {
+      debugPrint(
+        'Firestore error in getTrainingsToUploadTrackerData(teamId: $teamId): '
+            '${e.code} - ${e.message}',
+      );
+      return [];
+    } catch (e) {
+      debugPrint(
+        'Unexpected error in getTrainingsToUploadTrackerData(teamId: $teamId): $e',
+      );
+      return [];
+    }
+  }
+
+  /// STREAM TRAININGS BY TEAM + withTracker = true + isTrackerDataUploaded = false
+  Stream<List<Training>> streamTrainingsToUploadTrackerData(String teamId) {
+    return _collection
+        .where(keyTgTeamId, isEqualTo: teamId)
+        .where(keyTgWithTracker, isEqualTo: true)
+        .where(keyTgIsTrackerDataUploaded, isEqualTo: false)
+        .orderBy(keyTgDateTime, descending: false)
+        .snapshots()
+        .map(
+          (snapshot) => snapshot.docs
+          .map((doc) => Training.fromDocumentSnapshot(doc))
+          .toList(),
+    )
+        .handleError((error) {
+      if (error is FirebaseException) {
+        debugPrint(
+          'Firestore error in streamTrainingsToUploadTrackerData(teamId: $teamId): '
+              '${error.code} - ${error.message}',
+        );
+      } else {
+        debugPrint(
+          'Unexpected error in streamTrainingsToUploadTrackerData(teamId: $teamId): $error',
+        );
+      }
+    });
   }
 }

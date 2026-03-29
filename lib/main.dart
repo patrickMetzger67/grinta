@@ -1,12 +1,7 @@
 import 'package:firebase_analytics/firebase_analytics.dart';
 import 'package:firebase_core/firebase_core.dart';
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
-import 'package:grinta/tracker/tracker_hub_view.dart';
-
-import 'asi_converter_screen.dart';
-import 'asi_downloader_screen.dart';
 import 'firebase_options.dart';
 import 'homeScreen.dart';
 import 'l10n/app_localizations.dart';
@@ -51,7 +46,7 @@ class _MyAppState extends State<MyApp> {
   late final FirebaseAnalyticsObserver _analyticsObserver =
   FirebaseAnalyticsObserver(analytics: _analytics);
 
-  ThemeMode _themeMode = ThemeMode.light;
+  ThemeMode _themeMode = ThemeMode.dark;
 
   Locale? _locale;
 
@@ -96,17 +91,6 @@ class _MyAppState extends State<MyApp> {
       routes: {
         '/login': (context) => const LoginScreen(),
         '/home': (context) => const HomeScreen(),
-        '/asi-converter': (context) => const AsiConverterScreen(),
-        '/hub-view': (context) => const TrackerHubView(
-          trackerIds: [
-            'TRACKER_001',
-            'TRACKER_002',
-            'TRACKER_003',
-            'TRACKER_004',
-            'TRACKER_005',
-            'TRACKER_006',
-          ],
-        ),
         '/product': (context) => const ProductScreen(),
         '/cart': (context) => const CartScreen(),
       },

@@ -1,4 +1,5 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:grinta/model/timeRange.dart';
 
 class TrackerDeviceRaw {
   final String id;
@@ -67,9 +68,24 @@ class TrackerDeviceRawNoHeaderParser {
     return DateTime.fromMillisecondsSinceEpoch(millis, isUtc: true);
   }
 
+  static bool _isInAnyPeriod(DateTime ts, List<TimeRange> periods) {
+    // Si aucune période → on accepte tout
+    if (periods.isEmpty) return true;
+
+    final tsMs = ts.millisecondsSinceEpoch;
+
+    return periods.any((p) {
+      final startMs = p.start.millisecondsSinceEpoch;
+      final endMs = p.end.millisecondsSinceEpoch;
+
+      return tsMs >= startMs && tsMs <= endMs;
+    });
+  }
+
   static List<TrackerDeviceRaw> parseCsv({
     required String csv,
     required String deviceId,
+    required List<TimeRange> periods,
   }) {
     final lines = csv
         .split(RegExp(r'\r\n|\n|\r'))
@@ -94,6 +110,11 @@ class TrackerDeviceRawNoHeaderParser {
 
       final ts = _parseEpochSecondsToTimestamp(cols[0]);
       if (ts == null) {
+        continue;
+      }
+
+      // 🔥 Filtrage via méthode dédiée
+      if (!_isInAnyPeriod(ts, periods)) {
         continue;
       }
 

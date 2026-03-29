@@ -1,49 +1,125 @@
 import 'dart:async';
 import 'dart:convert';
+import 'dart:io';
 import 'dart:typed_data';
 
 import 'package:cloud_functions/cloud_functions.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:grinta/model/highlights.dart';
+import 'package:grinta/services/highlightsService.dart';
 import 'package:grinta/services/trackerDeviceRawFirestoreService.dart';
 
+import '../widget/asi_converter_screen.dart';
+import '../model/timeRange.dart';
 import '../model/trackerDeviceRaw.dart';
 import '../usb/asi_models.dart';
 import '../usb/asi_usb_client.dart';
 import '../usb/asi_usb_factory.dart';
 import '../util/app_theme.dart';
 
+import 'package:path_provider/path_provider.dart';
 
-// importe ton thème ici
-// import 'app_theme.dart';
+import '../util/downloadWeb.dart';
 
-class TrackerHubView extends StatefulWidget {
+
+class TrackerHubPage extends StatefulWidget {
   final List<String> trackerIds;
+  final String eventId;
+  final bool isMatch;
 
-  const TrackerHubView({
+  const TrackerHubPage({
     super.key,
     required this.trackerIds,
+    required this.eventId,
+    required this.isMatch,
   });
 
   @override
-  State<TrackerHubView> createState() => _TrackerHubViewState();
+  State<TrackerHubPage> createState() => _TrackerHubPageState();
 }
 
-class _TrackerHubViewState extends State<TrackerHubView> {
+class _TrackerHubPageState extends State<TrackerHubPage> {
   String? selectedTrackerId;
+  final List<String> trackerIdsDone = [];
 
-  List<String>? trackerIdsDone=[];
+
+  List<TimeRange> matchPeriods = [];
+
+  bool isDataLoaded = false;
+
+  @override
+  void initState() {
+    getData();
+    super.initState();
+  }
+
+  Future<void> getData() async {
+
+    TimeRange firsthalf = TimeRange(start: null, end: null);
+    TimeRange senddHalf = TimeRange(start: null, end: null);
+
+    if(widget.isMatch) {
+      final hls = await HighlightsService().getHighlightsByMatchCalendarId(widget.eventId);
+      for(var hl in hls) {
+        if(hl.actionType == ActionType.timeEvent) {
+          final timeEvent = hl.value as TimeEvent;
+          switch(timeEvent.type) {
+            case  TimeType.kickOff: // début match
+              firsthalf.start = hl.dateTime!;
+              break;
+            case TimeType.startExtraTime:
+              break;
+            case TimeType.halTime: // mi-temps
+              firsthalf.end = hl.dateTime!;
+              break;
+            case TimeType.secondHalf: // debut 2ème mi-temps
+              senddHalf.start = hl.dateTime!;
+              break;
+            case TimeType.end: // fin match
+              senddHalf.end = hl.dateTime!;
+              break;
+            case null:
+              throw UnimplementedError();
+
+          }
+        }
+      }
+      matchPeriods.add(firsthalf);
+      matchPeriods.add(senddHalf);
+    }
+
+    setState(() {
+      isDataLoaded = true;
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
-    final colors = context.appColors;
+    final colors = Theme.of(context).extension<AppColors>();
+    final textTheme = Theme.of(context).textTheme;
 
     return Scaffold(
-      backgroundColor: colors.background,
-      body: SafeArea(
+      backgroundColor: colors!.background,
+      appBar: AppBar(
+        title: Text(
+          'Trackers USB',
+          style: textTheme.titleLarge?.copyWith(
+            color: colors.textPrimary,
+            fontWeight: FontWeight.w700,
+          ),
+        ),
+      ),
+      body: !isDataLoaded
+          ? Center(
+        child: CircularProgressIndicator(
+          color: colors.textPrimary,
+        ),
+      )
+          : SafeArea(
         child: LayoutBuilder(
           builder: (context, constraints) {
             final isMobile = constraints.maxWidth < 900;
-            final crossAxisCount = _getCrossAxisCount(constraints.maxWidth);
 
             final trackerGrid = Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -51,8 +127,8 @@ class _TrackerHubViewState extends State<TrackerHubView> {
                 Padding(
                   padding: const EdgeInsets.fromLTRB(16, 20, 16, 8),
                   child: Text(
-                    'TrackerHubView',
-                    style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                    'Trackers disponibles',
+                    style: textTheme.headlineSmall?.copyWith(
                       fontWeight: FontWeight.w700,
                       color: colors.textPrimary,
                     ),
@@ -62,7 +138,7 @@ class _TrackerHubViewState extends State<TrackerHubView> {
                   padding: const EdgeInsets.symmetric(horizontal: 16),
                   child: Text(
                     '${widget.trackerIds.length} tracker(s)',
-                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                    style: textTheme.bodyMedium?.copyWith(
                       color: colors.textSecondary,
                     ),
                   ),
@@ -83,11 +159,13 @@ class _TrackerHubViewState extends State<TrackerHubView> {
                     itemBuilder: (context, index) {
                       final trackerId = widget.trackerIds[index];
                       final isSelected = trackerId == selectedTrackerId;
+                      final isDone = trackerIdsDone.contains(trackerId);
 
                       return _TrackerCard(
                         trackerId: trackerId,
                         isSelected: isSelected,
-                        isDone: false,
+                        isDone: isDone,
+                        periods: matchPeriods,
                         onTap: () {
                           setState(() {
                             selectedTrackerId = trackerId;
@@ -102,6 +180,7 @@ class _TrackerHubViewState extends State<TrackerHubView> {
 
             final detailPanel = _TrackerDetailPanel(
               trackerId: selectedTrackerId,
+              periods: matchPeriods,
             );
 
             if (isMobile) {
@@ -160,8 +239,6 @@ class _TrackerHubViewState extends State<TrackerHubView> {
     if (width < 1400) return 0.92;
     return 0.96;
   }
-
-
 }
 
 class _TrackerCard extends StatelessWidget {
@@ -169,12 +246,14 @@ class _TrackerCard extends StatelessWidget {
   final bool isSelected;
   final bool isDone;
   final VoidCallback onTap;
+  final List<TimeRange> periods;
 
   const _TrackerCard({
     required this.trackerId,
     required this.isSelected,
     required this.isDone,
     required this.onTap,
+    required this.periods,
   });
 
   @override
@@ -239,7 +318,7 @@ class _TrackerCard extends StatelessWidget {
                             padding: const EdgeInsets.all(12),
                             child: Icon(
                               Icons.gps_fixed_rounded,
-                              color: (isDone)?colors.success:colors.danger,
+                              color: isDone ? colors.success : colors.danger,
                             ),
                           ),
                         ),
@@ -247,7 +326,7 @@ class _TrackerCard extends StatelessWidget {
                     ),
                   ),
                 ),
-                const SizedBox(height: 10,),
+                const SizedBox(height: 10),
                 Flexible(
                   flex: 3,
                   child: Center(
@@ -291,9 +370,11 @@ class _TrackerCard extends StatelessWidget {
 
 class _TrackerDetailPanel extends StatelessWidget {
   final String? trackerId;
+  final List<TimeRange> periods;
 
   const _TrackerDetailPanel({
     required this.trackerId,
+    required this.periods,
   });
 
   @override
@@ -347,6 +428,7 @@ class _TrackerDetailPanel extends StatelessWidget {
 
     return AsiDownloaderPanel(
       trackerId: trackerId!,
+      periods: periods
     );
   }
 }
@@ -392,10 +474,12 @@ class _TrackerEmptyState extends StatelessWidget {
 
 class AsiDownloaderPanel extends StatefulWidget {
   final String trackerId;
+  final List<TimeRange> periods;
 
   const AsiDownloaderPanel({
     super.key,
     required this.trackerId,
+    required this.periods,
   });
 
   @override
@@ -510,15 +594,13 @@ class _AsiDownloaderPanelState extends State<AsiDownloaderPanel> {
       appendLog('Téléchargement en cours...');
       appendLog('Lecture RAW en cours...');
 
-      Uint8List data;
-      try {
-        data = await client
-            .downloadData(session!)
-            .timeout(const Duration(seconds: 8));
-      } on TimeoutException {
-        appendLog('Aucune donnée à transférer');
-        return;
-      }
+      final watch = Stopwatch()..start();
+
+      // ✅ PAS DE TIMEOUT
+      final Uint8List data = await client.downloadData(session!);
+
+      watch.stop();
+      appendLog('Lecture RAW terminée en ${watch.elapsed.inSeconds}s');
 
       appendLog('Téléchargé: ${data.length} octets');
 
@@ -529,6 +611,7 @@ class _AsiDownloaderPanelState extends State<AsiDownloaderPanel> {
 
       appendLog('Hash OK');
 
+      // UUID
       if (deviceId == null || deviceId!.trim().isEmpty) {
         try {
           final uuid = await readDeviceIdInFreshSession();
@@ -558,10 +641,15 @@ class _AsiDownloaderPanelState extends State<AsiDownloaderPanel> {
 
       appendLog('Lignes brutes non vides: ${rawLines.length}');
 
+      final previewLines = rawLines.take(20).toList();
+      for (final line in previewLines) {
+        print('CSV_PREVIEW: [$line]');
+      }
+
       final rows = TrackerDeviceRawNoHeaderParser.parseCsv(
         csv: csv,
         deviceId: deviceId!,
-        periods: []
+        periods: widget.periods
       );
 
       appendLog('${rows.length} point(s) brut(s) parsé(s)');
@@ -570,6 +658,16 @@ class _AsiDownloaderPanelState extends State<AsiDownloaderPanel> {
         appendLog('Aucune donnée exploitable trouvée dans le CSV');
         return;
       }
+
+
+      appendLog('Sauvegarde locale en cours...');
+      if (kIsWeb) {
+        saveRowsLocallyWeb(rows,deviceId: deviceId!);
+      } else {
+        final path = await saveRowsLocally(rows);
+        appendLog('Fichier sauvegardé: $path');
+      }
+      appendLog('Sauvegarde locale terminée');
 
       final uniqueIds = rows.map((e) => e.id).toSet();
       appendLog('DocId uniques: ${uniqueIds.length}');
@@ -585,23 +683,56 @@ class _AsiDownloaderPanelState extends State<AsiDownloaderPanel> {
       );
 
       if (duration.inMilliseconds > 0 && rows.length > 1) {
-        final hz = ((rows.length - 1) / (duration.inMilliseconds / 1000))
+        final hz =
+        ((rows.length - 1) / (duration.inMilliseconds / 1000))
             .toStringAsFixed(2);
         appendLog('Fréquence estimée: $hz Hz');
       }
 
-      appendLog('Sauvegarde Firestore en cours...');
-      await TrackerDeviceRawFirestoreService().saveAll(rows);
-      appendLog('Sauvegarde Firestore terminée');
+      for (final row in rows.take(20)) {
+        print(
+          '${row.id} | '
+              '${row.timestamp.toDate().toIso8601String()} | '
+              '${row.latitude} | ${row.longitude} | ${row.altitude} | ${row.speed} | ${row.hr}',
+        );
+      }
     } catch (e, st) {
       appendLog('Erreur download: $e');
-      debugPrint('DOWNLOAD_ERROR: $e');
-      debugPrintStack(stackTrace: st);
+      print('DOWNLOAD_ERROR: $e');
+      print(st);
     } finally {
       if (mounted) {
         setState(() => loading = false);
       }
     }
+  }
+
+  Future<String> saveRowsLocally(List<TrackerDeviceRaw> rows) async {
+    final dir = await getApplicationDocumentsDirectory();
+
+    final fileName =
+        'tracker_${deviceId ?? "unknown"}_${DateTime.now().millisecondsSinceEpoch}.json';
+
+    final file = File('${dir.path}/$fileName');
+
+    final jsonList = rows.map((row) {
+      return {
+        'id': row.id,
+        'deviceId': row.deviceId,
+        'timestamp': row.timestamp.toDate().toIso8601String(),
+        'latitude': row.latitude,
+        'longitude': row.longitude,
+        'altitude': row.altitude,
+        'speed': row.speed,
+        'hr': row.hr,
+      };
+    }).toList();
+
+    await file.writeAsString(
+      const JsonEncoder.withIndent('  ').convert(jsonList),
+    );
+
+    return file.path;
   }
 
   Future<void> eraseData() async {
@@ -693,12 +824,39 @@ class _AsiDownloaderPanelState extends State<AsiDownloaderPanel> {
             ),
           ),
           const SizedBox(height: 6),
-          Text(
-            widget.trackerId,
-            style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-              color: colors.textPrimary,
-              fontWeight: FontWeight.w700,
-            ),
+          Row(
+            children: [
+              Expanded(
+                child: Text(
+                  widget.trackerId,
+                  style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                    color: colors.textPrimary,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+              ),
+              ElevatedButton.icon(
+                onPressed: () {
+                  final safeDeviceId = widget.trackerId;
+                  final safePeriods = widget.periods ?? <TimeRange>[];
+                  if (safeDeviceId.trim().isEmpty) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(
+                        content: Text('Aucun deviceId disponible'),
+                      ),
+                    );
+                    return;
+                  }
+                  showAsiConverterDialog(
+                    context: context,
+                    deviceId: safeDeviceId,
+                    periods: safePeriods,
+                  );
+                },
+                icon: const Icon(Icons.insert_drive_file),
+                label: const Text('Fichier .asi'),
+              )
+            ],
           ),
           const SizedBox(height: 16),
           Wrap(
@@ -717,13 +875,8 @@ class _AsiDownloaderPanelState extends State<AsiDownloaderPanel> {
               ),
               OutlinedButton.icon(
                 onPressed: loading ? null : eraseData,
-                icon: const Icon(Icons.cleaning_services_rounded),
-                label: const Text('Erase data'),
-              ),
-              OutlinedButton.icon(
-                onPressed: loading ? null : eraseAll,
                 icon: const Icon(Icons.delete_sweep_rounded),
-                label: const Text('Erase all'),
+                label: const Text('Erase data'),
               ),
               OutlinedButton.icon(
                 onPressed: loading ? null : disconnect,
@@ -803,6 +956,82 @@ class _AsiDownloaderPanelState extends State<AsiDownloaderPanel> {
           ),
         ],
       ),
+    );
+  }
+
+  Future<void> openAsiConverterDialog({
+    required BuildContext context,
+    required String deviceId,
+    required List<TimeRange> periods,
+  }) async {
+    await showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) {
+        return Dialog(
+          insetPadding: const EdgeInsets.all(20),
+          child: SizedBox(
+            width: 1000,
+            height: 700,
+            child: Column(
+              children: [
+                // HEADER
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(16, 16, 8, 8),
+                  child: Row(
+                    children: [
+                      Expanded(
+                        child: Text(
+                          'Import fichier ASI',
+                          style: Theme.of(context)
+                              .textTheme
+                              .titleLarge
+                              ?.copyWith(fontWeight: FontWeight.w700),
+                        ),
+                      ),
+                      IconButton(
+                        onPressed: () => Navigator.pop(context),
+                        icon: const Icon(Icons.close),
+                      ),
+                    ],
+                  ),
+                ),
+
+                const Divider(height: 1),
+
+                // CONTENU
+                Expanded(
+                  child: AsiConverterScreen(
+                    deviceId: deviceId,
+                    periods: periods,
+                  ),
+                ),
+
+                const Divider(height: 1),
+
+                // FOOTER
+                Padding(
+                  padding: const EdgeInsets.all(12),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.end,
+                    children: [
+                      OutlinedButton(
+                        onPressed: () => Navigator.pop(context),
+                        child: const Text('Annuler'),
+                      ),
+                      const SizedBox(width: 12),
+                      ElevatedButton(
+                        onPressed: () => Navigator.pop(context),
+                        child: const Text('Fermer'),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
     );
   }
 }
