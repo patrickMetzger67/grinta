@@ -8,7 +8,6 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:grinta/model/highlights.dart';
 import 'package:grinta/services/highlightsService.dart';
-import 'package:grinta/services/trackerDeviceRawFirestoreService.dart';
 
 import '../widget/asi_converter_screen.dart';
 import '../model/timeRange.dart';
@@ -50,6 +49,8 @@ class _TrackerHubPageState extends State<TrackerHubPage> {
 
   @override
   void initState() {
+
+    debugPrint('isMatch=${widget.isMatch}');
     getData();
     super.initState();
   }
@@ -181,6 +182,8 @@ class _TrackerHubPageState extends State<TrackerHubPage> {
             final detailPanel = _TrackerDetailPanel(
               trackerId: selectedTrackerId,
               periods: matchPeriods,
+              isMatch: widget.isMatch,
+              eventId: widget.eventId,
             );
 
             if (isMobile) {
@@ -371,10 +374,14 @@ class _TrackerCard extends StatelessWidget {
 class _TrackerDetailPanel extends StatelessWidget {
   final String? trackerId;
   final List<TimeRange> periods;
+  final bool isMatch;
+  final String eventId;
 
   const _TrackerDetailPanel({
     required this.trackerId,
     required this.periods,
+    required this.isMatch,
+    required this.eventId,
   });
 
   @override
@@ -428,7 +435,9 @@ class _TrackerDetailPanel extends StatelessWidget {
 
     return AsiDownloaderPanel(
       trackerId: trackerId!,
-      periods: periods
+      periods: periods,
+      isMatch: isMatch,
+      eventId: eventId,
     );
   }
 }
@@ -475,11 +484,15 @@ class _TrackerEmptyState extends StatelessWidget {
 class AsiDownloaderPanel extends StatefulWidget {
   final String trackerId;
   final List<TimeRange> periods;
+  final bool isMatch;
+  final String eventId;
 
   const AsiDownloaderPanel({
     super.key,
     required this.trackerId,
     required this.periods,
+    required this.isMatch,
+    required this.eventId,
   });
 
   @override
@@ -851,6 +864,8 @@ class _AsiDownloaderPanelState extends State<AsiDownloaderPanel> {
                     context: context,
                     deviceId: safeDeviceId,
                     periods: safePeriods,
+                    isMatch: widget.isMatch,
+                    eventId: widget.eventId,
                   );
                 },
                 icon: const Icon(Icons.insert_drive_file),
@@ -963,6 +978,8 @@ class _AsiDownloaderPanelState extends State<AsiDownloaderPanel> {
     required BuildContext context,
     required String deviceId,
     required List<TimeRange> periods,
+    required bool isMatch,
+    required String eventId,
   }) async {
     await showDialog(
       context: context,
@@ -1004,6 +1021,8 @@ class _AsiDownloaderPanelState extends State<AsiDownloaderPanel> {
                   child: AsiConverterScreen(
                     deviceId: deviceId,
                     periods: periods,
+                    isMatch: isMatch,
+                    eventId: eventId,
                   ),
                 ),
 

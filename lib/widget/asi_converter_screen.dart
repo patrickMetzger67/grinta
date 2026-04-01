@@ -7,19 +7,27 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
 import '../model/timeRange.dart';
+import '../model/tracker/trackerData.dart';
 import '../model/trackerDeviceRaw.dart';
+import '../services/sensorAnalysisService.dart';
+import '../services/trackerDataAnalysisService.dart';
 import '../util/app_theme.dart';
 
 class AsiConverterScreen extends StatefulWidget {
   final String deviceId;
   final List<TimeRange> periods;
   final bool showAppBar;
+  final bool isMatch;
+  final String eventId;
 
   const AsiConverterScreen({
     super.key,
     required this.deviceId,
+    required this.isMatch,
+    required this.eventId,
     this.periods = const [],
     this.showAppBar = true,
+
   });
 
   @override
@@ -40,6 +48,7 @@ class _AsiConverterScreenState extends State<AsiConverterScreen> {
 
   @override
   void initState() {
+    debugPrint('dans AsiConverterScreen isMatch=${widget.isMatch}');
     super.initState();
     _deviceIdCtrl = TextEditingController(text: widget.deviceId);
   }
@@ -158,6 +167,68 @@ class _AsiConverterScreenState extends State<AsiConverterScreen> {
       );
 
       final filteredCsv = _buildCsvFromRows(rows);
+
+      final trackerSamples = rows.map((row) {
+        return TrackerRaw(
+          trackerId: row.deviceId,
+          timeMs: row.timestamp.millisecondsSinceEpoch,
+          latitude: row.latitude!,
+          longitude: row.longitude!,
+          speedMps: (row.speed ?? 0) / 3.6,
+        );
+      }).toList();
+
+      final analysis = SensorAnalysisService.analyzeSensorData(
+        trackerId: deviceId,
+        allSamples: trackerSamples,
+        isMatch: widget.isMatch,
+        playerId: deviceId,
+      );
+
+      debugPrint('deviceId: ${analysis.trackerId}');
+      debugPrint('distanceKm: ${analysis.distanceKm}');
+      debugPrint('duration: ${analysis.duration}');
+      debugPrint('averageSpeedKmh: ${analysis.averageSpeedKmh}');
+      debugPrint('maxSpeedKmh: ${analysis.maxSpeedKmh}');
+      debugPrint('samplesCount: ${analysis.samplesCount}');
+      debugPrint('sprintCount: ${analysis.sprintCount}');
+      debugPrint('timeAbove20Kmh: ${analysis.timeAbove20Kmh}');
+      debugPrint('maxAccelerationMps2: ${analysis.maxAccelerationMps2}');
+      debugPrint('heatmapPoint=${analysis.heatmapPoints.length}');
+      debugPrint('workloadScore: ${analysis.workloadScore}');
+
+      print('maxValidatedSpeedKmh: ${analysis.maxValidatedSpeedKmh}');
+      print('highAccelerationCount: ${analysis.highAccelerationCount}');
+      print('playerProfile: ${analysis.playerProfile}');
+      print('fatigueIndex: ${analysis.fatigueIndex}');
+      print('firstHalfDistanceKm: ${analysis.firstHalfDistanceKm}');
+      print('secondHalfDistanceKm: ${analysis.secondHalfDistanceKm}');
+
+      final firstHalf = analysis.halfStats.firstWhere((e) => e.halfIndex == 1);
+      final secondHalf = analysis.halfStats.firstWhere((e) => e.halfIndex == 2);
+
+      print('Diff distance: ${secondHalf.distanceKm - firstHalf.distanceKm}');
+      print('Diff vitesse: ${secondHalf.averageSpeedKmh - firstHalf.averageSpeedKmh}');
+      print('RESULT distanceTimeline length = ${analysis.distanceTimeline.length}');
+      print('RESULT toMap distanceTimeline = ${analysis.toMap()['distanceTimeline']}');
+
+      for (final z in analysis.speedZones) {
+        print('${z.zoneId} -> ${z.duration} (${z.percentOfSession.toStringAsFixed(1)}%)');
+      }
+
+      print('heatmap=${analysis.heatmapPoints.length}');
+
+      final url = await SensorAnalysisService.heatmapToCsv(
+        deviceId: widget.deviceId,
+        eventId: widget.eventId,
+        heatmapPoints: analysis.heatmapPoints,
+      );
+      final docId = await TrackerAnalysisService.saveAnalysis(
+        docId: '${widget.eventId}_${widget.deviceId}',
+        analysis,
+        eventId: widget.eventId,
+      );
+
 
       if (!mounted) return;
 
@@ -483,6 +554,8 @@ Future<void> showAsiConverterDialog({
   required BuildContext context,
   required String deviceId,
   required List<TimeRange> periods,
+  required bool isMatch,
+  required String eventId,
 }) async {
   final colors = context.appColors;
 
@@ -523,6 +596,8 @@ Future<void> showAsiConverterDialog({
                   deviceId: deviceId,
                   periods: periods,
                   showAppBar: false,
+                  isMatch: isMatch,
+                  eventId: eventId,
                 ),
               ),
               Divider(height: 1, color: colors.border),

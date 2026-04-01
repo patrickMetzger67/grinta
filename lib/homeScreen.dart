@@ -11,7 +11,6 @@ import 'package:grinta/services/matchService.dart';
 import 'package:grinta/services/ownerService.dart';
 import 'package:grinta/services/trainingService.dart';
 import 'package:grinta/tracker/tracker_hub_page.dart';
-import 'package:grinta/tracker/tracker_hub_view.dart';
 import 'package:grinta/widget/uploadTrackerButton.dart';
 import 'package:provider/provider.dart';
 

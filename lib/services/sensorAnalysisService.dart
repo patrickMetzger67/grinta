@@ -1,5 +1,9 @@
 import 'dart:math';
+import 'dart:convert';
+import 'dart:typed_data';
 
+import 'package:archive/archive.dart';
+import 'package:firebase_storage/firebase_storage.dart';
 import '../model/tracker/trackerData.dart';
 
 class SensorAnalysisService {
@@ -16,31 +20,41 @@ class SensorAnalysisService {
   /// Si la fréquence est irrégulière on utilise le delta temps réel
   static TrackerAnalysisResult analyzeSensorData({
     required String trackerId,
+    required String playerId,
     required List<TrackerRaw> allSamples,
     required bool isMatch,
     FootballFieldGps? fieldGps,
   }) {
     final samples = allSamples.where((s) {
-      if (s.trackerId == null || s.trackerId!.isEmpty) return true;
-      return s.trackerId == trackerId;
+      final id = s.trackerId?.trim();
+      return id == trackerId.trim();
     }).toList()
       ..sort((a, b) => a.timeMs.compareTo(b.timeMs));
 
     if (samples.isEmpty) {
       return TrackerAnalysisResult(
         trackerId: trackerId,
+        playerId: playerId,
         distanceKm: 0,
         duration: Duration.zero,
         averageSpeedKmh: 0,
         maxSpeedKmh: 0,
+        maxValidatedSpeedKmh: 0,
         samplesCount: 0,
         heatmapPoints: const [],
         sprintCount: 0,
+        highAccelerationCount: 0,
         timeAbove20Kmh: Duration.zero,
         maxAccelerationMps2: 0,
         distanceByZones: const [],
+        speedZones: const [],
         halfStats: const [],
         workloadScore: 0,
+        playerProfile: 'Inconnu',
+        fatigueIndex: 1.0,
+        firstHalfDistanceKm: 0,
+        secondHalfDistanceKm: 0,
+        distanceTimeline: const [],
       );
     }
 
@@ -48,132 +62,319 @@ class SensorAnalysisService {
     final Map<String, double> zoneDistanceMeters = {};
     final Map<String, int> zoneSamples = {};
 
-    double totalDistanceMeters = 0;
-    double speedSumMps = 0;
-    double maxSpeedMps = 0;
-    double maxAccelerationMps2 = 0;
+    double totalDistanceMeters = 0.0;
+    double maxSpeedMps = 0.0;
+    double maxValidatedSpeedMps = 0.0;
+    double maxAccelerationMps2 = 0.0;
+
     int sprintCount = 0;
+    int highAccelerationCount = 0;
     int timeAbove20Ms = 0;
 
-    bool inSprint = false;
+    double firstHalfDistanceMeters = 0.0;
+    double secondHalfDistanceMeters = 0.0;
 
     final startMs = samples.first.timeMs;
     final endMs = samples.last.timeMs;
     final totalDurationMs = max(0, endMs - startMs);
+    final midTimeMs = startMs + (totalDurationMs ~/ 2);
+
+    final bool canBuildRealFieldHeatmap = isMatch && fieldGps != null;
+    final bool shouldBuildRelativeHeatmap = fieldGps == null;
+
+    const double sprintThresholdMps = 5.56; // 20 km/h
+    const int sprintMinDurationMs = 1000;
+
+    const double highAccelerationThresholdMps2 = 3.5;
+    const int highAccelerationMinDurationMs = 300;
+
+    const double maxPlausibleSpeedMps = 11.5; // ~41.4 km/h
+    const double maxPlausibleAccelerationMps2 = 8.0;
+    const int minDtMs = 80;
+    const int maxDtMs = 3000;
+
+    const int smoothingWindow = 5;
+    final List<double> recentSpeeds = [];
+
+    bool inSprint = false;
+    int sprintAccumulatedMs = 0;
+
+    int highAccelerationAccumulatedMs = 0;
+    bool inHighAcceleration = false;
+
+    int validatedSpeedAccumulatedMs = 0;
+    const int validatedSpeedMinDurationMs = 500;
+
+    double? previousRetainedSpeedMps;
+
+    final globalMaxRawSensorSpeed = samples
+        .map((e) => e.speedMps)
+        .fold<double>(0.0, (p, e) => e > p ? e : p);
+
+    final bool sensorLooksLikeKmh = globalMaxRawSensorSpeed > 15.0;
+
+    final Map<String, int> speedZoneTimeMs = {
+      'Z1': 0, // < 7 km/h
+      'Z2': 0, // 7 - 13
+      'Z3': 0, // 13 - 18
+      'Z4': 0, // 18 - 21
+      'Z5': 0, // > 21
+    };
+
+    const int timelineBucketMs = 5 * 60 * 1000;
+    final Map<int, Map<String, double>> distanceTimelineBuckets = {};
 
     for (int i = 0; i < samples.length; i++) {
       final current = samples[i];
-      speedSumMps += current.speedMps;
-      maxSpeedMps = max(maxSpeedMps, current.speedMps);
 
-      if (i > 0) {
-        final prev = samples[i - 1];
-        final dtMs = current.timeMs - prev.timeMs;
-
-        if (dtMs <= 0) continue;
-
-        final dtSec = dtMs / 1000.0;
-
-        final rawDistance = _haversineMeters(
-          prev.latitude,
-          prev.longitude,
-          current.latitude,
-          current.longitude,
+      if (canBuildRealFieldHeatmap) {
+        final projectedCurrent = _projectGpsToField(
+          latitude: current.latitude,
+          longitude: current.longitude,
+          field: fieldGps!,
         );
 
-        final stepDistance =
-        rawDistance <= maxAcceptedStepDistanceMeters ? rawDistance : 0.0;
-
-        totalDistanceMeters += stepDistance;
-
-        final avgStepSpeed = (prev.speedMps + current.speedMps) / 2.0;
-
-        if (avgStepSpeed >= sprintThresholdMps) {
-          timeAbove20Ms += dtMs;
-        }
-
-        final acceleration = (current.speedMps - prev.speedMps) / dtSec;
-        if (acceleration > maxAccelerationMps2) {
-          maxAccelerationMps2 = acceleration;
-        }
-
-        final isSprintNow = current.speedMps >= sprintThresholdMps &&
-            acceleration >= minSprintAccelerationMps2;
-
-        if (isSprintNow && !inSprint) {
-          sprintCount++;
-          inSprint = true;
-        } else if (current.speedMps < sprintThresholdMps * 0.9) {
-          inSprint = false;
-        }
-
-        if (isMatch && fieldGps != null) {
-          final projectedCurrent = _projectGpsToField(
-            latitude: current.latitude,
-            longitude: current.longitude,
-            field: fieldGps,
-          );
-
-          if (projectedCurrent != null) {
-            heatmapPoints.add(
-              HeatmapPoint(
-                xMeters: projectedCurrent.$1,
-                yMeters: projectedCurrent.$2,
-                timeMs: current.timeMs,
-                intensity: max(0.2, current.speedMps),
-              ),
-            );
-
-            final zoneId = _computeZoneId(
+        if (projectedCurrent != null) {
+          heatmapPoints.add(
+            HeatmapPoint(
               xMeters: projectedCurrent.$1,
               yMeters: projectedCurrent.$2,
-              fieldLengthMeters: fieldGps.fieldLengthMeters,
-              fieldWidthMeters: fieldGps.fieldWidthMeters,
-            );
+              timeMs: current.timeMs,
+              intensity: max(0.2, current.speedMps),
+            ),
+          );
 
-            zoneDistanceMeters[zoneId] =
-                (zoneDistanceMeters[zoneId] ?? 0) + stepDistance;
-            zoneSamples[zoneId] = (zoneSamples[zoneId] ?? 0) + 1;
-          }
+          final zoneId = _computeZoneId(
+            xMeters: projectedCurrent.$1,
+            yMeters: projectedCurrent.$2,
+            fieldLengthMeters: fieldGps.fieldLengthMeters,
+            fieldWidthMeters: fieldGps.fieldWidthMeters,
+          );
+
+          zoneSamples[zoneId] = (zoneSamples[zoneId] ?? 0) + 1;
+        }
+      }
+
+      if (i == 0) continue;
+
+      final prev = samples[i - 1];
+      final dtMs = current.timeMs - prev.timeMs;
+
+      if (dtMs <= 0) continue;
+
+      if (dtMs < minDtMs) continue;
+
+      if (dtMs > maxDtMs) {
+        recentSpeeds.clear();
+        previousRetainedSpeedMps = null;
+        sprintAccumulatedMs = 0;
+        inSprint = false;
+        highAccelerationAccumulatedMs = 0;
+        inHighAcceleration = false;
+        validatedSpeedAccumulatedMs = 0;
+        continue;
+      }
+
+      final dtSec = dtMs / 1000.0;
+
+      final rawDistance = _haversineMeters(
+        prev.latitude,
+        prev.longitude,
+        current.latitude,
+        current.longitude,
+      );
+
+      final maxStepDistance = maxPlausibleSpeedMps * dtSec * 1.5;
+      final isGpsStepValid = rawDistance >= 0 && rawDistance <= maxStepDistance;
+
+      final stepDistance = isGpsStepValid ? rawDistance : 0.0;
+      totalDistanceMeters += stepDistance;
+
+      if (current.timeMs <= midTimeMs) {
+        firstHalfDistanceMeters += stepDistance;
+      } else {
+        secondHalfDistanceMeters += stepDistance;
+      }
+
+      final gpsSpeedMps = dtSec > 0 ? stepDistance / dtSec : 0.0;
+
+      recentSpeeds.add(gpsSpeedMps);
+      if (recentSpeeds.length > smoothingWindow) {
+        recentSpeeds.removeAt(0);
+      }
+
+      final smoothedGpsSpeedMps = recentSpeeds.isEmpty
+          ? 0.0
+          : recentSpeeds.reduce((a, b) => a + b) / recentSpeeds.length;
+
+      double sensorSpeedMps = 0.0;
+      if (current.speedMps.isFinite && current.speedMps >= 0) {
+        sensorSpeedMps = sensorLooksLikeKmh
+            ? current.speedMps / 3.6
+            : current.speedMps;
+      }
+
+      double retainedSpeedMps;
+      if (isGpsStepValid) {
+        if (smoothedGpsSpeedMps > maxPlausibleSpeedMps &&
+            sensorSpeedMps > 0 &&
+            sensorSpeedMps <= maxPlausibleSpeedMps) {
+          retainedSpeedMps = sensorSpeedMps;
+        } else {
+          retainedSpeedMps = smoothedGpsSpeedMps;
         }
       } else {
-        if (isMatch && fieldGps != null) {
-          final projectedCurrent = _projectGpsToField(
-            latitude: current.latitude,
-            longitude: current.longitude,
-            field: fieldGps,
+        retainedSpeedMps = sensorSpeedMps;
+      }
+
+      if (!retainedSpeedMps.isFinite || retainedSpeedMps < 0) {
+        retainedSpeedMps = 0.0;
+      }
+
+      if (retainedSpeedMps > maxSpeedMps) {
+        maxSpeedMps = retainedSpeedMps;
+      }
+
+      if (retainedSpeedMps >= maxValidatedSpeedMps) {
+        validatedSpeedAccumulatedMs += dtMs;
+        if (validatedSpeedAccumulatedMs >= validatedSpeedMinDurationMs) {
+          maxValidatedSpeedMps = retainedSpeedMps;
+        }
+      } else {
+        validatedSpeedAccumulatedMs = 0;
+      }
+
+      final speedKmh = retainedSpeedMps * 3.6;
+      String speedZoneId;
+      if (speedKmh < 7) {
+        speedZoneId = 'Z1';
+      } else if (speedKmh < 13) {
+        speedZoneId = 'Z2';
+      } else if (speedKmh < 18) {
+        speedZoneId = 'Z3';
+      } else if (speedKmh < 21) {
+        speedZoneId = 'Z4';
+      } else {
+        speedZoneId = 'Z5';
+      }
+      speedZoneTimeMs[speedZoneId] = (speedZoneTimeMs[speedZoneId] ?? 0) + dtMs;
+
+      final relativeStartMs = prev.timeMs - startMs;
+      final bucketIndex = relativeStartMs ~/ timelineBucketMs;
+
+      final bucket = distanceTimelineBuckets.putIfAbsent(bucketIndex, () {
+        return {
+          'walkingMeters': 0.0,
+          'joggingMeters': 0.0,
+          'runningMeters': 0.0,
+          'highIntensityMeters': 0.0,
+        };
+      });
+
+      if (speedKmh < 7) {
+        bucket['walkingMeters'] =
+            (bucket['walkingMeters'] ?? 0.0) + stepDistance;
+      } else if (speedKmh < 13) {
+        bucket['joggingMeters'] =
+            (bucket['joggingMeters'] ?? 0.0) + stepDistance;
+      } else if (speedKmh < 18) {
+        bucket['runningMeters'] =
+            (bucket['runningMeters'] ?? 0.0) + stepDistance;
+      } else {
+        bucket['highIntensityMeters'] =
+            (bucket['highIntensityMeters'] ?? 0.0) + stepDistance;
+      }
+
+      if (retainedSpeedMps >= sprintThresholdMps) {
+        timeAbove20Ms += dtMs;
+        sprintAccumulatedMs += dtMs;
+
+        if (!inSprint && sprintAccumulatedMs >= sprintMinDurationMs) {
+          sprintCount++;
+          inSprint = true;
+        }
+      } else {
+        sprintAccumulatedMs = 0;
+        inSprint = false;
+      }
+
+      if (previousRetainedSpeedMps != null) {
+        final acc = (retainedSpeedMps - previousRetainedSpeedMps!) / dtSec;
+
+        if (acc.isFinite &&
+            acc > 0 &&
+            acc <= maxPlausibleAccelerationMps2 &&
+            acc > maxAccelerationMps2) {
+          maxAccelerationMps2 = acc;
+        }
+
+        if (acc.isFinite && acc >= highAccelerationThresholdMps2) {
+          highAccelerationAccumulatedMs += dtMs;
+          if (!inHighAcceleration &&
+              highAccelerationAccumulatedMs >= highAccelerationMinDurationMs) {
+            highAccelerationCount++;
+            inHighAcceleration = true;
+          }
+        } else {
+          highAccelerationAccumulatedMs = 0;
+          inHighAcceleration = false;
+        }
+      }
+
+      previousRetainedSpeedMps = retainedSpeedMps;
+
+      if (canBuildRealFieldHeatmap) {
+        final projectedCurrent = _projectGpsToField(
+          latitude: current.latitude,
+          longitude: current.longitude,
+          field: fieldGps!,
+        );
+
+        if (projectedCurrent != null) {
+          final zoneId = _computeZoneId(
+            xMeters: projectedCurrent.$1,
+            yMeters: projectedCurrent.$2,
+            fieldLengthMeters: fieldGps.fieldLengthMeters,
+            fieldWidthMeters: fieldGps.fieldWidthMeters,
           );
 
-          if (projectedCurrent != null) {
+          zoneDistanceMeters[zoneId] =
+              (zoneDistanceMeters[zoneId] ?? 0.0) + stepDistance;
+
+          if (heatmapPoints.isNotEmpty) {
+            final last = heatmapPoints.removeLast();
             heatmapPoints.add(
               HeatmapPoint(
-                xMeters: projectedCurrent.$1,
-                yMeters: projectedCurrent.$2,
-                timeMs: current.timeMs,
-                intensity: max(0.2, current.speedMps),
+                xMeters: last.xMeters,
+                yMeters: last.yMeters,
+                timeMs: last.timeMs,
+                intensity: max(0.2, retainedSpeedMps),
               ),
             );
-
-            final zoneId = _computeZoneId(
-              xMeters: projectedCurrent.$1,
-              yMeters: projectedCurrent.$2,
-              fieldLengthMeters: fieldGps.fieldLengthMeters,
-              fieldWidthMeters: fieldGps.fieldWidthMeters,
-            );
-
-            zoneSamples[zoneId] = (zoneSamples[zoneId] ?? 0) + 1;
           }
         }
       }
     }
 
-    final averageSpeedMps = samples.isNotEmpty ? speedSumMps / samples.length : 0.0;
+    if (shouldBuildRelativeHeatmap) {
+      heatmapPoints.addAll(_buildRelativeHeatmapPoints(samples));
+    }
+
+    final averageSpeedMps = totalDurationMs > 0
+        ? totalDistanceMeters / (totalDurationMs / 1000.0)
+        : 0.0;
 
     final halfStats = _computeHalfStats(samples);
 
-    final distanceByZones = zoneSamples.keys.map((zoneId) {
+    final allZoneIds = <String>{
+      ...zoneSamples.keys,
+      ...zoneDistanceMeters.keys,
+    };
+
+    final distanceByZones = allZoneIds.map((zoneId) {
       final count = zoneSamples[zoneId] ?? 0;
       final percent = samples.isEmpty ? 0.0 : (count / samples.length) * 100.0;
+
       return FieldZoneStats(
         zoneId: zoneId,
         distanceMeters: zoneDistanceMeters[zoneId] ?? 0.0,
@@ -183,6 +384,36 @@ class SensorAnalysisService {
     }).toList()
       ..sort((a, b) => a.zoneId.compareTo(b.zoneId));
 
+    final speedZones = speedZoneTimeMs.entries.map((e) {
+      final percent =
+      totalDurationMs > 0 ? (e.value / totalDurationMs) * 100.0 : 0.0;
+      return SpeedZoneStat(
+        zoneId: e.key,
+        duration: Duration(milliseconds: e.value),
+        percentOfSession: percent,
+      );
+    }).toList()
+      ..sort((a, b) => a.zoneId.compareTo(b.zoneId));
+
+    final distanceTimeline = distanceTimelineBuckets.entries.map((entry) {
+      final bucketIndex = entry.key;
+      final values = entry.value;
+
+      final bucketStartMs = bucketIndex * timelineBucketMs;
+      final bucketEndMs = bucketStartMs + timelineBucketMs;
+
+      return DistanceTimelineStat(
+        bucketStartMs: bucketStartMs,
+        bucketEndMs: bucketEndMs,
+        label: '${bucketStartMs ~/ 60000}-${bucketEndMs ~/ 60000} min',
+        walkingMeters: values['walkingMeters'] ?? 0.0,
+        joggingMeters: values['joggingMeters'] ?? 0.0,
+        runningMeters: values['runningMeters'] ?? 0.0,
+        highIntensityMeters: values['highIntensityMeters'] ?? 0.0,
+      );
+    }).toList()
+      ..sort((a, b) => a.bucketStartMs.compareTo(b.bucketStartMs));
+
     final workloadScore = _computeWorkloadScore(
       distanceMeters: totalDistanceMeters,
       timeAbove20Ms: timeAbove20Ms,
@@ -190,21 +421,110 @@ class SensorAnalysisService {
       maxAccelerationMps2: maxAccelerationMps2,
     );
 
+    final fatigueIndex = firstHalfDistanceMeters > 0
+        ? secondHalfDistanceMeters / firstHalfDistanceMeters
+        : 1.0;
+
+    final String playerProfile;
+    if (sprintCount > 25 && timeAbove20Ms > 60000) {
+      playerProfile = 'Explosif / Ailier';
+    } else if (totalDistanceMeters > 10000 && sprintCount > 15) {
+      playerProfile = 'Box-to-box';
+    } else if (totalDistanceMeters < 7000 && sprintCount < 10) {
+      playerProfile = 'Défensif';
+    } else if (highAccelerationCount >= 15 && sprintCount >= 15) {
+      playerProfile = 'Polyvalent dynamique';
+    } else {
+      playerProfile = 'Polyvalent';
+    }
+
     return TrackerAnalysisResult(
       trackerId: trackerId,
+      playerId: playerId,
       distanceKm: totalDistanceMeters / 1000.0,
       duration: Duration(milliseconds: totalDurationMs),
       averageSpeedKmh: averageSpeedMps * 3.6,
       maxSpeedKmh: maxSpeedMps * 3.6,
+      maxValidatedSpeedKmh: maxValidatedSpeedMps * 3.6,
       samplesCount: samples.length,
       heatmapPoints: heatmapPoints,
       sprintCount: sprintCount,
+      highAccelerationCount: highAccelerationCount,
       timeAbove20Kmh: Duration(milliseconds: timeAbove20Ms),
       maxAccelerationMps2: maxAccelerationMps2,
       distanceByZones: distanceByZones,
+      speedZones: speedZones,
       halfStats: halfStats,
       workloadScore: workloadScore,
+      playerProfile: playerProfile,
+      fatigueIndex: fatigueIndex,
+      firstHalfDistanceKm: firstHalfDistanceMeters / 1000.0,
+      secondHalfDistanceKm: secondHalfDistanceMeters / 1000.0,
+      distanceTimeline: distanceTimeline,
     );
+  }
+  static List<HeatmapPoint> _buildRelativeHeatmapPoints(
+      List<TrackerRaw> samples, {
+        double targetWidthMeters = 105.0,
+        double targetHeightMeters = 68.0,
+      }) {
+    if (samples.isEmpty) return const [];
+
+    final origin = samples.first;
+
+    final localPoints = <({double x, double y, int timeMs, double intensity})>[];
+
+    double minX = double.infinity;
+    double maxX = double.negativeInfinity;
+    double minY = double.infinity;
+    double maxY = double.negativeInfinity;
+
+    for (final sample in samples) {
+      final local = _toLocalMeters(
+        originLat: origin.latitude,
+        originLng: origin.longitude,
+        lat: sample.latitude,
+        lng: sample.longitude,
+      );
+
+      final x = local.$1;
+      final y = local.$2;
+
+      minX = min(minX, x);
+      maxX = max(maxX, x);
+      minY = min(minY, y);
+      maxY = max(maxY, y);
+
+      localPoints.add((
+      x: x,
+      y: y,
+      timeMs: sample.timeMs,
+      intensity: max(0.2, sample.speedMps),
+      ));
+    }
+
+    final width = max(1.0, maxX - minX);
+    final height = max(1.0, maxY - minY);
+
+    final scale = min(targetWidthMeters / width, targetHeightMeters / height);
+
+    final scaledWidth = width * scale;
+    final scaledHeight = height * scale;
+
+    final offsetX = (targetWidthMeters - scaledWidth) / 2.0;
+    final offsetY = (targetHeightMeters - scaledHeight) / 2.0;
+
+    return localPoints.map((p) {
+      final normalizedX = ((p.x - minX) * scale) + offsetX;
+      final normalizedY = ((p.y - minY) * scale) + offsetY;
+
+      return HeatmapPoint(
+        xMeters: normalizedX.clamp(0, targetWidthMeters).toDouble(),
+        yMeters: normalizedY.clamp(0, targetHeightMeters).toDouble(),
+        timeMs: p.timeMs,
+        intensity: p.intensity,
+      );
+    }).toList();
   }
 
   static List<HalfStats> _computeHalfStats(List<TrackerRaw> samples) {
@@ -481,5 +801,47 @@ class SensorAnalysisService {
     }
 
     return points;
+  }
+
+  static Future<String> heatmapToCsv({
+    required String deviceId,
+    required String eventId,
+    required List<HeatmapPoint> heatmapPoints,
+  }) async {
+    final buffer = StringBuffer();
+
+    // En-tête CSV
+    buffer.writeln('xMeters,yMeters,timeMs,intensity');
+
+    for (final p in heatmapPoints) {
+      buffer.writeln(
+        '${p.xMeters},${p.yMeters},${p.timeMs},${p.intensity}',
+      );
+    }
+
+    final csvString = buffer.toString();
+    final csvBytes = Uint8List.fromList(utf8.encode(csvString));
+
+    // Compression gzip
+    final gzipBytes = Uint8List.fromList(GZipEncoder().encode(csvBytes) ?? csvBytes);
+
+    final filePath = 'tracker/heatmapPoints_${deviceId}_$eventId.csv.gz';
+
+    final ref = FirebaseStorage.instance.ref().child(filePath);
+
+    await ref.putData(
+      gzipBytes,
+      SettableMetadata(
+        contentType: 'application/gzip',
+        contentEncoding: 'gzip',
+        customMetadata: {
+          'deviceId': deviceId,
+          'eventId': eventId,
+          'originalContentType': 'text/csv',
+        },
+      ),
+    );
+
+    return await ref.getDownloadURL();
   }
 }
