@@ -1,4 +1,9 @@
+import 'dart:math' as math;
+import 'dart:ui';
+
 import 'package:cloud_firestore/cloud_firestore.dart';
+
+import '../fieldGpsCorners.dart';
 
 class TrackerRaw {
   final String? trackerId;
@@ -24,7 +29,8 @@ class TrackerRaw {
       latitude: _toDouble(map['latitude [deg]']),
       longitude: _toDouble(map['longitude [deg]']),
       speedMps: _toDouble(map['speed [m/s]']),
-      altitude: map['altitude [m]'] != null && map['altitude [m]'].toString().isNotEmpty
+      altitude: map['altitude [m]'] != null &&
+          map['altitude [m]'].toString().isNotEmpty
           ? _toDouble(map['altitude [m]'])
           : null,
     );
@@ -51,12 +57,36 @@ class GpsPoint {
     required this.lat,
     required this.lng,
   });
+
+  Map<String, dynamic> toMap() {
+    return {
+      'lat': lat,
+      'lng': lng,
+    };
+  }
+
+  factory GpsPoint.fromMap(Map<String, dynamic> map) {
+    return GpsPoint(
+      lat: _toDouble(map['lat']),
+      lng: _toDouble(map['lng']),
+    );
+  }
+
+  static double _toDouble(dynamic v) {
+    if (v == null) return 0.0;
+    if (v is double) return v;
+    if (v is int) return v.toDouble();
+    return double.tryParse(v.toString().replaceAll(',', '.')) ?? 0.0;
+  }
 }
 
+
 class FootballFieldGps {
-  final GpsPoint topLeft;
-  final GpsPoint topRight;
-  final GpsPoint bottomLeft;
+  final FieldCornerGps topLeft;
+  final FieldCornerGps topRight;
+  final FieldCornerGps bottomLeft;
+  final FieldCornerGps bottomRight;
+
   final double fieldLengthMeters;
   final double fieldWidthMeters;
 
@@ -64,9 +94,318 @@ class FootballFieldGps {
     required this.topLeft,
     required this.topRight,
     required this.bottomLeft,
-    this.fieldLengthMeters = 105.0,
-    this.fieldWidthMeters = 68.0,
+    required this.bottomRight,
+    required this.fieldLengthMeters,
+    required this.fieldWidthMeters,
   });
+
+
+  factory FootballFieldGps.fromMap(Map<String, dynamic> map) {
+    return FootballFieldGps(
+      topLeft: _pointFromMap(map['topLeft']),
+      topRight: _pointFromMap(map['topRight']),
+      bottomLeft: _pointFromMap(map['bottomLeft']),
+      bottomRight: _pointFromMap(map['bottomRight']),
+      fieldLengthMeters: (map['fieldLengthMeters'] as num).toDouble(),
+      fieldWidthMeters: (map['fieldWidthMeters'] as num).toDouble(),
+    );
+  }
+
+  static FieldCornerGps _pointFromMap(Map<String, dynamic> m) {
+    return FieldCornerGps(
+      latitude: (m['latitude'] as num).toDouble(),
+      longitude: (m['longitude'] as num).toDouble(),
+    );
+  }
+
+  Map<String, dynamic> toMap() {
+    return {
+      'topLeft': _pointToMap(topLeft),
+      'topRight': _pointToMap(topRight),
+      'bottomLeft': _pointToMap(bottomLeft),
+      'bottomRight': _pointToMap(bottomRight),
+      'fieldLengthMeters': fieldLengthMeters,
+      'fieldWidthMeters': fieldWidthMeters,
+    };
+  }
+  Map<String, dynamic> _pointToMap(FieldCornerGps p) {
+    return {
+      'latitude': p.latitude,
+      'longitude': p.longitude,
+    };
+  }
+
+  factory FootballFieldGps.fromFieldGpsCorners(FieldGpsCorners corners) {
+    if (corners.topLeft == null ||
+        corners.topRight == null ||
+        corners.bottomLeft == null ||
+        corners.bottomRight == null) {
+      throw Exception(
+        'Impossible de construire FootballFieldGps : les 4 coins GPS sont requis.',
+      );
+    }
+
+    final rawPoints = <FieldCornerGps>[
+      corners.topLeft!,
+      corners.topRight!,
+      corners.bottomLeft!,
+      corners.bottomRight!,
+    ];
+
+    final ordered = _orderCornersClockwise(rawPoints);
+    if (ordered == null || ordered.length != 4) {
+      throw Exception(
+        'Impossible de construire FootballFieldGps : ordre des coins introuvable.',
+      );
+    }
+
+    final tl = ordered[0];
+    final tr = ordered[1];
+    final br = ordered[2];
+    final bl = ordered[3];
+
+    final topWidth = _distanceMeters(tl, tr);
+    final bottomWidth = _distanceMeters(bl, br);
+    final leftLength = _distanceMeters(tl, bl);
+    final rightLength = _distanceMeters(tr, br);
+
+    final diagonal1 = _distanceMeters(tl, br);
+    final diagonal2 = _distanceMeters(tr, bl);
+
+    final avgHorizontal = (topWidth + bottomWidth) / 2.0;
+    final avgVertical = (leftLength + rightLength) / 2.0;
+
+    final avgLength = math.max(avgHorizontal, avgVertical);
+    final avgWidth = math.min(avgHorizontal, avgVertical);
+
+    final topBottomDiffRatio = _relativeDifference(topWidth, bottomWidth);
+    final leftRightDiffRatio = _relativeDifference(leftLength, rightLength);
+    final diagonalDiffRatio = _relativeDifference(diagonal1, diagonal2);
+
+    const maxOppositeSideDifferenceRatio = 0.20;
+    const maxDiagonalDifferenceRatio = 0.20;
+
+    const minFootball11Length = 90.0;
+    const maxFootball11Length = 120.0;
+    const minFootball11Width = 45.0;
+    const maxFootball11Width = 90.0;
+
+    final oppositeSidesOk =
+        topBottomDiffRatio <= maxOppositeSideDifferenceRatio &&
+            leftRightDiffRatio <= maxOppositeSideDifferenceRatio;
+
+    final diagonalsOk = diagonalDiffRatio <= maxDiagonalDifferenceRatio;
+
+    final football11SizeOk =
+        avgLength >= minFootball11Length &&
+            avgLength <= maxFootball11Length &&
+            avgWidth >= minFootball11Width &&
+            avgWidth <= maxFootball11Width;
+
+    if (!oppositeSidesOk || !diagonalsOk || !football11SizeOk) {
+      print('dans FootballFieldGps.fromFieldGpsCorners');
+      print('ordered tl=${tl.latitude}, ${tl.longitude}');
+      print('ordered tr=${tr.latitude}, ${tr.longitude}');
+      print('ordered br=${br.latitude}, ${br.longitude}');
+      print('ordered bl=${bl.latitude}, ${bl.longitude}');
+      print('topWidth=$topWidth');
+      print('bottomWidth=$bottomWidth');
+      print('leftLength=$leftLength');
+      print('rightLength=$rightLength');
+      print('diagonal1=$diagonal1');
+      print('diagonal2=$diagonal2');
+      print('avgLength=$avgLength');
+      print('avgWidth=$avgWidth');
+      print('topBottomDiffRatio=$topBottomDiffRatio');
+      print('leftRightDiffRatio=$leftRightDiffRatio');
+      print('diagonalDiffRatio=$diagonalDiffRatio');
+
+      throw Exception(
+        'Impossible de construire FootballFieldGps : la géométrie du terrain est incohérente.',
+      );
+    }
+
+    return FootballFieldGps(
+      topLeft: tl,
+      topRight: tr,
+      bottomLeft: bl,
+      bottomRight: br,
+      fieldLengthMeters: avgLength,
+      fieldWidthMeters: avgWidth,
+    );
+  }
+
+  Offset gpsToPitchMeters(FieldCornerGps gps) {
+    final vTop = _gpsDeltaMeters(topLeft, topRight);
+    final vBottom = _gpsDeltaMeters(bottomLeft, bottomRight);
+    final vLeft = _gpsDeltaMeters(topLeft, bottomLeft);
+    final vRight = _gpsDeltaMeters(topRight, bottomRight);
+
+    final avgHorizontal = (vTop.distance + vBottom.distance) / 2.0;
+    final avgVertical = (vLeft.distance + vRight.distance) / 2.0;
+
+    late Offset rawLengthAxis;
+    late Offset rawWidthAxis;
+
+    if (avgHorizontal >= avgVertical) {
+      rawLengthAxis = _normalize(vTop + vBottom);
+      rawWidthAxis = _normalize(vLeft + vRight);
+
+      if (_dot(rawLengthAxis, vTop) < 0) {
+        rawLengthAxis = -rawLengthAxis;
+      }
+      if (_dot(rawWidthAxis, vLeft) < 0) {
+        rawWidthAxis = -rawWidthAxis;
+      }
+    } else {
+      rawLengthAxis = _normalize(vLeft + vRight);
+      rawWidthAxis = _normalize(vTop + vBottom);
+
+      if (_dot(rawLengthAxis, vLeft) < 0) {
+        rawLengthAxis = -rawLengthAxis;
+      }
+      if (_dot(rawWidthAxis, vTop) < 0) {
+        rawWidthAxis = -rawWidthAxis;
+      }
+    }
+
+    final lengthAxis = _normalize(rawLengthAxis);
+
+    var widthAxis = rawWidthAxis - lengthAxis * _dot(rawWidthAxis, lengthAxis);
+    if (widthAxis.distance < 1e-6) {
+      widthAxis = Offset(-lengthAxis.dy, lengthAxis.dx);
+    }
+    widthAxis = _normalize(widthAxis);
+
+    final corners = [topLeft, topRight, bottomRight, bottomLeft];
+    final projectedCorners = corners.map((p) {
+      final v = _gpsDeltaMeters(topLeft, p);
+      return Offset(
+        _dot(v, lengthAxis),
+        _dot(v, widthAxis),
+      );
+    }).toList();
+
+    final minX = projectedCorners.map((e) => e.dx).reduce(math.min);
+    final minY = projectedCorners.map((e) => e.dy).reduce(math.min);
+
+    final v = _gpsDeltaMeters(topLeft, gps);
+
+    final x = _dot(v, lengthAxis) - minX;
+    final y = _dot(v, widthAxis) - minY;
+
+    return Offset(x, y);
+  }
+
+  List<Offset> cornersToPitchMeters() {
+    return [
+      gpsToPitchMeters(topLeft),
+      gpsToPitchMeters(topRight),
+      gpsToPitchMeters(bottomRight),
+      gpsToPitchMeters(bottomLeft),
+    ];
+  }
+
+  static List<FieldCornerGps>? _orderCornersClockwise(
+      List<FieldCornerGps> points,
+      ) {
+    if (points.length != 4) return null;
+
+    final centerLat =
+        points.map((p) => p.latitude).reduce((a, b) => a + b) / 4.0;
+    final centerLng =
+        points.map((p) => p.longitude).reduce((a, b) => a + b) / 4.0;
+
+    final sorted = [...points];
+    sorted.sort((a, b) {
+      final angleA = math.atan2(a.latitude - centerLat, a.longitude - centerLng);
+      final angleB = math.atan2(b.latitude - centerLat, b.longitude - centerLng);
+      return angleA.compareTo(angleB);
+    });
+
+    int topLeftIndex = 0;
+    for (int i = 1; i < sorted.length; i++) {
+      final current = sorted[i];
+      final best = sorted[topLeftIndex];
+
+      final isMoreNorth = current.latitude > best.latitude;
+      final sameNorth = (current.latitude - best.latitude).abs() < 1e-10;
+      final isMoreWest = current.longitude < best.longitude;
+
+      if (isMoreNorth || (sameNorth && isMoreWest)) {
+        topLeftIndex = i;
+      }
+    }
+
+    final rotated = [
+      sorted[topLeftIndex],
+      sorted[(topLeftIndex + 1) % 4],
+      sorted[(topLeftIndex + 2) % 4],
+      sorted[(topLeftIndex + 3) % 4],
+    ];
+
+    if (rotated[1].longitude < rotated[3].longitude) {
+      return [
+        rotated[0],
+        rotated[3],
+        rotated[2],
+        rotated[1],
+      ];
+    }
+
+    return rotated;
+  }
+
+  static double _distanceMeters(FieldCornerGps a, FieldCornerGps b) {
+    const earthRadius = 6371000.0;
+
+    final lat1 = a.latitude * math.pi / 180.0;
+    final lat2 = b.latitude * math.pi / 180.0;
+    final dLat = (b.latitude - a.latitude) * math.pi / 180.0;
+    final dLon = (b.longitude - a.longitude) * math.pi / 180.0;
+
+    final h =
+        math.sin(dLat / 2) * math.sin(dLat / 2) +
+            math.cos(lat1) *
+                math.cos(lat2) *
+                math.sin(dLon / 2) *
+                math.sin(dLon / 2);
+
+    final c = 2 * math.atan2(math.sqrt(h), math.sqrt(1 - h));
+    return earthRadius * c;
+  }
+
+  static double _relativeDifference(double a, double b) {
+    final maxValue = math.max(a, b);
+    if (maxValue == 0) return 0.0;
+    return (a - b).abs() / maxValue;
+  }
+
+  static Offset _gpsDeltaMeters(FieldCornerGps origin, FieldCornerGps target) {
+    const earthRadius = 6371000.0;
+
+    final lat1 = origin.latitude * math.pi / 180.0;
+    final lat2 = target.latitude * math.pi / 180.0;
+    final lon1 = origin.longitude * math.pi / 180.0;
+    final lon2 = target.longitude * math.pi / 180.0;
+
+    final dLat = lat2 - lat1;
+    final dLon = lon2 - lon1;
+    final meanLat = (lat1 + lat2) / 2.0;
+
+    final north = dLat * earthRadius;
+    final east = dLon * earthRadius * math.cos(meanLat);
+
+    return Offset(east, north);
+  }
+
+  static double _dot(Offset a, Offset b) => a.dx * b.dx + a.dy * b.dy;
+
+  static Offset _normalize(Offset v) {
+    final d = v.distance;
+    if (d < 1e-9) return Offset.zero;
+    return v / d;
+  }
 }
 
 class HeatmapPoint {
@@ -180,10 +519,10 @@ class DistanceTimelineStat {
   final int bucketEndMs;
   final String label;
 
-  final double walkingMeters; // < 7 km/h
-  final double joggingMeters; // 7 - 13 km/h
-  final double runningMeters; // 13 - 18 km/h
-  final double highIntensityMeters; // >= 18 km/h
+  final double walkingMeters;
+  final double joggingMeters;
+  final double runningMeters;
+  final double highIntensityMeters;
 
   const DistanceTimelineStat({
     required this.bucketStartMs,
@@ -225,7 +564,6 @@ class DistanceTimelineStat {
   }
 }
 
-
 class TrackerAnalysisResult {
   final String trackerId;
   final String playerId;
@@ -236,8 +574,11 @@ class TrackerAnalysisResult {
   final double maxValidatedSpeedKmh;
   final int samplesCount;
 
-  // Attention: non sauvegardé en Firestore
+  // Non sauvegardé en Firestore
   final List<HeatmapPoint> heatmapPoints;
+
+  // Nullable : null possible pour un entraînement
+  final FootballFieldGps? fieldGps;
 
   final int sprintCount;
   final int highAccelerationCount;
@@ -264,6 +605,7 @@ class TrackerAnalysisResult {
     required this.maxValidatedSpeedKmh,
     required this.samplesCount,
     required this.heatmapPoints,
+    this.fieldGps,
     required this.sprintCount,
     required this.highAccelerationCount,
     required this.timeAbove20Kmh,
@@ -293,6 +635,7 @@ class TrackerAnalysisResult {
       'maxValidatedSpeedKmh': maxValidatedSpeedKmh,
       'samplesCount': samplesCount,
       // heatmapPoints volontairement exclus
+      'fieldGps': fieldGps?.toMap(),
       'sprintCount': sprintCount,
       'highAccelerationCount': highAccelerationCount,
       'timeAbove20KmhMs': timeAbove20Kmh.inMilliseconds,
@@ -307,7 +650,9 @@ class TrackerAnalysisResult {
       'secondHalfDistanceKm': secondHalfDistanceKm,
       'distanceTimeline': distanceTimeline.map((e) => e.toMap()).toList(),
       'eventId': eventId,
-      'createdAt': createdAt != null ? Timestamp.fromDate(createdAt) : FieldValue.serverTimestamp(),
+      'createdAt': createdAt != null
+          ? Timestamp.fromDate(createdAt)
+          : FieldValue.serverTimestamp(),
     };
   }
 
@@ -322,6 +667,11 @@ class TrackerAnalysisResult {
       maxValidatedSpeedKmh: _toDouble(map['maxValidatedSpeedKmh']),
       samplesCount: _toInt(map['samplesCount']),
       heatmapPoints: const [],
+      fieldGps: map['fieldGps'] != null
+          ? FootballFieldGps.fromMap(
+        Map<String, dynamic>.from(map['fieldGps'] as Map),
+      )
+          : null,
       sprintCount: _toInt(map['sprintCount']),
       highAccelerationCount: _toInt(map['highAccelerationCount']),
       timeAbove20Kmh: Duration(milliseconds: _toInt(map['timeAbove20KmhMs'])),
@@ -360,6 +710,7 @@ class TrackerAnalysisResult {
     return double.tryParse(v.toString().replaceAll(',', '.')) ?? 0.0;
   }
 }
+
 class SpeedZoneStat {
   final String zoneId;
   final Duration duration;
@@ -402,8 +753,6 @@ class SpeedZoneStat {
   }
 }
 
-
-
 class TimelinePoint {
   final double timeSec;
   final double speedKmh;
@@ -416,4 +765,47 @@ class TimelinePoint {
     required this.accelerationMps2,
     required this.isSprint,
   });
+}
+
+class MatchHeatmapSplit {
+  final List<HeatmapPoint> firstHalfPoints;
+  final List<HeatmapPoint> secondHalfPoints;
+
+  const MatchHeatmapSplit({
+    required this.firstHalfPoints,
+    required this.secondHalfPoints,
+  });
+}
+
+class HeatmapTimeSplitter {
+  static MatchHeatmapSplit splitByHalves(List<HeatmapPoint> points) {
+    if (points.isEmpty) {
+      return const MatchHeatmapSplit(
+        firstHalfPoints: [],
+        secondHalfPoints: [],
+      );
+    }
+
+    final sorted = [...points]..sort((a, b) => a.timeMs.compareTo(b.timeMs));
+
+    final startTime = sorted.first.timeMs;
+    final endTime = sorted.last.timeMs;
+    final midTime = startTime + ((endTime - startTime) ~/ 2);
+
+    final firstHalf = <HeatmapPoint>[];
+    final secondHalf = <HeatmapPoint>[];
+
+    for (final p in sorted) {
+      if (p.timeMs <= midTime) {
+        firstHalf.add(p);
+      } else {
+        secondHalf.add(p);
+      }
+    }
+
+    return MatchHeatmapSplit(
+      firstHalfPoints: firstHalf,
+      secondHalfPoints: secondHalf,
+    );
+  }
 }

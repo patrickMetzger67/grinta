@@ -582,6 +582,7 @@ class _HomeScreenState extends State<HomeScreen> {
                                           trackerIds: trackerIdsToSend,
                                           eventId: match.id!,
                                           isMatch: true,
+                                          fieldGpsCorners: match.fieldGpsCorners,
                                         ),
                                       ),
                                     );
@@ -794,6 +795,7 @@ class _HomeScreenState extends State<HomeScreen> {
                                           trackerIds: trackerIdsToSend,
                                           eventId: training.trainingId!,
                                           isMatch: false,
+                                          fieldGpsCorners: null,
                                         ),
                                       ),
                                     );

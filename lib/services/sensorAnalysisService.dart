@@ -448,6 +448,7 @@ class SensorAnalysisService {
       maxValidatedSpeedKmh: maxValidatedSpeedMps * 3.6,
       samplesCount: samples.length,
       heatmapPoints: heatmapPoints,
+      fieldGps: fieldGps,
       sprintCount: sprintCount,
       highAccelerationCount: highAccelerationCount,
       timeAbove20Kmh: Duration(milliseconds: timeAbove20Ms),
@@ -668,24 +669,24 @@ class SensorAnalysisService {
     required FootballFieldGps field,
   }) {
     final p = _toLocalMeters(
-      originLat: field.topLeft.lat,
-      originLng: field.topLeft.lng,
+      originLat: field.topLeft.latitude,
+      originLng: field.topLeft.longitude,
       lat: latitude,
       lng: longitude,
     );
 
     final right = _toLocalMeters(
-      originLat: field.topLeft.lat,
-      originLng: field.topLeft.lng,
-      lat: field.topRight.lat,
-      lng: field.topRight.lng,
+      originLat: field.topLeft.latitude,
+      originLng: field.topLeft.longitude,
+      lat: field.topRight.latitude,
+      lng: field.topRight.longitude,
     );
 
     final down = _toLocalMeters(
-      originLat: field.topLeft.lat,
-      originLng: field.topLeft.lng,
-      lat: field.bottomLeft.lat,
-      lng: field.bottomLeft.lng,
+      originLat: field.topLeft.latitude,
+      originLng: field.topLeft.longitude,
+      lat: field.bottomLeft.latitude,
+      lng: field.bottomLeft.longitude,
     );
 
     final rightNorm = _normalize(right.$1, right.$2);

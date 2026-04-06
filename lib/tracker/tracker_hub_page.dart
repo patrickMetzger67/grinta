@@ -6,6 +6,7 @@ import 'dart:typed_data';
 import 'package:cloud_functions/cloud_functions.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:grinta/model/fieldGpsCorners.dart';
 import 'package:grinta/model/highlights.dart';
 import 'package:grinta/services/highlightsService.dart';
 
@@ -26,12 +27,14 @@ class TrackerHubPage extends StatefulWidget {
   final List<String> trackerIds;
   final String eventId;
   final bool isMatch;
+  final FieldGpsCorners? fieldGpsCorners;
 
   const TrackerHubPage({
     super.key,
     required this.trackerIds,
     required this.eventId,
     required this.isMatch,
+    this.fieldGpsCorners,
   });
 
   @override
@@ -184,6 +187,7 @@ class _TrackerHubPageState extends State<TrackerHubPage> {
               periods: matchPeriods,
               isMatch: widget.isMatch,
               eventId: widget.eventId,
+              fieldGpsCorners: widget.fieldGpsCorners,
             );
 
             if (isMobile) {
@@ -376,12 +380,14 @@ class _TrackerDetailPanel extends StatelessWidget {
   final List<TimeRange> periods;
   final bool isMatch;
   final String eventId;
+  final FieldGpsCorners? fieldGpsCorners;
 
   const _TrackerDetailPanel({
     required this.trackerId,
     required this.periods,
     required this.isMatch,
     required this.eventId,
+    required this.fieldGpsCorners,
   });
 
   @override
@@ -438,6 +444,7 @@ class _TrackerDetailPanel extends StatelessWidget {
       periods: periods,
       isMatch: isMatch,
       eventId: eventId,
+      fieldGpsCorners:fieldGpsCorners,
     );
   }
 }
@@ -486,6 +493,7 @@ class AsiDownloaderPanel extends StatefulWidget {
   final List<TimeRange> periods;
   final bool isMatch;
   final String eventId;
+  final FieldGpsCorners? fieldGpsCorners;
 
   const AsiDownloaderPanel({
     super.key,
@@ -493,6 +501,7 @@ class AsiDownloaderPanel extends StatefulWidget {
     required this.periods,
     required this.isMatch,
     required this.eventId,
+    required this.fieldGpsCorners,
   });
 
   @override
@@ -866,6 +875,7 @@ class _AsiDownloaderPanelState extends State<AsiDownloaderPanel> {
                     periods: safePeriods,
                     isMatch: widget.isMatch,
                     eventId: widget.eventId,
+                    fieldGpsCorners: widget.fieldGpsCorners,
                   );
                 },
                 icon: const Icon(Icons.insert_drive_file),
@@ -971,86 +981,6 @@ class _AsiDownloaderPanelState extends State<AsiDownloaderPanel> {
           ),
         ],
       ),
-    );
-  }
-
-  Future<void> openAsiConverterDialog({
-    required BuildContext context,
-    required String deviceId,
-    required List<TimeRange> periods,
-    required bool isMatch,
-    required String eventId,
-  }) async {
-    await showDialog(
-      context: context,
-      barrierDismissible: false,
-      builder: (context) {
-        return Dialog(
-          insetPadding: const EdgeInsets.all(20),
-          child: SizedBox(
-            width: 1000,
-            height: 700,
-            child: Column(
-              children: [
-                // HEADER
-                Padding(
-                  padding: const EdgeInsets.fromLTRB(16, 16, 8, 8),
-                  child: Row(
-                    children: [
-                      Expanded(
-                        child: Text(
-                          'Import fichier ASI',
-                          style: Theme.of(context)
-                              .textTheme
-                              .titleLarge
-                              ?.copyWith(fontWeight: FontWeight.w700),
-                        ),
-                      ),
-                      IconButton(
-                        onPressed: () => Navigator.pop(context),
-                        icon: const Icon(Icons.close),
-                      ),
-                    ],
-                  ),
-                ),
-
-                const Divider(height: 1),
-
-                // CONTENU
-                Expanded(
-                  child: AsiConverterScreen(
-                    deviceId: deviceId,
-                    periods: periods,
-                    isMatch: isMatch,
-                    eventId: eventId,
-                  ),
-                ),
-
-                const Divider(height: 1),
-
-                // FOOTER
-                Padding(
-                  padding: const EdgeInsets.all(12),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.end,
-                    children: [
-                      OutlinedButton(
-                        onPressed: () => Navigator.pop(context),
-                        child: const Text('Annuler'),
-                      ),
-                      const SizedBox(width: 12),
-                      ElevatedButton(
-                        onPressed: () => Navigator.pop(context),
-                        child: const Text('Fermer'),
-                      ),
-                    ],
-                  ),
-                ),
-              ],
-            ),
-          ),
-        );
-      },
     );
   }
 }

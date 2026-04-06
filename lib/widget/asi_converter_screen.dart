@@ -5,13 +5,26 @@ import 'package:cloud_functions/cloud_functions.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_svg/svg.dart';
+import 'package:grinta/model/fieldGpsCorners.dart';
+import 'package:grinta/widget/proPitchView.dart';
+
 
 import '../model/timeRange.dart';
 import '../model/tracker/trackerData.dart';
 import '../model/trackerDeviceRaw.dart';
+import '../services/pitch_heatmap_builder.dart';
 import '../services/sensorAnalysisService.dart';
 import '../services/trackerDataAnalysisService.dart';
 import '../util/app_theme.dart';
+import '../util/heatmap_svg_generator.dart';
+import 'gps_field.dart';
+
+enum HeatmapDisplayPeriod {
+  firstHalf,
+  secondHalf,
+  fullMatch,
+}
 
 class AsiConverterScreen extends StatefulWidget {
   final String deviceId;
@@ -19,6 +32,7 @@ class AsiConverterScreen extends StatefulWidget {
   final bool showAppBar;
   final bool isMatch;
   final String eventId;
+  final FieldGpsCorners? fieldGpsCorners;
 
   const AsiConverterScreen({
     super.key,
@@ -27,7 +41,7 @@ class AsiConverterScreen extends StatefulWidget {
     required this.eventId,
     this.periods = const [],
     this.showAppBar = true,
-
+    required this.fieldGpsCorners,
   });
 
   @override
@@ -42,9 +56,36 @@ class _AsiConverterScreenState extends State<AsiConverterScreen> {
   String? _csvResult;
   int _rowsCount = 0;
   bool _isLoading = false;
+  bool _invertSides = false;
+
+
+  FootballFieldGps? footballFieldGps;
+  List<Offset> cornersM = [];
 
   final GlobalKey<ScaffoldMessengerState> _scaffoldMessengerKey =
   GlobalKey<ScaffoldMessengerState>();
+
+  /// Analyse complète existante
+  TrackerAnalysisResult? _analysisResult;
+
+  /// Analyse recalculée uniquement pour l’affichage
+  TrackerAnalysisResult? _displayAnalysisResult;
+
+  /// Samples convertis depuis le CSV
+  List<TrackerRaw> _allTrackerSamples = [];
+
+  HeatmapDisplayPeriod _selectedPeriod = HeatmapDisplayPeriod.fullMatch;
+  bool _showSprintTrajectoriesOnly = false;
+
+  List<PitchPolyline> _sprintPolylines = const [];
+
+  static const double _sprintThresholdKmh = 20.0;
+  static const int _minSprintPoints = 4;
+
+
+  String? svgFullMatch;
+  String? svgFirstHalf;
+  String? svgSecondHalf;
 
   @override
   void initState() {
@@ -136,6 +177,290 @@ class _AsiConverterScreenState extends State<AsiConverterScreen> {
     return buffer.toString();
   }
 
+  // ---------------------------------------------------------------------------
+  // PÉRIODES / MI-TEMPS
+  // ---------------------------------------------------------------------------
+
+  DateTime? _extractDateTimeFromDynamic(dynamic value) {
+    if (value == null) return null;
+
+    if (value is DateTime) return value;
+
+    try {
+      // ex: Timestamp Firestore
+      final dynamic dt = value.toDate?.call();
+      if (dt is DateTime) return dt;
+    } catch (_) {}
+
+    if (value is int) {
+      return DateTime.fromMillisecondsSinceEpoch(value);
+    }
+
+    if (value is String) {
+      return DateTime.tryParse(value);
+    }
+
+    return null;
+  }
+
+  DateTime? _tryReadTimeRangeField(TimeRange range, List<String> fieldNames) {
+    for (final field in fieldNames) {
+      try {
+        final dynamic raw = (range as dynamic)
+            .toJson?.call()[field];
+        final date = _extractDateTimeFromDynamic(raw);
+        if (date != null) return date;
+      } catch (_) {}
+
+      try {
+        final dynamic raw = (range as dynamic)
+            .toMap?.call()[field];
+        final date = _extractDateTimeFromDynamic(raw);
+        if (date != null) return date;
+      } catch (_) {}
+
+      try {
+        final dynamic raw = (range as dynamic)
+            .toFirestore?.call()[field];
+        final date = _extractDateTimeFromDynamic(raw);
+        if (date != null) return date;
+      } catch (_) {}
+
+      try {
+        final dynamic raw = (range as dynamic).__getattribute__(field);
+        final date = _extractDateTimeFromDynamic(raw);
+        if (date != null) return date;
+      } catch (_) {}
+
+      try {
+        final dynamic raw = (range as dynamic).toString();
+        if (raw != null) {
+          // aucun traitement utile ici, on laisse
+        }
+      } catch (_) {}
+    }
+
+    // fallback reflection-like manuel par champs usuels
+    for (final field in fieldNames) {
+      try {
+        final dynamic raw = switch (field) {
+          'start' => (range as dynamic).start,
+          'end' => (range as dynamic).end,
+          'startAt' => (range as dynamic).startAt,
+          'endAt' => (range as dynamic).endAt,
+          'from' => (range as dynamic).from,
+          'to' => (range as dynamic).to,
+          'begin' => (range as dynamic).begin,
+          'finish' => (range as dynamic).finish,
+          'dateStart' => (range as dynamic).dateStart,
+          'dateEnd' => (range as dynamic).dateEnd,
+          _ => null,
+        };
+
+        final date = _extractDateTimeFromDynamic(raw);
+        if (date != null) return date;
+      } catch (_) {}
+    }
+
+    return null;
+  }
+
+
+
+  List<TimeRange> get _sortedPeriods {
+    final list = [...widget.periods];
+    list.sort((a, b) => a.start.compareTo(b.start));
+    return list;
+  }
+
+  TimeRange? get _firstHalfPeriod {
+    if (_sortedPeriods.isEmpty) return null;
+    return _sortedPeriods.first;
+  }
+
+  TimeRange? get _secondHalfPeriod {
+    if (_sortedPeriods.length < 2) return null;
+    return _sortedPeriods[1];
+  }
+
+  bool _isSampleInsidePeriod(TrackerRaw sample, TimeRange period) {
+    final startMs = period.start.toDate().millisecondsSinceEpoch;
+    final endMs = period.end.toDate().millisecondsSinceEpoch;
+
+    return sample.timeMs >= startMs && sample.timeMs <= endMs;
+  }
+
+  String _orientationInfo() {
+    if (_selectedPeriod == HeatmapDisplayPeriod.fullMatch) {
+      return 'Orientation terrain complet';
+    }
+
+    if (!_invertSides) {
+      return 'Orientation normale';
+    }
+
+    return 'Camps inversés';
+  }
+
+  PitchViewMode get _selectedPitchMode {
+    switch (_selectedPeriod) {
+      case HeatmapDisplayPeriod.firstHalf:
+        return _invertSides
+            ? PitchViewMode.bottomHalfPortrait
+            : PitchViewMode.topHalfPortrait;
+
+      case HeatmapDisplayPeriod.secondHalf:
+        return _invertSides
+            ? PitchViewMode.topHalfPortrait
+            : PitchViewMode.bottomHalfPortrait;
+
+      case HeatmapDisplayPeriod.fullMatch:
+        return PitchViewMode.fullLandscape;
+    }
+  }
+
+  List<TrackerRaw> _getSamplesForSelectedPeriod() {
+    if (_allTrackerSamples.isEmpty) return const [];
+
+    switch (_selectedPeriod) {
+      case HeatmapDisplayPeriod.fullMatch:
+        return List<TrackerRaw>.from(_allTrackerSamples);
+
+      case HeatmapDisplayPeriod.firstHalf:
+        final first = _firstHalfPeriod;
+        if (first == null) return const [];
+        return _allTrackerSamples
+            .where((s) => _isSampleInsidePeriod(s, first))
+            .toList(growable: false);
+
+      case HeatmapDisplayPeriod.secondHalf:
+        final second = _secondHalfPeriod;
+        if (second == null) return const [];
+        return _allTrackerSamples
+            .where((s) => _isSampleInsidePeriod(s, second))
+            .toList(growable: false);
+    }
+  }
+
+
+
+  String _selectedPeriodInfo() {
+    switch (_selectedPeriod) {
+      case HeatmapDisplayPeriod.firstHalf:
+        return _firstHalfPeriod == null
+            ? '1ère mi-temps indisponible'
+            : '1ère mi-temps';
+
+      case HeatmapDisplayPeriod.secondHalf:
+        return _secondHalfPeriod == null
+            ? '2ème mi-temps indisponible'
+            : '2ème mi-temps';
+
+      case HeatmapDisplayPeriod.fullMatch:
+        return 'Match entier';
+    }
+  }
+
+  // ---------------------------------------------------------------------------
+  // SPRINTS
+  // ---------------------------------------------------------------------------
+
+  List<List<TrackerRaw>> _extractSprintSegments(List<TrackerRaw> samples) {
+    final List<List<TrackerRaw>> segments = [];
+    List<TrackerRaw> current = [];
+
+    for (final sample in samples) {
+      final speedKmh = sample.speedMps * 3.6;
+
+      if (speedKmh >= _sprintThresholdKmh) {
+        current.add(sample);
+      } else {
+        if (current.length >= _minSprintPoints) {
+          segments.add(List<TrackerRaw>.from(current));
+        }
+        current = [];
+      }
+    }
+
+    if (current.length >= _minSprintPoints) {
+      segments.add(List<TrackerRaw>.from(current));
+    }
+
+    return segments;
+  }
+
+  List<PitchPolyline> _buildSprintPolylines(List<TrackerRaw> samples) {
+    final segments = _extractSprintSegments(samples);
+
+    if (segments.isEmpty) return const [];
+
+    final List<PitchPolyline> polylines = [];
+
+
+    for (final segment in segments) {
+      final sprintAnalysis = SensorAnalysisService.analyzeSensorData(
+        trackerId: _deviceIdCtrl.text.trim(),
+        allSamples: segment,
+        isMatch: widget.isMatch,
+        playerId: _deviceIdCtrl.text.trim(),
+        fieldGps: footballFieldGps,
+      );
+
+      if (sprintAnalysis.heatmapPoints.length < 2) continue;
+
+      polylines.add(
+        PitchPolyline(
+          pointsM: PitchHeatmapBuilder.polylineFromHeatmapPoints(
+            sprintAnalysis.heatmapPoints,
+          ),
+          segmentIntensity01:
+          PitchHeatmapBuilder.segmentIntensityFromHeatmapPoints(
+            sprintAnalysis.heatmapPoints,
+          ),
+          strokeWidth: 3.2,
+          showArrow: true,
+          showStartEndDots: false,
+        ),
+      );
+    }
+
+    return polylines;
+  }
+
+  // ---------------------------------------------------------------------------
+  // REBUILD DISPLAY
+  // ---------------------------------------------------------------------------
+
+  void _rebuildDisplayAnalysis() {
+    if (_allTrackerSamples.isEmpty) {
+      _displayAnalysisResult = null;
+      _sprintPolylines = const [];
+      return;
+    }
+
+    final samplesForDisplay = _getSamplesForSelectedPeriod();
+
+    if (samplesForDisplay.isEmpty) {
+      _displayAnalysisResult = null;
+      _sprintPolylines = const [];
+      return;
+    }
+    _displayAnalysisResult = SensorAnalysisService.analyzeSensorData(
+      trackerId: _deviceIdCtrl.text.trim(),
+      allSamples: samplesForDisplay,
+      isMatch: widget.isMatch,
+      playerId: _deviceIdCtrl.text.trim(),
+    );
+
+    _sprintPolylines = _showSprintTrajectoriesOnly
+        ? _buildSprintPolylines(samplesForDisplay)
+        : const [];
+  }
+
+  // ---------------------------------------------------------------------------
+  // CONVERSION
+  // ---------------------------------------------------------------------------
+
   Future<void> _convertFile() async {
     FocusScope.of(context).unfocus();
 
@@ -155,6 +480,10 @@ class _AsiConverterScreenState extends State<AsiConverterScreen> {
       _isLoading = true;
       _csvResult = null;
       _rowsCount = 0;
+      _analysisResult = null;
+      _displayAnalysisResult = null;
+      _allTrackerSamples = [];
+      _sprintPolylines = const [];
     });
 
     try {
@@ -178,57 +507,139 @@ class _AsiConverterScreenState extends State<AsiConverterScreen> {
         );
       }).toList();
 
-      final analysis = SensorAnalysisService.analyzeSensorData(
+      _allTrackerSamples = trackerSamples;
+
+      if(widget.fieldGpsCorners != null) {
+        setState(() {
+          footballFieldGps= FootballFieldGps.fromFieldGpsCorners(widget.fieldGpsCorners!);
+        });
+        if(footballFieldGps != null) {
+          setState(() {
+            cornersM = footballFieldGps!.cornersToPitchMeters();
+          });
+        }
+      }
+
+      _analysisResult = SensorAnalysisService.analyzeSensorData(
         trackerId: deviceId,
         allSamples: trackerSamples,
         isMatch: widget.isMatch,
         playerId: deviceId,
+        fieldGps: footballFieldGps,
       );
 
-      debugPrint('deviceId: ${analysis.trackerId}');
-      debugPrint('distanceKm: ${analysis.distanceKm}');
-      debugPrint('duration: ${analysis.duration}');
-      debugPrint('averageSpeedKmh: ${analysis.averageSpeedKmh}');
-      debugPrint('maxSpeedKmh: ${analysis.maxSpeedKmh}');
-      debugPrint('samplesCount: ${analysis.samplesCount}');
-      debugPrint('sprintCount: ${analysis.sprintCount}');
-      debugPrint('timeAbove20Kmh: ${analysis.timeAbove20Kmh}');
-      debugPrint('maxAccelerationMps2: ${analysis.maxAccelerationMps2}');
-      debugPrint('heatmapPoint=${analysis.heatmapPoints.length}');
-      debugPrint('workloadScore: ${analysis.workloadScore}');
+      _rebuildDisplayAnalysis();
 
-      print('maxValidatedSpeedKmh: ${analysis.maxValidatedSpeedKmh}');
-      print('highAccelerationCount: ${analysis.highAccelerationCount}');
-      print('playerProfile: ${analysis.playerProfile}');
-      print('fatigueIndex: ${analysis.fatigueIndex}');
-      print('firstHalfDistanceKm: ${analysis.firstHalfDistanceKm}');
-      print('secondHalfDistanceKm: ${analysis.secondHalfDistanceKm}');
+      if (_analysisResult != null) {
+        debugPrint('deviceId: ${_analysisResult!.trackerId}');
+        debugPrint('distanceKm: ${_analysisResult!.distanceKm}');
+        debugPrint('duration: ${_analysisResult!.duration}');
+        debugPrint('averageSpeedKmh: ${_analysisResult!.averageSpeedKmh}');
+        debugPrint('maxSpeedKmh: ${_analysisResult!.maxSpeedKmh}');
+        debugPrint('samplesCount: ${_analysisResult!.samplesCount}');
+        debugPrint('sprintCount: ${_analysisResult!.sprintCount}');
+        debugPrint('timeAbove20Kmh: ${_analysisResult!.timeAbove20Kmh}');
+        debugPrint(
+          'maxAccelerationMps2: ${_analysisResult!.maxAccelerationMps2}',
+        );
+        debugPrint('heatmapPoint=${_analysisResult!.heatmapPoints.length}');
+        debugPrint('workloadScore: ${_analysisResult!.workloadScore}');
 
-      final firstHalf = analysis.halfStats.firstWhere((e) => e.halfIndex == 1);
-      final secondHalf = analysis.halfStats.firstWhere((e) => e.halfIndex == 2);
+        print('maxValidatedSpeedKmh: ${_analysisResult!.maxValidatedSpeedKmh}');
+        print(
+          'highAccelerationCount: ${_analysisResult!.highAccelerationCount}',
+        );
+        print('playerProfile: ${_analysisResult!.playerProfile}');
+        print('fatigueIndex: ${_analysisResult!.fatigueIndex}');
+        print('firstHalfDistanceKm: ${_analysisResult!.firstHalfDistanceKm}');
+        print('secondHalfDistanceKm: ${_analysisResult!.secondHalfDistanceKm}');
 
-      print('Diff distance: ${secondHalf.distanceKm - firstHalf.distanceKm}');
-      print('Diff vitesse: ${secondHalf.averageSpeedKmh - firstHalf.averageSpeedKmh}');
-      print('RESULT distanceTimeline length = ${analysis.distanceTimeline.length}');
-      print('RESULT toMap distanceTimeline = ${analysis.toMap()['distanceTimeline']}');
+        final firstHalf =
+        _analysisResult!.halfStats.firstWhere((e) => e.halfIndex == 1);
+        final secondHalf =
+        _analysisResult!.halfStats.firstWhere((e) => e.halfIndex == 2);
 
-      for (final z in analysis.speedZones) {
-        print('${z.zoneId} -> ${z.duration} (${z.percentOfSession.toStringAsFixed(1)}%)');
+        print('Diff distance: ${secondHalf.distanceKm - firstHalf.distanceKm}');
+        print(
+          'Diff vitesse: ${secondHalf.averageSpeedKmh - firstHalf.averageSpeedKmh}',
+        );
+        print(
+          'RESULT distanceTimeline length = ${_analysisResult!.distanceTimeline.length}',
+        );
+        print(
+          'RESULT toMap distanceTimeline = ${_analysisResult!.toMap()['distanceTimeline']}',
+        );
+
+        for (final z in _analysisResult!.speedZones) {
+          print(
+            '${z.zoneId} -> ${z.duration} (${z.percentOfSession.toStringAsFixed(1)}%)',
+          );
+        }
+
+        print('heatmap=${_analysisResult!.heatmapPoints.length}');
+
+        /*
+        await SensorAnalysisService.heatmapToCsv(
+          deviceId: widget.deviceId,
+          eventId: widget.eventId,
+          heatmapPoints: _analysisResult!.heatmapPoints,
+        );
+        */
+        print('avant TrackerAnalysisService.saveAnalysis ${DateTime.now().toString()}');
+        await TrackerAnalysisService.saveAnalysis(
+          docId: '${widget.eventId}_${widget.deviceId}',
+          _analysisResult!,
+          eventId: widget.eventId,
+        );
+
+        print('avant HeatmapSvgGenerator.generateSvg ${DateTime.now().toString()}');
+        setState(() {
+          _selectedPeriod = HeatmapDisplayPeriod.fullMatch;
+        });
+        svgFullMatch = HeatmapSvgGenerator.generateSvg(
+          field: footballFieldGps!,
+          heatmapPoints: _analysisResult!.heatmapPoints,
+          invertSides: false,
+          svgWidth: 1600,
+          svgHeight: 1000,
+        );
+        print('après HeatmapSvgGenerator.generateSvg ${DateTime.now().toString()}');
+        await HeatmapSvgGenerator.saveSvgToFirestore(
+            fileName: '${widget.deviceId}-${widget.eventId}_fullMatch',
+            svg: svgFullMatch!);
+
+        setState(() {
+          _selectedPeriod = HeatmapDisplayPeriod.firstHalf;
+        });
+        print('avant _rebuildDisplayAnalysis() ${DateTime.now().toString()}');
+        _rebuildDisplayAnalysis();
+        print('après _rebuildDisplayAnalysis() ${DateTime.now().toString()}');
+
+        svgFirstHalf = HeatmapSvgGenerator.generateSvg(
+          field: footballFieldGps!,
+          heatmapPoints: _analysisResult!.heatmapPoints,
+          invertSides: false,
+          svgWidth: 1600,
+          svgHeight: 1000,
+        );
+        await HeatmapSvgGenerator.saveSvgToFirestore(
+            fileName: '${widget.deviceId}-${widget.eventId}_firstHalf',
+            svg: svgFullMatch!);
+        setState(() {
+          _selectedPeriod = HeatmapDisplayPeriod.secondHalf;
+        });
+        svgSecondHalf = HeatmapSvgGenerator.generateSvg(
+          field: footballFieldGps!,
+          heatmapPoints: _analysisResult!.heatmapPoints,
+          invertSides: false,
+          svgWidth: 1600,
+          svgHeight: 1000,
+        );
+        await HeatmapSvgGenerator.saveSvgToFirestore(
+            fileName: '${widget.deviceId}-${widget.eventId}_secondHalf',
+            svg: svgSecondHalf!);
+        print('apres TrackerAnalysisService.saveAnalysis ${DateTime.now().toString()}');
       }
-
-      print('heatmap=${analysis.heatmapPoints.length}');
-
-      final url = await SensorAnalysisService.heatmapToCsv(
-        deviceId: widget.deviceId,
-        eventId: widget.eventId,
-        heatmapPoints: analysis.heatmapPoints,
-      );
-      final docId = await TrackerAnalysisService.saveAnalysis(
-        docId: '${widget.eventId}_${widget.deviceId}',
-        analysis,
-        eventId: widget.eventId,
-      );
-
 
       if (!mounted) return;
 
@@ -236,6 +647,7 @@ class _AsiConverterScreenState extends State<AsiConverterScreen> {
         _csvResult = filteredCsv;
         _rowsCount = rows.length;
       });
+
 
       _showSnackBar('Conversion terminée - $_rowsCount ligne(s) retenue(s)');
     } catch (e) {
@@ -254,6 +666,10 @@ class _AsiConverterScreenState extends State<AsiConverterScreen> {
       _selectedFileName = null;
       _csvResult = null;
       _rowsCount = 0;
+      _analysisResult = null;
+      _displayAnalysisResult = null;
+      _allTrackerSamples = [];
+      _sprintPolylines = const [];
     });
   }
 
@@ -262,8 +678,17 @@ class _AsiConverterScreenState extends State<AsiConverterScreen> {
       return 'Aucune période définie';
     }
 
-    return '${widget.periods.length} période(s) transmise(s)';
+    if (widget.periods.length == 1) {
+      return '1 période transmise';
+    }
+
+    return '${widget.periods.length} période(s) transmise(s) - les 2 premières seront utilisées pour les mi-temps';
   }
+
+
+  // ---------------------------------------------------------------------------
+  // UI
+  // ---------------------------------------------------------------------------
 
   Widget _buildContent(BuildContext context) {
     final colors = context.appColors;
@@ -299,10 +724,10 @@ class _AsiConverterScreenState extends State<AsiConverterScreen> {
                       children: [
                         Text(
                           'Paramètres',
-                          style: Theme.of(context)
-                              .textTheme
-                              .titleLarge
-                              ?.copyWith(fontWeight: FontWeight.w600),
+                          style:
+                          Theme.of(context).textTheme.titleLarge?.copyWith(
+                            fontWeight: FontWeight.w600,
+                          ),
                         ),
                         const SizedBox(height: 18),
                         TextField(
@@ -394,8 +819,7 @@ class _AsiConverterScreenState extends State<AsiConverterScreen> {
                                 runSpacing: 12,
                                 children: [
                                   ElevatedButton.icon(
-                                    onPressed:
-                                    _isLoading ? null : _pickAsiFile,
+                                    onPressed: _isLoading ? null : _pickAsiFile,
                                     icon: const Icon(Icons.upload_file),
                                     label:
                                     const Text('Choisir un fichier .asi'),
@@ -440,79 +864,118 @@ class _AsiConverterScreenState extends State<AsiConverterScreen> {
                   ),
                 ),
                 const SizedBox(height: 20),
-                if (_csvResult != null)
+                if (_displayAnalysisResult != null &&
+                    _displayAnalysisResult!.heatmapPoints.isNotEmpty)
                   Card(
                     child: Padding(
                       padding: const EdgeInsets.all(18),
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Row(
+                          Text(
+                            'Heatmap',
+                            style:
+                            Theme.of(context).textTheme.titleLarge?.copyWith(
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                          const SizedBox(height: 8),
+                          Text(
+                            '${_displayAnalysisResult!.heatmapPoints.length} point(s) - ${_selectedPeriodInfo()}',
+                            style:
+                            Theme.of(context).textTheme.bodyMedium?.copyWith(
+                              color: colors.textSecondary,
+                            ),
+                          ),
+                          const SizedBox(height: 16),
+                          Wrap(
+                            spacing: 12,
+                            runSpacing: 12,
+                            crossAxisAlignment: WrapCrossAlignment.center,
                             children: [
-                              Expanded(
-                                child: Text(
-                                  'Résultat CSV',
-                                  style: Theme.of(context)
-                                      .textTheme
-                                      .titleLarge
-                                      ?.copyWith(fontWeight: FontWeight.w600),
-                                ),
-                              ),
-                              if (_rowsCount > 0)
-                                Padding(
-                                  padding: const EdgeInsets.only(right: 12),
-                                  child: Text(
-                                    '$_rowsCount ligne(s)',
-                                    style: Theme.of(context)
-                                        .textTheme
-                                        .bodyMedium
-                                        ?.copyWith(
-                                      color: colors.textSecondary,
+                              DropdownButton<HeatmapDisplayPeriod>(
+                                value: _selectedPeriod,
+                                items: [
+                                  const DropdownMenuItem(
+                                    value: HeatmapDisplayPeriod.fullMatch,
+                                    child: Text('Match entier'),
+                                  ),
+                                  DropdownMenuItem(
+                                    value: HeatmapDisplayPeriod.firstHalf,
+                                    enabled: _firstHalfPeriod != null,
+                                    child: Text(
+                                      _firstHalfPeriod != null
+                                          ? '1ère mi-temps'
+                                          : '1ère mi-temps indisponible',
                                     ),
                                   ),
-                                ),
-                              OutlinedButton.icon(
-                                onPressed: () async {
-                                  await Clipboard.setData(
-                                    ClipboardData(text: _csvResult!),
-                                  );
+                                  DropdownMenuItem(
+                                    value: HeatmapDisplayPeriod.secondHalf,
+                                    enabled: _secondHalfPeriod != null,
+                                    child: Text(
+                                      _secondHalfPeriod != null
+                                          ? '2ème mi-temps'
+                                          : '2ème mi-temps indisponible',
+                                    ),
+                                  ),
+                                ],
+                                onChanged: (value) {
+                                  if (value == null) return;
 
-                                  if (!mounted) return;
+                                  if (value == HeatmapDisplayPeriod.firstHalf &&
+                                      _firstHalfPeriod == null) {
+                                    return;
+                                  }
 
-                                  _showSnackBar(
-                                    'CSV copié dans le presse-papiers',
-                                  );
+                                  if (value == HeatmapDisplayPeriod.secondHalf &&
+                                      _secondHalfPeriod == null) {
+                                    return;
+                                  }
+
+                                  setState(() {
+                                    _selectedPeriod = value;
+                                    _rebuildDisplayAnalysis();
+                                  });
                                 },
-                                icon: const Icon(Icons.copy_rounded),
-                                label: const Text('Copier'),
+                              ),
+                              FilterChip(
+                                selected: _showSprintTrajectoriesOnly,
+                                label: const Text('Trajectoires des sprints'),
+                                onSelected: (value) {
+                                  setState(() {
+                                    _showSprintTrajectoriesOnly = value;
+                                    _rebuildDisplayAnalysis();
+                                  });
+                                },
+                              ),
+                              FilterChip(
+                                selected: _invertSides,
+                                label: const Text('Inverser les camps'),
+                                onSelected: (value) {
+                                  setState(() {
+                                    _invertSides = value;
+                                  });
+                                },
                               ),
                             ],
                           ),
-                          const SizedBox(height: 14),
-                          Container(
-                            width: double.infinity,
-                            constraints: const BoxConstraints(
-                              minHeight: 220,
-                              maxHeight: 420,
-                            ),
-                            padding: const EdgeInsets.all(14),
-                            decoration: BoxDecoration(
-                              color: colors.background,
-                              borderRadius: BorderRadius.circular(14),
-                              border: Border.all(color: colors.border),
-                            ),
-                            child: SingleChildScrollView(
-                              child: SelectableText(
-                                _csvResult!,
-                                style: TextStyle(
-                                  fontFamily: 'monospace',
-                                  fontSize: 13,
-                                  color: colors.textPrimary,
-                                  height: 1.45,
-                                ),
+                          const SizedBox(height: 16),
+                          if (svgFullMatch != null && svgFullMatch!.isNotEmpty) ...[
+                            Container(
+                              width: double.infinity,
+                              height: 320,
+                              padding: const EdgeInsets.all(12),
+                              decoration: BoxDecoration(
+                                color: colors.background,
+                                borderRadius: BorderRadius.circular(14),
+                                border: Border.all(color: colors.border),
+                              ),
+                              child: SvgPicture.string(
+                                svgFullMatch!,
+                                fit: BoxFit.contain,
                               ),
                             ),
-                          ),
+                          ]
                         ],
                       ),
                     ),
@@ -556,6 +1019,7 @@ Future<void> showAsiConverterDialog({
   required List<TimeRange> periods,
   required bool isMatch,
   required String eventId,
+  required FieldGpsCorners? fieldGpsCorners,
 }) async {
   final colors = context.appColors;
 
@@ -598,6 +1062,7 @@ Future<void> showAsiConverterDialog({
                   showAppBar: false,
                   isMatch: isMatch,
                   eventId: eventId,
+                  fieldGpsCorners: fieldGpsCorners,
                 ),
               ),
               Divider(height: 1, color: colors.border),

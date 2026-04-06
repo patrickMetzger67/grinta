@@ -13,6 +13,8 @@ class PitchHeatmapBuilder {
     double blurSigma = 10,
     double opacity = 0.55,
     bool useIntensity = true,
+    double fieldStartXM = 0.0,
+    double fieldLengthXM = 105.0,
   }) {
     final values = List<double>.filled(rows * cols, 0);
 
@@ -27,11 +29,15 @@ class PitchHeatmapBuilder {
     }
 
     for (final p in points) {
-      final x = p.xMeters.clamp(0, pitchWidthM);
-      final y = p.yMeters.clamp(0, pitchHeightM);
+      if (p.xMeters < fieldStartXM || p.xMeters > fieldStartXM + fieldLengthXM) {
+        continue;
+      }
 
-      final col = min(cols - 1, max(0, (x / pitchWidthM * cols).floor()));
-      final row = min(rows - 1, max(0, (y / pitchHeightM * rows).floor()));
+      final xLocal = (p.xMeters - fieldStartXM).clamp(0.0, fieldLengthXM);
+      final y = p.yMeters.clamp(0.0, pitchHeightM);
+
+      final col = min(cols - 1, max(0, (y / pitchHeightM * cols).floor()));
+      final row = min(rows - 1, max(0, (xLocal / fieldLengthXM * rows).floor()));
 
       final idx = row * cols + col;
       values[idx] += useIntensity ? max(0.1, p.intensity) : 1.0;
@@ -46,8 +52,17 @@ class PitchHeatmapBuilder {
     );
   }
 
-  static List<Offset> polylineFromHeatmapPoints(List<HeatmapPoint> points) {
+  static List<Offset> polylineFromHeatmapPoints(
+      List<HeatmapPoint> points, {
+        double fieldStartXM = 0.0,
+        double fieldLengthXM = 105.0,
+      }) {
     return points
+        .where(
+          (p) =>
+      p.xMeters >= fieldStartXM &&
+          p.xMeters <= fieldStartXM + fieldLengthXM,
+    )
         .map((p) => Offset(p.xMeters, p.yMeters))
         .toList(growable: false);
   }
