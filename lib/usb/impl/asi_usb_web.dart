@@ -3,23 +3,14 @@ import 'dart:js_interop';
 import 'dart:js_interop_unsafe';
 import 'dart:typed_data';
 
+import 'package:flutter/material.dart';
+
 import '../asi_models.dart';
 import '../asi_protocol.dart';
 import '../asi_usb_client.dart';
 
 @JS('globalThis')
 external JSObject get globalThis;
-
-class AsiNoDataToEraseException implements Exception {
-  final String message;
-
-  const AsiNoDataToEraseException([
-    this.message = 'Aucune donnée à effacer',
-  ]);
-
-  @override
-  String toString() => message;
-}
 
 Future<T> _promiseToFuture<T>(JSAny? promise) {
   if (promise == null) {
@@ -58,29 +49,71 @@ class WebAsiUsbClient implements AsiUsbClient {
     return usb as JSObject;
   }
 
-  @override
-  Future<List<AsiDeviceInfo>> listDevices() async {
-    final result = await _promiseToFuture<JSObject>(
-      _usb.callMethod(
-        'requestDevice'.toJS,
-        AsiProtocol.vid.toJS,
-        AsiProtocol.pid.toJS,
-      ),
-    );
+  Future<AsiDeviceInfo?> requestDevicePermission() async {
+    try {
+      final options = JSObject()
+        ..setProperty(
+          'filters'.toJS,
+          [
+            JSObject()
+              ..setProperty('vendorId'.toJS, AsiProtocol.vid.toJS)
+              ..setProperty('productId'.toJS, AsiProtocol.pid.toJS),
+          ].toJS,
+        );
 
-    final serialNumber = result.getProperty('serialNumber'.toJS);
-    final vendorId = result.getProperty('vendorId'.toJS);
-    final productId = result.getProperty('productId'.toJS);
-    final productName = result.getProperty('productName'.toJS);
+      final result = await _promiseToFuture<JSObject>(
+        _usb.callMethod('requestDevice'.toJS, options),
+      );
 
-    return [
-      AsiDeviceInfo(
+      final serialNumber = result.getProperty('serialNumber'.toJS);
+      final vendorId = result.getProperty('vendorId'.toJS);
+      final productId = result.getProperty('productId'.toJS);
+      final productName = result.getProperty('productName'.toJS);
+
+      return AsiDeviceInfo(
         id: serialNumber?.dartify()?.toString() ?? 'web-device',
         vendorId: ((vendorId?.dartify() as num?) ?? 0).toInt(),
         productId: ((productId?.dartify() as num?) ?? 0).toInt(),
         productName: productName?.dartify()?.toString(),
-      ),
-    ];
+      );
+    } catch (e) {
+      debugPrint('requestDevice error: $e');
+      return null;
+    }
+  }
+
+  @override
+  Future<List<AsiDeviceInfo>> listDevices() async {
+    try {
+      final devicesJs = await _promiseToFuture<JSArray>(
+        _usb.callMethod('getDevices'.toJS),
+      );
+
+      final result = <AsiDeviceInfo>[];
+
+      for (var i = 0; i < devicesJs.length; i++) {
+        final device = devicesJs[i] as JSObject;
+
+        final serialNumber = device.getProperty('serialNumber'.toJS);
+        final vendorId = device.getProperty('vendorId'.toJS);
+        final productId = device.getProperty('productId'.toJS);
+        final productName = device.getProperty('productName'.toJS);
+
+        result.add(
+          AsiDeviceInfo(
+            id: serialNumber?.dartify()?.toString() ?? 'web-device-$i',
+            vendorId: ((vendorId?.dartify() as num?) ?? 0).toInt(),
+            productId: ((productId?.dartify() as num?) ?? 0).toInt(),
+            productName: productName?.dartify()?.toString(),
+          ),
+        );
+      }
+
+      return result;
+    } catch (e) {
+      debugPrint('getDevices error: $e');
+      return [];
+    }
   }
 
   @override
@@ -109,7 +142,11 @@ class WebAsiUsbClient implements AsiUsbClient {
       ),
     ).timeout(
       const Duration(seconds: 3),
-      onTimeout: () => throw Exception('Timeout pendant prepareEndpoints'),
+      onTimeout: () {
+        throw const AsiDownloadTimeoutException(
+          'Timeout pendant la préparation des endpoints USB',
+        );
+      },
     );
 
     print('USB: endpoints prepared');
@@ -127,8 +164,8 @@ class WebAsiUsbClient implements AsiUsbClient {
     ).timeout(
       const Duration(seconds: 3),
       onTimeout: () {
-        throw Exception(
-          'Timeout pendant transferOut cmd=0x${command.toRadixString(16)}',
+        throw AsiDownloadTimeoutException(
+          'Timeout pendant l\'envoi de la commande 0x${command.toRadixString(16)}',
         );
       },
     );
@@ -157,9 +194,11 @@ class WebAsiUsbClient implements AsiUsbClient {
       ),
     ).timeout(
       timeout,
-      onTimeout: () => throw TimeoutException(
-        'Timeout pendant transferIn ($length octets)',
-      ),
+      onTimeout: () {
+        throw AsiDownloadTimeoutException(
+          'Timeout pendant la lecture USB ($length octets)',
+        );
+      },
     );
 
     final dartList = result.dartify();
@@ -217,14 +256,14 @@ class WebAsiUsbClient implements AsiUsbClient {
         AsiProtocol.verifyAck(ack);
         print('ACK OK');
         return;
-      } on TimeoutException {
+      } on AsiDownloadTimeoutException {
         break;
       } catch (_) {
         await Future.delayed(const Duration(milliseconds: 60));
       }
     }
 
-    throw TimeoutException('Aucun ACK reçu');
+    throw const AsiDownloadTimeoutException('Aucun ACK reçu');
   }
 
   Future<Uint8List> _readChunkRobust(
@@ -259,10 +298,18 @@ class WebAsiUsbClient implements AsiUsbClient {
       await Future.delayed(const Duration(milliseconds: 40));
     }
 
-    throw Exception('Lecture chunk impossible: $lastError');
+    if (lastError is AsiDownloadTimeoutException) {
+      throw lastError;
+    }
+
+    throw AsiDownloadTimeoutException(
+      'Impossible de lire un paquet de données dans le temps imparti',
+    );
   }
 
   Future<Uint8List> _readFirstStreamChunkOrEmpty(int packetSize) async {
+    Object? lastError;
+
     for (int attempt = 0; attempt < 8; attempt++) {
       try {
         final chunk = await _readUpTo(
@@ -277,7 +324,6 @@ class WebAsiUsbClient implements AsiUsbClient {
           continue;
         }
 
-        // ACK seul, mais pas encore de flux réel
         if (chunk.length == 1 && chunk[0] == AsiProtocol.usbAck) {
           print('FIRST STREAM: standalone ACK');
           await Future.delayed(const Duration(milliseconds: 80));
@@ -285,13 +331,16 @@ class WebAsiUsbClient implements AsiUsbClient {
         }
 
         return chunk;
-      } on TimeoutException {
-        print('FIRST STREAM TIMEOUT attempt=$attempt');
       } catch (e) {
+        lastError = e;
         print('FIRST STREAM ERROR attempt=$attempt error=$e');
       }
 
       await Future.delayed(const Duration(milliseconds: 80));
+    }
+
+    if (lastError is AsiDownloadTimeoutException) {
+      throw lastError;
     }
 
     return Uint8List(0);
@@ -320,70 +369,78 @@ class WebAsiUsbClient implements AsiUsbClient {
 
   @override
   Future<Uint8List> downloadData(AsiSession session) async {
-    print('DOWNLOAD: prepare');
-    await _prepareEndpoints();
+    try {
+      print('DOWNLOAD: prepare');
+      await _prepareEndpoints();
 
-    await Future.delayed(const Duration(milliseconds: 120));
+      await Future.delayed(const Duration(milliseconds: 120));
 
-    print('DOWNLOAD: before CMD_DATA_READ');
-    await _writeCommand(AsiProtocol.cmdDataRead);
-    print('DOWNLOAD: after CMD_DATA_READ');
+      print('DOWNLOAD: before CMD_DATA_READ');
+      await _writeCommand(AsiProtocol.cmdDataRead);
+      print('DOWNLOAD: after CMD_DATA_READ');
 
-    await Future.delayed(const Duration(milliseconds: 120));
+      await Future.delayed(const Duration(milliseconds: 120));
 
-    const int packetSize = 256;
-    final allBytes = <int>[];
+      const int packetSize = 256;
+      final allBytes = <int>[];
 
-    final firstChunk = await _readFirstStreamChunkOrEmpty(packetSize);
+      final firstChunk = await _readFirstStreamChunkOrEmpty(packetSize);
 
-    if (firstChunk.isEmpty) {
-      print('DOWNLOAD: aucune donnée disponible');
-      return Uint8List(0);
-    }
-
-    allBytes.addAll(firstChunk);
-    print('STREAM TOTAL=${allBytes.length}');
-
-    if (firstChunk.length == packetSize) {
-      while (true) {
-        final chunk = await _readChunkRobust(packetSize);
-        print('STREAM CHUNK len=${chunk.length} raw=${_hex(chunk)}');
-
-        if (chunk.isEmpty) {
-          throw Exception('Chunk vide pendant le stream');
-        }
-
-        allBytes.addAll(chunk);
-        print('STREAM TOTAL=${allBytes.length}');
-
-        if (chunk.length < packetSize) {
-          print('STREAM END detected by short packet');
-          break;
-        }
+      if (firstChunk.isEmpty) {
+        print('DOWNLOAD: aucune donnée disponible');
+        return Uint8List(0);
       }
-    } else {
-      print('STREAM END detected on first short packet');
+
+      allBytes.addAll(firstChunk);
+      print('STREAM TOTAL=${allBytes.length}');
+
+      if (firstChunk.length == packetSize) {
+        while (true) {
+          final chunk = await _readChunkRobust(packetSize);
+          print('STREAM CHUNK len=${chunk.length} raw=${_hex(chunk)}');
+
+          if (chunk.isEmpty) {
+            throw const AsiDownloadTimeoutException(
+              'Chunk vide pendant le stream',
+            );
+          }
+
+          allBytes.addAll(chunk);
+          print('STREAM TOTAL=${allBytes.length}');
+
+          if (chunk.length < packetSize) {
+            print('STREAM END detected by short packet');
+            break;
+          }
+        }
+      } else {
+        print('STREAM END detected on first short packet');
+      }
+
+      if (allBytes.length <= 32) {
+        throw Exception('Flux trop court pour contenir données + hash');
+      }
+
+      final data = Uint8List.fromList(
+        allBytes.sublist(0, allBytes.length - 32),
+      );
+
+      final hash = Uint8List.fromList(
+        allBytes.sublist(allBytes.length - 32),
+      );
+
+      print('DATA LEN=${data.length}');
+      print('HASH RAW: ${_hex(hash)}');
+
+      AsiProtocol.verifySha256(data, hash);
+      print('DOWNLOAD: hash OK');
+
+      return data;
+    } on AsiDownloadTimeoutException {
+      rethrow;
+    } on TimeoutException {
+      throw const AsiDownloadTimeoutException();
     }
-
-    if (allBytes.length <= 32) {
-      throw Exception('Flux trop court pour contenir données + hash');
-    }
-
-    final data = Uint8List.fromList(
-      allBytes.sublist(0, allBytes.length - 32),
-    );
-
-    final hash = Uint8List.fromList(
-      allBytes.sublist(allBytes.length - 32),
-    );
-
-    print('DATA LEN=${data.length}');
-    print('HASH RAW: ${_hex(hash)}');
-
-    AsiProtocol.verifySha256(data, hash);
-    print('DOWNLOAD: hash OK');
-
-    return data;
   }
 
   @override
@@ -393,6 +450,8 @@ class WebAsiUsbClient implements AsiUsbClient {
     try {
       await _expectAck(timeout: const Duration(seconds: 3));
       await Future.delayed(const Duration(milliseconds: 300));
+    } on AsiDownloadTimeoutException {
+      throw const AsiNoDataToEraseException();
     } on TimeoutException {
       throw const AsiNoDataToEraseException();
     }
@@ -405,6 +464,8 @@ class WebAsiUsbClient implements AsiUsbClient {
     try {
       await _expectAck(timeout: const Duration(seconds: 3));
       await Future.delayed(const Duration(milliseconds: 300));
+    } on AsiDownloadTimeoutException {
+      throw const AsiNoDataToEraseException();
     } on TimeoutException {
       throw const AsiNoDataToEraseException();
     }

@@ -1,17 +1,19 @@
 import 'dart:math' as math;
 import 'dart:io';
 
-import 'package:flutter/foundation.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 
 import '../model/tracker/trackerData.dart';
+import '../widget/proPitchView.dart';
 
 class HeatmapSvgGenerator {
-  /// Génère une image SVG vectorielle du terrain + heatmap.
+  /// Génère une image SVG vectorielle du terrain + heatmap + sprints.
   static String generateSvg({
     required FootballFieldGps field,
     required List<HeatmapPoint> heatmapPoints,
-    bool invertSides = false,
+    List<PitchPolyline> sprintPolylines = const [],
+    bool flipX = false,
+    bool flipY = false,
     double svgWidth = 1200,
     double svgHeight = 800,
     int gridX = 80,
@@ -39,13 +41,20 @@ class HeatmapSvgGenerator {
     final offsetX = (svgWidth - pitchWidthPx) / 2;
     final offsetY = (svgHeight - pitchHeightPx) / 2;
 
+    double normalizeX(double xMeters) {
+      return flipX ? fieldLength - xMeters : xMeters;
+    }
+
+    double normalizeY(double yMeters) {
+      return flipY ? fieldWidth - yMeters : yMeters;
+    }
+
     double mapX(double xMeters) {
-      final x = invertSides ? fieldLength - xMeters : xMeters;
-      return offsetX + (x * scale);
+      return offsetX + (normalizeX(xMeters) * scale);
     }
 
     double mapY(double yMeters) {
-      return offsetY + (yMeters * scale);
+      return offsetY + (normalizeY(yMeters) * scale);
     }
 
     final validPoints = heatmapPoints.where((p) {
@@ -59,14 +68,20 @@ class HeatmapSvgGenerator {
       fieldLength: fieldLength,
       fieldWidth: fieldWidth,
       heatmapPoints: validPoints,
-      invertSides: invertSides,
+      flipX: flipX,
+      flipY: flipY,
       gridX: gridX,
       gridY: gridY,
       sigmaMeters: sigmaMeters,
       minThreshold: minThreshold,
       mapX: mapX,
       mapY: mapY,
-      scale: scale,
+    );
+
+    final sprintLines = _buildSprintPolylinesSvg(
+      polylines: sprintPolylines,
+      mapX: mapX,
+      mapY: mapY,
     );
 
     final stripes = drawStripes
@@ -76,7 +91,6 @@ class HeatmapSvgGenerator {
       stripeCount: 10,
       mapX: mapX,
       mapY: mapY,
-      scale: scale,
     )
         : '';
 
@@ -86,6 +100,13 @@ class HeatmapSvgGenerator {
       mapX: mapX,
       mapY: mapY,
       scale: scale,
+    );
+
+    final pitchRect = _rectFromCorners(
+      x1: mapX(0),
+      y1: mapY(0),
+      x2: mapX(fieldLength),
+      y2: mapY(fieldWidth),
     );
 
     return '''
@@ -98,23 +119,24 @@ class HeatmapSvgGenerator {
 
   <defs>
     <clipPath id="pitchClip">
-      <rect x="${offsetX.toStringAsFixed(2)}"
-            y="${offsetY.toStringAsFixed(2)}"
-            width="${pitchWidthPx.toStringAsFixed(2)}"
-            height="${pitchHeightPx.toStringAsFixed(2)}" />
+      <rect x="${pitchRect.left.toStringAsFixed(2)}"
+            y="${pitchRect.top.toStringAsFixed(2)}"
+            width="${pitchRect.width.toStringAsFixed(2)}"
+            height="${pitchRect.height.toStringAsFixed(2)}" />
     </clipPath>
   </defs>
 
-  <rect x="${offsetX.toStringAsFixed(2)}"
-        y="${offsetY.toStringAsFixed(2)}"
-        width="${pitchWidthPx.toStringAsFixed(2)}"
-        height="${pitchHeightPx.toStringAsFixed(2)}"
+  <rect x="${pitchRect.left.toStringAsFixed(2)}"
+        y="${pitchRect.top.toStringAsFixed(2)}"
+        width="${pitchRect.width.toStringAsFixed(2)}"
+        height="${pitchRect.height.toStringAsFixed(2)}"
         fill="#2E7D32" />
 
   $stripes
 
   <g clip-path="url(#pitchClip)">
     $heatmapRects
+    $sprintLines
   </g>
 
   $pitchLines
@@ -128,21 +150,27 @@ class HeatmapSvgGenerator {
     required int stripeCount,
     required double Function(double xMeters) mapX,
     required double Function(double yMeters) mapY,
-    required double scale,
   }) {
     final buffer = StringBuffer();
 
     for (int i = 0; i < stripeCount; i++) {
       final x0 = fieldLength * (i / stripeCount);
-      final stripeW = (fieldLength / stripeCount) * scale;
+      final x1 = fieldLength * ((i + 1) / stripeCount);
+
+      final rect = _rectFromCorners(
+        x1: mapX(x0),
+        y1: mapY(0),
+        x2: mapX(x1),
+        y2: mapY(fieldWidth),
+      );
 
       final color = i.isEven ? '#2E7D32' : '#3D9440';
 
       buffer.writeln('''
-<rect x="${mapX(x0).toStringAsFixed(2)}"
-      y="${mapY(0).toStringAsFixed(2)}"
-      width="${stripeW.toStringAsFixed(2)}"
-      height="${(fieldWidth * scale).toStringAsFixed(2)}"
+<rect x="${rect.left.toStringAsFixed(2)}"
+      y="${rect.top.toStringAsFixed(2)}"
+      width="${rect.width.toStringAsFixed(2)}"
+      height="${rect.height.toStringAsFixed(2)}"
       fill="$color" />
 ''');
     }
@@ -154,14 +182,14 @@ class HeatmapSvgGenerator {
     required double fieldLength,
     required double fieldWidth,
     required List<HeatmapPoint> heatmapPoints,
-    required bool invertSides,
+    required bool flipX,
+    required bool flipY,
     required int gridX,
     required int gridY,
     required double sigmaMeters,
     required double minThreshold,
     required double Function(double xMeters) mapX,
     required double Function(double yMeters) mapY,
-    required double scale,
   }) {
     if (heatmapPoints.isEmpty) return '';
 
@@ -179,8 +207,8 @@ class HeatmapSvgGenerator {
     final grid = List.generate(rows, (_) => List<double>.filled(cols, 0.0));
 
     for (final point in heatmapPoints) {
-      final px = invertSides ? fieldLength - point.xMeters : point.xMeters;
-      final py = point.yMeters;
+      final px = flipX ? fieldLength - point.xMeters : point.xMeters;
+      final py = flipY ? fieldWidth - point.yMeters : point.yMeters;
       final intensity = point.intensity <= 0 ? 1.0 : point.intensity;
 
       final centerCol = (px / cellW).floor().clamp(0, cols - 1);
@@ -232,23 +260,113 @@ class HeatmapSvgGenerator {
         if (shaped < minThreshold) continue;
 
         final left = col * cellW;
+        final right = left + cellW;
         final top = row * cellH;
+        final bottom = top + cellH;
 
-        final x = mapX(left);
-        final y = mapY(top);
-        final w = cellW * scale;
-        final h = cellH * scale;
+        final rect = _rectFromCorners(
+          x1: mapX(left),
+          y1: mapY(top),
+          x2: mapX(right),
+          y2: mapY(bottom),
+        );
 
         final color = _heatColorHex(shaped);
         final opacity = (shaped * 0.85).clamp(0.0, 1.0);
 
         buffer.writeln('''
-<rect x="${x.toStringAsFixed(2)}"
-      y="${y.toStringAsFixed(2)}"
-      width="${w.toStringAsFixed(2)}"
-      height="${h.toStringAsFixed(2)}"
+<rect x="${rect.left.toStringAsFixed(2)}"
+      y="${rect.top.toStringAsFixed(2)}"
+      width="${rect.width.toStringAsFixed(2)}"
+      height="${rect.height.toStringAsFixed(2)}"
       fill="$color"
       fill-opacity="${opacity.toStringAsFixed(3)}" />
+''');
+      }
+    }
+
+    return buffer.toString();
+  }
+
+  static String _buildSprintPolylinesSvg({
+    required List<PitchPolyline> polylines,
+    required double Function(double) mapX,
+    required double Function(double) mapY,
+  }) {
+    if (polylines.isEmpty) return '';
+
+    final buffer = StringBuffer();
+
+    const sprintColor = '#D32F2F';
+    const lineOpacity = '0.95';
+    const lineWidth = 4.0;
+    const arrowLength = 14.0;
+    const arrowWidth = 6.0;
+
+    for (final polyline in polylines) {
+      if (polyline.pointsM.length < 2) continue;
+
+      final start = polyline.pointsM.first;
+      final end = polyline.pointsM.last;
+
+      final x1 = mapX(start.dx);
+      final y1 = mapY(start.dy);
+      final x2 = mapX(end.dx);
+      final y2 = mapY(end.dy);
+
+      final dx = x2 - x1;
+      final dy = y2 - y1;
+      final length = math.sqrt(dx * dx + dy * dy);
+
+      if (length < 0.001) continue;
+
+      final ux = dx / length;
+      final uy = dy / length;
+
+      final lineEndX = x2 - ux * 8.0;
+      final lineEndY = y2 - uy * 8.0;
+
+      buffer.writeln('''
+<line x1="${x1.toStringAsFixed(2)}"
+      y1="${y1.toStringAsFixed(2)}"
+      x2="${lineEndX.toStringAsFixed(2)}"
+      y2="${lineEndY.toStringAsFixed(2)}"
+      stroke="$sprintColor"
+      stroke-width="$lineWidth"
+      stroke-linecap="round"
+      stroke-opacity="$lineOpacity" />
+''');
+
+      if (polyline.showArrow) {
+        final baseX = x2 - ux * arrowLength;
+        final baseY = y2 - uy * arrowLength;
+
+        final perpX = -uy;
+        final perpY = ux;
+
+        final leftX = baseX + perpX * arrowWidth;
+        final leftY = baseY + perpY * arrowWidth;
+
+        final rightX = baseX - perpX * arrowWidth;
+        final rightY = baseY - perpY * arrowWidth;
+
+        buffer.writeln('''
+<polygon points="
+  ${x2.toStringAsFixed(2)},${y2.toStringAsFixed(2)}
+  ${leftX.toStringAsFixed(2)},${leftY.toStringAsFixed(2)}
+  ${rightX.toStringAsFixed(2)},${rightY.toStringAsFixed(2)}"
+  fill="$sprintColor"
+  fill-opacity="$lineOpacity" />
+''');
+      }
+
+      if (polyline.showStartEndDots) {
+        buffer.writeln('''
+<circle cx="${x1.toStringAsFixed(2)}"
+        cy="${y1.toStringAsFixed(2)}"
+        r="2.8"
+        fill="$sprintColor"
+        fill-opacity="$lineOpacity" />
 ''');
       }
     }
@@ -380,24 +498,31 @@ class HeatmapSvgGenerator {
 
     final buffer = StringBuffer();
 
+    final outerRect = _rectFromCorners(
+      x1: mapX(0),
+      y1: mapY(0),
+      x2: mapX(fieldLength),
+      y2: mapY(fieldWidth),
+    );
+
     buffer.writeln('''
-<rect x="${mapX(0).toStringAsFixed(2)}"
-      y="${mapY(0).toStringAsFixed(2)}"
-      width="${(fieldLength * scale).toStringAsFixed(2)}"
-      height="${(fieldWidth * scale).toStringAsFixed(2)}"
+<rect x="${outerRect.left.toStringAsFixed(2)}"
+      y="${outerRect.top.toStringAsFixed(2)}"
+      width="${outerRect.width.toStringAsFixed(2)}"
+      height="${outerRect.height.toStringAsFixed(2)}"
       fill="none"
       stroke="$lineColor"
       stroke-width="$lineWidth" />
 ''');
 
-    buffer.writeln('''
-<line x1="${mapX(halfLength).toStringAsFixed(2)}"
-      y1="${mapY(0).toStringAsFixed(2)}"
-      x2="${mapX(halfLength).toStringAsFixed(2)}"
-      y2="${mapY(fieldWidth).toStringAsFixed(2)}"
-      stroke="$lineColor"
-      stroke-width="$lineWidth" />
-''');
+    buffer.writeln(_lineSvg(
+      x1: mapX(halfLength),
+      y1: mapY(0),
+      x2: mapX(halfLength),
+      y2: mapY(fieldWidth),
+      stroke: lineColor,
+      strokeWidth: lineWidth,
+    ));
 
     buffer.writeln('''
 <circle cx="${mapX(halfLength).toStringAsFixed(2)}"
@@ -408,38 +533,46 @@ class HeatmapSvgGenerator {
         stroke-width="$lineWidth" />
 ''');
 
-    buffer.writeln(_rectSvg(
-      x: mapX(0),
-      y: mapY(penaltyAreaTop),
-      w: penaltyAreaDepth * scale,
-      h: penaltyAreaWidth * scale,
+    buffer.writeln(_rectSvgFromField(
+      leftMeters: 0,
+      topMeters: penaltyAreaTop,
+      rightMeters: penaltyAreaDepth,
+      bottomMeters: penaltyAreaBottom,
+      mapX: mapX,
+      mapY: mapY,
       stroke: lineColor,
       strokeWidth: lineWidth,
     ));
 
-    buffer.writeln(_rectSvg(
-      x: mapX(fieldLength - penaltyAreaDepth),
-      y: mapY(penaltyAreaTop),
-      w: penaltyAreaDepth * scale,
-      h: penaltyAreaWidth * scale,
+    buffer.writeln(_rectSvgFromField(
+      leftMeters: fieldLength - penaltyAreaDepth,
+      topMeters: penaltyAreaTop,
+      rightMeters: fieldLength,
+      bottomMeters: penaltyAreaBottom,
+      mapX: mapX,
+      mapY: mapY,
       stroke: lineColor,
       strokeWidth: lineWidth,
     ));
 
-    buffer.writeln(_rectSvg(
-      x: mapX(0),
-      y: mapY(goalAreaTop),
-      w: goalAreaDepth * scale,
-      h: goalAreaWidth * scale,
+    buffer.writeln(_rectSvgFromField(
+      leftMeters: 0,
+      topMeters: goalAreaTop,
+      rightMeters: goalAreaDepth,
+      bottomMeters: goalAreaBottom,
+      mapX: mapX,
+      mapY: mapY,
       stroke: lineColor,
       strokeWidth: lineWidth,
     ));
 
-    buffer.writeln(_rectSvg(
-      x: mapX(fieldLength - goalAreaDepth),
-      y: mapY(goalAreaTop),
-      w: goalAreaDepth * scale,
-      h: goalAreaWidth * scale,
+    buffer.writeln(_rectSvgFromField(
+      leftMeters: fieldLength - goalAreaDepth,
+      topMeters: goalAreaTop,
+      rightMeters: fieldLength,
+      bottomMeters: goalAreaBottom,
+      mapX: mapX,
+      mapY: mapY,
       stroke: lineColor,
       strokeWidth: lineWidth,
     ));
@@ -473,41 +606,87 @@ class HeatmapSvgGenerator {
     buffer.writeln(_cornerArcSvg(mapX(fieldLength), mapY(fieldWidth), cornerRadius * scale, math.pi, 3 * math.pi / 2));
     buffer.writeln(_cornerArcSvg(mapX(0), mapY(fieldWidth), cornerRadius * scale, 3 * math.pi / 2, 2 * math.pi));
 
-    buffer.writeln('''
-<line x1="${mapX(0).toStringAsFixed(2)}"
-      y1="${mapY(goalLineTop).toStringAsFixed(2)}"
-      x2="${mapX(0).toStringAsFixed(2)}"
-      y2="${mapY(goalLineBottom).toStringAsFixed(2)}"
-      stroke="$lineColor"
-      stroke-width="$lineWidth" />
-''');
+    buffer.writeln(_lineSvg(
+      x1: mapX(0),
+      y1: mapY(goalLineTop),
+      x2: mapX(0),
+      y2: mapY(goalLineBottom),
+      stroke: lineColor,
+      strokeWidth: lineWidth,
+    ));
 
-    buffer.writeln('''
-<line x1="${mapX(fieldLength).toStringAsFixed(2)}"
-      y1="${mapY(goalLineTop).toStringAsFixed(2)}"
-      x2="${mapX(fieldLength).toStringAsFixed(2)}"
-      y2="${mapY(goalLineBottom).toStringAsFixed(2)}"
-      stroke="$lineColor"
-      stroke-width="$lineWidth" />
-''');
+    buffer.writeln(_lineSvg(
+      x1: mapX(fieldLength),
+      y1: mapY(goalLineTop),
+      x2: mapX(fieldLength),
+      y2: mapY(goalLineBottom),
+      stroke: lineColor,
+      strokeWidth: lineWidth,
+    ));
 
     return buffer.toString();
   }
 
-  static String _rectSvg({
-    required double x,
-    required double y,
-    required double w,
-    required double h,
+  static _SvgRect _rectFromCorners({
+    required double x1,
+    required double y1,
+    required double x2,
+    required double y2,
+  }) {
+    final left = math.min(x1, x2);
+    final top = math.min(y1, y2);
+    final width = (x2 - x1).abs();
+    final height = (y2 - y1).abs();
+
+    return _SvgRect(
+      left: left,
+      top: top,
+      width: width,
+      height: height,
+    );
+  }
+
+  static String _rectSvgFromField({
+    required double leftMeters,
+    required double topMeters,
+    required double rightMeters,
+    required double bottomMeters,
+    required double Function(double xMeters) mapX,
+    required double Function(double yMeters) mapY,
+    required String stroke,
+    required double strokeWidth,
+  }) {
+    final rect = _rectFromCorners(
+      x1: mapX(leftMeters),
+      y1: mapY(topMeters),
+      x2: mapX(rightMeters),
+      y2: mapY(bottomMeters),
+    );
+
+    return '''
+<rect x="${rect.left.toStringAsFixed(2)}"
+      y="${rect.top.toStringAsFixed(2)}"
+      width="${rect.width.toStringAsFixed(2)}"
+      height="${rect.height.toStringAsFixed(2)}"
+      fill="none"
+      stroke="$stroke"
+      stroke-width="$strokeWidth" />
+''';
+  }
+
+  static String _lineSvg({
+    required double x1,
+    required double y1,
+    required double x2,
+    required double y2,
     required String stroke,
     required double strokeWidth,
   }) {
     return '''
-<rect x="${x.toStringAsFixed(2)}"
-      y="${y.toStringAsFixed(2)}"
-      width="${w.toStringAsFixed(2)}"
-      height="${h.toStringAsFixed(2)}"
-      fill="none"
+<line x1="${x1.toStringAsFixed(2)}"
+      y1="${y1.toStringAsFixed(2)}"
+      x2="${x2.toStringAsFixed(2)}"
+      y2="${y2.toStringAsFixed(2)}"
       stroke="$stroke"
       stroke-width="$strokeWidth" />
 ''';
@@ -605,4 +784,34 @@ class HeatmapSvgGenerator {
 
     return fileEntry['svg']?.toString();
   }
+
+  static Future<File> saveSvgToFile({
+    required String svg,
+    required String filePath,
+  }) async {
+    final file = File(filePath);
+    return file.writeAsString(svg, flush: true);
+  }
+
+  static Future<void> saveSvgBytesToPath({
+    required String svg,
+    required String filePath,
+  }) async {
+    final file = File(filePath);
+    await file.writeAsBytes(svg.codeUnits, flush: true);
+  }
+}
+
+class _SvgRect {
+  final double left;
+  final double top;
+  final double width;
+  final double height;
+
+  const _SvgRect({
+    required this.left,
+    required this.top,
+    required this.width,
+    required this.height,
+  });
 }

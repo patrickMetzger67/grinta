@@ -547,6 +547,7 @@ class _HomeScreenState extends State<HomeScreen> {
                                     }
 
                                     final List<String> devices = [];
+                                    final Map<String,String> devicePlayerMap = {};
 
                                     void addDevices(List<PlayerCompo>? players) {
                                       if (players == null) return;
@@ -555,6 +556,7 @@ class _HomeScreenState extends State<HomeScreen> {
                                         final name = mc.customName?.trim();
                                         if (name != null && name.isNotEmpty) {
                                           devices.add(name);
+                                          devicePlayerMap[name] = mc.playerID!;
                                         }
                                       }
                                     }
@@ -583,6 +585,8 @@ class _HomeScreenState extends State<HomeScreen> {
                                           eventId: match.id!,
                                           isMatch: true,
                                           fieldGpsCorners: match.fieldGpsCorners,
+                                          devicePlayerMap: devicePlayerMap,
+                                          ownerId: match.ownerId!,
                                         ),
                                       ),
                                     );
@@ -723,6 +727,7 @@ class _HomeScreenState extends State<HomeScreen> {
                                       ownerDevicesMap[od.id] = od;
                                     }
                                     final Set<String> devices = <String>{};
+                                    final Map<String,String> devicePlayerMap = {};
 
                                     final answers = await AnswerService().getAnswersByObjectId(training.trainingId!);
                                     Map<String,Answer> answersMap = {};
@@ -731,14 +736,29 @@ class _HomeScreenState extends State<HomeScreen> {
                                     }
                                     for (var pt in training.playerTraining) {
 
-                                      if (pt.presenceType == PresenceType.present && answersMap[pt.playerId] == null) {
+                                      bool isPresent = false;
+
+                                      if(answersMap[pt.playerId] == null) {
+                                        if(pt.presenceType == PresenceType.present || pt.presenceType == PresenceType.late) {
+                                          isPresent = true;
+                                        }
+                                      } else {
+                                        Answer? answer = answersMap[pt.playerId];
+                                        if(answer != null) {
+                                          if(answer.playerTraining!.presenceType == PresenceType.present || answer.playerTraining!.presenceType == PresenceType.late) {
+                                            isPresent = true;
+                                          }
+                                        }
+
+                                      }
+
+                                      if (isPresent) {
                                         if (pt.deviceId == null || pt.deviceId!.isEmpty) {
                                           final effective =
                                           await EffectivesService().getEffectivesByMemberAndSeason(
                                             memberId: pt.playerId!,
                                             seasonId: currentSeason!.ref!.id,
                                           );
-
                                           if (effective != null && effective.trackers != null) {
                                             for (var d in effective.trackers!) {
                                               final deviceOwner = ownerDevicesMap[d];
@@ -747,6 +767,7 @@ class _HomeScreenState extends State<HomeScreen> {
                                               if (customName != null &&
                                                   customName.trim().isNotEmpty) {
                                                 devices.add(customName.trim());
+                                                devicePlayerMap[customName.trim()] = pt.playerId!;
                                                 break;
                                               }
                                             }
@@ -758,6 +779,7 @@ class _HomeScreenState extends State<HomeScreen> {
                                           if (customName != null &&
                                               customName.trim().isNotEmpty) {
                                             devices.add(customName.trim());
+                                            devicePlayerMap[customName.trim()] = pt.playerId!;
                                           }
                                         }
                                       }
@@ -796,6 +818,8 @@ class _HomeScreenState extends State<HomeScreen> {
                                           eventId: training.trainingId!,
                                           isMatch: false,
                                           fieldGpsCorners: null,
+                                          devicePlayerMap: devicePlayerMap,
+                                          ownerId: training.ownerId!,
                                         ),
                                       ),
                                     );

@@ -14,14 +14,14 @@
   window.asiUsb = {
     _device: null,
 
-    async requestDevice(vendorId, productId) {
+    async requestDevice(options) {
       if (!navigator.usb) {
         throw new Error("WebUSB non supporté");
       }
 
-      const device = await navigator.usb.requestDevice({
-        filters: [{ vendorId, productId }]
-      });
+      console.log("requestDevice options =", options);
+
+      const device = await navigator.usb.requestDevice(options);
 
       this._device = device;
 
@@ -33,11 +33,28 @@
       };
     },
 
+    async getDevices() {
+      if (!navigator.usb) {
+        throw new Error("WebUSB non supporté");
+      }
+
+      const devices = await navigator.usb.getDevices();
+
+      return devices.map(device => ({
+        vendorId: device.vendorId,
+        productId: device.productId,
+        productName: device.productName || "",
+        serialNumber: device.serialNumber || ""
+      }));
+    },
+
     async open() {
       const device = this._device;
       if (!device) throw new Error("No device selected");
 
-      await device.open();
+      if (!device.opened) {
+        await device.open();
+      }
 
       if (!device.configuration) {
         await device.selectConfiguration(1);
@@ -52,6 +69,7 @@
 
       try { await device.releaseInterface(0); } catch (_) {}
       try { await device.close(); } catch (_) {}
+      this._device = null;
     },
 
     async prepareEndpoints(inEndpointNumber, outEndpointNumber) {
@@ -72,43 +90,43 @@
       console.log('USB transferOut result', result);
       return result.bytesWritten || 0;
     },
-  async transferIn(endpointNumber, length) {
-  const device = this._device;
-  if (!device) throw new Error("No device selected");
 
-  try {
-    console.log('USB transferIn request', endpointNumber, length);
-    const result = await device.transferIn(endpointNumber, length);
+    async transferIn(endpointNumber, length) {
+      const device = this._device;
+      if (!device) throw new Error("No device selected");
 
-    console.log(
-      'USB transferIn result',
-      'status=', result.status,
-      'byteLength=', result.data ? result.data.byteLength : 0
-    );
+      try {
+        console.log('USB transferIn request', endpointNumber, length);
+        const result = await device.transferIn(endpointNumber, length);
 
-    if (result.status === 'stall') {
-      try { await device.clearHalt('in', endpointNumber); } catch (_) {}
-      throw new Error('USB IN stalled');
-    }
+        console.log(
+          'USB transferIn result',
+          'status=', result.status,
+          'byteLength=', result.data ? result.data.byteLength : 0
+        );
 
-    if (!result.data || result.data.byteLength === 0) {
-      return [];
-    }
+        if (result.status === 'stall') {
+          try { await device.clearHalt('in', endpointNumber); } catch (_) {}
+          throw new Error('USB IN stalled');
+        }
 
-    // IMPORTANT: respecter byteOffset + byteLength du DataView
-    const view = new Uint8Array(
-      result.data.buffer,
-      result.data.byteOffset,
-      result.data.byteLength
-    );
+        if (!result.data || result.data.byteLength === 0) {
+          return [];
+        }
 
-    return Array.from(view);
-  } catch (e) {
-    console.error('USB transferIn error', e);
-    try { await device.clearHalt('in', endpointNumber); } catch (_) {}
-    throw e;
-  }
-},
+        const view = new Uint8Array(
+          result.data.buffer,
+          result.data.byteOffset,
+          result.data.byteLength
+        );
+
+        return Array.from(view);
+      } catch (e) {
+        console.error('USB transferIn error', e);
+        try { await device.clearHalt('in', endpointNumber); } catch (_) {}
+        throw e;
+      }
+    },
   };
 </script>
 

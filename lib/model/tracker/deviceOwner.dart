@@ -109,6 +109,18 @@ class DeviceOwnerService {
     return DeviceOwner.fromDoc(q.docs.first);
   }
 
+  Future<DeviceOwner?> getByOwnerIdAndCustomName(String ownerId, String customName) async {
+    final q = await _col
+        .where('ownerId', isEqualTo: ownerId)
+        .where('customeName', isEqualTo: customName)
+        .orderBy('affectedAt', descending: true)
+        .limit(1)
+        .get();
+
+    if (q.docs.isEmpty) return null;
+    return DeviceOwner.fromDoc(q.docs.first);
+  }
+
   /// UPDATE: merge partiel
   Future<void> update(String id, Map<String, dynamic> data) async {
     await _col.doc(id).update(data);

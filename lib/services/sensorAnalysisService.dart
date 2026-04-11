@@ -31,6 +31,8 @@ class SensorAnalysisService {
     }).toList()
       ..sort((a, b) => a.timeMs.compareTo(b.timeMs));
 
+
+    print('dans analyzeSensorData samples=${samples.length}');
     if (samples.isEmpty) {
       return TrackerAnalysisResult(
         trackerId: trackerId,
@@ -83,12 +85,12 @@ class SensorAnalysisService {
     final bool shouldBuildRelativeHeatmap = fieldGps == null;
 
     const double sprintThresholdMps = 5.56; // 20 km/h
-    const int sprintMinDurationMs = 1000;
+    const int sprintMinDurationMs = 1200;
 
     const double highAccelerationThresholdMps2 = 3.5;
     const int highAccelerationMinDurationMs = 300;
 
-    const double maxPlausibleSpeedMps = 11.5; // ~41.4 km/h
+    const double maxPlausibleSpeedMps = 10.5; // ~37.8 km/h
     const double maxPlausibleAccelerationMps2 = 8.0;
     const int minDtMs = 80;
     const int maxDtMs = 3000;
@@ -103,7 +105,7 @@ class SensorAnalysisService {
     bool inHighAcceleration = false;
 
     int validatedSpeedAccumulatedMs = 0;
-    const int validatedSpeedMinDurationMs = 500;
+    const int validatedSpeedMinDurationMs = 800;
 
     double? previousRetainedSpeedMps;
 
