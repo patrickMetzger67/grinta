@@ -56,6 +56,20 @@ class TrainingService {
     }
   }
 
+  Future<Training?> getTrainingByDocId(String docId) async {
+    try {
+      final doc = await _collection.doc(docId).get();
+
+      if (!doc.exists || doc.data() == null) {
+        return null;
+      }
+
+      return Training.fromDocumentSnapshot(doc);
+    } catch (e) {
+      rethrow;
+    }
+  }
+
   /// STREAM ONE
   Stream<Training?> streamTrainingById(String trainingId) {
     return _collection.doc(trainingId).snapshots().map((doc) {
@@ -92,11 +106,10 @@ class TrainingService {
   /// UPDATE
   Future<void> updateTraining(Training training) async {
     try {
-      if (training.trainingId == null || training.trainingId!.isEmpty) {
+      if (training.docId == null || training.docId!.isEmpty) {
         throw Exception("trainingId null ou vide");
       }
-
-      await _collection.doc(training.trainingId).update(training.toMap());
+      await _collection.doc(training.docId).update(training.toMap());
     } catch (e) {
       rethrow;
     }
@@ -622,6 +635,7 @@ class TrainingService {
 
   /// STREAM TRAININGS BY TEAM + withTracker = true + isTrackerDataUploaded = false
   Stream<List<Training>> streamTrainingsToUploadTrackerData(String teamId) {
+
     return _collection
         .where(keyTgTeamId, isEqualTo: teamId)
         .where(keyTgWithTracker, isEqualTo: true)

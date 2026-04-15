@@ -2,6 +2,7 @@ import 'dart:math' as math;
 import 'dart:ui';
 
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:flutter/material.dart';
 
 import '../fieldGpsCorners.dart';
 
@@ -80,7 +81,6 @@ class GpsPoint {
   }
 }
 
-
 class FootballFieldGps {
   final FieldCornerGps topLeft;
   final FieldCornerGps topRight;
@@ -98,7 +98,6 @@ class FootballFieldGps {
     required this.fieldLengthMeters,
     required this.fieldWidthMeters,
   });
-
 
   factory FootballFieldGps.fromMap(Map<String, dynamic> map) {
     return FootballFieldGps(
@@ -128,6 +127,7 @@ class FootballFieldGps {
       'fieldWidthMeters': fieldWidthMeters,
     };
   }
+
   Map<String, dynamic> _pointToMap(FieldCornerGps p) {
     return {
       'latitude': p.latitude,
@@ -152,7 +152,17 @@ class FootballFieldGps {
       corners.bottomRight!,
     ];
 
-    final ordered = _orderCornersClockwise(rawPoints);
+    debugPrint('--- RAW CORNERS ---');
+    debugPrint(
+        'raw topLeft=${corners.topLeft!.latitude}, ${corners.topLeft!.longitude}');
+    debugPrint(
+        'raw topRight=${corners.topRight!.latitude}, ${corners.topRight!.longitude}');
+    debugPrint(
+        'raw bottomLeft=${corners.bottomLeft!.latitude}, ${corners.bottomLeft!.longitude}');
+    debugPrint(
+        'raw bottomRight=${corners.bottomRight!.latitude}, ${corners.bottomRight!.longitude}');
+
+    final ordered = _buildCanonicalCorners(rawPoints);
     if (ordered == null || ordered.length != 4) {
       throw Exception(
         'Impossible de construire FootballFieldGps : ordre des coins introuvable.',
@@ -163,6 +173,12 @@ class FootballFieldGps {
     final tr = ordered[1];
     final br = ordered[2];
     final bl = ordered[3];
+
+    debugPrint('--- ORDERED CORNERS ---');
+    debugPrint('tl=${tl.latitude}, ${tl.longitude}');
+    debugPrint('tr=${tr.latitude}, ${tr.longitude}');
+    debugPrint('br=${br.latitude}, ${br.longitude}');
+    debugPrint('bl=${bl.latitude}, ${bl.longitude}');
 
     final topWidth = _distanceMeters(tl, tr);
     final bottomWidth = _distanceMeters(bl, br);
@@ -220,8 +236,42 @@ class FootballFieldGps {
       print('leftRightDiffRatio=$leftRightDiffRatio');
       print('diagonalDiffRatio=$diagonalDiffRatio');
 
+      final reasons = <String>[];
+
+      if (!oppositeSidesOk) {
+        reasons.add(
+          'côtés opposés trop différents '
+              '(haut=${topWidth.toStringAsFixed(2)}m, bas=${bottomWidth.toStringAsFixed(2)}m, '
+              'gauche=${leftLength.toStringAsFixed(2)}m, droite=${rightLength.toStringAsFixed(2)}m)',
+        );
+        print(
+        'côtés opposés trop différents '
+            '(haut=${topWidth.toStringAsFixed(2)}m, bas=${bottomWidth.toStringAsFixed(2)}m, '
+            'gauche=${leftLength.toStringAsFixed(2)}m, droite=${rightLength.toStringAsFixed(2)}m)',
+        );
+      }
+
+      if (!diagonalsOk) {
+        reasons.add(
+          'diagonales trop différentes '
+              '(${diagonal1.toStringAsFixed(2)}m vs ${diagonal2.toStringAsFixed(2)}m)',
+        );
+        print('diagonales trop différentes '
+            '(${diagonal1.toStringAsFixed(2)}m vs ${diagonal2.toStringAsFixed(2)}m)');
+      }
+
+      if (!football11SizeOk) {
+        reasons.add(
+          'taille incompatible avec un terrain à 11 '
+              '(longueur=${avgLength.toStringAsFixed(2)}m, largeur=${avgWidth.toStringAsFixed(2)}m)',
+        );
+        print('taille incompatible avec un terrain à 11 '
+            '(longueur=${avgLength.toStringAsFixed(2)}m, largeur=${avgWidth.toStringAsFixed(2)}m)');
+      }
+
+      print('Impossible de construire FootballFieldGps : la géométrie du terrain est incohérente. ${reasons.join(' ; ')}.');
       throw Exception(
-        'Impossible de construire FootballFieldGps : la géométrie du terrain est incohérente.',
+        'Impossible de construire FootballFieldGps : la géométrie du terrain est incohérente. ${reasons.join(' ; ')}.',
       );
     }
 
@@ -233,6 +283,63 @@ class FootballFieldGps {
       fieldLengthMeters: avgLength,
       fieldWidthMeters: avgWidth,
     );
+  }
+
+  static List<FieldCornerGps>? _buildCanonicalCorners(
+      List<FieldCornerGps> points,
+      ) {
+    if (points.length != 4) return null;
+
+    final centerLat =
+        points.map((p) => p.latitude).reduce((a, b) => a + b) / 4.0;
+    final centerLng =
+        points.map((p) => p.longitude).reduce((a, b) => a + b) / 4.0;
+
+    final sorted = [...points];
+    sorted.sort((a, b) {
+      final angleA = math.atan2(a.latitude - centerLat, a.longitude - centerLng);
+      final angleB = math.atan2(b.latitude - centerLat, b.longitude - centerLng);
+      return angleA.compareTo(angleB);
+    });
+
+    if (!_isClockwise(sorted)) {
+      final reversed = [sorted[0], sorted[3], sorted[2], sorted[1]];
+      sorted
+        ..clear()
+        ..addAll(reversed);
+    }
+
+    int topLeftIndex = 0;
+    for (int i = 1; i < sorted.length; i++) {
+      final current = sorted[i];
+      final best = sorted[topLeftIndex];
+
+      final isMoreNorth = current.latitude > best.latitude;
+      final sameNorth = (current.latitude - best.latitude).abs() < 1e-10;
+      final isMoreWest = current.longitude < best.longitude;
+
+      if (isMoreNorth || (sameNorth && isMoreWest)) {
+        topLeftIndex = i;
+      }
+    }
+
+    final rotated = [
+      sorted[topLeftIndex],
+      sorted[(topLeftIndex + 1) % 4],
+      sorted[(topLeftIndex + 2) % 4],
+      sorted[(topLeftIndex + 3) % 4],
+    ];
+
+    if (rotated[1].longitude < rotated[3].longitude) {
+      return [
+        rotated[0],
+        rotated[3],
+        rotated[2],
+        rotated[1],
+      ];
+    }
+
+    return rotated;
   }
 
   Offset gpsToPitchMeters(FieldCornerGps gps) {
@@ -317,11 +424,19 @@ class FootballFieldGps {
         points.map((p) => p.longitude).reduce((a, b) => a + b) / 4.0;
 
     final sorted = [...points];
+
     sorted.sort((a, b) {
       final angleA = math.atan2(a.latitude - centerLat, a.longitude - centerLng);
       final angleB = math.atan2(b.latitude - centerLat, b.longitude - centerLng);
       return angleA.compareTo(angleB);
     });
+
+    if (!_isClockwise(sorted)) {
+      final reversed = [sorted[0], sorted[3], sorted[2], sorted[1]];
+      sorted
+        ..clear()
+        ..addAll(reversed);
+    }
 
     int topLeftIndex = 0;
     for (int i = 1; i < sorted.length; i++) {
@@ -354,6 +469,20 @@ class FootballFieldGps {
     }
 
     return rotated;
+  }
+
+  static bool _isClockwise(List<FieldCornerGps> points) {
+    if (points.length != 4) return false;
+
+    double sum = 0.0;
+    for (int i = 0; i < points.length; i++) {
+      final current = points[i];
+      final next = points[(i + 1) % points.length];
+      sum +=
+          (next.longitude - current.longitude) * (next.latitude + current.latitude);
+    }
+
+    return sum > 0;
   }
 
   static double _distanceMeters(FieldCornerGps a, FieldCornerGps b) {

@@ -184,100 +184,7 @@ class _TrackerHubPageState extends State<TrackerHubPage> {
       canPop: _allowPop,
       onPopInvokedWithResult: (didPop, result) async {
         if (didPop) return;
-
-        bool hasUnsyncedDevice = false;
-
-        eventSync?.devices.forEach((key, device) {
-          final bool withAsiFile = device.withAsiFile == true;
-          final bool dataDownloaded = device.dataDownloaded == true;
-          final bool erased = device.erased == true;
-
-          final bool isSynced = withAsiFile || (dataDownloaded && erased);
-          final bool isUnsynced = !isSynced;
-
-          print(
-            '[$key] withAsiFile=$withAsiFile, '
-                'dataDownloaded=$dataDownloaded, '
-                'erased=$erased '
-                '=> isSynced=$isSynced / isUnsynced=$isUnsynced',
-          );
-
-          if (isUnsynced) {
-            hasUnsyncedDevice = true;
-          }
-        });
-
-        print('hasUnsyncedDevice=$hasUnsyncedDevice');
-
-        // Tu veux quitter si tout n'est PAS synchronisé
-        if (hasUnsyncedDevice) {
-          if (!mounted) return;
-
-          setState(() {
-            _allowPop = true;
-          });
-
-          WidgetsBinding.instance.addPostFrameCallback((_) {
-            if (mounted) {
-              Navigator.of(context).pop();
-            }
-          });
-          return;
-        }
-
-        final bool? shouldLeave = await showDialog<bool>(
-          context: context,
-          builder: (dialogContext) => AlertDialog(
-            title: const Text('Clôturer la synchronisation'),
-            content: const Text(
-              'Les capteurs sont tous synchronisés, souhaitez-vous clôturer la synchronisation ?',
-            ),
-            actions: [
-              TextButton(
-                onPressed: () {
-                  Navigator.of(dialogContext).pop(false);
-                },
-                child: const Text('Non'),
-              ),
-              TextButton(
-                onPressed: () async {
-                  if (widget.isMatch == true) {
-                    Match? match =
-                    await MatchService().getMatchById(widget.eventId);
-                    if (match != null) {
-                      match.isTrackerDataUploaded = true;
-                      await MatchService().updateMatch(match);
-                    }
-                  } else {
-                    Training? training =
-                    await TrainingService().getTrainingById(widget.eventId);
-                    if (training != null) {
-                      training.isTrackerDataUploaded = true;
-                      await TrainingService().updateTraining(training);
-                    }
-                  }
-
-                  if (dialogContext.mounted) {
-                    Navigator.of(dialogContext).pop(true);
-                  }
-                },
-                child: const Text('Oui'),
-              ),
-            ],
-          ),
-        );
-
-        if (shouldLeave == true && mounted) {
-          setState(() {
-            _allowPop = true;
-          });
-
-          WidgetsBinding.instance.addPostFrameCallback((_) {
-            if (mounted) {
-              Navigator.of(context).pop();
-            }
-          });
-        }
+        await _confirmCloseSync();
       },
       child: Scaffold(
         backgroundColor: colors!.background,
@@ -411,6 +318,43 @@ class _TrackerHubPageState extends State<TrackerHubPage> {
     );
   }
 
+  Future<void> _confirmCloseSync() async {
+    final shouldLeave = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: const Text('Clôturer la synchronisation'),
+        content: const Text('Souhaitez-vous clôturer la synchronisation ?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(dialogContext).pop(true),
+            child: const Text('Non'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.of(dialogContext).pop(true),
+            child: const Text('Oui'),
+          ),
+        ],
+      ),
+    );
+    if (shouldLeave != true) return;
+    if (widget.isMatch == true) {
+      final match = await MatchService().getMatchById(widget.eventId);
+      if (match != null) {
+        match.isTrackerDataUploaded = true;
+        await MatchService().updateMatch(match);
+      }
+    } else {
+      final training = await TrainingService().getTrainingById(widget.eventId);
+      if (training != null) {
+        training.isTrackerDataUploaded = true;
+        await TrainingService().updateTraining(training);
+      }
+    }
+
+    if (!mounted) return;
+    Navigator.of(context).pop();
+  }
+
   Future<void> showAlreadySyncedAlert(BuildContext context) async {
     final colors = context.appColors;
 
@@ -538,10 +482,6 @@ class _TrackerCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final colors = context.appColors;
     final PlayerService playerService = PlayerService();
-
-
-    print('playerId=$playerId isDone=$isDone');
-
 
     return FutureBuilder<Player?>(
       future: playerService.getPlayerById(playerId),

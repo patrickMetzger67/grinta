@@ -1,15 +1,18 @@
+import 'package:flutter/foundation.dart';
 import 'package:firebase_analytics/firebase_analytics.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
+import 'package:provider/provider.dart';
+
+import '../provider/current_season_provider.dart';
 import 'firebase_options.dart';
 import 'homeScreen.dart';
 import 'l10n/app_localizations.dart';
 import 'login_screen.dart';
 import 'util/app_theme.dart';
-
-import 'package:provider/provider.dart';
-import '../provider/current_season_provider.dart';
+import 'package:grinta/widget/web_app_root.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -47,7 +50,6 @@ class _MyAppState extends State<MyApp> {
   FirebaseAnalyticsObserver(analytics: _analytics);
 
   ThemeMode _themeMode = ThemeMode.dark;
-
   Locale? _locale;
 
   void changeLocale(Locale locale) {
@@ -90,7 +92,7 @@ class _MyAppState extends State<MyApp> {
       home: const AuthGate(),
       routes: {
         '/login': (context) => const LoginScreen(),
-        '/home': (context) => const HomeScreen(),
+        '/home': (context) => kIsWeb ? const WebAppRoot() : const HomeScreen(),
         '/product': (context) => const ProductScreen(),
         '/cart': (context) => const CartScreen(),
       },
@@ -103,14 +105,31 @@ class AuthGate extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // Exemple simple sans Firebase :
-    final bool isLoggedIn = false;
+    return StreamBuilder<User?>(
+      stream: FirebaseAuth.instance.authStateChanges(),
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return Scaffold(
+            backgroundColor: Theme.of(context).scaffoldBackgroundColor,
+            body: const Center(
+              child: CircularProgressIndicator(),
+            ),
+          );
+        }
 
-    if (isLoggedIn) {
-      return const HomeScreen();
-    }
+        final User? user = snapshot.data;
 
-    return const LoginScreen();
+        if (user == null) {
+          return const LoginScreen();
+        }
+
+        if (kIsWeb) {
+          return const WebAppRoot();
+        }
+
+        return const HomeScreen();
+      },
+    );
   }
 }
 

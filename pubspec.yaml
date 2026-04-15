@@ -27,6 +27,7 @@ dependencies:
   archive: ^4.0.9
   firebase_storage: ^13.2.0
   flutter_svg: ^2.2.4
+  flutter_compass: ^0.8.1
 
 
 dev_dependencies:

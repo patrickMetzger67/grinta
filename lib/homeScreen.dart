@@ -18,7 +18,6 @@ import './provider/current_season_provider.dart';
 import './services/teamService.dart';
 import '../model/team.dart';
 import './util/app_theme.dart';
-import 'main.dart';
 import '../model/match.dart' as match_model;
 import 'model/answer.dart';
 import 'model/matchCompo.dart';
@@ -50,7 +49,6 @@ class _HomeScreenState extends State<HomeScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final app = MyApp.of(context);
     final colors = context.appColors;
     final textTheme = Theme.of(context).textTheme;
 
@@ -73,34 +71,6 @@ class _HomeScreenState extends State<HomeScreen> {
       body: ListView(
         padding: const EdgeInsets.all(16),
         children: [
-          Card(
-            color: colors.card,
-            child: SwitchListTile(
-              activeThumbColor: Colors.white,
-              activeTrackColor: colors.primary,
-              inactiveThumbColor: colors.textSecondary,
-              inactiveTrackColor: colors.border,
-              title: Text(
-                "Mode sombre",
-                style: textTheme.bodyLarge?.copyWith(
-                  color: colors.textPrimary,
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
-              subtitle: Text(
-                "Activer ou désactiver le thème sombre",
-                style: textTheme.bodyMedium?.copyWith(
-                  color: colors.textSecondary,
-                ),
-              ),
-              value: app.isDarkMode,
-              onChanged: (value) {
-                app.toggleTheme(value);
-              },
-            ),
-          ),
-
-          const SizedBox(height: 16),
 
           Card(
             color: colors.card,
@@ -145,44 +115,6 @@ class _HomeScreenState extends State<HomeScreen> {
             ),
           ),
 
-          const SizedBox(height: 16),
-
-          Card(
-            color: colors.card,
-            child: Padding(
-              padding: const EdgeInsets.all(20),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Text(
-                    'Bienvenue',
-                    style: textTheme.titleLarge?.copyWith(
-                      fontWeight: FontWeight.w700,
-                      color: colors.textPrimary,
-                    ),
-                  ),
-                  const SizedBox(height: 12),
-                  Text(
-                    'Exemple avec Firebase Analytics.',
-                    textAlign: TextAlign.center,
-                    style: textTheme.bodyMedium?.copyWith(
-                      color: colors.textSecondary,
-                    ),
-                  ),
-                  const SizedBox(height: 20),
-                  ElevatedButton(
-                    onPressed: () async {
-                      await _logOpenProduct();
-
-                      if (!context.mounted) return;
-                      Navigator.pushNamed(context, '/product');
-                    },
-                    child: const Text('Aller vers produit'),
-                  ),
-                ],
-              ),
-            ),
-          ),
         ],
       ),
     );
@@ -717,6 +649,8 @@ class _HomeScreenState extends State<HomeScreen> {
                             UploadTrackerButton(
                               onPressed: () async {
                                 try {
+
+                                  print('trainingId=${training.trainingId} - date${training.dateTg}');
                                   final owner = await OwnerService().getOwnerById(training.ownerId!);
                                   if (owner != null && owner.typeTracker == "inspirit") {
                                     final ownerDevices =
@@ -815,7 +749,7 @@ class _HomeScreenState extends State<HomeScreen> {
                                       MaterialPageRoute(
                                         builder: (_) => TrackerHubPage(
                                           trackerIds: trackerIdsToSend,
-                                          eventId: training.trainingId!,
+                                          eventId: training.docId!,
                                           isMatch: false,
                                           fieldGpsCorners: null,
                                           devicePlayerMap: devicePlayerMap,

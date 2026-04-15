@@ -71,6 +71,7 @@ class FieldCornerGps {
   });
 
   factory FieldCornerGps.fromMap(Map<String, dynamic> map) {
+
     return FieldCornerGps(
       latitude: (map['latitude'] as num).toDouble(),
       longitude: (map['longitude'] as num).toDouble(),

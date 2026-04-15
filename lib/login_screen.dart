@@ -97,6 +97,8 @@ class _LoginScreenState extends State<LoginScreen> {
       return;
     }
 
+    if (_isLoading) return;
+
     setState(() => _isLoading = true);
 
     try {
@@ -111,8 +113,9 @@ class _LoginScreenState extends State<LoginScreen> {
 
       if (!mounted) return;
 
-      Navigator.of(context, rootNavigator: true)
-          .pushReplacementNamed('/home');
+      // Ne pas naviguer ici.
+      // AuthGate réagira automatiquement à authStateChanges()
+      // et affichera WebAppRoot sur web ou HomeScreen ailleurs.
     } on FirebaseAuthException catch (e) {
       String message = context.l10n.signInError;
 
@@ -154,6 +157,7 @@ class _LoginScreenState extends State<LoginScreen> {
       }
     }
   }
+
   void _goToLoginSheet() {
     final isTabletOrMobile = MediaQuery.of(context).size.width < 900;
 
@@ -258,8 +262,6 @@ class _WebLoginLayout extends StatelessWidget {
   Widget build(BuildContext context) {
     final colors = context.appColors;
 
-
-
     return Scaffold(
       body: Row(
         children: [
@@ -302,7 +304,10 @@ class _WebLoginLayout extends StatelessWidget {
                               children: [
                                 Text(
                                   context.l10n.heroTitle,
-                                  style: Theme.of(context).textTheme.displaySmall?.copyWith(
+                                  style: Theme.of(context)
+                                      .textTheme
+                                      .displaySmall
+                                      ?.copyWith(
                                     fontWeight: FontWeight.w700,
                                     height: 1.1,
                                   ),
@@ -312,7 +317,10 @@ class _WebLoginLayout extends StatelessWidget {
                                 const SizedBox(height: 18),
                                 Text(
                                   context.l10n.heroSubtitle,
-                                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                                  style: Theme.of(context)
+                                      .textTheme
+                                      .titleMedium
+                                      ?.copyWith(
                                     color: colors.textSecondary,
                                     height: 1.5,
                                   ),
@@ -368,9 +376,7 @@ class _WebLoginLayout extends StatelessWidget {
                       onSubmit: onSubmit,
                       onCreateAccount: onCreateAccount,
                       onForgotPassword: onForgotPassword,
-                      onLocaleChanged: (locale) {
-                        // à brancher sur ton système de changement de langue
-                      },
+                      onLocaleChanged: (locale) {},
                     ),
                   ),
                 ),
@@ -407,10 +413,10 @@ class _BrandHeader extends StatelessWidget {
       'assets/images/logoFondOrange.png',
       width: logoWidth.clamp(280.0, 760.0),
       fit: BoxFit.contain,
-   //   filterQuality: FilterQuality.high,
     );
   }
 }
+
 class _DesktopCarouselControls extends StatelessWidget {
   final int itemCount;
   final int currentPage;
@@ -467,6 +473,7 @@ class _DesktopCarouselControls extends StatelessWidget {
     );
   }
 }
+
 class _CarouselArrowButton extends StatelessWidget {
   final IconData icon;
   final VoidCallback? onTap;
@@ -685,10 +692,11 @@ class _LoginCard extends StatelessWidget {
               controller: emailCtrl,
               keyboardType: TextInputType.emailAddress,
               decoration: InputDecoration(
-                labelText:  context.l10n.email,
+                labelText: context.l10n.email,
                 hintText: context.l10n.you,
                 prefixIcon: const Icon(Icons.mail_outline_rounded),
               ),
+              onSubmitted: (_) => onSubmit(),
             ),
             const SizedBox(height: 14),
             TextField(
@@ -707,6 +715,7 @@ class _LoginCard extends StatelessWidget {
                   ),
                 ),
               ),
+              onSubmitted: (_) => onSubmit(),
             ),
             const SizedBox(height: 10),
             Align(
@@ -838,9 +847,7 @@ class _LoginBottomSheet extends StatelessWidget {
                 onSubmit: onSubmit,
                 onCreateAccount: onCreateAccount,
                 onForgotPassword: onForgotPassword,
-                onLocaleChanged: (locale) {
-                  // à brancher sur ton système de changement de langue
-                },
+                onLocaleChanged: (locale) {},
               ),
             ],
           ),
@@ -949,6 +956,7 @@ class _OnboardingCardCarousel extends StatelessWidget {
     );
   }
 }
+
 class _FeatureShowcaseCard extends StatelessWidget {
   final _OnboardingItem item;
   final bool mobileMode;
@@ -1030,7 +1038,11 @@ class _FeatureShowcaseCard extends StatelessWidget {
                                     ),
                                   ),
                                 ),
-                                SizedBox(height: ultraCompact ? 10 : (compact ? 12 : 20)),
+                                SizedBox(
+                                  height: ultraCompact
+                                      ? 10
+                                      : (compact ? 12 : 20),
+                                ),
                                 Container(
                                   width: double.infinity,
                                   padding: EdgeInsets.all(ultraCompact ? 10 : 16),
@@ -1071,7 +1083,11 @@ class _FeatureShowcaseCard extends StatelessWidget {
                                           borderRadius: BorderRadius.circular(99),
                                         ),
                                       ),
-                                      SizedBox(height: ultraCompact ? 10 : (compact ? 12 : 16)),
+                                      SizedBox(
+                                        height: ultraCompact
+                                            ? 10
+                                            : (compact ? 12 : 16),
+                                      ),
                                       Row(
                                         children: [
                                           Expanded(
@@ -1137,7 +1153,6 @@ class _FeatureShowcaseCard extends StatelessWidget {
   }
 }
 
-
 class _OnboardingItem {
   final String title;
   final String subtitle;
@@ -1149,6 +1164,7 @@ class _OnboardingItem {
     required this.icon,
   });
 }
+
 class _LanguageDropdown extends StatelessWidget {
   const _LanguageDropdown();
 
@@ -1208,6 +1224,7 @@ class _LanguageDropdown extends StatelessWidget {
             final locale = _languages.firstWhere(
                   (e) => e.locale.languageCode == value,
             ).locale;
+
             MyApp.of(context).changeLocale(locale);
           },
         ),

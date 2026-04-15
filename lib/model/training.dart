@@ -362,6 +362,7 @@ Timestamp? _asTimestamp(dynamic v) => v is Timestamp ? v : null;
 List<dynamic> _asList(dynamic v) => v is List ? v : <dynamic>[];
 
 class Training {
+  String? docId;
   String? trainingId;
   String? seasonId;
   String? clubId;
@@ -413,6 +414,7 @@ class Training {
   DocumentReference? ref;
 
   Training({
+    this.docId,
     this.trainingId,
     this.seasonId,
     this.clubId,
@@ -539,6 +541,7 @@ class Training {
     }
 
     return Training(
+      docId:docId,
       trainingId: _asString(map[keyTgTrainingId],
           fallback: _asString(docId, fallback: '')),
       seasonId: _asString(map[keyTgSeasonId]),
@@ -588,6 +591,8 @@ class Training {
 
   /// toMap SECURE (Firestore)
   Map<String, dynamic> toMap() {
+
+    print('toMap $isTrackerDataUploaded}');
     return {
       keyTgTrainingId: trainingId,
       keyTgSeasonId: seasonId,

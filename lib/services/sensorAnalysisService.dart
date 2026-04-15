@@ -31,8 +31,6 @@ class SensorAnalysisService {
     }).toList()
       ..sort((a, b) => a.timeMs.compareTo(b.timeMs));
 
-
-    print('dans analyzeSensorData samples=${samples.length}');
     if (samples.isEmpty) {
       return TrackerAnalysisResult(
         trackerId: trackerId,
