@@ -1,37 +1,11 @@
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 
+import '../model/agendaItem.dart';
 import '../util/app_theme.dart';
+import '../widget/agendaMatchRow.dart';
 
-enum AgendaItemType {
-  match,
-  entrainement,
-  preparationPhysique,
-}
 
-class AgendaItem {
-  final String id;
-  final DateTime startAt;
-  final DateTime endAt;
-  final String title;
-  final String? subtitle;
-  final AgendaItemType type;
-  final bool isDone;
-
-  const AgendaItem({
-    required this.id,
-    required this.startAt,
-    required this.endAt,
-    required this.title,
-    this.subtitle,
-    required this.type,
-    this.isDone = false,
-  });
-}
-
-typedef AgendaItemsLoader = Future<List<AgendaItem>> Function({
-required DateTime start,
-required DateTime end,
-});
 
 class AgendaScreen extends StatefulWidget {
   final AgendaItemsLoader loadItems;
@@ -62,9 +36,26 @@ class _AgendaScreenState extends State<AgendaScreen> {
   bool _isLoading = false;
   String? _error;
 
+
+
   @override
   void initState() {
     super.initState();
+
+
+
+
+    final User? user = FirebaseAuth.instance.currentUser;
+
+    if (user != null) {
+      print('UID: ${user.uid}');
+      print('Email: ${user.email}');
+      print('Nom: ${user.displayName}');
+      print('user >${user.toString()}');
+    } else {
+      print('Aucun utilisateur connecté');
+    }
+
 
     final now = widget.initialDate ?? DateTime.now();
     _selectedWeekStart = _startOfWeek(now);
@@ -423,6 +414,7 @@ class _AgendaScreenState extends State<AgendaScreen> {
     }
 
     if (_error != null && _items.isEmpty) {
+      debugPrint('$_error');
       return _AgendaErrorView(
         message: _error!,
         onRetry: _loadItems,
@@ -766,10 +758,10 @@ class _AgendaLegend extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return compact
-        ? SingleChildScrollView(
+        ? const SingleChildScrollView(
       scrollDirection: Axis.horizontal,
       child: Row(
-        children: const [
+        children: [
           _LegendItem(
             label: 'Match',
             color: Colors.red,
@@ -798,9 +790,9 @@ class _AgendaLegend extends StatelessWidget {
         borderRadius: BorderRadius.circular(22),
         border: Border.all(color: context.appColors.border),
       ),
-      child: Column(
+      child: const Column(
         crossAxisAlignment: CrossAxisAlignment.start,
-        children: const [
+        children: [
           Text(
             'Légende',
             style: TextStyle(
@@ -1305,6 +1297,7 @@ class _AgendaItemCard extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Icon(icon, size: 18, color: accent),
                         const SizedBox(width: 8),
@@ -1329,7 +1322,16 @@ class _AgendaItemCard extends StatelessWidget {
                         ],
                       ],
                     ),
+
+                    if (item.match != null) ...[
+                      const SizedBox(height: 10),
+                      AgendaMatchRow(
+                        match: item.match!,
+                      ),
+                    ],
+
                     const SizedBox(height: 10),
+
                     wide
                         ? Row(
                       crossAxisAlignment: CrossAxisAlignment.start,

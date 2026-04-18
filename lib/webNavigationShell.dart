@@ -4,7 +4,6 @@ import 'package:grinta/util/app_theme.dart';
 
 import 'main.dart';
 
-
 class WebShellItem {
   final String label;
   final IconData icon;
@@ -22,6 +21,7 @@ class WebNavigationShell extends StatefulWidget {
   final IconData appIcon;
   final List<WebShellItem> items;
   final int initialIndex;
+  final Widget? sidebarHeaderBottom;
 
   const WebNavigationShell({
     super.key,
@@ -29,6 +29,7 @@ class WebNavigationShell extends StatefulWidget {
     this.appTitle = 'Application',
     this.appIcon = Icons.dashboard_outlined,
     this.initialIndex = 0,
+    required this.sidebarHeaderBottom,
   }) : assert(items.length > 0, 'items ne doit pas être vide');
 
   @override
@@ -56,8 +57,6 @@ class _WebNavigationShellState extends State<WebNavigationShell> {
     }
 
     final colors = context.appColors;
-    final textTheme = Theme.of(context).textTheme;
-    final app = MyApp.of(context);
 
     return Scaffold(
       backgroundColor: colors.background,
@@ -78,11 +77,18 @@ class _WebNavigationShellState extends State<WebNavigationShell> {
                 children: [
                   _buildHeader(context),
                   Divider(color: colors.border, height: 1),
+
+                  if (!_collapsed && widget.sidebarHeaderBottom != null)
+                    Padding(
+                      padding: const EdgeInsets.fromLTRB(12, 12, 12, 8),
+                      child: widget.sidebarHeaderBottom!,
+                    ),
+
                   Expanded(
                     child: Padding(
-                      padding: const EdgeInsets.symmetric(
+                      padding: EdgeInsets.symmetric(
                         horizontal: 12,
-                        vertical: 18,
+                        vertical: _collapsed ? 18 : 10,
                       ),
                       child: ListView.separated(
                         itemCount: widget.items.length,
@@ -111,7 +117,6 @@ class _WebNavigationShellState extends State<WebNavigationShell> {
                 ],
               ),
             ),
-
             Expanded(
               child: Container(
                 color: colors.background,

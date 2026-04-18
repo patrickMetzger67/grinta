@@ -1,7 +1,7 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
-import 'package:grinta/provider/current_season_provider.dart';
+import 'package:grinta/provider/appSession.dart';
 import 'package:grinta/util/app_theme.dart';
 import 'package:provider/provider.dart';
 
@@ -90,9 +90,7 @@ class _LoginScreenState extends State<LoginScreen> {
 
     if (email.isEmpty || password.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(context.l10n.emailAndPasswordRequired),
-        ),
+        SnackBar(content: Text(context.l10n.emailAndPasswordRequired)),
       );
       return;
     }
@@ -102,20 +100,16 @@ class _LoginScreenState extends State<LoginScreen> {
     setState(() => _isLoading = true);
 
     try {
-      await FirebaseAuth.instance.signInWithEmailAndPassword(
+      final credential = await FirebaseAuth.instance.signInWithEmailAndPassword(
         email: email,
         password: password,
       );
+      debugPrint('login ok uid=${credential.user?.uid}');
+      await context.read<AppSession>().init();
 
       if (!mounted) return;
 
-      await context.read<CurrentSeasonProvider>().loadCurrentSeason();
-
-      if (!mounted) return;
-
-      // Ne pas naviguer ici.
-      // AuthGate réagira automatiquement à authStateChanges()
-      // et affichera WebAppRoot sur web ou HomeScreen ailleurs.
+      // AuthGate fera la navigation automatiquement
     } on FirebaseAuthException catch (e) {
       String message = context.l10n.signInError;
 

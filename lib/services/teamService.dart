@@ -38,9 +38,7 @@ class TeamService {
           .where(keyTeamManagers, arrayContains: userId)
           .get();
 
-      return query.docs
-          .map((doc) => Team.fromDocumentSnapshot(doc))
-          .toList();
+      return query.docs.map((doc) => Team.fromDocumentSnapshot(doc)).toList();
     } catch (e) {
       rethrow;
     }
@@ -58,6 +56,16 @@ class TeamService {
         .map((snapshot) =>
         snapshot.docs.map((doc) => Team.fromDocumentSnapshot(doc)).toList());
   }
+
+  /// WATCH BY SEASON ID + MANAGER USER ID
+  Stream<List<Team>> watchTeamsBySeasonIdAndManager({
+    required String seasonId,
+    required String userId,
+  }) =>
+      streamTeamsBySeasonIdAndManager(
+        seasonId: seasonId,
+        userId: userId,
+      );
 
   /// SET / UPSERT
   Future<void> setTeam(Team team) async {
@@ -101,6 +109,9 @@ class TeamService {
     });
   }
 
+  /// WATCH ONE
+  Stream<Team?> watchTeamById(String teamId) => streamTeamById(teamId);
+
   /// READ ALL
   Future<List<Team>> getAllTeams() async {
     try {
@@ -124,11 +135,14 @@ class TeamService {
     });
   }
 
+  /// WATCH ALL
+  Stream<List<Team>> watchAllTeams() => streamAllTeams();
+
   /// UPDATE
   Future<void> updateTeam(Team team) async {
     try {
       if (team.keyTeam == null || team.keyTeam!.isEmpty) {
-        throw Exception("keyTeam null ou vide");
+        throw Exception('keyTeam null ou vide');
       }
 
       await _collection.doc(team.keyTeam).update(team.toMap());
@@ -145,6 +159,62 @@ class TeamService {
       rethrow;
     }
   }
+
+  /// GET TEAMS FOR A PLAYER
+  Future<List<Team>> getTeamsByPlayerId(String playerId) async {
+    try {
+      final query = await _collection
+          .where(keyTeamPlayers, arrayContains: playerId)
+          .where(keyTeamIsVisible, isEqualTo: true)
+          .get();
+
+      return query.docs.map((doc) => Team.fromDocumentSnapshot(doc)).toList();
+    } catch (e) {
+      rethrow;
+    }
+  }
+
+  /// STREAM TEAMS FOR A PLAYER
+  Stream<List<Team>> streamTeamsByPlayerId(String playerId) {
+    return _collection
+        .where(keyTeamPlayers, arrayContains: playerId)
+        .where(keyTeamIsVisible, isEqualTo: true)
+        .snapshots()
+        .map((snapshot) =>
+        snapshot.docs.map((doc) => Team.fromDocumentSnapshot(doc)).toList());
+  }
+
+  /// WATCH TEAMS FOR A PLAYER
+  Stream<List<Team>> watchTeamsByPlayerId(String playerId) =>
+      streamTeamsByPlayerId(playerId);
+
+  /// GET TEAMS FOR A MANAGER
+  Future<List<Team>> getTeamsForAManger(String uid) async {
+    try {
+      final query = await _collection
+          .where(keyTeamManagers, arrayContains: uid)
+          .where(keyTeamIsVisible, isEqualTo: true)
+          .get();
+
+      return query.docs.map((doc) => Team.fromDocumentSnapshot(doc)).toList();
+    } catch (e) {
+      rethrow;
+    }
+  }
+
+  /// STREAM TEAMS FOR A MANAGER
+  Stream<List<Team>> streamTeamsForAManger(String uid) {
+    return _collection
+        .where(keyTeamManagers, arrayContains: uid)
+        .where(keyTeamIsVisible, isEqualTo: true)
+        .snapshots()
+        .map((snapshot) =>
+        snapshot.docs.map((doc) => Team.fromDocumentSnapshot(doc)).toList());
+  }
+
+  /// WATCH TEAMS FOR A MANAGER
+  Stream<List<Team>> watchTeamsForAManger(String uid) =>
+      streamTeamsForAManger(uid);
 
   /// GET BY CLUB ID
   Future<List<Team>> getTeamsByClubId(String clubId) async {
@@ -167,6 +237,9 @@ class TeamService {
         snapshot.docs.map((doc) => Team.fromDocumentSnapshot(doc)).toList());
   }
 
+  Stream<List<Team>> watchTeamsByClubId(String clubId) =>
+      streamTeamsByClubId(clubId);
+
   /// GET BY SEASON ID
   Future<List<Team>> getTeamsBySeasonId(String seasonId) async {
     try {
@@ -187,6 +260,9 @@ class TeamService {
         .map((snapshot) =>
         snapshot.docs.map((doc) => Team.fromDocumentSnapshot(doc)).toList());
   }
+
+  Stream<List<Team>> watchTeamsBySeasonId(String seasonId) =>
+      streamTeamsBySeasonId(seasonId);
 
   /// GET BY CATEGORY
   Future<List<Team>> getTeamsByCategory(String category) async {
@@ -209,6 +285,9 @@ class TeamService {
         snapshot.docs.map((doc) => Team.fromDocumentSnapshot(doc)).toList());
   }
 
+  Stream<List<Team>> watchTeamsByCategory(String category) =>
+      streamTeamsByCategory(category);
+
   /// GET BY SUBCATEGORY
   Future<List<Team>> getTeamsBySubCategory(String subCategory) async {
     try {
@@ -229,6 +308,9 @@ class TeamService {
         .map((snapshot) =>
         snapshot.docs.map((doc) => Team.fromDocumentSnapshot(doc)).toList());
   }
+
+  Stream<List<Team>> watchTeamsBySubCategory(String subCategory) =>
+      streamTeamsBySubCategory(subCategory);
 
   /// GET BY CHAMPIONSHIP TYPE
   Future<List<Team>> getTeamsByChType(String chType) async {
@@ -251,6 +333,9 @@ class TeamService {
         snapshot.docs.map((doc) => Team.fromDocumentSnapshot(doc)).toList());
   }
 
+  Stream<List<Team>> watchTeamsByChType(String chType) =>
+      streamTeamsByChType(chType);
+
   /// GET BY SOCCER TYPE
   Future<List<Team>> getTeamsBySoccerType(int soccerType) async {
     try {
@@ -271,6 +356,9 @@ class TeamService {
         .map((snapshot) =>
         snapshot.docs.map((doc) => Team.fromDocumentSnapshot(doc)).toList());
   }
+
+  Stream<List<Team>> watchTeamsBySoccerType(int soccerType) =>
+      streamTeamsBySoccerType(soccerType);
 
   /// GET VISIBLE TEAMS
   Future<List<Team>> getVisibleTeams() async {
@@ -293,6 +381,8 @@ class TeamService {
         snapshot.docs.map((doc) => Team.fromDocumentSnapshot(doc)).toList());
   }
 
+  Stream<List<Team>> watchVisibleTeams() => streamVisibleTeams();
+
   /// GET COMPETITION TEAMS
   Future<List<Team>> getCompetitionTeams() async {
     try {
@@ -314,6 +404,8 @@ class TeamService {
         snapshot.docs.map((doc) => Team.fromDocumentSnapshot(doc)).toList());
   }
 
+  Stream<List<Team>> watchCompetitionTeams() => streamCompetitionTeams();
+
   /// GET TRACKER TEAMS
   Future<List<Team>> getTeamsWithTracker() async {
     try {
@@ -334,6 +426,8 @@ class TeamService {
         .map((snapshot) =>
         snapshot.docs.map((doc) => Team.fromDocumentSnapshot(doc)).toList());
   }
+
+  Stream<List<Team>> watchTeamsWithTracker() => streamTeamsWithTracker();
 
   /// GET BY CLUB + SEASON
   Future<List<Team>> getTeamsByClubAndSeason({
@@ -364,6 +458,12 @@ class TeamService {
         snapshot.docs.map((doc) => Team.fromDocumentSnapshot(doc)).toList());
   }
 
+  Stream<List<Team>> watchTeamsByClubAndSeason({
+    required String clubId,
+    required String seasonId,
+  }) =>
+      streamTeamsByClubAndSeason(clubId: clubId, seasonId: seasonId);
+
   /// GET BY CLUB + CATEGORY
   Future<List<Team>> getTeamsByClubAndCategory({
     required String clubId,
@@ -393,6 +493,12 @@ class TeamService {
         snapshot.docs.map((doc) => Team.fromDocumentSnapshot(doc)).toList());
   }
 
+  Stream<List<Team>> watchTeamsByClubAndCategory({
+    required String clubId,
+    required String category,
+  }) =>
+      streamTeamsByClubAndCategory(clubId: clubId, category: category);
+
   /// GET ONE TEAM BY NAME
   Future<List<Team>> getTeamsByName(String name) async {
     try {
@@ -413,6 +519,8 @@ class TeamService {
         .map((snapshot) =>
         snapshot.docs.map((doc) => Team.fromDocumentSnapshot(doc)).toList());
   }
+
+  Stream<List<Team>> watchTeamsByName(String name) => streamTeamsByName(name);
 
   /// UPDATE VISIBILITY
   Future<void> updateVisibility({

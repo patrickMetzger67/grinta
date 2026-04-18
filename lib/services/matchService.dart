@@ -172,10 +172,30 @@ class MatchService {
   Future<List<Match>> getMatchesByTeamId(String teamId) async {
     try {
       final query = await _collection
-          .where(keyMatchTeamID, isEqualTo: teamId)
+          .where(keyMatchTeams, arrayContains: teamId)
           .get();
 
       return query.docs.map((doc) => Match.fromDocumentSnapshot(doc)).toList();
+    } catch (e) {
+      rethrow;
+    }
+  }
+
+  Future<List<Match>> getMatchesByTeamIdBetweenDates({
+    required String teamId,
+    required Timestamp start,
+    required Timestamp end,
+  }) async {
+    try {
+      final query = await _collection
+          .where(keyMatchTeams, arrayContains: teamId)
+          .where(keyMatchTimestamp, isGreaterThanOrEqualTo: start)
+          .where(keyMatchTimestamp, isLessThanOrEqualTo: end)
+          .get();
+
+      return query.docs
+          .map((doc) => Match.fromDocumentSnapshot(doc))
+          .toList();
     } catch (e) {
       rethrow;
     }

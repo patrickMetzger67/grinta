@@ -178,6 +178,26 @@ class TrainingService {
       rethrow;
     }
   }
+  Future<List<Training>> getTrainingsByTeamIdBetweenDates({
+    required String teamId,
+    required Timestamp start,
+    required Timestamp end,
+  }) async {
+    try {
+      final query = await _collection
+          .where(keyTgTeamId, isEqualTo: teamId)
+          .where(keyTgDateTime, isGreaterThanOrEqualTo: start)
+          .where(keyTgDateTime, isLessThanOrEqualTo: end)
+          .orderBy(keyTgDateTime)
+          .get();
+
+      return query.docs
+          .map((doc) => Training.fromDocumentSnapshot(doc))
+          .toList();
+    } catch (e) {
+      rethrow;
+    }
+  }
 
   Stream<List<Training>> streamTrainingsByTeamId(String teamId) {
     return _collection
@@ -292,22 +312,7 @@ class TrainingService {
         snapshot.docs.map((doc) => Training.fromDocumentSnapshot(doc)).toList());
   }
 
-  /// GET BETWEEN TWO DATES
-  Future<List<Training>> getTrainingsBetweenDates({
-    required Timestamp start,
-    required Timestamp end,
-  }) async {
-    try {
-      final query = await _collection
-          .where(keyTgDateTime, isGreaterThanOrEqualTo: start)
-          .where(keyTgDateTime, isLessThanOrEqualTo: end)
-          .get();
 
-      return query.docs.map((doc) => Training.fromDocumentSnapshot(doc)).toList();
-    } catch (e) {
-      rethrow;
-    }
-  }
 
   Stream<List<Training>> streamTrainingsBetweenDates({
     required Timestamp start,

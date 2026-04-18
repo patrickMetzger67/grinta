@@ -60,6 +60,7 @@ String keyMatchWhereMatchIsPlayed = 'whereIsPlayed'; // clubId where the match i
 String keyMatchIsInHighLight = 'isInHighLight';
 String keyMatchWithTracker = 'withTracker';
 String keyMatchIsTrackerDataUploaded = 'isTrackerDataUploaded';
+String keyMatchTimestamp = 'timestamp';
 
 class Match {
 
@@ -129,6 +130,7 @@ class Match {
   FieldGpsCorners? fieldGpsCorners;
   String? ownerId;
   bool? isTrackerDataUploaded;
+  Timestamp? timestamp;
 
 
   DocumentReference? ref;
@@ -188,6 +190,7 @@ class Match {
     this.fieldGpsCorners,
     this.ownerId,
     this.isTrackerDataUploaded,
+    this.timestamp,
   });
 
 
@@ -418,6 +421,7 @@ class Match {
 
     withTracker = map[keyMatchWithTracker] ?? false;
     isTrackerDataUploaded = map[keyMatchIsTrackerDataUploaded] ?? false;
+    timestamp = map[keyMatchTimestamp]?? null;
 
   }
 
@@ -481,6 +485,7 @@ class Match {
       'fieldGpsCorners': fieldGpsCorners?.toMap(),
       'ownerId':ownerId,
       keyMatchIsTrackerDataUploaded:isTrackerDataUploaded,
+      keyMatchTimestamp:timestamp,
     };
     return map;
   }

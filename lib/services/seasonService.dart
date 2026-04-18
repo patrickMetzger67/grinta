@@ -84,6 +84,16 @@ class SeasonService {
     });
   }
 
+  /// WATCH ALL
+  Stream<List<Season>> watchAllSeasons() {
+    return _collection.snapshots().map((snapshot) {
+      return snapshot.docs
+          .where((doc) => doc.data().isNotEmpty)
+          .map((doc) => Season.fromDocumentSnapshot(doc))
+          .toList();
+    });
+  }
+
   /// UPDATE
   Future<void> updateSeason({
     required String seasonId,
@@ -154,7 +164,9 @@ class SeasonService {
   }
 
   /// GET BY AFFILIATE NUMBER
-  Future<List<Season>> getSeasonsByAffiliateNumber(String affiliateNumber) async {
+  Future<List<Season>> getSeasonsByAffiliateNumber(
+      String affiliateNumber,
+      ) async {
     try {
       final query = await _collection
           .where(keySeasonAffiliateNumber, isEqualTo: affiliateNumber)
@@ -166,7 +178,9 @@ class SeasonService {
     }
   }
 
-  Stream<List<Season>> streamSeasonsByAffiliateNumber(String affiliateNumber) {
+  Stream<List<Season>> streamSeasonsByAffiliateNumber(
+      String affiliateNumber,
+      ) {
     return _collection
         .where(keySeasonAffiliateNumber, isEqualTo: affiliateNumber)
         .snapshots()

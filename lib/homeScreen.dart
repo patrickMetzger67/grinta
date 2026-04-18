@@ -11,10 +11,10 @@ import 'package:grinta/services/matchService.dart';
 import 'package:grinta/services/ownerService.dart';
 import 'package:grinta/services/trainingService.dart';
 import 'package:grinta/tracker/tracker_hub_page.dart';
+import 'package:grinta/provider/appSession.dart';
 import 'package:grinta/widget/uploadTrackerButton.dart';
 import 'package:provider/provider.dart';
 
-import './provider/current_season_provider.dart';
 import './services/teamService.dart';
 import '../model/team.dart';
 import './util/app_theme.dart';
@@ -55,7 +55,7 @@ class _HomeScreenState extends State<HomeScreen> {
     final currentUser = FirebaseAuth.instance.currentUser;
     final userId = currentUser?.uid;
 
-    currentSeason = context.watch<CurrentSeasonProvider>().currentSeason;
+    currentSeason = context.watch<AppSession>().selectedSeason;
 
     return Scaffold(
       appBar: AppBar(
@@ -80,7 +80,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    'Saison en cours',
+                    'Saison sélectionnée',
                     style: textTheme.titleMedium?.copyWith(
                       color: colors.textPrimary,
                       fontWeight: FontWeight.w700,

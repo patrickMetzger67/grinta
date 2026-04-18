@@ -58,6 +58,9 @@ class PlayerService {
     });
   }
 
+  /// Alias watch d’un joueur par son id
+  Stream<Player?> watchPlayerById(String id) => streamPlayerById(id);
+
   /// Récupérer tous les joueurs
   Future<List<Player>> getPlayers() async {
     final QuerySnapshot<Map<String, dynamic>> query = await _collection.get();
@@ -68,9 +71,14 @@ class PlayerService {
   /// Stream de tous les joueurs
   Stream<List<Player>> streamPlayers() {
     return _collection.snapshots().map((snapshot) {
-      return snapshot.docs.map((doc) => Player.fromDocumentsnapshot(doc)).toList();
+      return snapshot.docs
+          .map((doc) => Player.fromDocumentsnapshot(doc))
+          .toList();
     });
   }
+
+  /// Alias watch de tous les joueurs
+  Stream<List<Player>> watchPlayers() => streamPlayers();
 
   /// Récupérer les joueurs d’un club
   Future<List<Player>> getPlayersByClubId(String clubId) async {
@@ -87,9 +95,15 @@ class PlayerService {
         .where(keyPlayerClubId, isEqualTo: clubId)
         .snapshots()
         .map((snapshot) {
-      return snapshot.docs.map((doc) => Player.fromDocumentsnapshot(doc)).toList();
+      return snapshot.docs
+          .map((doc) => Player.fromDocumentsnapshot(doc))
+          .toList();
     });
   }
+
+  /// Alias watch des joueurs d’un club
+  Stream<List<Player>> watchPlayersByClubId(String clubId) =>
+      streamPlayersByClubId(clubId);
 
   /// Récupérer les joueurs actifs d’un club
   Future<List<Player>> getActivePlayersByClubId(String clubId) async {
@@ -108,17 +122,52 @@ class PlayerService {
         .where(keyPlayerStatut, isEqualTo: 1)
         .snapshots()
         .map((snapshot) {
-      return snapshot.docs.map((doc) => Player.fromDocumentsnapshot(doc)).toList();
+      return snapshot.docs
+          .map((doc) => Player.fromDocumentsnapshot(doc))
+          .toList();
     });
   }
 
-  /// Chercher un joueur par userID
+  /// Alias watch des joueurs actifs d’un club
+  Stream<List<Player>> watchActivePlayersByClubId(String clubId) =>
+      streamActivePlayersByClubId(clubId);
+
+  /// Chercher les joueurs par userID
   Future<List<Player>> getPlayersByUserId(String userId) async {
+    final QuerySnapshot<Map<String, dynamic>> query = await _collection
+        .where(keyPlayerUsers, arrayContains: userId)
+        .get();
+
+    return query.docs.map((doc) => Player.fromDocumentsnapshot(doc)).toList();
+  }
+
+  /// Stream des joueurs par userID
+  Stream<List<Player>> streamPlayersByUserId(String userId) {
+    return _collection
+        .where(keyPlayerUsers, arrayContains: userId)
+        .snapshots()
+        .map((snapshot) {
+      return snapshot.docs
+          .map((doc) => Player.fromDocumentsnapshot(doc))
+          .toList();
+    });
+  }
+
+  /// Alias watch des joueurs par userID
+  Stream<List<Player>> watchPlayersByUserId(String userId) =>
+      streamPlayersByUserId(userId);
+
+  /// Chercher un joueur par userID
+  Future<Player?> getPlayerByUserId(String userId) async {
     final QuerySnapshot<Map<String, dynamic>> query = await _collection
         .where(keyPlayerUserID, isEqualTo: userId)
         .get();
 
-    return query.docs.map((doc) => Player.fromDocumentsnapshot(doc)).toList();
+    if (query.docs.isEmpty) {
+      return null;
+    }
+
+    return Player.fromDocumentsnapshot(query.docs.first);
   }
 
   /// Ajouter une indisponibilité
@@ -126,7 +175,8 @@ class PlayerService {
     required String playerId,
     required Unavailability unavailability,
   }) async {
-    final DocumentReference<Map<String, dynamic>> docRef = _collection.doc(playerId);
+    final DocumentReference<Map<String, dynamic>> docRef =
+    _collection.doc(playerId);
     final DocumentSnapshot<Map<String, dynamic>> snapshot = await docRef.get();
 
     if (!snapshot.exists) return;
@@ -137,7 +187,8 @@ class PlayerService {
     player.unavailable!.add(unavailability);
 
     await docRef.update({
-      keyPlayerUnavailability: _buildUnavailabilityMapList(player.unavailable!),
+      keyPlayerUnavailability:
+      _buildUnavailabilityMapList(player.unavailable!),
     });
   }
 
@@ -147,7 +198,8 @@ class PlayerService {
     required List<dynamic> unavailabilityList,
   }) async {
     await _collection.doc(playerId).update({
-      keyPlayerUnavailability: _buildUnavailabilityMapList(unavailabilityList),
+      keyPlayerUnavailability:
+      _buildUnavailabilityMapList(unavailabilityList),
     });
   }
 
@@ -156,7 +208,8 @@ class PlayerService {
     required String playerId,
     required String unavailabilityId,
   }) async {
-    final DocumentReference<Map<String, dynamic>> docRef = _collection.doc(playerId);
+    final DocumentReference<Map<String, dynamic>> docRef =
+    _collection.doc(playerId);
     final DocumentSnapshot<Map<String, dynamic>> snapshot = await docRef.get();
 
     if (!snapshot.exists) return;
@@ -172,7 +225,8 @@ class PlayerService {
     });
 
     await docRef.update({
-      keyPlayerUnavailability: _buildUnavailabilityMapList(player.unavailable!),
+      keyPlayerUnavailability:
+      _buildUnavailabilityMapList(player.unavailable!),
     });
   }
 
@@ -224,7 +278,9 @@ class PlayerService {
   }
 
   /// Construire la liste Firestore des indisponibilités
-  List<Map<String, dynamic>> _buildUnavailabilityMapList(List<dynamic> unavailable) {
+  List<Map<String, dynamic>> _buildUnavailabilityMapList(
+      List<dynamic> unavailable,
+      ) {
     List<Map<String, dynamic>> list = [];
 
     for (int i = 0; i < unavailable.length; i++) {
@@ -266,34 +322,30 @@ class PlayerService {
   /// Récupérer l’URL de la photo joueur
   Future<String> getUrlPlayer(Player player, String defaultPlayerPhoto) async {
     try {
-      // Si déjà une URL complète
       if (player.photo != null &&
           player.photo!.isNotEmpty &&
-          player.photo!.contains("https://")) {
+          player.photo!.contains('https://')) {
         return player.photo!;
       }
 
-      // Si photo vide → fallback sur image par défaut
       if (player.photo == null || player.photo!.isEmpty) {
         return await getUrlDefaultPlayerImage(defaultUrl: defaultPlayerPhoto);
       }
 
-      Reference ref = FirebaseStorage.instance
-          .ref()
-          .child("thumbs/${player.photo!}");
+      Reference ref =
+      FirebaseStorage.instance.ref().child('thumbs/${player.photo!}');
 
       return await ref.getDownloadURL();
     } catch (e) {
-      // En cas d'erreur → fallback image par défaut
       return await getUrlDefaultPlayerImage(defaultUrl: defaultPlayerPhoto);
     }
   }
+
   /// Récupérer l’image par défaut
   Future<String> getUrlDefaultPlayerImage({required String defaultUrl}) async {
     try {
-      Reference ref = FirebaseStorage.instance
-          .ref()
-          .child("thumbs/$defaultUrl");
+      Reference ref =
+      FirebaseStorage.instance.ref().child('thumbs/$defaultUrl');
 
       return await ref.getDownloadURL();
     } catch (e) {

@@ -1,78 +1,192 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
+import 'package:grinta/model/season.dart';
+import 'package:grinta/provider/appSession.dart';
 import 'package:grinta/screen/agendaScreen.dart';
+import 'package:grinta/services/matchService.dart';
+import 'package:grinta/services/trainingService.dart';
+import 'package:grinta/util/buildTimestampFromDateAndTime.dart';
+import 'package:grinta/widget/app_session_player_season_selector.dart';
+import 'package:provider/provider.dart';
 
 import '../homeScreen.dart';
+import '../model/agendaItem.dart';
+import '../util/app_theme.dart';
 import '../webNavigationShell.dart';
 
-
-class WebAppRoot extends StatelessWidget {
+class WebAppRoot extends StatefulWidget {
   const WebAppRoot({super.key});
 
   @override
-  Widget build(BuildContext context) {
-    return WebNavigationShell(
-      appTitle: 'Grinta',
-      appIcon: Icons.sports_soccer_rounded,
-      initialIndex: 0,
-      items: [
-        const WebShellItem(
-          label: 'Tableau de bord',
-          icon: Icons.dashboard_outlined,
-          page: HomeScreen(),
-        ),
-        
-        WebShellItem(
-          label: 'Agenda',
-          icon: Icons.calendar_month_outlined,
-          page:AgendaScreen(
-            loadItems: ({
-              required DateTime start,
-              required DateTime end,
-            }) async {
-              final allItems = <AgendaItem>[
-                AgendaItem(
-                  id: '1',
-                  startAt: DateTime.now().add(const Duration(days: 1, hours: 18)),
-                  endAt: DateTime.now().add(const Duration(days: 1, hours: 20)),
-                  title: 'Match contre FC Rivière',
-                  subtitle: 'Stade municipal',
-                  type: AgendaItemType.match,
-                ),
-                AgendaItem(
-                  id: '2',
-                  startAt: DateTime.now().add(const Duration(days: 2, hours: 17)),
-                  endAt: DateTime.now().add(const Duration(days: 2, hours: 19)),
-                  title: 'Entraînement collectif',
-                  subtitle: 'Terrain annexe',
-                  type: AgendaItemType.entrainement,
-                ),
-                AgendaItem(
-                  id: '3',
-                  startAt: DateTime.now().add(const Duration(days: 4, hours: 9)),
-                  endAt: DateTime.now().add(const Duration(days: 4, hours: 10)),
-                  title: 'Préparation physique',
-                  subtitle: 'Salle de sport',
-                  type: AgendaItemType.preparationPhysique,
-                ),
-              ];
+  State<WebAppRoot> createState() => _WebAppRootState();
+}
 
-              return allItems.where((item) {
-                return item.startAt.millisecondsSinceEpoch >= start.millisecondsSinceEpoch &&
-                    item.startAt.millisecondsSinceEpoch <= end.millisecondsSinceEpoch;
-              }).toList()
-                ..sort((a, b) => a.startAt.compareTo(b.startAt));
-            },
-            onAddEvent: () {
-              // ouvrir l'écran de création
-            },
-          )
+class _WebAppRootState extends State<WebAppRoot> {
+  List<AgendaItem> _allItems = [];
+  bool _isLoading = true;
+
+  AppSession get appSession => context.read<AppSession>();
+
+  @override
+  void initState() {
+    super.initState();
+    _initApp();
+  }
+
+  Future<void> _initApp() async {
+    await Future.delayed(const Duration(seconds: 2));
+
+    if (!mounted) return;
+
+    setState(() {
+      _isLoading = false;
+    });
+  }
+
+  Future<List<AgendaItem>> _loadAgendaItems({
+    required DateTime start,
+    required DateTime end,
+  }) async {
+    final List<AgendaItem> allItems = [];
+
+
+    final timestampNow = Timestamp.now();
+
+    for (final t in appSession.selectedTeams) {
+      final matchsWrk = await MatchService().getMatchesByTeamIdBetweenDates(
+        teamId: t.keyTeam!,
+        start: Timestamp.fromDate(start),
+        end: Timestamp.fromDate(end),
+      );
+
+      final trainingsWrk = await TrainingService().getTrainingsByTeamIdBetweenDates(
+        teamId: t.keyTeam!,
+        start: Timestamp.fromDate(start),
+        end: Timestamp.fromDate(end),
+      );
+
+      for (final m in matchsWrk) {
+        DateTime? startAt;
+        if (m.timestamp != null) {
+          startAt = m.timestamp!.toDate();
+        } else if (m.dateCh != null && m.timeCh != null) {
+          startAt = buildTimestampFromDateAndTime(
+            date: m.dateCh!,
+            time: m.timeCh!,
+          ).toDate();
+        }
+
+        if (startAt == null) continue;
+
+        DateTime endAt = startAt.add(const Duration(minutes: 90));
+        allItems.add(
+          AgendaItem(
+            id: m.id!,
+            startAt: startAt,
+            endAt: endAt,
+            title: '${m.chType}: ${m.team1} - ${m.team2}',
+            type: AgendaItemType.match,
+            match: m,
+            isDone: Timestamp.fromDate(endAt).millisecondsSinceEpoch < timestampNow.millisecondsSinceEpoch ? true:false,
+          ),
+        );
+      }
+      for(final tr in trainingsWrk) {
+        DateTime endAt = tr.dateTime!.toDate().add(const Duration(minutes: 90));
+        allItems.add(
+          AgendaItem(
+            id: tr.ref!.id,
+            startAt: tr.dateTime!.toDate(),
+            endAt: endAt,
+            title: 'Entraînement: ${t.name}',
+            type: AgendaItemType.entrainement,
+            training: tr,
+            isDone: Timestamp.fromDate(endAt).millisecondsSinceEpoch < timestampNow.millisecondsSinceEpoch ? true:false,
+          ),
+        );
+      }
+
+    }
+
+    final unique = <String, AgendaItem>{};
+    for (final item in allItems) {
+      unique['${item.type.name}_${item.id}'] = item;
+    }
+
+    return unique.values.toList()
+      ..sort((a, b) => a.startAt.compareTo(b.startAt));
+  }
+  void _onAddEvent() {
+    debugPrint('player=${appSession.selectedPlayerId}');
+    debugPrint('season=${appSession.selectedSeason?.ref?.id}');
+    debugPrint(
+      'teams=${appSession.selectedTeams.map((e) => e.name).toList()}',
+    );
+    // ouvrir l'écran de création
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final selectedPlayerId = context.select<AppSession, String?>(
+          (session) => session.selectedPlayerId,
+    );
+
+    final selectedSeasonId = context.select<AppSession, String?>(
+          (session) => session.selectedSeason?.ref?.id,
+    );
+
+    final selectedSeason = context.select<AppSession, Season?>(
+          (session) => session.selectedSeason,
+    );
+
+    return Stack(
+      children: [
+        WebNavigationShell(
+          appTitle: 'Grinta',
+          appIcon: Icons.sports_soccer_rounded,
+          initialIndex: 0,
+          sidebarHeaderBottom: const AppSessionPlayerSeasonSelector(),
+          items: [
+            const WebShellItem(
+              label: 'Tableau de bord',
+              icon: Icons.dashboard_outlined,
+              page: HomeScreen(),
+            ),
+            WebShellItem(
+              label: 'Agenda',
+              icon: Icons.calendar_month_outlined,
+              page: AgendaScreen(
+                key: ValueKey('agenda-$selectedPlayerId-$selectedSeasonId'),
+                loadItems: _loadAgendaItems,
+                onAddEvent: _onAddEvent,
+              ),
+            ),
+            /*
+            WebShellItem(
+              label: 'Club',
+              icon: Icons.shield_outlined,
+              page: ClubScreen(),
+            ),
+            */
+          ],
         ),
-        /*
-        WebShellItem(
-          label: 'Club',
-          icon: Icons.shield_outlined,
-          page: ClubScreen(),
-        ),*/
+        if (_isLoading)
+          Positioned.fill(
+            child: AbsorbPointer(
+              absorbing: true,
+              child: Container(
+                color: context.appColors.background.withValues(alpha: 0.70),
+                child: Center(
+                  child: CircularProgressIndicator(
+                    color: context.appColors.primary,
+                    backgroundColor:
+                    context.appColors.border.withValues(alpha: 0.35),
+                    strokeWidth: 3,
+                  ),
+                ),
+              ),
+            ),
+          ),
       ],
     );
   }
