@@ -109,6 +109,11 @@ class _LoginScreenState extends State<LoginScreen> {
 
       if (!mounted) return;
 
+      Navigator.of(context, rootNavigator: true).pushNamedAndRemoveUntil(
+        '/',
+            (route) => false,
+      );
+
       // AuthGate fera la navigation automatiquement
     } on FirebaseAuthException catch (e) {
       String message = context.l10n.signInError;

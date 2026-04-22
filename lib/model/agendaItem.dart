@@ -17,6 +17,8 @@ class AgendaItem {
   final bool isDone;
   final Training? training;
   final grinta_match.Match? match;
+  final bool withTracker;
+  final bool areTrackersSynchronized;
 
 
   const AgendaItem({
@@ -29,6 +31,8 @@ class AgendaItem {
     this.isDone = false,
     this.match,
     this.training,
+    this.withTracker = false,
+    this.areTrackersSynchronized = false
   });
 }
 

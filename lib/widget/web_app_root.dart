@@ -1,8 +1,8 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
-import 'package:grinta/model/season.dart';
 import 'package:grinta/provider/appSession.dart';
 import 'package:grinta/screen/agendaScreen.dart';
+import 'package:grinta/screen/teamsListScreen.dart';
 import 'package:grinta/services/matchService.dart';
 import 'package:grinta/services/trainingService.dart';
 import 'package:grinta/util/buildTimestampFromDateAndTime.dart';
@@ -11,6 +11,8 @@ import 'package:provider/provider.dart';
 
 import '../homeScreen.dart';
 import '../model/agendaItem.dart';
+import '../screen/responsive_chat.dart';
+import '../screen/teamDetailScreen.dart';
 import '../util/app_theme.dart';
 import '../webNavigationShell.dart';
 
@@ -22,7 +24,6 @@ class WebAppRoot extends StatefulWidget {
 }
 
 class _WebAppRootState extends State<WebAppRoot> {
-  List<AgendaItem> _allItems = [];
   bool _isLoading = true;
 
   AppSession get appSession => context.read<AppSession>();
@@ -48,18 +49,19 @@ class _WebAppRootState extends State<WebAppRoot> {
     required DateTime end,
   }) async {
     final List<AgendaItem> allItems = [];
-
-
     final timestampNow = Timestamp.now();
 
     for (final t in appSession.selectedTeams) {
+      if (t.keyTeam == null) continue;
+
       final matchsWrk = await MatchService().getMatchesByTeamIdBetweenDates(
         teamId: t.keyTeam!,
         start: Timestamp.fromDate(start),
         end: Timestamp.fromDate(end),
       );
 
-      final trainingsWrk = await TrainingService().getTrainingsByTeamIdBetweenDates(
+      final trainingsWrk =
+      await TrainingService().getTrainingsByTeamIdBetweenDates(
         teamId: t.keyTeam!,
         start: Timestamp.fromDate(start),
         end: Timestamp.fromDate(end),
@@ -78,34 +80,45 @@ class _WebAppRootState extends State<WebAppRoot> {
 
         if (startAt == null) continue;
 
-        DateTime endAt = startAt.add(const Duration(minutes: 90));
+        final DateTime endAt = startAt.add(const Duration(minutes: 90));
+
         allItems.add(
           AgendaItem(
             id: m.id!,
             startAt: startAt,
             endAt: endAt,
-            title: '${m.chType}: ${m.team1} - ${m.team2}',
+            title: '${t.name}: ${m.chType}',
             type: AgendaItemType.match,
             match: m,
-            isDone: Timestamp.fromDate(endAt).millisecondsSinceEpoch < timestampNow.millisecondsSinceEpoch ? true:false,
+            isDone: Timestamp.fromDate(endAt).millisecondsSinceEpoch <
+                timestampNow.millisecondsSinceEpoch,
+            withTracker: m.withTracker!,
+            areTrackersSynchronized: m.isTrackerDataUploaded!,
           ),
         );
       }
-      for(final tr in trainingsWrk) {
-        DateTime endAt = tr.dateTime!.toDate().add(const Duration(minutes: 90));
+
+      for (final tr in trainingsWrk) {
+        if (tr.dateTime == null) continue;
+
+        final DateTime endAt =
+        tr.dateTime!.toDate().add(const Duration(minutes: 90));
+
         allItems.add(
           AgendaItem(
             id: tr.ref!.id,
             startAt: tr.dateTime!.toDate(),
             endAt: endAt,
-            title: 'Entraînement: ${t.name}',
+            title: '${t.name}: Entraînement',
             type: AgendaItemType.entrainement,
             training: tr,
-            isDone: Timestamp.fromDate(endAt).millisecondsSinceEpoch < timestampNow.millisecondsSinceEpoch ? true:false,
+            isDone: Timestamp.fromDate(endAt).millisecondsSinceEpoch <
+                timestampNow.millisecondsSinceEpoch,
+            withTracker: tr.withTracker,
+            areTrackersSynchronized: tr.isTrackerDataUploaded,
           ),
         );
       }
-
     }
 
     final unique = <String, AgendaItem>{};
@@ -116,13 +129,13 @@ class _WebAppRootState extends State<WebAppRoot> {
     return unique.values.toList()
       ..sort((a, b) => a.startAt.compareTo(b.startAt));
   }
+
   void _onAddEvent() {
     debugPrint('player=${appSession.selectedPlayerId}');
     debugPrint('season=${appSession.selectedSeason?.ref?.id}');
     debugPrint(
       'teams=${appSession.selectedTeams.map((e) => e.name).toList()}',
     );
-    // ouvrir l'écran de création
   }
 
   @override
@@ -135,9 +148,14 @@ class _WebAppRootState extends State<WebAppRoot> {
           (session) => session.selectedSeason?.ref?.id,
     );
 
-    final selectedSeason = context.select<AppSession, Season?>(
-          (session) => session.selectedSeason,
+    final hasManagedTeamsInSelectedSeason = context.select<AppSession, bool>(
+          (session) => session.hasManagedTeamsInSelectedSeason,
     );
+
+    final getManagedTeamsIds = context.select<AppSession, List<String>>(
+          (session) => session.managedTeamsIdsForSelectedSeason,
+    );
+
 
     return Stack(
       children: [
@@ -161,13 +179,35 @@ class _WebAppRootState extends State<WebAppRoot> {
                 onAddEvent: _onAddEvent,
               ),
             ),
-            /*
             WebShellItem(
-              label: 'Club',
-              icon: Icons.shield_outlined,
-              page: ClubScreen(),
+                label: 'Equipes',
+                icon: Icons.groups_rounded,
+                page: TeamsListScreen(
+                  managedTeamsIds: getManagedTeamsIds,
+                  onTeamTap: (context, team) {
+                    Navigator.of(context).push(
+                      MaterialPageRoute(
+                        builder: (_) => TeamDetailScreen(
+                          team: team,
+                          seasonId: context.read<AppSession>().selectedSeason?.ref?.id,
+                          categoryLabel: team.name,
+                          genderLabel: 'Hommes', // à adapter selon ton modèle
+                          thresholdCards: const [
+                            TeamThresholdCardData(value: '11 km/h', label: 'Moyenne'),
+                            TeamThresholdCardData(value: '14,5 km/h', label: 'Haute'),
+                            TeamThresholdCardData(value: '17 km/h', label: 'Très Haute'),
+                          ],
+                        ),
+                      ),
+                    );
+                  },
+                )
             ),
-            */
+            const WebShellItem(
+              label: 'Chat',
+              icon: Icons.chat,
+              page: ResponsiveChat(),
+            ),
           ],
         ),
         if (_isLoading)

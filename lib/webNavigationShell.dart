@@ -1,3 +1,4 @@
+import 'package:firebase_auth/firebase_auth.dart' as firebase_auth;
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:grinta/util/app_theme.dart';
@@ -39,11 +40,82 @@ class WebNavigationShell extends StatefulWidget {
 class _WebNavigationShellState extends State<WebNavigationShell> {
   late int _selectedIndex;
   bool _collapsed = false;
+  bool _isSigningOut = false;
 
   @override
   void initState() {
     super.initState();
     _selectedIndex = widget.initialIndex.clamp(0, widget.items.length - 1);
+  }
+
+  Future<void> _logout() async {
+    if (_isSigningOut) return;
+
+    final colors = context.appColors;
+
+    final confirm = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) {
+        return AlertDialog(
+          backgroundColor: colors.card,
+          surfaceTintColor: Colors.transparent,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(18),
+            side: BorderSide(color: colors.border),
+          ),
+          title: Text(
+            'Déconnexion',
+            style: TextStyle(
+              color: colors.textPrimary,
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+          content: Text(
+            'Souhaites-tu vraiment te déconnecter ?',
+            style: TextStyle(
+              color: colors.textSecondary,
+            ),
+          ),
+          actions: [
+            OutlinedButton(
+              onPressed: () => Navigator.of(dialogContext).pop(false),
+              child: const Text('Annuler'),
+            ),
+            ElevatedButton(
+              onPressed: () => Navigator.of(dialogContext).pop(true),
+              child: const Text('Déconnexion'),
+            ),
+          ],
+        );
+      },
+    );
+
+    if (confirm != true) return;
+
+    setState(() => _isSigningOut = true);
+
+    try {
+      await firebase_auth.FirebaseAuth.instance.signOut();
+
+      if (!mounted) return;
+
+      Navigator.of(context, rootNavigator: true).pushNamedAndRemoveUntil(
+        '/',
+            (route) => false,
+      );
+    } catch (e) {
+      if (!mounted) return;
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Erreur lors de la déconnexion : $e'),
+        ),
+      );
+    } finally {
+      if (mounted) {
+        setState(() => _isSigningOut = false);
+      }
+    }
   }
 
   @override
@@ -77,13 +149,11 @@ class _WebNavigationShellState extends State<WebNavigationShell> {
                 children: [
                   _buildHeader(context),
                   Divider(color: colors.border, height: 1),
-
                   if (!_collapsed && widget.sidebarHeaderBottom != null)
                     Padding(
                       padding: const EdgeInsets.fromLTRB(12, 12, 12, 8),
                       child: widget.sidebarHeaderBottom!,
                     ),
-
                   Expanded(
                     child: Padding(
                       padding: EdgeInsets.symmetric(
@@ -114,6 +184,7 @@ class _WebNavigationShellState extends State<WebNavigationShell> {
                   ),
                   Divider(color: colors.border, height: 1),
                   _buildThemeToggle(context),
+                  _buildLogoutButton(context),
                 ],
               ),
             ),
@@ -140,7 +211,7 @@ class _WebNavigationShellState extends State<WebNavigationShell> {
 
         if (compact) {
           return Padding(
-            padding: const EdgeInsets.fromLTRB(12, 12, 12, 16),
+            padding: const EdgeInsets.fromLTRB(12, 12, 12, 12),
             child: Tooltip(
               message: app.isDarkMode
                   ? 'Désactiver le mode sombre'
@@ -171,7 +242,7 @@ class _WebNavigationShellState extends State<WebNavigationShell> {
         }
 
         return Padding(
-          padding: const EdgeInsets.fromLTRB(12, 12, 12, 16),
+          padding: const EdgeInsets.fromLTRB(12, 12, 12, 12),
           child: Container(
             padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
             decoration: BoxDecoration(
@@ -221,6 +292,91 @@ class _WebNavigationShellState extends State<WebNavigationShell> {
           ),
         );
       },
+    );
+  }
+
+  Widget _buildLogoutButton(BuildContext context) {
+    final colors = context.appColors;
+    final textTheme = Theme.of(context).textTheme;
+
+    if (_collapsed) {
+      return Padding(
+        padding: const EdgeInsets.fromLTRB(12, 0, 12, 16),
+        child: Tooltip(
+          message: 'Déconnexion',
+          child: InkWell(
+            borderRadius: BorderRadius.circular(16),
+            onTap: _isSigningOut ? null : _logout,
+            child: Container(
+              width: double.infinity,
+              height: 52,
+              decoration: BoxDecoration(
+                color: colors.card,
+                borderRadius: BorderRadius.circular(16),
+                border: Border.all(color: colors.border),
+              ),
+              child: _isSigningOut
+                  ? Padding(
+                padding: const EdgeInsets.all(14),
+                child: CircularProgressIndicator(
+                  strokeWidth: 2.2,
+                  color: colors.primary,
+                ),
+              )
+                  : Icon(
+                Icons.logout_rounded,
+                color: colors.primary,
+              ),
+            ),
+          ),
+        ),
+      );
+    }
+
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(12, 0, 12, 16),
+      child: InkWell(
+        borderRadius: BorderRadius.circular(18),
+        onTap: _isSigningOut ? null : _logout,
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+          decoration: BoxDecoration(
+            color: colors.card,
+            borderRadius: BorderRadius.circular(18),
+            border: Border.all(color: colors.border),
+          ),
+          child: Row(
+            children: [
+              _isSigningOut
+                  ? SizedBox(
+                width: 22,
+                height: 22,
+                child: CircularProgressIndicator(
+                  strokeWidth: 2.2,
+                  color: colors.primary,
+                ),
+              )
+                  : Icon(
+                Icons.logout_rounded,
+                color: colors.primary,
+                size: 22,
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Text(
+                  'Déconnexion',
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: textTheme.bodyLarge?.copyWith(
+                    color: colors.primary,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
     );
   }
 

@@ -41,10 +41,12 @@ class AppSession extends ChangeNotifier {
   final Map<String, Map<String, Map<String, Team>>> _teamsAsPlayerData = {};
   final Map<String, Map<String, Map<String, Team>>> _teamsAsManagerData = {};
 
+
   Map<String, Season> _allSeasonMap = {};
 
   bool _isInitializing = false;
   bool _isDisposed = false;
+
   String? _lastInitializedUid;
   int _listenerGeneration = 0;
 
@@ -57,6 +59,39 @@ class AppSession extends ChangeNotifier {
       }
     });
   }
+
+
+  bool get hasManagedTeamsInSelectedSeason {
+    final String? seasonId = selectedSeason?.ref?.id;
+    if (seasonId == null) return false;
+
+    Map<String, Map<String, Team>>? teamsAsManager = _teamsAsManagerData[selectedPlayerId];
+    if(teamsAsManager == null || teamsAsManager.isEmpty) return false;
+    Map<String, Team>? teamsForSeasonId = teamsAsManager[seasonId];
+    if(teamsForSeasonId == null || teamsForSeasonId.isEmpty) return false;
+
+    return true;
+  }
+
+  List<String> get managedTeamsIdsForSelectedSeason {
+    List<String> ids = [];
+
+    final String? seasonId = selectedSeason?.ref?.id;
+    if (seasonId == null) return ids;
+
+    Map<String, Map<String, Team>>? teamsAsManager = _teamsAsManagerData[selectedPlayerId];
+    if(teamsAsManager == null || teamsAsManager.isEmpty) return ids;
+    Map<String, Team>? teamsForSeasonId = teamsAsManager[seasonId];
+    if(teamsForSeasonId == null || teamsForSeasonId.isEmpty) return ids;
+
+
+    for (final entry in teamsForSeasonId.entries) {
+        final String teamId = entry.key;
+        ids.add(teamId);
+    }
+    return ids;
+  }
+
 
   Map<String, Player> get currentUserPlayers {
     final uid = user?.uid;
@@ -374,6 +409,7 @@ class AppSession extends ChangeNotifier {
       _teamsAsManagerData[playerId] = rebuilt;
     }
   }
+
 
   void _rebuildMergedTeamsAndSeasons() {
     final Map<String, Map<String, Map<String, Team>>> mergedTeams = {};

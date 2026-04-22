@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/painting.dart' show WebHtmlElementStrategy;
 import 'package:grinta/model/match.dart' as grinta_match;
 
 import '../util/app_theme.dart';
@@ -7,22 +8,22 @@ class AgendaMatchRow extends StatelessWidget {
   final grinta_match.Match match;
 
   const AgendaMatchRow({
+    super.key,
     required this.match,
   });
 
-  @override
   @override
   Widget build(BuildContext context) {
     final colors = context.appColors;
 
     final textStyle = Theme.of(context).textTheme.bodyMedium?.copyWith(
       color: colors.textPrimary,
-      fontWeight: FontWeight.w400,
+      fontWeight: FontWeight.w700,
     ) ??
         TextStyle(
           color: colors.textPrimary,
           fontSize: 14,
-          fontWeight: FontWeight.w400,
+          fontWeight: FontWeight.w700,
         );
 
     String team1 = match.team1 ?? '';
@@ -31,136 +32,178 @@ class AgendaMatchRow extends StatelessWidget {
     if (team1.contains('Exempt')) team1 = 'Exempt';
     if (team2.contains('Exempt')) team2 = 'Exempt';
 
+    final hasTab = match.tab?.trim().isNotEmpty ?? false;
+    final hasTimeCh = match.timeCh?.trim().isNotEmpty ?? false;
+    final hasTerrain = match.nomDuTerrain?.trim().isNotEmpty ?? false;
+    final hasAdresse = match.terrainAdresse1?.trim().isNotEmpty ?? false;
+
     return LayoutBuilder(
       builder: (context, constraints) {
-        final bool hasTab = match.tab?.isNotEmpty ?? false;
-
-        final double contentWidth = constraints.maxWidth > 360
-            ? 360
-            : constraints.maxWidth;
+        final contentWidth =
+        constraints.maxWidth > 380 ? 380.0 : constraints.maxWidth;
 
         return Center(
           child: SizedBox(
             width: contentWidth,
-            child: Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
               children: [
-                Expanded(
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
+                if (hasTimeCh) ...[
+                  Text(
+                    match.timeCh!.trim(),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    textAlign: TextAlign.center,
+                    style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                      color: colors.textPrimary,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                ],
+                if (hasTerrain) ...[
+                  Text(
+                    match.nomDuTerrain!.trim(),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    textAlign: TextAlign.center,
+                    style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                      color: colors.textPrimary,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                ],
+                if (hasAdresse) ...[
+                  Text(
+                    match.terrainAdresse1!.trim(),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    textAlign: TextAlign.center,
+                    style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                      color: colors.textPrimary,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                ],
+                Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Expanded(
+                      child: _teamBlock(
+                        context: context,
+                        logoUrl: match.team1UrlLogo ?? '',
+                        teamName: team1,
+                        isPlayed: match.isMatchPlayed == true,
+                        score: '${match.homeScore ?? 0}',
+                        isForfeit: match.isTeam1Forfeit == true,
+                        scoreFirst: false,
+                        textStyle: textStyle,
+                      ),
+                    ),
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 8),
+                      child: Column(
                         mainAxisSize: MainAxisSize.min,
                         children: [
-                          if (match.team1UrlLogo?.isNotEmpty ?? false)
-                            _matchLogo(context, match.team1UrlLogo!),
-                          const SizedBox(width: 6),
-                          if (match.isMatchPlayed == true)
-                            _scoreBox(
-                              context: context,
-                              score: '${match.homeScore ?? 0}',
+                          const SizedBox(height: 10),
+                          Text(
+                            '-',
+                            textAlign: TextAlign.center,
+                            style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                              color: colors.textPrimary,
+                              fontWeight: FontWeight.w700,
                             ),
+                          ),
+                          if (hasTab) ...[
+                            const SizedBox(height: 4),
+                            Text(
+                              match.tab!.trim(),
+                              textAlign: TextAlign.center,
+                              style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                                color: colors.primary,
+                                fontWeight: FontWeight.w700,
+                              ),
+                            ),
+                          ],
                         ],
                       ),
-                      const SizedBox(height: 4),
-                      Text(
-                        team1,
-                        maxLines: 2,
-                        overflow: TextOverflow.ellipsis,
-                        textAlign: TextAlign.center,
-                        style: textStyle,
+                    ),
+                    Expanded(
+                      child: _teamBlock(
+                        context: context,
+                        logoUrl: match.team2UrlLogo ?? '',
+                        teamName: team2,
+                        isPlayed: match.isMatchPlayed == true,
+                        score: '${match.outSideScore ?? 0}',
+                        isForfeit: match.isTeam2Forfeit == true,
+                        scoreFirst: true,
+                        textStyle: textStyle,
                       ),
-                      if (match.isTeam1Forfeit == true)
-                        Padding(
-                          padding: const EdgeInsets.only(top: 2),
-                          child: Text(
-                            'Forfait',
-                            textAlign: TextAlign.center,
-                            style: textStyle.copyWith(
-                              fontStyle: FontStyle.italic,
-                              fontSize: 12,
-                              color: colors.textSecondary,
-                            ),
-                          ),
-                        ),
-                    ],
-                  ),
-                ),
-                Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 10),
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Text(
-                        '-',
-                        textAlign: TextAlign.center,
-                        style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                          color: colors.textSecondary,
-                          fontWeight: FontWeight.w700,
-                        ),
-                      ),
-                      if (hasTab) ...[
-                        const SizedBox(height: 4),
-                        Text(
-                          match.tab ?? '',
-                          textAlign: TextAlign.center,
-                          style: textStyle.copyWith(
-                            fontWeight: FontWeight.w700,
-                            color: colors.primary,
-                          ),
-                        ),
-                      ],
-                    ],
-                  ),
-                ),
-                Expanded(
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          if (match.isMatchPlayed == true)
-                            _scoreBox(
-                              context: context,
-                              score: '${match.outSideScore ?? 0}',
-                            ),
-                          const SizedBox(width: 6),
-                          if (match.team2UrlLogo?.isNotEmpty ?? false)
-                            _matchLogo(context, match.team2UrlLogo!),
-                        ],
-                      ),
-                      const SizedBox(height: 4),
-                      Text(
-                        team2,
-                        maxLines: 2,
-                        overflow: TextOverflow.ellipsis,
-                        textAlign: TextAlign.center,
-                        style: textStyle,
-                      ),
-                      if (match.isTeam2Forfeit == true)
-                        Padding(
-                          padding: const EdgeInsets.only(top: 2),
-                          child: Text(
-                            'Forfait',
-                            textAlign: TextAlign.center,
-                            style: textStyle.copyWith(
-                              fontStyle: FontStyle.italic,
-                              fontSize: 12,
-                              color: colors.textSecondary,
-                            ),
-                          ),
-                        ),
-                    ],
-                  ),
+                    ),
+                  ],
                 ),
               ],
             ),
           ),
         );
       },
+    );
+  }
+
+  Widget _teamBlock({
+    required BuildContext context,
+    required String logoUrl,
+    required String teamName,
+    required bool isPlayed,
+    required String score,
+    required bool isForfeit,
+    required bool scoreFirst,
+    required TextStyle textStyle,
+  }) {
+    final colors = context.appColors;
+
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            if (scoreFirst && isPlayed) ...[
+              _scoreBox(context: context, score: score),
+              const SizedBox(width: 6),
+            ],
+            _matchLogo(context, logoUrl),
+            if (!scoreFirst && isPlayed) ...[
+              const SizedBox(width: 6),
+              _scoreBox(context: context, score: score),
+            ],
+          ],
+        ),
+        const SizedBox(height: 6),
+        Text(
+          teamName,
+          maxLines: 2,
+          overflow: TextOverflow.ellipsis,
+          textAlign: TextAlign.center,
+          style: textStyle,
+        ),
+        if (isForfeit)
+          Padding(
+            padding: const EdgeInsets.only(top: 2),
+            child: Text(
+              'Forfait',
+              textAlign: TextAlign.center,
+              style: textStyle.copyWith(
+                fontStyle: FontStyle.italic,
+                fontSize: 12,
+                color: colors.textSecondary,
+              ),
+            ),
+          ),
+      ],
     );
   }
 
@@ -173,13 +216,13 @@ class AgendaMatchRow extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
       decoration: BoxDecoration(
-        color: colors.primary,
+        color: colors.card,
         borderRadius: BorderRadius.circular(6),
       ),
       child: Text(
         score,
         style: Theme.of(context).textTheme.bodySmall?.copyWith(
-          color: Theme.of(context).colorScheme.onPrimary,
+          color: colors.textPrimary,
           fontWeight: FontWeight.w700,
         ),
       ),
@@ -189,33 +232,6 @@ class AgendaMatchRow extends StatelessWidget {
   Widget _matchLogo(BuildContext context, String url) {
     final colors = context.appColors;
     final safeUrl = url.trim();
-
-    if (safeUrl.isEmpty) {
-      return Container(
-        width: 42,
-        height: 42,
-        decoration: BoxDecoration(
-          color: Colors.white,
-          shape: BoxShape.circle,
-          border: Border.all(color: colors.border),
-        ),
-        child: Center(
-          child: Container(
-            width: 30,
-            height: 30,
-            decoration: BoxDecoration(
-              color: colors.surface,
-              shape: BoxShape.circle,
-            ),
-            child: Icon(
-              Icons.shield_outlined,
-              size: 16,
-              color: colors.textSecondary,
-            ),
-          ),
-        ),
-      );
-    }
 
     return Container(
       width: 42,
@@ -227,20 +243,26 @@ class AgendaMatchRow extends StatelessWidget {
       ),
       child: Center(
         child: Container(
-          width: 30,
-          height: 30,
+          width: 28,
+          height: 28,
+          alignment: Alignment.center,
+          clipBehavior: Clip.antiAlias,
           decoration: const BoxDecoration(
             shape: BoxShape.circle,
           ),
-          clipBehavior: Clip.antiAlias,
-          child: Image.network(
+          child: safeUrl.isEmpty
+              ? Icon(
+            Icons.shield_outlined,
+            size: 16,
+            color: colors.textSecondary,
+          )
+              : Image.network(
             safeUrl,
             fit: BoxFit.contain,
             webHtmlElementStrategy: WebHtmlElementStrategy.prefer,
             errorBuilder: (context, error, stackTrace) {
               debugPrint('LOGO ERROR url=$safeUrl');
               debugPrint('error=$error');
-
               return Icon(
                 Icons.broken_image_outlined,
                 size: 16,

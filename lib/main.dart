@@ -1,17 +1,22 @@
+import 'package:cloud_functions/cloud_functions.dart';
 import 'package:flutter/foundation.dart';
 import 'package:firebase_analytics/firebase_analytics.dart';
-import 'package:firebase_auth/firebase_auth.dart';
+import 'package:firebase_auth/firebase_auth.dart' as firebase_auth;
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_localizations/flutter_localizations.dart';
-import 'package:grinta/provider/appSession.dart';
 import 'package:provider/provider.dart';
+import 'package:stream_chat_flutter/stream_chat_flutter.dart';
+import 'package:stream_chat_localizations/stream_chat_localizations.dart';
+
 import 'firebase_options.dart';
 import 'homeScreen.dart';
 import 'l10n/app_localizations.dart';
 import 'login_screen.dart';
+import 'package:grinta/provider/appSession.dart';
 import 'util/app_theme.dart';
 import 'package:grinta/widget/web_app_root.dart';
+
+const String kStreamApiKey = 'vg9g2zz7s2fc';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -48,6 +53,10 @@ class _MyAppState extends State<MyApp> {
   late final FirebaseAnalyticsObserver _analyticsObserver =
   FirebaseAnalyticsObserver(analytics: _analytics);
 
+  late final StreamChatClient _streamChatClient = StreamChatClient(
+    kStreamApiKey,
+  );
+
   ThemeMode _themeMode = ThemeMode.dark;
   Locale? _locale;
 
@@ -77,9 +86,7 @@ class _MyAppState extends State<MyApp> {
       locale: _locale,
       localizationsDelegates: const [
         AppLocalizations.delegate,
-        GlobalMaterialLocalizations.delegate,
-        GlobalWidgetsLocalizations.delegate,
-        GlobalCupertinoLocalizations.delegate,
+        ...GlobalStreamChatLocalizations.delegates,
       ],
       supportedLocales: const [
         Locale('fr'),
@@ -88,7 +95,13 @@ class _MyAppState extends State<MyApp> {
         Locale('es'),
         Locale('it'),
       ],
-      home: const AuthGate(),
+      builder: (context, child) {
+        return StreamChat(
+          client: _streamChatClient,
+          child: child ?? const SizedBox.shrink(),
+        );
+      },
+      home: AuthGate(client: _streamChatClient),
       routes: {
         '/login': (context) => const LoginScreen(),
         '/home': (context) => kIsWeb ? const WebAppRoot() : const HomeScreen(),
@@ -99,35 +112,179 @@ class _MyAppState extends State<MyApp> {
   }
 }
 
-class AuthGate extends StatelessWidget {
-  const AuthGate({super.key});
+class AuthGate extends StatefulWidget {
+  const AuthGate({
+    super.key,
+    required this.client,
+  });
+
+  final StreamChatClient client;
+
+  @override
+  State<AuthGate> createState() => _AuthGateState();
+}
+
+class _AuthGateState extends State<AuthGate> {
+  Future<void>? _streamConnectionFuture;
+  String? _streamFutureForUid;
+  String? _connectedStreamUserId;
+
+  Future<void> _connectStreamUser(firebase_auth.User firebaseUser) async {
+    final streamUserId = firebaseUser.uid;
+    // Vérifie que l'identifiant utilisé respecte bien le format attendu par Stream.
+
+    if (_connectedStreamUserId == streamUserId) {
+      return;
+    }
+
+    if (_connectedStreamUserId != null &&
+        _connectedStreamUserId != streamUserId) {
+      await widget.client.disconnectUser();
+      _connectedStreamUserId = null;
+    }
+
+    final token = await _fetchStreamToken(firebaseUser);
+
+    final streamUser = User(
+      id: streamUserId,
+      extraData: {
+        'name': firebaseUser.displayName ?? firebaseUser.email ?? 'Utilisateur',
+        if (firebaseUser.photoURL != null) 'image': firebaseUser.photoURL!,
+        if (firebaseUser.email != null) 'email': firebaseUser.email!,
+      },
+    );
+
+    await widget.client.connectUser(streamUser, token);
+    _connectedStreamUserId = streamUserId;
+  }
+
+  Future<void> _disconnectStreamUserIfNeeded() async {
+    if (_connectedStreamUserId == null) return;
+
+    await widget.client.disconnectUser();
+    _connectedStreamUserId = null;
+    _streamConnectionFuture = null;
+    _streamFutureForUid = null;
+  }
+
+  Future<String> _fetchStreamToken(firebase_auth.User firebaseUser) async {
+    final functions = FirebaseFunctions.instanceFor(
+      region: 'europe-west1',
+    );
+
+    final callable = functions.httpsCallable('getStreamUserToken');
+    final result = await callable();
+
+    final data = Map<String, dynamic>.from(result.data as Map);
+    final token = data['token'] as String?;
+
+    if (token == null || token.isEmpty) {
+      throw Exception('Token Stream manquant dans la réponse.');
+    }
+
+    return token;
+  }
 
   @override
   Widget build(BuildContext context) {
-    return StreamBuilder<User?>(
-      stream: FirebaseAuth.instance.authStateChanges(),
+    return StreamBuilder<firebase_auth.User?>(
+      stream: firebase_auth.FirebaseAuth.instance.authStateChanges(),
       builder: (context, snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting) {
-          return Scaffold(
-            backgroundColor: Theme.of(context).scaffoldBackgroundColor,
-            body: const Center(
-              child: CircularProgressIndicator(),
-            ),
+          return const _LoadingScreen();
+        }
+
+        final firebase_auth.User? user = snapshot.data;
+
+        if (user == null) {
+          return FutureBuilder<void>(
+            future: _disconnectStreamUserIfNeeded(),
+            builder: (context, _) {
+              return const LoginScreen();
+            },
           );
         }
 
-        final User? user = snapshot.data;
-
-        if (user == null) {
-          return const LoginScreen();
+        if (_streamConnectionFuture == null || _streamFutureForUid != user.uid) {
+          _streamFutureForUid = user.uid;
+          _streamConnectionFuture = _connectStreamUser(user);
         }
 
-        if (kIsWeb) {
-          return const WebAppRoot();
-        }
+        return FutureBuilder<void>(
+          future: _streamConnectionFuture,
+          builder: (context, streamSnapshot) {
+            if (streamSnapshot.connectionState != ConnectionState.done) {
+              return const _LoadingScreen();
+            }
 
-        return const HomeScreen();
+            if (streamSnapshot.hasError) {
+              return Scaffold(
+                backgroundColor: Theme.of(context).scaffoldBackgroundColor,
+                body: Center(
+                  child: Padding(
+                    padding: const EdgeInsets.all(24),
+                    child: ConstrainedBox(
+                      constraints: const BoxConstraints(maxWidth: 520),
+                      child: Card(
+                        child: Padding(
+                          padding: const EdgeInsets.all(20),
+                          child: Column(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              const Icon(Icons.error_outline, size: 40),
+                              const SizedBox(height: 16),
+                              Text(
+                                'Connexion Stream impossible',
+                                style: Theme.of(context).textTheme.titleLarge,
+                                textAlign: TextAlign.center,
+                              ),
+                              const SizedBox(height: 12),
+                              Text(
+                                '${streamSnapshot.error}',
+                                textAlign: TextAlign.center,
+                              ),
+                              const SizedBox(height: 20),
+                              ElevatedButton(
+                                onPressed: () {
+                                  setState(() {
+                                    _streamConnectionFuture =
+                                        _connectStreamUser(user);
+                                  });
+                                },
+                                child: const Text('Réessayer'),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+              );
+            }
+
+            if (kIsWeb) {
+              return const WebAppRoot();
+            }
+
+            return const HomeScreen();
+          },
+        );
       },
+    );
+  }
+}
+
+class _LoadingScreen extends StatelessWidget {
+  const _LoadingScreen();
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
+      body: const Center(
+        child: CircularProgressIndicator(),
+      ),
     );
   }
 }

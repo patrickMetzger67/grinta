@@ -81,7 +81,22 @@ class EffectivesService {
 
     return snapshot.docs.map((doc) => Effectives.fromData(doc)).toList();
   }
-  /// READ ONE BY MEMBER + SEASON
+
+  /// READ BY MEMBER + TEAMID
+  Future<Effectives?> getEffectivesByMemberIdAndTeamId(
+      String memberId,
+      String teamId,
+      ) async {
+    final querySnapshot = await _collection
+        .where(keyEffectivesMemberID, isEqualTo: memberId)
+        .where(keyEffectivesTeamID, isEqualTo: teamId)
+        .limit(1)
+        .get();
+    if (querySnapshot.docs.isEmpty) return null;
+    return Effectives.fromData(querySnapshot.docs.first);
+  }
+
+      /// READ ONE BY MEMBER + SEASON
   Future<Effectives?> getEffectivesByMemberAndSeason({
     required String memberId,
     required String seasonId,

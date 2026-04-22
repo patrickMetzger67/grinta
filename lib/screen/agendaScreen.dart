@@ -42,9 +42,6 @@ class _AgendaScreenState extends State<AgendaScreen> {
   void initState() {
     super.initState();
 
-
-
-
     final User? user = FirebaseAuth.instance.currentUser;
 
     if (user != null) {
@@ -757,26 +754,28 @@ class _AgendaLegend extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+
+    final colors = context.appColors;
     return compact
-        ? const SingleChildScrollView(
+        ? SingleChildScrollView(
       scrollDirection: Axis.horizontal,
       child: Row(
         children: [
           _LegendItem(
             label: 'Match',
-            color: Colors.red,
+            color: _typeColor(context, AgendaItemType.match),
             icon: Icons.sports_soccer_rounded,
           ),
-          SizedBox(width: 8),
+          const SizedBox(width: 8),
           _LegendItem(
             label: 'Entraînement',
-            color: Colors.orange,
+            color: _typeColor(context, AgendaItemType.entrainement),
             icon: Icons.fitness_center_rounded,
           ),
-          SizedBox(width: 8),
+          const SizedBox(width: 8),
           _LegendItem(
             label: 'Prépa physique',
-            color: Colors.green,
+            color: _typeColor(context, AgendaItemType.preparationPhysique),
             icon: Icons.directions_run_rounded,
           ),
         ],
@@ -790,34 +789,34 @@ class _AgendaLegend extends StatelessWidget {
         borderRadius: BorderRadius.circular(22),
         border: Border.all(color: context.appColors.border),
       ),
-      child: const Column(
+      child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
+          const Text(
             'Légende',
             style: TextStyle(
               fontSize: 16,
               fontWeight: FontWeight.w700,
             ),
           ),
-          SizedBox(height: 12),
+          const SizedBox(height: 12),
           _LegendItem(
             label: 'Match',
-            color: Colors.red,
+            color: _typeColor(context, AgendaItemType.match),
             icon: Icons.sports_soccer_rounded,
             fullWidth: true,
           ),
-          SizedBox(height: 8),
+          const SizedBox(height: 8),
           _LegendItem(
             label: 'Entraînement',
-            color: Colors.orange,
+            color: _typeColor(context, AgendaItemType.entrainement),
             icon: Icons.fitness_center_rounded,
             fullWidth: true,
           ),
-          SizedBox(height: 8),
-          _LegendItem(
+          const SizedBox(height: 8),
+           _LegendItem(
             label: 'Prépa physique',
-            color: Colors.green,
+            color: _typeColor(context, AgendaItemType.preparationPhysique),
             icon: Icons.directions_run_rounded,
             fullWidth: true,
           ),
@@ -1272,21 +1271,13 @@ class _AgendaItemCard extends StatelessWidget {
       width: double.infinity,
       clipBehavior: Clip.antiAlias,
       decoration: BoxDecoration(
-        color: colors.card,
+    //    color: colors.card,
+        color: accent,
         borderRadius: BorderRadius.circular(16),
         border: Border.all(color: colors.border),
       ),
       child: Stack(
         children: [
-          Positioned(
-            left: 0,
-            top: 0,
-            bottom: 0,
-            child: Container(
-              width: 5,
-              color: accent,
-            ),
-          ),
           Padding(
             padding: const EdgeInsets.fromLTRB(17, 12, 12, 12),
             child: LayoutBuilder(
@@ -1299,7 +1290,7 @@ class _AgendaItemCard extends StatelessWidget {
                     Row(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Icon(icon, size: 18, color: accent),
+                        Icon(icon, size: 18, color: colors.textPrimary),
                         const SizedBox(width: 8),
                         Expanded(
                           child: Text(
@@ -1312,6 +1303,14 @@ class _AgendaItemCard extends StatelessWidget {
                             ),
                           ),
                         ),
+                        if(item.withTracker) ... [
+                          const SizedBox(width: 8),
+                          Icon(
+                              Icons.gps_not_fixed_rounded,
+                            size: 18,
+                            color: (item.areTrackersSynchronized)?colors.success:colors.warning,
+                          ),
+                        ],
                         if (item.isDone) ...[
                           const SizedBox(width: 8),
                           Icon(
@@ -1329,65 +1328,6 @@ class _AgendaItemCard extends StatelessWidget {
                         match: item.match!,
                       ),
                     ],
-
-                    const SizedBox(height: 10),
-
-                    wide
-                        ? Row(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        _InfoPill(
-                          icon: Icons.access_time_rounded,
-                          label:
-                          '${_formatHour(item.startAt)} - ${_formatHour(item.endAt)}',
-                        ),
-                        const SizedBox(width: 8),
-                        _InfoPill(
-                          icon: icon,
-                          label: label,
-                          textColor: accent,
-                          backgroundColor: accent.withOpacity(0.12),
-                          borderColor: accent.withOpacity(0.24),
-                        ),
-                        if (item.subtitle != null &&
-                            item.subtitle!.trim().isNotEmpty) ...[
-                          const SizedBox(width: 8),
-                          Expanded(
-                            child: Align(
-                              alignment: Alignment.centerLeft,
-                              child: _InfoPill(
-                                icon: Icons.info_outline_rounded,
-                                label: item.subtitle!,
-                              ),
-                            ),
-                          ),
-                        ],
-                      ],
-                    )
-                        : Wrap(
-                      spacing: 8,
-                      runSpacing: 8,
-                      children: [
-                        _InfoPill(
-                          icon: Icons.access_time_rounded,
-                          label:
-                          '${_formatHour(item.startAt)} - ${_formatHour(item.endAt)}',
-                        ),
-                        _InfoPill(
-                          icon: icon,
-                          label: label,
-                          textColor: accent,
-                          backgroundColor: accent.withOpacity(0.12),
-                          borderColor: accent.withOpacity(0.24),
-                        ),
-                        if (item.subtitle != null &&
-                            item.subtitle!.trim().isNotEmpty)
-                          _InfoPill(
-                            icon: Icons.info_outline_rounded,
-                            label: item.subtitle!,
-                          ),
-                      ],
-                    ),
                   ],
                 );
               },
@@ -1661,7 +1601,7 @@ Color _typeColor(BuildContext context, AgendaItemType type) {
 
   switch (type) {
     case AgendaItemType.match:
-      return colors.danger;
+      return colors.secondary;
     case AgendaItemType.entrainement:
       return colors.primary;
     case AgendaItemType.preparationPhysique:
