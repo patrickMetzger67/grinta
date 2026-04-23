@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 
 import '../model/agendaItem.dart';
 import '../util/app_theme.dart';
+import '../widget/activity_rings_card.dart';
 import '../widget/agendaMatchRow.dart';
 
 
@@ -1303,12 +1304,14 @@ class _AgendaItemCard extends StatelessWidget {
                             ),
                           ),
                         ),
-                        if(item.withTracker) ... [
+                        if (item.withTracker) ...[
                           const SizedBox(width: 8),
                           Icon(
-                              Icons.gps_not_fixed_rounded,
+                            Icons.gps_not_fixed_rounded,
                             size: 18,
-                            color: (item.areTrackersSynchronized)?colors.success:colors.warning,
+                            color: (item.areTrackersSynchronized)
+                                ? colors.success
+                                : colors.warning,
                           ),
                         ],
                         if (item.isDone) ...[
@@ -1320,6 +1323,41 @@ class _AgendaItemCard extends StatelessWidget {
                           ),
                         ],
                       ],
+                    ),
+                    SizedBox(
+                      width: 55,
+                      height: 55,
+                      child: ActivityRingsCard.compact(
+                        rings: const [
+                          ActivityRingItem(
+                            label: 'Bouger',
+                            value: 113,
+                            goal: 600,
+                            unit: 'KCAL',
+                            color: Color(0xFFFF2D55),
+                            trackColor: Color(0xFF4B1322),
+                            icon: Icons.arrow_forward,
+                          ),
+                          ActivityRingItem(
+                            label: 'M’entraîner',
+                            value: 6,
+                            goal: 60,
+                            unit: 'MIN',
+                            color: Color(0xFF9DFF00),
+                            trackColor: Color(0xFF1C4312),
+                            icon: Icons.fast_forward,
+                          ),
+                          ActivityRingItem(
+                            label: 'Me lever',
+                            value: 6,
+                            goal: 12,
+                            unit: 'H',
+                            color: Color(0xFF28F0FF),
+                            trackColor: Color(0xFF103845),
+                            icon: Icons.north,
+                          ),
+                        ],
+                      ),
                     ),
 
                     if (item.match != null) ...[

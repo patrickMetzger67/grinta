@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:grinta/model/player.dart';
 import 'package:grinta/model/team.dart';
 import 'package:grinta/model/effectives.dart';
+import 'package:grinta/screen/team_param_screen.dart';
 import 'package:grinta/services/playerService.dart';
 import 'package:grinta/util/app_theme.dart';
 
@@ -99,17 +100,34 @@ class _TeamDetailScreenState extends State<TeamDetailScreen> {
     return data;
   }
 
+  double _averagePlayersAge(List<_TeamMemberVm> rows) {
+    final List<int> ages = rows.where((r) {
+      print('r=${r.player.lastName} - ${r.effectives?.type}');
+      final int type = r.effectives?.type ?? 0;
+      return type == 0;
+    }).map((r) {
+      final String age = _buildAge(r.player);
+      return int.tryParse(age) ?? -1;
+    }).where((age) => age >= 0).toList();
+
+    if (ages.isEmpty) return 0;
+
+    final int total = ages.reduce((a, b) => a + b);
+    return total / ages.length;
+  }
+
   int _playersCount(List<_TeamMemberVm> rows) {
     return rows.where((r) {
-      final int type = r.effectives?.type ?? 1;
-      return type == 1 || type == 4;
+      print('r=${r.player.lastName} - ${r.effectives?.type}');
+      final int type = r.effectives?.type ?? 0;
+      return type == 0;
     }).length;
   }
 
   int _staffsCount(List<_TeamMemberVm> rows) {
     return rows.where((r) {
       final int type = r.effectives?.type ?? 1;
-      return type == 2 || type == 3;
+      return type != 0;
     }).length;
   }
 
@@ -142,6 +160,7 @@ class _TeamDetailScreenState extends State<TeamDetailScreen> {
             final List<_TeamMemberVm> rows = snapshot.data ?? <_TeamMemberVm>[];
             final int playersCount = _playersCount(rows);
             final int staffsCount = _staffsCount(rows);
+            final double averageAge = _averagePlayersAge(rows);
 
             return SingleChildScrollView(
               padding: const EdgeInsets.all(24),
@@ -152,6 +171,7 @@ class _TeamDetailScreenState extends State<TeamDetailScreen> {
                     rows: rows,
                     playersCount: playersCount,
                     staffsCount: staffsCount,
+                    averageAge: averageAge
                   ),
                   const SizedBox(height: 24),
                   _buildRosterCard(context, rows),
@@ -169,6 +189,7 @@ class _TeamDetailScreenState extends State<TeamDetailScreen> {
         required List<_TeamMemberVm> rows,
         required int playersCount,
         required int staffsCount,
+        required double averageAge,
       }) {
     final colors = context.appColors;
     final textTheme = Theme.of(context).textTheme;
@@ -183,6 +204,7 @@ class _TeamDetailScreenState extends State<TeamDetailScreen> {
         _InfoChip(label: widget.genderLabel!.trim()),
       _InfoChip(label: '$playersCount joueur${playersCount > 1 ? 's' : ''}'),
       _InfoChip(label: '$staffsCount staff${staffsCount > 1 ? 's' : ''}'),
+      _InfoChip(label: "Moyenne d'âge: ${averageAge.toStringAsFixed(0)} ans"),
     ];
 
     return Container(
@@ -192,15 +214,15 @@ class _TeamDetailScreenState extends State<TeamDetailScreen> {
         borderRadius: BorderRadius.circular(22),
         gradient: LinearGradient(
           colors: <Color>[
-            const Color(0xFFFF2E63),
-            colors.secondary,
+            colors.primary,
+            colors.secondary.withValues(alpha: 0.9),
           ],
           begin: Alignment.centerLeft,
           end: Alignment.centerRight,
         ),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.18),
+            color: colors.secondary.withValues(alpha: 0.20),
             blurRadius: 28,
             offset: const Offset(0, 12),
           ),
@@ -226,7 +248,7 @@ class _TeamDetailScreenState extends State<TeamDetailScreen> {
                       children: [
                         Text(
                           title,
-                          style: textTheme.displaySmall?.copyWith(
+                          style: textTheme.headlineSmall?.copyWith(
                             color: Colors.white,
                             fontWeight: FontWeight.w800,
                           ),
@@ -238,6 +260,20 @@ class _TeamDetailScreenState extends State<TeamDetailScreen> {
                         _HeaderSquareIconButton(
                           icon: Icons.delete_outline_rounded,
                           onTap: () {},
+                        ),
+                        _HeaderSquareIconButton(
+                          icon: Icons.tune_rounded,
+                          onTap: () async {
+                            final updated = await Navigator.of(context).push<bool>(
+                              MaterialPageRoute(
+                                builder: (_) => TeamParamScreen(team: widget.team),
+                              ),
+                            );
+
+                            if (updated == true && mounted) {
+                              setState(() {});
+                            }
+                          },
                         ),
                       ],
                     ),
@@ -278,34 +314,7 @@ class _TeamDetailScreenState extends State<TeamDetailScreen> {
                   ],
                 ),
               ),
-              SizedBox(width: stacked ? 0 : 24, height: stacked ? 24 : 0),
-              Expanded(
-                flex: stacked ? 0 : 5,
-                child: widget.thresholdCards.isEmpty
-                    ? const SizedBox.shrink()
-                    : Column(
-                  crossAxisAlignment:
-                  stacked ? CrossAxisAlignment.start : CrossAxisAlignment.end,
-                  children: [
-                    Text(
-                      'Seuils : personnalisés',
-                      style: textTheme.titleMedium?.copyWith(
-                        color: Colors.white,
-                        fontWeight: FontWeight.w500,
-                      ),
-                    ),
-                    const SizedBox(height: 14),
-                    Wrap(
-                      spacing: 16,
-                      runSpacing: 16,
-                      alignment: WrapAlignment.end,
-                      children: widget.thresholdCards
-                          .map((e) => _ThresholdCard(data: e))
-                          .toList(),
-                    ),
-                  ],
-                ),
-              ),
+
             ],
           );
         },
@@ -332,7 +341,7 @@ class _TeamDetailScreenState extends State<TeamDetailScreen> {
               children: [
                 Icon(
                   Icons.groups_2_rounded,
-                  color: const Color(0xFFFF7B72),
+                  color: colors.secondary,
                   size: 30,
                 ),
                 const SizedBox(width: 12),

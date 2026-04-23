@@ -4,19 +4,12 @@ import 'dart:typed_data';
 
 import 'package:archive/archive.dart';
 import 'package:firebase_storage/firebase_storage.dart';
+
+import '../model/teamParam.dart';
 import '../model/tracker/trackerData.dart';
 
+
 class SensorAnalysisService {
-  /// Paramètres ajustables
-  static const double sprintThresholdKmh = 20.0;
-  static const double sprintThresholdMps = sprintThresholdKmh / 3.6;
-
-  /// Une accélération forte > 2 m/s² est déjà très significative
-  static const double minSprintAccelerationMps2 = 2.0;
-
-  /// Évite les gros sauts GPS aberrants
-  static const double maxAcceptedStepDistanceMeters = 50.0;
-
   /// Si la fréquence est irrégulière on utilise le delta temps réel
   static TrackerAnalysisResult analyzeSensorData({
     required String trackerId,
@@ -24,7 +17,10 @@ class SensorAnalysisService {
     required List<TrackerRaw> allSamples,
     required bool isMatch,
     FootballFieldGps? fieldGps,
+    TeamParam? teamParam,
   }) {
+    final params = teamParam ?? TeamParam.defaultConfig();
+
     final samples = allSamples.where((s) {
       final id = s.trackerId?.trim();
       return id == trackerId.trim();
@@ -69,7 +65,7 @@ class SensorAnalysisService {
 
     int sprintCount = 0;
     int highAccelerationCount = 0;
-    int timeAbove20Ms = 0;
+    int timeAboveSprintThresholdMs = 0;
 
     double firstHalfDistanceMeters = 0.0;
     double secondHalfDistanceMeters = 0.0;
@@ -82,18 +78,24 @@ class SensorAnalysisService {
     final bool canBuildRealFieldHeatmap = isMatch && fieldGps != null;
     final bool shouldBuildRelativeHeatmap = fieldGps == null;
 
-    const double sprintThresholdMps = 5.56; // 20 km/h
-    const int sprintMinDurationMs = 1200;
+    final double sprintThresholdMps = params.sprintThresholdMps;
+    final int sprintMinDurationMs = params.sprintMinDurationMs;
 
-    const double highAccelerationThresholdMps2 = 3.5;
-    const int highAccelerationMinDurationMs = 300;
+    final double highAccelerationThresholdMps2 =
+        params.highAccelerationThresholdMps2;
+    final int highAccelerationMinDurationMs =
+        params.highAccelerationMinDurationMs;
 
-    const double maxPlausibleSpeedMps = 10.5; // ~37.8 km/h
-    const double maxPlausibleAccelerationMps2 = 8.0;
-    const int minDtMs = 80;
-    const int maxDtMs = 3000;
+    final double maxPlausibleSpeedMps = params.maxPlausibleSpeedMps;
+    final double maxPlausibleAccelerationMps2 =
+        params.maxPlausibleAccelerationMps2;
 
-    const int smoothingWindow = 5;
+    final int minDtMs = params.minDtMs;
+    final int maxDtMs = params.maxDtMs;
+    final int smoothingWindow = params.smoothingWindow;
+    final int validatedSpeedMinDurationMs =
+        params.validatedSpeedMinDurationMs;
+
     final List<double> recentSpeeds = [];
 
     bool inSprint = false;
@@ -103,7 +105,6 @@ class SensorAnalysisService {
     bool inHighAcceleration = false;
 
     int validatedSpeedAccumulatedMs = 0;
-    const int validatedSpeedMinDurationMs = 800;
 
     double? previousRetainedSpeedMps;
 
@@ -114,14 +115,10 @@ class SensorAnalysisService {
     final bool sensorLooksLikeKmh = globalMaxRawSensorSpeed > 15.0;
 
     final Map<String, int> speedZoneTimeMs = {
-      'Z1': 0, // < 7 km/h
-      'Z2': 0, // 7 - 13
-      'Z3': 0, // 13 - 18
-      'Z4': 0, // 18 - 21
-      'Z5': 0, // > 21
+      for (final zone in params.orderedSpeedZones) zone.zoneId: 0,
     };
 
-    const int timelineBucketMs = 5 * 60 * 1000;
+    final int timelineBucketMs = params.timelineBucketMs;
     final Map<int, Map<String, double>> distanceTimelineBuckets = {};
 
     for (int i = 0; i < samples.length; i++) {
@@ -245,18 +242,9 @@ class SensorAnalysisService {
       }
 
       final speedKmh = retainedSpeedMps * 3.6;
-      String speedZoneId;
-      if (speedKmh < 7) {
-        speedZoneId = 'Z1';
-      } else if (speedKmh < 13) {
-        speedZoneId = 'Z2';
-      } else if (speedKmh < 18) {
-        speedZoneId = 'Z3';
-      } else if (speedKmh < 21) {
-        speedZoneId = 'Z4';
-      } else {
-        speedZoneId = 'Z5';
-      }
+
+      final resolvedZone = params.resolveSpeedZone(speedKmh);
+      final speedZoneId = resolvedZone.zoneId;
       speedZoneTimeMs[speedZoneId] = (speedZoneTimeMs[speedZoneId] ?? 0) + dtMs;
 
       final relativeStartMs = prev.timeMs - startMs;
@@ -271,13 +259,13 @@ class SensorAnalysisService {
         };
       });
 
-      if (speedKmh < 7) {
+      if (speedKmh < params.walkingMaxKmh) {
         bucket['walkingMeters'] =
             (bucket['walkingMeters'] ?? 0.0) + stepDistance;
-      } else if (speedKmh < 13) {
+      } else if (speedKmh < params.joggingMaxKmh) {
         bucket['joggingMeters'] =
             (bucket['joggingMeters'] ?? 0.0) + stepDistance;
-      } else if (speedKmh < 18) {
+      } else if (speedKmh < params.runningMaxKmh) {
         bucket['runningMeters'] =
             (bucket['runningMeters'] ?? 0.0) + stepDistance;
       } else {
@@ -286,7 +274,7 @@ class SensorAnalysisService {
       }
 
       if (retainedSpeedMps >= sprintThresholdMps) {
-        timeAbove20Ms += dtMs;
+        timeAboveSprintThresholdMs += dtMs;
         sprintAccumulatedMs += dtMs;
 
         if (!inSprint && sprintAccumulatedMs >= sprintMinDurationMs) {
@@ -364,7 +352,7 @@ class SensorAnalysisService {
         ? totalDistanceMeters / (totalDurationMs / 1000.0)
         : 0.0;
 
-    final halfStats = _computeHalfStats(samples);
+    final halfStats = _computeHalfStats(samples, params);
 
     final allZoneIds = <String>{
       ...zoneSamples.keys,
@@ -416,7 +404,7 @@ class SensorAnalysisService {
 
     final workloadScore = _computeWorkloadScore(
       distanceMeters: totalDistanceMeters,
-      timeAbove20Ms: timeAbove20Ms,
+      timeAbove20Ms: timeAboveSprintThresholdMs,
       sprintCount: sprintCount,
       maxAccelerationMps2: maxAccelerationMps2,
     );
@@ -426,7 +414,7 @@ class SensorAnalysisService {
         : 1.0;
 
     final String playerProfile;
-    if (sprintCount > 25 && timeAbove20Ms > 60000) {
+    if (sprintCount > 25 && timeAboveSprintThresholdMs > 60000) {
       playerProfile = 'Explosif / Ailier';
     } else if (totalDistanceMeters > 10000 && sprintCount > 15) {
       playerProfile = 'Box-to-box';
@@ -451,7 +439,7 @@ class SensorAnalysisService {
       fieldGps: fieldGps,
       sprintCount: sprintCount,
       highAccelerationCount: highAccelerationCount,
-      timeAbove20Kmh: Duration(milliseconds: timeAbove20Ms),
+      timeAbove20Kmh: Duration(milliseconds: timeAboveSprintThresholdMs),
       maxAccelerationMps2: maxAccelerationMps2,
       distanceByZones: distanceByZones,
       speedZones: speedZones,
@@ -464,6 +452,7 @@ class SensorAnalysisService {
       distanceTimeline: distanceTimeline,
     );
   }
+
   static List<HeatmapPoint> _buildRelativeHeatmapPoints(
       List<TrackerRaw> samples, {
         double targetWidthMeters = 105.0,
@@ -528,7 +517,10 @@ class SensorAnalysisService {
     }).toList();
   }
 
-  static List<HalfStats> _computeHalfStats(List<TrackerRaw> samples) {
+  static List<HalfStats> _computeHalfStats(
+      List<TrackerRaw> samples,
+      TeamParam params,
+      ) {
     if (samples.length < 2) return const [];
 
     final startMs = samples.first.timeMs;
@@ -545,21 +537,34 @@ class SensorAnalysisService {
     final result = <HalfStats>[];
 
     if (firstHalf.length >= 2) {
-      result.add(_buildHalfStats(1, firstHalf));
+      result.add(_buildHalfStats(1, firstHalf, params));
     }
     if (secondHalf.length >= 2) {
-      result.add(_buildHalfStats(2, secondHalf));
+      result.add(_buildHalfStats(2, secondHalf, params));
     }
 
     return result;
   }
 
-  static HalfStats _buildHalfStats(int halfIndex, List<TrackerRaw> samples) {
+  static HalfStats _buildHalfStats(
+      int halfIndex,
+      List<TrackerRaw> samples,
+      TeamParam params,
+      ) {
     double speedSumMps = 0;
     double distanceMeters = 0;
 
+    final globalMaxRawSensorSpeed = samples
+        .map((e) => e.speedMps)
+        .fold<double>(0.0, (p, e) => e > p ? e : p);
+
+    final bool sensorLooksLikeKmh = globalMaxRawSensorSpeed > 15.0;
+
     for (int i = 0; i < samples.length; i++) {
-      speedSumMps += samples[i].speedMps;
+      final speedMps = sensorLooksLikeKmh
+          ? samples[i].speedMps / 3.6
+          : samples[i].speedMps;
+      speedSumMps += speedMps;
 
       if (i > 0) {
         final d = _haversineMeters(
@@ -569,13 +574,13 @@ class SensorAnalysisService {
           samples[i].longitude,
         );
 
-        if (d <= maxAcceptedStepDistanceMeters) {
+        if (d <= params.maxAcceptedStepDistanceMeters) {
           distanceMeters += d;
         }
       }
     }
 
-    final averageSpeedMps = speedSumMps / samples.length;
+    final averageSpeedMps = samples.isNotEmpty ? speedSumMps / samples.length : 0;
     final durationMs = samples.last.timeMs - samples.first.timeMs;
 
     return HalfStats(
@@ -587,14 +592,6 @@ class SensorAnalysisService {
   }
 
   /// Charge de travail simplifiée
-  ///
-  /// Exemple de formule :
-  /// - distance (m) pondérée
-  /// - temps à haute intensité
-  /// - nombre de sprints
-  /// - accélération max
-  ///
-  /// À ajuster selon ta logique métier.
   static double _computeWorkloadScore({
     required double distanceMeters,
     required int timeAbove20Ms,
@@ -611,14 +608,6 @@ class SensorAnalysisService {
 
   /// Découpage simple du terrain en 6 zones :
   /// 3 bandes dans la longueur x 2 bandes dans la largeur
-  ///
-  /// Zone ids :
-  /// - DEF_LEFT
-  /// - DEF_RIGHT
-  /// - MID_LEFT
-  /// - MID_RIGHT
-  /// - ATT_LEFT
-  /// - ATT_RIGHT
   static String _computeZoneId({
     required double xMeters,
     required double yMeters,
@@ -650,12 +639,11 @@ class SensorAnalysisService {
     final dLat = _degToRad(lat2 - lat1);
     final dLon = _degToRad(lon2 - lon1);
 
-    final a =
-        sin(dLat / 2) * sin(dLat / 2) +
-            cos(_degToRad(lat1)) *
-                cos(_degToRad(lat2)) *
-                sin(dLon / 2) *
-                sin(dLon / 2);
+    final a = sin(dLat / 2) * sin(dLat / 2) +
+        cos(_degToRad(lat1)) *
+            cos(_degToRad(lat2)) *
+            sin(dLon / 2) *
+            sin(dLon / 2);
 
     final c = 2 * atan2(sqrt(a), sqrt(1 - a));
     return earthRadius * c;
@@ -750,7 +738,10 @@ class SensorAnalysisService {
   static List<TimelinePoint> buildTimelinePoints({
     required String trackerId,
     required List<TrackerRaw> allSamples,
+    TeamParam? teamParam,
   }) {
+    final params = teamParam ?? TeamParam.defaultConfig();
+
     final samples = allSamples.where((s) {
       if (s.trackerId == null || s.trackerId!.isEmpty) return true;
       return s.trackerId == trackerId;
@@ -778,12 +769,12 @@ class SensorAnalysisService {
           final dtSec = dtMs / 1000.0;
           acceleration = (current.speedMps - prev.speedMps) / dtSec;
 
-          final sprintNow = current.speedMps >= sprintThresholdMps &&
-              acceleration >= minSprintAccelerationMps2;
+          final sprintNow = current.speedMps >= params.sprintThresholdMps &&
+              acceleration >= params.minSprintAccelerationMps2;
 
           if (sprintNow && !inSprint) {
             inSprint = true;
-          } else if (current.speedMps < sprintThresholdMps * 0.9) {
+          } else if (current.speedMps < params.sprintThresholdMps * 0.9) {
             inSprint = false;
           }
 
@@ -811,7 +802,6 @@ class SensorAnalysisService {
   }) async {
     final buffer = StringBuffer();
 
-    // En-tête CSV
     buffer.writeln('xMeters,yMeters,timeMs,intensity');
 
     for (final p in heatmapPoints) {
@@ -823,8 +813,8 @@ class SensorAnalysisService {
     final csvString = buffer.toString();
     final csvBytes = Uint8List.fromList(utf8.encode(csvString));
 
-    // Compression gzip
-    final gzipBytes = Uint8List.fromList(GZipEncoder().encode(csvBytes) ?? csvBytes);
+    final gzipBytes =
+    Uint8List.fromList(GZipEncoder().encode(csvBytes) ?? csvBytes);
 
     final filePath = 'tracker/heatmapPoints_${deviceId}_$eventId.csv.gz';
 
