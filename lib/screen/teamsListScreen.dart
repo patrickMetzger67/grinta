@@ -16,7 +16,7 @@ class TeamsListScreen extends StatefulWidget {
 
   final List<String> managedTeamsIds;
   final String title;
-  final void Function(BuildContext context, Team team)? onTeamTap;
+  final void Function(BuildContext context, Team team, bool isMananger)? onTeamTap;
   final String? Function(Team team)? teamSubtitle;
   final Widget Function(BuildContext context, Team team)? trailingBuilder;
 
@@ -134,7 +134,7 @@ class _TeamsListScreenState extends State<TeamsListScreen> {
                           borderRadius: BorderRadius.circular(18),
                           onTap: widget.onTeamTap == null
                               ? null
-                              : () => widget.onTeamTap!(context, team),
+                              : () => widget.onTeamTap!(context, team, isManager),
                           child: Padding(
                             padding: const EdgeInsets.all(14),
                             child:Row(

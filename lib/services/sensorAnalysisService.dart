@@ -14,6 +14,7 @@ class SensorAnalysisService {
   static TrackerAnalysisResult analyzeSensorData({
     required String trackerId,
     required String playerId,
+    required String eventId,
     required List<TrackerRaw> allSamples,
     required bool isMatch,
     FootballFieldGps? fieldGps,
@@ -31,6 +32,7 @@ class SensorAnalysisService {
       return TrackerAnalysisResult(
         trackerId: trackerId,
         playerId: playerId,
+        eventId: eventId,
         distanceKm: 0,
         duration: Duration.zero,
         averageSpeedKmh: 0,
@@ -40,12 +42,13 @@ class SensorAnalysisService {
         heatmapPoints: const [],
         sprintCount: 0,
         highAccelerationCount: 0,
-        timeAbove20Kmh: Duration.zero,
+        highSpeedDuration: Duration.zero,
         maxAccelerationMps2: 0,
         distanceByZones: const [],
         speedZones: const [],
         halfStats: const [],
         workloadScore: 0,
+        workloadScorePerMinute: 0,
         playerProfile: 'Inconnu',
         fatigueIndex: 1.0,
         firstHalfDistanceKm: 0,
@@ -409,6 +412,12 @@ class SensorAnalysisService {
       maxAccelerationMps2: maxAccelerationMps2,
     );
 
+    final durationMinutes = totalDurationMs / 60000.0;
+
+    final workloadScorePerMinute = durationMinutes > 0
+        ? workloadScore / durationMinutes
+        : 0.0;
+
     final fatigueIndex = firstHalfDistanceMeters > 0
         ? secondHalfDistanceMeters / firstHalfDistanceMeters
         : 1.0;
@@ -429,6 +438,7 @@ class SensorAnalysisService {
     return TrackerAnalysisResult(
       trackerId: trackerId,
       playerId: playerId,
+      eventId: eventId,
       distanceKm: totalDistanceMeters / 1000.0,
       duration: Duration(milliseconds: totalDurationMs),
       averageSpeedKmh: averageSpeedMps * 3.6,
@@ -439,12 +449,13 @@ class SensorAnalysisService {
       fieldGps: fieldGps,
       sprintCount: sprintCount,
       highAccelerationCount: highAccelerationCount,
-      timeAbove20Kmh: Duration(milliseconds: timeAboveSprintThresholdMs),
+      highSpeedDuration: Duration(milliseconds: timeAboveSprintThresholdMs),
       maxAccelerationMps2: maxAccelerationMps2,
       distanceByZones: distanceByZones,
       speedZones: speedZones,
       halfStats: halfStats,
       workloadScore: workloadScore,
+      workloadScorePerMinute: workloadScorePerMinute,
       playerProfile: playerProfile,
       fatigueIndex: fatigueIndex,
       firstHalfDistanceKm: firstHalfDistanceMeters / 1000.0,

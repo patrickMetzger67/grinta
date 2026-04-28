@@ -3,7 +3,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import '../model/tracker/device.dart';
 
 
-class DeviceService {
+  class DeviceService {
   final FirebaseFirestore _firestore;
 
   DeviceService({FirebaseFirestore? firestore})

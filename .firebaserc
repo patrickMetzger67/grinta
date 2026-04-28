@@ -1,0 +1,15 @@
+{
+  "projects": {
+    "default": "aserstein-2453e"
+  },
+  "targets": {
+    "aserstein-2453e": {
+      "hosting": {
+        "grinta": [
+          "grinta"
+        ]
+      }
+    }
+  },
+  "etags": {}
+}

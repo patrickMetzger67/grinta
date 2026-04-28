@@ -312,6 +312,7 @@ class _AsiConverterScreenState extends State<AsiConverterScreen> {
         isMatch: widget.isMatch,
         playerId: _deviceIdCtrl.text.trim(),
         fieldGps: footballFieldGps,
+        eventId: widget.eventId,
       );
 
       if (sprintAnalysis.heatmapPoints.length < 2) continue;
@@ -462,6 +463,7 @@ class _AsiConverterScreenState extends State<AsiConverterScreen> {
         isMatch: widget.isMatch,
         playerId: widget.playerId,
         fieldGps: footballFieldGps,
+        eventId: widget.eventId,
       );
 
       if (_analysisResult == null) {
@@ -523,6 +525,7 @@ class _AsiConverterScreenState extends State<AsiConverterScreen> {
             isMatch: widget.isMatch,
             playerId: deviceId,
             fieldGps: footballFieldGps,
+            eventId: widget.eventId,
           );
         }
 
@@ -533,6 +536,7 @@ class _AsiConverterScreenState extends State<AsiConverterScreen> {
             isMatch: widget.isMatch,
             playerId: deviceId,
             fieldGps: footballFieldGps,
+            eventId: widget.eventId,
           );
         }
 

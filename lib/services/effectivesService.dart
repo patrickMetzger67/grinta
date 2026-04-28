@@ -83,6 +83,21 @@ class EffectivesService {
   }
 
   /// READ BY MEMBER + TEAMID
+  Future<Effectives?> getEffectivesPlayerByMemberIdAndTeamId(
+      String memberId,
+      String teamId,
+      ) async {
+    final querySnapshot = await _collection
+        .where(keyEffectivesMemberID, isEqualTo: memberId)
+        .where(keyEffectivesTeamID, isEqualTo: teamId)
+        .where(keyEffectivesType, isEqualTo: 0)
+        .limit(1)
+        .get();
+    if (querySnapshot.docs.isEmpty) return null;
+    return Effectives.fromData(querySnapshot.docs.first);
+  }
+
+  /// READ BY MEMBER + TEAMID
   Future<Effectives?> getEffectivesByMemberIdAndTeamId(
       String memberId,
       String teamId,

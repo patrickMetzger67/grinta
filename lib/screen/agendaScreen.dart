@@ -6,7 +6,11 @@ import '../util/app_theme.dart';
 import '../widget/activity_rings_card.dart';
 import '../widget/agendaMatchRow.dart';
 
-
+enum AgendaCalendarMode {
+  day,
+  week,
+  month,
+}
 
 class AgendaScreen extends StatefulWidget {
   final AgendaItemsLoader loadItems;
@@ -25,11 +29,21 @@ class AgendaScreen extends StatefulWidget {
 }
 
 class _AgendaScreenState extends State<AgendaScreen> {
+  static const int _initialMonthPage = 1200;
+
   final ScrollController _scrollController = ScrollController();
+  final GlobalKey _weeksViewportKey = GlobalKey();
 
   late DateTime _selectedWeekStart;
+  late DateTime _selectedDate;
   late DateTime _rangeStart;
   late DateTime _rangeEnd;
+
+  late final DateTime _monthPagerAnchor;
+  late final PageController _monthPageController;
+
+  late DateTime _displayedMonth;
+  AgendaCalendarMode _calendarMode = AgendaCalendarMode.day;
 
   final Map<int, GlobalKey> _weekKeys = <int, GlobalKey>{};
 
@@ -37,14 +51,11 @@ class _AgendaScreenState extends State<AgendaScreen> {
   bool _isLoading = false;
   String? _error;
 
-
-
   @override
   void initState() {
     super.initState();
 
     final User? user = FirebaseAuth.instance.currentUser;
-
     if (user != null) {
       print('UID: ${user.uid}');
       print('Email: ${user.email}');
@@ -54,19 +65,198 @@ class _AgendaScreenState extends State<AgendaScreen> {
       print('Aucun utilisateur connecté');
     }
 
+    final now = DateUtils.dateOnly(widget.initialDate ?? DateTime.now());
 
-    final now = widget.initialDate ?? DateTime.now();
+    _selectedDate = now;
     _selectedWeekStart = _startOfWeek(now);
     _rangeStart = _startOfMonth(now);
     _rangeEnd = _endOfMonth(now);
+
+    _monthPagerAnchor = DateTime(now.year, now.month, 1);
+    _displayedMonth = DateTime(now.year, now.month, 1);
+    _monthPageController = PageController(initialPage: _initialMonthPage);
+
+    _scrollController.addListener(_handleScroll);
 
     _loadItems();
   }
 
   @override
   void dispose() {
+    _scrollController.removeListener(_handleScroll);
     _scrollController.dispose();
+    _monthPageController.dispose();
     super.dispose();
+  }
+
+  void _handleScroll() {
+    if (_calendarMode != AgendaCalendarMode.month) return;
+
+    final focusedWeek = _computeFocusedWeek();
+    if (focusedWeek == null) return;
+
+    if (focusedWeek.millisecondsSinceEpoch !=
+        _selectedWeekStart.millisecondsSinceEpoch) {
+      final nextSelectedDate = _dateInWeekWithSameWeekday(focusedWeek);
+      final nextDisplayedMonth =
+      DateTime(nextSelectedDate.year, nextSelectedDate.month, 1);
+
+      if (!mounted) return;
+
+      setState(() {
+        _selectedWeekStart = focusedWeek;
+        _selectedDate = nextSelectedDate;
+        _displayedMonth = nextDisplayedMonth;
+      });
+
+      _jumpMonthPagerToDisplayedMonth();
+    }
+  }
+
+  DateTime? _computeFocusedWeek() {
+    if (!mounted || _weekKeys.isEmpty) return null;
+
+    final viewportContext = _weeksViewportKey.currentContext;
+    if (viewportContext == null) return null;
+
+    final viewportRenderObject = viewportContext.findRenderObject();
+    if (viewportRenderObject is! RenderBox || !viewportRenderObject.hasSize) {
+      return null;
+    }
+
+    final viewportTop = viewportRenderObject.localToGlobal(Offset.zero).dy;
+    final focusAnchor = viewportTop + 24.0;
+
+    DateTime? focusedWeek;
+    double? bestDistance;
+
+    for (final entry in _weekKeys.entries) {
+      final weekContext = entry.value.currentContext;
+      if (weekContext == null) continue;
+
+      final renderObject = weekContext.findRenderObject();
+      if (renderObject is! RenderBox || !renderObject.hasSize) continue;
+
+      final top = renderObject.localToGlobal(Offset.zero).dy;
+      final bottom = top + renderObject.size.height;
+
+      final distance = focusAnchor < top
+          ? top - focusAnchor
+          : focusAnchor > bottom
+          ? focusAnchor - bottom
+          : 0.0;
+
+      if (bestDistance == null || distance < bestDistance) {
+        bestDistance = distance;
+        focusedWeek = DateTime.fromMillisecondsSinceEpoch(entry.key);
+      }
+    }
+
+    return focusedWeek;
+  }
+
+  DateTime _dateInWeekWithSameWeekday(DateTime weekStart) {
+    final weekdayOffset = _selectedDate.weekday - DateTime.monday;
+    return DateUtils.dateOnly(
+      weekStart.add(Duration(days: weekdayOffset)),
+    );
+  }
+
+  void _setCalendarMode(AgendaCalendarMode mode) {
+    if (_calendarMode == mode) return;
+
+    setState(() {
+      _calendarMode = mode;
+      _displayedMonth = DateTime(_selectedDate.year, _selectedDate.month, 1);
+    });
+
+    _jumpMonthPagerToDisplayedMonth();
+  }
+
+  void _jumpMonthPagerToDisplayedMonth() {
+    if (!_monthPageController.hasClients) return;
+
+    final targetPage =
+        _initialMonthPage + _monthDiff(_monthPagerAnchor, _displayedMonth);
+
+    final currentPage = _monthPageController.page?.round();
+    if (currentPage == targetPage) return;
+
+    _monthPageController.jumpToPage(targetPage);
+  }
+
+  void _onMonthPageChanged(int page) {
+    _handleMonthPageChanged(page);
+  }
+
+  Future<void> _handleMonthPageChanged(int page) async {
+    final monthOffset = page - _initialMonthPage;
+    final newMonth = _addMonths(_monthPagerAnchor, monthOffset);
+
+    final daysInMonth = DateTime(newMonth.year, newMonth.month + 1, 0).day;
+    final safeDay = _selectedDate.day.clamp(1, daysInMonth);
+    final newSelectedDate = DateUtils.dateOnly(
+      DateTime(newMonth.year, newMonth.month, safeDay),
+    );
+    final newSelectedWeek = _startOfWeek(newSelectedDate);
+
+    setState(() {
+      _displayedMonth = newMonth;
+      _selectedDate = newSelectedDate;
+      _selectedWeekStart = newSelectedWeek;
+    });
+
+    final isBeforeRange =
+        newSelectedWeek.millisecondsSinceEpoch < _rangeStart.millisecondsSinceEpoch;
+    final isAfterRange =
+        newSelectedWeek.millisecondsSinceEpoch > _rangeEnd.millisecondsSinceEpoch;
+
+    if (isBeforeRange || isAfterRange) {
+      if (isBeforeRange) {
+        _rangeStart = newSelectedWeek;
+      }
+      if (isAfterRange) {
+        _rangeEnd = _endOfWeek(newSelectedWeek);
+      }
+      await _loadItems(scrollToSelection: true);
+      return;
+    }
+
+    await _scrollToSelectedWeek();
+  }
+
+  Future<void> _selectDate(DateTime date) async {
+    final normalizedDate = DateUtils.dateOnly(date);
+    final targetWeek = _startOfWeek(normalizedDate);
+    final targetMonth = DateTime(normalizedDate.year, normalizedDate.month, 1);
+
+    setState(() {
+      _selectedDate = normalizedDate;
+      _selectedWeekStart = targetWeek;
+      _displayedMonth = targetMonth;
+    });
+
+    _jumpMonthPagerToDisplayedMonth();
+
+    final isBeforeRange =
+        targetWeek.millisecondsSinceEpoch < _rangeStart.millisecondsSinceEpoch;
+    final isAfterRange =
+        targetWeek.millisecondsSinceEpoch > _rangeEnd.millisecondsSinceEpoch;
+
+    if (isBeforeRange || isAfterRange) {
+      if (isBeforeRange) {
+        _rangeStart = targetWeek;
+      }
+      if (isAfterRange) {
+        _rangeEnd = _endOfWeek(targetWeek);
+      }
+      await _loadItems(scrollToSelection: true);
+      return;
+    }
+
+    if (_calendarMode == AgendaCalendarMode.month) {
+      await _scrollToSelectedWeek();
+    }
   }
 
   Future<void> _loadItems({bool scrollToSelection = true}) async {
@@ -92,11 +282,15 @@ class _AgendaScreenState extends State<AgendaScreen> {
         _isLoading = false;
       });
 
-      if (scrollToSelection) {
-        await Future<void>.delayed(const Duration(milliseconds: 20));
-        await _scrollToSelectedWeek(animated: false);
-      }
+      WidgetsBinding.instance.addPostFrameCallback((_) async {
+        if (!mounted) return;
 
+        if (scrollToSelection && _calendarMode == AgendaCalendarMode.month) {
+          await _scrollToSelectedWeek(animated: false);
+        } else {
+          _handleScroll();
+        }
+      });
     } catch (e) {
       if (!mounted) return;
 
@@ -112,7 +306,11 @@ class _AgendaScreenState extends State<AgendaScreen> {
 
     setState(() {
       _selectedWeekStart = previousWeek;
+      _selectedDate = _dateInWeekWithSameWeekday(previousWeek);
+      _displayedMonth = DateTime(_selectedDate.year, _selectedDate.month, 1);
     });
+
+    _jumpMonthPagerToDisplayedMonth();
 
     if (previousWeek.millisecondsSinceEpoch < _rangeStart.millisecondsSinceEpoch) {
       _rangeStart = previousWeek;
@@ -120,7 +318,9 @@ class _AgendaScreenState extends State<AgendaScreen> {
       return;
     }
 
-    await _scrollToSelectedWeek();
+    if (_calendarMode == AgendaCalendarMode.month) {
+      await _scrollToSelectedWeek();
+    }
   }
 
   Future<void> _goToNextWeek() async {
@@ -128,7 +328,11 @@ class _AgendaScreenState extends State<AgendaScreen> {
 
     setState(() {
       _selectedWeekStart = nextWeek;
+      _selectedDate = _dateInWeekWithSameWeekday(nextWeek);
+      _displayedMonth = DateTime(_selectedDate.year, _selectedDate.month, 1);
     });
+
+    _jumpMonthPagerToDisplayedMonth();
 
     if (nextWeek.millisecondsSinceEpoch > _rangeEnd.millisecondsSinceEpoch) {
       _rangeEnd = _endOfWeek(nextWeek);
@@ -136,18 +340,24 @@ class _AgendaScreenState extends State<AgendaScreen> {
       return;
     }
 
-    await _scrollToSelectedWeek();
+    if (_calendarMode == AgendaCalendarMode.month) {
+      await _scrollToSelectedWeek();
+    }
   }
 
   Future<void> _jumpToToday() async {
-    final now = DateTime.now();
+    final now = DateUtils.dateOnly(DateTime.now());
     final todayWeek = _startOfWeek(now);
     final monthStart = _startOfMonth(now);
     final monthEnd = _endOfMonth(now);
 
     setState(() {
+      _selectedDate = now;
       _selectedWeekStart = todayWeek;
+      _displayedMonth = DateTime(now.year, now.month, 1);
     });
+
+    _jumpMonthPagerToDisplayedMonth();
 
     final mustReload =
         monthStart.millisecondsSinceEpoch != _rangeStart.millisecondsSinceEpoch ||
@@ -160,7 +370,9 @@ class _AgendaScreenState extends State<AgendaScreen> {
       return;
     }
 
-    await _scrollToSelectedWeek();
+    if (_calendarMode == AgendaCalendarMode.month) {
+      await _scrollToSelectedWeek();
+    }
   }
 
   Future<void> _pickPeriod() async {
@@ -184,8 +396,12 @@ class _AgendaScreenState extends State<AgendaScreen> {
     setState(() {
       _rangeStart = newRangeStart;
       _rangeEnd = newRangeEnd;
-      _selectedWeekStart = newRangeStart;
+      _selectedDate = DateUtils.dateOnly(pickedRange.start);
+      _selectedWeekStart = _startOfWeek(pickedRange.start);
+      _displayedMonth = DateTime(_selectedDate.year, _selectedDate.month, 1);
     });
+
+    _jumpMonthPagerToDisplayedMonth();
 
     await _loadItems(scrollToSelection: true);
   }
@@ -207,20 +423,25 @@ class _AgendaScreenState extends State<AgendaScreen> {
   }
 
   Future<void> _scrollToSelectedWeek({bool animated = true}) async {
-    WidgetsBinding.instance.addPostFrameCallback((_) async {
+    await Future<void>.delayed(Duration.zero);
+
+    if (!mounted) return;
+
+    final key = _weekKeys[_selectedWeekStart.millisecondsSinceEpoch];
+    final targetContext = key?.currentContext;
+
+    if (targetContext == null) return;
+
+    await Scrollable.ensureVisible(
+      targetContext,
+      duration: animated ? const Duration(milliseconds: 280) : Duration.zero,
+      curve: Curves.easeOut,
+      alignment: 0.02,
+    );
+
+    WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) return;
-
-      final key = _weekKeys[_selectedWeekStart.millisecondsSinceEpoch];
-      final targetContext = key?.currentContext;
-
-      if (targetContext == null) return;
-
-      await Scrollable.ensureVisible(
-        targetContext,
-        duration: animated ? const Duration(milliseconds: 280) : Duration.zero,
-        curve: Curves.easeOut,
-        alignment: 0.02,
-      );
+      _handleScroll();
     });
   }
 
@@ -263,11 +484,10 @@ class _AgendaScreenState extends State<AgendaScreen> {
                   const SizedBox(height: 16),
                   _AgendaHeaderSummary(
                     items: _items,
-                    compact: false,
                     periodLabel: _formatPeriodLabel(_rangeStart, _rangeEnd),
                   ),
-                  const SizedBox(height: 12),
-                  _AgendaLegend(compact: false),
+            //      const SizedBox(height: 12),
+            //      const _AgendaLegend(),
                 ],
               ),
             ),
@@ -353,22 +573,26 @@ class _AgendaScreenState extends State<AgendaScreen> {
     final weeks = _generateWeeks(_rangeStart, _rangeEnd);
     final groupedByWeek = _groupItemsByWeek(_items);
     final compact = MediaQuery.of(context).size.width < 700;
+    final headerEventTypesByDay = _headerEventTypesByDay(_items);
 
     return Scaffold(
       backgroundColor: colors.background,
       appBar: AppBar(
         title: const Text('Agenda'),
         actions: [
+
           IconButton(
             tooltip: 'Vue d’ensemble',
             onPressed: _showOverviewPanel,
             icon: const Icon(Icons.insert_chart_outlined_rounded),
           ),
+          /*
           IconButton(
             tooltip: 'Navigation',
             onPressed: _showNavigationPanel,
             icon: const Icon(Icons.calendar_month_rounded),
           ),
+          */
         ],
       ),
       body: SafeArea(
@@ -376,17 +600,32 @@ class _AgendaScreenState extends State<AgendaScreen> {
           padding: const EdgeInsets.fromLTRB(12, 12, 12, 16),
           child: Column(
             children: [
-              _AgendaMiniHeader(
-                selectedWeekStart: _selectedWeekStart,
-                rangeStart: _rangeStart,
-                rangeEnd: _rangeEnd,
+              _GrintaStyleCalendarHeader(
+                pageController: _monthPageController,
+                initialPage: _initialMonthPage,
+                anchorMonth: _monthPagerAnchor,
+                displayedMonth: _displayedMonth,
+                selectedDate: _selectedDate,
+                mode: _calendarMode,
+                eventTypesByDay: headerEventTypesByDay,
+                onModeChanged: _setCalendarMode,
+                onTodayTap: () async {
+                  await _jumpToToday();
+                },
+                onPageChanged: _onMonthPageChanged,
+                onDateTap: (date) async {
+                  await _selectDate(date);
+                },
               ),
               const SizedBox(height: 12),
               Expanded(
-                child: _buildMainList(
-                  weeks: weeks,
-                  groupedByWeek: groupedByWeek,
-                  compact: compact,
+                child: Container(
+                  key: _weeksViewportKey,
+                  child: _buildAgendaContent(
+                    weeks: weeks,
+                    groupedByWeek: groupedByWeek,
+                    compact: compact,
+                  ),
                 ),
               ),
             ],
@@ -402,17 +641,42 @@ class _AgendaScreenState extends State<AgendaScreen> {
     );
   }
 
+  Widget _buildAgendaContent({
+    required List<DateTime> weeks,
+    required Map<DateTime, List<AgendaItem>> groupedByWeek,
+    required bool compact,
+  }) {
+    switch (_calendarMode) {
+      case AgendaCalendarMode.month:
+        return _buildMainList(
+          weeks: weeks,
+          groupedByWeek: groupedByWeek,
+          compact: compact,
+          selectedDate: _selectedDate,
+        );
+
+      case AgendaCalendarMode.week:
+        return _buildSelectedWeekView(
+          groupedByWeek: groupedByWeek,
+          compact: compact,
+        );
+
+      case AgendaCalendarMode.day:
+        return _buildSelectedDayView();
+    }
+  }
+
   Widget _buildMainList({
     required List<DateTime> weeks,
     required Map<DateTime, List<AgendaItem>> groupedByWeek,
     required bool compact,
+    required DateTime selectedDate,
   }) {
     if (_isLoading && _items.isEmpty) {
       return const _AgendaLoadingView();
     }
 
     if (_error != null && _items.isEmpty) {
-      debugPrint('$_error');
       return _AgendaErrorView(
         message: _error!,
         onRetry: _loadItems,
@@ -427,76 +691,699 @@ class _AgendaScreenState extends State<AgendaScreen> {
         groupedByWeek: groupedByWeek,
         compact: compact,
         selectedWeekStart: _selectedWeekStart,
+        selectedDate: selectedDate,
         keyBuilder: _keyForWeek,
         onWeekTap: (weekStart) async {
           setState(() {
             _selectedWeekStart = weekStart;
+            _selectedDate = _dateInWeekWithSameWeekday(weekStart);
+            _displayedMonth = DateTime(_selectedDate.year, _selectedDate.month, 1);
           });
+
+          _jumpMonthPagerToDisplayedMonth();
           await _scrollToSelectedWeek();
         },
       ),
     );
   }
-}
 
-class _AgendaMiniHeader extends StatelessWidget {
-  final DateTime selectedWeekStart;
-  final DateTime rangeStart;
-  final DateTime rangeEnd;
+  Widget _buildSelectedWeekView({
+    required Map<DateTime, List<AgendaItem>> groupedByWeek,
+    required bool compact,
+  }) {
+    if (_isLoading && _items.isEmpty) {
+      return const _AgendaLoadingView();
+    }
 
-  const _AgendaMiniHeader({
-    required this.selectedWeekStart,
-    required this.rangeStart,
-    required this.rangeEnd,
-  });
+    if (_error != null && _items.isEmpty) {
+      return _AgendaErrorView(
+        message: _error!,
+        onRetry: _loadItems,
+      );
+    }
 
-  @override
-  Widget build(BuildContext context) {
-    final colors = context.appColors;
-    final weekEnd = _endOfWeek(selectedWeekStart);
+    final weekItems = <AgendaItem>[
+      ...(groupedByWeek[_selectedWeekStart] ?? <AgendaItem>[]),
+    ]..sort((a, b) => a.startAt.compareTo(b.startAt));
 
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-      decoration: BoxDecoration(
-        color: colors.surface,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: colors.border),
-      ),
-      child: Row(
+    return RefreshIndicator(
+      onRefresh: _loadItems,
+      child: ListView(
+        controller: _scrollController,
+        physics: const AlwaysScrollableScrollPhysics(),
         children: [
-          Icon(
-            Icons.date_range_rounded,
-            size: 18,
-            color: colors.primary,
+          _WeekCard(
+            weekStart: _selectedWeekStart,
+            items: weekItems,
+            compact: compact,
+            isSelected: true,
+            selectedDate: _selectedDate,
+            onTap: () {},
           ),
-          const SizedBox(width: 10),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
+        ],
+      ),
+    );
+  }
+
+  Widget _buildSelectedDayView() {
+    if (_isLoading && _items.isEmpty) {
+      return const _AgendaLoadingView();
+    }
+
+    if (_error != null && _items.isEmpty) {
+      return _AgendaErrorView(
+        message: _error!,
+        onRetry: _loadItems,
+      );
+    }
+
+    final dayItems = _items
+        .where((e) => _isSameDay(e.startAt, _selectedDate))
+        .toList()
+      ..sort((a, b) => a.startAt.compareTo(b.startAt));
+
+    return RefreshIndicator(
+      onRefresh: _loadItems,
+      child: ListView(
+        controller: _scrollController,
+        physics: const AlwaysScrollableScrollPhysics(),
+        padding: const EdgeInsets.only(bottom: 8),
+        children: [
+          /*
+          Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: context.appColors.surface,
+              borderRadius: BorderRadius.circular(22),
+              border: Border.all(color: context.appColors.border),
+            ),
+            child: Row(
               children: [
-                Text(
-                  _formatWeekRange(selectedWeekStart, weekEnd),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                    color: colors.textPrimary,
-                    fontWeight: FontWeight.w700,
+
+                Container(
+                  width: 42,
+                  height: 42,
+                  alignment: Alignment.center,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    color: context.appColors.primary,
+                  ),
+                  child: Text(
+                    '${_selectedDate.day}',
+                    style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                      color: Colors.white,
+                      fontWeight: FontWeight.w800,
+                    ),
                   ),
                 ),
-                const SizedBox(height: 2),
-                Text(
-                  _formatPeriodLabel(rangeStart, rangeEnd),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                    color: colors.textSecondary,
-                    fontWeight: FontWeight.w500,
+                const SizedBox(width: 12),
+
+                Expanded(
+                  child: Text(
+                    _formatFullDate(_selectedDate),
+                    style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                      color: context.appColors.textPrimary,
+                      fontWeight: FontWeight.w700,
+                    ),
                   ),
                 ),
               ],
             ),
           ),
+          */
+          const SizedBox(height: 12),
+          if (dayItems.isEmpty)
+            const _EmptyDayTile()
+          else
+            ...dayItems.map(
+                  (item) => Padding(
+                padding: const EdgeInsets.only(bottom: 10),
+                child: _AgendaItemCard(item: item),
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+}
+
+class _GrintaStyleCalendarHeader extends StatelessWidget {
+  final PageController pageController;
+  final int initialPage;
+  final DateTime anchorMonth;
+  final DateTime displayedMonth;
+  final DateTime selectedDate;
+  final AgendaCalendarMode mode;
+  final Map<int, List<AgendaItemType>> eventTypesByDay;
+  final ValueChanged<AgendaCalendarMode> onModeChanged;
+  final VoidCallback onTodayTap;
+  final ValueChanged<int> onPageChanged;
+  final ValueChanged<DateTime> onDateTap;
+
+  const _GrintaStyleCalendarHeader({
+    required this.pageController,
+    required this.initialPage,
+    required this.anchorMonth,
+    required this.displayedMonth,
+    required this.selectedDate,
+    required this.mode,
+    required this.eventTypesByDay,
+    required this.onModeChanged,
+    required this.onTodayTap,
+    required this.onPageChanged,
+    required this.onDateTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = context.appColors;
+    final isMonth = mode == AgendaCalendarMode.month;
+    final isWeek = mode == AgendaCalendarMode.week;
+    final isDay = mode == AgendaCalendarMode.day;
+
+    final headerTitle = isMonth
+        ? _formatMonthYear(displayedMonth)
+        : isWeek
+        ? _formatWeekRange(
+      _startOfWeek(selectedDate),
+      _endOfWeek(selectedDate),
+    )
+        : _formatFullDate(selectedDate);
+
+    final calendarHeight = isDay
+        ? 86.0
+        : isMonth
+        ? _monthGridHeight(displayedMonth)
+        : 64.0;
+
+    return GestureDetector(
+      behavior: HitTestBehavior.opaque,
+      onVerticalDragEnd: (details) {
+        final velocity = details.primaryVelocity ?? 0;
+
+        if (velocity > 180) {
+          onModeChanged(AgendaCalendarMode.month);
+        } else if (velocity < -180 && mode == AgendaCalendarMode.month) {
+          onModeChanged(AgendaCalendarMode.week);
+        }
+      },
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 220),
+        curve: Curves.easeOut,
+        width: double.infinity,
+        decoration: BoxDecoration(
+          color: colors.surface,
+          borderRadius: BorderRadius.circular(22),
+          border: Border.all(color: colors.border),
+        ),
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(12, 14, 12, 12),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  Expanded(
+                    child: isMonth
+                        ? Row(
+                      children: [
+                        InkWell(
+                          borderRadius: BorderRadius.circular(10),
+                          onTap: () async {
+                            if (!pageController.hasClients) return;
+                            await pageController.previousPage(
+                              duration: const Duration(milliseconds: 220),
+                              curve: Curves.easeOut,
+                            );
+                          },
+                          child: Padding(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 8,
+                              vertical: 6,
+                            ),
+                            child: Text(
+                              '<',
+                              style: Theme.of(context)
+                                  .textTheme
+                                  .titleSmall
+                                  ?.copyWith(
+                                fontWeight: FontWeight.w800,
+                                color: colors.textPrimary,
+                              ),
+                            ),
+                          ),
+                        ),
+                        Expanded(
+                          child: Center(
+                            child: Text(
+                              headerTitle,
+                              style: Theme.of(context)
+                                  .textTheme
+                                  .titleSmall
+                                  ?.copyWith(
+                                fontWeight: FontWeight.w800,
+                                color: colors.textPrimary,
+                              ),
+                            ),
+                          ),
+                        ),
+                        InkWell(
+                          borderRadius: BorderRadius.circular(10),
+                          onTap: () async {
+                            if (!pageController.hasClients) return;
+                            await pageController.nextPage(
+                              duration: const Duration(milliseconds: 220),
+                              curve: Curves.easeOut,
+                            );
+                          },
+                          child: Padding(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 8,
+                              vertical: 6,
+                            ),
+                            child: Text(
+                              '>',
+                              style: Theme.of(context)
+                                  .textTheme
+                                  .titleSmall
+                                  ?.copyWith(
+                                fontWeight: FontWeight.w800,
+                                color: colors.textPrimary,
+                              ),
+                            ),
+                          ),
+                        ),
+                      ],
+                    )
+                        : Text(
+                      headerTitle,
+                      style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                        fontWeight: FontWeight.w800,
+                        color: colors.textPrimary,
+                      ),
+                    ),
+                  ),
+                  TextButton(
+                    onPressed: onTodayTap,
+                    child: const Text('Aujourd’hui'),
+                  ),
+                  const SizedBox(width: 4),
+                  _AgendaModeButton(
+                    icon: Icons.view_day_outlined,
+                    selected: isDay,
+                    onTap: () => onModeChanged(AgendaCalendarMode.day),
+                  ),
+                  const SizedBox(width: 6),
+                  _AgendaModeButton(
+                    icon: Icons.view_week_outlined,
+                    selected: isWeek,
+                    onTap: () => onModeChanged(AgendaCalendarMode.week),
+                  ),
+                  const SizedBox(width: 6),
+                  _AgendaModeButton(
+                    icon: Icons.calendar_view_month_outlined,
+                    selected: isMonth,
+                    onTap: () => onModeChanged(AgendaCalendarMode.month),
+                  ),
+
+                ],
+              ),
+              const SizedBox(height: 10),
+              if (!isDay) ...[
+                SizedBox(
+                  height: 28,
+                  child: Row(
+                    children: List.generate(7, (index) {
+                      return Expanded(
+                        child: Center(
+                          child: Text(
+                            _weekdayLabelFromIndex(index),
+                            style: Theme.of(context)
+                                .textTheme
+                                .bodyMedium
+                                ?.copyWith(
+                              color: colors.textSecondary,
+                              fontWeight: FontWeight.w700,
+                            ),
+                          ),
+                        ),
+                      );
+                    }),
+                  ),
+                ),
+                const SizedBox(height: 8),
+              ],
+              AnimatedSize(
+                duration: const Duration(milliseconds: 220),
+                curve: Curves.easeOut,
+                child: SizedBox(
+                  height: calendarHeight,
+                  child: isDay
+                      ? _AgendaDayCalendar(
+                    selectedDate: selectedDate,
+                    eventTypesByDay: eventTypesByDay,
+                    onDateTap: onDateTap,
+                  )
+                      : PageView.builder(
+                    controller: pageController,
+                    physics: isMonth
+                        ? const PageScrollPhysics()
+                        : const NeverScrollableScrollPhysics(),
+                    onPageChanged: onPageChanged,
+                    itemBuilder: (context, index) {
+                      final offset = index - initialPage;
+                      final month = _addMonths(anchorMonth, offset);
+
+                      return _MonthCalendarPage(
+                        month: month,
+                        selectedDate: selectedDate,
+                        expanded: isMonth,
+                        eventTypesByDay: eventTypesByDay,
+                        onDateTap: onDateTap,
+                      );
+                    },
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _AgendaModeButton extends StatelessWidget {
+  final IconData icon;
+  final bool selected;
+  final VoidCallback onTap;
+
+  const _AgendaModeButton({
+    required this.icon,
+    required this.selected,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = context.appColors;
+
+    return InkWell(
+      borderRadius: BorderRadius.circular(12),
+      onTap: onTap,
+      child: Container(
+        width: 38,
+        height: 38,
+        decoration: BoxDecoration(
+          color: selected ? colors.primary.withOpacity(0.12) : colors.card,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(
+            color: selected ? colors.primary : colors.border,
+          ),
+        ),
+        child: Icon(
+          icon,
+          size: 20,
+          color: selected ? colors.primary : colors.textSecondary,
+        ),
+      ),
+    );
+  }
+}
+
+class _AgendaDayCalendar extends StatelessWidget {
+  final DateTime selectedDate;
+  final Map<int, List<AgendaItemType>> eventTypesByDay;
+  final ValueChanged<DateTime> onDateTap;
+
+  const _AgendaDayCalendar({
+    required this.selectedDate,
+    required this.eventTypesByDay,
+    required this.onDateTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = context.appColors;
+    final today = DateUtils.dateOnly(DateTime.now());
+    final weekStart = _startOfWeek(selectedDate);
+
+    return Row(
+      children: List.generate(7, (index) {
+        final day = DateUtils.dateOnly(
+          weekStart.add(Duration(days: index)),
+        );
+        final isSelected = _isSameDay(day, selectedDate);
+        final isToday = _isSameDay(day, today);
+        final dayTypes = _eventTypesForDay(eventTypesByDay, day);
+
+        return Expanded(
+          child: InkWell(
+            borderRadius: BorderRadius.circular(16),
+            onTap: () => onDateTap(day),
+            child: Padding(
+              padding: const EdgeInsets.symmetric(vertical: 4),
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Text(
+                    _weekdayLabel(day),
+                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                      color: isSelected ? colors.primary : colors.textSecondary,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                  const SizedBox(height: 6),
+                  Container(
+                    width: 36,
+                    height: 36,
+                    alignment: Alignment.center,
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      color: isSelected
+                          ? colors.primary
+                          : isToday
+                          ? colors.primary.withOpacity(0.10)
+                          : Colors.transparent,
+                      border: !isSelected && isToday
+                          ? Border.all(
+                        color: colors.primary.withOpacity(0.25),
+                      )
+                          : null,
+                    ),
+                    child: Text(
+                      '${day.day}',
+                      style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                        fontWeight: FontWeight.w800,
+                        color: isSelected
+                            ? Colors.white
+                            : isToday
+                            ? colors.primary
+                            : colors.textPrimary,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  _AgendaEventDots(
+                    types: dayTypes,
+                    selected: isSelected,
+                  ),
+                ],
+              ),
+            ),
+          ),
+        );
+      }),
+    );
+  }
+}
+
+class _MonthCalendarPage extends StatelessWidget {
+  final DateTime month;
+  final DateTime selectedDate;
+  final bool expanded;
+  final Map<int, List<AgendaItemType>> eventTypesByDay;
+  final ValueChanged<DateTime> onDateTap;
+
+  const _MonthCalendarPage({
+    required this.month,
+    required this.selectedDate,
+    required this.expanded,
+    required this.eventTypesByDay,
+    required this.onDateTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = context.appColors;
+    final today = DateUtils.dateOnly(DateTime.now());
+
+    final days = _generateMonthGridDays(month);
+    final weeks = <List<DateTime>>[
+      for (int i = 0; i + 6 < days.length; i += 7) days.sublist(i, i + 7),
+    ];
+
+    final selectedWeekIndex = weeks.indexWhere(
+          (week) => week.any((d) => _isSameDay(d, selectedDate)),
+    );
+
+    final safeSelectedWeekIndex = selectedWeekIndex < 0 ? 0 : selectedWeekIndex;
+
+    const rowHeight = 64.0;
+    const rowSpacing = 10.0;
+
+    final fullHeight =
+        (weeks.length * rowHeight) + ((weeks.length - 1) * rowSpacing);
+
+    final visibleHeight = expanded ? fullHeight : rowHeight;
+
+    final translateY =
+    expanded ? 0.0 : -(safeSelectedWeekIndex * (rowHeight + rowSpacing));
+
+    return SizedBox(
+      height: visibleHeight,
+      child: ClipRect(
+        child: Stack(
+          children: [
+            Positioned(
+              top: translateY,
+              left: 0,
+              right: 0,
+              child: SizedBox(
+                height: fullHeight,
+                child: Column(
+                  children: List.generate(weeks.length, (weekIndex) {
+                    final week = weeks[weekIndex];
+
+                    return Padding(
+                      padding: EdgeInsets.only(
+                        bottom: weekIndex == weeks.length - 1 ? 0 : rowSpacing,
+                      ),
+                      child: SizedBox(
+                        height: rowHeight,
+                        child: Row(
+                          children: week.map((day) {
+                            final isSelected = _isSameDay(day, selectedDate);
+                            final isToday = _isSameDay(day, today);
+                            final isInMonth =
+                                day.month == month.month && day.year == month.year;
+                            final dayTypes = _eventTypesForDay(eventTypesByDay, day);
+
+                            return Expanded(
+                              child: InkWell(
+                                borderRadius: BorderRadius.circular(18),
+                                onTap: () => onDateTap(day),
+                                child: Center(
+                                  child: Column(
+                                    mainAxisAlignment: MainAxisAlignment.center,
+                                    children: [
+                                      Container(
+                                        width: 38,
+                                        height: 38,
+                                        alignment: Alignment.center,
+                                        decoration: BoxDecoration(
+                                          shape: BoxShape.circle,
+                                          color: isSelected
+                                              ? colors.primary
+                                              : isToday
+                                              ? colors.primary.withOpacity(0.10)
+                                              : Colors.transparent,
+                                          border: !isSelected && isToday
+                                              ? Border.all(
+                                            color: colors.primary.withOpacity(0.25),
+                                          )
+                                              : null,
+                                        ),
+                                        child: Text(
+                                          '${day.day}',
+                                          style: Theme.of(context)
+                                              .textTheme
+                                              .titleMedium
+                                              ?.copyWith(
+                                            fontWeight: FontWeight.w800,
+                                            color: isSelected
+                                                ? Colors.white
+                                                : isToday
+                                                ? colors.primary
+                                                : isInMonth
+                                                ? colors.textPrimary
+                                                : colors.textSecondary
+                                                .withOpacity(0.45),
+                                          ),
+                                        ),
+                                      ),
+                                      const SizedBox(height: 4),
+                                      _AgendaEventDots(
+                                        types: dayTypes,
+                                        selected: isSelected,
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ),
+                            );
+                          }).toList(),
+                        ),
+                      ),
+                    );
+                  }),
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _AgendaEventDots extends StatelessWidget {
+  final List<AgendaItemType> types;
+  final bool selected;
+
+  const _AgendaEventDots({
+    required this.types,
+    this.selected = false,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    if (types.isEmpty) {
+      return const SizedBox(height: 6);
+    }
+
+    final visible = types.take(4).toList();
+    final hasMore = types.length > 4;
+    final dotColorOverride = selected ? Colors.white : null;
+    final plusColor = selected ? Colors.white : context.appColors.textSecondary;
+
+    return SizedBox(
+      height: 8,
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          ...visible.map((type) {
+            return Container(
+              width: 6,
+              height: 6,
+              margin: const EdgeInsets.symmetric(horizontal: 1.5),
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: dotColorOverride ?? _typeColor(context, type),
+              ),
+            );
+          }),
+          if (hasMore) ...[
+            const SizedBox(width: 2),
+            Text(
+              '+',
+              style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                fontWeight: FontWeight.w900,
+                color: plusColor,
+                height: 0.9,
+              ),
+            ),
+          ],
         ],
       ),
     );
@@ -505,12 +1392,10 @@ class _AgendaMiniHeader extends StatelessWidget {
 
 class _AgendaHeaderSummary extends StatelessWidget {
   final List<AgendaItem> items;
-  final bool compact;
   final String periodLabel;
 
   const _AgendaHeaderSummary({
     required this.items,
-    required this.compact,
     required this.periodLabel,
   });
 
@@ -528,7 +1413,7 @@ class _AgendaHeaderSummary extends StatelessWidget {
 
     return Container(
       width: double.infinity,
-      padding: EdgeInsets.all(compact ? 14 : 16),
+      padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: colors.surface,
         borderRadius: BorderRadius.circular(22),
@@ -747,42 +1632,11 @@ class _SummaryChip extends StatelessWidget {
 }
 
 class _AgendaLegend extends StatelessWidget {
-  final bool compact;
-
-  const _AgendaLegend({
-    required this.compact,
-  });
+  const _AgendaLegend();
 
   @override
   Widget build(BuildContext context) {
-
-    final colors = context.appColors;
-    return compact
-        ? SingleChildScrollView(
-      scrollDirection: Axis.horizontal,
-      child: Row(
-        children: [
-          _LegendItem(
-            label: 'Match',
-            color: _typeColor(context, AgendaItemType.match),
-            icon: Icons.sports_soccer_rounded,
-          ),
-          const SizedBox(width: 8),
-          _LegendItem(
-            label: 'Entraînement',
-            color: _typeColor(context, AgendaItemType.entrainement),
-            icon: Icons.fitness_center_rounded,
-          ),
-          const SizedBox(width: 8),
-          _LegendItem(
-            label: 'Prépa physique',
-            color: _typeColor(context, AgendaItemType.preparationPhysique),
-            icon: Icons.directions_run_rounded,
-          ),
-        ],
-      ),
-    )
-        : Container(
+    return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
@@ -793,10 +1647,9 @@ class _AgendaLegend extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text(
+          Text(
             'Légende',
-            style: TextStyle(
-              fontSize: 16,
+            style: Theme.of(context).textTheme.titleMedium?.copyWith(
               fontWeight: FontWeight.w700,
             ),
           ),
@@ -815,7 +1668,7 @@ class _AgendaLegend extends StatelessWidget {
             fullWidth: true,
           ),
           const SizedBox(height: 8),
-           _LegendItem(
+          _LegendItem(
             label: 'Prépa physique',
             color: _typeColor(context, AgendaItemType.preparationPhysique),
             icon: Icons.directions_run_rounded,
@@ -872,12 +1725,14 @@ class _LegendItem extends StatelessWidget {
     );
   }
 }
+
 class _AgendaWeeksList extends StatelessWidget {
   final ScrollController controller;
   final List<DateTime> weeks;
   final Map<DateTime, List<AgendaItem>> groupedByWeek;
   final bool compact;
   final DateTime selectedWeekStart;
+  final DateTime selectedDate;
   final GlobalKey Function(DateTime weekStart) keyBuilder;
   final ValueChanged<DateTime> onWeekTap;
 
@@ -887,6 +1742,7 @@ class _AgendaWeeksList extends StatelessWidget {
     required this.groupedByWeek,
     required this.compact,
     required this.selectedWeekStart,
+    required this.selectedDate,
     required this.keyBuilder,
     required this.onWeekTap,
   });
@@ -917,17 +1773,15 @@ class _AgendaWeeksList extends StatelessWidget {
                 padding: EdgeInsets.only(
                   bottom: index == weeks.length - 1 ? 0 : 14,
                 ),
-                child: SizedBox(
-                  width: double.infinity,
-                  child: Container(
-                    key: keyBuilder(weekStart),
-                    child: _WeekCard(
-                      weekStart: weekStart,
-                      items: weekItems,
-                      compact: compact,
-                      isSelected: isSelected,
-                      onTap: () => onWeekTap(weekStart),
-                    ),
+                child: Container(
+                  key: keyBuilder(weekStart),
+                  child: _WeekCard(
+                    weekStart: weekStart,
+                    items: weekItems,
+                    compact: compact,
+                    isSelected: isSelected,
+                    selectedDate: selectedDate,
+                    onTap: () => onWeekTap(weekStart),
                   ),
                 ),
               );
@@ -944,6 +1798,7 @@ class _WeekCard extends StatelessWidget {
   final List<AgendaItem> items;
   final bool compact;
   final bool isSelected;
+  final DateTime selectedDate;
   final VoidCallback onTap;
 
   const _WeekCard({
@@ -951,6 +1806,7 @@ class _WeekCard extends StatelessWidget {
     required this.items,
     required this.compact,
     required this.isSelected,
+    required this.selectedDate,
     required this.onTap,
   });
 
@@ -975,6 +1831,7 @@ class _WeekCard extends StatelessWidget {
           ),
           child: Column(
             children: [
+              /*
               Padding(
                 padding: EdgeInsets.fromLTRB(
                   compact ? 14 : 18,
@@ -990,7 +1847,10 @@ class _WeekCard extends StatelessWidget {
                         children: [
                           Text(
                             _formatWeekRange(weekStart, weekEnd),
-                            style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                            style: Theme.of(context)
+                                .textTheme
+                                .titleMedium
+                                ?.copyWith(
                               color: colors.textPrimary,
                               fontWeight: FontWeight.w700,
                             ),
@@ -998,7 +1858,8 @@ class _WeekCard extends StatelessWidget {
                           const SizedBox(height: 4),
                           Text(
                             _weekDescription(items),
-                            style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                            style:
+                            Theme.of(context).textTheme.bodySmall?.copyWith(
                               color: colors.textSecondary,
                               fontWeight: FontWeight.w500,
                             ),
@@ -1020,8 +1881,9 @@ class _WeekCard extends StatelessWidget {
                           ),
                         ),
                         child: Text(
-                          'Sélectionnée',
-                          style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                          'Semaine focus',
+                          style:
+                          Theme.of(context).textTheme.bodySmall?.copyWith(
                             color: colors.primary,
                             fontWeight: FontWeight.w700,
                           ),
@@ -1030,16 +1892,19 @@ class _WeekCard extends StatelessWidget {
                   ],
                 ),
               ),
-              Divider(height: 1, color: colors.border),
+              */
+             // Divider(height: 1, color: colors.border),
               ...List.generate(7, (index) {
                 final day = weekStart.add(Duration(days: index));
-                final dayItems = items.where((e) => _isSameDay(e.startAt, day)).toList();
+                final dayItems =
+                items.where((e) => _isSameDay(e.startAt, day)).toList();
 
                 return _DayRow(
                   date: day,
                   items: dayItems,
                   compact: compact,
                   isLast: index == 6,
+                  isSelected: _isSameDay(day, selectedDate),
                 );
               }),
             ],
@@ -1051,7 +1916,8 @@ class _WeekCard extends StatelessWidget {
 
   static String _weekDescription(List<AgendaItem> items) {
     final matchs = items.where((e) => e.type == AgendaItemType.match).length;
-    final trainings = items.where((e) => e.type == AgendaItemType.entrainement).length;
+    final trainings =
+        items.where((e) => e.type == AgendaItemType.entrainement).length;
     final prepas =
         items.where((e) => e.type == AgendaItemType.preparationPhysique).length;
 
@@ -1073,12 +1939,14 @@ class _DayRow extends StatelessWidget {
   final List<AgendaItem> items;
   final bool compact;
   final bool isLast;
+  final bool isSelected;
 
   const _DayRow({
     required this.date,
     required this.items,
     required this.compact,
     required this.isLast,
+    required this.isSelected,
   });
 
   @override
@@ -1112,6 +1980,7 @@ class _DayRow extends StatelessWidget {
                 _DateColumn(
                   date: date,
                   isToday: isToday,
+                  isSelected: isSelected,
                   compact: compact,
                 ),
                 const SizedBox(height: 10),
@@ -1128,6 +1997,7 @@ class _DayRow extends StatelessWidget {
                 child: _DateColumn(
                   date: date,
                   isToday: isToday,
+                  isSelected: isSelected,
                   compact: compact,
                 ),
               ),
@@ -1146,11 +2016,13 @@ class _DayRow extends StatelessWidget {
 class _DateColumn extends StatelessWidget {
   final DateTime date;
   final bool isToday;
+  final bool isSelected;
   final bool compact;
 
   const _DateColumn({
     required this.date,
     required this.isToday,
+    required this.isSelected,
     required this.compact,
   });
 
@@ -1165,7 +2037,7 @@ class _DateColumn extends StatelessWidget {
         Text(
           _weekdayLabel(date),
           style: Theme.of(context).textTheme.bodySmall?.copyWith(
-            color: colors.textSecondary,
+            color: isSelected ? colors.primary : colors.textSecondary,
             fontWeight: FontWeight.w700,
           ),
         ),
@@ -1176,13 +2048,24 @@ class _DateColumn extends StatelessWidget {
           alignment: Alignment.center,
           decoration: BoxDecoration(
             shape: BoxShape.circle,
-            color: isToday ? colors.primary : Colors.transparent,
+            color: isSelected
+                ? colors.primary
+                : isToday
+                ? colors.primary.withOpacity(0.10)
+                : Colors.transparent,
+            border: !isSelected && isToday
+                ? Border.all(color: colors.primary.withOpacity(0.25))
+                : null,
           ),
           child: Text(
             '${date.day}',
             style: Theme.of(context).textTheme.titleMedium?.copyWith(
               fontWeight: FontWeight.w800,
-              color: isToday ? Colors.white : colors.textPrimary,
+              color: isSelected
+                  ? Colors.white
+                  : isToday
+                  ? colors.primary
+                  : colors.textPrimary,
             ),
           ),
         ),
@@ -1254,6 +2137,7 @@ class _EmptyDayTile extends StatelessWidget {
     );
   }
 }
+
 class _AgendaItemCard extends StatelessWidget {
   final AgendaItem item;
 
@@ -1266,160 +2150,145 @@ class _AgendaItemCard extends StatelessWidget {
     final colors = context.appColors;
     final accent = _typeColor(context, item.type);
     final icon = _typeIcon(item.type);
-    final label = _typeLabel(item.type);
 
     return Container(
       width: double.infinity,
       clipBehavior: Clip.antiAlias,
       decoration: BoxDecoration(
-    //    color: colors.card,
         color: accent,
         borderRadius: BorderRadius.circular(16),
         border: Border.all(color: colors.border),
       ),
-      child: Stack(
-        children: [
-          Padding(
-            padding: const EdgeInsets.fromLTRB(17, 12, 12, 12),
-            child: LayoutBuilder(
-              builder: (context, constraints) {
-                final wide = constraints.maxWidth > 560;
-
-                return Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Icon(icon, size: 18, color: colors.textPrimary),
-                        const SizedBox(width: 8),
-                        Expanded(
-                          child: Text(
-                            item.title,
-                            maxLines: 2,
-                            overflow: TextOverflow.ellipsis,
-                            style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                              color: colors.textPrimary,
-                              fontWeight: FontWeight.w700,
-                            ),
-                          ),
-                        ),
-                        if (item.withTracker) ...[
-                          const SizedBox(width: 8),
-                          Icon(
-                            Icons.gps_not_fixed_rounded,
-                            size: 18,
-                            color: (item.areTrackersSynchronized)
-                                ? colors.success
-                                : colors.warning,
-                          ),
-                        ],
-                        if (item.isDone) ...[
-                          const SizedBox(width: 8),
-                          Icon(
-                            Icons.check_circle_rounded,
-                            size: 18,
-                            color: colors.success,
-                          ),
-                        ],
-                      ],
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(17, 12, 12, 12),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Icon(icon, size: 18, color: colors.textPrimary),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    item.title,
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                    style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                      color: colors.textPrimary,
+                      fontWeight: FontWeight.w700,
                     ),
-                    SizedBox(
-                      width: 55,
-                      height: 55,
-                      child: ActivityRingsCard.compact(
-                        rings: const [
-                          ActivityRingItem(
-                            label: 'Bouger',
-                            value: 113,
-                            goal: 600,
-                            unit: 'KCAL',
-                            color: Color(0xFFFF2D55),
-                            trackColor: Color(0xFF4B1322),
-                            icon: Icons.arrow_forward,
-                          ),
-                          ActivityRingItem(
-                            label: 'M’entraîner',
-                            value: 6,
-                            goal: 60,
-                            unit: 'MIN',
-                            color: Color(0xFF9DFF00),
-                            trackColor: Color(0xFF1C4312),
-                            icon: Icons.fast_forward,
-                          ),
-                          ActivityRingItem(
-                            label: 'Me lever',
-                            value: 6,
-                            goal: 12,
-                            unit: 'H',
-                            color: Color(0xFF28F0FF),
-                            trackColor: Color(0xFF103845),
-                            icon: Icons.north,
-                          ),
-                        ],
-                      ),
-                    ),
-
-                    if (item.match != null) ...[
-                      const SizedBox(height: 10),
-                      AgendaMatchRow(
-                        match: item.match!,
-                      ),
-                    ],
-                  ],
-                );
-              },
+                  ),
+                ),
+                if (item.withTracker) ...[
+                  const SizedBox(width: 8),
+                  Icon(
+                    Icons.gps_fixed_outlined,
+                    size: 18,
+                    color: item.areTrackersSynchronized
+                        ? colors.success
+                        : colors.warning,
+                  ),
+                ],
+                if (item.isDone) ...[
+                  const SizedBox(width: 8),
+                  Icon(
+                    Icons.check_circle_rounded,
+                    size: 18,
+                    color: colors.success,
+                  ),
+                ],
+              ],
             ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _InfoPill extends StatelessWidget {
-  final IconData icon;
-  final String label;
-  final Color? textColor;
-  final Color? backgroundColor;
-  final Color? borderColor;
-
-  const _InfoPill({
-    required this.icon,
-    required this.label,
-    this.textColor,
-    this.backgroundColor,
-    this.borderColor,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final colors = context.appColors;
-    final fg = textColor ?? colors.textSecondary;
-
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
-      decoration: BoxDecoration(
-        color: backgroundColor ?? colors.surface,
-        borderRadius: BorderRadius.circular(999),
-        border: Border.all(color: borderColor ?? colors.border),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(icon, size: 14, color: fg),
-          const SizedBox(width: 6),
-          Flexible(
-            child: Text(
-              label,
-              overflow: TextOverflow.ellipsis,
-              style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                color: fg,
-                fontWeight: FontWeight.w600,
+            const SizedBox(height: 10),
+            SizedBox(
+              width: double.infinity,
+              height: 80,
+              child: ActivityRingsCard.detailed(
+                showWorkload: true,
+                workloadScore: 87.5,
+                workloadLabel: 'Workload',
+                workloadUnit: 'pts',
+                workloadColor: Colors.orange,
+                showLegend: true,
+                embedded: true,
+                backgroundColor: Colors.black,
+                padding: const EdgeInsets.all(4),
+                rings: [
+                  ActivityRingItem(
+                    label: 'Distance',
+                    value: 8.4,
+                    goal: 10,
+                    unit: 'km',
+                    color: Colors.greenAccent,
+                    trackColor: Colors.greenAccent.withOpacity(0.18),
+                    icon: Icons.directions_run,
+                  ),
+                  ActivityRingItem(
+                    label: 'Durée',
+                    value: 52,
+                    goal: 60,
+                    unit: 'min',
+                    color: Colors.blueAccent,
+                    trackColor: Colors.blueAccent.withOpacity(0.18),
+                    icon: Icons.timer,
+                  ),
+                  ActivityRingItem(
+                    label: 'Sprints',
+                    value: 52,
+                    goal: 60,
+                    unit: 'min',
+                    color: Colors.redAccent,
+                    trackColor: Colors.redAccent.withOpacity(0.18),
+                    icon: Icons.timer,
+                  ),
+                ],
               ),
             ),
-          ),
-        ],
+            /*
+            SizedBox(
+              width: 55,
+              height: 55,
+              child: ActivityRingsCard.compact(
+                rings: const [
+                  ActivityRingItem(
+                    label: 'Bouger',
+                    value: 113,
+                    goal: 600,
+                    unit: 'KCAL',
+                    color: Color(0xFFFF2D55),
+                    trackColor: Color(0xFF4B1322),
+                    icon: Icons.arrow_forward,
+                  ),
+                  ActivityRingItem(
+                    label: 'M’entraîner',
+                    value: 6,
+                    goal: 60,
+                    unit: 'MIN',
+                    color: Color(0xFF9DFF00),
+                    trackColor: Color(0xFF1C4312),
+                    icon: Icons.fast_forward,
+                  ),
+                  ActivityRingItem(
+                    label: 'Me lever',
+                    value: 6,
+                    goal: 12,
+                    unit: 'H',
+                    color: Color(0xFF28F0FF),
+                    trackColor: Color(0xFF103845),
+                    icon: Icons.north,
+                  ),
+                ],
+              ),
+            ),
+            */
+
+            if (item.match != null) ...[
+              const SizedBox(height: 10),
+              AgendaMatchRow(match: item.match!),
+            ],
+          ],
+        ),
       ),
     );
   }
@@ -1518,6 +2387,26 @@ Map<DateTime, List<AgendaItem>> _groupItemsByWeek(List<AgendaItem> items) {
   return grouped;
 }
 
+Map<int, List<AgendaItemType>> _headerEventTypesByDay(List<AgendaItem> items) {
+  final result = <int, List<AgendaItemType>>{};
+
+  for (final item in items) {
+    final dayKey = DateUtils.dateOnly(item.startAt).millisecondsSinceEpoch;
+    result.putIfAbsent(dayKey, () => <AgendaItemType>[]);
+    result[dayKey]!.add(item.type);
+  }
+
+  return result;
+}
+
+List<AgendaItemType> _eventTypesForDay(
+    Map<int, List<AgendaItemType>> eventTypesByDay,
+    DateTime day,
+    ) {
+  final key = DateUtils.dateOnly(day).millisecondsSinceEpoch;
+  return eventTypesByDay[key] ?? const <AgendaItemType>[];
+}
+
 List<DateTime> _generateWeeks(DateTime start, DateTime end) {
   final result = <DateTime>[];
 
@@ -1530,6 +2419,56 @@ List<DateTime> _generateWeeks(DateTime start, DateTime end) {
   }
 
   return result;
+}
+
+List<DateTime> _generateMonthGridDays(DateTime month) {
+  final firstDayOfMonth = DateTime(month.year, month.month, 1);
+  final lastDayOfMonth = DateTime(month.year, month.month + 1, 0);
+
+  final gridStart = DateTime(
+    firstDayOfMonth.year,
+    firstDayOfMonth.month,
+    firstDayOfMonth.day - (firstDayOfMonth.weekday - 1),
+  );
+
+  final gridEnd = DateTime(
+    lastDayOfMonth.year,
+    lastDayOfMonth.month,
+    lastDayOfMonth.day + (7 - lastDayOfMonth.weekday),
+  );
+
+  final result = <DateTime>[];
+  DateTime current = gridStart;
+
+  while (!current.isAfter(gridEnd)) {
+    result.add(DateUtils.dateOnly(current));
+    current = DateTime(current.year, current.month, current.day + 1);
+  }
+
+  while (result.length % 7 != 0) {
+    final last = result.last;
+    result.add(DateTime(last.year, last.month, last.day + 1));
+  }
+
+  return result;
+}
+
+double _monthGridHeight(DateTime month) {
+  final days = _generateMonthGridDays(month);
+  final weekCount = (days.length / 7).ceil();
+
+  const rowHeight = 64.0;
+  const rowSpacing = 10.0;
+
+  return (weekCount * rowHeight) + ((weekCount - 1) * rowSpacing);
+}
+
+int _monthDiff(DateTime from, DateTime to) {
+  return ((to.year - from.year) * 12) + to.month - from.month;
+}
+
+DateTime _addMonths(DateTime date, int months) {
+  return DateTime(date.year, date.month + months, 1);
 }
 
 DateTime _startOfMonth(DateTime date) {
@@ -1564,6 +2503,51 @@ bool _isSameDay(DateTime a, DateTime b) {
 String _weekdayLabel(DateTime date) {
   const labels = ['LUN', 'MAR', 'MER', 'JEU', 'VEN', 'SAM', 'DIM'];
   return labels[date.weekday - 1];
+}
+
+String _weekdayLabelFromIndex(int index) {
+  const labels = ['LUN', 'MAR', 'MER', 'JEU', 'VEN', 'SAM', 'DIM'];
+  return labels[index];
+}
+
+String _formatMonthYear(DateTime date) {
+  const months = [
+    '',
+    'janvier',
+    'février',
+    'mars',
+    'avril',
+    'mai',
+    'juin',
+    'juillet',
+    'août',
+    'septembre',
+    'octobre',
+    'novembre',
+    'décembre',
+  ];
+
+  return '${months[date.month]} ${date.year}';
+}
+
+String _formatFullDate(DateTime date) {
+  const months = [
+    '',
+    'janvier',
+    'février',
+    'mars',
+    'avril',
+    'mai',
+    'juin',
+    'juillet',
+    'août',
+    'septembre',
+    'octobre',
+    'novembre',
+    'décembre',
+  ];
+
+  return '${date.day} ${months[date.month]} ${date.year}';
 }
 
 String _formatWeekRange(DateTime start, DateTime end) {
@@ -1628,18 +2612,12 @@ String _formatPeriodLabel(DateTime start, DateTime end) {
   return '${start.day} ${months[start.month]} ${start.year} - ${end.day} ${months[end.month]} ${end.year}';
 }
 
-String _formatHour(DateTime date) {
-  final hh = date.hour.toString().padLeft(2, '0');
-  final mm = date.minute.toString().padLeft(2, '0');
-  return '$hh:$mm';
-}
-
 Color _typeColor(BuildContext context, AgendaItemType type) {
   final colors = context.appColors;
 
   switch (type) {
     case AgendaItemType.match:
-      return colors.secondary;
+      return colors.danger;
     case AgendaItemType.entrainement:
       return colors.primary;
     case AgendaItemType.preparationPhysique:
@@ -1655,16 +2633,5 @@ IconData _typeIcon(AgendaItemType type) {
       return Icons.fitness_center_rounded;
     case AgendaItemType.preparationPhysique:
       return Icons.directions_run_rounded;
-  }
-}
-
-String _typeLabel(AgendaItemType type) {
-  switch (type) {
-    case AgendaItemType.match:
-      return 'Match';
-    case AgendaItemType.entrainement:
-      return 'Entraînement';
-    case AgendaItemType.preparationPhysique:
-      return 'Prépa physique';
   }
 }

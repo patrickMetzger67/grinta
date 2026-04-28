@@ -6,7 +6,7 @@ class TrackerAnalysisService {
   TrackerAnalysisService._();
 
   static final FirebaseFirestore _firestore = FirebaseFirestore.instance;
-  static const String collectionName = 'TRACKER_Analyis';
+  static const String collectionName = 'TRACKER_Analysis';
 
   static CollectionReference<Map<String, dynamic>> get _collection =>
       _firestore.collection(collectionName);
@@ -107,24 +107,24 @@ class TrackerAnalysisService {
     );
   }
 
-  /// Optionnel : filtre par match
-  static Stream<List<TrackerAnalysisResult>> getAnalysesByMatch(
-      String matchId, {
+  /// Optionnel : filtre par match sans Stream
+  static Future<List<TrackerAnalysisResult>> getAnalysesByEvent(
+      String eventId, {
         int? limit,
-      }) {
+      }) async {
     Query<Map<String, dynamic>> query = _collection
-        .where('matchId', isEqualTo: matchId)
+        .where('eventId', isEqualTo: eventId)
         .orderBy('createdAt', descending: true);
 
     if (limit != null) {
       query = query.limit(limit);
     }
 
-    return query.snapshots().map(
-          (snapshot) => snapshot.docs
-          .map((doc) => TrackerAnalysisResult.fromMap(doc.data()))
-          .toList(),
-    );
+    final snapshot = await query.get();
+
+    return snapshot.docs
+        .map((doc) => TrackerAnalysisResult.fromMap(doc.data()))
+        .toList();
   }
 
   static Future<void> deleteAnalysis(String docId) async {

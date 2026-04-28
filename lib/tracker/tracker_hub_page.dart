@@ -26,6 +26,7 @@ import '../model/training.dart';
 import '../services/pitch_heatmap_builder.dart';
 import '../services/playerService.dart';
 import '../services/sensorAnalysisService.dart';
+import '../services/teamWorkloadSummaryService.dart';
 import '../services/trackerDataAnalysisService.dart';
 import '../util/heatmap_svg_generator.dart';
 import '../widget/asi_converter_screen.dart';
@@ -337,6 +338,18 @@ class _TrackerHubPageState extends State<TrackerHubPage> {
       ),
     );
     if (shouldLeave != true) return;
+    
+    List<TrackerAnalysisResult> trackerAnalysis = await TrackerAnalysisService.getAnalysesByEvent(widget.eventId);
+    final service = TeamWorkloadSummaryService();
+
+    final summary = await service.computeAndSave(
+      eventId: widget.eventId, // id du match ou de l'entraînement
+      playerResults: trackerAnalysis,
+      sessionDuration: const Duration(minutes: 90), // optionnel
+    );
+
+    await service.save(summary);
+
     if (widget.isMatch == true) {
       final match = await MatchService().getMatchById(widget.eventId);
       if (match != null) {
@@ -1124,6 +1137,7 @@ class _AsiDownloaderPanelState extends State<AsiDownloaderPanel> {
         isMatch: widget.isMatch,
         playerId: widget.playerId,
         fieldGps: footballFieldGps,
+        eventId: widget.eventId,
       );
 
       await TrackerAnalysisService.saveAnalysis(
@@ -1185,6 +1199,7 @@ class _AsiDownloaderPanelState extends State<AsiDownloaderPanel> {
             isMatch: widget.isMatch,
             playerId: widget.playerId,
             fieldGps: footballFieldGps,
+            eventId: widget.eventId,
           );
         }
 
@@ -1195,6 +1210,7 @@ class _AsiDownloaderPanelState extends State<AsiDownloaderPanel> {
             isMatch: widget.isMatch,
             playerId: widget.playerId,
             fieldGps: footballFieldGps,
+            eventId: widget.eventId,
           );
         }
 
@@ -1445,6 +1461,7 @@ class _AsiDownloaderPanelState extends State<AsiDownloaderPanel> {
         isMatch: widget.isMatch,
         playerId: widget.playerId,
         fieldGps: footballFieldGps,
+        eventId: widget.eventId,
       );
 
       if (sprintAnalysis.heatmapPoints.length < 2) continue;

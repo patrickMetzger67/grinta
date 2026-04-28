@@ -650,7 +650,7 @@ class _HomeScreenState extends State<HomeScreen> {
                               onPressed: () async {
                                 try {
 
-                                  print('trainingId=${training.trainingId} - date${training.dateTg}');
+                                  print('trainingId=${training.trainingId} - date${training.dateTg} ownerId=${training.ownerId}');
                                   final owner = await OwnerService().getOwnerById(training.ownerId!);
                                   if (owner != null && owner.typeTracker == "inspirit") {
                                     final ownerDevices =

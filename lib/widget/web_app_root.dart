@@ -51,20 +51,21 @@ class _WebAppRootState extends State<WebAppRoot> {
     final List<AgendaItem> allItems = [];
     final timestampNow = Timestamp.now();
 
+
     for (final t in appSession.selectedTeams) {
       if (t.keyTeam == null) continue;
 
       final matchsWrk = await MatchService().getMatchesByTeamIdBetweenDates(
         teamId: t.keyTeam!,
-        start: Timestamp.fromDate(start),
-        end: Timestamp.fromDate(end),
+        start: appSession.selectedSeason!.startDate!,
+        end: appSession.selectedSeason!.endDate!,
       );
 
       final trainingsWrk =
       await TrainingService().getTrainingsByTeamIdBetweenDates(
         teamId: t.keyTeam!,
-        start: Timestamp.fromDate(start),
-        end: Timestamp.fromDate(end),
+        start: appSession.selectedSeason!.startDate!,
+        end: appSession.selectedSeason!.endDate!,
       );
 
       for (final m in matchsWrk) {
@@ -184,19 +185,13 @@ class _WebAppRootState extends State<WebAppRoot> {
                 icon: Icons.groups_rounded,
                 page: TeamsListScreen(
                   managedTeamsIds: getManagedTeamsIds,
-                  onTeamTap: (context, team) {
+                  onTeamTap: (context, team, isManager) {
                     Navigator.of(context).push(
                       MaterialPageRoute(
                         builder: (_) => TeamDetailScreen(
                           team: team,
                           seasonId: context.read<AppSession>().selectedSeason?.ref?.id,
-                          categoryLabel: team.name,
-                          genderLabel: 'Hommes', // à adapter selon ton modèle
-                          thresholdCards: const [
-                            TeamThresholdCardData(value: '11 km/h', label: 'Moyenne'),
-                            TeamThresholdCardData(value: '14,5 km/h', label: 'Haute'),
-                            TeamThresholdCardData(value: '17 km/h', label: 'Très Haute'),
-                          ],
+                          isManager: isManager,
                         ),
                       ),
                     );

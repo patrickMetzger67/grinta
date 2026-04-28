@@ -9,9 +9,11 @@ class TeamParamScreen extends StatefulWidget {
   const TeamParamScreen({
     super.key,
     required this.team,
+    this.isManager = false,
   });
 
   final Team team;
+  final bool isManager;
 
   @override
   State<TeamParamScreen> createState() => _TeamParamScreenState();
@@ -51,6 +53,8 @@ class _TeamParamScreenState extends State<TeamParamScreen> {
 
   TeamParam? _defaultParams;
   final List<_EditableSpeedZone> _zones = [];
+
+  bool get _canEdit => widget.isManager;
 
   String get _teamId => (widget.team.keyTeam ?? '').trim();
 
@@ -155,15 +159,19 @@ class _TeamParamScreenState extends State<TeamParamScreen> {
     for (final zone in _zones) {
       zone.dispose();
     }
+
     _zones.clear();
 
     final orderedZones = params.orderedSpeedZones;
+
     for (final zone in orderedZones) {
       _zones.add(_EditableSpeedZone.fromModel(zone));
     }
   }
 
   Future<void> _save() async {
+    if (!_canEdit) return;
+
     if (_teamId.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
@@ -291,7 +299,7 @@ class _TeamParamScreenState extends State<TeamParamScreen> {
 
       if (current.maxKmh == null) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
+          const SnackBar(
             content: Text(
               'Seule la dernière zone peut avoir une borne max vide.',
             ),
@@ -316,6 +324,8 @@ class _TeamParamScreenState extends State<TeamParamScreen> {
   }
 
   Future<void> _restoreDefaultValues() async {
+    if (!_canEdit) return;
+
     final TeamParam defaults = _defaultParams ?? TeamParam.defaultConfig();
 
     _fillForm(defaults);
@@ -332,6 +342,8 @@ class _TeamParamScreenState extends State<TeamParamScreen> {
   }
 
   Future<void> _deleteCustomParams() async {
+    if (!_canEdit) return;
+
     if (_teamId.isEmpty ||
         _teamId == TeamParam.defaultTeamId ||
         !_hasCustomParams) {
@@ -340,24 +352,43 @@ class _TeamParamScreenState extends State<TeamParamScreen> {
 
     final bool? confirmed = await showDialog<bool>(
       context: context,
-      builder: (context) {
-        final colors = context.appColors;
+      builder: (dialogContext) {
+        final colors = dialogContext.appColors;
 
         return AlertDialog(
           backgroundColor: colors.card,
-          title: const Text('Supprimer la personnalisation ?'),
-          content: const Text(
+          surfaceTintColor: Colors.transparent,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(20),
+            side: BorderSide(color: colors.border),
+          ),
+          title: Text(
+            'Supprimer la personnalisation ?',
+            style: TextStyle(
+              color: colors.textPrimary,
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+          content: Text(
             'Les paramètres spécifiques de cette équipe seront supprimés. '
-                'L’équipe utilisera alors les paramètres par défaut (teamId = 0).',
+                'L’équipe utilisera alors les paramètres par défaut.',
+            style: TextStyle(
+              color: colors.textSecondary,
+            ),
           ),
           actions: [
-            TextButton(
-              onPressed: () => Navigator.of(context).pop(false),
+            OutlinedButton(
+              onPressed: () => Navigator.of(dialogContext).pop(false),
               child: const Text('Annuler'),
             ),
-            FilledButton(
-              onPressed: () => Navigator.of(context).pop(true),
-              child: const Text('Supprimer'),
+            FilledButton.icon(
+              onPressed: () => Navigator.of(dialogContext).pop(true),
+              style: FilledButton.styleFrom(
+                backgroundColor: colors.danger,
+                foregroundColor: Colors.white,
+              ),
+              icon: const Icon(Icons.delete_outline_rounded),
+              label: const Text('Supprimer'),
             ),
           ],
         );
@@ -392,8 +423,11 @@ class _TeamParamScreenState extends State<TeamParamScreen> {
   }
 
   void _addZone() {
+    if (!_canEdit) return;
+
     setState(() {
       final index = _zones.length + 1;
+
       _zones.add(
         _EditableSpeedZone(
           zoneIdController: TextEditingController(text: 'Z$index'),
@@ -406,6 +440,8 @@ class _TeamParamScreenState extends State<TeamParamScreen> {
   }
 
   void _removeZone(int index) {
+    if (!_canEdit) return;
+
     if (_zones.length <= 1) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
@@ -458,6 +494,7 @@ class _TeamParamScreenState extends State<TeamParamScreen> {
       ),
     );
   }
+
 
   Widget _buildHeader(BuildContext context) {
     final colors = context.appColors;
@@ -515,6 +552,7 @@ class _TeamParamScreenState extends State<TeamParamScreen> {
                               ? 'Seuils personnalisés'
                               : 'Seuils par défaut',
                         ),
+                        if (!_canEdit) const _HeaderChip(label: 'Lecture seule'),
                       ],
                     ),
                     const SizedBox(height: 18),
@@ -556,22 +594,36 @@ class _TeamParamScreenState extends State<TeamParamScreen> {
                   runSpacing: 12,
                   alignment: stacked ? WrapAlignment.start : WrapAlignment.end,
                   children: [
-                    OutlinedButton.icon(
-                      onPressed: _saving ? null : _restoreDefaultValues,
-                      style: OutlinedButton.styleFrom(
-                        foregroundColor: Colors.white,
-                        side: const BorderSide(color: Colors.white),
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 18,
-                          vertical: 16,
+                    if (_canEdit) ...[
+                      OutlinedButton.icon(
+                        onPressed: _saving ? null : _restoreDefaultValues,
+                        style: OutlinedButton.styleFrom(
+                          foregroundColor: Colors.white,
+                          side: const BorderSide(color: Colors.white),
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 18,
+                            vertical: 16,
+                          ),
                         ),
+                        icon: const Icon(Icons.restart_alt_rounded),
+                        label: const Text('Valeurs par défaut'),
                       ),
-                      icon: const Icon(Icons.restart_alt_rounded),
-                      label: const Text('Valeurs par défaut'),
-                    ),
-                    if (_hasCustomParams)
+                      if (_hasCustomParams)
+                        FilledButton.icon(
+                          onPressed: _saving ? null : _deleteCustomParams,
+                          style: FilledButton.styleFrom(
+                            backgroundColor: const Color(0xFF232A3B),
+                            foregroundColor: Colors.white,
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 18,
+                              vertical: 16,
+                            ),
+                          ),
+                          icon: const Icon(Icons.delete_outline_rounded),
+                          label: const Text('Supprimer la personnalisation'),
+                        ),
                       FilledButton.icon(
-                        onPressed: _saving ? null : _deleteCustomParams,
+                        onPressed: _saving ? null : _save,
                         style: FilledButton.styleFrom(
                           backgroundColor: const Color(0xFF232A3B),
                           foregroundColor: Colors.white,
@@ -580,31 +632,21 @@ class _TeamParamScreenState extends State<TeamParamScreen> {
                             vertical: 16,
                           ),
                         ),
-                        icon: const Icon(Icons.delete_outline_rounded),
-                        label: const Text('Supprimer la personnalisation'),
-                      ),
-                    FilledButton.icon(
-                      onPressed: _saving ? null : _save,
-                      style: FilledButton.styleFrom(
-                        backgroundColor: const Color(0xFF232A3B),
-                        foregroundColor: Colors.white,
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 18,
-                          vertical: 16,
+                        icon: _saving
+                            ? const SizedBox(
+                          width: 18,
+                          height: 18,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2,
+                            color: Colors.white,
+                          ),
+                        )
+                            : const Icon(Icons.save_rounded),
+                        label: Text(
+                          _saving ? 'Enregistrement...' : 'Enregistrer',
                         ),
                       ),
-                      icon: _saving
-                          ? const SizedBox(
-                        width: 18,
-                        height: 18,
-                        child: CircularProgressIndicator(
-                          strokeWidth: 2,
-                          color: Colors.white,
-                        ),
-                      )
-                          : const Icon(Icons.save_rounded),
-                      label: Text(_saving ? 'Enregistrement...' : 'Enregistrer'),
-                    ),
+                    ],
                   ],
                 ),
               ),
@@ -626,12 +668,14 @@ class _TeamParamScreenState extends State<TeamParamScreen> {
             label: 'Seuil sprint (km/h)',
             suffixText: 'km/h',
             isRequired: true,
+            enabled: _canEdit,
           ),
           _ParamField(
             controller: _minSprintAccelerationMps2Ctrl,
             label: 'Accélération mini pour sprint',
             suffixText: 'm/s²',
             isRequired: true,
+            enabled: _canEdit,
           ),
           _ParamField(
             controller: _sprintMinDurationMsCtrl,
@@ -639,6 +683,7 @@ class _TeamParamScreenState extends State<TeamParamScreen> {
             suffixText: 'ms',
             isInteger: true,
             isRequired: true,
+            enabled: _canEdit,
           ),
           _ParamField(
             controller: _validatedSpeedMinDurationMsCtrl,
@@ -646,6 +691,7 @@ class _TeamParamScreenState extends State<TeamParamScreen> {
             suffixText: 'ms',
             isInteger: true,
             isRequired: true,
+            enabled: _canEdit,
           ),
         ],
       ),
@@ -663,6 +709,7 @@ class _TeamParamScreenState extends State<TeamParamScreen> {
             label: 'Seuil forte accélération',
             suffixText: 'm/s²',
             isRequired: true,
+            enabled: _canEdit,
           ),
           _ParamField(
             controller: _highAccelerationMinDurationMsCtrl,
@@ -670,6 +717,7 @@ class _TeamParamScreenState extends State<TeamParamScreen> {
             suffixText: 'ms',
             isInteger: true,
             isRequired: true,
+            enabled: _canEdit,
           ),
         ],
       ),
@@ -687,18 +735,21 @@ class _TeamParamScreenState extends State<TeamParamScreen> {
             label: 'Distance max acceptée par pas',
             suffixText: 'm',
             isRequired: true,
+            enabled: _canEdit,
           ),
           _ParamField(
             controller: _maxPlausibleSpeedMpsCtrl,
             label: 'Vitesse max plausible',
             suffixText: 'm/s',
             isRequired: true,
+            enabled: _canEdit,
           ),
           _ParamField(
             controller: _maxPlausibleAccelerationMps2Ctrl,
             label: 'Accélération max plausible',
             suffixText: 'm/s²',
             isRequired: true,
+            enabled: _canEdit,
           ),
           _ParamField(
             controller: _minDtMsCtrl,
@@ -706,6 +757,7 @@ class _TeamParamScreenState extends State<TeamParamScreen> {
             suffixText: 'ms',
             isInteger: true,
             isRequired: true,
+            enabled: _canEdit,
           ),
           _ParamField(
             controller: _maxDtMsCtrl,
@@ -713,12 +765,14 @@ class _TeamParamScreenState extends State<TeamParamScreen> {
             suffixText: 'ms',
             isInteger: true,
             isRequired: true,
+            enabled: _canEdit,
           ),
           _ParamField(
             controller: _smoothingWindowCtrl,
             label: 'Fenêtre de lissage',
             isInteger: true,
             isRequired: true,
+            enabled: _canEdit,
           ),
           _ParamField(
             controller: _timelineBucketMsCtrl,
@@ -726,6 +780,7 @@ class _TeamParamScreenState extends State<TeamParamScreen> {
             suffixText: 'ms',
             isInteger: true,
             isRequired: true,
+            enabled: _canEdit,
           ),
         ],
       ),
@@ -739,17 +794,21 @@ class _TeamParamScreenState extends State<TeamParamScreen> {
     return _SectionCard(
       title: 'Zones de vitesse',
       icon: Icons.stacked_line_chart_rounded,
-      headerAction: FilledButton.icon(
+      headerAction: _canEdit
+          ? FilledButton.icon(
         onPressed: _addZone,
         icon: const Icon(Icons.add_rounded),
         label: const Text('Ajouter une zone'),
-      ),
+      )
+          : null,
       child: Column(
         children: [
           Align(
             alignment: Alignment.centerLeft,
             child: Text(
-              'Tu peux personnaliser librement les zones utilisées pour le calcul du temps passé dans chaque zone.',
+              _canEdit
+                  ? 'Tu peux personnaliser librement les zones utilisées pour le calcul du temps passé dans chaque zone.'
+                  : 'Consultation seule : les zones de vitesse ne sont pas modifiables.',
               style: textTheme.bodyMedium?.copyWith(
                 color: colors.textSecondary,
               ),
@@ -796,13 +855,14 @@ class _TeamParamScreenState extends State<TeamParamScreen> {
                   ),
                 ),
               ),
-              IconButton(
-                onPressed: () => _removeZone(index),
-                icon: Icon(
-                  Icons.delete_outline_rounded,
-                  color: colors.textSecondary,
+              if (_canEdit)
+                IconButton(
+                  onPressed: () => _removeZone(index),
+                  icon: Icon(
+                    Icons.delete_outline_rounded,
+                    color: colors.textSecondary,
+                  ),
                 ),
-              ),
             ],
           ),
           const SizedBox(height: 12),
@@ -812,23 +872,29 @@ class _TeamParamScreenState extends State<TeamParamScreen> {
                 controller: zone.zoneIdController,
                 label: 'Code',
                 isRequired: true,
+                enabled: _canEdit,
+                isNumeric: false,
               ),
               _ParamField(
                 controller: zone.labelController,
                 label: 'Libellé',
                 isRequired: true,
+                enabled: _canEdit,
+                isNumeric: false,
               ),
               _ParamField(
                 controller: zone.minKmhController,
                 label: 'Vitesse min',
                 suffixText: 'km/h',
                 isRequired: true,
+                enabled: _canEdit,
               ),
               _ParamField(
                 controller: zone.maxKmhController,
                 label: 'Vitesse max',
                 suffixText: 'km/h',
                 hintText: 'Laisser vide pour la dernière zone',
+                enabled: _canEdit,
               ),
             ],
           ),
@@ -855,52 +921,29 @@ class _TeamParamScreenState extends State<TeamParamScreen> {
         children: [
           OutlinedButton.icon(
             onPressed: _saving ? null : () => Navigator.of(context).maybePop(),
-            icon: const Icon(Icons.close_rounded),
-            label: const Text('Annuler'),
+            icon: Icon(
+              _canEdit ? Icons.close_rounded : Icons.arrow_back_rounded,
+            ),
+            label: Text(_canEdit ? 'Annuler' : 'Retour'),
           ),
-          FilledButton.icon(
-            onPressed: _saving ? null : _save,
-            icon: _saving
-                ? const SizedBox(
-              width: 18,
-              height: 18,
-              child: CircularProgressIndicator(
-                strokeWidth: 2,
-                color: Colors.white,
-              ),
-            )
-                : const Icon(Icons.save_rounded),
-            label: Text(_saving ? 'Enregistrement...' : 'Enregistrer'),
-          ),
+          if (_canEdit)
+            FilledButton.icon(
+              onPressed: _saving ? null : _save,
+              icon: _saving
+                  ? const SizedBox(
+                width: 18,
+                height: 18,
+                child: CircularProgressIndicator(
+                  strokeWidth: 2,
+                  color: Colors.white,
+                ),
+              )
+                  : const Icon(Icons.save_rounded),
+              label: Text(_saving ? 'Enregistrement...' : 'Enregistrer'),
+            ),
         ],
       ),
     );
-  }
-
-  String? _validateNumeric(
-      String? value, {
-        bool integer = false,
-        bool required = true,
-      }) {
-    final text = (value ?? '').trim();
-
-    if (text.isEmpty) {
-      return required ? 'Champ requis' : null;
-    }
-
-    if (integer) {
-      if (int.tryParse(text) == null) {
-        return 'Valeur entière invalide';
-      }
-      return null;
-    }
-
-    final parsed = double.tryParse(text.replaceAll(',', '.'));
-    if (parsed == null) {
-      return 'Valeur numérique invalide';
-    }
-
-    return null;
   }
 
   int _parseInt(String value) {
@@ -915,7 +958,11 @@ class _TeamParamScreenState extends State<TeamParamScreen> {
     if (value == value.roundToDouble()) {
       return value.toInt().toString();
     }
-    return value.toStringAsFixed(2).replaceAll(RegExp(r'0+$'), '').replaceAll(RegExp(r'\.$'), '');
+
+    return value
+        .toStringAsFixed(2)
+        .replaceAll(RegExp(r'0+$'), '')
+        .replaceAll(RegExp(r'\.$'), '');
   }
 }
 
@@ -954,6 +1001,7 @@ class _EditableSpeedZone {
     if (value == value.roundToDouble()) {
       return value.toInt().toString();
     }
+
     return value
         .toStringAsFixed(2)
         .replaceAll(RegExp(r'0+$'), '')
@@ -993,7 +1041,7 @@ class _SectionCard extends StatelessWidget {
             children: [
               Icon(
                 icon,
-                color: colors.secondary,
+                color: colors.primary,
                 size: 28,
               ),
               const SizedBox(width: 12),
@@ -1027,9 +1075,8 @@ class _ResponsiveFieldsWrap extends StatelessWidget {
   Widget build(BuildContext context) {
     return LayoutBuilder(
       builder: (context, constraints) {
-        final double itemWidth = constraints.maxWidth < 700
-            ? constraints.maxWidth
-            : (constraints.maxWidth - 16) / 2;
+        final double itemWidth =
+        constraints.maxWidth < 700 ? constraints.maxWidth : (constraints.maxWidth - 16) / 2;
 
         return Wrap(
           spacing: 16,
@@ -1056,6 +1103,8 @@ class _ParamField extends StatelessWidget {
     this.suffixText,
     this.isInteger = false,
     this.isRequired = false,
+    this.enabled = true,
+    this.isNumeric = true,
   });
 
   final TextEditingController controller;
@@ -1064,6 +1113,8 @@ class _ParamField extends StatelessWidget {
   final String? suffixText;
   final bool isInteger;
   final bool isRequired;
+  final bool enabled;
+  final bool isNumeric;
 
   @override
   Widget build(BuildContext context) {
@@ -1071,15 +1122,23 @@ class _ParamField extends StatelessWidget {
 
     return TextFormField(
       controller: controller,
-      keyboardType: TextInputType.numberWithOptions(
+      enabled: enabled,
+      keyboardType: isNumeric
+          ? TextInputType.numberWithOptions(
         decimal: !isInteger,
         signed: false,
-      ),
-      validator: (value) {
+      )
+          : TextInputType.text,
+      validator: enabled
+          ? (value) {
         final text = (value ?? '').trim();
 
         if (text.isEmpty) {
           return isRequired ? 'Champ requis' : null;
+        }
+
+        if (!isNumeric) {
+          return null;
         }
 
         if (isInteger) {
@@ -1090,24 +1149,44 @@ class _ParamField extends StatelessWidget {
         }
 
         final parsed = double.tryParse(text.replaceAll(',', '.'));
+
         if (parsed == null) {
           return 'Valeur numérique invalide';
         }
 
         return null;
-      },
+      }
+          : null,
+      style: TextStyle(
+        color: enabled ? colors.textPrimary : colors.textSecondary,
+        fontWeight: FontWeight.w500,
+      ),
       decoration: InputDecoration(
         labelText: label,
         hintText: hintText,
         suffixText: suffixText,
         filled: true,
-        fillColor: colors.surface.withValues(alpha: 0.55),
+        fillColor: enabled
+            ? colors.surface.withValues(alpha: 0.55)
+            : colors.background.withValues(alpha: 0.55),
+        labelStyle: TextStyle(
+          color: enabled ? colors.textSecondary : colors.textSecondary,
+        ),
+        suffixStyle: TextStyle(
+          color: enabled ? colors.textSecondary : colors.textSecondary,
+        ),
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(16),
         ),
         enabledBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(16),
           borderSide: BorderSide(color: colors.border),
+        ),
+        disabledBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(16),
+          borderSide: BorderSide(
+            color: colors.border.withValues(alpha: 0.65),
+          ),
         ),
       ),
     );

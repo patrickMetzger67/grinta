@@ -1,14 +1,17 @@
-import 'dart:math' as math;
-
 import 'package:flutter/material.dart';
+import 'package:grinta/model/effectives.dart';
 import 'package:grinta/model/player.dart';
 import 'package:grinta/model/team.dart';
-import 'package:grinta/model/effectives.dart';
+import 'package:grinta/model/tracker/deviceOwner.dart';
 import 'package:grinta/screen/team_param_screen.dart';
 import 'package:grinta/services/playerService.dart';
+import 'package:grinta/services/teamService.dart';
 import 'package:grinta/util/app_theme.dart';
 
+import '../model/tracker/owner.dart';
 import '../services/effectivesService.dart';
+import '../services/deviceService.dart';
+import '../services/ownerService.dart';
 
 class TeamDetailScreen extends StatefulWidget {
   const TeamDetailScreen({
@@ -19,78 +22,218 @@ class TeamDetailScreen extends StatefulWidget {
     this.genderLabel,
     this.thresholdCards = const [],
     this.effectivesService,
+    this.isManager=false,
   });
 
   final Team team;
   final String? seasonId;
-
-  /// Ex: "U11"
   final String? categoryLabel;
-
-  /// Ex: "Hommes"
   final String? genderLabel;
-
-  /// Petites cartes à droite dans le header.
   final List<TeamThresholdCardData> thresholdCards;
-
   final EffectivesService? effectivesService;
+  final bool isManager;
 
   @override
   State<TeamDetailScreen> createState() => _TeamDetailScreenState();
 }
 
+enum _RosterSortColumn {
+  player,
+  age,
+  position,
+  height,
+  weight,
+  tracker,
+}
+
 class _TeamDetailScreenState extends State<TeamDetailScreen> {
   late final PlayerService _playerService;
   late final EffectivesService _effectivesService;
+  late final DeviceOwnerService _deviceOwnerService;
+  late final DeviceService _deviceService;
+  late final OwnerService _ownerService;
+
   late Future<List<_TeamMemberVm>> _future;
+
+  _RosterSortColumn? _sortColumn;
+  bool _sortAscending = true;
+
+  List<dynamic> rawPlayers = [];
 
   @override
   void initState() {
     super.initState();
+
     _playerService = PlayerService();
     _effectivesService = widget.effectivesService ?? EffectivesService();
+
+    _deviceOwnerService = DeviceOwnerService();
+    _deviceService = DeviceService();
+    _ownerService = OwnerService();
+
     _future = _loadMembers();
   }
 
   Future<List<_TeamMemberVm>> _loadMembers() async {
     final String? seasonId = widget.seasonId;
     final String? teamId = widget.team.keyTeam;
-    final List<dynamic> rawPlayers = (widget.team.players ?? const []);
+    rawPlayers = widget.team.players ?? const <dynamic>[];
 
-    if (seasonId == null || seasonId.isEmpty || teamId == null || teamId.isEmpty) {
+    if (seasonId == null ||
+        seasonId.isEmpty ||
+        teamId == null ||
+        teamId.isEmpty) {
       return <_TeamMemberVm>[];
     }
 
     final List<String> memberIds = rawPlayers
         .map((e) => e?.toString() ?? '')
-        .where((e) => e.isNotEmpty)
+        .where((e) => e.trim().isNotEmpty)
         .toList();
 
     final List<_TeamMemberVm?> rows = await Future.wait(
       memberIds.map((memberId) async {
         try {
           final Player? player = await _playerService.getPlayerById(memberId);
-          if (player == null) return null;
 
-          final Effectives? effectives = await _effectivesService.getEffectivesByMemberIdAndTeamId(memberId, teamId,);
+          if (player == null) {
+            return null;
+          }
+
+          final Effectives? effectives =
+          await _effectivesService.getEffectivesByMemberIdAndTeamId(
+            memberId,
+            teamId,
+          );
+
+          final List<_TrackerChipVm> trackers = await _loadTrackers(
+            effectives?.trackers,
+          );
 
           return _TeamMemberVm(
             player: player,
             effectives: effectives,
+            trackers: trackers,
           );
-        } catch (_) {
+        } catch (e, stackTrace) {
+          debugPrint('Erreur _loadMembers memberId=$memberId : $e');
+          debugPrint('$stackTrace');
           return null;
         }
       }),
     );
 
-    final List<_TeamMemberVm> data =
-    rows.whereType<_TeamMemberVm>().toList();
+    final List<_TeamMemberVm> data = rows.whereType<_TeamMemberVm>().toList();
 
     data.sort((a, b) {
       final int orderA = a.effectives?.order ?? 999999;
       final int orderB = b.effectives?.order ?? 999999;
-      if (orderA != orderB) return orderA.compareTo(orderB);
+
+      if (orderA != orderB) {
+        return orderA.compareTo(orderB);
+      }
+
+      return a.player.lastName!.toLowerCase().compareTo(b.player.lastName!.toLowerCase());
+
+    });
+
+    return data;
+  }
+
+  Future<List<_TrackerChipVm>> _loadTrackers(List<dynamic>? trackerIds) async {
+
+    if (trackerIds == null || trackerIds.isEmpty) {
+      return <_TrackerChipVm>[];
+    }
+
+    final List<String> ids = trackerIds
+        .map((e) => e?.toString() ?? '')
+        .where((e) => e.trim().isNotEmpty)
+        .toList();
+
+    final List<_TrackerChipVm> result = <_TrackerChipVm>[];
+
+    for (final String trackerId in ids) {
+      final _TrackerChipVm? tracker = await _loadTrackerById(trackerId);
+
+      if (tracker != null) {
+        result.add(tracker);
+      }
+    }
+
+    return result;
+  }
+
+  Future<_TrackerChipVm?> _loadTrackerById(String trackerId) async {
+    try {
+      final DeviceOwner? deviceOwner = await _deviceOwnerService.getById(trackerId);
+      if (deviceOwner == null) {
+        debugPrint('deviceOwner null pour trackerId=$trackerId');
+        return null;
+      }
+
+      final String customName = deviceOwner.customName ?? '';
+
+      final Owner? owner = await OwnerService().getOwnerById(deviceOwner.ownerId);
+
+      if (owner == null || owner.name.isEmpty) {
+        debugPrint('ownerId vide pour trackerId=$trackerId');
+        return null;
+      }
+      final String label = <String>[
+        if (customName.isNotEmpty) customName,
+        if (owner.name.isNotEmpty) owner.name,
+      ].join(' - ');
+
+      debugPrint('label tracker=$label');
+
+      if (label.isEmpty) {
+        return null;
+      }
+
+      return _TrackerChipVm(
+        id: trackerId,
+        label: label,
+      );
+    } catch (e, stackTrace) {
+      debugPrint('Erreur _loadTrackerById trackerId=$trackerId : $e');
+      debugPrint('$stackTrace');
+      return null;
+    }
+  }
+
+
+
+  List<_TeamMemberVm> _playerRows(List<_TeamMemberVm> rows) {
+    return rows.where((r) {
+      final Effectives? effectives = r.effectives;
+
+      if (effectives == null) {
+        return false;
+      }
+
+      return effectives.type == 0;
+    }).toList();
+  }
+
+  List<_TeamMemberVm> _staffRows(List<_TeamMemberVm> rows) {
+    final List<_TeamMemberVm> data = rows.where((r) {
+      final Effectives? effectives = r.effectives;
+
+      if (effectives == null) {
+        return false;
+      }
+
+      return effectives.type != 0;
+    }).toList();
+
+    data.sort((a, b) {
+      final int orderA = a.effectives?.order ?? 999999;
+      final int orderB = b.effectives?.order ?? 999999;
+
+      if (orderA != orderB) {
+        return orderA.compareTo(orderB);
+      }
 
       return _displayName(a.player)
           .toLowerCase()
@@ -102,32 +245,49 @@ class _TeamDetailScreenState extends State<TeamDetailScreen> {
 
   double _averagePlayersAge(List<_TeamMemberVm> rows) {
     final List<int> ages = rows.where((r) {
-      print('r=${r.player.lastName} - ${r.effectives?.type}');
-      final int type = r.effectives?.type ?? 0;
-      return type == 0;
-    }).map((r) {
-      final String age = _buildAge(r.player);
-      return int.tryParse(age) ?? -1;
-    }).where((age) => age >= 0).toList();
+      final Effectives? effectives = r.effectives;
 
-    if (ages.isEmpty) return 0;
+      if (effectives == null) {
+        return false;
+      }
+
+      return effectives.type == 0;
+    }).map((r) {
+      return _ageValue(r.player) ?? -1;
+    }).where((age) {
+      return age >= 0;
+    }).toList();
+
+    if (ages.isEmpty) {
+      return 0;
+    }
 
     final int total = ages.reduce((a, b) => a + b);
+
     return total / ages.length;
   }
 
   int _playersCount(List<_TeamMemberVm> rows) {
     return rows.where((r) {
-      print('r=${r.player.lastName} - ${r.effectives?.type}');
-      final int type = r.effectives?.type ?? 0;
-      return type == 0;
+      final Effectives? effectives = r.effectives;
+
+      if (effectives == null) {
+        return false;
+      }
+
+      return effectives.type == 0;
     }).length;
   }
 
   int _staffsCount(List<_TeamMemberVm> rows) {
     return rows.where((r) {
-      final int type = r.effectives?.type ?? 1;
-      return type != 0;
+      final Effectives? effectives = r.effectives;
+
+      if (effectives == null) {
+        return false;
+      }
+
+      return effectives.type != 0;
     }).length;
   }
 
@@ -135,13 +295,198 @@ class _TeamDetailScreenState extends State<TeamDetailScreen> {
     final String first = player.firstName ?? '';
     final String last = player.lastName ?? '';
     final String value = '$first $last'.trim();
+
     return value.isEmpty ? 'Joueur' : value;
+  }
+
+  void _onSort(_RosterSortColumn column) {
+    setState(() {
+      if (_sortColumn == column) {
+        _sortAscending = !_sortAscending;
+      } else {
+        _sortColumn = column;
+        _sortAscending = true;
+      }
+    });
+  }
+
+  List<_TeamMemberVm> _sortedRosterRows(List<_TeamMemberVm> rows) {
+    final List<_TeamMemberVm> data = rows.where((r) {
+      return r.effectives != null;
+    }).toList();
+
+    final _RosterSortColumn? column = _sortColumn;
+
+    if (column == null) {
+      return data;
+    }
+
+    data.sort((a, b) {
+      int result = 0;
+
+      switch (column) {
+        case _RosterSortColumn.player:
+          result = _compareText(
+            _displayName(a.player),
+            _displayName(b.player),
+            ascending: _sortAscending,
+          );
+          break;
+
+        case _RosterSortColumn.age:
+          result = _compareNullableInt(
+            _ageValue(a.player),
+            _ageValue(b.player),
+            ascending: _sortAscending,
+          );
+          break;
+
+        case _RosterSortColumn.position:
+          result = _compareText(
+            getStrPosition(a.effectives?.position ?? 0),
+            getStrPosition(b.effectives?.position ?? 0),
+            ascending: _sortAscending,
+          );
+          break;
+
+        case _RosterSortColumn.height:
+          result = _compareNullableInt(
+            _positiveIntOrNull(a.effectives?.taille),
+            _positiveIntOrNull(b.effectives?.taille),
+            ascending: _sortAscending,
+          );
+          break;
+
+        case _RosterSortColumn.weight:
+          result = _compareNullableInt(
+            _positiveIntOrNull(a.effectives?.poids),
+            _positiveIntOrNull(b.effectives?.poids),
+            ascending: _sortAscending,
+          );
+          break;
+
+        case _RosterSortColumn.tracker:
+          result = _compareText(
+            _trackerValue(a),
+            _trackerValue(b),
+            ascending: _sortAscending,
+          );
+          break;
+      }
+
+      if (result != 0) {
+        return result;
+      }
+
+      return _displayName(a.player)
+          .toLowerCase()
+          .compareTo(_displayName(b.player).toLowerCase());
+    });
+
+    return data;
+  }
+
+  int _compareText(
+      String a,
+      String b, {
+        required bool ascending,
+      }) {
+    final String valueA = a.trim().toLowerCase();
+    final String valueB = b.trim().toLowerCase();
+
+    if (valueA.isEmpty && valueB.isEmpty) {
+      return 0;
+    }
+
+    if (valueA.isEmpty) {
+      return 1;
+    }
+
+    if (valueB.isEmpty) {
+      return -1;
+    }
+
+    final int result = valueA.compareTo(valueB);
+
+    return ascending ? result : -result;
+  }
+
+  int _compareNullableInt(
+      int? a,
+      int? b, {
+        required bool ascending,
+      }) {
+    if (a == null && b == null) {
+      return 0;
+    }
+
+    if (a == null) {
+      return 1;
+    }
+
+    if (b == null) {
+      return -1;
+    }
+
+    final int result = a.compareTo(b);
+
+    return ascending ? result : -result;
+  }
+
+  int? _positiveIntOrNull(int? value) {
+    if (value == null || value <= 0) {
+      return null;
+    }
+
+    return value;
+  }
+
+  int? _ageValue(Player player) {
+    final DateTime? birthDate = _getBirthDate(player);
+
+    if (birthDate == null) {
+      return null;
+    }
+
+    final DateTime now = DateTime.now();
+    int age = now.year - birthDate.year;
+
+    if (now.month < birthDate.month ||
+        (now.month == birthDate.month && now.day < birthDate.day)) {
+      age--;
+    }
+
+    return age;
+  }
+
+  String _trackerValue(_TeamMemberVm row) {
+    if (row.trackers.isEmpty) {
+      return '';
+    }
+
+    return row.trackers.map((tracker) => tracker.label).join(' ');
+  }
+
+  String _buildStaffRole(Effectives? effectives) {
+    if (effectives == null) {
+      return 'Staff';
+    }
+
+    switch (effectives.type) {
+      case 0:
+        return 'Joueur';
+      case 1:
+        return 'Coach';
+      case 2:
+        return 'Dirigeant';
+    }
+
+    return 'Staff';
   }
 
   @override
   Widget build(BuildContext context) {
     final colors = context.appColors;
-    final textTheme = Theme.of(context).textTheme;
 
     return Scaffold(
       backgroundColor: colors.background,
@@ -158,9 +503,12 @@ class _TeamDetailScreenState extends State<TeamDetailScreen> {
             }
 
             final List<_TeamMemberVm> rows = snapshot.data ?? <_TeamMemberVm>[];
+            final List<_TeamMemberVm> playerRows = _playerRows(rows);
+            final List<_TeamMemberVm> staffRows = _staffRows(rows);
+
             final int playersCount = _playersCount(rows);
             final int staffsCount = _staffsCount(rows);
-            final double averageAge = _averagePlayersAge(rows);
+            final double averageAge = _averagePlayersAge(playerRows);
 
             return SingleChildScrollView(
               padding: const EdgeInsets.all(24),
@@ -171,10 +519,12 @@ class _TeamDetailScreenState extends State<TeamDetailScreen> {
                     rows: rows,
                     playersCount: playersCount,
                     staffsCount: staffsCount,
-                    averageAge: averageAge
+                    averageAge: averageAge,
                   ),
                   const SizedBox(height: 24),
-                  _buildRosterCard(context, rows),
+                  _buildRosterCard(context, playerRows),
+                  const SizedBox(height: 24),
+                  _buildStaffCard(context, staffRows),
                 ],
               ),
             );
@@ -194,8 +544,9 @@ class _TeamDetailScreenState extends State<TeamDetailScreen> {
     final colors = context.appColors;
     final textTheme = Theme.of(context).textTheme;
 
-    final String title =
-    (widget.team.name ?? '').trim().isEmpty ? 'Équipe' : widget.team.name!.trim();
+    final String title = (widget.team.name ?? '').trim().isEmpty
+        ? 'Équipe'
+        : widget.team.name!.trim();
 
     final List<Widget> chips = <Widget>[
       if ((widget.categoryLabel ?? '').trim().isNotEmpty)
@@ -253,25 +604,33 @@ class _TeamDetailScreenState extends State<TeamDetailScreen> {
                             fontWeight: FontWeight.w800,
                           ),
                         ),
-                        _HeaderSquareIconButton(
-                          icon: Icons.edit_outlined,
-                          onTap: () {},
-                        ),
-                        _HeaderSquareIconButton(
-                          icon: Icons.delete_outline_rounded,
-                          onTap: () {},
-                        ),
+                        if(widget.isManager) ... [
+                          _HeaderSquareIconButton(
+                            icon: Icons.edit_outlined,
+                            onTap: () {},
+                          ),
+                          _HeaderSquareIconButton(
+                            icon: Icons.delete_outline_rounded,
+                            onTap: () {},
+                          ),
+                        ],
                         _HeaderSquareIconButton(
                           icon: Icons.tune_rounded,
                           onTap: () async {
-                            final updated = await Navigator.of(context).push<bool>(
+                            final bool? updated =
+                            await Navigator.of(context).push<bool>(
                               MaterialPageRoute(
-                                builder: (_) => TeamParamScreen(team: widget.team),
+                                builder: (_) => TeamParamScreen(
+                                  team: widget.team,
+                                  isManager: widget.isManager,
+                                ),
                               ),
                             );
 
                             if (updated == true && mounted) {
-                              setState(() {});
+                              setState(() {
+                                _future = _loadMembers();
+                              });
                             }
                           },
                         ),
@@ -314,7 +673,6 @@ class _TeamDetailScreenState extends State<TeamDetailScreen> {
                   ],
                 ),
               ),
-
             ],
           );
         },
@@ -325,6 +683,7 @@ class _TeamDetailScreenState extends State<TeamDetailScreen> {
   Widget _buildRosterCard(BuildContext context, List<_TeamMemberVm> rows) {
     final colors = context.appColors;
     final textTheme = Theme.of(context).textTheme;
+    final List<_TeamMemberVm> visibleRows = _sortedRosterRows(rows);
 
     return Container(
       width: double.infinity,
@@ -341,27 +700,30 @@ class _TeamDetailScreenState extends State<TeamDetailScreen> {
               children: [
                 Icon(
                   Icons.groups_2_rounded,
-                  color: colors.secondary,
+                  color: colors.primary,
                   size: 30,
                 ),
                 const SizedBox(width: 12),
                 Expanded(
                   child: Text(
-                    'Effectif',
+                    'Joueurs',
                     style: textTheme.headlineSmall?.copyWith(
                       fontWeight: FontWeight.w800,
                     ),
                   ),
                 ),
-                FilledButton(
-                  onPressed: () {},
-                  child: const Text('Ajouter un joueur'),
-                ),
+                if(widget.isManager) ... [
+                  FilledButton(
+                    onPressed: () {},
+                    child: const Text('Ajouter un joueur'),
+                  ),
+                ]
+
               ],
             ),
           ),
           _buildTableHeader(context),
-          if (rows.isEmpty)
+          if (visibleRows.isEmpty)
             Padding(
               padding: const EdgeInsets.all(24),
               child: Text(
@@ -373,13 +735,282 @@ class _TeamDetailScreenState extends State<TeamDetailScreen> {
             )
           else
             ...List.generate(
-              rows.length,
+              visibleRows.length,
                   (index) => _buildRow(
                 context,
-                row: rows[index],
+                row: visibleRows[index],
                 odd: index.isOdd,
               ),
             ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildStaffCard(BuildContext context, List<_TeamMemberVm> staffRows) {
+    final colors = context.appColors;
+    final textTheme = Theme.of(context).textTheme;
+
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(24),
+      decoration: BoxDecoration(
+        color: colors.card,
+        borderRadius: BorderRadius.circular(22),
+        border: Border.all(color: colors.border),
+        boxShadow: [
+          BoxShadow(
+            color: colors.secondary.withValues(alpha: 0.08),
+            blurRadius: 24,
+            offset: const Offset(0, 8),
+          ),
+        ],
+      ),
+      child: Column(
+        children: [
+          Row(
+            children: [
+              Icon(
+                Icons.shield_outlined,
+                color: colors.primary,
+                size: 32,
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Text(
+                  'Staff',
+                  style: textTheme.headlineSmall?.copyWith(
+                    fontWeight: FontWeight.w800,
+                  ),
+                ),
+              ),
+              if(widget.isManager) ... [
+                FilledButton(
+                  onPressed: () {},
+                  child: const Text('Ajouter un staff'),
+                ),
+              ]
+            ],
+          ),
+          const SizedBox(height: 24),
+          if (staffRows.isEmpty)
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.all(24),
+              decoration: BoxDecoration(
+                color: colors.surface.withValues(alpha: 0.35),
+                borderRadius: BorderRadius.circular(18),
+                border: Border.all(
+                  color: colors.border.withValues(alpha: 0.7),
+                ),
+              ),
+              child: Text(
+                'Aucun staff trouvé pour cette équipe.',
+                style: textTheme.titleMedium?.copyWith(
+                  color: colors.textSecondary,
+                ),
+              ),
+            )
+          else
+            LayoutBuilder(
+              builder: (context, constraints) {
+                double itemWidth;
+
+                if (constraints.maxWidth >= 1400) {
+                  itemWidth = (constraints.maxWidth - 32) / 3;
+                } else if (constraints.maxWidth >= 900) {
+                  itemWidth = (constraints.maxWidth - 16) / 2;
+                } else {
+                  itemWidth = constraints.maxWidth;
+                }
+
+                return Wrap(
+                  spacing: 16,
+                  runSpacing: 16,
+                  children: staffRows.map((row) {
+                    return SizedBox(
+                      width: itemWidth,
+                      child: _buildStaffMemberCard(context, row),
+                    );
+                  }).toList(),
+                );
+              },
+            ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildStaffMemberCard(BuildContext context, _TeamMemberVm row) {
+    final colors = context.appColors;
+    final textTheme = Theme.of(context).textTheme;
+    final Player player = row.player;
+    final String name = _displayName(player);
+    final String role = _buildStaffRole(row.effectives);
+
+    return Container(
+      padding: const EdgeInsets.all(18),
+      decoration: BoxDecoration(
+        color: colors.surface.withValues(alpha: 0.40),
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(
+          color: colors.border.withValues(alpha: 0.75),
+        ),
+      ),
+      child: Row(
+        children: [
+          _PlayerPhoto(
+            player: player,
+          ),
+          const SizedBox(width: 16),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  name,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: textTheme.labelSmall?.copyWith(
+                    fontWeight: FontWeight.w800,
+                  ),
+                ),
+                const SizedBox(height: 10),
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 12,
+                    vertical: 6,
+                  ),
+                  decoration: BoxDecoration(
+                    color: colors.primary.withValues(alpha: 0.15),
+                    borderRadius: BorderRadius.circular(999),
+                    border: Border.all(
+                      color: colors.primary.withValues(alpha: 0.25),
+                    ),
+                  ),
+                  child: Text(
+                    role,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: textTheme.bodyMedium?.copyWith(
+                      color: colors.primary,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(width: 12),
+          if(widget.isManager) ... [
+            _CircleGhostButton(
+              icon: Icons.delete_outline_rounded,
+              onTap: () async {
+                final appColors = context.appColors;
+
+                final bool? confirm = await showDialog<bool>(
+                  context: context,
+                  barrierDismissible: true,
+                  builder: (BuildContext dialogContext) {
+                    return AlertDialog(
+                      backgroundColor: appColors.surface,
+                      surfaceTintColor: Colors.transparent,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(20),
+                        side: BorderSide(color: appColors.border),
+                      ),
+                      title: Row(
+                        children: [
+                          Icon(
+                            Icons.warning_amber_rounded,
+                            color: appColors.danger,
+                          ),
+                          const SizedBox(width: 10),
+                          Expanded(
+                            child: Text(
+                              'Confirmer la suppression',
+                              style: TextStyle(
+                                color: appColors.textPrimary,
+                                fontWeight: FontWeight.w700,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                      content: Text(
+                        'Confirmez-vous la suppression du staff de ${player.firstName} ${player.lastName} ?',
+                        style: TextStyle(
+                          color: appColors.textSecondary,
+                          fontSize: 15,
+                        ),
+                      ),
+                      actionsPadding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+                      actions: [
+                        OutlinedButton(
+                          onPressed: () {
+                            Navigator.of(dialogContext).pop(false);
+                          },
+                          style: OutlinedButton.styleFrom(
+                            foregroundColor: appColors.textSecondary,
+                            side: BorderSide(color: appColors.border),
+                          ),
+                          child: const Text('Annuler'),
+                        ),
+                        FilledButton.icon(
+                          onPressed: () {
+                            Navigator.of(dialogContext).pop(true);
+                          },
+                          style: FilledButton.styleFrom(
+                            backgroundColor: appColors.danger,
+                            foregroundColor: Colors.white,
+                          ),
+                          icon: const Icon(Icons.delete_outline_rounded),
+                          label: const Text('Supprimer'),
+                        ),
+                      ],
+                    );
+                  },
+                );
+
+                if (confirm == true) {
+                  try {
+                    await EffectivesService().deleteEffectives(row.effectives!);
+                    // Mise à jour de l'équipe
+                    List<dynamic>? rawManagers = widget.team.managers;
+                    rawManagers?.remove(player.keyMember);
+                    Team team = widget.team;
+                    team.managers = rawManagers;
+                    await TeamService().updateTeam(team);
+
+                    if (!context.mounted) return;
+                    setState(() {
+                      // Rafraîchit la page après suppression
+                    });
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: Text(
+                          '${player.firstName} ${player.lastName} a été supprimé.', style: TextStyle(color: appColors.textPrimary),
+                        ),
+                        backgroundColor: appColors.success,
+                      ),
+                    );
+                  } catch (e) {
+                    if (!context.mounted) return;
+
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: Text(
+                          'Erreur lors de la suppression : $e',
+                        ),
+                        backgroundColor: appColors.danger,
+                      ),
+                    );
+                  }
+                }
+              },
+            ),
+          ]
+
         ],
       ),
     );
@@ -400,13 +1031,50 @@ class _TeamDetailScreenState extends State<TeamDetailScreen> {
       ),
       child: Row(
         children: [
-          _headerCell('Joueur', flex: 4, textTheme: textTheme),
-          _headerCell('', flex: 1, textTheme: textTheme),
-          _headerCell('Age', flex: 1, textTheme: textTheme, center: true),
-          _headerCell('Poste', flex: 2, textTheme: textTheme, center: true),
-          _headerCell('Taille', flex: 2, textTheme: textTheme, center: true),
-          _headerCell('Poids', flex: 2, textTheme: textTheme, center: true),
-          _headerCell('Tracker', flex: 2, textTheme: textTheme, center: true),
+          _headerCell(
+            'Joueur',
+            flex: 4,
+            textTheme: textTheme,
+            sortColumn: _RosterSortColumn.player,
+          ),
+          if(widget.isManager) ...[
+            _headerCell('', flex: 1, textTheme: textTheme),
+          ],
+          _headerCell(
+            'Age',
+            flex: 1,
+            textTheme: textTheme,
+            center: true,
+            sortColumn: _RosterSortColumn.age,
+          ),
+          _headerCell(
+            'Poste',
+            flex: 2,
+            textTheme: textTheme,
+            center: true,
+            sortColumn: _RosterSortColumn.position,
+          ),
+          _headerCell(
+            'Taille',
+            flex: 2,
+            textTheme: textTheme,
+            center: true,
+            sortColumn: _RosterSortColumn.height,
+          ),
+          _headerCell(
+            'Poids',
+            flex: 2,
+            textTheme: textTheme,
+            center: true,
+            sortColumn: _RosterSortColumn.weight,
+          ),
+          _headerCell(
+            'Tracker',
+            flex: 3,
+            textTheme: textTheme,
+            center: false,
+            sortColumn: _RosterSortColumn.tracker,
+          ),
         ],
       ),
     );
@@ -417,20 +1085,58 @@ class _TeamDetailScreenState extends State<TeamDetailScreen> {
         required int flex,
         required TextTheme textTheme,
         bool center = false,
+        _RosterSortColumn? sortColumn,
       }) {
+    final colors = context.appColors;
+    final bool sortable = sortColumn != null;
+    final bool active = _sortColumn == sortColumn;
+
+    final Widget content = Align(
+      alignment: center ? Alignment.center : Alignment.centerLeft,
+      child: Row(
+        mainAxisSize: center ? MainAxisSize.min : MainAxisSize.max,
+        mainAxisAlignment:
+        center ? MainAxisAlignment.center : MainAxisAlignment.start,
+        children: [
+          Flexible(
+            child: Text(
+              label,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: textTheme.bodySmall?.copyWith(
+                fontWeight: FontWeight.w800,
+                color: active ? colors.primary : null,
+              ),
+            ),
+          ),
+          if (sortable) ...[
+            const SizedBox(width: 4),
+            Icon(
+              active
+                  ? (_sortAscending
+                  ? Icons.arrow_upward_rounded
+                  : Icons.arrow_downward_rounded)
+                  : Icons.unfold_more_rounded,
+              size: 15,
+              color: active ? colors.primary : colors.textSecondary,
+            ),
+          ],
+        ],
+      ),
+    );
+
     return Expanded(
       flex: flex,
-      child: Align(
-        alignment: center ? Alignment.center : Alignment.centerLeft,
-        child: Text(
-          label,
-          maxLines: 1,
-          overflow: TextOverflow.ellipsis,
-          style: textTheme.bodySmall?.copyWith(
-            fontWeight: FontWeight.w800,
-          ),
+      child: sortable
+          ? InkWell(
+        onTap: () => _onSort(sortColumn),
+        borderRadius: BorderRadius.circular(8),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(vertical: 4),
+          child: content,
         ),
-      ),
+      )
+          : content,
     );
   }
 
@@ -444,16 +1150,18 @@ class _TeamDetailScreenState extends State<TeamDetailScreen> {
     final Player player = row.player;
     final Effectives? effectives = row.effectives;
 
+    if (effectives == null) {
+      return const SizedBox.shrink();
+    }
+
     final String playerName = _displayName(player);
-    final String position = getStrPosition(effectives?.position ?? 0);
+    final String position = getStrPosition(effectives.position ?? 0);
+
     final String taille =
-    (effectives?.taille ?? 0) > 0 ? '${effectives!.taille} cm' : '-';
+    (effectives.taille ?? 0) > 0 ? '${effectives.taille} cm' : '-';
+
     final String poids =
-    (effectives?.poids ?? 0) > 0 ? '${effectives!.poids} kg' : '-';
-    final String tracker = (effectives?.trackers != null &&
-        effectives!.trackers!.isNotEmpty)
-        ? effectives.trackers!.first
-        : '-';
+    (effectives.poids ?? 0) > 0 ? '${effectives.poids} kg' : '-';
 
     final String age = _buildAge(player);
 
@@ -488,62 +1196,344 @@ class _TeamDetailScreenState extends State<TeamDetailScreen> {
               ],
             ),
           ),
-          Expanded(
-            flex: 1,
-            child: Center(
-              child: FittedBox(
-                fit: BoxFit.scaleDown,
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    _CircleGhostButton(
-                      icon: Icons.edit_outlined,
-                      onTap: () {},
-                    ),
-                    const SizedBox(width: 6),
-                    _CircleGhostButton(
-                      icon: Icons.delete_outline_rounded,
-                      onTap: () {},
-                    ),
-                  ],
+          if(widget.isManager) ... [
+            Expanded(
+              flex: 1,
+              child: Center(
+                child: FittedBox(
+                  fit: BoxFit.scaleDown,
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      _CircleGhostButton(
+                        icon: Icons.edit_outlined,
+                        onTap: () {},
+                      ),
+                      const SizedBox(width: 6),
+                      _CircleGhostButton(
+                        icon: Icons.delete_outline_rounded,
+                        onTap: () async {
+                          final appColors = context.appColors;
+
+                          final bool? confirm = await showDialog<bool>(
+                            context: context,
+                            barrierDismissible: true,
+                            builder: (BuildContext dialogContext) {
+                              return AlertDialog(
+                                backgroundColor: appColors.surface,
+                                surfaceTintColor: Colors.transparent,
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(20),
+                                  side: BorderSide(color: appColors.border),
+                                ),
+                                title: Row(
+                                  children: [
+                                    Icon(
+                                      Icons.warning_amber_rounded,
+                                      color: appColors.danger,
+                                    ),
+                                    const SizedBox(width: 10),
+                                    Expanded(
+                                      child: Text(
+                                        'Confirmer la suppression',
+                                        style: TextStyle(
+                                          color: appColors.textPrimary,
+                                          fontWeight: FontWeight.w700,
+                                        ),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                                content: Text(
+                                  'Confirmez-vous la suppression de l’équipe du joueur $playerName ?',
+                                  style: TextStyle(
+                                    color: appColors.textSecondary,
+                                    fontSize: 15,
+                                  ),
+                                ),
+                                actionsPadding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+                                actions: [
+                                  OutlinedButton(
+                                    onPressed: () {
+                                      Navigator.of(dialogContext).pop(false);
+                                    },
+                                    style: OutlinedButton.styleFrom(
+                                      foregroundColor: appColors.textSecondary,
+                                      side: BorderSide(color: appColors.border),
+                                    ),
+                                    child: const Text('Annuler'),
+                                  ),
+                                  FilledButton.icon(
+                                    onPressed: () {
+                                      Navigator.of(dialogContext).pop(true);
+                                    },
+                                    style: FilledButton.styleFrom(
+                                      backgroundColor: appColors.danger,
+                                      foregroundColor: Colors.white,
+                                    ),
+                                    icon: const Icon(Icons.delete_outline_rounded),
+                                    label: const Text('Supprimer'),
+                                  ),
+                                ],
+                              );
+                            },
+                          );
+
+                          if (confirm == true) {
+                            try {
+                              await EffectivesService().deleteEffectives(effectives);
+
+                              // Mise à jour de l'équipe
+                              rawPlayers.remove(player.keyMember);
+                              Team team = widget.team;
+                              team.players = rawPlayers;
+                              await TeamService().updateTeam(team);
+
+
+                              if (!context.mounted) return;
+                              setState(() {
+                                // Rafraîchit la page après suppression
+                              });
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                SnackBar(
+                                  content: Text(
+                                    'L’équipe du joueur $playerName a été supprimé.', style: TextStyle(color: appColors.textPrimary),
+                                  ),
+                                  backgroundColor: appColors.success,
+                                ),
+                              );
+                            } catch (e) {
+                              if (!context.mounted) return;
+
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                SnackBar(
+                                  content: Text(
+                                    'Erreur lors de la suppression : $e',
+                                  ),
+                                  backgroundColor: appColors.danger,
+                                ),
+                              );
+                            }
+                          }
+                        },
+                      ),
+                    ],
+                  ),
                 ),
               ),
             ),
-          ),
+          ],
           _valueCell(age, flex: 1, center: true),
           _valueCell(position, flex: 2, center: true),
           _valueCell(taille, flex: 2, center: true),
           _valueCell(poids, flex: 2, center: true),
           Expanded(
-            flex: 2,
-            child: Align(
-              alignment: Alignment.center,
-              child: Text(
-                tracker,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: textTheme.bodySmall?.copyWith(
-                  color: tracker == '-' ? colors.textSecondary : colors.secondary,
-                ),
-              ),
-            ),
+            flex: 3,
+            child: _buildTrackerChipsCell(context, row),
           ),
         ],
       ),
     );
   }
 
+  Widget _buildTrackerChipsCell(BuildContext context, _TeamMemberVm row) {
+    final colors = context.appColors;
+    final textTheme = Theme.of(context).textTheme;
+
+    return Align(
+      alignment: Alignment.centerLeft,
+      child: Wrap(
+        spacing: 6,
+        runSpacing: 6,
+        crossAxisAlignment: WrapCrossAlignment.center,
+        children: [
+          if (row.trackers.isEmpty)
+            Text(
+              '-',
+              style: textTheme.bodySmall?.copyWith(
+                color: colors.textSecondary,
+              ),
+            ),
+
+          ...row.trackers.map((tracker) {
+
+            return InputChip(
+              label: Text(tracker.label),
+              labelStyle: textTheme.bodySmall?.copyWith(
+                color: colors.textPrimary,
+                fontWeight: FontWeight.w500,
+              ),
+              backgroundColor: colors.surface,
+              side: BorderSide(
+                color: colors.border,
+              ),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(18),
+              ),
+              deleteIcon: widget.isManager
+                  ? Icon(
+                Icons.delete_outline,
+                size: 18,
+                color: colors.danger,
+              )
+                  : null,
+              onDeleted: widget.isManager
+                  ? () async {
+                await _deleteTrackerAffectation(
+                  context: context,
+                  row: row,
+                  tracker: tracker,
+                );
+              }
+                  : null,
+              materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+              visualDensity: VisualDensity.compact,
+            );
+          }),
+          if(widget.isManager) ... [
+            _buildAddTrackerButton(
+              context: context,
+              row: row,
+            ),
+          ]
+
+        ],
+      ),
+    );
+  }
+  Widget _buildAddTrackerButton({
+    required BuildContext context,
+    required _TeamMemberVm row,
+  }) {
+    final colors = context.appColors;
+
+    return InkWell(
+      borderRadius: BorderRadius.circular(18),
+      onTap: () async {
+        await _addTrackerAffectation(
+          context: context,
+          row: row,
+        );
+      },
+      child: Container(
+        width: 32,
+        height: 32,
+        decoration: BoxDecoration(
+          color: colors.primary.withValues(alpha: 0.12),
+          borderRadius: BorderRadius.circular(18),
+          border: Border.all(
+            color: colors.primary.withValues(alpha: 0.45),
+          ),
+        ),
+        child: Icon(
+          Icons.add,
+          size: 20,
+          color: colors.primary,
+        ),
+      ),
+    );
+  }
+  Future<void> _addTrackerAffectation({
+    required BuildContext context,
+    required _TeamMemberVm row,
+  }) async {
+    // Ouvre ici un Dialog ou BottomSheet permettant de sélectionner
+    // un tracker supplémentaire à affecter au joueur.
+
+    // Exemple :
+    //
+    // final selectedTracker = await showModalBottomSheet<Tracker>(
+    //   context: context,
+    //   builder: (_) => TrackerSelectionBottomSheet(
+    //     playerId: row.player.id,
+    //     alreadyAssignedTrackers: row.trackers,
+    //   ),
+    // );
+    //
+    // if (selectedTracker == null) return;
+    //
+    // await trackerService.assignTrackerToPlayer(
+    //   playerId: row.player.id,
+    //   trackerId: selectedTracker.id,
+    // );
+    //
+    // setState(() {});
+  }
+
+  Future<void> _deleteTrackerAffectation({
+    required BuildContext context,
+    required _TeamMemberVm row,
+    required dynamic tracker,
+  }) async {
+    final colors = context.appColors;
+
+    final confirm = await showDialog<bool>(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          backgroundColor: colors.surface,
+          title: Text(
+            'Supprimer l’affectation',
+            style: TextStyle(
+              color: colors.textPrimary,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+          content: Text(
+            'Voulez-vous supprimer l’affectation du tracker "${tracker.name}" ?',
+            style: TextStyle(
+              color: colors.textSecondary,
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context, false),
+              child: Text(
+                'Annuler',
+                style: TextStyle(
+                  color: colors.textSecondary,
+                ),
+              ),
+            ),
+            TextButton(
+              onPressed: () => Navigator.pop(context, true),
+              child: Text(
+                'Supprimer',
+                style: TextStyle(
+                  color: colors.danger,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ),
+          ],
+        );
+      },
+    );
+
+    if (confirm != true) return;
+
+    // À adapter avec ton service / ta collection Firestore.
+    //
+    // await trackerService.removeTrackerFromPlayer(
+    //   playerId: row.player.id,
+    //   trackerId: tracker.id,
+    // );
+
+    // setState(() {});
+  }
+
   String _buildAge(Player player) {
     final DateTime? birthDate = _getBirthDate(player);
-    if (birthDate == null) return '-';
+
+    if (birthDate == null) {
+      return '-';
+    }
 
     final DateTime now = DateTime.now();
     int age = now.year - birthDate.year;
 
-    if (
-    now.month < birthDate.month ||
-        (now.month == birthDate.month && now.day < birthDate.day)
-    ) {
+    if (now.month < birthDate.month ||
+        (now.month == birthDate.month && now.day < birthDate.day)) {
       age--;
     }
 
@@ -553,16 +1543,23 @@ class _TeamDetailScreenState extends State<TeamDetailScreen> {
   DateTime? _getBirthDate(Player player) {
     final String? raw = player.birthDay;
 
-    if (raw == null || raw.trim().isEmpty) return null;
+    if (raw == null || raw.trim().isEmpty) {
+      return null;
+    }
 
     final List<String> parts = raw.trim().split('/');
-    if (parts.length != 3) return null;
+
+    if (parts.length != 3) {
+      return null;
+    }
 
     final int? day = int.tryParse(parts[0]);
     final int? month = int.tryParse(parts[1]);
     final int? year = int.tryParse(parts[2]);
 
-    if (day == null || month == null || year == null) return null;
+    if (day == null || month == null || year == null) {
+      return null;
+    }
 
     try {
       return DateTime(year, month, day);
@@ -576,7 +1573,6 @@ class _TeamDetailScreenState extends State<TeamDetailScreen> {
         required int flex,
         bool center = false,
       }) {
-
     final textTheme = Theme.of(context).textTheme;
 
     return Expanded(
@@ -608,18 +1604,32 @@ class _TeamMemberVm {
   const _TeamMemberVm({
     required this.player,
     required this.effectives,
+    required this.trackers,
   });
 
   final Player player;
   final Effectives? effectives;
+  final List<_TrackerChipVm> trackers;
+}
+
+class _TrackerChipVm {
+  const _TrackerChipVm({
+    required this.id,
+    required this.label,
+  });
+
+  final String id;
+  final String label;
 }
 
 class _PlayerPhoto extends StatelessWidget {
   const _PlayerPhoto({
     required this.player,
+    this.radius = 18,
   });
 
   final Player player;
+  final double radius;
 
   @override
   Widget build(BuildContext context) {
@@ -633,7 +1643,7 @@ class _PlayerPhoto extends StatelessWidget {
 
         if (imageUrl != null && imageUrl.isNotEmpty) {
           return CircleAvatar(
-            radius: 18,
+            radius: radius,
             backgroundColor: colors.primary.withValues(alpha: 0.12),
             backgroundImage: NetworkImage(imageUrl),
           );
@@ -645,7 +1655,7 @@ class _PlayerPhoto extends StatelessWidget {
         );
 
         return CircleAvatar(
-          radius: 18,
+          radius: radius,
           backgroundColor: colors.primary.withValues(alpha: 0.12),
           child: Text(
             initials,
@@ -663,7 +1673,49 @@ class _PlayerPhoto extends StatelessWidget {
     final String f = firstName.isNotEmpty ? firstName[0].toUpperCase() : '';
     final String l = lastName.isNotEmpty ? lastName[0].toUpperCase() : '';
     final String value = '$f$l';
+
     return value.isEmpty ? '?' : value;
+  }
+}
+
+class _TrackerChip extends StatelessWidget {
+  const _TrackerChip({
+    required this.label,
+  });
+
+  final String label;
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = context.appColors;
+
+    return ConstrainedBox(
+      constraints: const BoxConstraints(
+        maxWidth: 180,
+      ),
+      child: Container(
+        padding: const EdgeInsets.symmetric(
+          horizontal: 10,
+          vertical: 6,
+        ),
+        decoration: BoxDecoration(
+          color: colors.primary.withValues(alpha: 0.12),
+          borderRadius: BorderRadius.circular(999),
+          border: Border.all(
+            color: colors.primary.withValues(alpha: 0.25),
+          ),
+        ),
+        child: Text(
+          label,
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+          style: Theme.of(context).textTheme.bodySmall?.copyWith(
+            color: colors.primary,
+            fontWeight: FontWeight.w700,
+          ),
+        ),
+      ),
+    );
   }
 }
 
@@ -676,8 +1728,6 @@ class _InfoChip extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final colors = context.appColors;
-
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
       decoration: BoxDecoration(

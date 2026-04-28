@@ -32,15 +32,27 @@ class ActivityRingItem {
     if (n == n.roundToDouble()) {
       return n.toInt().toString();
     }
-    return n.toStringAsFixed(1);
+    return n.toStringAsFixed(1).replaceAll('.', ',');
   }
 }
 
 class ActivityRingsCard extends StatefulWidget {
+  /// Conservé pour compatibilité, mais non affiché.
   final String? title;
+
+  /// Conservé pour compatibilité, mais non utilisé.
   final bool showTitle;
+
   final bool showLegend;
   final bool embedded;
+
+  /// Workload optionnel.
+  final bool showWorkload;
+  final double? workloadScore;
+  final String workloadLabel;
+  final String workloadUnit;
+  final Color workloadColor;
+
   final List<ActivityRingItem> rings;
   final Color backgroundColor;
   final double borderRadius;
@@ -50,9 +62,14 @@ class ActivityRingsCard extends StatefulWidget {
   const ActivityRingsCard({
     super.key,
     this.title,
-    this.showTitle = true,
+    this.showTitle = false,
     this.showLegend = true,
     this.embedded = false,
+    this.showWorkload = false,
+    this.workloadScore,
+    this.workloadLabel = 'Workload',
+    this.workloadUnit = '',
+    this.workloadColor = Colors.white,
     required this.rings,
     this.backgroundColor = const Color(0xFF17181C),
     this.borderRadius = 20,
@@ -71,6 +88,11 @@ class ActivityRingsCard extends StatefulWidget {
     double borderRadius = 14,
     EdgeInsets padding = const EdgeInsets.all(8),
     Duration animationDuration = const Duration(milliseconds: 900),
+    bool showWorkload = false,
+    double? workloadScore,
+    String workloadLabel = 'Workload',
+    String workloadUnit = '',
+    Color workloadColor = Colors.white,
   }) {
     return ActivityRingsCard(
       key: key,
@@ -83,25 +105,35 @@ class ActivityRingsCard extends StatefulWidget {
       borderRadius: borderRadius,
       padding: padding,
       animationDuration: animationDuration,
+      showWorkload: showWorkload,
+      workloadScore: workloadScore,
+      workloadLabel: workloadLabel,
+      workloadUnit: workloadUnit,
+      workloadColor: workloadColor,
     );
   }
 
   factory ActivityRingsCard.detailed({
     Key? key,
     required List<ActivityRingItem> rings,
-    String? title = 'Anneaux Activité',
-    bool showTitle = true,
+    String? title,
+    bool showTitle = false,
     bool showLegend = true,
     bool embedded = false,
     Color backgroundColor = const Color(0xFF17181C),
     double borderRadius = 20,
     EdgeInsets padding = const EdgeInsets.all(12),
     Duration animationDuration = const Duration(milliseconds: 900),
+    bool showWorkload = false,
+    double? workloadScore,
+    String workloadLabel = 'Workload',
+    String workloadUnit = '',
+    Color workloadColor = Colors.white,
   }) {
     return ActivityRingsCard(
       key: key,
       title: title,
-      showTitle: showTitle,
+      showTitle: false,
       showLegend: showLegend,
       embedded: embedded,
       rings: rings,
@@ -109,6 +141,11 @@ class ActivityRingsCard extends StatefulWidget {
       borderRadius: borderRadius,
       padding: padding,
       animationDuration: animationDuration,
+      showWorkload: showWorkload,
+      workloadScore: workloadScore,
+      workloadLabel: workloadLabel,
+      workloadUnit: workloadUnit,
+      workloadColor: workloadColor,
     );
   }
 
@@ -121,18 +158,29 @@ class ActivityRingsCard extends StatefulWidget {
     EdgeInsets padding = const EdgeInsets.all(10),
     Duration animationDuration = const Duration(milliseconds: 900),
     bool showTitle = false,
+    bool showLegend = true,
+    bool showWorkload = false,
+    double? workloadScore,
+    String workloadLabel = 'Workload',
+    String workloadUnit = '',
+    Color workloadColor = Colors.white,
   }) {
     return ActivityRingsCard(
       key: key,
       title: title,
-      showTitle: showTitle,
-      showLegend: true,
+      showTitle: false,
+      showLegend: showLegend,
       embedded: true,
       rings: rings,
       backgroundColor: backgroundColor,
       borderRadius: borderRadius,
       padding: padding,
       animationDuration: animationDuration,
+      showWorkload: showWorkload,
+      workloadScore: workloadScore,
+      workloadLabel: workloadLabel,
+      workloadUnit: workloadUnit,
+      workloadColor: workloadColor,
     );
   }
 
@@ -145,24 +193,34 @@ class _ActivityRingsCardState extends State<ActivityRingsCard>
   late final AnimationController _controller;
   late final Animation<double> _animation;
 
+  String get _formattedWorkloadScore {
+    final score = widget.workloadScore ?? 0;
+    return score.toStringAsFixed(2).replaceAll('.', ',');
+  }
+
   @override
   void initState() {
     super.initState();
+
     _controller = AnimationController(
       vsync: this,
       duration: widget.animationDuration,
     );
+
     _animation = CurvedAnimation(
       parent: _controller,
       curve: Curves.easeOutCubic,
     );
+
     _controller.forward();
   }
 
   @override
   void didUpdateWidget(covariant ActivityRingsCard oldWidget) {
     super.didUpdateWidget(oldWidget);
-    if (oldWidget.rings != widget.rings) {
+
+    if (oldWidget.rings != widget.rings ||
+        oldWidget.workloadScore != widget.workloadScore) {
       _controller.forward(from: 0);
     }
   }
@@ -175,146 +233,146 @@ class _ActivityRingsCardState extends State<ActivityRingsCard>
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-
     return LayoutBuilder(
       builder: (context, constraints) {
         final maxWidth = constraints.hasBoundedWidth
             ? constraints.maxWidth
-            : (widget.showLegend ? 340.0 : 140.0);
+            : (widget.embedded ? 260.0 : 360.0);
 
         final maxHeight = constraints.hasBoundedHeight
             ? constraints.maxHeight
-            : (widget.embedded ? 140.0 : 260.0);
+            : (widget.embedded ? 90.0 : 120.0);
 
-        final hasTitle = widget.showTitle &&
-            widget.title != null &&
-            widget.title!.trim().isNotEmpty;
+        final contentWidth = math.max(
+          0.0,
+          maxWidth - widget.padding.horizontal,
+        );
 
-        final titleHeight = hasTitle
-            ? (widget.embedded ? 22.0 : 34.0)
-            : 0.0;
-
-        final titleGap = hasTitle
-            ? (widget.embedded ? 8.0 : 12.0)
-            : 0.0;
-
-        final contentWidth =
-        math.max(0.0, maxWidth - widget.padding.horizontal);
         final contentHeight = math.max(
           0.0,
-          maxHeight - widget.padding.vertical - titleHeight - titleGap,
+          maxHeight - widget.padding.vertical,
         );
 
-        final horizontalLegend =
-            widget.showLegend && contentWidth >= (widget.embedded ? 240 : 320);
+        final hasWorkload =
+            widget.showWorkload && widget.workloadScore != null;
 
-        final ringSize = widget.showLegend
-            ? (horizontalLegend
-            ? math.min(
-          contentHeight,
-          contentWidth * (widget.embedded ? 0.34 : 0.40),
-        )
-            : math.min(contentWidth, contentHeight) * 0.78)
-            : math.min(contentWidth, contentHeight) * 0.96;
+        final hasLegend = widget.showLegend && widget.rings.isNotEmpty;
 
-        final rowHeight = widget.rings.isEmpty
-            ? contentHeight
-            : contentHeight / widget.rings.length;
+        final isTiny = contentWidth < 150 || contentHeight < 55;
+        final gap = isTiny ? 4.0 : 10.0;
 
-        final labelFontSize = (rowHeight * 0.22).clamp(
-          widget.embedded ? 10.0 : 11.0,
-          widget.embedded ? 14.0 : 18.0,
-        );
-
-        final valueFontSize = (rowHeight * 0.28).clamp(
-          widget.embedded ? 11.0 : 12.0,
-          widget.embedded ? 18.0 : 24.0,
-        );
-
-        final unitFontSize = (rowHeight * 0.16).clamp(
-          widget.embedded ? 9.0 : 10.0,
-          widget.embedded ? 13.0 : 16.0,
-        );
-
-        return Container(
-          width: double.infinity,
-          height: double.infinity,
-          padding: widget.padding,
-          decoration: BoxDecoration(
-            color: widget.backgroundColor,
-            borderRadius: BorderRadius.circular(widget.borderRadius),
-          ),
-          child: SizedBox(
-            width: maxWidth,
-            height: maxHeight,
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
+        return SizedBox(
+          width: constraints.hasBoundedWidth ? double.infinity : maxWidth,
+          height: constraints.hasBoundedHeight ? double.infinity : maxHeight,
+          child: Container(
+            padding: widget.padding,
+            clipBehavior: Clip.antiAlias,
+            decoration: BoxDecoration(
+              color: widget.backgroundColor,
+              borderRadius: BorderRadius.circular(widget.borderRadius),
+            ),
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.center,
               children: [
-                if (hasTitle) ...[
-                  Text(
-                    widget.title!,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: (widget.embedded
-                        ? theme.textTheme.titleMedium
-                        : theme.textTheme.headlineMedium)
-                        ?.copyWith(
-                      color: Colors.white,
-                      fontWeight: FontWeight.w800,
-                    ),
+                if (hasWorkload) ...[
+                  Expanded(
+                    flex: hasLegend ? 32 : 40,
+                    child: _buildWorkloadColumn(),
                   ),
-                  SizedBox(height: titleGap),
+                  SizedBox(width: gap),
                 ],
+
                 Expanded(
-                  child: widget.showLegend
-                      ? (horizontalLegend
-                      ? Row(
-                    crossAxisAlignment: CrossAxisAlignment.center,
-                    children: [
-                      SizedBox(
-                        width: ringSize,
-                        height: ringSize,
-                        child: _buildRingsPainter(),
-                      ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: _buildLegend(
-                          labelFontSize: labelFontSize,
-                          valueFontSize: valueFontSize,
-                          unitFontSize: unitFontSize,
-                        ),
-                      ),
-                    ],
-                  )
-                      : Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      SizedBox(
-                        width: ringSize,
-                        height: ringSize,
-                        child: _buildRingsPainter(),
-                      ),
-                      const SizedBox(height: 10),
-                      Expanded(
-                        child: _buildLegend(
-                          labelFontSize: labelFontSize,
-                          valueFontSize: valueFontSize,
-                          unitFontSize: unitFontSize,
-                        ),
-                      ),
-                    ],
-                  ))
-                      : Center(
-                    child: SizedBox(
-                      width: ringSize,
-                      height: ringSize,
-                      child: _buildRingsPainter(),
-                    ),
-                  ),
+                  flex: hasLegend ? 28 : 60,
+                  child: _buildRingsColumn(),
                 ),
+
+                if (hasLegend) ...[
+                  SizedBox(width: gap),
+                  Expanded(
+                    flex: hasWorkload ? 40 : 48,
+                    child: _buildLegendColumn(),
+                  ),
+                ],
               ],
             ),
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildWorkloadColumn() {
+    final labelFontSize = widget.embedded ? 9.0 : 11.0;
+    final scoreFontSize = widget.embedded ? 20.0 : 28.0;
+    final unitFontSize = widget.embedded ? 9.0 : 12.0;
+
+    return SizedBox.expand(
+      child: FittedBox(
+        fit: BoxFit.scaleDown,
+        alignment: Alignment.center,
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.center,
+          children: [
+            Text(
+              widget.workloadLabel,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: TextStyle(
+                color: Colors.white.withOpacity(0.72),
+                fontSize: labelFontSize,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+            const SizedBox(height: 2),
+            RichText(
+              maxLines: 1,
+              text: TextSpan(
+                children: [
+                  TextSpan(
+                    text: _formattedWorkloadScore,
+                    style: TextStyle(
+                      color: widget.workloadColor,
+                      fontSize: scoreFontSize,
+                      fontWeight: FontWeight.w900,
+                      height: 1,
+                    ),
+                  ),
+                  if (widget.workloadUnit.trim().isNotEmpty)
+                    TextSpan(
+                      text: ' ${widget.workloadUnit}',
+                      style: TextStyle(
+                        color: widget.workloadColor,
+                        fontSize: unitFontSize,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildRingsColumn() {
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final ringSize = math.max(
+          0.0,
+          math.min(
+            constraints.maxWidth,
+            constraints.maxHeight,
+          ),
+        );
+
+        return Center(
+          child: SizedBox(
+            width: ringSize,
+            height: ringSize,
+            child: _buildRingsPainter(),
           ),
         );
       },
@@ -335,69 +393,102 @@ class _ActivityRingsCardState extends State<ActivityRingsCard>
     );
   }
 
-  Widget _buildLegend({
-    required double labelFontSize,
-    required double valueFontSize,
-    required double unitFontSize,
-  }) {
-    return Column(
-      mainAxisAlignment: MainAxisAlignment.center,
-      children: widget.rings.map((ring) {
-        return Expanded(
-          child: Align(
-            alignment: Alignment.centerLeft,
-            child: Row(
-              children: [
-                Expanded(
-                  child: Text(
-                    ring.label,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontSize: labelFontSize,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                ),
-                const SizedBox(width: 8),
-                Flexible(
-                  child: Align(
-                    alignment: Alignment.centerRight,
-                    child: FittedBox(
-                      fit: BoxFit.scaleDown,
-                      alignment: Alignment.centerRight,
-                      child: RichText(
-                        text: TextSpan(
-                          children: [
-                            TextSpan(
-                              text:
-                              '${ring.formattedValue}/${ring.formattedGoal} ',
-                              style: TextStyle(
-                                color: ring.color,
-                                fontSize: valueFontSize,
-                                fontWeight: FontWeight.w800,
-                              ),
-                            ),
-                            TextSpan(
-                              text: ring.unit,
-                              style: TextStyle(
-                                color: ring.color,
-                                fontSize: unitFontSize,
-                                fontWeight: FontWeight.w700,
-                              ),
-                            ),
-                          ],
+  Widget _buildLegendColumn() {
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final rowHeight = widget.rings.isEmpty
+            ? constraints.maxHeight
+            : constraints.maxHeight / widget.rings.length;
+
+        final dotSize = (rowHeight * 0.22).clamp(4.0, 9.0).toDouble();
+
+        final labelFontSize = (rowHeight * 0.24).clamp(
+          widget.embedded ? 7.0 : 9.0,
+          widget.embedded ? 12.0 : 15.0,
+        ).toDouble();
+
+        final valueFontSize = (rowHeight * 0.28).clamp(
+          widget.embedded ? 8.0 : 10.0,
+          widget.embedded ? 13.0 : 17.0,
+        ).toDouble();
+
+        final unitFontSize = (rowHeight * 0.20).clamp(
+          widget.embedded ? 7.0 : 8.0,
+          widget.embedded ? 11.0 : 13.0,
+        ).toDouble();
+
+        return Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: widget.rings.map((ring) {
+            return Expanded(
+              child: Align(
+                alignment: Alignment.centerLeft,
+                child: Row(
+                  children: [
+                    SizedBox(
+                      width: dotSize,
+                      height: dotSize,
+                      child: DecoratedBox(
+                        decoration: BoxDecoration(
+                          color: ring.color,
+                          shape: BoxShape.circle,
                         ),
                       ),
                     ),
-                  ),
+                    const SizedBox(width: 6),
+
+                    Expanded(
+                      child: Text(
+                        ring.label,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontSize: labelFontSize,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ),
+
+                    const SizedBox(width: 6),
+
+                    Flexible(
+                      child: FittedBox(
+                        fit: BoxFit.scaleDown,
+                        alignment: Alignment.centerRight,
+                        child: RichText(
+                          maxLines: 1,
+                          text: TextSpan(
+                            children: [
+                              TextSpan(
+                                text:
+                                '${ring.formattedValue}/${ring.formattedGoal} ',
+                                style: TextStyle(
+                                  color: ring.color,
+                                  fontSize: valueFontSize,
+                                  fontWeight: FontWeight.w800,
+                                ),
+                              ),
+                              TextSpan(
+                                text: ring.unit,
+                                style: TextStyle(
+                                  color: ring.color,
+                                  fontSize: unitFontSize,
+                                  fontWeight: FontWeight.w700,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
-              ],
-            ),
-          ),
+              ),
+            );
+          }).toList(),
         );
-      }).toList(),
+      },
     );
   }
 }
@@ -413,9 +504,11 @@ class _ActivityRingsPainter extends CustomPainter {
 
   @override
   void paint(Canvas canvas, Size size) {
+    if (size.width <= 0 || size.height <= 0 || rings.isEmpty) return;
+
     final shortestSide = math.min(size.width, size.height);
     final center = Offset(size.width / 2, size.height / 2);
-    final count = rings.length.clamp(1, 5);
+    final count = rings.length.clamp(1, 5).toInt();
 
     final gap = shortestSide * (count >= 4 ? 0.030 : 0.040);
 
@@ -425,7 +518,7 @@ class _ActivityRingsPainter extends CustomPainter {
     final strokeWidth = rawStrokeWidth.clamp(
       shortestSide * 0.07,
       shortestSide * 0.18,
-    );
+    ).toDouble();
 
     final outerRadius = shortestSide / 2 - strokeWidth / 2 - 2;
     const startAngle = -math.pi / 2;
@@ -472,6 +565,7 @@ class _ActivityRingsPainter extends CustomPainter {
 
       if (ring.icon != null && sweepAngle > 0.001) {
         final endAngle = startAngle + sweepAngle;
+
         final iconOffset = Offset(
           center.dx + radius * math.cos(endAngle),
           center.dy + radius * math.sin(endAngle),

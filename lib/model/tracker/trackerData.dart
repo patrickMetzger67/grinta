@@ -696,6 +696,7 @@ class DistanceTimelineStat {
 class TrackerAnalysisResult {
   final String trackerId;
   final String playerId;
+  final String eventId;
   final double distanceKm;
   final Duration duration;
   final double averageSpeedKmh;
@@ -711,12 +712,13 @@ class TrackerAnalysisResult {
 
   final int sprintCount;
   final int highAccelerationCount;
-  final Duration timeAbove20Kmh;
+  final Duration highSpeedDuration;
   final double maxAccelerationMps2;
   final List<FieldZoneStats> distanceByZones;
   final List<SpeedZoneStat> speedZones;
   final List<HalfStats> halfStats;
   final double workloadScore;
+  final double workloadScorePerMinute;
 
   final String playerProfile;
   final double fatigueIndex;
@@ -727,6 +729,7 @@ class TrackerAnalysisResult {
   const TrackerAnalysisResult({
     required this.trackerId,
     required this.playerId,
+    required this.eventId,
     required this.distanceKm,
     required this.duration,
     required this.averageSpeedKmh,
@@ -737,12 +740,13 @@ class TrackerAnalysisResult {
     this.fieldGps,
     required this.sprintCount,
     required this.highAccelerationCount,
-    required this.timeAbove20Kmh,
+    required this.highSpeedDuration,
     required this.maxAccelerationMps2,
     required this.distanceByZones,
     required this.speedZones,
     required this.halfStats,
     required this.workloadScore,
+    required this.workloadScorePerMinute,
     required this.playerProfile,
     required this.fatigueIndex,
     required this.firstHalfDistanceKm,
@@ -757,6 +761,7 @@ class TrackerAnalysisResult {
     return {
       'trackerId': trackerId,
       'playerId': playerId,
+      'eventId': eventId,
       'distanceKm': distanceKm,
       'durationMs': duration.inMilliseconds,
       'averageSpeedKmh': averageSpeedKmh,
@@ -767,18 +772,18 @@ class TrackerAnalysisResult {
       'fieldGps': fieldGps?.toMap(),
       'sprintCount': sprintCount,
       'highAccelerationCount': highAccelerationCount,
-      'timeAbove20KmhMs': timeAbove20Kmh.inMilliseconds,
+      'highSpeedDuration': highSpeedDuration.inMilliseconds,
       'maxAccelerationMps2': maxAccelerationMps2,
       'distanceByZones': distanceByZones.map((e) => e.toMap()).toList(),
       'speedZones': speedZones.map((e) => e.toMap()).toList(),
       'halfStats': halfStats.map((e) => e.toMap()).toList(),
       'workloadScore': workloadScore,
+      'workloadScorePerMinute': workloadScorePerMinute,
       'playerProfile': playerProfile,
       'fatigueIndex': fatigueIndex,
       'firstHalfDistanceKm': firstHalfDistanceKm,
       'secondHalfDistanceKm': secondHalfDistanceKm,
       'distanceTimeline': distanceTimeline.map((e) => e.toMap()).toList(),
-      'eventId': eventId,
       'createdAt': createdAt != null
           ? Timestamp.fromDate(createdAt)
           : FieldValue.serverTimestamp(),
@@ -789,6 +794,7 @@ class TrackerAnalysisResult {
     return TrackerAnalysisResult(
       trackerId: (map['trackerId'] ?? '').toString(),
       playerId: (map['playerId'] ?? '').toString(),
+      eventId: (map['eventId'] ?? '').toString(),
       distanceKm: _toDouble(map['distanceKm']),
       duration: Duration(milliseconds: _toInt(map['durationMs'])),
       averageSpeedKmh: _toDouble(map['averageSpeedKmh']),
@@ -803,7 +809,7 @@ class TrackerAnalysisResult {
           : null,
       sprintCount: _toInt(map['sprintCount']),
       highAccelerationCount: _toInt(map['highAccelerationCount']),
-      timeAbove20Kmh: Duration(milliseconds: _toInt(map['timeAbove20KmhMs'])),
+      highSpeedDuration: Duration(milliseconds: _toInt(map['highSpeedDuration'])),
       maxAccelerationMps2: _toDouble(map['maxAccelerationMps2']),
       distanceByZones: (map['distanceByZones'] as List<dynamic>? ?? [])
           .map((e) => FieldZoneStats.fromMap(Map<String, dynamic>.from(e as Map)))
@@ -815,6 +821,7 @@ class TrackerAnalysisResult {
           .map((e) => HalfStats.fromMap(Map<String, dynamic>.from(e as Map)))
           .toList(),
       workloadScore: _toDouble(map['workloadScore']),
+      workloadScorePerMinute: _toDouble(map['workloadScorePerMinute']),
       playerProfile: (map['playerProfile'] ?? '').toString(),
       fatigueIndex: _toDouble(map['fatigueIndex']),
       firstHalfDistanceKm: _toDouble(map['firstHalfDistanceKm']),
