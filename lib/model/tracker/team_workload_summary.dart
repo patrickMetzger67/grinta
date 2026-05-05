@@ -255,6 +255,7 @@ class TeamWorkloadSummary {
           (sum, r) => sum + r.workloadScore,
     );
 
+
     final averageWorkloadScore = playersCount > 0
         ? totalWorkloadScore / playersCount
         : 0.0;

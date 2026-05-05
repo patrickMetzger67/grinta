@@ -637,7 +637,23 @@ class TrainingService {
       return [];
     }
   }
-
+  Stream<List<Training>> streamTrainingsByTeamIdBetweenDates({
+    required String teamId,
+    required Timestamp start,
+    required Timestamp end,
+  }) {
+    return _collection
+        .where(keyTgTeamId, isEqualTo: teamId)
+        .where(keyTgDateTime, isGreaterThanOrEqualTo: start)
+        .where(keyTgDateTime, isLessThan: end)
+        .orderBy(keyTgDateTime)
+        .snapshots()
+        .map((snapshot) {
+      return snapshot.docs
+          .map((doc) => Training.fromDocumentSnapshot(doc))
+          .toList();
+    });
+  }
   /// STREAM TRAININGS BY TEAM + withTracker = true + isTrackerDataUploaded = false
   Stream<List<Training>> streamTrainingsToUploadTrackerData(String teamId) {
 

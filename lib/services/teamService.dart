@@ -57,6 +57,19 @@ class TeamService {
         snapshot.docs.map((doc) => Team.fromDocumentSnapshot(doc)).toList());
   }
 
+  /// STREAM BY SEASON ID + MANAGER USER ID
+  Stream<List<Team>> streamTeamsBySeasonIdPlayerId({
+    required String seasonId,
+    required String playerId,
+  }) {
+    return _collection
+        .where(keyTeamSeasonID, isEqualTo: seasonId)
+        .where(keyTeamPlayers, arrayContains: playerId)
+        .snapshots()
+        .map((snapshot) =>
+        snapshot.docs.map((doc) => Team.fromDocumentSnapshot(doc)).toList());
+  }
+
   /// WATCH BY SEASON ID + MANAGER USER ID
   Stream<List<Team>> watchTeamsBySeasonIdAndManager({
     required String seasonId,

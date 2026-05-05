@@ -250,8 +250,10 @@ class _TrackerHubPageState extends State<TrackerHubPage> {
                       ),
                       itemBuilder: (context, index) {
                         final trackerId = widget.trackerIds[index];
-                        final isSelected =
-                            trackerId == selectedTrackerId;
+                        final isSelected = trackerId == selectedTrackerId;
+
+
+                        print('trackerId=$trackerId');
 
                         final isDone =
                             (eventSync!.devices[trackerId]!
@@ -260,6 +262,8 @@ class _TrackerHubPageState extends State<TrackerHubPage> {
                                     .devices[trackerId]!.erased) ||
                                 eventSync!
                                     .devices[trackerId]!.withAsiFile;
+
+                        print('isDone=$isDone');
 
                         return _TrackerCard(
                           trackerId: trackerId,

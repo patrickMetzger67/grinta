@@ -15,23 +15,24 @@ import 'package:grinta/provider/appSession.dart';
 import 'package:grinta/widget/uploadTrackerButton.dart';
 import 'package:provider/provider.dart';
 
-import './services/teamService.dart';
-import '../model/team.dart';
-import './util/app_theme.dart';
+import '../model/answer.dart';
 import '../model/match.dart' as match_model;
-import 'model/answer.dart';
-import 'model/matchCompo.dart';
-import 'model/season.dart';
-import 'model/training.dart';
+import '../model/matchCompo.dart';
+import '../model/season.dart';
+import '../model/team.dart';
+import '../model/training.dart';
+import '../services/teamService.dart';
+import '../util/app_theme.dart';
 
-class HomeScreen extends StatefulWidget {
-  const HomeScreen({super.key});
+
+class SyncScreen extends StatefulWidget {
+  const SyncScreen({super.key});
 
   @override
-  State<HomeScreen> createState() => _HomeScreenState();
+  State<SyncScreen> createState() => _SyncScreenState();
 }
 
-class _HomeScreenState extends State<HomeScreen> {
+class _SyncScreenState extends State<SyncScreen> {
   final TeamService _teamService = TeamService();
   final MatchService _matchService = MatchService();
   String? _selectedTeamId;
@@ -71,35 +72,6 @@ class _HomeScreenState extends State<HomeScreen> {
       body: ListView(
         padding: const EdgeInsets.all(16),
         children: [
-
-          Card(
-            color: colors.card,
-            child: Padding(
-              padding: const EdgeInsets.all(16),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    'Saison sélectionnée',
-                    style: textTheme.titleMedium?.copyWith(
-                      color: colors.textPrimary,
-                      fontWeight: FontWeight.w700,
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-                  Text(
-                    currentSeason?.name ?? 'Aucune saison courante',
-                    style: textTheme.bodyLarge?.copyWith(
-                      color: colors.primary,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ),
-
-          const SizedBox(height: 16),
 
           Card(
             color: colors.card,
@@ -287,13 +259,6 @@ class _HomeScreenState extends State<HomeScreen> {
               ),
             ),
             const SizedBox(height: 8),
-            Text(
-              'Choisir une équipe de la saison en cours',
-              style: textTheme.bodyMedium?.copyWith(
-                color: colors.textSecondary,
-              ),
-            ),
-            const SizedBox(height: 14),
             DropdownButtonFormField<String>(
               value: selectedValue,
               isExpanded: true,
@@ -345,7 +310,7 @@ class _HomeScreenState extends State<HomeScreen> {
             ),
             const SizedBox(height: 14),
             Text(
-              'Matchs à traiter',
+              'Matchs à synchroniser',
               style: textTheme.titleMedium?.copyWith(
                 color: colors.textPrimary,
                 fontWeight: FontWeight.w700,
@@ -539,7 +504,7 @@ class _HomeScreenState extends State<HomeScreen> {
             ),
             const SizedBox(height: 14),
             Text(
-              'Entrainements à traiter',
+              'Entrainements à synchroniser',
               style: textTheme.titleMedium?.copyWith(
                 color: colors.textPrimary,
                 fontWeight: FontWeight.w700,

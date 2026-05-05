@@ -1,5 +1,8 @@
 import 'dart:math' as math;
+
 import 'package:flutter/material.dart';
+
+import '../util/app_theme.dart';
 
 class ActivityRingItem {
   final String label;
@@ -26,21 +29,23 @@ class ActivityRingItem {
   }
 
   String get formattedValue => _formatNumber(value);
+
   String get formattedGoal => _formatNumber(goal);
 
   static String _formatNumber(double n) {
     if (n == n.roundToDouble()) {
       return n.toInt().toString();
     }
+
     return n.toStringAsFixed(1).replaceAll('.', ',');
   }
 }
 
 class ActivityRingsCard extends StatefulWidget {
-  /// Conservé pour compatibilité, mais non affiché.
+  /// Conservé pour compatibilité, mais non affiché par défaut.
   final String? title;
 
-  /// Conservé pour compatibilité, mais non utilisé.
+  /// Conservé pour compatibilité.
   final bool showTitle;
 
   final bool showLegend;
@@ -51,13 +56,17 @@ class ActivityRingsCard extends StatefulWidget {
   final double? workloadScore;
   final String workloadLabel;
   final String workloadUnit;
-  final Color workloadColor;
+  final Color? workloadColor;
 
   final List<ActivityRingItem> rings;
-  final Color backgroundColor;
+
+  /// Si null, utilise automatiquement context.appColors.surface.
+  final Color? backgroundColor;
+
   final double borderRadius;
   final Duration animationDuration;
   final EdgeInsets padding;
+  final bool withgoal;
 
   const ActivityRingsCard({
     super.key,
@@ -69,12 +78,13 @@ class ActivityRingsCard extends StatefulWidget {
     this.workloadScore,
     this.workloadLabel = 'Workload',
     this.workloadUnit = '',
-    this.workloadColor = Colors.white,
+    this.workloadColor,
     required this.rings,
-    this.backgroundColor = const Color(0xFF17181C),
+    this.backgroundColor,
     this.borderRadius = 20,
     this.animationDuration = const Duration(milliseconds: 900),
     this.padding = const EdgeInsets.all(12),
+    required this.withgoal,
   }) : assert(
   rings.length >= 1 && rings.length <= 5,
   'Le nombre d’anneaux doit être compris entre 1 et 5.',
@@ -84,7 +94,7 @@ class ActivityRingsCard extends StatefulWidget {
     Key? key,
     required List<ActivityRingItem> rings,
     String? title,
-    Color backgroundColor = const Color(0xFF17181C),
+    Color? backgroundColor,
     double borderRadius = 14,
     EdgeInsets padding = const EdgeInsets.all(8),
     Duration animationDuration = const Duration(milliseconds: 900),
@@ -92,7 +102,8 @@ class ActivityRingsCard extends StatefulWidget {
     double? workloadScore,
     String workloadLabel = 'Workload',
     String workloadUnit = '',
-    Color workloadColor = Colors.white,
+    Color? workloadColor,
+    required bool withgoal,
   }) {
     return ActivityRingsCard(
       key: key,
@@ -110,6 +121,7 @@ class ActivityRingsCard extends StatefulWidget {
       workloadLabel: workloadLabel,
       workloadUnit: workloadUnit,
       workloadColor: workloadColor,
+      withgoal: withgoal,
     );
   }
 
@@ -120,7 +132,7 @@ class ActivityRingsCard extends StatefulWidget {
     bool showTitle = false,
     bool showLegend = true,
     bool embedded = false,
-    Color backgroundColor = const Color(0xFF17181C),
+    Color? backgroundColor,
     double borderRadius = 20,
     EdgeInsets padding = const EdgeInsets.all(12),
     Duration animationDuration = const Duration(milliseconds: 900),
@@ -128,12 +140,13 @@ class ActivityRingsCard extends StatefulWidget {
     double? workloadScore,
     String workloadLabel = 'Workload',
     String workloadUnit = '',
-    Color workloadColor = Colors.white,
+    Color? workloadColor,
+    required bool withgoal,
   }) {
     return ActivityRingsCard(
       key: key,
       title: title,
-      showTitle: false,
+      showTitle: showTitle,
       showLegend: showLegend,
       embedded: embedded,
       rings: rings,
@@ -146,6 +159,7 @@ class ActivityRingsCard extends StatefulWidget {
       workloadLabel: workloadLabel,
       workloadUnit: workloadUnit,
       workloadColor: workloadColor,
+      withgoal: withgoal,
     );
   }
 
@@ -153,7 +167,7 @@ class ActivityRingsCard extends StatefulWidget {
     Key? key,
     required List<ActivityRingItem> rings,
     String? title,
-    Color backgroundColor = const Color(0xFF17181C),
+    Color? backgroundColor,
     double borderRadius = 14,
     EdgeInsets padding = const EdgeInsets.all(10),
     Duration animationDuration = const Duration(milliseconds: 900),
@@ -163,12 +177,13 @@ class ActivityRingsCard extends StatefulWidget {
     double? workloadScore,
     String workloadLabel = 'Workload',
     String workloadUnit = '',
-    Color workloadColor = Colors.white,
+    Color? workloadColor,
+    required bool withgoal,
   }) {
     return ActivityRingsCard(
       key: key,
       title: title,
-      showTitle: false,
+      showTitle: showTitle,
       showLegend: showLegend,
       embedded: true,
       rings: rings,
@@ -181,6 +196,7 @@ class ActivityRingsCard extends StatefulWidget {
       workloadLabel: workloadLabel,
       workloadUnit: workloadUnit,
       workloadColor: workloadColor,
+      withgoal: withgoal,
     );
   }
 
@@ -233,33 +249,39 @@ class _ActivityRingsCardState extends State<ActivityRingsCard>
 
   @override
   Widget build(BuildContext context) {
+    final colors = context.appColors;
+
     return LayoutBuilder(
       builder: (context, constraints) {
-        final maxWidth = constraints.hasBoundedWidth
+        final double maxWidth = constraints.hasBoundedWidth
             ? constraints.maxWidth
-            : (widget.embedded ? 260.0 : 360.0);
+            : widget.embedded
+            ? 260.0
+            : 360.0;
 
-        final maxHeight = constraints.hasBoundedHeight
+        final double maxHeight = constraints.hasBoundedHeight
             ? constraints.maxHeight
-            : (widget.embedded ? 90.0 : 120.0);
+            : widget.embedded
+            ? 90.0
+            : 120.0;
 
-        final contentWidth = math.max(
+        final double contentWidth = math.max(
           0.0,
           maxWidth - widget.padding.horizontal,
         );
 
-        final contentHeight = math.max(
+        final double contentHeight = math.max(
           0.0,
           maxHeight - widget.padding.vertical,
         );
 
-        final hasWorkload =
+        final bool hasWorkload =
             widget.showWorkload && widget.workloadScore != null;
 
-        final hasLegend = widget.showLegend && widget.rings.isNotEmpty;
+        final bool hasLegend = widget.showLegend && widget.rings.isNotEmpty;
 
-        final isTiny = contentWidth < 150 || contentHeight < 55;
-        final gap = isTiny ? 4.0 : 10.0;
+        final bool isTiny = contentWidth < 150 || contentHeight < 55;
+        final double gap = isTiny ? 4.0 : 10.0;
 
         return SizedBox(
           width: constraints.hasBoundedWidth ? double.infinity : maxWidth,
@@ -268,8 +290,11 @@ class _ActivityRingsCardState extends State<ActivityRingsCard>
             padding: widget.padding,
             clipBehavior: Clip.antiAlias,
             decoration: BoxDecoration(
-              color: widget.backgroundColor,
+              color: widget.backgroundColor ?? colors.surface,
               borderRadius: BorderRadius.circular(widget.borderRadius),
+              border: Border.all(
+                color: colors.border.withValues(alpha: 0.60),
+              ),
             ),
             child: Row(
               crossAxisAlignment: CrossAxisAlignment.center,
@@ -281,17 +306,15 @@ class _ActivityRingsCardState extends State<ActivityRingsCard>
                   ),
                   SizedBox(width: gap),
                 ],
-
                 Expanded(
                   flex: hasLegend ? 28 : 60,
                   child: _buildRingsColumn(),
                 ),
-
                 if (hasLegend) ...[
                   SizedBox(width: gap),
                   Expanded(
                     flex: hasWorkload ? 40 : 48,
-                    child: _buildLegendColumn(),
+                    child: _buildLegendColumn(withgoal: widget.withgoal),
                   ),
                 ],
               ],
@@ -303,9 +326,15 @@ class _ActivityRingsCardState extends State<ActivityRingsCard>
   }
 
   Widget _buildWorkloadColumn() {
-    final labelFontSize = widget.embedded ? 9.0 : 11.0;
-    final scoreFontSize = widget.embedded ? 20.0 : 28.0;
-    final unitFontSize = widget.embedded ? 9.0 : 12.0;
+    final colors = context.appColors;
+    final textTheme = Theme.of(context).textTheme;
+
+    final double labelFontSize = widget.embedded ? 10.0 : 12.0;
+    final double scoreFontSize = widget.embedded ? 22.0 : 30.0;
+    final double unitFontSize = widget.embedded ? 10.0 : 13.0;
+
+    final Color effectiveWorkloadColor =
+        widget.workloadColor ?? colors.primary;
 
     return SizedBox.expand(
       child: FittedBox(
@@ -319,10 +348,11 @@ class _ActivityRingsCardState extends State<ActivityRingsCard>
               widget.workloadLabel,
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
-              style: TextStyle(
-                color: Colors.white.withOpacity(0.72),
+              style: textTheme.bodySmall?.copyWith(
+                color: colors.textSecondary,
                 fontSize: labelFontSize,
                 fontWeight: FontWeight.w600,
+                fontFamily: AppTheme.fontFamily,
               ),
             ),
             const SizedBox(height: 2),
@@ -332,20 +362,22 @@ class _ActivityRingsCardState extends State<ActivityRingsCard>
                 children: [
                   TextSpan(
                     text: _formattedWorkloadScore,
-                    style: TextStyle(
-                      color: widget.workloadColor,
+                    style: textTheme.headlineSmall?.copyWith(
+                      color: effectiveWorkloadColor,
                       fontSize: scoreFontSize,
                       fontWeight: FontWeight.w900,
                       height: 1,
+                      fontFamily: AppTheme.fontFamily,
                     ),
                   ),
                   if (widget.workloadUnit.trim().isNotEmpty)
                     TextSpan(
                       text: ' ${widget.workloadUnit}',
-                      style: TextStyle(
-                        color: widget.workloadColor,
+                      style: textTheme.bodySmall?.copyWith(
+                        color: effectiveWorkloadColor,
                         fontSize: unitFontSize,
                         fontWeight: FontWeight.w700,
+                        fontFamily: AppTheme.fontFamily,
                       ),
                     ),
                 ],
@@ -360,7 +392,7 @@ class _ActivityRingsCardState extends State<ActivityRingsCard>
   Widget _buildRingsColumn() {
     return LayoutBuilder(
       builder: (context, constraints) {
-        final ringSize = math.max(
+        final double ringSize = math.max(
           0.0,
           math.min(
             constraints.maxWidth,
@@ -380,6 +412,8 @@ class _ActivityRingsCardState extends State<ActivityRingsCard>
   }
 
   Widget _buildRingsPainter() {
+    final colors = context.appColors;
+
     return AnimatedBuilder(
       animation: _animation,
       builder: (context, _) {
@@ -387,35 +421,45 @@ class _ActivityRingsCardState extends State<ActivityRingsCard>
           painter: _ActivityRingsPainter(
             rings: widget.rings,
             animationValue: _animation.value,
+            iconColor: colors.surface,
           ),
         );
       },
     );
   }
 
-  Widget _buildLegendColumn() {
+  Widget _buildLegendColumn({required bool withgoal}) {
     return LayoutBuilder(
       builder: (context, constraints) {
-        final rowHeight = widget.rings.isEmpty
+        final colors = context.appColors;
+        final textTheme = Theme.of(context).textTheme;
+
+        final double rowHeight = widget.rings.isEmpty
             ? constraints.maxHeight
             : constraints.maxHeight / widget.rings.length;
 
-        final dotSize = (rowHeight * 0.22).clamp(4.0, 9.0).toDouble();
+        final double dotSize = (rowHeight * 0.28).clamp(7.0, 11.0).toDouble();
 
-        final labelFontSize = (rowHeight * 0.24).clamp(
-          widget.embedded ? 7.0 : 9.0,
-          widget.embedded ? 12.0 : 15.0,
-        ).toDouble();
+        final double labelFontSize = (rowHeight * 0.38)
+            .clamp(
+          widget.embedded ? 11.0 : 12.0,
+          widget.embedded ? 14.0 : 16.0,
+        )
+            .toDouble();
 
-        final valueFontSize = (rowHeight * 0.28).clamp(
-          widget.embedded ? 8.0 : 10.0,
-          widget.embedded ? 13.0 : 17.0,
-        ).toDouble();
+        final double valueFontSize = (rowHeight * 0.42)
+            .clamp(
+          widget.embedded ? 12.0 : 13.0,
+          widget.embedded ? 15.0 : 18.0,
+        )
+            .toDouble();
 
-        final unitFontSize = (rowHeight * 0.20).clamp(
-          widget.embedded ? 7.0 : 8.0,
-          widget.embedded ? 11.0 : 13.0,
-        ).toDouble();
+        final double unitFontSize = (rowHeight * 0.30)
+            .clamp(
+          widget.embedded ? 10.0 : 11.0,
+          widget.embedded ? 13.0 : 15.0,
+        )
+            .toDouble();
 
         return Column(
           mainAxisAlignment: MainAxisAlignment.center,
@@ -423,66 +467,62 @@ class _ActivityRingsCardState extends State<ActivityRingsCard>
             return Expanded(
               child: Align(
                 alignment: Alignment.centerLeft,
-                child: Row(
-                  children: [
-                    SizedBox(
-                      width: dotSize,
-                      height: dotSize,
-                      child: DecoratedBox(
+                child: FittedBox(
+                  fit: BoxFit.scaleDown,
+                  alignment: Alignment.centerLeft,
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Container(
+                        width: dotSize,
+                        height: dotSize,
                         decoration: BoxDecoration(
                           color: ring.color,
                           shape: BoxShape.circle,
                         ),
                       ),
-                    ),
-                    const SizedBox(width: 6),
-
-                    Expanded(
-                      child: Text(
+                      const SizedBox(width: 8),
+                      Text(
                         ring.label,
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
-                        style: TextStyle(
-                          color: Colors.white,
+                        style: textTheme.bodyMedium?.copyWith(
+                          color: colors.textPrimary,
                           fontSize: labelFontSize,
-                          fontWeight: FontWeight.w600,
+                          fontWeight: FontWeight.w700,
+                          fontFamily: AppTheme.fontFamily,
                         ),
                       ),
-                    ),
-
-                    const SizedBox(width: 6),
-
-                    Flexible(
-                      child: FittedBox(
-                        fit: BoxFit.scaleDown,
-                        alignment: Alignment.centerRight,
-                        child: RichText(
-                          maxLines: 1,
-                          text: TextSpan(
-                            children: [
-                              TextSpan(
-                                text:
-                                '${ring.formattedValue}/${ring.formattedGoal} ',
-                                style: TextStyle(
-                                  color: ring.color,
-                                  fontSize: valueFontSize,
-                                  fontWeight: FontWeight.w800,
-                                ),
+                      const SizedBox(width: 10),
+                      RichText(
+                        maxLines: 1,
+                        text: TextSpan(
+                          children: [
+                            TextSpan(
+                              text:(withgoal)?
+                              '${ring.formattedValue}/${ring.formattedGoal}':ring.formattedValue,
+                              style: textTheme.bodyMedium?.copyWith(
+                                color: ring.color,
+                                fontSize: valueFontSize,
+                                fontWeight: FontWeight.w900,
+                                fontFamily: AppTheme.fontFamily,
                               ),
+                            ),
+                            if (ring.unit.trim().isNotEmpty)
                               TextSpan(
-                                text: ring.unit,
-                                style: TextStyle(
+                                text: ' ${ring.unit}',
+                                style: textTheme.bodySmall?.copyWith(
                                   color: ring.color,
                                   fontSize: unitFontSize,
                                   fontWeight: FontWeight.w700,
+                                  fontFamily: AppTheme.fontFamily,
                                 ),
                               ),
-                            ],
-                          ),
+                          ],
                         ),
                       ),
-                    ),
-                  ],
+                    ],
+                  ),
                 ),
               ),
             );
@@ -496,48 +536,55 @@ class _ActivityRingsCardState extends State<ActivityRingsCard>
 class _ActivityRingsPainter extends CustomPainter {
   final List<ActivityRingItem> rings;
   final double animationValue;
+  final Color iconColor;
 
   _ActivityRingsPainter({
     required this.rings,
     required this.animationValue,
+    required this.iconColor,
   });
 
   @override
   void paint(Canvas canvas, Size size) {
     if (size.width <= 0 || size.height <= 0 || rings.isEmpty) return;
 
-    final shortestSide = math.min(size.width, size.height);
-    final center = Offset(size.width / 2, size.height / 2);
-    final count = rings.length.clamp(1, 5).toInt();
+    final double shortestSide = math.min(size.width, size.height);
+    final Offset center = Offset(size.width / 2, size.height / 2);
+    final int count = rings.length.clamp(1, 5).toInt();
 
-    final gap = shortestSide * (count >= 4 ? 0.030 : 0.040);
+    final double gap = shortestSide * (count >= 4 ? 0.030 : 0.040);
 
-    final rawStrokeWidth =
+    final double rawStrokeWidth =
         ((shortestSide * 0.84) - ((count - 1) * gap)) / (count * 2.1);
 
-    final strokeWidth = rawStrokeWidth.clamp(
+    final double strokeWidth = rawStrokeWidth
+        .clamp(
       shortestSide * 0.07,
       shortestSide * 0.18,
-    ).toDouble();
+    )
+        .toDouble();
 
-    final outerRadius = shortestSide / 2 - strokeWidth / 2 - 2;
-    const startAngle = -math.pi / 2;
+    final double outerRadius = shortestSide / 2 - strokeWidth / 2 - 2;
+    const double startAngle = -math.pi / 2;
 
     for (int i = 0; i < count; i++) {
-      final ring = rings[i];
-      final radius = outerRadius - (i * (strokeWidth + gap));
+      final ActivityRingItem ring = rings[i];
+      final double radius = outerRadius - (i * (strokeWidth + gap));
 
       if (radius <= 0) continue;
 
-      final rect = Rect.fromCircle(center: center, radius: radius);
+      final Rect rect = Rect.fromCircle(
+        center: center,
+        radius: radius,
+      );
 
-      final trackPaint = Paint()
+      final Paint trackPaint = Paint()
         ..color = ring.trackColor
         ..style = PaintingStyle.stroke
         ..strokeWidth = strokeWidth
         ..strokeCap = StrokeCap.round;
 
-      final progressPaint = Paint()
+      final Paint progressPaint = Paint()
         ..color = ring.color
         ..style = PaintingStyle.stroke
         ..strokeWidth = strokeWidth
@@ -551,7 +598,7 @@ class _ActivityRingsPainter extends CustomPainter {
         trackPaint,
       );
 
-      final sweepAngle = 2 * math.pi * ring.progress * animationValue;
+      final double sweepAngle = 2 * math.pi * ring.progress * animationValue;
 
       if (sweepAngle > 0.001) {
         canvas.drawArc(
@@ -564,9 +611,9 @@ class _ActivityRingsPainter extends CustomPainter {
       }
 
       if (ring.icon != null && sweepAngle > 0.001) {
-        final endAngle = startAngle + sweepAngle;
+        final double endAngle = startAngle + sweepAngle;
 
-        final iconOffset = Offset(
+        final Offset iconOffset = Offset(
           center.dx + radius * math.cos(endAngle),
           center.dy + radius * math.sin(endAngle),
         );
@@ -576,6 +623,7 @@ class _ActivityRingsPainter extends CustomPainter {
           iconOffset,
           ring.icon!,
           ring.color,
+          iconColor,
           strokeWidth,
         );
       }
@@ -586,25 +634,26 @@ class _ActivityRingsPainter extends CustomPainter {
       Canvas canvas,
       Offset center,
       IconData icon,
-      Color color,
+      Color backgroundColor,
+      Color iconColor,
       double ringThickness,
       ) {
-    final badgeRadius = ringThickness * 0.42;
+    final double badgeRadius = ringThickness * 0.42;
 
     canvas.drawCircle(
       center,
       badgeRadius,
-      Paint()..color = color,
+      Paint()..color = backgroundColor,
     );
 
-    final textPainter = TextPainter(
+    final TextPainter textPainter = TextPainter(
       text: TextSpan(
         text: String.fromCharCode(icon.codePoint),
         style: TextStyle(
           fontSize: badgeRadius,
           fontFamily: icon.fontFamily,
           package: icon.fontPackage,
-          color: Colors.black,
+          color: iconColor,
           fontWeight: FontWeight.bold,
         ),
       ),
@@ -623,6 +672,7 @@ class _ActivityRingsPainter extends CustomPainter {
   @override
   bool shouldRepaint(covariant _ActivityRingsPainter oldDelegate) {
     return oldDelegate.rings != rings ||
-        oldDelegate.animationValue != animationValue;
+        oldDelegate.animationValue != animationValue ||
+        oldDelegate.iconColor != iconColor;
   }
 }

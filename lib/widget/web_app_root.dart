@@ -1,17 +1,20 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
+import 'package:grinta/model/tracker/team_workload_summary.dart';
 import 'package:grinta/provider/appSession.dart';
 import 'package:grinta/screen/agendaScreen.dart';
+import 'package:grinta/screen/dashboardScreen.dart';
 import 'package:grinta/screen/teamsListScreen.dart';
 import 'package:grinta/services/matchService.dart';
+import 'package:grinta/services/teamWorkloadSummaryService.dart';
 import 'package:grinta/services/trainingService.dart';
 import 'package:grinta/util/buildTimestampFromDateAndTime.dart';
 import 'package:grinta/widget/app_session_player_season_selector.dart';
 import 'package:provider/provider.dart';
 
-import '../homeScreen.dart';
 import '../model/agendaItem.dart';
 import '../screen/responsive_chat.dart';
+import '../screen/syncScreen.dart';
 import '../screen/teamDetailScreen.dart';
 import '../util/app_theme.dart';
 import '../webNavigationShell.dart';
@@ -83,6 +86,11 @@ class _WebAppRootState extends State<WebAppRoot> {
 
         final DateTime endAt = startAt.add(const Duration(minutes: 90));
 
+        TeamWorkloadSummary? teamWorkloadSummary;
+        if(m.withTracker! && (m.id != null && m.id!.isNotEmpty)) {
+          teamWorkloadSummary = await TeamWorkloadSummaryService().getByEventId(m.id!);
+        }
+
         allItems.add(
           AgendaItem(
             id: m.id!,
@@ -95,6 +103,7 @@ class _WebAppRootState extends State<WebAppRoot> {
                 timestampNow.millisecondsSinceEpoch,
             withTracker: m.withTracker!,
             areTrackersSynchronized: m.isTrackerDataUploaded!,
+            teamWorkloadSummary: teamWorkloadSummary,
           ),
         );
       }
@@ -104,6 +113,13 @@ class _WebAppRootState extends State<WebAppRoot> {
 
         final DateTime endAt =
         tr.dateTime!.toDate().add(const Duration(minutes: 90));
+
+
+        TeamWorkloadSummary? teamWorkloadSummary;
+        if(tr.withTracker && (tr.docId != null && tr.docId!.isNotEmpty)) {
+          teamWorkloadSummary = await TeamWorkloadSummaryService().getByEventId(tr.docId!);
+        }
+
 
         allItems.add(
           AgendaItem(
@@ -117,6 +133,7 @@ class _WebAppRootState extends State<WebAppRoot> {
                 timestampNow.millisecondsSinceEpoch,
             withTracker: tr.withTracker,
             areTrackersSynchronized: tr.isTrackerDataUploaded,
+            teamWorkloadSummary: teamWorkloadSummary,
           ),
         );
       }
@@ -169,7 +186,7 @@ class _WebAppRootState extends State<WebAppRoot> {
             const WebShellItem(
               label: 'Tableau de bord',
               icon: Icons.dashboard_outlined,
-              page: HomeScreen(),
+              page: DashboardScreen(),
             ),
             WebShellItem(
               label: 'Agenda',
@@ -180,31 +197,40 @@ class _WebAppRootState extends State<WebAppRoot> {
                 onAddEvent: _onAddEvent,
               ),
             ),
-            WebShellItem(
-                label: 'Equipes',
-                icon: Icons.groups_rounded,
-                page: TeamsListScreen(
-                  managedTeamsIds: getManagedTeamsIds,
-                  onTeamTap: (context, team, isManager) {
-                    Navigator.of(context).push(
-                      MaterialPageRoute(
-                        builder: (_) => TeamDetailScreen(
-                          team: team,
-                          seasonId: context.read<AppSession>().selectedSeason?.ref?.id,
-                          isManager: isManager,
+            if(getManagedTeamsIds.isNotEmpty) ... [
+              WebShellItem(
+                  label: 'Equipes',
+                  icon: Icons.groups_rounded,
+                  page: TeamsListScreen(
+                    managedTeamsIds: getManagedTeamsIds,
+                    onTeamTap: (context, team, isManager) {
+                      Navigator.of(context).push(
+                        MaterialPageRoute(
+                          builder: (_) => TeamDetailScreen(
+                            team: team,
+                            seasonId: context.read<AppSession>().selectedSeason?.ref?.id,
+                            isManager: isManager,
+                          ),
                         ),
-                      ),
-                    );
-                  },
-                )
-            ),
+                      );
+                    },
+                  )
+              ),
+            ],
+
             const WebShellItem(
               label: 'Chat',
               icon: Icons.chat,
               page: ResponsiveChat(),
             ),
+            const WebShellItem(
+              label: 'Synchronisation',
+              icon: Icons.sync,
+              page: SyncScreen(),
+            ),
           ],
         ),
+
         if (_isLoading)
           Positioned.fill(
             child: AbsorbPointer(

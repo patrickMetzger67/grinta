@@ -49,6 +49,7 @@ class WebAsiUsbClient implements AsiUsbClient {
     return usb as JSObject;
   }
 
+  @override
   Future<AsiDeviceInfo?> requestDevicePermission() async {
     try {
       final options = JSObject()
@@ -121,6 +122,7 @@ class WebAsiUsbClient implements AsiUsbClient {
     await _promiseToFuture<JSAny?>(
       _usb.callMethod('open'.toJS),
     );
+
     return AsiSession(device: device);
   }
 
@@ -152,6 +154,32 @@ class WebAsiUsbClient implements AsiUsbClient {
     print('USB: endpoints prepared');
   }
 
+  int _extractBytesWritten(JSAny? result) {
+    final value = result?.dartify();
+
+    if (value == null) {
+      return 1;
+    }
+
+    if (value is num) {
+      return value.toInt();
+    }
+
+    if (value is Map) {
+      final bytesWritten = value['bytesWritten'];
+      if (bytesWritten is num) {
+        return bytesWritten.toInt();
+      }
+
+      final status = value['status'];
+      if (status == 'ok') {
+        return 1;
+      }
+    }
+
+    return 1;
+  }
+
   Future<void> _writeCommand(int command) async {
     print('WRITE: start cmd=0x${command.toRadixString(16)}');
 
@@ -170,9 +198,9 @@ class WebAsiUsbClient implements AsiUsbClient {
       },
     );
 
-    print('WRITE: result=$result');
+    print('WRITE: result=${result?.dartify()}');
 
-    final bytesWritten = (result?.dartify() as num?)?.toInt() ?? 0;
+    final bytesWritten = _extractBytesWritten(result);
     print('WRITE: bytesWritten=$bytesWritten');
 
     if (bytesWritten <= 0) {
@@ -202,6 +230,7 @@ class WebAsiUsbClient implements AsiUsbClient {
     );
 
     final dartList = result.dartify();
+
     if (dartList is! List) {
       throw Exception('Réponse USB invalide');
     }
@@ -213,6 +242,30 @@ class WebAsiUsbClient implements AsiUsbClient {
     );
 
     return Uint8List.fromList(values);
+  }
+
+  Future<Uint8List?> _tryReadUpTo(
+      int length, {
+        Duration timeout = const Duration(milliseconds: 900),
+      }) async {
+    try {
+      final data = await _readUpTo(
+        length,
+        timeout: timeout,
+      );
+
+      if (data.isEmpty) {
+        return null;
+      }
+
+      return data;
+    } on AsiDownloadTimeoutException catch (e) {
+      print('READ TIMEOUT treated as no data: $e');
+      return null;
+    } on TimeoutException catch (e) {
+      print('READ TIMEOUT treated as no data: $e');
+      return null;
+    }
   }
 
   Future<Uint8List> _readExact(int length) async {
@@ -236,6 +289,7 @@ class WebAsiUsbClient implements AsiUsbClient {
 
     while (DateTime.now().isBefore(deadline)) {
       final remaining = deadline.difference(DateTime.now());
+
       final effectiveTimeout = remaining.inMilliseconds <= 0
           ? const Duration(milliseconds: 1)
           : remaining;
@@ -258,7 +312,8 @@ class WebAsiUsbClient implements AsiUsbClient {
         return;
       } on AsiDownloadTimeoutException {
         break;
-      } catch (_) {
+      } catch (e) {
+        print('ACK ignored error: $e');
         await Future.delayed(const Duration(milliseconds: 60));
       }
     }
@@ -266,84 +321,62 @@ class WebAsiUsbClient implements AsiUsbClient {
     throw const AsiDownloadTimeoutException('Aucun ACK reçu');
   }
 
-  Future<Uint8List> _readChunkRobust(
-      int maxLength, {
-        int attempts = 6,
-        Duration perAttemptTimeout = const Duration(milliseconds: 800),
-      }) async {
-    Object? lastError;
-
-    for (int attempt = 0; attempt < attempts; attempt++) {
-      try {
-        final chunk = await _readUpTo(
-          maxLength,
-          timeout: perAttemptTimeout,
-        );
-
-        if (chunk.isNotEmpty) {
-          print('READ CHUNK OK attempt=$attempt len=${chunk.length}');
-          return chunk;
-        }
-
-        print('READ CHUNK EMPTY attempt=$attempt');
-      } catch (e) {
-        lastError = e;
-        print('READ CHUNK ERROR attempt=$attempt error=$e');
-
-        try {
-          await _prepareEndpoints();
-        } catch (_) {}
-      }
-
-      await Future.delayed(const Duration(milliseconds: 40));
-    }
-
-    if (lastError is AsiDownloadTimeoutException) {
-      throw lastError;
-    }
-
-    throw AsiDownloadTimeoutException(
-      'Impossible de lire un paquet de données dans le temps imparti',
-    );
-  }
-
   Future<Uint8List> _readFirstStreamChunkOrEmpty(int packetSize) async {
-    Object? lastError;
-
     for (int attempt = 0; attempt < 8; attempt++) {
-      try {
-        final chunk = await _readUpTo(
-          packetSize,
-          timeout: const Duration(milliseconds: 700),
-        );
+      final chunk = await _tryReadUpTo(
+        packetSize,
+        timeout: const Duration(milliseconds: 900),
+      );
 
-        print('FIRST STREAM CHUNK attempt=$attempt len=${chunk.length} raw=${_hex(chunk)}');
-
-        if (chunk.isEmpty) {
-          await Future.delayed(const Duration(milliseconds: 80));
-          continue;
-        }
-
-        if (chunk.length == 1 && chunk[0] == AsiProtocol.usbAck) {
-          print('FIRST STREAM: standalone ACK');
-          await Future.delayed(const Duration(milliseconds: 80));
-          continue;
-        }
-
-        return chunk;
-      } catch (e) {
-        lastError = e;
-        print('FIRST STREAM ERROR attempt=$attempt error=$e');
+      if (chunk == null || chunk.isEmpty) {
+        print('FIRST STREAM CHUNK empty attempt=$attempt');
+        await Future.delayed(const Duration(milliseconds: 80));
+        continue;
       }
 
-      await Future.delayed(const Duration(milliseconds: 80));
-    }
+      print(
+        'FIRST STREAM CHUNK attempt=$attempt len=${chunk.length} raw=${_hex(chunk)}',
+      );
 
-    if (lastError is AsiDownloadTimeoutException) {
-      throw lastError;
+      if (chunk.length == 1 && chunk[0] == AsiProtocol.usbAck) {
+        print('FIRST STREAM: standalone ACK');
+        await Future.delayed(const Duration(milliseconds: 80));
+        continue;
+      }
+
+      return chunk;
     }
 
     return Uint8List(0);
+  }
+
+  Future<Uint8List?> _readNextStreamChunkOrNull(int packetSize) async {
+    for (int attempt = 0; attempt < 3; attempt++) {
+      final chunk = await _tryReadUpTo(
+        packetSize,
+        timeout: const Duration(milliseconds: 900),
+      );
+
+      if (chunk == null || chunk.isEmpty) {
+        print('NEXT STREAM CHUNK empty attempt=$attempt');
+        await Future.delayed(const Duration(milliseconds: 60));
+        continue;
+      }
+
+      print(
+        'NEXT STREAM CHUNK attempt=$attempt len=${chunk.length} raw=${_hex(chunk)}',
+      );
+
+      if (chunk.length == 1 && chunk[0] == AsiProtocol.usbAck) {
+        print('NEXT STREAM: standalone ACK ignored');
+        await Future.delayed(const Duration(milliseconds: 60));
+        continue;
+      }
+
+      return chunk;
+    }
+
+    return null;
   }
 
   @override
@@ -364,6 +397,7 @@ class WebAsiUsbClient implements AsiUsbClient {
     final trimmed = bytes.takeWhile((b) => b != 0).toList();
 
     if (trimmed.isEmpty) return null;
+
     return String.fromCharCodes(trimmed);
   }
 
@@ -394,15 +428,17 @@ class WebAsiUsbClient implements AsiUsbClient {
       allBytes.addAll(firstChunk);
       print('STREAM TOTAL=${allBytes.length}');
 
-      if (firstChunk.length == packetSize) {
+      if (firstChunk.length < packetSize) {
+        print('STREAM END detected on first short packet');
+      } else {
         while (true) {
-          final chunk = await _readChunkRobust(packetSize);
-          print('STREAM CHUNK len=${chunk.length} raw=${_hex(chunk)}');
+          final chunk = await _readNextStreamChunkOrNull(packetSize);
 
-          if (chunk.isEmpty) {
-            throw const AsiDownloadTimeoutException(
-              'Chunk vide pendant le stream',
+          if (chunk == null || chunk.isEmpty) {
+            print(
+              'STREAM END detected by timeout/no more data after ${allBytes.length} bytes',
             );
+            break;
           }
 
           allBytes.addAll(chunk);
@@ -413,12 +449,17 @@ class WebAsiUsbClient implements AsiUsbClient {
             break;
           }
         }
-      } else {
-        print('STREAM END detected on first short packet');
+      }
+
+      if (allBytes.isEmpty) {
+        print('DOWNLOAD: aucune donnée disponible');
+        return Uint8List(0);
       }
 
       if (allBytes.length <= 32) {
-        throw Exception('Flux trop court pour contenir données + hash');
+        throw Exception(
+          'Flux trop court pour contenir données + hash: ${allBytes.length} octets',
+        );
       }
 
       final data = Uint8List.fromList(

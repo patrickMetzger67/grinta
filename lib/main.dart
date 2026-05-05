@@ -4,12 +4,12 @@ import 'package:firebase_analytics/firebase_analytics.dart';
 import 'package:firebase_auth/firebase_auth.dart' as firebase_auth;
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
+import 'package:grinta/screen/dashboardScreen.dart';
 import 'package:provider/provider.dart';
 import 'package:stream_chat_flutter/stream_chat_flutter.dart';
 import 'package:stream_chat_localizations/stream_chat_localizations.dart';
 
 import 'firebase_options.dart';
-import 'homeScreen.dart';
 import 'l10n/app_localizations.dart';
 import 'login_screen.dart';
 import 'package:grinta/provider/appSession.dart';
@@ -104,7 +104,7 @@ class _MyAppState extends State<MyApp> {
       home: AuthGate(client: _streamChatClient),
       routes: {
         '/login': (context) => const LoginScreen(),
-        '/home': (context) => kIsWeb ? const WebAppRoot() : const HomeScreen(),
+        '/home': (context) => kIsWeb ? const WebAppRoot() : const DashboardScreen(),
         '/product': (context) => const ProductScreen(),
         '/cart': (context) => const CartScreen(),
       },
@@ -267,7 +267,7 @@ class _AuthGateState extends State<AuthGate> {
               return const WebAppRoot();
             }
 
-            return const HomeScreen();
+            return const DashboardScreen();
           },
         );
       },

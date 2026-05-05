@@ -26,6 +26,24 @@ class MatchService {
     }
   }
 
+  Stream<List<Match>> streamMatchesByTeamIdBetweenDates({
+    required String teamId,
+    required Timestamp start,
+    required Timestamp end,
+  }) {
+    return _collection
+        .where(keyMatchTeams, arrayContains: teamId)
+        .where(keyMatchTimestamp, isGreaterThanOrEqualTo: start)
+        .where(keyMatchTimestamp, isLessThan: end)
+        .orderBy(keyMatchTimestamp)
+        .snapshots()
+        .map((snapshot) {
+      return snapshot.docs
+          .map((doc) => Match.fromDocumentSnapshot(doc))
+          .toList();
+    });
+  }
+
   /// READ ONE
   Future<Match?> getMatchById(String matchId) async {
     try {

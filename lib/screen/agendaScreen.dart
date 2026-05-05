@@ -1,7 +1,11 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 
 import '../model/agendaItem.dart';
+import '../model/season.dart';
+import '../model/tracker/team_workload_summary.dart';
+import '../provider/appSession.dart';
 import '../util/app_theme.dart';
 import '../widget/activity_rings_card.dart';
 import '../widget/agendaMatchRow.dart';
@@ -2151,6 +2155,28 @@ class _AgendaItemCard extends StatelessWidget {
     final accent = _typeColor(context, item.type);
     final icon = _typeIcon(item.type);
 
+
+    final List<String> managedTeamsIds =
+    context.select<AppSession, List<String>>(
+          (session) => session.managedTeamsIdsForSelectedSeason,
+    );
+
+    Season? currentSeason = context.watch<AppSession>().selectedSeason;
+    String? currentPlayerId = context.watch<AppSession>().selectedPlayerId;
+
+
+    print('currentPlayerId=$currentPlayerId');
+
+
+    TeamPlayerMetricScores? teamPlayerMetricScores;
+    if(item.teamWorkloadSummary != null ) {
+      for(var pm in item.teamWorkloadSummary!.playerScores) {
+        if(pm.playerId == currentPlayerId) {
+          teamPlayerMetricScores = pm;
+        }
+      }
+    }
+
     return Container(
       width: double.infinity,
       clipBehavior: Clip.antiAlias,
@@ -2200,89 +2226,14 @@ class _AgendaItemCard extends StatelessWidget {
                 ],
               ],
             ),
-            const SizedBox(height: 10),
-            SizedBox(
-              width: double.infinity,
-              height: 80,
-              child: ActivityRingsCard.detailed(
-                showWorkload: true,
-                workloadScore: 87.5,
-                workloadLabel: 'Workload',
-                workloadUnit: 'pts',
-                workloadColor: Colors.orange,
-                showLegend: true,
-                embedded: true,
-                backgroundColor: Colors.black,
-                padding: const EdgeInsets.all(4),
-                rings: [
-                  ActivityRingItem(
-                    label: 'Distance',
-                    value: 8.4,
-                    goal: 10,
-                    unit: 'km',
-                    color: Colors.greenAccent,
-                    trackColor: Colors.greenAccent.withOpacity(0.18),
-                    icon: Icons.directions_run,
-                  ),
-                  ActivityRingItem(
-                    label: 'Durée',
-                    value: 52,
-                    goal: 60,
-                    unit: 'min',
-                    color: Colors.blueAccent,
-                    trackColor: Colors.blueAccent.withOpacity(0.18),
-                    icon: Icons.timer,
-                  ),
-                  ActivityRingItem(
-                    label: 'Sprints',
-                    value: 52,
-                    goal: 60,
-                    unit: 'min',
-                    color: Colors.redAccent,
-                    trackColor: Colors.redAccent.withOpacity(0.18),
-                    icon: Icons.timer,
-                  ),
-                ],
-              ),
-            ),
-            /*
-            SizedBox(
-              width: 55,
-              height: 55,
-              child: ActivityRingsCard.compact(
-                rings: const [
-                  ActivityRingItem(
-                    label: 'Bouger',
-                    value: 113,
-                    goal: 600,
-                    unit: 'KCAL',
-                    color: Color(0xFFFF2D55),
-                    trackColor: Color(0xFF4B1322),
-                    icon: Icons.arrow_forward,
-                  ),
-                  ActivityRingItem(
-                    label: 'M’entraîner',
-                    value: 6,
-                    goal: 60,
-                    unit: 'MIN',
-                    color: Color(0xFF9DFF00),
-                    trackColor: Color(0xFF1C4312),
-                    icon: Icons.fast_forward,
-                  ),
-                  ActivityRingItem(
-                    label: 'Me lever',
-                    value: 6,
-                    goal: 12,
-                    unit: 'H',
-                    color: Color(0xFF28F0FF),
-                    trackColor: Color(0xFF103845),
-                    icon: Icons.north,
-                  ),
-                ],
-              ),
-            ),
-            */
-
+            if(item.withTracker && teamPlayerMetricScores != null) ... [
+              const SizedBox(height: 10),
+              activityRing(context: context, teamPlayerMetricScores: teamPlayerMetricScores, teamWorkloadSummary: item.teamWorkloadSummary!),
+            ],
+            if(item.withTracker && teamPlayerMetricScores == null && item.teamWorkloadSummary != null) ... [
+              const SizedBox(height: 10),
+              activityRing(context: context, teamPlayerMetricScores: teamPlayerMetricScores, teamWorkloadSummary: item.teamWorkloadSummary!),
+            ],
             if (item.match != null) ...[
               const SizedBox(height: 10),
               AgendaMatchRow(match: item.match!),
@@ -2292,6 +2243,96 @@ class _AgendaItemCard extends StatelessWidget {
       ),
     );
   }
+
+  Widget activityRing({required BuildContext context,
+    required TeamPlayerMetricScores? teamPlayerMetricScores,
+    required TeamWorkloadSummary? teamWorkloadSummary,
+  }) {
+
+    final colors = context.appColors;
+
+    double charge = 0.0;
+    double distance = 0.0;
+    double tpsHauteVitesse = 0.0;
+    double sprints = 0.0;
+    double ms2 = 0.0;
+
+    print('dans activityRing = ${teamWorkloadSummary!.eventId}');
+
+    if(teamPlayerMetricScores != null) {
+      charge = teamPlayerMetricScores.getMetric("workloadScore")!.value;
+      distance = teamPlayerMetricScores.getMetric("distanceKm")!.value;
+      tpsHauteVitesse = teamPlayerMetricScores.getMetric("highSpeedDuration")!.value;
+      sprints = teamPlayerMetricScores.getMetric("sprintCount")!.value;
+      ms2 = teamPlayerMetricScores.getMetric("maxAccelerationMps2")!.value;
+    } else {
+      charge = teamWorkloadSummary!.averageWorkloadScore;
+      distance = teamWorkloadSummary.metricStats['distanceKm']!.mean;
+      tpsHauteVitesse = teamWorkloadSummary.metricStats['highSpeedDuration']!.mean;
+      sprints = teamWorkloadSummary.metricStats['sprintCount']!.mean;
+      ms2 = teamWorkloadSummary.metricStats['maxAccelerationMps2']!.mean;
+    }
+
+    print('charge = $charge');
+
+
+    return SizedBox(
+      width: double.infinity,
+      height: 80,
+      child: ActivityRingsCard.detailed(
+        showWorkload: true,
+        workloadScore: charge,
+        workloadLabel: 'Charge',
+        workloadUnit: 'pts',
+        workloadColor: Colors.orange,
+        showLegend: true,
+        embedded: true,
+        backgroundColor: Colors.black,
+        padding: const EdgeInsets.all(4),
+        withgoal: false,
+        rings: [
+          ActivityRingItem(
+            label: 'Distance',
+            value: distance,
+            goal: item.teamWorkloadSummary!.metricStats["distanceKm"]!.max,
+            unit: 'km',
+            color: colors.success,
+            trackColor: Colors.greenAccent.withOpacity(0.18),
+            icon: Icons.directions_run,
+          ),
+          ActivityRingItem(
+            label: 'Tps haute vitesse',
+            value: tpsHauteVitesse,
+            goal: item.teamWorkloadSummary!.metricStats["highSpeedDuration"]!.max,
+            unit: 's',
+            color: colors.primary,
+            trackColor: Colors.blueAccent.withOpacity(0.18),
+            icon: Icons.timer,
+          ),
+          ActivityRingItem(
+            label: 'Sprints',
+            value: sprints,
+            goal: item.teamWorkloadSummary!.metricStats["sprintCount"]!.max,
+            unit: 'nb',
+            color: colors.warning,
+            trackColor: Colors.redAccent.withOpacity(0.18),
+            icon: Icons.speed,
+          ),
+          ActivityRingItem(
+            label: 'Accélation max: 4m/s2',
+            value: ms2,
+            goal: item.teamWorkloadSummary!.metricStats["maxAccelerationMps2"]!.max,
+            unit: 'm/s2',
+            color: colors.danger,
+            trackColor: Colors.redAccent.withOpacity(0.18),
+            icon: Icons.speed,
+          ),
+        ],
+      ),
+    );
+  }
+
+
 }
 
 class _AgendaLoadingView extends StatelessWidget {
