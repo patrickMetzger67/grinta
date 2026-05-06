@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:grinta/util/app_theme.dart';
+import '../util/app_theme.dart';
 
 class BackButtonStyled extends StatelessWidget {
   const BackButtonStyled({super.key});

@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:grinta/model/player.dart';
 import 'package:grinta/model/season.dart';
-import 'package:grinta/util/app_theme.dart';
+import '../util/app_theme.dart';
 
 import '../provider/appSession.dart';
 

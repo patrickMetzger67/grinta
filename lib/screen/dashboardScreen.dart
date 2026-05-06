@@ -4,11 +4,14 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:grinta/provider/appSession.dart';
 import 'package:grinta/services/clubService.dart';
+import 'package:grinta/services/matchCompoService.dart';
 import 'package:grinta/services/teamWorkloadSummaryService.dart';
+import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 
 import '../model/activityMetrics.dart';
 import '../model/match.dart' as match_model;
+import '../model/matchCompo.dart';
 import '../model/season.dart';
 import '../model/team.dart';
 import '../model/training.dart';
@@ -17,12 +20,23 @@ import '../services/teamService.dart';
 import '../services/trainingService.dart';
 import '../util/app_theme.dart';
 import '../widget/activity_rings_card.dart';
+import '../widget/agendaMatchRow.dart';
 import '../widget/metrics_panel.dart';
+import 'match_detail_screen.dart';
 
 enum DashboardPeriod {
   week,
   month,
   custom,
+}
+enum DashboardStatsType {
+  matches,
+  trainings,
+}
+
+enum DashboardWhereType {
+  player,
+  team,
 }
 
 enum _MatchOutcome {
@@ -42,6 +56,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
   final TeamService _teamService = TeamService();
   final MatchService _matchService = MatchService();
   final TrainingService _trainingService = TrainingService();
+  final MatchCompoService _matchCompoService = MatchCompoService();
 
   String? _selectedTeamId;
   Season? currentSeason;
@@ -49,6 +64,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
   String? currentUserId;
 
   DashboardPeriod _selectedPeriod = DashboardPeriod.week;
+  DashboardStatsType _selectedStatsType = DashboardStatsType.trainings;
+  DashboardWhereType _selectedStatsWhere = DashboardWhereType.player;
   DateTimeRange? _customRange;
 
   Future<void> _logOpenProduct() async {
@@ -321,7 +338,26 @@ class _DashboardScreenState extends State<DashboardScreen> {
             textTheme: textTheme,
             isPhone: isPhone,
           ),
+
+          SizedBox(height: isPhone ? 12 : 14),
+
+          _buildStatsTypeSelector(
+            context: context,
+            colors: colors,
+            textTheme: textTheme,
+            isPhone: isPhone,
+          ),
+
           SizedBox(height: isPhone ? 14 : 18),
+
+          _buildStatsWhereSelector(
+            context: context,
+            colors: colors,
+            textTheme: textTheme,
+            isPhone: isPhone,
+          ),
+          SizedBox(height: isPhone ? 14 : 18),
+
           _buildStatsStream(
             context: context,
             colors: colors,
@@ -329,9 +365,118 @@ class _DashboardScreenState extends State<DashboardScreen> {
             teamId: teamId,
             playerId: playerId,
             managedTeamsIds: managedTeamsIds,
+            statsType: _selectedStatsType,
+            whereType: _selectedStatsWhere,
           ),
         ],
       ),
+    );
+  }
+  Widget _buildStatsTypeSelector({
+    required BuildContext context,
+    required AppColors colors,
+    required TextTheme textTheme,
+    required bool isPhone,
+  }) {
+    final List<Widget> buttons = [
+      _PeriodChip(
+        label: 'Entraînements',
+        selected: _selectedStatsType == DashboardStatsType.trainings,
+        onTap: () {
+          setState(() {
+            _selectedStatsType = DashboardStatsType.trainings;
+          });
+        },
+      ),
+      _PeriodChip(
+        label: 'Matchs',
+        selected: _selectedStatsType == DashboardStatsType.matches,
+        onTap: () {
+          setState(() {
+            _selectedStatsType = DashboardStatsType.matches;
+          });
+        },
+      ),
+    ];
+
+    final Widget buttonsContent = isPhone
+        ? SingleChildScrollView(
+      scrollDirection: Axis.horizontal,
+      physics: const BouncingScrollPhysics(),
+      child: Row(
+        children: [
+          for (int i = 0; i < buttons.length; i++) ...[
+            buttons[i],
+            if (i < buttons.length - 1) const SizedBox(width: 8),
+          ],
+        ],
+      ),
+    )
+        : Wrap(
+      spacing: 10,
+      runSpacing: 10,
+      children: buttons,
+    );
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        buttonsContent,
+      ],
+    );
+  }
+
+  Widget _buildStatsWhereSelector({
+    required BuildContext context,
+    required AppColors colors,
+    required TextTheme textTheme,
+    required bool isPhone,
+  }) {
+    final List<Widget> buttons = [
+      _PeriodChip(
+        label: 'Joueur',
+        selected: _selectedStatsWhere == DashboardWhereType.player,
+        onTap: () {
+          setState(() {
+            _selectedStatsWhere = DashboardWhereType.player;
+          });
+        },
+      ),
+      _PeriodChip(
+        label: 'Equipe',
+        selected: _selectedStatsWhere == DashboardWhereType.team,
+        onTap: () {
+          setState(() {
+            _selectedStatsWhere = DashboardWhereType.team;
+          });
+        },
+      ),
+    ];
+
+    final Widget buttonsContent = isPhone
+        ? SingleChildScrollView(
+      scrollDirection: Axis.horizontal,
+      physics: const BouncingScrollPhysics(),
+      child: Row(
+        children: [
+          for (int i = 0; i < buttons.length; i++) ...[
+            buttons[i],
+            if (i < buttons.length - 1) const SizedBox(width: 8),
+          ],
+        ],
+      ),
+    )
+        : Wrap(
+      spacing: 10,
+      runSpacing: 10,
+      children: buttons,
+    );
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        buttonsContent,
+      ],
     );
   }
 
@@ -342,6 +487,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
     required String? teamId,
     required String? playerId,
     required List<String>? managedTeamsIds,
+    required DashboardStatsType statsType,
+    required DashboardWhereType whereType,
   }) {
     if (teamId == null || teamId.isEmpty) {
       return const _InfoMessage(
@@ -355,40 +502,178 @@ class _DashboardScreenState extends State<DashboardScreen> {
     final Timestamp start = Timestamp.fromDate(range.start);
     final Timestamp end = Timestamp.fromDate(range.end);
 
-    return StreamBuilder<List<match_model.Match>>(
-      stream: _matchService.streamMatchesByTeamIdBetweenDates(
+    if (statsType == DashboardStatsType.matches) {
+      return StreamBuilder<List<match_model.Match>>(
+        stream: _matchService.streamMatchesByTeamIdBetweenDates(
+          teamId: teamId,
+          start: start,
+          end: end,
+        ),
+        builder: (context, matchSnapshot) {
+          if (matchSnapshot.hasError) {
+            return const _InfoMessage(
+              title: 'Matchs',
+              message: 'Erreur lors du chargement des matchs.',
+              isError: true,
+            );
+          }
+
+          if (!matchSnapshot.hasData) {
+            return _buildStatsLoading(
+              context: context,
+              colors: colors,
+              textTheme: textTheme,
+            );
+          }
+
+          final List<match_model.Match> matchesTmp =
+              matchSnapshot.data ?? <match_model.Match>[];
+
+          return FutureBuilder<List<match_model.Match>>(
+            future: _filterMatchesByWhereType(
+              matches: matchesTmp,
+              whereType: whereType,
+              playerId: playerId,
+            ),
+            builder: (context, filteredMatchesSnapshot) {
+              if (filteredMatchesSnapshot.connectionState ==
+                  ConnectionState.waiting) {
+                return _buildStatsLoading(
+                  context: context,
+                  colors: colors,
+                  textTheme: textTheme,
+                );
+              }
+
+              if (filteredMatchesSnapshot.hasError) {
+                return const _InfoMessage(
+                  title: 'Matchs',
+                  message: 'Erreur lors du filtrage des matchs.',
+                  isError: true,
+                );
+              }
+
+              final List<match_model.Match> matches =
+                  filteredMatchesSnapshot.data ?? <match_model.Match>[];
+
+              return FutureBuilder<_ActivityStats>(
+                future: _buildMatchStats(
+                  matches: matches,
+                  teamId: teamId,
+                ),
+                builder: (context, statsSnapshot) {
+                  if (statsSnapshot.connectionState ==
+                      ConnectionState.waiting) {
+                    return _buildStatsLoading(
+                      context: context,
+                      colors: colors,
+                      textTheme: textTheme,
+                    );
+                  }
+
+                  if (statsSnapshot.hasError) {
+                    return const _InfoMessage(
+                      title: 'Matchs',
+                      message:
+                      'Erreur lors du calcul des statistiques des matchs.',
+                      isError: true,
+                    );
+                  }
+
+                  final _ActivityStats matchStats = statsSnapshot.data ??
+                      const _ActivityStats(
+                        done: 0,
+                        planned: 0,
+                        presentPecent: 0.0
+                      );
+
+                  return _buildSingleStatResponsive(
+                    context: context,
+                    colors: colors,
+                    textTheme: textTheme,
+                    icon: Icons.sports_soccer_rounded,
+                    stats: matchStats,
+                    label: 'Matchs',
+                    accentColor: colors.danger,
+                    matches: matches,
+                  );
+                },
+              );
+            },
+          );
+        },
+      );
+    }
+
+    return StreamBuilder<List<Training>>(
+      stream: _trainingService.streamTrainingsByTeamIdBetweenDates(
         teamId: teamId,
         start: start,
         end: end,
       ),
-      builder: (context, matchSnapshot) {
-        if (matchSnapshot.hasError) {
+      builder: (context, trainingSnapshot) {
+        if (trainingSnapshot.hasError) {
           return const _InfoMessage(
-            title: 'Statistiques',
-            message: 'Erreur lors du chargement des matchs.',
+            title: 'Entraînements',
+            message: 'Erreur lors du chargement des entraînements.',
             isError: true,
           );
         }
 
-        return StreamBuilder<List<Training>>(
-          stream: _trainingService.streamTrainingsByTeamIdBetweenDates(
-            teamId: teamId,
-            start: start,
-            end: end,
-          ),
-          builder: (context, trainingSnapshot) {
-            if (trainingSnapshot.hasError) {
-              return const _InfoMessage(
-                title: 'Statistiques',
-                message: 'Erreur lors du chargement des entraînements.',
-                isError: true,
-              );
+        if (!trainingSnapshot.hasData) {
+          return _buildStatsLoading(
+            context: context,
+            colors: colors,
+            textTheme: textTheme,
+          );
+        }
+
+        final List<Training> trainingsTmp = trainingSnapshot.data ?? <Training>[];
+        List<Training> trainings = [];
+
+        double passed = 0;
+        double present = 0;
+
+        for(var t in trainingsTmp) {
+          if(t.dateTime!.millisecondsSinceEpoch < Timestamp.now().millisecondsSinceEpoch) {
+            passed++;
+          }
+          if(_selectedStatsWhere == DashboardWhereType.player) {
+            for(var p in t.playerTraining) {
+              if(p.playerId == playerId && (p.presenceType == PresenceType.present || p.presenceType == PresenceType.late)) {
+                if(t.dateTime!.millisecondsSinceEpoch < Timestamp.now().millisecondsSinceEpoch) {
+                  present++;
+                }
+                trainings.add(t);
+              }
             }
+          } else {
+            trainings.add(t);
+          }
+        }
+        print('passed=$passed present=$present');
+        double presentPresent = (passed >0)?(present /passed) * 100:0;
 
-            final bool isLoading =
-                !matchSnapshot.hasData || !trainingSnapshot.hasData;
+        final Future<_ActivityStats> trainingStatsFuture =
+        playerId == null || playerId.isEmpty
+            ? Future<_ActivityStats>.value(
+          const _ActivityStats(
+            done: 0,
+            planned: 0,
+            presentPecent: 0.0,
+          ),
+        )
+            : _buildTrainingStats(
+          trainings: trainings,
+          playerId: playerId,
+          managedTeamsIds: managedTeamsIds,
+          presentPercent: presentPresent
+        );
 
-            if (isLoading) {
+        return FutureBuilder<_ActivityStats>(
+          future: trainingStatsFuture,
+          builder: (context, statsSnapshot) {
+            if (statsSnapshot.connectionState == ConnectionState.waiting) {
               return _buildStatsLoading(
                 context: context,
                 colors: colors,
@@ -396,84 +681,158 @@ class _DashboardScreenState extends State<DashboardScreen> {
               );
             }
 
-            final List<match_model.Match> matches =
-                matchSnapshot.data ?? <match_model.Match>[];
+            if (statsSnapshot.hasError) {
+              return const _InfoMessage(
+                title: 'Entraînements',
+                message:
+                'Erreur lors du calcul des statistiques des entraînements.',
+                isError: true,
+              );
+            }
 
-            final List<Training> trainings =
-                trainingSnapshot.data ?? <Training>[];
-
-            final Future<_ActivityStats> matchStatsFuture = _buildMatchStats(
-              matches: matches,
-              teamId: teamId,
-            );
-
-            final Future<_ActivityStats> trainingStatsFuture =
-            playerId == null || playerId.isEmpty
-                ? Future<_ActivityStats>.value(
-              const _ActivityStats(
-                done: 0,
-                planned: 0,
-              ),
-            )
-                : _buildTrainingStats(
-              trainings: trainings,
-              playerId: playerId,
-              managedTeamsIds: managedTeamsIds,
-            );
-
-            return FutureBuilder<List<_ActivityStats>>(
-              future: Future.wait<_ActivityStats>([
-                matchStatsFuture,
-                trainingStatsFuture,
-              ]),
-              builder: (context, statsSnapshot) {
-                if (statsSnapshot.connectionState == ConnectionState.waiting) {
-                  return _buildStatsLoading(
-                    context: context,
-                    colors: colors,
-                    textTheme: textTheme,
-                  );
-                }
-
-                if (statsSnapshot.hasError) {
-                  return const _InfoMessage(
-                    title: 'Statistiques',
-                    message: 'Erreur lors du calcul des statistiques.',
-                    isError: true,
-                  );
-                }
-
-                final List<_ActivityStats> stats =
-                    statsSnapshot.data ?? <_ActivityStats>[];
-
-                final _ActivityStats matchStats = stats.isNotEmpty
-                    ? stats[0]
-                    : const _ActivityStats(
+            final _ActivityStats trainingStats = statsSnapshot.data ??
+                const _ActivityStats(
                   done: 0,
                   planned: 0,
+                  presentPecent: 0.0,
                 );
 
-                final _ActivityStats trainingStats = stats.length > 1
-                    ? stats[1]
-                    : const _ActivityStats(
-                  done: 0,
-                  planned: 0,
-                );
-
-                return _buildStatsResponsive(
-                  context: context,
-                  colors: colors,
-                  textTheme: textTheme,
-                  matchStats: matchStats,
-                  trainingStats: trainingStats,
-                  physicalPrepStats: const _ActivityStats(
-                    done: 0,
-                    planned: 0,
-                  ),
-                );
-              },
+            return _buildSingleStatResponsive(
+              context: context,
+              colors: colors,
+              textTheme: textTheme,
+              icon: Icons.fitness_center_rounded,
+              stats: trainingStats,
+              label: 'Entraînements',
+              accentColor: colors.primary,
+              matches: const <match_model.Match>[],
             );
           },
+        );
+      },
+    );
+  }
+
+  Future<List<match_model.Match>> _filterMatchesByWhereType({
+    required List<match_model.Match> matches,
+    required DashboardWhereType whereType,
+    required String? playerId,
+  }) async {
+    if (whereType != DashboardWhereType.player) {
+      return matches;
+    }
+
+    if (playerId == null || playerId.isEmpty) {
+      return <match_model.Match>[];
+    }
+
+    final List<match_model.Match> filteredMatches = <match_model.Match>[];
+
+    for (final match in matches) {
+      final String? matchId = match.id;
+
+      if (matchId == null || matchId.isEmpty) {
+        continue;
+      }
+
+      final matchCompos =
+      await _matchCompoService.getMatchComposByMatchId(matchId);
+
+      bool playerFound = false;
+
+      for (final compo in matchCompos) {
+        if (_matchCompoContainsPlayer(
+          matchCompo: compo,
+          playerId: playerId,
+        )) {
+          playerFound = true;
+          break;
+        }
+      }
+
+      if (playerFound) {
+        filteredMatches.add(match);
+      }
+    }
+
+    return filteredMatches;
+  }
+
+  bool _matchCompoContainsPlayer({
+    required MatchCompo matchCompo,
+    required String playerId,
+  }) {
+
+    try {
+
+      for(var p in matchCompo.substitute!) {
+        if(p.playerID == playerId) return true;
+      }
+
+      for(var p in matchCompo.goalkeeper!) {
+        if(p.playerID == playerId) return true;
+      }
+
+      for(var p in matchCompo.defender!) {
+        if(p.playerID == playerId) return true;
+      }
+
+      for(var p in matchCompo.midfielderDefensive!) {
+        if(p.playerID == playerId) return true;
+      }
+      for(var p in matchCompo.midfielder!) {
+        if(p.playerID == playerId) return true;
+      }
+      for(var p in matchCompo.midfielderAttaking!) {
+        if(p.playerID == playerId) return true;
+      }
+      for(var p in matchCompo.stricker!) {
+        if(p.playerID == playerId) return true;
+      }
+
+    } catch (_) {}
+    return false;
+  }
+
+  Widget _buildSingleStatResponsive({
+    required BuildContext context,
+    required AppColors colors,
+    required TextTheme textTheme,
+    required IconData icon,
+    required _ActivityStats stats,
+    required String label,
+    required Color accentColor,
+    required List<match_model.Match> matches,
+  }) {
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final double width = constraints.maxWidth;
+
+        if (width < 520) {
+          return _StatCompactCard(
+            icon: icon,
+            stats: stats,
+            label: label,
+            accentColor: accentColor,
+            fillWidth: true,
+            matches: matches,
+            type: _selectedStatsType,
+            where: _selectedStatsWhere,
+          );
+        }
+
+        return SizedBox(
+          width: double.infinity,
+          child: _StatCompactCard(
+            icon: icon,
+            stats: stats,
+            label: label,
+            accentColor: accentColor,
+            fillWidth: true,
+            matches: matches,
+            type: _selectedStatsType,
+            where: _selectedStatsWhere,
+          ),
         );
       },
     );
@@ -530,6 +889,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
       done: done,
       planned: planned,
       matchOutcomes: Map<_MatchOutcome, int>.unmodifiable(outcomes),
+      presentPecent: 0.0,
     );
   }
 
@@ -580,6 +940,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
     required List<Training> trainings,
     required String playerId,
     required List<String>? managedTeamsIds,
+    required double presentPercent,
     }) async {
     final DateTime now = DateTime.now();
 
@@ -619,7 +980,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
               break;
             }
             // si joueur non trouvé dans la liste et si l'équipe est managé par le user courrant alors on prend la moyenne de chaqye metrics
-            if(isPlayerFounded == false && managedTeamsIds!.contains(training.teamId)) {
+            if (!isPlayerFounded &&
+                (managedTeamsIds?.contains(training.teamId) ?? false)) {
 
             }
           }
@@ -641,6 +1003,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
       trainingMetrics: List<ActivityMetrics>.unmodifiable(
         trainingMetrics,
       ),
+      presentPecent: presentPercent,
     );
   }
   DateTime? _dateFromValue(dynamic value) {
@@ -817,133 +1180,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
     });
   }
 
-  Widget _buildStatsResponsive({
-    required BuildContext context,
-    required AppColors colors,
-    required TextTheme textTheme,
-    required _ActivityStats matchStats,
-    required _ActivityStats trainingStats,
-    required _ActivityStats physicalPrepStats,
-  }) {
-    return LayoutBuilder(
-      builder: (context, constraints) {
-        final double width = constraints.maxWidth;
-
-        if (width < 520) {
-          return SingleChildScrollView(
-            scrollDirection: Axis.horizontal,
-            physics: const BouncingScrollPhysics(),
-            child: Row(
-              children: [
-                _StatCompactCard(
-                  icon: Icons.sports_soccer_rounded,
-                  stats: matchStats,
-                  label: 'Matchs',
-                  accentColor: colors.danger,
-                  minWidth: 270,
-                ),
-                const SizedBox(width: 10),
-                _StatCompactCard(
-                  icon: Icons.fitness_center_rounded,
-                  stats: trainingStats,
-                  label: 'Entraînements',
-                  accentColor: colors.primary,
-                  minWidth: 285,
-                ),
-                if (physicalPrepStats.total > 0) ...[
-                  const SizedBox(width: 10),
-                  _StatCompactCard(
-                    icon: Icons.directions_run_rounded,
-                    stats: physicalPrepStats,
-                    label: 'Prépa physique',
-                    accentColor: colors.success,
-                    minWidth: 280,
-                  ),
-                ],
-              ],
-            ),
-          );
-        }
-
-        if (width < 850) {
-          return Wrap(
-            spacing: 10,
-            runSpacing: 10,
-            children: [
-              SizedBox(
-                width: (width - 10) / 2,
-                child: _StatCompactCard(
-                  icon: Icons.sports_soccer_rounded,
-                  stats: matchStats,
-                  label: 'Matchs',
-                  accentColor: colors.danger,
-                  fillWidth: true,
-                ),
-              ),
-              SizedBox(
-                width: (width - 10) / 2,
-                child: _StatCompactCard(
-                  icon: Icons.fitness_center_rounded,
-                  stats: trainingStats,
-                  label: 'Entraînements',
-                  accentColor: colors.primary,
-                  fillWidth: true,
-                ),
-              ),
-              if (physicalPrepStats.total > 0)
-                SizedBox(
-                  width: width,
-                  child: _StatCompactCard(
-                    icon: Icons.directions_run_rounded,
-                    stats: physicalPrepStats,
-                    label: 'Prépa physique',
-                    accentColor: colors.success,
-                    fillWidth: true,
-                  ),
-                ),
-            ],
-          );
-        }
-
-        return Row(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Expanded(
-              child: _StatCompactCard(
-                icon: Icons.sports_soccer_rounded,
-                stats: matchStats,
-                label: 'Matchs',
-                accentColor: colors.danger,
-                fillWidth: true,
-              ),
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: _StatCompactCard(
-                icon: Icons.fitness_center_rounded,
-                stats: trainingStats,
-                label: 'Entraînements',
-                accentColor: colors.primary,
-                fillWidth: true,
-              ),
-            ),
-            if (physicalPrepStats.total > 0) ...[
-              const SizedBox(width: 12),
-              Expanded(
-                child: _StatCompactCard(
-                  icon: Icons.directions_run_rounded,
-                  stats: physicalPrepStats,
-                  label: 'Prépa physique',
-                  accentColor: colors.success,
-                  fillWidth: true,
-                ),
-              ),
-            ],
-          ],
-        );
-      },
-    );
-  }
 
   Widget _buildTeamCard({
     required BuildContext context,
@@ -1224,12 +1460,14 @@ class _ActivityStats {
   const _ActivityStats({
     required this.done,
     required this.planned,
+    required this.presentPecent,
     this.matchOutcomes = const <_MatchOutcome, int>{},
     this.trainingMetrics = const <ActivityMetrics>[],
   });
 
   final int done;
   final int planned;
+  final double presentPecent;
   final Map<_MatchOutcome, int> matchOutcomes;
 
   /// Utilisé uniquement pour les entraînements.
@@ -1301,8 +1539,11 @@ class _StatCompactCard extends StatefulWidget {
     required this.stats,
     required this.label,
     required this.accentColor,
+    required this.matches,
     this.minWidth = 255,
     this.fillWidth = false,
+    required this.type,
+    required this.where,
   });
 
   final IconData icon;
@@ -1311,6 +1552,9 @@ class _StatCompactCard extends StatefulWidget {
   final Color accentColor;
   final double minWidth;
   final bool fillWidth;
+  final List<match_model.Match> matches;
+  final DashboardStatsType type;
+  final DashboardWhereType where;
 
   @override
   State<_StatCompactCard> createState() => _StatCompactCardState();
@@ -1358,6 +1602,9 @@ class _StatCompactCardState extends State<_StatCompactCard> {
               context: context,
               colors: colors,
               textTheme: textTheme,
+              presentPercent: widget.stats.presentPecent,
+              type: widget.type,
+              where: widget.where,
             ),
             const SizedBox(height: 9),
             _StatProgressBar(stats: widget.stats),
@@ -1367,6 +1614,12 @@ class _StatCompactCardState extends State<_StatCompactCard> {
             if (hasMatchOutcomes) ...[
               const SizedBox(height: 12),
               _MatchOutcomeRingsCard(stats: widget.stats),
+              const SizedBox(height: 12),
+              _buildMatchesList(
+                context: context,
+                colors: colors,
+                textTheme: textTheme,
+              ),
             ],
 
             if (hasTrainingMetrics) ...[
@@ -1383,11 +1636,127 @@ class _StatCompactCardState extends State<_StatCompactCard> {
     );
   }
 
-  Widget _buildHeader({
+  Widget _buildMatchesList({
     required BuildContext context,
     required AppColors colors,
     required TextTheme textTheme,
   }) {
+    if (widget.matches.isEmpty) {
+      return Text(
+        'Aucun match à afficher.',
+        style: textTheme.bodySmall?.copyWith(
+          color: colors.textSecondary,
+          fontWeight: FontWeight.w600,
+        ),
+      );
+    }
+
+    final List<match_model.Match> sortedMatches =
+    List<match_model.Match>.from(widget.matches);
+
+    sortedMatches.sort((a, b) {
+      final DateTime? dateA = _dateFromValue(a.timestamp);
+      final DateTime? dateB = _dateFromValue(b.timestamp);
+
+      final int millisA = dateA?.millisecondsSinceEpoch ?? 0;
+      final int millisB = dateB?.millisecondsSinceEpoch ?? 0;
+
+      return millisB.compareTo(millisA);
+    });
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          'Liste des matchs',
+          style: textTheme.bodyMedium?.copyWith(
+            color: colors.textPrimary,
+            fontWeight: FontWeight.w800,
+          ),
+        ),
+        const SizedBox(height: 10),
+
+        ListView.separated(
+          shrinkWrap: true,
+          physics: const NeverScrollableScrollPhysics(),
+          itemCount: sortedMatches.length,
+          separatorBuilder: (context, index) => const SizedBox(height: 10),
+          itemBuilder: (context, index) {
+            final match = sortedMatches[index];
+
+            return Material(
+              color: Colors.transparent,
+              child: InkWell(
+                borderRadius: BorderRadius.circular(16),
+                onTap: () {
+                  Navigator.of(context).push(
+                    MaterialPageRoute(
+                      fullscreenDialog: true,
+                      builder: (_) => MatchDetailScreen(
+                        match: match,
+                      ),
+                    ),
+                  );
+                },
+                child: Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 10,
+                    vertical: 12,
+                  ),
+                  decoration: BoxDecoration(
+                    color: colors.card,
+                    borderRadius: BorderRadius.circular(16),
+                    border: Border.all(
+                      color: colors.border,
+                    ),
+                  ),
+                  child: AgendaMatchRow(
+                    match: match,
+                    withDateTime: true,
+                  ),
+                ),
+              ),
+            );
+          },
+        ),
+      ],
+    );
+  }
+
+  DateTime? _dateFromValue(dynamic value) {
+    if (value == null) {
+      return null;
+    }
+
+    if (value is Timestamp) {
+      return value.toDate();
+    }
+
+    if (value is DateTime) {
+      return value;
+    }
+
+    return null;
+  }
+
+  Widget _buildHeader({
+    required BuildContext context,
+    required AppColors colors,
+    required TextTheme textTheme,
+    required double presentPercent,
+    required DashboardWhereType where,
+    required DashboardStatsType type,
+  }) {
+
+    final locale = Localizations.localeOf(context).toString();
+
+    final String formattedValue = NumberFormat.decimalPatternDigits(
+      locale: locale,
+      decimalDigits: 2,
+    ).format(presentPercent);
+
+
     return Row(
       mainAxisSize: widget.fillWidth ? MainAxisSize.max : MainAxisSize.min,
       children: [
@@ -1425,6 +1794,18 @@ class _StatCompactCardState extends State<_StatCompactCard> {
             ),
           ),
         ),
+        if (widget.stats.total > 0 && type == DashboardStatsType.trainings && where == DashboardWhereType.player) ...[
+          const SizedBox(width: 8),
+          Text(
+            'Tx de présence: ($formattedValue) %',
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: textTheme.bodyMedium?.copyWith(
+              color: (presentPercent > 50.0)?colors.success:colors.danger,
+              fontWeight: FontWeight.w800,
+            ),
+          ),
+        ],
       ],
     );
   }

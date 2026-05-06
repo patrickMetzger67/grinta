@@ -773,48 +773,6 @@ class _AgendaScreenState extends State<AgendaScreen> {
         physics: const AlwaysScrollableScrollPhysics(),
         padding: const EdgeInsets.only(bottom: 8),
         children: [
-          /*
-          Container(
-            padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              color: context.appColors.surface,
-              borderRadius: BorderRadius.circular(22),
-              border: Border.all(color: context.appColors.border),
-            ),
-            child: Row(
-              children: [
-
-                Container(
-                  width: 42,
-                  height: 42,
-                  alignment: Alignment.center,
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    color: context.appColors.primary,
-                  ),
-                  child: Text(
-                    '${_selectedDate.day}',
-                    style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                      color: Colors.white,
-                      fontWeight: FontWeight.w800,
-                    ),
-                  ),
-                ),
-                const SizedBox(width: 12),
-
-                Expanded(
-                  child: Text(
-                    _formatFullDate(_selectedDate),
-                    style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                      color: context.appColors.textPrimary,
-                      fontWeight: FontWeight.w700,
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
-          */
           const SizedBox(height: 12),
           if (dayItems.isEmpty)
             const _EmptyDayTile()
@@ -1835,69 +1793,6 @@ class _WeekCard extends StatelessWidget {
           ),
           child: Column(
             children: [
-              /*
-              Padding(
-                padding: EdgeInsets.fromLTRB(
-                  compact ? 14 : 18,
-                  compact ? 14 : 16,
-                  compact ? 14 : 18,
-                  12,
-                ),
-                child: Row(
-                  children: [
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            _formatWeekRange(weekStart, weekEnd),
-                            style: Theme.of(context)
-                                .textTheme
-                                .titleMedium
-                                ?.copyWith(
-                              color: colors.textPrimary,
-                              fontWeight: FontWeight.w700,
-                            ),
-                          ),
-                          const SizedBox(height: 4),
-                          Text(
-                            _weekDescription(items),
-                            style:
-                            Theme.of(context).textTheme.bodySmall?.copyWith(
-                              color: colors.textSecondary,
-                              fontWeight: FontWeight.w500,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                    if (isSelected)
-                      Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 10,
-                          vertical: 6,
-                        ),
-                        decoration: BoxDecoration(
-                          color: colors.primary.withOpacity(0.12),
-                          borderRadius: BorderRadius.circular(999),
-                          border: Border.all(
-                            color: colors.primary.withOpacity(0.24),
-                          ),
-                        ),
-                        child: Text(
-                          'Semaine focus',
-                          style:
-                          Theme.of(context).textTheme.bodySmall?.copyWith(
-                            color: colors.primary,
-                            fontWeight: FontWeight.w700,
-                          ),
-                        ),
-                      ),
-                  ],
-                ),
-              ),
-              */
-             // Divider(height: 1, color: colors.border),
               ...List.generate(7, (index) {
                 final day = weekStart.add(Duration(days: index));
                 final dayItems =
@@ -2165,9 +2060,6 @@ class _AgendaItemCard extends StatelessWidget {
     String? currentPlayerId = context.watch<AppSession>().selectedPlayerId;
 
 
-    print('currentPlayerId=$currentPlayerId');
-
-
     TeamPlayerMetricScores? teamPlayerMetricScores;
     if(item.teamWorkloadSummary != null ) {
       for(var pm in item.teamWorkloadSummary!.playerScores) {
@@ -2236,7 +2128,7 @@ class _AgendaItemCard extends StatelessWidget {
             ],
             if (item.match != null) ...[
               const SizedBox(height: 10),
-              AgendaMatchRow(match: item.match!),
+              AgendaMatchRow(match: item.match!,withDateTime: false,),
             ],
           ],
         ),
@@ -2257,7 +2149,6 @@ class _AgendaItemCard extends StatelessWidget {
     double sprints = 0.0;
     double ms2 = 0.0;
 
-    print('dans activityRing = ${teamWorkloadSummary!.eventId}');
 
     if(teamPlayerMetricScores != null) {
       charge = teamPlayerMetricScores.getMetric("workloadScore")!.value;

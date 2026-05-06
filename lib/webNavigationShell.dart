@@ -1,7 +1,7 @@
 import 'package:firebase_auth/firebase_auth.dart' as firebase_auth;
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
-import 'package:grinta/util/app_theme.dart';
+import 'util/app_theme.dart';
 
 import 'main.dart';
 
@@ -48,10 +48,31 @@ class _WebNavigationShellState extends State<WebNavigationShell> {
     _selectedIndex = widget.initialIndex.clamp(0, widget.items.length - 1);
   }
 
+  @override
+  void didUpdateWidget(covariant WebNavigationShell oldWidget) {
+    super.didUpdateWidget(oldWidget);
+
+    if (oldWidget.items.length != widget.items.length) {
+      setState(() {
+        _ensureValidSelectedIndex();
+      });
+    } else {
+      _ensureValidSelectedIndex();
+    }
+  }
+
   Future<void> _logout() async {
     if (_isSigningOut) return;
 
     final colors = context.appColors;
+
+
+    _ensureValidSelectedIndex();
+
+    final int safeSelectedIndex = _selectedIndex.clamp(
+      0,
+      widget.items.length - 1,
+    );
 
     final confirm = await showDialog<bool>(
       context: context,
@@ -130,6 +151,13 @@ class _WebNavigationShellState extends State<WebNavigationShell> {
 
     final colors = context.appColors;
 
+    _ensureValidSelectedIndex();
+
+    final int safeSelectedIndex = _selectedIndex.clamp(
+      0,
+      widget.items.length - 1,
+    );
+
     return Scaffold(
       backgroundColor: colors.background,
       body: SafeArea(
@@ -165,7 +193,7 @@ class _WebNavigationShellState extends State<WebNavigationShell> {
                         separatorBuilder: (_, __) => const SizedBox(height: 8),
                         itemBuilder: (context, index) {
                           final item = widget.items[index];
-                          final selected = index == _selectedIndex;
+                          final selected = index == safeSelectedIndex;
 
                           return _SidebarItem(
                             collapsed: _collapsed,
@@ -191,13 +219,28 @@ class _WebNavigationShellState extends State<WebNavigationShell> {
             Expanded(
               child: Container(
                 color: colors.background,
-                child: widget.items[_selectedIndex].page,
+                child: widget.items[safeSelectedIndex].page,
               ),
             ),
           ],
         ),
       ),
     );
+  }
+
+  void _ensureValidSelectedIndex() {
+    if (widget.items.isEmpty) {
+      _selectedIndex = 0;
+      return;
+    }
+
+    if (_selectedIndex < 0) {
+      _selectedIndex = 0;
+    }
+
+    if (_selectedIndex >= widget.items.length) {
+      _selectedIndex = widget.items.length - 1;
+    }
   }
 
   Widget _buildThemeToggle(BuildContext context) {

@@ -5,6 +5,7 @@ import 'package:firebase_auth/firebase_auth.dart' as firebase_auth;
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
 import 'package:grinta/screen/dashboardScreen.dart';
+import 'util/app_theme.dart';
 import 'package:provider/provider.dart';
 import 'package:stream_chat_flutter/stream_chat_flutter.dart';
 import 'package:stream_chat_localizations/stream_chat_localizations.dart';
@@ -13,7 +14,6 @@ import 'firebase_options.dart';
 import 'l10n/app_localizations.dart';
 import 'login_screen.dart';
 import 'package:grinta/provider/appSession.dart';
-import 'util/app_theme.dart';
 import 'package:grinta/widget/web_app_root.dart';
 
 const String kStreamApiKey = 'vg9g2zz7s2fc';

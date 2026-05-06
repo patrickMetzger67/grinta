@@ -6,7 +6,7 @@ import 'package:grinta/model/tracker/deviceOwner.dart';
 import 'package:grinta/screen/team_param_screen.dart';
 import 'package:grinta/services/playerService.dart';
 import 'package:grinta/services/teamService.dart';
-import 'package:grinta/util/app_theme.dart';
+import '../util/app_theme.dart';
 
 import '../model/tracker/owner.dart';
 import '../services/effectivesService.dart';

@@ -1,15 +1,19 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/painting.dart' show WebHtmlElementStrategy;
 import 'package:grinta/model/match.dart' as grinta_match;
+import 'package:intl/intl.dart';
 
 import '../util/app_theme.dart';
 
 class AgendaMatchRow extends StatelessWidget {
   final grinta_match.Match match;
+  final bool withDateTime;
 
   const AgendaMatchRow({
     super.key,
     required this.match,
+    required this.withDateTime,
   });
 
   @override
@@ -48,6 +52,38 @@ class AgendaMatchRow extends StatelessWidget {
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
+                if(withDateTime) ... [
+                  Row(
+                    crossAxisAlignment: CrossAxisAlignment.center,
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Text(
+                        formatTimestampFr(match.timestamp),
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                        textAlign: TextAlign.center,
+                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                          color: colors.textPrimary,
+                          fontWeight: FontWeight.w700,
+                        )
+                      ),
+                    ],
+                  ),
+                ],
+                Row(
+                  crossAxisAlignment: CrossAxisAlignment.center,
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Text(
+                      match.chType!,
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                      textAlign: TextAlign.center,
+                      style: textStyle,
+                    ),
+                  ],
+                ),
+                SizedBox(height: 5,),
                 Row(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
@@ -111,6 +147,19 @@ class AgendaMatchRow extends StatelessWidget {
         );
       },
     );
+  }
+
+  String formatTimestampFr(Timestamp? timestamp) {
+    if (timestamp == null) {
+      return '';
+    }
+
+    final DateTime date = timestamp.toDate();
+
+    final String dayPart = DateFormat('EEEE d MMMM', 'fr_FR').format(date);
+    final String hourPart = DateFormat('HH\'h\'mm', 'fr_FR').format(date);
+
+    return '$dayPart - $hourPart';
   }
 
   Widget _teamBlock({

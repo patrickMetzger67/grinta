@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:grinta/model/team.dart';
 import 'package:grinta/provider/appSession.dart';
-import 'package:grinta/util/app_theme.dart';
+import '../util/app_theme.dart';
 import 'package:provider/provider.dart';
 
 class TeamsListScreen extends StatefulWidget {

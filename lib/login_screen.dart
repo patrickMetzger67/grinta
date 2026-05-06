@@ -2,7 +2,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:grinta/provider/appSession.dart';
-import 'package:grinta/util/app_theme.dart';
+import 'util/app_theme.dart';
 import 'package:provider/provider.dart';
 
 import 'core/extensions/l10n_extension.dart';

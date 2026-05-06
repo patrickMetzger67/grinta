@@ -1,0 +1,1157 @@
+import 'package:flutter/material.dart';
+
+import '../model/matchStats.dart';
+import '../services/matchStatsService.dart';
+import '../util/app_theme.dart';
+import '../model/match.dart' as models;
+import '../widget/match_highlights_timeline.dart';
+import '../widget/match_tracker_stats_table.dart';
+
+class MatchDetailScreen extends StatelessWidget {
+  final models.Match match;
+
+  /// Permet de remplacer le contenu de l’onglet Compo.
+  final Widget Function(BuildContext context, models.Match match)? compoBuilder;
+
+  /// Permet de remplacer le contenu de l’onglet Temps forts.
+  final Widget Function(BuildContext context, models.Match match)? highlightsBuilder;
+
+  /// Permet de remplacer le contenu de l’onglet Statistiques.
+  final Widget Function(BuildContext context, models.Match match)? statsBuilder;
+
+  const MatchDetailScreen({
+    super.key,
+    required this.match,
+    this.compoBuilder,
+    this.highlightsBuilder,
+    this.statsBuilder,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = context.appColors;
+    final bool showStats = match.withTracker == true;
+
+    final tabs = <Widget>[
+      const _MatchDetailTab(
+        icon: Icons.groups_rounded,
+        label: 'Compo',
+        compactLabel: 'Compo',
+      ),
+      const _MatchDetailTab(
+        icon: Icons.flash_on_rounded,
+        label: 'Temps forts',
+        compactLabel: 'Temps',
+      ),
+      if (showStats)
+        const _MatchDetailTab(
+          icon: Icons.query_stats_rounded,
+          label: 'Statistiques',
+          compactLabel: 'Stats',
+        ),
+    ];
+
+    final views = <Widget>[
+      compoBuilder?.call(context, match) ?? _CompoTab(match: match),
+      highlightsBuilder?.call(context, match) ?? _HighlightsTab(match: match),
+      if (showStats) statsBuilder?.call(context, match) ?? _StatsTab(match: match),
+    ];
+
+    return DefaultTabController(
+      length: tabs.length,
+      child: Scaffold(
+        backgroundColor: colors.background,
+        body: SafeArea(
+          child: Column(
+            children: [
+              _TopBar(match: match),
+              Expanded(
+                child: LayoutBuilder(
+                  builder: (context, constraints) {
+                    final bool isWebLarge = constraints.maxWidth >= 900;
+                    final bool isTablet = constraints.maxWidth >= 600 && constraints.maxWidth < 900;
+
+                    final double horizontalPadding = isWebLarge
+                        ? 8
+                        : isTablet
+                        ? 10
+                        : 0;
+
+                    return Container(
+                      width: double.infinity,
+                      padding: EdgeInsets.symmetric(horizontal: horizontalPadding),
+                      child: Column(
+                        children: [
+                          _MatchHeader(match: match),
+                          const SizedBox(height: 8),
+                          _TabsContainer(tabs: tabs),
+                          const SizedBox(height: 12),
+                          Expanded(
+                            child: TabBarView(
+                              physics: const NeverScrollableScrollPhysics(),
+                              children: views,
+                            ),
+                          ),
+                        ],
+                      ),
+                    );
+                  },
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _TopBar extends StatelessWidget {
+  final models.Match match;
+
+  const _TopBar({
+    required this.match,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = context.appColors;
+
+    return Container(
+      padding: const EdgeInsets.fromLTRB(16, 8, 8, 8),
+      decoration: BoxDecoration(
+        color: colors.surface,
+        border: Border(
+          bottom: BorderSide(color: colors.border),
+        ),
+      ),
+      child: Row(
+        children: [
+          Expanded(
+            child: Text(
+              'Détail du match',
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: TextStyle(
+                color: colors.textPrimary,
+                fontSize: 20,
+                fontWeight: FontWeight.w800,
+              ),
+            ),
+          ),
+          IconButton(
+            tooltip: 'Fermer',
+            onPressed: () => Navigator.of(context).pop(),
+            icon: Icon(
+              Icons.close_rounded,
+              color: colors.textPrimary,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _TabsContainer extends StatelessWidget {
+  final List<Widget> tabs;
+
+  const _TabsContainer({
+    required this.tabs,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = context.appColors;
+
+    return Container(
+      width: double.infinity,
+      margin: const EdgeInsets.symmetric(horizontal: 8),
+      padding: const EdgeInsets.all(4),
+      decoration: BoxDecoration(
+        color: colors.surface,
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(color: colors.border),
+      ),
+      child: TabBar(
+        tabs: tabs,
+        isScrollable: false,
+        tabAlignment: TabAlignment.fill,
+        labelPadding: EdgeInsets.zero,
+        dividerColor: Colors.transparent,
+        indicatorSize: TabBarIndicatorSize.tab,
+        labelColor: Colors.white,
+        unselectedLabelColor: colors.textSecondary,
+        labelStyle: const TextStyle(
+          fontWeight: FontWeight.w800,
+          fontSize: 13,
+        ),
+        unselectedLabelStyle: const TextStyle(
+          fontWeight: FontWeight.w700,
+          fontSize: 13,
+        ),
+        indicator: BoxDecoration(
+          color: colors.primary,
+          borderRadius: BorderRadius.circular(14),
+        ),
+      ),
+    );
+  }
+}
+
+class _MatchDetailTab extends StatelessWidget {
+  final IconData icon;
+  final String label;
+  final String compactLabel;
+
+  const _MatchDetailTab({
+    required this.icon,
+    required this.label,
+    required this.compactLabel,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final bool compact = MediaQuery.of(context).size.width < 430;
+
+        return Tab(
+          height: 42,
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(
+                icon,
+                size: compact ? 17 : 18,
+              ),
+              const SizedBox(width: 5),
+              Flexible(
+                child: Text(
+                  compact ? compactLabel : label,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+}
+
+class _MatchHeader extends StatelessWidget {
+  final models.Match match;
+
+  const _MatchHeader({
+    required this.match,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = context.appColors;
+
+    final String team1 = _clean(match.team1, fallback: 'Équipe 1');
+    final String team2 = _clean(match.team2, fallback: 'Équipe 2');
+
+    final bool played = match.isMatchPlayed == true;
+    final bool isReport = match.isReport == true;
+
+    final String score = played
+        ? '${match.homeScore ?? 0} - ${match.outSideScore ?? 0}'
+        : '-';
+
+    return Container(
+      width: double.infinity,
+      margin: const EdgeInsets.fromLTRB(8, 12, 8, 0),
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: colors.card,
+        borderRadius: BorderRadius.circular(24),
+        border: Border.all(color: colors.border),
+      ),
+      child: Column(
+        children: [
+          Wrap(
+            spacing: 8,
+            runSpacing: 8,
+            alignment: WrapAlignment.center,
+            children: [
+              if (_clean(match.chType).isNotEmpty)
+                _InfoPill(
+                  icon: Icons.emoji_events_outlined,
+                  label: match.chType!,
+                ),
+              if ((match.day ?? 0) > 0)
+                _InfoPill(
+                  icon: Icons.calendar_view_day_rounded,
+                  label: 'Journée ${match.day}',
+                ),
+              if (_clean(match.tour).isNotEmpty)
+                _InfoPill(
+                  icon: Icons.flag_outlined,
+                  label: match.tour!,
+                ),
+              if (isReport)
+                _InfoPill(
+                  icon: Icons.warning_amber_rounded,
+                  label: 'Reporté',
+                  color: colors.warning,
+                ),
+            ],
+          ),
+          const SizedBox(height: 18),
+
+          LayoutBuilder(
+            builder: (context, constraints) {
+              final bool compact = constraints.maxWidth < 360;
+
+              if (compact) {
+                return Column(
+                  children: [
+                    _TeamBlock(
+                      name: team1,
+                      logoUrl: match.team1UrlLogo,
+                      affiliation: match.affiliationTeam1,
+                      compact: true,
+                    ),
+                    const SizedBox(height: 12),
+                    _ScoreBlock(
+                      score: score,
+                      tab: match.tab,
+                      played: played,
+                    ),
+                    const SizedBox(height: 12),
+                    _TeamBlock(
+                      name: team2,
+                      logoUrl: match.team2UrlLogo,
+                      affiliation: match.affiliationTeam2,
+                      compact: true,
+                    ),
+                  ],
+                );
+              }
+
+              return Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Expanded(
+                    child: _TeamBlock(
+                      name: team1,
+                      logoUrl: match.team1UrlLogo,
+                      affiliation: match.affiliationTeam1,
+                    ),
+                  ),
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 12),
+                    child: _ScoreBlock(
+                      score: score,
+                      tab: match.tab,
+                      played: played,
+                    ),
+                  ),
+                  Expanded(
+                    child: _TeamBlock(
+                      name: team2,
+                      logoUrl: match.team2UrlLogo,
+                      affiliation: match.affiliationTeam2,
+                    ),
+                  ),
+                ],
+              );
+            },
+          ),
+
+          const SizedBox(height: 18),
+          Divider(color: colors.border),
+          const SizedBox(height: 12),
+
+          _HeaderInfoLine(
+            icon: Icons.schedule_rounded,
+            value: _dateTimeLabel(match),
+          ),
+          const SizedBox(height: 8),
+          _HeaderInfoLine(
+            icon: Icons.stadium_rounded,
+            value: _terrainLabel(match),
+          ),
+
+          if (_clean(match.surfaceDeJeu).isNotEmpty) ...[
+            const SizedBox(height: 8),
+            _HeaderInfoLine(
+              icon: Icons.grass_rounded,
+              value: match.surfaceDeJeu!,
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+
+  static String _dateTimeLabel(models.Match match) {
+    final date = _clean(match.dateCh);
+    final time = _clean(match.timeCh);
+
+    if (date.isEmpty && time.isEmpty) return 'Date non définie';
+    if (date.isNotEmpty && time.isNotEmpty) return '$date à $time';
+    if (date.isNotEmpty) return date;
+    return time;
+  }
+
+  static String _terrainLabel(models.Match match) {
+    final terrain = _clean(match.nomDuTerrain);
+    final address1 = _clean(match.terrainAdresse1);
+    final address2 = _clean(match.terrainAddress2);
+
+    final parts = <String>[
+      if (terrain.isNotEmpty) terrain,
+      if (address1.isNotEmpty) address1,
+      if (address2.isNotEmpty) address2,
+    ];
+
+    if (parts.isEmpty) return 'Terrain non défini';
+    return parts.join(' - ');
+  }
+}
+
+class _TeamBlock extends StatelessWidget {
+  final String name;
+  final String? logoUrl;
+  final String? affiliation;
+  final bool compact;
+
+  const _TeamBlock({
+    required this.name,
+    required this.logoUrl,
+    required this.affiliation,
+    this.compact = false,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = context.appColors;
+
+    return Column(
+      children: [
+        _TeamLogo(
+          logoUrl: logoUrl,
+          size: compact ? 52 : 64,
+          imageSize: compact ? 34 : 44,
+        ),
+        const SizedBox(height: 10),
+        Text(
+          name,
+          maxLines: compact ? 1 : 2,
+          overflow: TextOverflow.ellipsis,
+          textAlign: TextAlign.center,
+          style: TextStyle(
+            color: colors.textPrimary,
+            fontSize: compact ? 14 : 15,
+            fontWeight: FontWeight.w800,
+          ),
+        ),
+        if (_clean(affiliation).isNotEmpty) ...[
+          const SizedBox(height: 4),
+          Text(
+            affiliation!,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            textAlign: TextAlign.center,
+            style: TextStyle(
+              color: colors.textSecondary,
+              fontSize: 12,
+              fontWeight: FontWeight.w500,
+            ),
+          ),
+        ],
+      ],
+    );
+  }
+}
+
+class _TeamLogo extends StatelessWidget {
+  final String? logoUrl;
+  final double size;
+  final double imageSize;
+
+  const _TeamLogo({
+    required this.logoUrl,
+    this.size = 64,
+    this.imageSize = 44,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = context.appColors;
+    final safeUrl = (logoUrl ?? '').trim();
+
+    return Container(
+      width: size,
+      height: size,
+      decoration: BoxDecoration(
+        color: Colors.white,
+        shape: BoxShape.circle,
+        border: Border.all(color: colors.border),
+      ),
+      child: Center(
+        child: Container(
+          width: imageSize,
+          height: imageSize,
+          alignment: Alignment.center,
+          clipBehavior: Clip.antiAlias,
+          decoration: const BoxDecoration(
+            shape: BoxShape.circle,
+          ),
+          child: safeUrl.isEmpty
+              ? Icon(
+            Icons.shield_outlined,
+            size: imageSize * 0.55,
+            color: colors.textSecondary,
+          )
+              : Image.network(
+            safeUrl,
+            fit: BoxFit.contain,
+            webHtmlElementStrategy: WebHtmlElementStrategy.prefer,
+            errorBuilder: (context, error, stackTrace) {
+              debugPrint('LOGO ERROR url=$safeUrl');
+              debugPrint('error=$error');
+
+              return Icon(
+                Icons.broken_image_outlined,
+                size: imageSize * 0.55,
+                color: colors.textSecondary,
+              );
+            },
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _ScoreBlock extends StatelessWidget {
+  final String score;
+  final String? tab;
+  final bool played;
+
+  const _ScoreBlock({
+    required this.score,
+    required this.tab,
+    required this.played,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = context.appColors;
+
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Text(
+          score,
+          textAlign: TextAlign.center,
+          style: TextStyle(
+            color: colors.textPrimary,
+            fontSize: played ? 34 : 30,
+            fontWeight: FontWeight.w900,
+          ),
+        ),
+        if (_clean(tab).isNotEmpty)
+          Text(
+            'TAB $tab',
+            textAlign: TextAlign.center,
+            style: TextStyle(
+              color: colors.textSecondary,
+              fontSize: 12,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+      ],
+    );
+  }
+}
+
+class _HeaderInfoLine extends StatelessWidget {
+  final IconData icon;
+  final String value;
+
+  const _HeaderInfoLine({
+    required this.icon,
+    required this.value,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = context.appColors;
+
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Icon(
+          icon,
+          size: 18,
+          color: colors.textSecondary,
+        ),
+        const SizedBox(width: 8),
+        Expanded(
+          child: Text(
+            value,
+            maxLines: 2,
+            overflow: TextOverflow.ellipsis,
+            style: TextStyle(
+              color: colors.textSecondary,
+              fontSize: 13,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _InfoPill extends StatelessWidget {
+  final IconData icon;
+  final String label;
+  final Color? color;
+
+  const _InfoPill({
+    required this.icon,
+    required this.label,
+    this.color,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = context.appColors;
+    final pillColor = color ?? colors.primary;
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
+      decoration: BoxDecoration(
+        color: pillColor.withValues(alpha: 0.12),
+        borderRadius: BorderRadius.circular(999),
+        border: Border.all(
+          color: pillColor.withValues(alpha: 0.25),
+        ),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(
+            icon,
+            size: 15,
+            color: pillColor,
+          ),
+          const SizedBox(width: 6),
+          Text(
+            label,
+            style: TextStyle(
+              color: pillColor,
+              fontSize: 12,
+              fontWeight: FontWeight.w800,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _CompoTab extends StatelessWidget {
+  final models.Match match;
+
+  const _CompoTab({
+    required this.match,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return _TabContainer(
+      children: [
+        _SectionCard(
+          title: 'Composition',
+          icon: Icons.groups_rounded,
+          child: Column(
+            children: [
+              _EmptyState(
+                icon: Icons.sports_soccer_rounded,
+                title: 'Composition non renseignée',
+                message: 'Tu pourras brancher ici la composition de chaque équipe.',
+              ),
+              const SizedBox(height: 12),
+              LayoutBuilder(
+                builder: (context, constraints) {
+                  final bool compact = constraints.maxWidth < 520;
+
+                  if (compact) {
+                    return Column(
+                      children: [
+                        _MiniTeamCard(
+                          title: _clean(match.team1, fallback: 'Équipe 1'),
+                          subtitle: 'Titulaires / remplaçants',
+                        ),
+                        const SizedBox(height: 12),
+                        _MiniTeamCard(
+                          title: _clean(match.team2, fallback: 'Équipe 2'),
+                          subtitle: 'Titulaires / remplaçants',
+                        ),
+                      ],
+                    );
+                  }
+
+                  return Row(
+                    children: [
+                      Expanded(
+                        child: _MiniTeamCard(
+                          title: _clean(match.team1, fallback: 'Équipe 1'),
+                          subtitle: 'Titulaires / remplaçants',
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: _MiniTeamCard(
+                          title: _clean(match.team2, fallback: 'Équipe 2'),
+                          subtitle: 'Titulaires / remplaçants',
+                        ),
+                      ),
+                    ],
+                  );
+                },
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _HighlightsTab extends StatelessWidget {
+  final models.Match match;
+
+  const _HighlightsTab({
+    required this.match,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return _TabContainer(
+      children: [
+        StreamBuilder<MatchStats?>(
+          stream: MatchStatsService().streamMatchStatsByMatchId(match.id ?? ''),
+          builder: (context, snapshot) {
+            if (snapshot.connectionState == ConnectionState.waiting) {
+              return const Center(
+                child: Padding(
+                  padding: EdgeInsets.all(24),
+                  child: CircularProgressIndicator(),
+                ),
+              );
+            }
+
+            final matchStats = snapshot.data;
+
+            return MatchHighlightsTimeline(
+              matchStats: matchStats,
+              team1: match.team1,
+              team2: match.team2,
+            );
+          },
+        ),
+      ],
+    );
+  }
+}
+
+class _StatsTab extends StatelessWidget {
+  final models.Match match;
+
+  const _StatsTab({
+    required this.match,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return _TabContainer(
+      children: [
+        MatchTrackerStatsTable(
+          eventId: match.id ?? '',
+          realtime: true,
+        ),
+      ],
+    );
+  }
+}
+
+class _TrackerStatus extends StatelessWidget {
+  final models.Match match;
+
+  const _TrackerStatus({
+    required this.match,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = context.appColors;
+    final bool uploaded = match.isTrackerDataUploaded == true;
+
+    return Container(
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: uploaded
+            ? colors.success.withValues(alpha: 0.10)
+            : colors.warning.withValues(alpha: 0.10),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: uploaded
+              ? colors.success.withValues(alpha: 0.25)
+              : colors.warning.withValues(alpha: 0.25),
+        ),
+      ),
+      child: Row(
+        children: [
+          Icon(
+            uploaded ? Icons.check_circle_rounded : Icons.pending_rounded,
+            color: uploaded ? colors.success : colors.warning,
+          ),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Text(
+              uploaded
+                  ? 'Les données tracker sont disponibles.'
+                  : 'Les données tracker ne sont pas encore importées.',
+              style: TextStyle(
+                color: colors.textPrimary,
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _TabContainer extends StatelessWidget {
+  final List<Widget> children;
+
+  const _TabContainer({
+    required this.children,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final width = MediaQuery.of(context).size.width;
+
+    final double horizontalPadding = width >= 900
+        ? 8
+        : width >= 600
+        ? 10
+        : 12;
+
+    return ListView(
+      padding: EdgeInsets.fromLTRB(
+        horizontalPadding,
+        0,
+        horizontalPadding,
+        24,
+      ),
+      children: children,
+    );
+  }
+}
+
+class _SectionCard extends StatelessWidget {
+  final String title;
+  final IconData icon;
+  final Widget child;
+
+  const _SectionCard({
+    required this.title,
+    required this.icon,
+    required this.child,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = context.appColors;
+
+    return Container(
+      width: double.infinity,
+      margin: const EdgeInsets.only(bottom: 14),
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: colors.card,
+        borderRadius: BorderRadius.circular(22),
+        border: Border.all(color: colors.border),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(
+                icon,
+                color: colors.primary,
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  title,
+                  style: TextStyle(
+                    color: colors.textPrimary,
+                    fontSize: 17,
+                    fontWeight: FontWeight.w800,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 14),
+          child,
+        ],
+      ),
+    );
+  }
+}
+
+class _EmptyState extends StatelessWidget {
+  final IconData icon;
+  final String title;
+  final String message;
+
+  const _EmptyState({
+    required this.icon,
+    required this.title,
+    required this.message,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = context.appColors;
+
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(18),
+      decoration: BoxDecoration(
+        color: colors.surface,
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(color: colors.border),
+      ),
+      child: Column(
+        children: [
+          Icon(
+            icon,
+            color: colors.textSecondary,
+            size: 34,
+          ),
+          const SizedBox(height: 10),
+          Text(
+            title,
+            textAlign: TextAlign.center,
+            style: TextStyle(
+              color: colors.textPrimary,
+              fontWeight: FontWeight.w800,
+              fontSize: 15,
+            ),
+          ),
+          const SizedBox(height: 6),
+          Text(
+            message,
+            textAlign: TextAlign.center,
+            style: TextStyle(
+              color: colors.textSecondary,
+              fontWeight: FontWeight.w500,
+              fontSize: 13,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _MiniTeamCard extends StatelessWidget {
+  final String title;
+  final String subtitle;
+
+  const _MiniTeamCard({
+    required this.title,
+    required this.subtitle,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = context.appColors;
+
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: colors.surface,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: colors.border),
+      ),
+      child: Column(
+        children: [
+          Text(
+            title,
+            maxLines: 2,
+            overflow: TextOverflow.ellipsis,
+            textAlign: TextAlign.center,
+            style: TextStyle(
+              color: colors.textPrimary,
+              fontWeight: FontWeight.w800,
+              fontSize: 13,
+            ),
+          ),
+          const SizedBox(height: 6),
+          Text(
+            subtitle,
+            textAlign: TextAlign.center,
+            style: TextStyle(
+              color: colors.textSecondary,
+              fontWeight: FontWeight.w500,
+              fontSize: 12,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _TimelineItem extends StatelessWidget {
+  final String minute;
+  final String title;
+  final String subtitle;
+  final IconData icon;
+
+  const _TimelineItem({
+    required this.minute,
+    required this.title,
+    required this.subtitle,
+    required this.icon,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = context.appColors;
+
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        SizedBox(
+          width: 42,
+          child: Text(
+            minute,
+            style: TextStyle(
+              color: colors.primary,
+              fontWeight: FontWeight.w900,
+              fontSize: 15,
+            ),
+          ),
+        ),
+        Container(
+          width: 34,
+          height: 34,
+          decoration: BoxDecoration(
+            color: colors.primary.withValues(alpha: 0.12),
+            shape: BoxShape.circle,
+          ),
+          child: Icon(
+            icon,
+            color: colors.primary,
+            size: 20,
+          ),
+        ),
+        const SizedBox(width: 12),
+        Expanded(
+          child: Container(
+            padding: const EdgeInsets.only(bottom: 18),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  title,
+                  style: TextStyle(
+                    color: colors.textPrimary,
+                    fontWeight: FontWeight.w800,
+                    fontSize: 14,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  subtitle,
+                  style: TextStyle(
+                    color: colors.textSecondary,
+                    fontWeight: FontWeight.w500,
+                    fontSize: 13,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _StatCard extends StatelessWidget {
+  final String label;
+  final String value;
+
+  const _StatCard({
+    required this.label,
+    required this.value,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = context.appColors;
+
+    return Container(
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: colors.surface,
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(color: colors.border),
+      ),
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Text(
+            value,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: TextStyle(
+              color: colors.textPrimary,
+              fontSize: 24,
+              fontWeight: FontWeight.w900,
+            ),
+          ),
+          const SizedBox(height: 6),
+          Text(
+            label,
+            maxLines: 2,
+            overflow: TextOverflow.ellipsis,
+            textAlign: TextAlign.center,
+            style: TextStyle(
+              color: colors.textSecondary,
+              fontSize: 12,
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+String _clean(String? value, {String fallback = ''}) {
+  final text = value?.trim() ?? '';
+  return text.isEmpty ? fallback : text;
+}

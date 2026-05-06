@@ -96,7 +96,7 @@ class _WebAppRootState extends State<WebAppRoot> {
             id: m.id!,
             startAt: startAt,
             endAt: endAt,
-            title: '${t.name}: ${m.chType}',
+            title: '${t.name}',
             type: AgendaItemType.match,
             match: m,
             isDone: Timestamp.fromDate(endAt).millisecondsSinceEpoch <
