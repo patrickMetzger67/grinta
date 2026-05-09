@@ -8,7 +8,7 @@ class TeamParamService {
   TeamParamService._();
 
   static final FirebaseFirestore _firestore = FirebaseFirestore.instance;
-  static const String collectionName = 'teamParam';
+  static const String collectionName = 'TRACKER_TeamParam';
 
   static CollectionReference<Map<String, dynamic>> get _collection =>
       _firestore.collection(collectionName);

@@ -673,10 +673,11 @@ class TrainingMetricRow extends StatelessWidget {
               ),
             ),
             const SizedBox(width: 8),
-            ZScoreChip(
-              value: zScore,
-              text: zScoreText,
-            ),
+            if(zScore != 0.0)
+              ZScoreChip(
+                value: zScore,
+                text: zScoreText,
+              ),
           ],
         ),
       ),

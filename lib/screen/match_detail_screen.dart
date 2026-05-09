@@ -1,11 +1,16 @@
 import 'package:flutter/material.dart';
 
 import '../model/matchStats.dart';
+import '../model/player.dart';
+import '../model/tracker/team_workload_summary.dart';
 import '../services/matchStatsService.dart';
+import '../services/playerService.dart';
+import '../services/teamWorkloadSummaryService.dart';
 import '../util/app_theme.dart';
 import '../model/match.dart' as models;
 import '../widget/match_highlights_timeline.dart';
 import '../widget/match_tracker_stats_table.dart';
+import '../widget/tracker_player_analysis_widget.dart';
 
 class MatchDetailScreen extends StatelessWidget {
   final models.Match match;
@@ -19,12 +24,17 @@ class MatchDetailScreen extends StatelessWidget {
   /// Permet de remplacer le contenu de l’onglet Statistiques.
   final Widget Function(BuildContext context, models.Match match)? statsBuilder;
 
+  final bool isManager;
+  final String? playerId;
+
   const MatchDetailScreen({
     super.key,
     required this.match,
     this.compoBuilder,
     this.highlightsBuilder,
     this.statsBuilder,
+    required this.isManager,
+    required this.playerId,
   });
 
   @override
@@ -54,7 +64,7 @@ class MatchDetailScreen extends StatelessWidget {
     final views = <Widget>[
       compoBuilder?.call(context, match) ?? _CompoTab(match: match),
       highlightsBuilder?.call(context, match) ?? _HighlightsTab(match: match),
-      if (showStats) statsBuilder?.call(context, match) ?? _StatsTab(match: match),
+      if (showStats) statsBuilder?.call(context, match) ?? _StatsTab(match: match, isManager: isManager,playerId: playerId,),
     ];
 
     return DefaultTabController(
@@ -765,23 +775,231 @@ class _HighlightsTab extends StatelessWidget {
   }
 }
 
-class _StatsTab extends StatelessWidget {
+class _StatsTab extends StatefulWidget {
   final models.Match match;
+  final bool isManager;
+  final String? playerId;
 
   const _StatsTab({
     required this.match,
+    required this.isManager,
+    required this.playerId,
   });
 
   @override
+  State<_StatsTab> createState() => _StatsTabState();
+}
+
+class _StatsTabState extends State<_StatsTab> {
+  late Future<Player?> _playerFuture;
+
+  @override
+  void initState() {
+    super.initState();
+    _playerFuture = _loadPlayer();
+  }
+
+  @override
+  void didUpdateWidget(covariant _StatsTab oldWidget) {
+    super.didUpdateWidget(oldWidget);
+
+    if (oldWidget.playerId != widget.playerId) {
+      _playerFuture = _loadPlayer();
+    }
+  }
+
+  Future<Player?> _loadPlayer() async {
+    final safePlayerId = (widget.playerId ?? '').trim();
+
+    if (safePlayerId.isEmpty) {
+      return null;
+    }
+
+    return PlayerService().getPlayerById(safePlayerId);
+  }
+
+  @override
   Widget build(BuildContext context) {
+    debugPrint(
+      'dans _StatsTab isManager=${widget.isManager} playerId=${widget.playerId}',
+    );
+
+    final String eventId = (widget.match.id ?? '').trim();
+
+    if (eventId.isEmpty) {
+      return const _TabContainer(
+        children: [
+          _EmptyState(
+            icon: Icons.query_stats_rounded,
+            title: 'Statistiques indisponibles',
+            message: 'Identifiant du match manquant.',
+          ),
+        ],
+      );
+    }
+
+    if (widget.isManager) {
+      return _TabContainer(
+        children: [
+          MatchTrackerStatsTable(
+            eventId: eventId,
+            teamId: widget.match.teamID,
+            realtime: true,
+          ),
+        ],
+      );
+    }
+
+    final String safePlayerId = (widget.playerId ?? '').trim();
+
+    if (safePlayerId.isEmpty) {
+      return const _TabContainer(
+        children: [
+          _EmptyState(
+            icon: Icons.person_off_rounded,
+            title: 'Joueur non identifié',
+            message: 'Impossible de charger les statistiques du joueur.',
+          ),
+        ],
+      );
+    }
+
     return _TabContainer(
       children: [
-        MatchTrackerStatsTable(
-          eventId: match.id ?? '',
-          realtime: true,
+        FutureBuilder<Player?>(
+          future: _playerFuture,
+          builder: (context, playerSnapshot) {
+            if (playerSnapshot.connectionState == ConnectionState.waiting) {
+              return const Center(
+                child: Padding(
+                  padding: EdgeInsets.all(24),
+                  child: CircularProgressIndicator(),
+                ),
+              );
+            }
+
+            if (playerSnapshot.hasError) {
+              return _EmptyState(
+                icon: Icons.error_outline_rounded,
+                title: 'Erreur joueur',
+                message: playerSnapshot.error.toString(),
+              );
+            }
+
+            final Player? player = playerSnapshot.data;
+
+            if (player == null) {
+              return const _EmptyState(
+                icon: Icons.person_off_rounded,
+                title: 'Joueur introuvable',
+                message: 'Impossible de retrouver le joueur sélectionné.',
+              );
+            }
+
+            return StreamBuilder<TeamWorkloadSummary?>(
+              stream: TeamWorkloadSummaryService().watchByEventId(eventId),
+              builder: (context, summarySnapshot) {
+                if (summarySnapshot.connectionState ==
+                    ConnectionState.waiting) {
+                  return const Center(
+                    child: Padding(
+                      padding: EdgeInsets.all(24),
+                      child: CircularProgressIndicator(),
+                    ),
+                  );
+                }
+
+                if (summarySnapshot.hasError) {
+                  return _EmptyState(
+                    icon: Icons.error_outline_rounded,
+                    title: 'Erreur tracker',
+                    message: summarySnapshot.error.toString(),
+                  );
+                }
+
+                final TeamWorkloadSummary? summary = summarySnapshot.data;
+
+                if (summary == null) {
+                  return const _EmptyState(
+                    icon: Icons.query_stats_rounded,
+                    title: 'Aucune statistique',
+                    message: 'Aucune donnée tracker trouvée pour ce match.',
+                  );
+                }
+
+                final TeamPlayerMetricScores? playerScore =
+                _findPlayerScore(
+                  summary: summary,
+                  playerId: safePlayerId,
+                );
+
+                if (playerScore == null) {
+                  return const _EmptyState(
+                    icon: Icons.person_search_rounded,
+                    title: 'Joueur non trouvé',
+                    message:
+                    'Ce joueur n’a pas de données tracker pour ce match.',
+                  );
+                }
+
+                final String trackerId = playerScore.trackerId.trim();
+
+                if (trackerId.isEmpty) {
+                  return const _EmptyState(
+                    icon: Icons.sensors_off_rounded,
+                    title: 'Capteur non trouvé',
+                    message:
+                    'Aucun capteur n’est associé à ce joueur pour ce match.',
+                  );
+                }
+
+                final String analysisDocId = '${eventId}_$trackerId';
+
+                return TrackerPlayerAnalysisWidget(
+                  analysisDocId: analysisDocId,
+                  teamId: widget.match.teamID,
+                  playerName: _playerDisplayName(player),
+                  player: player,
+                  isMatch: true,
+                );
+              },
+            );
+          },
         ),
       ],
     );
+  }
+
+  TeamPlayerMetricScores? _findPlayerScore({
+    required TeamWorkloadSummary summary,
+    required String playerId,
+  }) {
+    for (final score in summary.playerScores) {
+      if (score.playerId == playerId) {
+        return score;
+      }
+    }
+
+    return null;
+  }
+
+  String _playerDisplayName(Player player) {
+    final firstName = (player.firstName ?? '').trim();
+    final lastName = (player.lastName ?? '').trim();
+
+    if (firstName.isNotEmpty && lastName.isNotEmpty) {
+      return '$firstName $lastName';
+    }
+
+    if (firstName.isNotEmpty) {
+      return firstName;
+    }
+
+    if (lastName.isNotEmpty) {
+      return lastName;
+    }
+
+    return 'Joueur';
   }
 }
 

@@ -95,10 +95,75 @@ extension MetricTypeX on MetricType {
     }
   }
 }
+
+ActivityMetrics buildActivityMetricsFromSummary({
+  required String eventId,
+  required Timestamp timestamp,
+  required TeamWorkloadSummary tws,
+
+}) {
+  final ActivityMetrics activityMetrics = ActivityMetrics(
+    eventId: eventId,
+    timestamp: timestamp,
+  );
+
+  for (final entry in tws.metricStats.entries) {
+    final String metricKey = entry.key.toString().trim();
+
+    if (metricKey.isEmpty) {
+      continue;
+    }
+
+    final dynamic value = entry.value.mean;
+    const dynamic zScore = 0;
+
+    switch (metricKey) {
+      case 'distanceKm':
+        activityMetrics.distanceKM = _toDouble(value);
+        activityMetrics.distanceKMZScore = _toDouble(zScore);
+        break;
+
+      case 'highAccelerationCount':
+        activityMetrics.highAccelerationCount = _toInt(value);
+        activityMetrics.highAccelerationCountZScore = _toDouble(zScore);
+        break;
+
+      case 'highSpeedDuration':
+        activityMetrics.highSpeedDuration = _toDouble(value);
+        activityMetrics.highSpeedDurationZScore = _toDouble(zScore);
+        break;
+
+      case 'maxAccelerationMps2':
+        activityMetrics.maxAccelerationMps2 = _toDouble(value);
+        activityMetrics.maxAccelerationMps2ZScore = _toDouble(zScore);
+        break;
+
+      case 'maxValidatedSpeedKmh':
+        activityMetrics.maxValidatedSpeedKmh = _toDouble(value);
+        activityMetrics.maxValidatedSpeedKmhZScore = _toDouble(zScore);
+        break;
+
+      case 'sprintCount':
+        activityMetrics.sprintCount = _toInt(value);
+        activityMetrics.sprintCountZScore = _toDouble(zScore);
+        break;
+
+      case 'workloadScore':
+        activityMetrics.workloadScore = _toDouble(value);
+        activityMetrics.workloadScoreZScore = _toDouble(zScore);
+        break;
+    }
+  }
+
+  return activityMetrics;
+}
+
+
 ActivityMetrics buildActivityMetricsFromPlayerScore({
   required String eventId,
   required Timestamp timestamp,
   required dynamic playerScore,
+
 }) {
   final ActivityMetrics activityMetrics = ActivityMetrics(
     eventId: eventId,

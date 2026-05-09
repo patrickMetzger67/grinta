@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:grinta/widget/playerPhoto.dart';
+import 'package:grinta/widget/tracker_player_analysis_widget.dart';
 
 import '../model/player.dart';
 import '../model/tracker/team_workload_summary.dart';
@@ -8,6 +10,7 @@ import '../util/app_theme.dart';
 
 class MatchTrackerStatsTable extends StatefulWidget {
   final String eventId;
+  final String? teamId;
   final bool realtime;
   final EdgeInsetsGeometry padding;
   final TeamWorkloadSummaryService? summaryService;
@@ -16,6 +19,7 @@ class MatchTrackerStatsTable extends StatefulWidget {
   const MatchTrackerStatsTable({
     super.key,
     required this.eventId,
+    this.teamId,
     this.realtime = true,
     this.padding = EdgeInsets.zero,
     this.summaryService,
@@ -207,6 +211,7 @@ class _MatchTrackerStatsTableState extends State<MatchTrackerStatsTable> {
           sortColumnIndex: _sortColumnIndex,
           sortAscending: _sortAscending,
           padding: widget.padding,
+          teamId: widget.teamId,
           onSort: _onSort,
         );
       },
@@ -288,6 +293,7 @@ class _TrackerStatsTableContent extends StatelessWidget {
   final int sortColumnIndex;
   final bool sortAscending;
   final EdgeInsetsGeometry padding;
+  final String? teamId;
   final void Function(int columnIndex, bool ascending) onSort;
 
   const _TrackerStatsTableContent({
@@ -298,6 +304,7 @@ class _TrackerStatsTableContent extends StatelessWidget {
     required this.sortAscending,
     required this.padding,
     required this.onSort,
+    this.teamId,
   });
 
   @override
@@ -325,6 +332,7 @@ class _TrackerStatsTableContent extends StatelessWidget {
                   minWidth: 1240,
                 ),
                 child: DataTable(
+                  showCheckboxColumn: false,
                   sortColumnIndex: sortColumnIndex,
                   sortAscending: sortAscending,
                   columnSpacing: 16,
@@ -370,6 +378,14 @@ class _TrackerStatsTableContent extends StatelessWidget {
                   ],
                   rows: rows.map((row) {
                     return DataRow(
+                      onSelectChanged: (_) {
+                        _openPlayerTrackerAnalysis(
+                          context: context,
+                          summary: summary,
+                          row: row,
+                          teamId: teamId,
+                        );
+                      },
                       cells: [
                         DataCell(
                           SizedBox(
@@ -404,11 +420,102 @@ class _TrackerStatsTableContent extends StatelessWidget {
                       ],
                     );
                   }).toList(),
-                ),
+                )
               ),
             ),
           ],
         ),
+      ),
+    );
+  }
+  void _openPlayerTrackerAnalysis({
+    required BuildContext context,
+    required TeamWorkloadSummary summary,
+    required _TrackerStatsRow row,
+    required String? teamId,
+  }) {
+    final colors = context.appColors;
+
+    final eventId = summary.eventId.trim();
+    final trackerId = row.trackerId.trim();
+
+    if (eventId.isEmpty || trackerId.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Impossible d’ouvrir l’analyse : eventId ou trackerId manquant.'),
+        ),
+      );
+      return;
+    }
+
+    final analysisDocId = '${eventId}_$trackerId';
+
+    Navigator.of(context, rootNavigator: true).push(
+      MaterialPageRoute(
+        fullscreenDialog: true,
+        builder: (_) {
+          return Scaffold(
+            backgroundColor: colors.background,
+            body: SafeArea(
+              child: Column(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.fromLTRB(16, 8, 8, 8),
+                    decoration: BoxDecoration(
+                      color: colors.surface,
+                      border: Border(
+                        bottom: BorderSide(color: colors.border),
+                      ),
+                    ),
+                    child: Row(
+                      children: [
+                        Expanded(
+                          child: Text(
+                            'Détails',
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: TextStyle(
+                              color: colors.textPrimary,
+                              fontSize: 20,
+                              fontWeight: FontWeight.w900,
+                            ),
+                          ),
+                        ),
+                        IconButton(
+                          tooltip: 'Fermer',
+                          onPressed: () => Navigator.of(context).pop(),
+                          icon: Icon(
+                            Icons.close_rounded,
+                            color: colors.textPrimary,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  Expanded(
+                    child: LayoutBuilder(
+                      builder: (context, constraints) {
+                        final bool isLarge = constraints.maxWidth >= 900;
+
+                        return ListView(
+                          padding: EdgeInsets.all(isLarge ? 10 : 12),
+                          children: [
+                            TrackerPlayerAnalysisWidget(
+                              analysisDocId: analysisDocId,
+                              teamId: teamId,
+                              playerName: row.playerName,
+                              player: row.player,
+                            ),
+                          ],
+                        );
+                      },
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          );
+        },
       ),
     );
   }
@@ -581,7 +688,7 @@ class _PlayerCell extends StatelessWidget {
 
     return Row(
       children: [
-        _PlayerAvatar(row: row),
+        PlayerPhoto(player: row.player!,),
         const SizedBox(width: 10),
         Expanded(
           child: Column(
@@ -602,41 +709,6 @@ class _PlayerCell extends StatelessWidget {
           ),
         ),
       ],
-    );
-  }
-}
-
-class _PlayerAvatar extends StatelessWidget {
-  final _TrackerStatsRow row;
-
-  const _PlayerAvatar({
-    required this.row,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final colors = context.appColors;
-
-    return Container(
-      width: 38,
-      height: 38,
-      decoration: BoxDecoration(
-        color: colors.primary.withValues(alpha: 0.12),
-        shape: BoxShape.circle,
-        border: Border.all(
-          color: colors.primary.withValues(alpha: 0.20),
-        ),
-      ),
-      child: Center(
-        child: Text(
-          _initials(row.playerName),
-          style: TextStyle(
-            color: colors.primary,
-            fontWeight: FontWeight.w900,
-            fontSize: 13,
-          ),
-        ),
-      ),
     );
   }
 }

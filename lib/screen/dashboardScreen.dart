@@ -83,19 +83,29 @@ class _DashboardScreenState extends State<DashboardScreen> {
     final textTheme = Theme.of(context).textTheme;
 
     final currentUser = FirebaseAuth.instance.currentUser;
-    final String? userId = currentUser?.uid;
+
+
+
+    final appSession = context.watch<AppSession>();
+
+    final firebaseUser = FirebaseAuth.instance.currentUser;
+    final sessionUser = appSession.user;
+
+    currentSeason = appSession.selectedSeason;
+    currentPlayerId = appSession.selectedPlayerId;
+    currentUserId = sessionUser?.uid ?? firebaseUser?.uid;
+
+    final String? userId = currentUserId;
 
     final List<String> managedTeamsIds =
-    context.select<AppSession, List<String>>(
-          (session) => session.managedTeamsIdsForSelectedSeason,
-    );
+        appSession.managedTeamsIdsForSelectedSeason;
 
-    currentSeason = context.watch<AppSession>().selectedSeason;
-    currentPlayerId = context.watch<AppSession>().selectedPlayerId;
-    currentUserId = context.watch<AppSession>().user!.uid;
+    if (userId == null || userId.isEmpty) {
+      return _buildWaitingUserSession(context);
+    }
 
     final List<String> currentPlayerTeamIds = getTeamIdsForCurrentPlayerAndSeason(
-      teams: context.watch<AppSession>().teams,
+      teams: appSession.teams,
       currentSeason: currentSeason,
       currentPlayerId: currentPlayerId,
       managedTeamsIds: managedTeamsIds,
@@ -189,7 +199,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
                         isPhone: isPhone,
                         teamId: activeTeamId,
                         playerId: currentPlayerId,
-                        managedTeamsIds: managedTeamsIds
+                        userId: userId,
+                        managedTeamsIds: managedTeamsIds,
+                        currentPlayerTeamsIds: currentPlayerTeamIds
                       ),
                     ],
                   ),
@@ -197,6 +209,42 @@ class _DashboardScreenState extends State<DashboardScreen> {
               ),
             );
           },
+        ),
+      ),
+    );
+  }
+
+  Widget _buildWaitingUserSession(BuildContext context) {
+    final colors = context.appColors;
+
+    return Scaffold(
+      backgroundColor: colors.background,
+      body: SafeArea(
+        child: Center(
+          child: Container(
+            padding: const EdgeInsets.all(18),
+            decoration: BoxDecoration(
+              color: colors.card,
+              borderRadius: BorderRadius.circular(18),
+              border: Border.all(color: colors.border),
+            ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                CircularProgressIndicator(
+                  color: colors.primary,
+                ),
+                const SizedBox(height: 14),
+                Text(
+                  'Chargement de la session...',
+                  style: TextStyle(
+                    color: colors.textPrimary,
+                    fontWeight: FontWeight.w800,
+                  ),
+                ),
+              ],
+            ),
+          ),
         ),
       ),
     );
@@ -313,7 +361,19 @@ class _DashboardScreenState extends State<DashboardScreen> {
     required String? teamId,
     required String? playerId,
     required List<String>? managedTeamsIds,
+    required List<String>? currentPlayerTeamsIds,
+    required String? userId,
   }) {
+
+
+    bool isManager = (userId != null)?managedTeamsIds!.contains(teamId):false;
+    bool isPlayer = (playerId != null)?currentPlayerTeamsIds!.contains(teamId):false;
+
+    if(isManager == true && isPlayer == false) {
+        _selectedStatsWhere = DashboardWhereType.team;
+    }
+
+
     return Container(
       width: double.infinity,
       padding: EdgeInsets.all(isPhone ? 14 : 18),
@@ -341,6 +401,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
           SizedBox(height: isPhone ? 12 : 14),
 
+
+
           _buildStatsTypeSelector(
             context: context,
             colors: colors,
@@ -350,13 +412,17 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
           SizedBox(height: isPhone ? 14 : 18),
 
-          _buildStatsWhereSelector(
-            context: context,
-            colors: colors,
-            textTheme: textTheme,
-            isPhone: isPhone,
-          ),
-          SizedBox(height: isPhone ? 14 : 18),
+          if(isPlayer == true) ... [
+
+            _buildStatsWhereSelector(
+              context: context,
+              colors: colors,
+              textTheme: textTheme,
+              isPhone: isPhone,
+            ),
+
+            SizedBox(height: isPhone ? 14 : 18),
+          ],
 
           _buildStatsStream(
             context: context,
@@ -367,6 +433,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
             managedTeamsIds: managedTeamsIds,
             statsType: _selectedStatsType,
             whereType: _selectedStatsWhere,
+            userId: userId,
           ),
         ],
       ),
@@ -489,6 +556,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
     required List<String>? managedTeamsIds,
     required DashboardStatsType statsType,
     required DashboardWhereType whereType,
+    required String? userId,
   }) {
     if (teamId == null || teamId.isEmpty) {
       return const _InfoMessage(
@@ -596,6 +664,10 @@ class _DashboardScreenState extends State<DashboardScreen> {
                     label: 'Matchs',
                     accentColor: colors.danger,
                     matches: matches,
+                    teamId: _selectedTeamId!,
+                    userId: userId!,
+                    managedTeamsIds: (managedTeamsIds != null)?managedTeamsIds:[],
+                    playerId: playerId!
                   );
                 },
               );
@@ -651,7 +723,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
             trainings.add(t);
           }
         }
-        print('passed=$passed present=$present');
+
         double presentPresent = (passed >0)?(present /passed) * 100:0;
 
         final Future<_ActivityStats> trainingStatsFuture =
@@ -706,6 +778,10 @@ class _DashboardScreenState extends State<DashboardScreen> {
               label: 'Entraînements',
               accentColor: colors.primary,
               matches: const <match_model.Match>[],
+              teamId: teamId,
+              userId: userId!,
+              managedTeamsIds: (managedTeamsIds != null)?managedTeamsIds:[],
+              playerId: playerId
             );
           },
         );
@@ -718,6 +794,10 @@ class _DashboardScreenState extends State<DashboardScreen> {
     required DashboardWhereType whereType,
     required String? playerId,
   }) async {
+
+    print('dans filterMatchesByWhereType whereType=${whereType.toString()}');
+
+
     if (whereType != DashboardWhereType.player) {
       return matches;
     }
@@ -803,6 +883,10 @@ class _DashboardScreenState extends State<DashboardScreen> {
     required String label,
     required Color accentColor,
     required List<match_model.Match> matches,
+    required String userId,
+    required String teamId,
+    required List<String> managedTeamsIds,
+    required String? playerId,
   }) {
     return LayoutBuilder(
       builder: (context, constraints) {
@@ -818,6 +902,10 @@ class _DashboardScreenState extends State<DashboardScreen> {
             matches: matches,
             type: _selectedStatsType,
             where: _selectedStatsWhere,
+            teamId: teamId,
+            userId: userId,
+            managedTeamsIds: managedTeamsIds,
+            playerId: playerId,
           );
         }
 
@@ -832,6 +920,10 @@ class _DashboardScreenState extends State<DashboardScreen> {
             matches: matches,
             type: _selectedStatsType,
             where: _selectedStatsWhere,
+            teamId: teamId,
+            userId: userId,
+            managedTeamsIds: managedTeamsIds,
+            playerId: playerId,
           ),
         );
       },
@@ -982,7 +1074,12 @@ class _DashboardScreenState extends State<DashboardScreen> {
             // si joueur non trouvé dans la liste et si l'équipe est managé par le user courrant alors on prend la moyenne de chaqye metrics
             if (!isPlayerFounded &&
                 (managedTeamsIds?.contains(training.teamId) ?? false)) {
-
+              final ActivityMetrics activityMetrics = buildActivityMetricsFromSummary(
+                eventId:  training.docId ?? '',
+                timestamp: training.dateTime!,
+                tws: workloadSummary,
+              );
+              trainingMetrics.add(activityMetrics);
             }
           }
         }
@@ -1544,6 +1641,10 @@ class _StatCompactCard extends StatefulWidget {
     this.fillWidth = false,
     required this.type,
     required this.where,
+    required this.userId,
+    required this.teamId,
+    required this.managedTeamsIds,
+    required this.playerId,
   });
 
   final IconData icon;
@@ -1555,6 +1656,10 @@ class _StatCompactCard extends StatefulWidget {
   final List<match_model.Match> matches;
   final DashboardStatsType type;
   final DashboardWhereType where;
+  final String userId;
+  final String teamId;
+  final List<String> managedTeamsIds;
+  final String? playerId;
 
   @override
   State<_StatCompactCard> createState() => _StatCompactCardState();
@@ -1619,6 +1724,10 @@ class _StatCompactCardState extends State<_StatCompactCard> {
                 context: context,
                 colors: colors,
                 textTheme: textTheme,
+                userId: widget.userId,
+                managedTeamsIds: widget.managedTeamsIds,
+                teamId: widget.teamId,
+                playerId: widget.playerId,
               ),
             ],
 
@@ -1640,7 +1749,15 @@ class _StatCompactCardState extends State<_StatCompactCard> {
     required BuildContext context,
     required AppColors colors,
     required TextTheme textTheme,
+    required String? userId,
+    required List<String> managedTeamsIds,
+    required String teamId,
+    required String? playerId,
   }) {
+
+
+    bool isManager = (userId != null)?managedTeamsIds.contains(teamId):false;
+
     if (widget.matches.isEmpty) {
       return Text(
         'Aucun match à afficher.',
@@ -1694,6 +1811,8 @@ class _StatCompactCardState extends State<_StatCompactCard> {
                       fullscreenDialog: true,
                       builder: (_) => MatchDetailScreen(
                         match: match,
+                        isManager: isManager,
+                        playerId: playerId,
                       ),
                     ),
                   );

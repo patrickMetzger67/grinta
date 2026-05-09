@@ -80,7 +80,7 @@ class _TrackerHubPageState extends State<TrackerHubPage> {
     super.initState();
     _initEventSyncAndListen();
     user = FirebaseAuth.instance.currentUser;
-    debugPrint('isMatch=${widget.isMatch}');
+    debugPrint('isMatch=${widget.isMatch} trackerIds=${widget.trackerIds}');
   }
 
   @override
