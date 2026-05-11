@@ -1737,6 +1737,7 @@ class _StatCompactCardState extends State<_StatCompactCard> {
                 metrics: widget.stats.trainingMetrics,
                 initialMetricType: MetricType.workloadScore,
                 maxVisibleRows: 10,
+                teamId: widget.teamId,
               ),
             ],
           ],

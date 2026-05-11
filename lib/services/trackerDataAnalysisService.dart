@@ -127,6 +127,46 @@ class TrackerAnalysisService {
         .toList();
   }
 
+  /// Optionnel : filtre par match sans Stream
+  static Future<TrackerAnalysisResult?> getAnalysisByEventAndPlayerId(
+      String eventId,
+      String playerId, {
+        int limit = 1,
+      }) async {
+    Query<Map<String, dynamic>> query = _collection
+        .where('eventId', isEqualTo: eventId)
+        .where('playerId', isEqualTo: playerId)
+        .orderBy('createdAt', descending: true)
+        .limit(limit);
+
+    final snapshot = await query.get();
+
+    if (snapshot.docs.isEmpty) {
+      return null;
+    }
+
+    return TrackerAnalysisResult.fromMap(
+      snapshot.docs.first.data(),
+    );
+  }
+  static Future<String?> getAnalysisDocIdByEventAndPlayerId(
+      String eventId,
+      String playerId,
+      ) async {
+    final snapshot = await _collection
+        .where('eventId', isEqualTo: eventId)
+        .where('playerId', isEqualTo: playerId)
+        .orderBy('createdAt', descending: true)
+        .limit(1)
+        .get();
+
+    if (snapshot.docs.isEmpty) {
+      return null;
+    }
+
+    return snapshot.docs.first.id;
+  }
+
   static Future<void> deleteAnalysis(String docId) async {
     await _collection.doc(docId).delete();
   }

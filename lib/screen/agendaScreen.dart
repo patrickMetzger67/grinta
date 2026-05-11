@@ -1,14 +1,20 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:grinta/services/playerService.dart';
 import 'package:provider/provider.dart';
 
 import '../model/agendaItem.dart';
+import '../model/player.dart';
 import '../model/season.dart';
 import '../model/tracker/team_workload_summary.dart';
 import '../provider/appSession.dart';
 import '../util/app_theme.dart';
+import '../util/playerDisplayName.dart';
 import '../widget/activity_rings_card.dart';
 import '../widget/agendaMatchRow.dart';
+import '../widget/match_tracker_stats_table.dart';
+import '../widget/tracker_player_analysis_widget.dart';
+import 'match_detail_screen.dart';
 
 enum AgendaCalendarMode {
   day,
@@ -2050,7 +2056,6 @@ class _AgendaItemCard extends StatelessWidget {
     final accent = _typeColor(context, item.type);
     final icon = _typeIcon(item.type);
 
-
     final List<String> managedTeamsIds =
     context.select<AppSession, List<String>>(
           (session) => session.managedTeamsIdsForSelectedSeason,
@@ -2058,7 +2063,21 @@ class _AgendaItemCard extends StatelessWidget {
 
     Season? currentSeason = context.watch<AppSession>().selectedSeason;
     String? currentPlayerId = context.watch<AppSession>().selectedPlayerId;
+    String? userId = context.watch<AppSession>().user!.uid;
 
+    bool isManager = false;
+
+    if(item.match != null) {
+      for(var t in item.match!.teams!) {
+        isManager = managedTeamsIds.contains(t);
+        if(isManager) {
+          break;
+        }
+      }
+    }
+    if(item.training != null) {
+      isManager = managedTeamsIds.contains(item.training!.teamId!);
+    }
 
     TeamPlayerMetricScores? teamPlayerMetricScores;
     if(item.teamWorkloadSummary != null ) {
@@ -2118,23 +2137,269 @@ class _AgendaItemCard extends StatelessWidget {
                 ],
               ],
             ),
-            if(item.withTracker && teamPlayerMetricScores != null) ... [
+            if(isManager == false && item.withTracker && teamPlayerMetricScores != null) ... [
               const SizedBox(height: 10),
-              activityRing(context: context, teamPlayerMetricScores: teamPlayerMetricScores, teamWorkloadSummary: item.teamWorkloadSummary!),
+              InkWell(
+                borderRadius: BorderRadius.circular(12),
+                onTap: () async {
+
+
+                  final String analysisDocId = '${item.id}_${teamPlayerMetricScores?.trackerId}';
+
+                  final Player? player = await PlayerService().getPlayerById(currentPlayerId!);
+
+                  showModalBottomSheet(
+                    context: context,
+                    isScrollControlled: true,
+                    useSafeArea: true,
+                    backgroundColor: colors.background,
+                    barrierColor: Colors.black54,
+                    builder: (BuildContext bottomSheetContext) {
+                      return Scaffold(
+                        backgroundColor: colors.background,
+                        body: SafeArea(
+                          child: Column(
+                            children: [
+                              Padding(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 12,
+                                  vertical: 8,
+                                ),
+                                child: Row(
+                                  children: [
+                                    Expanded(
+                                      child: Center(
+                                        child: InkWell(
+                                          borderRadius: BorderRadius.circular(14),
+                                          onTap: () {
+                                            Navigator.of(bottomSheetContext).pop();
+                                          },
+                                          child: Container(
+                                            padding: const EdgeInsets.symmetric(
+                                              horizontal: 14,
+                                              vertical: 10,
+                                            ),
+                                            decoration: BoxDecoration(
+                                              color: colors.primary.withValues(alpha: 0.12),
+                                              borderRadius: BorderRadius.circular(14),
+                                              border: Border.all(
+                                                color: colors.primary.withValues(alpha: 0.25),
+                                              ),
+                                            ),
+                                            child: Row(
+                                              mainAxisSize: MainAxisSize.min,
+                                              mainAxisAlignment: MainAxisAlignment.center,
+                                              children: [
+                                                Icon(
+                                                  Icons.close_rounded,
+                                                  size: 18,
+                                                  color: colors.primary,
+                                                ),
+                                                const SizedBox(width: 6),
+                                                Text(
+                                                  'Fermer',
+                                                  textAlign: TextAlign.center,
+                                                  style: TextStyle(
+                                                    color: colors.primary,
+                                                    fontSize: 13,
+                                                    fontWeight: FontWeight.w900,
+                                                  ),
+                                                ),
+                                              ],
+                                            ),
+                                          ),
+                                        ),
+                                      ),
+                                    ),
+
+                                  ],
+                                ),
+                              ),
+
+                              const Divider(height: 1),
+
+                              Expanded(
+                                child: TrackerPlayerAnalysisWidget(
+                                  analysisDocId: analysisDocId,
+                                  teamId: '',
+                                  playerName: playerDisplayName(player!),
+                                  player: player,
+                                  isMatch: (item.match == null)?false:true,
+                                  showHeader: false,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      );
+                    },
+                  );
+                },
+                child: activityRing(
+                  context: context,
+                  teamPlayerMetricScores: teamPlayerMetricScores,
+                  teamWorkloadSummary: item.teamWorkloadSummary!,
+                ),
+              ),
             ],
-            if(item.withTracker && teamPlayerMetricScores == null && item.teamWorkloadSummary != null) ... [
+            if(isManager && item.withTracker && item.teamWorkloadSummary != null) ... [
               const SizedBox(height: 10),
-              activityRing(context: context, teamPlayerMetricScores: teamPlayerMetricScores, teamWorkloadSummary: item.teamWorkloadSummary!),
+              InkWell(
+                borderRadius: BorderRadius.circular(16),
+                onTap: () {
+                  final colors = context.appColors;
+
+                  showGeneralDialog(
+                    context: context,
+                    barrierDismissible: false,
+                    barrierColor: Colors.black54,
+                    transitionDuration: const Duration(milliseconds: 180),
+                    pageBuilder: (
+                        BuildContext dialogContext,
+                        Animation<double> animation,
+                        Animation<double> secondaryAnimation,
+                        ) {
+                      return Material(
+                        color: colors.background,
+                        child: SafeArea(
+                          child: Column(
+                            children: [
+                              Padding(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 12,
+                                  vertical: 8,
+                                ),
+                                child: SizedBox(
+                                  height: 48,
+                                  child: Stack(
+                                    alignment: Alignment.center,
+                                    children: [
+                                      Center(
+                                        child: Padding(
+                                          padding: const EdgeInsets.symmetric(horizontal: 110),
+                                          child: Text(
+                                            'Statistiques tracker',
+                                            maxLines: 1,
+                                            overflow: TextOverflow.ellipsis,
+                                            textAlign: TextAlign.center,
+                                            style: TextStyle(
+                                              color: colors.textPrimary,
+                                              fontSize: 18,
+                                              fontWeight: FontWeight.w900,
+                                            ),
+                                          ),
+                                        ),
+                                      ),
+
+                                      Align(
+                                        alignment: Alignment.centerRight,
+                                        child: InkWell(
+                                          borderRadius: BorderRadius.circular(14),
+                                          onTap: () {
+                                            Navigator.of(dialogContext).pop();
+                                          },
+                                          child: Container(
+                                            padding: const EdgeInsets.symmetric(
+                                              horizontal: 14,
+                                              vertical: 10,
+                                            ),
+                                            decoration: BoxDecoration(
+                                              color: colors.primary.withValues(alpha: 0.12),
+                                              borderRadius: BorderRadius.circular(14),
+                                              border: Border.all(
+                                                color: colors.primary.withValues(alpha: 0.25),
+                                              ),
+                                            ),
+                                            child: Row(
+                                              mainAxisSize: MainAxisSize.min,
+                                              mainAxisAlignment: MainAxisAlignment.center,
+                                              children: [
+                                                Icon(
+                                                  Icons.close_rounded,
+                                                  size: 18,
+                                                  color: colors.primary,
+                                                ),
+                                                const SizedBox(width: 6),
+                                                Text(
+                                                  'Fermer',
+                                                  textAlign: TextAlign.center,
+                                                  style: TextStyle(
+                                                    color: colors.primary,
+                                                    fontSize: 13,
+                                                    fontWeight: FontWeight.w900,
+                                                  ),
+                                                ),
+                                              ],
+                                            ),
+                                          ),
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ),
+
+                              Divider(
+                                height: 1,
+                                color: colors.border,
+                              ),
+
+                              Expanded(
+                                child: SizedBox(
+                                  width: double.infinity,
+                                  child: Padding(
+                                    padding: const EdgeInsets.all(12),
+                                    child: MatchTrackerStatsTable(
+                                      eventId: item.id,
+                                      teamId: item.training!.teamId!,
+                                      realtime: true,
+                                      isMatch: (item.match == null)?false:true,
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      );
+                    },
+                  );
+                },
+                child: activityRing(
+                  context: context,
+                  teamPlayerMetricScores: teamPlayerMetricScores,
+                  teamWorkloadSummary: item.teamWorkloadSummary!,
+                ),
+              ),
             ],
             if (item.match != null) ...[
               const SizedBox(height: 10),
-              AgendaMatchRow(match: item.match!,withDateTime: false,),
+              InkWell(
+                borderRadius: BorderRadius.circular(12),
+                onTap: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) => MatchDetailScreen(
+                        match: item.match!,
+                        isManager: isManager,
+                        playerId: currentPlayerId,
+                      ),
+                    ),
+                  );
+                },
+                child: AgendaMatchRow(
+                  match: item.match!,
+                  withDateTime: false,
+                ),
+              ),
             ],
           ],
         ),
       ),
     );
   }
+
 
   Widget activityRing({required BuildContext context,
     required TeamPlayerMetricScores? teamPlayerMetricScores,

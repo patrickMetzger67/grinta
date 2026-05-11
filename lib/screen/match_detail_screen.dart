@@ -8,6 +8,7 @@ import '../services/playerService.dart';
 import '../services/teamWorkloadSummaryService.dart';
 import '../util/app_theme.dart';
 import '../model/match.dart' as models;
+import '../util/playerDisplayName.dart';
 import '../widget/match_highlights_timeline.dart';
 import '../widget/match_tracker_stats_table.dart';
 import '../widget/tracker_player_analysis_widget.dart';
@@ -958,7 +959,7 @@ class _StatsTabState extends State<_StatsTab> {
                 return TrackerPlayerAnalysisWidget(
                   analysisDocId: analysisDocId,
                   teamId: widget.match.teamID,
-                  playerName: _playerDisplayName(player),
+                  playerName: playerDisplayName(player),
                   player: player,
                   isMatch: true,
                 );
@@ -983,24 +984,6 @@ class _StatsTabState extends State<_StatsTab> {
     return null;
   }
 
-  String _playerDisplayName(Player player) {
-    final firstName = (player.firstName ?? '').trim();
-    final lastName = (player.lastName ?? '').trim();
-
-    if (firstName.isNotEmpty && lastName.isNotEmpty) {
-      return '$firstName $lastName';
-    }
-
-    if (firstName.isNotEmpty) {
-      return firstName;
-    }
-
-    if (lastName.isNotEmpty) {
-      return lastName;
-    }
-
-    return 'Joueur';
-  }
 }
 
 class _TrackerStatus extends StatelessWidget {

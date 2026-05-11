@@ -204,19 +204,19 @@ class _TrackerPlayerAnalysisContentState
               ),
             ),
           ),
-          _PlayerAnalysisTabDef(
-            label: 'Zones de terrain',
-            compactLabel: 'Terrain',
-            icon: Icons.grid_view_rounded,
-            child: _SectionCard(
-              title: 'Zones terrain',
+          if(widget.isMatch) ... [
+            _PlayerAnalysisTabDef(
+              label: 'Zones de terrain',
+              compactLabel: 'Terrain',
               icon: Icons.grid_view_rounded,
-              child: _FieldZonesView(
-                zones: widget.analysis.distanceByZones,
+              child: _SectionCard(
+                title: 'Zones terrain',
+                icon: Icons.grid_view_rounded,
+                child: _FieldZonesView(
+                  zones: widget.analysis.distanceByZones,
+                ),
               ),
             ),
-          ),
-          if (widget.isMatch)
             _PlayerAnalysisTabDef(
               label: 'Comparaison mi-temps',
               compactLabel: 'Mi-temps',
@@ -229,6 +229,8 @@ class _TrackerPlayerAnalysisContentState
                 ),
               ),
             ),
+          ],
+
           if (widget.showDistanceTimeline)
             _PlayerAnalysisTabDef(
               label: 'Timeline distance',
@@ -242,57 +244,80 @@ class _TrackerPlayerAnalysisContentState
                 ),
               ),
             ),
-          _PlayerAnalysisTabDef(
-            label: 'Heatmap',
-            compactLabel: 'Heatmap',
-            icon: Icons.local_fire_department_rounded,
-            child: _SectionCard(
-              title: 'Carte de chaleur',
+          if(widget.isMatch) ... [
+            _PlayerAnalysisTabDef(
+              label: 'Heatmap',
+              compactLabel: 'Heatmap',
               icon: Icons.local_fire_department_rounded,
-              child: _TrackerHeatmapView(
-                analysis: widget.analysis,
+              child: _SectionCard(
+                title: 'Carte de chaleur',
+                icon: Icons.local_fire_department_rounded,
+                child: _TrackerHeatmapView(
+                  analysis: widget.analysis,
+                ),
+              ),
+            ),
+          ]
+
+        ];
+
+        final int safeSelectedIndex = _selectedIndex.clamp(
+          0,
+          tabs.length - 1,
+        );
+
+        final double minHeight = constraints.hasBoundedHeight
+            ? constraints.maxHeight
+            : 0;
+
+        return Scrollbar(
+          child: SingleChildScrollView(
+            padding: EdgeInsets.only(
+              bottom: 16 + MediaQuery.of(context).padding.bottom,
+            ),
+            child: ConstrainedBox(
+              constraints: BoxConstraints(
+                minHeight: minHeight,
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  if (widget.showHeader && widget.player != null) ...[
+                    _PlayerAnalysisHeader(
+                      analysis: widget.analysis,
+                      teamParam: widget.teamParam,
+                      playerName: widget.playerName,
+                      compact: compact,
+                      player: widget.player!,
+                    ),
+                    const SizedBox(height: 12),
+                  ],
+
+                  _PlayerAnalysisTabSelector(
+                    tabs: tabs,
+                    selectedIndex: safeSelectedIndex,
+                    onSelected: (index) {
+                      setState(() {
+                        _selectedIndex = index;
+                      });
+                    },
+                  ),
+
+                  const SizedBox(height: 12),
+
+                  AnimatedSwitcher(
+                    duration: const Duration(milliseconds: 220),
+                    switchInCurve: Curves.easeOut,
+                    switchOutCurve: Curves.easeIn,
+                    child: KeyedSubtree(
+                      key: ValueKey(safeSelectedIndex),
+                      child: tabs[safeSelectedIndex].child,
+                    ),
+                  ),
+                ],
               ),
             ),
           ),
-        ];
-
-        if (_selectedIndex >= tabs.length) {
-          _selectedIndex = tabs.length - 1;
-        }
-
-        return Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            if (widget.showHeader) ...[
-              _PlayerAnalysisHeader(
-                analysis: widget.analysis,
-                teamParam: widget.teamParam,
-                playerName: widget.playerName,
-                compact: compact,
-                player: widget.player!,
-              ),
-              const SizedBox(height: 12),
-            ],
-            _PlayerAnalysisTabSelector(
-              tabs: tabs,
-              selectedIndex: _selectedIndex,
-              onSelected: (index) {
-                setState(() {
-                  _selectedIndex = index;
-                });
-              },
-            ),
-            const SizedBox(height: 12),
-            AnimatedSwitcher(
-              duration: const Duration(milliseconds: 220),
-              switchInCurve: Curves.easeOut,
-              switchOutCurve: Curves.easeIn,
-              child: KeyedSubtree(
-                key: ValueKey(_selectedIndex),
-                child: tabs[_selectedIndex].child,
-              ),
-            ),
-          ],
         );
       },
     );

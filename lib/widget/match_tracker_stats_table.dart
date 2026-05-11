@@ -15,6 +15,7 @@ class MatchTrackerStatsTable extends StatefulWidget {
   final EdgeInsetsGeometry padding;
   final TeamWorkloadSummaryService? summaryService;
   final PlayerService? playerService;
+  final bool isMatch;
 
   const MatchTrackerStatsTable({
     super.key,
@@ -24,6 +25,7 @@ class MatchTrackerStatsTable extends StatefulWidget {
     this.padding = EdgeInsets.zero,
     this.summaryService,
     this.playerService,
+    this.isMatch = true,
   });
 
   @override
@@ -213,6 +215,7 @@ class _MatchTrackerStatsTableState extends State<MatchTrackerStatsTable> {
           padding: widget.padding,
           teamId: widget.teamId,
           onSort: _onSort,
+          isMatch: widget.isMatch,
         );
       },
     );
@@ -295,6 +298,7 @@ class _TrackerStatsTableContent extends StatelessWidget {
   final EdgeInsetsGeometry padding;
   final String? teamId;
   final void Function(int columnIndex, bool ascending) onSort;
+  final bool isMatch;
 
   const _TrackerStatsTableContent({
     required this.summary,
@@ -305,127 +309,158 @@ class _TrackerStatsTableContent extends StatelessWidget {
     required this.padding,
     required this.onSort,
     this.teamId,
+    required this.isMatch,
   });
 
   @override
   Widget build(BuildContext context) {
     final colors = context.appColors;
 
-    return Padding(
-      padding: padding,
-      child: Container(
-        width: double.infinity,
-        decoration: BoxDecoration(
-          color: colors.card,
-          borderRadius: BorderRadius.circular(22),
-          border: Border.all(color: colors.border),
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            _StatsHeader(summary: summary),
-            Divider(color: colors.border, height: 1),
-            SingleChildScrollView(
-              scrollDirection: Axis.horizontal,
-              child: ConstrainedBox(
-                constraints: const BoxConstraints(
-                  minWidth: 1240,
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final bool hasBoundedHeight = constraints.hasBoundedHeight;
+
+        final double minTableWidth =
+        constraints.hasBoundedWidth && constraints.maxWidth > 1240
+            ? constraints.maxWidth
+            : 1240;
+
+        final Widget tableWidget = SingleChildScrollView(
+          scrollDirection: Axis.horizontal,
+          child: ConstrainedBox(
+            constraints: BoxConstraints(
+              minWidth: minTableWidth,
+            ),
+            child: DataTable(
+              showCheckboxColumn: false,
+              sortColumnIndex: sortColumnIndex,
+              sortAscending: sortAscending,
+              columnSpacing: 16,
+              horizontalMargin: 16,
+              headingRowHeight: 58,
+              dataRowMinHeight: 66,
+              dataRowMaxHeight: 78,
+              dividerThickness: 1,
+              border: TableBorder(
+                horizontalInside: BorderSide(
+                  color: colors.border,
+                  width: 1,
                 ),
-                child: DataTable(
-                  showCheckboxColumn: false,
-                  sortColumnIndex: sortColumnIndex,
-                  sortAscending: sortAscending,
-                  columnSpacing: 16,
-                  horizontalMargin: 16,
-                  headingRowHeight: 58,
-                  dataRowMinHeight: 66,
-                  dataRowMaxHeight: 78,
-                  dividerThickness: 1,
-                  border: TableBorder(
-                    horizontalInside: BorderSide(
-                      color: colors.border,
-                      width: 1,
-                    ),
+              ),
+              columns: [
+                DataColumn(
+                  label: const _TableHeaderCell(
+                    title: 'Joueur',
+                    subtitle: 'nom',
+                    width: 180,
                   ),
-                  columns: [
-                    DataColumn(
-                      label: const _TableHeaderCell(
-                        title: 'Joueur',
-                        subtitle: 'nom',
-                        width: 180,
-                      ),
-                      onSort: onSort,
+                  onSort: onSort,
+                ),
+                DataColumn(
+                  label: const _TableHeaderCell(
+                    title: 'Tracker',
+                    subtitle: 'id',
+                    width: 80,
+                  ),
+                  onSort: onSort,
+                ),
+                for (final metric in metrics)
+                  DataColumn(
+                    numeric: true,
+                    label: _TableHeaderCell(
+                      title: metric.title,
+                      subtitle: metric.subtitle,
+                      width: metric.width,
+                      alignRight: true,
                     ),
-                    DataColumn(
-                      label: const _TableHeaderCell(
-                        title: 'Tracker',
-                        subtitle: 'id',
-                        width: 80,
+                    onSort: onSort,
+                  ),
+              ],
+              rows: rows.map((row) {
+                return DataRow(
+                  onSelectChanged: (_) {
+                    _openPlayerTrackerAnalysis(
+                      context: context,
+                      summary: summary,
+                      row: row,
+                      teamId: teamId,
+                      isMatch: isMatch
+                    );
+                  },
+                  cells: [
+                    DataCell(
+                      SizedBox(
+                        width: 180,
+                        child: _PlayerCell(row: row),
                       ),
-                      onSort: onSort,
+                    ),
+                    DataCell(
+                      SizedBox(
+                        width: 80,
+                        child: Text(
+                          row.trackerId.isEmpty ? '-' : row.trackerId,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: TextStyle(
+                            color: colors.textSecondary,
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
+                      ),
                     ),
                     for (final metric in metrics)
-                      DataColumn(
-                        numeric: true,
-                        label: _TableHeaderCell(
-                          title: metric.title,
-                          subtitle: metric.subtitle,
+                      DataCell(
+                        SizedBox(
                           width: metric.width,
-                          alignRight: true,
+                          child: _MetricCell(
+                            metric: row.metric(metric.key),
+                            formatter: metric.formatter,
+                          ),
                         ),
-                        onSort: onSort,
                       ),
                   ],
-                  rows: rows.map((row) {
-                    return DataRow(
-                      onSelectChanged: (_) {
-                        _openPlayerTrackerAnalysis(
-                          context: context,
-                          summary: summary,
-                          row: row,
-                          teamId: teamId,
-                        );
-                      },
-                      cells: [
-                        DataCell(
-                          SizedBox(
-                            width: 180,
-                            child: _PlayerCell(row: row),
-                          ),
-                        ),
-                        DataCell(
-                          SizedBox(
-                            width: 80,
-                            child: Text(
-                              row.trackerId.isEmpty ? '-' : row.trackerId,
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                              style: TextStyle(
-                                color: colors.textSecondary,
-                                fontWeight: FontWeight.w700,
-                              ),
-                            ),
-                          ),
-                        ),
-                        for (final metric in metrics)
-                          DataCell(
-                            SizedBox(
-                              width: metric.width,
-                              child: _MetricCell(
-                                metric: row.metric(metric.key),
-                                formatter: metric.formatter,
-                              ),
-                            ),
-                          ),
-                      ],
-                    );
-                  }).toList(),
-                )
-              ),
+                );
+              }).toList(),
             ),
-          ],
-        ),
-      ),
+          ),
+        );
+
+        return Padding(
+          padding: padding,
+          child: Container(
+            width: double.infinity,
+            height: hasBoundedHeight ? double.infinity : null,
+            decoration: BoxDecoration(
+              color: colors.card,
+              borderRadius: BorderRadius.circular(22),
+              border: Border.all(color: colors.border),
+            ),
+            clipBehavior: Clip.antiAlias,
+            child: Column(
+              mainAxisSize: hasBoundedHeight ? MainAxisSize.max : MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                _StatsHeader(summary: summary),
+
+                Divider(
+                  color: colors.border,
+                  height: 1,
+                ),
+
+                if (hasBoundedHeight)
+                  Expanded(
+                    child: SingleChildScrollView(
+                      padding: const EdgeInsets.only(bottom: 16),
+                      child: tableWidget,
+                    ),
+                  )
+                else
+                  tableWidget,
+              ],
+            ),
+          ),
+        );
+      },
     );
   }
   void _openPlayerTrackerAnalysis({
@@ -433,6 +468,7 @@ class _TrackerStatsTableContent extends StatelessWidget {
     required TeamWorkloadSummary summary,
     required _TrackerStatsRow row,
     required String? teamId,
+    required bool isMatch,
   }) {
     final colors = context.appColors;
 
@@ -505,6 +541,7 @@ class _TrackerStatsTableContent extends StatelessWidget {
                               teamId: teamId,
                               playerName: row.playerName,
                               player: row.player,
+                              isMatch: isMatch,
                             ),
                           ],
                         );
