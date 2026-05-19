@@ -11,6 +11,7 @@ list(APPEND FLUTTER_PLUGIN_LIST
   firebase_core
   firebase_storage
   gal
+  geolocator_windows
   media_kit_video
   record_windows
   share_plus

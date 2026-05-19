@@ -13,6 +13,8 @@ import 'package:grinta/widget/app_session_player_season_selector.dart';
 import 'package:provider/provider.dart';
 
 import '../model/agendaItem.dart';
+import '../screen/compo_screen.dart';
+import '../screen/field_localization_screen.dart';
 import '../screen/responsive_chat.dart';
 import '../screen/syncScreen.dart';
 import '../screen/teamDetailScreen.dart';
@@ -60,15 +62,24 @@ class _WebAppRootState extends State<WebAppRoot> {
 
       final matchsWrk = await MatchService().getMatchesByTeamIdBetweenDates(
         teamId: t.keyTeam!,
+        start: Timestamp.fromDate(start),
+        end: Timestamp.fromDate(end),
+        /*
         start: appSession.selectedSeason!.startDate!,
         end: appSession.selectedSeason!.endDate!,
+         */
       );
 
       final trainingsWrk =
       await TrainingService().getTrainingsByTeamIdBetweenDates(
         teamId: t.keyTeam!,
+        start: Timestamp.fromDate(start),
+        end: Timestamp.fromDate(end),
+        /*
         start: appSession.selectedSeason!.startDate!,
         end: appSession.selectedSeason!.endDate!,
+
+         */
       );
 
       for (final m in matchsWrk) {
@@ -228,6 +239,20 @@ class _WebAppRootState extends State<WebAppRoot> {
               icon: Icons.sync,
               page: SyncScreen(),
             ),
+            if (getManagedTeamsIds.isNotEmpty) ...[
+              const WebShellItem(
+                label: 'Terrains',
+                icon: Icons.stadium_outlined,
+                page: FootballFieldLocalizationScreen(),
+              ),
+            ],
+            if (getManagedTeamsIds.isNotEmpty) ...[
+              const WebShellItem(
+                label: 'Compo',
+                icon: Icons.groups_outlined,
+                page: CompoScreen(),
+              ),
+            ],
           ],
         ),
 

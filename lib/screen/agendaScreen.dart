@@ -45,6 +45,7 @@ class _AgendaScreenState extends State<AgendaScreen> {
   final GlobalKey _weeksViewportKey = GlobalKey();
 
   late DateTime _selectedWeekStart;
+  late DateTime _selectedWeekEnd;
   late DateTime _selectedDate;
   late DateTime _rangeStart;
   late DateTime _rangeEnd;
@@ -54,6 +55,7 @@ class _AgendaScreenState extends State<AgendaScreen> {
 
   late DateTime _displayedMonth;
   AgendaCalendarMode _calendarMode = AgendaCalendarMode.day;
+  bool _forceLoadItemsOnNextMonthPageChange = false;
 
   final Map<int, GlobalKey> _weekKeys = <int, GlobalKey>{};
 
@@ -79,8 +81,14 @@ class _AgendaScreenState extends State<AgendaScreen> {
 
     _selectedDate = now;
     _selectedWeekStart = _startOfWeek(now);
+    _selectedWeekEnd = _endOfWeek(now);
+    /*
     _rangeStart = _startOfMonth(now);
     _rangeEnd = _endOfMonth(now);
+     */
+
+    _rangeStart = _selectedWeekStart;
+    _rangeEnd = _selectedWeekEnd;
 
     _monthPagerAnchor = DateTime(now.year, now.month, 1);
     _displayedMonth = DateTime(now.year, now.month, 1);
@@ -209,12 +217,21 @@ class _AgendaScreenState extends State<AgendaScreen> {
       DateTime(newMonth.year, newMonth.month, safeDay),
     );
     final newSelectedWeek = _startOfWeek(newSelectedDate);
+    final forceLoadItems = _forceLoadItemsOnNextMonthPageChange;
+    _forceLoadItemsOnNextMonthPageChange = false;
 
     setState(() {
       _displayedMonth = newMonth;
       _selectedDate = newSelectedDate;
       _selectedWeekStart = newSelectedWeek;
     });
+
+    if (forceLoadItems) {
+      _rangeStart = _startOfMonth(newMonth);
+      _rangeEnd = _endOfMonth(newMonth);
+      await _loadItems(scrollToSelection: true);
+      return;
+    }
 
     final isBeforeRange =
         newSelectedWeek.millisecondsSinceEpoch < _rangeStart.millisecondsSinceEpoch;
@@ -311,7 +328,7 @@ class _AgendaScreenState extends State<AgendaScreen> {
     }
   }
 
-  Future<void> _goToPreviousWeek() async {
+  Future<void> _goToPreviousWeek({bool forceLoadItems = false}) async {
     final previousWeek = _selectedWeekStart.subtract(const Duration(days: 7));
 
     setState(() {
@@ -320,7 +337,17 @@ class _AgendaScreenState extends State<AgendaScreen> {
       _displayedMonth = DateTime(_selectedDate.year, _selectedDate.month, 1);
     });
 
+    if (forceLoadItems) {
+      _rangeStart = previousWeek;
+      _rangeEnd = _endOfWeek(previousWeek);
+    }
+
     _jumpMonthPagerToDisplayedMonth();
+
+    if (forceLoadItems) {
+      await _loadItems(scrollToSelection: true);
+      return;
+    }
 
     if (previousWeek.millisecondsSinceEpoch < _rangeStart.millisecondsSinceEpoch) {
       _rangeStart = previousWeek;
@@ -333,7 +360,7 @@ class _AgendaScreenState extends State<AgendaScreen> {
     }
   }
 
-  Future<void> _goToNextWeek() async {
+  Future<void> _goToNextWeek({bool forceLoadItems = false}) async {
     final nextWeek = _selectedWeekStart.add(const Duration(days: 7));
 
     setState(() {
@@ -342,7 +369,17 @@ class _AgendaScreenState extends State<AgendaScreen> {
       _displayedMonth = DateTime(_selectedDate.year, _selectedDate.month, 1);
     });
 
+    if (forceLoadItems) {
+      _rangeStart = nextWeek;
+      _rangeEnd = _endOfWeek(nextWeek);
+    }
+
     _jumpMonthPagerToDisplayedMonth();
+
+    if (forceLoadItems) {
+      await _loadItems(scrollToSelection: true);
+      return;
+    }
 
     if (nextWeek.millisecondsSinceEpoch > _rangeEnd.millisecondsSinceEpoch) {
       _rangeEnd = _endOfWeek(nextWeek);
@@ -353,6 +390,26 @@ class _AgendaScreenState extends State<AgendaScreen> {
     if (_calendarMode == AgendaCalendarMode.month) {
       await _scrollToSelectedWeek();
     }
+  }
+
+  Future<void> _goToPreviousMonthFromHeader() async {
+    if (!_monthPageController.hasClients) return;
+
+    _forceLoadItemsOnNextMonthPageChange = true;
+    await _monthPageController.previousPage(
+      duration: const Duration(milliseconds: 220),
+      curve: Curves.easeOut,
+    );
+  }
+
+  Future<void> _goToNextMonthFromHeader() async {
+    if (!_monthPageController.hasClients) return;
+
+    _forceLoadItemsOnNextMonthPageChange = true;
+    await _monthPageController.nextPage(
+      duration: const Duration(milliseconds: 220),
+      curve: Curves.easeOut,
+    );
   }
 
   Future<void> _jumpToToday() async {
@@ -496,8 +553,8 @@ class _AgendaScreenState extends State<AgendaScreen> {
                     items: _items,
                     periodLabel: _formatPeriodLabel(_rangeStart, _rangeEnd),
                   ),
-            //      const SizedBox(height: 12),
-            //      const _AgendaLegend(),
+                  //      const SizedBox(height: 12),
+                  //      const _AgendaLegend(),
                 ],
               ),
             ),
@@ -619,6 +676,28 @@ class _AgendaScreenState extends State<AgendaScreen> {
                 mode: _calendarMode,
                 eventTypesByDay: headerEventTypesByDay,
                 onModeChanged: _setCalendarMode,
+                onPreviousMonth: () async {
+                  await _goToPreviousMonthFromHeader();
+                },
+                onNextMonth: () async {
+                  await _goToNextMonthFromHeader();
+                },
+                onPreviousWeek: () async {
+                  await _goToPreviousWeek(forceLoadItems: true);
+                },
+                onNextWeek: () async {
+                  await _goToNextWeek(forceLoadItems: true);
+                },
+                onPreviousDay: () async {
+                  await _selectDate(
+                    _selectedDate.subtract(const Duration(days: 1)),
+                  );
+                },
+                onNextDay: () async {
+                  await _selectDate(
+                    _selectedDate.add(const Duration(days: 1)),
+                  );
+                },
                 onTodayTap: () async {
                   await _jumpToToday();
                 },
@@ -804,6 +883,12 @@ class _GrintaStyleCalendarHeader extends StatelessWidget {
   final AgendaCalendarMode mode;
   final Map<int, List<AgendaItemType>> eventTypesByDay;
   final ValueChanged<AgendaCalendarMode> onModeChanged;
+  final Future<void> Function() onPreviousMonth;
+  final Future<void> Function() onNextMonth;
+  final Future<void> Function() onPreviousWeek;
+  final Future<void> Function() onNextWeek;
+  final Future<void> Function() onPreviousDay;
+  final Future<void> Function() onNextDay;
   final VoidCallback onTodayTap;
   final ValueChanged<int> onPageChanged;
   final ValueChanged<DateTime> onDateTap;
@@ -817,6 +902,12 @@ class _GrintaStyleCalendarHeader extends StatelessWidget {
     required this.mode,
     required this.eventTypesByDay,
     required this.onModeChanged,
+    required this.onPreviousMonth,
+    required this.onNextMonth,
+    required this.onPreviousWeek,
+    required this.onNextWeek,
+    required this.onPreviousDay,
+    required this.onNextDay,
     required this.onTodayTap,
     required this.onPageChanged,
     required this.onDateTap,
@@ -843,6 +934,67 @@ class _GrintaStyleCalendarHeader extends StatelessWidget {
         : isMonth
         ? _monthGridHeight(displayedMonth)
         : 64.0;
+
+    Future<void> goToPreviousHeaderPeriod() async {
+      if (isMonth) {
+        await onPreviousMonth();
+        return;
+      }
+
+      if (isWeek) {
+        await onPreviousWeek();
+        return;
+      }
+
+      if (isDay) {
+        await onPreviousDay();
+      }
+    }
+
+    Future<void> goToNextHeaderPeriod() async {
+      if (isMonth) {
+        await onNextMonth();
+        return;
+      }
+
+      if (isWeek) {
+        await onNextWeek();
+        return;
+      }
+
+      if (isDay) {
+        await onNextDay();
+      }
+    }
+
+    Widget headerArrow({
+      required String label,
+      required Future<void> Function() onTap,
+      required String tooltip,
+    }) {
+      return Tooltip(
+        message: tooltip,
+        child: InkWell(
+          borderRadius: BorderRadius.circular(10),
+          onTap: () async {
+            await onTap();
+          },
+          child: Padding(
+            padding: const EdgeInsets.symmetric(
+              horizontal: 8,
+              vertical: 6,
+            ),
+            child: Text(
+              label,
+              style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                fontWeight: FontWeight.w800,
+                color: colors.textPrimary,
+              ),
+            ),
+          ),
+        ),
+      );
+    }
 
     return GestureDetector(
       behavior: HitTestBehavior.opaque,
@@ -872,39 +1024,23 @@ class _GrintaStyleCalendarHeader extends StatelessWidget {
               Row(
                 children: [
                   Expanded(
-                    child: isMonth
+                    child: (isMonth || isWeek || isDay)
                         ? Row(
                       children: [
-                        InkWell(
-                          borderRadius: BorderRadius.circular(10),
-                          onTap: () async {
-                            if (!pageController.hasClients) return;
-                            await pageController.previousPage(
-                              duration: const Duration(milliseconds: 220),
-                              curve: Curves.easeOut,
-                            );
-                          },
-                          child: Padding(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 8,
-                              vertical: 6,
-                            ),
-                            child: Text(
-                              '<',
-                              style: Theme.of(context)
-                                  .textTheme
-                                  .titleSmall
-                                  ?.copyWith(
-                                fontWeight: FontWeight.w800,
-                                color: colors.textPrimary,
-                              ),
-                            ),
-                          ),
+                        headerArrow(
+                          label: '<',
+                          tooltip: isDay
+                              ? 'Jour précédent'
+                              : isWeek
+                              ? 'Semaine précédente'
+                              : 'Mois précédent',
+                          onTap: goToPreviousHeaderPeriod,
                         ),
                         Expanded(
                           child: Center(
                             child: Text(
                               headerTitle,
+                              textAlign: TextAlign.center,
                               style: Theme.of(context)
                                   .textTheme
                                   .titleSmall
@@ -915,31 +1051,14 @@ class _GrintaStyleCalendarHeader extends StatelessWidget {
                             ),
                           ),
                         ),
-                        InkWell(
-                          borderRadius: BorderRadius.circular(10),
-                          onTap: () async {
-                            if (!pageController.hasClients) return;
-                            await pageController.nextPage(
-                              duration: const Duration(milliseconds: 220),
-                              curve: Curves.easeOut,
-                            );
-                          },
-                          child: Padding(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 8,
-                              vertical: 6,
-                            ),
-                            child: Text(
-                              '>',
-                              style: Theme.of(context)
-                                  .textTheme
-                                  .titleSmall
-                                  ?.copyWith(
-                                fontWeight: FontWeight.w800,
-                                color: colors.textPrimary,
-                              ),
-                            ),
-                          ),
+                        headerArrow(
+                          label: '>',
+                          tooltip: isDay
+                              ? 'Jour suivant'
+                              : isWeek
+                              ? 'Semaine suivante'
+                              : 'Mois suivant',
+                          onTap: goToNextHeaderPeriod,
                         ),
                       ],
                     )
@@ -2066,10 +2185,12 @@ class _AgendaItemCard extends StatelessWidget {
     String? userId = context.watch<AppSession>().user!.uid;
 
     bool isManager = false;
+    String teamId='';
 
     if(item.match != null) {
       for(var t in item.match!.teams!) {
         isManager = managedTeamsIds.contains(t);
+        teamId = t;
         if(isManager) {
           break;
         }
@@ -2218,6 +2339,7 @@ class _AgendaItemCard extends StatelessWidget {
 
                               const Divider(height: 1),
 
+
                               Expanded(
                                 child: TrackerPlayerAnalysisWidget(
                                   analysisDocId: analysisDocId,
@@ -2249,121 +2371,134 @@ class _AgendaItemCard extends StatelessWidget {
                 onTap: () {
                   final colors = context.appColors;
 
-                  showGeneralDialog(
-                    context: context,
-                    barrierDismissible: false,
-                    barrierColor: Colors.black54,
-                    transitionDuration: const Duration(milliseconds: 180),
-                    pageBuilder: (
-                        BuildContext dialogContext,
-                        Animation<double> animation,
-                        Animation<double> secondaryAnimation,
-                        ) {
-                      return Material(
-                        color: colors.background,
-                        child: SafeArea(
-                          child: Column(
-                            children: [
-                              Padding(
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: 12,
-                                  vertical: 8,
-                                ),
-                                child: SizedBox(
-                                  height: 48,
-                                  child: Stack(
-                                    alignment: Alignment.center,
-                                    children: [
-                                      Center(
-                                        child: Padding(
-                                          padding: const EdgeInsets.symmetric(horizontal: 110),
-                                          child: Text(
-                                            'Statistiques tracker',
-                                            maxLines: 1,
-                                            overflow: TextOverflow.ellipsis,
-                                            textAlign: TextAlign.center,
-                                            style: TextStyle(
-                                              color: colors.textPrimary,
-                                              fontSize: 18,
-                                              fontWeight: FontWeight.w900,
-                                            ),
-                                          ),
-                                        ),
-                                      ),
 
-                                      Align(
-                                        alignment: Alignment.centerRight,
-                                        child: InkWell(
-                                          borderRadius: BorderRadius.circular(14),
-                                          onTap: () {
-                                            Navigator.of(dialogContext).pop();
-                                          },
-                                          child: Container(
-                                            padding: const EdgeInsets.symmetric(
-                                              horizontal: 14,
-                                              vertical: 10,
-                                            ),
-                                            decoration: BoxDecoration(
-                                              color: colors.primary.withValues(alpha: 0.12),
-                                              borderRadius: BorderRadius.circular(14),
-                                              border: Border.all(
-                                                color: colors.primary.withValues(alpha: 0.25),
+                  if(item.match != null) {
+                    Navigator.of(context).push(
+                      MaterialPageRoute(
+                        fullscreenDialog: true,
+                        builder: (_) => MatchDetailScreen(
+                          match: item.match!,
+                          isManager: isManager,
+                          playerId: currentPlayerId,
+                        ),
+                      ),
+                    );
+                  } else {
+                    showGeneralDialog(
+                      context: context,
+                      barrierDismissible: false,
+                      barrierColor: Colors.black54,
+                      transitionDuration: const Duration(milliseconds: 180),
+                      pageBuilder: (
+                          BuildContext dialogContext,
+                          Animation<double> animation,
+                          Animation<double> secondaryAnimation,
+                          ) {
+                        return Material(
+                          color: colors.background,
+                          child: SafeArea(
+                            child: Column(
+                              children: [
+                                Padding(
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 12,
+                                    vertical: 8,
+                                  ),
+                                  child: SizedBox(
+                                    height: 48,
+                                    child: Stack(
+                                      alignment: Alignment.center,
+                                      children: [
+                                        Center(
+                                          child: Padding(
+                                            padding: const EdgeInsets.symmetric(horizontal: 110),
+                                            child: Text(
+                                              'Statistiques tracker',
+                                              maxLines: 1,
+                                              overflow: TextOverflow.ellipsis,
+                                              textAlign: TextAlign.center,
+                                              style: TextStyle(
+                                                color: colors.textPrimary,
+                                                fontSize: 18,
+                                                fontWeight: FontWeight.w900,
                                               ),
                                             ),
-                                            child: Row(
-                                              mainAxisSize: MainAxisSize.min,
-                                              mainAxisAlignment: MainAxisAlignment.center,
-                                              children: [
-                                                Icon(
-                                                  Icons.close_rounded,
-                                                  size: 18,
-                                                  color: colors.primary,
+                                          ),
+                                        ),
+
+                                        Align(
+                                          alignment: Alignment.centerRight,
+                                          child: InkWell(
+                                            borderRadius: BorderRadius.circular(14),
+                                            onTap: () {
+                                              Navigator.of(dialogContext).pop();
+                                            },
+                                            child: Container(
+                                              padding: const EdgeInsets.symmetric(
+                                                horizontal: 14,
+                                                vertical: 10,
+                                              ),
+                                              decoration: BoxDecoration(
+                                                color: colors.primary.withValues(alpha: 0.12),
+                                                borderRadius: BorderRadius.circular(14),
+                                                border: Border.all(
+                                                  color: colors.primary.withValues(alpha: 0.25),
                                                 ),
-                                                const SizedBox(width: 6),
-                                                Text(
-                                                  'Fermer',
-                                                  textAlign: TextAlign.center,
-                                                  style: TextStyle(
+                                              ),
+                                              child: Row(
+                                                mainAxisSize: MainAxisSize.min,
+                                                mainAxisAlignment: MainAxisAlignment.center,
+                                                children: [
+                                                  Icon(
+                                                    Icons.close_rounded,
+                                                    size: 18,
                                                     color: colors.primary,
-                                                    fontSize: 13,
-                                                    fontWeight: FontWeight.w900,
                                                   ),
-                                                ),
-                                              ],
+                                                  const SizedBox(width: 6),
+                                                  Text(
+                                                    'Fermer',
+                                                    textAlign: TextAlign.center,
+                                                    style: TextStyle(
+                                                      color: colors.primary,
+                                                      fontSize: 13,
+                                                      fontWeight: FontWeight.w900,
+                                                    ),
+                                                  ),
+                                                ],
+                                              ),
                                             ),
                                           ),
                                         ),
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                              ),
-
-                              Divider(
-                                height: 1,
-                                color: colors.border,
-                              ),
-
-                              Expanded(
-                                child: SizedBox(
-                                  width: double.infinity,
-                                  child: Padding(
-                                    padding: const EdgeInsets.all(12),
-                                    child: MatchTrackerStatsTable(
-                                      eventId: item.id,
-                                      teamId: item.training!.teamId!,
-                                      realtime: true,
-                                      isMatch: (item.match == null)?false:true,
+                                      ],
                                     ),
                                   ),
                                 ),
-                              ),
-                            ],
+
+                                Divider(
+                                  height: 1,
+                                  color: colors.border,
+                                ),
+                                Expanded(
+                                  child: SizedBox(
+                                    width: double.infinity,
+                                    child: Padding(
+                                      padding: const EdgeInsets.all(12),
+                                      child: MatchTrackerStatsTable(
+                                        eventId: item.id,
+                                        teamId: (item.training != null)?item.training!.teamId!:teamId,
+                                        realtime: true,
+                                        isMatch: (item.match == null)?false:true,
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
                           ),
-                        ),
-                      );
-                    },
-                  );
+                        );
+                      },
+                    );
+                  }
                 },
                 child: activityRing(
                   context: context,

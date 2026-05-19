@@ -1,4 +1,3 @@
-
 class MatchStatHighLight {
   String? player;
   String? incomingPlayer;
@@ -7,46 +6,60 @@ class MatchStatHighLight {
   String? type;
 
   MatchStatHighLight({
-    this.player='',
-    this.incomingPlayer='',
-    this.team='',
-    this.time=0,
-    this.type=''
+    this.player = '',
+    this.incomingPlayer = '',
+    this.team = '',
+    this.time = 0,
+    this.type = '',
   });
-  MatchStatHighLight.fromMap(Map<String,dynamic>? map) {
 
-    if(map!['team'] != null) {
-      team = map['team'];
-    } else {
-      team = '';
-    }
-    if(map['player'] != null) {
-      player = map['player'];
-    } else {
-      player = '';
-    }
-    if(map['time'] != null) {
-      time = map['time'];
-    } else {
-      time = 0;
-    }
-    if(map['type'] != null) {
-      type = map['type'];
-    } else {
-      type = '';
-    }
-    if(map['incomingPlayer'] != null) {
-      incomingPlayer = map['incomingPlayer'];
-    } else {
-      incomingPlayer = '';
-    }
+  MatchStatHighLight.fromMap(Map<String, dynamic>? map) {
+    final data = map ?? <String, dynamic>{};
+
+    team = _stringFromAny(
+      data['team'] ??
+          data['teamName'] ??
+          data['club'] ??
+          data['side'],
+    );
+
+    player = _stringFromAny(
+      data['player'] ??
+          data['playerName'] ??
+          data['outgoingPlayer'] ??
+          data['playerOut'] ??
+          data['outPlayer'] ??
+          data['sortant'],
+    );
+
+    incomingPlayer = _stringFromAny(
+      data['incomingPlayer'] ??
+          data['incoming_player'] ??
+          data['incoming'] ??
+          data['incomingName'] ??
+          data['incomingPlayerName'] ??
+          data['playerIn'] ??
+          data['inPlayer'] ??
+          data['entrant'] ??
+          data['substitute'] ??
+          data['assist'],
+    );
+
+    time = _intFromAny(
+      data['time'] ?? data['minute'] ?? data['elapsed'],
+    );
+
+    type = _stringFromAny(
+      data['type'] ?? data['eventType'] ?? data['detail'] ?? data['label'],
+    );
   }
+
   @override
   String toString() {
-    return 'Highlight => team=$team ' +
-        'player=$player ' +
-        'time=$time ' +
-        'type=$type ' +
+    return 'Highlight => team=$team '
+        'player=$player '
+        'time=$time '
+        'type=$type '
         'incomingPlayer=$incomingPlayer';
   }
 }
@@ -57,34 +70,36 @@ class MatchStatPlayer {
   String? shirt;
 
   MatchStatPlayer({
-    this.team='',
-    this.player='',
-    this.shirt='',
+    this.team = '',
+    this.player = '',
+    this.shirt = '',
   });
 
-  MatchStatPlayer.fromMap(Map<String,dynamic>? map, String? _team) {
-    team = _team;
-    if(map!['name'] != null) {
-      player = map['name'];
-    }
-    if(map['shirt'] != null) {
-      shirt = map['shirt'];
-    }
-  }
-  @override
-  String toString() {
-    return 'Player => team=$team ' +
-         'name=$player ' +
-        'shirt=$shirt';
+  MatchStatPlayer.fromMap(Map<String, dynamic>? map, String? selectedTeam) {
+    final data = map ?? <String, dynamic>{};
+
+    team = selectedTeam ?? '';
+    player = _stringFromAny(
+      data['name'] ?? data['player'] ?? data['playerName'] ?? data['nom'],
+    );
+    shirt = _stringFromAny(
+      data['shirt'] ?? data['number'] ?? data['shirtNumber'] ?? data['numero'],
+    );
   }
 
+  @override
+  String toString() {
+    return 'Player => team=$team '
+        'name=$player '
+        'shirt=$shirt';
+  }
 }
 
 class MatchStats {
   String? matchId;
-  List<MatchStatHighLight>? highlights=[];
-  List<MatchStatPlayer>? titulars=[];
-  List<MatchStatPlayer>? substitutes=[];
+  List<MatchStatHighLight>? highlights = [];
+  List<MatchStatPlayer>? titulars = [];
+  List<MatchStatPlayer>? substitutes = [];
 
   MatchStats({
     this.matchId,
@@ -93,48 +108,101 @@ class MatchStats {
     this.substitutes,
   });
 
-  MatchStats.fromMap(Map<String,dynamic>? map) {
+  MatchStats.fromMap(Map<String, dynamic>? map) {
+    final data = map ?? <String, dynamic>{};
 
-    if(map!['id'] != null) {
-      matchId = map['id'];
-    } else {
-      matchId = '';
-    }
+    matchId = _stringFromAny(data['id'] ?? data['matchId']);
+    highlights = <MatchStatHighLight>[];
+    titulars = <MatchStatPlayer>[];
+    substitutes = <MatchStatPlayer>[];
 
-    if(map['highLights'] != null) {
-      List<dynamic> tmpHighLights= map['highLights'];
-      for(int i=0; i < tmpHighLights.length;i++) {
-        MatchStatHighLight _matchStatHighLight = MatchStatHighLight.fromMap(tmpHighLights[i]);
-        highlights!.add(_matchStatHighLight);
-      }
-    }
-    if(map['players'] != null) {
-      List<dynamic> tmpPlayers= map['players'];
-      for(int i=0; i < tmpPlayers.length;i++) {
-        String team = tmpPlayers[i]['team'];
-        List<dynamic> tmpTitulars= tmpPlayers[i]['titulars'];
-        for(int y=0; y < tmpTitulars.length;y++) {
-          MatchStatPlayer _matchStatPlayer = MatchStatPlayer.fromMap(tmpTitulars[y],team);
-          titulars!.add(_matchStatPlayer);
+    final rawHighlights = data['highLights'] ?? data['highlights'] ?? data['events'];
+    if (rawHighlights is List) {
+      for (final item in rawHighlights) {
+        if (item is Map) {
+          highlights!.add(
+            MatchStatHighLight.fromMap(Map<String, dynamic>.from(item)),
+          );
         }
-
-        List<dynamic> tmpSubstitutes= tmpPlayers[i]['substitutes'];
-        for(int y=0; y < tmpSubstitutes.length;y++) {
-          MatchStatPlayer _matchStatPlayer = MatchStatPlayer.fromMap(tmpSubstitutes[y],team);
-          substitutes!.add(_matchStatPlayer);
-        }
-
       }
     }
 
+    final rawPlayers = data['players'];
+    if (rawPlayers is List) {
+      for (final teamBlock in rawPlayers) {
+        if (teamBlock is! Map) continue;
+
+        final teamData = Map<String, dynamic>.from(teamBlock);
+        final team = _stringFromAny(teamData['team'] ?? teamData['teamName']);
+
+        final rawTitulars = teamData['titulars'] ?? teamData['starters'];
+        if (rawTitulars is List) {
+          for (final item in rawTitulars) {
+            if (item is Map) {
+              titulars!.add(
+                MatchStatPlayer.fromMap(Map<String, dynamic>.from(item), team),
+              );
+            }
+          }
+        }
+
+        final rawSubstitutes = teamData['substitutes'] ?? teamData['subs'];
+        if (rawSubstitutes is List) {
+          for (final item in rawSubstitutes) {
+            if (item is Map) {
+              substitutes!.add(
+                MatchStatPlayer.fromMap(Map<String, dynamic>.from(item), team),
+              );
+            }
+          }
+        }
+      }
+    }
   }
 
   @override
   String toString() {
-    return 'MatchStats => id=$matchId ' +
-        'highlights=${highlights.toString()} ' +
-        'titulars=${titulars.toString()} ' +
+    return 'MatchStats => id=$matchId '
+        'highlights=${highlights.toString()} '
+        'titulars=${titulars.toString()} '
         'substitutes=${substitutes.toString()}';
   }
+}
 
+String _stringFromAny(dynamic value) {
+  if (value == null) return '';
+
+  if (value is String) {
+    return value.trim();
+  }
+
+  if (value is num || value is bool) {
+    return value.toString();
+  }
+
+  if (value is Map) {
+    final name = value['name'] ??
+        value['playerName'] ??
+        value['displayName'] ??
+        value['shortName'] ??
+        value['label'];
+    return _stringFromAny(name);
+  }
+
+  return value.toString().trim();
+}
+
+int _intFromAny(dynamic value) {
+  if (value == null) return 0;
+
+  if (value is int) return value;
+  if (value is double) return value.round();
+  if (value is num) return value.toInt();
+
+  if (value is String) {
+    final cleaned = value.replaceAll(RegExp(r'[^0-9]'), '');
+    return int.tryParse(cleaned) ?? 0;
+  }
+
+  return 0;
 }

@@ -9,6 +9,7 @@ import '../services/teamWorkloadSummaryService.dart';
 import '../util/app_theme.dart';
 import '../model/match.dart' as models;
 import '../util/playerDisplayName.dart';
+import '../widget/match_compo_widget.dart';
 import '../widget/match_highlights_timeline.dart';
 import '../widget/match_tracker_stats_table.dart';
 import '../widget/tracker_player_analysis_widget.dart';
@@ -681,58 +682,34 @@ class _CompoTab extends StatelessWidget {
   Widget build(BuildContext context) {
     return _TabContainer(
       children: [
-        _SectionCard(
-          title: 'Composition',
-          icon: Icons.groups_rounded,
-          child: Column(
-            children: [
-              _EmptyState(
-                icon: Icons.sports_soccer_rounded,
-                title: 'Composition non renseignée',
-                message: 'Tu pourras brancher ici la composition de chaque équipe.',
-              ),
-              const SizedBox(height: 12),
-              LayoutBuilder(
-                builder: (context, constraints) {
-                  final bool compact = constraints.maxWidth < 520;
+        StreamBuilder<MatchStats?>(
+          stream: MatchStatsService().streamMatchStatsByMatchId(match.id ?? ''),
+          builder: (context, snapshot) {
+            if (snapshot.connectionState == ConnectionState.waiting) {
+              return const Center(
+                child: Padding(
+                  padding: EdgeInsets.all(24),
+                  child: CircularProgressIndicator(),
+                ),
+              );
+            }
 
-                  if (compact) {
-                    return Column(
-                      children: [
-                        _MiniTeamCard(
-                          title: _clean(match.team1, fallback: 'Équipe 1'),
-                          subtitle: 'Titulaires / remplaçants',
-                        ),
-                        const SizedBox(height: 12),
-                        _MiniTeamCard(
-                          title: _clean(match.team2, fallback: 'Équipe 2'),
-                          subtitle: 'Titulaires / remplaçants',
-                        ),
-                      ],
-                    );
-                  }
+            if (snapshot.hasError) {
+              return _EmptyState(
+                icon: Icons.error_outline_rounded,
+                title: 'Erreur composition',
+                message: snapshot.error.toString(),
+              );
+            }
 
-                  return Row(
-                    children: [
-                      Expanded(
-                        child: _MiniTeamCard(
-                          title: _clean(match.team1, fallback: 'Équipe 1'),
-                          subtitle: 'Titulaires / remplaçants',
-                        ),
-                      ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: _MiniTeamCard(
-                          title: _clean(match.team2, fallback: 'Équipe 2'),
-                          subtitle: 'Titulaires / remplaçants',
-                        ),
-                      ),
-                    ],
-                  );
-                },
-              ),
-            ],
-          ),
+            final matchStats = snapshot.data;
+
+            return MatchCompoWidget(
+              matchStats: matchStats,
+              team1: match.team1,
+              team2: match.team2,
+            );
+          },
         ),
       ],
     );
