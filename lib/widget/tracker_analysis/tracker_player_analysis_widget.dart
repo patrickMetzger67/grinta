@@ -1,0 +1,436 @@
+import 'package:flutter/material.dart';
+import 'package:flutter_svg/svg.dart';
+import 'package:grinta/core/extensions/l10n_extension.dart';
+import 'package:grinta/l10n/app_localizations.dart';
+import 'package:grinta/widget/playerPhoto.dart';
+
+import '../../model/player.dart';
+import '../../model/teamParam.dart';
+import '../../model/tracker/trackerData.dart';
+import '../../services/teamParamService.dart';
+import '../../services/trackerDataAnalysisService.dart';
+import '../../services/trackerSvgService.dart';
+import '../../util/app_theme.dart';
+part 'tracker_analysis_tabs.dart';
+part 'tracker_analysis_views.dart';
+part 'tracker_analysis_heatmap.dart';
+
+class TrackerPlayerAnalysisWidget extends StatefulWidget {
+  /// Option 1 : tu fournis directement l'objet déjà chargé.
+  final TrackerAnalysisResult? analysis;
+
+  /// Option 2 : le widget charge le document Firestore.
+  /// Exemple : "53514382_07"
+  final String? analysisDocId;
+
+  /// Obligatoire pour utiliser les bons paramètres d’équipe.
+  /// Si vide ou null, fallback sur TeamParam.defaultTeamId.
+  final String? teamId;
+
+  /// Optionnel : nom affiché dans l’en-tête.
+  final String? playerName;
+
+  final bool showHeader;
+  final bool showDistanceTimeline;
+
+  /// Permet d’afficher ou non l’onglet "Comparaison mi-temps".
+  /// Pour un entraînement, passe false.
+  final bool isMatch;
+  final Player? player;
+
+  const TrackerPlayerAnalysisWidget({
+    super.key,
+    this.analysis,
+    this.analysisDocId,
+    this.teamId,
+    this.playerName,
+    this.showHeader = true,
+    this.showDistanceTimeline = true,
+    this.isMatch = true,
+    required this.player,
+  });
+
+  @override
+  State<TrackerPlayerAnalysisWidget> createState() =>
+      _TrackerPlayerAnalysisWidgetState();
+}
+
+class _TrackerPlayerAnalysisWidgetState
+    extends State<TrackerPlayerAnalysisWidget> {
+  late Future<_TrackerPlayerAnalysisPayload?> _future;
+
+  @override
+  void initState() {
+    super.initState();
+    _future = _load();
+  }
+
+  @override
+  void didUpdateWidget(covariant TrackerPlayerAnalysisWidget oldWidget) {
+    super.didUpdateWidget(oldWidget);
+
+    if (oldWidget.analysis != widget.analysis ||
+        oldWidget.analysisDocId != widget.analysisDocId ||
+        oldWidget.teamId != widget.teamId) {
+      _future = _load();
+    }
+  }
+
+  Future<_TrackerPlayerAnalysisPayload?> _load() async {
+    TrackerAnalysisResult? analysis = widget.analysis;
+
+    final docId = (widget.analysisDocId ?? '').trim();
+
+    if (analysis == null && docId.isNotEmpty) {
+      analysis = await TrackerAnalysisService.getAnalysisById(docId);
+    }
+
+    if (analysis == null) {
+      return null;
+    }
+
+    final safeTeamId = (widget.teamId ?? '').trim().isEmpty
+        ? TeamParam.defaultTeamId
+        : widget.teamId!.trim();
+
+    final teamParam = await TeamParamService.getEffectiveTeamParam(safeTeamId);
+
+    return _TrackerPlayerAnalysisPayload(
+      analysis: analysis,
+      teamParam: teamParam,
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return FutureBuilder<_TrackerPlayerAnalysisPayload?>(
+      future: _future,
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return const _TrackerPlayerLoadingCard();
+        }
+
+        if (snapshot.hasError) {
+          final l10n = context.l10n;
+          return _TrackerPlayerEmptyCard(
+            icon: Icons.error_outline_rounded,
+            title: l10n.errorLoadingTitle,
+            message: snapshot.error.toString(),
+          );
+        }
+
+        final payload = snapshot.data;
+
+        if (payload == null) {
+          final l10n = context.l10n;
+          return _TrackerPlayerEmptyCard(
+            icon: Icons.query_stats_rounded,
+            title: l10n.emptyNoAnalysis,
+            message: l10n.errorNoTrackerAnalysis,
+          );
+        }
+
+        return _TrackerPlayerAnalysisContent(
+          analysis: payload.analysis,
+          teamParam: payload.teamParam,
+          playerName: widget.playerName,
+          showHeader: widget.showHeader,
+          showDistanceTimeline: widget.showDistanceTimeline,
+          isMatch: widget.isMatch,
+          player: widget.player,
+        );
+      },
+    );
+  }
+}
+
+class _TrackerPlayerAnalysisContent extends StatefulWidget {
+  final TrackerAnalysisResult analysis;
+  final TeamParam teamParam;
+  final String? playerName;
+  final bool showHeader;
+  final bool showDistanceTimeline;
+  final bool isMatch;
+  final Player? player;
+
+  const _TrackerPlayerAnalysisContent({
+    required this.analysis,
+    required this.teamParam,
+    required this.playerName,
+    required this.showHeader,
+    required this.showDistanceTimeline,
+    required this.isMatch,
+    required this.player,
+  });
+
+  @override
+  State<_TrackerPlayerAnalysisContent> createState() =>
+      _TrackerPlayerAnalysisContentState();
+}
+
+class _TrackerPlayerAnalysisContentState
+    extends State<_TrackerPlayerAnalysisContent> {
+  int _selectedIndex = 0;
+
+  @override
+  Widget build(BuildContext context) {
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final bool compact = constraints.maxWidth < 620;
+
+        final int metricColumns = constraints.maxWidth >= 1100
+            ? 5
+            : constraints.maxWidth >= 820
+            ? 4
+            : constraints.maxWidth >= 560
+            ? 3
+            : 2;
+
+        final l10n = context.l10n;
+        final tabs = <_PlayerAnalysisTabDef>[
+          _PlayerAnalysisTabDef(
+            label: l10n.playerSynthesisTabTitle,
+            compactLabel: l10n.playerSynthesisTabTitle,
+            icon: Icons.query_stats_rounded,
+            child: _buildSynthesisTab(
+              context: context,
+              metricColumns: metricColumns,
+              compact: compact,
+            ),
+          ),
+          _PlayerAnalysisTabDef(
+            label: l10n.tabSpeedZones,
+            compactLabel: l10n.tabSpeedZonesShort,
+            icon: Icons.speed_rounded,
+            child: _SectionCard(
+              title: l10n.tabSpeedZones,
+              icon: Icons.speed_rounded,
+              trailing: _TeamParamBadge(teamParam: widget.teamParam),
+              child: _SpeedZonesView(
+                analysis: widget.analysis,
+                teamParam: widget.teamParam,
+              ),
+            ),
+          ),
+          if(widget.isMatch) ... [
+            _PlayerAnalysisTabDef(
+              label: l10n.tabFieldZones,
+              compactLabel: l10n.entityField,
+              icon: Icons.grid_view_rounded,
+              child: _SectionCard(
+                title: l10n.tabFieldZones,
+                icon: Icons.grid_view_rounded,
+                child: _FieldZonesView(
+                  zones: widget.analysis.distanceByZones,
+                ),
+              ),
+            ),
+            _PlayerAnalysisTabDef(
+              label: l10n.tabHalfTimeComparison,
+              compactLabel: l10n.tabHalfTimeComparison,
+              icon: Icons.compare_arrows_rounded,
+              child: _SectionCard(
+                title: l10n.tabHalfTimeComparison,
+                icon: Icons.compare_arrows_rounded,
+                child: _HalfStatsView(
+                  analysis: widget.analysis,
+                ),
+              ),
+            ),
+          ],
+
+          if (widget.showDistanceTimeline)
+            _PlayerAnalysisTabDef(
+              label: l10n.tabDistanceTimeline,
+              compactLabel: l10n.tabDistanceTimeline,
+              icon: Icons.bar_chart_rounded,
+              child: _SectionCard(
+                title: l10n.tabDistanceTimeline,
+                icon: Icons.bar_chart_rounded,
+                child: _DistanceTimelineView(
+                  timeline: widget.analysis.distanceTimeline,
+                ),
+              ),
+            ),
+          if(widget.isMatch) ... [
+            _PlayerAnalysisTabDef(
+              label: l10n.entityHeatmap,
+              compactLabel: l10n.entityHeatmap,
+              icon: Icons.local_fire_department_rounded,
+              child: _SectionCard(
+                title: l10n.tabHeatmap,
+                icon: Icons.local_fire_department_rounded,
+                child: _TrackerHeatmapView(
+                  analysis: widget.analysis,
+                ),
+              ),
+            ),
+          ]
+
+        ];
+
+        final int safeSelectedIndex = _selectedIndex.clamp(
+          0,
+          tabs.length - 1,
+        );
+
+        final double minHeight = constraints.hasBoundedHeight
+            ? constraints.maxHeight
+            : 0;
+
+        return Scrollbar(
+          child: SingleChildScrollView(
+            padding: EdgeInsets.only(
+              bottom: 16 + MediaQuery.of(context).padding.bottom,
+            ),
+            child: ConstrainedBox(
+              constraints: BoxConstraints(
+                minHeight: minHeight,
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  if (widget.showHeader && widget.player != null) ...[
+                    _PlayerAnalysisHeader(
+                      analysis: widget.analysis,
+                      teamParam: widget.teamParam,
+                      playerName: widget.playerName,
+                      compact: compact,
+                      player: widget.player!,
+                    ),
+                    const SizedBox(height: 12),
+                  ],
+
+                  _PlayerAnalysisTabSelector(
+                    tabs: tabs,
+                    selectedIndex: safeSelectedIndex,
+                    onSelected: (index) {
+                      setState(() {
+                        _selectedIndex = index;
+                      });
+                    },
+                  ),
+
+                  const SizedBox(height: 12),
+
+                  AnimatedSwitcher(
+                    duration: const Duration(milliseconds: 220),
+                    switchInCurve: Curves.easeOut,
+                    switchOutCurve: Curves.easeIn,
+                    child: KeyedSubtree(
+                      key: ValueKey(safeSelectedIndex),
+                      child: tabs[safeSelectedIndex].child,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildSynthesisTab({
+    required BuildContext context,
+    required int metricColumns,
+    required bool compact,
+  }) {
+    final l10n = context.l10n;
+    final colors = context.appColors;
+    final analysis = widget.analysis;
+
+    return _SectionCard(
+      title: l10n.playerSynthesisTitle,
+      icon: Icons.query_stats_rounded,
+      child: GridView.count(
+        crossAxisCount: metricColumns,
+        shrinkWrap: true,
+        physics: const NeverScrollableScrollPhysics(),
+        crossAxisSpacing: 10,
+        mainAxisSpacing: 10,
+        childAspectRatio: compact ? 1.35 : 1.55,
+        children: [
+          _MetricTile(
+            icon: Icons.route_rounded,
+            label: l10n.statsDistance,
+            value: analysis.distanceKm.toStringAsFixed(2),
+            unit: l10n.statsUnitKm,
+            color: colors.primary,
+          ),
+          _MetricTile(
+            icon: Icons.speed_rounded,
+            label: l10n.statsAvgSpeed,
+            value: analysis.averageSpeedKmh.toStringAsFixed(1),
+            unit: l10n.statsUnitKmh,
+            color: colors.secondary,
+          ),
+          _MetricTile(
+            icon: Icons.bolt_rounded,
+            label: l10n.statsMaxSpeed,
+            value: analysis.maxValidatedSpeedKmh.toStringAsFixed(1),
+            unit: l10n.statsUnitKmh,
+            color: colors.success,
+          ),
+          _MetricTile(
+            icon: Icons.trending_up_rounded,
+            label: l10n.statsMaxAccel,
+            value: analysis.maxAccelerationMps2.toStringAsFixed(2),
+            unit: l10n.statsUnitMps2,
+            color: colors.warning,
+          ),
+          _MetricTile(
+            icon: Icons.directions_run_rounded,
+            label: l10n.statsSprints,
+            value: analysis.sprintCount.toString(),
+            unit: l10n.statsUnitCount,
+            color: colors.primary,
+          ),
+          _MetricTile(
+            icon: Icons.flash_on_rounded,
+            label: l10n.statsHighAccel,
+            value: analysis.highAccelerationCount.toString(),
+            unit: l10n.statsUnitCount,
+            color: colors.warning,
+          ),
+          _MetricTile(
+            icon: Icons.timer_rounded,
+            label: l10n.statsHighSpeedTime,
+            value: _durationShort(analysis.highSpeedDuration),
+            unit: '',
+            color: colors.secondary,
+          ),
+          _MetricTile(
+            icon: Icons.fitness_center_rounded,
+            label: l10n.statsWorkload,
+            value: analysis.workloadScore.toStringAsFixed(0),
+            unit: 'pts',
+            color: colors.success,
+          ),
+          _MetricTile(
+            icon: Icons.local_fire_department_rounded,
+            label: l10n.statsFatigue,
+            value: analysis.fatigueIndex.toStringAsFixed(2),
+            unit: '',
+            color: _fatigueColor(context, analysis.fatigueIndex),
+          ),
+          _MetricTile(
+            icon: Icons.schedule_rounded,
+            label: l10n.statsDuration,
+            value: _durationLong(analysis.duration),
+            unit: '',
+            color: colors.textSecondary,
+          ),
+        ],
+      ),
+    );
+  }
+
+  Color _fatigueColor(BuildContext context, double value) {
+    final colors = context.appColors;
+
+    if (value >= 1.10) return colors.danger;
+    if (value >= 0.95) return colors.warning;
+    return colors.success;
+  }
+}

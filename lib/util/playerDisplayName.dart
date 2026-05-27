@@ -1,6 +1,6 @@
 import '../model/player.dart';
 
-String playerDisplayName(Player player) {
+String playerDisplayName(Player player, {String unknownLabel = 'Joueur'}) {
   final firstName = (player.firstName ?? '').trim();
   final lastName = (player.lastName ?? '').trim();
 
@@ -16,5 +16,5 @@ String playerDisplayName(Player player) {
     return lastName;
   }
 
-  return 'Joueur';
+  return unknownLabel;
 }

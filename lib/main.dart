@@ -10,6 +10,7 @@ import 'package:provider/provider.dart';
 import 'package:stream_chat_flutter/stream_chat_flutter.dart';
 import 'package:stream_chat_localizations/stream_chat_localizations.dart';
 
+import 'core/extensions/l10n_extension.dart';
 import 'firebase_options.dart';
 import 'l10n/app_localizations.dart';
 import 'login_screen.dart';
@@ -40,14 +41,14 @@ Future<void> main() async {
 class MyApp extends StatefulWidget {
   const MyApp({super.key});
 
-  static _MyAppState of(BuildContext context) =>
-      context.findAncestorStateOfType<_MyAppState>()!;
+  static MyAppState of(BuildContext context) =>
+      context.findAncestorStateOfType<MyAppState>()!;
 
   @override
-  State<MyApp> createState() => _MyAppState();
+  State<MyApp> createState() => MyAppState();
 }
 
-class _MyAppState extends State<MyApp> {
+class MyAppState extends State<MyApp> {
   final FirebaseAnalytics _analytics = FirebaseAnalytics.instance;
 
   late final FirebaseAnalyticsObserver _analyticsObserver =
@@ -74,16 +75,33 @@ class _MyAppState extends State<MyApp> {
 
   bool get isDarkMode => _themeMode == ThemeMode.dark;
 
+  Locale? get _effectiveLocale => _locale;
+
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
+      key: ValueKey(_effectiveLocale?.languageCode ?? 'system'),
       debugShowCheckedModeBanner: false,
-      title: 'Grinta',
+      onGenerateTitle: (context) => context.l10n.appName,
       theme: AppTheme.lightTheme,
       darkTheme: AppTheme.darkTheme,
       themeMode: _themeMode,
       navigatorObservers: [_analyticsObserver],
-      locale: _locale,
+      locale: _effectiveLocale,
+      localeResolutionCallback: (deviceLocale, supportedLocales) {
+        if (_locale != null) {
+          return _locale!;
+        }
+        if (deviceLocale == null) {
+          return supportedLocales.first;
+        }
+        for (final supported in supportedLocales) {
+          if (supported.languageCode == deviceLocale.languageCode) {
+            return supported;
+          }
+        }
+        return supportedLocales.first;
+      },
       localizationsDelegates: const [
         AppLocalizations.delegate,
         ...GlobalStreamChatLocalizations.delegates,
@@ -104,9 +122,7 @@ class _MyAppState extends State<MyApp> {
       home: AuthGate(client: _streamChatClient),
       routes: {
         '/login': (context) => const LoginScreen(),
-        '/home': (context) => kIsWeb ? const WebAppRoot() : const DashboardScreen(),
-        '/product': (context) => const ProductScreen(),
-        '/cart': (context) => const CartScreen(),
+        '/home': (context) => const WebAppRoot(),
       },
     );
   }
@@ -131,7 +147,12 @@ class _AuthGateState extends State<AuthGate> {
 
   Future<void> _connectStreamUser(firebase_auth.User firebaseUser) async {
     final streamUserId = firebaseUser.uid;
-    // Vérifie que l'identifiant utilisé respecte bien le format attendu par Stream.
+
+    // Hot restart / navigation : état AuthGate perdu, client Stream encore connecté.
+    if (widget.client.state.currentUser?.id == streamUserId) {
+      _connectedStreamUserId = streamUserId;
+      return;
+    }
 
     if (_connectedStreamUserId == streamUserId) {
       return;
@@ -154,12 +175,24 @@ class _AuthGateState extends State<AuthGate> {
       },
     );
 
-    await widget.client.connectUser(streamUser, token);
+    try {
+      await widget.client.connectUser(streamUser, token);
+    } on StreamChatError catch (e) {
+      if (widget.client.state.currentUser?.id == streamUserId) {
+        _connectedStreamUserId = streamUserId;
+        return;
+      }
+      debugPrint('Stream connectUser failed: ${e.message}');
+      rethrow;
+    }
     _connectedStreamUserId = streamUserId;
   }
 
   Future<void> _disconnectStreamUserIfNeeded() async {
-    if (_connectedStreamUserId == null) return;
+    if (_connectedStreamUserId == null &&
+        widget.client.state.currentUser == null) {
+      return;
+    }
 
     await widget.client.disconnectUser();
     _connectedStreamUserId = null;
@@ -234,7 +267,7 @@ class _AuthGateState extends State<AuthGate> {
                               const Icon(Icons.error_outline, size: 40),
                               const SizedBox(height: 16),
                               Text(
-                                'Connexion Stream impossible',
+                                context.l10n.errorStreamConnection,
                                 style: Theme.of(context).textTheme.titleLarge,
                                 textAlign: TextAlign.center,
                               ),
@@ -251,7 +284,7 @@ class _AuthGateState extends State<AuthGate> {
                                         _connectStreamUser(user);
                                   });
                                 },
-                                child: const Text('Réessayer'),
+                                child: Text(context.l10n.actionRetry),
                               ),
                             ],
                           ),
@@ -263,11 +296,7 @@ class _AuthGateState extends State<AuthGate> {
               );
             }
 
-            if (kIsWeb) {
-              return const WebAppRoot();
-            }
-
-            return const DashboardScreen();
+            return const WebAppRoot();
           },
         );
       },
@@ -337,10 +366,11 @@ class _ProductScreenState extends State<ProductScreen> {
   @override
   Widget build(BuildContext context) {
     final colors = context.appColors;
+    final l10n = context.l10n;
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Produit'),
+        title: Text(l10n.entityProduct),
       ),
       body: Center(
         child: Card(
@@ -350,7 +380,7 @@ class _ProductScreenState extends State<ProductScreen> {
               mainAxisSize: MainAxisSize.min,
               children: [
                 Text(
-                  'Maillot domicile',
+                  l10n.matchHomeJersey,
                   style: Theme.of(context).textTheme.titleLarge?.copyWith(
                     fontWeight: FontWeight.w700,
                     color: colors.textPrimary,
@@ -372,7 +402,7 @@ class _ProductScreenState extends State<ProductScreen> {
                     if (!context.mounted) return;
                     Navigator.pushNamed(context, '/cart');
                   },
-                  child: const Text('Ajouter au panier'),
+                  child: Text(l10n.actionAddToCart),
                 ),
               ],
             ),
@@ -405,10 +435,11 @@ class CartScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final colors = context.appColors;
+    final l10n = context.l10n;
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Panier'),
+        title: Text(l10n.entityCart),
       ),
       body: Center(
         child: Card(
@@ -418,7 +449,7 @@ class CartScreen extends StatelessWidget {
               mainAxisSize: MainAxisSize.min,
               children: [
                 Text(
-                  'Votre panier',
+                  l10n.matchCartTitle,
                   style: Theme.of(context).textTheme.titleLarge?.copyWith(
                     fontWeight: FontWeight.w700,
                     color: colors.textPrimary,
@@ -426,7 +457,7 @@ class CartScreen extends StatelessWidget {
                 ),
                 const SizedBox(height: 12),
                 Text(
-                  '1 article - 49,90 €',
+                  l10n.matchCartOneItem,
                   style: Theme.of(context).textTheme.bodyLarge?.copyWith(
                     color: colors.textSecondary,
                   ),
@@ -436,7 +467,7 @@ class CartScreen extends StatelessWidget {
                   onPressed: () async {
                     await _logBeginCheckout();
                   },
-                  child: const Text('Commencer le paiement'),
+                  child: Text(l10n.actionBeginCheckout),
                 ),
               ],
             ),

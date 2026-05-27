@@ -7,6 +7,7 @@ import 'package:file_picker/file_picker.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/svg.dart';
+import 'package:grinta/core/extensions/l10n_extension.dart';
 import 'package:grinta/model/effectives.dart';
 import 'package:grinta/model/fieldGpsCorners.dart';
 import 'package:grinta/model/tracker/deviceOwner.dart';
@@ -132,7 +133,7 @@ class _AsiConverterScreenState extends State<AsiConverterScreen> {
 
       if (file.bytes == null) {
         if (!mounted) return;
-        _showSnackBar('Impossible de lire le fichier sélectionné');
+        _showSnackBar(context.l10n.asiCannotReadFile);
         return;
       }
 
@@ -143,15 +144,15 @@ class _AsiConverterScreenState extends State<AsiConverterScreen> {
         Device? device = await DeviceService().getDeviceById(deviceOwner.deviceId);
         if(device != null && device.deviceName!.isNotEmpty) {
           if(file.name.contains(device.deviceName!) == false) {
-            _showSnackBar('Le fichier ne correspond pas au tracker sélectionné');
+            _showSnackBar(context.l10n.asiFileMismatch);
             return;
           }
         } else {
-          _showSnackBar('Tracker non reconnu');
+          _showSnackBar(context.l10n.asiTrackerUnknown);
           return;
         }
       } else {
-        _showSnackBar('Tracker non reconnu');
+        _showSnackBar(context.l10n.asiTrackerUnknown);
         return;
       }
 
@@ -162,7 +163,7 @@ class _AsiConverterScreenState extends State<AsiConverterScreen> {
     } catch (e) {
       debugPrint('Erreur file picker: $e');
       if (!mounted) return;
-      _showSnackBar('Erreur lors de la sélection du fichier : $e');
+      _showSnackBar(context.l10n.asiFilePickError(e.toString()));
     }
   }
 
@@ -258,20 +259,21 @@ class _AsiConverterScreenState extends State<AsiConverterScreen> {
     }).toList(growable: false);
   }
 
-  String _selectedPeriodInfo() {
+  String _selectedPeriodInfo(BuildContext context) {
+    final l10n = context.l10n;
     switch (_selectedPeriod) {
       case HeatmapDisplayPeriod.firstHalf:
         return _firstHalfPeriod == null
-            ? '1ère mi-temps indisponible'
-            : '1ère mi-temps';
+            ? l10n.halfFirstUnavailable
+            : l10n.halfFirst;
 
       case HeatmapDisplayPeriod.secondHalf:
         return _secondHalfPeriod == null
-            ? '2ème mi-temps indisponible'
-            : '2ème mi-temps';
+            ? l10n.halfSecondUnavailable
+            : l10n.halfSecond;
 
       case HeatmapDisplayPeriod.fullMatch:
-        return 'Match entier';
+        return l10n.entityFullMatch;
     }
   }
 
@@ -398,12 +400,12 @@ class _AsiConverterScreenState extends State<AsiConverterScreen> {
     final deviceId = _deviceIdCtrl.text.trim();
 
     if (_selectedFileBytes == null) {
-      _showSnackBar('Veuillez sélectionner un fichier .asi');
+      _showSnackBar(context.l10n.asiSelectFile);
       return;
     }
 
     if (deviceId.isEmpty) {
-      _showSnackBar('Veuillez renseigner le deviceId');
+      _showSnackBar(context.l10n.asiEnterDeviceId);
       return;
     }
 
@@ -661,11 +663,11 @@ class _AsiConverterScreenState extends State<AsiConverterScreen> {
           await EventSyncService().createOrUpdateEventSync(eventSync!);
         }
       }
-      _showSnackBar('Conversion terminée - $_rowsCount ligne(s) retenue(s)');
+      _showSnackBar(context.l10n.successConversionDone(_rowsCount));
 
     } catch (e) {
       if (!mounted) return;
-      _showSnackBar('Erreur pendant la conversion : $e');
+      _showSnackBar(context.l10n.asiConversionError(e.toString()));
     } finally {
       if (mounted) {
         setState(() {
@@ -695,16 +697,17 @@ class _AsiConverterScreenState extends State<AsiConverterScreen> {
     });
   }
 
-  String _formatPeriodsSummary() {
+  String _formatPeriodsSummary(BuildContext context) {
+    final l10n = context.l10n;
     if (widget.periods.isEmpty) {
-      return 'Aucune période définie';
+      return l10n.periodUndefined;
     }
 
     if (widget.periods.length == 1) {
-      return '1 période transmise';
+      return l10n.asiPeriodsOne;
     }
 
-    return '${widget.periods.length} période(s) transmise(s) - les 2 premières seront utilisées pour les mi-temps';
+    return l10n.asiPeriodsMany(widget.periods.length);
   }
 
   Widget _buildContent(BuildContext context) {
@@ -720,14 +723,14 @@ class _AsiConverterScreenState extends State<AsiConverterScreen> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  'Importer un fichier .asi',
+                  context.l10n.asiImportTitle,
                   style: Theme.of(context).textTheme.headlineSmall?.copyWith(
                     fontWeight: FontWeight.w700,
                   ),
                 ),
                 const SizedBox(height: 8),
                 Text(
-                  'Sélectionne un fichier, vérifie le deviceId, puis lance la conversion.',
+                  context.l10n.asiImportSubtitle,
                   style: Theme.of(context).textTheme.bodyLarge?.copyWith(
                     color: colors.textSecondary,
                   ),
@@ -740,7 +743,7 @@ class _AsiConverterScreenState extends State<AsiConverterScreen> {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          'Paramètres',
+                          context.l10n.infoParameters,
                           style:
                           Theme.of(context).textTheme.titleLarge?.copyWith(
                             fontWeight: FontWeight.w600,
@@ -749,9 +752,9 @@ class _AsiConverterScreenState extends State<AsiConverterScreen> {
                         const SizedBox(height: 18),
                         TextField(
                           controller: _deviceIdCtrl,
-                          decoration: const InputDecoration(
-                            labelText: 'Device ID',
-                            hintText: 'Exemple : tracker_001',
+                          decoration: InputDecoration(
+                            labelText: context.l10n.entityDeviceId,
+                            hintText: context.l10n.hintDeviceIdExample,
                             prefixIcon: Icon(Icons.memory_outlined),
                           ),
                         ),
@@ -768,7 +771,7 @@ class _AsiConverterScreenState extends State<AsiConverterScreen> {
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               Text(
-                                'Périodes',
+                                context.l10n.entityPeriods,
                                 style: Theme.of(context)
                                     .textTheme
                                     .titleMedium
@@ -776,7 +779,7 @@ class _AsiConverterScreenState extends State<AsiConverterScreen> {
                               ),
                               const SizedBox(height: 10),
                               Text(
-                                _formatPeriodsSummary(),
+                                _formatPeriodsSummary(context),
                                 style: Theme.of(context)
                                     .textTheme
                                     .bodyLarge
@@ -800,7 +803,7 @@ class _AsiConverterScreenState extends State<AsiConverterScreen> {
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               Text(
-                                'Fichier sélectionné',
+                                context.l10n.asiFileSelectedLabel,
                                 style: Theme.of(context)
                                     .textTheme
                                     .titleMedium
@@ -817,7 +820,7 @@ class _AsiConverterScreenState extends State<AsiConverterScreen> {
                                   Expanded(
                                     child: Text(
                                       _selectedFileName ??
-                                          'Aucun fichier sélectionné',
+                                          context.l10n.emptyNoFileSelected,
                                       style: Theme.of(context)
                                           .textTheme
                                           .bodyLarge
@@ -838,7 +841,7 @@ class _AsiConverterScreenState extends State<AsiConverterScreen> {
                                   ElevatedButton.icon(
                                     onPressed: _isLoading ? null : _pickAsiFile,
                                     icon: const Icon(Icons.upload_file),
-                                    label: const Text('Choisir un fichier .asi'),
+                                    label: Text(context.l10n.actionChooseAsiFile),
                                   ),
                                   OutlinedButton.icon(
                                     onPressed: _isLoading ||
@@ -846,7 +849,7 @@ class _AsiConverterScreenState extends State<AsiConverterScreen> {
                                         ? null
                                         : _clearSelection,
                                     icon: const Icon(Icons.delete_outline),
-                                    label: const Text('Réinitialiser'),
+                                    label: Text(context.l10n.actionReset),
                                   ),
                                 ],
                               ),
@@ -870,8 +873,8 @@ class _AsiConverterScreenState extends State<AsiConverterScreen> {
                                 : const Icon(Icons.sync_alt_rounded),
                             label: Text(
                               _isLoading
-                                  ? 'Conversion en cours...'
-                                  : 'Convertir en CSV',
+                                  ? context.l10n.asiConverting
+                                  : context.l10n.actionConvertToCsv,
                             ),
                           ),
                         ),
@@ -889,7 +892,7 @@ class _AsiConverterScreenState extends State<AsiConverterScreen> {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
-                            'Heatmap',
+                            context.l10n.entityHeatmap,
                             style:
                             Theme.of(context).textTheme.titleLarge?.copyWith(
                               fontWeight: FontWeight.w600,
@@ -897,7 +900,10 @@ class _AsiConverterScreenState extends State<AsiConverterScreen> {
                           ),
                           const SizedBox(height: 8),
                           Text(
-                            '${_displayAnalysisResult!.heatmapPoints.length} point(s) - ${_selectedPeriodInfo()}',
+                            context.l10n.asiHeatmapPointCount(
+                              _displayAnalysisResult!.heatmapPoints.length,
+                              _selectedPeriodInfo(context),
+                            ),
                             style:
                             Theme.of(context).textTheme.bodyMedium?.copyWith(
                               color: colors.textSecondary,
@@ -912,17 +918,17 @@ class _AsiConverterScreenState extends State<AsiConverterScreen> {
                               DropdownButton<HeatmapDisplayPeriod>(
                                 value: _selectedPeriod,
                                 items: [
-                                  const DropdownMenuItem(
+                                  DropdownMenuItem(
                                     value: HeatmapDisplayPeriod.fullMatch,
-                                    child: Text('Match entier'),
+                                    child: Text(context.l10n.entityFullMatch),
                                   ),
                                   DropdownMenuItem(
                                     value: HeatmapDisplayPeriod.firstHalf,
                                     enabled: _firstHalfPeriod != null,
                                     child: Text(
                                       _firstHalfPeriod != null
-                                          ? '1ère mi-temps'
-                                          : '1ère mi-temps indisponible',
+                                          ? context.l10n.halfFirst
+                                          : context.l10n.halfFirstUnavailable,
                                     ),
                                   ),
                                   DropdownMenuItem(
@@ -930,8 +936,8 @@ class _AsiConverterScreenState extends State<AsiConverterScreen> {
                                     enabled: _secondHalfPeriod != null,
                                     child: Text(
                                       _secondHalfPeriod != null
-                                          ? '2ème mi-temps'
-                                          : '2ème mi-temps indisponible',
+                                          ? context.l10n.halfSecond
+                                          : context.l10n.halfSecondUnavailable,
                                     ),
                                   ),
                                 ],
@@ -1028,7 +1034,7 @@ class _AsiConverterScreenState extends State<AsiConverterScreen> {
       backgroundColor: widget.showAppBar ? null : Colors.transparent,
       appBar: widget.showAppBar
           ? AppBar(
-        title: const Text('Conversion ASI vers CSV'),
+        title: Text(context.l10n.dialogAsiConversionTitle),
       )
           : null,
       body: _buildContent(context),
@@ -1078,7 +1084,7 @@ Future<void> showAsiConverterDialog({
                   children: [
                     Expanded(
                       child: Text(
-                        'Import fichier ASI',
+                        dialogContext.l10n.asiImportFileHeader,
                         style: Theme.of(dialogContext)
                             .textTheme
                             .titleLarge
@@ -1114,12 +1120,12 @@ Future<void> showAsiConverterDialog({
                   children: [
                     OutlinedButton(
                       onPressed: () => Navigator.of(dialogContext).pop(),
-                      child: const Text('Annuler'),
+                      child: Text(dialogContext.l10n.actionCancel),
                     ),
                     const SizedBox(width: 12),
                     ElevatedButton(
                       onPressed: () => Navigator.of(dialogContext).pop(),
-                      child: const Text('Fermer'),
+                      child: Text(dialogContext.l10n.actionClose),
                     ),
                   ],
                 ),

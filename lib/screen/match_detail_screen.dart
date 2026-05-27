@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:grinta/core/extensions/l10n_extension.dart';
 
 import '../model/matchStats.dart';
 import '../model/player.dart';
@@ -44,22 +45,23 @@ class MatchDetailScreen extends StatelessWidget {
     final colors = context.appColors;
     final bool showStats = match.withTracker == true;
 
+    final l10n = context.l10n;
     final tabs = <Widget>[
-      const _MatchDetailTab(
+      _MatchDetailTab(
         icon: Icons.groups_rounded,
-        label: 'Compo',
-        compactLabel: 'Compo',
+        label: l10n.tabCompo,
+        compactLabel: l10n.tabCompo,
       ),
-      const _MatchDetailTab(
+      _MatchDetailTab(
         icon: Icons.flash_on_rounded,
-        label: 'Temps forts',
-        compactLabel: 'Temps',
+        label: l10n.tabHighlights,
+        compactLabel: l10n.tabHighlightsShort,
       ),
       if (showStats)
-        const _MatchDetailTab(
+        _MatchDetailTab(
           icon: Icons.query_stats_rounded,
-          label: 'Statistiques',
-          compactLabel: 'Stats',
+          label: l10n.navStatistics,
+          compactLabel: l10n.tabStats,
         ),
     ];
 
@@ -141,7 +143,7 @@ class _TopBar extends StatelessWidget {
         children: [
           Expanded(
             child: Text(
-              'Détail du match',
+              context.l10n.matchDetailTitle,
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
               style: TextStyle(
@@ -152,7 +154,7 @@ class _TopBar extends StatelessWidget {
             ),
           ),
           IconButton(
-            tooltip: 'Fermer',
+            tooltip: context.l10n.actionClose,
             onPressed: () => Navigator.of(context).pop(),
             icon: Icon(
               Icons.close_rounded,
@@ -264,8 +266,9 @@ class _MatchHeader extends StatelessWidget {
   Widget build(BuildContext context) {
     final colors = context.appColors;
 
-    final String team1 = _clean(match.team1, fallback: 'Équipe 1');
-    final String team2 = _clean(match.team2, fallback: 'Équipe 2');
+    final l10n = context.l10n;
+    final String team1 = _clean(match.team1, fallback: l10n.entityTeamWithIndex(1));
+    final String team2 = _clean(match.team2, fallback: l10n.entityTeamWithIndex(2));
 
     final bool played = match.isMatchPlayed == true;
     final bool isReport = match.isReport == true;
@@ -298,7 +301,7 @@ class _MatchHeader extends StatelessWidget {
               if ((match.day ?? 0) > 0)
                 _InfoPill(
                   icon: Icons.calendar_view_day_rounded,
-                  label: 'Journée ${match.day}',
+                  label: l10n.periodMatchDay(match.day.toString()),
                 ),
               if (_clean(match.tour).isNotEmpty)
                 _InfoPill(
@@ -308,7 +311,7 @@ class _MatchHeader extends StatelessWidget {
               if (isReport)
                 _InfoPill(
                   icon: Icons.warning_amber_rounded,
-                  label: 'Reporté',
+                  label: l10n.periodPostponed,
                   color: colors.warning,
                 ),
             ],
@@ -381,12 +384,12 @@ class _MatchHeader extends StatelessWidget {
 
           _HeaderInfoLine(
             icon: Icons.schedule_rounded,
-            value: _dateTimeLabel(match),
+            value: _dateTimeLabel(context, match),
           ),
           const SizedBox(height: 8),
           _HeaderInfoLine(
             icon: Icons.stadium_rounded,
-            value: _terrainLabel(match),
+            value: _terrainLabel(context, match),
           ),
 
           if (_clean(match.surfaceDeJeu).isNotEmpty) ...[
@@ -401,17 +404,20 @@ class _MatchHeader extends StatelessWidget {
     );
   }
 
-  static String _dateTimeLabel(models.Match match) {
+  static String _dateTimeLabel(BuildContext context, models.Match match) {
+    final l10n = context.l10n;
     final date = _clean(match.dateCh);
     final time = _clean(match.timeCh);
 
-    if (date.isEmpty && time.isEmpty) return 'Date non définie';
-    if (date.isNotEmpty && time.isNotEmpty) return '$date à $time';
+    if (date.isEmpty && time.isEmpty) return l10n.dateUndefined;
+    if (date.isNotEmpty && time.isNotEmpty) {
+      return l10n.matchDateTimeAt(date, time);
+    }
     if (date.isNotEmpty) return date;
     return time;
   }
 
-  static String _terrainLabel(models.Match match) {
+  static String _terrainLabel(BuildContext context, models.Match match) {
     final terrain = _clean(match.nomDuTerrain);
     final address1 = _clean(match.terrainAdresse1);
     final address2 = _clean(match.terrainAddress2);
@@ -422,7 +428,7 @@ class _MatchHeader extends StatelessWidget {
       if (address2.isNotEmpty) address2,
     ];
 
-    if (parts.isEmpty) return 'Terrain non défini';
+    if (parts.isEmpty) return context.l10n.entityFieldUndefined;
     return parts.join(' - ');
   }
 }
@@ -697,7 +703,7 @@ class _CompoTab extends StatelessWidget {
             if (snapshot.hasError) {
               return _EmptyState(
                 icon: Icons.error_outline_rounded,
-                title: 'Erreur composition',
+                title: context.l10n.errorCompositionTitle,
                 message: snapshot.error.toString(),
               );
             }
@@ -805,12 +811,12 @@ class _StatsTabState extends State<_StatsTab> {
     final String eventId = (widget.match.id ?? '').trim();
 
     if (eventId.isEmpty) {
-      return const _TabContainer(
+      return _TabContainer(
         children: [
           _EmptyState(
             icon: Icons.query_stats_rounded,
-            title: 'Statistiques indisponibles',
-            message: 'Identifiant du match manquant.',
+            title: context.l10n.matchStatsUnavailableTitle,
+            message: context.l10n.errorMatchIdMissing,
           ),
         ],
       );
@@ -831,12 +837,12 @@ class _StatsTabState extends State<_StatsTab> {
     final String safePlayerId = (widget.playerId ?? '').trim();
 
     if (safePlayerId.isEmpty) {
-      return const _TabContainer(
+      return _TabContainer(
         children: [
           _EmptyState(
             icon: Icons.person_off_rounded,
-            title: 'Joueur non identifié',
-            message: 'Impossible de charger les statistiques du joueur.',
+            title: context.l10n.errorPlayerNotIdentified,
+            message: context.l10n.errorNoStatsForPlayer,
           ),
         ],
       );
@@ -859,7 +865,7 @@ class _StatsTabState extends State<_StatsTab> {
             if (playerSnapshot.hasError) {
               return _EmptyState(
                 icon: Icons.error_outline_rounded,
-                title: 'Erreur joueur',
+                title: context.l10n.errorPlayerTitle,
                 message: playerSnapshot.error.toString(),
               );
             }
@@ -867,10 +873,10 @@ class _StatsTabState extends State<_StatsTab> {
             final Player? player = playerSnapshot.data;
 
             if (player == null) {
-              return const _EmptyState(
+              return _EmptyState(
                 icon: Icons.person_off_rounded,
-                title: 'Joueur introuvable',
-                message: 'Impossible de retrouver le joueur sélectionné.',
+                title: context.l10n.errorPlayerNotFound,
+                message: context.l10n.errorPlayerNotFoundMessage,
               );
             }
 
@@ -890,7 +896,7 @@ class _StatsTabState extends State<_StatsTab> {
                 if (summarySnapshot.hasError) {
                   return _EmptyState(
                     icon: Icons.error_outline_rounded,
-                    title: 'Erreur tracker',
+                    title: context.l10n.errorTrackerTitle,
                     message: summarySnapshot.error.toString(),
                   );
                 }
@@ -898,10 +904,10 @@ class _StatsTabState extends State<_StatsTab> {
                 final TeamWorkloadSummary? summary = summarySnapshot.data;
 
                 if (summary == null) {
-                  return const _EmptyState(
+                  return _EmptyState(
                     icon: Icons.query_stats_rounded,
-                    title: 'Aucune statistique',
-                    message: 'Aucune donnée tracker trouvée pour ce match.',
+                    title: context.l10n.errorNoStats,
+                    message: context.l10n.errorNoTrackerData,
                   );
                 }
 
@@ -912,22 +918,20 @@ class _StatsTabState extends State<_StatsTab> {
                 );
 
                 if (playerScore == null) {
-                  return const _EmptyState(
+                  return _EmptyState(
                     icon: Icons.person_search_rounded,
-                    title: 'Joueur non trouvé',
-                    message:
-                    'Ce joueur n’a pas de données tracker pour ce match.',
+                    title: context.l10n.errorPlayerNotFoundInMatch,
+                    message: context.l10n.errorPlayerNoTrackerMatch,
                   );
                 }
 
                 final String trackerId = playerScore.trackerId.trim();
 
                 if (trackerId.isEmpty) {
-                  return const _EmptyState(
+                  return _EmptyState(
                     icon: Icons.sensors_off_rounded,
-                    title: 'Capteur non trouvé',
-                    message:
-                    'Aucun capteur n’est associé à ce joueur pour ce match.',
+                    title: context.l10n.sensorNotFoundTitle,
+                    message: context.l10n.sensorNotFoundMessage,
                   );
                 }
 
@@ -936,7 +940,10 @@ class _StatsTabState extends State<_StatsTab> {
                 return TrackerPlayerAnalysisWidget(
                   analysisDocId: analysisDocId,
                   teamId: widget.match.teamID,
-                  playerName: playerDisplayName(player),
+                  playerName: playerDisplayName(
+                    player,
+                    unknownLabel: context.l10n.entityPlayer,
+                  ),
                   player: player,
                   isMatch: true,
                 );
@@ -998,8 +1005,8 @@ class _TrackerStatus extends StatelessWidget {
           Expanded(
             child: Text(
               uploaded
-                  ? 'Les données tracker sont disponibles.'
-                  : 'Les données tracker ne sont pas encore importées.',
+                  ? context.l10n.matchTrackerDataAvailable
+                  : context.l10n.matchTrackerDataPending,
               style: TextStyle(
                 color: colors.textPrimary,
                 fontWeight: FontWeight.w700,

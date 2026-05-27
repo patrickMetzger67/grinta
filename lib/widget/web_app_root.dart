@@ -1,4 +1,5 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:grinta/model/tracker/team_workload_summary.dart';
 import 'package:grinta/provider/appSession.dart';
@@ -19,6 +20,8 @@ import '../screen/responsive_chat.dart';
 import '../screen/syncScreen.dart';
 import '../screen/teamDetailScreen.dart';
 import '../util/app_theme.dart';
+import '../core/extensions/l10n_extension.dart';
+import 'mobile_navigation_shell.dart';
 import '../webNavigationShell.dart';
 
 class WebAppRoot extends StatefulWidget {
@@ -177,40 +180,44 @@ class _WebAppRootState extends State<WebAppRoot> {
           (session) => session.selectedSeason?.ref?.id,
     );
 
-    final hasManagedTeamsInSelectedSeason = context.select<AppSession, bool>(
-          (session) => session.hasManagedTeamsInSelectedSeason,
-    );
-
     final getManagedTeamsIds = context.select<AppSession, List<String>>(
           (session) => session.managedTeamsIdsForSelectedSeason,
     );
 
 
-    return Stack(
-      children: [
-        WebNavigationShell(
-          appTitle: 'Grinta',
-          appIcon: Icons.sports_soccer_rounded,
-          initialIndex: 0,
-          sidebarHeaderBottom: const AppSessionPlayerSeasonSelector(),
-          items: [
-            const WebShellItem(
-              label: 'Tableau de bord',
-              icon: Icons.dashboard_outlined,
-              page: DashboardScreen(),
-            ),
-            WebShellItem(
-              label: 'Agenda',
-              icon: Icons.calendar_month_outlined,
-              page: AgendaScreen(
-                key: ValueKey('agenda-$selectedPlayerId-$selectedSeasonId'),
-                loadItems: _loadAgendaItems,
-                onAddEvent: _onAddEvent,
-              ),
-            ),
-            if(getManagedTeamsIds.isNotEmpty) ... [
+    final l10n = context.l10n;
+    final localeCode = Localizations.localeOf(context).languageCode;
+
+    final agendaPage = AgendaScreen(
+      key: ValueKey('agenda-$selectedPlayerId-$selectedSeasonId-$localeCode'),
+      loadItems: _loadAgendaItems,
+      onAddEvent: _onAddEvent,
+    );
+
+    final bool isMobileNative = !kIsWeb &&
+        (defaultTargetPlatform == TargetPlatform.iOS ||
+            defaultTargetPlatform == TargetPlatform.android);
+
+    final Widget shell = kIsWeb
+        ? WebNavigationShell(
+            appTitle: l10n.appName,
+            appIcon: Icons.sports_soccer_rounded,
+            initialIndex: 0,
+            sidebarHeaderBottom: const AppSessionPlayerSeasonSelector(),
+            items: [
               WebShellItem(
-                  label: 'Equipes',
+                label: l10n.navDashboard,
+                icon: Icons.dashboard_outlined,
+                page: const DashboardScreen(),
+              ),
+              WebShellItem(
+                label: l10n.navAgenda,
+                icon: Icons.calendar_month_outlined,
+                page: agendaPage,
+              ),
+              if (getManagedTeamsIds.isNotEmpty) ...[
+                WebShellItem(
+                  label: l10n.navTeams,
                   icon: Icons.groups_rounded,
                   page: TeamsListScreen(
                     managedTeamsIds: getManagedTeamsIds,
@@ -219,42 +226,60 @@ class _WebAppRootState extends State<WebAppRoot> {
                         MaterialPageRoute(
                           builder: (_) => TeamDetailScreen(
                             team: team,
-                            seasonId: context.read<AppSession>().selectedSeason?.ref?.id,
+                            seasonId: context
+                                .read<AppSession>()
+                                .selectedSeason
+                                ?.ref
+                                ?.id,
                             isManager: isManager,
                           ),
                         ),
                       );
                     },
-                  )
+                  ),
+                ),
+              ],
+              WebShellItem(
+                label: l10n.navChat,
+                icon: Icons.chat,
+                page: const ResponsiveChat(),
               ),
+              WebShellItem(
+                label: l10n.navSync,
+                icon: Icons.sync,
+                page: const SyncScreen(),
+              ),
+              if (getManagedTeamsIds.isNotEmpty) ...[
+                WebShellItem(
+                  label: l10n.navFields,
+                  icon: Icons.stadium_outlined,
+                  page: const FootballFieldLocalizationScreen(),
+                ),
+              ],
+              if (getManagedTeamsIds.isNotEmpty) ...[
+                WebShellItem(
+                  label: l10n.navCompo,
+                  icon: Icons.groups_outlined,
+                  page: const CompoScreen(),
+                ),
+              ],
             ],
+          )
+        : isMobileNative
+            ? MobileNavigationShell(
+                agendaPage: agendaPage,
+                dashboardPage: DashboardScreen(
+                  key: ValueKey('dashboard-$localeCode'),
+                ),
+                chatPage: ResponsiveChat(
+                  key: ValueKey('chat-$localeCode'),
+                ),
+              )
+            : agendaPage;
 
-            const WebShellItem(
-              label: 'Chat',
-              icon: Icons.chat,
-              page: ResponsiveChat(),
-            ),
-            const WebShellItem(
-              label: 'Synchronisation',
-              icon: Icons.sync,
-              page: SyncScreen(),
-            ),
-            if (getManagedTeamsIds.isNotEmpty) ...[
-              const WebShellItem(
-                label: 'Terrains',
-                icon: Icons.stadium_outlined,
-                page: FootballFieldLocalizationScreen(),
-              ),
-            ],
-            if (getManagedTeamsIds.isNotEmpty) ...[
-              const WebShellItem(
-                label: 'Compo',
-                icon: Icons.groups_outlined,
-                page: CompoScreen(),
-              ),
-            ],
-          ],
-        ),
+    return Stack(
+      children: [
+        shell,
 
         if (_isLoading)
           Positioned.fill(

@@ -1,5 +1,8 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 
+import '../core/extensions/app_localizations_effectives_extension.dart';
+import '../l10n/app_localizations.dart';
+
 
 class Tracker {
   String? ownerId;
@@ -176,34 +179,9 @@ class Effectives {
   }
 
 }
-String getStrPosition(int position) {
 
-  String strPosition="";
-  switch(position) {
-    case 0:
-      strPosition = 'Joueur';
-      break;
-    case 1:
-      strPosition = 'Educateur/Entraineur';
-      break;
-    case 2:
-      strPosition = 'Dirigeant';
-      break;
-    case 3:
-      strPosition = 'Gardien de but';
-      break;
-    case 4:
-      strPosition = 'Défenseur';
-      break;
-    case 5:
-      strPosition = 'Milieu';
-      break;
-    case 6:
-      strPosition = 'Attaquant';
-      break;
-  }
-
-  return strPosition;
+String getStrPosition(int position, AppLocalizations l10n) {
+  return l10n.positionLabel(position);
 }
 int? getIntPosition(String position) {
 

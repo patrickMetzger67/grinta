@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:grinta/core/extensions/l10n_extension.dart';
+import 'package:grinta/l10n/app_localizations.dart';
 
 import '../util/app_theme.dart';
 import '../model/matchStats.dart';
@@ -34,8 +36,8 @@ class MatchHighlightsTimeline extends StatelessWidget {
 
     if (items.isEmpty) {
       return _TimelineEmptyState(
-        title: 'Aucun temps fort',
-        message: 'Les buts, cartons et changements apparaîtront ici.',
+        title: context.l10n.emptyNoHighlights,
+        message: context.l10n.emptyNoHighlightsMessage,
       );
     }
 
@@ -55,7 +57,7 @@ class MatchHighlightsTimeline extends StatelessWidget {
             children: [
               if (showStartAndEnd) ...[
                 _TimelineMatchMarker(
-                  label: 'Coup d’envoi',
+                  label: context.l10n.highlightKickoff,
                   icon: Icons.play_arrow_rounded,
                   color: colors.primary,
                 ),
@@ -75,7 +77,7 @@ class MatchHighlightsTimeline extends StatelessWidget {
               if (showStartAndEnd) ...[
                 const SizedBox(height: 8),
                 _TimelineMatchMarker(
-                  label: 'Fin du match',
+                  label: context.l10n.highlightFullTime,
                   icon: Icons.sports_score_rounded,
                   color: colors.textSecondary,
                 ),
@@ -217,8 +219,8 @@ class _HighlightCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final colors = context.appColors;
 
-    final title = _titleForType(highlight.type);
-    final description = _descriptionForHighlight(highlight);
+    final title = _titleForType(context.l10n, highlight.type);
+    final description = _descriptionForHighlight(context.l10n, highlight);
     final team = _clean(highlight.team);
 
     return ConstrainedBox(
@@ -304,44 +306,47 @@ class _HighlightCard extends StatelessWidget {
     );
   }
 
-  String _titleForType(String? type) {
+  String _titleForType(AppLocalizations l10n, String? type) {
     switch (_normalize(type)) {
       case 'goal':
       case 'but':
-        return 'But';
+        return l10n.highlightTypeGoal;
 
       case 'replacement':
       case 'substitution':
       case 'change':
       case 'changement':
-        return 'Changement';
+        return l10n.highlightTypeSubstitution;
 
       case 'yellowcard':
       case 'yellow_card':
       case 'carton_jaune':
-        return 'Carton jaune';
+        return l10n.highlightTypeYellowCard;
 
       case 'redcard':
       case 'red_card':
       case 'carton_rouge':
-        return 'Carton rouge';
+        return l10n.highlightTypeRedCard;
 
       case 'own_goal':
       case 'owngoal':
-        return 'But contre son camp';
+        return l10n.highlightTypeOwnGoal;
 
       case 'penalty':
-        return 'Penalty';
+        return l10n.highlightTypePenalty;
 
       default:
         final safeType = _clean(type);
-        return safeType.isEmpty ? 'Temps fort' : safeType;
+        return safeType.isEmpty ? l10n.highlightTypeGeneric : safeType;
     }
   }
 
-  String _descriptionForHighlight(MatchStatHighLight highlight) {
+  String _descriptionForHighlight(
+    AppLocalizations l10n,
+    MatchStatHighLight highlight,
+  ) {
     final type = _normalize(highlight.type);
-    final player = _clean(highlight.player, fallback: 'Joueur non renseigné');
+    final player = _clean(highlight.player, fallback: l10n.entityPlayerNotSet);
     final incomingPlayer = _clean(highlight.incomingPlayer);
 
     switch (type) {
@@ -354,10 +359,10 @@ class _HighlightCard extends StatelessWidget {
       case 'change':
       case 'changement':
         if (incomingPlayer.isEmpty) {
-          return '$player sort';
+          return l10n.highlightSubstitutionOut(player);
         }
 
-        return '$incomingPlayer remplace $player';
+        return l10n.highlightSubstitutionIn(incomingPlayer, player);
 
       case 'yellowcard':
       case 'yellow_card':

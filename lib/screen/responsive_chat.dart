@@ -4,6 +4,7 @@ import 'dart:math' as math;
 import 'dart:ui';
 
 import 'package:flutter/material.dart';
+import 'package:grinta/core/extensions/l10n_extension.dart';
 import 'package:responsive_builder/responsive_builder.dart';
 import 'package:stream_chat_flutter/stream_chat_flutter.dart';
 
@@ -79,7 +80,7 @@ class _SplitChatViewState extends State<_SplitChatView> {
               child: Padding(
                 padding: const EdgeInsets.all(24),
                 child: Text(
-                  'Sélectionne une conversation',
+                  context.l10n.chatSelectConversation,
                   textAlign: TextAlign.center,
                   style: Theme.of(context).textTheme.titleLarge?.copyWith(
                     color: colors.textPrimary,
@@ -177,7 +178,7 @@ class _ChannelListPageState extends State<_ChannelListPage> {
         SnackBar(
           backgroundColor: colors.danger,
           content: Text(
-            'Erreur lors de la création : $e',
+            context.l10n.errorChatCreate(e.toString()),
             style: const TextStyle(color: Colors.white),
           ),
         ),
@@ -209,11 +210,12 @@ class _ChannelListPageState extends State<_ChannelListPage> {
     return Scaffold(
       backgroundColor: colors.background,
       floatingActionButton: FloatingActionButton.extended(
+        heroTag: 'grinta-fab-chat',
         onPressed: _openUserPicker,
         backgroundColor: colors.primary,
         foregroundColor: Colors.white,
         icon: const Icon(Icons.add_comment_rounded),
-        label: const Text('Nouveau'),
+        label: Text(context.l10n.actionNew),
       ),
       body: RefreshIndicator(
         color: colors.primary,
@@ -262,7 +264,7 @@ class _ChannelListPageState extends State<_ChannelListPage> {
                     ),
                     const SizedBox(height: 12),
                     Text(
-                      'Aucune conversation',
+                      context.l10n.emptyNoConversation,
                       style: TextStyle(
                         color: colors.textPrimary,
                         fontSize: 16,
@@ -271,7 +273,7 @@ class _ChannelListPageState extends State<_ChannelListPage> {
                     ),
                     const SizedBox(height: 6),
                     Text(
-                      'Appuie sur "Nouveau" pour démarrer un chat.',
+                      context.l10n.chatStartNewHint,
                       textAlign: TextAlign.center,
                       style: TextStyle(
                         color: colors.textSecondary,
@@ -363,7 +365,7 @@ class _UserPickerPageState extends State<_UserPickerPage> {
       return Scaffold(
         backgroundColor: colors.background,
         appBar: AppBar(
-          title: const Text('Nouvelle conversation'),
+          title: Text(context.l10n.dialogNewConversation),
         ),
         body: Center(
           child: CircularProgressIndicator(
@@ -376,7 +378,7 @@ class _UserPickerPageState extends State<_UserPickerPage> {
     return Scaffold(
       backgroundColor: colors.background,
       appBar: AppBar(
-        title: const Text('Nouvelle conversation'),
+        title: Text(context.l10n.dialogNewConversation),
       ),
       body: Column(
         children: [
@@ -387,7 +389,7 @@ class _UserPickerPageState extends State<_UserPickerPage> {
               onChanged: _applySearch,
               style: TextStyle(color: colors.textPrimary),
               decoration: InputDecoration(
-                hintText: 'Rechercher un utilisateur',
+                hintText: context.l10n.hintSearchUser,
                 prefixIcon: Icon(
                   Icons.search_rounded,
                   color: colors.textSecondary,
@@ -460,8 +462,8 @@ class _UserPickerPageState extends State<_UserPickerPage> {
                           const SizedBox(height: 12),
                           Text(
                             hasSearch
-                                ? 'Aucun utilisateur trouvé'
-                                : 'Aucun utilisateur disponible',
+                                ? context.l10n.emptyNoUserFound
+                                : context.l10n.emptyNoUserAvailable,
                             style: TextStyle(
                               color: colors.textPrimary,
                               fontSize: 16,
@@ -471,8 +473,8 @@ class _UserPickerPageState extends State<_UserPickerPage> {
                           const SizedBox(height: 6),
                           Text(
                             hasSearch
-                                ? 'Essaie avec un autre nom.'
-                                : 'Les autres utilisateurs apparaîtront ici.',
+                                ? context.l10n.chatTryAnotherName
+                                : context.l10n.chatUsersAppearHere,
                             textAlign: TextAlign.center,
                             style: TextStyle(
                               color: colors.textSecondary,

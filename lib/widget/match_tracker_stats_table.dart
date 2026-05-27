@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:grinta/core/extensions/l10n_extension.dart';
+import 'package:grinta/l10n/app_localizations.dart';
 import 'package:grinta/widget/playerPhoto.dart';
 import 'package:grinta/widget/tracker_player_analysis_widget.dart';
 
@@ -41,57 +43,56 @@ class _MatchTrackerStatsTableState extends State<MatchTrackerStatsTable> {
   int _sortColumnIndex = 1;
   bool _sortAscending = true;
 
-  static final List<_MetricConfig> _metrics = [
+  List<_MetricConfig> _metrics(AppLocalizations l10n) => [
     _MetricConfig(
       key: TeamWorkloadMetricKeys.workloadScore,
-      title: 'Workload',
-      subtitle: 'score',
+      title: l10n.statsWorkload,
+      subtitle: l10n.statsScore,
       width: 140,
       formatter: (value) => value.toStringAsFixed(0),
     ),
     _MetricConfig(
       key: TeamWorkloadMetricKeys.distanceKm,
-      title: 'Distance',
-      subtitle: 'km',
+      title: l10n.statsDistance,
+      subtitle: l10n.statsUnitKm,
       width: 132,
       formatter: (value) => value.toStringAsFixed(2),
     ),
     _MetricConfig(
       key: TeamWorkloadMetricKeys.maxValidatedSpeedKmh,
-      title: 'Vitesse max',
-      subtitle: 'km/h',
+      title: l10n.statsMaxSpeed,
+      subtitle: l10n.statsUnitKmh,
       width: 142,
       formatter: (value) => value.toStringAsFixed(1),
     ),
     _MetricConfig(
       key: TeamWorkloadMetricKeys.highAccelerationCount,
-      title: 'Acc. hautes',
-      subtitle: 'nb',
+      title: l10n.statsHighAccel,
+      subtitle: l10n.statsUnitCount,
       width: 132,
       formatter: (value) => value.toStringAsFixed(0),
     ),
     _MetricConfig(
       key: TeamWorkloadMetricKeys.highSpeedDuration,
-      title: 'Haute vitesse',
-      subtitle: 'sec',
+      title: l10n.statsHighSpeedTime,
+      subtitle: l10n.statsUnitSeconds,
       width: 142,
       formatter: (value) => value.toStringAsFixed(1),
     ),
     _MetricConfig(
       key: TeamWorkloadMetricKeys.maxAccelerationMps2,
-      title: 'Acc. max',
-      subtitle: 'm/s²',
+      title: l10n.statsMaxAccel,
+      subtitle: l10n.statsUnitMps2,
       width: 132,
       formatter: (value) => value.toStringAsFixed(2),
     ),
     _MetricConfig(
       key: TeamWorkloadMetricKeys.sprintCount,
-      title: 'Sprints',
-      subtitle: 'nb',
+      title: l10n.statsSprints,
+      subtitle: l10n.statsUnitCount,
       width: 120,
       formatter: (value) => value.toStringAsFixed(0),
     ),
-
   ];
 
   @override
@@ -117,9 +118,9 @@ class _MatchTrackerStatsTableState extends State<MatchTrackerStatsTable> {
     final safeEventId = widget.eventId.trim();
 
     if (safeEventId.isEmpty) {
-      return const _TrackerStatsEmptyState(
-        title: 'Match non identifié',
-        message: 'Impossible de charger les statistiques tracker sans identifiant de match.',
+      return _TrackerStatsEmptyState(
+        title: context.l10n.errorMatchNotIdentified,
+        message: context.l10n.errorNoTrackerStats,
       );
     }
 
@@ -133,7 +134,7 @@ class _MatchTrackerStatsTableState extends State<MatchTrackerStatsTable> {
 
           if (snapshot.hasError) {
             return _TrackerStatsEmptyState(
-              title: 'Erreur de chargement',
+              title: context.l10n.errorLoadingTitle,
               message: snapshot.error.toString(),
             );
           }
@@ -141,9 +142,9 @@ class _MatchTrackerStatsTableState extends State<MatchTrackerStatsTable> {
           final summary = snapshot.data;
 
           if (summary == null) {
-            return const _TrackerStatsEmptyState(
-              title: 'Aucune statistique disponible',
-              message: 'Aucune donnée trouvée pour ce match.',
+            return _TrackerStatsEmptyState(
+              title: context.l10n.emptyNoStats,
+              message: context.l10n.emptyNoStatsForMatch,
             );
           }
 
@@ -161,7 +162,7 @@ class _MatchTrackerStatsTableState extends State<MatchTrackerStatsTable> {
 
         if (snapshot.hasError) {
           return _TrackerStatsEmptyState(
-            title: 'Erreur de chargement',
+            title: context.l10n.errorLoadingTitle,
             message: snapshot.error.toString(),
           );
         }
@@ -169,9 +170,9 @@ class _MatchTrackerStatsTableState extends State<MatchTrackerStatsTable> {
         final summary = snapshot.data;
 
         if (summary == null) {
-          return const _TrackerStatsEmptyState(
-            title: 'Aucune statistique disponible',
-            message: 'Aucune donnée trouvée dans TRACKER_TeamAnalysis pour ce match.',
+          return _TrackerStatsEmptyState(
+            title: context.l10n.emptyNoStats,
+            message: context.l10n.emptyNoStatsTeamAnalysis,
           );
         }
 
@@ -181,6 +182,8 @@ class _MatchTrackerStatsTableState extends State<MatchTrackerStatsTable> {
   }
 
   Widget _buildTableFromSummary(TeamWorkloadSummary summary) {
+    final metrics = _metrics(context.l10n);
+
     return FutureBuilder<List<_TrackerStatsRow>>(
       future: _buildRows(summary),
       builder: (context, snapshot) {
@@ -190,7 +193,7 @@ class _MatchTrackerStatsTableState extends State<MatchTrackerStatsTable> {
 
         if (snapshot.hasError) {
           return _TrackerStatsEmptyState(
-            title: 'Erreur joueurs',
+            title: context.l10n.errorPlayersTitle,
             message: snapshot.error.toString(),
           );
         }
@@ -198,18 +201,18 @@ class _MatchTrackerStatsTableState extends State<MatchTrackerStatsTable> {
         final rows = snapshot.data ?? [];
 
         if (rows.isEmpty) {
-          return const _TrackerStatsEmptyState(
-            title: 'Aucun joueur',
-            message: 'Les statistiques existent mais aucun score joueur n’est disponible.',
+          return _TrackerStatsEmptyState(
+            title: context.l10n.errorNoPlayersTitle,
+            message: context.l10n.emptyNoPlayersInStats,
           );
         }
 
-        _sortRows(rows);
+        _sortRows(rows, metrics);
 
         return _TrackerStatsTableContent(
           summary: summary,
           rows: rows,
-          metrics: _metrics,
+          metrics: metrics,
           sortColumnIndex: _sortColumnIndex,
           sortAscending: _sortAscending,
           padding: widget.padding,
@@ -222,6 +225,7 @@ class _MatchTrackerStatsTableState extends State<MatchTrackerStatsTable> {
   }
 
   Future<List<_TrackerStatsRow>> _buildRows(TeamWorkloadSummary summary) async {
+    final unknownPlayer = context.l10n.entityPlayerUnknown;
     final rows = await Future.wait(
       summary.playerScores.map((playerScore) async {
         final player = await _loadPlayer(playerScore.playerId);
@@ -231,6 +235,11 @@ class _MatchTrackerStatsTableState extends State<MatchTrackerStatsTable> {
           trackerId: playerScore.trackerId,
           player: player,
           scores: playerScore,
+          displayName: _resolvePlayerDisplayName(
+            player,
+            playerScore.playerId,
+            unknownPlayer,
+          ),
         );
       }),
     );
@@ -258,7 +267,7 @@ class _MatchTrackerStatsTableState extends State<MatchTrackerStatsTable> {
     });
   }
 
-  void _sortRows(List<_TrackerStatsRow> rows) {
+  void _sortRows(List<_TrackerStatsRow> rows, List<_MetricConfig> metrics) {
     rows.sort((a, b) {
       int result;
 
@@ -273,10 +282,10 @@ class _MatchTrackerStatsTableState extends State<MatchTrackerStatsTable> {
       } else {
         final metricIndex = _sortColumnIndex - 2;
 
-        if (metricIndex < 0 || metricIndex >= _metrics.length) {
+        if (metricIndex < 0 || metricIndex >= metrics.length) {
           result = 0;
         } else {
-          final metricKey = _metrics[metricIndex].key;
+          final metricKey = metrics[metricIndex].key;
           final aValue = a.metricValue(metricKey);
           final bValue = b.metricValue(metricKey);
 
@@ -349,17 +358,17 @@ class _TrackerStatsTableContent extends StatelessWidget {
               ),
               columns: [
                 DataColumn(
-                  label: const _TableHeaderCell(
-                    title: 'Joueur',
-                    subtitle: 'nom',
+                  label: _TableHeaderCell(
+                    title: context.l10n.entityPlayer,
+                    subtitle: context.l10n.entityName,
                     width: 180,
                   ),
                   onSort: onSort,
                 ),
                 DataColumn(
-                  label: const _TableHeaderCell(
-                    title: 'Tracker',
-                    subtitle: 'id',
+                  label: _TableHeaderCell(
+                    title: context.l10n.entityTracker,
+                    subtitle: context.l10n.entityTrackerId,
                     width: 80,
                   ),
                   onSort: onSort,
@@ -477,8 +486,8 @@ class _TrackerStatsTableContent extends StatelessWidget {
 
     if (eventId.isEmpty || trackerId.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Impossible d’ouvrir l’analyse : eventId ou trackerId manquant.'),
+        SnackBar(
+          content: Text(context.l10n.errorOpenAnalysis),
         ),
       );
       return;
@@ -507,7 +516,7 @@ class _TrackerStatsTableContent extends StatelessWidget {
                       children: [
                         Expanded(
                           child: Text(
-                            'Détails',
+                            context.l10n.entityDetails,
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
                             style: TextStyle(
@@ -518,7 +527,7 @@ class _TrackerStatsTableContent extends StatelessWidget {
                           ),
                         ),
                         IconButton(
-                          tooltip: 'Fermer',
+                          tooltip: context.l10n.actionClose,
                           onPressed: () => Navigator.of(context).pop(),
                           icon: Icon(
                             Icons.close_rounded,
@@ -585,7 +594,7 @@ class _StatsHeader extends StatelessWidget {
               ),
               const SizedBox(width: 8),
               Text(
-                'Statistiques',
+                context.l10n.navStatistics,
                 style: TextStyle(
                   color: colors.textPrimary,
                   fontSize: 17,
@@ -595,19 +604,25 @@ class _StatsHeader extends StatelessWidget {
             ],
           ),
           _SummaryPill(
-            label: '${summary.playersCount} joueurs',
+            label: context.l10n.statsPlayersCount(summary.playersCount),
             icon: Icons.groups_rounded,
           ),
           _SummaryPill(
-            label: 'Charge Moy. ${summary.averageWorkloadScore.toStringAsFixed(0)}',
+            label: context.l10n.statsAvgWorkload(
+              summary.averageWorkloadScore.toStringAsFixed(0),
+            ),
             icon: Icons.bar_chart_rounded,
           ),
           _SummaryPill(
-            label: 'Distance Moy. ${summary.metricStats['distanceKm']!.mean.toStringAsFixed(2)}',
+            label: context.l10n.statsAvgDistance(
+              summary.metricStats['distanceKm']!.mean.toStringAsFixed(2),
+            ),
             icon: Icons.map_rounded,
           ),
           _SummaryPill(
-            label: 'Vitesse max Moy. ${summary.metricStats['distanceKm']!.mean.toStringAsFixed(2)}',
+            label: context.l10n.statsAvgMaxSpeed(
+              summary.metricStats['distanceKm']!.mean.toStringAsFixed(2),
+            ),
             icon: Icons.directions_run_rounded,
           ),
         ],
@@ -814,7 +829,7 @@ class _ZScoreBadge extends StatelessWidget {
     final String sign = zScore > 0 ? '+' : '';
 
     return Tooltip(
-      message: 'zScore ${sign}${zScore.toStringAsFixed(2)}',
+      message: context.l10n.statsZScore(sign, zScore.toStringAsFixed(2)),
       child: Container(
         constraints: const BoxConstraints(minWidth: 48),
         padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 4),
@@ -928,32 +943,17 @@ class _TrackerStatsRow {
   final String trackerId;
   final Player? player;
   final TeamPlayerMetricScores scores;
+  final String displayName;
 
   const _TrackerStatsRow({
     required this.playerId,
     required this.trackerId,
     required this.player,
     required this.scores,
+    required this.displayName,
   });
 
-  String get playerName {
-    final firstName = (player?.firstName ?? '').trim();
-    final lastName = (player?.lastName ?? '').trim();
-
-    if (firstName.isNotEmpty && lastName.isNotEmpty) {
-      return '$firstName $lastName';
-    }
-
-    if (firstName.isNotEmpty) {
-      return firstName;
-    }
-
-    if (lastName.isNotEmpty) {
-      return lastName;
-    }
-
-    return _formatFallbackPlayerId(playerId);
-  }
+  String get playerName => displayName;
 
   PlayerMetricScore? metric(String key) {
     return scores.getMetric(key);
@@ -980,11 +980,34 @@ class _MetricConfig {
   });
 }
 
-String _formatFallbackPlayerId(String playerId) {
+String _resolvePlayerDisplayName(
+  Player? player,
+  String playerId,
+  String unknownPlayer,
+) {
+  final firstName = (player?.firstName ?? '').trim();
+  final lastName = (player?.lastName ?? '').trim();
+
+  if (firstName.isNotEmpty && lastName.isNotEmpty) {
+    return '$firstName $lastName';
+  }
+
+  if (firstName.isNotEmpty) {
+    return firstName;
+  }
+
+  if (lastName.isNotEmpty) {
+    return lastName;
+  }
+
+  return _formatFallbackPlayerId(playerId, unknownPlayer);
+}
+
+String _formatFallbackPlayerId(String playerId, String unknownPlayer) {
   final safe = playerId.trim();
 
   if (safe.isEmpty) {
-    return 'Joueur inconnu';
+    return unknownPlayer;
   }
 
   final parts = safe.split('-');

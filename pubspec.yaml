@@ -37,6 +37,7 @@ dependencies:
   google_maps_flutter: ^2.17.0
   geolocator: ^14.0.2
   http: ^1.6.0
+  cached_network_image: ^3.4.1
 
 
 dev_dependencies:
@@ -50,6 +51,8 @@ flutter:
 
   assets:
     - assets/images/logoFondOrange.png
+    - assets/images/logoFondBlanc.png
+    - assets/images/logoNoirFondBlanc.png
 
   fonts:
     - family: SFPro

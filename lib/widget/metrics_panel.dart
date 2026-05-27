@@ -12,6 +12,7 @@ import '../model/tracker/trackerData.dart';
 import '../provider/appSession.dart';
 import '../services/playerService.dart';
 import '../services/trackerDataAnalysisService.dart';
+import '../core/extensions/l10n_extension.dart';
 import '../util/app_theme.dart';
 import '../util/playerDisplayName.dart';
 import 'match_tracker_stats_table.dart';
@@ -106,7 +107,7 @@ class _MetricsPanelState extends State<MetricsPanel> {
         size: 22,
       ),
       decoration: InputDecoration(
-        labelText: 'Indicateur',
+        labelText: context.l10n.hintMetric,
         contentPadding: const EdgeInsets.symmetric(
           horizontal: 12,
           vertical: 10,
@@ -214,7 +215,7 @@ class _TrainingMetricsListViewState extends State<TrainingMetricsListView> {
           border: Border.all(color: colors.border),
         ),
         child: Text(
-          'Aucune donnée disponible.',
+          context.l10n.emptyNoData,
           style: textTheme.bodySmall?.copyWith(
             color: colors.textSecondary,
             fontWeight: FontWeight.w600,
@@ -371,7 +372,7 @@ class TrainingMetricLineChart extends StatelessWidget {
               const SizedBox(width: 8),
               Expanded(
                 child: Text(
-                  'Évolution - ${metricType.label}',
+                  context.l10n.metricsEvolutionTitle(metricType.label),
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                   style: textTheme.bodyMedium?.copyWith(
@@ -676,7 +677,7 @@ class TrainingMetricRow extends StatelessWidget {
             showGeneralDialog(
               context: context,
               barrierDismissible: true,
-              barrierLabel: 'Fermer',
+              barrierLabel: context.l10n.actionClose,
               barrierColor: Colors.black54,
               transitionDuration: const Duration(milliseconds: 180),
               pageBuilder: (
@@ -703,7 +704,9 @@ class TrainingMetricRow extends StatelessWidget {
                                   child: Padding(
                                     padding: const EdgeInsets.symmetric(horizontal: 110),
                                     child: Text(
-                                     'Entraînement du ${_formatShortDate(date)}',
+                                     dialogContext.l10n.trainingOnDate(
+                                       _formatShortDate(date),
+                                     ),
                                       maxLines: 1,
                                       overflow: TextOverflow.ellipsis,
                                       textAlign: TextAlign.center,
@@ -745,7 +748,7 @@ class TrainingMetricRow extends StatelessWidget {
                                           ),
                                           const SizedBox(width: 6),
                                           Text(
-                                            'Fermer',
+                                            dialogContext.l10n.actionClose,
                                             style: TextStyle(
                                               color: colors.primary,
                                               fontSize: 13,
@@ -788,7 +791,10 @@ class TrainingMetricRow extends StatelessWidget {
                             child: TrackerPlayerAnalysisWidget(
                               analysisDocId: docId,
                               teamId: '',
-                              playerName: playerDisplayName(player!),
+                              playerName: playerDisplayName(
+                                player!,
+                                unknownLabel: context.l10n.entityPlayer,
+                              ),
                               player: player,
                               isMatch: false,
                               showHeader: false,

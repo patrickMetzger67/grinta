@@ -1,61 +1,95 @@
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
+import 'package:grinta/model/player.dart';
+import 'package:grinta/provider/appSession.dart';
+import 'package:grinta/services/playerService.dart';
+import 'package:provider/provider.dart';
 
-import '../model/player.dart';
-import '../services/playerService.dart';
-import '../util/app_theme.dart';
+import 'app_session_player_avatar.dart';
 
-class PlayerPhoto extends StatelessWidget {
+/// Photo joueur — même rendu que le profil ([AppSessionPlayerAvatar]).
+class PlayerPhoto extends StatefulWidget {
   const PlayerPhoto({
+    super.key,
     required this.player,
     this.radius = 18,
+    this.defaultPhotoFileName = 'portrait_1920x1920.jpg',
   });
 
   final Player player;
   final double radius;
+  final String defaultPhotoFileName;
+
+  @override
+  State<PlayerPhoto> createState() => _PlayerPhotoState();
+}
+
+class _PlayerPhotoState extends State<PlayerPhoto> {
+  static final PlayerService _playerService = PlayerService();
+
+  late Future<String> _urlFuture;
+
+  @override
+  void initState() {
+    super.initState();
+    _urlFuture = _playerService.getCachedUrlPlayer(
+      widget.player,
+      widget.defaultPhotoFileName,
+    );
+  }
+
+  @override
+  void didUpdateWidget(covariant PlayerPhoto oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    final oldKey = oldWidget.player.keyMember ?? oldWidget.player.photo;
+    final newKey = widget.player.keyMember ?? widget.player.photo;
+    if (oldKey != newKey) {
+      _urlFuture = _playerService.getCachedUrlPlayer(
+        widget.player,
+        widget.defaultPhotoFileName,
+      );
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
-    final colors = context.appColors;
-    final PlayerService playerService = PlayerService();
+    final memberId = widget.player.keyMember;
+    if (memberId != null) {
+      final sessionImage =
+          context.watch<AppSession>().playersPhoto[memberId];
+      if (sessionImage != null) {
+        return AppSessionPlayerAvatar(
+          player: widget.player,
+          imageProvider: sessionImage,
+          radius: widget.radius,
+        );
+      }
+    }
 
     return FutureBuilder<String>(
-      future: playerService.getUrlPlayer(player, "portrait_1920x1920.jpg"),
-      builder: (context, photoSnapshot) {
-        final String? imageUrl = photoSnapshot.data;
-
-        if (imageUrl != null && imageUrl.isNotEmpty) {
-          return CircleAvatar(
-            radius: radius,
-            backgroundColor: colors.primary.withValues(alpha: 0.12),
-            backgroundImage: NetworkImage(imageUrl),
-          );
+      future: _urlFuture,
+      builder: (context, snapshot) {
+        if (snapshot.connectionState != ConnectionState.done) {
+          return _avatar(imageProvider: null);
         }
 
-        final String initials = _initials(
-          player.firstName ?? '',
-          player.lastName ?? '',
-        );
+        final imageUrl = snapshot.data?.trim() ?? '';
+        if (imageUrl.isEmpty) {
+          return _avatar(imageProvider: null);
+        }
 
-        return CircleAvatar(
-          radius: radius,
-          backgroundColor: colors.primary.withValues(alpha: 0.12),
-          child: Text(
-            initials,
-            style: Theme.of(context).textTheme.titleMedium?.copyWith(
-              color: colors.primary,
-              fontWeight: FontWeight.w700,
-            ),
-          ),
+        return _avatar(
+          imageProvider: CachedNetworkImageProvider(imageUrl),
         );
       },
     );
   }
 
-  String _initials(String firstName, String lastName) {
-    final String f = firstName.isNotEmpty ? firstName[0].toUpperCase() : '';
-    final String l = lastName.isNotEmpty ? lastName[0].toUpperCase() : '';
-    final String value = '$f$l';
-
-    return value.isEmpty ? '?' : value;
+  Widget _avatar({required ImageProvider? imageProvider}) {
+    return AppSessionPlayerAvatar(
+      player: widget.player,
+      imageProvider: imageProvider,
+      radius: widget.radius,
+    );
   }
 }

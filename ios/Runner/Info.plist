@@ -66,5 +66,9 @@
 	</array>
 	<key>UIViewControllerBasedStatusBarAppearance</key>
 	<false/>
+	<key>GMSApiKey</key>
+	<string>AIzaSyDyHHcP9py2HCyx18Ssels7qqygKxeUZG0</string>
+	<key>NSLocationWhenInUseUsageDescription</key>
+	<string>Grinta uses your location to center the map on the pitch.</string>
 </dict>
 </plist>

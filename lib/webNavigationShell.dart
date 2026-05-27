@@ -1,7 +1,10 @@
 import 'package:firebase_auth/firebase_auth.dart' as firebase_auth;
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'core/extensions/l10n_extension.dart';
 import 'util/app_theme.dart';
+import 'widget/app_language_dropdown.dart';
+import 'widget/app_logo.dart';
 
 import 'main.dart';
 
@@ -27,7 +30,7 @@ class WebNavigationShell extends StatefulWidget {
   const WebNavigationShell({
     super.key,
     required this.items,
-    this.appTitle = 'Application',
+    this.appTitle = '',
     this.appIcon = Icons.dashboard_outlined,
     this.initialIndex = 0,
     required this.sidebarHeaderBottom,
@@ -85,14 +88,14 @@ class _WebNavigationShellState extends State<WebNavigationShell> {
             side: BorderSide(color: colors.border),
           ),
           title: Text(
-            'Déconnexion',
+            dialogContext.l10n.actionLogoutConfirmTitle,
             style: TextStyle(
               color: colors.textPrimary,
               fontWeight: FontWeight.w700,
             ),
           ),
           content: Text(
-            'Souhaites-tu vraiment te déconnecter ?',
+            dialogContext.l10n.actionLogoutConfirmMessage,
             style: TextStyle(
               color: colors.textSecondary,
             ),
@@ -100,11 +103,11 @@ class _WebNavigationShellState extends State<WebNavigationShell> {
           actions: [
             OutlinedButton(
               onPressed: () => Navigator.of(dialogContext).pop(false),
-              child: const Text('Annuler'),
+              child: Text(dialogContext.l10n.actionCancel),
             ),
             ElevatedButton(
               onPressed: () => Navigator.of(dialogContext).pop(true),
-              child: const Text('Déconnexion'),
+              child: Text(dialogContext.l10n.actionLogout),
             ),
           ],
         );
@@ -129,7 +132,7 @@ class _WebNavigationShellState extends State<WebNavigationShell> {
 
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('Erreur lors de la déconnexion : $e'),
+          content: Text(context.l10n.errorLogout(e.toString())),
         ),
       );
     } finally {
@@ -142,9 +145,9 @@ class _WebNavigationShellState extends State<WebNavigationShell> {
   @override
   Widget build(BuildContext context) {
     if (!kIsWeb) {
-      return const Scaffold(
+      return Scaffold(
         body: Center(
-          child: Text('Ce shell est prévu pour Flutter Web uniquement.'),
+          child: Text(context.l10n.infoWebShellOnly),
         ),
       );
     }
@@ -211,6 +214,7 @@ class _WebNavigationShellState extends State<WebNavigationShell> {
                     ),
                   ),
                   Divider(color: colors.border, height: 1),
+                  _buildLanguageSelector(context),
                   _buildThemeToggle(context),
                   _buildLogoutButton(context),
                 ],
@@ -243,9 +247,24 @@ class _WebNavigationShellState extends State<WebNavigationShell> {
     }
   }
 
+  Widget _buildLanguageSelector(BuildContext context) {
+    if (_collapsed) {
+      return const Padding(
+        padding: EdgeInsets.fromLTRB(12, 12, 12, 0),
+        child: AppLanguageDropdown(compact: true),
+      );
+    }
+
+    return const Padding(
+      padding: EdgeInsets.fromLTRB(12, 12, 12, 0),
+      child: AppLanguageSidebarTile(),
+    );
+  }
+
   Widget _buildThemeToggle(BuildContext context) {
     final colors = context.appColors;
     final textTheme = Theme.of(context).textTheme;
+    final l10n = context.l10n;
     final app = MyApp.of(context);
 
     return LayoutBuilder(
@@ -257,8 +276,8 @@ class _WebNavigationShellState extends State<WebNavigationShell> {
             padding: const EdgeInsets.fromLTRB(12, 12, 12, 12),
             child: Tooltip(
               message: app.isDarkMode
-                  ? 'Désactiver le mode sombre'
-                  : 'Activer le mode sombre',
+                  ? l10n.themeDisableDarkModeTooltip
+                  : l10n.themeEnableDarkModeTooltip,
               child: InkWell(
                 borderRadius: BorderRadius.circular(16),
                 onTap: () {
@@ -308,7 +327,7 @@ class _WebNavigationShellState extends State<WebNavigationShell> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        'Mode sombre',
+                        l10n.themeDarkModeLabel,
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                         style: textTheme.bodyLarge?.copyWith(
@@ -346,7 +365,7 @@ class _WebNavigationShellState extends State<WebNavigationShell> {
       return Padding(
         padding: const EdgeInsets.fromLTRB(12, 0, 12, 16),
         child: Tooltip(
-          message: 'Déconnexion',
+          message: context.l10n.actionLogout,
           child: InkWell(
             borderRadius: BorderRadius.circular(16),
             onTap: _isSigningOut ? null : _logout,
@@ -407,7 +426,7 @@ class _WebNavigationShellState extends State<WebNavigationShell> {
               const SizedBox(width: 12),
               Expanded(
                 child: Text(
-                  'Déconnexion',
+                  context.l10n.actionLogout,
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                   style: textTheme.bodyLarge?.copyWith(
@@ -441,10 +460,7 @@ class _WebNavigationShellState extends State<WebNavigationShell> {
                 color: colors.primary.withValues(alpha: 0.12),
                 borderRadius: BorderRadius.circular(10),
               ),
-              child: Image.asset(
-                'assets/images/logoFondOrange.png',
-                fit: BoxFit.contain,
-              ),
+              child: const AppLogo(),
             ),
             const SizedBox(height: 8),
             InkWell(
@@ -482,10 +498,8 @@ class _WebNavigationShellState extends State<WebNavigationShell> {
           Expanded(
             child: Align(
               alignment: Alignment.centerLeft,
-              child: Image.asset(
-                'assets/images/logoFondOrange.png',
+              child: const AppLogo(
                 height: 48,
-                fit: BoxFit.contain,
               ),
             ),
           ),

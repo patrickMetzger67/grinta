@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:grinta/model/team.dart';
 import 'package:grinta/provider/appSession.dart';
+import '../core/extensions/l10n_extension.dart';
 import '../util/app_theme.dart';
 import 'package:provider/provider.dart';
 
@@ -8,14 +9,14 @@ class TeamsListScreen extends StatefulWidget {
   const TeamsListScreen({
     super.key,
     required this.managedTeamsIds,
-    this.title = 'Équipes',
+    this.title,
     this.onTeamTap,
     this.teamSubtitle,
     this.trailingBuilder,
   });
 
   final List<String> managedTeamsIds;
-  final String title;
+  final String? title;
   final void Function(BuildContext context, Team team, bool isMananger)? onTeamTap;
   final String? Function(Team team)? teamSubtitle;
   final Widget Function(BuildContext context, Team team)? trailingBuilder;
@@ -39,6 +40,7 @@ class _TeamsListScreenState extends State<TeamsListScreen> {
   Widget build(BuildContext context) {
     final colors = context.appColors;
     final textTheme = Theme.of(context).textTheme;
+    final l10n = context.l10n;
 
     return Consumer<AppSession>(
       builder: (context, appSession, _) {
@@ -62,7 +64,7 @@ class _TeamsListScreenState extends State<TeamsListScreen> {
 
         return Scaffold(
           appBar: AppBar(
-            title: Text(widget.title),
+            title: Text(widget.title ?? l10n.entityTeams),
           ),
           body: SafeArea(
             child: Column(
@@ -77,7 +79,7 @@ class _TeamsListScreenState extends State<TeamsListScreen> {
                       });
                     },
                     decoration: InputDecoration(
-                      hintText: 'Rechercher une équipe',
+                      hintText: l10n.hintSearchTeam,
                       prefixIcon: Icon(
                         Icons.search_rounded,
                         color: colors.textSecondary,
@@ -106,8 +108,11 @@ class _TeamsListScreenState extends State<TeamsListScreen> {
                       Chip(
                         label: Text(
                           _search.isEmpty
-                              ? '${allTeams.length} équipe(s)'
-                              : '${filteredTeams.length} / ${allTeams.length}',
+                              ? l10n.teamsListCount(allTeams.length)
+                              : l10n.teamsListCountFiltered(
+                                  filteredTeams.length,
+                                  allTeams.length,
+                                ),
                         ),
                       ),
                     ],
@@ -124,7 +129,9 @@ class _TeamsListScreenState extends State<TeamsListScreen> {
                     itemBuilder: (context, index) {
                       final Team team = filteredTeams[index];
                       final String name =
-                      (team.name ?? '').trim().isEmpty ? 'Équipe' : team.name!.trim();
+                      (team.name ?? '').trim().isEmpty
+                          ? l10n.entityTeam
+                          : team.name!.trim();
                       final String? subtitle = widget.teamSubtitle?.call(team);
 
                       final bool isManager = team.keyTeam != null && widget.managedTeamsIds.contains(team.keyTeam!);
@@ -252,8 +259,8 @@ class _EmptyTeamsState extends StatelessWidget {
             const SizedBox(height: 12),
             Text(
               isSearching
-                  ? 'Aucune équipe trouvée'
-                  : 'Aucune équipe disponible',
+                  ? context.l10n.teamsListNoResults
+                  : context.l10n.teamsListNoTeams,
               style: textTheme.titleMedium?.copyWith(
                 fontWeight: FontWeight.w600,
               ),

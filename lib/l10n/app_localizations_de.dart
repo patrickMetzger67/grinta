@@ -12,15 +12,14 @@ class AppLocalizationsDe extends AppLocalizations {
   String get appName => 'Grinta';
 
   @override
-  String get heroTitle =>
-      'Verwalten Sie Ihre sportlichen Aktivitäten ganz einfach';
+  String get heroTitle => 'Verwalten Sie Ihre sportliche Aktivität einfach';
 
   @override
   String get heroSubtitle =>
-      'Organisieren Sie Ihre Veranstaltungen, verwalten Sie Ihre Mitglieder und verfolgen Sie Ihre Aktivitäten über eine klare, moderne und responsive Benutzeroberfläche.';
+      'Organisieren Sie Ihre Veranstaltungen, verwalten Sie Ihre Mitglieder und überwachen Sie Ihre Aktivitäten über eine übersichtliche, moderne und reaktionsfähige Oberfläche.';
 
   @override
-  String get loginTitle => 'Anmelden';
+  String get loginTitle => 'Verbindung';
 
   @override
   String get loginSubtitle =>
@@ -30,55 +29,59 @@ class AppLocalizationsDe extends AppLocalizations {
   String get email => 'E-Mail-Adresse';
 
   @override
-  String get you => 'vous@exemple.com';
+  String get emailHint => 'you@example.com';
 
   @override
   String get password => 'Passwort';
 
   @override
+  String get passwordHint => '••••••••';
+
+  @override
   String get forgotPassword => 'Passwort vergessen?';
 
   @override
-  String get signIn => 'Anmelden';
+  String get signIn => 'Einloggen';
 
   @override
-  String get emailAndPasswordRequired => 'Email et mot de passe requis';
+  String get emailAndPasswordRequired => 'E-Mail und Passwort erforderlich';
 
   @override
-  String get signInError => 'Erreur de connexion';
+  String get signInError => 'Verbindungsfehler';
 
   @override
-  String get userNotFound => 'Aucun utilisateur trouvé pour cet email';
+  String get userNotFound => 'Für diese E-Mail wurden keine Benutzer gefunden';
 
   @override
-  String get wrongPassword => 'Mot de passe incorrect';
+  String get wrongPassword => 'Falsches Passwort';
 
   @override
-  String get invalidEmail => 'Adresse email invalide';
+  String get invalidEmail => 'Ungültige E-Mail-Adresse';
 
   @override
-  String get invalidCredential => 'Identifiants invalides';
+  String get invalidCredential => 'Ungültige Bezeichner';
 
   @override
-  String get tooManyRequests => 'Trop de tentatives. Réessaie plus tard';
+  String get tooManyRequests =>
+      'Zu viele Versuche. Versuchen Sie es später noch einmal';
 
   @override
-  String get userDisabled => 'Ce compte a été désactivé';
+  String get userDisabled => 'Dieses Konto wurde deaktiviert';
 
   @override
-  String get unexpectedError => 'Erreur inattendue';
+  String get unexpectedError => 'Unerwarteter Fehler';
 
   @override
-  String get createAccount => 'Konto erstellen';
+  String get createAccount => 'Ein Konto erstellen';
 
   @override
-  String get or => 'oder';
+  String get or => 'Oder';
 
   @override
-  String get continueWithGoogle => 'Mit Google fortfahren';
+  String get continueWithGoogle => 'Weiter mit Google';
 
   @override
-  String get hasATeamCode => 'Je dispose d\'un code équipe';
+  String get hasATeamCode => 'Ich habe einen Teamcode';
 
   @override
   String get slide1Title => 'Verwalten Sie Ihr Team';
@@ -92,12 +95,1623 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get slide2Subtitle =>
-      'Erstellen Sie Ihre Veranstaltungen, laden Sie Ihre Spieler ein und verfolgen Sie deren Verfügbarkeit ganz einfach.';
+      'Erstellen Sie Ihre Events, rufen Sie Ihre Spieler zusammen und verfolgen Sie ganz einfach die Verfügbarkeit.';
 
   @override
   String get slide3Title => 'Verfolgen Sie Ihre Leistung';
 
   @override
   String get slide3Subtitle =>
-      'Sehen Sie Statistiken, Aktivitäten und Ergebnisse über eine klare Benutzeroberfläche ein.';
+      'Zeigen Sie Statistiken, Aktivitäten und Ergebnisse über eine übersichtliche Oberfläche an.';
+
+  @override
+  String get actionCancel => 'Stornieren';
+
+  @override
+  String get actionDelete => 'LÖSCHEN';
+
+  @override
+  String get actionRetry => 'Versuchen Sie es erneut';
+
+  @override
+  String get actionClose => 'Schließen';
+
+  @override
+  String get actionOk => 'Okay';
+
+  @override
+  String get actionYes => 'Ja';
+
+  @override
+  String get actionNo => 'NEIN';
+
+  @override
+  String get actionValidate => 'Zur Validierung';
+
+  @override
+  String get actionCopy => 'Kopie';
+
+  @override
+  String get actionReset => 'Zurücksetzen';
+
+  @override
+  String get actionBack => 'Zurück';
+
+  @override
+  String get actionNew => 'Neu';
+
+  @override
+  String get actionChoosePeriod => 'Wählen Sie einen Zeitraum';
+
+  @override
+  String get actionWeekPrevious => 'Woche -';
+
+  @override
+  String get actionWeekNext => 'Woche +';
+
+  @override
+  String get actionLoadBefore => 'Vorwärts laden';
+
+  @override
+  String get actionLoadAfter => 'Danach laden';
+
+  @override
+  String get actionToday => 'Heute';
+
+  @override
+  String get actionLogout => 'Trennen';
+
+  @override
+  String get actionLogoutConfirmTitle => 'Trennen';
+
+  @override
+  String get actionLogoutConfirmMessage =>
+      'Möchten Sie sich wirklich abmelden?';
+
+  @override
+  String get actionAddPlayer => 'Fügen Sie einen Spieler hinzu';
+
+  @override
+  String get actionAddStaff => 'Fügen Sie einen Stab hinzu';
+
+  @override
+  String get actionAddZone => 'Fügen Sie einen Bereich hinzu';
+
+  @override
+  String get actionAddToCart => 'In den Warenkorb legen';
+
+  @override
+  String get actionBeginCheckout => 'Zahlung starten';
+
+  @override
+  String get actionConnect => 'Verbinden';
+
+  @override
+  String get actionDownload => 'Herunterladen';
+
+  @override
+  String get actionEraseData => 'Daten löschen';
+
+  @override
+  String get actionChooseAsiFile => 'Wählen Sie eine .asi-Datei';
+
+  @override
+  String get actionDefaultValues => 'Standardwerte';
+
+  @override
+  String get actionRemoveCustomization => 'Personalisierung entfernen';
+
+  @override
+  String get actionDisconnect => 'Trennen';
+
+  @override
+  String get actionAsiFile => '.asi-Datei';
+
+  @override
+  String get actionWeekPreviousLong => 'Vorherige Woche';
+
+  @override
+  String get actionWeekNextLong => 'Nächste Woche';
+
+  @override
+  String get entityTeam => 'Team';
+
+  @override
+  String entityTeamWithIndex(int index) {
+    return 'Team $index';
+  }
+
+  @override
+  String get entityTeams => 'Mannschaften';
+
+  @override
+  String get entityPlayer => 'Spieler';
+
+  @override
+  String get entityPlayers => 'Spieler';
+
+  @override
+  String get entityPlayerUnknown => 'Unbekannter Spieler';
+
+  @override
+  String get entityPlayerNotSet => 'Spieler nicht informiert';
+
+  @override
+  String get entityStaff => 'Personal';
+
+  @override
+  String get entityMatch => 'Übereinstimmen';
+
+  @override
+  String get entityMatches => 'Streichhölzer';
+
+  @override
+  String get entityTraining => 'Ausbildung';
+
+  @override
+  String get entityTrainings => 'Trainingseinheiten';
+
+  @override
+  String get entityField => 'Boden';
+
+  @override
+  String get entityFieldUndefined => 'Undefiniertes Land';
+
+  @override
+  String get entitySeason => 'Jahreszeit';
+
+  @override
+  String get entityEvent => 'Ereignis';
+
+  @override
+  String get entityEvents => 'Ereignisse';
+
+  @override
+  String get entityConversation => 'Gespräch';
+
+  @override
+  String get entityUser => 'Benutzer';
+
+  @override
+  String get entityProduct => 'Produkt';
+
+  @override
+  String get entityCart => 'Korb';
+
+  @override
+  String get entityApplication => 'Anwendung';
+
+  @override
+  String get entityMap => 'Karte';
+
+  @override
+  String get entityIndicator => 'Indikator';
+
+  @override
+  String get entityDeviceId => 'Geräte-ID';
+
+  @override
+  String get entityTracker => 'Tracker';
+
+  @override
+  String get entityTrackerId => 'Ausweis';
+
+  @override
+  String get entityName => 'Name';
+
+  @override
+  String get entityCode => 'Code';
+
+  @override
+  String get entityLabel => 'Wortlaut';
+
+  @override
+  String get entityMinSpeed => 'Mindestgeschwindigkeit';
+
+  @override
+  String get entityMaxSpeed => 'Höchstgeschwindigkeit';
+
+  @override
+  String get entityFullMatch => 'Ganzes Spiel';
+
+  @override
+  String get entityFullMatchShort => 'Vollständige Übereinstimmung';
+
+  @override
+  String get navDashboard => 'Armaturenbrett';
+
+  @override
+  String get navAgenda => 'Tagebuch';
+
+  @override
+  String get navTeams => 'Mannschaften';
+
+  @override
+  String get navChat => 'Nachrichten';
+
+  @override
+  String get navSync => 'Synchronisation';
+
+  @override
+  String get navFields => 'Land';
+
+  @override
+  String get navCompo => 'Zusammensetzung';
+
+  @override
+  String get navStatistics => 'Statistiken';
+
+  @override
+  String get navOverview => 'Überblick';
+
+  @override
+  String get navNavigation => 'Navigation';
+
+  @override
+  String get tabCompo => 'Zusammensetzung';
+
+  @override
+  String get tabHighlights => 'Höhepunkte';
+
+  @override
+  String get tabStats => 'Statistiken';
+
+  @override
+  String get tabStarters => 'Inhaber';
+
+  @override
+  String get tabSubstitutes => 'Ersatz';
+
+  @override
+  String get tabSynthesis => 'Zusammenfassung';
+
+  @override
+  String get tabSpeedZones => 'Geschwindigkeitszonen';
+
+  @override
+  String get tabFieldZones => 'Feldbereiche';
+
+  @override
+  String get tabHalfTimeComparison => 'Halbzeitvergleich';
+
+  @override
+  String get tabDistanceTimeline => 'Timeline-Entfernung';
+
+  @override
+  String get tabHeatmap => 'Wärmekarte';
+
+  @override
+  String get periodWeek => 'Woche';
+
+  @override
+  String get periodMonth => 'Monat';
+
+  @override
+  String get periodCustom => 'Zeitraum';
+
+  @override
+  String get periodPrep => 'Körperliche Vorbereitung';
+
+  @override
+  String get periodPostponed => 'Verschoben';
+
+  @override
+  String periodMatchDay(String day) {
+    return 'Spieltag $day';
+  }
+
+  @override
+  String periodSelectedWeek(String range) {
+    return 'Ausgewählte Woche: $range';
+  }
+
+  @override
+  String get periodUndefined => 'Kein definierter Zeitraum';
+
+  @override
+  String get hintSearchTeam => 'Finden Sie ein Team';
+
+  @override
+  String get hintSearchUser => 'Nach einem Benutzer suchen';
+
+  @override
+  String get hintSearchAddress =>
+      'Suchen Sie nach einer Adresse oder einem Stadion';
+
+  @override
+  String get hintSelectSeason => 'Wählen Sie eine Saison aus';
+
+  @override
+  String get hintFieldName => 'Landname';
+
+  @override
+  String get hintCompoType => 'Art der Komposition';
+
+  @override
+  String get hintMetric => 'Indikator';
+
+  @override
+  String get hintDeviceIdExample => 'Beispiel: tracker_001';
+
+  @override
+  String get hintSpeedZoneMaxEmpty =>
+      'Lassen Sie für den letzten Bereich das Feld leer';
+
+  @override
+  String get emptyNoData => 'Keine Daten verfügbar';
+
+  @override
+  String get emptyNoEvent => 'Keine Veranstaltungen';
+
+  @override
+  String get emptyNoConversation => 'Kein Gespräch';
+
+  @override
+  String get emptyNoHighlights => 'Keine Highlights';
+
+  @override
+  String get emptyNoCompo =>
+      'Für dieses Spiel wurden keine Aufstellungen gefunden.';
+
+  @override
+  String get emptyNoStarters => 'Kein Inhaber angegeben.';
+
+  @override
+  String get emptyNoSubstitutes => 'Kein Ersatz angegeben.';
+
+  @override
+  String get emptyNoTracker => 'Kein Tracker ausgewählt';
+
+  @override
+  String get emptyNoTrackers => 'Keine Tracker zum Anzeigen';
+
+  @override
+  String get emptyNoDeviceId => 'Keine Geräte-ID verfügbar';
+
+  @override
+  String get emptyNoFileSelected => 'Keine Dateien ausgewählt';
+
+  @override
+  String get emptyNoSpeedZone => 'Keine Geschwindigkeitszone verfügbar.';
+
+  @override
+  String get emptyNoFieldZoneData => 'Keine Geländezonendaten verfügbar.';
+
+  @override
+  String get emptyNoDistanceTimeline =>
+      'Keine Entfernungszeitleiste verfügbar.';
+
+  @override
+  String get emptyNoStatsForMatch =>
+      'Für dieses Spiel wurden keine Daten gefunden.';
+
+  @override
+  String get emptyNoStatsTeamAnalysis =>
+      'Für dieses Spiel wurden keine Daten in TRACKER_TeamAnalysis gefunden.';
+
+  @override
+  String get emptyNoPendingMatch => 'Keine ausstehenden Spiele.';
+
+  @override
+  String get emptyNoPendingTraining => 'Kein Training mit Tracker ausstehend.';
+
+  @override
+  String get emptyNoTeamFound => 'Keine Teams gefunden';
+
+  @override
+  String get emptyNoTeamAvailable => 'Keine Teams verfügbar';
+
+  @override
+  String get emptyNoTeamForSeason =>
+      'Für diese Saison wurden keine Teams gefunden.';
+
+  @override
+  String get emptyNoTeamForStats =>
+      'Es sind keine Teams zum Anzeigen von Statistiken verfügbar.';
+
+  @override
+  String get emptyNoPlayerForTeam =>
+      'Für dieses Team wurden keine Spieler gefunden.';
+
+  @override
+  String get trainingPlayersRecap => 'Zusammenfassung';
+
+  @override
+  String get trainingPlayersLoading => 'Spieler werden geladen…';
+
+  @override
+  String get trainingPlayersClose => 'Schließen';
+
+  @override
+  String get presencePresent => 'Anwesend';
+
+  @override
+  String get presenceInjured => 'Verletzt';
+
+  @override
+  String get presenceExcused => 'Entschuldigt';
+
+  @override
+  String get presenceAbsent => 'Abwesend';
+
+  @override
+  String get presenceLate => 'Verspätet';
+
+  @override
+  String get presenceUnknown => '—';
+
+  @override
+  String get trainingPlayersAddPlayer => 'Spieler hinzufügen';
+
+  @override
+  String get trainingPlayersAddPlayerTitle => 'Spieler wählen';
+
+  @override
+  String get trainingPlayersNoCandidates =>
+      'Alle Spieler des Teams sind bereits eingetragen.';
+
+  @override
+  String get trainingPlayersChangePresence => 'Anwesenheit ändern';
+
+  @override
+  String get trainingPlayersAssignTracker => 'Tracker zuweisen';
+
+  @override
+  String get trainingPlayersNoTrackerAvailable => 'Kein Tracker verfügbar.';
+
+  @override
+  String get trainingPlayersSelectTracker => 'Tracker';
+
+  @override
+  String get emptyNoStaffForTeam =>
+      'Für dieses Team wurden keine Mitarbeiter gefunden.';
+
+  @override
+  String get emptyNoPlayerSelected => 'Keine Spieler ausgewählt.';
+
+  @override
+  String get emptyNoCurrentSeason => 'Keine aktuelle Saison verfügbar.';
+
+  @override
+  String get emptyNoUserFound => 'Keine Benutzer gefunden';
+
+  @override
+  String get emptyNoUserAvailable => 'Keine Benutzer verfügbar';
+
+  @override
+  String get emptyNoConnectedDevice => 'Keine Geräte angeschlossen';
+
+  @override
+  String get emptyNoMatchToShow => 'Keine Übereinstimmungen zum Anzeigen.';
+
+  @override
+  String get emptyNoCompoType => 'Es wurde kein Kompositionstyp gefunden.';
+
+  @override
+  String get emptyNoAnalysis => 'Keine Analyse verfügbar';
+
+  @override
+  String get emptyNoStats => 'Keine Statistiken verfügbar';
+
+  @override
+  String get emptyNoPlayersInStats =>
+      'Statistiken sind vorhanden, es ist jedoch kein Spielerstand verfügbar.';
+
+  @override
+  String get emptyHeatmap => 'Heatmap nicht verfügbar';
+
+  @override
+  String emptyNoSvgForPeriod(String period) {
+    return 'Kein SVG-Bild für $period gefunden.';
+  }
+
+  @override
+  String errorGeneric(String details) {
+    return 'Fehler: $details';
+  }
+
+  @override
+  String errorLoadingResource(String resource) {
+    return 'Fehler beim Laden von $resource.';
+  }
+
+  @override
+  String errorFilteringResource(String resource) {
+    return 'Fehler beim Filtern von $resource.';
+  }
+
+  @override
+  String errorComputingStats(String resource) {
+    return 'Fehler bei der Statistikberechnung für $resource.';
+  }
+
+  @override
+  String errorSaving(String details) {
+    return 'Fehler beim Speichern: $details';
+  }
+
+  @override
+  String errorLogout(String details) {
+    return 'Fehler beim Abmelden: $details';
+  }
+
+  @override
+  String get errorStreamConnection =>
+      'Es kann keine Verbindung zum Stream hergestellt werden';
+
+  @override
+  String get errorOpenAnalysis =>
+      'Analyse kann nicht geöffnet werden: Ereignis-ID oder Tracker-ID fehlt.';
+
+  @override
+  String get errorAgendaLoad => 'Kalender kann nicht geladen werden';
+
+  @override
+  String errorTeamParamsLoad(String details) {
+    return 'Fehler beim Laden der Einstellungen: $details';
+  }
+
+  @override
+  String get errorSaveTeamIdEmpty => 'Speichern nicht möglich: leere Team-ID.';
+
+  @override
+  String errorDeleteFailed(String details) {
+    return 'Fehler beim Löschen: $details';
+  }
+
+  @override
+  String get errorLoadingTitle => 'Fehler beim Laden';
+
+  @override
+  String get errorCompositionTitle => 'Kompositionsfehler';
+
+  @override
+  String get errorPlayerTitle => 'Spielerfehler';
+
+  @override
+  String get errorPlayersTitle => 'Spielerfehler';
+
+  @override
+  String get errorTrackerTitle => 'Tracker-Fehler';
+
+  @override
+  String get errorMatchNotIdentified => 'Unbekannte Übereinstimmung';
+
+  @override
+  String get errorPlayerNotIdentified => 'Unbekannter Spieler';
+
+  @override
+  String get errorPlayerNotFound => 'Spieler nicht gefunden';
+
+  @override
+  String get errorPlayerNotFoundInMatch => 'Spieler nicht gefunden';
+
+  @override
+  String get errorStatsUnavailable => 'Statistiken nicht verfügbar';
+
+  @override
+  String get errorNoStats => 'Keine Statistik';
+
+  @override
+  String get errorNoStatsForPlayer =>
+      'Spielerstatistiken können nicht geladen werden.';
+
+  @override
+  String get errorPlayerNotFoundMessage =>
+      'Der ausgewählte Spieler konnte nicht gefunden werden.';
+
+  @override
+  String get errorNoTrackerData =>
+      'Für dieses Spiel wurden keine Trackerdaten gefunden.';
+
+  @override
+  String get errorNoTrackerStats =>
+      'Ohne Match-ID können Tracker-Statistiken nicht geladen werden.';
+
+  @override
+  String get errorNoTrackerAnalysis =>
+      'Es konnten keine Tracker-Daten für diesen Player gefunden werden.';
+
+  @override
+  String get errorMatchIdMissing => 'Fehlende Match-ID.';
+
+  @override
+  String errorChatCreate(String details) {
+    return 'Fehler beim Erstellen: $details';
+  }
+
+  @override
+  String get errorCompoTitle => 'Fehler';
+
+  @override
+  String get errorNoCompoTitle => 'Keine Komposition';
+
+  @override
+  String get successSettingsSaved => 'Einstellungen erfolgreich gespeichert.';
+
+  @override
+  String get successGpsCopied => 'GPS kopiert.';
+
+  @override
+  String get successDefaultsLoaded => 'In das Formular geladene Standardwerte.';
+
+  @override
+  String successConversionDone(int count) {
+    return 'Konvertierung abgeschlossen - $count Zeile(n) übernommen';
+  }
+
+  @override
+  String get infoReadOnly => 'Nur lesen';
+
+  @override
+  String get infoWebShellOnly => 'Diese Shell ist nur für Flutter Web gedacht.';
+
+  @override
+  String get settingsLanguageLabel => 'Sprache';
+
+  @override
+  String get themeDarkModeLabel => 'Dunkler Modus';
+
+  @override
+  String get themeEnableDarkModeTooltip => 'Dunklen Modus aktivieren';
+
+  @override
+  String get themeDisableDarkModeTooltip => 'Dunklen Modus deaktivieren';
+
+  @override
+  String get infoParameters => 'Einstellungen';
+
+  @override
+  String get infoUserNotConnected => 'Benutzer nicht angemeldet.';
+
+  @override
+  String get dialogCloseSyncTitle => 'Enge Synchronisierung';
+
+  @override
+  String get dialogCloseSyncMessage =>
+      'Möchten Sie die Synchronisierung schließen?';
+
+  @override
+  String get dialogDeleteCustomizationTitle => 'Personalisierung entfernen?';
+
+  @override
+  String get dialogDeleteAssignmentTitle => 'Zuordnung löschen';
+
+  @override
+  String get dialogNewConversation => 'Neues Gespräch';
+
+  @override
+  String get dialogAsiConversionTitle => 'ASI-zu-CSV-Konvertierung';
+
+  @override
+  String get syncMatchesToSync => 'Zu synchronisierende Übereinstimmungen';
+
+  @override
+  String get syncNoDeviceForTraining =>
+      'Für dieses Training wurden keine Geräte gefunden';
+
+  @override
+  String get statsWins => 'Siege';
+
+  @override
+  String get statsLosses => 'Niederlagen';
+
+  @override
+  String get statsDraws => 'Dummies';
+
+  @override
+  String get statsDistance => 'Distanz';
+
+  @override
+  String get statsMaxSpeed => 'Höchstgeschwindigkeit';
+
+  @override
+  String get statsAvgSpeed => 'Durchschnittliche Geschwindigkeit';
+
+  @override
+  String get statsWorkload => 'Arbeitsbelastung';
+
+  @override
+  String get statsFatigue => 'Ermüdung';
+
+  @override
+  String get statsDuration => 'Dauer';
+
+  @override
+  String get statsSprints => 'Sprints';
+
+  @override
+  String get statsHighAccel => 'Acc. hoch';
+
+  @override
+  String get statsHighSpeedTime => 'Hohe Geschwindigkeit';
+
+  @override
+  String get statsHighSpeedTimeShort => 'Hochgeschwindigkeitszeit';
+
+  @override
+  String get statsMaxAccel => 'Acc. max';
+
+  @override
+  String get statsAxisSpeed => 'Geschwindigkeit (km/h)';
+
+  @override
+  String get statsAxisTime => 'Mal)';
+
+  @override
+  String get statsAxisAcceleration => 'Beschleunigung (m/s²)';
+
+  @override
+  String get statsScore => 'Punktzahl';
+
+  @override
+  String statsPlayersCount(int count) {
+    return '$count Spieler';
+  }
+
+  @override
+  String statsAvgWorkload(String value) {
+    return 'Ø Belastung $value';
+  }
+
+  @override
+  String statsAvgDistance(String value) {
+    return 'Ø Distanz $value';
+  }
+
+  @override
+  String statsAvgMaxSpeed(String value) {
+    return 'Ø Max.-Geschw. $value';
+  }
+
+  @override
+  String statsZScore(String sign, String value) {
+    return 'zScore $sign$value';
+  }
+
+  @override
+  String get statsMaxAccelSample => 'Maximale Beschleunigung: 4 m/s2';
+
+  @override
+  String get speedZoneWalk => 'Gehen';
+
+  @override
+  String get speedZoneJogging => 'Jogging';
+
+  @override
+  String get speedZoneRun => 'Wettrennen';
+
+  @override
+  String get speedZoneHighIntensity => 'Hohe Intensität';
+
+  @override
+  String get speedZoneSprint => 'Sprint';
+
+  @override
+  String get highlightKickoff => 'Beginnen';
+
+  @override
+  String get highlightFullTime => 'Ende des Spiels';
+
+  @override
+  String get substitutionOut => 'Ausfahrt';
+
+  @override
+  String get substitutionIn => 'Eingang';
+
+  @override
+  String get teamParamsPerformanceTitle => 'Leistungseinstellungen';
+
+  @override
+  String get teamParamsSpeedSprints => 'Geschwindigkeit & Sprints';
+
+  @override
+  String get teamParamsIntensity => 'Intensität';
+
+  @override
+  String get teamParamsGpsTimeline => 'GPS / Validierung / Zeitleiste';
+
+  @override
+  String get teamParamsSpeedZones => 'Geschwindigkeitszonen';
+
+  @override
+  String get teamParamsMinOneZone =>
+      'Mindestens ein Bereich muss erhalten bleiben.';
+
+  @override
+  String get teamParamsAddSpeedZone =>
+      'Fügt mindestens eine Geschwindigkeitszone hinzu.';
+
+  @override
+  String get teamParamsSprintThreshold => 'Sprintschwelle (km/h)';
+
+  @override
+  String get teamParamsSprintMinAccel => 'Mini-Beschleunigung für den Sprint';
+
+  @override
+  String get teamParamsSprintMinDuration => 'Dauer des Minisprints';
+
+  @override
+  String get teamParamsSpeedMinDuration =>
+      'Mindestgeschwindigkeitsdauer validiert';
+
+  @override
+  String get teamParamsHighAccelThreshold => 'Starke Beschleunigungsschwelle';
+
+  @override
+  String get teamParamsHighAccelMinDuration =>
+      'Minidauer starke Beschleunigung';
+
+  @override
+  String get teamParamsMaxStepDistance =>
+      'Maximal zulässige Entfernung pro Schritt';
+
+  @override
+  String get teamParamsMaxPlausibleSpeed =>
+      'Maximale plausible Geschwindigkeit';
+
+  @override
+  String get teamParamsMaxPlausibleAccel => 'Maximale plausible Beschleunigung';
+
+  @override
+  String get teamParamsMinDeltaTime => 'Minimales Zeitdelta';
+
+  @override
+  String get teamParamsMaxDeltaTime => 'Maximales Zeitdelta';
+
+  @override
+  String get teamParamsSmoothingWindow => 'Glättungsfenster';
+
+  @override
+  String get teamParamsTimelineBucket => 'Bucket-Zeitleiste';
+
+  @override
+  String teamMembersPlayers(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count Spieler',
+      one: '1 Spieler',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String teamMembersStaff(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count Staff-Mitglieder',
+      one: '1 Staff-Mitglied',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get fieldTooltipZoomIn => 'Vergrößern Sie das gesamte Gelände';
+
+  @override
+  String get fieldTooltipZoomOut => 'Alles Gelände einstürzen lassen';
+
+  @override
+  String get fieldTooltipLengthUp => 'Länge erhöhen';
+
+  @override
+  String get fieldTooltipLengthDown => 'Länge reduzieren';
+
+  @override
+  String get fieldTooltipWidthUp => 'Breite vergrößern';
+
+  @override
+  String get fieldTooltipWidthDown => 'Breite reduzieren';
+
+  @override
+  String get fieldTooltipRotateLeft => 'Biegen Sie links ab';
+
+  @override
+  String get fieldTooltipRotateRight => 'Biegen Sie rechts ab';
+
+  @override
+  String get fieldTooltipMap => 'Karte';
+
+  @override
+  String get fieldTooltipSatellite => 'Satellit';
+
+  @override
+  String get fieldLocateCorners => 'Lokalisieren Sie Ecken';
+
+  @override
+  String get fieldSnackbarLocationDisabled =>
+      'Die Standortverfolgung ist deaktiviert.';
+
+  @override
+  String get fieldSnackbarAllowLocation =>
+      'Ermöglicht dem Standort, die Karte zu zentrieren.';
+
+  @override
+  String get fieldSnackbarGpsFailed =>
+      'Die aktuelle Position kann nicht abgerufen werden.';
+
+  @override
+  String get fieldSnackbarEnterAddress =>
+      'Geben Sie eine Adresse oder einen Stadionnamen ein.';
+
+  @override
+  String get fieldSnackbarMapNotReady => 'Die Karte ist noch nicht fertig.';
+
+  @override
+  String get fieldSnackbarAddressNotFound => 'Adresse nicht gefunden.';
+
+  @override
+  String fieldSnackbarAddressNotFoundWithStatus(String status) {
+    return 'Adresse nicht gefunden: $status';
+  }
+
+  @override
+  String get fieldSnackbarGeocodingFailed =>
+      'Die Suche nach dieser Adresse ist nicht möglich. Überprüft den Schlüssel und die Geocoding-API.';
+
+  @override
+  String get fieldSnackbarPlaceInMap =>
+      'Platziert das Gelände vollständig auf der Karte.';
+
+  @override
+  String get fieldSnackbarGpsConvertFailed =>
+      'Ecken können nicht in GPS-Positionen umgewandelt werden.';
+
+  @override
+  String get fieldHelpGestures =>
+      'Gelände: Ziehen, Bewegen, Zoomen/Drehen mit 2 Fingern, Trackpad: Scrollen, Zoomen, Drehen, Breite, Länge';
+
+  @override
+  String get compoNotFoundTitle => 'Zusammensetzung nicht angegeben';
+
+  @override
+  String get compoTypeEmptyTitle => 'Keine Komposition';
+
+  @override
+  String get matchStatsUnavailableTitle => 'Statistiken nicht verfügbar';
+
+  @override
+  String get sensorNotFoundTitle => 'Sensor nicht gefunden';
+
+  @override
+  String get sensorNotFoundMessage =>
+      'Für dieses Spiel sind diesem Spieler keine Sensoren zugeordnet.';
+
+  @override
+  String get matchHomeJersey => 'Heimtrikot';
+
+  @override
+  String get matchCartTitle => 'Ihr Warenkorb';
+
+  @override
+  String get matchCartOneItem => '1 Artikel – 49,90 €';
+
+  @override
+  String get asiSelectFile => 'Bitte wählen Sie eine .asi-Datei aus';
+
+  @override
+  String get asiEnterDeviceId => 'Bitte geben Sie die Geräte-ID ein';
+
+  @override
+  String get asiCannotReadFile =>
+      'Die ausgewählte Datei kann nicht abgespielt werden';
+
+  @override
+  String get asiFileMismatch =>
+      'Die Datei passt nicht zum ausgewählten Tracker';
+
+  @override
+  String get asiTrackerUnknown => 'Tracker nicht erkannt';
+
+  @override
+  String asiFilePickError(String details) {
+    return 'Fehler bei der Dateiauswahl: $details';
+  }
+
+  @override
+  String asiConversionError(String details) {
+    return 'Fehler bei der Konvertierung: $details';
+  }
+
+  @override
+  String get asiAnalysisFailed => 'Analyse nicht möglich';
+
+  @override
+  String get playerSynthesisTitle => 'Spielerzusammenfassung';
+
+  @override
+  String get playerSynthesisTabTitle => 'Zusammenfassung';
+
+  @override
+  String teamsListCount(int count) {
+    return '$count Team(s)';
+  }
+
+  @override
+  String teamsListCountFiltered(int filtered, int total) {
+    return '$filtered / $total';
+  }
+
+  @override
+  String get teamsListNoResults => 'Keine Teams gefunden';
+
+  @override
+  String get teamsListNoTeams => 'Keine Teams verfügbar';
+
+  @override
+  String get navHome => 'Willkommen';
+
+  @override
+  String get myTeams => 'Meine Teams';
+
+  @override
+  String get syncTrainingsToSync => 'Trainings zum Synchronisieren';
+
+  @override
+  String get chatSelectConversation => 'Wählen Sie eine Konversation aus';
+
+  @override
+  String get chatStartNewHint =>
+      'Klicken Sie auf „Neu“, um einen Chat zu starten.';
+
+  @override
+  String get chatTryAnotherName => 'Versuchen Sie es mit einem anderen Namen.';
+
+  @override
+  String get chatUsersAppearHere => 'Andere Benutzer werden hier angezeigt.';
+
+  @override
+  String get matchDetailTitle => 'Spieldetails';
+
+  @override
+  String get dateUndefined => 'Datum nicht definiert';
+
+  @override
+  String matchDateTimeAt(String date, String time) {
+    return '$date um $time';
+  }
+
+  @override
+  String get entityComposition => 'Zusammensetzung';
+
+  @override
+  String get entityDetails => 'Details';
+
+  @override
+  String get entityHeatmap => 'Heatmap';
+
+  @override
+  String get entityPeriods => 'Perioden';
+
+  @override
+  String get tabHighlightsShort => 'Zeit';
+
+  @override
+  String get emptyNoHighlightsMessage =>
+      'Tore, Karten und Auswechslungen werden hier angezeigt.';
+
+  @override
+  String get highlightTypeGoal => 'Ziel';
+
+  @override
+  String get highlightTypeSubstitution => 'Ändern';
+
+  @override
+  String get highlightTypeYellowCard => 'Gelbe Karte';
+
+  @override
+  String get highlightTypeRedCard => 'Rote Karte';
+
+  @override
+  String get highlightTypeOwnGoal => 'Eigentor';
+
+  @override
+  String get highlightTypePenalty => 'Strafe';
+
+  @override
+  String get highlightTypeGeneric => 'Hervorheben';
+
+  @override
+  String highlightSubstitutionOut(String player) {
+    return '$player raus';
+  }
+
+  @override
+  String highlightSubstitutionIn(String incoming, String outgoing) {
+    return '$incoming ersetzt $outgoing';
+  }
+
+  @override
+  String get errorNoPlayersTitle => 'Keine Spieler';
+
+  @override
+  String get matchTrackerDataAvailable => 'Trackerdaten sind verfügbar.';
+
+  @override
+  String get matchTrackerDataPending =>
+      'Die Trackerdaten sind noch nicht importiert.';
+
+  @override
+  String get errorPlayerNoTrackerMatch =>
+      'Dieser Spieler hat keine Trackerdaten für dieses Spiel.';
+
+  @override
+  String get trackerSyncTitle => 'Sensorsynchronisation';
+
+  @override
+  String get trackerAvailableSensors => 'Sensoren verfügbar';
+
+  @override
+  String trackerCount(int count) {
+    return '$count Tracker';
+  }
+
+  @override
+  String get trackerAlreadySyncedTitle =>
+      'Synchronisierung bereits durchgeführt';
+
+  @override
+  String get trackerAlreadySyncedMessage =>
+      'Der Sensor wurde für diese Sitzung bereits synchronisiert.';
+
+  @override
+  String get trackerStatusSelected => 'Ausgewählt';
+
+  @override
+  String get trackerStatusSynced => 'Synchronisiert';
+
+  @override
+  String get trackerStatusOpen => 'Offen';
+
+  @override
+  String get trackerSelectForActions =>
+      'Wählt einen Tracker aus, um Anmelde-, Download- und Löschaktionen anzuzeigen.';
+
+  @override
+  String get trackerSelectedLabel => 'Tracker ausgewählt';
+
+  @override
+  String get trackerLogsPlaceholder => 'Die Protokolle werden hier angezeigt.';
+
+  @override
+  String get trackerNoDataOnDevice => 'Keine Daten auf diesem Sensor.';
+
+  @override
+  String get trackerNoDataOnDeviceTitle =>
+      'Sensor verbunden — keine Einheit zum Import';
+
+  @override
+  String get trackerNoDataOnDeviceDetails =>
+      'USB-Verbindung OK (UUID OK), aber der Pod hat keine aufgezeichnete Einheit: keine Aktivität gestartet oder Daten bereits gelöscht. Nehmen Sie eine Einheit auf dem Inspirit auf und laden Sie erneut herunter.';
+
+  @override
+  String get trackerDownloadFailedTitle => 'Download fehlgeschlagen';
+
+  @override
+  String get trackerDownloadBusyHint =>
+      'Stellen Sie sicher, dass keine andere Grinta-Instanz geöffnet ist.';
+
+  @override
+  String get trackerDownloadPrepareSession =>
+      'USB-Vorbereitung vor dem Download (wie Trennen und erneut Verbinden)…';
+
+  @override
+  String get trackerUsbAuthorizeHint =>
+      'Kein Inspirit für diese Website autorisiert. Ein Chrome-Dialog öffnet sich: Inspirit wählen, dann „Verbinden“ — Dialog nicht schließen.';
+
+  @override
+  String get trackerUsbPopupCancelled =>
+      'Chrome-Dialog geschlossen oder kein Gerät gewählt. Tracker anschließen, erneut „Verbinden“ und in der Liste auswählen.';
+
+  @override
+  String get trackerUsbPhysicalReconnect =>
+      'USB-Sitzung abgelaufen (Kabel getrennt oder Sensor zurückgesetzt). Tracker ggf. wieder anschließen, dann erneut „Verbinden“ — Chrome kann erneut nach Auswahl fragen.';
+
+  @override
+  String trackerDeviceName(String name) {
+    return 'Gerät: $name';
+  }
+
+  @override
+  String get asiImportTitle => 'Importieren Sie eine .asi-Datei';
+
+  @override
+  String get asiImportSubtitle =>
+      'Wählen Sie eine Datei aus, überprüfen Sie die Geräte-ID und starten Sie dann die Konvertierung.';
+
+  @override
+  String get asiFileSelectedLabel => 'Ausgewählte Datei';
+
+  @override
+  String get asiImportFileHeader => 'ASI-Datei importieren';
+
+  @override
+  String get actionConvertToCsv => 'In CSV konvertieren';
+
+  @override
+  String get asiConverting => 'Konvertierung läuft...';
+
+  @override
+  String get asiPeriodsOne => '1 Periode übertragen';
+
+  @override
+  String asiPeriodsMany(int count) {
+    return '$count Periode(n) übermittelt - die ersten 2 werden für die Halbzeiten verwendet';
+  }
+
+  @override
+  String get statsUnitKm => 'km';
+
+  @override
+  String get statsUnitKmh => 'km/h';
+
+  @override
+  String get statsUnitCount => 'nb';
+
+  @override
+  String get statsUnitSeconds => 'trocken';
+
+  @override
+  String get statsUnitMps2 => 'm/s²';
+
+  @override
+  String get loadingSession => 'Sitzung wird geladen...';
+
+  @override
+  String get loadingStats => 'Statistiken werden geladen...';
+
+  @override
+  String get dashboardMyManagedTeams => 'Meine verwalteten Teams';
+
+  @override
+  String get dashboardMatchListTitle => 'Liste der Übereinstimmungen';
+
+  @override
+  String periodCustomRange(String start, String end) {
+    return 'vom $start bis $end';
+  }
+
+  @override
+  String statsPresenceRate(String value) {
+    return 'Anwesenheitsquote: ($value) %';
+  }
+
+  @override
+  String get statsDoneSingular => 'realisiert';
+
+  @override
+  String get statsDonePlural => 'gemacht';
+
+  @override
+  String get statsPlannedSingular => 'geplant';
+
+  @override
+  String get statsPlannedPlural => 'geplant';
+
+  @override
+  String get actionDayPrevious => 'Vorheriger Tag';
+
+  @override
+  String get actionDayNext => 'Am nächsten Tag';
+
+  @override
+  String get actionMonthPrevious => 'Vorheriger Monat';
+
+  @override
+  String get actionMonthNext => 'Nächsten Monat';
+
+  @override
+  String get actionSave => 'Speichern';
+
+  @override
+  String get actionSaving => 'Anmeldung...';
+
+  @override
+  String periodLoaded(String range) {
+    return 'Zeitraum geladen: $range';
+  }
+
+  @override
+  String get agendaLegend => 'Legende';
+
+  @override
+  String agendaOverviewEventsCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count Ereignisse',
+      one: '1 Ereignis',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String agendaEventSummaryMatches(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count Spiele',
+      one: '1 Spiel',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String agendaEventSummaryTrainings(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count Trainings',
+      one: '1 Training',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String agendaEventSummaryPrepas(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count Vorbereitungen',
+      one: '1 Vorbereitung',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get agendaTrackerStatsTitle => 'Tracker-Statistiken';
+
+  @override
+  String get teamDetailBackToTeams => 'Zurück zu den Teams';
+
+  @override
+  String teamDetailAverageAge(String age) {
+    return 'Durchschnittsalter: $age Jahre';
+  }
+
+  @override
+  String get teamDetailConfirmDeleteTitle => 'Bestätigen Sie den Löschvorgang';
+
+  @override
+  String teamDetailConfirmRemoveStaff(String playerName) {
+    return 'Staff $playerName wirklich entfernen?';
+  }
+
+  @override
+  String teamDetailConfirmRemovePlayerTeam(String playerName) {
+    return 'Spieler $playerName aus dem Team entfernen?';
+  }
+
+  @override
+  String teamDetailPlayerRemoved(String playerName) {
+    return '$playerName wurde entfernt.';
+  }
+
+  @override
+  String teamDetailPlayerTeamRemoved(String playerName) {
+    return '$playerName wurde aus dem Team entfernt.';
+  }
+
+  @override
+  String get teamDetailColumnAge => 'Alter';
+
+  @override
+  String get teamDetailColumnPosition => 'Position';
+
+  @override
+  String get teamDetailColumnHeight => 'Größe';
+
+  @override
+  String get teamDetailColumnWeight => 'Gewicht';
+
+  @override
+  String teamDetailHeightCm(int value) {
+    return '$value cm';
+  }
+
+  @override
+  String teamDetailWeightKg(int value) {
+    return '$value kg';
+  }
+
+  @override
+  String teamDetailConfirmRemoveTracker(String trackerName) {
+    return 'Zuweisung des Trackers „$trackerName“ entfernen?';
+  }
+
+  @override
+  String get roleCoach => 'Trainer';
+
+  @override
+  String get roleExecutive => 'Funktionär';
+
+  @override
+  String get positionEducator => 'Betreuer/Trainer';
+
+  @override
+  String get positionExecutive => 'Funktionär';
+
+  @override
+  String get positionGoalkeeper => 'Torwart';
+
+  @override
+  String get positionDefender => 'Verteidiger';
+
+  @override
+  String get positionMidfielder => 'Mittelfeld';
+
+  @override
+  String get positionForward => 'Stürmer';
+
+  @override
+  String get teamParamsCustomThresholds => 'Benutzerdefinierte Schwellenwerte';
+
+  @override
+  String get teamParamsDefaultThresholds => 'Standardschwellenwerte';
+
+  @override
+  String get teamParamsBackToTeam => 'Zurück zum Team';
+
+  @override
+  String get teamParamsDeleteCustomizationBody =>
+      'Die spezifischen Einstellungen für dieses Team werden gelöscht. Das Team verwendet dann die Standardeinstellungen.';
+
+  @override
+  String get teamParamsCustomizationRemoved =>
+      'Personalisierung entfernt. Es werden die Standardeinstellungen verwendet.';
+
+  @override
+  String teamParamsZoneMaxGreaterThanMin(String label) {
+    return 'Zone \"$label\" muss eine obere Grenze über der unteren Grenze haben.';
+  }
+
+  @override
+  String get teamParamsOnlyLastZoneEmptyMax =>
+      'Nur die letzte Zone kann ein leeres Max-Terminal haben.';
+
+  @override
+  String teamParamsZonesOverlap(String zoneA, String zoneB) {
+    return 'Die Zonen \"$zoneA\" und \"$zoneB\" überschneiden sich.';
+  }
+
+  @override
+  String get teamParamsCustomizeZonesHint =>
+      'Sie können die verwendeten Zonen frei anpassen, um die in jeder Zone verbrachte Zeit zu berechnen.';
+
+  @override
+  String get teamParamsZonesReadOnly =>
+      'Nur nach Rücksprache: Geschwindigkeitszonen können nicht geändert werden.';
+
+  @override
+  String get teamParamsInvalidInteger => 'Ungültiger ganzzahliger Wert';
+
+  @override
+  String get teamParamsInvalidNumber => 'Ungültiger numerischer Wert';
+
+  @override
+  String teamParamsZoneTitle(int index) {
+    return 'Zone $index';
+  }
+
+  @override
+  String get hintRequiredField => 'Erforderliches Feld';
+
+  @override
+  String get fieldSnackbarGoogleMapsKeyMissing =>
+      'Fehlender Google Maps-Schlüssel für die Adresssuche.';
+
+  @override
+  String get fieldMapModeHelp => 'Kartenmodus: Verschiebt oder zoomt die Karte';
+
+  @override
+  String get fieldSideLeft => 'Linke Seite';
+
+  @override
+  String get fieldSideRight => 'Rechte Seite';
+
+  @override
+  String get fieldEstimatedAddress => 'Geschätzte Adresse';
+
+  @override
+  String get fieldAddressUnavailable =>
+      'Für diese Stelle ist keine Postanschrift verfügbar.';
+
+  @override
+  String get fieldGpsPositionsTitle => 'GPS-Geländepositionen';
+
+  @override
+  String get fieldAverageLength => 'Durchschnittliche Länge';
+
+  @override
+  String get fieldAverageWidth => 'Durchschnittliche Breite';
+
+  @override
+  String get trackerParamDefault => 'Standardeinstellung';
+
+  @override
+  String trackerParamTeam(String teamId) {
+    return 'Team-Param $teamId';
+  }
+
+  @override
+  String get halfFirst => '1. Hälfte';
+
+  @override
+  String get halfSecond => '2. Hälfte';
+
+  @override
+  String halfNth(int index) {
+    return '$index. Halbzeit';
+  }
+
+  @override
+  String get halfFirstShort => '1';
+
+  @override
+  String get halfSecondShort => '2';
+
+  @override
+  String get halfMatchShort => 'Übereinstimmen';
+
+  @override
+  String get tabSpeedZonesShort => 'Geschwindigkeit';
+
+  @override
+  String get fieldZoneAttackLeftShort => 'Att. LINKS';
+
+  @override
+  String get fieldZoneAttackRightShort => 'Att. RECHTS';
+
+  @override
+  String get fieldZoneMidLeftShort => 'Mil. LINKS';
+
+  @override
+  String get fieldZoneMidRightShort => 'Mil. RECHTS';
+
+  @override
+  String get fieldZoneDefenseLeftShort => 'Def. LINKS';
+
+  @override
+  String get fieldZoneDefenseRightShort => 'Def. RECHTS';
+
+  @override
+  String get fieldZoneAttackLeft => 'Linker Angriff';
+
+  @override
+  String get fieldZoneAttackRight => 'Rechter Angriff';
+
+  @override
+  String get fieldZoneMidLeft => 'Linker Mittelfeldspieler';
+
+  @override
+  String get fieldZoneMidRight => 'Rechts in der Mitte';
+
+  @override
+  String get fieldZoneDefenseLeft => 'Linke Verteidigung';
+
+  @override
+  String get fieldZoneDefenseRight => 'Rechte Verteidigung';
+
+  @override
+  String get halfFirstUnavailable => '1. Halbzeit nicht verfügbar';
+
+  @override
+  String get halfSecondUnavailable => '2. Hälfte nicht verfügbar';
+
+  @override
+  String asiHeatmapPointCount(int count, String period) {
+    return '$count Punkt(e) - $period';
+  }
+
+  @override
+  String metricsEvolutionTitle(String metric) {
+    return 'Verlauf - $metric';
+  }
+
+  @override
+  String trainingOnDate(String date) {
+    return 'Training am $date';
+  }
 }

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../model/compoType.dart';
 import '../services/compoTypeService.dart';
+import '../core/extensions/l10n_extension.dart';
 import '../util/app_theme.dart';
 import '../widget/half_pitch_compo_widget.dart';
 
@@ -41,9 +42,10 @@ class _CompoScreenState extends State<CompoScreen> {
             }
 
             if (snapshot.hasError) {
+              final l10n = context.l10n;
               return _CompoStateMessage(
                 icon: Icons.error_outline_rounded,
-                title: 'Erreur',
+                title: l10n.errorCompoTitle,
                 message: snapshot.error.toString(),
               );
             }
@@ -51,10 +53,11 @@ class _CompoScreenState extends State<CompoScreen> {
             final compoTypes = snapshot.data ?? <CompoType>[];
 
             if (compoTypes.isEmpty) {
-              return const _CompoStateMessage(
+              final l10n = context.l10n;
+              return _CompoStateMessage(
                 icon: Icons.sports_soccer_rounded,
-                title: 'Aucune composition',
-                message: 'Aucun type de composition n’a été trouvé.',
+                title: l10n.compoTypeEmptyTitle,
+                message: l10n.emptyNoCompoType,
               );
             }
 
@@ -211,7 +214,7 @@ class _CompoTypeDropdown extends StatelessWidget {
         value: selectedKey,
         isExpanded: true,
         decoration: InputDecoration(
-          labelText: 'Type de composition',
+          labelText: context.l10n.hintCompoType,
           prefixIcon: Icon(
             Icons.tune_rounded,
             color: colors.primary,

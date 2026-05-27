@@ -1,5 +1,6 @@
 import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
+import '../core/extensions/l10n_extension.dart';
 import '../model/tracker/trackerData.dart';
 
 class TrackerTimelineChart extends StatelessWidget {
@@ -13,10 +14,12 @@ class TrackerTimelineChart extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     if (points.isEmpty) {
-      return const Center(
-        child: Text('Aucune donnée disponible'),
+      return Center(
+        child: Text(context.l10n.emptyNoData),
       );
     }
+
+    final l10n = context.l10n;
 
     final minX = points.first.timeSec;
     final maxX = points.last.timeSec;
@@ -58,20 +61,20 @@ class TrackerTimelineChart extends StatelessWidget {
                       },
                     ),
                   ),
-                  titlesData: const FlTitlesData(
-                    topTitles: AxisTitles(
+                  titlesData: FlTitlesData(
+                    topTitles: const AxisTitles(
                       sideTitles: SideTitles(showTitles: false),
                     ),
-                    rightTitles: AxisTitles(
+                    rightTitles: const AxisTitles(
                       sideTitles: SideTitles(showTitles: false),
                     ),
                     leftTitles: AxisTitles(
-                      axisNameWidget: Text('Vitesse (km/h)'),
-                      sideTitles: SideTitles(showTitles: true),
+                      axisNameWidget: Text(l10n.statsAxisSpeed),
+                      sideTitles: const SideTitles(showTitles: true),
                     ),
                     bottomTitles: AxisTitles(
-                      axisNameWidget: Text('Temps (s)'),
-                      sideTitles: SideTitles(showTitles: true),
+                      axisNameWidget: Text(l10n.statsAxisTime),
+                      sideTitles: const SideTitles(showTitles: true),
                     ),
                   ),
                   rangeAnnotations: RangeAnnotations(
@@ -140,11 +143,11 @@ class TrackerTimelineChart extends StatelessWidget {
                       sideTitles: SideTitles(showTitles: false),
                     ),
                     leftTitles: AxisTitles(
-                      axisNameWidget: const Text('Accélération (m/s²)'),
+                      axisNameWidget: Text(l10n.statsAxisAcceleration),
                       sideTitles: const SideTitles(showTitles: true),
                     ),
                     bottomTitles: AxisTitles(
-                      axisNameWidget: const Text('Temps (s)'),
+                      axisNameWidget: Text(l10n.statsAxisTime),
                       sideTitles: const SideTitles(showTitles: true),
                     ),
                   ),

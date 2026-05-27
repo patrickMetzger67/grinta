@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:grinta/core/extensions/l10n_extension.dart';
+import 'package:grinta/l10n/app_localizations.dart';
 
 import '../model/matchStats.dart';
 import '../util/app_theme.dart';
@@ -42,12 +44,13 @@ class MatchCompoWidget extends StatelessWidget {
     if (!hasComposition) {
       return _CompositionEmptyState(
         icon: Icons.sports_soccer_rounded,
-        title: 'Composition non renseignée',
-        message: 'Aucune composition n’a été trouvée pour ce match.',
+        title: context.l10n.compoNotFoundTitle,
+        message: context.l10n.emptyNoCompo,
       );
     }
 
     final teamNames = _resolveTeamNames(
+      context: context,
       titulars: titulars,
       substitutes: substitutes,
       team1: team1,
@@ -112,11 +115,13 @@ class MatchCompoWidget extends StatelessWidget {
   }
 
   List<String> _resolveTeamNames({
+    required BuildContext context,
     required List<MatchStatPlayer> titulars,
     required List<MatchStatPlayer> substitutes,
     required String? team1,
     required String? team2,
   }) {
+    final l10n = context.l10n;
     final teamsFromStats = <String>[];
 
     void addTeam(String? value) {
@@ -151,8 +156,8 @@ class MatchCompoWidget extends StatelessWidget {
       }
     }
 
-    addFallback(_clean(team1, fallback: 'Équipe 1'));
-    addFallback(_clean(team2, fallback: 'Équipe 2'));
+    addFallback(_clean(team1, fallback: l10n.entityTeamWithIndex(1)));
+    addFallback(_clean(team2, fallback: l10n.entityTeamWithIndex(2)));
 
     return fallbackTeams;
   }
@@ -193,7 +198,7 @@ class _HeaderCard extends StatelessWidget {
               const SizedBox(width: 8),
               Expanded(
                 child: Text(
-                  'Composition',
+                  context.l10n.entityComposition,
                   style: TextStyle(
                     color: colors.textPrimary,
                     fontSize: 17,
@@ -269,18 +274,18 @@ class _TeamCompositionCard extends StatelessWidget {
           ),
           const SizedBox(height: 14),
           _PlayerSection(
-            title: 'Titulaires',
+            title: context.l10n.tabStarters,
             icon: Icons.sports_soccer_rounded,
             players: titulars,
-            emptyMessage: 'Aucun titulaire renseigné.',
+            emptyMessage: context.l10n.emptyNoStarters,
             changes: changes,
           ),
           const SizedBox(height: 14),
           _PlayerSection(
-            title: 'Remplaçants',
+            title: context.l10n.tabSubstitutes,
             icon: Icons.swap_horiz_rounded,
             players: substitutes,
-            emptyMessage: 'Aucun remplaçant renseigné.',
+            emptyMessage: context.l10n.emptyNoSubstitutes,
             changes: changes,
           ),
         ],
@@ -383,9 +388,12 @@ class _PlayerTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final colors = context.appColors;
-    final playerName = _clean(player.player, fallback: 'Joueur non renseigné');
+    final playerName = _clean(
+      player.player,
+      fallback: context.l10n.entityPlayerNotSet,
+    );
     final shirt = _clean(player.shirt);
-    final playerChanges = _findPlayerChanges(player, changes);
+    final playerChanges = _findPlayerChanges(context.l10n, player, changes);
 
     for (final playerChange in playerChanges) {
       debugPrint(
@@ -656,6 +664,7 @@ List<_PlayerChange> _extractChanges(List<MatchStatHighLight> highlights) {
 }
 
 List<_PlayerChangeBadge> _findPlayerChanges(
+    AppLocalizations l10n,
     MatchStatPlayer player,
     List<_PlayerChange> changes,
     ) {
@@ -665,7 +674,7 @@ List<_PlayerChangeBadge> _findPlayerChanges(
     if (_samePlayer(player.player, change.outgoingPlayer)) {
       badges.add(
         _PlayerChangeBadge(
-          label: 'Sortie',
+          label: l10n.substitutionOut,
           minute: change.minute,
           isIncoming: false,
         ),
@@ -675,7 +684,7 @@ List<_PlayerChangeBadge> _findPlayerChanges(
     if (_samePlayer(player.player, change.incomingPlayer)) {
       badges.add(
         _PlayerChangeBadge(
-          label: 'Entrée',
+          label: l10n.substitutionIn,
           minute: change.minute,
           isIncoming: true,
         ),

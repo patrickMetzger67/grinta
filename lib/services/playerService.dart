@@ -8,6 +8,9 @@ class PlayerService {
 
   static const String collectionName = 'member';
 
+  static final Map<String, String> _playerPhotoUrlCache = {};
+  static final Map<String, Future<String>> _playerPhotoUrlPending = {};
+
   CollectionReference<Map<String, dynamic>> get _collection =>
       _firestore.collection(collectionName);
 
@@ -317,6 +320,42 @@ class PlayerService {
     }
 
     return list;
+  }
+
+  /// URL photo mise en cache (évite les appels Storage à chaque scroll / rebuild).
+  Future<String> getCachedUrlPlayer(
+    Player player,
+    String defaultPlayerPhoto,
+  ) {
+    final cacheKey = _playerPhotoCacheKey(player, defaultPlayerPhoto);
+    final cached = _playerPhotoUrlCache[cacheKey];
+    if (cached != null) {
+      return Future<String>.value(cached);
+    }
+
+    return _playerPhotoUrlPending.putIfAbsent(cacheKey, () async {
+      try {
+        final url = await getUrlPlayer(player, defaultPlayerPhoto);
+        _playerPhotoUrlCache[cacheKey] = url;
+        return url;
+      } finally {
+        _playerPhotoUrlPending.remove(cacheKey);
+      }
+    });
+  }
+
+  static String _playerPhotoCacheKey(Player player, String defaultPlayerPhoto) {
+    final id = player.keyMember?.trim();
+    if (id != null && id.isNotEmpty) {
+      return '$id|$defaultPlayerPhoto';
+    }
+    final photo = player.photo?.trim() ?? '';
+    return 'photo:$photo|$defaultPlayerPhoto';
+  }
+
+  static void clearPlayerPhotoUrlCache() {
+    _playerPhotoUrlCache.clear();
+    _playerPhotoUrlPending.clear();
   }
 
   /// Récupérer l’URL de la photo joueur

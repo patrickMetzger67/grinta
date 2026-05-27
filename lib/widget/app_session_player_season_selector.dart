@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:grinta/core/extensions/l10n_extension.dart';
 import 'package:provider/provider.dart';
 import 'package:grinta/model/player.dart';
 import 'package:grinta/model/season.dart';
 import '../util/app_theme.dart';
 
+import 'app_session_player_avatar.dart';
 import '../provider/appSession.dart';
 
 class AppSessionPlayerSeasonSelector extends StatelessWidget {
@@ -16,8 +18,8 @@ class AppSessionPlayerSeasonSelector extends StatelessWidget {
         final Map<String, Player> playerMap = appSession.currentUserPlayers;
         final List<Player> playerList = playerMap.values.toList()
           ..sort((a, b) {
-            final aName = _playerLabel(a).toLowerCase();
-            final bName = _playerLabel(b).toLowerCase();
+            final aName = _playerLabel(context, a).toLowerCase();
+            final bName = _playerLabel(context, b).toLowerCase();
             return aName.compareTo(bName);
           });
 
@@ -74,7 +76,7 @@ class AppSessionPlayerSeasonSelector extends StatelessWidget {
               isExpanded: true,
               decoration: _inputDecoration(
                 context,
-                hintText: 'Sélectionner une saison',
+                hintText: context.l10n.hintSelectSeason,
               ),
               items: seasonList.map((season) {
                 final seasonId = season.ref?.id;
@@ -83,7 +85,7 @@ class AppSessionPlayerSeasonSelector extends StatelessWidget {
                 return DropdownMenuItem<String>(
                   value: seasonId,
                   child: Text(
-                    _seasonLabel(season),
+                    _seasonLabel(context, season),
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                     softWrap: false,
@@ -137,14 +139,14 @@ class AppSessionPlayerSeasonSelector extends StatelessWidget {
     );
   }
 
-  String _playerLabel(Player player) {
+  String _playerLabel(BuildContext context, Player player) {
     final firstName = player.firstName ?? '';
     final lastName = player.lastName ?? '';
     final fullName = '$firstName $lastName'.trim();
-    return fullName.isNotEmpty ? fullName : 'Joueur';
+    return fullName.isNotEmpty ? fullName : context.l10n.entityPlayer;
   }
 
-  String _seasonLabel(Season season) {
+  String _seasonLabel(BuildContext context, Season season) {
     if (season.name != null && season.name!.trim().isNotEmpty) {
       return season.name!.trim();
     }
@@ -160,7 +162,7 @@ class AppSessionPlayerSeasonSelector extends StatelessWidget {
       return season.ref!.id;
     }
 
-    return 'Saison';
+    return context.l10n.entitySeason;
   }
 }
 
@@ -186,7 +188,7 @@ class _PlayerSelectorField extends StatelessWidget {
 
     return Row(
       children: [
-        _PlayerAvatar(
+        AppSessionPlayerAvatar(
           player: selectedPlayer,
           imageProvider: selectedImageProvider,
           radius: 18,
@@ -236,7 +238,7 @@ class _SinglePlayerDisplay extends StatelessWidget {
       ),
       child: Row(
         children: [
-          _PlayerAvatar(
+          AppSessionPlayerAvatar(
             player: player,
             imageProvider: imageProvider,
             radius: 18,
@@ -244,7 +246,7 @@ class _SinglePlayerDisplay extends StatelessWidget {
           const SizedBox(width: 10),
           Expanded(
             child: Text(
-              _playerLabel(player),
+              _playerLabel(context, player),
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
               softWrap: false,
@@ -255,11 +257,11 @@ class _SinglePlayerDisplay extends StatelessWidget {
     );
   }
 
-  String _playerLabel(Player player) {
+  String _playerLabel(BuildContext context, Player player) {
     final firstName = player.firstName ?? '';
     final lastName = player.lastName ?? '';
     final fullName = '$firstName $lastName'.trim();
-    return fullName.isNotEmpty ? fullName : 'Joueur';
+    return fullName.isNotEmpty ? fullName : context.l10n.entityPlayer;
   }
 }
 
@@ -273,54 +275,17 @@ class _PlayerDropdownItem extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Text(
-      _playerLabel(player),
+      _playerLabel(context, player),
       maxLines: 1,
       overflow: TextOverflow.ellipsis,
       softWrap: false,
     );
   }
 
-  String _playerLabel(Player player) {
+  String _playerLabel(BuildContext context, Player player) {
     final firstName = player.firstName ?? '';
     final lastName = player.lastName ?? '';
     final fullName = '$firstName $lastName'.trim();
-    return fullName.isNotEmpty ? fullName : 'Joueur';
-  }
-}
-
-class _PlayerAvatar extends StatelessWidget {
-  final Player player;
-  final ImageProvider? imageProvider;
-  final double radius;
-
-  const _PlayerAvatar({
-    required this.player,
-    required this.imageProvider,
-    required this.radius,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final firstName = player.firstName ?? '';
-    final lastName = player.lastName ?? '';
-    final initials = _buildInitials(firstName, lastName);
-
-    return CircleAvatar(
-      radius: radius,
-      backgroundImage: imageProvider,
-      child: imageProvider == null
-          ? Text(
-        initials,
-        style: TextStyle(fontSize: radius * 0.65),
-      )
-          : null,
-    );
-  }
-
-  String _buildInitials(String firstName, String lastName) {
-    final f = firstName.isNotEmpty ? firstName[0].toUpperCase() : '';
-    final l = lastName.isNotEmpty ? lastName[0].toUpperCase() : '';
-    final value = '$f$l';
-    return value.isNotEmpty ? value : '?';
+    return fullName.isNotEmpty ? fullName : context.l10n.entityPlayer;
   }
 }

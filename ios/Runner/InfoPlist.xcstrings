@@ -1,0 +1,41 @@
+{
+  "sourceLanguage" : "fr",
+  "strings" : {
+    "NSLocationWhenInUseUsageDescription" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Grinta nutzt Ihren Standort, um die Karte auf das Spielfeld zu zentrieren."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Grinta uses your location to center the map on the pitch."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Grinta utiliza tu ubicación para centrar el mapa en el terreno."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Grinta utilise votre position pour centrer la carte sur le terrain."
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Grinta utilizza la tua posizione per centrare la mappa sul campo."
+          }
+        }
+      }
+    }
+  },
+  "version" : "1.0"
+}

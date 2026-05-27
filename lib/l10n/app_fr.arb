@@ -1,32 +1,808 @@
 {
-"@@locale": "fr",
-"appName": "Grinta",
-"heroTitle": "Pilotez votre activité sportive simplement",
-"heroSubtitle": "Organisez vos événements, gérez vos membres et suivez votre activité depuis une interface claire, moderne et responsive.",
-"loginTitle": "Connexion",
-"loginSubtitle": "Connectez-vous pour accéder à votre espace.",
-"email": "Adresse email",
-"you":"vous@exemple.com",
-"password": "Mot de passe",
-"forgotPassword": "Mot de passe oublié ?",
-"signIn": "Se connecter",
-"emailAndPasswordRequired":"Email et mot de passe requis",
-"signInError":"Erreur de connexion",
-"userNotFound":"Aucun utilisateur trouvé pour cet email",
-"wrongPassword":"Mot de passe incorrect",
-"invalidEmail":"Adresse email invalide",
-"invalidCredential":"Identifiants invalides",
-"tooManyRequests":"Trop de tentatives. Réessaie plus tard",
-"userDisabled":"Ce compte a été désactivé",
-"unexpectedError":"Erreur inattendue",
-"createAccount": "Créer un compte",
-"or": "ou",
-"continueWithGoogle": "Continuer avec Google",
-"hasATeamCode":"Je dispose d'un code équipe",
-"slide1Title": "Gérez votre équipe",
-"slide1Subtitle": "Centralisez vos membres, vos informations et votre organisation dans une seule application.",
-"slide2Title": "Planifiez vos matchs",
-"slide2Subtitle": "Créez vos événements, convoquez vos joueurs et suivez facilement les disponibilités.",
-"slide3Title": "Suivez vos performances",
-"slide3Subtitle": "Consultez les statistiques, l’activité et les résultats depuis une interface claire."
+  "@@locale": "fr",
+
+  "appName": "Grinta",
+  "heroTitle": "Pilotez votre activité sportive simplement",
+  "heroSubtitle": "Organisez vos événements, gérez vos membres et suivez votre activité depuis une interface claire, moderne et responsive.",
+  "loginTitle": "Connexion",
+  "loginSubtitle": "Connectez-vous pour accéder à votre espace.",
+  "email": "Adresse email",
+  "emailHint": "vous@exemple.com",
+  "password": "Mot de passe",
+  "passwordHint": "••••••••",
+  "forgotPassword": "Mot de passe oublié ?",
+  "signIn": "Se connecter",
+  "emailAndPasswordRequired": "Email et mot de passe requis",
+  "signInError": "Erreur de connexion",
+  "userNotFound": "Aucun utilisateur trouvé pour cet email",
+  "wrongPassword": "Mot de passe incorrect",
+  "invalidEmail": "Adresse email invalide",
+  "invalidCredential": "Identifiants invalides",
+  "tooManyRequests": "Trop de tentatives. Réessaie plus tard",
+  "userDisabled": "Ce compte a été désactivé",
+  "unexpectedError": "Erreur inattendue",
+  "createAccount": "Créer un compte",
+  "or": "ou",
+  "continueWithGoogle": "Continuer avec Google",
+  "hasATeamCode": "Je dispose d'un code équipe",
+  "slide1Title": "Gérez votre équipe",
+  "slide1Subtitle": "Centralisez vos membres, vos informations et votre organisation dans une seule application.",
+  "slide2Title": "Planifiez vos matchs",
+  "slide2Subtitle": "Créez vos événements, convoquez vos joueurs et suivez facilement les disponibilités.",
+  "slide3Title": "Suivez vos performances",
+  "slide3Subtitle": "Consultez les statistiques, l’activité et les résultats depuis une interface claire.",
+
+  "actionCancel": "Annuler",
+  "actionDelete": "Supprimer",
+  "actionRetry": "Réessayer",
+  "actionClose": "Fermer",
+  "actionOk": "OK",
+  "actionYes": "Oui",
+  "actionNo": "Non",
+  "actionValidate": "Valider",
+  "actionCopy": "Copier",
+  "actionReset": "Réinitialiser",
+  "actionBack": "Retour",
+  "actionNew": "Nouveau",
+  "actionChoosePeriod": "Choisir une période",
+  "actionWeekPrevious": "Semaine -",
+  "actionWeekNext": "Semaine +",
+  "actionLoadBefore": "Charger avant",
+  "actionLoadAfter": "Charger après",
+  "actionToday": "Aujourd’hui",
+  "actionLogout": "Déconnexion",
+  "actionLogoutConfirmTitle": "Déconnexion",
+  "actionLogoutConfirmMessage": "Souhaites-tu vraiment te déconnecter ?",
+  "actionAddPlayer": "Ajouter un joueur",
+  "actionAddStaff": "Ajouter un staff",
+  "actionAddZone": "Ajouter une zone",
+  "actionAddToCart": "Ajouter au panier",
+  "actionBeginCheckout": "Commencer le paiement",
+  "actionConnect": "Connecter",
+  "actionDownload": "Télécharger",
+  "actionEraseData": "Effacer les données",
+  "actionChooseAsiFile": "Choisir un fichier .asi",
+  "actionDefaultValues": "Valeurs par défaut",
+  "actionRemoveCustomization": "Supprimer la personnalisation",
+  "actionDisconnect": "Déconnecter",
+  "actionAsiFile": "Fichier .asi",
+  "actionWeekPreviousLong": "Semaine précédente",
+  "actionWeekNextLong": "Semaine suivante",
+
+  "entityTeam": "Équipe",
+  "entityTeamWithIndex": "Équipe {index}",
+  "@entityTeamWithIndex": {
+    "placeholders": {
+      "index": { "type": "int" }
+    }
+  },
+  "entityTeams": "Équipes",
+  "entityPlayer": "Joueur",
+  "entityPlayers": "Joueurs",
+  "entityPlayerUnknown": "Joueur inconnu",
+  "entityPlayerNotSet": "Joueur non renseigné",
+  "entityStaff": "Staff",
+  "entityMatch": "Match",
+  "entityMatches": "Matchs",
+  "entityTraining": "Entraînement",
+  "entityTrainings": "Entraînements",
+  "entityField": "Terrain",
+  "entityFieldUndefined": "Terrain non défini",
+  "entitySeason": "Saison",
+  "entityEvent": "événement",
+  "entityEvents": "événements",
+  "entityConversation": "conversation",
+  "entityUser": "utilisateur",
+  "entityProduct": "Produit",
+  "entityCart": "Panier",
+  "entityApplication": "Application",
+  "entityMap": "Carte",
+  "entityIndicator": "Indicateur",
+  "entityDeviceId": "Device ID",
+  "entityTracker": "Tracker",
+  "entityTrackerId": "id",
+  "entityName": "nom",
+  "entityCode": "Code",
+  "entityLabel": "Libellé",
+  "entityMinSpeed": "Vitesse min",
+  "entityMaxSpeed": "Vitesse max",
+  "entityFullMatch": "Match entier",
+  "entityFullMatchShort": "Match complet",
+
+  "navDashboard": "Tableau de bord",
+  "navAgenda": "Agenda",
+  "navTeams": "Équipes",
+  "navChat": "Messagerie",
+  "navSync": "Synchronisation",
+  "navFields": "Terrains",
+  "navCompo": "Compo",
+  "navStatistics": "Statistiques",
+  "navOverview": "Vue d’ensemble",
+  "navNavigation": "Navigation",
+
+  "tabCompo": "Compo",
+  "tabHighlights": "Temps forts",
+  "tabStats": "Statistiques",
+  "tabStarters": "Titulaires",
+  "tabSubstitutes": "Remplaçants",
+  "tabSynthesis": "Synthèse",
+  "tabSpeedZones": "Zones de vitesse",
+  "tabFieldZones": "Zones de terrain",
+  "tabHalfTimeComparison": "Comparaison mi-temps",
+  "tabDistanceTimeline": "Timeline distance",
+  "tabHeatmap": "Carte de chaleur",
+
+  "periodWeek": "Semaine",
+  "periodMonth": "Mois",
+  "periodCustom": "Période",
+  "periodPrep": "Prépa physique",
+  "periodPostponed": "Reporté",
+  "periodMatchDay": "Journée {day}",
+  "@periodMatchDay": {
+    "placeholders": {
+      "day": { "type": "String" }
+    }
+  },
+  "periodSelectedWeek": "Semaine sélectionnée : {range}",
+  "@periodSelectedWeek": {
+    "placeholders": {
+      "range": { "type": "String" }
+    }
+  },
+  "periodUndefined": "Aucune période définie",
+
+  "hintSearchTeam": "Rechercher une équipe",
+  "hintSearchUser": "Rechercher un utilisateur",
+  "hintSearchAddress": "Rechercher une adresse ou un stade",
+  "hintSelectSeason": "Sélectionner une saison",
+  "hintFieldName": "Nom du terrain",
+  "hintCompoType": "Type de composition",
+  "hintMetric": "Indicateur",
+  "hintDeviceIdExample": "Exemple : tracker_001",
+  "hintSpeedZoneMaxEmpty": "Laisser vide pour la dernière zone",
+
+  "emptyNoData": "Aucune donnée disponible",
+  "emptyNoEvent": "Aucun événement",
+  "emptyNoConversation": "Aucune conversation",
+  "emptyNoHighlights": "Aucun temps fort",
+  "emptyNoCompo": "Aucune composition n’a été trouvée pour ce match.",
+  "emptyNoStarters": "Aucun titulaire renseigné.",
+  "emptyNoSubstitutes": "Aucun remplaçant renseigné.",
+  "emptyNoTracker": "Aucun tracker sélectionné",
+  "emptyNoTrackers": "Aucun tracker à afficher",
+  "emptyNoDeviceId": "Aucun deviceId disponible",
+  "emptyNoFileSelected": "Aucun fichier sélectionné",
+  "emptyNoSpeedZone": "Aucune zone de vitesse disponible.",
+  "emptyNoFieldZoneData": "Aucune donnée de zone terrain disponible.",
+  "emptyNoDistanceTimeline": "Aucune timeline de distance disponible.",
+  "emptyNoStatsForMatch": "Aucune donnée trouvée pour ce match.",
+  "emptyNoStatsTeamAnalysis": "Aucune donnée trouvée dans TRACKER_TeamAnalysis pour ce match.",
+  "emptyNoPendingMatch": "Aucun match en attente.",
+  "emptyNoPendingTraining": "Aucun entraînement avec tracker en attente.",
+  "emptyNoTeamFound": "Aucune équipe trouvée",
+  "emptyNoTeamAvailable": "Aucune équipe disponible",
+  "emptyNoTeamForSeason": "Aucune équipe trouvée pour cette saison.",
+  "emptyNoTeamForStats": "Aucune équipe disponible pour afficher les statistiques.",
+  "emptyNoPlayerForTeam": "Aucun joueur trouvé pour cette équipe.",
+  "trainingPlayersRecap": "Récapitulatif",
+  "trainingPlayersLoading": "Chargement des joueurs…",
+  "trainingPlayersClose": "Fermer",
+  "presencePresent": "Présent(e)",
+  "presenceInjured": "Blessé(e)",
+  "presenceExcused": "Excusé(e)",
+  "presenceAbsent": "Absent(e)",
+  "presenceLate": "En retard",
+  "presenceUnknown": "—",
+  "trainingPlayersAddPlayer": "Ajouter un joueur",
+  "trainingPlayersAddPlayerTitle": "Choisir un joueur",
+  "trainingPlayersNoCandidates": "Tous les joueurs de l'équipe sont déjà inscrits.",
+  "trainingPlayersChangePresence": "Modifier la présence",
+  "trainingPlayersAssignTracker": "Affecter un capteur",
+  "trainingPlayersNoTrackerAvailable": "Aucun capteur disponible.",
+  "trainingPlayersSelectTracker": "Capteur",
+  "emptyNoStaffForTeam": "Aucun staff trouvé pour cette équipe.",
+  "emptyNoPlayerSelected": "Aucun joueur sélectionné.",
+  "emptyNoCurrentSeason": "Aucune saison en cours disponible.",
+  "emptyNoUserFound": "Aucun utilisateur trouvé",
+  "emptyNoUserAvailable": "Aucun utilisateur disponible",
+  "emptyNoConnectedDevice": "Aucun périphérique connecté",
+  "emptyNoMatchToShow": "Aucun match à afficher.",
+  "emptyNoCompoType": "Aucun type de composition n’a été trouvé.",
+  "emptyNoAnalysis": "Aucune analyse disponible",
+  "emptyNoStats": "Aucune statistique disponible",
+  "emptyNoPlayersInStats": "Les statistiques existent mais aucun score joueur n’est disponible.",
+  "emptyHeatmap": "Heatmap indisponible",
+  "emptyNoSvgForPeriod": "Aucune image SVG trouvée pour {period}.",
+  "@emptyNoSvgForPeriod": {
+    "placeholders": {
+      "period": { "type": "String" }
+    }
+  },
+
+  "errorGeneric": "Erreur : {details}",
+  "@errorGeneric": {
+    "placeholders": {
+      "details": { "type": "String" }
+    }
+  },
+  "errorLoadingResource": "Erreur lors du chargement de {resource}.",
+  "@errorLoadingResource": {
+    "placeholders": {
+      "resource": { "type": "String" }
+    }
+  },
+  "errorFilteringResource": "Erreur lors du filtrage de {resource}.",
+  "@errorFilteringResource": {
+    "placeholders": {
+      "resource": { "type": "String" }
+    }
+  },
+  "errorComputingStats": "Erreur lors du calcul des statistiques de {resource}.",
+  "@errorComputingStats": {
+    "placeholders": {
+      "resource": { "type": "String" }
+    }
+  },
+  "errorSaving": "Erreur lors de l’enregistrement : {details}",
+  "@errorSaving": {
+    "placeholders": {
+      "details": { "type": "String" }
+    }
+  },
+  "errorLogout": "Erreur lors de la déconnexion : {details}",
+  "@errorLogout": {
+    "placeholders": {
+      "details": { "type": "String" }
+    }
+  },
+  "errorStreamConnection": "Connexion Stream impossible",
+  "errorOpenAnalysis": "Impossible d’ouvrir l’analyse : eventId ou trackerId manquant.",
+  "errorAgendaLoad": "Impossible de charger l’agenda",
+  "errorTeamParamsLoad": "Erreur de chargement des paramètres : {details}",
+  "@errorTeamParamsLoad": {
+    "placeholders": {
+      "details": { "type": "String" }
+    }
+  },
+  "errorSaveTeamIdEmpty": "Impossible de sauvegarder : teamId vide.",
+  "errorDeleteFailed": "Erreur lors de la suppression : {details}",
+  "@errorDeleteFailed": {
+    "placeholders": {
+      "details": { "type": "String" }
+    }
+  },
+  "errorLoadingTitle": "Erreur de chargement",
+  "errorCompositionTitle": "Erreur composition",
+  "errorPlayerTitle": "Erreur joueur",
+  "errorPlayersTitle": "Erreur joueurs",
+  "errorTrackerTitle": "Erreur tracker",
+  "errorMatchNotIdentified": "Match non identifié",
+  "errorPlayerNotIdentified": "Joueur non identifié",
+  "errorPlayerNotFound": "Joueur introuvable",
+  "errorPlayerNotFoundInMatch": "Joueur non trouvé",
+  "errorStatsUnavailable": "Statistiques indisponibles",
+  "errorNoStats": "Aucune statistique",
+  "errorNoStatsForPlayer": "Impossible de charger les statistiques du joueur.",
+  "errorPlayerNotFoundMessage": "Impossible de retrouver le joueur sélectionné.",
+  "errorNoTrackerData": "Aucune donnée tracker trouvée pour ce match.",
+  "errorNoTrackerStats": "Impossible de charger les statistiques tracker sans identifiant de match.",
+  "errorNoTrackerAnalysis": "Impossible de trouver les données tracker de ce joueur.",
+  "errorMatchIdMissing": "Identifiant du match manquant.",
+  "errorChatCreate": "Erreur lors de la création : {details}",
+  "@errorChatCreate": {
+    "placeholders": {
+      "details": { "type": "String" }
+    }
+  },
+  "errorCompoTitle": "Erreur",
+  "errorNoCompoTitle": "Aucune composition",
+
+  "successSettingsSaved": "Paramètres enregistrés avec succès.",
+  "successGpsCopied": "GPS copié.",
+  "successDefaultsLoaded": "Valeurs par défaut chargées dans le formulaire.",
+  "successConversionDone": "Conversion terminée - {count} ligne(s) retenue(s)",
+  "@successConversionDone": {
+    "placeholders": {
+      "count": { "type": "int" }
+    }
+  },
+
+  "infoReadOnly": "Lecture seule",
+  "infoWebShellOnly": "Ce shell est prévu pour Flutter Web uniquement.",
+  "settingsLanguageLabel": "Langue",
+  "themeDarkModeLabel": "Mode sombre",
+  "themeEnableDarkModeTooltip": "Activer le mode sombre",
+  "themeDisableDarkModeTooltip": "Désactiver le mode sombre",
+  "infoParameters": "Paramètres",
+  "infoUserNotConnected": "Utilisateur non connecté.",
+
+  "dialogCloseSyncTitle": "Clôturer la synchronisation",
+  "dialogCloseSyncMessage": "Souhaitez-vous clôturer la synchronisation ?",
+  "dialogDeleteCustomizationTitle": "Supprimer la personnalisation ?",
+  "dialogDeleteAssignmentTitle": "Supprimer l’affectation",
+  "dialogNewConversation": "Nouvelle conversation",
+  "dialogAsiConversionTitle": "Conversion ASI vers CSV",
+
+  "syncMatchesToSync": "Matchs à synchroniser",
+  "syncNoDeviceForTraining": "Aucun device trouvé pour cet entraînement",
+
+  "statsWins": "Victoires",
+  "statsLosses": "Défaites",
+  "statsDraws": "Nuls",
+  "statsDistance": "Distance",
+  "statsMaxSpeed": "Vitesse max",
+  "statsAvgSpeed": "Vitesse moy.",
+  "statsWorkload": "Workload",
+  "statsFatigue": "Fatigue",
+  "statsDuration": "Durée",
+  "statsSprints": "Sprints",
+  "statsHighAccel": "Acc. hautes",
+  "statsHighSpeedTime": "Haute vitesse",
+  "statsHighSpeedTimeShort": "Tps haute vitesse",
+  "statsMaxAccel": "Acc. max",
+  "statsAxisSpeed": "Vitesse (km/h)",
+  "statsAxisTime": "Temps (s)",
+  "statsAxisAcceleration": "Accélération (m/s²)",
+  "statsScore": "score",
+  "statsPlayersCount": "{count} joueurs",
+  "@statsPlayersCount": {
+    "placeholders": {
+      "count": { "type": "int" }
+    }
+  },
+  "statsAvgWorkload": "Charge Moy. {value}",
+  "@statsAvgWorkload": {
+    "placeholders": {
+      "value": { "type": "String" }
+    }
+  },
+  "statsAvgDistance": "Distance Moy. {value}",
+  "@statsAvgDistance": {
+    "placeholders": {
+      "value": { "type": "String" }
+    }
+  },
+  "statsAvgMaxSpeed": "Vitesse max Moy. {value}",
+  "@statsAvgMaxSpeed": {
+    "placeholders": {
+      "value": { "type": "String" }
+    }
+  },
+  "statsZScore": "zScore {sign}{value}",
+  "@statsZScore": {
+    "placeholders": {
+      "sign": { "type": "String" },
+      "value": { "type": "String" }
+    }
+  },
+  "statsMaxAccelSample": "Accélération max: 4m/s2",
+
+  "speedZoneWalk": "Marche",
+  "speedZoneJogging": "Jogging",
+  "speedZoneRun": "Course",
+  "speedZoneHighIntensity": "Haute intensité",
+  "speedZoneSprint": "Sprint",
+
+  "highlightKickoff": "Coup d’envoi",
+  "highlightFullTime": "Fin du match",
+  "substitutionOut": "Sortie",
+  "substitutionIn": "Entrée",
+
+  "teamParamsPerformanceTitle": "Paramètres performance",
+  "teamParamsSpeedSprints": "Vitesse & sprints",
+  "teamParamsIntensity": "Intensité",
+  "teamParamsGpsTimeline": "GPS / validation / timeline",
+  "teamParamsSpeedZones": "Zones de vitesse",
+  "teamParamsMinOneZone": "Il faut conserver au moins une zone.",
+  "teamParamsAddSpeedZone": "Ajoute au moins une zone de vitesse.",
+  "teamParamsSprintThreshold": "Seuil sprint (km/h)",
+  "teamParamsSprintMinAccel": "Accélération mini pour sprint",
+  "teamParamsSprintMinDuration": "Durée mini sprint",
+  "teamParamsSpeedMinDuration": "Durée mini vitesse validée",
+  "teamParamsHighAccelThreshold": "Seuil forte accélération",
+  "teamParamsHighAccelMinDuration": "Durée mini forte accélération",
+  "teamParamsMaxStepDistance": "Distance max acceptée par pas",
+  "teamParamsMaxPlausibleSpeed": "Vitesse max plausible",
+  "teamParamsMaxPlausibleAccel": "Accélération max plausible",
+  "teamParamsMinDeltaTime": "Delta temps mini",
+  "teamParamsMaxDeltaTime": "Delta temps maxi",
+  "teamParamsSmoothingWindow": "Fenêtre de lissage",
+  "teamParamsTimelineBucket": "Bucket timeline",
+  "teamMembersPlayers": "{count, plural, =1{1 joueur} other{{count} joueurs}}",
+  "@teamMembersPlayers": {
+    "placeholders": {
+      "count": { "type": "int" }
+    }
+  },
+  "teamMembersStaff": "{count, plural, =1{1 staff} other{{count} staffs}}",
+  "@teamMembersStaff": {
+    "placeholders": {
+      "count": { "type": "int" }
+    }
+  },
+
+  "fieldTooltipZoomIn": "Agrandir tout le terrain",
+  "fieldTooltipZoomOut": "Réduire tout le terrain",
+  "fieldTooltipLengthUp": "Augmenter la longueur",
+  "fieldTooltipLengthDown": "Réduire la longueur",
+  "fieldTooltipWidthUp": "Augmenter la largeur",
+  "fieldTooltipWidthDown": "Réduire la largeur",
+  "fieldTooltipRotateLeft": "Tourner à gauche",
+  "fieldTooltipRotateRight": "Tourner à droite",
+  "fieldTooltipMap": "Carte",
+  "fieldTooltipSatellite": "Satellite",
+  "fieldLocateCorners": "Localiser les coins",
+  "fieldSnackbarLocationDisabled": "La localisation est désactivée.",
+  "fieldSnackbarAllowLocation": "Autorise la localisation pour centrer la carte.",
+  "fieldSnackbarGpsFailed": "Impossible de récupérer la position actuelle.",
+  "fieldSnackbarEnterAddress": "Saisis une adresse ou un nom de stade.",
+  "fieldSnackbarMapNotReady": "La carte n’est pas encore prête.",
+  "fieldSnackbarAddressNotFound": "Adresse introuvable.",
+  "fieldSnackbarAddressNotFoundWithStatus": "Adresse introuvable : {status}",
+  "@fieldSnackbarAddressNotFoundWithStatus": {
+    "placeholders": {
+      "status": { "type": "String" }
+    }
+  },
+  "fieldSnackbarGeocodingFailed": "Impossible de rechercher cette adresse. Vérifie la clé et l’API Geocoding.",
+  "fieldSnackbarPlaceInMap": "Place le terrain entièrement dans la carte.",
+  "fieldSnackbarGpsConvertFailed": "Impossible de convertir les coins en positions GPS.",
+  "fieldHelpGestures": "Terrain : glisser déplacer • 2 doigts zoom/tourner • trackpad : scroll zoom, ⇧ tourner, ⌥ largeur, ⇧⌥ longueur",
+
+  "compoNotFoundTitle": "Composition non renseignée",
+  "compoTypeEmptyTitle": "Aucune composition",
+
+  "matchStatsUnavailableTitle": "Statistiques indisponibles",
+  "sensorNotFoundTitle": "Capteur non trouvé",
+  "sensorNotFoundMessage": "Aucun capteur n’est associé à ce joueur pour ce match.",
+  "matchHomeJersey": "Maillot domicile",
+  "matchCartTitle": "Votre panier",
+  "matchCartOneItem": "1 article - 49,90 €",
+
+  "asiSelectFile": "Veuillez sélectionner un fichier .asi",
+  "asiEnterDeviceId": "Veuillez renseigner le deviceId",
+  "asiCannotReadFile": "Impossible de lire le fichier sélectionné",
+  "asiFileMismatch": "Le fichier ne correspond pas au tracker sélectionné",
+  "asiTrackerUnknown": "Tracker non reconnu",
+  "asiFilePickError": "Erreur lors de la sélection du fichier : {details}",
+  "@asiFilePickError": {
+    "placeholders": {
+      "details": { "type": "String" }
+    }
+  },
+  "asiConversionError": "Erreur pendant la conversion : {details}",
+  "@asiConversionError": {
+    "placeholders": {
+      "details": { "type": "String" }
+    }
+  },
+  "asiAnalysisFailed": "Analyse impossible",
+
+  "playerSynthesisTitle": "Synthèse joueur",
+  "playerSynthesisTabTitle": "Synthèse",
+
+  "teamsListCount": "{count} équipe(s)",
+  "@teamsListCount": {
+    "placeholders": {
+      "count": { "type": "int" }
+    }
+  },
+  "teamsListCountFiltered": "{filtered} / {total}",
+  "@teamsListCountFiltered": {
+    "placeholders": {
+      "filtered": { "type": "int" },
+      "total": { "type": "int" }
+    }
+  },
+  "teamsListNoResults": "Aucune équipe trouvée",
+  "teamsListNoTeams": "Aucune équipe disponible",
+
+  "navHome": "Accueil",
+  "myTeams": "Mes équipes",
+  "syncTrainingsToSync": "Entraînements à synchroniser",
+  "chatSelectConversation": "Sélectionne une conversation",
+  "chatStartNewHint": "Appuie sur \"Nouveau\" pour démarrer un chat.",
+  "chatTryAnotherName": "Essaie avec un autre nom.",
+  "chatUsersAppearHere": "Les autres utilisateurs apparaîtront ici.",
+  "matchDetailTitle": "Détail du match",
+  "dateUndefined": "Date non définie",
+  "matchDateTimeAt": "{date} à {time}",
+  "@matchDateTimeAt": {
+    "placeholders": {
+      "date": { "type": "String" },
+      "time": { "type": "String" }
+    }
+  },
+  "entityComposition": "Composition",
+  "entityDetails": "Détails",
+  "entityHeatmap": "Heatmap",
+  "entityPeriods": "Périodes",
+  "tabHighlightsShort": "Temps",
+  "emptyNoHighlightsMessage": "Les buts, cartons et changements apparaîtront ici.",
+  "highlightTypeGoal": "But",
+  "highlightTypeSubstitution": "Changement",
+  "highlightTypeYellowCard": "Carton jaune",
+  "highlightTypeRedCard": "Carton rouge",
+  "highlightTypeOwnGoal": "But contre son camp",
+  "highlightTypePenalty": "Penalty",
+  "highlightTypeGeneric": "Temps fort",
+  "highlightSubstitutionOut": "{player} sort",
+  "@highlightSubstitutionOut": {
+    "placeholders": {
+      "player": { "type": "String" }
+    }
+  },
+  "highlightSubstitutionIn": "{incoming} remplace {outgoing}",
+  "@highlightSubstitutionIn": {
+    "placeholders": {
+      "incoming": { "type": "String" },
+      "outgoing": { "type": "String" }
+    }
+  },
+  "errorNoPlayersTitle": "Aucun joueur",
+  "matchTrackerDataAvailable": "Les données tracker sont disponibles.",
+  "matchTrackerDataPending": "Les données tracker ne sont pas encore importées.",
+  "errorPlayerNoTrackerMatch": "Ce joueur n’a pas de données tracker pour ce match.",
+  "trackerSyncTitle": "Synchronisation des capteurs",
+  "trackerAvailableSensors": "Capteurs disponibles",
+  "trackerCount": "{count} tracker(s)",
+  "@trackerCount": {
+    "placeholders": {
+      "count": { "type": "int" }
+    }
+  },
+  "trackerAlreadySyncedTitle": "Synchronisation déjà effectuée",
+  "trackerAlreadySyncedMessage": "Le capteur a déjà été synchronisé pour cette session.",
+  "trackerStatusSelected": "Sélectionné",
+  "trackerStatusSynced": "Synchronisé",
+  "trackerStatusOpen": "Ouvrir",
+  "trackerSelectForActions": "Sélectionne un tracker pour afficher les actions de connexion, téléchargement et effacement.",
+  "trackerSelectedLabel": "Tracker sélectionné",
+  "trackerLogsPlaceholder": "Les logs apparaîtront ici.",
+  "trackerNoDataOnDevice": "Aucune donnée sur ce capteur.",
+  "trackerNoDataOnDeviceTitle": "Capteur connecté — aucune séance à importer",
+  "trackerNoDataOnDeviceDetails": "Le capteur a confirmé 0 octet de séance (pas une erreur de connexion). Activité non enregistrée sur le pod, ou données déjà effacées. Enregistrez une séance sur l’Inspirit, puis recliquez « Télécharger ».",
+  "trackerDownloadFailedTitle": "Échec du téléchargement",
+  "trackerDownloadBusyHint": "Assurez-vous qu’aucune autre instance de Grinta soit ouverte.",
+  "trackerDownloadPrepareSession": "Préparation USB avant téléchargement (équivalent Déconnecter puis Connecter)…",
+  "trackerUsbAuthorizeHint": "Aucun Inspirit autorisé pour ce site. Une fenêtre Chrome va s’ouvrir : cliquez sur « Inspirit_00 » (ou votre modèle), puis le bouton « Connecter » — ne fermez pas la fenêtre.",
+  "trackerUsbPopupCancelled": "Popup Chrome fermée ou aucun appareil choisi. Branchez le tracker, recliquez « Connecter » et sélectionnez-le dans la liste.",
+  "trackerUsbPhysicalReconnect": "Session USB expirée (câble débranché ou capteur réinitialisé). Rebranchez le tracker si besoin, puis recliquez « Connecter » — une fenêtre Chrome peut s’ouvrir pour le resélectionner.",
+  "trackerDeviceName": "Périphérique : {name}",
+  "@trackerDeviceName": {
+    "placeholders": {
+      "name": { "type": "String" }
+    }
+  },
+  "asiImportTitle": "Importer un fichier .asi",
+  "asiImportSubtitle": "Sélectionne un fichier, vérifie le deviceId, puis lance la conversion.",
+  "asiFileSelectedLabel": "Fichier sélectionné",
+  "asiImportFileHeader": "Import fichier ASI",
+  "actionConvertToCsv": "Convertir en CSV",
+  "asiConverting": "Conversion en cours...",
+  "asiPeriodsOne": "1 période transmise",
+  "asiPeriodsMany": "{count} période(s) transmise(s) - les 2 premières seront utilisées pour les mi-temps",
+  "@asiPeriodsMany": {
+    "placeholders": {
+      "count": { "type": "int" }
+    }
+  },
+  "statsUnitKm": "km",
+  "statsUnitKmh": "km/h",
+  "statsUnitCount": "nb",
+  "statsUnitSeconds": "sec",
+  "statsUnitMps2": "m/s²",
+
+  "loadingSession": "Chargement de la session...",
+  "loadingStats": "Chargement des statistiques...",
+  "dashboardMyManagedTeams": "Mes équipes managées",
+  "dashboardMatchListTitle": "Liste des matchs",
+  "periodCustomRange": "du {start} au {end}",
+  "@periodCustomRange": {
+    "placeholders": {
+      "start": { "type": "String" },
+      "end": { "type": "String" }
+    }
+  },
+  "statsPresenceRate": "Tx de présence: ({value}) %",
+  "@statsPresenceRate": {
+    "placeholders": {
+      "value": { "type": "String" }
+    }
+  },
+  "statsDoneSingular": "réalisé",
+  "statsDonePlural": "réalisés",
+  "statsPlannedSingular": "planifié",
+  "statsPlannedPlural": "planifiés",
+  "actionDayPrevious": "Jour précédent",
+  "actionDayNext": "Jour suivant",
+  "actionMonthPrevious": "Mois précédent",
+  "actionMonthNext": "Mois suivant",
+  "actionSave": "Enregistrer",
+  "actionSaving": "Enregistrement...",
+  "periodLoaded": "Période chargée : {range}",
+  "@periodLoaded": {
+    "placeholders": {
+      "range": { "type": "String" }
+    }
+  },
+  "agendaLegend": "Légende",
+  "agendaOverviewEventsCount": "{count, plural, =1{1 événement} other{{count} événements}}",
+  "@agendaOverviewEventsCount": {
+    "placeholders": {
+      "count": { "type": "int" }
+    }
+  },
+  "agendaEventSummaryMatches": "{count, plural, =1{1 match} other{{count} matchs}}",
+  "@agendaEventSummaryMatches": {
+    "placeholders": {
+      "count": { "type": "int" }
+    }
+  },
+  "agendaEventSummaryTrainings": "{count, plural, =1{1 entraînement} other{{count} entraînements}}",
+  "@agendaEventSummaryTrainings": {
+    "placeholders": {
+      "count": { "type": "int" }
+    }
+  },
+  "agendaEventSummaryPrepas": "{count, plural, =1{1 prépa} other{{count} prépas}}",
+  "@agendaEventSummaryPrepas": {
+    "placeholders": {
+      "count": { "type": "int" }
+    }
+  },
+  "agendaTrackerStatsTitle": "Statistiques tracker",
+  "teamDetailBackToTeams": "Retour aux équipes",
+  "teamDetailAverageAge": "Moyenne d'âge: {age} ans",
+  "@teamDetailAverageAge": {
+    "placeholders": {
+      "age": { "type": "String" }
+    }
+  },
+  "teamDetailConfirmDeleteTitle": "Confirmer la suppression",
+  "teamDetailConfirmRemoveStaff": "Confirmez-vous la suppression du staff de {playerName} ?",
+  "@teamDetailConfirmRemoveStaff": {
+    "placeholders": {
+      "playerName": { "type": "String" }
+    }
+  },
+  "teamDetailConfirmRemovePlayerTeam": "Confirmez-vous la suppression de l'équipe du joueur {playerName} ?",
+  "@teamDetailConfirmRemovePlayerTeam": {
+    "placeholders": {
+      "playerName": { "type": "String" }
+    }
+  },
+  "teamDetailPlayerRemoved": "{playerName} a été supprimé.",
+  "@teamDetailPlayerRemoved": {
+    "placeholders": {
+      "playerName": { "type": "String" }
+    }
+  },
+  "teamDetailPlayerTeamRemoved": "L'équipe du joueur {playerName} a été supprimé.",
+  "@teamDetailPlayerTeamRemoved": {
+    "placeholders": {
+      "playerName": { "type": "String" }
+    }
+  },
+  "teamDetailColumnAge": "Âge",
+  "teamDetailColumnPosition": "Poste",
+  "teamDetailColumnHeight": "Taille",
+  "teamDetailColumnWeight": "Poids",
+  "teamDetailHeightCm": "{value} cm",
+  "@teamDetailHeightCm": {
+    "placeholders": {
+      "value": { "type": "int" }
+    }
+  },
+  "teamDetailWeightKg": "{value} kg",
+  "@teamDetailWeightKg": {
+    "placeholders": {
+      "value": { "type": "int" }
+    }
+  },
+  "teamDetailConfirmRemoveTracker": "Voulez-vous supprimer l'affectation du tracker « {trackerName} » ?",
+  "@teamDetailConfirmRemoveTracker": {
+    "placeholders": {
+      "trackerName": { "type": "String" }
+    }
+  },
+  "roleCoach": "Coach",
+  "roleExecutive": "Dirigeant",
+  "positionEducator": "Educateur/Entraineur",
+  "positionExecutive": "Dirigeant",
+  "positionGoalkeeper": "Gardien de but",
+  "positionDefender": "Défenseur",
+  "positionMidfielder": "Milieu",
+  "positionForward": "Attaquant",
+  "teamParamsCustomThresholds": "Seuils personnalisés",
+  "teamParamsDefaultThresholds": "Seuils par défaut",
+  "teamParamsBackToTeam": "Retour à l'équipe",
+  "teamParamsDeleteCustomizationBody": "Les paramètres spécifiques de cette équipe seront supprimés. L'équipe utilisera alors les paramètres par défaut.",
+  "teamParamsCustomizationRemoved": "Personnalisation supprimée. Les paramètres par défaut seront utilisés.",
+  "teamParamsZoneMaxGreaterThanMin": "La zone \"{label}\" doit avoir une borne max supérieure à la borne min.",
+  "@teamParamsZoneMaxGreaterThanMin": {
+    "placeholders": {
+      "label": { "type": "String" }
+    }
+  },
+  "teamParamsOnlyLastZoneEmptyMax": "Seule la dernière zone peut avoir une borne max vide.",
+  "teamParamsZonesOverlap": "Les zones \"{zoneA}\" et \"{zoneB}\" se chevauchent.",
+  "@teamParamsZonesOverlap": {
+    "placeholders": {
+      "zoneA": { "type": "String" },
+      "zoneB": { "type": "String" }
+    }
+  },
+  "teamParamsCustomizeZonesHint": "Tu peux personnaliser librement les zones utilisées pour le calcul du temps passé dans chaque zone.",
+  "teamParamsZonesReadOnly": "Consultation seule : les zones de vitesse ne sont pas modifiables.",
+  "teamParamsInvalidInteger": "Valeur entière invalide",
+  "teamParamsInvalidNumber": "Valeur numérique invalide",
+  "teamParamsZoneTitle": "Zone {index}",
+  "@teamParamsZoneTitle": {
+    "placeholders": {
+      "index": { "type": "int" }
+    }
+  },
+  "hintRequiredField": "Champ requis",
+  "fieldSnackbarGoogleMapsKeyMissing": "Clé Google Maps manquante pour la recherche d'adresse.",
+  "fieldMapModeHelp": "Mode carte : déplace ou zoome la carte",
+  "fieldSideLeft": "Côté gauche",
+  "fieldSideRight": "Côté droit",
+  "fieldEstimatedAddress": "Adresse estimée",
+  "fieldAddressUnavailable": "Adresse postale indisponible pour cette position.",
+  "fieldGpsPositionsTitle": "Positions GPS du terrain",
+  "fieldAverageLength": "Longueur moyenne",
+  "fieldAverageWidth": "Largeur moyenne",
+  "trackerParamDefault": "Param défaut",
+  "trackerParamTeam": "Param équipe {teamId}",
+  "@trackerParamTeam": {
+    "placeholders": {
+      "teamId": { "type": "String" }
+    }
+  },
+  "halfFirst": "1ère mi-temps",
+  "halfSecond": "2ème mi-temps",
+  "halfNth": "{index}ème mi-temps",
+  "@halfNth": {
+    "placeholders": {
+      "index": { "type": "int" }
+    }
+  },
+  "halfFirstShort": "1ère",
+  "halfSecondShort": "2ème",
+  "halfMatchShort": "Match",
+  "tabSpeedZonesShort": "Vitesse",
+  "fieldZoneAttackLeftShort": "Att. gauche",
+  "fieldZoneAttackRightShort": "Att. droite",
+  "fieldZoneMidLeftShort": "Mil. gauche",
+  "fieldZoneMidRightShort": "Mil. droite",
+  "fieldZoneDefenseLeftShort": "Déf. gauche",
+  "fieldZoneDefenseRightShort": "Déf. droite",
+  "fieldZoneAttackLeft": "Attaque gauche",
+  "fieldZoneAttackRight": "Attaque droite",
+  "fieldZoneMidLeft": "Milieu gauche",
+  "fieldZoneMidRight": "Milieu droite",
+  "fieldZoneDefenseLeft": "Défense gauche",
+  "fieldZoneDefenseRight": "Défense droite",
+  "halfFirstUnavailable": "1ère mi-temps indisponible",
+  "halfSecondUnavailable": "2ème mi-temps indisponible",
+  "asiHeatmapPointCount": "{count} point(s) - {period}",
+  "@asiHeatmapPointCount": {
+    "placeholders": {
+      "count": { "type": "int" },
+      "period": { "type": "String" }
+    }
+  },
+  "metricsEvolutionTitle": "Évolution - {metric}",
+  "@metricsEvolutionTitle": {
+    "placeholders": {
+      "metric": { "type": "String" }
+    }
+  },
+  "trainingOnDate": "Entraînement du {date}",
+  "@trainingOnDate": {
+    "placeholders": {
+      "date": { "type": "String" }
+    }
+  }
 }

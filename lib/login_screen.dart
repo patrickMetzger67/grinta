@@ -6,7 +6,8 @@ import 'util/app_theme.dart';
 import 'package:provider/provider.dart';
 
 import 'core/extensions/l10n_extension.dart';
-import 'main.dart';
+import 'widget/app_language_dropdown.dart';
+import 'widget/app_logo.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -82,11 +83,17 @@ class _LoginScreenState extends State<LoginScreen> {
     );
   }
 
-  Future<void> _submit() async {
-    FocusScope.of(context).unfocus();
+  Future<void> _submit() => _submitWithCredentials(
+        _emailCtrl.text.trim(),
+        _passwordCtrl.text.trim(),
+      );
 
-    final email = _emailCtrl.text.trim();
-    final password = _passwordCtrl.text.trim();
+  Future<void> _submitWithCredentials(
+    String email,
+    String password, {
+    bool manageParentLoading = true,
+  }) async {
+    FocusScope.of(context).unfocus();
 
     if (email.isEmpty || password.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -95,9 +102,13 @@ class _LoginScreenState extends State<LoginScreen> {
       return;
     }
 
-    if (_isLoading) return;
+    if (manageParentLoading) {
+      if (_isLoading) return;
+      setState(() => _isLoading = true);
+    }
 
-    setState(() => _isLoading = true);
+    final appSession = context.read<AppSession>();
+    final l10n = context.l10n;
 
     try {
       final credential = await FirebaseAuth.instance.signInWithEmailAndPassword(
@@ -105,41 +116,43 @@ class _LoginScreenState extends State<LoginScreen> {
         password: password,
       );
       debugPrint('login ok uid=${credential.user?.uid}');
-      await context.read<AppSession>().init();
 
       if (!mounted) return;
 
-      Navigator.of(context, rootNavigator: true).pushNamedAndRemoveUntil(
-        '/',
-            (route) => false,
-      );
+      // Ferme le bottom sheet mobile avant que AuthGate retire LoginScreen.
+      final navigator = Navigator.of(context);
+      if (navigator.canPop()) {
+        navigator.pop();
+      }
 
-      // AuthGate fera la navigation automatiquement
+      await appSession.init();
+
+      // AuthGate réagit à authStateChanges et affiche l'app sans navigation.
     } on FirebaseAuthException catch (e) {
-      String message = context.l10n.signInError;
+      if (!mounted) return;
+
+      String message = l10n.signInError;
 
       switch (e.code) {
         case 'user-not-found':
-          message = context.l10n.userNotFound;
+          message = l10n.userNotFound;
           break;
         case 'wrong-password':
-          message = context.l10n.wrongPassword;
+          message = l10n.wrongPassword;
           break;
         case 'invalid-email':
-          message = context.l10n.invalidEmail;
+          message = l10n.invalidEmail;
           break;
         case 'invalid-credential':
-          message = context.l10n.invalidCredential;
+          message = l10n.invalidCredential;
           break;
         case 'too-many-requests':
-          message = context.l10n.tooManyRequests;
+          message = l10n.tooManyRequests;
           break;
         case 'user-disabled':
-          message = context.l10n.userDisabled;
+          message = l10n.userDisabled;
           break;
       }
-
-      if (!mounted) return;
 
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text(message)),
@@ -148,10 +161,10 @@ class _LoginScreenState extends State<LoginScreen> {
       if (!mounted) return;
 
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('${context.l10n.unexpectedError} : $e')),
+        SnackBar(content: Text('${l10n.unexpectedError} : $e')),
       );
     } finally {
-      if (mounted) {
+      if (manageParentLoading && mounted) {
         setState(() => _isLoading = false);
       }
     }
@@ -168,14 +181,7 @@ class _LoginScreenState extends State<LoginScreen> {
       useSafeArea: true,
       backgroundColor: Colors.transparent,
       builder: (_) => _LoginBottomSheet(
-        emailCtrl: _emailCtrl,
-        passwordCtrl: _passwordCtrl,
-        obscurePassword: _obscurePassword,
-        isLoading: _isLoading,
-        onToggleObscure: () {
-          setState(() => _obscurePassword = !_obscurePassword);
-        },
-        onSubmit: _submit,
+        onSubmit: _submitWithCredentials,
         onCreateAccount: () {
           Navigator.pop(context);
           // TODO: navigation create account
@@ -408,10 +414,8 @@ class _BrandHeader extends StatelessWidget {
       logoWidth = screenWidth * 0.24;
     }
 
-    return Image.asset(
-      'assets/images/logoFondOrange.png',
+    return AppLogo(
       width: logoWidth.clamp(280.0, 760.0),
-      fit: BoxFit.contain,
     );
   }
 }
@@ -676,7 +680,10 @@ class _LoginCard extends StatelessWidget {
                   ),
                 ),
                 const SizedBox(width: 12),
-                const _LanguageDropdown(),
+                const SizedBox(
+                  width: 132,
+                  child: AppLanguageDropdown(),
+                ),
               ],
             ),
             const SizedBox(height: 8),
@@ -692,7 +699,7 @@ class _LoginCard extends StatelessWidget {
               keyboardType: TextInputType.emailAddress,
               decoration: InputDecoration(
                 labelText: context.l10n.email,
-                hintText: context.l10n.you,
+                hintText: context.l10n.emailHint,
                 prefixIcon: const Icon(Icons.mail_outline_rounded),
               ),
               onSubmitted: (_) => onSubmit(),
@@ -703,7 +710,7 @@ class _LoginCard extends StatelessWidget {
               obscureText: obscurePassword,
               decoration: InputDecoration(
                 labelText: context.l10n.password,
-                hintText: '••••••••',
+                hintText: context.l10n.passwordHint,
                 prefixIcon: const Icon(Icons.lock_outline_rounded),
                 suffixIcon: IconButton(
                   onPressed: onToggleObscure,
@@ -792,26 +799,50 @@ class _LoginCard extends StatelessWidget {
   }
 }
 
-class _LoginBottomSheet extends StatelessWidget {
-  final TextEditingController emailCtrl;
-  final TextEditingController passwordCtrl;
-  final bool obscurePassword;
-  final bool isLoading;
-  final VoidCallback onToggleObscure;
-  final VoidCallback onSubmit;
+class _LoginBottomSheet extends StatefulWidget {
+  final Future<void> Function(String email, String password) onSubmit;
   final VoidCallback onCreateAccount;
   final VoidCallback onForgotPassword;
 
   const _LoginBottomSheet({
-    required this.emailCtrl,
-    required this.passwordCtrl,
-    required this.obscurePassword,
-    required this.isLoading,
-    required this.onToggleObscure,
     required this.onSubmit,
     required this.onCreateAccount,
     required this.onForgotPassword,
   });
+
+  @override
+  State<_LoginBottomSheet> createState() => _LoginBottomSheetState();
+}
+
+class _LoginBottomSheetState extends State<_LoginBottomSheet> {
+  final TextEditingController _emailCtrl = TextEditingController();
+  final TextEditingController _passwordCtrl = TextEditingController();
+
+  bool _obscurePassword = true;
+  bool _isLoading = false;
+
+  @override
+  void dispose() {
+    _emailCtrl.dispose();
+    _passwordCtrl.dispose();
+    super.dispose();
+  }
+
+  Future<void> _handleSubmit() async {
+    if (_isLoading) return;
+
+    setState(() => _isLoading = true);
+    try {
+      await widget.onSubmit(
+        _emailCtrl.text.trim(),
+        _passwordCtrl.text.trim(),
+      );
+    } finally {
+      if (mounted) {
+        setState(() => _isLoading = false);
+      }
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -838,15 +869,17 @@ class _LoginBottomSheet extends StatelessWidget {
               ),
               const SizedBox(height: 18),
               _LoginCard(
-                emailCtrl: emailCtrl,
-                passwordCtrl: passwordCtrl,
-                obscurePassword: obscurePassword,
-                isLoading: isLoading,
-                onToggleObscure: onToggleObscure,
-                onSubmit: onSubmit,
-                onCreateAccount: onCreateAccount,
-                onForgotPassword: onForgotPassword,
-                onLocaleChanged: (locale) {},
+                emailCtrl: _emailCtrl,
+                passwordCtrl: _passwordCtrl,
+                obscurePassword: _obscurePassword,
+                isLoading: _isLoading,
+                onToggleObscure: () {
+                  setState(() => _obscurePassword = !_obscurePassword);
+                },
+                onSubmit: _handleSubmit,
+                onCreateAccount: widget.onCreateAccount,
+                onForgotPassword: widget.onForgotPassword,
+                onLocaleChanged: (_) {},
               ),
             ],
           ),
@@ -1161,85 +1194,5 @@ class _OnboardingItem {
     required this.title,
     required this.subtitle,
     required this.icon,
-  });
-}
-
-class _LanguageDropdown extends StatelessWidget {
-  const _LanguageDropdown();
-
-  static const List<_LanguageItem> _languages = [
-    _LanguageItem(locale: Locale('fr'), flag: '🇫🇷', label: 'FR'),
-    _LanguageItem(locale: Locale('en'), flag: '🇬🇧', label: 'EN'),
-    _LanguageItem(locale: Locale('de'), flag: '🇩🇪', label: 'DE'),
-    _LanguageItem(locale: Locale('es'), flag: '🇪🇸', label: 'ES'),
-    _LanguageItem(locale: Locale('it'), flag: '🇮🇹', label: 'IT'),
-  ];
-
-  @override
-  Widget build(BuildContext context) {
-    final colors = context.appColors;
-    final currentLocale = Localizations.localeOf(context);
-
-    final selected = _languages.firstWhere(
-          (e) => e.locale.languageCode == currentLocale.languageCode,
-      orElse: () => _languages.first,
-    );
-
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10),
-      decoration: BoxDecoration(
-        color: colors.surface,
-        borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: colors.border),
-      ),
-      child: DropdownButtonHideUnderline(
-        child: DropdownButton<String>(
-          value: selected.locale.languageCode,
-          icon: const Icon(Icons.keyboard_arrow_down_rounded),
-          borderRadius: BorderRadius.circular(14),
-          style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-            color: colors.textPrimary,
-            fontWeight: FontWeight.w600,
-          ),
-          items: _languages.map((language) {
-            return DropdownMenuItem<String>(
-              value: language.locale.languageCode,
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Text(
-                    language.flag,
-                    style: const TextStyle(fontSize: 18),
-                  ),
-                  const SizedBox(width: 8),
-                  Text(language.label),
-                ],
-              ),
-            );
-          }).toList(),
-          onChanged: (value) {
-            if (value == null) return;
-
-            final locale = _languages.firstWhere(
-                  (e) => e.locale.languageCode == value,
-            ).locale;
-
-            MyApp.of(context).changeLocale(locale);
-          },
-        ),
-      ),
-    );
-  }
-}
-
-class _LanguageItem {
-  final Locale locale;
-  final String flag;
-  final String label;
-
-  const _LanguageItem({
-    required this.locale,
-    required this.flag,
-    required this.label,
   });
 }

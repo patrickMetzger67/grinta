@@ -2,6 +2,7 @@ import 'package:firebase_analytics/firebase_analytics.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:grinta/core/extensions/l10n_extension.dart';
 import 'package:grinta/model/effectives.dart';
 import 'package:grinta/model/tracker/deviceOwner.dart';
 import 'package:grinta/services/answerService.dart';
@@ -61,7 +62,7 @@ class _SyncScreenState extends State<SyncScreen> {
     return Scaffold(
       appBar: AppBar(
         title: Text(
-          "Accueil",
+          context.l10n.navHome,
           style: textTheme.titleLarge?.copyWith(
             color: colors.textPrimary,
             fontWeight: FontWeight.w700,
@@ -115,7 +116,7 @@ class _SyncScreenState extends State<SyncScreen> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            'Mes équipes',
+            context.l10n.myTeams,
             style: textTheme.titleMedium?.copyWith(
               color: colors.textPrimary,
               fontWeight: FontWeight.w700,
@@ -123,7 +124,7 @@ class _SyncScreenState extends State<SyncScreen> {
           ),
           const SizedBox(height: 8),
           Text(
-            'Aucune saison en cours disponible.',
+            context.l10n.emptyNoCurrentSeason,
             style: textTheme.bodyMedium?.copyWith(
               color: colors.textSecondary,
             ),
@@ -137,7 +138,7 @@ class _SyncScreenState extends State<SyncScreen> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            'Mes équipes',
+            context.l10n.myTeams,
             style: textTheme.titleMedium?.copyWith(
               color: colors.textPrimary,
               fontWeight: FontWeight.w700,
@@ -145,7 +146,7 @@ class _SyncScreenState extends State<SyncScreen> {
           ),
           const SizedBox(height: 8),
           Text(
-            'Utilisateur non connecté.',
+            context.l10n.infoUserNotConnected,
             style: textTheme.bodyMedium?.copyWith(
               color: colors.textSecondary,
             ),
@@ -165,7 +166,7 @@ class _SyncScreenState extends State<SyncScreen> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
-                'Mes équipes',
+                context.l10n.myTeams,
                 style: textTheme.titleMedium?.copyWith(
                   color: colors.textPrimary,
                   fontWeight: FontWeight.w700,
@@ -186,7 +187,7 @@ class _SyncScreenState extends State<SyncScreen> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
-                'Mes équipes',
+                context.l10n.myTeams,
                 style: textTheme.titleMedium?.copyWith(
                   color: colors.textPrimary,
                   fontWeight: FontWeight.w700,
@@ -194,7 +195,7 @@ class _SyncScreenState extends State<SyncScreen> {
               ),
               const SizedBox(height: 8),
               Text(
-                'Erreur lors du chargement des équipes.',
+                context.l10n.errorLoadingResource(context.l10n.entityTeams),
                 style: textTheme.bodyMedium?.copyWith(
                   color: colors.danger,
                 ),
@@ -210,7 +211,7 @@ class _SyncScreenState extends State<SyncScreen> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
-                'Mes équipes',
+                context.l10n.myTeams,
                 style: textTheme.titleMedium?.copyWith(
                   color: colors.textPrimary,
                   fontWeight: FontWeight.w700,
@@ -218,7 +219,7 @@ class _SyncScreenState extends State<SyncScreen> {
               ),
               const SizedBox(height: 8),
               Text(
-                'Aucune équipe trouvée pour cette saison.',
+                context.l10n.emptyNoTeamForSeason,
                 style: textTheme.bodyMedium?.copyWith(
                   color: colors.textSecondary,
                 ),
@@ -252,7 +253,7 @@ class _SyncScreenState extends State<SyncScreen> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              'Mes équipes',
+              context.l10n.myTeams,
               style: textTheme.titleMedium?.copyWith(
                 color: colors.textPrimary,
                 fontWeight: FontWeight.w700,
@@ -268,7 +269,7 @@ class _SyncScreenState extends State<SyncScreen> {
                 color: colors.textSecondary,
               ),
               decoration: InputDecoration(
-                labelText: 'Équipe',
+                labelText: context.l10n.entityTeam,
                 labelStyle: TextStyle(
                   color: colors.textSecondary,
                   fontWeight: FontWeight.w500,
@@ -310,7 +311,7 @@ class _SyncScreenState extends State<SyncScreen> {
             ),
             const SizedBox(height: 14),
             Text(
-              'Matchs à synchroniser',
+              context.l10n.syncMatchesToSync,
               style: textTheme.titleMedium?.copyWith(
                 color: colors.textPrimary,
                 fontWeight: FontWeight.w700,
@@ -337,7 +338,7 @@ class _SyncScreenState extends State<SyncScreen> {
                   return Padding(
                     padding: const EdgeInsets.symmetric(vertical: 8),
                     child: Text(
-                      'Erreur lors du chargement des matchs.',
+                      context.l10n.errorLoadingResource(context.l10n.entityMatches),
                       style: textTheme.bodyMedium?.copyWith(
                         color: colors.danger,
                       ),
@@ -357,7 +358,7 @@ class _SyncScreenState extends State<SyncScreen> {
                       border: Border.all(color: colors.border),
                     ),
                     child: Text(
-                      'Aucun match en attente.',
+                      context.l10n.emptyNoPendingMatch,
                       style: textTheme.bodyMedium?.copyWith(
                         color: colors.textSecondary,
                       ),
@@ -504,7 +505,7 @@ class _SyncScreenState extends State<SyncScreen> {
             ),
             const SizedBox(height: 14),
             Text(
-              'Entrainements à synchroniser',
+              context.l10n.syncTrainingsToSync,
               style: textTheme.titleMedium?.copyWith(
                 color: colors.textPrimary,
                 fontWeight: FontWeight.w700,
@@ -531,7 +532,7 @@ class _SyncScreenState extends State<SyncScreen> {
                   return Padding(
                     padding: const EdgeInsets.symmetric(vertical: 8),
                     child: Text(
-                      'Erreur lors du chargement des entraînements.',
+                      context.l10n.errorLoadingResource(context.l10n.entityTrainings),
                       style: textTheme.bodyMedium?.copyWith(
                         color: colors.danger,
                       ),
@@ -551,7 +552,7 @@ class _SyncScreenState extends State<SyncScreen> {
                       border: Border.all(color: colors.border),
                     ),
                     child: Text(
-                      'Aucun entraînement avec tracker en attente.',
+                      context.l10n.emptyNoPendingTraining,
                       style: textTheme.bodyMedium?.copyWith(
                         color: colors.textSecondary,
                       ),
@@ -574,7 +575,7 @@ class _SyncScreenState extends State<SyncScreen> {
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Text(
-                              'Entraînement',
+                              context.l10n.entityTraining,
                               style: textTheme.bodyLarge?.copyWith(
                                 color: colors.textPrimary,
                                 fontWeight: FontWeight.w700,
@@ -700,9 +701,9 @@ class _SyncScreenState extends State<SyncScreen> {
 
                                     if (trackerIdsToSend.isEmpty) {
                                       ScaffoldMessenger.of(context).showSnackBar(
-                                        const SnackBar(
+                                        SnackBar(
                                           content: Text(
-                                            'Aucun device trouvé pour cet entraînement',
+                                            context.l10n.syncNoDeviceForTraining,
                                           ),
                                         ),
                                       );
