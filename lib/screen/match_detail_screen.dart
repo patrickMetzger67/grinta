@@ -14,12 +14,16 @@ import '../widget/match_compo_widget.dart';
 import '../widget/match_highlights_timeline.dart';
 import '../widget/match_tracker_stats_table.dart';
 import '../widget/tracker_player_analysis_widget.dart';
+import 'match_detail/match_tactical_schema_tab.dart';
 
 class MatchDetailScreen extends StatelessWidget {
   final models.Match match;
 
   /// Permet de remplacer le contenu de l’onglet Compo.
   final Widget Function(BuildContext context, models.Match match)? compoBuilder;
+
+  /// Permet de remplacer le contenu de l’onglet Schéma tactique.
+  final Widget Function(BuildContext context, models.Match match)? tacticalSchemaBuilder;
 
   /// Permet de remplacer le contenu de l’onglet Temps forts.
   final Widget Function(BuildContext context, models.Match match)? highlightsBuilder;
@@ -34,6 +38,7 @@ class MatchDetailScreen extends StatelessWidget {
     super.key,
     required this.match,
     this.compoBuilder,
+    this.tacticalSchemaBuilder,
     this.highlightsBuilder,
     this.statsBuilder,
     required this.isManager,
@@ -53,6 +58,11 @@ class MatchDetailScreen extends StatelessWidget {
         compactLabel: l10n.tabCompo,
       ),
       _MatchDetailTab(
+        icon: Icons.grid_view_rounded,
+        label: l10n.tabTacticalSchema,
+        compactLabel: l10n.tabTacticalSchemaShort,
+      ),
+      _MatchDetailTab(
         icon: Icons.flash_on_rounded,
         label: l10n.tabHighlights,
         compactLabel: l10n.tabHighlightsShort,
@@ -67,6 +77,8 @@ class MatchDetailScreen extends StatelessWidget {
 
     final views = <Widget>[
       compoBuilder?.call(context, match) ?? _CompoTab(match: match),
+      tacticalSchemaBuilder?.call(context, match) ??
+          MatchTacticalSchemaTab(match: match, isManager: isManager),
       highlightsBuilder?.call(context, match) ?? _HighlightsTab(match: match),
       if (showStats) statsBuilder?.call(context, match) ?? _StatsTab(match: match, isManager: isManager,playerId: playerId,),
     ];
@@ -97,7 +109,7 @@ class MatchDetailScreen extends StatelessWidget {
                       child: Column(
                         children: [
                           _MatchHeader(match: match),
-                          const SizedBox(height: 8),
+                          const SizedBox(height: 6),
                           _TabsContainer(tabs: tabs),
                           const SizedBox(height: 12),
                           Expanded(
@@ -262,6 +274,118 @@ class _MatchHeader extends StatelessWidget {
     required this.match,
   });
 
+  static bool _hasVenueInfo(models.Match match) {
+    return _clean(match.nomDuTerrain).isNotEmpty ||
+        _clean(match.terrainAdresse1).isNotEmpty ||
+        _clean(match.terrainAddress2).isNotEmpty ||
+        _clean(match.surfaceDeJeu).isNotEmpty;
+  }
+
+  static String _venueSummary(models.Match match) {
+    final terrain = _clean(match.nomDuTerrain);
+    final address = [
+      _clean(match.terrainAdresse1),
+      _clean(match.terrainAddress2),
+    ].where((part) => part.isNotEmpty).join(' — ');
+
+    if (terrain.isNotEmpty && address.isNotEmpty) {
+      return '$terrain · $address';
+    }
+    if (terrain.isNotEmpty) return terrain;
+    if (address.isNotEmpty) return address;
+    return _clean(match.surfaceDeJeu);
+  }
+
+  static void _showVenueSheet(BuildContext context, models.Match match) {
+    final colors = context.appColors;
+    final l10n = context.l10n;
+
+    showModalBottomSheet<void>(
+      context: context,
+      backgroundColor: colors.background,
+      barrierColor: Colors.black54,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+      ),
+      builder: (ctx) {
+        return SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(16, 12, 16, 20),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Text(
+                  l10n.matchDetailVenueTitle,
+                  style: Theme.of(ctx).textTheme.titleMedium?.copyWith(
+                        fontWeight: FontWeight.w800,
+                        color: colors.textPrimary,
+                      ),
+                ),
+                const SizedBox(height: 10),
+                Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.all(14),
+                  decoration: BoxDecoration(
+                    color: colors.surface,
+                    borderRadius: BorderRadius.circular(14),
+                    border: Border.all(
+                      color: colors.primary.withValues(alpha: 0.45),
+                      width: 1.2,
+                    ),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withValues(alpha: 0.12),
+                        blurRadius: 12,
+                        offset: const Offset(0, 4),
+                      ),
+                    ],
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      if (_clean(match.nomDuTerrain).isNotEmpty)
+                        _HeaderInfoLine(
+                          icon: Icons.stadium_rounded,
+                          value: match.nomDuTerrain!,
+                          valueColor: colors.textPrimary,
+                        ),
+                      if (_clean(match.terrainAdresse1).isNotEmpty ||
+                          _clean(match.terrainAddress2).isNotEmpty) ...[
+                        const SizedBox(height: 8),
+                        _HeaderInfoLine(
+                          icon: Icons.place_outlined,
+                          value: [
+                            _clean(match.terrainAdresse1),
+                            _clean(match.terrainAddress2),
+                          ].where((s) => s.isNotEmpty).join(' — '),
+                          valueColor: colors.textPrimary,
+                        ),
+                      ],
+                      if (_clean(match.surfaceDeJeu).isNotEmpty) ...[
+                        const SizedBox(height: 8),
+                        _HeaderInfoLine(
+                          icon: Icons.grass_rounded,
+                          value: match.surfaceDeJeu!,
+                          valueColor: colors.textPrimary,
+                        ),
+                      ],
+                      if (!_hasVenueInfo(match))
+                        Text(
+                          l10n.entityFieldUndefined,
+                          style: TextStyle(color: colors.textSecondary),
+                        ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final colors = context.appColors;
@@ -272,6 +396,7 @@ class _MatchHeader extends StatelessWidget {
 
     final bool played = match.isMatchPlayed == true;
     final bool isReport = match.isReport == true;
+    final bool hasVenue = _hasVenueInfo(match);
 
     final String score = played
         ? '${match.homeScore ?? 0} - ${match.outSideScore ?? 0}'
@@ -279,18 +404,18 @@ class _MatchHeader extends StatelessWidget {
 
     return Container(
       width: double.infinity,
-      margin: const EdgeInsets.fromLTRB(8, 12, 8, 0),
-      padding: const EdgeInsets.all(16),
+      margin: const EdgeInsets.fromLTRB(8, 4, 8, 0),
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
       decoration: BoxDecoration(
         color: colors.card,
-        borderRadius: BorderRadius.circular(24),
+        borderRadius: BorderRadius.circular(16),
         border: Border.all(color: colors.border),
       ),
       child: Column(
         children: [
           Wrap(
-            spacing: 8,
-            runSpacing: 8,
+            spacing: 6,
+            runSpacing: 4,
             alignment: WrapAlignment.center,
             children: [
               if (_clean(match.chType).isNotEmpty)
@@ -316,7 +441,7 @@ class _MatchHeader extends StatelessWidget {
                 ),
             ],
           ),
-          const SizedBox(height: 18),
+          const SizedBox(height: 6),
 
           LayoutBuilder(
             builder: (context, constraints) {
@@ -331,13 +456,13 @@ class _MatchHeader extends StatelessWidget {
                       affiliation: match.affiliationTeam1,
                       compact: true,
                     ),
-                    const SizedBox(height: 12),
+                    const SizedBox(height: 6),
                     _ScoreBlock(
                       score: score,
                       tab: match.tab,
                       played: played,
                     ),
-                    const SizedBox(height: 12),
+                    const SizedBox(height: 6),
                     _TeamBlock(
                       name: team2,
                       logoUrl: match.team2UrlLogo,
@@ -349,7 +474,7 @@ class _MatchHeader extends StatelessWidget {
               }
 
               return Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
+                crossAxisAlignment: CrossAxisAlignment.center,
                 children: [
                   Expanded(
                     child: _TeamBlock(
@@ -359,7 +484,7 @@ class _MatchHeader extends StatelessWidget {
                     ),
                   ),
                   Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 12),
+                    padding: const EdgeInsets.symmetric(horizontal: 8),
                     child: _ScoreBlock(
                       score: score,
                       tab: match.tab,
@@ -378,25 +503,80 @@ class _MatchHeader extends StatelessWidget {
             },
           ),
 
-          const SizedBox(height: 18),
-          Divider(color: colors.border),
-          const SizedBox(height: 12),
-
-          _HeaderInfoLine(
-            icon: Icons.schedule_rounded,
-            value: _dateTimeLabel(context, match),
+          const SizedBox(height: 6),
+          Row(
+            children: [
+              Icon(
+                Icons.schedule_rounded,
+                size: 15,
+                color: colors.textSecondary,
+              ),
+              const SizedBox(width: 6),
+              Expanded(
+                child: Text(
+                  _dateTimeLabel(context, match),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    color: colors.textSecondary,
+                    fontSize: 12,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ),
+            ],
           ),
-          const SizedBox(height: 8),
-          _HeaderInfoLine(
-            icon: Icons.stadium_rounded,
-            value: _terrainLabel(context, match),
-          ),
-
-          if (_clean(match.surfaceDeJeu).isNotEmpty) ...[
-            const SizedBox(height: 8),
-            _HeaderInfoLine(
-              icon: Icons.grass_rounded,
-              value: match.surfaceDeJeu!,
+          if (hasVenue) ...[
+            const SizedBox(height: 6),
+            Material(
+              color: colors.surface,
+              elevation: 1,
+              shadowColor: Colors.black.withValues(alpha: 0.2),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(10),
+                side: BorderSide(
+                  color: colors.primary.withValues(alpha: 0.5),
+                  width: 1.2,
+                ),
+              ),
+              clipBehavior: Clip.antiAlias,
+              child: InkWell(
+                onTap: () => _showVenueSheet(context, match),
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 10,
+                    vertical: 8,
+                  ),
+                  child: Row(
+                    children: [
+                      Icon(
+                        Icons.place_rounded,
+                        size: 18,
+                        color: colors.primary,
+                      ),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: Text(
+                          _venueSummary(match),
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                          style: TextStyle(
+                            color: colors.textPrimary,
+                            fontSize: 12,
+                            fontWeight: FontWeight.w700,
+                            height: 1.25,
+                          ),
+                        ),
+                      ),
+                      Icon(
+                        Icons.info_outline_rounded,
+                        size: 18,
+                        color: colors.primary,
+                      ),
+                    ],
+                  ),
+                ),
+              ),
             ),
           ],
         ],
@@ -417,20 +597,6 @@ class _MatchHeader extends StatelessWidget {
     return time;
   }
 
-  static String _terrainLabel(BuildContext context, models.Match match) {
-    final terrain = _clean(match.nomDuTerrain);
-    final address1 = _clean(match.terrainAdresse1);
-    final address2 = _clean(match.terrainAddress2);
-
-    final parts = <String>[
-      if (terrain.isNotEmpty) terrain,
-      if (address1.isNotEmpty) address1,
-      if (address2.isNotEmpty) address2,
-    ];
-
-    if (parts.isEmpty) return context.l10n.entityFieldUndefined;
-    return parts.join(' - ');
-  }
 }
 
 class _TeamBlock extends StatelessWidget {
@@ -454,10 +620,10 @@ class _TeamBlock extends StatelessWidget {
       children: [
         _TeamLogo(
           logoUrl: logoUrl,
-          size: compact ? 52 : 64,
-          imageSize: compact ? 34 : 44,
+          size: compact ? 40 : 48,
+          imageSize: compact ? 26 : 32,
         ),
-        const SizedBox(height: 10),
+        const SizedBox(height: 4),
         Text(
           name,
           maxLines: compact ? 1 : 2,
@@ -465,12 +631,13 @@ class _TeamBlock extends StatelessWidget {
           textAlign: TextAlign.center,
           style: TextStyle(
             color: colors.textPrimary,
-            fontSize: compact ? 14 : 15,
+            fontSize: compact ? 13 : 14,
             fontWeight: FontWeight.w800,
+            height: 1.15,
           ),
         ),
         if (_clean(affiliation).isNotEmpty) ...[
-          const SizedBox(height: 4),
+          const SizedBox(height: 2),
           Text(
             affiliation!,
             maxLines: 1,
@@ -478,8 +645,9 @@ class _TeamBlock extends StatelessWidget {
             textAlign: TextAlign.center,
             style: TextStyle(
               color: colors.textSecondary,
-              fontSize: 12,
+              fontSize: 11,
               fontWeight: FontWeight.w500,
+              height: 1.1,
             ),
           ),
         ],
@@ -571,8 +739,9 @@ class _ScoreBlock extends StatelessWidget {
           textAlign: TextAlign.center,
           style: TextStyle(
             color: colors.textPrimary,
-            fontSize: played ? 34 : 30,
+            fontSize: played ? 26 : 22,
             fontWeight: FontWeight.w900,
+            height: 1,
           ),
         ),
         if (_clean(tab).isNotEmpty)
@@ -581,8 +750,9 @@ class _ScoreBlock extends StatelessWidget {
             textAlign: TextAlign.center,
             style: TextStyle(
               color: colors.textSecondary,
-              fontSize: 12,
+              fontSize: 10,
               fontWeight: FontWeight.w600,
+              height: 1.1,
             ),
           ),
       ],
@@ -593,10 +763,12 @@ class _ScoreBlock extends StatelessWidget {
 class _HeaderInfoLine extends StatelessWidget {
   final IconData icon;
   final String value;
+  final Color? valueColor;
 
   const _HeaderInfoLine({
     required this.icon,
     required this.value,
+    this.valueColor,
   });
 
   @override
@@ -608,19 +780,20 @@ class _HeaderInfoLine extends StatelessWidget {
       children: [
         Icon(
           icon,
-          size: 18,
-          color: colors.textSecondary,
+          size: 16,
+          color: colors.primary,
         ),
         const SizedBox(width: 8),
         Expanded(
           child: Text(
             value,
-            maxLines: 2,
+            maxLines: 3,
             overflow: TextOverflow.ellipsis,
             style: TextStyle(
-              color: colors.textSecondary,
+              color: valueColor ?? colors.textSecondary,
               fontSize: 13,
               fontWeight: FontWeight.w600,
+              height: 1.25,
             ),
           ),
         ),
@@ -646,7 +819,7 @@ class _InfoPill extends StatelessWidget {
     final pillColor = color ?? colors.primary;
 
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
       decoration: BoxDecoration(
         color: pillColor.withValues(alpha: 0.12),
         borderRadius: BorderRadius.circular(999),
@@ -659,16 +832,17 @@ class _InfoPill extends StatelessWidget {
         children: [
           Icon(
             icon,
-            size: 15,
+            size: 13,
             color: pillColor,
           ),
-          const SizedBox(width: 6),
+          const SizedBox(width: 4),
           Text(
             label,
             style: TextStyle(
               color: pillColor,
-              fontSize: 12,
+              fontSize: 11,
               fontWeight: FontWeight.w800,
+              height: 1.1,
             ),
           ),
         ],

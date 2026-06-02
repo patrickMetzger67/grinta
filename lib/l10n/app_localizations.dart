@@ -770,6 +770,84 @@ abstract class AppLocalizations {
   /// **'Compo'**
   String get tabCompo;
 
+  /// No description provided for @tabTacticalSchema.
+  ///
+  /// In fr, this message translates to:
+  /// **'Schéma tactique'**
+  String get tabTacticalSchema;
+
+  /// No description provided for @tabTacticalSchemaShort.
+  ///
+  /// In fr, this message translates to:
+  /// **'Schéma'**
+  String get tabTacticalSchemaShort;
+
+  /// No description provided for @matchTacticalSchemaConvocation.
+  ///
+  /// In fr, this message translates to:
+  /// **'Convoquer des joueurs'**
+  String get matchTacticalSchemaConvocation;
+
+  /// No description provided for @matchTacticalSchemaConvocationHint.
+  ///
+  /// In fr, this message translates to:
+  /// **'Optionnel — limite le choix sur le terrain aux joueurs convoqués'**
+  String get matchTacticalSchemaConvocationHint;
+
+  /// No description provided for @matchTacticalSchemaSubstitutes.
+  ///
+  /// In fr, this message translates to:
+  /// **'Remplaçants'**
+  String get matchTacticalSchemaSubstitutes;
+
+  /// No description provided for @matchTacticalSchemaAddSubstitute.
+  ///
+  /// In fr, this message translates to:
+  /// **'Ajouter un remplaçant'**
+  String get matchTacticalSchemaAddSubstitute;
+
+  /// No description provided for @matchTacticalSchemaNoSubstitutes.
+  ///
+  /// In fr, this message translates to:
+  /// **'Aucun remplaçant'**
+  String get matchTacticalSchemaNoSubstitutes;
+
+  /// No description provided for @matchTacticalSchemaPickPlayer.
+  ///
+  /// In fr, this message translates to:
+  /// **'Choisir un joueur'**
+  String get matchTacticalSchemaPickPlayer;
+
+  /// No description provided for @matchTacticalSchemaClearSlot.
+  ///
+  /// In fr, this message translates to:
+  /// **'Retirer du poste'**
+  String get matchTacticalSchemaClearSlot;
+
+  /// No description provided for @matchTacticalSchemaSaved.
+  ///
+  /// In fr, this message translates to:
+  /// **'Schéma tactique enregistré'**
+  String get matchTacticalSchemaSaved;
+
+  /// No description provided for @matchTacticalSchemaEmpty.
+  ///
+  /// In fr, this message translates to:
+  /// **'Aucun schéma tactique pour ce match'**
+  String get matchTacticalSchemaEmpty;
+
+  /// No description provided for @matchTacticalSchemaUnavailable.
+  ///
+  /// In fr, this message translates to:
+  /// **'Schéma tactique indisponible pour ce match'**
+  String get matchTacticalSchemaUnavailable;
+
+  /// No description provided for @matchTacticalSchemaNoTeam.
+  ///
+  /// In fr, this message translates to:
+  /// **'Impossible d\'identifier l\'équipe liée à ce match.'**
+  String get matchTacticalSchemaNoTeam;
+
   /// No description provided for @tabHighlights.
   ///
   /// In fr, this message translates to:
@@ -2197,6 +2275,24 @@ abstract class AppLocalizations {
   /// In fr, this message translates to:
   /// **'Détail du match'**
   String get matchDetailTitle;
+
+  /// No description provided for @matchDetailVenueTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Lieu du match'**
+  String get matchDetailVenueTitle;
+
+  /// No description provided for @playerAgeYears.
+  ///
+  /// In fr, this message translates to:
+  /// **'{age} ans'**
+  String playerAgeYears(int age);
+
+  /// No description provided for @playerAgeUnknown.
+  ///
+  /// In fr, this message translates to:
+  /// **'Âge non renseigné'**
+  String get playerAgeUnknown;
 
   /// No description provided for @dateUndefined.
   ///

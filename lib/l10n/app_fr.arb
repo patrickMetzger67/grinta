@@ -121,6 +121,19 @@
   "navNavigation": "Navigation",
 
   "tabCompo": "Compo",
+  "tabTacticalSchema": "Schéma tactique",
+  "tabTacticalSchemaShort": "Schéma",
+  "matchTacticalSchemaConvocation": "Convoquer des joueurs",
+  "matchTacticalSchemaConvocationHint": "Optionnel — limite le choix sur le terrain aux joueurs convoqués",
+  "matchTacticalSchemaSubstitutes": "Remplaçants",
+  "matchTacticalSchemaAddSubstitute": "Ajouter un remplaçant",
+  "matchTacticalSchemaNoSubstitutes": "Aucun remplaçant",
+  "matchTacticalSchemaPickPlayer": "Choisir un joueur",
+  "matchTacticalSchemaClearSlot": "Retirer du poste",
+  "matchTacticalSchemaSaved": "Schéma tactique enregistré",
+  "matchTacticalSchemaEmpty": "Aucun schéma tactique pour ce match",
+  "matchTacticalSchemaUnavailable": "Schéma tactique indisponible pour ce match",
+  "matchTacticalSchemaNoTeam": "Impossible d'identifier l'équipe liée à ce match.",
   "tabHighlights": "Temps forts",
   "tabStats": "Statistiques",
   "tabStarters": "Titulaires",
@@ -505,6 +518,14 @@
   "chatTryAnotherName": "Essaie avec un autre nom.",
   "chatUsersAppearHere": "Les autres utilisateurs apparaîtront ici.",
   "matchDetailTitle": "Détail du match",
+  "matchDetailVenueTitle": "Lieu du match",
+  "playerAgeYears": "{age} ans",
+  "@playerAgeYears": {
+    "placeholders": {
+      "age": { "type": "int" }
+    }
+  },
+  "playerAgeUnknown": "Âge non renseigné",
   "dateUndefined": "Date non définie",
   "matchDateTimeAt": "{date} à {time}",
   "@matchDateTimeAt": {

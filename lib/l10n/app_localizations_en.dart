@@ -348,6 +348,48 @@ class AppLocalizationsEn extends AppLocalizations {
   String get tabCompo => 'Composition';
 
   @override
+  String get tabTacticalSchema => 'Tactical setup';
+
+  @override
+  String get tabTacticalSchemaShort => 'Setup';
+
+  @override
+  String get matchTacticalSchemaConvocation => 'Call up players';
+
+  @override
+  String get matchTacticalSchemaConvocationHint =>
+      'Optional — limits pitch selection to called-up players';
+
+  @override
+  String get matchTacticalSchemaSubstitutes => 'Substitutes';
+
+  @override
+  String get matchTacticalSchemaAddSubstitute => 'Add substitute';
+
+  @override
+  String get matchTacticalSchemaNoSubstitutes => 'No substitutes';
+
+  @override
+  String get matchTacticalSchemaPickPlayer => 'Choose a player';
+
+  @override
+  String get matchTacticalSchemaClearSlot => 'Remove from position';
+
+  @override
+  String get matchTacticalSchemaSaved => 'Tactical setup saved';
+
+  @override
+  String get matchTacticalSchemaEmpty => 'No tactical setup for this match';
+
+  @override
+  String get matchTacticalSchemaUnavailable =>
+      'Tactical setup unavailable for this match';
+
+  @override
+  String get matchTacticalSchemaNoTeam =>
+      'Unable to identify the team linked to this match.';
+
+  @override
   String get tabHighlights => 'Highlights';
 
   @override
@@ -1136,6 +1178,17 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get matchDetailTitle => 'Match details';
+
+  @override
+  String get matchDetailVenueTitle => 'Match venue';
+
+  @override
+  String playerAgeYears(int age) {
+    return '$age years old';
+  }
+
+  @override
+  String get playerAgeUnknown => 'Age not provided';
 
   @override
   String get dateUndefined => 'Date not defined';

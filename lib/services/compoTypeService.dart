@@ -8,6 +8,41 @@ class CompoTypeService {
   final CollectionReference _collection =
   FirebaseFirestore.instance.collection(collectionName);
 
+  /// Charge tous les types puis filtre par [preferredSoccerType] en mémoire.
+  /// Si aucun ne correspond (ex. match mal typé), renvoie toute la liste.
+  Stream<List<CompoType>> streamCompoTypesResolved({
+    int? preferredSoccerType,
+    bool orderByName = true,
+  }) {
+    return streamCompoTypes(soccerType: null, orderByName: orderByName).map(
+      (allTypes) => _filterCompoTypes(allTypes, preferredSoccerType),
+    );
+  }
+
+  /// Même logique que [streamCompoTypesResolved], en une requête.
+  Future<List<CompoType>> getCompoTypesResolved({
+    int? preferredSoccerType,
+    bool orderByName = true,
+  }) async {
+    final allTypes = await getCompoTypes(soccerType: null, orderByName: orderByName);
+    return _filterCompoTypes(allTypes, preferredSoccerType);
+  }
+
+  List<CompoType> _filterCompoTypes(
+    List<CompoType> allTypes,
+    int? preferredSoccerType,
+  ) {
+    if (preferredSoccerType == null || allTypes.isEmpty) {
+      return allTypes;
+    }
+
+    final filtered = allTypes
+        .where((t) => t.soccerType == preferredSoccerType)
+        .toList();
+
+    return filtered.isNotEmpty ? filtered : allTypes;
+  }
+
   Stream<List<CompoType>> streamCompoTypes({
     int? soccerType,
     bool orderByName = true,

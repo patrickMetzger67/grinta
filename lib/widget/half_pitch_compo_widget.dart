@@ -56,6 +56,12 @@ class HalfPitchCompoWidget extends StatelessWidget {
   /// Fonction de sélection à brancher plus tard.
   final void Function(CompoSlot slot)? onSlotTap;
 
+  /// Avatar personnalisé (ex. [PlayerPhoto]) — prioritaire sur [CompoFieldPlayer.photoUrl].
+  final Widget Function(String playerId, double size)? playerAvatarBuilder;
+
+  /// Tap sur l'avatar d'un joueur déjà placé (sans déclencher [onSlotTap]).
+  final void Function(String playerId)? onPlayerAvatarTap;
+
   final double? height;
 
   const HalfPitchCompoWidget({
@@ -63,6 +69,8 @@ class HalfPitchCompoWidget extends StatelessWidget {
     required this.compoType,
     this.selectedPlayers = const {},
     this.onSlotTap,
+    this.playerAvatarBuilder,
+    this.onPlayerAvatarTap,
     this.height,
   });
 
@@ -155,6 +163,8 @@ class HalfPitchCompoWidget extends StatelessWidget {
                             size: slotSize,
                             slot: slot,
                             player: selectedPlayers[slot.id],
+                            playerAvatarBuilder: playerAvatarBuilder,
+                            onPlayerAvatarTap: onPlayerAvatarTap,
                             onTap: () {
                               if (onSlotTap != null) {
                                 onSlotTap!(slot);
@@ -208,12 +218,16 @@ class _PositionButton extends StatelessWidget {
   final double size;
   final CompoSlot slot;
   final CompoFieldPlayer? player;
+  final Widget Function(String playerId, double size)? playerAvatarBuilder;
+  final void Function(String playerId)? onPlayerAvatarTap;
   final VoidCallback onTap;
 
   const _PositionButton({
     required this.size,
     required this.slot,
     required this.player,
+    this.playerAvatarBuilder,
+    this.onPlayerAvatarTap,
     required this.onTap,
   });
 
@@ -288,11 +302,20 @@ class _PositionButton extends StatelessWidget {
                     ],
                   ),
                   child: ClipOval(
-                    child: _ButtonContent(
-                      player: player,
-                      photoUrl: photoUrl,
-                      role: slot.role,
-                    ),
+                    child: player != null &&
+                            playerAvatarBuilder != null
+                        ? GestureDetector(
+                            onTap: onPlayerAvatarTap != null
+                                ? () => onPlayerAvatarTap!(player!.id)
+                                : null,
+                            behavior: HitTestBehavior.opaque,
+                            child: playerAvatarBuilder!(player!.id, size),
+                          )
+                        : _ButtonContent(
+                            player: player,
+                            photoUrl: photoUrl,
+                            role: slot.role,
+                          ),
                   ),
                 ),
               ),
@@ -660,6 +683,9 @@ class _ProHalfPitchPainter extends CustomPainter {
   @override
   bool shouldRepaint(covariant _ProHalfPitchPainter oldDelegate) => false;
 }
+
+/// Positions du terrain pour un [CompoType] (titulaires uniquement).
+List<CompoSlot> buildCompoSlots(CompoType compoType) => _buildSlots(compoType);
 
 List<CompoSlot> _buildSlots(CompoType compoType) {
   final slots = <CompoSlot>[];

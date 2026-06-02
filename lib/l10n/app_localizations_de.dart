@@ -351,6 +351,49 @@ class AppLocalizationsDe extends AppLocalizations {
   String get tabCompo => 'Zusammensetzung';
 
   @override
+  String get tabTacticalSchema => 'Taktisches Schema';
+
+  @override
+  String get tabTacticalSchemaShort => 'Schema';
+
+  @override
+  String get matchTacticalSchemaConvocation => 'Spieler einberufen';
+
+  @override
+  String get matchTacticalSchemaConvocationHint =>
+      'Optional — beschränkt die Auswahl auf einberufene Spieler';
+
+  @override
+  String get matchTacticalSchemaSubstitutes => 'Ersatzspieler';
+
+  @override
+  String get matchTacticalSchemaAddSubstitute => 'Ersatz hinzufügen';
+
+  @override
+  String get matchTacticalSchemaNoSubstitutes => 'Keine Ersatzspieler';
+
+  @override
+  String get matchTacticalSchemaPickPlayer => 'Spieler wählen';
+
+  @override
+  String get matchTacticalSchemaClearSlot => 'Vom Posten entfernen';
+
+  @override
+  String get matchTacticalSchemaSaved => 'Taktisches Schema gespeichert';
+
+  @override
+  String get matchTacticalSchemaEmpty =>
+      'Kein taktisches Schema für dieses Spiel';
+
+  @override
+  String get matchTacticalSchemaUnavailable =>
+      'Taktisches Schema für dieses Spiel nicht verfügbar';
+
+  @override
+  String get matchTacticalSchemaNoTeam =>
+      'Das mit diesem Spiel verknüpfte Team konnte nicht ermittelt werden.';
+
+  @override
   String get tabHighlights => 'Höhepunkte';
 
   @override
@@ -1164,6 +1207,17 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get matchDetailTitle => 'Spieldetails';
+
+  @override
+  String get matchDetailVenueTitle => 'Spielort';
+
+  @override
+  String playerAgeYears(int age) {
+    return '$age Jahre';
+  }
+
+  @override
+  String get playerAgeUnknown => 'Alter nicht angegeben';
 
   @override
   String get dateUndefined => 'Datum nicht definiert';

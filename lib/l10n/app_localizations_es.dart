@@ -351,6 +351,49 @@ class AppLocalizationsEs extends AppLocalizations {
   String get tabCompo => 'Composición';
 
   @override
+  String get tabTacticalSchema => 'Esquema táctico';
+
+  @override
+  String get tabTacticalSchemaShort => 'Esquema';
+
+  @override
+  String get matchTacticalSchemaConvocation => 'Convocar jugadores';
+
+  @override
+  String get matchTacticalSchemaConvocationHint =>
+      'Opcional — limita la selección a los convocados';
+
+  @override
+  String get matchTacticalSchemaSubstitutes => 'Suplentes';
+
+  @override
+  String get matchTacticalSchemaAddSubstitute => 'Añadir suplente';
+
+  @override
+  String get matchTacticalSchemaNoSubstitutes => 'Sin suplentes';
+
+  @override
+  String get matchTacticalSchemaPickPlayer => 'Elegir jugador';
+
+  @override
+  String get matchTacticalSchemaClearSlot => 'Quitar del puesto';
+
+  @override
+  String get matchTacticalSchemaSaved => 'Esquema táctico guardado';
+
+  @override
+  String get matchTacticalSchemaEmpty =>
+      'Sin esquema táctico para este partido';
+
+  @override
+  String get matchTacticalSchemaUnavailable =>
+      'Esquema táctico no disponible para este partido';
+
+  @override
+  String get matchTacticalSchemaNoTeam =>
+      'No se puede identificar el equipo vinculado a este partido.';
+
+  @override
   String get tabHighlights => 'Reflejos';
 
   @override
@@ -1159,6 +1202,17 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get matchDetailTitle => 'Detalles del partido';
+
+  @override
+  String get matchDetailVenueTitle => 'Lugar del partido';
+
+  @override
+  String playerAgeYears(int age) {
+    return '$age años';
+  }
+
+  @override
+  String get playerAgeUnknown => 'Edad no indicada';
 
   @override
   String get dateUndefined => 'Fecha no definida';
