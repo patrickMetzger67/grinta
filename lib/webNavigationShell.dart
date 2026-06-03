@@ -1,6 +1,11 @@
 import 'package:firebase_auth/firebase_auth.dart' as firebase_auth;
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:grinta/analytics/analytics_features.dart';
+import 'package:grinta/analytics/analytics_interactions.dart';
+import 'package:grinta/analytics/shell_tab_analytics.dart';
+import 'package:grinta/feature_discovery/shell_navigation_scope.dart';
+import 'package:grinta/services/feature_discovery_service.dart';
 import 'core/extensions/l10n_extension.dart';
 import 'util/app_theme.dart';
 import 'widget/app_language_dropdown.dart';
@@ -12,11 +17,15 @@ class WebShellItem {
   final String label;
   final IconData icon;
   final Widget page;
+  final String screenName;
+  final String? featureId;
 
   const WebShellItem({
     required this.label,
     required this.icon,
     required this.page,
+    required this.screenName,
+    this.featureId,
   });
 }
 
@@ -44,11 +53,58 @@ class _WebNavigationShellState extends State<WebNavigationShell> {
   late int _selectedIndex;
   bool _collapsed = false;
   bool _isSigningOut = false;
+  final ShellTabAnalytics _tabAnalytics = ShellTabAnalytics();
 
   @override
   void initState() {
     super.initState();
     _selectedIndex = widget.initialIndex.clamp(0, widget.items.length - 1);
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _markTabFeatureVisited(_selectedIndex);
+      _logTabScreen(_selectedIndex);
+    });
+  }
+
+  @override
+  void dispose() {
+    _tabAnalytics.dispose();
+    super.dispose();
+  }
+
+  void _logTabScreen(int index) {
+    if (index < 0 || index >= widget.items.length) return;
+    _tabAnalytics.onTabSelected(widget.items[index].screenName);
+  }
+
+  void _markTabFeatureVisited(int index) {
+    if (index < 0 || index >= widget.items.length) return;
+    final featureId = widget.items[index].featureId;
+    if (featureId == null || featureId.isEmpty) return;
+    FeatureDiscoveryService.instance.markFeatureVisited(featureId);
+  }
+
+  bool _selectTabByFeatureId(String featureId) {
+    final int index = widget.items.indexWhere(
+      (WebShellItem item) => item.featureId == featureId,
+    );
+    if (index < 0) return false;
+    if (index == _selectedIndex) return true;
+    setState(() => _selectedIndex = index);
+    _markTabFeatureVisited(index);
+    _logTabScreen(index);
+    return true;
+  }
+
+  Set<String> get _availableTabFeatureIds => widget.items
+      .map((WebShellItem item) => item.featureId)
+      .whereType<String>()
+      .where((String id) => id.isNotEmpty)
+      .toSet();
+
+  String? get _currentTabFeatureId {
+    if (widget.items.isEmpty) return null;
+    final int safeIndex = _selectedIndex.clamp(0, widget.items.length - 1);
+    return widget.items[safeIndex].featureId;
   }
 
   @override
@@ -116,6 +172,8 @@ class _WebNavigationShellState extends State<WebNavigationShell> {
 
     if (confirm != true) return;
 
+    AnalyticsInteractions.logFeature(AnalyticsFeatures.logout);
+
     setState(() => _isSigningOut = true);
 
     try {
@@ -161,7 +219,11 @@ class _WebNavigationShellState extends State<WebNavigationShell> {
       widget.items.length - 1,
     );
 
-    return Scaffold(
+    return ShellNavigationScope(
+      availableTabFeatureIds: _availableTabFeatureIds,
+      currentTabFeatureId: _currentTabFeatureId,
+      onNavigateToTab: _selectTabByFeatureId,
+      child: Scaffold(
       backgroundColor: colors.background,
       body: SafeArea(
         child: Row(
@@ -204,9 +266,12 @@ class _WebNavigationShellState extends State<WebNavigationShell> {
                             label: item.label,
                             icon: item.icon,
                             onTap: () {
+                              if (index == safeSelectedIndex) return;
                               setState(() {
                                 _selectedIndex = index;
                               });
+                              _markTabFeatureVisited(index);
+                              _logTabScreen(index);
                             },
                           );
                         },
@@ -229,6 +294,7 @@ class _WebNavigationShellState extends State<WebNavigationShell> {
           ],
         ),
       ),
+    ),
     );
   }
 

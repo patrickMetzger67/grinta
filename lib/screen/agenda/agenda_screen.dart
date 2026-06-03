@@ -1,5 +1,9 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:grinta/analytics/analytics_features.dart';
+import 'package:grinta/analytics/analytics_interactions.dart';
+import 'package:grinta/analytics/analytics_routes.dart';
+import 'package:grinta/analytics/analytics_screen_names.dart';
 import 'package:grinta/core/extensions/l10n_extension.dart';
 import 'package:grinta/l10n/app_localizations.dart';
 import 'package:grinta/services/playerService.dart';
@@ -17,7 +21,10 @@ import '../../util/playerDisplayName.dart';
 import '../../widget/activity_rings_card.dart';
 import '../../widget/agendaMatchRow.dart';
 import '../../widget/match_tracker_stats_table.dart';
+import '../../model/feature_discovery_ids.dart';
 import '../../widget/app_shell_scope.dart';
+import '../../widget/feature_discovery_random_banner.dart';
+import '../../widget/tracker_kit_icon_pill.dart';
 import '../../widget/tracker_player_analysis_widget.dart';
 import '../match_detail_screen.dart';
 import '../team_players_screen.dart';
@@ -677,6 +684,10 @@ class _AgendaScreenState extends State<AgendaScreen> {
           padding: const EdgeInsets.fromLTRB(12, 12, 12, 16),
           child: Column(
             children: [
+              FeatureDiscoveryRandomBanner(
+                parentScreenId: FeatureDiscoveryIds.tabAgenda,
+                excludeCurrentBaseScreen: true,
+              ),
               _GrintaStyleCalendarHeader(
                 pageController: _monthPageController,
                 initialPage: _initialMonthPage,

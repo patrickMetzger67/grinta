@@ -1,5 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:grinta/core/extensions/app_localizations_effectives_extension.dart';
+import 'package:grinta/analytics/analytics_features.dart';
+import 'package:grinta/analytics/analytics_interactions.dart';
+import 'package:grinta/analytics/analytics_routes.dart';
+import 'package:grinta/analytics/analytics_screen_names.dart';
 import 'package:grinta/core/extensions/l10n_extension.dart';
 import 'package:grinta/l10n/app_localizations.dart';
 import 'package:grinta/model/effectives.dart';
@@ -624,9 +628,16 @@ class _TeamDetailScreenState extends State<TeamDetailScreen> {
                         _HeaderSquareIconButton(
                           icon: Icons.tune_rounded,
                           onTap: () async {
+                            AnalyticsInteractions.logFeature(
+                              AnalyticsFeatures.openTeamParam,
+                              parameters: <String, Object>{
+                                'is_manager': widget.isManager,
+                              },
+                            );
                             final bool? updated =
                             await Navigator.of(context).push<bool>(
-                              MaterialPageRoute(
+                              analyticsMaterialRoute<bool>(
+                                screenName: AnalyticsScreenNames.teamParam,
                                 builder: (_) => TeamParamScreen(
                                   team: widget.team,
                                   isManager: widget.isManager,

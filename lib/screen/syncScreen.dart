@@ -1,29 +1,37 @@
-import 'package:firebase_analytics/firebase_analytics.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:grinta/analytics/analytics_features.dart';
+import 'package:grinta/analytics/analytics_interactions.dart';
+import 'package:grinta/analytics/analytics_routes.dart';
+import 'package:grinta/analytics/analytics_screen_names.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:grinta/core/extensions/l10n_extension.dart';
-import 'package:grinta/model/effectives.dart';
 import 'package:grinta/model/tracker/deviceOwner.dart';
 import 'package:grinta/services/answerService.dart';
 import 'package:grinta/services/effectivesService.dart';
 import 'package:grinta/services/matchCompoService.dart';
 import 'package:grinta/services/matchService.dart';
 import 'package:grinta/services/ownerService.dart';
+import 'package:grinta/services/tracker_field_service.dart';
 import 'package:grinta/services/trainingService.dart';
+import 'package:grinta/screen/field_localization_screen.dart';
 import 'package:grinta/tracker/tracker_hub_page.dart';
 import 'package:grinta/provider/appSession.dart';
 import 'package:grinta/widget/uploadTrackerButton.dart';
 import 'package:provider/provider.dart';
 
 import '../model/answer.dart';
+import '../model/fieldGpsCorners.dart';
 import '../model/match.dart' as match_model;
 import '../model/matchCompo.dart';
 import '../model/season.dart';
 import '../model/team.dart';
 import '../model/training.dart';
 import '../services/teamService.dart';
+import '../model/feature_discovery_ids.dart';
 import '../util/app_theme.dart';
+import '../util/french_address_parser.dart';
+import '../widget/feature_discovery_random_banner.dart';
 
 
 class SyncScreen extends StatefulWidget {
@@ -36,18 +44,10 @@ class SyncScreen extends StatefulWidget {
 class _SyncScreenState extends State<SyncScreen> {
   final TeamService _teamService = TeamService();
   final MatchService _matchService = MatchService();
+  final TrackerFieldService _trackerFieldService = TrackerFieldService();
   String? _selectedTeamId;
 
   Season? currentSeason;
-
-  Future<void> _logOpenProduct() async {
-    await FirebaseAnalytics.instance.logEvent(
-      name: 'open_product',
-      parameters: {
-        'source': 'home',
-      },
-    );
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -73,7 +73,10 @@ class _SyncScreenState extends State<SyncScreen> {
       body: ListView(
         padding: const EdgeInsets.all(16),
         children: [
-
+          FeatureDiscoveryRandomBanner(
+            parentScreenId: FeatureDiscoveryIds.tabSync,
+            includeBaseScreens: false,
+          ),
           Card(
             color: colors.card,
             child: Padding(
@@ -93,15 +96,323 @@ class _SyncScreenState extends State<SyncScreen> {
     );
   }
 
-  void addDevices(List<PlayerCompo>? players, List<String> devices) {
-    if (players == null) return;
+  String? _trackerLabelFromDeviceOwner(DeviceOwner deviceOwner) {
+    final customName = deviceOwner.customName?.trim();
+    if (customName == null || customName.isEmpty) {
+      return null;
+    }
+    return customName;
+  }
 
-    for (final mc in players) {
-      final name = mc.customName?.trim();
-      if (name != null && name.isNotEmpty) {
-        devices.add(name);
+  Future<String?> _resolveTrackerIdForMatchPlayer({
+    required PlayerCompo playerCompo,
+    required Map<String, DeviceOwner> ownerDevicesByDocId,
+    required String? seasonId,
+  }) async {
+    final directName = playerCompo.customName?.trim();
+    if (directName != null && directName.isNotEmpty) {
+      return directName;
+    }
+
+    final deviceOwnerDocId = playerCompo.deviceOwnerId?.trim();
+    if (deviceOwnerDocId != null && deviceOwnerDocId.isNotEmpty) {
+      final deviceOwner = ownerDevicesByDocId[deviceOwnerDocId];
+      if (deviceOwner != null) {
+        final label = _trackerLabelFromDeviceOwner(deviceOwner);
+        if (label != null) return label;
       }
     }
+
+    final playerId = playerCompo.playerID?.trim();
+    if (playerId == null ||
+        playerId.isEmpty ||
+        seasonId == null ||
+        seasonId.isEmpty) {
+      return null;
+    }
+
+    final effective = await EffectivesService().getEffectivesByMemberAndSeason(
+      memberId: playerId,
+      seasonId: seasonId,
+    );
+    final trackers = effective?.trackers;
+    if (trackers == null || trackers.isEmpty) return null;
+
+    for (final trackerDocId in trackers) {
+      final deviceOwner = ownerDevicesByDocId[trackerDocId];
+      if (deviceOwner == null) continue;
+      final label = _trackerLabelFromDeviceOwner(deviceOwner);
+      if (label != null) return label;
+    }
+
+    return null;
+  }
+
+  Future<Map<String, String>> _buildMatchDevicePlayerMap({
+    required MatchCompo matchCompo,
+    required Map<String, DeviceOwner> ownerDevicesByDocId,
+    required String? seasonId,
+  }) async {
+    final devicePlayerMap = <String, String>{};
+    final seenTrackerIds = <String>{};
+
+    Future<void> addFromPlayers(List<PlayerCompo>? players) async {
+      if (players == null) return;
+      for (final playerCompo in players) {
+        final playerId = playerCompo.playerID?.trim();
+        if (playerId == null || playerId.isEmpty) continue;
+
+        final trackerId = await _resolveTrackerIdForMatchPlayer(
+          playerCompo: playerCompo,
+          ownerDevicesByDocId: ownerDevicesByDocId,
+          seasonId: seasonId,
+        );
+        if (trackerId == null || trackerId.isEmpty) continue;
+        if (seenTrackerIds.contains(trackerId)) continue;
+
+        seenTrackerIds.add(trackerId);
+        devicePlayerMap[trackerId] = playerId;
+      }
+    }
+
+    await addFromPlayers(matchCompo.goalkeeper);
+    await addFromPlayers(matchCompo.defender);
+    await addFromPlayers(matchCompo.midfielder);
+    await addFromPlayers(matchCompo.midfielderAttaking);
+    await addFromPlayers(matchCompo.midfielderDefensive);
+    await addFromPlayers(matchCompo.stricker);
+    await addFromPlayers(matchCompo.substitute);
+
+    return devicePlayerMap;
+  }
+
+  Future<Map<String, String>> _buildTrainingDevicePlayerMap({
+    required Training training,
+    required Map<String, DeviceOwner> ownerDevicesByDocId,
+    required String seasonId,
+  }) async {
+    final devicePlayerMap = <String, String>{};
+    final seenTrackerIds = <String>{};
+
+    final answers = await AnswerService()
+        .getAnswersByObjectId(training.trainingId!);
+    final answersMap = <String, Answer>{
+      for (final answer in answers)
+        if (answer.playerTraining?.playerId != null)
+          answer.playerTraining!.playerId!: answer,
+    };
+
+    for (final playerTraining in training.playerTraining) {
+      final playerId = playerTraining.playerId?.trim();
+      if (playerId == null || playerId.isEmpty) continue;
+
+      final answer = answersMap[playerId];
+      final bool isPresent;
+      if (answer == null) {
+        isPresent = playerTraining.presenceType == PresenceType.present ||
+            playerTraining.presenceType == PresenceType.late;
+      } else {
+        final presence = answer.playerTraining?.presenceType;
+        isPresent = presence == PresenceType.present ||
+            presence == PresenceType.late;
+      }
+      if (!isPresent) continue;
+
+      String? trackerId;
+      final deviceDocId = playerTraining.deviceId?.trim();
+      if (deviceDocId != null && deviceDocId.isNotEmpty) {
+        final deviceOwner = ownerDevicesByDocId[deviceDocId];
+        if (deviceOwner != null) {
+          trackerId = _trackerLabelFromDeviceOwner(deviceOwner);
+        }
+      } else {
+        final effective =
+            await EffectivesService().getEffectivesByMemberAndSeason(
+          memberId: playerId,
+          seasonId: seasonId,
+        );
+        for (final trackerDocId in effective?.trackers ?? const <String>[]) {
+          final deviceOwner = ownerDevicesByDocId[trackerDocId];
+          if (deviceOwner == null) continue;
+          trackerId = _trackerLabelFromDeviceOwner(deviceOwner);
+          if (trackerId != null) break;
+        }
+      }
+
+      if (trackerId == null || trackerId.isEmpty) continue;
+      if (seenTrackerIds.contains(trackerId)) continue;
+
+      seenTrackerIds.add(trackerId);
+      devicePlayerMap[trackerId] = playerId;
+    }
+
+    return devicePlayerMap;
+  }
+
+  List<String> _sortTrackerIds(Iterable<String> trackerIds) {
+    final sorted = trackerIds.toList()
+      ..sort((a, b) {
+        final intA = int.tryParse(a);
+        final intB = int.tryParse(b);
+        if (intA != null && intB != null) {
+          return intA.compareTo(intB);
+        }
+        return a.compareTo(b);
+      });
+    return sorted;
+  }
+
+  Future<FieldGpsCorners?> _loadFieldGpsCornersFromTrackerFields(
+    match_model.Match match,
+  ) async {
+    final terrainNom = match.nomDuTerrain?.trim() ?? '';
+    final parsed = FrenchAddressParser.parseTerrainAdresse1(match.terrainAdresse1);
+    final fieldId = FrenchAddressParser.computeFieldId(
+      terrainNom: terrainNom.isNotEmpty
+          ? terrainNom
+          : (match.terrainAdresse1?.trim() ?? ''),
+      ville: parsed.ville,
+    );
+    if (fieldId.isEmpty) return null;
+
+    final trackerField = await _trackerFieldService.getById(fieldId);
+    return trackerField?.fieldGpsCorners;
+  }
+
+  Future<bool?> _confirmFieldGeolocation(BuildContext context) {
+    return showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: Text(dialogContext.l10n.syncFieldGeolocationPromptTitle),
+        content: Text(dialogContext.l10n.syncFieldGeolocationPromptMessage),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(dialogContext).pop(false),
+            child: Text(dialogContext.l10n.actionNo),
+          ),
+          TextButton(
+            onPressed: () => Navigator.of(dialogContext).pop(true),
+            child: Text(dialogContext.l10n.actionYes),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Future<FieldGpsCorners?> _localizeMatchField(match_model.Match match) async {
+    final result = await Navigator.push<FieldLocalizationResult>(
+      context,
+      analyticsMaterialRoute(
+        screenName: AnalyticsScreenNames.fields,
+        builder: (_) => FootballFieldLocalizationScreen(
+          initialName: match.nomDuTerrain?.trim() ?? '',
+          initialAddress: match.terrainAdresse1?.trim() ?? '',
+        ),
+      ),
+    );
+
+    if (result == null || !mounted) return null;
+
+    match.fieldGpsCorners = result.fieldGpsCorners;
+    await _matchService.updateMatch(match);
+
+    final uid = FirebaseAuth.instance.currentUser?.uid;
+    if (uid != null) {
+      final terrainNom = result.fieldName.trim().isNotEmpty
+          ? result.fieldName.trim()
+          : (match.nomDuTerrain?.trim() ?? '');
+      try {
+        await _trackerFieldService.saveFromMatchLocalization(
+          terrainNom: terrainNom,
+          terrainAdresse1: match.terrainAdresse1 ?? '',
+          fieldGpsCorners: result.fieldGpsCorners,
+          uid: uid,
+        );
+      } catch (e) {
+        debugPrint('TrackerFieldService save failed: $e');
+      }
+    }
+
+    return result.fieldGpsCorners;
+  }
+
+  Future<FieldGpsCorners?> _ensureMatchFieldGpsCorners(
+    match_model.Match match,
+  ) async {
+    if (match.fieldGpsCorners != null) {
+      return match.fieldGpsCorners;
+    }
+
+    final storedField = await _loadFieldGpsCornersFromTrackerFields(match);
+    if (storedField != null) {
+      match.fieldGpsCorners = storedField;
+      await _matchService.updateMatch(match);
+      return storedField;
+    }
+
+    final shouldLocalize = await _confirmFieldGeolocation(context);
+    if (shouldLocalize != true || !mounted) return null;
+
+    return _localizeMatchField(match);
+  }
+
+  Future<void> _openMatchTrackerHub({
+    required match_model.Match match,
+    required List<String> trackerIdsToSend,
+    required Map<String, String> devicePlayerMap,
+    required FieldGpsCorners fieldGpsCorners,
+  }) async {
+    if (!mounted || trackerIdsToSend.isEmpty) return;
+
+    AnalyticsInteractions.logFeature(
+      AnalyticsFeatures.syncTrackerHub,
+      parameters: const <String, Object>{
+        'is_match': true,
+      },
+    );
+    await Navigator.push(
+      context,
+      analyticsMaterialRoute<void>(
+        screenName: AnalyticsScreenNames.trackerHub,
+        builder: (_) => TrackerHubPage(
+          trackerIds: trackerIdsToSend,
+          eventId: match.id!,
+          isMatch: true,
+          fieldGpsCorners: fieldGpsCorners,
+          devicePlayerMap: devicePlayerMap,
+          ownerId: match.ownerId!,
+        ),
+      ),
+    );
+  }
+
+  Future<void> _openTrainingTrackerHub({
+    required Training training,
+    required List<String> trackerIdsToSend,
+    required Map<String, String> devicePlayerMap,
+  }) async {
+    if (!mounted || trackerIdsToSend.isEmpty) return;
+
+    AnalyticsInteractions.logFeature(
+      AnalyticsFeatures.syncTrackerHub,
+      parameters: const <String, Object>{
+        'is_match': false,
+      },
+    );
+    await Navigator.push(
+      context,
+      analyticsMaterialRoute<void>(
+        screenName: AnalyticsScreenNames.trackerHub,
+        builder: (_) => TrackerHubPage(
+          trackerIds: trackerIdsToSend,
+          eventId: training.docId!,
+          isMatch: false,
+          fieldGpsCorners: null,
+          devicePlayerMap: devicePlayerMap,
+          ownerId: training.ownerId!,
+        ),
+      ),
+    );
   }
 
   Widget _buildTeamsDropdown({
@@ -444,49 +755,46 @@ class _SyncScreenState extends State<SyncScreen> {
                                       return;
                                     }
 
-                                    final List<String> devices = [];
-                                    final Map<String,String> devicePlayerMap = {};
+                                    final ownerDevices =
+                                        await DeviceOwnerService()
+                                            .getByOwnerId(owner.id);
+                                    final ownerDevicesByDocId = {
+                                      for (final od in ownerDevices) od.id: od,
+                                    };
 
-                                    void addDevices(List<PlayerCompo>? players) {
-                                      if (players == null) return;
-
-                                      for (final mc in players) {
-                                        final name = mc.customName?.trim();
-                                        if (name != null && name.isNotEmpty) {
-                                          devices.add(name);
-                                          devicePlayerMap[name] = mc.playerID!;
-                                        }
-                                      }
-                                    }
-
-                                    addDevices(matchCompo.goalkeeper);
-                                    addDevices(matchCompo.defender);
-                                    addDevices(matchCompo.midfielder);
-                                    addDevices(matchCompo.midfielderAttaking);
-                                    addDevices(matchCompo.midfielderDefensive);
-                                    addDevices(matchCompo.stricker);
-                                    addDevices(matchCompo.substitute);
-
-                                    final trackerIdsToSend = List<String>.unmodifiable(
-                                      List<String>.from(devices)
-                                        ..removeWhere((e) => e.trim().isEmpty)
-                                        ..sort((a, b) => int.parse(a).compareTo(int.parse(b))),
+                                    final devicePlayerMap =
+                                        await _buildMatchDevicePlayerMap(
+                                      matchCompo: matchCompo,
+                                      ownerDevicesByDocId: ownerDevicesByDocId,
+                                      seasonId: currentSeason?.ref?.id,
                                     );
+                                    final trackerIdsToSend =
+                                        _sortTrackerIds(devicePlayerMap.keys);
 
                                     if (!mounted) return;
 
-                                    await Navigator.push(
-                                      this.context,
-                                      MaterialPageRoute(
-                                        builder: (_) => TrackerHubPage(
-                                          trackerIds: trackerIdsToSend,
-                                          eventId: match.id!,
-                                          isMatch: true,
-                                          fieldGpsCorners: match.fieldGpsCorners,
-                                          devicePlayerMap: devicePlayerMap,
-                                          ownerId: match.ownerId!,
+                                    if (trackerIdsToSend.isEmpty) {
+                                      ScaffoldMessenger.of(context).showSnackBar(
+                                        SnackBar(
+                                          content: Text(
+                                            context.l10n.syncNoDeviceForMatch,
+                                          ),
                                         ),
-                                      ),
+                                      );
+                                      return;
+                                    }
+
+                                    final fieldGpsCorners =
+                                        await _ensureMatchFieldGpsCorners(match);
+                                    if (fieldGpsCorners == null || !mounted) {
+                                      return;
+                                    }
+
+                                    await _openMatchTrackerHub(
+                                      match: match,
+                                      trackerIdsToSend: trackerIdsToSend,
+                                      devicePlayerMap: devicePlayerMap,
+                                      fieldGpsCorners: fieldGpsCorners,
                                     );
                                   }
                                 } catch (e, st) {
@@ -616,86 +924,30 @@ class _SyncScreenState extends State<SyncScreen> {
                               onPressed: () async {
                                 try {
 
-                                  print('trainingId=${training.trainingId} - date${training.dateTg} ownerId=${training.ownerId}');
-                                  final owner = await OwnerService().getOwnerById(training.ownerId!);
-                                  if (owner != null && owner.typeTracker == "inspirit") {
+                                  final owner = await OwnerService()
+                                      .getOwnerById(training.ownerId!);
+                                  if (owner != null &&
+                                      owner.typeTracker == 'inspirit') {
+                                    final seasonId = currentSeason?.ref?.id;
+                                    if (seasonId == null || seasonId.isEmpty) {
+                                      return;
+                                    }
+
                                     final ownerDevices =
-                                    await DeviceOwnerService().getByOwnerId(owner.id);
+                                        await DeviceOwnerService()
+                                            .getByOwnerId(owner.id);
+                                    final ownerDevicesByDocId = {
+                                      for (final od in ownerDevices) od.id: od,
+                                    };
 
-                                    final Map<String, DeviceOwner> ownerDevicesMap = {};
-                                    for (var od in ownerDevices) {
-                                      ownerDevicesMap[od.id] = od;
-                                    }
-                                    final Set<String> devices = <String>{};
-                                    final Map<String,String> devicePlayerMap = {};
-
-                                    final answers = await AnswerService().getAnswersByObjectId(training.trainingId!);
-                                    Map<String,Answer> answersMap = {};
-                                    for(var a in answers) {
-                                      answersMap[a.playerTraining!.playerId!] = a;
-                                    }
-                                    for (var pt in training.playerTraining) {
-
-                                      bool isPresent = false;
-
-                                      if(answersMap[pt.playerId] == null) {
-                                        if(pt.presenceType == PresenceType.present || pt.presenceType == PresenceType.late) {
-                                          isPresent = true;
-                                        }
-                                      } else {
-                                        Answer? answer = answersMap[pt.playerId];
-                                        if(answer != null) {
-                                          if(answer.playerTraining!.presenceType == PresenceType.present || answer.playerTraining!.presenceType == PresenceType.late) {
-                                            isPresent = true;
-                                          }
-                                        }
-
-                                      }
-
-                                      if (isPresent) {
-                                        if (pt.deviceId == null || pt.deviceId!.isEmpty) {
-                                          final effective =
-                                          await EffectivesService().getEffectivesByMemberAndSeason(
-                                            memberId: pt.playerId!,
-                                            seasonId: currentSeason!.ref!.id,
-                                          );
-                                          if (effective != null && effective.trackers != null) {
-                                            for (var d in effective.trackers!) {
-                                              final deviceOwner = ownerDevicesMap[d];
-                                              final customName = deviceOwner?.customName;
-
-                                              if (customName != null &&
-                                                  customName.trim().isNotEmpty) {
-                                                devices.add(customName.trim());
-                                                devicePlayerMap[customName.trim()] = pt.playerId!;
-                                                break;
-                                              }
-                                            }
-                                          }
-                                        } else {
-                                          final deviceOwner = ownerDevicesMap[pt.deviceId!];
-                                          final customName = deviceOwner?.customName;
-
-                                          if (customName != null &&
-                                              customName.trim().isNotEmpty) {
-                                            devices.add(customName.trim());
-                                            devicePlayerMap[customName.trim()] = pt.playerId!;
-                                          }
-                                        }
-                                      }
-                                    }
-
-                                    final trackerIdsToSend = devices.toList()
-                                      ..sort((a, b) {
-                                        final intA = int.tryParse(a);
-                                        final intB = int.tryParse(b);
-
-                                        if (intA != null && intB != null) {
-                                          return intA.compareTo(intB);
-                                        }
-
-                                        return a.compareTo(b);
-                                      });
+                                    final devicePlayerMap =
+                                        await _buildTrainingDevicePlayerMap(
+                                      training: training,
+                                      ownerDevicesByDocId: ownerDevicesByDocId,
+                                      seasonId: seasonId,
+                                    );
+                                    final trackerIdsToSend =
+                                        _sortTrackerIds(devicePlayerMap.keys);
 
                                     if (!mounted) return;
 
@@ -710,18 +962,10 @@ class _SyncScreenState extends State<SyncScreen> {
                                       return;
                                     }
 
-                                    await Navigator.push(
-                                      this.context,
-                                      MaterialPageRoute(
-                                        builder: (_) => TrackerHubPage(
-                                          trackerIds: trackerIdsToSend,
-                                          eventId: training.docId!,
-                                          isMatch: false,
-                                          fieldGpsCorners: null,
-                                          devicePlayerMap: devicePlayerMap,
-                                          ownerId: training.ownerId!,
-                                        ),
-                                      ),
+                                    await _openTrainingTrackerHub(
+                                      training: training,
+                                      trackerIdsToSend: trackerIdsToSend,
+                                      devicePlayerMap: devicePlayerMap,
                                     );
                                   }
                                 } catch (e) {

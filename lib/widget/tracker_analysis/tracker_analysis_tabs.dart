@@ -1,12 +1,14 @@
 part of 'tracker_player_analysis_widget.dart';
 
 class _PlayerAnalysisTabDef {
+  final String analyticsTabId;
   final String label;
   final String compactLabel;
   final IconData icon;
   final Widget child;
 
   const _PlayerAnalysisTabDef({
+    required this.analyticsTabId,
     required this.label,
     required this.compactLabel,
     required this.icon,
@@ -28,8 +30,9 @@ class _PlayerAnalysisTabSelector extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final colors = context.appColors;
-    final width = MediaQuery.of(context).size.width;
-    final bool compact = width < 520;
+    final width = MediaQuery.sizeOf(context).width;
+    final bool iconOnly = width < 600;
+    final bool compactLabels = width < 520;
 
     return Container(
       width: double.infinity,
@@ -41,13 +44,22 @@ class _PlayerAnalysisTabSelector extends StatelessWidget {
       ),
       child: LayoutBuilder(
         builder: (context, constraints) {
-          final int perRow = constraints.maxWidth >= 1050
-              ? tabs.length
-              : constraints.maxWidth >= 760
-              ? 3
-              : 2;
-
           final double spacing = 6;
+          final int perRow;
+
+          if (iconOnly) {
+            const double iconTabWidth = 44;
+            perRow = (constraints.maxWidth / (iconTabWidth + spacing))
+                .floor()
+                .clamp(2, tabs.length);
+          } else {
+            perRow = constraints.maxWidth >= 1050
+                ? tabs.length
+                : constraints.maxWidth >= 760
+                ? 3
+                : 2;
+          }
+
           final double itemWidth =
               (constraints.maxWidth - ((perRow - 1) * spacing)) / perRow;
 
@@ -61,7 +73,8 @@ class _PlayerAnalysisTabSelector extends StatelessWidget {
                   child: _PlayerAnalysisTabButton(
                     tab: tabs[index],
                     selected: selectedIndex == index,
-                    compact: compact,
+                    iconOnly: iconOnly,
+                    compactLabels: compactLabels,
                     onTap: () => onSelected(index),
                   ),
                 ),
@@ -76,13 +89,15 @@ class _PlayerAnalysisTabSelector extends StatelessWidget {
 class _PlayerAnalysisTabButton extends StatelessWidget {
   final _PlayerAnalysisTabDef tab;
   final bool selected;
-  final bool compact;
+  final bool iconOnly;
+  final bool compactLabels;
   final VoidCallback onTap;
 
   const _PlayerAnalysisTabButton({
     required this.tab,
     required this.selected,
-    required this.compact,
+    required this.iconOnly,
+    required this.compactLabels,
     required this.onTap,
   });
 
@@ -93,32 +108,16 @@ class _PlayerAnalysisTabButton extends StatelessWidget {
     final bgColor = selected ? colors.primary : Colors.transparent;
     final fgColor = selected ? Colors.white : colors.textSecondary;
 
-    return Material(
-      color: Colors.transparent,
-      child: InkWell(
-        borderRadius: BorderRadius.circular(14),
-        onTap: onTap,
-        child: AnimatedContainer(
-          duration: const Duration(milliseconds: 180),
-          curve: Curves.easeOut,
-          height: 42,
-          padding: const EdgeInsets.symmetric(horizontal: 8),
-          decoration: BoxDecoration(
-            color: bgColor,
-            borderRadius: BorderRadius.circular(14),
-          ),
-          child: Row(
+    final Widget tabContent = iconOnly
+        ? Icon(tab.icon, color: fgColor, size: 22)
+        : Row(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Icon(
-                tab.icon,
-                color: fgColor,
-                size: compact ? 17 : 18,
-              ),
+              Icon(tab.icon, color: fgColor, size: 18),
               const SizedBox(width: 6),
               Flexible(
                 child: Text(
-                  compact ? tab.compactLabel : tab.label,
+                  compactLabels ? tab.compactLabel : tab.label,
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                   style: TextStyle(
@@ -129,6 +128,26 @@ class _PlayerAnalysisTabButton extends StatelessWidget {
                 ),
               ),
             ],
+          );
+
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        borderRadius: BorderRadius.circular(14),
+        onTap: onTap,
+        child: Tooltip(
+          message: tab.label,
+          preferBelow: false,
+          child: AnimatedContainer(
+            duration: const Duration(milliseconds: 180),
+            curve: Curves.easeOut,
+            height: iconOnly ? 40 : 42,
+            padding: EdgeInsets.symmetric(horizontal: iconOnly ? 4 : 8),
+            decoration: BoxDecoration(
+              color: bgColor,
+              borderRadius: BorderRadius.circular(14),
+            ),
+            child: Center(child: tabContent),
           ),
         ),
       ),
@@ -141,6 +160,7 @@ class _PlayerAnalysisHeader extends StatelessWidget {
   final TeamParam teamParam;
   final String? playerName;
   final bool compact;
+  final bool isPhone;
   final Player player;
 
   const _PlayerAnalysisHeader({
@@ -148,6 +168,7 @@ class _PlayerAnalysisHeader extends StatelessWidget {
     required this.teamParam,
     required this.playerName,
     required this.compact,
+    required this.isPhone,
     required this.player,
   });
 
@@ -159,15 +180,17 @@ class _PlayerAnalysisHeader extends StatelessWidget {
         ? playerName!.trim()
         : _formatPlayerId(analysis.playerId);
 
+    final bool stacked = compact || isPhone;
+
     return Container(
       width: double.infinity,
-      padding: EdgeInsets.all(compact ? 14 : 16),
+      padding: EdgeInsets.all(isPhone ? 10 : (compact ? 14 : 16)),
       decoration: BoxDecoration(
         color: colors.card,
-        borderRadius: BorderRadius.circular(22),
+        borderRadius: BorderRadius.circular(isPhone ? 16 : 22),
         border: Border.all(color: colors.border),
       ),
-      child: compact
+      child: stacked
           ? Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -175,11 +198,13 @@ class _PlayerAnalysisHeader extends StatelessWidget {
             title: title,
             analysis: analysis,
             player: player,
+            isPhone: isPhone,
           ),
-          const SizedBox(height: 12),
+          SizedBox(height: isPhone ? 8 : 12),
           _HeaderBadges(
             analysis: analysis,
             teamParam: teamParam,
+            isPhone: isPhone,
           ),
         ],
       )
@@ -190,12 +215,14 @@ class _PlayerAnalysisHeader extends StatelessWidget {
               title: title,
               analysis: analysis,
               player: player,
+              isPhone: isPhone,
             ),
           ),
           const SizedBox(width: 16),
           _HeaderBadges(
             analysis: analysis,
             teamParam: teamParam,
+            isPhone: isPhone,
           ),
         ],
       ),
@@ -207,22 +234,25 @@ class _HeaderTitle extends StatelessWidget {
   final String title;
   final TrackerAnalysisResult analysis;
   final Player player;
+  final bool isPhone;
 
   const _HeaderTitle({
     required this.title,
     required this.analysis,
     required this.player,
+    required this.isPhone,
   });
 
   @override
   Widget build(BuildContext context) {
     final colors = context.appColors;
+    final double avatarSize = isPhone ? 36 : 46;
 
     return Row(
       children: [
         Container(
-          width: 46,
-          height: 46,
+          width: avatarSize,
+          height: avatarSize,
           decoration: BoxDecoration(
             color: colors.primary.withValues(alpha: 0.12),
             shape: BoxShape.circle,
@@ -237,7 +267,7 @@ class _HeaderTitle extends StatelessWidget {
             ),
           ),
         ),
-        const SizedBox(width: 12),
+        SizedBox(width: isPhone ? 8 : 12),
         Expanded(
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -248,18 +278,18 @@ class _HeaderTitle extends StatelessWidget {
                 overflow: TextOverflow.ellipsis,
                 style: TextStyle(
                   color: colors.textPrimary,
-                  fontSize: 18,
+                  fontSize: isPhone ? 15 : 18,
                   fontWeight: FontWeight.w900,
                 ),
               ),
-              const SizedBox(height: 4),
+              SizedBox(height: isPhone ? 2 : 4),
               Text(
                 'Tracker ${analysis.trackerId}',
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
                 style: TextStyle(
                   color: colors.textSecondary,
-                  fontSize: 12,
+                  fontSize: isPhone ? 11 : 12,
                   fontWeight: FontWeight.w700,
                 ),
               ),
@@ -274,18 +304,20 @@ class _HeaderTitle extends StatelessWidget {
 class _HeaderBadges extends StatelessWidget {
   final TrackerAnalysisResult analysis;
   final TeamParam teamParam;
+  final bool isPhone;
 
   const _HeaderBadges({
     required this.analysis,
     required this.teamParam,
+    required this.isPhone,
   });
 
   @override
   Widget build(BuildContext context) {
     final l10n = context.l10n;
     return Wrap(
-      spacing: 8,
-      runSpacing: 8,
+      spacing: isPhone ? 6 : 8,
+      runSpacing: isPhone ? 6 : 8,
       alignment: WrapAlignment.end,
       children: [
         /*
@@ -297,12 +329,14 @@ class _HeaderBadges extends StatelessWidget {
         _SmallBadge(
           icon: Icons.timer_rounded,
           label: _durationLong(analysis.duration),
+          compact: isPhone,
         ),
         _SmallBadge(
           icon: Icons.settings_rounded,
           label: teamParam.isDefault
               ? l10n.trackerParamDefault
               : l10n.trackerParamTeam(teamParam.teamId),
+          compact: isPhone,
         ),
       ],
     );

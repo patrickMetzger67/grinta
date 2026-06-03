@@ -1,6 +1,5 @@
 import 'package:cloud_functions/cloud_functions.dart';
 import 'package:flutter/foundation.dart';
-import 'package:firebase_analytics/firebase_analytics.dart';
 import 'package:firebase_auth/firebase_auth.dart' as firebase_auth;
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
@@ -15,6 +14,11 @@ import 'firebase_options.dart';
 import 'l10n/app_localizations.dart';
 import 'login_screen.dart';
 import 'package:grinta/provider/appSession.dart';
+import 'package:grinta/services/active_session_service.dart';
+import 'package:grinta/services/feature_discovery_service.dart';
+import 'package:grinta/analytics/analytics_observer.dart';
+import 'package:grinta/analytics/analytics_route_aware.dart';
+import 'package:grinta/services/analytics_service.dart';
 import 'package:grinta/widget/web_app_root.dart';
 
 const String kStreamApiKey = 'vg9g2zz7s2fc';
@@ -25,6 +29,9 @@ Future<void> main() async {
   await Firebase.initializeApp(
     options: DefaultFirebaseOptions.currentPlatform,
   );
+
+  ActiveSessionService.instance;
+  await FeatureDiscoveryService.instance.ensureInitialized();
 
   runApp(
     MultiProvider(
@@ -49,10 +56,9 @@ class MyApp extends StatefulWidget {
 }
 
 class MyAppState extends State<MyApp> {
-  final FirebaseAnalytics _analytics = FirebaseAnalytics.instance;
-
-  late final FirebaseAnalyticsObserver _analyticsObserver =
-  FirebaseAnalyticsObserver(analytics: _analytics);
+  late final AppAnalyticsObserver _analyticsObserver = AppAnalyticsObserver(
+    analytics: AnalyticsService.instance,
+  );
 
   late final StreamChatClient _streamChatClient = StreamChatClient(
     kStreamApiKey,
@@ -86,7 +92,7 @@ class MyAppState extends State<MyApp> {
       theme: AppTheme.lightTheme,
       darkTheme: AppTheme.darkTheme,
       themeMode: _themeMode,
-      navigatorObservers: [_analyticsObserver],
+      navigatorObservers: [_analyticsObserver, appRouteObserver],
       locale: _effectiveLocale,
       localeResolutionCallback: (deviceLocale, supportedLocales) {
         if (_locale != null) {
@@ -141,8 +147,8 @@ class AuthGate extends StatefulWidget {
 }
 
 class _AuthGateState extends State<AuthGate> {
-  Future<void>? _streamConnectionFuture;
-  String? _streamFutureForUid;
+  Future<void>? _authenticatedSessionFuture;
+  String? _authenticatedSessionForUid;
   String? _connectedStreamUserId;
 
   Future<void> _connectStreamUser(firebase_auth.User firebaseUser) async {
@@ -196,8 +202,15 @@ class _AuthGateState extends State<AuthGate> {
 
     await widget.client.disconnectUser();
     _connectedStreamUserId = null;
-    _streamConnectionFuture = null;
-    _streamFutureForUid = null;
+    _authenticatedSessionFuture = null;
+    _authenticatedSessionForUid = null;
+  }
+
+  Future<void> _prepareAuthenticatedSession(
+    firebase_auth.User firebaseUser,
+  ) async {
+    await ActiveSessionService.instance.ensureSessionActive();
+    await _connectStreamUser(firebaseUser);
   }
 
   Future<String> _fetchStreamToken(firebase_auth.User firebaseUser) async {
@@ -238,13 +251,14 @@ class _AuthGateState extends State<AuthGate> {
           );
         }
 
-        if (_streamConnectionFuture == null || _streamFutureForUid != user.uid) {
-          _streamFutureForUid = user.uid;
-          _streamConnectionFuture = _connectStreamUser(user);
+        if (_authenticatedSessionFuture == null ||
+            _authenticatedSessionForUid != user.uid) {
+          _authenticatedSessionForUid = user.uid;
+          _authenticatedSessionFuture = _prepareAuthenticatedSession(user);
         }
 
         return FutureBuilder<void>(
-          future: _streamConnectionFuture,
+          future: _authenticatedSessionFuture,
           builder: (context, streamSnapshot) {
             if (streamSnapshot.connectionState != ConnectionState.done) {
               return const _LoadingScreen();
@@ -280,8 +294,8 @@ class _AuthGateState extends State<AuthGate> {
                               ElevatedButton(
                                 onPressed: () {
                                   setState(() {
-                                    _streamConnectionFuture =
-                                        _connectStreamUser(user);
+                                    _authenticatedSessionFuture =
+                                        _prepareAuthenticatedSession(user);
                                   });
                                 },
                                 child: Text(context.l10n.actionRetry),
@@ -313,166 +327,6 @@ class _LoadingScreen extends StatelessWidget {
       backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       body: const Center(
         child: CircularProgressIndicator(),
-      ),
-    );
-  }
-}
-
-class ProductScreen extends StatefulWidget {
-  const ProductScreen({super.key});
-
-  @override
-  State<ProductScreen> createState() => _ProductScreenState();
-}
-
-class _ProductScreenState extends State<ProductScreen> {
-  @override
-  void initState() {
-    super.initState();
-    _logViewItem();
-  }
-
-  Future<void> _logViewItem() async {
-    await FirebaseAnalytics.instance.logViewItem(
-      currency: 'EUR',
-      value: 49.90,
-      items: [
-        AnalyticsEventItem(
-          itemId: '123',
-          itemName: 'Maillot domicile',
-          itemCategory: 'eshop',
-          price: 49.90,
-        ),
-      ],
-    );
-  }
-
-  Future<void> _logAddToCart() async {
-    await FirebaseAnalytics.instance.logAddToCart(
-      currency: 'EUR',
-      value: 49.90,
-      items: [
-        AnalyticsEventItem(
-          itemId: '123',
-          itemName: 'Maillot domicile',
-          itemCategory: 'eshop',
-          price: 49.90,
-          quantity: 1,
-        ),
-      ],
-    );
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final colors = context.appColors;
-    final l10n = context.l10n;
-
-    return Scaffold(
-      appBar: AppBar(
-        title: Text(l10n.entityProduct),
-      ),
-      body: Center(
-        child: Card(
-          child: Padding(
-            padding: const EdgeInsets.all(20),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Text(
-                  l10n.matchHomeJersey,
-                  style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                    fontWeight: FontWeight.w700,
-                    color: colors.textPrimary,
-                  ),
-                ),
-                const SizedBox(height: 8),
-                Text(
-                  '49,90 €',
-                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                    color: colors.primary,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-                const SizedBox(height: 20),
-                ElevatedButton(
-                  onPressed: () async {
-                    await _logAddToCart();
-
-                    if (!context.mounted) return;
-                    Navigator.pushNamed(context, '/cart');
-                  },
-                  child: Text(l10n.actionAddToCart),
-                ),
-              ],
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-class CartScreen extends StatelessWidget {
-  const CartScreen({super.key});
-
-  Future<void> _logBeginCheckout() async {
-    await FirebaseAnalytics.instance.logBeginCheckout(
-      value: 49.90,
-      currency: 'EUR',
-      items: [
-        AnalyticsEventItem(
-          itemId: '123',
-          itemName: 'Maillot domicile',
-          itemCategory: 'eshop',
-          price: 49.90,
-          quantity: 1,
-        ),
-      ],
-    );
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final colors = context.appColors;
-    final l10n = context.l10n;
-
-    return Scaffold(
-      appBar: AppBar(
-        title: Text(l10n.entityCart),
-      ),
-      body: Center(
-        child: Card(
-          child: Padding(
-            padding: const EdgeInsets.all(20),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Text(
-                  l10n.matchCartTitle,
-                  style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                    fontWeight: FontWeight.w700,
-                    color: colors.textPrimary,
-                  ),
-                ),
-                const SizedBox(height: 12),
-                Text(
-                  l10n.matchCartOneItem,
-                  style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                    color: colors.textSecondary,
-                  ),
-                ),
-                const SizedBox(height: 20),
-                ElevatedButton(
-                  onPressed: () async {
-                    await _logBeginCheckout();
-                  },
-                  child: Text(l10n.actionBeginCheckout),
-                ),
-              ],
-            ),
-          ),
-        ),
       ),
     );
   }

@@ -734,6 +734,150 @@ abstract class AppLocalizations {
   /// **'Synchronisation'**
   String get navSync;
 
+  /// No description provided for @featureDiscoveryAgendaTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Découvrez l’agenda'**
+  String get featureDiscoveryAgendaTitle;
+
+  /// No description provided for @featureDiscoveryAgendaMessage.
+  ///
+  /// In fr, this message translates to:
+  /// **'Consultez vos matchs et entraînements à venir depuis l’onglet Agenda.'**
+  String get featureDiscoveryAgendaMessage;
+
+  /// No description provided for @featureDiscoveryDiscover.
+  ///
+  /// In fr, this message translates to:
+  /// **'Découvrir'**
+  String get featureDiscoveryDiscover;
+
+  /// No description provided for @featureDiscoveryDashboardTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Découvrez le tableau de bord'**
+  String get featureDiscoveryDashboardTitle;
+
+  /// No description provided for @featureDiscoveryDashboardMessage.
+  ///
+  /// In fr, this message translates to:
+  /// **'Suivez l’activité, les stats et les prochains événements depuis l’onglet Tableau de bord.'**
+  String get featureDiscoveryDashboardMessage;
+
+  /// No description provided for @featureDiscoveryChatTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Découvrez la messagerie'**
+  String get featureDiscoveryChatTitle;
+
+  /// No description provided for @featureDiscoveryChatMessage.
+  ///
+  /// In fr, this message translates to:
+  /// **'Échangez avec votre équipe depuis l’onglet Messagerie.'**
+  String get featureDiscoveryChatMessage;
+
+  /// No description provided for @featureDiscoverySyncTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Découvrez la synchronisation'**
+  String get featureDiscoverySyncTitle;
+
+  /// No description provided for @featureDiscoverySyncMessage.
+  ///
+  /// In fr, this message translates to:
+  /// **'Envoyez les données tracker et gérez les appareils depuis l’onglet Synchronisation.'**
+  String get featureDiscoverySyncMessage;
+
+  /// No description provided for @featureDiscoveryTeamsTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Découvrez les équipes'**
+  String get featureDiscoveryTeamsTitle;
+
+  /// No description provided for @featureDiscoveryTeamsMessage.
+  ///
+  /// In fr, this message translates to:
+  /// **'Gérez les effectifs et les paramètres depuis la section Équipes.'**
+  String get featureDiscoveryTeamsMessage;
+
+  /// No description provided for @featureDiscoveryFieldsTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Découvrez les terrains'**
+  String get featureDiscoveryFieldsTitle;
+
+  /// No description provided for @featureDiscoveryFieldsMessage.
+  ///
+  /// In fr, this message translates to:
+  /// **'Localisez les terrains pour l’analyse tracker depuis l’onglet Terrains.'**
+  String get featureDiscoveryFieldsMessage;
+
+  /// No description provided for @featureDiscoveryCompoTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Découvrez la compo'**
+  String get featureDiscoveryCompoTitle;
+
+  /// No description provided for @featureDiscoveryCompoMessage.
+  ///
+  /// In fr, this message translates to:
+  /// **'Créez et réutilisez des compositions depuis l’onglet Compo.'**
+  String get featureDiscoveryCompoMessage;
+
+  /// No description provided for @featureDiscoveryMatchCompoTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Onglet Compo'**
+  String get featureDiscoveryMatchCompoTitle;
+
+  /// No description provided for @featureDiscoveryMatchCompoMessage.
+  ///
+  /// In fr, this message translates to:
+  /// **'Consultez et modifiez la composition du match dans l’onglet Compo.'**
+  String get featureDiscoveryMatchCompoMessage;
+
+  /// No description provided for @featureDiscoveryMatchTacticalTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Onglet Schéma tactique'**
+  String get featureDiscoveryMatchTacticalTitle;
+
+  /// No description provided for @featureDiscoveryMatchTacticalMessage.
+  ///
+  /// In fr, this message translates to:
+  /// **'Placez les joueurs sur le terrain dans l’onglet Schéma tactique.'**
+  String get featureDiscoveryMatchTacticalMessage;
+
+  /// No description provided for @featureDiscoveryMatchHighlightsTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Onglet Temps forts'**
+  String get featureDiscoveryMatchHighlightsTitle;
+
+  /// No description provided for @featureDiscoveryMatchHighlightsMessage.
+  ///
+  /// In fr, this message translates to:
+  /// **'Revoyez les moments clés dans l’onglet Temps forts.'**
+  String get featureDiscoveryMatchHighlightsMessage;
+
+  /// No description provided for @featureDiscoveryMatchStatsTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Onglet Statistiques'**
+  String get featureDiscoveryMatchStatsTitle;
+
+  /// No description provided for @featureDiscoveryMatchStatsMessage.
+  ///
+  /// In fr, this message translates to:
+  /// **'Explorez les stats tracker et heatmaps dans l’onglet Statistiques.'**
+  String get featureDiscoveryMatchStatsMessage;
+
+  /// No description provided for @featureDiscoveryDismiss.
+  ///
+  /// In fr, this message translates to:
+  /// **'Fermer'**
+  String get featureDiscoveryDismiss;
+
   /// No description provided for @navFields.
   ///
   /// In fr, this message translates to:
@@ -1364,6 +1508,12 @@ abstract class AppLocalizations {
   /// **'Connexion Stream impossible'**
   String get errorStreamConnection;
 
+  /// No description provided for @sessionReplacedOnAnotherDevice.
+  ///
+  /// In fr, this message translates to:
+  /// **'Votre session a été ouverte sur un autre appareil. Veuillez vous reconnecter.'**
+  String get sessionReplacedOnAnotherDevice;
+
   /// No description provided for @errorOpenAnalysis.
   ///
   /// In fr, this message translates to:
@@ -1633,6 +1783,12 @@ abstract class AppLocalizations {
   /// In fr, this message translates to:
   /// **'Aucun device trouvé pour cet entraînement'**
   String get syncNoDeviceForTraining;
+
+  /// No description provided for @syncNoDeviceForMatch.
+  ///
+  /// In fr, this message translates to:
+  /// **'Aucun capteur trouvé pour ce match'**
+  String get syncNoDeviceForMatch;
 
   /// No description provided for @statsWins.
   ///
@@ -2282,6 +2438,24 @@ abstract class AppLocalizations {
   /// **'Lieu du match'**
   String get matchDetailVenueTitle;
 
+  /// No description provided for @matchDetailTrackerKitTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Sélection du kit'**
+  String get matchDetailTrackerKitTitle;
+
+  /// No description provided for @matchDetailTrackerKitLabel.
+  ///
+  /// In fr, this message translates to:
+  /// **'Trackers'**
+  String get matchDetailTrackerKitLabel;
+
+  /// No description provided for @matchDetailTrackerKitComingSoon.
+  ///
+  /// In fr, this message translates to:
+  /// **'À venir'**
+  String get matchDetailTrackerKitComingSoon;
+
   /// No description provided for @playerAgeYears.
   ///
   /// In fr, this message translates to:
@@ -2521,6 +2695,30 @@ abstract class AppLocalizations {
   /// In fr, this message translates to:
   /// **'Préparation USB avant téléchargement (équivalent Déconnecter puis Connecter)…'**
   String get trackerDownloadPrepareSession;
+
+  /// No description provided for @uploadTrackerLoading.
+  ///
+  /// In fr, this message translates to:
+  /// **'Chargement...'**
+  String get uploadTrackerLoading;
+
+  /// No description provided for @uploadTrackerDownloadData.
+  ///
+  /// In fr, this message translates to:
+  /// **'Télécharger les données'**
+  String get uploadTrackerDownloadData;
+
+  /// No description provided for @syncFieldGeolocationPromptTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Géolocaliser le terrain ?'**
+  String get syncFieldGeolocationPromptTitle;
+
+  /// No description provided for @syncFieldGeolocationPromptMessage.
+  ///
+  /// In fr, this message translates to:
+  /// **'Les coordonnées GPS du terrain ne sont pas renseignées. Souhaitez-vous les définir avant de télécharger les données tracker ?'**
+  String get syncFieldGeolocationPromptMessage;
 
   /// No description provided for @trackerUsbAuthorizeHint.
   ///

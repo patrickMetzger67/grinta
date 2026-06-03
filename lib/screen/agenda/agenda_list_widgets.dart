@@ -669,7 +669,7 @@ class _AgendaItemCard extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
+              crossAxisAlignment: CrossAxisAlignment.center,
               children: [
                 Icon(icon, size: 18, color: colors.textPrimary),
                 const SizedBox(width: 8),
@@ -684,14 +684,14 @@ class _AgendaItemCard extends StatelessWidget {
                     ),
                   ),
                 ),
-                if (item.withTracker) ...[
+                if ((item.type == AgendaItemType.match ||
+                        item.type == AgendaItemType.entrainement) &&
+                    item.withTracker == true) ...[
                   const SizedBox(width: 8),
-                  Icon(
-                    Icons.gps_fixed_outlined,
-                    size: 18,
-                    color: item.areTrackersSynchronized
-                        ? colors.success
-                        : colors.warning,
+                  TrackerKitGpsPill(
+                    withTracker: true,
+                    isManager: isManager,
+                    variant: TrackerKitPillVariant.agendaCard,
                   ),
                 ],
                 if (item.isDone) ...[
@@ -704,16 +704,54 @@ class _AgendaItemCard extends StatelessWidget {
                 ],
               ],
             ),
-            if(isManager == false && item.withTracker && teamPlayerMetricScores != null) ... [
+            if(isManager == false && item.withTracker == true && teamPlayerMetricScores != null) ... [
               const SizedBox(height: 10),
               InkWell(
                 borderRadius: BorderRadius.circular(12),
                 onTap: () async {
+                  if (item.match != null) {
+                    final match = item.match!;
+                    AnalyticsInteractions.logFeature(
+                      AnalyticsFeatures.openMatchDetail,
+                      parameters: <String, Object>{
+                        'has_tracker': match.withTracker == true,
+                        'source': 'agenda_stats_ring',
+                      },
+                    );
+                    Navigator.of(context).push(
+                      analyticsMaterialRoute<void>(
+                        screenName: AnalyticsScreenNames.matchDetail,
+                        fullscreenDialog: true,
+                        builder: (_) => MatchDetailScreen(
+                          match: match,
+                          isManager: false,
+                          playerId: currentPlayerId,
+                          initialTabIndex: MatchDetailScreen.statsTabIndexFor(
+                            match,
+                          ),
+                        ),
+                      ),
+                    );
+                    return;
+                  }
 
+                  AnalyticsInteractions.logFeature(
+                    AnalyticsFeatures.openPlayerAnalysis,
+                    parameters: const <String, Object>{
+                      'source': 'agenda_stats_ring',
+                      'is_match': false,
+                    },
+                  );
 
-                  final String analysisDocId = '${item.id}_${teamPlayerMetricScores?.trackerId}';
+                  final String analysisDocId =
+                      '${item.id}_${teamPlayerMetricScores?.trackerId}';
 
-                  final Player? player = await PlayerService().getPlayerById(currentPlayerId!);
+                  final Player? player =
+                      await PlayerService().getPlayerById(currentPlayerId!);
+
+                  if (!context.mounted) {
+                    return;
+                  }
 
                   showModalBottomSheet(
                     context: context,
@@ -795,7 +833,7 @@ class _AgendaItemCard extends StatelessWidget {
                                     unknownLabel: context.l10n.entityPlayer,
                                   ),
                                   player: player,
-                                  isMatch: (item.match == null)?false:true,
+                                  isMatch: false,
                                   showHeader: false,
                                 ),
                               ),
@@ -813,7 +851,7 @@ class _AgendaItemCard extends StatelessWidget {
                 ),
               ),
             ],
-            if(isManager && item.withTracker && item.teamWorkloadSummary != null) ... [
+            if(isManager && item.withTracker == true && item.teamWorkloadSummary != null) ... [
               const SizedBox(height: 10),
               InkWell(
                 borderRadius: BorderRadius.circular(16),
@@ -822,17 +860,33 @@ class _AgendaItemCard extends StatelessWidget {
 
 
                   if(item.match != null) {
+                    final match = item.match!;
+                    AnalyticsInteractions.logFeature(
+                      AnalyticsFeatures.openMatchDetail,
+                      parameters: <String, Object>{
+                        'has_tracker': match.withTracker == true,
+                        'source': 'agenda_manager_ring',
+                      },
+                    );
                     Navigator.of(context).push(
-                      MaterialPageRoute(
+                      analyticsMaterialRoute<void>(
+                        screenName: AnalyticsScreenNames.matchDetail,
                         fullscreenDialog: true,
                         builder: (_) => MatchDetailScreen(
-                          match: item.match!,
+                          match: match,
                           isManager: isManager,
                           playerId: currentPlayerId,
                         ),
                       ),
                     );
                   } else {
+                    AnalyticsInteractions.logFeature(
+                      AnalyticsFeatures.openTrackerStats,
+                      parameters: const <String, Object>{
+                        'source': 'agenda_manager_ring',
+                        'is_match': false,
+                      },
+                    );
                     showGeneralDialog(
                       context: context,
                       barrierDismissible: false,
@@ -965,7 +1019,10 @@ class _AgendaItemCard extends StatelessWidget {
                   final teamId = training.teamId?.trim() ?? '';
                   if (teamId.isEmpty) return;
 
-
+                  AnalyticsInteractions.logFeature(
+                    AnalyticsFeatures.openTeamPlayers,
+                    parameters: const <String, Object>{'source': 'agenda'},
+                  );
 
                   TeamPlayersScreen.open(
                     context,
@@ -984,11 +1041,20 @@ class _AgendaItemCard extends StatelessWidget {
               InkWell(
                 borderRadius: BorderRadius.circular(12),
                 onTap: () {
+                  final match = item.match!;
+                  AnalyticsInteractions.logFeature(
+                    AnalyticsFeatures.openMatchDetail,
+                    parameters: <String, Object>{
+                      'has_tracker': match.withTracker == true,
+                      'source': 'agenda_match_row',
+                    },
+                  );
                   Navigator.push(
                     context,
-                    MaterialPageRoute(
+                    analyticsMaterialRoute<void>(
+                      screenName: AnalyticsScreenNames.matchDetail,
                       builder: (_) => MatchDetailScreen(
-                        match: item.match!,
+                        match: match,
                         isManager: isManager,
                         playerId: currentPlayerId,
                       ),

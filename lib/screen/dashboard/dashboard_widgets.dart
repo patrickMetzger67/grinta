@@ -225,8 +225,16 @@ class _StatCompactCardState extends State<_StatCompactCard> {
               child: InkWell(
                 borderRadius: BorderRadius.circular(16),
                 onTap: () {
+                  AnalyticsInteractions.logFeature(
+                    AnalyticsFeatures.openMatchDetail,
+                    parameters: <String, Object>{
+                      'has_tracker': match.withTracker == true,
+                      'source': 'dashboard',
+                    },
+                  );
                   Navigator.of(context).push(
-                    MaterialPageRoute(
+                    analyticsMaterialRoute<void>(
+                      screenName: AnalyticsScreenNames.matchDetail,
                       fullscreenDialog: true,
                       builder: (_) => MatchDetailScreen(
                         match: match,

@@ -1,5 +1,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
+import 'package:grinta/analytics/analytics_routes.dart';
+import 'package:grinta/analytics/analytics_screen_names.dart';
 import 'package:grinta/core/extensions/l10n_extension.dart';
 import 'package:provider/provider.dart';
 
@@ -45,7 +47,8 @@ class TeamPlayersScreen extends StatefulWidget {
         context.read<AppSession>().selectedSeason?.ref?.id;
 
     return Navigator.of(context).push<void>(
-      MaterialPageRoute<void>(
+      analyticsMaterialRoute<void>(
+        screenName: AnalyticsScreenNames.teamPlayers,
         builder: (_) => TeamPlayersScreen(
           training: training,
           title: title,

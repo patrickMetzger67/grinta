@@ -38,8 +38,14 @@ class PlayerCompo {
     playerID = map[keyPlayerCompoPlayerId];
     number = map[keyPlayerCompoPlayerNumber];
     playerNameDisplayed=map[keyPlayerCompoPlayerNameDisplayed];
-    deviceOwnerId = map[keyPlayerCompoPlayerTrackerId] ?? '';
-    customName = map[keyPlayerCompoPlayerCustomName] ?? '';
+    final rawDeviceOwnerId = map[keyPlayerCompoPlayerTrackerId]?.toString().trim();
+    deviceOwnerId =
+        (rawDeviceOwnerId != null && rawDeviceOwnerId.isNotEmpty)
+            ? rawDeviceOwnerId
+            : null;
+    final rawCustomName = map[keyPlayerCompoPlayerCustomName]?.toString().trim();
+    customName =
+        (rawCustomName != null && rawCustomName.isNotEmpty) ? rawCustomName : null;
   }
 
 

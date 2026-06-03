@@ -5,7 +5,12 @@ import 'package:grinta/provider/appSession.dart';
 import 'util/app_theme.dart';
 import 'package:provider/provider.dart';
 
+import 'analytics/analytics_features.dart';
+import 'analytics/analytics_interactions.dart';
+import 'analytics/analytics_screen_names.dart';
 import 'core/extensions/l10n_extension.dart';
+import 'services/active_session_service.dart';
+import 'services/analytics_service.dart';
 import 'widget/app_language_dropdown.dart';
 import 'widget/app_logo.dart';
 
@@ -50,6 +55,24 @@ class _LoginScreenState extends State<LoginScreen> {
     super.initState();
     _pageController = PageController(
       viewportFraction: 0.86,
+    );
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      AnalyticsService.instance.logScreenView(
+        screenName: AnalyticsScreenNames.login,
+      );
+      _showForcedLogoutMessageIfNeeded();
+    });
+  }
+
+  void _showForcedLogoutMessageIfNeeded() {
+    if (!mounted) return;
+    if (!ActiveSessionService.instance
+        .consumeForcedLogoutDueToRemoteSession()) {
+      return;
+    }
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text(context.l10n.sessionReplacedOnAnotherDevice)),
     );
   }
 
@@ -107,6 +130,8 @@ class _LoginScreenState extends State<LoginScreen> {
       setState(() => _isLoading = true);
     }
 
+    AnalyticsInteractions.logFeature(AnalyticsFeatures.loginAttempt);
+
     final appSession = context.read<AppSession>();
     final l10n = context.l10n;
 
@@ -116,6 +141,11 @@ class _LoginScreenState extends State<LoginScreen> {
         password: password,
       );
       debugPrint('login ok uid=${credential.user?.uid}');
+
+      await AnalyticsService.instance.logLogin(method: 'email');
+      await AnalyticsService.instance.logFeatureUsed(
+        feature: AnalyticsFeatures.loginSuccess,
+      );
 
       if (!mounted) return;
 

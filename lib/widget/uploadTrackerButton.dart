@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:grinta/core/extensions/l10n_extension.dart';
 
 class UploadTrackerButton extends StatefulWidget {
   final Future<void> Function() onPressed;
@@ -43,7 +44,11 @@ class _UploadTrackerButtonState extends State<UploadTrackerButton> {
         ),
       )
           : const Icon(Icons.cloud_upload),
-      label: Text(_isLoading ? 'Chargement...' : 'Upload tracker'),
+      label: Text(
+        _isLoading
+            ? context.l10n.uploadTrackerLoading
+            : context.l10n.uploadTrackerDownloadData,
+      ),
     );
   }
 }

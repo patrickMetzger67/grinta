@@ -1,5 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/svg.dart';
+import 'package:grinta/analytics/analytics_features.dart';
+import 'package:grinta/analytics/analytics_interactions.dart';
+import 'package:grinta/analytics/analytics_screen_names.dart';
 import 'package:grinta/core/extensions/l10n_extension.dart';
 import 'package:grinta/l10n/app_localizations.dart';
 import 'package:grinta/widget/playerPhoto.dart';
@@ -171,12 +174,24 @@ class _TrackerPlayerAnalysisContent extends StatefulWidget {
 class _TrackerPlayerAnalysisContentState
     extends State<_TrackerPlayerAnalysisContent> {
   int _selectedIndex = 0;
+  int _lastLoggedTabIndex = -1;
+
+  void _logTabIfNeeded(int index, List<_PlayerAnalysisTabDef> tabs) {
+    if (index == _lastLoggedTabIndex) return;
+    if (index < 0 || index >= tabs.length) return;
+    _lastLoggedTabIndex = index;
+    AnalyticsInteractions.logTabSelect(
+      screen: AnalyticsScreenNames.playerAnalysis,
+      tab: tabs[index].analyticsTabId,
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
     return LayoutBuilder(
       builder: (context, constraints) {
         final bool compact = constraints.maxWidth < 620;
+        final bool isPhone = constraints.maxWidth < 600;
 
         final int metricColumns = constraints.maxWidth >= 1100
             ? 5
@@ -189,6 +204,7 @@ class _TrackerPlayerAnalysisContentState
         final l10n = context.l10n;
         final tabs = <_PlayerAnalysisTabDef>[
           _PlayerAnalysisTabDef(
+            analyticsTabId: AnalyticsFeatures.playerAnalysisTabSynthesis,
             label: l10n.playerSynthesisTabTitle,
             compactLabel: l10n.playerSynthesisTabTitle,
             icon: Icons.query_stats_rounded,
@@ -199,6 +215,7 @@ class _TrackerPlayerAnalysisContentState
             ),
           ),
           _PlayerAnalysisTabDef(
+            analyticsTabId: AnalyticsFeatures.playerAnalysisTabSpeedZones,
             label: l10n.tabSpeedZones,
             compactLabel: l10n.tabSpeedZonesShort,
             icon: Icons.speed_rounded,
@@ -214,6 +231,7 @@ class _TrackerPlayerAnalysisContentState
           ),
           if(widget.isMatch) ... [
             _PlayerAnalysisTabDef(
+              analyticsTabId: AnalyticsFeatures.playerAnalysisTabFieldZones,
               label: l10n.tabFieldZones,
               compactLabel: l10n.entityField,
               icon: Icons.grid_view_rounded,
@@ -226,6 +244,7 @@ class _TrackerPlayerAnalysisContentState
               ),
             ),
             _PlayerAnalysisTabDef(
+              analyticsTabId: AnalyticsFeatures.playerAnalysisTabHalfTime,
               label: l10n.tabHalfTimeComparison,
               compactLabel: l10n.tabHalfTimeComparison,
               icon: Icons.compare_arrows_rounded,
@@ -241,6 +260,7 @@ class _TrackerPlayerAnalysisContentState
 
           if (widget.showDistanceTimeline)
             _PlayerAnalysisTabDef(
+              analyticsTabId: AnalyticsFeatures.playerAnalysisTabDistanceTimeline,
               label: l10n.tabDistanceTimeline,
               compactLabel: l10n.tabDistanceTimeline,
               icon: Icons.bar_chart_rounded,
@@ -254,6 +274,7 @@ class _TrackerPlayerAnalysisContentState
             ),
           if(widget.isMatch) ... [
             _PlayerAnalysisTabDef(
+              analyticsTabId: AnalyticsFeatures.playerAnalysisTabHeatmap,
               label: l10n.entityHeatmap,
               compactLabel: l10n.entityHeatmap,
               icon: Icons.local_fire_department_rounded,
@@ -273,6 +294,10 @@ class _TrackerPlayerAnalysisContentState
           0,
           tabs.length - 1,
         );
+
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          _logTabIfNeeded(safeSelectedIndex, tabs);
+        });
 
         final double minHeight = constraints.hasBoundedHeight
             ? constraints.maxHeight
@@ -296,15 +321,17 @@ class _TrackerPlayerAnalysisContentState
                       teamParam: widget.teamParam,
                       playerName: widget.playerName,
                       compact: compact,
+                      isPhone: isPhone,
                       player: widget.player!,
                     ),
-                    const SizedBox(height: 12),
+                    SizedBox(height: isPhone ? 8 : 12),
                   ],
 
                   _PlayerAnalysisTabSelector(
                     tabs: tabs,
                     selectedIndex: safeSelectedIndex,
                     onSelected: (index) {
+                      _logTabIfNeeded(index, tabs);
                       setState(() {
                         _selectedIndex = index;
                       });

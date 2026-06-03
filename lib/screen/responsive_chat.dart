@@ -4,11 +4,15 @@ import 'dart:math' as math;
 import 'dart:ui';
 
 import 'package:flutter/material.dart';
+import 'package:grinta/analytics/analytics_routes.dart';
+import 'package:grinta/analytics/analytics_screen_names.dart';
 import 'package:grinta/core/extensions/l10n_extension.dart';
 import 'package:responsive_builder/responsive_builder.dart';
 import 'package:stream_chat_flutter/stream_chat_flutter.dart';
 
+import '../model/feature_discovery_ids.dart';
 import '../util/app_theme.dart';
+import '../widget/feature_discovery_random_banner.dart';
 
 
 class ResponsiveChat extends StatelessWidget {
@@ -16,26 +20,38 @@ class ResponsiveChat extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return ResponsiveBuilder(
-      builder: (context, sizingInformation) {
-        if (sizingInformation.isDesktop || sizingInformation.isTablet) {
-          return const _SplitChatView();
-        }
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        FeatureDiscoveryRandomBanner(
+          parentScreenId: FeatureDiscoveryIds.tabChat,
+          excludeCurrentBaseScreen: true,
+        ),
+        Expanded(
+          child: ResponsiveBuilder(
+            builder: (context, sizingInformation) {
+              if (sizingInformation.isDesktop || sizingInformation.isTablet) {
+                return const _SplitChatView();
+              }
 
-        return _ChannelListPage(
-          onTap: (channel) {
-            Navigator.push(
-              context,
-              MaterialPageRoute(
-                builder: (context) => StreamChannel(
-                  channel: channel,
-                  child: const _ChatChannelPage(),
-                ),
-              ),
-            );
-          },
-        );
-      },
+              return _ChannelListPage(
+                onTap: (channel) {
+                  Navigator.push(
+                    context,
+                    analyticsMaterialRoute<void>(
+                      screenName: AnalyticsScreenNames.chatChannel,
+                      builder: (context) => StreamChannel(
+                        channel: channel,
+                        child: const _ChatChannelPage(),
+                      ),
+                    ),
+                  );
+                },
+              );
+            },
+          ),
+        ),
+      ],
     );
   }
 }
@@ -136,7 +152,8 @@ class _ChannelListPageState extends State<_ChannelListPage> {
   Future<void> _openUserPicker() async {
     final user = await Navigator.push<User>(
       context,
-      MaterialPageRoute(
+      analyticsMaterialRoute<User>(
+        screenName: AnalyticsScreenNames.chatUserPicker,
         builder: (context) => const _UserPickerPage(),
       ),
     );

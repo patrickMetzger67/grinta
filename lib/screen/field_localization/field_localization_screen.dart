@@ -19,6 +19,7 @@ part 'field_localization_widgets.dart';
 
 class FootballFieldLocalizationScreen extends StatefulWidget {
   final String initialName;
+  final String initialAddress;
   final LatLng initialTarget;
   final double initialZoom;
   final String googleMapsApiKey;
@@ -31,6 +32,7 @@ class FootballFieldLocalizationScreen extends StatefulWidget {
   const FootballFieldLocalizationScreen({
     super.key,
     this.initialName = '',
+    this.initialAddress = '',
     this.initialTarget = const LatLng(46.227638, 2.213749),
     this.initialZoom = 18.0,
     this.googleMapsApiKey = kGoogleMapsApiKey,
@@ -93,15 +95,20 @@ class _FootballFieldLocalizationScreenState
 
   double get _fieldHeight => _fieldLength;
 
+  bool get _hasInitialAddress => widget.initialAddress.trim().isNotEmpty;
+
   @override
   void initState() {
     super.initState();
     _nameController.text = widget.initialName;
+    _addressController.text = widget.initialAddress;
     // Affiche la carte tout de suite (évite blocage géoloc sur simulateur).
     _initialMapTarget = widget.initialTarget;
     _currentMapTarget = widget.initialTarget;
     _currentMapZoom = widget.initialZoom;
-    unawaited(_tryRefineLocationFromGps());
+    if (!_hasInitialAddress) {
+      unawaited(_tryRefineLocationFromGps());
+    }
   }
 
   @override
@@ -127,6 +134,10 @@ class _FootballFieldLocalizationScreenState
       );
     } catch (_) {
       // La carte native peut ne pas être prête immédiatement sur iOS/Android.
+    }
+
+    if (_hasInitialAddress) {
+      unawaited(_searchAddress());
     }
   }
 

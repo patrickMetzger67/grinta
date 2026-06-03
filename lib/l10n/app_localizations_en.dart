@@ -330,6 +330,89 @@ class AppLocalizationsEn extends AppLocalizations {
   String get navSync => 'Synchronization';
 
   @override
+  String get featureDiscoveryAgendaTitle => 'Discover the calendar';
+
+  @override
+  String get featureDiscoveryAgendaMessage =>
+      'View upcoming matches and training sessions from the Agenda tab.';
+
+  @override
+  String get featureDiscoveryDiscover => 'Discover';
+
+  @override
+  String get featureDiscoveryDashboardTitle => 'Discover the dashboard';
+
+  @override
+  String get featureDiscoveryDashboardMessage =>
+      'Track team activity, stats, and upcoming events from the Dashboard tab.';
+
+  @override
+  String get featureDiscoveryChatTitle => 'Discover messaging';
+
+  @override
+  String get featureDiscoveryChatMessage =>
+      'Chat with your team from the Messaging tab.';
+
+  @override
+  String get featureDiscoverySyncTitle => 'Discover synchronization';
+
+  @override
+  String get featureDiscoverySyncMessage =>
+      'Upload tracker data and manage devices from the Synchronization tab.';
+
+  @override
+  String get featureDiscoveryTeamsTitle => 'Discover teams';
+
+  @override
+  String get featureDiscoveryTeamsMessage =>
+      'Manage rosters and team settings from the Teams section.';
+
+  @override
+  String get featureDiscoveryFieldsTitle => 'Discover field mapping';
+
+  @override
+  String get featureDiscoveryFieldsMessage =>
+      'Localize pitches for tracker analysis from the Fields tab.';
+
+  @override
+  String get featureDiscoveryCompoTitle => 'Discover compositions';
+
+  @override
+  String get featureDiscoveryCompoMessage =>
+      'Build and reuse lineups from the Composition tab.';
+
+  @override
+  String get featureDiscoveryMatchCompoTitle => 'Lineup tab';
+
+  @override
+  String get featureDiscoveryMatchCompoMessage =>
+      'View and edit the match lineup in the Compo tab.';
+
+  @override
+  String get featureDiscoveryMatchTacticalTitle => 'Tactical setup tab';
+
+  @override
+  String get featureDiscoveryMatchTacticalMessage =>
+      'Place players on the pitch in the Tactical setup tab.';
+
+  @override
+  String get featureDiscoveryMatchHighlightsTitle => 'Highlights tab';
+
+  @override
+  String get featureDiscoveryMatchHighlightsMessage =>
+      'Review key moments in the Highlights tab.';
+
+  @override
+  String get featureDiscoveryMatchStatsTitle => 'Statistics tab';
+
+  @override
+  String get featureDiscoveryMatchStatsMessage =>
+      'Explore tracker stats and heatmaps in the Statistics tab.';
+
+  @override
+  String get featureDiscoveryDismiss => 'Close';
+
+  @override
   String get navFields => 'Land';
 
   @override
@@ -669,6 +752,10 @@ class AppLocalizationsEn extends AppLocalizations {
   String get errorStreamConnection => 'Unable to connect to Stream';
 
   @override
+  String get sessionReplacedOnAnotherDevice =>
+      'Your session was opened on another device. Please sign in again.';
+
+  @override
   String get errorOpenAnalysis =>
       'Unable to open analysis: missing eventId or trackerId.';
 
@@ -815,6 +902,9 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get syncNoDeviceForTraining => 'No devices found for this workout';
+
+  @override
+  String get syncNoDeviceForMatch => 'No devices found for this match';
 
   @override
   String get statsWins => 'Victories';
@@ -1183,6 +1273,15 @@ class AppLocalizationsEn extends AppLocalizations {
   String get matchDetailVenueTitle => 'Match venue';
 
   @override
+  String get matchDetailTrackerKitTitle => 'Sélection du kit';
+
+  @override
+  String get matchDetailTrackerKitLabel => 'Trackers';
+
+  @override
+  String get matchDetailTrackerKitComingSoon => 'À venir';
+
+  @override
   String playerAgeYears(int age) {
     return '$age years old';
   }
@@ -1319,6 +1418,19 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get trackerDownloadPrepareSession =>
       'Preparing USB before download (same as Disconnect then Connect)…';
+
+  @override
+  String get uploadTrackerLoading => 'Loading...';
+
+  @override
+  String get uploadTrackerDownloadData => 'Download data';
+
+  @override
+  String get syncFieldGeolocationPromptTitle => 'Geolocate the field?';
+
+  @override
+  String get syncFieldGeolocationPromptMessage =>
+      'The field GPS coordinates are not set. Would you like to define them before downloading tracker data?';
 
   @override
   String get trackerUsbAuthorizeHint =>

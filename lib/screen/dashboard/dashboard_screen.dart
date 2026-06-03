@@ -1,6 +1,9 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:firebase_analytics/firebase_analytics.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:grinta/analytics/analytics_features.dart';
+import 'package:grinta/analytics/analytics_interactions.dart';
+import 'package:grinta/analytics/analytics_routes.dart';
+import 'package:grinta/analytics/analytics_screen_names.dart';
 import 'package:flutter/material.dart';
 import 'package:grinta/core/extensions/l10n_extension.dart';
 import 'package:grinta/provider/appSession.dart';
@@ -19,8 +22,10 @@ import '../../model/training.dart';
 import '../../services/matchService.dart';
 import '../../services/teamService.dart';
 import '../../services/trainingService.dart';
+import '../../model/feature_discovery_ids.dart';
 import '../../util/app_theme.dart';
 import '../../widget/activity_rings_card.dart';
+import '../../widget/feature_discovery_random_banner.dart';
 import '../../widget/agendaMatchRow.dart';
 import '../../widget/metrics_panel.dart';
 import '../match_detail_screen.dart';
@@ -51,15 +56,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
   DashboardStatsType _selectedStatsType = DashboardStatsType.trainings;
   DashboardWhereType _selectedStatsWhere = DashboardWhereType.player;
   DateTimeRange? _customRange;
-
-  Future<void> _logOpenProduct() async {
-    await FirebaseAnalytics.instance.logEvent(
-      name: 'open_product',
-      parameters: {
-        'source': 'home',
-      },
-    );
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -150,6 +146,10 @@ class _DashboardScreenState extends State<DashboardScreen> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
+                      FeatureDiscoveryRandomBanner(
+                        parentScreenId: FeatureDiscoveryIds.tabDashboard,
+                        excludeCurrentBaseScreen: true,
+                      ),
                       if (managedTeamsIds.length > 1) ...[
                         _buildTeamCard(
                           context: context,
@@ -436,6 +436,10 @@ class _DashboardScreenState extends State<DashboardScreen> {
         label: l10n.entityTrainings,
         selected: _selectedStatsType == DashboardStatsType.trainings,
         onTap: () {
+          AnalyticsInteractions.logFeature(
+            AnalyticsFeatures.dashboardStatsTypeSelect,
+            parameters: const <String, Object>{'value': 'trainings'},
+          );
           setState(() {
             _selectedStatsType = DashboardStatsType.trainings;
           });
@@ -445,6 +449,10 @@ class _DashboardScreenState extends State<DashboardScreen> {
         label: l10n.entityMatches,
         selected: _selectedStatsType == DashboardStatsType.matches,
         onTap: () {
+          AnalyticsInteractions.logFeature(
+            AnalyticsFeatures.dashboardStatsTypeSelect,
+            parameters: const <String, Object>{'value': 'matches'},
+          );
           setState(() {
             _selectedStatsType = DashboardStatsType.matches;
           });
@@ -491,6 +499,10 @@ class _DashboardScreenState extends State<DashboardScreen> {
         label: l10n.entityPlayer,
         selected: _selectedStatsWhere == DashboardWhereType.player,
         onTap: () {
+          AnalyticsInteractions.logFeature(
+            AnalyticsFeatures.dashboardStatsWhereSelect,
+            parameters: const <String, Object>{'value': 'player'},
+          );
           setState(() {
             _selectedStatsWhere = DashboardWhereType.player;
           });
@@ -500,6 +512,10 @@ class _DashboardScreenState extends State<DashboardScreen> {
         label: l10n.entityTeam,
         selected: _selectedStatsWhere == DashboardWhereType.team,
         onTap: () {
+          AnalyticsInteractions.logFeature(
+            AnalyticsFeatures.dashboardStatsWhereSelect,
+            parameters: const <String, Object>{'value': 'team'},
+          );
           setState(() {
             _selectedStatsWhere = DashboardWhereType.team;
           });
@@ -1173,6 +1189,10 @@ class _DashboardScreenState extends State<DashboardScreen> {
         label: l10n.periodWeek,
         selected: _selectedPeriod == DashboardPeriod.week,
         onTap: () {
+          AnalyticsInteractions.logFeature(
+            AnalyticsFeatures.dashboardPeriodSelect,
+            parameters: const <String, Object>{'value': 'week'},
+          );
           setState(() {
             _selectedPeriod = DashboardPeriod.week;
           });
@@ -1182,6 +1202,10 @@ class _DashboardScreenState extends State<DashboardScreen> {
         label: l10n.periodMonth,
         selected: _selectedPeriod == DashboardPeriod.month,
         onTap: () {
+          AnalyticsInteractions.logFeature(
+            AnalyticsFeatures.dashboardPeriodSelect,
+            parameters: const <String, Object>{'value': 'month'},
+          );
           setState(() {
             _selectedPeriod = DashboardPeriod.month;
           });
@@ -1191,6 +1215,10 @@ class _DashboardScreenState extends State<DashboardScreen> {
         label: l10n.periodCustom,
         selected: _selectedPeriod == DashboardPeriod.custom,
         onTap: () async {
+          AnalyticsInteractions.logFeature(
+            AnalyticsFeatures.dashboardPeriodSelect,
+            parameters: const <String, Object>{'value': 'custom'},
+          );
           await _selectCustomRange(context);
         },
       ),

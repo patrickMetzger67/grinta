@@ -1,5 +1,6 @@
 import 'package:firebase_analytics/firebase_analytics.dart';
 import 'package:flutter/foundation.dart';
+import 'package:grinta/analytics/analytics_events.dart';
 
 class AnalyticsService {
   AnalyticsService._();
@@ -13,6 +14,12 @@ class AnalyticsService {
   Future<void> logScreen({
     required String screenName,
     String? screenClass,
+  }) async =>
+      logScreenView(screenName: screenName, screenClass: screenClass);
+
+  Future<void> logScreenView({
+    required String screenName,
+    String? screenClass,
   }) async {
     try {
       await _analytics.logScreenView(
@@ -20,9 +27,42 @@ class AnalyticsService {
         screenClass: screenClass ?? screenName,
       );
     } catch (e, st) {
-      debugPrint('Analytics logScreen error: $e');
+      debugPrint('Analytics logScreenView error: $e');
       debugPrintStack(stackTrace: st);
     }
+  }
+
+  Future<void> logFeatureEvent({
+    required String name,
+    Map<String, Object>? parameters,
+  }) async =>
+      logEvent(name: name, parameters: parameters);
+
+  Future<void> logFeatureDuration({
+    required String feature,
+    required int seconds,
+  }) async {
+    if (seconds <= 0) return;
+    await logEvent(
+      name: AnalyticsEvents.screenDuration,
+      parameters: <String, Object>{
+        'feature': feature,
+        'duration_seconds': seconds,
+      },
+    );
+  }
+
+  Future<void> logFeatureUsed({
+    required String feature,
+    Map<String, Object>? parameters,
+  }) async {
+    await logEvent(
+      name: AnalyticsEvents.featureUsed,
+      parameters: <String, Object>{
+        'feature': feature,
+        ...?parameters,
+      },
+    );
   }
 
   Future<void> logEvent({
@@ -32,12 +72,33 @@ class AnalyticsService {
     try {
       await _analytics.logEvent(
         name: name,
-        parameters: parameters,
+        parameters: _sanitizeParameters(parameters),
       );
     } catch (e, st) {
       debugPrint('Analytics logEvent error: $e');
       debugPrintStack(stackTrace: st);
     }
+  }
+
+  /// Firebase Analytics accepts only [String] or [num] parameter values.
+  static Map<String, Object>? _sanitizeParameters(Map<String, Object>? parameters) {
+    if (parameters == null || parameters.isEmpty) return parameters;
+
+    final sanitized = <String, Object>{};
+    for (final entry in parameters.entries) {
+      final value = _sanitizeParameterValue(entry.value);
+      if (value != null) {
+        sanitized[entry.key] = value;
+      }
+    }
+    return sanitized.isEmpty ? null : sanitized;
+  }
+
+  static Object? _sanitizeParameterValue(Object? value) {
+    if (value == null) return null;
+    if (value is bool) return value ? 'true' : 'false';
+    if (value is String || value is num) return value;
+    return value.toString();
   }
 
   Future<void> logLogin({String method = 'password'}) async {

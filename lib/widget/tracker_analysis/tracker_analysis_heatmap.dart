@@ -612,10 +612,12 @@ class _MiniValueLine extends StatelessWidget {
 class _SmallBadge extends StatelessWidget {
   final IconData icon;
   final String label;
+  final bool compact;
 
   const _SmallBadge({
     required this.icon,
     required this.label,
+    this.compact = false,
   });
 
   @override
@@ -623,7 +625,10 @@ class _SmallBadge extends StatelessWidget {
     final colors = context.appColors;
 
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 6),
+      padding: EdgeInsets.symmetric(
+        horizontal: compact ? 7 : 9,
+        vertical: compact ? 4 : 6,
+      ),
       decoration: BoxDecoration(
         color: colors.surface,
         borderRadius: BorderRadius.circular(999),
@@ -634,15 +639,15 @@ class _SmallBadge extends StatelessWidget {
         children: [
           Icon(
             icon,
-            size: 14,
+            size: compact ? 12 : 14,
             color: colors.textSecondary,
           ),
-          const SizedBox(width: 5),
+          SizedBox(width: compact ? 4 : 5),
           Text(
             label.isEmpty ? '-' : label,
             style: TextStyle(
               color: colors.textSecondary,
-              fontSize: 11,
+              fontSize: compact ? 10 : 11,
               fontWeight: FontWeight.w800,
             ),
           ),

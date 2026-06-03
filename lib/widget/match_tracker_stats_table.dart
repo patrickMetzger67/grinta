@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:grinta/analytics/analytics_routes.dart';
+import 'package:grinta/analytics/analytics_screen_names.dart';
 import 'package:grinta/core/extensions/l10n_extension.dart';
 import 'package:grinta/l10n/app_localizations.dart';
 import 'package:grinta/widget/playerPhoto.dart';
@@ -496,7 +498,8 @@ class _TrackerStatsTableContent extends StatelessWidget {
     final analysisDocId = '${eventId}_$trackerId';
 
     Navigator.of(context, rootNavigator: true).push(
-      MaterialPageRoute(
+      analyticsMaterialRoute<void>(
+        screenName: AnalyticsScreenNames.playerAnalysis,
         fullscreenDialog: true,
         builder: (_) {
           return Scaffold(

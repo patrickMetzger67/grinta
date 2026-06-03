@@ -10,6 +10,11 @@ import 'package:grinta/services/matchService.dart';
 import 'package:grinta/services/teamWorkloadSummaryService.dart';
 import 'package:grinta/services/trainingService.dart';
 import 'package:grinta/util/buildTimestampFromDateAndTime.dart';
+import 'package:grinta/analytics/analytics_features.dart';
+import 'package:grinta/analytics/analytics_interactions.dart';
+import 'package:grinta/analytics/analytics_routes.dart';
+import 'package:grinta/analytics/analytics_screen_names.dart';
+import 'package:grinta/model/feature_discovery_ids.dart';
 import 'package:grinta/widget/app_session_player_season_selector.dart';
 import 'package:provider/provider.dart';
 
@@ -101,7 +106,7 @@ class _WebAppRootState extends State<WebAppRoot> {
         final DateTime endAt = startAt.add(const Duration(minutes: 90));
 
         TeamWorkloadSummary? teamWorkloadSummary;
-        if(m.withTracker! && (m.id != null && m.id!.isNotEmpty)) {
+        if(m.withTracker == true && (m.id != null && m.id!.isNotEmpty)) {
           teamWorkloadSummary = await TeamWorkloadSummaryService().getByEventId(m.id!);
         }
 
@@ -115,7 +120,7 @@ class _WebAppRootState extends State<WebAppRoot> {
             match: m,
             isDone: Timestamp.fromDate(endAt).millisecondsSinceEpoch <
                 timestampNow.millisecondsSinceEpoch,
-            withTracker: m.withTracker!,
+            withTracker: m.withTracker,
             areTrackersSynchronized: m.isTrackerDataUploaded!,
             teamWorkloadSummary: teamWorkloadSummary,
           ),
@@ -209,21 +214,35 @@ class _WebAppRootState extends State<WebAppRoot> {
                 label: l10n.navDashboard,
                 icon: Icons.dashboard_outlined,
                 page: const DashboardScreen(),
+                screenName: AnalyticsScreenNames.dashboard,
+                featureId: FeatureDiscoveryIds.tabDashboard,
               ),
               WebShellItem(
                 label: l10n.navAgenda,
                 icon: Icons.calendar_month_outlined,
                 page: agendaPage,
+                screenName: AnalyticsScreenNames.agenda,
+                featureId: FeatureDiscoveryIds.tabAgenda,
               ),
               if (getManagedTeamsIds.isNotEmpty) ...[
                 WebShellItem(
                   label: l10n.navTeams,
                   icon: Icons.groups_rounded,
+                  screenName: AnalyticsScreenNames.teams,
+                  featureId: FeatureDiscoveryIds.tabTeams,
                   page: TeamsListScreen(
                     managedTeamsIds: getManagedTeamsIds,
                     onTeamTap: (context, team, isManager) {
+                      AnalyticsInteractions.logFeature(
+                        AnalyticsFeatures.openTeamDetail,
+                        parameters: <String, Object>{
+                          'is_manager': isManager,
+                          'source': 'teams_list',
+                        },
+                      );
                       Navigator.of(context).push(
-                        MaterialPageRoute(
+                        analyticsMaterialRoute<void>(
+                          screenName: AnalyticsScreenNames.teamDetail,
                           builder: (_) => TeamDetailScreen(
                             team: team,
                             seasonId: context
@@ -243,17 +262,23 @@ class _WebAppRootState extends State<WebAppRoot> {
                 label: l10n.navChat,
                 icon: Icons.chat,
                 page: const ResponsiveChat(),
+                screenName: AnalyticsScreenNames.chat,
+                featureId: FeatureDiscoveryIds.tabChat,
               ),
               WebShellItem(
                 label: l10n.navSync,
                 icon: Icons.sync,
                 page: const SyncScreen(),
+                screenName: AnalyticsScreenNames.sync,
+                featureId: FeatureDiscoveryIds.tabSync,
               ),
               if (getManagedTeamsIds.isNotEmpty) ...[
                 WebShellItem(
                   label: l10n.navFields,
                   icon: Icons.stadium_outlined,
                   page: const FootballFieldLocalizationScreen(),
+                  screenName: AnalyticsScreenNames.fields,
+                  featureId: FeatureDiscoveryIds.tabFields,
                 ),
               ],
               if (getManagedTeamsIds.isNotEmpty) ...[
@@ -261,6 +286,8 @@ class _WebAppRootState extends State<WebAppRoot> {
                   label: l10n.navCompo,
                   icon: Icons.groups_outlined,
                   page: const CompoScreen(),
+                  screenName: AnalyticsScreenNames.compo,
+                  featureId: FeatureDiscoveryIds.tabCompo,
                 ),
               ],
             ],

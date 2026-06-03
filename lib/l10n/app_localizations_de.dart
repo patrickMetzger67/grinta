@@ -333,6 +333,89 @@ class AppLocalizationsDe extends AppLocalizations {
   String get navSync => 'Synchronisation';
 
   @override
+  String get featureDiscoveryAgendaTitle => 'Kalender entdecken';
+
+  @override
+  String get featureDiscoveryAgendaMessage =>
+      'Sehen Sie kommende Spiele und Trainings im Agenda-Tab.';
+
+  @override
+  String get featureDiscoveryDiscover => 'Entdecken';
+
+  @override
+  String get featureDiscoveryDashboardTitle => 'Dashboard entdecken';
+
+  @override
+  String get featureDiscoveryDashboardMessage =>
+      'Verfolgen Sie Aktivität, Statistiken und Termine im Dashboard-Tab.';
+
+  @override
+  String get featureDiscoveryChatTitle => 'Nachrichten entdecken';
+
+  @override
+  String get featureDiscoveryChatMessage =>
+      'Chatten Sie mit Ihrem Team im Nachrichten-Tab.';
+
+  @override
+  String get featureDiscoverySyncTitle => 'Synchronisation entdecken';
+
+  @override
+  String get featureDiscoverySyncMessage =>
+      'Laden Sie Tracker-Daten hoch und verwalten Sie Geräte im Sync-Tab.';
+
+  @override
+  String get featureDiscoveryTeamsTitle => 'Teams entdecken';
+
+  @override
+  String get featureDiscoveryTeamsMessage =>
+      'Verwalten Sie Kader und Einstellungen im Bereich Teams.';
+
+  @override
+  String get featureDiscoveryFieldsTitle => 'Plätze entdecken';
+
+  @override
+  String get featureDiscoveryFieldsMessage =>
+      'Orten Sie Spielfelder für die Tracker-Analyse im Tab Plätze.';
+
+  @override
+  String get featureDiscoveryCompoTitle => 'Aufstellungen entdecken';
+
+  @override
+  String get featureDiscoveryCompoMessage =>
+      'Erstellen und nutzen Sie Aufstellungen im Tab Aufstellung.';
+
+  @override
+  String get featureDiscoveryMatchCompoTitle => 'Tab Aufstellung';
+
+  @override
+  String get featureDiscoveryMatchCompoMessage =>
+      'Sehen und bearbeiten Sie die Aufstellung im Tab Aufstellung.';
+
+  @override
+  String get featureDiscoveryMatchTacticalTitle => 'Tab Taktik';
+
+  @override
+  String get featureDiscoveryMatchTacticalMessage =>
+      'Platzieren Sie Spieler auf dem Feld im Tab Taktik.';
+
+  @override
+  String get featureDiscoveryMatchHighlightsTitle => 'Tab Highlights';
+
+  @override
+  String get featureDiscoveryMatchHighlightsMessage =>
+      'Sehen Sie Schlüsselmomente im Tab Highlights.';
+
+  @override
+  String get featureDiscoveryMatchStatsTitle => 'Tab Statistiken';
+
+  @override
+  String get featureDiscoveryMatchStatsMessage =>
+      'Erkunden Sie Tracker-Stats und Heatmaps im Tab Statistiken.';
+
+  @override
+  String get featureDiscoveryDismiss => 'Schließen';
+
+  @override
   String get navFields => 'Land';
 
   @override
@@ -683,6 +766,10 @@ class AppLocalizationsDe extends AppLocalizations {
       'Es kann keine Verbindung zum Stream hergestellt werden';
 
   @override
+  String get sessionReplacedOnAnotherDevice =>
+      'Ihre Sitzung wurde auf einem anderen Gerät geöffnet. Bitte melden Sie sich erneut an.';
+
+  @override
   String get errorOpenAnalysis =>
       'Analyse kann nicht geöffnet werden: Ereignis-ID oder Tracker-ID fehlt.';
 
@@ -832,6 +919,10 @@ class AppLocalizationsDe extends AppLocalizations {
   @override
   String get syncNoDeviceForTraining =>
       'Für dieses Training wurden keine Geräte gefunden';
+
+  @override
+  String get syncNoDeviceForMatch =>
+      'Für dieses Spiel wurden keine Geräte gefunden';
 
   @override
   String get statsWins => 'Siege';
@@ -1212,6 +1303,15 @@ class AppLocalizationsDe extends AppLocalizations {
   String get matchDetailVenueTitle => 'Spielort';
 
   @override
+  String get matchDetailTrackerKitTitle => 'Sélection du kit';
+
+  @override
+  String get matchDetailTrackerKitLabel => 'Trackers';
+
+  @override
+  String get matchDetailTrackerKitComingSoon => 'À venir';
+
+  @override
   String playerAgeYears(int age) {
     return '$age Jahre';
   }
@@ -1350,6 +1450,19 @@ class AppLocalizationsDe extends AppLocalizations {
   @override
   String get trackerDownloadPrepareSession =>
       'USB-Vorbereitung vor dem Download (wie Trennen und erneut Verbinden)…';
+
+  @override
+  String get uploadTrackerLoading => 'Wird geladen...';
+
+  @override
+  String get uploadTrackerDownloadData => 'Daten herunterladen';
+
+  @override
+  String get syncFieldGeolocationPromptTitle => 'Spielfeld geolokalisieren?';
+
+  @override
+  String get syncFieldGeolocationPromptMessage =>
+      'Die GPS-Koordinaten des Spielfelds sind nicht hinterlegt. Möchten Sie sie vor dem Herunterladen der Tracker-Daten festlegen?';
 
   @override
   String get trackerUsbAuthorizeHint =>

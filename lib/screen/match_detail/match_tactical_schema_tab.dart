@@ -1,5 +1,3 @@
-import 'dart:math' as math;
-
 import 'package:flutter/material.dart';
 import 'package:grinta/core/extensions/l10n_extension.dart';
 import 'package:provider/provider.dart';
@@ -555,8 +553,16 @@ class _MatchTacticalSchemaBodyState extends State<_MatchTacticalSchemaBody>
 
         return LayoutBuilder(
           builder: (context, constraints) {
+            final bool isPhone = constraints.maxWidth < 600;
+            final double sectionGap = isPhone ? 6 : 8;
+
             return Padding(
-              padding: const EdgeInsets.fromLTRB(12, 4, 12, 12),
+              padding: EdgeInsets.fromLTRB(
+                isPhone ? 8 : 12,
+                4,
+                isPhone ? 8 : 12,
+                isPhone ? 8 : 12,
+              ),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
@@ -570,6 +576,7 @@ class _MatchTacticalSchemaBodyState extends State<_MatchTacticalSchemaBody>
                       child: _ConvocationCheckList(
                         players: _teamPlayers,
                         convokedIds: _convokedIds,
+                        maxListHeight: isPhone ? 160 : 280,
                         onChanged: (id, selected) {
                           setState(() {
                             if (selected) {
@@ -587,7 +594,7 @@ class _MatchTacticalSchemaBodyState extends State<_MatchTacticalSchemaBody>
                         },
                       ),
                     ),
-                    const SizedBox(height: 8),
+                    SizedBox(height: sectionGap),
                   ],
                   if (showEditor)
                     _CompoTypeSelector(
@@ -604,31 +611,18 @@ class _MatchTacticalSchemaBodyState extends State<_MatchTacticalSchemaBody>
                     )
                   else if (selectedType.name != null)
                     _ReadOnlyCompoTypeLabel(name: selectedType.name!),
-                  const SizedBox(height: 8),
+                  SizedBox(height: sectionGap),
                   if (hasSchema || showEditor)
                     Expanded(
-                      child: LayoutBuilder(
-                        builder: (context, pitchConstraints) {
-                          const fieldRatio = 68.0 / 52.5;
-                          final width = pitchConstraints.maxWidth;
-                          final maxHeight = pitchConstraints.maxHeight;
-                          final heightFromWidth = width / fieldRatio;
-                          final pitchHeight = math
-                              .min(heightFromWidth, maxHeight)
-                              .clamp(220.0, maxHeight);
-
-                          return Align(
-                            alignment: Alignment.topCenter,
-                            child: HalfPitchCompoWidget(
-                              compoType: selectedType,
-                              selectedPlayers: _displayFieldPlayers,
-                              onSlotTap: showEditor ? _onSlotTap : null,
-                              playerAvatarBuilder: _playerAvatar,
-                              onPlayerAvatarTap: _showPlayerInfo,
-                              height: pitchHeight,
-                            ),
-                          );
-                        },
+                      child: Align(
+                        alignment: Alignment.topCenter,
+                        child: HalfPitchCompoWidget(
+                          compoType: selectedType,
+                          selectedPlayers: _displayFieldPlayers,
+                          onSlotTap: showEditor ? _onSlotTap : null,
+                          playerAvatarBuilder: _playerAvatar,
+                          onPlayerAvatarTap: _showPlayerInfo,
+                        ),
                       ),
                     )
                   else if (!showEditor)
@@ -638,23 +632,30 @@ class _MatchTacticalSchemaBodyState extends State<_MatchTacticalSchemaBody>
                         message: l10n.matchTacticalSchemaEmpty,
                       ),
                     ),
-                  const SizedBox(height: 8),
-                  _SubstitutesSection(
-                    substitutes: _substitutes,
-                    playersById: _playersById,
-                    readOnly: _readOnly,
-                    onRemove: (index) {
-                      setState(() => _substitutes.removeAt(index));
-                    },
-                    onAdd: showEditor
-                        ? () => _pickPlayer(
-                              title: l10n.matchTacticalSchemaAddSubstitute,
-                              forSubstitute: true,
-                            )
-                        : null,
+                  SizedBox(height: sectionGap),
+                  ConstrainedBox(
+                    constraints: BoxConstraints(
+                      maxHeight: isPhone ? 108 : double.infinity,
+                    ),
+                    child: SingleChildScrollView(
+                      child: _SubstitutesSection(
+                        substitutes: _substitutes,
+                        playersById: _playersById,
+                        readOnly: _readOnly,
+                        onRemove: (index) {
+                          setState(() => _substitutes.removeAt(index));
+                        },
+                        onAdd: showEditor
+                            ? () => _pickPlayer(
+                                  title: l10n.matchTacticalSchemaAddSubstitute,
+                                  forSubstitute: true,
+                                )
+                            : null,
+                      ),
+                    ),
                   ),
                   if (showEditor) ...[
-                    const SizedBox(height: 8),
+                    SizedBox(height: sectionGap),
                     FilledButton.icon(
                       onPressed:
                           _saving || _selectedCompoType == null ? null : _save,
@@ -796,11 +797,13 @@ class _ConvocationCheckList extends StatelessWidget {
     required this.players,
     required this.convokedIds,
     required this.onChanged,
+    this.maxListHeight = 280,
   });
 
   final List<Player> players;
   final Set<String> convokedIds;
   final void Function(String playerId, bool selected) onChanged;
+  final double maxListHeight;
 
   @override
   Widget build(BuildContext context) {
@@ -808,7 +811,7 @@ class _ConvocationCheckList extends StatelessWidget {
     final l10n = context.l10n;
 
     return ConstrainedBox(
-      constraints: const BoxConstraints(maxHeight: 280),
+      constraints: BoxConstraints(maxHeight: maxListHeight),
       child: ListView.builder(
         shrinkWrap: true,
         padding: const EdgeInsets.symmetric(vertical: 4),
@@ -850,11 +853,16 @@ class _CompoTypeSelector extends StatelessWidget {
   Widget build(BuildContext context) {
     final colors = context.appColors;
 
+    final bool isPhone = MediaQuery.sizeOf(context).width < 600;
+
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+      padding: EdgeInsets.symmetric(
+        horizontal: isPhone ? 10 : 12,
+        vertical: isPhone ? 2 : 4,
+      ),
       decoration: BoxDecoration(
         color: colors.card,
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(isPhone ? 16 : 22),
         border: Border.all(color: colors.border),
       ),
       child: DropdownButtonFormField<String>(

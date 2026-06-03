@@ -1,6 +1,12 @@
 // device_owner.dart
 import 'package:cloud_firestore/cloud_firestore.dart';
 
+String? _parseCustomName(Object? value) {
+  final trimmed = value?.toString().trim();
+  if (trimmed == null || trimmed.isEmpty) return null;
+  return trimmed;
+}
+
 class DeviceOwner {
   final String id; // id du doc Firestore
   final String ownerId;
@@ -38,7 +44,7 @@ class DeviceOwner {
           ? data['affectedAt'] as Timestamp
           : Timestamp.now(),
       affectedUid: (data['affectedUid'] ?? '').toString(),
-      customName: (data['customeName'] ?? '').toString(),
+      customName: _parseCustomName(data['customeName']),
     );
   }
 }

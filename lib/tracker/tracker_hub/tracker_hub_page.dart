@@ -77,12 +77,24 @@ class _TrackerHubPageState extends State<TrackerHubPage> {
 
   bool _allowPop = false;
 
+  late final List<String> _validTrackerIds;
+  late final Map<String, String> _validDevicePlayerMap;
+
   @override
   void initState() {
     super.initState();
+    _validTrackerIds = widget.trackerIds
+        .map((id) => id.trim())
+        .where((id) => id.isNotEmpty)
+        .toList(growable: false);
+    _validDevicePlayerMap = {
+      for (final trackerId in _validTrackerIds)
+        if (widget.devicePlayerMap[trackerId] != null)
+          trackerId: widget.devicePlayerMap[trackerId]!,
+    };
     _initEventSyncAndListen();
     user = FirebaseAuth.instance.currentUser;
-    debugPrint('isMatch=${widget.isMatch} trackerIds=${widget.trackerIds}');
+    debugPrint('isMatch=${widget.isMatch} trackerIds=$_validTrackerIds');
   }
 
   @override
@@ -108,8 +120,10 @@ class _TrackerHubPageState extends State<TrackerHubPage> {
 
     final Map<String, DeviceSync> devices = {};
 
-    for (final entry in widget.devicePlayerMap.entries) {
-      devices[entry.key] = DeviceSync(deviceId: entry.key);
+    for (final entry in _validDevicePlayerMap.entries) {
+      final trackerId = entry.key.trim();
+      if (trackerId.isEmpty) continue;
+      devices[trackerId] = DeviceSync(deviceId: trackerId);
     }
 
     final newEventSync = EventSync(
@@ -227,7 +241,7 @@ class _TrackerHubPageState extends State<TrackerHubPage> {
                   Padding(
                     padding: const EdgeInsets.symmetric(horizontal: 16),
                     child: Text(
-                      context.l10n.trackerCount(widget.trackerIds.length),
+                      context.l10n.trackerCount(_validTrackerIds.length),
                       style: textTheme.bodyMedium?.copyWith(
                         color: colors.textSecondary,
                       ),
@@ -235,12 +249,12 @@ class _TrackerHubPageState extends State<TrackerHubPage> {
                   ),
                   const SizedBox(height: 16),
                   Expanded(
-                    child: widget.trackerIds.isEmpty
+                    child: _validTrackerIds.isEmpty
                         ? const _TrackerEmptyState()
                         : GridView.builder(
                       padding:
                       const EdgeInsets.fromLTRB(16, 0, 16, 16),
-                      itemCount: widget.trackerIds.length,
+                      itemCount: _validTrackerIds.length,
                       gridDelegate:
                       SliverGridDelegateWithFixedCrossAxisCount(
                         crossAxisCount:
@@ -251,21 +265,12 @@ class _TrackerHubPageState extends State<TrackerHubPage> {
                         _getChildAspectRatio(constraints.maxWidth),
                       ),
                       itemBuilder: (context, index) {
-                        final trackerId = widget.trackerIds[index];
+                        final trackerId = _validTrackerIds[index];
                         final isSelected = trackerId == selectedTrackerId;
-
-
-                        print('trackerId=$trackerId');
-
-                        final isDone =
-                            (eventSync!.devices[trackerId]!
-                                .dataDownloaded &&
-                                eventSync!
-                                    .devices[trackerId]!.erased) ||
-                                eventSync!
-                                    .devices[trackerId]!.withAsiFile;
-
-                        print('isDone=$isDone');
+                        final deviceSync = eventSync?.devices[trackerId];
+                        final isDone = deviceSync != null &&
+                            ((deviceSync.dataDownloaded && deviceSync.erased) ||
+                                deviceSync.withAsiFile);
 
                         return _TrackerCard(
                           trackerId: trackerId,
@@ -273,7 +278,7 @@ class _TrackerHubPageState extends State<TrackerHubPage> {
                           isDone: isDone,
                           periods: matchPeriods,
                           playerId:
-                          widget.devicePlayerMap[trackerId]!,
+                          _validDevicePlayerMap[trackerId] ?? '',
                           onTap: () async {
                             if (isDone) {
                               await showAlreadySyncedAlert(context);
@@ -296,7 +301,9 @@ class _TrackerHubPageState extends State<TrackerHubPage> {
                 isMatch: widget.isMatch,
                 eventId: widget.eventId,
                 fieldGpsCorners: widget.fieldGpsCorners,
-                playerId: widget.devicePlayerMap[selectedTrackerId],
+                playerId: selectedTrackerId == null
+                    ? null
+                    : _validDevicePlayerMap[selectedTrackerId],
                 eventSync: eventSync,
                 ownerId: widget.ownerId,
               );

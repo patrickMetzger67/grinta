@@ -333,6 +333,89 @@ class AppLocalizationsEs extends AppLocalizations {
   String get navSync => 'Sincronización';
 
   @override
+  String get featureDiscoveryAgendaTitle => 'Descubra la agenda';
+
+  @override
+  String get featureDiscoveryAgendaMessage =>
+      'Consulte sus partidos y entrenamientos desde la pestaña Agenda.';
+
+  @override
+  String get featureDiscoveryDiscover => 'Descubrir';
+
+  @override
+  String get featureDiscoveryDashboardTitle => 'Descubra el panel';
+
+  @override
+  String get featureDiscoveryDashboardMessage =>
+      'Siga la actividad, estadísticas y próximos eventos desde la pestaña Panel.';
+
+  @override
+  String get featureDiscoveryChatTitle => 'Descubra la mensajería';
+
+  @override
+  String get featureDiscoveryChatMessage =>
+      'Chatee con su equipo desde la pestaña Mensajería.';
+
+  @override
+  String get featureDiscoverySyncTitle => 'Descubra la sincronización';
+
+  @override
+  String get featureDiscoverySyncMessage =>
+      'Suba datos del tracker y gestione dispositivos desde Sincronización.';
+
+  @override
+  String get featureDiscoveryTeamsTitle => 'Descubra los equipos';
+
+  @override
+  String get featureDiscoveryTeamsMessage =>
+      'Gestione plantillas y ajustes desde la sección Equipos.';
+
+  @override
+  String get featureDiscoveryFieldsTitle => 'Descubra los campos';
+
+  @override
+  String get featureDiscoveryFieldsMessage =>
+      'Localice campos para el análisis tracker desde la pestaña Campos.';
+
+  @override
+  String get featureDiscoveryCompoTitle => 'Descubra las alineaciones';
+
+  @override
+  String get featureDiscoveryCompoMessage =>
+      'Cree y reutilice alineaciones desde la pestaña Composición.';
+
+  @override
+  String get featureDiscoveryMatchCompoTitle => 'Pestaña Composición';
+
+  @override
+  String get featureDiscoveryMatchCompoMessage =>
+      'Vea y edite la alineación del partido en Composición.';
+
+  @override
+  String get featureDiscoveryMatchTacticalTitle => 'Pestaña Esquema táctico';
+
+  @override
+  String get featureDiscoveryMatchTacticalMessage =>
+      'Coloque jugadores en el campo en Esquema táctico.';
+
+  @override
+  String get featureDiscoveryMatchHighlightsTitle => 'Pestaña Momentos clave';
+
+  @override
+  String get featureDiscoveryMatchHighlightsMessage =>
+      'Revise los momentos clave en Momentos clave.';
+
+  @override
+  String get featureDiscoveryMatchStatsTitle => 'Pestaña Estadísticas';
+
+  @override
+  String get featureDiscoveryMatchStatsMessage =>
+      'Explore estadísticas y mapas de calor en Estadísticas.';
+
+  @override
+  String get featureDiscoveryDismiss => 'Cerrar';
+
+  @override
   String get navFields => 'Tierra';
 
   @override
@@ -681,6 +764,10 @@ class AppLocalizationsEs extends AppLocalizations {
   String get errorStreamConnection => 'No se puede conectar a Stream';
 
   @override
+  String get sessionReplacedOnAnotherDevice =>
+      'Tu sesión se abrió en otro dispositivo. Vuelve a iniciar sesión.';
+
+  @override
   String get errorOpenAnalysis =>
       'No se puede abrir el análisis: falta eventId o trackerId.';
 
@@ -832,6 +919,10 @@ class AppLocalizationsEs extends AppLocalizations {
   @override
   String get syncNoDeviceForTraining =>
       'No se encontraron dispositivos para este entrenamiento';
+
+  @override
+  String get syncNoDeviceForMatch =>
+      'No se encontraron dispositivos para este partido';
 
   @override
   String get statsWins => 'Victorias';
@@ -1207,6 +1298,15 @@ class AppLocalizationsEs extends AppLocalizations {
   String get matchDetailVenueTitle => 'Lugar del partido';
 
   @override
+  String get matchDetailTrackerKitTitle => 'Sélection du kit';
+
+  @override
+  String get matchDetailTrackerKitLabel => 'Trackers';
+
+  @override
+  String get matchDetailTrackerKitComingSoon => 'À venir';
+
+  @override
   String playerAgeYears(int age) {
     return '$age años';
   }
@@ -1345,6 +1445,19 @@ class AppLocalizationsEs extends AppLocalizations {
   @override
   String get trackerDownloadPrepareSession =>
       'Preparación USB antes de la descarga (como Desconectar y volver a Conectar)…';
+
+  @override
+  String get uploadTrackerLoading => 'Cargando...';
+
+  @override
+  String get uploadTrackerDownloadData => 'Descargar los datos';
+
+  @override
+  String get syncFieldGeolocationPromptTitle => '¿Geolocalizar el terreno?';
+
+  @override
+  String get syncFieldGeolocationPromptMessage =>
+      'Las coordenadas GPS del terreno no están definidas. ¿Desea definirlas antes de descargar los datos del tracker?';
 
   @override
   String get trackerUsbAuthorizeHint =>

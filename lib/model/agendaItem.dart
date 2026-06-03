@@ -20,7 +20,7 @@ class AgendaItem {
   final Training? training;
   final grinta_match.Match? match;
   final ActivityMetrics? activityMetrics;
-  final bool withTracker;
+  final bool? withTracker;
   final bool areTrackersSynchronized;
   final TeamWorkloadSummary? teamWorkloadSummary;
 
@@ -36,7 +36,7 @@ class AgendaItem {
     this.match,
     this.training,
     this.activityMetrics,
-    this.withTracker = false,
+    this.withTracker,
     this.areTrackersSynchronized = false,
     this.teamWorkloadSummary,
   });

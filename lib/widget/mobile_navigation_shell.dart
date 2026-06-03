@@ -13,8 +13,28 @@ import 'package:grinta/widget/app_language_dropdown.dart';
 import 'package:grinta/widget/app_session_player_avatar.dart';
 import 'package:grinta/widget/app_session_player_season_selector.dart';
 import 'package:grinta/widget/app_logo.dart';
+import 'package:grinta/analytics/analytics_features.dart';
+import 'package:grinta/analytics/analytics_interactions.dart';
+import 'package:grinta/analytics/analytics_routes.dart';
+import 'package:grinta/analytics/analytics_screen_names.dart';
+import 'package:grinta/analytics/shell_tab_analytics.dart';
+import 'package:grinta/feature_discovery/shell_navigation_scope.dart';
+import 'package:grinta/model/feature_discovery_ids.dart';
+import 'package:grinta/services/feature_discovery_service.dart';
 import 'package:grinta/widget/app_shell_scope.dart';
 import 'package:provider/provider.dart';
+
+const List<String> _kMobileTabFeatureIds = <String>[
+  FeatureDiscoveryIds.tabAgenda,
+  FeatureDiscoveryIds.tabDashboard,
+  FeatureDiscoveryIds.tabChat,
+];
+
+const List<String> _kMobileTabScreenNames = <String>[
+  AnalyticsScreenNames.agenda,
+  AnalyticsScreenNames.dashboard,
+  AnalyticsScreenNames.chat,
+];
 
 class MobileNavigationShell extends StatefulWidget {
   const MobileNavigationShell({
@@ -35,6 +55,43 @@ class MobileNavigationShell extends StatefulWidget {
 class _MobileNavigationShellState extends State<MobileNavigationShell> {
   int _selectedIndex = 0;
   bool _isSigningOut = false;
+  final ShellTabAnalytics _tabAnalytics = ShellTabAnalytics();
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _markTabFeatureVisited(_selectedIndex);
+      _logTabScreen(_selectedIndex);
+    });
+  }
+
+  @override
+  void dispose() {
+    _tabAnalytics.dispose();
+    super.dispose();
+  }
+
+  void _logTabScreen(int index) {
+    if (index < 0 || index >= _kMobileTabScreenNames.length) return;
+    _tabAnalytics.onTabSelected(_kMobileTabScreenNames[index]);
+  }
+
+  void _markTabFeatureVisited(int index) {
+    if (index < 0 || index >= _kMobileTabFeatureIds.length) return;
+    FeatureDiscoveryService.instance
+        .markFeatureVisited(_kMobileTabFeatureIds[index]);
+  }
+
+  bool _selectTabByFeatureId(String featureId) {
+    final int index = _kMobileTabFeatureIds.indexOf(featureId);
+    if (index < 0) return false;
+    if (index == _selectedIndex) return true;
+    setState(() => _selectedIndex = index);
+    _markTabFeatureVisited(index);
+    _logTabScreen(index);
+    return true;
+  }
 
   Future<void> _logout() async {
     if (_isSigningOut) return;
@@ -79,6 +136,8 @@ class _MobileNavigationShellState extends State<MobileNavigationShell> {
     );
 
     if (confirm != true) return;
+
+    AnalyticsInteractions.logFeature(AnalyticsFeatures.logout);
 
     setState(() => _isSigningOut = true);
 
@@ -168,12 +227,22 @@ class _MobileNavigationShellState extends State<MobileNavigationShell> {
                         onTap: () {
                           closeSheetThen(
                             () => navigator.push(
-                              MaterialPageRoute<void>(
+                              analyticsMaterialRoute<void>(
+                                screenName: AnalyticsScreenNames.teamsList,
                                 builder: (_) => TeamsListScreen(
                                   managedTeamsIds: managedTeamsIds,
                                   onTeamTap: (ctx, team, isManager) {
+                                    AnalyticsInteractions.logFeature(
+                                      AnalyticsFeatures.openTeamDetail,
+                                      parameters: <String, Object>{
+                                        'is_manager': isManager,
+                                        'source': 'teams_list',
+                                      },
+                                    );
                                     Navigator.of(ctx).push(
-                                      MaterialPageRoute<void>(
+                                      analyticsMaterialRoute<void>(
+                                        screenName:
+                                            AnalyticsScreenNames.teamDetail,
                                         builder: (_) => TeamDetailScreen(
                                           team: team,
                                           seasonId: appSession
@@ -201,7 +270,8 @@ class _MobileNavigationShellState extends State<MobileNavigationShell> {
                         onTap: () {
                           closeSheetThen(
                             () => navigator.push(
-                              MaterialPageRoute<void>(
+                              analyticsMaterialRoute<void>(
+                                screenName: AnalyticsScreenNames.fields,
                                 builder: (_) =>
                                     const FootballFieldLocalizationScreen(),
                               ),
@@ -219,7 +289,8 @@ class _MobileNavigationShellState extends State<MobileNavigationShell> {
                         onTap: () {
                           closeSheetThen(
                             () => navigator.push(
-                              MaterialPageRoute<void>(
+                              analyticsMaterialRoute<void>(
+                                screenName: AnalyticsScreenNames.compo,
                                 builder: (_) => const CompoScreen(),
                               ),
                             ),
@@ -310,7 +381,11 @@ class _MobileNavigationShellState extends State<MobileNavigationShell> {
       widget.chatPage,
     ];
 
-    return AppShellScope(
+    return ShellNavigationScope(
+      availableTabFeatureIds: _kMobileTabFeatureIds.toSet(),
+      currentTabFeatureId: _kMobileTabFeatureIds[_selectedIndex],
+      onNavigateToTab: _selectTabByFeatureId,
+      child: AppShellScope(
       isMobileShell: true,
       child: Scaffold(
         backgroundColor: colors.background,
@@ -350,7 +425,10 @@ class _MobileNavigationShellState extends State<MobileNavigationShell> {
         bottomNavigationBar: NavigationBar(
           selectedIndex: _selectedIndex,
           onDestinationSelected: (index) {
+            if (index == _selectedIndex) return;
             setState(() => _selectedIndex = index);
+            _markTabFeatureVisited(index);
+            _logTabScreen(index);
           },
           backgroundColor: colors.surface,
           indicatorColor: colors.primary.withValues(alpha: 0.15),
@@ -373,6 +451,7 @@ class _MobileNavigationShellState extends State<MobileNavigationShell> {
           ],
         ),
       ),
+    ),
     );
   }
 }

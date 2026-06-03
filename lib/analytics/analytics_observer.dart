@@ -20,7 +20,7 @@ class AppAnalyticsObserver extends NavigatorObserver {
       screenName = route.runtimeType.toString();
     }
 
-    analytics.logScreen(
+    analytics.logScreenView(
       screenName: screenName,
       screenClass: route.runtimeType.toString(),
     );

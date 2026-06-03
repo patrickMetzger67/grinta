@@ -1,5 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:grinta/analytics/analytics_interactions.dart';
+import 'package:grinta/analytics/analytics_screen_names.dart';
 import 'package:grinta/core/extensions/l10n_extension.dart';
+import 'package:grinta/model/feature_discovery_ids.dart';
+import 'package:grinta/feature_discovery/match_detail_tab_navigation_scope.dart';
+import 'package:grinta/services/feature_discovery_service.dart';
+import 'package:grinta/widget/feature_discovery_random_banner.dart';
 
 import '../model/matchStats.dart';
 import '../model/player.dart';
@@ -13,6 +19,7 @@ import '../util/playerDisplayName.dart';
 import '../widget/match_compo_widget.dart';
 import '../widget/match_highlights_timeline.dart';
 import '../widget/match_tracker_stats_table.dart';
+import '../widget/tracker_kit_icon_pill.dart';
 import '../widget/tracker_player_analysis_widget.dart';
 import 'match_detail/match_tactical_schema_tab.dart';
 
@@ -34,6 +41,9 @@ class MatchDetailScreen extends StatelessWidget {
   final bool isManager;
   final String? playerId;
 
+  /// Index de l’onglet affiché à l’ouverture (0 = Compo, …).
+  final int initialTabIndex;
+
   const MatchDetailScreen({
     super.key,
     required this.match,
@@ -43,7 +53,40 @@ class MatchDetailScreen extends StatelessWidget {
     this.statsBuilder,
     required this.isManager,
     required this.playerId,
+    this.initialTabIndex = 0,
   });
+
+  /// Index de l’onglet Statistiques quand le match a un tracker.
+  static List<String> _tabNamesForMatch(models.Match match) {
+    final names = <String>[
+      AnalyticsScreenNames.matchDetailTabCompo,
+      AnalyticsScreenNames.matchDetailTabTacticalSchema,
+      AnalyticsScreenNames.matchDetailTabHighlights,
+    ];
+    if (match.withTracker == true) {
+      names.add(AnalyticsScreenNames.matchDetailTabStats);
+    }
+    return names;
+  }
+
+  static List<String> _featureDiscoveryIdsForMatch(models.Match match) {
+    final ids = <String>[
+      FeatureDiscoveryIds.matchDetailTabCompo,
+      FeatureDiscoveryIds.matchDetailTabTacticalSchema,
+      FeatureDiscoveryIds.matchDetailTabHighlights,
+    ];
+    if (match.withTracker == true) {
+      ids.add(FeatureDiscoveryIds.matchDetailTabStats);
+    }
+    return ids;
+  }
+
+  static int statsTabIndexFor(models.Match match) {
+    if (match.withTracker != true) {
+      return 0;
+    }
+    return 3;
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -83,49 +126,53 @@ class MatchDetailScreen extends StatelessWidget {
       if (showStats) statsBuilder?.call(context, match) ?? _StatsTab(match: match, isManager: isManager,playerId: playerId,),
     ];
 
-    return DefaultTabController(
-      length: tabs.length,
-      child: Scaffold(
-        backgroundColor: colors.background,
-        body: SafeArea(
-          child: Column(
-            children: [
-              _TopBar(match: match),
-              Expanded(
-                child: LayoutBuilder(
-                  builder: (context, constraints) {
-                    final bool isWebLarge = constraints.maxWidth >= 900;
-                    final bool isTablet = constraints.maxWidth >= 600 && constraints.maxWidth < 900;
+    final int safeInitialIndex =
+        initialTabIndex.clamp(0, tabs.length - 1);
 
-                    final double horizontalPadding = isWebLarge
-                        ? 8
-                        : isTablet
-                        ? 10
-                        : 0;
+    return Scaffold(
+      backgroundColor: colors.background,
+      body: SafeArea(
+        child: Column(
+          children: [
+            _TopBar(match: match),
+            Expanded(
+              child: LayoutBuilder(
+                builder: (context, constraints) {
+                  final bool isWebLarge = constraints.maxWidth >= 900;
+                  final bool isTablet =
+                      constraints.maxWidth >= 600 &&
+                      constraints.maxWidth < 900;
 
-                    return Container(
-                      width: double.infinity,
-                      padding: EdgeInsets.symmetric(horizontal: horizontalPadding),
-                      child: Column(
-                        children: [
-                          _MatchHeader(match: match),
-                          const SizedBox(height: 6),
-                          _TabsContainer(tabs: tabs),
-                          const SizedBox(height: 12),
-                          Expanded(
-                            child: TabBarView(
-                              physics: const NeverScrollableScrollPhysics(),
-                              children: views,
-                            ),
-                          ),
-                        ],
-                      ),
-                    );
-                  },
-                ),
+                  final double horizontalPadding = isWebLarge
+                      ? 8
+                      : isTablet
+                      ? 10
+                      : 0;
+
+                  return Container(
+                    width: double.infinity,
+                    padding: EdgeInsets.symmetric(
+                      horizontal: horizontalPadding,
+                    ),
+                    child: Column(
+                      children: [
+                        _MatchHeader(match: match, isManager: isManager),
+                        _MatchDetailTabShell(
+                          tabs: tabs,
+                          views: views,
+                          tabNames: _tabNamesForMatch(match),
+                          featureDiscoveryIds:
+                              _featureDiscoveryIdsForMatch(match),
+                          initialIndex: safeInitialIndex,
+                          matchHasTracker: showStats,
+                        ),
+                      ],
+                    ),
+                  );
+                },
               ),
-            ],
-          ),
+            ),
+          ],
         ),
       ),
     );
@@ -179,11 +226,128 @@ class _TopBar extends StatelessWidget {
   }
 }
 
+/// Match-detail tab bar + content with analytics and feature-discovery on change.
+class _MatchDetailTabShell extends StatefulWidget {
+  final List<Widget> tabs;
+  final List<Widget> views;
+  final List<String> tabNames;
+  final List<String> featureDiscoveryIds;
+  final int initialIndex;
+  final bool matchHasTracker;
+
+  const _MatchDetailTabShell({
+    required this.tabs,
+    required this.views,
+    required this.tabNames,
+    required this.featureDiscoveryIds,
+    required this.initialIndex,
+    required this.matchHasTracker,
+  });
+
+  @override
+  State<_MatchDetailTabShell> createState() => _MatchDetailTabShellState();
+}
+
+class _MatchDetailTabShellState extends State<_MatchDetailTabShell>
+    with SingleTickerProviderStateMixin {
+  late TabController _tabController;
+  int _lastLoggedIndex = -1;
+
+  @override
+  void initState() {
+    super.initState();
+    _tabController = TabController(
+      length: widget.tabs.length,
+      vsync: this,
+      initialIndex: widget.initialIndex,
+    );
+    _tabController.addListener(_onTabControllerChanged);
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _recordTabVisit(_tabController.index);
+    });
+  }
+
+  @override
+  void dispose() {
+    _tabController.removeListener(_onTabControllerChanged);
+    _tabController.dispose();
+    super.dispose();
+  }
+
+  void _onTabControllerChanged() {
+    if (_tabController.indexIsChanging) return;
+    _recordTabVisit(_tabController.index);
+  }
+
+  void _onTabTapped(int index) {
+    _recordTabVisit(index);
+  }
+
+  void _recordTabVisit(int index) {
+    if (index == _lastLoggedIndex) return;
+    if (index < 0 || index >= widget.tabNames.length) return;
+    _lastLoggedIndex = index;
+
+    AnalyticsInteractions.logTabSelect(
+      screen: AnalyticsScreenNames.matchDetail,
+      tab: widget.tabNames[index],
+    );
+
+    if (index < widget.featureDiscoveryIds.length) {
+      FeatureDiscoveryService.instance
+          .markFeatureVisited(widget.featureDiscoveryIds[index]);
+    }
+  }
+
+  void _goToTabIndex(int index) {
+    if (index < 0 || index >= widget.tabs.length) return;
+    _tabController.animateTo(index);
+    _recordTabVisit(index);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return MatchDetailTabNavigationScope(
+      featureIdsByTabIndex: widget.featureDiscoveryIds,
+      onNavigateToTabIndex: _goToTabIndex,
+      child: Expanded(
+        child: Column(
+          children: [
+            FeatureDiscoveryRandomBanner(
+              parentScreenId: FeatureDiscoveryIds.screenMatchDetail,
+              includeBaseScreens: false,
+              matchHasTracker: widget.matchHasTracker,
+            ),
+            const SizedBox(height: 6),
+            _TabsContainer(
+              tabs: widget.tabs,
+              controller: _tabController,
+              onTap: _onTabTapped,
+            ),
+            const SizedBox(height: 12),
+            Expanded(
+              child: TabBarView(
+                controller: _tabController,
+                physics: const NeverScrollableScrollPhysics(),
+                children: widget.views,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
 class _TabsContainer extends StatelessWidget {
   final List<Widget> tabs;
+  final TabController controller;
+  final ValueChanged<int> onTap;
 
   const _TabsContainer({
     required this.tabs,
+    required this.controller,
+    required this.onTap,
   });
 
   @override
@@ -200,6 +364,8 @@ class _TabsContainer extends StatelessWidget {
         border: Border.all(color: colors.border),
       ),
       child: TabBar(
+        controller: controller,
+        onTap: onTap,
         tabs: tabs,
         isScrollable: false,
         tabAlignment: TabAlignment.fill,
@@ -238,40 +404,48 @@ class _MatchDetailTab extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return LayoutBuilder(
-      builder: (context, constraints) {
-        final bool compact = MediaQuery.of(context).size.width < 430;
+    final bool isPhone = MediaQuery.sizeOf(context).width < 600;
 
-        return Tab(
-          height: 42,
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Icon(
-                icon,
-                size: compact ? 17 : 18,
-              ),
-              const SizedBox(width: 5),
-              Flexible(
-                child: Text(
-                  compact ? compactLabel : label,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                ),
-              ),
-            ],
+    if (isPhone) {
+      return Tab(
+        height: 40,
+        iconMargin: EdgeInsets.zero,
+        icon: Tooltip(
+          message: label,
+          child: Icon(icon, size: 22),
+        ),
+      );
+    }
+
+    final bool useShortLabel = MediaQuery.sizeOf(context).width < 900;
+
+    return Tab(
+      height: 42,
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(icon, size: 18),
+          const SizedBox(width: 5),
+          Flexible(
+            child: Text(
+              useShortLabel ? compactLabel : label,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+            ),
           ),
-        );
-      },
+        ],
+      ),
     );
   }
 }
 
 class _MatchHeader extends StatelessWidget {
   final models.Match match;
+  final bool isManager;
 
   const _MatchHeader({
     required this.match,
+    required this.isManager,
   });
 
   static bool _hasVenueInfo(models.Match match) {
@@ -439,6 +613,10 @@ class _MatchHeader extends StatelessWidget {
                   label: l10n.periodPostponed,
                   color: colors.warning,
                 ),
+              TrackerKitGpsPill(
+                withTracker: match.withTracker == true,
+                isManager: isManager,
+              ),
             ],
           ),
           const SizedBox(height: 6),

@@ -102,12 +102,12 @@ class HalfPitchCompoWidget extends StatelessWidget {
         final double naturalHeight = pitchBoxWidth / ratio;
 
         final double maxHeight = isPhone
-            ? screenSize.height * 0.68
+            ? screenSize.height * 0.82
             : isTablet
             ? screenSize.height * 0.74
             : 760;
 
-        final double minHeight = isPhone ? 390 : 520;
+        final double minHeight = isPhone ? 280 : 520;
 
         final double responsiveHeight = height ??
             math.max(
@@ -115,17 +115,25 @@ class HalfPitchCompoWidget extends StatelessWidget {
               math.min(naturalHeight, maxHeight),
             );
 
-        return Center(
-          child: Container(
-            width: pitchBoxWidth,
-            padding: EdgeInsets.all(isPhone ? 6 : 10),
-            decoration: BoxDecoration(
-              color: colors.card,
-              border: Border.all(color: colors.border),
-            ),
-            child: SizedBox(
-              height: responsiveHeight,
-              child: LayoutBuilder(
+        final bool fillParent = height != null;
+        final double boxWidth =
+            fillParent ? constraints.maxWidth : pitchBoxWidth;
+        final EdgeInsets padding = EdgeInsets.all(isPhone ? 4 : 10);
+        final double innerHeight = math.max(
+          0,
+          responsiveHeight - padding.vertical,
+        );
+
+        final pitchBox = Container(
+          width: boxWidth,
+          padding: padding,
+          decoration: BoxDecoration(
+            color: colors.card,
+            border: Border.all(color: colors.border),
+          ),
+          child: SizedBox(
+            height: innerHeight,
+            child: LayoutBuilder(
                 builder: (context, pitchConstraints) {
                   final size = Size(
                     pitchConstraints.maxWidth,
@@ -135,10 +143,10 @@ class HalfPitchCompoWidget extends StatelessWidget {
                   final pitchRect = _pitchRectForSize(size);
 
                   final slotSize = math.min(
-                    isPhone ? 48.0 : 60.0,
+                    isPhone ? 52.0 : 60.0,
                     math.max(
-                      isPhone ? 38.0 : 46.0,
-                      pitchRect.width * (isPhone ? 0.105 : 0.115),
+                      isPhone ? 40.0 : 46.0,
+                      pitchRect.width * (isPhone ? 0.11 : 0.115),
                     ),
                   );
 
@@ -177,8 +185,17 @@ class HalfPitchCompoWidget extends StatelessWidget {
                 },
               ),
             ),
-          ),
         );
+
+        if (fillParent) {
+          return SizedBox(
+            width: constraints.maxWidth,
+            height: responsiveHeight,
+            child: pitchBox,
+          );
+        }
+
+        return Center(child: pitchBox);
       },
     );
   }
