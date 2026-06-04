@@ -62,6 +62,9 @@ class HalfPitchCompoWidget extends StatelessWidget {
   /// Tap sur l'avatar d'un joueur déjà placé (sans déclencher [onSlotTap]).
   final void Function(String playerId)? onPlayerAvatarTap;
 
+  /// Appui long sur l'avatar d'un joueur déjà placé.
+  final void Function(String playerId)? onPlayerAvatarLongPress;
+
   final double? height;
 
   const HalfPitchCompoWidget({
@@ -71,6 +74,7 @@ class HalfPitchCompoWidget extends StatelessWidget {
     this.onSlotTap,
     this.playerAvatarBuilder,
     this.onPlayerAvatarTap,
+    this.onPlayerAvatarLongPress,
     this.height,
   });
 
@@ -173,6 +177,7 @@ class HalfPitchCompoWidget extends StatelessWidget {
                             player: selectedPlayers[slot.id],
                             playerAvatarBuilder: playerAvatarBuilder,
                             onPlayerAvatarTap: onPlayerAvatarTap,
+                            onPlayerAvatarLongPress: onPlayerAvatarLongPress,
                             onTap: () {
                               if (onSlotTap != null) {
                                 onSlotTap!(slot);
@@ -237,6 +242,7 @@ class _PositionButton extends StatelessWidget {
   final CompoFieldPlayer? player;
   final Widget Function(String playerId, double size)? playerAvatarBuilder;
   final void Function(String playerId)? onPlayerAvatarTap;
+  final void Function(String playerId)? onPlayerAvatarLongPress;
   final VoidCallback onTap;
 
   const _PositionButton({
@@ -245,6 +251,7 @@ class _PositionButton extends StatelessWidget {
     required this.player,
     this.playerAvatarBuilder,
     this.onPlayerAvatarTap,
+    this.onPlayerAvatarLongPress,
     required this.onTap,
   });
 
@@ -319,20 +326,11 @@ class _PositionButton extends StatelessWidget {
                     ],
                   ),
                   child: ClipOval(
-                    child: player != null &&
-                            playerAvatarBuilder != null
-                        ? GestureDetector(
-                            onTap: onPlayerAvatarTap != null
-                                ? () => onPlayerAvatarTap!(player!.id)
-                                : null,
-                            behavior: HitTestBehavior.opaque,
-                            child: playerAvatarBuilder!(player!.id, size),
-                          )
-                        : _ButtonContent(
-                            player: player,
-                            photoUrl: photoUrl,
-                            role: slot.role,
-                          ),
+                    child: _buildAvatarContent(
+                      player: player,
+                      photoUrl: photoUrl,
+                      size: size,
+                    ),
                   ),
                 ),
               ),
@@ -340,6 +338,37 @@ class _PositionButton extends StatelessWidget {
           ),
         ],
       ),
+    );
+  }
+
+  Widget _buildAvatarContent({
+    required CompoFieldPlayer? player,
+    required String photoUrl,
+    required double size,
+  }) {
+    Widget content;
+    if (player != null && playerAvatarBuilder != null) {
+      content = playerAvatarBuilder!(player.id, size);
+    } else {
+      content = _ButtonContent(
+        player: player,
+        photoUrl: photoUrl,
+        role: slot.role,
+      );
+    }
+
+    if (player == null) return content;
+
+    final hasTap = onPlayerAvatarTap != null;
+    final hasLongPress = onPlayerAvatarLongPress != null;
+    if (!hasTap && !hasLongPress) return content;
+
+    return GestureDetector(
+      onTap: hasTap ? () => onPlayerAvatarTap!(player.id) : null,
+      onLongPress:
+          hasLongPress ? () => onPlayerAvatarLongPress!(player.id) : null,
+      behavior: HitTestBehavior.opaque,
+      child: content,
     );
   }
 }

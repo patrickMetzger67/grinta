@@ -504,6 +504,8 @@ class MatchService {
     required String matchId,
     bool? withTracker,
     bool? isTrackerDataUploaded,
+    String? ownerId,
+    bool clearOwnerId = false,
   }) async {
     try {
       final Map<String, dynamic> data = {};
@@ -513,6 +515,14 @@ class MatchService {
       }
       if (isTrackerDataUploaded != null) {
         data[keyMatchIsTrackerDataUploaded] = isTrackerDataUploaded;
+      }
+      if (clearOwnerId) {
+        data['ownerId'] = FieldValue.delete();
+      } else {
+        final trimmedOwnerId = ownerId?.trim();
+        if (trimmedOwnerId != null && trimmedOwnerId.isNotEmpty) {
+          data['ownerId'] = trimmedOwnerId;
+        }
       }
 
       if (data.isNotEmpty) {

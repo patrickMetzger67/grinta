@@ -439,7 +439,7 @@ class _MatchDetailTab extends StatelessWidget {
   }
 }
 
-class _MatchHeader extends StatelessWidget {
+class _MatchHeader extends StatefulWidget {
   final models.Match match;
   final bool isManager;
 
@@ -447,6 +447,30 @@ class _MatchHeader extends StatelessWidget {
     required this.match,
     required this.isManager,
   });
+
+  @override
+  State<_MatchHeader> createState() => _MatchHeaderState();
+}
+
+class _MatchHeaderState extends State<_MatchHeader> {
+  late models.Match _match;
+
+  @override
+  void initState() {
+    super.initState();
+    _match = widget.match;
+  }
+
+  @override
+  void didUpdateWidget(covariant _MatchHeader oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.match.id != widget.match.id) {
+      _match = widget.match;
+    }
+  }
+
+  models.Match get match => _match;
+  bool get isManager => widget.isManager;
 
   static bool _hasVenueInfo(models.Match match) {
     return _clean(match.nomDuTerrain).isNotEmpty ||
@@ -613,8 +637,8 @@ class _MatchHeader extends StatelessWidget {
                   label: l10n.periodPostponed,
                   color: colors.warning,
                 ),
-              TrackerKitGpsPill(
-                withTracker: match.withTracker == true,
+              MatchTrackerKitPillHost(
+                match: match,
                 isManager: isManager,
               ),
             ],

@@ -168,17 +168,99 @@ void _addToRoleList(MatchCompo compo, String slotRole, PlayerCompo player) {
   }
 }
 
-PlayerCompo playerCompoFromPlayer(Player player, {int? number}) {
+PlayerCompo playerCompoFromPlayer(
+  Player player, {
+  int? number,
+  String? deviceOwnerId,
+  String? customName,
+}) {
   final id = player.ref?.id ?? '';
   final first = player.firstName?.trim() ?? '';
   final last = player.lastName?.trim() ?? '';
   final name = '$first $last'.trim();
 
-  return PlayerCompo(
+  final compo = PlayerCompo(
     playerID: id,
     number: number,
     playerNameDisplayed: name.isNotEmpty ? name : id,
   );
+  final trackerId = deviceOwnerId?.trim();
+  compo.deviceOwnerId =
+      (trackerId != null && trackerId.isNotEmpty) ? trackerId : null;
+  final trackerName = customName?.trim();
+  compo.customName =
+      (trackerName != null && trackerName.isNotEmpty) ? trackerName : null;
+  return compo;
+}
+
+/// Numéros de maillot déjà attribués dans la compo (titulaires + remplaçants).
+void collectUsedJerseyNumbers({
+  required Map<String, PlayerCompo> startersBySlotId,
+  required List<PlayerCompo> substitutes,
+  String? excludeSlotId,
+  required Set<int> outNumbers,
+}) {
+  void add(PlayerCompo compo) {
+    final number = compo.number;
+    if (number != null && number >= 1 && number <= 99) {
+      outNumbers.add(number);
+    }
+  }
+
+  for (final entry in startersBySlotId.entries) {
+    if (excludeSlotId != null && entry.key == excludeSlotId) continue;
+    add(entry.value);
+  }
+  for (final sub in substitutes) {
+    add(sub);
+  }
+}
+
+/// Numéros 1–99 non encore attribués ([retainAssignment] reste sélectionnable).
+List<int> availableJerseyNumbers({
+  required Map<String, PlayerCompo> startersBySlotId,
+  required List<PlayerCompo> substitutes,
+  String? excludeSlotId,
+  PlayerCompo? retainAssignment,
+}) {
+  final used = <int>{};
+  collectUsedJerseyNumbers(
+    startersBySlotId: startersBySlotId,
+    substitutes: substitutes,
+    excludeSlotId: excludeSlotId,
+    outNumbers: used,
+  );
+
+  final retainNumber = retainAssignment?.number;
+  if (retainNumber != null && retainNumber >= 1 && retainNumber <= 99) {
+    used.remove(retainNumber);
+  }
+
+  return [for (var n = 1; n <= 99; n++) if (!used.contains(n)) n];
+}
+
+/// Capteurs déjà affectés dans la compo courante (titulaires + remplaçants).
+void collectUsedTrackerAssignments({
+  required Map<String, PlayerCompo> startersBySlotId,
+  required List<PlayerCompo> substitutes,
+  String? excludeSlotId,
+  required Set<String> outDeviceOwnerIds,
+  required Set<String> outCustomNames,
+}) {
+  void add(PlayerCompo compo) {
+    final id = compo.deviceOwnerId?.trim();
+    if (id != null && id.isNotEmpty) outDeviceOwnerIds.add(id);
+    final name = compo.customName?.trim();
+    if (name != null && name.isNotEmpty) outCustomNames.add(name);
+  }
+
+  for (final entry in startersBySlotId.entries) {
+    if (excludeSlotId != null && entry.key == excludeSlotId) continue;
+    add(entry.value);
+  }
+  for (final sub in substitutes) {
+    add(sub);
+  }
 }
 
 Set<String> convokedPlayerIds(MatchCompo compo) {

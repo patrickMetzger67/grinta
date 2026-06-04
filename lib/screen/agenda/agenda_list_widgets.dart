@@ -684,8 +684,16 @@ class _AgendaItemCard extends StatelessWidget {
                     ),
                   ),
                 ),
-                if ((item.type == AgendaItemType.match ||
-                        item.type == AgendaItemType.entrainement) &&
+                if (item.type == AgendaItemType.match &&
+                    item.match != null) ...[
+                  const SizedBox(width: 8),
+                  MatchTrackerKitPillHost(
+                    match: item.match!,
+                    isManager: isManager,
+                    variant: TrackerKitPillVariant.agendaCard,
+                    showForNonManagerWithTracker: true,
+                  ),
+                ] else if (item.type == AgendaItemType.entrainement &&
                     item.withTracker == true) ...[
                   const SizedBox(width: 8),
                   TrackerKitGpsPill(

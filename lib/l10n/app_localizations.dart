@@ -992,6 +992,60 @@ abstract class AppLocalizations {
   /// **'Impossible d\'identifier l\'équipe liée à ce match.'**
   String get matchTacticalSchemaNoTeam;
 
+  /// No description provided for @matchTacticalSchemaJerseyNumber.
+  ///
+  /// In fr, this message translates to:
+  /// **'Numéro de maillot'**
+  String get matchTacticalSchemaJerseyNumber;
+
+  /// No description provided for @matchTacticalSchemaPlayerAssignment.
+  ///
+  /// In fr, this message translates to:
+  /// **'Affectation du joueur'**
+  String get matchTacticalSchemaPlayerAssignment;
+
+  /// No description provided for @matchTacticalSchemaJerseyNumberRequired.
+  ///
+  /// In fr, this message translates to:
+  /// **'Indiquez un numéro de maillot (1 à 99).'**
+  String get matchTacticalSchemaJerseyNumberRequired;
+
+  /// No description provided for @matchTacticalSchemaNoJerseyNumberAvailable.
+  ///
+  /// In fr, this message translates to:
+  /// **'Aucun numéro de maillot disponible (tous les numéros de 1 à 99 sont déjà attribués).'**
+  String get matchTacticalSchemaNoJerseyNumberAvailable;
+
+  /// No description provided for @matchTacticalSchemaRemoveFromCompo.
+  ///
+  /// In fr, this message translates to:
+  /// **'Retirer de la compo ?'**
+  String get matchTacticalSchemaRemoveFromCompo;
+
+  /// No description provided for @matchTacticalSchemaRemoveFromCompoMessage.
+  ///
+  /// In fr, this message translates to:
+  /// **'Ce joueur sera retiré du schéma tactique (poste et remplaçants).'**
+  String get matchTacticalSchemaRemoveFromCompoMessage;
+
+  /// No description provided for @matchTacticalSchemaRemoveFromCompoConfirm.
+  ///
+  /// In fr, this message translates to:
+  /// **'Retirer'**
+  String get matchTacticalSchemaRemoveFromCompoConfirm;
+
+  /// No description provided for @matchTacticalSchemaSensorRequired.
+  ///
+  /// In fr, this message translates to:
+  /// **'Sélectionnez un capteur disponible.'**
+  String get matchTacticalSchemaSensorRequired;
+
+  /// No description provided for @matchTacticalSchemaNoPlayerAvailable.
+  ///
+  /// In fr, this message translates to:
+  /// **'Aucun joueur disponible — tous les joueurs éligibles sont déjà sur la compo.'**
+  String get matchTacticalSchemaNoPlayerAvailable;
+
   /// No description provided for @tabHighlights.
   ///
   /// In fr, this message translates to:
@@ -2455,6 +2509,36 @@ abstract class AppLocalizations {
   /// In fr, this message translates to:
   /// **'À venir'**
   String get matchDetailTrackerKitComingSoon;
+
+  /// No description provided for @matchDetailTrackerKitWithTracker.
+  ///
+  /// In fr, this message translates to:
+  /// **'Avec tracker'**
+  String get matchDetailTrackerKitWithTracker;
+
+  /// No description provided for @matchDetailTrackerKitWithoutTracker.
+  ///
+  /// In fr, this message translates to:
+  /// **'Sans tracker'**
+  String get matchDetailTrackerKitWithoutTracker;
+
+  /// No description provided for @matchDetailTrackerKitSelectLabel.
+  ///
+  /// In fr, this message translates to:
+  /// **'Kit'**
+  String get matchDetailTrackerKitSelectLabel;
+
+  /// No description provided for @matchDetailTrackerKitNoOwners.
+  ///
+  /// In fr, this message translates to:
+  /// **'Aucun kit configuré pour cette équipe.'**
+  String get matchDetailTrackerKitNoOwners;
+
+  /// No description provided for @matchDetailTrackerKitSignInRequired.
+  ///
+  /// In fr, this message translates to:
+  /// **'Connectez-vous pour sélectionner un kit.'**
+  String get matchDetailTrackerKitSignInRequired;
 
   /// No description provided for @playerAgeYears.
   ///

@@ -195,12 +195,28 @@ class Team {
       users = map[keyTeamUsers];
     }
     withTracker= (map['withTracker'] ?? false) as bool;
-    owners= (map['owners'] as List<dynamic>?)
-        ?.map((e) => e.toString())
-        .toList() ??
-        const <String>[];
+    owners = List<dynamic>.from(
+      (map['owners'] as List<dynamic>?) ?? const <dynamic>[],
+    );
 
   }
+
+  /// Parsed entries from [owners] (id + display name).
+  List<TeamOwnerRef> get ownerRefs => TeamOwnerRef.parseList(owners);
+
+  bool get hasTrackerOwners => ownerRefs.isNotEmpty;
+
+  /// True when [owners] has at least one non-null Firestore entry (even if [ownerRefs] is empty).
+  bool get hasRawOwners {
+    for (final entry in owners) {
+      if (entry == null) continue;
+      if (entry is String && entry.trim().isNotEmpty) return true;
+      if (entry is Map && entry.isNotEmpty) return true;
+    }
+    return false;
+  }
+
+  bool get hasAnyTrackerOwners => hasTrackerOwners || hasRawOwners;
 
   @override
   String toString() {
@@ -325,6 +341,68 @@ class  TeamStatsOnFly {
   }
 
 }
+/// Owner reference stored on [Team.owners] (id string or map with id/name).
+class TeamOwnerRef {
+  final String id;
+  final String name;
+
+  const TeamOwnerRef({required this.id, required this.name});
+
+  /// Label for UI (name when set, otherwise [id]).
+  String get displayLabel {
+    final trimmed = name.trim();
+    if (trimmed.isNotEmpty) return trimmed;
+    return id;
+  }
+
+  /// True when [name] is missing or only mirrors [id] (e.g. string Firestore entry).
+  bool get needsNameLookup {
+    final trimmed = name.trim();
+    return trimmed.isEmpty || trimmed == id;
+  }
+
+  TeamOwnerRef withName(String resolvedName) {
+    final trimmed = resolvedName.trim();
+    if (trimmed.isEmpty) return this;
+    return TeamOwnerRef(id: id, name: trimmed);
+  }
+
+  static List<TeamOwnerRef> parseList(List<dynamic> raw) {
+    final result = <TeamOwnerRef>[];
+    for (final entry in raw) {
+      final parsed = parseOne(entry);
+      if (parsed != null) {
+        result.add(parsed);
+      }
+    }
+    return result;
+  }
+
+  static TeamOwnerRef? parseOne(dynamic entry) {
+    if (entry == null) return null;
+    if (entry is String) {
+      final id = entry.trim();
+      if (id.isEmpty) return null;
+      return TeamOwnerRef(id: id, name: id);
+    }
+    if (entry is Map) {
+      final map = Map<String, dynamic>.from(entry);
+      final id = (map['id'] ?? map['ownerId'] ?? map['ownerID'] ?? '')
+          .toString()
+          .trim();
+      if (id.isEmpty) return null;
+      final name = (map['name'] ??
+              map['displayName'] ??
+              map['label'] ??
+              '')
+          .toString()
+          .trim();
+      return TeamOwnerRef(id: id, name: name.isEmpty ? id : name);
+    }
+    return null;
+  }
+}
+
 String removeDiacritics(String str) {
   var withDia = 'ÀÁÂÃÄÅàáâãäåÒÓÔÕÕÖØòóôõöøÈÉÊËèéêëðÇçÐÌÍÎÏìíîïÙÚÛÜùúûüÑñŠšŸÿýŽž';
   var withoutDia = 'AAAAAAaaaaaaOOOOOOOooooooEEEEeeeeeCcDIIIIiiiiUUUUuuuuNnSsYyyZz';

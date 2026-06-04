@@ -1,6 +1,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 
+import '../model/team.dart';
 import '../model/tracker/owner.dart';
 
 
@@ -48,11 +49,45 @@ class OwnerService {
     return owner;
   }
 
+  /// Resolves [TeamOwnerRef.displayLabel] from TRACKER_Owner when team data only has ids.
+  Future<List<TeamOwnerRef>> enrichTeamOwnerRefs(List<TeamOwnerRef> refs) async {
+    if (refs.isEmpty) return refs;
+    return Future.wait(
+      refs.map((ref) async {
+        if (!ref.needsNameLookup) return ref;
+        final owner = await getOwnerById(ref.id);
+        final resolved = owner?.name.trim() ?? '';
+        if (resolved.isEmpty) return ref;
+        return ref.withName(resolved);
+      }),
+    );
+  }
+
   /// Read
   Future<Owner?> getOwnerById(String ownerId) async {
     final doc = await _col.doc(ownerId).get();
     if (!doc.exists) return null;
     return Owner.fromDoc(doc);
+  }
+
+  /// Owners whose [Owner.email] matches [email] (trimmed, case-sensitive).
+  Future<List<Owner>> getOwnersByEmail(String email) async {
+    final normalized = email.trim();
+    if (normalized.isEmpty) return [];
+
+    final query = await _col.where('email', isEqualTo: normalized).get();
+
+    final owners = <Owner>[];
+    for (final doc in query.docs) {
+      try {
+        owners.add(Owner.fromDoc(doc));
+      } catch (_) {}
+    }
+
+    owners.sort(
+      (a, b) => a.name.toLowerCase().compareTo(b.name.toLowerCase()),
+    );
+    return owners;
   }
 
   Future<List<Owner>> getOwnersByClubId(String clubId) async {

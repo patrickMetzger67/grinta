@@ -474,6 +474,38 @@ class AppLocalizationsFr extends AppLocalizations {
       'Impossible d\'identifier l\'équipe liée à ce match.';
 
   @override
+  String get matchTacticalSchemaJerseyNumber => 'Numéro de maillot';
+
+  @override
+  String get matchTacticalSchemaPlayerAssignment => 'Affectation du joueur';
+
+  @override
+  String get matchTacticalSchemaJerseyNumberRequired =>
+      'Indiquez un numéro de maillot (1 à 99).';
+
+  @override
+  String get matchTacticalSchemaNoJerseyNumberAvailable =>
+      'Aucun numéro de maillot disponible (tous les numéros de 1 à 99 sont déjà attribués).';
+
+  @override
+  String get matchTacticalSchemaRemoveFromCompo => 'Retirer de la compo ?';
+
+  @override
+  String get matchTacticalSchemaRemoveFromCompoMessage =>
+      'Ce joueur sera retiré du schéma tactique (poste et remplaçants).';
+
+  @override
+  String get matchTacticalSchemaRemoveFromCompoConfirm => 'Retirer';
+
+  @override
+  String get matchTacticalSchemaSensorRequired =>
+      'Sélectionnez un capteur disponible.';
+
+  @override
+  String get matchTacticalSchemaNoPlayerAvailable =>
+      'Aucun joueur disponible — tous les joueurs éligibles sont déjà sur la compo.';
+
+  @override
   String get tabHighlights => 'Temps forts';
 
   @override
@@ -1296,6 +1328,23 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get matchDetailTrackerKitComingSoon => 'À venir';
+
+  @override
+  String get matchDetailTrackerKitWithTracker => 'Avec tracker';
+
+  @override
+  String get matchDetailTrackerKitWithoutTracker => 'Sans tracker';
+
+  @override
+  String get matchDetailTrackerKitSelectLabel => 'Kit';
+
+  @override
+  String get matchDetailTrackerKitNoOwners =>
+      'Aucun kit configuré pour cette équipe.';
+
+  @override
+  String get matchDetailTrackerKitSignInRequired =>
+      'Connectez-vous pour sélectionner un kit.';
 
   @override
   String playerAgeYears(int age) {

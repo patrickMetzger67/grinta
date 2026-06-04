@@ -6,11 +6,14 @@ import '../../model/compoType.dart';
 import '../../model/match.dart' as models;
 import '../../model/matchCompo.dart';
 import '../../model/player.dart';
+import '../../model/tracker/deviceOwner.dart';
 import '../../provider/appSession.dart';
 import '../../services/compoTypeService.dart';
+import '../../services/deviceOwnerService.dart' as device_owner_svc;
 import '../../services/matchCompoService.dart';
 import '../../services/teamService.dart';
 import '../../services/team_players_service.dart';
+import '../../screen/team_players/training_team_players_tracker.dart';
 import '../../util/app_theme.dart';
 import '../../util/match_compo_pitch_mapper.dart';
 import '../../util/playerDisplayName.dart';
@@ -287,6 +290,22 @@ class _MatchTacticalSchemaBodyState extends State<_MatchTacticalSchemaBody>
     return ids;
   }
 
+  /// Joueurs du pool convoqué non encore placés sur la compo.
+  /// Si [excludeSlotId] est fourni, le joueur déjà sur ce poste reste listé.
+  List<Player> _availablePlayersForPicker({String? excludeSlotId}) {
+    final assigned = _assignedPlayerIds;
+    if (excludeSlotId != null) {
+      final current = _startersBySlot[excludeSlotId]?.playerID?.trim();
+      if (current != null && current.isNotEmpty) assigned.remove(current);
+    }
+
+    return _playerPool.where((p) {
+      final id = p.ref?.id.trim();
+      if (id == null || id.isEmpty) return false;
+      return !assigned.contains(id);
+    }).toList();
+  }
+
   Map<String, CompoFieldPlayer> get _displayFieldPlayers {
     final map = <String, CompoFieldPlayer>{};
     for (final entry in _startersBySlot.entries) {
@@ -319,6 +338,36 @@ class _MatchTacticalSchemaBodyState extends State<_MatchTacticalSchemaBody>
     showPlayerInfoBubble(context, player);
   }
 
+  Future<void> _onPlayerAvatarLongPress(String playerId) async {
+    if (_readOnly) return;
+
+    final l10n = context.l10n;
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: Text(l10n.matchTacticalSchemaRemoveFromCompo),
+        content: Text(l10n.matchTacticalSchemaRemoveFromCompoMessage),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(false),
+            child: Text(l10n.actionCancel),
+          ),
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(true),
+            child: Text(l10n.matchTacticalSchemaRemoveFromCompoConfirm),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed != true || !mounted) return;
+
+    setState(() {
+      _startersBySlot.removeWhere((_, p) => p.playerID?.trim() == playerId);
+      _substitutes.removeWhere((p) => p.playerID?.trim() == playerId);
+    });
+  }
+
   Widget _playerAvatar(String playerId, double size) {
     final player = _playersById[playerId];
     if (player == null) {
@@ -334,26 +383,64 @@ class _MatchTacticalSchemaBodyState extends State<_MatchTacticalSchemaBody>
     );
   }
 
-  Future<void> _pickPlayer({
-    required String title,
+  bool get _trackerRequiredForMatch {
+    final ownerId = widget.match.ownerId?.trim() ?? '';
+    return widget.match.withTracker == true && ownerId.isNotEmpty;
+  }
+
+  Future<List<DeviceOwner>> _loadAvailableTrackers({
     String? excludeSlotId,
-    bool forSubstitute = false,
+    PlayerCompo? retainAssignment,
   }) async {
-    final assigned = _assignedPlayerIds;
-    if (excludeSlotId != null) {
-      final current = _startersBySlot[excludeSlotId]?.playerID?.trim();
-      if (current != null) assigned.remove(current);
+    final ownerId = widget.match.ownerId?.trim() ?? '';
+    if (!_trackerRequiredForMatch) return [];
+
+    final all =
+        await device_owner_svc.DeviceOwnerService().listByOwnerId(ownerId);
+    final usedIds = <String>{};
+    final usedNames = <String>{};
+    collectUsedTrackerAssignments(
+      startersBySlotId: _startersBySlot,
+      substitutes: _substitutes,
+      excludeSlotId: excludeSlotId,
+      outDeviceOwnerIds: usedIds,
+      outCustomNames: usedNames,
+    );
+
+    if (retainAssignment != null) {
+      final retainId = retainAssignment.deviceOwnerId?.trim();
+      if (retainId != null && retainId.isNotEmpty) usedIds.remove(retainId);
+      final retainName = retainAssignment.customName?.trim();
+      if (retainName != null && retainName.isNotEmpty) {
+        usedNames.remove(retainName);
+      }
     }
 
-    final candidates = _playerPool.where((p) {
-      final id = p.ref?.id.trim();
-      if (id == null || id.isEmpty) return false;
-      return !assigned.contains(id);
+    final available = all.where((device) {
+      if (usedIds.contains(device.id)) return false;
+      final name = device.customName?.trim();
+      if (name != null && name.isNotEmpty && usedNames.contains(name)) {
+        return false;
+      }
+      return true;
     }).toList();
+    available.sort(compareDeviceOwnersByCustomName);
+    return available;
+  }
 
-    if (!mounted) return;
+  int? _defaultJerseyNumber(Player player, PlayerCompo? existing) {
+    if (existing?.number != null) return existing!.number;
+    return int.tryParse(player.personNumber?.trim() ?? '');
+  }
 
-    final picked = await showModalBottomSheet<Player>(
+  Future<Player?> _showPlayerPickerSheet({
+    required String title,
+    required List<Player> players,
+    VoidCallback? onClear,
+    String? clearLabel,
+    String? emptyMessage,
+  }) {
+    return showModalBottomSheet<Player>(
       context: context,
       isScrollControlled: true,
       backgroundColor: context.appColors.surface,
@@ -362,21 +449,93 @@ class _MatchTacticalSchemaBodyState extends State<_MatchTacticalSchemaBody>
       ),
       builder: (ctx) => _PlayerPickerSheet(
         title: title,
-        players: candidates,
+        players: players,
+        onClear: onClear,
+        clearLabel: clearLabel,
+        emptyMessage: emptyMessage,
       ),
+    );
+  }
+
+  Future<PlayerCompo?> _showPlayerAssignmentSheet({
+    required Player player,
+    PlayerCompo? existing,
+    String? excludeSlotId,
+  }) async {
+    final availableTrackers = await _loadAvailableTrackers(
+      excludeSlotId: excludeSlotId,
+      retainAssignment: existing,
+    );
+    if (!mounted) return null;
+
+    final jerseyNumbers = availableJerseyNumbers(
+      startersBySlotId: _startersBySlot,
+      substitutes: _substitutes,
+      excludeSlotId: excludeSlotId,
+      retainAssignment: existing,
+    );
+
+    return showModalBottomSheet<PlayerCompo>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: context.appColors.surface,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (ctx) => _PlayerCompoDetailsSheet(
+        player: player,
+        requireTracker: _trackerRequiredForMatch,
+        availableTrackers: availableTrackers,
+        availableJerseyNumbers: jerseyNumbers,
+        initialNumber: _defaultJerseyNumber(player, existing),
+        initialTracker: _deviceOwnerForCompo(existing, availableTrackers),
+      ),
+    );
+  }
+
+  DeviceOwner? _deviceOwnerForCompo(
+    PlayerCompo? compo,
+    List<DeviceOwner> availableTrackers,
+  ) {
+    final docId = compo?.deviceOwnerId?.trim();
+    if (docId == null || docId.isEmpty) return null;
+    for (final device in availableTrackers) {
+      if (device.id == docId) return device;
+    }
+    return null;
+  }
+
+  Future<void> _pickPlayer({
+    required String title,
+    String? excludeSlotId,
+    bool forSubstitute = false,
+  }) async {
+    if (!mounted) return;
+
+    final picked = await _showPlayerPickerSheet(
+      title: title,
+      players: _availablePlayersForPicker(excludeSlotId: excludeSlotId),
+      emptyMessage: context.l10n.matchTacticalSchemaNoPlayerAvailable,
     );
 
     if (picked == null || !forSubstitute) return;
 
+    final compo = await _showPlayerAssignmentSheet(
+      player: picked,
+      excludeSlotId: excludeSlotId,
+    );
+    if (!mounted || compo == null) return;
+
     setState(() {
-      _substitutes = [..._substitutes, playerCompoFromPlayer(picked)];
+      _substitutes = [..._substitutes, compo];
     });
   }
 
   Future<void> _onSlotTap(CompoSlot slot) async {
     if (_readOnly || _selectedCompoType == null) return;
 
-    final currentId = _startersBySlot[slot.id]?.playerID?.trim();
+    final existing = _startersBySlot[slot.id];
+    final currentId = existing?.playerID?.trim();
 
     final picked = await showModalBottomSheet<Object>(
       context: context,
@@ -387,12 +546,8 @@ class _MatchTacticalSchemaBodyState extends State<_MatchTacticalSchemaBody>
       ),
       builder: (ctx) => _PlayerPickerSheet(
         title: context.l10n.matchTacticalSchemaPickPlayer,
-        players: _playerPool.where((p) {
-          final id = p.ref?.id.trim();
-          if (id == null || id.isEmpty) return false;
-          if (id == currentId) return true;
-          return !_assignedPlayerIds.contains(id);
-        }).toList(),
+        players: _availablePlayersForPicker(excludeSlotId: slot.id),
+        emptyMessage: context.l10n.matchTacticalSchemaNoPlayerAvailable,
         onClear: currentId != null
             ? () => Navigator.of(ctx).pop(_clearSlotToken)
             : null,
@@ -402,15 +557,25 @@ class _MatchTacticalSchemaBodyState extends State<_MatchTacticalSchemaBody>
 
     if (!mounted) return;
 
-    setState(() {
-      if (identical(picked, _clearSlotToken)) {
-        _startersBySlot.remove(slot.id);
-        return;
-      }
-      if (picked is Player) {
-        _startersBySlot[slot.id] = playerCompoFromPlayer(picked);
-      }
-    });
+    if (identical(picked, _clearSlotToken)) {
+      setState(() => _startersBySlot.remove(slot.id));
+      return;
+    }
+    if (picked is! Player) return;
+
+    final retainExisting =
+        currentId != null && currentId == picked.ref?.id.trim()
+            ? existing
+            : null;
+
+    final compo = await _showPlayerAssignmentSheet(
+      player: picked,
+      existing: retainExisting,
+      excludeSlotId: slot.id,
+    );
+    if (!mounted || compo == null) return;
+
+    setState(() => _startersBySlot[slot.id] = compo);
   }
 
   void _onCompoTypeChanged(CompoType type) {
@@ -622,6 +787,9 @@ class _MatchTacticalSchemaBodyState extends State<_MatchTacticalSchemaBody>
                           onSlotTap: showEditor ? _onSlotTap : null,
                           playerAvatarBuilder: _playerAvatar,
                           onPlayerAvatarTap: _showPlayerInfo,
+                          onPlayerAvatarLongPress: showEditor
+                              ? _onPlayerAvatarLongPress
+                              : null,
                         ),
                       ),
                     )
@@ -1053,18 +1221,250 @@ class _SubstituteChip extends StatelessWidget {
   }
 }
 
+class _PlayerCompoDetailsSheet extends StatefulWidget {
+  const _PlayerCompoDetailsSheet({
+    required this.player,
+    required this.requireTracker,
+    required this.availableTrackers,
+    required this.availableJerseyNumbers,
+    this.initialNumber,
+    this.initialTracker,
+  });
+
+  final Player player;
+  final bool requireTracker;
+  final List<DeviceOwner> availableTrackers;
+  final List<int> availableJerseyNumbers;
+  final int? initialNumber;
+  final DeviceOwner? initialTracker;
+
+  @override
+  State<_PlayerCompoDetailsSheet> createState() =>
+      _PlayerCompoDetailsSheetState();
+}
+
+class _PlayerCompoDetailsSheetState extends State<_PlayerCompoDetailsSheet> {
+  int? _jerseyNumber;
+  DeviceOwner? _selectedTracker;
+  String? _errorText;
+
+  @override
+  void initState() {
+    super.initState();
+    final initial = widget.initialNumber;
+    if (initial != null &&
+        initial >= 1 &&
+        initial <= 99 &&
+        widget.availableJerseyNumbers.contains(initial)) {
+      _jerseyNumber = initial;
+    }
+    _selectedTracker = widget.initialTracker;
+    if (_selectedTracker == null &&
+        widget.requireTracker &&
+        widget.availableTrackers.length == 1) {
+      _selectedTracker = widget.availableTrackers.first;
+    }
+  }
+
+  void _confirm() {
+    final l10n = context.l10n;
+    if (widget.availableJerseyNumbers.isEmpty) {
+      setState(
+        () => _errorText = l10n.matchTacticalSchemaNoJerseyNumberAvailable,
+      );
+      return;
+    }
+
+    final number = _jerseyNumber;
+    if (number == null || number < 1 || number > 99) {
+      setState(() => _errorText = l10n.matchTacticalSchemaJerseyNumberRequired);
+      return;
+    }
+
+    if (widget.requireTracker &&
+        widget.availableTrackers.isNotEmpty &&
+        _selectedTracker == null) {
+      setState(() => _errorText = l10n.matchTacticalSchemaSensorRequired);
+      return;
+    }
+
+    final tracker = _selectedTracker;
+    final customName = tracker == null
+        ? null
+        : (tracker.customName?.trim().isNotEmpty == true
+            ? tracker.customName!.trim()
+            : tracker.deviceId);
+
+    Navigator.of(context).pop(
+      playerCompoFromPlayer(
+        widget.player,
+        number: number,
+        deviceOwnerId: tracker?.id,
+        customName: customName,
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = context.appColors;
+    final l10n = context.l10n;
+    final name = playerDisplayName(
+      widget.player,
+      unknownLabel: l10n.entityPlayer,
+    );
+
+    return Padding(
+      padding: EdgeInsets.only(
+        left: 20,
+        right: 20,
+        top: 16,
+        bottom: MediaQuery.of(context).viewInsets.bottom + 20,
+      ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Text(
+            l10n.matchTacticalSchemaPlayerAssignment,
+            style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                  fontWeight: FontWeight.w800,
+                  color: colors.textPrimary,
+                ),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            name,
+            style: TextStyle(color: colors.textSecondary),
+          ),
+          const SizedBox(height: 16),
+          if (widget.availableJerseyNumbers.isEmpty)
+            Text(
+              l10n.matchTacticalSchemaNoJerseyNumberAvailable,
+              style: TextStyle(color: colors.textSecondary),
+            )
+          else
+            DropdownButtonFormField<int>(
+              value: widget.availableJerseyNumbers.contains(_jerseyNumber)
+                  ? _jerseyNumber
+                  : null,
+              isExpanded: true,
+              dropdownColor: colors.surface,
+              style: TextStyle(color: colors.textPrimary),
+              decoration: InputDecoration(
+                labelText: l10n.matchTacticalSchemaJerseyNumber,
+                labelStyle: TextStyle(color: colors.textSecondary),
+                enabledBorder: OutlineInputBorder(
+                  borderSide: BorderSide(color: colors.border),
+                ),
+                focusedBorder: OutlineInputBorder(
+                  borderSide: BorderSide(color: colors.primary, width: 2),
+                ),
+              ),
+              items: widget.availableJerseyNumbers
+                  .map(
+                    (number) => DropdownMenuItem(
+                      value: number,
+                      child: Text('$number'),
+                    ),
+                  )
+                  .toList(),
+              onChanged: (value) => setState(() {
+                _jerseyNumber = value;
+                _errorText = null;
+              }),
+            ),
+          if (widget.requireTracker) ...[
+            const SizedBox(height: 16),
+            if (widget.availableTrackers.isEmpty)
+              Text(
+                l10n.trainingPlayersNoTrackerAvailable,
+                style: TextStyle(color: colors.textSecondary),
+              )
+            else
+              DropdownButtonFormField<DeviceOwner>(
+                value: _selectedTracker,
+                isExpanded: true,
+                dropdownColor: colors.surface,
+                style: TextStyle(color: colors.textPrimary),
+                decoration: InputDecoration(
+                  labelText: l10n.trainingPlayersSelectTracker,
+                  labelStyle: TextStyle(color: colors.textSecondary),
+                  enabledBorder: OutlineInputBorder(
+                    borderSide: BorderSide(color: colors.border),
+                  ),
+                  focusedBorder: OutlineInputBorder(
+                    borderSide: BorderSide(color: colors.primary, width: 2),
+                  ),
+                ),
+                items: widget.availableTrackers.map((device) {
+                  final custom = device.customName?.trim();
+                  final label = (custom != null && custom.isNotEmpty)
+                      ? '$custom (${device.deviceId})'
+                      : device.deviceId;
+                  return DropdownMenuItem(
+                    value: device,
+                    child: Text(
+                      label,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  );
+                }).toList(),
+                onChanged: (value) => setState(() {
+                  _selectedTracker = value;
+                  _errorText = null;
+                }),
+              ),
+          ],
+          if (_errorText != null) ...[
+            const SizedBox(height: 8),
+            Text(
+              _errorText!,
+              style: TextStyle(color: colors.danger, fontSize: 13),
+            ),
+          ],
+          const SizedBox(height: 20),
+          Row(
+            children: [
+              Expanded(
+                child: OutlinedButton(
+                  onPressed: () => Navigator.of(context).pop(),
+                  child: Text(l10n.actionCancel),
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: FilledButton(
+                  onPressed: _confirm,
+                  style: FilledButton.styleFrom(
+                    backgroundColor: colors.primary,
+                    foregroundColor: Colors.white,
+                  ),
+                  child: Text(l10n.actionValidate),
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+}
+
 class _PlayerPickerSheet extends StatelessWidget {
   const _PlayerPickerSheet({
     required this.title,
     required this.players,
     this.onClear,
     this.clearLabel,
+    this.emptyMessage,
   });
 
   final String title;
   final List<Player> players;
   final VoidCallback? onClear;
   final String? clearLabel;
+  final String? emptyMessage;
 
   @override
   Widget build(BuildContext context) {
@@ -1099,9 +1499,13 @@ class _PlayerPickerSheet extends StatelessWidget {
             Expanded(
               child: players.isEmpty
                   ? Center(
-                      child: Text(
-                        l10n.emptyNoPlayerSelected,
-                        style: TextStyle(color: colors.textSecondary),
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 24),
+                        child: Text(
+                          emptyMessage ?? l10n.emptyNoPlayerSelected,
+                          textAlign: TextAlign.center,
+                          style: TextStyle(color: colors.textSecondary),
+                        ),
                       ),
                     )
                   : ListView.builder(
