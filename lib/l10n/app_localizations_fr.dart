@@ -73,10 +73,41 @@ class AppLocalizationsFr extends AppLocalizations {
   String get createAccount => 'Créer un compte';
 
   @override
+  String get noAccountYet => 'Vous n\'avez pas de compte ?';
+
+  @override
+  String get createOneLink => 'Créez-en un';
+
+  @override
+  String get confirmPassword => 'Confirmer le mot de passe';
+
+  @override
+  String get confirmPasswordHint => '••••••••';
+
+  @override
+  String get passwordRequirements =>
+      'Le mot de passe doit contenir au moins 8 caractères, une majuscule, un chiffre et un caractère spécial.';
+
+  @override
+  String get passwordsDoNotMatch => 'Les mots de passe ne correspondent pas';
+
+  @override
+  String get alreadyHaveAccount => 'Vous avez déjà un compte ?';
+
+  @override
+  String get signInLink => 'Se connecter';
+
+  @override
   String get or => 'ou';
 
   @override
   String get continueWithGoogle => 'Continuer avec Google';
+
+  @override
+  String get continueWithApple => 'Continuer avec Apple';
+
+  @override
+  String get continueWithMeta => 'Continuer avec Meta';
 
   @override
   String get hasATeamCode => 'Je dispose d\'un code équipe';

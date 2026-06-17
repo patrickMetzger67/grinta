@@ -25,6 +25,9 @@ apply plugin: 'com.android.application'
 apply plugin: 'kotlin-android'
 apply from: "$flutterRoot/packages/flutter_tools/gradle/flutter.gradle"
 
+def facebookAppId = localProperties.getProperty('facebook.appId') ?: ''
+def facebookClientToken = localProperties.getProperty('facebook.clientToken') ?: ''
+
 android {
     compileSdkVersion 28
 
@@ -38,11 +41,19 @@ android {
 
     defaultConfig {
         // TODO: Specify your own unique Application ID (https://developer.android.com/studio/build/application-id.html).
-        applicationId "com.example.grinta"
+        applicationId "io.grinta.app"
         minSdkVersion 21
         targetSdkVersion 28
         versionCode flutterVersionCode.toInteger()
         versionName flutterVersionName
+
+        // Facebook config is injected from `android/local.properties` (not committed).
+        // Example:
+        //   facebook.appId=1234567890
+        //   facebook.clientToken=abcdef...
+        resValue "string", "facebook_app_id", facebookAppId
+        resValue "string", "facebook_client_token", facebookClientToken
+        resValue "string", "fb_login_protocol_scheme", (facebookAppId ? "fb${facebookAppId}" : "")
     }
 
     buildTypes {

@@ -76,10 +76,41 @@ class AppLocalizationsEs extends AppLocalizations {
   String get createAccount => 'Crea una cuenta';
 
   @override
+  String get noAccountYet => '¿No tienes una cuenta?';
+
+  @override
+  String get createOneLink => 'Crea una';
+
+  @override
+  String get confirmPassword => 'Confirmar contraseña';
+
+  @override
+  String get confirmPasswordHint => '••••••••';
+
+  @override
+  String get passwordRequirements =>
+      'La contraseña debe tener al menos 8 caracteres e incluir una mayúscula, un dígito y un carácter especial.';
+
+  @override
+  String get passwordsDoNotMatch => 'Las contraseñas no coinciden';
+
+  @override
+  String get alreadyHaveAccount => '¿Ya tienes una cuenta?';
+
+  @override
+  String get signInLink => 'Acceso';
+
+  @override
   String get or => 'O';
 
   @override
   String get continueWithGoogle => 'Continuar con Google';
+
+  @override
+  String get continueWithApple => 'Continuar con Apple';
+
+  @override
+  String get continueWithMeta => 'Continuar con Meta';
 
   @override
   String get hasATeamCode => 'tengo un codigo de equipo';
@@ -1330,30 +1361,30 @@ class AppLocalizationsEs extends AppLocalizations {
   String get matchDetailVenueTitle => 'Lugar del partido';
 
   @override
-  String get matchDetailTrackerKitTitle => 'Sélection du kit';
+  String get matchDetailTrackerKitTitle => 'Selección del kit';
 
   @override
   String get matchDetailTrackerKitLabel => 'Trackers';
 
   @override
-  String get matchDetailTrackerKitComingSoon => 'À venir';
+  String get matchDetailTrackerKitComingSoon => 'Próximamente';
 
   @override
-  String get matchDetailTrackerKitWithTracker => 'Avec tracker';
+  String get matchDetailTrackerKitWithTracker => 'Con tracker';
 
   @override
-  String get matchDetailTrackerKitWithoutTracker => 'Sans tracker';
+  String get matchDetailTrackerKitWithoutTracker => 'Sin tracker';
 
   @override
   String get matchDetailTrackerKitSelectLabel => 'Kit';
 
   @override
   String get matchDetailTrackerKitNoOwners =>
-      'Aucun kit configuré pour cette équipe.';
+      'No hay kit configurado para este equipo.';
 
   @override
   String get matchDetailTrackerKitSignInRequired =>
-      'Connectez-vous pour sélectionner un kit.';
+      'Inicie sesión para seleccionar un kit.';
 
   @override
   String playerAgeYears(int age) {

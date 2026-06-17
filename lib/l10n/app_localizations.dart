@@ -230,6 +230,54 @@ abstract class AppLocalizations {
   /// **'Créer un compte'**
   String get createAccount;
 
+  /// No description provided for @noAccountYet.
+  ///
+  /// In fr, this message translates to:
+  /// **'Vous n\'avez pas de compte ?'**
+  String get noAccountYet;
+
+  /// No description provided for @createOneLink.
+  ///
+  /// In fr, this message translates to:
+  /// **'Créez-en un'**
+  String get createOneLink;
+
+  /// No description provided for @confirmPassword.
+  ///
+  /// In fr, this message translates to:
+  /// **'Confirmer le mot de passe'**
+  String get confirmPassword;
+
+  /// No description provided for @confirmPasswordHint.
+  ///
+  /// In fr, this message translates to:
+  /// **'••••••••'**
+  String get confirmPasswordHint;
+
+  /// No description provided for @passwordRequirements.
+  ///
+  /// In fr, this message translates to:
+  /// **'Le mot de passe doit contenir au moins 8 caractères, une majuscule, un chiffre et un caractère spécial.'**
+  String get passwordRequirements;
+
+  /// No description provided for @passwordsDoNotMatch.
+  ///
+  /// In fr, this message translates to:
+  /// **'Les mots de passe ne correspondent pas'**
+  String get passwordsDoNotMatch;
+
+  /// No description provided for @alreadyHaveAccount.
+  ///
+  /// In fr, this message translates to:
+  /// **'Vous avez déjà un compte ?'**
+  String get alreadyHaveAccount;
+
+  /// No description provided for @signInLink.
+  ///
+  /// In fr, this message translates to:
+  /// **'Se connecter'**
+  String get signInLink;
+
   /// No description provided for @or.
   ///
   /// In fr, this message translates to:
@@ -241,6 +289,18 @@ abstract class AppLocalizations {
   /// In fr, this message translates to:
   /// **'Continuer avec Google'**
   String get continueWithGoogle;
+
+  /// No description provided for @continueWithApple.
+  ///
+  /// In fr, this message translates to:
+  /// **'Continuer avec Apple'**
+  String get continueWithApple;
+
+  /// No description provided for @continueWithMeta.
+  ///
+  /// In fr, this message translates to:
+  /// **'Continuer avec Meta'**
+  String get continueWithMeta;
 
   /// No description provided for @hasATeamCode.
   ///

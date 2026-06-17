@@ -38,6 +38,10 @@ dependencies:
   geolocator: ^14.0.2
   http: ^1.6.0
   cached_network_image: ^3.4.1
+  google_sign_in: ^7.2.0
+  sign_in_with_apple: ^7.0.1
+  flutter_facebook_auth: ^7.1.2
+  media_kit_libs_ios_video: ^1.1.4
 
 
 dev_dependencies:
@@ -53,6 +57,9 @@ flutter:
     - assets/images/logoFondOrange.png
     - assets/images/logoFondBlanc.png
     - assets/images/logoNoirFondBlanc.png
+    - assets/images/google_logo.svg
+    - assets/images/apple_logo.svg
+    - assets/images/meta_logo.svg
 
   fonts:
     - family: SFPro

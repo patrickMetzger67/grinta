@@ -1,4 +1,4 @@
-package com.example.grinta
+package io.grinta.app
 
 import android.app.PendingIntent
 import android.content.BroadcastReceiver
@@ -19,7 +19,7 @@ import java.util.concurrent.ConcurrentHashMap
 
 class MainActivity : FlutterActivity() {
     private val channelName = "asi_usb"
-    private val actionUsbPermission = "com.example.grinta.USB_PERMISSION"
+    private val actionUsbPermission = "io.grinta.app.USB_PERMISSION"
 
     private lateinit var usbManager: UsbManager
 

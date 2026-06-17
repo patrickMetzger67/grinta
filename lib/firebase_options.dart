@@ -38,7 +38,7 @@ class DefaultFirebaseOptions {
 
   static const FirebaseOptions android = FirebaseOptions(
     apiKey: 'AIzaSyDVH6-cWa529FOnCYPE4166rpxOSX2i7HY',
-    appId: '1:626293600533:android:85812718c2da4a6ea8791c',
+    appId: '1:626293600533:android:e2d12e06bd907a92a8791c',
     messagingSenderId: '626293600533',
     projectId: 'aserstein-2453e',
     storageBucket: 'aserstein-2453e.appspot.com',
@@ -47,20 +47,21 @@ class DefaultFirebaseOptions {
 
   static const FirebaseOptions ios = FirebaseOptions(
     apiKey: 'AIzaSyD_pjnsmxdTyvaaINWW1Z8xRDbG2t1xLAU',
-    appId: '1:626293600533:ios:13b689391e972360a8791c',
+    appId: '1:626293600533:ios:48ed2a621067eddda8791c',
     messagingSenderId: '626293600533',
     projectId: 'aserstein-2453e',
     storageBucket: 'aserstein-2453e.appspot.com',
     databaseURL: 'https://aserstein-2453e.firebaseio.com',
-    iosBundleId: 'com.tome4.aserstein',
+    iosBundleId: 'io.grinta.app',
   );
 
   static const FirebaseOptions macos = FirebaseOptions(
     apiKey: 'AIzaSyD_pjnsmxdTyvaaINWW1Z8xRDbG2t1xLAU',
-    appId: '1:626293600533:ios:13b689391e972360a8791c',
+    appId: '1:626293600533:ios:48ed2a621067eddda8791c',
     messagingSenderId: '626293600533',
     projectId: 'aserstein-2453e',
     storageBucket: 'aserstein-2453e.appspot.com',
-    iosBundleId: 'com.tome4.aserstein',
+    databaseURL: 'https://aserstein-2453e.firebaseio.com',
+    iosBundleId: 'io.grinta.app',
   );
 }

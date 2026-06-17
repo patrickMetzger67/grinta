@@ -1,0 +1,5 @@
+// Facebook / Meta config (do not commit real values in VCS if you prefer).
+// Fill these in locally (or via CI) to enable Facebook login.
+FACEBOOK_APP_ID=
+FACEBOOK_CLIENT_TOKEN=
+

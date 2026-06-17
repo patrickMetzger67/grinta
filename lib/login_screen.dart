@@ -11,8 +11,18 @@ import 'analytics/analytics_screen_names.dart';
 import 'core/extensions/l10n_extension.dart';
 import 'services/active_session_service.dart';
 import 'services/analytics_service.dart';
+import 'services/social_auth_service.dart';
 import 'widget/app_language_dropdown.dart';
 import 'widget/app_logo.dart';
+import 'widget/social_auth_button.dart';
+
+bool _isPasswordValid(String password) {
+  if (password.length < 8) return false;
+  if (!RegExp(r'[A-Z]').hasMatch(password)) return false;
+  if (!RegExp(r'[0-9]').hasMatch(password)) return false;
+  if (!RegExp(r'[^a-zA-Z0-9]').hasMatch(password)) return false;
+  return true;
+}
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -106,11 +116,6 @@ class _LoginScreenState extends State<LoginScreen> {
     );
   }
 
-  Future<void> _submit() => _submitWithCredentials(
-        _emailCtrl.text.trim(),
-        _passwordCtrl.text.trim(),
-      );
-
   Future<void> _submitWithCredentials(
     String email,
     String password, {
@@ -159,6 +164,9 @@ class _LoginScreenState extends State<LoginScreen> {
 
       // AuthGate réagit à authStateChanges et affiche l'app sans navigation.
     } on FirebaseAuthException catch (e) {
+      debugPrint(
+        'Auth error method=email code=${e.code} message=${e.message}',
+      );
       if (!mounted) return;
 
       String message = l10n.signInError;
@@ -188,6 +196,173 @@ class _LoginScreenState extends State<LoginScreen> {
         SnackBar(content: Text(message)),
       );
     } catch (e) {
+      debugPrint('Auth error method=email unexpected: $e');
+      if (!mounted) return;
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('${l10n.unexpectedError} : $e')),
+      );
+    } finally {
+      if (manageParentLoading && mounted) {
+        setState(() => _isLoading = false);
+      }
+    }
+  }
+
+  Future<void> _submit() => _submitWithCredentials(
+        _emailCtrl.text.trim(),
+        _passwordCtrl.text.trim(),
+      );
+
+  Future<void> _signUpWithCredentials(
+    String email,
+    String password, {
+    bool manageParentLoading = true,
+  }) async {
+    FocusScope.of(context).unfocus();
+
+    if (email.isEmpty || password.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(context.l10n.emailAndPasswordRequired)),
+      );
+      return;
+    }
+
+    if (!_isPasswordValid(password)) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(context.l10n.passwordRequirements)),
+      );
+      return;
+    }
+
+    if (manageParentLoading) {
+      if (_isLoading) return;
+      setState(() => _isLoading = true);
+    }
+
+    AnalyticsInteractions.logFeature(AnalyticsFeatures.loginAttempt);
+
+    final appSession = context.read<AppSession>();
+    final l10n = context.l10n;
+
+    try {
+      final credential =
+          await FirebaseAuth.instance.createUserWithEmailAndPassword(
+        email: email,
+        password: password,
+      );
+      debugPrint('signup ok uid=${credential.user?.uid}');
+
+      await AnalyticsService.instance.logLogin(method: 'email');
+      await AnalyticsService.instance.logFeatureUsed(
+        feature: AnalyticsFeatures.loginSuccess,
+      );
+
+      if (!mounted) return;
+
+      final navigator = Navigator.of(context);
+      if (navigator.canPop()) {
+        navigator.pop();
+      }
+
+      await appSession.init();
+    } on FirebaseAuthException catch (e) {
+      debugPrint(
+        'Auth error method=signup code=${e.code} message=${e.message}',
+      );
+      if (!mounted) return;
+
+      String message = l10n.signInError;
+
+      switch (e.code) {
+        case 'email-already-in-use':
+          message = l10n.invalidCredential;
+          break;
+        case 'invalid-email':
+          message = l10n.invalidEmail;
+          break;
+        case 'weak-password':
+          message = l10n.passwordRequirements;
+          break;
+        case 'too-many-requests':
+          message = l10n.tooManyRequests;
+          break;
+        case 'operation-not-allowed':
+          message = l10n.signInError;
+          break;
+      }
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(message)),
+      );
+    } catch (e) {
+      debugPrint('Auth error method=signup unexpected: $e');
+      if (!mounted) return;
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('${l10n.unexpectedError} : $e')),
+      );
+    } finally {
+      if (manageParentLoading && mounted) {
+        setState(() => _isLoading = false);
+      }
+    }
+  }
+
+  Future<void> _signInWithSocial(
+    SocialAuthProvider provider, {
+    bool manageParentLoading = true,
+  }) async {
+    FocusScope.of(context).unfocus();
+
+    if (manageParentLoading) {
+      if (_isLoading) return;
+      setState(() => _isLoading = true);
+    }
+
+    final methodName = switch (provider) {
+      SocialAuthProvider.google => 'google',
+      SocialAuthProvider.apple => 'apple',
+      SocialAuthProvider.meta => 'facebook',
+    };
+
+    AnalyticsInteractions.logFeature(AnalyticsFeatures.loginAttempt);
+
+    final appSession = context.read<AppSession>();
+    final l10n = context.l10n;
+
+    try {
+      final credential =
+          await SocialAuthService.instance.signIn(provider);
+      debugPrint('social login ok uid=${credential.user?.uid} provider=$methodName');
+
+      await AnalyticsService.instance.logLogin(method: methodName);
+      await AnalyticsService.instance.logFeatureUsed(
+        feature: AnalyticsFeatures.loginSuccess,
+      );
+
+      if (!mounted) return;
+
+      final navigator = Navigator.of(context);
+      if (navigator.canPop()) {
+        navigator.pop();
+      }
+
+      await appSession.init();
+    } on SocialAuthCancelledException {
+      debugPrint('Auth cancelled provider=$methodName');
+      return;
+    } on FirebaseAuthException catch (e) {
+      debugPrint(
+        'Auth error provider=$methodName code=${e.code} message=${e.message}',
+      );
+      if (!mounted) return;
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(e.message ?? l10n.signInError)),
+      );
+    } catch (e) {
+      debugPrint('Auth error provider=$methodName unexpected: $e');
       if (!mounted) return;
 
       ScaffoldMessenger.of(context).showSnackBar(
@@ -211,11 +386,9 @@ class _LoginScreenState extends State<LoginScreen> {
       useSafeArea: true,
       backgroundColor: Colors.transparent,
       builder: (_) => _LoginBottomSheet(
-        onSubmit: _submitWithCredentials,
-        onCreateAccount: () {
-          Navigator.pop(context);
-          // TODO: navigation create account
-        },
+        onSignIn: _submitWithCredentials,
+        onSignUp: _signUpWithCredentials,
+        onSocialSignIn: _signInWithSocial,
         onForgotPassword: () {
           // TODO: forgot password
         },
@@ -241,8 +414,10 @@ class _LoginScreenState extends State<LoginScreen> {
         onToggleObscure: () {
           setState(() => _obscurePassword = !_obscurePassword);
         },
-        onSubmit: _submit,
-        onCreateAccount: () {},
+        onSignIn: _submit,
+        onSignUp: (email, password) =>
+            _signUpWithCredentials(email, password),
+        onSocialSignIn: _signInWithSocial,
         onForgotPassword: () {},
         onPreviousPage: () => _goPreviousPage(items.length),
         onNextPage: () => _goNextPage(items.length),
@@ -254,7 +429,6 @@ class _LoginScreenState extends State<LoginScreen> {
       currentPage: _currentPage,
       pageController: _pageController,
       onPageChanged: (index) => setState(() => _currentPage = index),
-      onCreateAccount: () {},
       onLogin: _goToLoginSheet,
     );
   }
@@ -270,8 +444,9 @@ class _WebLoginLayout extends StatelessWidget {
   final bool isLoading;
   final ValueChanged<int> onPageChanged;
   final VoidCallback onToggleObscure;
-  final VoidCallback onSubmit;
-  final VoidCallback onCreateAccount;
+  final VoidCallback onSignIn;
+  final Future<void> Function(String email, String password) onSignUp;
+  final Future<void> Function(SocialAuthProvider provider) onSocialSignIn;
   final VoidCallback onForgotPassword;
   final VoidCallback onPreviousPage;
   final VoidCallback onNextPage;
@@ -286,8 +461,9 @@ class _WebLoginLayout extends StatelessWidget {
     required this.isLoading,
     required this.onPageChanged,
     required this.onToggleObscure,
-    required this.onSubmit,
-    required this.onCreateAccount,
+    required this.onSignIn,
+    required this.onSignUp,
+    required this.onSocialSignIn,
     required this.onForgotPassword,
     required this.onPreviousPage,
     required this.onNextPage,
@@ -408,8 +584,9 @@ class _WebLoginLayout extends StatelessWidget {
                       obscurePassword: obscurePassword,
                       isLoading: isLoading,
                       onToggleObscure: onToggleObscure,
-                      onSubmit: onSubmit,
-                      onCreateAccount: onCreateAccount,
+                      onSignIn: onSignIn,
+                      onSignUp: onSignUp,
+                      onSocialSignIn: onSocialSignIn,
                       onForgotPassword: onForgotPassword,
                       onLocaleChanged: (locale) {},
                     ),
@@ -561,7 +738,6 @@ class _MobileLoginLayout extends StatelessWidget {
   final int currentPage;
   final PageController pageController;
   final ValueChanged<int> onPageChanged;
-  final VoidCallback onCreateAccount;
   final VoidCallback onLogin;
 
   const _MobileLoginLayout({
@@ -569,7 +745,6 @@ class _MobileLoginLayout extends StatelessWidget {
     required this.currentPage,
     required this.pageController,
     required this.onPageChanged,
-    required this.onCreateAccount,
     required this.onLogin,
   });
 
@@ -637,16 +812,8 @@ class _MobileLoginLayout extends StatelessWidget {
                             SizedBox(
                               width: double.infinity,
                               child: ElevatedButton(
-                                onPressed: onCreateAccount,
-                                child: Text(context.l10n.createAccount),
-                              ),
-                            ),
-                            const SizedBox(height: 12),
-                            SizedBox(
-                              width: double.infinity,
-                              child: OutlinedButton(
                                 onPressed: onLogin,
-                                child: Text(context.l10n.loginTitle),
+                                child: Text(context.l10n.signIn),
                               ),
                             ),
                             const SizedBox(height: 20),
@@ -665,14 +832,15 @@ class _MobileLoginLayout extends StatelessWidget {
   }
 }
 
-class _LoginCard extends StatelessWidget {
+class _LoginCard extends StatefulWidget {
   final TextEditingController emailCtrl;
   final TextEditingController passwordCtrl;
   final bool obscurePassword;
   final bool isLoading;
   final VoidCallback onToggleObscure;
-  final VoidCallback onSubmit;
-  final VoidCallback onCreateAccount;
+  final VoidCallback onSignIn;
+  final Future<void> Function(String email, String password) onSignUp;
+  final Future<void> Function(SocialAuthProvider provider) onSocialSignIn;
   final VoidCallback onForgotPassword;
   final ValueChanged<Locale> onLocaleChanged;
 
@@ -682,11 +850,52 @@ class _LoginCard extends StatelessWidget {
     required this.obscurePassword,
     required this.isLoading,
     required this.onToggleObscure,
-    required this.onSubmit,
-    required this.onCreateAccount,
+    required this.onSignIn,
+    required this.onSignUp,
+    required this.onSocialSignIn,
     required this.onForgotPassword,
     required this.onLocaleChanged,
   });
+
+  @override
+  State<_LoginCard> createState() => _LoginCardState();
+}
+
+class _LoginCardState extends State<_LoginCard> {
+  final TextEditingController _confirmPasswordCtrl = TextEditingController();
+  bool _isSignUpMode = false;
+  bool _obscureConfirmPassword = true;
+
+  @override
+  void dispose() {
+    _confirmPasswordCtrl.dispose();
+    super.dispose();
+  }
+
+  void _toggleMode() {
+    setState(() {
+      _isSignUpMode = !_isSignUpMode;
+      _confirmPasswordCtrl.clear();
+    });
+  }
+
+  Future<void> _handleSubmit() async {
+    final email = widget.emailCtrl.text.trim();
+    final password = widget.passwordCtrl.text.trim();
+
+    if (_isSignUpMode) {
+      final confirmPassword = _confirmPasswordCtrl.text.trim();
+      if (confirmPassword != password) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(context.l10n.passwordsDoNotMatch)),
+        );
+        return;
+      }
+      await widget.onSignUp(email, password);
+    } else {
+      widget.onSignIn();
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -725,76 +934,113 @@ class _LoginCard extends StatelessWidget {
             ),
             const SizedBox(height: 24),
             TextField(
-              controller: emailCtrl,
+              controller: widget.emailCtrl,
               keyboardType: TextInputType.emailAddress,
               decoration: InputDecoration(
                 labelText: context.l10n.email,
                 hintText: context.l10n.emailHint,
                 prefixIcon: const Icon(Icons.mail_outline_rounded),
               ),
-              onSubmitted: (_) => onSubmit(),
+              onSubmitted: (_) => _handleSubmit(),
             ),
             const SizedBox(height: 14),
             TextField(
-              controller: passwordCtrl,
-              obscureText: obscurePassword,
+              controller: widget.passwordCtrl,
+              obscureText: widget.obscurePassword,
               decoration: InputDecoration(
                 labelText: context.l10n.password,
                 hintText: context.l10n.passwordHint,
                 prefixIcon: const Icon(Icons.lock_outline_rounded),
                 suffixIcon: IconButton(
-                  onPressed: onToggleObscure,
+                  onPressed: widget.onToggleObscure,
                   icon: Icon(
-                    obscurePassword
+                    widget.obscurePassword
                         ? Icons.visibility_off_outlined
                         : Icons.visibility_outlined,
                   ),
                 ),
               ),
-              onSubmitted: (_) => onSubmit(),
+              onSubmitted: (_) => _handleSubmit(),
             ),
+            if (_isSignUpMode) ...[
+              const SizedBox(height: 14),
+              TextField(
+                controller: _confirmPasswordCtrl,
+                obscureText: _obscureConfirmPassword,
+                decoration: InputDecoration(
+                  labelText: context.l10n.confirmPassword,
+                  hintText: context.l10n.confirmPasswordHint,
+                  prefixIcon: const Icon(Icons.lock_outline_rounded),
+                  suffixIcon: IconButton(
+                    onPressed: () {
+                      setState(
+                        () => _obscureConfirmPassword = !_obscureConfirmPassword,
+                      );
+                    },
+                    icon: Icon(
+                      _obscureConfirmPassword
+                          ? Icons.visibility_off_outlined
+                          : Icons.visibility_outlined,
+                    ),
+                  ),
+                ),
+                onSubmitted: (_) => _handleSubmit(),
+              ),
+            ],
             const SizedBox(height: 10),
+            if (!_isSignUpMode)
+              Align(
+                alignment: Alignment.centerRight,
+                child: TextButton(
+                  onPressed: widget.onForgotPassword,
+                  child: Text(context.l10n.forgotPassword),
+                ),
+              ),
             Align(
               alignment: Alignment.centerRight,
-              child: TextButton(
-                onPressed: onForgotPassword,
-                child: Text(context.l10n.forgotPassword),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    _isSignUpMode
+                        ? context.l10n.alreadyHaveAccount
+                        : context.l10n.noAccountYet,
+                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                      color: colors.textSecondary,
+                    ),
+                  ),
+                  TextButton(
+                    onPressed: _toggleMode,
+                    style: TextButton.styleFrom(
+                      padding: const EdgeInsets.symmetric(horizontal: 4),
+                      minimumSize: Size.zero,
+                      tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                    ),
+                    child: Text(
+                      _isSignUpMode
+                          ? context.l10n.signInLink
+                          : context.l10n.createOneLink,
+                    ),
+                  ),
+                ],
               ),
             ),
             const SizedBox(height: 12),
             SizedBox(
               width: double.infinity,
               child: ElevatedButton(
-                onPressed: isLoading ? null : onSubmit,
-                child: isLoading
+                onPressed: widget.isLoading ? null : _handleSubmit,
+                child: widget.isLoading
                     ? const SizedBox(
                   width: 22,
                   height: 22,
                   child: CircularProgressIndicator(strokeWidth: 2),
                 )
-                    : Text(context.l10n.signIn),
-              ),
-            ),
-            const SizedBox(height: 12),
-            SizedBox(
-              width: double.infinity,
-              child: OutlinedButton(
-                onPressed: isLoading ? null : onSubmit,
-                child: isLoading
-                    ? const SizedBox(
-                  width: 22,
-                  height: 22,
-                  child: CircularProgressIndicator(strokeWidth: 2),
-                )
-                    : Text(context.l10n.hasATeamCode),
-              ),
-            ),
-            const SizedBox(height: 12),
-            SizedBox(
-              width: double.infinity,
-              child: OutlinedButton(
-                onPressed: onCreateAccount,
-                child: Text(context.l10n.createAccount),
+                    : Text(
+                  _isSignUpMode
+                      ? context.l10n.createAccount
+                      : context.l10n.signIn,
+                ),
               ),
             ),
             const SizedBox(height: 22),
@@ -812,15 +1058,20 @@ class _LoginCard extends StatelessWidget {
               ],
             ),
             const SizedBox(height: 22),
-            SizedBox(
-              width: double.infinity,
-              child: OutlinedButton.icon(
-                onPressed: () {
-                  // TODO: Google Sign-In
-                },
-                icon: const Icon(Icons.g_mobiledata_rounded),
-                label: Text(context.l10n.continueWithGoogle),
-              ),
+            SocialAuthButton(
+              provider: SocialAuthProvider.google,
+              label: context.l10n.continueWithGoogle,
+              onPressed: widget.isLoading
+                  ? null
+                  : () => widget.onSocialSignIn(SocialAuthProvider.google),
+            ),
+            const SizedBox(height: 12),
+            SocialAuthButton(
+              provider: SocialAuthProvider.apple,
+              label: context.l10n.continueWithApple,
+              onPressed: widget.isLoading
+                  ? null
+                  : () => widget.onSocialSignIn(SocialAuthProvider.apple),
             ),
           ],
         ),
@@ -830,13 +1081,23 @@ class _LoginCard extends StatelessWidget {
 }
 
 class _LoginBottomSheet extends StatefulWidget {
-  final Future<void> Function(String email, String password) onSubmit;
-  final VoidCallback onCreateAccount;
+  final Future<void> Function(
+    String email,
+    String password, {
+    bool manageParentLoading,
+  }) onSignIn;
+  final Future<void> Function(
+    String email,
+    String password, {
+    bool manageParentLoading,
+  }) onSignUp;
+  final Future<void> Function(SocialAuthProvider provider) onSocialSignIn;
   final VoidCallback onForgotPassword;
 
   const _LoginBottomSheet({
-    required this.onSubmit,
-    required this.onCreateAccount,
+    required this.onSignIn,
+    required this.onSignUp,
+    required this.onSocialSignIn,
     required this.onForgotPassword,
   });
 
@@ -858,15 +1119,46 @@ class _LoginBottomSheetState extends State<_LoginBottomSheet> {
     super.dispose();
   }
 
-  Future<void> _handleSubmit() async {
+  Future<void> _handleSignIn() async {
     if (_isLoading) return;
 
     setState(() => _isLoading = true);
     try {
-      await widget.onSubmit(
+      await widget.onSignIn(
         _emailCtrl.text.trim(),
         _passwordCtrl.text.trim(),
+        manageParentLoading: false,
       );
+    } finally {
+      if (mounted) {
+        setState(() => _isLoading = false);
+      }
+    }
+  }
+
+  Future<void> _handleSignUp(String email, String password) async {
+    if (_isLoading) return;
+
+    setState(() => _isLoading = true);
+    try {
+      await widget.onSignUp(
+        email,
+        password,
+        manageParentLoading: false,
+      );
+    } finally {
+      if (mounted) {
+        setState(() => _isLoading = false);
+      }
+    }
+  }
+
+  Future<void> _handleSocialSignIn(SocialAuthProvider provider) async {
+    if (_isLoading) return;
+
+    setState(() => _isLoading = true);
+    try {
+      await widget.onSocialSignIn(provider);
     } finally {
       if (mounted) {
         setState(() => _isLoading = false);
@@ -906,8 +1198,9 @@ class _LoginBottomSheetState extends State<_LoginBottomSheet> {
                 onToggleObscure: () {
                   setState(() => _obscurePassword = !_obscurePassword);
                 },
-                onSubmit: _handleSubmit,
-                onCreateAccount: widget.onCreateAccount,
+                onSignIn: _handleSignIn,
+                onSignUp: _handleSignUp,
+                onSocialSignIn: _handleSocialSignIn,
                 onForgotPassword: widget.onForgotPassword,
                 onLocaleChanged: (_) {},
               ),
