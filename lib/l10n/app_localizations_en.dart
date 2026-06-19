@@ -113,6 +113,102 @@ class AppLocalizationsEn extends AppLocalizations {
   String get hasATeamCode => 'I have a team code';
 
   @override
+  String get hasInvitationCodeQuestion => 'Do you have an invitation code?';
+
+  @override
+  String get invitationCode => 'Invitation code';
+
+  @override
+  String get invitationCodeHint => 'Enter your code';
+
+  @override
+  String get invitationNotFound => 'Invitation code not found';
+
+  @override
+  String get invitationAlreadyUsed =>
+      'This invitation code has already been used';
+
+  @override
+  String invitationSentBy(String firstName, String lastName) {
+    return 'The invitation was sent to you by $firstName $lastName';
+  }
+
+  @override
+  String get signupWithoutInvitationComingSoon => 'Feature coming soon';
+
+  @override
+  String get emailAlreadyInUse =>
+      'An account already exists with this email address';
+
+  @override
+  String get invitationCodeRequired =>
+      'Please enter and validate an invitation code';
+
+  @override
+  String get invitationChoiceRequired =>
+      'Please indicate whether you have an invitation code';
+
+  @override
+  String get memberProfileTitle => 'Your profile';
+
+  @override
+  String get memberFirstName => 'First name';
+
+  @override
+  String get memberLastName => 'Last name';
+
+  @override
+  String get memberBirthDate => 'Date of birth';
+
+  @override
+  String get memberBirthDateOptional => 'Date of birth (optional)';
+
+  @override
+  String get memberBirthPlace => 'Place of birth';
+
+  @override
+  String get memberBirthPlaceOptional => 'Place of birth (optional)';
+
+  @override
+  String get memberNationality => 'Nationality';
+
+  @override
+  String get memberNationalityHint => 'Select a nationality';
+
+  @override
+  String get memberNationalitySearch => 'Search nationality';
+
+  @override
+  String get memberPositions => 'Positions';
+
+  @override
+  String get memberPositionsHint => 'Select one or more positions (optional)';
+
+  @override
+  String get memberFirstNameRequired => 'First name is required';
+
+  @override
+  String get memberLastNameRequired => 'Last name is required';
+
+  @override
+  String get memberBirthPlaceRequired => 'Place of birth is required';
+
+  @override
+  String get memberNationalityRequired => 'Nationality is required';
+
+  @override
+  String get memberProfileIncomplete => 'Please complete your profile';
+
+  @override
+  String get memberProfileSubmit => 'Create my player profile';
+
+  @override
+  String get createTeamPromptQuestion => 'Would you like to create a team?';
+
+  @override
+  String get createTeamPromptLater => 'Later';
+
+  @override
   String get slide1Title => 'Manage your team';
 
   @override

@@ -6,6 +6,7 @@ String keyPlayerStatut = 'statut';
 String keyPlayerBirthDay = 'birthDay';
 String keyPlayerBirthPlace = 'birthPlace';
 String keyPlayerNationality = 'nationality';
+String keyPlayerPositions = 'positions';
 String keyPlayerSeasons = 'seasons';
 String keyPlayerKeyMember = 'keyMember';
 String keyPlayerCategory = 'category';
@@ -61,6 +62,7 @@ class Player {
   String? birthDay;
   String? birthPlace;
   String? nationality;
+  List<dynamic>? positions;
   String? category;
   String? sexe;
   String? userID;
@@ -85,6 +87,7 @@ class Player {
     this.birthDay='',
     this.birthPlace='',
     this.nationality,
+    this.positions,
     this.category='',
     this.sexe='',
     this.userID='',
@@ -118,6 +121,11 @@ class Player {
       birthDay      = map[keyPlayerBirthDay];
       birthPlace    = map[keyPlayerBirthPlace];
       nationality   = map[keyPlayerNationality];
+      if (map[keyPlayerPositions] != null) {
+        positions = map[keyPlayerPositions];
+      } else {
+        positions = [];
+      }
       if(map[keyPlayerSexe] != null) {
         sexe          = map[keyPlayerSexe];
       } else {
@@ -248,6 +256,7 @@ class Player {
       keyPlayerBirthDay: birthDay,
       keyPlayerBirthPlace: birthPlace,
       keyPlayerNationality: nationality,
+      keyPlayerPositions: positions ?? [],
       keyPlayerSexe: sexe,
       keyPlayerUserID: userID,
       keyPlayerViews: views,

@@ -308,6 +308,186 @@ abstract class AppLocalizations {
   /// **'Je dispose d\'un code équipe'**
   String get hasATeamCode;
 
+  /// No description provided for @hasInvitationCodeQuestion.
+  ///
+  /// In fr, this message translates to:
+  /// **'Avez-vous un code d\'invitation ?'**
+  String get hasInvitationCodeQuestion;
+
+  /// No description provided for @invitationCode.
+  ///
+  /// In fr, this message translates to:
+  /// **'Code d\'invitation'**
+  String get invitationCode;
+
+  /// No description provided for @invitationCodeHint.
+  ///
+  /// In fr, this message translates to:
+  /// **'Saisissez votre code'**
+  String get invitationCodeHint;
+
+  /// No description provided for @invitationNotFound.
+  ///
+  /// In fr, this message translates to:
+  /// **'Code invitation non trouvé'**
+  String get invitationNotFound;
+
+  /// No description provided for @invitationAlreadyUsed.
+  ///
+  /// In fr, this message translates to:
+  /// **'Ce code d\'invitation a déjà été utilisé'**
+  String get invitationAlreadyUsed;
+
+  /// No description provided for @invitationSentBy.
+  ///
+  /// In fr, this message translates to:
+  /// **'L\'invitation vous a été envoyée par {firstName} {lastName}'**
+  String invitationSentBy(String firstName, String lastName);
+
+  /// No description provided for @signupWithoutInvitationComingSoon.
+  ///
+  /// In fr, this message translates to:
+  /// **'Fonctionnalité à venir'**
+  String get signupWithoutInvitationComingSoon;
+
+  /// No description provided for @emailAlreadyInUse.
+  ///
+  /// In fr, this message translates to:
+  /// **'Un compte existe déjà avec cette adresse email'**
+  String get emailAlreadyInUse;
+
+  /// No description provided for @invitationCodeRequired.
+  ///
+  /// In fr, this message translates to:
+  /// **'Veuillez saisir et valider un code d\'invitation'**
+  String get invitationCodeRequired;
+
+  /// No description provided for @invitationChoiceRequired.
+  ///
+  /// In fr, this message translates to:
+  /// **'Veuillez indiquer si vous avez un code d\'invitation'**
+  String get invitationChoiceRequired;
+
+  /// No description provided for @memberProfileTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Votre profil'**
+  String get memberProfileTitle;
+
+  /// No description provided for @memberFirstName.
+  ///
+  /// In fr, this message translates to:
+  /// **'Prénom'**
+  String get memberFirstName;
+
+  /// No description provided for @memberLastName.
+  ///
+  /// In fr, this message translates to:
+  /// **'Nom'**
+  String get memberLastName;
+
+  /// No description provided for @memberBirthDate.
+  ///
+  /// In fr, this message translates to:
+  /// **'Date de naissance'**
+  String get memberBirthDate;
+
+  /// No description provided for @memberBirthDateOptional.
+  ///
+  /// In fr, this message translates to:
+  /// **'Date de naissance (facultatif)'**
+  String get memberBirthDateOptional;
+
+  /// No description provided for @memberBirthPlace.
+  ///
+  /// In fr, this message translates to:
+  /// **'Lieu de naissance'**
+  String get memberBirthPlace;
+
+  /// No description provided for @memberBirthPlaceOptional.
+  ///
+  /// In fr, this message translates to:
+  /// **'Lieu de naissance (facultatif)'**
+  String get memberBirthPlaceOptional;
+
+  /// No description provided for @memberNationality.
+  ///
+  /// In fr, this message translates to:
+  /// **'Nationalité'**
+  String get memberNationality;
+
+  /// No description provided for @memberNationalityHint.
+  ///
+  /// In fr, this message translates to:
+  /// **'Sélectionnez une nationalité'**
+  String get memberNationalityHint;
+
+  /// No description provided for @memberNationalitySearch.
+  ///
+  /// In fr, this message translates to:
+  /// **'Rechercher une nationalité'**
+  String get memberNationalitySearch;
+
+  /// No description provided for @memberPositions.
+  ///
+  /// In fr, this message translates to:
+  /// **'Postes'**
+  String get memberPositions;
+
+  /// No description provided for @memberPositionsHint.
+  ///
+  /// In fr, this message translates to:
+  /// **'Sélectionnez un ou plusieurs postes (facultatif)'**
+  String get memberPositionsHint;
+
+  /// No description provided for @memberFirstNameRequired.
+  ///
+  /// In fr, this message translates to:
+  /// **'Le prénom est obligatoire'**
+  String get memberFirstNameRequired;
+
+  /// No description provided for @memberLastNameRequired.
+  ///
+  /// In fr, this message translates to:
+  /// **'Le nom est obligatoire'**
+  String get memberLastNameRequired;
+
+  /// No description provided for @memberBirthPlaceRequired.
+  ///
+  /// In fr, this message translates to:
+  /// **'Le lieu de naissance est obligatoire'**
+  String get memberBirthPlaceRequired;
+
+  /// No description provided for @memberNationalityRequired.
+  ///
+  /// In fr, this message translates to:
+  /// **'La nationalité est obligatoire'**
+  String get memberNationalityRequired;
+
+  /// No description provided for @memberProfileIncomplete.
+  ///
+  /// In fr, this message translates to:
+  /// **'Veuillez compléter votre profil'**
+  String get memberProfileIncomplete;
+
+  /// No description provided for @memberProfileSubmit.
+  ///
+  /// In fr, this message translates to:
+  /// **'Créer ma fiche joueur'**
+  String get memberProfileSubmit;
+
+  /// No description provided for @createTeamPromptQuestion.
+  ///
+  /// In fr, this message translates to:
+  /// **'Souhaitez-vous créer une équipe ?'**
+  String get createTeamPromptQuestion;
+
+  /// No description provided for @createTeamPromptLater.
+  ///
+  /// In fr, this message translates to:
+  /// **'Plus tard'**
+  String get createTeamPromptLater;
+
   /// No description provided for @slide1Title.
   ///
   /// In fr, this message translates to:

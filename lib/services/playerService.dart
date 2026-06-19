@@ -2,6 +2,9 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_storage/firebase_storage.dart';
 
 import '../model/player.dart';
+import '../model/member_profile_data.dart';
+import '../util/player_photo_resolver.dart';
+import '../util/search_options.dart';
 
 class PlayerService {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
@@ -17,6 +20,46 @@ class PlayerService {
   /// Ajouter un joueur
   Future<DocumentReference<Map<String, dynamic>>> addPlayer(Player player) async {
     return await _collection.add(player.toMap());
+  }
+
+  /// Crée un membre (player) sans invitation et lie l'utilisateur courant.
+  Future<String> createMember({
+    required String userId,
+    required MemberProfileData profile,
+  }) async {
+    final searchOptions = buildPlayerSearchOptions(
+      firstName: profile.firstName.trim(),
+      lastName: profile.lastName.trim(),
+    );
+
+    final player = Player(
+      firstName: profile.firstName.trim(),
+      lastName: profile.lastName.trim(),
+      birthDay: profile.birthDay?.trim() ?? '',
+      birthPlace: profile.birthPlace?.trim() ?? '',
+      nationality: profile.nationality.trim(),
+      positions: profile.positions,
+      statut: 1,
+      userID: userId,
+      users: [userId],
+      searchOptions: searchOptions,
+      views: 0,
+      likes: [],
+      photo: '',
+      clubId: '',
+      category: '',
+      sexe: 'M',
+      personNumber: '',
+    )..creatorUserId = userId;
+
+    final docRef = await addPlayer(player);
+    final playerId = docRef.id;
+
+    await docRef.update({
+      keyPlayerKeyMember: playerId,
+    });
+
+    return playerId;
   }
 
   /// Ajouter un joueur avec un id personnalisé
@@ -347,10 +390,19 @@ class PlayerService {
   static String _playerPhotoCacheKey(Player player, String defaultPlayerPhoto) {
     final id = player.keyMember?.trim();
     if (id != null && id.isNotEmpty) {
-      return '$id|$defaultPlayerPhoto';
+      final photo = player.photo?.trim() ?? '';
+      if (photo.isNotEmpty) {
+        return '$id|$defaultPlayerPhoto';
+      }
+      final userId = player.userID?.trim() ?? '';
+      return '$id|user:$userId|$defaultPlayerPhoto';
     }
     final photo = player.photo?.trim() ?? '';
-    return 'photo:$photo|$defaultPlayerPhoto';
+    if (photo.isNotEmpty) {
+      return 'photo:$photo|$defaultPlayerPhoto';
+    }
+    final userId = player.userID?.trim() ?? '';
+    return 'photo:|user:$userId|$defaultPlayerPhoto';
   }
 
   static void clearPlayerPhotoUrlCache() {
@@ -358,21 +410,20 @@ class PlayerService {
     _playerPhotoUrlPending.clear();
   }
 
-  /// Récupérer l’URL de la photo joueur
+  /// Récupérer l’URL de la photo joueur (joueur → utilisateur → défaut).
   Future<String> getUrlPlayer(Player player, String defaultPlayerPhoto) async {
     try {
-      if (player.photo != null &&
-          player.photo!.isNotEmpty &&
-          player.photo!.contains('https://')) {
-        return player.photo!;
-      }
-
-      if (player.photo == null || player.photo!.isEmpty) {
+      final photoSource = await resolvePlayerPhotoSource(player);
+      if (photoSource == null || photoSource.isEmpty) {
         return await getUrlDefaultPlayerImage(defaultUrl: defaultPlayerPhoto);
       }
 
-      Reference ref =
-      FirebaseStorage.instance.ref().child('thumbs/${player.photo!}');
+      if (photoSource.contains('https://')) {
+        return photoSource;
+      }
+
+      final ref =
+          FirebaseStorage.instance.ref().child('thumbs/$photoSource');
 
       return await ref.getDownloadURL();
     } catch (e) {

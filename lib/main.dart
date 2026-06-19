@@ -1,9 +1,7 @@
 import 'package:cloud_functions/cloud_functions.dart';
-import 'package:flutter/foundation.dart';
 import 'package:firebase_auth/firebase_auth.dart' as firebase_auth;
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
-import 'package:grinta/screen/dashboardScreen.dart';
 import 'util/app_theme.dart';
 import 'package:provider/provider.dart';
 import 'package:stream_chat_flutter/stream_chat_flutter.dart';
@@ -13,6 +11,7 @@ import 'core/extensions/l10n_extension.dart';
 import 'firebase_options.dart';
 import 'l10n/app_localizations.dart';
 import 'login_screen.dart';
+import 'navigation/app_navigator.dart';
 import 'package:grinta/provider/appSession.dart';
 import 'package:grinta/services/active_session_service.dart';
 import 'package:grinta/services/feature_discovery_service.dart';
@@ -86,6 +85,7 @@ class MyAppState extends State<MyApp> {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
+      navigatorKey: appNavigatorKey,
       key: ValueKey(_effectiveLocale?.languageCode ?? 'system'),
       debugShowCheckedModeBanner: false,
       onGenerateTitle: (context) => context.l10n.appName,
