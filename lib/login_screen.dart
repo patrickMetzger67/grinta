@@ -22,6 +22,8 @@ import 'widget/app_language_dropdown.dart';
 import 'widget/app_logo.dart';
 import 'widget/member_profile_form.dart';
 import 'widget/social_auth_button.dart';
+import 'widget/subscription_paywall.dart';
+import 'services/subscription_service.dart';
 
 bool _isPasswordValid(String password) {
   if (password.length < 8) return false;
@@ -433,6 +435,20 @@ class _LoginScreenState extends State<LoginScreen> {
 
   Future<void> _finishOnboardingAfterMemberCreated(AppSession appSession) async {
     final wantsCreateTeam = await _promptCreateTeam();
+
+    if (!SubscriptionService.instance.isSubscribed) {
+      final rootContext = appNavigatorKey.currentContext;
+      if (rootContext != null && rootContext.mounted) {
+        await SubscriptionPaywall.show(
+          rootContext,
+          initialKind: wantsCreateTeam == true
+              ? SubscriptionOfferingKind.coach
+              : SubscriptionOfferingKind.player,
+          allowSkip: true,
+        );
+      }
+    }
+
     if (wantsCreateTeam == true) {
       final rootContext = appNavigatorKey.currentContext;
       if (rootContext != null && rootContext.mounted) {

@@ -919,5 +919,33 @@
     "placeholders": {
       "date": { "type": "String" }
     }
-  }
+  },
+
+  "subscriptionPaywallTitle": "Passez à Grinta Premium",
+  "subscriptionPaywallSubtitle": "Débloquez toutes les fonctionnalités pour votre club ou votre suivi joueur.",
+  "subscriptionPaywallLater": "Plus tard",
+  "subscriptionOfferingCoach": "Entraîneur",
+  "subscriptionOfferingPlayer": "Joueur",
+  "subscriptionTierCoachBasic": "Coach Basic",
+  "subscriptionTierCoachBasicDesc": "Gestion d'équipe essentielle : agenda, effectif et statistiques de base.",
+  "subscriptionTierCoachElite": "Coach Elite",
+  "subscriptionTierCoachEliteDesc": "Analyses avancées, compositions tactiques et outils coach complets.",
+  "subscriptionTierCoachPro": "Coach Pro",
+  "subscriptionTierCoachProDesc": "Tout Elite, plus tracker GPS, heatmaps et exports pro.",
+  "subscriptionTierPlayer": "Joueur",
+  "subscriptionTierPlayerDesc": "Suivez vos performances, stats personnelles et progression.",
+  "subscriptionPerMonth": "/mois",
+  "subscriptionSubscribe": "S'abonner",
+  "subscriptionTierActive": "Abonnement actif",
+  "subscriptionRestorePurchases": "Restaurer les achats",
+  "subscriptionAutoRenewLegal": "L'abonnement se renouvelle automatiquement. Vous pouvez l'annuler à tout moment dans les réglages de votre compte App Store ou Google Play.",
+  "subscriptionStoreUnavailable": "Les achats intégrés ne sont pas disponibles sur cette plateforme.",
+  "subscriptionAlreadyActive": "Vous avez déjà un abonnement actif.",
+  "subscriptionProductNotFound": "Produit introuvable. Vérifiez la configuration RevenueCat.",
+  "subscriptionPurchaseFailed": "L'achat a échoué. Réessayez.",
+  "subscriptionRestoreNone": "Aucun achat à restaurer.",
+  "subscriptionRestoreFailed": "La restauration a échoué.",
+  "subscriptionPromptTitle": "Passez à Premium",
+  "subscriptionPromptMessage": "Accédez à toutes les fonctionnalités Grinta avec un abonnement adapté à votre profil.",
+  "subscriptionPromptAction": "Voir les offres"
 }

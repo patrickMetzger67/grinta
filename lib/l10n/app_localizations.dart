@@ -3709,6 +3709,168 @@ abstract class AppLocalizations {
   /// In fr, this message translates to:
   /// **'Entraînement du {date}'**
   String trainingOnDate(String date);
+
+  /// No description provided for @subscriptionPaywallTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Passez à Grinta Premium'**
+  String get subscriptionPaywallTitle;
+
+  /// No description provided for @subscriptionPaywallSubtitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Débloquez toutes les fonctionnalités pour votre club ou votre suivi joueur.'**
+  String get subscriptionPaywallSubtitle;
+
+  /// No description provided for @subscriptionPaywallLater.
+  ///
+  /// In fr, this message translates to:
+  /// **'Plus tard'**
+  String get subscriptionPaywallLater;
+
+  /// No description provided for @subscriptionOfferingCoach.
+  ///
+  /// In fr, this message translates to:
+  /// **'Entraîneur'**
+  String get subscriptionOfferingCoach;
+
+  /// No description provided for @subscriptionOfferingPlayer.
+  ///
+  /// In fr, this message translates to:
+  /// **'Joueur'**
+  String get subscriptionOfferingPlayer;
+
+  /// No description provided for @subscriptionTierCoachBasic.
+  ///
+  /// In fr, this message translates to:
+  /// **'Coach Basic'**
+  String get subscriptionTierCoachBasic;
+
+  /// No description provided for @subscriptionTierCoachBasicDesc.
+  ///
+  /// In fr, this message translates to:
+  /// **'Gestion d\'équipe essentielle : agenda, effectif et statistiques de base.'**
+  String get subscriptionTierCoachBasicDesc;
+
+  /// No description provided for @subscriptionTierCoachElite.
+  ///
+  /// In fr, this message translates to:
+  /// **'Coach Elite'**
+  String get subscriptionTierCoachElite;
+
+  /// No description provided for @subscriptionTierCoachEliteDesc.
+  ///
+  /// In fr, this message translates to:
+  /// **'Analyses avancées, compositions tactiques et outils coach complets.'**
+  String get subscriptionTierCoachEliteDesc;
+
+  /// No description provided for @subscriptionTierCoachPro.
+  ///
+  /// In fr, this message translates to:
+  /// **'Coach Pro'**
+  String get subscriptionTierCoachPro;
+
+  /// No description provided for @subscriptionTierCoachProDesc.
+  ///
+  /// In fr, this message translates to:
+  /// **'Tout Elite, plus tracker GPS, heatmaps et exports pro.'**
+  String get subscriptionTierCoachProDesc;
+
+  /// No description provided for @subscriptionTierPlayer.
+  ///
+  /// In fr, this message translates to:
+  /// **'Joueur'**
+  String get subscriptionTierPlayer;
+
+  /// No description provided for @subscriptionTierPlayerDesc.
+  ///
+  /// In fr, this message translates to:
+  /// **'Suivez vos performances, stats personnelles et progression.'**
+  String get subscriptionTierPlayerDesc;
+
+  /// No description provided for @subscriptionPerMonth.
+  ///
+  /// In fr, this message translates to:
+  /// **'/mois'**
+  String get subscriptionPerMonth;
+
+  /// No description provided for @subscriptionSubscribe.
+  ///
+  /// In fr, this message translates to:
+  /// **'S\'abonner'**
+  String get subscriptionSubscribe;
+
+  /// No description provided for @subscriptionTierActive.
+  ///
+  /// In fr, this message translates to:
+  /// **'Abonnement actif'**
+  String get subscriptionTierActive;
+
+  /// No description provided for @subscriptionRestorePurchases.
+  ///
+  /// In fr, this message translates to:
+  /// **'Restaurer les achats'**
+  String get subscriptionRestorePurchases;
+
+  /// No description provided for @subscriptionAutoRenewLegal.
+  ///
+  /// In fr, this message translates to:
+  /// **'L\'abonnement se renouvelle automatiquement. Vous pouvez l\'annuler à tout moment dans les réglages de votre compte App Store ou Google Play.'**
+  String get subscriptionAutoRenewLegal;
+
+  /// No description provided for @subscriptionStoreUnavailable.
+  ///
+  /// In fr, this message translates to:
+  /// **'Les achats intégrés ne sont pas disponibles sur cette plateforme.'**
+  String get subscriptionStoreUnavailable;
+
+  /// No description provided for @subscriptionAlreadyActive.
+  ///
+  /// In fr, this message translates to:
+  /// **'Vous avez déjà un abonnement actif.'**
+  String get subscriptionAlreadyActive;
+
+  /// No description provided for @subscriptionProductNotFound.
+  ///
+  /// In fr, this message translates to:
+  /// **'Produit introuvable. Vérifiez la configuration RevenueCat.'**
+  String get subscriptionProductNotFound;
+
+  /// No description provided for @subscriptionPurchaseFailed.
+  ///
+  /// In fr, this message translates to:
+  /// **'L\'achat a échoué. Réessayez.'**
+  String get subscriptionPurchaseFailed;
+
+  /// No description provided for @subscriptionRestoreNone.
+  ///
+  /// In fr, this message translates to:
+  /// **'Aucun achat à restaurer.'**
+  String get subscriptionRestoreNone;
+
+  /// No description provided for @subscriptionRestoreFailed.
+  ///
+  /// In fr, this message translates to:
+  /// **'La restauration a échoué.'**
+  String get subscriptionRestoreFailed;
+
+  /// No description provided for @subscriptionPromptTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Passez à Premium'**
+  String get subscriptionPromptTitle;
+
+  /// No description provided for @subscriptionPromptMessage.
+  ///
+  /// In fr, this message translates to:
+  /// **'Accédez à toutes les fonctionnalités Grinta avec un abonnement adapté à votre profil.'**
+  String get subscriptionPromptMessage;
+
+  /// No description provided for @subscriptionPromptAction.
+  ///
+  /// In fr, this message translates to:
+  /// **'Voir les offres'**
+  String get subscriptionPromptAction;
 }
 
 class _AppLocalizationsDelegate

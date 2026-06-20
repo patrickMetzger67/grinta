@@ -2023,4 +2023,95 @@ class AppLocalizationsEn extends AppLocalizations {
   String trainingOnDate(String date) {
     return 'Training on $date';
   }
+
+  @override
+  String get subscriptionPaywallTitle => 'Upgrade to Grinta Premium';
+
+  @override
+  String get subscriptionPaywallSubtitle =>
+      'Unlock all features for your club or personal player tracking.';
+
+  @override
+  String get subscriptionPaywallLater => 'Later';
+
+  @override
+  String get subscriptionOfferingCoach => 'Coach';
+
+  @override
+  String get subscriptionOfferingPlayer => 'Player';
+
+  @override
+  String get subscriptionTierCoachBasic => 'Coach Basic';
+
+  @override
+  String get subscriptionTierCoachBasicDesc =>
+      'Essential team management: calendar, roster, and basic stats.';
+
+  @override
+  String get subscriptionTierCoachElite => 'Coach Elite';
+
+  @override
+  String get subscriptionTierCoachEliteDesc =>
+      'Advanced analytics, tactical lineups, and full coach tools.';
+
+  @override
+  String get subscriptionTierCoachPro => 'Coach Pro';
+
+  @override
+  String get subscriptionTierCoachProDesc =>
+      'Everything in Elite, plus GPS tracker, heatmaps, and pro exports.';
+
+  @override
+  String get subscriptionTierPlayer => 'Player';
+
+  @override
+  String get subscriptionTierPlayerDesc =>
+      'Track your performance, personal stats, and progress.';
+
+  @override
+  String get subscriptionPerMonth => '/month';
+
+  @override
+  String get subscriptionSubscribe => 'Subscribe';
+
+  @override
+  String get subscriptionTierActive => 'Active subscription';
+
+  @override
+  String get subscriptionRestorePurchases => 'Restore purchases';
+
+  @override
+  String get subscriptionAutoRenewLegal =>
+      'Subscription renews automatically. You can cancel anytime in your App Store or Google Play account settings.';
+
+  @override
+  String get subscriptionStoreUnavailable =>
+      'In-app purchases are not available on this platform.';
+
+  @override
+  String get subscriptionAlreadyActive =>
+      'You already have an active subscription.';
+
+  @override
+  String get subscriptionProductNotFound =>
+      'Product not found. Check RevenueCat configuration.';
+
+  @override
+  String get subscriptionPurchaseFailed => 'Purchase failed. Please try again.';
+
+  @override
+  String get subscriptionRestoreNone => 'No purchases to restore.';
+
+  @override
+  String get subscriptionRestoreFailed => 'Restore failed.';
+
+  @override
+  String get subscriptionPromptTitle => 'Go Premium';
+
+  @override
+  String get subscriptionPromptMessage =>
+      'Access all Grinta features with a plan tailored to your profile.';
+
+  @override
+  String get subscriptionPromptAction => 'View plans';
 }

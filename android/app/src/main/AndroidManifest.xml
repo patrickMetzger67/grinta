@@ -10,7 +10,7 @@
         android:required="true" />
 
     <application
-        android:label="grinta"
+        android:label="Grinta"
         android:icon="@mipmap/ic_launcher"
         android:roundIcon="@mipmap/ic_launcher">
 

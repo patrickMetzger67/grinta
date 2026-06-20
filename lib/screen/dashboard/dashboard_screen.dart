@@ -26,6 +26,7 @@ import '../../model/feature_discovery_ids.dart';
 import '../../util/app_theme.dart';
 import '../../widget/activity_rings_card.dart';
 import '../../widget/feature_discovery_random_banner.dart';
+import '../../widget/subscription_prompt_banner.dart';
 import '../../widget/agendaMatchRow.dart';
 import '../../widget/metrics_panel.dart';
 import '../match_detail_screen.dart';
@@ -146,7 +147,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      FeatureDiscoveryRandomBanner(
+                      const SubscriptionPromptBanner(),
+                      const FeatureDiscoveryRandomBanner(
                         parentScreenId: FeatureDiscoveryIds.tabDashboard,
                         excludeCurrentBaseScreen: true,
                       ),

@@ -15,6 +15,7 @@ import 'navigation/app_navigator.dart';
 import 'package:grinta/provider/appSession.dart';
 import 'package:grinta/services/active_session_service.dart';
 import 'package:grinta/services/feature_discovery_service.dart';
+import 'package:grinta/services/subscription_service.dart';
 import 'package:grinta/analytics/analytics_observer.dart';
 import 'package:grinta/analytics/analytics_route_aware.dart';
 import 'package:grinta/services/analytics_service.dart';
@@ -31,12 +32,16 @@ Future<void> main() async {
 
   ActiveSessionService.instance;
   await FeatureDiscoveryService.instance.ensureInitialized();
+  await SubscriptionService.instance.ensureInitialized();
 
   runApp(
     MultiProvider(
       providers: [
         ChangeNotifierProvider<AppSession>(
           create: (_) => AppSession(),
+        ),
+        ChangeNotifierProvider<SubscriptionService>.value(
+          value: SubscriptionService.instance,
         ),
       ],
       child: const MyApp(),
