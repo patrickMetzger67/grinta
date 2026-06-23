@@ -1,0 +1,11 @@
+{
+  "REVENUECAT_IOS_API_KEY_SANDBOX": "appl_your_ios_public_key",
+  "REVENUECAT_IOS_API_KEY_PROD": "appl_your_ios_public_key",
+  "REVENUECAT_ANDROID_API_KEY_SANDBOX": "goog_your_android_public_key",
+  "REVENUECAT_ANDROID_API_KEY_PROD": "goog_your_android_public_key",
+  "REVENUECAT_WEB_API_KEY_SANDBOX": "rcb_sb_your_web_billing_sandbox_key",
+  "REVENUECAT_WEB_API_KEY_PROD": "rcb_your_web_billing_prod_key",
+  "STRIPE_PUBLISHABLE_KEY_TEST": "",
+  "STRIPE_PUBLISHABLE_KEY_LIVE": "",
+  "SHOPIFY_STOREFRONT_TOKEN": ""
+}

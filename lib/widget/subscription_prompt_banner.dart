@@ -43,7 +43,7 @@ class _SubscriptionPromptBannerState extends State<SubscriptionPromptBanner> {
     await SubscriptionPromptService.instance.ensureInitialized();
 
     final show = SubscriptionPromptService.instance.shouldShowPrompt(
-      isSubscribed: service.isSubscribed,
+      isSubscribed: service.hasActivePaidSubscription,
     );
 
     if (!mounted) return;
@@ -60,6 +60,9 @@ class _SubscriptionPromptBannerState extends State<SubscriptionPromptBanner> {
   }
 
   Future<void> _openPaywall() async {
+    await SubscriptionService.instance.refreshForActiveSession();
+    if (!mounted) return;
+
     final appSession = context.read<AppSession>();
     final isCoach = appSession.managedTeamsIdsForSelectedSeason.isNotEmpty ||
         appSession.hasManagedTeamsInSelectedSeason;

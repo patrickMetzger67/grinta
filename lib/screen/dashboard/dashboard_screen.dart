@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:grinta/analytics/analytics_features.dart';
@@ -26,7 +28,7 @@ import '../../model/feature_discovery_ids.dart';
 import '../../util/app_theme.dart';
 import '../../widget/activity_rings_card.dart';
 import '../../widget/feature_discovery_random_banner.dart';
-import '../../widget/subscription_prompt_banner.dart';
+import '../../widget/alternating_monetization_banner.dart';
 import '../../widget/agendaMatchRow.dart';
 import '../../widget/metrics_panel.dart';
 import '../match_detail_screen.dart';
@@ -58,6 +60,39 @@ class _DashboardScreenState extends State<DashboardScreen> {
   DashboardWhereType _selectedStatsWhere = DashboardWhereType.player;
   DateTimeRange? _customRange;
 
+  bool _sessionWaitTimedOut = false;
+  Timer? _sessionWaitTimer;
+
+  @override
+  void dispose() {
+    _sessionWaitTimer?.cancel();
+    super.dispose();
+  }
+
+  void _startSessionWaitTimer() {
+    if (_sessionWaitTimer != null) return;
+    _sessionWaitTimer = Timer(const Duration(seconds: 15), () {
+      if (!mounted) return;
+      setState(() => _sessionWaitTimedOut = true);
+    });
+  }
+
+  void _cancelSessionWaitTimer() {
+    _sessionWaitTimer?.cancel();
+    _sessionWaitTimer = null;
+    if (_sessionWaitTimedOut) {
+      _sessionWaitTimedOut = false;
+    }
+  }
+
+  void _retrySessionLoad() {
+    setState(() => _sessionWaitTimedOut = false);
+    _sessionWaitTimer?.cancel();
+    _sessionWaitTimer = null;
+    unawaited(context.read<AppSession>().init());
+    _startSessionWaitTimer();
+  }
+
   @override
   Widget build(BuildContext context) {
     final colors = context.appColors;
@@ -82,8 +117,11 @@ class _DashboardScreenState extends State<DashboardScreen> {
         appSession.managedTeamsIdsForSelectedSeason;
 
     if (userId == null || userId.isEmpty) {
+      _startSessionWaitTimer();
       return _buildWaitingUserSession(context);
     }
+
+    _cancelSessionWaitTimer();
 
     final List<String> currentPlayerTeamIds = getTeamIdsForCurrentPlayerAndSeason(
       teams: appSession.teams,
@@ -147,7 +185,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      const SubscriptionPromptBanner(),
+                      const AlternatingMonetizationBanner(),
                       const FeatureDiscoveryRandomBanner(
                         parentScreenId: FeatureDiscoveryIds.tabDashboard,
                         excludeCurrentBaseScreen: true,
@@ -229,6 +267,13 @@ class _DashboardScreenState extends State<DashboardScreen> {
                     fontWeight: FontWeight.w800,
                   ),
                 ),
+                if (_sessionWaitTimedOut) ...[
+                  const SizedBox(height: 16),
+                  ElevatedButton(
+                    onPressed: _retrySessionLoad,
+                    child: Text(l10n.actionRetry),
+                  ),
+                ],
               ],
             ),
           ),

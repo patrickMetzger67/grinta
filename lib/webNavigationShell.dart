@@ -1,3 +1,5 @@
+import 'dart:async' show unawaited;
+
 import 'package:firebase_auth/firebase_auth.dart' as firebase_auth;
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
@@ -6,10 +8,13 @@ import 'package:grinta/analytics/analytics_interactions.dart';
 import 'package:grinta/analytics/shell_tab_analytics.dart';
 import 'package:grinta/feature_discovery/shell_navigation_scope.dart';
 import 'package:grinta/services/feature_discovery_service.dart';
+import 'package:grinta/services/subscription_service.dart';
 import 'core/extensions/l10n_extension.dart';
 import 'util/app_theme.dart';
 import 'widget/app_language_dropdown.dart';
 import 'widget/app_logo.dart';
+import 'widget/edit_member_profile.dart';
+import 'widget/subscription_details_sheet.dart';
 
 import 'main.dart';
 
@@ -52,6 +57,7 @@ class WebNavigationShell extends StatefulWidget {
 class _WebNavigationShellState extends State<WebNavigationShell> {
   late int _selectedIndex;
   bool _collapsed = false;
+  bool _settingsExpanded = false;
   bool _isSigningOut = false;
   final ShellTabAnalytics _tabAnalytics = ShellTabAnalytics();
 
@@ -62,6 +68,7 @@ class _WebNavigationShellState extends State<WebNavigationShell> {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _markTabFeatureVisited(_selectedIndex);
       _logTabScreen(_selectedIndex);
+      unawaited(SubscriptionService.instance.refreshForActiveSession());
     });
   }
 
@@ -279,9 +286,7 @@ class _WebNavigationShellState extends State<WebNavigationShell> {
                     ),
                   ),
                   Divider(color: colors.border, height: 1),
-                  _buildLanguageSelector(context),
-                  _buildThemeToggle(context),
-                  _buildLogoutButton(context),
+                  _buildSettingsSection(context),
                 ],
               ),
             ),
@@ -311,6 +316,126 @@ class _WebNavigationShellState extends State<WebNavigationShell> {
     if (_selectedIndex >= widget.items.length) {
       _selectedIndex = widget.items.length - 1;
     }
+  }
+
+  void _toggleSidebarCollapsed() {
+    setState(() {
+      _collapsed = !_collapsed;
+      if (_collapsed) {
+        _settingsExpanded = false;
+      }
+    });
+  }
+
+  void _toggleSettingsExpanded() {
+    setState(() {
+      if (_collapsed) {
+        _collapsed = false;
+        _settingsExpanded = true;
+      } else {
+        _settingsExpanded = !_settingsExpanded;
+      }
+    });
+  }
+
+  Widget _buildSettingsSection(BuildContext context) {
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        _buildSettingsToggle(context),
+        if (_settingsExpanded && !_collapsed) ...[
+          _buildLanguageSelector(context),
+          _buildThemeToggle(context),
+          ListenableBuilder(
+            listenable: SubscriptionService.instance,
+            builder: (context, _) {
+              if (!SubscriptionService.instance.hasActivePaidSubscription) {
+                return const SizedBox.shrink();
+              }
+              return _buildSubscriptionButton(context);
+            },
+          ),
+          _buildEditProfileButton(context),
+          _buildLogoutButton(context),
+        ],
+      ],
+    );
+  }
+
+  Widget _buildSettingsToggle(BuildContext context) {
+    final colors = context.appColors;
+    final textTheme = Theme.of(context).textTheme;
+    final l10n = context.l10n;
+
+    if (_collapsed) {
+      return Padding(
+        padding: const EdgeInsets.fromLTRB(12, 12, 12, 16),
+        child: Tooltip(
+          message: l10n.navSettings,
+          child: InkWell(
+            borderRadius: BorderRadius.circular(16),
+            onTap: _toggleSettingsExpanded,
+            child: Container(
+              width: double.infinity,
+              height: 52,
+              decoration: BoxDecoration(
+                color: colors.card,
+                borderRadius: BorderRadius.circular(16),
+                border: Border.all(color: colors.border),
+              ),
+              child: Icon(
+                Icons.settings_outlined,
+                color: colors.primary,
+              ),
+            ),
+          ),
+        ),
+      );
+    }
+
+    return Padding(
+      padding: EdgeInsets.fromLTRB(12, 12, 12, _settingsExpanded ? 0 : 16),
+      child: InkWell(
+        borderRadius: BorderRadius.circular(18),
+        onTap: _toggleSettingsExpanded,
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+          decoration: BoxDecoration(
+            color: colors.card,
+            borderRadius: BorderRadius.circular(18),
+            border: Border.all(color: colors.border),
+          ),
+          child: Row(
+            children: [
+              Icon(
+                Icons.settings_outlined,
+                color: colors.primary,
+                size: 22,
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Text(
+                  l10n.navSettings,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: textTheme.bodyLarge?.copyWith(
+                    color: colors.textPrimary,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ),
+              Icon(
+                _settingsExpanded
+                    ? Icons.expand_less_rounded
+                    : Icons.expand_more_rounded,
+                color: colors.textSecondary,
+                size: 22,
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
   }
 
   Widget _buildLanguageSelector(BuildContext context) {
@@ -423,6 +548,142 @@ class _WebNavigationShellState extends State<WebNavigationShell> {
     );
   }
 
+  Widget _buildSubscriptionButton(BuildContext context) {
+    final colors = context.appColors;
+    final textTheme = Theme.of(context).textTheme;
+
+    if (_collapsed) {
+      return Padding(
+        padding: const EdgeInsets.fromLTRB(12, 0, 12, 12),
+        child: Tooltip(
+          message: context.l10n.subscriptionMenu,
+          child: InkWell(
+            borderRadius: BorderRadius.circular(16),
+            onTap: () => showSubscriptionDetails(context),
+            child: Container(
+              width: double.infinity,
+              height: 52,
+              decoration: BoxDecoration(
+                color: colors.card,
+                borderRadius: BorderRadius.circular(16),
+                border: Border.all(color: colors.border),
+              ),
+              child: Icon(
+                Icons.card_membership_outlined,
+                color: colors.primary,
+              ),
+            ),
+          ),
+        ),
+      );
+    }
+
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(12, 0, 12, 12),
+      child: InkWell(
+        borderRadius: BorderRadius.circular(18),
+        onTap: () => showSubscriptionDetails(context),
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+          decoration: BoxDecoration(
+            color: colors.card,
+            borderRadius: BorderRadius.circular(18),
+            border: Border.all(color: colors.border),
+          ),
+          child: Row(
+            children: [
+              Icon(
+                Icons.card_membership_outlined,
+                color: colors.primary,
+                size: 22,
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Text(
+                  context.l10n.subscriptionMenu,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: textTheme.bodyLarge?.copyWith(
+                    color: colors.textPrimary,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildEditProfileButton(BuildContext context) {
+    final colors = context.appColors;
+    final textTheme = Theme.of(context).textTheme;
+
+    if (_collapsed) {
+      return Padding(
+        padding: const EdgeInsets.fromLTRB(12, 0, 12, 12),
+        child: Tooltip(
+          message: context.l10n.actionEditProfile,
+          child: InkWell(
+            borderRadius: BorderRadius.circular(16),
+            onTap: () => showEditMemberProfile(context),
+            child: Container(
+              width: double.infinity,
+              height: 52,
+              decoration: BoxDecoration(
+                color: colors.card,
+                borderRadius: BorderRadius.circular(16),
+                border: Border.all(color: colors.border),
+              ),
+              child: Icon(
+                Icons.person_outline_rounded,
+                color: colors.primary,
+              ),
+            ),
+          ),
+        ),
+      );
+    }
+
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(12, 0, 12, 12),
+      child: InkWell(
+        borderRadius: BorderRadius.circular(18),
+        onTap: () => showEditMemberProfile(context),
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+          decoration: BoxDecoration(
+            color: colors.card,
+            borderRadius: BorderRadius.circular(18),
+            border: Border.all(color: colors.border),
+          ),
+          child: Row(
+            children: [
+              Icon(
+                Icons.person_outline_rounded,
+                color: colors.primary,
+                size: 22,
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Text(
+                  context.l10n.actionEditProfile,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: textTheme.bodyLarge?.copyWith(
+                    color: colors.textPrimary,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
   Widget _buildLogoutButton(BuildContext context) {
     final colors = context.appColors;
     final textTheme = Theme.of(context).textTheme;
@@ -531,11 +792,7 @@ class _WebNavigationShellState extends State<WebNavigationShell> {
             const SizedBox(height: 8),
             InkWell(
               borderRadius: BorderRadius.circular(20),
-              onTap: () {
-                setState(() {
-                  _collapsed = !_collapsed;
-                });
-              },
+              onTap: _toggleSidebarCollapsed,
               child: Container(
                 width: 36,
                 height: 36,
@@ -572,11 +829,7 @@ class _WebNavigationShellState extends State<WebNavigationShell> {
           const SizedBox(width: 8),
           InkWell(
             borderRadius: BorderRadius.circular(24),
-            onTap: () {
-              setState(() {
-                _collapsed = !_collapsed;
-              });
-            },
+            onTap: _toggleSidebarCollapsed,
             child: Container(
               width: 42,
               height: 42,

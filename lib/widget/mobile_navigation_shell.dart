@@ -1,3 +1,5 @@
+import 'dart:async' show unawaited;
+
 import 'package:firebase_auth/firebase_auth.dart' as firebase_auth;
 import 'package:flutter/material.dart';
 import 'package:grinta/core/extensions/l10n_extension.dart';
@@ -20,8 +22,12 @@ import 'package:grinta/analytics/analytics_screen_names.dart';
 import 'package:grinta/analytics/shell_tab_analytics.dart';
 import 'package:grinta/feature_discovery/shell_navigation_scope.dart';
 import 'package:grinta/model/feature_discovery_ids.dart';
+import 'package:grinta/services/account_deletion_service.dart';
+import 'package:grinta/services/subscription_service.dart';
 import 'package:grinta/services/feature_discovery_service.dart';
 import 'package:grinta/widget/app_shell_scope.dart';
+import 'package:grinta/widget/edit_member_profile.dart';
+import 'package:grinta/widget/subscription_details_sheet.dart';
 import 'package:provider/provider.dart';
 
 const List<String> _kMobileTabFeatureIds = <String>[
@@ -55,7 +61,10 @@ class MobileNavigationShell extends StatefulWidget {
 class _MobileNavigationShellState extends State<MobileNavigationShell> {
   int _selectedIndex = 0;
   bool _isSigningOut = false;
+  bool _isDeletingAccount = false;
   final ShellTabAnalytics _tabAnalytics = ShellTabAnalytics();
+
+  bool get _isAccountActionBusy => _isSigningOut || _isDeletingAccount;
 
   @override
   void initState() {
@@ -63,6 +72,7 @@ class _MobileNavigationShellState extends State<MobileNavigationShell> {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _markTabFeatureVisited(_selectedIndex);
       _logTabScreen(_selectedIndex);
+      unawaited(SubscriptionService.instance.refreshForActiveSession());
     });
   }
 
@@ -94,7 +104,7 @@ class _MobileNavigationShellState extends State<MobileNavigationShell> {
   }
 
   Future<void> _logout() async {
-    if (_isSigningOut) return;
+    if (_isAccountActionBusy) return;
 
     final colors = context.appColors;
 
@@ -165,6 +175,259 @@ class _MobileNavigationShellState extends State<MobileNavigationShell> {
     }
   }
 
+  Future<void> _deleteAccount() async {
+    if (_isAccountActionBusy) return;
+
+    final colors = context.appColors;
+
+    final confirm = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) {
+        return AlertDialog(
+          backgroundColor: colors.card,
+          surfaceTintColor: Colors.transparent,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(18),
+            side: BorderSide(color: colors.border),
+          ),
+          title: Text(
+            dialogContext.l10n.actionDeleteAccountConfirmTitle,
+            style: TextStyle(
+              color: colors.textPrimary,
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+          content: Text(
+            dialogContext.l10n.actionDeleteAccountConfirmMessage,
+            style: TextStyle(
+              color: colors.textSecondary,
+            ),
+          ),
+          actions: [
+            OutlinedButton(
+              onPressed: () => Navigator.of(dialogContext).pop(false),
+              child: Text(dialogContext.l10n.actionCancel),
+            ),
+            ElevatedButton(
+              style: ElevatedButton.styleFrom(
+                backgroundColor: colors.warning,
+                foregroundColor: Colors.white,
+              ),
+              onPressed: () => Navigator.of(dialogContext).pop(true),
+              child: Text(dialogContext.l10n.actionDeleteAccount),
+            ),
+          ],
+        );
+      },
+    );
+
+    if (confirm != true) return;
+
+    AnalyticsInteractions.logFeature(AnalyticsFeatures.deleteAccount);
+
+    setState(() => _isDeletingAccount = true);
+
+    try {
+      await AccountDeletionService.instance.deleteCurrentAccount();
+      await firebase_auth.FirebaseAuth.instance.signOut();
+
+      if (!mounted) return;
+
+      Navigator.of(context, rootNavigator: true).pushNamedAndRemoveUntil(
+        '/',
+        (route) => false,
+      );
+    } on firebase_auth.FirebaseAuthException catch (e) {
+      if (!mounted) return;
+
+      final message = e.code == 'requires-recent-login'
+          ? context.l10n.errorDeleteAccountRequiresRecentLogin
+          : context.l10n.errorDeleteAccount(e.message ?? e.code);
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(message)),
+      );
+    } catch (e) {
+      if (!mounted) return;
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(context.l10n.errorDeleteAccount(e.toString())),
+        ),
+      );
+    } finally {
+      if (mounted) {
+        setState(() => _isDeletingAccount = false);
+      }
+    }
+  }
+
+  void _openSettingsSheet(BuildContext parentContext) {
+    final l10n = context.l10n;
+    final colors = context.appColors;
+
+    void closeSheetThen(void Function() action, BuildContext sheetContext) {
+      Navigator.of(sheetContext).pop();
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!mounted) return;
+        action();
+      });
+    }
+
+    showModalBottomSheet<void>(
+      context: parentContext,
+      isScrollControlled: true,
+      backgroundColor: colors.card,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (sheetContext) {
+        final app = MyApp.of(sheetContext);
+
+        return SafeArea(
+          child: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const SizedBox(height: 12),
+                Container(
+                  width: 40,
+                  height: 4,
+                  decoration: BoxDecoration(
+                    color: colors.border,
+                    borderRadius: BorderRadius.circular(999),
+                  ),
+                ),
+                const SizedBox(height: 8),
+                ListTile(
+                  leading: Icon(
+                    Icons.settings_outlined,
+                    color: colors.primary,
+                  ),
+                  title: Text(
+                    l10n.navSettings,
+                    style: TextStyle(
+                      color: colors.textPrimary,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                ),
+                const Divider(height: 1),
+                const Padding(
+                  padding: EdgeInsets.fromLTRB(16, 12, 16, 0),
+                  child: AppLanguageSidebarTile(),
+                ),
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 16),
+                  child: ListTile(
+                    contentPadding: EdgeInsets.zero,
+                    leading: Icon(
+                      app.isDarkMode
+                          ? Icons.dark_mode_rounded
+                          : Icons.light_mode_rounded,
+                      color: colors.primary,
+                    ),
+                    title: Text(
+                      l10n.themeDarkModeLabel,
+                      style: TextStyle(
+                        color: colors.textPrimary,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                    trailing: Switch(
+                      value: app.isDarkMode,
+                      onChanged: (value) {
+                        app.toggleTheme(value);
+                      },
+                      activeThumbColor: Colors.white,
+                      activeTrackColor: colors.primary,
+                      inactiveThumbColor: colors.textSecondary,
+                      inactiveTrackColor: colors.border,
+                    ),
+                  ),
+                ),
+                const Divider(height: 1),
+                ListenableBuilder(
+                  listenable: SubscriptionService.instance,
+                  builder: (context, _) {
+                    if (!SubscriptionService.instance
+                        .hasActivePaidSubscription) {
+                      return const SizedBox.shrink();
+                    }
+
+                    return ListTile(
+                      leading: Icon(
+                        Icons.card_membership_outlined,
+                        color: colors.primary,
+                      ),
+                      title: Text(
+                        l10n.subscriptionMenu,
+                        style: TextStyle(
+                          color: colors.textPrimary,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                      onTap: () {
+                        closeSheetThen(
+                          () => showSubscriptionDetails(context),
+                          sheetContext,
+                        );
+                      },
+                    );
+                  },
+                ),
+                ListTile(
+                  leading: Icon(
+                    Icons.person_outline_rounded,
+                    color: colors.primary,
+                  ),
+                  title: Text(
+                    l10n.actionEditProfile,
+                    style: TextStyle(
+                      color: colors.textPrimary,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                  onTap: () {
+                    closeSheetThen(
+                      () => showEditMemberProfile(context),
+                      sheetContext,
+                    );
+                  },
+                ),
+                ListTile(
+                  leading: _isSigningOut
+                      ? SizedBox(
+                          width: 24,
+                          height: 24,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2.2,
+                            color: colors.primary,
+                          ),
+                        )
+                      : Icon(Icons.logout_rounded, color: colors.primary),
+                  title: Text(
+                    l10n.actionLogout,
+                    style: TextStyle(
+                      color: colors.textPrimary,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                  onTap: _isAccountActionBusy
+                      ? null
+                      : () {
+                          closeSheetThen(() => _logout(), sheetContext);
+                        },
+                ),
+                const SizedBox(height: 8),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+
   void _openAccountMenu() {
     if (!mounted) return;
 
@@ -188,8 +451,6 @@ class _MobileNavigationShellState extends State<MobileNavigationShell> {
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
       builder: (sheetContext) {
-        final app = MyApp.of(sheetContext);
-
         return Consumer<AppSession>(
           builder: (context, appSession, _) {
             final managedTeamsIds =
@@ -300,62 +561,59 @@ class _MobileNavigationShellState extends State<MobileNavigationShell> {
                       ),
                     ],
                     const Divider(height: 1),
-                    const Padding(
-                      padding: EdgeInsets.fromLTRB(16, 12, 16, 0),
-                      child: AppLanguageSidebarTile(),
-                    ),
-                    Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 16),
-                      child: ListTile(
-                        contentPadding: EdgeInsets.zero,
-                        leading: Icon(
-                          app.isDarkMode
-                              ? Icons.dark_mode_rounded
-                              : Icons.light_mode_rounded,
-                          color: colors.primary,
-                        ),
-                        title: Text(
-                          l10n.themeDarkModeLabel,
-                          style: TextStyle(
-                            color: colors.textPrimary,
-                            fontWeight: FontWeight.w600,
-                          ),
-                        ),
-                        trailing: Switch(
-                          value: app.isDarkMode,
-                          onChanged: (value) {
-                            app.toggleTheme(value);
-                          },
-                          activeThumbColor: Colors.white,
-                          activeTrackColor: colors.primary,
-                          inactiveThumbColor: colors.textSecondary,
-                          inactiveTrackColor: colors.border,
-                        ),
-                      ),
-                    ),
-                    const Divider(height: 1),
                     ListTile(
-                      leading: _isSigningOut
-                          ? SizedBox(
-                              width: 24,
-                              height: 24,
-                              child: CircularProgressIndicator(
-                                strokeWidth: 2.2,
-                                color: colors.primary,
-                              ),
-                            )
-                          : Icon(Icons.logout_rounded, color: colors.primary),
+                      leading: Icon(
+                        Icons.settings_outlined,
+                        color: colors.primary,
+                      ),
                       title: Text(
-                        l10n.actionLogout,
+                        l10n.navSettings,
                         style: TextStyle(
                           color: colors.textPrimary,
                           fontWeight: FontWeight.w600,
                         ),
                       ),
-                      onTap: _isSigningOut
+                      trailing: Icon(
+                        Icons.chevron_right_rounded,
+                        color: colors.textSecondary,
+                      ),
+                      onTap: () {
+                        Navigator.of(sheetContext).pop();
+                        WidgetsBinding.instance.addPostFrameCallback((_) {
+                          if (!mounted) return;
+                          _openSettingsSheet(context);
+                        });
+                      },
+                    ),
+                    const Divider(height: 1),
+                    ListTile(
+                      leading: _isDeletingAccount
+                          ? SizedBox(
+                              width: 24,
+                              height: 24,
+                              child: CircularProgressIndicator(
+                                strokeWidth: 2.2,
+                                color: colors.warning,
+                              ),
+                            )
+                          : Icon(
+                              Icons.delete_forever_outlined,
+                              color: colors.warning,
+                            ),
+                      title: Text(
+                        l10n.actionDeleteAccount,
+                        style: TextStyle(
+                          color: colors.warning,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                      onTap: _isAccountActionBusy
                           ? null
                           : () {
-                              closeSheetThen(() => _logout(), sheetContext);
+                              closeSheetThen(
+                                () => _deleteAccount(),
+                                sheetContext,
+                              );
                             },
                     ),
                     const SizedBox(height: 8),
@@ -473,8 +731,8 @@ class _MobileAvatarMenuButton extends StatelessWidget {
           );
         }
 
-        final imageProvider =
-            appSession.playersPhoto[player.keyMember!];
+        final imageUrls =
+            appSession.playersPhotoUrls[player.keyMember!];
 
         return Material(
           color: Colors.transparent,
@@ -483,8 +741,9 @@ class _MobileAvatarMenuButton extends StatelessWidget {
             customBorder: const CircleBorder(),
             child: AppSessionPlayerAvatar(
               player: player,
-              imageProvider: imageProvider,
+              imageUrls: imageUrls,
               radius: 20,
+              watchSessionForStaleWebAvatar: true,
             ),
           ),
         );

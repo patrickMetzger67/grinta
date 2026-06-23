@@ -10,9 +10,11 @@ import 'analytics/analytics_features.dart';
 import 'analytics/analytics_interactions.dart';
 import 'analytics/analytics_screen_names.dart';
 import 'core/extensions/l10n_extension.dart';
-import 'model/member_profile_data.dart';
+import 'model/player.dart';
 import 'services/playerService.dart';
 import 'services/userService.dart';
+import 'services/user_trial_service.dart';
+import 'util/player_positions.dart';
 import 'services/active_session_service.dart';
 import 'services/analytics_service.dart';
 import 'navigation/app_navigator.dart';
@@ -21,9 +23,9 @@ import 'services/social_auth_service.dart';
 import 'widget/app_language_dropdown.dart';
 import 'widget/app_logo.dart';
 import 'widget/member_profile_form.dart';
+import 'widget/legal_links_footer.dart';
 import 'widget/social_auth_button.dart';
 import 'widget/subscription_paywall.dart';
-import 'services/subscription_service.dart';
 
 bool _isPasswordValid(String password) {
   if (password.length < 8) return false;
@@ -178,6 +180,7 @@ class _LoginScreenState extends State<LoginScreen> {
       }
 
       await appSession.init();
+      await appSession.refreshPlayerAvatarUrls();
 
       // AuthGate réagit à authStateChanges et affiche l'app sans navigation.
     } on FirebaseAuthException catch (e) {
@@ -233,15 +236,31 @@ class _LoginScreenState extends State<LoginScreen> {
   Future<void> _signUpWithCredentials(
     String email,
     String password, {
-    required MemberProfileData memberProfile,
     bool manageParentLoading = true,
     BuildContext? snackBarContext,
   }) async {
-    FocusScope.of(context).unfocus();
+    if (mounted) {
+      FocusScope.of(context).unfocus();
+    } else if (snackBarContext != null && snackBarContext.mounted) {
+      FocusScope.of(snackBarContext).unfocus();
+    }
+
+    final rootContext = appNavigatorKey.currentContext;
+    final l10n = (mounted ? context.l10n : null) ??
+        (snackBarContext != null && snackBarContext.mounted
+            ? snackBarContext.l10n
+            : null) ??
+        (rootContext != null && rootContext.mounted
+            ? rootContext.l10n
+            : null);
+    if (l10n == null) {
+      debugPrint('login: email signup aborted — no context for l10n');
+      return;
+    }
 
     if (email.isEmpty || password.isEmpty) {
       _showSnackBar(
-        context.l10n.emailAndPasswordRequired,
+        l10n.emailAndPasswordRequired,
         snackBarContext: snackBarContext,
       );
       return;
@@ -249,15 +268,7 @@ class _LoginScreenState extends State<LoginScreen> {
 
     if (!_isPasswordValid(password)) {
       _showSnackBar(
-        context.l10n.passwordRequirements,
-        snackBarContext: snackBarContext,
-      );
-      return;
-    }
-
-    if (!memberProfile.isValid) {
-      _showSnackBar(
-        context.l10n.memberProfileIncomplete,
+        l10n.passwordRequirements,
         snackBarContext: snackBarContext,
       );
       return;
@@ -265,18 +276,25 @@ class _LoginScreenState extends State<LoginScreen> {
 
     if (manageParentLoading) {
       if (_isLoading) return;
-      setState(() => _isLoading = true);
+      if (mounted) {
+        setState(() => _isLoading = true);
+      }
     }
 
     AnalyticsInteractions.logFeature(AnalyticsFeatures.loginAttempt);
 
-    final appSession = context.read<AppSession>();
-    final l10n = context.l10n;
+    final appSession = (mounted ? context : null)?.read<AppSession>() ??
+        (rootContext != null && rootContext.mounted
+            ? rootContext.read<AppSession>()
+            : null);
+    if (appSession == null) {
+      debugPrint('login: email signup aborted — no AppSession');
+      return;
+    }
 
     try {
       final emailExists = await UserService().existsByEmail(email);
       if (emailExists) {
-        if (!mounted) return;
         _showSnackBar(
           l10n.emailAlreadyInUse,
           snackBarContext: snackBarContext,
@@ -296,25 +314,60 @@ class _LoginScreenState extends State<LoginScreen> {
         throw Exception('Firebase user uid missing after signup');
       }
 
-      await PlayerService().createMember(
-        userId: newUserUid,
-        profile: memberProfile,
-      );
-
       await AnalyticsService.instance.logLogin(method: 'email');
-      await AnalyticsService.instance.logFeatureUsed(
-        feature: AnalyticsFeatures.loginSuccess,
-      );
+
+      if (manageParentLoading && mounted) {
+        setState(() => _isLoading = false);
+      }
 
       _dismissLoginBottomSheetIfOpen(sheetContext: snackBarContext);
       await _waitForBottomSheetDismissal();
 
-      await _finishOnboardingAfterMemberCreated(appSession);
+      final profile = await _promptMemberProfile();
+      debugPrint(
+        'login: member profile dialog result=${profile?.firstName ?? 'cancelled'}',
+      );
+
+      if (profile == null) {
+        await FirebaseAuth.instance.signOut();
+        return;
+      }
+
+      if (manageParentLoading && mounted) {
+        setState(() => _isLoading = true);
+      }
+
+      try {
+        await _createUserAccountDocument(
+          uid: newUserUid,
+          email: email,
+          profile: profile,
+        );
+        await _completeSocialOnboarding(uid: newUserUid, profile: profile);
+        await _refreshSessionAvatars(appSession);
+      } catch (e) {
+        debugPrint('Email signup profile error: $e');
+        await FirebaseAuth.instance.signOut();
+        final message = e is StateError &&
+                e.message == 'member profile incomplete'
+            ? l10n.memberProfileIncomplete
+            : '${l10n.unexpectedError} : $e';
+        _showSnackBar(message, snackBarContext: snackBarContext);
+        return;
+      }
+
+      await AnalyticsService.instance.logFeatureUsed(
+        feature: AnalyticsFeatures.loginSuccess,
+      );
+
+      await _finishOnboardingAfterMemberCreated(
+        appSession,
+        profile: profile,
+      );
     } on FirebaseAuthException catch (e) {
       debugPrint(
         'Auth error method=signup code=${e.code} message=${e.message}',
       );
-      if (!mounted) return;
 
       String message = l10n.signInError;
 
@@ -339,7 +392,6 @@ class _LoginScreenState extends State<LoginScreen> {
       _showSnackBar(message, snackBarContext: snackBarContext);
     } catch (e) {
       debugPrint('Auth error method=signup unexpected: $e');
-      if (!mounted) return;
 
       _showSnackBar(
         '${l10n.unexpectedError} : $e',
@@ -433,10 +485,28 @@ class _LoginScreenState extends State<LoginScreen> {
     );
   }
 
-  Future<void> _finishOnboardingAfterMemberCreated(AppSession appSession) async {
-    final wantsCreateTeam = await _promptCreateTeam();
+  Future<void> _refreshSessionAvatars(AppSession appSession) async {
+    final sessionContext = appNavigatorKey.currentContext;
+    if (sessionContext != null && sessionContext.mounted) {
+      await sessionContext.read<AppSession>().refreshPlayerAvatarUrls();
+      return;
+    }
+    await appSession.refreshPlayerAvatarUrls();
+  }
 
-    if (!SubscriptionService.instance.isSubscribed) {
+  Future<void> _finishOnboardingAfterMemberCreated(
+    AppSession appSession, {
+    required Player profile,
+  }) async {
+    final isEducator = profile.positionCodes.contains(positionCodeEducator);
+    bool? wantsCreateTeam;
+    if (isEducator) {
+      wantsCreateTeam = await _promptCreateTeam();
+    }
+
+    await UserTrialService.instance.ensureInitialized();
+
+    if (!UserTrialService.instance.hasPremiumAccess) {
       final rootContext = appNavigatorKey.currentContext;
       if (rootContext != null && rootContext.mounted) {
         await SubscriptionPaywall.show(
@@ -463,13 +533,16 @@ class _LoginScreenState extends State<LoginScreen> {
 
     final sessionContext = appNavigatorKey.currentContext;
     if (sessionContext != null && sessionContext.mounted) {
-      await sessionContext.read<AppSession>().init();
+      final session = sessionContext.read<AppSession>();
+      await session.init();
+      await session.refreshPlayerAvatarUrls();
     } else {
       await appSession.init();
+      await appSession.refreshPlayerAvatarUrls();
     }
   }
 
-  Future<MemberProfileData?> _promptMemberProfile() async {
+  Future<Player?> _promptMemberProfile() async {
     final rootContext = appNavigatorKey.currentContext;
     if (rootContext == null || !rootContext.mounted) {
       debugPrint('login: member profile dialog skipped — no root context');
@@ -487,7 +560,7 @@ class _LoginScreenState extends State<LoginScreen> {
       return null;
     }
 
-    return showDialog<MemberProfileData?>(
+    return showDialog<Player?>(
       context: rootContext,
       useRootNavigator: true,
       barrierDismissible: false,
@@ -497,9 +570,9 @@ class _LoginScreenState extends State<LoginScreen> {
 
   Future<void> _completeSocialOnboarding({
     required String uid,
-    required MemberProfileData profile,
+    required Player profile,
   }) async {
-    if (!profile.isValid) {
+    if (!profile.isProfileAndContactValid) {
       throw StateError('member profile incomplete');
     }
 
@@ -507,6 +580,20 @@ class _LoginScreenState extends State<LoginScreen> {
       userId: uid,
       profile: profile,
     );
+  }
+
+  Future<void> _createUserAccountDocument({
+    required String uid,
+    required String email,
+    required Player profile,
+  }) async {
+    await UserService().createAccountIfNeeded(
+      uid: uid,
+      email: email,
+      firstName: profile.firstName?.trim() ?? '',
+      lastName: profile.lastName?.trim() ?? '',
+    );
+    await UserTrialService.instance.reload();
   }
 
   Future<void> _signInWithSocial(
@@ -533,7 +620,6 @@ class _LoginScreenState extends State<LoginScreen> {
     final methodName = switch (provider) {
       SocialAuthProvider.google => 'google',
       SocialAuthProvider.apple => 'apple',
-      SocialAuthProvider.meta => 'facebook',
     };
 
     AnalyticsInteractions.logFeature(AnalyticsFeatures.loginAttempt);
@@ -554,7 +640,10 @@ class _LoginScreenState extends State<LoginScreen> {
       final credential =
           await SocialAuthService.instance.signIn(provider);
       final uid = credential.user?.uid;
-      debugPrint('login: social auth success uid=$uid provider=$methodName');
+      debugPrint(
+        'login: social auth success uid=$uid provider=$methodName '
+        'photoURL=${credential.user?.photoURL}',
+      );
 
       if (uid == null) {
         throw Exception('Firebase user uid missing after social login');
@@ -566,6 +655,7 @@ class _LoginScreenState extends State<LoginScreen> {
           await _userNeedsInvitationOnboarding(credential);
       debugPrint('login: needsInvitation=$needsInvitation');
       var memberJustCreated = false;
+      Player? createdProfile;
 
       if (needsInvitation) {
         if (manageParentLoading && mounted) {
@@ -590,7 +680,19 @@ class _LoginScreenState extends State<LoginScreen> {
         }
 
         try {
+          await _createUserAccountDocument(
+            uid: uid,
+            email: credential.user?.email ?? '',
+            profile: profile,
+          );
           await _completeSocialOnboarding(uid: uid, profile: profile);
+          final refreshSession = (appNavigatorKey.currentContext ?? rootContext)
+                  ?.read<AppSession>() ??
+              (mounted ? context.read<AppSession>() : null);
+          if (refreshSession != null) {
+            await _refreshSessionAvatars(refreshSession);
+          }
+          createdProfile = profile;
           memberJustCreated = true;
         } catch (e) {
           debugPrint('Social onboarding error: $e');
@@ -611,19 +713,30 @@ class _LoginScreenState extends State<LoginScreen> {
         feature: AnalyticsFeatures.loginSuccess,
       );
 
-      if (memberJustCreated) {
+      if (memberJustCreated && createdProfile != null) {
         final appSession = (appNavigatorKey.currentContext ?? rootContext)
                 ?.read<AppSession>() ??
             (mounted ? context.read<AppSession>() : null);
         if (appSession != null) {
-          await _finishOnboardingAfterMemberCreated(appSession);
+          await _finishOnboardingAfterMemberCreated(
+            appSession,
+            profile: createdProfile,
+          );
+        } else {
+          debugPrint(
+            'login: onboarding finish skipped — no AppSession for avatar refresh',
+          );
         }
       } else {
         final sessionContext = appNavigatorKey.currentContext ?? rootContext;
         if (sessionContext != null && sessionContext.mounted) {
-          await sessionContext.read<AppSession>().init();
+          final session = sessionContext.read<AppSession>();
+          await session.init();
+          await session.refreshPlayerAvatarUrls();
         } else if (mounted) {
-          await context.read<AppSession>().init();
+          final session = context.read<AppSession>();
+          await session.init();
+          await session.refreshPlayerAvatarUrls();
         }
       }
       debugPrint('login: social sign-in complete, appSession initialized');
@@ -704,11 +817,9 @@ class _LoginScreenState extends State<LoginScreen> {
           setState(() => _obscurePassword = !_obscurePassword);
         },
         onSignIn: _submit,
-        onSignUp: (email, password, {required memberProfile}) =>
-            _signUpWithCredentials(
+        onSignUp: (email, password) => _signUpWithCredentials(
           email,
           password,
-          memberProfile: memberProfile,
         ),
         onSocialSignIn: _signInWithSocial,
         onForgotPassword: () {},
@@ -738,11 +849,7 @@ class _WebLoginLayout extends StatelessWidget {
   final ValueChanged<int> onPageChanged;
   final VoidCallback onToggleObscure;
   final VoidCallback onSignIn;
-  final Future<void> Function(
-    String email,
-    String password, {
-    required MemberProfileData memberProfile,
-  }) onSignUp;
+  final Future<void> Function(String email, String password) onSignUp;
   final Future<void> Function(SocialAuthProvider provider) onSocialSignIn;
   final VoidCallback onForgotPassword;
   final VoidCallback onPreviousPage;
@@ -1113,6 +1220,8 @@ class _MobileLoginLayout extends StatelessWidget {
                                 child: Text(context.l10n.signIn),
                               ),
                             ),
+                            const SizedBox(height: 12),
+                            const LegalLinksFooter(),
                             const SizedBox(height: 20),
                           ],
                         ),
@@ -1137,7 +1246,30 @@ class _MemberProfileDialog extends StatefulWidget {
 }
 
 class _MemberProfileDialogState extends State<_MemberProfileDialog> {
-  MemberProfileData? _memberProfile;
+  MemberProfileFormState? _formState;
+
+  void _onFormStateCreated(MemberProfileFormState state) {
+    _formState = state;
+  }
+
+  void _submit() {
+    final formState = _formState;
+    if (formState == null || !formState.mounted) return;
+
+    final validationError = formState.validateAndGetError();
+    if (validationError != null) {
+      AppSnackbar.show(context, validationError);
+      return;
+    }
+
+    final profile = formState.buildProfile();
+    if (profile == null) {
+      AppSnackbar.show(context, context.l10n.memberProfileIncomplete);
+      return;
+    }
+
+    Navigator.of(context).pop(profile);
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -1147,8 +1279,9 @@ class _MemberProfileDialogState extends State<_MemberProfileDialog> {
       title: Text(context.l10n.memberProfileTitle),
       content: SingleChildScrollView(
         child: MemberProfileForm(
+          key: const ValueKey('signup-member-profile'),
           enabled: true,
-          onChanged: (profile) => setState(() => _memberProfile = profile),
+          onFormStateCreated: _onFormStateCreated,
         ),
       ),
       actions: [
@@ -1157,9 +1290,7 @@ class _MemberProfileDialogState extends State<_MemberProfileDialog> {
           child: Text(context.l10n.actionCancel),
         ),
         ElevatedButton(
-          onPressed: _memberProfile?.isValid == true
-              ? () => Navigator.of(context).pop(_memberProfile)
-              : null,
+          onPressed: _submit,
           child: Text(context.l10n.memberProfileSubmit),
         ),
       ],
@@ -1178,11 +1309,7 @@ class _LoginCard extends StatefulWidget {
   final bool isLoading;
   final VoidCallback onToggleObscure;
   final VoidCallback onSignIn;
-  final Future<void> Function(
-    String email,
-    String password, {
-    required MemberProfileData memberProfile,
-  }) onSignUp;
+  final Future<void> Function(String email, String password) onSignUp;
   final Future<void> Function(SocialAuthProvider provider) onSocialSignIn;
   final VoidCallback onForgotPassword;
   final ValueChanged<Locale> onLocaleChanged;
@@ -1211,7 +1338,6 @@ class _LoginCardState extends State<_LoginCard> {
 
   bool _isSignUpMode = false;
   bool _obscureConfirmPassword = true;
-  MemberProfileData? _memberProfile;
 
   @override
   void dispose() {
@@ -1219,15 +1345,10 @@ class _LoginCardState extends State<_LoginCard> {
     super.dispose();
   }
 
-  void _resetMemberProfileState() {
-    _memberProfile = null;
-  }
-
   void _toggleMode() {
     setState(() {
       _isSignUpMode = !_isSignUpMode;
       _confirmPasswordCtrl.clear();
-      _resetMemberProfileState();
     });
   }
 
@@ -1236,7 +1357,6 @@ class _LoginCardState extends State<_LoginCard> {
       setState(() {
         _isSignUpMode = false;
         _confirmPasswordCtrl.clear();
-        _resetMemberProfileState();
       });
       return;
     }
@@ -1245,9 +1365,6 @@ class _LoginCardState extends State<_LoginCard> {
   }
 
   bool get _showBackButton => widget.onBack != null || _isSignUpMode;
-
-  bool get _canSubmitSignUp =>
-      _memberProfile != null && _memberProfile!.isValid;
 
   Future<void> _handleSubmit() async {
     final email = widget.emailCtrl.text.trim();
@@ -1260,16 +1377,7 @@ class _LoginCardState extends State<_LoginCard> {
         return;
       }
 
-      if (_memberProfile == null || !_memberProfile!.isValid) {
-        showLoginSnackBar(context, context.l10n.memberProfileIncomplete);
-        return;
-      }
-
-      await widget.onSignUp(
-        email,
-        password,
-        memberProfile: _memberProfile!,
-      );
+      await widget.onSignUp(email, password);
     } else {
       widget.onSignIn();
     }
@@ -1381,13 +1489,6 @@ class _LoginCardState extends State<_LoginCard> {
                 ),
                 onSubmitted: (_) => _handleSubmit(),
               ),
-              const SizedBox(height: 20),
-              MemberProfileForm(
-                enabled: !widget.isLoading,
-                onChanged: (profile) {
-                  setState(() => _memberProfile = profile);
-                },
-              ),
             ],
             const SizedBox(height: 10),
             if (!_isSignUpMode)
@@ -1431,10 +1532,7 @@ class _LoginCardState extends State<_LoginCard> {
             SizedBox(
               width: double.infinity,
               child: ElevatedButton(
-                onPressed: widget.isLoading ||
-                        (_isSignUpMode && !_canSubmitSignUp)
-                    ? null
-                    : _handleSubmit,
+                onPressed: widget.isLoading ? null : _handleSubmit,
                 child: widget.isLoading
                     ? const SizedBox(
                   width: 22,
@@ -1478,6 +1576,8 @@ class _LoginCardState extends State<_LoginCard> {
                   ? null
                   : () => widget.onSocialSignIn(SocialAuthProvider.apple),
             ),
+            const SizedBox(height: 16),
+            const LegalLinksFooter(),
           ],
         ),
       ),
@@ -1495,7 +1595,6 @@ class _LoginBottomSheet extends StatefulWidget {
   final Future<void> Function(
     String email,
     String password, {
-    required MemberProfileData memberProfile,
     bool manageParentLoading,
     BuildContext? snackBarContext,
   }) onSignUp;
@@ -1551,9 +1650,8 @@ class _LoginBottomSheetState extends State<_LoginBottomSheet> {
 
   Future<void> _handleSignUp(
     String email,
-    String password, {
-    required MemberProfileData memberProfile,
-  }) async {
+    String password,
+  ) async {
     if (_isLoading) return;
 
     setState(() => _isLoading = true);
@@ -1561,7 +1659,6 @@ class _LoginBottomSheetState extends State<_LoginBottomSheet> {
       await widget.onSignUp(
         email,
         password,
-        memberProfile: memberProfile,
         manageParentLoading: false,
         snackBarContext: context,
       );

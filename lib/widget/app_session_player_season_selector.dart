@@ -56,7 +56,7 @@ class AppSessionPlayerSeasonSelector extends StatelessWidget {
               _PlayerSelectorField(
                 players: playerList,
                 selectedPlayerId: selectedPlayerId,
-                selectedImageProvider: appSession.playersPhoto[selectedPlayerId],
+                selectedImageUrls: appSession.playersPhotoUrls[selectedPlayerId],
                 onChanged: (value) {
                   if (value == null) return;
                   appSession.setSelectedPlayerId(value);
@@ -65,7 +65,7 @@ class AppSessionPlayerSeasonSelector extends StatelessWidget {
             else
               _SinglePlayerDisplay(
                 player: selectedPlayer,
-                imageProvider: appSession.playersPhoto[selectedPlayerId],
+                imageUrls: appSession.playersPhotoUrls[selectedPlayerId],
               ),
             const SizedBox(height: 12),
             DropdownButtonFormField<String>(
@@ -169,13 +169,13 @@ class AppSessionPlayerSeasonSelector extends StatelessWidget {
 class _PlayerSelectorField extends StatelessWidget {
   final List<Player> players;
   final String selectedPlayerId;
-  final ImageProvider? selectedImageProvider;
+  final List<String>? selectedImageUrls;
   final ValueChanged<String?> onChanged;
 
   const _PlayerSelectorField({
     required this.players,
     required this.selectedPlayerId,
-    required this.selectedImageProvider,
+    required this.selectedImageUrls,
     required this.onChanged,
   });
 
@@ -190,8 +190,9 @@ class _PlayerSelectorField extends StatelessWidget {
       children: [
         AppSessionPlayerAvatar(
           player: selectedPlayer,
-          imageProvider: selectedImageProvider,
+          imageUrls: selectedImageUrls,
           radius: 18,
+          watchSessionForStaleWebAvatar: true,
         ),
         const SizedBox(width: 10),
         Expanded(
@@ -216,11 +217,11 @@ class _PlayerSelectorField extends StatelessWidget {
 
 class _SinglePlayerDisplay extends StatelessWidget {
   final Player player;
-  final ImageProvider? imageProvider;
+  final List<String>? imageUrls;
 
   const _SinglePlayerDisplay({
     required this.player,
-    required this.imageProvider,
+    required this.imageUrls,
   });
 
   @override
@@ -240,8 +241,9 @@ class _SinglePlayerDisplay extends StatelessWidget {
         children: [
           AppSessionPlayerAvatar(
             player: player,
-            imageProvider: imageProvider,
+            imageUrls: imageUrls,
             radius: 18,
+            watchSessionForStaleWebAvatar: true,
           ),
           const SizedBox(width: 10),
           Expanded(

@@ -1,5 +1,8 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 
+import '../util/player_profile_validator.dart' as profile_validator;
+import '../util/search_options.dart';
+
 String keyPlayerFirstName = 'firstName';
 String keyPlayerLastName = 'lastName';
 String keyPlayerStatut = 'statut';
@@ -21,6 +24,9 @@ String keyPlayerPersonNumber = 'personNumber';
 String keyPlayerClubId = 'clubId';
 String keyPlayerSearchOptions = 'searchOptions';
 String keyPlayerUnavailability = 'unavailability';
+String keyPlayerEmail = 'email';
+String keyPlayerPhoneE164 = 'phoneE164';
+String keyPlayerPhoneCountryCode = 'phoneCountryCode';
 
 
 enum  UnavailabilityType { holiday, unwell, injured, other }
@@ -72,6 +78,9 @@ class Player {
   String? creatorUserId;  // if null the player is created by a backend program otherwise it contains the app user id
   String? personNumber;
   String? clubId;
+  String? email;
+  String? phoneE164;
+  String? phoneCountryCode;
   List<dynamic>? users=[];
 
   List<dynamic>? searchOptions=[];
@@ -96,120 +105,332 @@ class Player {
     this.photo='',
     this.personNumber,
     this.clubId,
+    this.email,
+    this.phoneE164,
+    this.phoneCountryCode,
     this.searchOptions,
     this.unavailable,
     this.users,
   });
 
-  Player.fromDocumentsnapshot(DocumentSnapshot snapshot) {
+  List<int> get positionCodes {
+    final raw = positions;
+    if (raw == null || raw.isEmpty) return const [];
 
-    ref = snapshot.reference;
+    return raw
+        .map((value) {
+          if (value is int) return value;
+          return int.tryParse(value.toString());
+        })
+        .whereType<int>()
+        .toList();
+  }
 
-    Map<String, dynamic>? map = snapshot.data() as Map<String, dynamic>?;
+  bool get isProfileComplete => profile_validator.isProfileComplete(this);
 
-    if(map != null) {
-      if(map[keyPlayerKeyMember] != null) {
-        keyMember     = map[keyPlayerKeyMember];
-      } else {
-        keyMember = '';
-      }
+  bool get isProfileAndContactValid =>
+      profile_validator.isProfileAndContactValid(this);
 
-      firstName     = map[keyPlayerFirstName];
-      lastName      = map[keyPlayerLastName];
-      statut        = map[keyPlayerStatut];
-      category      = map[keyPlayerCategory];
-      birthDay      = map[keyPlayerBirthDay];
-      birthPlace    = map[keyPlayerBirthPlace];
-      nationality   = map[keyPlayerNationality];
-      if (map[keyPlayerPositions] != null) {
-        positions = map[keyPlayerPositions];
-      } else {
-        positions = [];
-      }
-      if(map[keyPlayerSexe] != null) {
-        sexe          = map[keyPlayerSexe];
-      } else {
-        sexe = 'M';
-      }
+  Player toEditableProfile() {
+    final birthDayTrimmed = birthDay?.trim();
+    final birthPlaceTrimmed = birthPlace?.trim();
+    final emailTrimmed = email?.trim();
+    final phoneTrimmed = phoneE164?.trim();
+    final phoneCountryTrimmed = phoneCountryCode?.trim();
 
-      userID        = map[keyPlayerUserID];
-      if(map[keyPlayerPhoto] != null) {
-        photo         = map[keyPlayerPhoto];
-      } else {
-        photo = "";
-      }
+    return copyWith(
+      firstName: firstName?.trim() ?? '',
+      lastName: lastName?.trim() ?? '',
+      birthDay: birthDayTrimmed != null && birthDayTrimmed.isNotEmpty
+          ? birthDayTrimmed
+          : '',
+      birthPlace: birthPlaceTrimmed != null && birthPlaceTrimmed.isNotEmpty
+          ? birthPlaceTrimmed
+          : '',
+      nationality: nationality?.trim() ?? '',
+      positions: positionCodes,
+      email: emailTrimmed != null && emailTrimmed.isNotEmpty
+          ? emailTrimmed
+          : null,
+      phoneE164: phoneTrimmed != null && phoneTrimmed.isNotEmpty
+          ? phoneTrimmed
+          : null,
+      phoneCountryCode: phoneCountryTrimmed != null &&
+              phoneCountryTrimmed.isNotEmpty
+          ? phoneCountryTrimmed
+          : null,
+    );
+  }
 
-      if(map[keyPlayerViews] != null) {
-        views         = map[keyPlayerViews];
-      } else {
-        views         = 0;
-      }
-      if(map[keyPlayerLikes] != null) {
-        likes         = map[keyPlayerLikes];
-      } else {
-        likes= [];
-      }
-      if(map[keyPlayerCreatorUserId] != null) {
-        creatorUserId   = map[keyPlayerCreatorUserId];
-      }
-      if(map[keyPlayerPersonNumber] != null) {
-        personNumber    = map[keyPlayerPersonNumber];
-      } else {
-        personNumber = '';
-      }
+  static Player forNewMember({
+    required String userId,
+    required Player profile,
+  }) {
+    final searchOptions = buildPlayerSearchOptions(
+      firstName: profile.firstName?.trim() ?? '',
+      lastName: profile.lastName?.trim() ?? '',
+    );
 
-      if(map[keyPlayerClubId] != null) {
-        clubId = map[keyPlayerClubId];
-      } else {
-        clubId = '';
-      }
+    return Player(
+      firstName: profile.firstName?.trim() ?? '',
+      lastName: profile.lastName?.trim() ?? '',
+      birthDay: profile.birthDay?.trim() ?? '',
+      birthPlace: profile.birthPlace?.trim() ?? '',
+      nationality: profile.nationality?.trim() ?? '',
+      positions: profile.positionCodes,
+      email: profile.email?.trim() ?? '',
+      phoneE164: profile.phoneE164?.trim() ?? '',
+      phoneCountryCode: profile.phoneCountryCode?.trim() ?? '',
+      statut: 1,
+      userID: userId,
+      users: [userId],
+      searchOptions: searchOptions,
+      views: 0,
+      likes: [],
+      photo: '',
+      clubId: '',
+      category: '',
+      sexe: 'M',
+      personNumber: '',
+    )..creatorUserId = userId;
+  }
 
-      if(map[keyPlayerSearchOptions] != null) {
-        searchOptions = map[keyPlayerSearchOptions];
-      } else {
-        searchOptions = [];
-      }
+  Map<String, dynamic> toProfileUpdateMap() {
+    final searchOptions = buildPlayerSearchOptions(
+      firstName: firstName?.trim() ?? '',
+      lastName: lastName?.trim() ?? '',
+    );
 
-      if(map[keyPlayerUnavailability] != null) {
-        unavailable = [];
-        List<dynamic> _unavailabilityList  = map[keyPlayerUnavailability];
-        for(int i=0; i <_unavailabilityList.length;i++) {
-          Unavailability _unavailability = Unavailability();
-          _unavailability.id = _unavailabilityList[i]['id'];
-          _unavailability.from = _unavailabilityList[i]['from'];
-          _unavailability.to = _unavailabilityList[i]['to'];
-          _unavailability.details = _unavailabilityList[i]['details'];
-          if(_unavailabilityList[i]['isVisible'] != null) {
-            _unavailability.isVisible = _unavailabilityList[i]['isVisible'];
-          } else {
-            _unavailability.isVisible = true;
-          }
-          switch(_unavailabilityList[i]['type']) {
-            case 'holiday':
-              _unavailability.unavailabilityType = UnavailabilityType.holiday;
-              break;
-            case 'unwell':
-              _unavailability.unavailabilityType = UnavailabilityType.unwell;
-              break;
-            case 'injured':
-              _unavailability.unavailabilityType = UnavailabilityType.injured;
-              break;
-            case 'other':
-              _unavailability.unavailabilityType = UnavailabilityType.other;
-              break;
-          }
-          unavailable!.add(_unavailability);
-        }
-      } else {
-        unavailable = [];
-      }
+    return {
+      keyPlayerFirstName: firstName?.trim() ?? '',
+      keyPlayerLastName: lastName?.trim() ?? '',
+      keyPlayerBirthDay: birthDay?.trim() ?? '',
+      keyPlayerBirthPlace: birthPlace?.trim() ?? '',
+      keyPlayerNationality: nationality?.trim() ?? '',
+      keyPlayerPositions: positionCodes,
+      keyPlayerEmail: email?.trim() ?? '',
+      keyPlayerPhoneE164: phoneE164?.trim() ?? '',
+      keyPlayerPhoneCountryCode: phoneCountryCode?.trim() ?? '',
+      keyPlayerSearchOptions: searchOptions,
+    };
+  }
 
-      if(map[keyPlayerUsers] != null) {
-        users = map[keyPlayerUsers];
-      } else {
-        users = [];
-      }
+  Player copyWith({
+    String? keyMember,
+    String? firstName,
+    String? lastName,
+    int? statut,
+    String? birthDay,
+    String? birthPlace,
+    String? nationality,
+    List<dynamic>? positions,
+    String? category,
+    String? sexe,
+    String? userID,
+    int? views,
+    List<dynamic>? likes,
+    String? photo,
+    String? creatorUserId,
+    String? personNumber,
+    String? clubId,
+    String? email,
+    String? phoneE164,
+    String? phoneCountryCode,
+    List<dynamic>? users,
+    List<dynamic>? searchOptions,
+    List<dynamic>? unavailable,
+    DocumentReference? ref,
+  }) {
+    return Player(
+      keyMember: keyMember ?? this.keyMember,
+      firstName: firstName ?? this.firstName,
+      lastName: lastName ?? this.lastName,
+      statut: statut ?? this.statut,
+      birthDay: birthDay ?? this.birthDay,
+      birthPlace: birthPlace ?? this.birthPlace,
+      nationality: nationality ?? this.nationality,
+      positions: positions ?? this.positions,
+      category: category ?? this.category,
+      sexe: sexe ?? this.sexe,
+      userID: userID ?? this.userID,
+      views: views ?? this.views,
+      likes: likes ?? this.likes,
+      photo: photo ?? this.photo,
+      personNumber: personNumber ?? this.personNumber,
+      clubId: clubId ?? this.clubId,
+      email: email ?? this.email,
+      phoneE164: phoneE164 ?? this.phoneE164,
+      phoneCountryCode: phoneCountryCode ?? this.phoneCountryCode,
+      users: users ?? this.users,
+      searchOptions: searchOptions ?? this.searchOptions,
+      unavailable: unavailable ?? this.unavailable,
+    )
+      ..creatorUserId = creatorUserId ?? this.creatorUserId
+      ..ref = ref ?? this.ref;
+  }
+
+  static DateTime? parseBirthDay(String? birthDay) {
+    final trimmed = birthDay?.trim();
+    if (trimmed == null || trimmed.isEmpty) return null;
+
+    final parts = trimmed.split('/');
+    if (parts.length != 3) return null;
+
+    final day = int.tryParse(parts[0]);
+    final month = int.tryParse(parts[1]);
+    final year = int.tryParse(parts[2]);
+    if (day == null || month == null || year == null) return null;
+
+    return DateTime(year, month, day);
+  }
+
+  static Player fromMap(Map<String, dynamic> map) {
+    final player = Player();
+
+    if (map[keyPlayerKeyMember] != null) {
+      player.keyMember = map[keyPlayerKeyMember];
+    } else {
+      player.keyMember = '';
     }
+
+    player.firstName = map[keyPlayerFirstName];
+    player.lastName = map[keyPlayerLastName];
+    player.statut = map[keyPlayerStatut];
+    player.category = map[keyPlayerCategory];
+    player.birthDay = map[keyPlayerBirthDay];
+    player.birthPlace = map[keyPlayerBirthPlace];
+    player.nationality = map[keyPlayerNationality];
+    if (map[keyPlayerPositions] != null) {
+      player.positions = map[keyPlayerPositions];
+    } else {
+      player.positions = [];
+    }
+    if (map[keyPlayerSexe] != null) {
+      player.sexe = map[keyPlayerSexe];
+    } else {
+      player.sexe = 'M';
+    }
+
+    player.userID = map[keyPlayerUserID];
+    if (map[keyPlayerPhoto] != null) {
+      player.photo = map[keyPlayerPhoto];
+    } else {
+      player.photo = '';
+    }
+
+    if (map[keyPlayerViews] != null) {
+      player.views = map[keyPlayerViews];
+    } else {
+      player.views = 0;
+    }
+    if (map[keyPlayerLikes] != null) {
+      player.likes = map[keyPlayerLikes];
+    } else {
+      player.likes = [];
+    }
+    if (map[keyPlayerCreatorUserId] != null) {
+      player.creatorUserId = map[keyPlayerCreatorUserId];
+    }
+    if (map[keyPlayerPersonNumber] != null) {
+      player.personNumber = map[keyPlayerPersonNumber];
+    } else {
+      player.personNumber = '';
+    }
+
+    if (map[keyPlayerClubId] != null) {
+      player.clubId = map[keyPlayerClubId];
+    } else {
+      player.clubId = '';
+    }
+
+    if (map[keyPlayerSearchOptions] != null) {
+      player.searchOptions = map[keyPlayerSearchOptions];
+    } else {
+      player.searchOptions = [];
+    }
+
+    if (map[keyPlayerEmail] != null) {
+      player.email = map[keyPlayerEmail];
+    }
+    if (map[keyPlayerPhoneE164] != null) {
+      player.phoneE164 = map[keyPlayerPhoneE164];
+    }
+    if (map[keyPlayerPhoneCountryCode] != null) {
+      player.phoneCountryCode = map[keyPlayerPhoneCountryCode];
+    }
+
+    if (map[keyPlayerUnavailability] != null) {
+      player.unavailable = [];
+      final unavailabilityList = map[keyPlayerUnavailability];
+      for (int i = 0; i < unavailabilityList.length; i++) {
+        final unavailability = Unavailability();
+        unavailability.id = unavailabilityList[i]['id'];
+        unavailability.from = unavailabilityList[i]['from'];
+        unavailability.to = unavailabilityList[i]['to'];
+        unavailability.details = unavailabilityList[i]['details'];
+        if (unavailabilityList[i]['isVisible'] != null) {
+          unavailability.isVisible = unavailabilityList[i]['isVisible'];
+        } else {
+          unavailability.isVisible = true;
+        }
+        switch (unavailabilityList[i]['type']) {
+          case 'holiday':
+            unavailability.unavailabilityType = UnavailabilityType.holiday;
+            break;
+          case 'unwell':
+            unavailability.unavailabilityType = UnavailabilityType.unwell;
+            break;
+          case 'injured':
+            unavailability.unavailabilityType = UnavailabilityType.injured;
+            break;
+          case 'other':
+            unavailability.unavailabilityType = UnavailabilityType.other;
+            break;
+        }
+        player.unavailable!.add(unavailability);
+      }
+    } else {
+      player.unavailable = [];
+    }
+
+    if (map[keyPlayerUsers] != null) {
+      player.users = map[keyPlayerUsers];
+    } else {
+      player.users = [];
+    }
+
+    return player;
+  }
+
+  Player.fromDocumentsnapshot(DocumentSnapshot snapshot) {
+    ref = snapshot.reference;
+    final map = snapshot.data() as Map<String, dynamic>?;
+    if (map == null) return;
+
+    final parsed = Player.fromMap(map);
+    keyMember = parsed.keyMember;
+    firstName = parsed.firstName;
+    lastName = parsed.lastName;
+    statut = parsed.statut;
+    category = parsed.category;
+    birthDay = parsed.birthDay;
+    birthPlace = parsed.birthPlace;
+    nationality = parsed.nationality;
+    positions = parsed.positions;
+    sexe = parsed.sexe;
+    userID = parsed.userID;
+    photo = parsed.photo;
+    views = parsed.views;
+    likes = parsed.likes;
+    creatorUserId = parsed.creatorUserId;
+    personNumber = parsed.personNumber;
+    clubId = parsed.clubId;
+    searchOptions = parsed.searchOptions;
+    email = parsed.email;
+    phoneE164 = parsed.phoneE164;
+    phoneCountryCode = parsed.phoneCountryCode;
+    unavailable = parsed.unavailable;
+    users = parsed.users;
   }
 
   Map<String, dynamic> toMap() {
@@ -268,6 +489,9 @@ class Player {
       keyPlayerSearchOptions:searchOptions,
       keyPlayerUnavailability:_unavailabilityList,
       keyPlayerUsers:users,
+      keyPlayerEmail: email?.trim() ?? '',
+      keyPlayerPhoneE164: phoneE164?.trim() ?? '',
+      keyPlayerPhoneCountryCode: phoneCountryCode?.trim() ?? '',
     };
 
     return map;

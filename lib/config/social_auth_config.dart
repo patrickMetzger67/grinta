@@ -4,9 +4,6 @@
 /// Identifiants natifs Grinta :
 /// - iOS / macOS : `io.grinta.app` (GoogleService-Info.plist)
 /// - Android : `io.grinta.app` (google-services.json)
-///
-/// Renseignez [facebookAppId] avec l'identifiant de votre application Meta
-/// (developers.facebook.com) et activez le fournisseur Facebook dans Firebase Auth.
 class SocialAuthConfig {
   SocialAuthConfig._();
 
@@ -22,10 +19,4 @@ class SocialAuthConfig {
   /// et GIDClientID dans Info.plist ; documenté ici pour référence.
   static const String iosGoogleClientId =
       '626293600533-mo43u2rcr958qudvq7gfgn578pua44j3.apps.googleusercontent.com';
-
-  /// Identifiant de l'application Meta / Facebook.
-  /// Laisser vide tant que l'app Meta n'est pas configurée.
-  static const String facebookAppId = '';
-
-  static const String facebookDisplayName = 'Grinta';
 }

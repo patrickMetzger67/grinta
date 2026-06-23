@@ -31,7 +31,7 @@ class DefaultFirebaseOptions {
     appId: '1:626293600533:web:cd2bb4abec1eeef2a8791c',
     messagingSenderId: '626293600533',
     projectId: 'aserstein-2453e',
-    authDomain: 'aserstein-2453e.firebaseapp.com',
+    authDomain: 'auth.grinta.io',
     storageBucket: 'aserstein-2453e.appspot.com',
     measurementId: 'G-DWZBSPWQH8',
   );

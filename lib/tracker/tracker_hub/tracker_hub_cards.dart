@@ -121,44 +121,7 @@ class _TrackerCard extends StatelessWidget {
                                 ),
                               ),
                             )
-                                : FutureBuilder<String>(
-                              future: playerService.getUrlPlayer(player,"portrait_1920x1920.jpg"),
-                              builder: (context, photoSnapshot) {
-                                final String? imageUrl = photoSnapshot.data;
-
-                                if (imageUrl != null &&
-                                    imageUrl.isNotEmpty) {
-                                  return CircleAvatar(
-                                    radius: 30,
-                                    backgroundColor: colors.primary
-                                        .withValues(alpha: 0.12),
-                                    backgroundImage:
-                                    NetworkImage(imageUrl),
-                                  );
-                                }
-
-                                return Container(
-                                  decoration: BoxDecoration(
-                                    shape: BoxShape.circle,
-                                    color: colors.primary.withValues(
-                                      alpha: 0.12,
-                                    ),
-                                  ),
-                                  child: FittedBox(
-                                    fit: BoxFit.scaleDown,
-                                    child: Padding(
-                                      padding: const EdgeInsets.all(12),
-                                      child: Icon(
-                                        Icons.person_rounded,
-                                        color: isDone
-                                            ? colors.success
-                                            : colors.danger,
-                                      ),
-                                    ),
-                                  ),
-                                );
-                              },
-                            ),
+                                : PlayerPhoto(player: player, radius: 30),
                           ),
                         ),
                       ),

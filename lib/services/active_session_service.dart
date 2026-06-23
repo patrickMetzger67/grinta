@@ -1,4 +1,4 @@
-import 'dart:async' show Future, StreamSubscription, unawaited;
+import 'dart:async' show Future, StreamSubscription, TimeoutException, unawaited;
 
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
@@ -31,6 +31,7 @@ class ActiveSessionService {
   static final ActiveSessionService instance = ActiveSessionService._();
 
   static const Uuid _uuid = Uuid();
+  static const Duration _claimWriteTimeout = Duration(seconds: 15);
 
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
 
@@ -40,6 +41,7 @@ class ActiveSessionService {
   Future<void>? _claimFuture;
   bool _isForceLoggingOut = false;
   bool _forcedLogoutDueToRemoteSession = false;
+  bool _awaitingOwnSessionConfirmation = false;
 
   DocumentReference<Map<String, dynamic>> _docRef(String uid) => _firestore
       .collection('users')
@@ -55,6 +57,7 @@ class ActiveSessionService {
     _localSessionId = null;
     _activeUid = null;
     _claimFuture = null;
+    _awaitingOwnSessionConfirmation = false;
 
     if (uid != null) {
       unawaited(ensureSessionActive());
@@ -96,32 +99,46 @@ class ActiveSessionService {
     final String sessionId = _uuid.v4();
     _localSessionId = sessionId;
     _activeUid = uid;
+    _awaitingOwnSessionConfirmation = true;
 
     try {
       await _docRef(uid).set(<String, dynamic>{
         'sessionId': sessionId,
         'platform': _platformLabel(),
         'updatedAt': FieldValue.serverTimestamp(),
-      });
+      }).timeout(_claimWriteTimeout);
 
       if (FirebaseAuth.instance.currentUser?.uid != uid) {
+        _awaitingOwnSessionConfirmation = false;
         return;
       }
 
       _startListener(uid);
+    } on TimeoutException {
+      debugPrint(
+        'ActiveSessionService claim write timed out for uid=$uid; continuing',
+      );
+      if (FirebaseAuth.instance.currentUser?.uid == uid) {
+        _startListener(uid);
+      } else {
+        _awaitingOwnSessionConfirmation = false;
+      }
     } catch (e, st) {
       debugPrint('ActiveSessionService claim failed: $e\n$st');
       if (FirebaseAuth.instance.currentUser?.uid == uid) {
         _localSessionId = null;
         _activeUid = null;
       }
+      _awaitingOwnSessionConfirmation = false;
       rethrow;
     }
   }
 
   void _startListener(String uid) {
     _sessionSub?.cancel();
-    _sessionSub = _docRef(uid).snapshots().listen(
+    _sessionSub = _docRef(uid)
+        .snapshots(includeMetadataChanges: true)
+        .listen(
       (DocumentSnapshot<Map<String, dynamic>> snapshot) {
         if (FirebaseAuth.instance.currentUser?.uid != uid) return;
         if (_isForceLoggingOut) return;
@@ -131,16 +148,86 @@ class ActiveSessionService {
         if (remoteSessionId == null || remoteSessionId.isEmpty) return;
 
         final String? localSessionId = _localSessionId;
-        if (localSessionId == null || remoteSessionId == localSessionId) {
+        if (localSessionId == null) return;
+
+        if (remoteSessionId == localSessionId) {
+          _awaitingOwnSessionConfirmation = false;
           return;
         }
 
-        unawaited(_forceLogout());
+        _handleSessionMismatch(
+          uid: uid,
+          localSessionId: localSessionId,
+          fromCache: snapshot.metadata.isFromCache,
+        );
       },
       onError: (Object e, StackTrace st) {
         debugPrint('ActiveSessionService listener failed: $e\n$st');
       },
     );
+  }
+
+  void _handleSessionMismatch({
+    required String uid,
+    required String localSessionId,
+    required bool fromCache,
+  }) {
+    if (_awaitingOwnSessionConfirmation) {
+      // Hot restart: ignore stale local cache from a previous session on this
+      // device. A server-confirmed mismatch means another device claimed session.
+      if (fromCache) return;
+
+      unawaited(
+        _verifyRemoteSessionAndMaybeLogout(
+          uid: uid,
+          localSessionId: localSessionId,
+        ),
+      );
+      return;
+    }
+
+    if (fromCache) {
+      // Running session: verify stale cache against server before signing out.
+      unawaited(
+        _verifyRemoteSessionAndMaybeLogout(
+          uid: uid,
+          localSessionId: localSessionId,
+        ),
+      );
+      return;
+    }
+
+    // Server-confirmed remote takeover on an established session.
+    unawaited(_forceLogout());
+  }
+
+  Future<void> _verifyRemoteSessionAndMaybeLogout({
+    required String uid,
+    required String localSessionId,
+  }) async {
+    if (_isForceLoggingOut) return;
+    if (FirebaseAuth.instance.currentUser?.uid != uid) return;
+    if (_localSessionId != localSessionId) return;
+
+    try {
+      final DocumentSnapshot<Map<String, dynamic>> snapshot =
+          await _docRef(uid).get(const GetOptions(source: Source.server));
+      if (FirebaseAuth.instance.currentUser?.uid != uid) return;
+      if (_localSessionId != localSessionId) return;
+
+      final String? serverSessionId =
+          snapshot.data()?['sessionId'] as String?;
+      if (serverSessionId == null ||
+          serverSessionId.isEmpty ||
+          serverSessionId == localSessionId) {
+        _awaitingOwnSessionConfirmation = false;
+        return;
+      }
+
+      await _forceLogout();
+    } catch (e, st) {
+      debugPrint('ActiveSessionService server verify failed: $e\n$st');
+    }
   }
 
   Future<void> _forceLogout() async {
@@ -152,6 +239,7 @@ class ActiveSessionService {
     _localSessionId = null;
     _activeUid = null;
     _claimFuture = null;
+    _awaitingOwnSessionConfirmation = false;
 
     try {
       await FirebaseAuth.instance.signOut();

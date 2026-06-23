@@ -2,13 +2,12 @@ import 'dart:io' show Platform;
 
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/foundation.dart';
-import 'package:flutter_facebook_auth/flutter_facebook_auth.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:sign_in_with_apple/sign_in_with_apple.dart';
 
 import '../config/social_auth_config.dart';
 
-enum SocialAuthProvider { google, apple, meta }
+enum SocialAuthProvider { google, apple }
 
 class SocialAuthCancelledException implements Exception {
   const SocialAuthCancelledException();
@@ -42,8 +41,6 @@ class SocialAuthService {
         return _signInWithGoogle();
       case SocialAuthProvider.apple:
         return _signInWithApple();
-      case SocialAuthProvider.meta:
-        return _signInWithMeta();
     }
   }
 
@@ -117,46 +114,5 @@ class SocialAuthService {
     }
 
     return userCredential;
-  }
-
-  Future<UserCredential> _signInWithMeta() async {
-    final appId = SocialAuthConfig.facebookAppId.trim();
-    if (appId.isEmpty) {
-      throw FirebaseAuthException(
-        code: 'configuration-error',
-        message:
-            'Connexion Meta non configurée. Renseignez SocialAuthConfig.facebookAppId.',
-      );
-    }
-
-    final result = await FacebookAuth.instance.login(
-      permissions: const ['email', 'public_profile'],
-    );
-
-    switch (result.status) {
-      case LoginStatus.success:
-        final accessToken = result.accessToken?.tokenString;
-        if (accessToken == null || accessToken.isEmpty) {
-          throw FirebaseAuthException(
-            code: 'invalid-credential',
-            message: 'Jeton Meta manquant.',
-          );
-        }
-
-        final credential = FacebookAuthProvider.credential(accessToken);
-        return FirebaseAuth.instance.signInWithCredential(credential);
-      case LoginStatus.cancelled:
-        throw const SocialAuthCancelledException();
-      case LoginStatus.failed:
-        throw FirebaseAuthException(
-          code: 'invalid-credential',
-          message: result.message ?? 'Échec de la connexion Meta.',
-        );
-      case LoginStatus.operationInProgress:
-        throw FirebaseAuthException(
-          code: 'operation-in-progress',
-          message: 'Une connexion Meta est déjà en cours.',
-        );
-    }
   }
 }

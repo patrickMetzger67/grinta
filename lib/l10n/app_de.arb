@@ -53,6 +53,12 @@
   "memberProfileTitle": "Ihr Profil",
   "memberFirstName": "Vorname",
   "memberLastName": "Nachname",
+  "memberEmail": "E-Mail",
+  "memberEmailOptional": "E-Mail (optional)",
+  "memberPhone": "Telefon",
+  "memberPhoneOptional": "Telefon (optional)",
+  "memberEmailInvalid": "Bitte geben Sie eine gültige E-Mail-Adresse ein",
+  "memberPhoneInvalid": "Bitte geben Sie eine gültige Telefonnummer ein",
   "memberBirthDate": "Geburtsdatum",
   "memberBirthDateOptional": "Geburtsdatum (optional)",
   "memberBirthPlace": "Geburtsort",
@@ -66,8 +72,26 @@
   "memberLastNameRequired": "Nachname ist erforderlich",
   "memberBirthPlaceRequired": "Geburtsort ist erforderlich",
   "memberNationalityRequired": "Nationalität ist erforderlich",
+  "memberContactRequired": "Bitte geben Sie mindestens eine E-Mail-Adresse oder Telefonnummer an",
   "memberProfileIncomplete": "Bitte vervollständigen Sie Ihr Profil",
-  "memberProfileSubmit": "Spielerprofil erstellen",
+  "memberProfileSubmit": "Mein Profil erstellen",
+  "memberProfileUpdateSuccess": "Profil aktualisiert",
+  "memberProfileUpdateError": "Profil konnte nicht aktualisiert werden: {error}",
+  "@memberProfileUpdateError": {
+    "placeholders": {
+      "error": { "type": "String" }
+    }
+  },
+  "memberProfileChangePhoto": "Foto ändern",
+  "memberProfileTakePhoto": "Foto aufnehmen",
+  "memberProfileChooseFromGallery": "Aus Galerie wählen",
+  "memberProfilePhotoUploadError": "Foto konnte nicht aktualisiert werden: {error}",
+  "@memberProfilePhotoUploadError": {
+    "placeholders": {
+      "error": { "type": "String" }
+    }
+  },
+  "errorEditProfileUnavailable": "Kein Profil zum Bearbeiten verfügbar",
   "createTeamPromptQuestion": "Möchten Sie ein Team erstellen?",
   "createTeamPromptLater": "Später",
   "slide1Title": "Verwalten Sie Ihr Team",
@@ -94,6 +118,7 @@
   "actionLoadBefore": "Vorwärts laden",
   "actionLoadAfter": "Danach laden",
   "actionToday": "Heute",
+  "actionEditProfile": "Profil bearbeiten",
   "actionLogout": "Trennen",
   "actionLogoutConfirmTitle": "Trennen",
   "actionLogoutConfirmMessage": "Möchten Sie sich wirklich abmelden?",
@@ -181,6 +206,7 @@
   "navStatistics": "Statistiken",
   "navOverview": "Überblick",
   "navNavigation": "Navigation",
+  "navSettings": "Einstellungen",
   "tabCompo": "Zusammensetzung",
   "tabTacticalSchema": "Taktisches Schema",
   "tabTacticalSchemaShort": "Schema",
@@ -628,6 +654,10 @@
   "subscriptionTierPlayer": "Spieler",
   "subscriptionTierPlayerDesc": "Verfolgen Sie Ihre Leistung, persönliche Stats und Fortschritt.",
   "subscriptionPerMonth": "/Monat",
+  "subscriptionPerYear": "/Jahr",
+  "subscriptionBillingMonthly": "Monatlich",
+  "subscriptionBillingYearly": "Jährlich",
+  "subscriptionAnnualSavings": "2 Monate gratis",
   "subscriptionSubscribe": "Abonnieren",
   "subscriptionTierActive": "Aktives Abonnement",
   "subscriptionRestorePurchases": "Käufe wiederherstellen",
@@ -635,10 +665,68 @@
   "subscriptionStoreUnavailable": "In-App-Käufe sind auf dieser Plattform nicht verfügbar.",
   "subscriptionAlreadyActive": "Sie haben bereits ein aktives Abonnement.",
   "subscriptionProductNotFound": "Produkt nicht gefunden. RevenueCat-Konfiguration prüfen.",
+  "subscriptionOfferingsUnavailable": "Abonnement-Angebote konnten nicht geladen werden. Verbindung und RevenueCat-Web-Offering prüfen und erneut versuchen.",
   "subscriptionPurchaseFailed": "Kauf fehlgeschlagen. Bitte erneut versuchen.",
   "subscriptionRestoreNone": "Keine Käufe zum Wiederherstellen.",
   "subscriptionRestoreFailed": "Wiederherstellung fehlgeschlagen.",
   "subscriptionPromptTitle": "Premium werden",
   "subscriptionPromptMessage": "Nutzen Sie alle Grinta-Funktionen mit einem passenden Abonnement.",
-  "subscriptionPromptAction": "Angebote ansehen"
+  "subscriptionPromptAction": "Angebote ansehen",
+
+  "subscriptionMenu": "Abonnement",
+  "subscriptionDetailsTitle": "Abonnement",
+  "subscriptionTier": "Tarif",
+  "subscriptionRenewalDate": "Verlängert am {date}",
+  "@subscriptionRenewalDate": {
+    "placeholders": {
+      "date": { "type": "String" }
+    }
+  },
+  "subscriptionNone": "Kein aktives Abonnement",
+  "subscriptionTrialEnds": "Test endet am {date}",
+  "@subscriptionTrialEnds": {
+    "placeholders": {
+      "date": { "type": "String" }
+    }
+  },
+  "subscriptionPeriodLabel": "Zeitraum",
+  "subscriptionRenewalLabel": "Verlängerung",
+  "subscriptionBillingPeriodMonthly": "Monatlich",
+  "subscriptionBillingPeriodYearly": "Jährlich",
+  "subscriptionStatusActive": "Aktiv",
+
+  "subscriptionChangePlan": "Tarif wechseln",
+  "subscriptionChangePlanTitle": "Abonnement ändern",
+  "subscriptionChangePlanSubtitle": "Wechseln Sie zwischen Coach und Spieler, ändern Sie die Stufe oder den Abrechnungszeitraum.",
+  "subscriptionChangePlanConfirm": "Änderung bestätigen",
+  "subscriptionCurrentPlan": "Aktueller Tarif",
+  "subscriptionPlanChanged": "Ihr Abonnement wurde aktualisiert.",
+
+  "trialStatusTitle": "Kostenlose Testphase",
+  "trialDaysRemaining": "{days, plural, =1{1 Tag verbleibend} other{{days} Tage verbleibend}}",
+  "@trialDaysRemaining": {
+    "placeholders": {
+      "days": { "type": "int" }
+    }
+  },
+
+  "shopTitle": "Grinta Shop",
+  "shopPromoTitle": "Shop-Angebot",
+  "shopPromoCta": "Angebot ansehen",
+  "shopBrowseAll": "Shop durchsuchen",
+  "shopLoadError": "Der Shop konnte nicht geladen werden.",
+  "shopRetry": "Erneut versuchen",
+
+  "legalPrivacyPolicy": "Datenschutzerklärung",
+  "legalTermsOfService": "Nutzungsbedingungen",
+  "actionDeleteAccount": "Konto löschen",
+  "actionDeleteAccountConfirmTitle": "Konto löschen?",
+  "actionDeleteAccountConfirmMessage": "Diese Aktion ist endgültig. Ihr Konto, Ihr Mitgliederprofil und zugehörige Daten werden gelöscht.",
+  "errorDeleteAccount": "Konto konnte nicht gelöscht werden: {details}",
+  "@errorDeleteAccount": {
+    "placeholders": {
+      "details": { "type": "String" }
+    }
+  },
+  "errorDeleteAccountRequiresRecentLogin": "Aus Sicherheitsgründen melden Sie sich ab, erneut an und versuchen Sie es dann erneut."
 }

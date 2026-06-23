@@ -158,6 +158,24 @@ class AppLocalizationsEn extends AppLocalizations {
   String get memberLastName => 'Last name';
 
   @override
+  String get memberEmail => 'Email';
+
+  @override
+  String get memberEmailOptional => 'Email (optional)';
+
+  @override
+  String get memberPhone => 'Phone';
+
+  @override
+  String get memberPhoneOptional => 'Phone (optional)';
+
+  @override
+  String get memberEmailInvalid => 'Please enter a valid email address';
+
+  @override
+  String get memberPhoneInvalid => 'Please enter a valid phone number';
+
+  @override
   String get memberBirthDate => 'Date of birth';
 
   @override
@@ -197,10 +215,39 @@ class AppLocalizationsEn extends AppLocalizations {
   String get memberNationalityRequired => 'Nationality is required';
 
   @override
+  String get memberContactRequired =>
+      'Please provide at least an email address or a phone number';
+
+  @override
   String get memberProfileIncomplete => 'Please complete your profile';
 
   @override
-  String get memberProfileSubmit => 'Create my player profile';
+  String get memberProfileSubmit => 'Create my profile';
+
+  @override
+  String get memberProfileUpdateSuccess => 'Profile updated';
+
+  @override
+  String memberProfileUpdateError(String error) {
+    return 'Could not update profile: $error';
+  }
+
+  @override
+  String get memberProfileChangePhoto => 'Change photo';
+
+  @override
+  String get memberProfileTakePhoto => 'Take photo';
+
+  @override
+  String get memberProfileChooseFromGallery => 'Choose from gallery';
+
+  @override
+  String memberProfilePhotoUploadError(String error) {
+    return 'Could not update photo: $error';
+  }
+
+  @override
+  String get errorEditProfileUnavailable => 'No profile available to edit';
 
   @override
   String get createTeamPromptQuestion => 'Would you like to create a team?';
@@ -282,6 +329,9 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get actionToday => 'Today';
+
+  @override
+  String get actionEditProfile => 'Edit profile';
 
   @override
   String get actionLogout => 'Disconnect';
@@ -553,6 +603,9 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get navNavigation => 'Navigation';
+
+  @override
+  String get navSettings => 'Settings';
 
   @override
   String get tabCompo => 'Composition';
@@ -2072,6 +2125,18 @@ class AppLocalizationsEn extends AppLocalizations {
   String get subscriptionPerMonth => '/month';
 
   @override
+  String get subscriptionPerYear => '/year';
+
+  @override
+  String get subscriptionBillingMonthly => 'Monthly';
+
+  @override
+  String get subscriptionBillingYearly => 'Yearly';
+
+  @override
+  String get subscriptionAnnualSavings => '2 months free';
+
+  @override
   String get subscriptionSubscribe => 'Subscribe';
 
   @override
@@ -2097,6 +2162,10 @@ class AppLocalizationsEn extends AppLocalizations {
       'Product not found. Check RevenueCat configuration.';
 
   @override
+  String get subscriptionOfferingsUnavailable =>
+      'Subscription plans could not be loaded. Check your connection and RevenueCat web offering, then try again.';
+
+  @override
   String get subscriptionPurchaseFailed => 'Purchase failed. Please try again.';
 
   @override
@@ -2114,4 +2183,117 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get subscriptionPromptAction => 'View plans';
+
+  @override
+  String get subscriptionMenu => 'Subscription';
+
+  @override
+  String get subscriptionDetailsTitle => 'Subscription';
+
+  @override
+  String get subscriptionTier => 'Plan';
+
+  @override
+  String subscriptionRenewalDate(String date) {
+    return 'Renews on $date';
+  }
+
+  @override
+  String get subscriptionNone => 'No active subscription';
+
+  @override
+  String subscriptionTrialEnds(String date) {
+    return 'Trial ends on $date';
+  }
+
+  @override
+  String get subscriptionPeriodLabel => 'Period';
+
+  @override
+  String get subscriptionRenewalLabel => 'Renewal';
+
+  @override
+  String get subscriptionBillingPeriodMonthly => 'Monthly';
+
+  @override
+  String get subscriptionBillingPeriodYearly => 'Yearly';
+
+  @override
+  String get subscriptionStatusActive => 'Active';
+
+  @override
+  String get subscriptionChangePlan => 'Change plan';
+
+  @override
+  String get subscriptionChangePlanTitle => 'Change your plan';
+
+  @override
+  String get subscriptionChangePlanSubtitle =>
+      'Switch between Coach and Player, change tier, or update your billing period.';
+
+  @override
+  String get subscriptionChangePlanConfirm => 'Confirm change';
+
+  @override
+  String get subscriptionCurrentPlan => 'Current plan';
+
+  @override
+  String get subscriptionPlanChanged => 'Your subscription has been updated.';
+
+  @override
+  String get trialStatusTitle => 'Free trial';
+
+  @override
+  String trialDaysRemaining(int days) {
+    String _temp0 = intl.Intl.pluralLogic(
+      days,
+      locale: localeName,
+      other: '$days days remaining',
+      one: '1 day remaining',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get shopTitle => 'Grinta Shop';
+
+  @override
+  String get shopPromoTitle => 'Shop offer';
+
+  @override
+  String get shopPromoCta => 'View offer';
+
+  @override
+  String get shopBrowseAll => 'Browse shop';
+
+  @override
+  String get shopLoadError => 'Unable to load the shop.';
+
+  @override
+  String get shopRetry => 'Retry';
+
+  @override
+  String get legalPrivacyPolicy => 'Privacy Policy';
+
+  @override
+  String get legalTermsOfService => 'Terms of Service';
+
+  @override
+  String get actionDeleteAccount => 'Delete account';
+
+  @override
+  String get actionDeleteAccountConfirmTitle => 'Delete account?';
+
+  @override
+  String get actionDeleteAccountConfirmMessage =>
+      'This action is permanent. Your account, member profile, and associated data will be deleted.';
+
+  @override
+  String errorDeleteAccount(String details) {
+    return 'Unable to delete account: $details';
+  }
+
+  @override
+  String get errorDeleteAccountRequiresRecentLogin =>
+      'For security, please sign out, sign in again, then retry account deletion.';
 }

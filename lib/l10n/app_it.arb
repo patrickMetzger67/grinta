@@ -53,6 +53,12 @@
   "memberProfileTitle": "Il tuo profilo",
   "memberFirstName": "Nome",
   "memberLastName": "Cognome",
+  "memberEmail": "E-mail",
+  "memberEmailOptional": "E-mail (facoltativa)",
+  "memberPhone": "Telefono",
+  "memberPhoneOptional": "Telefono (facoltativo)",
+  "memberEmailInvalid": "Inserisci un indirizzo e-mail valido",
+  "memberPhoneInvalid": "Inserisci un numero di telefono valido",
   "memberBirthDate": "Data di nascita",
   "memberBirthDateOptional": "Data di nascita (facoltativa)",
   "memberBirthPlace": "Luogo di nascita",
@@ -66,8 +72,26 @@
   "memberLastNameRequired": "Il cognome è obbligatorio",
   "memberBirthPlaceRequired": "Il luogo di nascita è obbligatorio",
   "memberNationalityRequired": "La nazionalità è obbligatoria",
+  "memberContactRequired": "Inserisci almeno un indirizzo e-mail o un numero di telefono",
   "memberProfileIncomplete": "Completa il tuo profilo",
-  "memberProfileSubmit": "Crea la mia scheda giocatore",
+  "memberProfileSubmit": "Crea il mio profilo",
+  "memberProfileUpdateSuccess": "Profilo aggiornato",
+  "memberProfileUpdateError": "Impossibile aggiornare il profilo: {error}",
+  "@memberProfileUpdateError": {
+    "placeholders": {
+      "error": { "type": "String" }
+    }
+  },
+  "memberProfileChangePhoto": "Cambia foto",
+  "memberProfileTakePhoto": "Scatta una foto",
+  "memberProfileChooseFromGallery": "Scegli dalla galleria",
+  "memberProfilePhotoUploadError": "Impossibile aggiornare la foto: {error}",
+  "@memberProfilePhotoUploadError": {
+    "placeholders": {
+      "error": { "type": "String" }
+    }
+  },
+  "errorEditProfileUnavailable": "Nessun profilo disponibile da modificare",
   "createTeamPromptQuestion": "Vuoi creare una squadra?",
   "createTeamPromptLater": "Più tardi",
   "slide1Title": "Gestisci la tua squadra",
@@ -94,6 +118,7 @@
   "actionLoadBefore": "Carica in avanti",
   "actionLoadAfter": "Carica dopo",
   "actionToday": "Oggi",
+  "actionEditProfile": "Modifica profilo",
   "actionLogout": "Disconnetti",
   "actionLogoutConfirmTitle": "Disconnetti",
   "actionLogoutConfirmMessage": "Vuoi davvero disconnetterti?",
@@ -181,6 +206,7 @@
   "navStatistics": "Statistiche",
   "navOverview": "Panoramica",
   "navNavigation": "Navigazione",
+  "navSettings": "Impostazioni",
   "tabCompo": "Composizione",
   "tabTacticalSchema": "Schema tattico",
   "tabTacticalSchemaShort": "Schema",
@@ -628,6 +654,10 @@
   "subscriptionTierPlayer": "Giocatore",
   "subscriptionTierPlayerDesc": "Monitora prestazioni, statistiche personali e progressi.",
   "subscriptionPerMonth": "/mese",
+  "subscriptionPerYear": "/anno",
+  "subscriptionBillingMonthly": "Mensile",
+  "subscriptionBillingYearly": "Annuale",
+  "subscriptionAnnualSavings": "2 mesi gratis",
   "subscriptionSubscribe": "Abbonati",
   "subscriptionTierActive": "Abbonamento attivo",
   "subscriptionRestorePurchases": "Ripristina acquisti",
@@ -635,10 +665,68 @@
   "subscriptionStoreUnavailable": "Gli acquisti in-app non sono disponibili su questa piattaforma.",
   "subscriptionAlreadyActive": "Hai già un abbonamento attivo.",
   "subscriptionProductNotFound": "Prodotto non trovato. Verifica la configurazione RevenueCat.",
+  "subscriptionOfferingsUnavailable": "Impossibile caricare i piani di abbonamento. Controlla la connessione e l'offering web RevenueCat, poi riprova.",
   "subscriptionPurchaseFailed": "Acquisto non riuscito. Riprova.",
   "subscriptionRestoreNone": "Nessun acquisto da ripristinare.",
   "subscriptionRestoreFailed": "Ripristino non riuscito.",
   "subscriptionPromptTitle": "Passa a Premium",
   "subscriptionPromptMessage": "Accedi a tutte le funzioni Grinta con un piano adatto al tuo profilo.",
-  "subscriptionPromptAction": "Vedi i piani"
+  "subscriptionPromptAction": "Vedi i piani",
+
+  "subscriptionMenu": "Abbonamento",
+  "subscriptionDetailsTitle": "Abbonamento",
+  "subscriptionTier": "Piano",
+  "subscriptionRenewalDate": "Rinnovo il {date}",
+  "@subscriptionRenewalDate": {
+    "placeholders": {
+      "date": { "type": "String" }
+    }
+  },
+  "subscriptionNone": "Nessun abbonamento attivo",
+  "subscriptionTrialEnds": "Fine prova il {date}",
+  "@subscriptionTrialEnds": {
+    "placeholders": {
+      "date": { "type": "String" }
+    }
+  },
+  "subscriptionPeriodLabel": "Periodo",
+  "subscriptionRenewalLabel": "Rinnovo",
+  "subscriptionBillingPeriodMonthly": "Mensile",
+  "subscriptionBillingPeriodYearly": "Annuale",
+  "subscriptionStatusActive": "Attivo",
+
+  "subscriptionChangePlan": "Cambia piano",
+  "subscriptionChangePlanTitle": "Modifica abbonamento",
+  "subscriptionChangePlanSubtitle": "Passa da Giocatore a Coach, cambia livello o periodo di fatturazione.",
+  "subscriptionChangePlanConfirm": "Conferma modifica",
+  "subscriptionCurrentPlan": "Piano attuale",
+  "subscriptionPlanChanged": "Il tuo abbonamento è stato aggiornato.",
+
+  "trialStatusTitle": "Prova gratuita",
+  "trialDaysRemaining": "{days, plural, =1{1 giorno rimanente} other{{days} giorni rimanenti}}",
+  "@trialDaysRemaining": {
+    "placeholders": {
+      "days": { "type": "int" }
+    }
+  },
+
+  "shopTitle": "Shop Grinta",
+  "shopPromoTitle": "Offerta shop",
+  "shopPromoCta": "Vedi l'offerta",
+  "shopBrowseAll": "Sfoglia lo shop",
+  "shopLoadError": "Impossibile caricare lo shop.",
+  "shopRetry": "Riprova",
+
+  "legalPrivacyPolicy": "Informativa sulla privacy",
+  "legalTermsOfService": "Termini di servizio",
+  "actionDeleteAccount": "Elimina account",
+  "actionDeleteAccountConfirmTitle": "Eliminare l'account?",
+  "actionDeleteAccountConfirmMessage": "Questa azione è definitiva. Il tuo account, il profilo membro e i dati associati verranno eliminati.",
+  "errorDeleteAccount": "Impossibile eliminare l'account: {details}",
+  "@errorDeleteAccount": {
+    "placeholders": {
+      "details": { "type": "String" }
+    }
+  },
+  "errorDeleteAccountRequiresRecentLogin": "Per sicurezza, esci, accedi di nuovo e riprova."
 }

@@ -1,21 +1,37 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 
 import '../core/extensions/l10n_extension.dart';
-import '../model/member_profile_data.dart';
+import '../model/player.dart';
 import '../util/nationalities.dart';
 import '../util/player_positions.dart';
+import '../util/player_profile_validator.dart';
 import '../util/app_theme.dart';
+import 'international_phone_field.dart';
 
-typedef MemberProfileChanged = void Function(MemberProfileData? profile);
+typedef MemberProfileChanged = void Function(Player? profile);
+typedef MemberProfileValidityChanged = void Function(bool isValid);
+typedef MemberProfileFormStateCreated = void Function(
+  MemberProfileFormState state,
+);
 
 class MemberProfileForm extends StatefulWidget {
   final bool enabled;
   final MemberProfileChanged? onChanged;
+  final MemberProfileValidityChanged? onValidityChanged;
+  final MemberProfileFormStateCreated? onFormStateCreated;
+  final Player? initialProfile;
+  final bool showTitle;
 
   const MemberProfileForm({
     super.key,
     required this.enabled,
     this.onChanged,
+    this.onValidityChanged,
+    this.onFormStateCreated,
+    this.initialProfile,
+    this.showTitle = true,
   });
 
   @override
@@ -26,14 +42,81 @@ class MemberProfileFormState extends State<MemberProfileForm> {
   final TextEditingController _firstNameCtrl = TextEditingController();
   final TextEditingController _lastNameCtrl = TextEditingController();
   final TextEditingController _birthPlaceCtrl = TextEditingController();
+  final TextEditingController _emailCtrl = TextEditingController();
 
   DateTime? _birthDate;
   String? _nationalityCountryCode;
+  String? _phoneE164;
+  String? _phoneCountryCode;
+  String? _seedPhoneE164;
+  String? _seedPhoneCountryCode;
   final Set<int> _selectedPositionCodes = {};
   List<NationalityOption> _nationalityOptions = const [];
 
   bool _initializedDefaults = false;
+  bool _appliedInitialProfile = false;
   String? _cachedLocaleLanguageCode;
+  Timer? _notifyDebounce;
+  final Key _phoneFieldKey = const ValueKey('member-profile-phone');
+
+  @override
+  void initState() {
+    super.initState();
+    _applyInitialProfileIfNeeded();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) {
+        widget.onFormStateCreated?.call(this);
+      }
+    });
+  }
+
+  @override
+  void didUpdateWidget(covariant MemberProfileForm oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (_initialProfileChanged(
+      oldWidget.initialProfile,
+      widget.initialProfile,
+    )) {
+      _appliedInitialProfile = false;
+      _applyInitialProfileIfNeeded();
+    }
+  }
+
+  bool _initialProfileChanged(Player? previous, Player? next) {
+    if (identical(previous, next)) return false;
+    return _profileMemberId(previous) != _profileMemberId(next);
+  }
+
+  String _profileMemberId(Player? profile) =>
+      profile?.keyMember?.trim() ?? '';
+
+  void _applyInitialProfileIfNeeded() {
+    if (_appliedInitialProfile) return;
+    final initial = widget.initialProfile;
+    if (initial == null) return;
+
+    _appliedInitialProfile = true;
+    _firstNameCtrl.text = initial.firstName?.trim() ?? '';
+    _lastNameCtrl.text = initial.lastName?.trim() ?? '';
+    _birthPlaceCtrl.text = initial.birthPlace?.trim() ?? '';
+    _emailCtrl.text = initial.email?.trim() ?? '';
+    _birthDate = Player.parseBirthDay(initial.birthDay);
+    _nationalityCountryCode = initial.nationality?.trim().isNotEmpty == true
+        ? initial.nationality!.trim()
+        : null;
+    _phoneE164 = initial.phoneE164?.trim().isNotEmpty == true
+        ? initial.phoneE164!.trim()
+        : null;
+    _phoneCountryCode = initial.phoneCountryCode?.trim().isNotEmpty == true
+        ? initial.phoneCountryCode!.trim()
+        : null;
+    _seedPhoneE164 = _phoneE164;
+    _seedPhoneCountryCode = _phoneCountryCode;
+    _selectedPositionCodes
+      ..clear()
+      ..addAll(initial.positionCodes);
+    WidgetsBinding.instance.addPostFrameCallback((_) => _notifyChanged());
+  }
 
   @override
   void didChangeDependencies() {
@@ -43,7 +126,12 @@ class MemberProfileFormState extends State<MemberProfileForm> {
 
     if (!_initializedDefaults) {
       _initializedDefaults = true;
-      _nationalityCountryCode = defaultNationalityCountryCode(locale);
+      if (widget.initialProfile == null) {
+        _nationalityCountryCode = defaultNationalityCountryCode(locale);
+      } else if (_nationalityCountryCode == null ||
+          _nationalityCountryCode!.trim().isEmpty) {
+        _nationalityCountryCode = defaultNationalityCountryCode(locale);
+      }
       WidgetsBinding.instance.addPostFrameCallback((_) => _notifyChanged());
     }
 
@@ -55,23 +143,28 @@ class MemberProfileFormState extends State<MemberProfileForm> {
 
   @override
   void dispose() {
+    _notifyDebounce?.cancel();
     _firstNameCtrl.dispose();
     _lastNameCtrl.dispose();
     _birthPlaceCtrl.dispose();
+    _emailCtrl.dispose();
     super.dispose();
   }
 
-  MemberProfileData? buildProfile() {
-    final profile = MemberProfileData(
+  Player? buildProfile() {
+    final profile = Player(
       firstName: _firstNameCtrl.text.trim(),
       lastName: _lastNameCtrl.text.trim(),
       birthPlace: _trimOrNull(_birthPlaceCtrl.text),
       nationality: _nationalityCountryCode?.trim() ?? '',
       birthDay: _formatBirthDay(_birthDate),
       positions: _selectedPositionCodes.toList()..sort(),
+      email: _trimOrNull(_emailCtrl.text),
+      phoneE164: _phoneE164,
+      phoneCountryCode: _phoneCountryCode,
     );
 
-    return profile.isValid ? profile : null;
+    return profile.isProfileAndContactValid ? profile : null;
   }
 
   String? validateAndGetError() {
@@ -85,11 +178,31 @@ class MemberProfileFormState extends State<MemberProfileForm> {
         _nationalityCountryCode!.trim().isEmpty) {
       return context.l10n.memberNationalityRequired;
     }
+    final draftProfile = Player(
+      email: _trimOrNull(_emailCtrl.text),
+      phoneE164: _phoneE164,
+    );
+    if (!hasContactInfo(draftProfile)) {
+      return context.l10n.memberContactRequired;
+    }
+    if (!isValidEmailFormat(_emailCtrl.text)) {
+      return context.l10n.memberEmailInvalid;
+    }
+    if (!isValidE164Phone(_phoneE164)) {
+      return context.l10n.memberPhoneInvalid;
+    }
     return null;
   }
 
   void _notifyChanged() {
-    widget.onChanged?.call(buildProfile());
+    _notifyDebounce?.cancel();
+    _notifyDebounce = Timer(const Duration(milliseconds: 120), () {
+      if (!mounted) return;
+      final profile = buildProfile();
+      final isValid = profile?.isProfileAndContactValid == true;
+      widget.onValidityChanged?.call(isValid);
+      widget.onChanged?.call(profile);
+    });
   }
 
   String? _trimOrNull(String value) {
@@ -171,13 +284,15 @@ class MemberProfileFormState extends State<MemberProfileForm> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(
-          l10n.memberProfileTitle,
-          style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                fontWeight: FontWeight.w600,
-              ),
-        ),
-        const SizedBox(height: 12),
+        if (widget.showTitle) ...[
+          Text(
+            l10n.memberProfileTitle,
+            style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                  fontWeight: FontWeight.w600,
+                ),
+          ),
+          const SizedBox(height: 12),
+        ],
         TextField(
           controller: _firstNameCtrl,
           enabled: widget.enabled,
@@ -198,6 +313,33 @@ class MemberProfileFormState extends State<MemberProfileForm> {
             prefixIcon: const Icon(Icons.badge_outlined),
           ),
           onChanged: (_) => _notifyChanged(),
+        ),
+        const SizedBox(height: 12),
+        TextField(
+          controller: _emailCtrl,
+          enabled: widget.enabled,
+          keyboardType: TextInputType.emailAddress,
+          autocorrect: false,
+          decoration: InputDecoration(
+            labelText: l10n.memberEmailOptional,
+            prefixIcon: const Icon(Icons.email_outlined),
+          ),
+          onChanged: (_) => _notifyChanged(),
+        ),
+        const SizedBox(height: 12),
+        InternationalPhoneField(
+          key: _phoneFieldKey,
+          enabled: widget.enabled,
+          initialPhoneE164: _seedPhoneE164,
+          initialPhoneCountryCode: _seedPhoneCountryCode,
+          onChanged: ({
+            required phoneE164,
+            required phoneCountryCode,
+          }) {
+            _phoneE164 = phoneE164;
+            _phoneCountryCode = phoneCountryCode;
+            _notifyChanged();
+          },
         ),
         const SizedBox(height: 12),
         InkWell(

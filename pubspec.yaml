@@ -40,10 +40,12 @@ dependencies:
   cached_network_image: ^3.4.1
   google_sign_in: ^7.2.0
   sign_in_with_apple: ^7.0.1
-  flutter_facebook_auth: ^7.1.2
   media_kit_libs_ios_video: ^1.1.4
   country_picker: ^2.0.27
   purchases_flutter: ^10.3.0
+  webview_flutter: ^4.10.0
+  url_launcher: ^6.3.1
+  shared_preferences: ^2.5.3
 
 
 dev_dependencies:
@@ -51,6 +53,21 @@ dev_dependencies:
     sdk: flutter
   flutter_lints: ^3.0.1
   sealed_countries: ^3.2.0
+  flutter_native_splash: ^2.4.6
+
+flutter_native_splash:
+  color: "#F95C1B"
+  image: assets/images/splash_logo.png
+  color_dark: "#111214"
+  image_dark: assets/images/splash_logo_dark.png
+  android_12:
+    image: assets/images/splash_logo.png
+    icon_background_color: "#F95C1B"
+    image_dark: assets/images/splash_logo_dark.png
+    icon_background_color_dark: "#111214"
+  android: true
+  ios: true
+  web: false
 
 flutter:
   uses-material-design: true
@@ -60,6 +77,8 @@ flutter:
     - assets/images/logoFondOrange.png
     - assets/images/logoFondBlanc.png
     - assets/images/logoNoirFondBlanc.png
+    - assets/images/splash_logo.png
+    - assets/images/splash_logo_dark.png
     - assets/images/google_logo.svg
     - assets/images/apple_logo.svg
     - assets/images/meta_logo.svg

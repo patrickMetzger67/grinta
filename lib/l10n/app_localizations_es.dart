@@ -161,6 +161,25 @@ class AppLocalizationsEs extends AppLocalizations {
   String get memberLastName => 'Apellido';
 
   @override
+  String get memberEmail => 'Correo electrónico';
+
+  @override
+  String get memberEmailOptional => 'Correo electrónico (opcional)';
+
+  @override
+  String get memberPhone => 'Teléfono';
+
+  @override
+  String get memberPhoneOptional => 'Teléfono (opcional)';
+
+  @override
+  String get memberEmailInvalid =>
+      'Introduce una dirección de correo electrónico válida';
+
+  @override
+  String get memberPhoneInvalid => 'Introduce un número de teléfono válido';
+
+  @override
   String get memberBirthDate => 'Fecha de nacimiento';
 
   @override
@@ -202,10 +221,40 @@ class AppLocalizationsEs extends AppLocalizations {
   String get memberNationalityRequired => 'La nacionalidad es obligatoria';
 
   @override
+  String get memberContactRequired =>
+      'Indica al menos un correo electrónico o un número de teléfono';
+
+  @override
   String get memberProfileIncomplete => 'Completa tu perfil';
 
   @override
-  String get memberProfileSubmit => 'Crear mi ficha de jugador';
+  String get memberProfileSubmit => 'Crear mi perfil';
+
+  @override
+  String get memberProfileUpdateSuccess => 'Perfil actualizado';
+
+  @override
+  String memberProfileUpdateError(String error) {
+    return 'No se pudo actualizar el perfil: $error';
+  }
+
+  @override
+  String get memberProfileChangePhoto => 'Cambiar foto';
+
+  @override
+  String get memberProfileTakePhoto => 'Tomar una foto';
+
+  @override
+  String get memberProfileChooseFromGallery => 'Elegir de la galería';
+
+  @override
+  String memberProfilePhotoUploadError(String error) {
+    return 'No se pudo actualizar la foto: $error';
+  }
+
+  @override
+  String get errorEditProfileUnavailable =>
+      'No hay perfil disponible para editar';
 
   @override
   String get createTeamPromptQuestion => '¿Desea crear un equipo?';
@@ -287,6 +336,9 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get actionToday => 'Hoy';
+
+  @override
+  String get actionEditProfile => 'Editar perfil';
 
   @override
   String get actionLogout => 'Desconectar';
@@ -558,6 +610,9 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get navNavigation => 'Navegación';
+
+  @override
+  String get navSettings => 'Ajustes';
 
   @override
   String get tabCompo => 'Composición';
@@ -2103,6 +2158,18 @@ class AppLocalizationsEs extends AppLocalizations {
   String get subscriptionPerMonth => '/mes';
 
   @override
+  String get subscriptionPerYear => '/año';
+
+  @override
+  String get subscriptionBillingMonthly => 'Mensual';
+
+  @override
+  String get subscriptionBillingYearly => 'Anual';
+
+  @override
+  String get subscriptionAnnualSavings => '2 meses gratis';
+
+  @override
   String get subscriptionSubscribe => 'Suscribirse';
 
   @override
@@ -2127,6 +2194,10 @@ class AppLocalizationsEs extends AppLocalizations {
       'Producto no encontrado. Comprueba la configuración de RevenueCat.';
 
   @override
+  String get subscriptionOfferingsUnavailable =>
+      'No se pudieron cargar los planes de suscripción. Comprueba tu conexión y la offering web de RevenueCat, e inténtalo de nuevo.';
+
+  @override
   String get subscriptionPurchaseFailed =>
       'La compra ha fallado. Inténtalo de nuevo.';
 
@@ -2145,4 +2216,117 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get subscriptionPromptAction => 'Ver planes';
+
+  @override
+  String get subscriptionMenu => 'Suscripción';
+
+  @override
+  String get subscriptionDetailsTitle => 'Suscripción';
+
+  @override
+  String get subscriptionTier => 'Plan';
+
+  @override
+  String subscriptionRenewalDate(String date) {
+    return 'Renovación el $date';
+  }
+
+  @override
+  String get subscriptionNone => 'Sin suscripción activa';
+
+  @override
+  String subscriptionTrialEnds(String date) {
+    return 'Fin de la prueba el $date';
+  }
+
+  @override
+  String get subscriptionPeriodLabel => 'Periodo';
+
+  @override
+  String get subscriptionRenewalLabel => 'Renovación';
+
+  @override
+  String get subscriptionBillingPeriodMonthly => 'Mensual';
+
+  @override
+  String get subscriptionBillingPeriodYearly => 'Anual';
+
+  @override
+  String get subscriptionStatusActive => 'Activo';
+
+  @override
+  String get subscriptionChangePlan => 'Cambiar plan';
+
+  @override
+  String get subscriptionChangePlanTitle => 'Modificar suscripción';
+
+  @override
+  String get subscriptionChangePlanSubtitle =>
+      'Cambia entre Entrenador y Jugador, modifica el nivel o el periodo de facturación.';
+
+  @override
+  String get subscriptionChangePlanConfirm => 'Confirmar cambio';
+
+  @override
+  String get subscriptionCurrentPlan => 'Plan actual';
+
+  @override
+  String get subscriptionPlanChanged => 'Tu suscripción se ha actualizado.';
+
+  @override
+  String get trialStatusTitle => 'Prueba gratuita';
+
+  @override
+  String trialDaysRemaining(int days) {
+    String _temp0 = intl.Intl.pluralLogic(
+      days,
+      locale: localeName,
+      other: '$days días restantes',
+      one: '1 día restante',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get shopTitle => 'Tienda Grinta';
+
+  @override
+  String get shopPromoTitle => 'Oferta de la tienda';
+
+  @override
+  String get shopPromoCta => 'Ver oferta';
+
+  @override
+  String get shopBrowseAll => 'Ver tienda';
+
+  @override
+  String get shopLoadError => 'No se pudo cargar la tienda.';
+
+  @override
+  String get shopRetry => 'Reintentar';
+
+  @override
+  String get legalPrivacyPolicy => 'Política de privacidad';
+
+  @override
+  String get legalTermsOfService => 'Términos de servicio';
+
+  @override
+  String get actionDeleteAccount => 'Eliminar cuenta';
+
+  @override
+  String get actionDeleteAccountConfirmTitle => '¿Eliminar cuenta?';
+
+  @override
+  String get actionDeleteAccountConfirmMessage =>
+      'Esta acción es permanente. Se eliminarán tu cuenta, tu perfil de miembro y los datos asociados.';
+
+  @override
+  String errorDeleteAccount(String details) {
+    return 'No se pudo eliminar la cuenta: $details';
+  }
+
+  @override
+  String get errorDeleteAccountRequiresRecentLogin =>
+      'Por seguridad, cierra sesión, vuelve a iniciar sesión e inténtalo de nuevo.';
 }

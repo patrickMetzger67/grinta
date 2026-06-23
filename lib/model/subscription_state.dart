@@ -52,6 +52,8 @@ class SubscriptionState {
     this.activeEntitlements = const <String>{},
     this.coachTier,
     this.hasPlayerSubscription = false,
+    this.activeProductId,
+    this.billingPeriod,
     this.subscriptionExpiresAt,
     this.managementUrl,
     this.lastError,
@@ -62,12 +64,13 @@ class SubscriptionState {
   final Set<String> activeEntitlements;
   final CoachTier? coachTier;
   final bool hasPlayerSubscription;
+  final String? activeProductId;
+  final SubscriptionBillingPeriod? billingPeriod;
   final DateTime? subscriptionExpiresAt;
   final String? managementUrl;
   final String? lastError;
 
-  bool get isSubscribed =>
-      coachTier != null || hasPlayerSubscription || activeEntitlements.isNotEmpty;
+  bool get isSubscribed => activeEntitlements.isNotEmpty;
 
   bool hasEntitlement(String entitlementId) =>
       activeEntitlements.contains(entitlementId);
@@ -87,6 +90,10 @@ class SubscriptionState {
     CoachTier? coachTier,
     bool clearCoachTier = false,
     bool? hasPlayerSubscription,
+    String? activeProductId,
+    bool clearActiveProductId = false,
+    SubscriptionBillingPeriod? billingPeriod,
+    bool clearBillingPeriod = false,
     DateTime? subscriptionExpiresAt,
     bool clearExpiresAt = false,
     String? managementUrl,
@@ -101,6 +108,12 @@ class SubscriptionState {
       coachTier: clearCoachTier ? null : (coachTier ?? this.coachTier),
       hasPlayerSubscription:
           hasPlayerSubscription ?? this.hasPlayerSubscription,
+      activeProductId: clearActiveProductId
+          ? null
+          : (activeProductId ?? this.activeProductId),
+      billingPeriod: clearBillingPeriod
+          ? null
+          : (billingPeriod ?? this.billingPeriod),
       subscriptionExpiresAt: clearExpiresAt
           ? null
           : (subscriptionExpiresAt ?? this.subscriptionExpiresAt),

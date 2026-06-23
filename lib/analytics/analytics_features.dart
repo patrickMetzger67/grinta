@@ -4,6 +4,8 @@ abstract final class AnalyticsFeatures {
   static const loginAttempt = 'login_attempt';
   static const loginSuccess = 'login_success';
   static const logout = 'logout';
+  static const deleteAccount = 'delete_account';
+  static const editProfile = 'edit_profile';
 
   // Navigation / opens
   static const openMatchDetail = 'open_match_detail';

@@ -1,6 +1,9 @@
+import 'dart:async';
+
 import 'package:cloud_functions/cloud_functions.dart';
 import 'package:firebase_auth/firebase_auth.dart' as firebase_auth;
 import 'package:firebase_core/firebase_core.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'util/app_theme.dart';
 import 'package:provider/provider.dart';
@@ -16,12 +19,15 @@ import 'package:grinta/provider/appSession.dart';
 import 'package:grinta/services/active_session_service.dart';
 import 'package:grinta/services/feature_discovery_service.dart';
 import 'package:grinta/services/subscription_service.dart';
+import 'package:grinta/services/user_trial_service.dart';
 import 'package:grinta/analytics/analytics_observer.dart';
 import 'package:grinta/analytics/analytics_route_aware.dart';
 import 'package:grinta/services/analytics_service.dart';
 import 'package:grinta/widget/web_app_root.dart';
+import 'package:grinta/util/firebase_auth_ready.dart';
 
 const String kStreamApiKey = 'vg9g2zz7s2fc';
+const Duration _kSessionPrepTimeout = Duration(seconds: 30);
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -30,8 +36,19 @@ Future<void> main() async {
     options: DefaultFirebaseOptions.currentPlatform,
   );
 
+  if (kIsWeb) {
+    await firebase_auth.FirebaseAuth.instance.setPersistence(
+      firebase_auth.Persistence.LOCAL,
+    );
+  }
+
+  // Restaure la session Firebase persistée avant le premier frame.
+  await waitForFirebaseAuthReady(firebase_auth.FirebaseAuth.instance);
+
   ActiveSessionService.instance;
   await FeatureDiscoveryService.instance.ensureInitialized();
+  UserTrialService.instance;
+  await UserTrialService.instance.ensureInitialized();
   await SubscriptionService.instance.ensureInitialized();
 
   runApp(
@@ -42,6 +59,9 @@ Future<void> main() async {
         ),
         ChangeNotifierProvider<SubscriptionService>.value(
           value: SubscriptionService.instance,
+        ),
+        ChangeNotifierProvider<UserTrialService>.value(
+          value: UserTrialService.instance,
         ),
       ],
       child: const MyApp(),
@@ -155,6 +175,23 @@ class _AuthGateState extends State<AuthGate> {
   Future<void>? _authenticatedSessionFuture;
   String? _authenticatedSessionForUid;
   String? _connectedStreamUserId;
+  late final Future<void> _authReadyFuture;
+  firebase_auth.User? _persistedUser;
+
+  @override
+  void initState() {
+    super.initState();
+    final auth = firebase_auth.FirebaseAuth.instance;
+    _persistedUser = auth.currentUser;
+    // main() already awaited auth readiness; skip duplicate wait when possible.
+    if (_persistedUser != null) {
+      _authReadyFuture = Future<void>.value();
+    } else {
+      _authReadyFuture = waitForFirebaseAuthReady(auth).then((_) {
+        _persistedUser ??= auth.currentUser;
+      });
+    }
+  }
 
   Future<void> _connectStreamUser(firebase_auth.User firebaseUser) async {
     final streamUserId = firebaseUser.uid;
@@ -214,8 +251,45 @@ class _AuthGateState extends State<AuthGate> {
   Future<void> _prepareAuthenticatedSession(
     firebase_auth.User firebaseUser,
   ) async {
-    await ActiveSessionService.instance.ensureSessionActive();
-    await _connectStreamUser(firebaseUser);
+    await ActiveSessionService.instance
+        .ensureSessionActive()
+        .timeout(_kSessionPrepTimeout, onTimeout: () {
+      debugPrint('ensureSessionActive timed out; continuing to AppSession init');
+    });
+
+    final firebase_auth.User? liveUser =
+        firebase_auth.FirebaseAuth.instance.currentUser;
+    if (liveUser == null || liveUser.uid != firebaseUser.uid) {
+      throw StateError('Session utilisateur perdue pendant la préparation.');
+    }
+
+    if (mounted) {
+      final appSession = context.read<AppSession>();
+      await appSession.init().timeout(_kSessionPrepTimeout, onTimeout: () {
+        debugPrint('AppSession.init timed out; continuing to Stream connect');
+        appSession.releaseStuckInit(expectedUid: firebaseUser.uid);
+      });
+      // Init already resolves avatars; on web skip a second refresh that would
+      // stack with userChanges/idTokenChanges listeners and web avatar polling.
+      if (mounted && !kIsWeb) {
+        await context
+            .read<AppSession>()
+            .refreshPlayerAvatarUrls(allowWebRetry: false)
+            .timeout(_kSessionPrepTimeout, onTimeout: () {
+          debugPrint(
+            'refreshPlayerAvatarUrls timed out; continuing to Stream connect',
+          );
+        });
+      }
+    }
+
+    final firebase_auth.User? afterInitUser =
+        firebase_auth.FirebaseAuth.instance.currentUser;
+    if (afterInitUser == null || afterInitUser.uid != firebaseUser.uid) {
+      throw StateError('Session utilisateur perdue après initialisation.');
+    }
+
+    await _connectStreamUser(afterInitUser).timeout(_kSessionPrepTimeout);
   }
 
   Future<String> _fetchStreamToken(firebase_auth.User firebaseUser) async {
@@ -238,84 +312,150 @@ class _AuthGateState extends State<AuthGate> {
 
   @override
   Widget build(BuildContext context) {
-    return StreamBuilder<firebase_auth.User?>(
-      stream: firebase_auth.FirebaseAuth.instance.authStateChanges(),
-      builder: (context, snapshot) {
-        if (snapshot.connectionState == ConnectionState.waiting) {
+    return FutureBuilder<void>(
+      future: _authReadyFuture,
+      builder: (context, authReadySnapshot) {
+        if (authReadySnapshot.connectionState != ConnectionState.done) {
           return const _LoadingScreen();
         }
 
-        final firebase_auth.User? user = snapshot.data;
-
-        if (user == null) {
-          return FutureBuilder<void>(
-            future: _disconnectStreamUserIfNeeded(),
-            builder: (context, _) {
-              return const LoginScreen();
-            },
-          );
-        }
-
-        if (_authenticatedSessionFuture == null ||
-            _authenticatedSessionForUid != user.uid) {
-          _authenticatedSessionForUid = user.uid;
-          _authenticatedSessionFuture = _prepareAuthenticatedSession(user);
-        }
-
-        return FutureBuilder<void>(
-          future: _authenticatedSessionFuture,
-          builder: (context, streamSnapshot) {
-            if (streamSnapshot.connectionState != ConnectionState.done) {
+        return StreamBuilder<firebase_auth.User?>(
+          stream: firebase_auth.FirebaseAuth.instance.authStateChanges(),
+          initialData: firebase_auth.FirebaseAuth.instance.currentUser,
+          builder: (context, snapshot) {
+            if (snapshot.connectionState == ConnectionState.waiting &&
+                snapshot.data == null &&
+                firebase_auth.FirebaseAuth.instance.currentUser == null) {
               return const _LoadingScreen();
             }
 
-            if (streamSnapshot.hasError) {
-              return Scaffold(
-                backgroundColor: Theme.of(context).scaffoldBackgroundColor,
-                body: Center(
-                  child: Padding(
-                    padding: const EdgeInsets.all(24),
-                    child: ConstrainedBox(
-                      constraints: const BoxConstraints(maxWidth: 520),
-                      child: Card(
-                        child: Padding(
-                          padding: const EdgeInsets.all(20),
-                          child: Column(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              const Icon(Icons.error_outline, size: 40),
-                              const SizedBox(height: 16),
-                              Text(
-                                context.l10n.errorStreamConnection,
-                                style: Theme.of(context).textTheme.titleLarge,
-                                textAlign: TextAlign.center,
+            final auth = firebase_auth.FirebaseAuth.instance;
+            final firebase_auth.User? liveUser = auth.currentUser;
+            final firebase_auth.User? streamUser = snapshot.data;
+
+            // Explicit sign-out: stream and live user both null → drop cached user.
+            if (snapshot.hasData &&
+                streamUser == null &&
+                liveUser == null) {
+              _persistedUser = null;
+            }
+
+            final firebase_auth.User? user = liveUser ??
+                streamUser ??
+                (isFirebaseAuthDefinitelySignedOut(auth) ? null : _persistedUser);
+
+            if (user != null) {
+              _persistedUser = user;
+            } else {
+              _authenticatedSessionFuture = null;
+              _authenticatedSessionForUid = null;
+            }
+
+            if (user == null) {
+              if (!isFirebaseAuthDefinitelySignedOut(auth)) {
+                return const _LoadingScreen();
+              }
+
+              return FutureBuilder<void>(
+                future: _disconnectStreamUserIfNeeded(),
+                builder: (context, _) {
+                  return const LoginScreen();
+                },
+              );
+            }
+
+            if (_authenticatedSessionFuture == null ||
+                _authenticatedSessionForUid != user.uid) {
+              _authenticatedSessionForUid = user.uid;
+              _authenticatedSessionFuture = _prepareAuthenticatedSession(user);
+            }
+
+            return FutureBuilder<void>(
+              future: _authenticatedSessionFuture,
+              builder: (context, streamSnapshot) {
+                if (streamSnapshot.connectionState != ConnectionState.done) {
+                  return const _LoadingScreen();
+                }
+
+                if (streamSnapshot.hasError) {
+                  return Scaffold(
+                    backgroundColor: Theme.of(context).scaffoldBackgroundColor,
+                    body: Center(
+                      child: Padding(
+                        padding: const EdgeInsets.all(24),
+                        child: ConstrainedBox(
+                          constraints: const BoxConstraints(maxWidth: 520),
+                          child: Card(
+                            child: Padding(
+                              padding: const EdgeInsets.all(20),
+                              child: Column(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  const Icon(Icons.error_outline, size: 40),
+                                  const SizedBox(height: 16),
+                                  Text(
+                                    context.l10n.errorStreamConnection,
+                                    style:
+                                        Theme.of(context).textTheme.titleLarge,
+                                    textAlign: TextAlign.center,
+                                  ),
+                                  const SizedBox(height: 12),
+                                  Text(
+                                    '${streamSnapshot.error}',
+                                    textAlign: TextAlign.center,
+                                  ),
+                                  const SizedBox(height: 20),
+                                  ElevatedButton(
+                                    onPressed: () {
+                                      setState(() {
+                                        _authenticatedSessionFuture =
+                                            _prepareAuthenticatedSession(user);
+                                      });
+                                    },
+                                    child: Text(context.l10n.actionRetry),
+                                  ),
+                                ],
                               ),
-                              const SizedBox(height: 12),
-                              Text(
-                                '${streamSnapshot.error}',
-                                textAlign: TextAlign.center,
-                              ),
-                              const SizedBox(height: 20),
-                              ElevatedButton(
-                                onPressed: () {
-                                  setState(() {
-                                    _authenticatedSessionFuture =
-                                        _prepareAuthenticatedSession(user);
-                                  });
-                                },
-                                child: Text(context.l10n.actionRetry),
-                              ),
-                            ],
+                            ),
                           ),
                         ),
                       ),
                     ),
-                  ),
-                ),
-              );
-            }
+                  );
+                }
 
-            return const WebAppRoot();
+                final firebase_auth.User? confirmedUser = auth.currentUser;
+                if (confirmedUser == null || confirmedUser.uid != user.uid) {
+                  if (!isFirebaseAuthDefinitelySignedOut(auth)) {
+                    return const _LoadingScreen();
+                  }
+                  return FutureBuilder<void>(
+                    future: _disconnectStreamUserIfNeeded(),
+                    builder: (context, _) => const LoginScreen(),
+                  );
+                }
+
+                final appSession = context.watch<AppSession>();
+                if (appSession.user?.uid != confirmedUser.uid) {
+                  if (appSession.isLoading) {
+                    WidgetsBinding.instance.addPostFrameCallback((_) {
+                      if (!mounted) return;
+                      context.read<AppSession>().releaseStuckInit(
+                            expectedUid: confirmedUser.uid,
+                          );
+                    });
+                  } else {
+                    WidgetsBinding.instance.addPostFrameCallback((_) {
+                      if (!mounted) return;
+                      unawaited(context.read<AppSession>().init());
+                    });
+                  }
+                  return const _LoadingScreen();
+                }
+
+                return const WebAppRoot();
+              },
+            );
           },
         );
       },

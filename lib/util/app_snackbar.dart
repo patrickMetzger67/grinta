@@ -1,4 +1,9 @@
+import 'dart:async' show unawaited;
+
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+
+import 'package:grinta/navigation/app_navigator.dart';
 
 import 'app_theme.dart';
 
@@ -53,14 +58,63 @@ class AppSnackbar {
     );
   }
 
+  static ScaffoldMessengerState? _resolveMessenger(BuildContext context) {
+    final direct = ScaffoldMessenger.maybeOf(context);
+    if (direct != null) return direct;
+
+    final rootContext = appNavigatorKey.currentContext;
+    if (rootContext != null) {
+      return ScaffoldMessenger.maybeOf(rootContext);
+    }
+    return null;
+  }
+
+  static bool _isInsideDialog(BuildContext context) {
+    return context.findAncestorWidgetOfExactType<Dialog>() != null;
+  }
+
+  static Future<void> _showDialogMessage(
+    BuildContext context,
+    String message,
+  ) async {
+    await showDialog<void>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        content: Text(message),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(dialogContext).pop(),
+            child: Text(MaterialLocalizations.of(dialogContext).okButtonLabel),
+          ),
+        ],
+      ),
+    );
+  }
+
   static void show(
     BuildContext context,
     String message, {
     bool isError = true,
     double extraBottomMargin = 16,
+    bool preferDialog = false,
   }) {
     if (!context.mounted) return;
-    ScaffoldMessenger.of(context)
+
+    final useDialog = preferDialog || (kIsWeb && _isInsideDialog(context));
+    if (useDialog) {
+      unawaited(_showDialogMessage(context, message));
+      return;
+    }
+
+    final messenger = _resolveMessenger(context);
+    if (messenger == null) {
+      if (kIsWeb) {
+        unawaited(_showDialogMessage(context, message));
+      }
+      return;
+    }
+
+    messenger
       ..hideCurrentSnackBar()
       ..showSnackBar(
         build(

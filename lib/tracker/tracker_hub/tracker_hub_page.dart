@@ -24,6 +24,7 @@ import '../../model/tracker/trackerData.dart';
 import '../../model/training.dart';
 import '../../services/pitch_heatmap_builder.dart';
 import '../../services/playerService.dart';
+import '../../widget/playerPhoto.dart';
 import '../../services/sensorAnalysisService.dart';
 import '../../services/teamWorkloadSummaryService.dart';
 import '../../services/trackerDataAnalysisService.dart';

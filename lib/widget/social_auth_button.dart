@@ -22,8 +22,6 @@ class SocialAuthButton extends StatelessWidget {
         return 'assets/images/google_logo.svg';
       case SocialAuthProvider.apple:
         return 'assets/images/apple_logo.svg';
-      case SocialAuthProvider.meta:
-        return 'assets/images/meta_logo.svg';
     }
   }
 

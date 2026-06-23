@@ -1,9 +1,9 @@
 import '../model/invitation.dart';
-import '../model/member_profile_data.dart';
+import '../model/player.dart';
 
 class OnboardingSelection {
   final Invitation? invitation;
-  final MemberProfileData? memberProfile;
+  final Player? memberProfile;
 
   const OnboardingSelection._({
     this.invitation,
@@ -14,7 +14,7 @@ class OnboardingSelection {
     return OnboardingSelection._(invitation: invitation);
   }
 
-  factory OnboardingSelection.memberProfile(MemberProfileData profile) {
+  factory OnboardingSelection.memberProfile(Player profile) {
     return OnboardingSelection._(memberProfile: profile);
   }
 

@@ -1,8 +1,9 @@
-import 'package:cached_network_image/cached_network_image.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:grinta/model/player.dart';
 import 'package:grinta/provider/appSession.dart';
 import 'package:grinta/services/playerService.dart';
+import 'package:grinta/util/player_photo_resolver.dart';
 import 'package:provider/provider.dart';
 
 import 'app_session_player_avatar.dart';
@@ -13,7 +14,7 @@ class PlayerPhoto extends StatefulWidget {
     super.key,
     required this.player,
     this.radius = 18,
-    this.defaultPhotoFileName = 'portrait_1920x1920.jpg',
+    this.defaultPhotoFileName = defaultPlayerAvatarFilename,
   });
 
   final Player player;
@@ -27,69 +28,72 @@ class PlayerPhoto extends StatefulWidget {
 class _PlayerPhotoState extends State<PlayerPhoto> {
   static final PlayerService _playerService = PlayerService();
 
-  late Future<String> _urlFuture;
+  late Future<List<String>> _avatarUrlsFuture;
 
   @override
   void initState() {
     super.initState();
-    _urlFuture = _playerService.getCachedUrlPlayer(
-      widget.player,
-      widget.defaultPhotoFileName,
-    );
+    _avatarUrlsFuture = _loadAvatarUrls();
   }
 
   @override
   void didUpdateWidget(covariant PlayerPhoto oldWidget) {
     super.didUpdateWidget(oldWidget);
-    final oldKey = oldWidget.player.keyMember ?? oldWidget.player.photo;
-    final newKey = widget.player.keyMember ?? widget.player.photo;
-    if (oldKey != newKey) {
-      _urlFuture = _playerService.getCachedUrlPlayer(
-        widget.player,
-        widget.defaultPhotoFileName,
-      );
+    if (_avatarCacheIdentity(oldWidget.player) !=
+        _avatarCacheIdentity(widget.player)) {
+      _avatarUrlsFuture = _loadAvatarUrls();
     }
+  }
+
+  Future<List<String>> _loadAvatarUrls() {
+    return _playerService.getCachedPlayerAvatarUrls(
+      widget.player,
+      defaultPhotoFileName: widget.defaultPhotoFileName,
+      authUser: FirebaseAuth.instance.currentUser,
+    );
+  }
+
+  static String _avatarCacheIdentity(Player player) {
+    final memberId = player.keyMember ?? '';
+    final photo = player.photo ?? '';
+    final userId = player.userID ?? '';
+    final users = (player.users ?? []).join(',');
+    return '$memberId|$photo|$userId|$users';
   }
 
   @override
   Widget build(BuildContext context) {
     final memberId = widget.player.keyMember;
     if (memberId != null) {
-      final sessionImage =
-          context.watch<AppSession>().playersPhoto[memberId];
-      if (sessionImage != null) {
+      final sessionUrls =
+          context.watch<AppSession>().playersPhotoUrls[memberId];
+      if (sessionUrls != null && sessionUrls.isNotEmpty) {
         return AppSessionPlayerAvatar(
           player: widget.player,
-          imageProvider: sessionImage,
+          imageUrls: sessionUrls,
           radius: widget.radius,
+          watchSessionForStaleWebAvatar: true,
         );
       }
     }
 
-    return FutureBuilder<String>(
-      future: _urlFuture,
+    return FutureBuilder<List<String>>(
+      future: _avatarUrlsFuture,
       builder: (context, snapshot) {
-        if (snapshot.connectionState != ConnectionState.done) {
-          return _avatar(imageProvider: null);
+        final imageUrls = snapshot.data;
+        if (imageUrls == null || imageUrls.isEmpty) {
+          return AppSessionPlayerAvatar(
+            player: widget.player,
+            radius: widget.radius,
+          );
         }
 
-        final imageUrl = snapshot.data?.trim() ?? '';
-        if (imageUrl.isEmpty) {
-          return _avatar(imageProvider: null);
-        }
-
-        return _avatar(
-          imageProvider: CachedNetworkImageProvider(imageUrl),
+        return AppSessionPlayerAvatar(
+          player: widget.player,
+          imageUrls: imageUrls,
+          radius: widget.radius,
         );
       },
-    );
-  }
-
-  Widget _avatar({required ImageProvider? imageProvider}) {
-    return AppSessionPlayerAvatar(
-      player: widget.player,
-      imageProvider: imageProvider,
-      radius: widget.radius,
     );
   }
 }

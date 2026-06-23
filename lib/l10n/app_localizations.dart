@@ -386,6 +386,42 @@ abstract class AppLocalizations {
   /// **'Nom'**
   String get memberLastName;
 
+  /// No description provided for @memberEmail.
+  ///
+  /// In fr, this message translates to:
+  /// **'E-mail'**
+  String get memberEmail;
+
+  /// No description provided for @memberEmailOptional.
+  ///
+  /// In fr, this message translates to:
+  /// **'E-mail (facultatif)'**
+  String get memberEmailOptional;
+
+  /// No description provided for @memberPhone.
+  ///
+  /// In fr, this message translates to:
+  /// **'Téléphone'**
+  String get memberPhone;
+
+  /// No description provided for @memberPhoneOptional.
+  ///
+  /// In fr, this message translates to:
+  /// **'Téléphone (facultatif)'**
+  String get memberPhoneOptional;
+
+  /// No description provided for @memberEmailInvalid.
+  ///
+  /// In fr, this message translates to:
+  /// **'Veuillez saisir une adresse e-mail valide'**
+  String get memberEmailInvalid;
+
+  /// No description provided for @memberPhoneInvalid.
+  ///
+  /// In fr, this message translates to:
+  /// **'Veuillez saisir un numéro de téléphone valide'**
+  String get memberPhoneInvalid;
+
   /// No description provided for @memberBirthDate.
   ///
   /// In fr, this message translates to:
@@ -464,6 +500,12 @@ abstract class AppLocalizations {
   /// **'La nationalité est obligatoire'**
   String get memberNationalityRequired;
 
+  /// No description provided for @memberContactRequired.
+  ///
+  /// In fr, this message translates to:
+  /// **'Renseignez au moins un email ou un numéro de téléphone'**
+  String get memberContactRequired;
+
   /// No description provided for @memberProfileIncomplete.
   ///
   /// In fr, this message translates to:
@@ -473,8 +515,50 @@ abstract class AppLocalizations {
   /// No description provided for @memberProfileSubmit.
   ///
   /// In fr, this message translates to:
-  /// **'Créer ma fiche joueur'**
+  /// **'Créer mon profil'**
   String get memberProfileSubmit;
+
+  /// No description provided for @memberProfileUpdateSuccess.
+  ///
+  /// In fr, this message translates to:
+  /// **'Profil mis à jour'**
+  String get memberProfileUpdateSuccess;
+
+  /// No description provided for @memberProfileUpdateError.
+  ///
+  /// In fr, this message translates to:
+  /// **'Impossible de mettre à jour le profil : {error}'**
+  String memberProfileUpdateError(String error);
+
+  /// No description provided for @memberProfileChangePhoto.
+  ///
+  /// In fr, this message translates to:
+  /// **'Changer la photo'**
+  String get memberProfileChangePhoto;
+
+  /// No description provided for @memberProfileTakePhoto.
+  ///
+  /// In fr, this message translates to:
+  /// **'Prendre une photo'**
+  String get memberProfileTakePhoto;
+
+  /// No description provided for @memberProfileChooseFromGallery.
+  ///
+  /// In fr, this message translates to:
+  /// **'Choisir dans la galerie'**
+  String get memberProfileChooseFromGallery;
+
+  /// No description provided for @memberProfilePhotoUploadError.
+  ///
+  /// In fr, this message translates to:
+  /// **'Impossible de mettre à jour la photo : {error}'**
+  String memberProfilePhotoUploadError(String error);
+
+  /// No description provided for @errorEditProfileUnavailable.
+  ///
+  /// In fr, this message translates to:
+  /// **'Aucun profil disponible à modifier'**
+  String get errorEditProfileUnavailable;
 
   /// No description provided for @createTeamPromptQuestion.
   ///
@@ -631,6 +715,12 @@ abstract class AppLocalizations {
   /// In fr, this message translates to:
   /// **'Aujourd’hui'**
   String get actionToday;
+
+  /// No description provided for @actionEditProfile.
+  ///
+  /// In fr, this message translates to:
+  /// **'Modifier mon profil'**
+  String get actionEditProfile;
 
   /// No description provided for @actionLogout.
   ///
@@ -1147,6 +1237,12 @@ abstract class AppLocalizations {
   /// In fr, this message translates to:
   /// **'Navigation'**
   String get navNavigation;
+
+  /// No description provided for @navSettings.
+  ///
+  /// In fr, this message translates to:
+  /// **'Paramètres'**
+  String get navSettings;
 
   /// No description provided for @tabCompo.
   ///
@@ -3794,6 +3890,30 @@ abstract class AppLocalizations {
   /// **'/mois'**
   String get subscriptionPerMonth;
 
+  /// No description provided for @subscriptionPerYear.
+  ///
+  /// In fr, this message translates to:
+  /// **'/an'**
+  String get subscriptionPerYear;
+
+  /// No description provided for @subscriptionBillingMonthly.
+  ///
+  /// In fr, this message translates to:
+  /// **'Mensuel'**
+  String get subscriptionBillingMonthly;
+
+  /// No description provided for @subscriptionBillingYearly.
+  ///
+  /// In fr, this message translates to:
+  /// **'Annuel'**
+  String get subscriptionBillingYearly;
+
+  /// No description provided for @subscriptionAnnualSavings.
+  ///
+  /// In fr, this message translates to:
+  /// **'2 mois offerts'**
+  String get subscriptionAnnualSavings;
+
   /// No description provided for @subscriptionSubscribe.
   ///
   /// In fr, this message translates to:
@@ -3836,6 +3956,12 @@ abstract class AppLocalizations {
   /// **'Produit introuvable. Vérifiez la configuration RevenueCat.'**
   String get subscriptionProductNotFound;
 
+  /// No description provided for @subscriptionOfferingsUnavailable.
+  ///
+  /// In fr, this message translates to:
+  /// **'Les offres d\'abonnement n\'ont pas pu être chargées. Vérifiez votre connexion et l\'offering web RevenueCat, puis réessayez.'**
+  String get subscriptionOfferingsUnavailable;
+
   /// No description provided for @subscriptionPurchaseFailed.
   ///
   /// In fr, this message translates to:
@@ -3871,6 +3997,198 @@ abstract class AppLocalizations {
   /// In fr, this message translates to:
   /// **'Voir les offres'**
   String get subscriptionPromptAction;
+
+  /// No description provided for @subscriptionMenu.
+  ///
+  /// In fr, this message translates to:
+  /// **'Abonnement'**
+  String get subscriptionMenu;
+
+  /// No description provided for @subscriptionDetailsTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Abonnement'**
+  String get subscriptionDetailsTitle;
+
+  /// No description provided for @subscriptionTier.
+  ///
+  /// In fr, this message translates to:
+  /// **'Formule'**
+  String get subscriptionTier;
+
+  /// No description provided for @subscriptionRenewalDate.
+  ///
+  /// In fr, this message translates to:
+  /// **'Renouvellement le {date}'**
+  String subscriptionRenewalDate(String date);
+
+  /// No description provided for @subscriptionNone.
+  ///
+  /// In fr, this message translates to:
+  /// **'Aucun abonnement actif'**
+  String get subscriptionNone;
+
+  /// No description provided for @subscriptionTrialEnds.
+  ///
+  /// In fr, this message translates to:
+  /// **'Fin de l\'essai le {date}'**
+  String subscriptionTrialEnds(String date);
+
+  /// No description provided for @subscriptionPeriodLabel.
+  ///
+  /// In fr, this message translates to:
+  /// **'Période'**
+  String get subscriptionPeriodLabel;
+
+  /// No description provided for @subscriptionRenewalLabel.
+  ///
+  /// In fr, this message translates to:
+  /// **'Renouvellement'**
+  String get subscriptionRenewalLabel;
+
+  /// No description provided for @subscriptionBillingPeriodMonthly.
+  ///
+  /// In fr, this message translates to:
+  /// **'Mensuel'**
+  String get subscriptionBillingPeriodMonthly;
+
+  /// No description provided for @subscriptionBillingPeriodYearly.
+  ///
+  /// In fr, this message translates to:
+  /// **'Annuel'**
+  String get subscriptionBillingPeriodYearly;
+
+  /// No description provided for @subscriptionStatusActive.
+  ///
+  /// In fr, this message translates to:
+  /// **'Actif'**
+  String get subscriptionStatusActive;
+
+  /// No description provided for @subscriptionChangePlan.
+  ///
+  /// In fr, this message translates to:
+  /// **'Changer de formule'**
+  String get subscriptionChangePlan;
+
+  /// No description provided for @subscriptionChangePlanTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Modifier votre abonnement'**
+  String get subscriptionChangePlanTitle;
+
+  /// No description provided for @subscriptionChangePlanSubtitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Passez de Joueur à Coach, changez de formule ou modifiez la période de facturation.'**
+  String get subscriptionChangePlanSubtitle;
+
+  /// No description provided for @subscriptionChangePlanConfirm.
+  ///
+  /// In fr, this message translates to:
+  /// **'Confirmer le changement'**
+  String get subscriptionChangePlanConfirm;
+
+  /// No description provided for @subscriptionCurrentPlan.
+  ///
+  /// In fr, this message translates to:
+  /// **'Formule actuelle'**
+  String get subscriptionCurrentPlan;
+
+  /// No description provided for @subscriptionPlanChanged.
+  ///
+  /// In fr, this message translates to:
+  /// **'Votre abonnement a été mis à jour.'**
+  String get subscriptionPlanChanged;
+
+  /// No description provided for @trialStatusTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Essai gratuit'**
+  String get trialStatusTitle;
+
+  /// No description provided for @trialDaysRemaining.
+  ///
+  /// In fr, this message translates to:
+  /// **'{days, plural, =1{1 jour restant} other{{days} jours restants}}'**
+  String trialDaysRemaining(int days);
+
+  /// No description provided for @shopTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Boutique Grinta'**
+  String get shopTitle;
+
+  /// No description provided for @shopPromoTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Offre boutique'**
+  String get shopPromoTitle;
+
+  /// No description provided for @shopPromoCta.
+  ///
+  /// In fr, this message translates to:
+  /// **'Voir l\'offre'**
+  String get shopPromoCta;
+
+  /// No description provided for @shopBrowseAll.
+  ///
+  /// In fr, this message translates to:
+  /// **'Voir la boutique'**
+  String get shopBrowseAll;
+
+  /// No description provided for @shopLoadError.
+  ///
+  /// In fr, this message translates to:
+  /// **'Impossible de charger la boutique.'**
+  String get shopLoadError;
+
+  /// No description provided for @shopRetry.
+  ///
+  /// In fr, this message translates to:
+  /// **'Réessayer'**
+  String get shopRetry;
+
+  /// No description provided for @legalPrivacyPolicy.
+  ///
+  /// In fr, this message translates to:
+  /// **'Politique de confidentialité'**
+  String get legalPrivacyPolicy;
+
+  /// No description provided for @legalTermsOfService.
+  ///
+  /// In fr, this message translates to:
+  /// **'Conditions d\'utilisation'**
+  String get legalTermsOfService;
+
+  /// No description provided for @actionDeleteAccount.
+  ///
+  /// In fr, this message translates to:
+  /// **'Supprimer mon compte'**
+  String get actionDeleteAccount;
+
+  /// No description provided for @actionDeleteAccountConfirmTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Supprimer le compte ?'**
+  String get actionDeleteAccountConfirmTitle;
+
+  /// No description provided for @actionDeleteAccountConfirmMessage.
+  ///
+  /// In fr, this message translates to:
+  /// **'Cette action est définitive. Votre compte, votre profil membre et vos données associées seront supprimés.'**
+  String get actionDeleteAccountConfirmMessage;
+
+  /// No description provided for @errorDeleteAccount.
+  ///
+  /// In fr, this message translates to:
+  /// **'Impossible de supprimer le compte : {details}'**
+  String errorDeleteAccount(String details);
+
+  /// No description provided for @errorDeleteAccountRequiresRecentLogin.
+  ///
+  /// In fr, this message translates to:
+  /// **'Pour des raisons de sécurité, reconnectez-vous puis réessayez.'**
+  String get errorDeleteAccountRequiresRecentLogin;
 }
 
 class _AppLocalizationsDelegate

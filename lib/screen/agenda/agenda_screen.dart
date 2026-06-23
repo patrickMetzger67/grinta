@@ -24,6 +24,7 @@ import '../../widget/match_tracker_stats_table.dart';
 import '../../model/feature_discovery_ids.dart';
 import '../../widget/app_shell_scope.dart';
 import '../../widget/feature_discovery_random_banner.dart';
+import '../../widget/alternating_monetization_banner.dart';
 import '../../widget/tracker_kit_icon_pill.dart';
 import '../../widget/tracker_player_analysis_widget.dart';
 import '../match_detail_screen.dart';
@@ -684,7 +685,8 @@ class _AgendaScreenState extends State<AgendaScreen> {
           padding: const EdgeInsets.fromLTRB(12, 12, 12, 16),
           child: Column(
             children: [
-              FeatureDiscoveryRandomBanner(
+              const AlternatingMonetizationBanner(),
+              const FeatureDiscoveryRandomBanner(
                 parentScreenId: FeatureDiscoveryIds.tabAgenda,
                 excludeCurrentBaseScreen: true,
               ),

@@ -13,6 +13,7 @@ import 'package:stream_chat_flutter/stream_chat_flutter.dart';
 import '../model/feature_discovery_ids.dart';
 import '../util/app_theme.dart';
 import '../widget/feature_discovery_random_banner.dart';
+import '../widget/alternating_monetization_banner.dart';
 
 
 class ResponsiveChat extends StatelessWidget {
@@ -23,7 +24,8 @@ class ResponsiveChat extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        FeatureDiscoveryRandomBanner(
+        const AlternatingMonetizationBanner(),
+        const FeatureDiscoveryRandomBanner(
           parentScreenId: FeatureDiscoveryIds.tabChat,
           excludeCurrentBaseScreen: true,
         ),

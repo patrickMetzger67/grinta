@@ -1,18 +1,16 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:firebase_storage/firebase_storage.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 
 import '../model/player.dart';
-import '../model/member_profile_data.dart';
 import '../util/player_photo_resolver.dart';
-import '../util/search_options.dart';
 
 class PlayerService {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
 
   static const String collectionName = 'member';
 
-  static final Map<String, String> _playerPhotoUrlCache = {};
-  static final Map<String, Future<String>> _playerPhotoUrlPending = {};
+  static final Map<String, List<String>> _avatarUrlCache = {};
+  static final Map<String, Future<List<String>>> _avatarUrlPending = {};
 
   CollectionReference<Map<String, dynamic>> get _collection =>
       _firestore.collection(collectionName);
@@ -25,32 +23,9 @@ class PlayerService {
   /// Crée un membre (player) sans invitation et lie l'utilisateur courant.
   Future<String> createMember({
     required String userId,
-    required MemberProfileData profile,
+    required Player profile,
   }) async {
-    final searchOptions = buildPlayerSearchOptions(
-      firstName: profile.firstName.trim(),
-      lastName: profile.lastName.trim(),
-    );
-
-    final player = Player(
-      firstName: profile.firstName.trim(),
-      lastName: profile.lastName.trim(),
-      birthDay: profile.birthDay?.trim() ?? '',
-      birthPlace: profile.birthPlace?.trim() ?? '',
-      nationality: profile.nationality.trim(),
-      positions: profile.positions,
-      statut: 1,
-      userID: userId,
-      users: [userId],
-      searchOptions: searchOptions,
-      views: 0,
-      likes: [],
-      photo: '',
-      clubId: '',
-      category: '',
-      sexe: 'M',
-      personNumber: '',
-    )..creatorUserId = userId;
+    final player = Player.forNewMember(userId: userId, profile: profile);
 
     final docRef = await addPlayer(player);
     final playerId = docRef.id;
@@ -60,6 +35,14 @@ class PlayerService {
     });
 
     return playerId;
+  }
+
+  /// Met à jour les champs de profil d'un membre existant.
+  Future<void> updateMemberProfile({
+    required String memberId,
+    required Player profile,
+  }) async {
+    await updatePlayerFields(memberId, profile.toProfileUpdateMap());
   }
 
   /// Ajouter un joueur avec un id personnalisé
@@ -365,81 +348,67 @@ class PlayerService {
     return list;
   }
 
-  /// URL photo mise en cache (évite les appels Storage à chaque scroll / rebuild).
-  Future<String> getCachedUrlPlayer(
-    Player player,
-    String defaultPlayerPhoto,
-  ) {
-    final cacheKey = _playerPhotoCacheKey(player, defaultPlayerPhoto);
-    final cached = _playerPhotoUrlCache[cacheKey];
+  /// URLs avatar mises en cache (joueur → utilisateur → défaut).
+  Future<List<String>> getCachedPlayerAvatarUrls(
+    Player player, {
+    String defaultPhotoFileName = defaultPlayerAvatarFilename,
+    User? authUser,
+  }) {
+    final cacheKey = _avatarCacheKey(
+      player,
+      defaultPhotoFileName,
+      authUser: authUser,
+    );
+    final cached = _avatarUrlCache[cacheKey];
     if (cached != null) {
-      return Future<String>.value(cached);
+      return Future<List<String>>.value(cached);
     }
 
-    return _playerPhotoUrlPending.putIfAbsent(cacheKey, () async {
+    return _avatarUrlPending.putIfAbsent(cacheKey, () async {
       try {
-        final url = await getUrlPlayer(player, defaultPlayerPhoto);
-        _playerPhotoUrlCache[cacheKey] = url;
-        return url;
+        final urls = await resolvePlayerAvatarUrls(
+          player,
+          defaultPhotoFileName: defaultPhotoFileName,
+          authUser: authUser,
+        );
+        _avatarUrlCache[cacheKey] = urls;
+        return urls;
       } finally {
-        _playerPhotoUrlPending.remove(cacheKey);
+        _avatarUrlPending.remove(cacheKey);
       }
     });
   }
 
-  static String _playerPhotoCacheKey(Player player, String defaultPlayerPhoto) {
+  static String _avatarCacheKey(
+    Player player,
+    String defaultPhotoFileName, {
+    User? authUser,
+  }) {
+    final linkedUserId = linkedUserIdForPlayer(player);
+    final photoPart = hasPlayerPhoto(player) ? player.photo!.trim() : '';
+    final authPhotoPart = _authPhotoCachePart(player, authUser);
     final id = player.keyMember?.trim();
     if (id != null && id.isNotEmpty) {
-      final photo = player.photo?.trim() ?? '';
-      if (photo.isNotEmpty) {
-        return '$id|$defaultPlayerPhoto';
-      }
-      final userId = player.userID?.trim() ?? '';
-      return '$id|user:$userId|$defaultPlayerPhoto';
+      return '$id|$photoPart|user:$linkedUserId|auth:$authPhotoPart|$defaultPhotoFileName';
     }
-    final photo = player.photo?.trim() ?? '';
-    if (photo.isNotEmpty) {
-      return 'photo:$photo|$defaultPlayerPhoto';
+    return 'photo:$photoPart|user:$linkedUserId|auth:$authPhotoPart|$defaultPhotoFileName';
+  }
+
+  static String _authPhotoCachePart(Player player, User? authUser) {
+    if (authUser == null) return '';
+    final authUid = authUser.uid.trim();
+    if (authUid.isEmpty || !isPlayerLinkedToAuthUser(player, authUid)) {
+      return '';
     }
-    final userId = player.userID?.trim() ?? '';
-    return 'photo:|user:$userId|$defaultPlayerPhoto';
+    final liveUser = FirebaseAuth.instance.currentUser;
+    if (liveUser != null && liveUser.uid.trim() == authUid) {
+      return liveUser.photoURL?.trim() ?? '';
+    }
+    return authUser.photoURL?.trim() ?? '';
   }
 
   static void clearPlayerPhotoUrlCache() {
-    _playerPhotoUrlCache.clear();
-    _playerPhotoUrlPending.clear();
-  }
-
-  /// Récupérer l’URL de la photo joueur (joueur → utilisateur → défaut).
-  Future<String> getUrlPlayer(Player player, String defaultPlayerPhoto) async {
-    try {
-      final photoSource = await resolvePlayerPhotoSource(player);
-      if (photoSource == null || photoSource.isEmpty) {
-        return await getUrlDefaultPlayerImage(defaultUrl: defaultPlayerPhoto);
-      }
-
-      if (photoSource.contains('https://')) {
-        return photoSource;
-      }
-
-      final ref =
-          FirebaseStorage.instance.ref().child('thumbs/$photoSource');
-
-      return await ref.getDownloadURL();
-    } catch (e) {
-      return await getUrlDefaultPlayerImage(defaultUrl: defaultPlayerPhoto);
-    }
-  }
-
-  /// Récupérer l’image par défaut
-  Future<String> getUrlDefaultPlayerImage({required String defaultUrl}) async {
-    try {
-      Reference ref =
-      FirebaseStorage.instance.ref().child('thumbs/$defaultUrl');
-
-      return await ref.getDownloadURL();
-    } catch (e) {
-      return '';
-    }
+    _avatarUrlCache.clear();
+    _avatarUrlPending.clear();
   }
 }

@@ -33,4 +33,7 @@ abstract final class AnalyticsScreenNames {
   // Chat
   static const chatChannel = 'chat_channel';
   static const chatUserPicker = 'chat_user_picker';
+
+  // Shop
+  static const shop = 'shop';
 }
