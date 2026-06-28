@@ -105,10 +105,13 @@ class Invitation {
       keyInvitationExtId: extId,
       keyInvitationUid: uid,
       keyInvitationCreatedAt: createdAt,
-      keyInvitationValidateUid: validateUid,
-      keyInvitationValidateAt: validateAt,
-      keyInvitationTeamId: teamId,
-      keyInvitationSeasonId: seasonId,
+      if (validateUid != null && validateUid!.trim().isNotEmpty)
+        keyInvitationValidateUid: validateUid!.trim(),
+      if (validateAt != null) keyInvitationValidateAt: validateAt,
+      if (teamId != null && teamId!.trim().isNotEmpty)
+        keyInvitationTeamId: teamId!.trim(),
+      if (seasonId != null && seasonId!.trim().isNotEmpty)
+        keyInvitationSeasonId: seasonId!.trim(),
     };
   }
 

@@ -1,0 +1,30 @@
+{
+  "coach_basic": {
+    "maxTeams": 1,
+    "maxPlayersPerTeam": 20,
+    "maxProfiles": 1
+  },
+  "coach_elite": {
+    "maxTeams": 3,
+    "maxPlayersPerTeam": 22,
+    "maxProfiles": 3
+  },
+  "coach_pro": {
+    "maxTeams": 5,
+    "maxPlayersPerTeam": 25,
+    "maxProfiles": 3
+  },
+  "player": {
+    "maxTeams": 3,
+    "maxPlayersPerTeam": 1,
+    "maxProfiles": 3,
+    "allowOnlySelfAsPlayer": true
+  },
+  "maxProfilesFreePlayer": 1,
+  "maxTeamsFreePlayer": 1,
+  "trial": {
+    "maxTeams": 1,
+    "maxPlayersPerTeam": 20,
+    "maxProfiles": 1
+  }
+}

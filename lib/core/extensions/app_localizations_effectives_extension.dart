@@ -1,4 +1,5 @@
 import 'package:grinta/l10n/app_localizations.dart';
+import 'package:grinta/util/player_positions.dart';
 
 extension AppLocalizationsEffectives on AppLocalizations {
   String positionLabel(int position) {
@@ -29,6 +30,8 @@ extension AppLocalizationsEffectives on AppLocalizations {
         return roleCoach;
       case 2:
         return roleExecutive;
+      case positionCodeMedical:
+        return grintaStaffRoleMedical;
       default:
         return entityStaff;
     }

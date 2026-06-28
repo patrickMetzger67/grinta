@@ -128,6 +128,10 @@ class AppLocalizationsEs extends AppLocalizations {
   String get invitationNotFound => 'Código de invitación no encontrado';
 
   @override
+  String get invitationNotFoundContinuePrompt =>
+      'Este código no existe. ¿Desea continuar creando su perfil de jugador?';
+
+  @override
   String get invitationAlreadyUsed =>
       'Este código de invitación ya ha sido utilizado';
 
@@ -178,6 +182,37 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get memberPhoneInvalid => 'Introduce un número de teléfono válido';
+
+  @override
+  String get memberPhoneRequired =>
+      'El número de teléfono es obligatorio para las invitaciones';
+
+  @override
+  String invitationSmsMessage(
+      String appName, String code, String appleStoreUrl, String googlePlayUrl) {
+    return 'Tu entrenador te invita a unirte a $appName. Tu código: $code.\niPhone: $appleStoreUrl\nAndroid: $googlePlayUrl';
+  }
+
+  @override
+  String get memberInvitationSmsFailed =>
+      'Miembro añadido, pero no se pudo enviar el SMS de invitación.';
+
+  @override
+  String get memberAddedToTeamNotificationTitle => 'Actualización del equipo';
+
+  @override
+  String memberAddedToTeamNotificationBody(String teamName) {
+    return 'Tu entrenador te ha añadido a $teamName.';
+  }
+
+  @override
+  String get invitationAccepted => 'Invitación aceptada';
+
+  @override
+  String get invitationPending => 'Invitación pendiente';
+
+  @override
+  String get memberAppAccountLinked => 'Cuenta de la app vinculada';
 
   @override
   String get memberBirthDate => 'Fecha de nacimiento';
@@ -341,6 +376,9 @@ class AppLocalizationsEs extends AppLocalizations {
   String get actionEditProfile => 'Editar perfil';
 
   @override
+  String get actionCreateNewProfile => 'Crear un nuevo perfil';
+
+  @override
   String get actionLogout => 'Desconectar';
 
   @override
@@ -350,7 +388,104 @@ class AppLocalizationsEs extends AppLocalizations {
   String get actionLogoutConfirmMessage => '¿Realmente quieres cerrar sesión?';
 
   @override
+  String get actionCreateTeam => 'Crear un equipo';
+
+  @override
+  String get teamCreationAttachClubQuestion =>
+      '¿Desea asociar este equipo a un club?';
+
+  @override
+  String get teamCreationSelectClub => 'Seleccionar un club';
+
+  @override
+  String get teamCreationClubRequired => 'Seleccione un club';
+
+  @override
+  String get teamCreationSelectClubTeams => 'Seleccionar equipos del club';
+
+  @override
+  String get teamCreationNoClubTeams => 'Ningún equipo inscrito';
+
+  @override
+  String teamCreationSelectedClubTeamsCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count equipos seleccionados',
+      one: '1 equipo seleccionado',
+      zero: 'Ningún equipo seleccionado',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String teamCreationClubTeamCompetitionsCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count competiciones',
+      one: '1 competición',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get teamCreationSoccerType => 'Tipo de fútbol';
+
+  @override
+  String get teamCreationNoClubWarningTitle => 'Advertencia';
+
+  @override
+  String get teamCreationNoClubWarning =>
+      'Este equipo no está vinculado a un club ni a una competición. En ese caso, no se recuperan automáticamente el calendario ni los resultados.';
+
+  @override
+  String equipeCompetitionsSheetTitle(String teamName) {
+    return 'Competiciones — $teamName';
+  }
+
+  @override
+  String fffCompetitionPhaseLabel(int phase) {
+    return 'Fase $phase';
+  }
+
+  @override
+  String fffCompetitionGroupeLabel(int groupe) {
+    return 'Grupo $groupe';
+  }
+
+  @override
+  String get hintSearchClub => 'Buscar un club';
+
+  @override
+  String get hintSearchClubTeam => 'Buscar un equipo';
+
+  @override
   String get actionAddPlayer => 'Añadir un jugador';
+
+  @override
+  String get actionCreatePlayer => 'Crear un jugador';
+
+  @override
+  String get actionEditPlayer => 'Editar jugador';
+
+  @override
+  String get actionEditStaff => 'Editar cuerpo técnico';
+
+  @override
+  String get addPlayerPositionRequired => 'Selecciona una posición';
+
+  @override
+  String get addPlayerHeightCmOptional => 'Altura (cm, opcional)';
+
+  @override
+  String get addPlayerWeightKgOptional => 'Peso (kg, opcional)';
+
+  @override
+  String get addPlayerHeightInvalid => 'Introduce una altura entre 50 y 250 cm';
+
+  @override
+  String get addPlayerWeightInvalid => 'Introduce un peso entre 20 y 200 kg';
 
   @override
   String get actionAddStaff => 'Agregar un personal';
@@ -752,6 +887,24 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get hintSearchTeam => 'encontrar un equipo';
+
+  @override
+  String get hintSearchMember => 'Buscar un miembro';
+
+  @override
+  String get memberSearchPrompt => 'Escriba un nombre o apellido para buscar';
+
+  @override
+  String get memberAlreadyOnTeamRoster =>
+      'Este miembro ya forma parte del plantel';
+
+  @override
+  String get memberAlreadyPlayer =>
+      'Este miembro ya figura como jugador en el equipo';
+
+  @override
+  String get memberAlreadyStaff =>
+      'Este miembro ya figura como staff en el equipo';
 
   @override
   String get hintSearchUser => 'Buscar un usuario';
@@ -1923,6 +2076,24 @@ class AppLocalizationsEs extends AppLocalizations {
   String get roleExecutive => 'Directivo';
 
   @override
+  String get grintaStaffRoleEducator => 'Entrenador / Educador';
+
+  @override
+  String get grintaStaffRoleMedical => 'Médico';
+
+  @override
+  String get grintaStaffRoleExecutive => 'Directivo';
+
+  @override
+  String get addStaffRoleLabel => 'Función';
+
+  @override
+  String get addStaffRoleHint => 'Elegir una función';
+
+  @override
+  String get addStaffRoleRequired => 'Seleccione una función';
+
+  @override
   String get positionEducator => 'Educador/Entrenador';
 
   @override
@@ -1930,6 +2101,72 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get positionGoalkeeper => 'Portero';
+
+  @override
+  String get positionCenterBack => 'Defensa central';
+
+  @override
+  String get positionCenterBackLeft => 'Defensa central izquierdo';
+
+  @override
+  String get positionCenterBackRight => 'Defensa central derecho';
+
+  @override
+  String get positionLeftDefender => 'Defensa izquierdo';
+
+  @override
+  String get positionRightDefender => 'Defensa derecho';
+
+  @override
+  String get positionLeftBack => 'Lateral izquierdo';
+
+  @override
+  String get positionRightBack => 'Lateral derecho';
+
+  @override
+  String get positionLeftPiston => 'Carrilero izquierdo';
+
+  @override
+  String get positionRightPiston => 'Carrilero derecho';
+
+  @override
+  String get positionDefensiveMidfielder => 'Mediocampista defensivo';
+
+  @override
+  String get positionCentralMidfielder => 'Mediocampista central';
+
+  @override
+  String get positionBoxToBoxMidfielder => 'Mediocampista de contención';
+
+  @override
+  String get positionLeftMidfielder => 'Mediocampista izquierdo';
+
+  @override
+  String get positionRightMidfielder => 'Mediocampista derecho';
+
+  @override
+  String get positionAttackingMidfielder => 'Mediocampista ofensivo';
+
+  @override
+  String get positionPlaymaker => 'Organizador';
+
+  @override
+  String get positionLeftWinger => 'Extremo izquierdo';
+
+  @override
+  String get positionRightWinger => 'Extremo derecho';
+
+  @override
+  String get positionSecondStriker => 'Segundo delantero';
+
+  @override
+  String get positionCenterForward => 'Delantero centro';
+
+  @override
+  String get positionStriker => 'Goleador';
+
+  @override
+  String get positionAttacker => 'Delantero';
 
   @override
   String get positionDefender => 'Defensa';
@@ -2115,7 +2352,7 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get subscriptionPaywallSubtitle =>
-      'Desbloquea todas las funciones para tu club o seguimiento como jugador.';
+      'Desbloquea todas las funciones para el seguimiento de tus equipos y jugadores.';
 
   @override
   String get subscriptionPaywallLater => 'Más tarde';
@@ -2274,6 +2511,67 @@ class AppLocalizationsEs extends AppLocalizations {
   String get subscriptionPlanChanged => 'Tu suscripción se ha actualizado.';
 
   @override
+  String subscriptionLimitMaxTeamsReached(int max) {
+    return 'Has alcanzado el número máximo de equipos ($max) para tu suscripción.';
+  }
+
+  @override
+  String subscriptionLimitMaxPlayersReached(int max) {
+    return 'Has alcanzado el número máximo de jugadores ($max) para este equipo.';
+  }
+
+  @override
+  String get subscriptionLimitPlayerTierOnlySelf =>
+      'Tu suscripción Jugador solo te permite añadirte a ti mismo a un equipo.';
+
+  @override
+  String subscriptionLimitMaxProfilesReached(int max) {
+    return 'Has alcanzado el número máximo de perfiles ($max) para tu suscripción.';
+  }
+
+  @override
+  String get subscriptionLimitProfileUpgradeTitle => 'Perfiles adicionales';
+
+  @override
+  String get subscriptionLimitProfileUpgradeMessage =>
+      'Pasa a una suscripción de pago para crear perfiles adicionales.';
+
+  @override
+  String get subscriptionLimitProfileCoachBasicTitle => 'Perfiles adicionales';
+
+  @override
+  String get subscriptionLimitProfileCoachBasicMessage =>
+      'Pasa a Elite o Pro para crear hasta 3 perfiles.';
+
+  @override
+  String get subscriptionLimitProfilePremiumBadge => 'Premium';
+
+  @override
+  String get subscriptionLimitTeamUpgradeTitle => 'Equipos adicionales';
+
+  @override
+  String get subscriptionLimitTeamUpgradeMessage =>
+      'Pase a la suscripción Jugador para crear más equipos y gestionar su plantilla.';
+
+  @override
+  String get subscriptionLimitTeamCoachBasicTitle => 'Equipos adicionales';
+
+  @override
+  String get subscriptionLimitTeamCoachBasicMessage =>
+      'Pase a Elite o Pro para crear más equipos.';
+
+  @override
+  String get subscriptionLimitTeamDetailBlockedTitle => 'Gestión del equipo';
+
+  @override
+  String get subscriptionLimitTeamDetailBlockedMessage =>
+      'Pase a la suscripción Jugador para acceder a los detalles del equipo y gestionar su plantilla.';
+
+  @override
+  String get subscriptionLimitTeamCreatedFreePlayer =>
+      'Su equipo ha sido creado. Actualice su suscripción para acceder a los detalles.';
+
+  @override
   String get trialStatusTitle => 'Prueba gratuita';
 
   @override
@@ -2329,4 +2627,20 @@ class AppLocalizationsEs extends AppLocalizations {
   @override
   String get errorDeleteAccountRequiresRecentLogin =>
       'Por seguridad, cierra sesión, vuelve a iniciar sesión e inténtalo de nuevo.';
+
+  @override
+  String get actionDeleteTeam => 'Eliminar equipo';
+
+  @override
+  String get teamDeleteConfirmTitle => '¿Eliminar equipo?';
+
+  @override
+  String teamDeleteConfirmMessage(String teamName) {
+    return '¿Seguro que quieres eliminar «$teamName»? Esta acción es permanente. Se eliminarán todos los datos relacionados con el equipo (miembros, partidos, estadísticas, etc.).';
+  }
+
+  @override
+  String teamDeleteSuccess(String teamName) {
+    return 'El equipo «$teamName» ha sido eliminado.';
+  }
 }

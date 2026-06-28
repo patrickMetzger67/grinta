@@ -18,12 +18,14 @@ import 'navigation/app_navigator.dart';
 import 'package:grinta/provider/appSession.dart';
 import 'package:grinta/services/active_session_service.dart';
 import 'package:grinta/services/feature_discovery_service.dart';
+import 'package:grinta/services/subscription_limits_service.dart';
 import 'package:grinta/services/subscription_service.dart';
 import 'package:grinta/services/user_trial_service.dart';
 import 'package:grinta/analytics/analytics_observer.dart';
 import 'package:grinta/analytics/analytics_route_aware.dart';
 import 'package:grinta/services/analytics_service.dart';
 import 'package:grinta/widget/web_app_root.dart';
+import 'package:grinta/services/notification_fcm_service.dart';
 import 'package:grinta/util/firebase_auth_ready.dart';
 
 const String kStreamApiKey = 'vg9g2zz7s2fc';
@@ -35,6 +37,8 @@ Future<void> main() async {
   await Firebase.initializeApp(
     options: DefaultFirebaseOptions.currentPlatform,
   );
+
+  await NotificationFCMService.init();
 
   if (kIsWeb) {
     await firebase_auth.FirebaseAuth.instance.setPersistence(
@@ -50,6 +54,7 @@ Future<void> main() async {
   UserTrialService.instance;
   await UserTrialService.instance.ensureInitialized();
   await SubscriptionService.instance.ensureInitialized();
+  await SubscriptionLimitsService.instance.ensureInitialized();
 
   runApp(
     MultiProvider(

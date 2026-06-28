@@ -84,6 +84,17 @@ class ClubService {
     });
   }
 
+  static bool isExcludedFromClubSearch(Club club) {
+    final String? name = club.name;
+    return name != null && name.startsWith('#');
+  }
+
+  List<Club> _filterSearchableClubs(List<Club> clubs) {
+    return clubs
+        .where((club) => !isExcludedFromClubSearch(club))
+        .toList();
+  }
+
   Stream<List<Club>> watchClubs({
     int limit = 100,
   }) {
@@ -92,9 +103,10 @@ class ClubService {
         .limit(limit)
         .snapshots()
         .map((snapshot) {
-      return snapshot.docs.map((doc) {
+      final clubs = snapshot.docs.map((doc) {
         return Club.fromDocumentSnapshot(doc);
       }).toList();
+      return _filterSearchableClubs(clubs);
     });
   }
 
@@ -106,9 +118,10 @@ class ClubService {
         .limit(limit)
         .get();
 
-    return snapshot.docs.map((doc) {
+    final clubs = snapshot.docs.map((doc) {
       return Club.fromDocumentSnapshot(doc);
     }).toList();
+    return _filterSearchableClubs(clubs);
   }
 
   Stream<List<Club>> searchClubs(String query) {
@@ -126,9 +139,10 @@ class ClubService {
         .limit(50)
         .snapshots()
         .map((snapshot) {
-      return snapshot.docs.map((doc) {
+      final clubs = snapshot.docs.map((doc) {
         return Club.fromDocumentSnapshot(doc);
       }).toList();
+      return _filterSearchableClubs(clubs);
     });
   }
 

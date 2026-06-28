@@ -38,6 +38,7 @@
   "invitationCode": "Codice di invito",
   "invitationCodeHint": "Inserisci il tuo codice",
   "invitationNotFound": "Codice di invito non trovato",
+  "invitationNotFoundContinuePrompt": "Questo codice non esiste. Vuoi continuare creando il tuo profilo giocatore?",
   "invitationAlreadyUsed": "Questo codice di invito è già stato utilizzato",
   "invitationSentBy": "L'invito ti è stato inviato da {firstName} {lastName}",
   "@invitationSentBy": {
@@ -59,6 +60,27 @@
   "memberPhoneOptional": "Telefono (facoltativo)",
   "memberEmailInvalid": "Inserisci un indirizzo e-mail valido",
   "memberPhoneInvalid": "Inserisci un numero di telefono valido",
+  "memberPhoneRequired": "Il numero di telefono è obbligatorio per gli inviti",
+  "invitationSmsMessage": "Il tuo allenatore ti invita a unirti a {appName}. Il tuo codice: {code}.\niPhone: {appleStoreUrl}\nAndroid: {googlePlayUrl}",
+  "@invitationSmsMessage": {
+    "placeholders": {
+      "appName": { "type": "String" },
+      "code": { "type": "String" },
+      "appleStoreUrl": { "type": "String" },
+      "googlePlayUrl": { "type": "String" }
+    }
+  },
+  "memberInvitationSmsFailed": "Membro aggiunto, ma non è stato possibile inviare l'SMS di invito.",
+  "memberAddedToTeamNotificationTitle": "Aggiornamento squadra",
+  "memberAddedToTeamNotificationBody": "Il tuo allenatore ti ha aggiunto a {teamName}.",
+  "@memberAddedToTeamNotificationBody": {
+    "placeholders": {
+      "teamName": { "type": "String" }
+    }
+  },
+  "invitationAccepted": "Invito accettato",
+  "invitationPending": "Invito in attesa",
+  "memberAppAccountLinked": "Account app collegato",
   "memberBirthDate": "Data di nascita",
   "memberBirthDateOptional": "Data di nascita (facoltativa)",
   "memberBirthPlace": "Luogo di nascita",
@@ -119,10 +141,65 @@
   "actionLoadAfter": "Carica dopo",
   "actionToday": "Oggi",
   "actionEditProfile": "Modifica profilo",
+  "actionCreateNewProfile": "Crea un nuovo profilo",
   "actionLogout": "Disconnetti",
   "actionLogoutConfirmTitle": "Disconnetti",
   "actionLogoutConfirmMessage": "Vuoi davvero disconnetterti?",
+  "actionCreateTeam": "Crea una squadra",
+  "teamCreationAttachClubQuestion": "Vuoi collegare questa squadra a un club?",
+  "teamCreationSelectClub": "Seleziona un club",
+  "teamCreationClubRequired": "Seleziona un club",
+  "teamCreationSelectClubTeams": "Seleziona le squadre del club",
+  "teamCreationNoClubTeams": "Nessuna squadra iscritta",
+  "teamCreationSelectedClubTeamsCount": "{count, plural, =0{Nessuna squadra selezionata} =1{1 squadra selezionata} other{{count} squadre selezionate}}",
+  "@teamCreationSelectedClubTeamsCount": {
+    "placeholders": {
+      "count": { "type": "int" }
+    }
+  },
+  "teamCreationClubTeamCompetitionsCount": "{count, plural, =1{1 competizione} other{{count} competizioni}}",
+  "@teamCreationClubTeamCompetitionsCount": {
+    "placeholders": {
+      "count": { "type": "int" }
+    }
+  },
+  "teamCreationSoccerType": "Tipo di calcio",
+  "teamCreationNoClubWarningTitle": "Avviso",
+  "teamCreationNoClubWarning": "Questa squadra non è collegata a un club né a una competizione. In questo caso, calendario e risultati non vengono recuperati automaticamente.",
+  "equipeCompetitionsSheetTitle": "Competizioni — {teamName}",
+  "@equipeCompetitionsSheetTitle": {
+    "placeholders": {
+      "teamName": { "type": "String" }
+    }
+  },
+  "fffCompetitionPhaseLabel": "Fase {phase}",
+  "@fffCompetitionPhaseLabel": {
+    "placeholders": {
+      "phase": { "type": "int" }
+    }
+  },
+  "fffCompetitionGroupeLabel": "Gruppo {groupe}",
+  "@fffCompetitionGroupeLabel": {
+    "placeholders": {
+      "groupe": { "type": "int" }
+    }
+  },
+  "hintSearchClub": "Cerca un club",
+  "hintSearchClubTeam": "Cerca una squadra",
+  "hintSearchMember": "Cerca un membro",
+  "memberSearchPrompt": "Digita nome o cognome per cercare",
+  "memberAlreadyOnTeamRoster": "Questo membro fa già parte della rosa",
+  "memberAlreadyPlayer": "Questo membro è già in squadra come giocatore",
+  "memberAlreadyStaff": "Questo membro è già in squadra come staff",
   "actionAddPlayer": "Aggiungi un giocatore",
+  "actionCreatePlayer": "Crea un giocatore",
+  "actionEditPlayer": "Modifica giocatore",
+  "actionEditStaff": "Modifica staff",
+  "addPlayerPositionRequired": "Seleziona una posizione",
+  "addPlayerHeightCmOptional": "Altezza (cm, facoltativa)",
+  "addPlayerWeightKgOptional": "Peso (kg, facoltativo)",
+  "addPlayerHeightInvalid": "Inserisci un'altezza tra 50 e 250 cm",
+  "addPlayerWeightInvalid": "Inserisci un peso tra 20 e 200 kg",
   "actionAddStaff": "Aggiungi un rigo",
   "actionAddZone": "Aggiungi un'area",
   "actionAddToCart": "Aggiungi al carrello",
@@ -584,9 +661,37 @@
   "teamDetailConfirmRemoveTracker": "Rimuovere l'assegnazione del tracker «{trackerName}»?",
   "roleCoach": "Allenatore",
   "roleExecutive": "Dirigente",
+  "grintaStaffRoleEducator": "Allenatore / Educatore",
+  "grintaStaffRoleMedical": "Medico",
+  "grintaStaffRoleExecutive": "Dirigente",
+  "addStaffRoleLabel": "Ruolo",
+  "addStaffRoleHint": "Scegli un ruolo",
+  "addStaffRoleRequired": "Seleziona un ruolo",
   "positionEducator": "Educatore/Allenatore",
   "positionExecutive": "Dirigente",
   "positionGoalkeeper": "Portiere",
+  "positionCenterBack": "Difensore centrale",
+  "positionCenterBackLeft": "Difensore centrale sinistro",
+  "positionCenterBackRight": "Difensore centrale destro",
+  "positionLeftDefender": "Difensore sinistro",
+  "positionRightDefender": "Difensore destro",
+  "positionLeftBack": "Terzino sinistro",
+  "positionRightBack": "Terzino destro",
+  "positionLeftPiston": "Esterno sinistro",
+  "positionRightPiston": "Esterno destro",
+  "positionDefensiveMidfielder": "Mediano",
+  "positionCentralMidfielder": "Centrocampista centrale",
+  "positionBoxToBoxMidfielder": "Centrocampista di ripiego",
+  "positionLeftMidfielder": "Centrocampista sinistro",
+  "positionRightMidfielder": "Centrocampista destro",
+  "positionAttackingMidfielder": "Centrocampista offensivo",
+  "positionPlaymaker": "Trequartista",
+  "positionLeftWinger": "Ala sinistra",
+  "positionRightWinger": "Ala destra",
+  "positionSecondStriker": "Seconda punta",
+  "positionCenterForward": "Centravanti",
+  "positionStriker": "Finalizzatore",
+  "positionAttacker": "Attaccante",
   "positionDefender": "Difensore",
   "positionMidfielder": "Centrocampista",
   "positionForward": "Attaccante",
@@ -641,7 +746,7 @@
   "trainingOnDate": "Allenamento del {date}",
 
   "subscriptionPaywallTitle": "Passa a Grinta Premium",
-  "subscriptionPaywallSubtitle": "Sblocca tutte le funzioni per il tuo club o il tracking giocatore.",
+  "subscriptionPaywallSubtitle": "Sblocca tutte le funzioni per il monitoraggio delle tue squadre e dei tuoi giocatori.",
   "subscriptionPaywallLater": "Più tardi",
   "subscriptionOfferingCoach": "Allenatore",
   "subscriptionOfferingPlayer": "Giocatore",
@@ -702,6 +807,38 @@
   "subscriptionCurrentPlan": "Piano attuale",
   "subscriptionPlanChanged": "Il tuo abbonamento è stato aggiornato.",
 
+  "subscriptionLimitMaxTeamsReached": "Hai raggiunto il numero massimo di squadre ({max}) per il tuo abbonamento.",
+  "@subscriptionLimitMaxTeamsReached": {
+    "placeholders": {
+      "max": { "type": "int" }
+    }
+  },
+  "subscriptionLimitMaxPlayersReached": "Hai raggiunto il numero massimo di giocatori ({max}) per questa squadra.",
+  "@subscriptionLimitMaxPlayersReached": {
+    "placeholders": {
+      "max": { "type": "int" }
+    }
+  },
+  "subscriptionLimitPlayerTierOnlySelf": "Il tuo abbonamento Giocatore consente di aggiungere solo il tuo profilo a una squadra.",
+  "subscriptionLimitMaxProfilesReached": "Hai raggiunto il numero massimo di profili ({max}) per il tuo abbonamento.",
+  "@subscriptionLimitMaxProfilesReached": {
+    "placeholders": {
+      "max": { "type": "int" }
+    }
+  },
+  "subscriptionLimitProfileUpgradeTitle": "Profili aggiuntivi",
+  "subscriptionLimitProfileUpgradeMessage": "Passa a un abbonamento a pagamento per creare profili aggiuntivi.",
+  "subscriptionLimitProfileCoachBasicTitle": "Profili aggiuntivi",
+  "subscriptionLimitProfileCoachBasicMessage": "Passa a Elite o Pro per creare fino a 3 profili.",
+  "subscriptionLimitProfilePremiumBadge": "Premium",
+  "subscriptionLimitTeamUpgradeTitle": "Squadre aggiuntive",
+  "subscriptionLimitTeamUpgradeMessage": "Passa all'abbonamento Giocatore per creare più squadre e gestire la rosa.",
+  "subscriptionLimitTeamCoachBasicTitle": "Squadre aggiuntive",
+  "subscriptionLimitTeamCoachBasicMessage": "Passa a Elite o Pro per creare più squadre.",
+  "subscriptionLimitTeamDetailBlockedTitle": "Gestione squadra",
+  "subscriptionLimitTeamDetailBlockedMessage": "Passa all'abbonamento Giocatore per accedere ai dettagli della squadra e gestire la rosa.",
+  "subscriptionLimitTeamCreatedFreePlayer": "La tua squadra è stata creata. Passa all'abbonamento a pagamento per accedere ai dettagli.",
+
   "trialStatusTitle": "Prova gratuita",
   "trialDaysRemaining": "{days, plural, =1{1 giorno rimanente} other{{days} giorni rimanenti}}",
   "@trialDaysRemaining": {
@@ -728,5 +865,19 @@
       "details": { "type": "String" }
     }
   },
-  "errorDeleteAccountRequiresRecentLogin": "Per sicurezza, esci, accedi di nuovo e riprova."
+  "errorDeleteAccountRequiresRecentLogin": "Per sicurezza, esci, accedi di nuovo e riprova.",
+  "actionDeleteTeam": "Elimina squadra",
+  "teamDeleteConfirmTitle": "Eliminare la squadra?",
+  "teamDeleteConfirmMessage": "Vuoi davvero eliminare «{teamName}»? Questa azione è definitiva. Tutti i dati relativi alla squadra (membri, partite, statistiche, ecc.) verranno eliminati.",
+  "@teamDeleteConfirmMessage": {
+    "placeholders": {
+      "teamName": { "type": "String" }
+    }
+  },
+  "teamDeleteSuccess": "La squadra «{teamName}» è stata eliminata.",
+  "@teamDeleteSuccess": {
+    "placeholders": {
+      "teamName": { "type": "String" }
+    }
+  }
 }

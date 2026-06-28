@@ -332,6 +332,12 @@ abstract class AppLocalizations {
   /// **'Code invitation non trouvé'**
   String get invitationNotFound;
 
+  /// No description provided for @invitationNotFoundContinuePrompt.
+  ///
+  /// In fr, this message translates to:
+  /// **'Code inexistant, souhaitez-vous poursuivre en créant votre profil joueur ?'**
+  String get invitationNotFoundContinuePrompt;
+
   /// No description provided for @invitationAlreadyUsed.
   ///
   /// In fr, this message translates to:
@@ -421,6 +427,55 @@ abstract class AppLocalizations {
   /// In fr, this message translates to:
   /// **'Veuillez saisir un numéro de téléphone valide'**
   String get memberPhoneInvalid;
+
+  /// No description provided for @memberPhoneRequired.
+  ///
+  /// In fr, this message translates to:
+  /// **'Le numéro de téléphone est requis pour les invitations'**
+  String get memberPhoneRequired;
+
+  /// No description provided for @invitationSmsMessage.
+  ///
+  /// In fr, this message translates to:
+  /// **'Ton coach t\'invite à rejoindre {appName}. Ton code : {code}.\niPhone : {appleStoreUrl}\nAndroid : {googlePlayUrl}'**
+  String invitationSmsMessage(
+      String appName, String code, String appleStoreUrl, String googlePlayUrl);
+
+  /// No description provided for @memberInvitationSmsFailed.
+  ///
+  /// In fr, this message translates to:
+  /// **'Membre ajouté, mais l\'envoi du SMS d\'invitation a échoué.'**
+  String get memberInvitationSmsFailed;
+
+  /// No description provided for @memberAddedToTeamNotificationTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Mise à jour d\'équipe'**
+  String get memberAddedToTeamNotificationTitle;
+
+  /// No description provided for @memberAddedToTeamNotificationBody.
+  ///
+  /// In fr, this message translates to:
+  /// **'Ton coach t\'a ajouté à {teamName}.'**
+  String memberAddedToTeamNotificationBody(String teamName);
+
+  /// No description provided for @invitationAccepted.
+  ///
+  /// In fr, this message translates to:
+  /// **'Invitation acceptée'**
+  String get invitationAccepted;
+
+  /// No description provided for @invitationPending.
+  ///
+  /// In fr, this message translates to:
+  /// **'Invitation en attente'**
+  String get invitationPending;
+
+  /// No description provided for @memberAppAccountLinked.
+  ///
+  /// In fr, this message translates to:
+  /// **'Compte application lié'**
+  String get memberAppAccountLinked;
 
   /// No description provided for @memberBirthDate.
   ///
@@ -722,6 +777,12 @@ abstract class AppLocalizations {
   /// **'Modifier mon profil'**
   String get actionEditProfile;
 
+  /// No description provided for @actionCreateNewProfile.
+  ///
+  /// In fr, this message translates to:
+  /// **'Créer un nouveau profil'**
+  String get actionCreateNewProfile;
+
   /// No description provided for @actionLogout.
   ///
   /// In fr, this message translates to:
@@ -740,11 +801,155 @@ abstract class AppLocalizations {
   /// **'Souhaites-tu vraiment te déconnecter ?'**
   String get actionLogoutConfirmMessage;
 
+  /// No description provided for @actionCreateTeam.
+  ///
+  /// In fr, this message translates to:
+  /// **'Créer une équipe'**
+  String get actionCreateTeam;
+
+  /// No description provided for @teamCreationAttachClubQuestion.
+  ///
+  /// In fr, this message translates to:
+  /// **'Souhaitez-vous attacher cette équipe à un club ?'**
+  String get teamCreationAttachClubQuestion;
+
+  /// No description provided for @teamCreationSelectClub.
+  ///
+  /// In fr, this message translates to:
+  /// **'Sélectionner un club'**
+  String get teamCreationSelectClub;
+
+  /// No description provided for @teamCreationClubRequired.
+  ///
+  /// In fr, this message translates to:
+  /// **'Veuillez sélectionner un club'**
+  String get teamCreationClubRequired;
+
+  /// No description provided for @teamCreationSelectClubTeams.
+  ///
+  /// In fr, this message translates to:
+  /// **'Sélectionner des équipes'**
+  String get teamCreationSelectClubTeams;
+
+  /// No description provided for @teamCreationNoClubTeams.
+  ///
+  /// In fr, this message translates to:
+  /// **'Aucune équipe engagée'**
+  String get teamCreationNoClubTeams;
+
+  /// No description provided for @teamCreationSelectedClubTeamsCount.
+  ///
+  /// In fr, this message translates to:
+  /// **'{count, plural, =0{Aucune équipe sélectionnée} =1{1 équipe sélectionnée} other{{count} équipes sélectionnées}}'**
+  String teamCreationSelectedClubTeamsCount(int count);
+
+  /// No description provided for @teamCreationClubTeamCompetitionsCount.
+  ///
+  /// In fr, this message translates to:
+  /// **'{count, plural, =1{1 compétition} other{{count} compétitions}}'**
+  String teamCreationClubTeamCompetitionsCount(int count);
+
+  /// No description provided for @teamCreationSoccerType.
+  ///
+  /// In fr, this message translates to:
+  /// **'Type de football'**
+  String get teamCreationSoccerType;
+
+  /// No description provided for @teamCreationNoClubWarningTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Avertissement'**
+  String get teamCreationNoClubWarningTitle;
+
+  /// No description provided for @teamCreationNoClubWarning.
+  ///
+  /// In fr, this message translates to:
+  /// **'L\'équipe n\'est pas liée à un club ni à une compétition. Dans ce cas, vous n\'avez pas de récupération automatique du calendrier et des résultats.'**
+  String get teamCreationNoClubWarning;
+
+  /// No description provided for @equipeCompetitionsSheetTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Compétitions — {teamName}'**
+  String equipeCompetitionsSheetTitle(String teamName);
+
+  /// No description provided for @fffCompetitionPhaseLabel.
+  ///
+  /// In fr, this message translates to:
+  /// **'Phase {phase}'**
+  String fffCompetitionPhaseLabel(int phase);
+
+  /// No description provided for @fffCompetitionGroupeLabel.
+  ///
+  /// In fr, this message translates to:
+  /// **'Groupe {groupe}'**
+  String fffCompetitionGroupeLabel(int groupe);
+
+  /// No description provided for @hintSearchClub.
+  ///
+  /// In fr, this message translates to:
+  /// **'Rechercher un club'**
+  String get hintSearchClub;
+
+  /// No description provided for @hintSearchClubTeam.
+  ///
+  /// In fr, this message translates to:
+  /// **'Rechercher une équipe'**
+  String get hintSearchClubTeam;
+
   /// No description provided for @actionAddPlayer.
   ///
   /// In fr, this message translates to:
   /// **'Ajouter un joueur'**
   String get actionAddPlayer;
+
+  /// No description provided for @actionCreatePlayer.
+  ///
+  /// In fr, this message translates to:
+  /// **'Créer un joueur'**
+  String get actionCreatePlayer;
+
+  /// No description provided for @actionEditPlayer.
+  ///
+  /// In fr, this message translates to:
+  /// **'Modifier le joueur'**
+  String get actionEditPlayer;
+
+  /// No description provided for @actionEditStaff.
+  ///
+  /// In fr, this message translates to:
+  /// **'Modifier le staff'**
+  String get actionEditStaff;
+
+  /// No description provided for @addPlayerPositionRequired.
+  ///
+  /// In fr, this message translates to:
+  /// **'Veuillez sélectionner un poste'**
+  String get addPlayerPositionRequired;
+
+  /// No description provided for @addPlayerHeightCmOptional.
+  ///
+  /// In fr, this message translates to:
+  /// **'Taille (cm, facultatif)'**
+  String get addPlayerHeightCmOptional;
+
+  /// No description provided for @addPlayerWeightKgOptional.
+  ///
+  /// In fr, this message translates to:
+  /// **'Poids (kg, facultatif)'**
+  String get addPlayerWeightKgOptional;
+
+  /// No description provided for @addPlayerHeightInvalid.
+  ///
+  /// In fr, this message translates to:
+  /// **'Saisissez une taille entre 50 et 250 cm'**
+  String get addPlayerHeightInvalid;
+
+  /// No description provided for @addPlayerWeightInvalid.
+  ///
+  /// In fr, this message translates to:
+  /// **'Saisissez un poids entre 20 et 200 kg'**
+  String get addPlayerWeightInvalid;
 
   /// No description provided for @actionAddStaff.
   ///
@@ -1495,6 +1700,36 @@ abstract class AppLocalizations {
   /// In fr, this message translates to:
   /// **'Rechercher une équipe'**
   String get hintSearchTeam;
+
+  /// No description provided for @hintSearchMember.
+  ///
+  /// In fr, this message translates to:
+  /// **'Rechercher un membre'**
+  String get hintSearchMember;
+
+  /// No description provided for @memberSearchPrompt.
+  ///
+  /// In fr, this message translates to:
+  /// **'Saisissez un prénom ou un nom pour rechercher'**
+  String get memberSearchPrompt;
+
+  /// No description provided for @memberAlreadyOnTeamRoster.
+  ///
+  /// In fr, this message translates to:
+  /// **'Ce membre fait déjà partie de l\'effectif'**
+  String get memberAlreadyOnTeamRoster;
+
+  /// No description provided for @memberAlreadyPlayer.
+  ///
+  /// In fr, this message translates to:
+  /// **'Ce membre fait déjà partie des joueurs'**
+  String get memberAlreadyPlayer;
+
+  /// No description provided for @memberAlreadyStaff.
+  ///
+  /// In fr, this message translates to:
+  /// **'Ce membre fait déjà partie du staff'**
+  String get memberAlreadyStaff;
 
   /// No description provided for @hintSearchUser.
   ///
@@ -2501,13 +2736,13 @@ abstract class AppLocalizations {
   /// No description provided for @teamMembersPlayers.
   ///
   /// In fr, this message translates to:
-  /// **'{count, plural, =1{1 joueur} other{{count} joueurs}}'**
+  /// **'{count, plural, =0{0 joueurs} =1{1 joueur} other{{count} joueurs}}'**
   String teamMembersPlayers(int count);
 
   /// No description provided for @teamMembersStaff.
   ///
   /// In fr, this message translates to:
-  /// **'{count, plural, =1{1 staff} other{{count} staffs}}'**
+  /// **'{count, plural, =0{0 staff} =1{1 staff} other{{count} staffs}}'**
   String teamMembersStaff(int count);
 
   /// No description provided for @fieldTooltipZoomIn.
@@ -3476,6 +3711,42 @@ abstract class AppLocalizations {
   /// **'Dirigeant'**
   String get roleExecutive;
 
+  /// No description provided for @grintaStaffRoleEducator.
+  ///
+  /// In fr, this message translates to:
+  /// **'Entraîneur / Éducateur'**
+  String get grintaStaffRoleEducator;
+
+  /// No description provided for @grintaStaffRoleMedical.
+  ///
+  /// In fr, this message translates to:
+  /// **'Médical'**
+  String get grintaStaffRoleMedical;
+
+  /// No description provided for @grintaStaffRoleExecutive.
+  ///
+  /// In fr, this message translates to:
+  /// **'Dirigeant'**
+  String get grintaStaffRoleExecutive;
+
+  /// No description provided for @addStaffRoleLabel.
+  ///
+  /// In fr, this message translates to:
+  /// **'Fonction'**
+  String get addStaffRoleLabel;
+
+  /// No description provided for @addStaffRoleHint.
+  ///
+  /// In fr, this message translates to:
+  /// **'Choisir une fonction'**
+  String get addStaffRoleHint;
+
+  /// No description provided for @addStaffRoleRequired.
+  ///
+  /// In fr, this message translates to:
+  /// **'Veuillez choisir une fonction'**
+  String get addStaffRoleRequired;
+
   /// No description provided for @positionEducator.
   ///
   /// In fr, this message translates to:
@@ -3491,8 +3762,140 @@ abstract class AppLocalizations {
   /// No description provided for @positionGoalkeeper.
   ///
   /// In fr, this message translates to:
-  /// **'Gardien de but'**
+  /// **'Gardien'**
   String get positionGoalkeeper;
+
+  /// No description provided for @positionCenterBack.
+  ///
+  /// In fr, this message translates to:
+  /// **'Défenseur central'**
+  String get positionCenterBack;
+
+  /// No description provided for @positionCenterBackLeft.
+  ///
+  /// In fr, this message translates to:
+  /// **'Défenseur central gauche'**
+  String get positionCenterBackLeft;
+
+  /// No description provided for @positionCenterBackRight.
+  ///
+  /// In fr, this message translates to:
+  /// **'Défenseur central droit'**
+  String get positionCenterBackRight;
+
+  /// No description provided for @positionLeftDefender.
+  ///
+  /// In fr, this message translates to:
+  /// **'Défenseur gauche'**
+  String get positionLeftDefender;
+
+  /// No description provided for @positionRightDefender.
+  ///
+  /// In fr, this message translates to:
+  /// **'Défenseur droit'**
+  String get positionRightDefender;
+
+  /// No description provided for @positionLeftBack.
+  ///
+  /// In fr, this message translates to:
+  /// **'Latéral gauche'**
+  String get positionLeftBack;
+
+  /// No description provided for @positionRightBack.
+  ///
+  /// In fr, this message translates to:
+  /// **'Latéral droit'**
+  String get positionRightBack;
+
+  /// No description provided for @positionLeftPiston.
+  ///
+  /// In fr, this message translates to:
+  /// **'Piston gauche'**
+  String get positionLeftPiston;
+
+  /// No description provided for @positionRightPiston.
+  ///
+  /// In fr, this message translates to:
+  /// **'Piston droit'**
+  String get positionRightPiston;
+
+  /// No description provided for @positionDefensiveMidfielder.
+  ///
+  /// In fr, this message translates to:
+  /// **'Milieu défensif'**
+  String get positionDefensiveMidfielder;
+
+  /// No description provided for @positionCentralMidfielder.
+  ///
+  /// In fr, this message translates to:
+  /// **'Milieu central'**
+  String get positionCentralMidfielder;
+
+  /// No description provided for @positionBoxToBoxMidfielder.
+  ///
+  /// In fr, this message translates to:
+  /// **'Milieu relayeur'**
+  String get positionBoxToBoxMidfielder;
+
+  /// No description provided for @positionLeftMidfielder.
+  ///
+  /// In fr, this message translates to:
+  /// **'Milieu gauche'**
+  String get positionLeftMidfielder;
+
+  /// No description provided for @positionRightMidfielder.
+  ///
+  /// In fr, this message translates to:
+  /// **'Milieu droit'**
+  String get positionRightMidfielder;
+
+  /// No description provided for @positionAttackingMidfielder.
+  ///
+  /// In fr, this message translates to:
+  /// **'Milieu offensif'**
+  String get positionAttackingMidfielder;
+
+  /// No description provided for @positionPlaymaker.
+  ///
+  /// In fr, this message translates to:
+  /// **'Meneur de jeu'**
+  String get positionPlaymaker;
+
+  /// No description provided for @positionLeftWinger.
+  ///
+  /// In fr, this message translates to:
+  /// **'Ailier gauche'**
+  String get positionLeftWinger;
+
+  /// No description provided for @positionRightWinger.
+  ///
+  /// In fr, this message translates to:
+  /// **'Ailier droit'**
+  String get positionRightWinger;
+
+  /// No description provided for @positionSecondStriker.
+  ///
+  /// In fr, this message translates to:
+  /// **'Second attaquant'**
+  String get positionSecondStriker;
+
+  /// No description provided for @positionCenterForward.
+  ///
+  /// In fr, this message translates to:
+  /// **'Avant-centre'**
+  String get positionCenterForward;
+
+  /// No description provided for @positionStriker.
+  ///
+  /// In fr, this message translates to:
+  /// **'Buteur'**
+  String get positionStriker;
+
+  /// No description provided for @positionAttacker.
+  ///
+  /// In fr, this message translates to:
+  /// **'Attaquant'**
+  String get positionAttacker;
 
   /// No description provided for @positionDefender.
   ///
@@ -3815,7 +4218,7 @@ abstract class AppLocalizations {
   /// No description provided for @subscriptionPaywallSubtitle.
   ///
   /// In fr, this message translates to:
-  /// **'Débloquez toutes les fonctionnalités pour votre club ou votre suivi joueur.'**
+  /// **'Débloquez toutes les fonctionnalités pour le suivi de vos équipes et de vos joueurs'**
   String get subscriptionPaywallSubtitle;
 
   /// No description provided for @subscriptionPaywallLater.
@@ -4100,6 +4503,102 @@ abstract class AppLocalizations {
   /// **'Votre abonnement a été mis à jour.'**
   String get subscriptionPlanChanged;
 
+  /// No description provided for @subscriptionLimitMaxTeamsReached.
+  ///
+  /// In fr, this message translates to:
+  /// **'Vous avez atteint le nombre maximum d\'équipes ({max}) pour votre abonnement.'**
+  String subscriptionLimitMaxTeamsReached(int max);
+
+  /// No description provided for @subscriptionLimitMaxPlayersReached.
+  ///
+  /// In fr, this message translates to:
+  /// **'Vous avez atteint le nombre maximum de joueurs ({max}) pour cette équipe.'**
+  String subscriptionLimitMaxPlayersReached(int max);
+
+  /// No description provided for @subscriptionLimitPlayerTierOnlySelf.
+  ///
+  /// In fr, this message translates to:
+  /// **'Votre abonnement Joueur ne permet d\'ajouter que votre propre profil à une équipe.'**
+  String get subscriptionLimitPlayerTierOnlySelf;
+
+  /// No description provided for @subscriptionLimitMaxProfilesReached.
+  ///
+  /// In fr, this message translates to:
+  /// **'Vous avez atteint le nombre maximum de profils ({max}) pour votre abonnement.'**
+  String subscriptionLimitMaxProfilesReached(int max);
+
+  /// No description provided for @subscriptionLimitProfileUpgradeTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Profils supplémentaires'**
+  String get subscriptionLimitProfileUpgradeTitle;
+
+  /// No description provided for @subscriptionLimitProfileUpgradeMessage.
+  ///
+  /// In fr, this message translates to:
+  /// **'Passez à un abonnement payant pour créer des profils supplémentaires.'**
+  String get subscriptionLimitProfileUpgradeMessage;
+
+  /// No description provided for @subscriptionLimitProfileCoachBasicTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Profils supplémentaires'**
+  String get subscriptionLimitProfileCoachBasicTitle;
+
+  /// No description provided for @subscriptionLimitProfileCoachBasicMessage.
+  ///
+  /// In fr, this message translates to:
+  /// **'Passez à la formule Elite ou Pro pour créer jusqu\'à 3 profils.'**
+  String get subscriptionLimitProfileCoachBasicMessage;
+
+  /// No description provided for @subscriptionLimitProfilePremiumBadge.
+  ///
+  /// In fr, this message translates to:
+  /// **'Premium'**
+  String get subscriptionLimitProfilePremiumBadge;
+
+  /// No description provided for @subscriptionLimitTeamUpgradeTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Équipes supplémentaires'**
+  String get subscriptionLimitTeamUpgradeTitle;
+
+  /// No description provided for @subscriptionLimitTeamUpgradeMessage.
+  ///
+  /// In fr, this message translates to:
+  /// **'Passez à l\'abonnement Joueur pour créer plus d\'équipes et gérer votre effectif.'**
+  String get subscriptionLimitTeamUpgradeMessage;
+
+  /// No description provided for @subscriptionLimitTeamCoachBasicTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Équipes supplémentaires'**
+  String get subscriptionLimitTeamCoachBasicTitle;
+
+  /// No description provided for @subscriptionLimitTeamCoachBasicMessage.
+  ///
+  /// In fr, this message translates to:
+  /// **'Passez à la formule Elite ou Pro pour créer plus d\'équipes.'**
+  String get subscriptionLimitTeamCoachBasicMessage;
+
+  /// No description provided for @subscriptionLimitTeamDetailBlockedTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Gestion d\'équipe'**
+  String get subscriptionLimitTeamDetailBlockedTitle;
+
+  /// No description provided for @subscriptionLimitTeamDetailBlockedMessage.
+  ///
+  /// In fr, this message translates to:
+  /// **'Passez à l\'abonnement Joueur pour accéder aux détails de l\'équipe et gérer votre effectif.'**
+  String get subscriptionLimitTeamDetailBlockedMessage;
+
+  /// No description provided for @subscriptionLimitTeamCreatedFreePlayer.
+  ///
+  /// In fr, this message translates to:
+  /// **'Votre équipe a été créée. Passez à l\'abonnement payant pour accéder aux détails.'**
+  String get subscriptionLimitTeamCreatedFreePlayer;
+
   /// No description provided for @trialStatusTitle.
   ///
   /// In fr, this message translates to:
@@ -4189,6 +4688,30 @@ abstract class AppLocalizations {
   /// In fr, this message translates to:
   /// **'Pour des raisons de sécurité, reconnectez-vous puis réessayez.'**
   String get errorDeleteAccountRequiresRecentLogin;
+
+  /// No description provided for @actionDeleteTeam.
+  ///
+  /// In fr, this message translates to:
+  /// **'Supprimer l\'équipe'**
+  String get actionDeleteTeam;
+
+  /// No description provided for @teamDeleteConfirmTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Supprimer l\'équipe ?'**
+  String get teamDeleteConfirmTitle;
+
+  /// No description provided for @teamDeleteConfirmMessage.
+  ///
+  /// In fr, this message translates to:
+  /// **'Voulez-vous vraiment supprimer « {teamName} » ? Cette action est définitive. Toutes les données liées à l\'équipe (membres, matchs, statistiques, etc.) seront supprimées.'**
+  String teamDeleteConfirmMessage(String teamName);
+
+  /// No description provided for @teamDeleteSuccess.
+  ///
+  /// In fr, this message translates to:
+  /// **'L\'équipe « {teamName} » a été supprimée.'**
+  String teamDeleteSuccess(String teamName);
 }
 
 class _AppLocalizationsDelegate

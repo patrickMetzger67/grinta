@@ -26,7 +26,27 @@ class PlayerService {
     required Player profile,
   }) async {
     final player = Player.forNewMember(userId: userId, profile: profile);
+    return _persistNewMember(player);
+  }
 
+  /// Crée un membre sans compte utilisateur lié (ex. ajout à une équipe).
+  Future<Player> createInvitedMember({
+    required String creatorUserId,
+    required Player profile,
+  }) async {
+    final player = Player.forInvitedMember(
+      creatorUserId: creatorUserId,
+      profile: profile,
+    );
+    final memberId = await _persistNewMember(player);
+    final created = await getPlayerById(memberId);
+    if (created == null) {
+      throw StateError('Created member not found: $memberId');
+    }
+    return created;
+  }
+
+  Future<String> _persistNewMember(Player player) async {
     final docRef = await addPlayer(player);
     final playerId = docRef.id;
 
@@ -43,6 +63,26 @@ class PlayerService {
     required Player profile,
   }) async {
     await updatePlayerFields(memberId, profile.toProfileUpdateMap());
+  }
+
+  /// Lie un compte Firebase à un membre invité (userID + users[]).
+  Future<void> linkUserToMember({
+    required String memberId,
+    required String uid,
+  }) async {
+    final trimmedMemberId = memberId.trim();
+    final trimmedUid = uid.trim();
+    if (trimmedMemberId.isEmpty) {
+      throw ArgumentError.value(memberId, 'memberId', 'must not be empty');
+    }
+    if (trimmedUid.isEmpty) {
+      throw ArgumentError.value(uid, 'uid', 'must not be empty');
+    }
+
+    await _collection.doc(trimmedMemberId).update({
+      keyPlayerUserID: trimmedUid,
+      keyPlayerUsers: FieldValue.arrayUnion([trimmedUid]),
+    });
   }
 
   /// Ajouter un joueur avec un id personnalisé
@@ -185,6 +225,46 @@ class PlayerService {
   /// Alias watch des joueurs par userID
   Stream<List<Player>> watchPlayersByUserId(String userId) =>
       streamPlayersByUserId(userId);
+
+  /// Search active members by [searchOptions] token (lowercase prefix).
+  ///
+  /// Firestore `array-contains` matches one indexed token; multi-word queries
+  /// should pass the first token and filter client-side on the full name.
+  Future<List<Player>> searchMembersBySearchOptions(String query) async {
+    final String normalizedQuery = query.trim().toLowerCase();
+    if (normalizedQuery.isEmpty) {
+      return const <Player>[];
+    }
+
+    final QuerySnapshot<Map<String, dynamic>> snapshot = await _collection
+        .where(keyPlayerSearchOptions, arrayContains: normalizedQuery)
+        .limit(50)
+        .get();
+
+    return snapshot.docs
+        .map((doc) => Player.fromDocumentsnapshot(doc))
+        .where((player) => player.statut == 1)
+        .toList();
+  }
+
+  /// Stream variant of [searchMembersBySearchOptions].
+  Stream<List<Player>> streamMembersBySearchOptions(String query) {
+    final String normalizedQuery = query.trim().toLowerCase();
+    if (normalizedQuery.isEmpty) {
+      return Stream<List<Player>>.value(const <Player>[]);
+    }
+
+    return _collection
+        .where(keyPlayerSearchOptions, arrayContains: normalizedQuery)
+        .limit(50)
+        .snapshots()
+        .map(
+          (snapshot) => snapshot.docs
+              .map((doc) => Player.fromDocumentsnapshot(doc))
+              .where((player) => player.statut == 1)
+              .toList(),
+        );
+  }
 
   /// Chercher un joueur par userID
   Future<Player?> getPlayerByUserId(String userId) async {
@@ -387,7 +467,7 @@ class PlayerService {
     final linkedUserId = linkedUserIdForPlayer(player);
     final photoPart = hasPlayerPhoto(player) ? player.photo!.trim() : '';
     final authPhotoPart = _authPhotoCachePart(player, authUser);
-    final id = player.keyMember?.trim();
+    final id = effectiveMemberId(player);
     if (id != null && id.isNotEmpty) {
       return '$id|$photoPart|user:$linkedUserId|auth:$authPhotoPart|$defaultPhotoFileName';
     }

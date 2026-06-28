@@ -7,5 +7,6 @@
   "REVENUECAT_WEB_API_KEY_PROD": "rcb_your_web_billing_prod_key",
   "STRIPE_PUBLISHABLE_KEY_TEST": "",
   "STRIPE_PUBLISHABLE_KEY_LIVE": "",
-  "SHOPIFY_STOREFRONT_TOKEN": ""
+  "SHOPIFY_STOREFRONT_TOKEN": "",
+  "FCM_WEB_VAPID_KEY": "BYour_Web_Push_Public_Key_From_Firebase_Console"
 }

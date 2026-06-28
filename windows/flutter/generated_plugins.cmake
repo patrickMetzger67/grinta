@@ -13,6 +13,7 @@ list(APPEND FLUTTER_PLUGIN_LIST
   gal
   geolocator_windows
   media_kit_video
+  permission_handler_windows
   record_windows
   share_plus
   thumblr_windows
@@ -20,6 +21,7 @@ list(APPEND FLUTTER_PLUGIN_LIST
 )
 
 list(APPEND FLUTTER_FFI_PLUGIN_LIST
+  flutter_local_notifications_windows
 )
 
 set(PLUGIN_BUNDLED_LIBRARIES)

@@ -1,11 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:grinta/core/extensions/l10n_extension.dart';
-import 'package:grinta/provider/appSession.dart';
 import 'package:grinta/services/subscription_prompt_service.dart';
 import 'package:grinta/services/subscription_service.dart';
 import 'package:grinta/util/app_theme.dart';
 import 'package:grinta/widget/subscription_paywall.dart';
-import 'package:provider/provider.dart';
 
 /// Home-page banner prompting non-subscribers to open the paywall.
 /// Dismissible; state persisted via [SubscriptionPromptService].
@@ -63,15 +61,8 @@ class _SubscriptionPromptBannerState extends State<SubscriptionPromptBanner> {
     await SubscriptionService.instance.refreshForActiveSession();
     if (!mounted) return;
 
-    final appSession = context.read<AppSession>();
-    final isCoach = appSession.managedTeamsIdsForSelectedSeason.isNotEmpty ||
-        appSession.hasManagedTeamsInSelectedSeason;
-
     await SubscriptionPaywall.show(
       context,
-      initialKind: isCoach
-          ? SubscriptionOfferingKind.coach
-          : SubscriptionOfferingKind.player,
       allowSkip: true,
     );
 

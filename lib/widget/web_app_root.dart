@@ -189,6 +189,9 @@ class _WebAppRootState extends State<WebAppRoot> {
           (session) => session.managedTeamsIdsForSelectedSeason,
     );
 
+    final selectedTeamCount = context.select<AppSession, int>(
+          (session) => session.selectedTeams.length,
+    );
 
     final l10n = context.l10n;
     final localeCode = Localizations.localeOf(context).languageCode;
@@ -224,40 +227,39 @@ class _WebAppRootState extends State<WebAppRoot> {
                 screenName: AnalyticsScreenNames.agenda,
                 featureId: FeatureDiscoveryIds.tabAgenda,
               ),
-              if (getManagedTeamsIds.isNotEmpty) ...[
-                WebShellItem(
-                  label: l10n.navTeams,
-                  icon: Icons.groups_rounded,
-                  screenName: AnalyticsScreenNames.teams,
-                  featureId: FeatureDiscoveryIds.tabTeams,
-                  page: TeamsListScreen(
-                    managedTeamsIds: getManagedTeamsIds,
-                    onTeamTap: (context, team, isManager) {
-                      AnalyticsInteractions.logFeature(
-                        AnalyticsFeatures.openTeamDetail,
-                        parameters: <String, Object>{
-                          'is_manager': isManager,
-                          'source': 'teams_list',
-                        },
-                      );
-                      Navigator.of(context).push(
-                        analyticsMaterialRoute<void>(
-                          screenName: AnalyticsScreenNames.teamDetail,
-                          builder: (_) => TeamDetailScreen(
-                            team: team,
-                            seasonId: context
-                                .read<AppSession>()
-                                .selectedSeason
-                                ?.ref
-                                ?.id,
-                            isManager: isManager,
-                          ),
+              WebShellItem(
+                label: l10n.navTeams,
+                icon: Icons.groups_rounded,
+                badgeCount: selectedTeamCount,
+                screenName: AnalyticsScreenNames.teams,
+                featureId: FeatureDiscoveryIds.tabTeams,
+                page: TeamsListScreen(
+                  managedTeamsIds: getManagedTeamsIds,
+                  onTeamTap: (context, team, isManager) {
+                    AnalyticsInteractions.logFeature(
+                      AnalyticsFeatures.openTeamDetail,
+                      parameters: <String, Object>{
+                        'is_manager': isManager,
+                        'source': 'teams_list',
+                      },
+                    );
+                    Navigator.of(context).push(
+                      analyticsMaterialRoute<void>(
+                        screenName: AnalyticsScreenNames.teamDetail,
+                        builder: (_) => TeamDetailScreen(
+                          team: team,
+                          seasonId: context
+                              .read<AppSession>()
+                              .selectedSeason
+                              ?.ref
+                              ?.id,
+                          isManager: isManager,
                         ),
-                      );
-                    },
-                  ),
+                      ),
+                    );
+                  },
                 ),
-              ],
+              ),
               WebShellItem(
                 label: l10n.navChat,
                 icon: Icons.chat,

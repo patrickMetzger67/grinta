@@ -1,0 +1,27 @@
+{
+  "positions": [
+    { "code": 1, "order": 1, "labelKey": "positionGoalkeeper" },
+    { "code": 2, "order": 2, "labelKey": "positionCenterBack" },
+    { "code": 3, "order": 3, "labelKey": "positionCenterBackLeft" },
+    { "code": 4, "order": 4, "labelKey": "positionCenterBackRight" },
+    { "code": 5, "order": 5, "labelKey": "positionLeftDefender" },
+    { "code": 6, "order": 6, "labelKey": "positionRightDefender" },
+    { "code": 7, "order": 7, "labelKey": "positionLeftBack" },
+    { "code": 8, "order": 8, "labelKey": "positionRightBack" },
+    { "code": 9, "order": 9, "labelKey": "positionLeftPiston" },
+    { "code": 10, "order": 10, "labelKey": "positionRightPiston" },
+    { "code": 11, "order": 11, "labelKey": "positionDefensiveMidfielder" },
+    { "code": 12, "order": 12, "labelKey": "positionCentralMidfielder" },
+    { "code": 13, "order": 13, "labelKey": "positionBoxToBoxMidfielder" },
+    { "code": 14, "order": 14, "labelKey": "positionLeftMidfielder" },
+    { "code": 15, "order": 15, "labelKey": "positionRightMidfielder" },
+    { "code": 16, "order": 16, "labelKey": "positionAttackingMidfielder" },
+    { "code": 17, "order": 17, "labelKey": "positionPlaymaker" },
+    { "code": 18, "order": 18, "labelKey": "positionLeftWinger" },
+    { "code": 19, "order": 19, "labelKey": "positionRightWinger" },
+    { "code": 20, "order": 20, "labelKey": "positionSecondStriker" },
+    { "code": 21, "order": 21, "labelKey": "positionCenterForward" },
+    { "code": 22, "order": 22, "labelKey": "positionStriker" },
+    { "code": 23, "order": 23, "labelKey": "positionAttacker" }
+  ]
+}

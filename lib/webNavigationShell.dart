@@ -7,13 +7,16 @@ import 'package:grinta/analytics/analytics_features.dart';
 import 'package:grinta/analytics/analytics_interactions.dart';
 import 'package:grinta/analytics/shell_tab_analytics.dart';
 import 'package:grinta/feature_discovery/shell_navigation_scope.dart';
+import 'package:grinta/services/account_deletion_service.dart';
 import 'package:grinta/services/feature_discovery_service.dart';
 import 'package:grinta/services/subscription_service.dart';
 import 'core/extensions/l10n_extension.dart';
 import 'util/app_theme.dart';
 import 'widget/app_language_dropdown.dart';
 import 'widget/app_logo.dart';
+import 'widget/account_create_profile_entry.dart';
 import 'widget/edit_member_profile.dart';
+import 'widget/nav_icon_count_badge.dart';
 import 'widget/subscription_details_sheet.dart';
 
 import 'main.dart';
@@ -24,6 +27,7 @@ class WebShellItem {
   final Widget page;
   final String screenName;
   final String? featureId;
+  final int badgeCount;
 
   const WebShellItem({
     required this.label,
@@ -31,6 +35,7 @@ class WebShellItem {
     required this.page,
     required this.screenName,
     this.featureId,
+    this.badgeCount = 0,
   });
 }
 
@@ -59,7 +64,10 @@ class _WebNavigationShellState extends State<WebNavigationShell> {
   bool _collapsed = false;
   bool _settingsExpanded = false;
   bool _isSigningOut = false;
+  bool _isDeletingAccount = false;
   final ShellTabAnalytics _tabAnalytics = ShellTabAnalytics();
+
+  bool get _isAccountActionBusy => _isSigningOut || _isDeletingAccount;
 
   @override
   void initState() {
@@ -127,8 +135,95 @@ class _WebNavigationShellState extends State<WebNavigationShell> {
     }
   }
 
+  Future<void> _deleteAccount() async {
+    if (_isAccountActionBusy) return;
+
+    final colors = context.appColors;
+
+    final confirm = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) {
+        return AlertDialog(
+          backgroundColor: colors.card,
+          surfaceTintColor: Colors.transparent,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(18),
+            side: BorderSide(color: colors.border),
+          ),
+          title: Text(
+            dialogContext.l10n.actionDeleteAccountConfirmTitle,
+            style: TextStyle(
+              color: colors.textPrimary,
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+          content: Text(
+            dialogContext.l10n.actionDeleteAccountConfirmMessage,
+            style: TextStyle(
+              color: colors.textSecondary,
+            ),
+          ),
+          actions: [
+            OutlinedButton(
+              onPressed: () => Navigator.of(dialogContext).pop(false),
+              child: Text(dialogContext.l10n.actionCancel),
+            ),
+            ElevatedButton(
+              style: ElevatedButton.styleFrom(
+                backgroundColor: colors.warning,
+                foregroundColor: Colors.white,
+              ),
+              onPressed: () => Navigator.of(dialogContext).pop(true),
+              child: Text(dialogContext.l10n.actionDeleteAccount),
+            ),
+          ],
+        );
+      },
+    );
+
+    if (confirm != true) return;
+
+    AnalyticsInteractions.logFeature(AnalyticsFeatures.deleteAccount);
+
+    setState(() => _isDeletingAccount = true);
+
+    try {
+      await AccountDeletionService.instance.deleteCurrentAccount();
+      await firebase_auth.FirebaseAuth.instance.signOut();
+
+      if (!mounted) return;
+
+      Navigator.of(context, rootNavigator: true).pushNamedAndRemoveUntil(
+        '/',
+        (route) => false,
+      );
+    } on firebase_auth.FirebaseAuthException catch (e) {
+      if (!mounted) return;
+
+      final message = e.code == 'requires-recent-login'
+          ? context.l10n.errorDeleteAccountRequiresRecentLogin
+          : context.l10n.errorDeleteAccount(e.message ?? e.code);
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(message)),
+      );
+    } catch (e) {
+      if (!mounted) return;
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(context.l10n.errorDeleteAccount(e.toString())),
+        ),
+      );
+    } finally {
+      if (mounted) {
+        setState(() => _isDeletingAccount = false);
+      }
+    }
+  }
+
   Future<void> _logout() async {
-    if (_isSigningOut) return;
+    if (_isAccountActionBusy) return;
 
     final colors = context.appColors;
 
@@ -272,6 +367,7 @@ class _WebNavigationShellState extends State<WebNavigationShell> {
                             selected: selected,
                             label: item.label,
                             icon: item.icon,
+                            badgeCount: item.badgeCount,
                             onTap: () {
                               if (index == safeSelectedIndex) return;
                               setState(() {
@@ -356,6 +452,11 @@ class _WebNavigationShellState extends State<WebNavigationShell> {
             },
           ),
           _buildEditProfileButton(context),
+          AccountCreateProfileSidebarButton(
+            collapsed: _collapsed,
+            onTap: () => openAccountCreateProfileFlow(context),
+          ),
+          _buildDeleteAccountButton(context),
           _buildLogoutButton(context),
         ],
       ],
@@ -684,6 +785,91 @@ class _WebNavigationShellState extends State<WebNavigationShell> {
     );
   }
 
+  Widget _buildDeleteAccountButton(BuildContext context) {
+    final colors = context.appColors;
+    final textTheme = Theme.of(context).textTheme;
+
+    if (_collapsed) {
+      return Padding(
+        padding: const EdgeInsets.fromLTRB(12, 0, 12, 12),
+        child: Tooltip(
+          message: context.l10n.actionDeleteAccount,
+          child: InkWell(
+            borderRadius: BorderRadius.circular(16),
+            onTap: _isAccountActionBusy ? null : _deleteAccount,
+            child: Container(
+              width: double.infinity,
+              height: 52,
+              decoration: BoxDecoration(
+                color: colors.card,
+                borderRadius: BorderRadius.circular(16),
+                border: Border.all(color: colors.border),
+              ),
+              child: _isDeletingAccount
+                  ? Padding(
+                      padding: const EdgeInsets.all(14),
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2.2,
+                        color: colors.warning,
+                      ),
+                    )
+                  : Icon(
+                      Icons.delete_forever_outlined,
+                      color: colors.warning,
+                    ),
+            ),
+          ),
+        ),
+      );
+    }
+
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(12, 0, 12, 12),
+      child: InkWell(
+        borderRadius: BorderRadius.circular(18),
+        onTap: _isAccountActionBusy ? null : _deleteAccount,
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+          decoration: BoxDecoration(
+            color: colors.card,
+            borderRadius: BorderRadius.circular(18),
+            border: Border.all(color: colors.border),
+          ),
+          child: Row(
+            children: [
+              _isDeletingAccount
+                  ? SizedBox(
+                      width: 22,
+                      height: 22,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2.2,
+                        color: colors.warning,
+                      ),
+                    )
+                  : Icon(
+                      Icons.delete_forever_outlined,
+                      color: colors.warning,
+                      size: 22,
+                    ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Text(
+                  context.l10n.actionDeleteAccount,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: textTheme.bodyLarge?.copyWith(
+                    color: colors.warning,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
   Widget _buildLogoutButton(BuildContext context) {
     final colors = context.appColors;
     final textTheme = Theme.of(context).textTheme;
@@ -695,7 +881,7 @@ class _WebNavigationShellState extends State<WebNavigationShell> {
           message: context.l10n.actionLogout,
           child: InkWell(
             borderRadius: BorderRadius.circular(16),
-            onTap: _isSigningOut ? null : _logout,
+            onTap: _isAccountActionBusy ? null : _logout,
             child: Container(
               width: double.infinity,
               height: 52,
@@ -726,7 +912,7 @@ class _WebNavigationShellState extends State<WebNavigationShell> {
       padding: const EdgeInsets.fromLTRB(12, 0, 12, 16),
       child: InkWell(
         borderRadius: BorderRadius.circular(18),
-        onTap: _isSigningOut ? null : _logout,
+        onTap: _isAccountActionBusy ? null : _logout,
         child: Container(
           padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
           decoration: BoxDecoration(
@@ -856,6 +1042,7 @@ class _SidebarItem extends StatefulWidget {
   final bool selected;
   final String label;
   final IconData icon;
+  final int badgeCount;
   final VoidCallback onTap;
 
   const _SidebarItem({
@@ -863,6 +1050,7 @@ class _SidebarItem extends StatefulWidget {
     required this.selected,
     required this.label,
     required this.icon,
+    this.badgeCount = 0,
     required this.onTap,
   });
 
@@ -915,10 +1103,10 @@ class _SidebarItemState extends State<_SidebarItem> {
                   ? MainAxisAlignment.center
                   : MainAxisAlignment.start,
               children: [
-                Icon(
-                  widget.icon,
-                  color: foregroundColor,
-                  size: 24,
+                NavIconCountBadge(
+                  icon: widget.icon,
+                  count: widget.badgeCount,
+                  iconColor: foregroundColor,
                 ),
                 if (!widget.collapsed) ...[
                   const SizedBox(width: 14),

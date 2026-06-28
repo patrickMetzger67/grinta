@@ -1,6 +1,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 
 import '../model/effectives.dart';
+import 'subscription_limits_service.dart';
 
 class EffectivesService {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
@@ -12,6 +13,17 @@ class EffectivesService {
 
   /// CREATE
   Future<DocumentReference> addEffectives(Effectives effective) async {
+    final teamId = effective.teamID?.trim() ?? '';
+    final memberId = effective.memberID?.trim() ?? '';
+    if (teamId.isNotEmpty &&
+        memberId.isNotEmpty &&
+        (effective.type ?? 0) == 0) {
+      await SubscriptionLimitsService.instance.assertCanAddPlayer(
+        teamId: teamId,
+        memberId: memberId,
+      );
+    }
+
     effective.modificationDate = Timestamp.now();
     return await _collection.add(effective.toMap());
   }

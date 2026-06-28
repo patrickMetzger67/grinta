@@ -1,10 +1,8 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:grinta/model/player.dart';
-import 'package:grinta/provider/appSession.dart';
 import 'package:grinta/services/playerService.dart';
 import 'package:grinta/util/player_photo_resolver.dart';
-import 'package:provider/provider.dart';
 
 import 'app_session_player_avatar.dart';
 
@@ -54,7 +52,7 @@ class _PlayerPhotoState extends State<PlayerPhoto> {
   }
 
   static String _avatarCacheIdentity(Player player) {
-    final memberId = player.keyMember ?? '';
+    final memberId = effectiveMemberId(player) ?? '';
     final photo = player.photo ?? '';
     final userId = player.userID ?? '';
     final users = (player.users ?? []).join(',');
@@ -63,35 +61,14 @@ class _PlayerPhotoState extends State<PlayerPhoto> {
 
   @override
   Widget build(BuildContext context) {
-    final memberId = widget.player.keyMember;
-    if (memberId != null) {
-      final sessionUrls =
-          context.watch<AppSession>().playersPhotoUrls[memberId];
-      if (sessionUrls != null && sessionUrls.isNotEmpty) {
-        return AppSessionPlayerAvatar(
-          player: widget.player,
-          imageUrls: sessionUrls,
-          radius: widget.radius,
-          watchSessionForStaleWebAvatar: true,
-        );
-      }
-    }
-
     return FutureBuilder<List<String>>(
       future: _avatarUrlsFuture,
       builder: (context, snapshot) {
-        final imageUrls = snapshot.data;
-        if (imageUrls == null || imageUrls.isEmpty) {
-          return AppSessionPlayerAvatar(
-            player: widget.player,
-            radius: widget.radius,
-          );
-        }
-
         return AppSessionPlayerAvatar(
           player: widget.player,
-          imageUrls: imageUrls,
+          imageUrls: snapshot.data,
           radius: widget.radius,
+          watchSessionForStaleWebAvatar: true,
         );
       },
     );

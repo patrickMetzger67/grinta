@@ -6,6 +6,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 
 import '../model/player.dart';
+import '../model/team.dart';
 import '../services/user_avatar_service.dart';
 
 const defaultPlayerAvatarFilename = 'portrait_1920x1920.jpg';
@@ -46,6 +47,148 @@ const Duration _kAuthPhotoReloadTimeout = Duration(seconds: 5);
 bool hasPlayerPhoto(Player player) {
   final photo = player.photo?.trim() ?? '';
   return photo.isNotEmpty && !_invalidPlayerPhotoValues.contains(photo);
+}
+
+/// Identifiant membre stable pour les maps session (keyMember ou id document).
+String? effectiveMemberId(Player player) {
+  final fromField = player.keyMember?.trim();
+  if (fromField != null && fromField.isNotEmpty) {
+    return fromField;
+  }
+
+  final docId = player.ref?.id.trim();
+  if (docId != null && docId.isNotEmpty) {
+    return docId;
+  }
+
+  return null;
+}
+
+/// Candidate member ids for roster / team membership lookups.
+///
+/// [effectiveMemberId] ([keyMember] or Firestore doc id) is canonical; linked
+/// [Player.userID] is included only to match legacy roster data.
+Set<String> playerMemberLookupIds(Player player) {
+  final Set<String> ids = <String>{};
+
+  void add(String? raw) {
+    final String trimmed = raw?.trim() ?? '';
+    if (trimmed.isNotEmpty) {
+      ids.add(trimmed);
+    }
+  }
+
+  add(effectiveMemberId(player));
+  add(player.keyMember);
+  add(player.ref?.id);
+  add(player.userID);
+  return ids;
+}
+
+/// True when [team.grintaPlayers] references any [playerMemberLookupIds] entry.
+bool teamContainsGrintaMemberForPlayer(Team team, Player player) {
+  for (final String id in playerMemberLookupIds(player)) {
+    if (teamContainsGrintaMember(team, id)) {
+      return true;
+    }
+  }
+  return false;
+}
+
+/// Assure [player.keyMember] non vide quand l'id document est connu.
+void normalizePlayerMemberId(Player player) {
+  final effectiveId = effectiveMemberId(player);
+  if (effectiveId == null) return;
+  if (player.keyMember?.trim().isNotEmpty ?? false) return;
+  player.keyMember = effectiveId;
+}
+
+/// UID Auth le plus à jour ([FirebaseAuth.currentUser] toujours prioritaire).
+String? liveAuthUid({User? sessionUser}) {
+  final User? current = FirebaseAuth.instance.currentUser;
+  final String? currentUid = current?.uid.trim();
+  if (currentUid != null && currentUid.isNotEmpty) {
+    return currentUid;
+  }
+
+  final String? sessionUid = sessionUser?.uid.trim();
+  if (sessionUid != null && sessionUid.isNotEmpty) {
+    return sessionUid;
+  }
+  return null;
+}
+
+/// photoURL Auth live : [FirebaseAuth.currentUser] d'abord, puis snapshot session.
+String? liveAuthPhotoUrl({User? sessionUser}) {
+  final String? authUid = liveAuthUid(sessionUser: sessionUser);
+  if (authUid == null || authUid.isEmpty) return null;
+
+  final User? current = FirebaseAuth.instance.currentUser;
+  if (current != null && current.uid.trim() == authUid) {
+    final currentPhoto = _readAuthPhotoUrl(current);
+    if (currentPhoto != null) return currentPhoto;
+  }
+
+  if (sessionUser != null && sessionUser.uid.trim() == authUid) {
+    final sessionPhoto = _readAuthPhotoUrl(sessionUser);
+    if (sessionPhoto != null) return sessionPhoto;
+  }
+
+  return null;
+}
+
+/// URLs à afficher : photo Auth live en tête si lié, puis override, puis session.
+List<String> buildDisplayAvatarUrls({
+  required Player player,
+  List<String>? sessionUrls,
+  List<String>? overrideUrls,
+  User? authUser,
+}) {
+  final urls = <String>[];
+
+  void add(String? source) {
+    if (source == null) return;
+    final trimmed = source.trim();
+    if (trimmed.isEmpty) return;
+    if (!urls.contains(trimmed)) {
+      urls.add(trimmed);
+    }
+  }
+
+  final User? resolvedAuthUser =
+      FirebaseAuth.instance.currentUser ?? authUser;
+  final authUid = liveAuthUid(sessionUser: resolvedAuthUser) ?? '';
+  if (authUid.isNotEmpty && isPlayerLinkedToAuthUser(player, authUid)) {
+    add(liveAuthPhotoUrl(sessionUser: resolvedAuthUser));
+  }
+
+  for (final url in overrideUrls ?? const <String>[]) {
+    add(url);
+  }
+  for (final url in sessionUrls ?? const <String>[]) {
+    add(url);
+  }
+
+  if (kDebugMode && urls.isEmpty) {
+    debugPrint(
+      'buildDisplayAvatarUrls empty player=${effectiveMemberId(player)} '
+      'linked=${authUid.isNotEmpty && isPlayerLinkedToAuthUser(player, authUid)} '
+      'sessionUrls=$sessionUrls overrideUrls=$overrideUrls '
+      'authPhoto=${liveAuthPhotoUrl(sessionUser: authUser)}',
+    );
+  }
+
+  if (urls.isEmpty) return urls;
+
+  final authUrls = urls
+      .where(UserAvatarService.isExternalAuthPhotoUrl)
+      .toList(growable: false);
+  if (authUrls.isEmpty) return urls;
+
+  final defaults = urls
+      .where((url) => !UserAvatarService.isExternalAuthPhotoUrl(url))
+      .toList(growable: false);
+  return [...authUrls, ...defaults];
 }
 
 /// Chaîne d'URL à essayer à l'affichage (max 3) :
@@ -142,6 +285,50 @@ String? _normalizeLinkedUserId(dynamic entry) {
   return asString;
 }
 
+/// True when [player] belongs to the logged-in user (explicit link or session map).
+bool isAuthUsersSessionPlayer(
+  Player player,
+  String authUid, {
+  Map<String, Player>? sessionPlayers,
+}) {
+  if (authUid.isEmpty) return false;
+  if (isPlayerLinkedToAuthUser(player, authUid)) return true;
+
+  final memberId = effectiveMemberId(player);
+  if (memberId == null || memberId.isEmpty) return false;
+  return sessionPlayers?[memberId] != null;
+}
+
+/// All Firebase Auth uids linked to [player] via [Player.userID] and [Player.users].
+///
+/// Normalizes, trims, deduplicates, and drops empty values.
+Set<String> collectMemberLinkedUserIds(Player player) {
+  final ids = <String>{};
+
+  final userId = _normalizeLinkedUserId(player.userID);
+  if (userId != null && userId.isNotEmpty) {
+    ids.add(userId);
+  }
+
+  final users = player.users;
+  if (users != null) {
+    for (final entry in users) {
+      final uid = _normalizeLinkedUserId(entry);
+      if (uid != null && uid.isNotEmpty) {
+        ids.add(uid);
+      }
+    }
+  }
+
+  return ids;
+}
+
+/// True when [player] has at least one linked app account ([Player.userID] or
+/// [Player.users]).
+bool isMemberLinkedToAppAccount(Player player) {
+  return collectMemberLinkedUserIds(player).isNotEmpty;
+}
+
 /// Indique si [player] est lié au compte Firebase [authUid].
 bool isPlayerLinkedToAuthUser(Player player, String authUid) {
   if (authUid.isEmpty) return false;
@@ -217,37 +404,65 @@ Future<String?> _linkedAuthPhotoUrl(
   return authPhoto;
 }
 
-String? _readAuthPhotoUrl(User? user) {
-  final photo = user?.photoURL?.trim();
-  if (photo == null || photo.isEmpty) return null;
-  return photo;
+/// Ensures Google profile photo URLs request a displayable thumbnail size.
+String normalizeAuthPhotoDisplayUrl(String url, {int size = 96}) {
+  final trimmed = url.trim();
+  if (trimmed.isEmpty) return trimmed;
+
+  final host = Uri.tryParse(trimmed)?.host ?? '';
+  if (!host.contains('googleusercontent.com')) return trimmed;
+
+  if (RegExp(r'[-=]s\d+').hasMatch(trimmed)) return trimmed;
+  return '$trimmed=s$size-c';
+}
+
+String? _readAuthPhotoUrl(User? user) => readAuthUserPhotoUrl(user);
+
+/// Auth profile photo: [User.photoURL] then OAuth [UserInfo.photoURL].
+String? readAuthUserPhotoUrl(User? user) {
+  final direct = user?.photoURL?.trim();
+  if (direct != null && direct.isNotEmpty) {
+    return normalizeAuthPhotoDisplayUrl(direct);
+  }
+
+  for (final info in user?.providerData ?? const <UserInfo>[]) {
+    final providerPhoto = info.photoURL?.trim();
+    if (providerPhoto != null && providerPhoto.isNotEmpty) {
+      return normalizeAuthPhotoDisplayUrl(providerPhoto);
+    }
+  }
+  return null;
+}
+
+/// True when [player] should use the live Firebase Auth profile photo.
+bool shouldUseDirectAuthPhoto(
+  Player player,
+  String authUid, {
+  Map<String, Player>? sessionPlayers,
+}) {
+  if (authUid.isEmpty) return false;
+
+  final current = FirebaseAuth.instance.currentUser;
+  if (current == null || current.uid.trim() != authUid) return false;
+
+  return isAuthUsersSessionPlayer(
+    player,
+    authUid,
+    sessionPlayers: sessionPlayers,
+  );
 }
 
 Future<String?> _currentAuthPhotoUrl(User? user) async {
   if (user == null) return null;
 
-  final uid = user.uid.trim();
-  final direct = _readAuthPhotoUrl(user);
+  final direct = liveAuthPhotoUrl(sessionUser: user);
   if (direct != null) return direct;
-
-  // The passed [User] can be a stale authStateChanges snapshot; prefer live Auth.
-  final liveUser = FirebaseAuth.instance.currentUser;
-  if (liveUser != null && liveUser.uid.trim() == uid) {
-    final livePhoto = _readAuthPhotoUrl(liveUser);
-    if (livePhoto != null) return livePhoto;
-  }
-
-  // reload() can hang on web — late photoURL is handled by AppSession polling.
-  if (kIsWeb) {
-    return null;
-  }
 
   try {
     await user.reload().timeout(_kAuthPhotoReloadTimeout);
-    final reloaded = FirebaseAuth.instance.currentUser;
-    if (reloaded != null && reloaded.uid.trim() == uid) {
-      return _readAuthPhotoUrl(reloaded);
-    }
+    return liveAuthPhotoUrl(
+      sessionUser: FirebaseAuth.instance.currentUser ?? user,
+    );
   } catch (_) {}
 
   return null;

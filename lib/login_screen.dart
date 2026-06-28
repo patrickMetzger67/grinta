@@ -11,10 +11,13 @@ import 'analytics/analytics_interactions.dart';
 import 'analytics/analytics_screen_names.dart';
 import 'core/extensions/l10n_extension.dart';
 import 'model/player.dart';
+import 'model/invitation.dart';
+import 'services/invitationService.dart';
 import 'services/playerService.dart';
 import 'services/userService.dart';
 import 'services/user_trial_service.dart';
-import 'util/player_positions.dart';
+import 'util/team_creation_access.dart';
+import 'util/player_photo_resolver.dart';
 import 'services/active_session_service.dart';
 import 'services/analytics_service.dart';
 import 'navigation/app_navigator.dart';
@@ -22,7 +25,7 @@ import 'services/social_onboarding_coordinator.dart';
 import 'services/social_auth_service.dart';
 import 'widget/app_language_dropdown.dart';
 import 'widget/app_logo.dart';
-import 'widget/member_profile_form.dart';
+import 'widget/signup_invitation_onboarding.dart';
 import 'widget/legal_links_footer.dart';
 import 'widget/social_auth_button.dart';
 import 'widget/subscription_paywall.dart';
@@ -323,15 +326,19 @@ class _LoginScreenState extends State<LoginScreen> {
       _dismissLoginBottomSheetIfOpen(sheetContext: snackBarContext);
       await _waitForBottomSheetDismissal();
 
-      final profile = await _promptMemberProfile();
+      final onboarding = await SignupInvitationOnboarding.run();
       debugPrint(
-        'login: member profile dialog result=${profile?.firstName ?? 'cancelled'}',
+        'login: signup onboarding result='
+        '${onboarding?.profile.firstName ?? 'cancelled'} '
+        'linkedExisting=${onboarding?.linkedExistingMember ?? false}',
       );
 
-      if (profile == null) {
-        await FirebaseAuth.instance.signOut();
+      if (onboarding == null) {
+        await _deleteNewAccountAndSignOut();
         return;
       }
+
+      final profile = onboarding.profile;
 
       if (manageParentLoading && mounted) {
         setState(() => _isLoading = true);
@@ -343,11 +350,19 @@ class _LoginScreenState extends State<LoginScreen> {
           email: email,
           profile: profile,
         );
-        await _completeSocialOnboarding(uid: newUserUid, profile: profile);
+        if (onboarding.linkedExistingMember) {
+          await _completeInvitationOnboarding(
+            uid: newUserUid,
+            profile: profile,
+            invitation: onboarding.invitation!,
+          );
+        } else {
+          await _completeSocialOnboarding(uid: newUserUid, profile: profile);
+        }
         await _refreshSessionAvatars(appSession);
       } catch (e) {
         debugPrint('Email signup profile error: $e');
-        await FirebaseAuth.instance.signOut();
+        await _deleteNewAccountAndSignOut();
         final message = e is StateError &&
                 e.message == 'member profile incomplete'
             ? l10n.memberProfileIncomplete
@@ -363,6 +378,7 @@ class _LoginScreenState extends State<LoginScreen> {
       await _finishOnboardingAfterMemberCreated(
         appSession,
         profile: profile,
+        linkedViaInvitation: onboarding.linkedExistingMember,
       );
     } on FirebaseAuthException catch (e) {
       debugPrint(
@@ -486,86 +502,55 @@ class _LoginScreenState extends State<LoginScreen> {
   }
 
   Future<void> _refreshSessionAvatars(AppSession appSession) async {
-    final sessionContext = appNavigatorKey.currentContext;
-    if (sessionContext != null && sessionContext.mounted) {
-      await sessionContext.read<AppSession>().refreshPlayerAvatarUrls();
-      return;
-    }
-    await appSession.refreshPlayerAvatarUrls();
+    await _refreshSessionAfterOnboarding(appSession);
   }
 
   Future<void> _finishOnboardingAfterMemberCreated(
     AppSession appSession, {
     required Player profile,
+    bool linkedViaInvitation = false,
   }) async {
-    final isEducator = profile.positionCodes.contains(positionCodeEducator);
-    bool? wantsCreateTeam;
-    if (isEducator) {
-      wantsCreateTeam = await _promptCreateTeam();
-    }
+    final isEducator = profile.isEducatorOrCoach;
+
+    // Resolve avatars before paywall/onboarding UI so late OAuth photoURL
+    // is not missed while the web poll budget is consumed elsewhere.
+    await _refreshSessionAfterOnboarding(appSession);
+
+    final bool? wantsCreateTeam = linkedViaInvitation
+        ? false
+        : await _promptCreateTeam();
 
     await UserTrialService.instance.ensureInitialized();
 
-    if (!UserTrialService.instance.hasPremiumAccess) {
-      final rootContext = appNavigatorKey.currentContext;
-      if (rootContext != null && rootContext.mounted) {
+    final rootContext = appNavigatorKey.currentContext;
+    if (rootContext != null && rootContext.mounted) {
+      if (!UserTrialService.instance.hasPremiumAccess) {
         await SubscriptionPaywall.show(
           rootContext,
-          initialKind: wantsCreateTeam == true
+          initialKind: isEducator
               ? SubscriptionOfferingKind.coach
               : SubscriptionOfferingKind.player,
           allowSkip: true,
         );
+        await UserTrialService.instance.reload();
+      }
+
+      if (wantsCreateTeam == true && rootContext.mounted) {
+        await openTeamCreationFlow(rootContext);
       }
     }
+  }
 
-    if (wantsCreateTeam == true) {
-      final rootContext = appNavigatorKey.currentContext;
-      if (rootContext != null && rootContext.mounted) {
-        showLoginSnackBar(
-          rootContext,
-          rootContext.l10n.signupWithoutInvitationComingSoon,
-          isError: false,
-        );
-      }
-      // TODO: navigate to team creation flow
-    }
-
+  Future<void> _refreshSessionAfterOnboarding(AppSession appSession) async {
     final sessionContext = appNavigatorKey.currentContext;
     if (sessionContext != null && sessionContext.mounted) {
       final session = sessionContext.read<AppSession>();
       await session.init();
       await session.refreshPlayerAvatarUrls();
-    } else {
-      await appSession.init();
-      await appSession.refreshPlayerAvatarUrls();
+      return;
     }
-  }
-
-  Future<Player?> _promptMemberProfile() async {
-    final rootContext = appNavigatorKey.currentContext;
-    if (rootContext == null || !rootContext.mounted) {
-      debugPrint('login: member profile dialog skipped — no root context');
-      return null;
-    }
-
-    debugPrint('login: showing member profile dialog');
-
-    await WidgetsBinding.instance.endOfFrame;
-
-    if (!rootContext.mounted) {
-      debugPrint(
-        'login: member profile dialog skipped — root context unmounted',
-      );
-      return null;
-    }
-
-    return showDialog<Player?>(
-      context: rootContext,
-      useRootNavigator: true,
-      barrierDismissible: false,
-      builder: (ctx) => const _MemberProfileDialog(),
-    );
+    await appSession.init();
+    await appSession.refreshPlayerAvatarUrls();
   }
 
   Future<void> _completeSocialOnboarding({
@@ -580,6 +565,42 @@ class _LoginScreenState extends State<LoginScreen> {
       userId: uid,
       profile: profile,
     );
+  }
+
+  Future<void> _completeInvitationOnboarding({
+    required String uid,
+    required Player profile,
+    required Invitation invitation,
+  }) async {
+    if (!profile.isProfileAndContactValid) {
+      throw StateError('member profile incomplete');
+    }
+
+    final memberId = invitation.extId.trim();
+    if (memberId.isEmpty) {
+      throw StateError('invitation member id missing');
+    }
+
+    final playerService = PlayerService();
+    await playerService.linkUserToMember(memberId: memberId, uid: uid);
+    await playerService.updateMemberProfile(
+      memberId: memberId,
+      profile: profile,
+    );
+    await InvitationService().validateInvitation(invitation.id, uid);
+  }
+
+  Future<void> _deleteNewAccountAndSignOut() async {
+    try {
+      final user = FirebaseAuth.instance.currentUser;
+      if (user != null) {
+        await user.delete();
+      }
+    } catch (e) {
+      debugPrint('login: failed to delete new account: $e');
+    } finally {
+      await FirebaseAuth.instance.signOut();
+    }
   }
 
   Future<void> _createUserAccountDocument({
@@ -649,12 +670,28 @@ class _LoginScreenState extends State<LoginScreen> {
         throw Exception('Firebase user uid missing after social login');
       }
 
+      final authUser = credential.user;
+      if (authUser != null) {
+        if (kIsWeb) {
+          try {
+            await authUser.reload().timeout(const Duration(seconds: 3));
+          } catch (_) {}
+        }
+        final resolvedUser = FirebaseAuth.instance.currentUser ?? authUser;
+        final oauthPhoto = readAuthUserPhotoUrl(resolvedUser);
+        final session = (appNavigatorKey.currentContext ?? rootContext)
+                ?.read<AppSession>() ??
+            (mounted ? context.read<AppSession>() : null);
+        session?.cacheOAuthPhotoUrl(oauthPhoto);
+      }
+
       await AnalyticsService.instance.logLogin(method: methodName);
 
       final needsInvitation =
           await _userNeedsInvitationOnboarding(credential);
       debugPrint('login: needsInvitation=$needsInvitation');
       var memberJustCreated = false;
+      var linkedViaInvitation = false;
       Player? createdProfile;
 
       if (needsInvitation) {
@@ -665,15 +702,19 @@ class _LoginScreenState extends State<LoginScreen> {
         _dismissLoginBottomSheetIfOpen(sheetContext: sheetContext);
         await _waitForBottomSheetDismissal();
 
-        final profile = await _promptMemberProfile();
+        final onboarding = await SignupInvitationOnboarding.run();
         debugPrint(
-          'login: member profile dialog result=${profile?.firstName ?? 'cancelled'}',
+          'login: signup onboarding result='
+          '${onboarding?.profile.firstName ?? 'cancelled'} '
+          'linkedExisting=${onboarding?.linkedExistingMember ?? false}',
         );
 
-        if (profile == null) {
-          await FirebaseAuth.instance.signOut();
+        if (onboarding == null) {
+          await _deleteNewAccountAndSignOut();
           return;
         }
+
+        final profile = onboarding.profile;
 
         if (manageParentLoading && mounted) {
           setState(() => _isLoading = true);
@@ -685,7 +726,15 @@ class _LoginScreenState extends State<LoginScreen> {
             email: credential.user?.email ?? '',
             profile: profile,
           );
-          await _completeSocialOnboarding(uid: uid, profile: profile);
+          if (onboarding.linkedExistingMember) {
+            await _completeInvitationOnboarding(
+              uid: uid,
+              profile: profile,
+              invitation: onboarding.invitation!,
+            );
+          } else {
+            await _completeSocialOnboarding(uid: uid, profile: profile);
+          }
           final refreshSession = (appNavigatorKey.currentContext ?? rootContext)
                   ?.read<AppSession>() ??
               (mounted ? context.read<AppSession>() : null);
@@ -693,10 +742,11 @@ class _LoginScreenState extends State<LoginScreen> {
             await _refreshSessionAvatars(refreshSession);
           }
           createdProfile = profile;
+          linkedViaInvitation = onboarding.linkedExistingMember;
           memberJustCreated = true;
         } catch (e) {
           debugPrint('Social onboarding error: $e');
-          await FirebaseAuth.instance.signOut();
+          await _deleteNewAccountAndSignOut();
           final message = e is StateError &&
                   e.message == 'member profile incomplete'
               ? l10n.memberProfileIncomplete
@@ -721,6 +771,7 @@ class _LoginScreenState extends State<LoginScreen> {
           await _finishOnboardingAfterMemberCreated(
             appSession,
             profile: createdProfile,
+            linkedViaInvitation: linkedViaInvitation,
           );
         } else {
           debugPrint(
@@ -1233,70 +1284,6 @@ class _MobileLoginLayout extends StatelessWidget {
             ],
           ),
         ),
-      ),
-    );
-  }
-}
-
-class _MemberProfileDialog extends StatefulWidget {
-  const _MemberProfileDialog();
-
-  @override
-  State<_MemberProfileDialog> createState() => _MemberProfileDialogState();
-}
-
-class _MemberProfileDialogState extends State<_MemberProfileDialog> {
-  MemberProfileFormState? _formState;
-
-  void _onFormStateCreated(MemberProfileFormState state) {
-    _formState = state;
-  }
-
-  void _submit() {
-    final formState = _formState;
-    if (formState == null || !formState.mounted) return;
-
-    final validationError = formState.validateAndGetError();
-    if (validationError != null) {
-      AppSnackbar.show(context, validationError);
-      return;
-    }
-
-    final profile = formState.buildProfile();
-    if (profile == null) {
-      AppSnackbar.show(context, context.l10n.memberProfileIncomplete);
-      return;
-    }
-
-    Navigator.of(context).pop(profile);
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final colors = context.appColors;
-
-    return AlertDialog(
-      title: Text(context.l10n.memberProfileTitle),
-      content: SingleChildScrollView(
-        child: MemberProfileForm(
-          key: const ValueKey('signup-member-profile'),
-          enabled: true,
-          onFormStateCreated: _onFormStateCreated,
-        ),
-      ),
-      actions: [
-        TextButton(
-          onPressed: () => Navigator.of(context).pop(null),
-          child: Text(context.l10n.actionCancel),
-        ),
-        ElevatedButton(
-          onPressed: _submit,
-          child: Text(context.l10n.memberProfileSubmit),
-        ),
-      ],
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(16),
-        side: BorderSide(color: colors.border),
       ),
     );
   }

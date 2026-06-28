@@ -34,17 +34,59 @@ class InvitationService {
     );
 
     if (documentId != null && documentId.trim().isNotEmpty) {
-      await _collection.doc(documentId.trim()).set(invitation.toMap());
+      final Map<String, dynamic> payload = invitation.toMap();
+      debugPrint(
+        'InvitationService.createInvitation set id=${documentId.trim()} '
+        'collection=$collectionName payload=$payload',
+      );
+      await _collection.doc(documentId.trim()).set(payload);
       return invitation.copyWith(id: documentId.trim());
     }
 
-    final docRef = await _collection.add(invitation.toMap());
+    final Map<String, dynamic> payload = invitation.toMap();
+    debugPrint(
+      'InvitationService.createInvitation add collection=$collectionName '
+      'payload=$payload',
+    );
+    final docRef = await _collection.add(payload);
     return invitation.copyWith(id: docRef.id, ref: docRef);
   }
 
   /// CREATE / UPDATE avec id custom
   Future<void> setInvitation(String id, Invitation invitation) async {
     await _collection.doc(id).set(invitation.toMap());
+  }
+
+  /// READ many by document id (parallel individual reads).
+  Future<Map<String, Invitation>> getInvitationsByIds(
+    Iterable<String> ids,
+  ) async {
+    final Set<String> uniqueIds = ids
+        .map((String id) => id.trim())
+        .where((String id) => id.isNotEmpty)
+        .toSet();
+    if (uniqueIds.isEmpty) {
+      return const <String, Invitation>{};
+    }
+
+    final List<Invitation?> invitations = await Future.wait(
+      uniqueIds.map((String id) async {
+        final DocumentSnapshot<Map<String, dynamic>> doc =
+            await _collection.doc(id).get();
+        if (!doc.exists) {
+          return null;
+        }
+        return Invitation.fromDocumentSnapshot(doc);
+      }),
+    );
+
+    final Map<String, Invitation> result = <String, Invitation>{};
+    for (final Invitation? invitation in invitations) {
+      if (invitation != null) {
+        result[invitation.id] = invitation;
+      }
+    }
+    return result;
   }
 
   /// READ ONE par id document
@@ -55,6 +97,9 @@ class InvitationService {
 
     return Invitation.fromDocumentSnapshot(doc);
   }
+
+  /// READ ONE par code (alias for [getInvitationByCode]).
+  Future<Invitation?> findByCode(String code) => getInvitationByCode(code);
 
   /// READ ONE par code
   Future<Invitation?> getInvitationByCode(String code) async {

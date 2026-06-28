@@ -1,5 +1,6 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 
+import '../util/player_positions.dart';
 import '../util/player_profile_validator.dart' as profile_validator;
 import '../util/search_options.dart';
 
@@ -126,6 +127,10 @@ class Player {
         .toList();
   }
 
+  /// Profile position includes Educateur/Entraineur (coach/educator).
+  bool get isEducatorOrCoach =>
+      positionCodes.contains(positionCodeEducator);
+
   bool get isProfileComplete => profile_validator.isProfileComplete(this);
 
   bool get isProfileAndContactValid =>
@@ -166,10 +171,36 @@ class Player {
     required String userId,
     required Player profile,
   }) {
+    return _forNewMemberDocument(
+      profile: profile,
+      userId: userId,
+      creatorUserId: userId,
+    );
+  }
+
+  /// Member created by a coach/manager for roster assignment (no linked app user yet).
+  static Player forInvitedMember({
+    required String creatorUserId,
+    required Player profile,
+  }) {
+    return _forNewMemberDocument(
+      profile: profile,
+      userId: '',
+      creatorUserId: creatorUserId,
+    );
+  }
+
+  static Player _forNewMemberDocument({
+    required Player profile,
+    required String userId,
+    required String creatorUserId,
+  }) {
     final searchOptions = buildPlayerSearchOptions(
       firstName: profile.firstName?.trim() ?? '',
       lastName: profile.lastName?.trim() ?? '',
     );
+    final trimmedUserId = userId.trim();
+    final users = trimmedUserId.isEmpty ? <String>[] : <String>[trimmedUserId];
 
     return Player(
       firstName: profile.firstName?.trim() ?? '',
@@ -182,8 +213,8 @@ class Player {
       phoneE164: profile.phoneE164?.trim() ?? '',
       phoneCountryCode: profile.phoneCountryCode?.trim() ?? '',
       statut: 1,
-      userID: userId,
-      users: [userId],
+      userID: trimmedUserId,
+      users: users,
       searchOptions: searchOptions,
       views: 0,
       likes: [],
@@ -192,7 +223,7 @@ class Player {
       category: '',
       sexe: 'M',
       personNumber: '',
-    )..creatorUserId = userId;
+    )..creatorUserId = creatorUserId;
   }
 
   Map<String, dynamic> toProfileUpdateMap() {
@@ -409,6 +440,9 @@ class Player {
 
     final parsed = Player.fromMap(map);
     keyMember = parsed.keyMember;
+    if (keyMember == null || keyMember!.trim().isEmpty) {
+      keyMember = snapshot.id;
+    }
     firstName = parsed.firstName;
     lastName = parsed.lastName;
     statut = parsed.statut;

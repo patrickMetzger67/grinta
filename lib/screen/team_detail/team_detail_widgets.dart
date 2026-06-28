@@ -15,11 +15,29 @@ class _TeamMemberVm {
     required this.player,
     required this.effectives,
     required this.trackers,
+    this.grintaPositions = const <int>[],
+    this.isGrintaRoster = false,
+    this.grintaEmail,
+    this.grintaPhoneE164,
+    this.grintaBirthday,
+    this.grintaHeightCm,
+    this.grintaWeightKg,
+    this.grintaInvitationId,
+    this.invitationAccepted,
   });
 
   final Player player;
   final Effectives? effectives;
   final List<_TrackerChipVm> trackers;
+  final List<int> grintaPositions;
+  final bool isGrintaRoster;
+  final String? grintaEmail;
+  final String? grintaPhoneE164;
+  final DateTime? grintaBirthday;
+  final int? grintaHeightCm;
+  final double? grintaWeightKg;
+  final String? grintaInvitationId;
+  final bool? invitationAccepted;
 }
 
 class _TrackerChipVm {

@@ -20,12 +20,14 @@ class InternationalPhoneField extends StatefulWidget {
     required this.enabled,
     this.initialPhoneE164,
     this.initialPhoneCountryCode,
+    this.labelText,
     this.onChanged,
   });
 
   final bool enabled;
   final String? initialPhoneE164;
   final String? initialPhoneCountryCode;
+  final String? labelText;
   final PhoneValueChanged? onChanged;
 
   @override
@@ -202,7 +204,7 @@ class _InternationalPhoneFieldState extends State<InternationalPhoneField> {
             keyboardType: TextInputType.phone,
             inputFormatters: [FilteringTextInputFormatter.digitsOnly],
             decoration: InputDecoration(
-              labelText: l10n.memberPhoneOptional,
+              labelText: widget.labelText ?? l10n.memberPhoneOptional,
               prefixIcon: const Icon(Icons.phone_outlined),
             ),
             onChanged: (_) => _notifyChanged(),

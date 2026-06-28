@@ -5,11 +5,23 @@ import 'package:grinta/config/subscription_config.dart';
 import 'package:grinta/core/extensions/l10n_extension.dart';
 import 'package:grinta/l10n/app_localizations.dart';
 import 'package:grinta/model/subscription_state.dart';
+import 'package:grinta/provider/appSession.dart';
 import 'package:grinta/services/subscription_service.dart';
 import 'package:grinta/util/app_snackbar.dart';
 import 'package:grinta/util/app_theme.dart';
 import 'package:grinta/widget/legal_links_footer.dart';
+import 'package:provider/provider.dart';
 import 'package:purchases_flutter/purchases_flutter.dart';
+
+/// Whether the active member profile should see Coach (Entraîneur) offerings first.
+bool prefersCoachSubscriptionOffering(AppSession session) {
+  final player = session.selectedPlayer;
+  if (player != null && player.isEducatorOrCoach) {
+    return true;
+  }
+  return session.managedTeamsIdsForSelectedSeason.isNotEmpty ||
+      session.hasManagedTeamsInSelectedSeason;
+}
 
 /// Which subscription catalog to emphasize in the paywall.
 enum SubscriptionOfferingKind {
@@ -21,7 +33,7 @@ enum SubscriptionOfferingKind {
 class SubscriptionPaywall extends StatefulWidget {
   const SubscriptionPaywall({
     super.key,
-    this.initialKind = SubscriptionOfferingKind.coach,
+    this.initialKind = SubscriptionOfferingKind.player,
     this.allowSkip = true,
     this.changePlanMode = false,
   });
@@ -35,14 +47,18 @@ class SubscriptionPaywall extends StatefulWidget {
   /// Shows paywall as dialog (wide) or bottom sheet (narrow).
   static Future<bool?> show(
     BuildContext context, {
-    SubscriptionOfferingKind initialKind = SubscriptionOfferingKind.coach,
+    SubscriptionOfferingKind? initialKind,
     bool allowSkip = true,
     bool changePlanMode = false,
   }) {
     final width = MediaQuery.sizeOf(context).width;
     final effectiveAllowSkip = changePlanMode ? false : allowSkip;
+    final resolvedKind = initialKind ??
+        (prefersCoachSubscriptionOffering(context.read<AppSession>())
+            ? SubscriptionOfferingKind.coach
+            : SubscriptionOfferingKind.player);
     final child = SubscriptionPaywall(
-      initialKind: initialKind,
+      initialKind: resolvedKind,
       allowSkip: effectiveAllowSkip,
       changePlanMode: changePlanMode,
     );
@@ -98,8 +114,16 @@ class _SubscriptionPaywallState extends State<SubscriptionPaywall> {
     super.initState();
     if (widget.changePlanMode) {
       _applyCurrentSubscriptionSelection();
+    } else {
+      _applyProfileOpeningDefaults();
     }
     unawaited(_refreshPaywallState());
+  }
+
+  void _applyProfileOpeningDefaults() {
+    if (widget.initialKind == SubscriptionOfferingKind.coach) {
+      _billingPeriod = SubscriptionBillingPeriod.yearly;
+    }
   }
 
   Future<void> _refreshPaywallState() async {

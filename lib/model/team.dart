@@ -1,5 +1,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 
+import 'grinta_player.dart';
+
 String keyTeamName = 'name';
 String keyTeamCategory = 'category';
 String keyTeamSubCategory = 'subCategory';
@@ -10,9 +12,11 @@ String keyTeamKey = 'keyTeam';
 String keyTeamSeasonID = 'seasonID';
 String keyTeamOrder = 'order';
 String keyTeamIsCompetition = 'isCompetition';
+String keyTeamIsGrinta = 'isGrinta';
 String keyTeamChType = "chType";
 String keyTeamCompetitions = "competitions";
 String keyTeamSoccerType = "soccerType";
+String keyTeamIdInTeamsPerClub = 'teamIdInTeamsPerClub';
 String keyTeamPhoto = 'photo';
 String keyTeamUrlFb = 'urlFb';
 String keyTeamUrlInsta = 'urlInsta';
@@ -20,7 +24,10 @@ String keyTeamUrlTwitter = 'urlTwitter';
 String keyTeamClubId = 'clubId';
 String keyTeamManagers = 'managers';
 String keyTeamPlayers = 'players';
+String keyTeamGrintaPlayers = 'grintaPlayers';
+String keyTeamGrintaPlayerMemberIds = 'grintaPlayerMemberIds';
 String keyTeamUsers = 'users';
+String keyTeamUid = 'uid';
 String keyCompetitionName = "name";
 String keyCompetitonChType = "chType";
 String keyCompetitionUrlCalendar = "urlCalendar";
@@ -98,6 +105,7 @@ class Team {
   String? chType;
   bool? isCompetition = false;
   int? soccerType;
+  String? teamIdInTeamsPerClub;
   String? photo;
   String? urlFb;
   String? urlInsta;
@@ -107,9 +115,13 @@ class Team {
   List<Competition>? competitions;
 
   List<dynamic>? players=[];
+  List<GrintaPlayer>? grintaPlayers=[];
+  List<String>? grintaPlayerMemberIds = [];
   List<dynamic>? users=[];
   bool? withTracker=false;
+  bool? isGrinta=false;
   List<dynamic> owners=[];
+  String? uid;
 
   DocumentReference? ref;
 
@@ -122,14 +134,19 @@ class Team {
         this.order=1,
         this.chType,
         this.soccerType,
+        this.teamIdInTeamsPerClub,
         this.photo,
         this.urlFb,
         this.urlInsta,
         this.urlTwitter,
         this.clubId,
         this.players,
+        this.grintaPlayers,
+        this.grintaPlayerMemberIds,
         this.users,
         this.withTracker,
+        this.isGrinta,
+        this.uid,
       });
 
   Team.fromDocumentSnapshot(DocumentSnapshot snapshot) {
@@ -148,12 +165,18 @@ class Team {
     chType = map[keyTeamChType];
     order = map[keyTeamOrder];
     soccerType = map[keyTeamSoccerType];
+    teamIdInTeamsPerClub = map[keyTeamIdInTeamsPerClub]?.toString();
     photo = map[keyTeamPhoto];
-    List<dynamic> tmpObject = map[keyTeamCompetitions];
     competitions = [];
-    for (int i = 0; i < tmpObject.length; i++) {
-      Competition competition = Competition.fromMap(tmpObject[i] as Map<String, dynamic>?);
-      competitions!.add(competition);
+    final dynamic rawCompetitions = map[keyTeamCompetitions];
+    if (rawCompetitions is List) {
+      for (final dynamic entry in rawCompetitions) {
+        if (entry is Map) {
+          competitions!.add(
+            Competition.fromMap(Map<String, dynamic>.from(entry)),
+          );
+        }
+      }
     }
     if(map[keyTeamUrlFb] != null) {
       urlFb = map[keyTeamUrlFb];
@@ -177,17 +200,36 @@ class Team {
       clubId = '';
     }
 
-    if(map[keyTeamManagers] != null) {
-      managers = map[keyTeamManagers];
+    final dynamic rawManagers = map[keyTeamManagers];
+    if (rawManagers is List) {
+      managers = List<dynamic>.from(rawManagers);
     } else {
       managers = [];
     }
 
-    if(map[keyTeamPlayers] != null) {
-      players = map[keyTeamPlayers];
+    final dynamic rawPlayers = map[keyTeamPlayers];
+    if (rawPlayers is List) {
+      players = List<dynamic>.from(rawPlayers);
     } else {
       players = [];
     }
+
+    grintaPlayers = [];
+    final dynamic rawGrintaPlayers = map[keyTeamGrintaPlayers];
+    if (rawGrintaPlayers is List) {
+      for (final dynamic entry in rawGrintaPlayers) {
+        if (entry is Map) {
+          grintaPlayers!.add(
+            GrintaPlayer.fromMap(Map<String, dynamic>.from(entry)),
+          );
+        }
+      }
+    }
+
+    grintaPlayerMemberIds = _parseGrintaPlayerMemberIds(
+      map[keyTeamGrintaPlayerMemberIds],
+      grintaPlayers,
+    );
 
     if(map[keyTeamUsers] != null) {
       users = map[keyTeamUsers];
@@ -195,9 +237,11 @@ class Team {
       users = map[keyTeamUsers];
     }
     withTracker= (map['withTracker'] ?? false) as bool;
+    isGrinta = (map[keyTeamIsGrinta] ?? false) as bool;
     owners = List<dynamic>.from(
       (map['owners'] as List<dynamic>?) ?? const <dynamic>[],
     );
+    uid = map[keyTeamUid]?.toString();
 
   }
 
@@ -231,6 +275,7 @@ class Team {
         'seasonID = $seasonID ' +
         'order = $order ' +
         'soccerType =$soccerType ' +
+        'teamIdInTeamsPerClub = $teamIdInTeamsPerClub ' +
         'competitions = ${competitions.toString()} ' +
         'photo = $photo ' +
         'urlFb = $urlFb ' +
@@ -238,10 +283,13 @@ class Team {
         'urlTwitter = $urlTwitter ' +
         'clubId=$clubId ' +
         'players=$players ' +
+        'grintaPlayers=$grintaPlayers ' +
         'users=$users ' +
         'managers=${managers.toString()} ' +
         'withTracker=$withTracker  ' +
-        'owners=${owners.toString()}';
+        'isGrinta=$isGrinta ' +
+        'owners=${owners.toString()} ' +
+        'uid=$uid';
   }
 
   Map<String, dynamic> toMap() {
@@ -253,6 +301,16 @@ class Team {
       }
     }
 
+
+    final List<Map<String, dynamic>> grintaPlayerMaps = [];
+    if (grintaPlayers != null) {
+      for (final GrintaPlayer grintaPlayer in grintaPlayers!) {
+        grintaPlayerMaps.add(grintaPlayer.toMap());
+      }
+    }
+
+    final List<String> memberIds =
+        grintaPlayerMemberIdsFromGrintaPlayers(grintaPlayers);
 
     Map<String, dynamic> map = {
       keyTeamKey: keyTeam,
@@ -266,6 +324,7 @@ class Team {
       keyTeamSeasonID:seasonID,
       keyTeamOrder:order,
       keyTeamSoccerType:soccerType,
+      keyTeamIdInTeamsPerClub:teamIdInTeamsPerClub,
       keyTeamPhoto:photo,
       keyTeamUrlFb:urlFb,
       keyTeamUrlInsta:urlInsta,
@@ -274,9 +333,13 @@ class Team {
       keyTeamClubId:clubId,
       keyTeamManagers:managers,
       keyTeamPlayers:players,
+      keyTeamGrintaPlayers:grintaPlayerMaps,
+      keyTeamGrintaPlayerMemberIds: memberIds,
       keyTeamUsers:users,
       'withTracker':withTracker,
+      keyTeamIsGrinta:isGrinta,
       'owners':owners,
+      keyTeamUid: uid,
     };
     return map;
   }
@@ -286,6 +349,86 @@ class Team {
     keyTeam = keyTeam!.replaceAll(' ', '').toUpperCase();
     keyTeam = removeDiacritics(keyTeam!);
   }
+}
+
+/// Member ids referenced by [GrintaPlayer.playerId] on a team roster.
+List<String> grintaPlayerMemberIdsFromGrintaPlayers(
+  List<GrintaPlayer>? grintaPlayers,
+) {
+  final Set<String> ids = <String>{};
+  for (final GrintaPlayer entry in grintaPlayers ?? const <GrintaPlayer>[]) {
+    final String id = entry.playerId.trim();
+    if (id.isNotEmpty) {
+      ids.add(id);
+    }
+  }
+  return ids.toList();
+}
+
+/// True when [memberId] appears on [team.grintaPlayers].
+bool teamContainsGrintaMember(Team team, String memberId) {
+  final String trimmedMemberId = memberId.trim();
+  if (trimmedMemberId.isEmpty) {
+    return false;
+  }
+
+  for (final GrintaPlayer entry in team.grintaPlayers ?? const <GrintaPlayer>[]) {
+    if (entry.playerId.trim() == trimmedMemberId) {
+      return true;
+    }
+  }
+  return false;
+}
+
+/// True when Firestore [rawMemberIds] is missing or stale vs [grintaPlayers].
+bool grintaPlayerMemberIdsNeedBackfill({
+  required dynamic rawMemberIds,
+  required List<GrintaPlayer>? grintaPlayers,
+}) {
+  final List<String> computed =
+      grintaPlayerMemberIdsFromGrintaPlayers(grintaPlayers);
+  if (computed.isEmpty) {
+    return false;
+  }
+
+  final Set<String> stored = <String>{};
+  if (rawMemberIds is List) {
+    for (final dynamic entry in rawMemberIds) {
+      final String id = entry?.toString().trim() ?? '';
+      if (id.isNotEmpty) {
+        stored.add(id);
+      }
+    }
+  }
+  if (stored.isEmpty) {
+    return true;
+  }
+
+  final Set<String> computedSet = computed.toSet();
+  return stored.length != computedSet.length ||
+      !computedSet.every(stored.contains);
+}
+
+List<String> _parseGrintaPlayerMemberIds(
+  dynamic rawMemberIds,
+  List<GrintaPlayer>? grintaPlayers,
+) {
+  final List<String> fromRoster =
+      grintaPlayerMemberIdsFromGrintaPlayers(grintaPlayers);
+  if (fromRoster.isNotEmpty) {
+    return fromRoster;
+  }
+
+  final Set<String> ids = <String>{};
+  if (rawMemberIds is List) {
+    for (final dynamic entry in rawMemberIds) {
+      final String id = entry?.toString().trim() ?? '';
+      if (id.isNotEmpty) {
+        ids.add(id);
+      }
+    }
+  }
+  return ids.toList();
 }
 
 enum ResultType {

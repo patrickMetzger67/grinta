@@ -7,6 +7,7 @@ import '../util/app_theme.dart';
 
 import 'app_session_player_avatar.dart';
 import '../provider/appSession.dart';
+import '../util/player_photo_resolver.dart';
 
 class AppSessionPlayerSeasonSelector extends StatelessWidget {
   const AppSessionPlayerSeasonSelector({super.key});
@@ -27,11 +28,16 @@ class AppSessionPlayerSeasonSelector extends StatelessWidget {
           return const SizedBox.shrink();
         }
 
-        final Player selectedPlayer = appSession.selectedPlayer ?? playerList.first;
-        final String selectedPlayerId = selectedPlayer.keyMember!;
+        final Player selectedPlayer =
+            appSession.selectedPlayer ?? playerList.first;
+        final String? selectedPlayerId =
+            appSession.selectedPlayerId ?? effectiveMemberId(selectedPlayer);
+        if (selectedPlayerId == null) {
+          return const SizedBox.shrink();
+        }
 
         final Map<String, Season> seasonMap =
-        appSession.getSeasonsForPlayer(selectedPlayerId);
+            appSession.getSeasonsForPlayer(selectedPlayerId);
 
         final List<Season> seasonList = seasonMap.values.toList()
           ..sort((a, b) {
@@ -56,7 +62,6 @@ class AppSessionPlayerSeasonSelector extends StatelessWidget {
               _PlayerSelectorField(
                 players: playerList,
                 selectedPlayerId: selectedPlayerId,
-                selectedImageUrls: appSession.playersPhotoUrls[selectedPlayerId],
                 onChanged: (value) {
                   if (value == null) return;
                   appSession.setSelectedPlayerId(value);
@@ -65,7 +70,6 @@ class AppSessionPlayerSeasonSelector extends StatelessWidget {
             else
               _SinglePlayerDisplay(
                 player: selectedPlayer,
-                imageUrls: appSession.playersPhotoUrls[selectedPlayerId],
               ),
             const SizedBox(height: 12),
             DropdownButtonFormField<String>(
@@ -169,20 +173,18 @@ class AppSessionPlayerSeasonSelector extends StatelessWidget {
 class _PlayerSelectorField extends StatelessWidget {
   final List<Player> players;
   final String selectedPlayerId;
-  final List<String>? selectedImageUrls;
   final ValueChanged<String?> onChanged;
 
   const _PlayerSelectorField({
     required this.players,
     required this.selectedPlayerId,
-    required this.selectedImageUrls,
     required this.onChanged,
   });
 
   @override
   Widget build(BuildContext context) {
     final Player selectedPlayer = players.firstWhere(
-          (p) => p.keyMember == selectedPlayerId,
+          (p) => effectiveMemberId(p) == selectedPlayerId,
       orElse: () => players.first,
     );
 
@@ -190,7 +192,6 @@ class _PlayerSelectorField extends StatelessWidget {
       children: [
         AppSessionPlayerAvatar(
           player: selectedPlayer,
-          imageUrls: selectedImageUrls,
           radius: 18,
           watchSessionForStaleWebAvatar: true,
         ),
@@ -201,12 +202,13 @@ class _PlayerSelectorField extends StatelessWidget {
             isExpanded: true,
             decoration: AppSessionPlayerSeasonSelector._inputDecoration(context),
             items: players.map((player) {
-              final playerId = player.keyMember!;
+              final playerId = effectiveMemberId(player);
+              if (playerId == null) return null;
               return DropdownMenuItem<String>(
                 value: playerId,
                 child: _PlayerDropdownItem(player: player),
               );
-            }).toList(),
+            }).whereType<DropdownMenuItem<String>>().toList(),
             onChanged: onChanged,
           ),
         ),
@@ -217,11 +219,9 @@ class _PlayerSelectorField extends StatelessWidget {
 
 class _SinglePlayerDisplay extends StatelessWidget {
   final Player player;
-  final List<String>? imageUrls;
 
   const _SinglePlayerDisplay({
     required this.player,
-    required this.imageUrls,
   });
 
   @override
@@ -241,7 +241,6 @@ class _SinglePlayerDisplay extends StatelessWidget {
         children: [
           AppSessionPlayerAvatar(
             player: player,
-            imageUrls: imageUrls,
             radius: 18,
             watchSessionForStaleWebAvatar: true,
           ),

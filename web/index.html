@@ -135,6 +135,19 @@
   };
 </script>
 
+<!-- FCM: service worker for background web push (see web/firebase-messaging-sw.js). -->
+<script>
+  if ('serviceWorker' in navigator) {
+    window.addEventListener('load', function () {
+      navigator.serviceWorker.register('/firebase-messaging-sw.js', {
+        scope: '/firebase-cloud-messaging-push-scope',
+      }).catch(function (err) {
+        console.warn('[FCM] service worker registration failed:', err);
+      });
+    });
+  }
+</script>
+
 <script src="flutter_bootstrap.js" async></script>
 </body>
 </html>

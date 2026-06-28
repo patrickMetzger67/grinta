@@ -26,7 +26,13 @@ class SubscriptionService extends ChangeNotifier {
   bool _sdkConfigured = false;
   String? _loggedInUid;
   Future<void>? _initFuture;
+  Future<void>? _logInFuture;
+  String? _logInFutureUid;
+  Future<void>? _refreshForActiveSessionFuture;
+  DateTime? _lastOfferingsRefreshAt;
   _SubscriptionLifecycleObserver? _lifecycleObserver;
+
+  static const Duration _offeringsRefreshMinInterval = Duration(seconds: 60);
 
   SubscriptionState get state => _state;
   Offerings? get offerings => _offerings;
@@ -215,14 +221,104 @@ class SubscriptionService extends ChangeNotifier {
 
   Future<void> _logInRevenueCat(String uid) async {
     if (!_sdkConfigured) return;
+    if (uid == _loggedInUid) return;
 
+    if (_logInFuture != null && _logInFutureUid == uid) {
+      await _logInFuture;
+      return;
+    }
+
+    final inFlight = _logInFuture;
+    if (inFlight != null) {
+      await inFlight;
+      if (uid == _loggedInUid) return;
+      if (_logInFuture != null && _logInFutureUid == uid) {
+        await _logInFuture;
+        return;
+      }
+    }
+
+    final future = _performLogInRevenueCat(uid);
+    _logInFuture = future;
+    _logInFutureUid = uid;
+    try {
+      await future;
+    } finally {
+      if (identical(_logInFuture, future)) {
+        _logInFuture = null;
+        _logInFutureUid = null;
+      }
+    }
+  }
+
+  bool _isConcurrentLoginError(Object e) {
+    if (e is PlatformException) {
+      final details = '${e.message} ${e.details}';
+      if (details.contains('429') ||
+          details.contains('7638') ||
+          details.contains('another request in flight')) {
+        return true;
+      }
+    }
+    final text = e.toString();
+    return text.contains('429') ||
+        text.contains('7638') ||
+        text.contains('another request in flight');
+  }
+
+  bool _isRevenueCatLinkedToUid(CustomerInfo info, String uid) {
+    final rcId = info.originalAppUserId;
+    return rcId == uid || !_isAnonymousRevenueCatUser(rcId);
+  }
+
+  void _markRevenueCatLoggedIn(String uid, CustomerInfo info) {
+    if (!_isRevenueCatLinkedToUid(info, uid)) {
+      if (kDebugMode) {
+        debugPrint(
+          'SubscriptionService: logIn completed but RC user still anonymous '
+          '(firebaseUid=$uid rcAppUserId=${info.originalAppUserId}); '
+          'will retry on next refresh',
+        );
+      }
+      return;
+    }
+    _loggedInUid = uid;
+  }
+
+  Future<void> _performLogInRevenueCat(String uid) async {
     try {
       _setLoading(true);
-      final result = await Purchases.logIn(uid);
-      _loggedInUid = uid;
+
+      LogInResult? result;
+
+      for (var attempt = 0; attempt < 2; attempt++) {
+        try {
+          result = await Purchases.logIn(uid);
+          break;
+        } catch (e) {
+          if (attempt == 0 && _isConcurrentLoginError(e)) {
+            if (kDebugMode) {
+              debugPrint(
+                'SubscriptionService: Purchases.logIn concurrent request '
+                '(firebaseUid=$uid), retrying in 500ms',
+              );
+            }
+            await Future<void>.delayed(const Duration(milliseconds: 500));
+            continue;
+          }
+          rethrow;
+        }
+      }
+
+      if (result == null) {
+        throw StateError('Purchases.logIn returned no result');
+      }
+
+      _markRevenueCatLoggedIn(uid, result.customerInfo);
       _applyCustomerInfo(result.customerInfo);
-      await refreshCustomerInfo();
+      await _fetchCustomerInfo();
       await refreshOfferings();
+      _lastOfferingsRefreshAt = DateTime.now();
 
       if (kDebugMode) {
         final info = result.customerInfo;
@@ -468,6 +564,11 @@ class SubscriptionService extends ChangeNotifier {
   Future<void> refreshCustomerInfo() async {
     if (!_sdkConfigured) return;
     await _ensureRevenueCatUserLinked();
+    await _fetchCustomerInfo();
+  }
+
+  Future<void> _fetchCustomerInfo() async {
+    if (!_sdkConfigured) return;
     try {
       final info = await Purchases.getCustomerInfo();
       _applyCustomerInfo(info);
@@ -488,15 +589,43 @@ class SubscriptionService extends ChangeNotifier {
 
   /// Refreshes RevenueCat state when the user opens profile / navigation.
   Future<void> refreshForActiveSession() async {
+    if (_refreshForActiveSessionFuture != null) {
+      await _refreshForActiveSessionFuture;
+      return;
+    }
+
+    final future = _refreshForActiveSessionImpl();
+    _refreshForActiveSessionFuture = future;
+    try {
+      await future;
+    } finally {
+      if (identical(_refreshForActiveSessionFuture, future)) {
+        _refreshForActiveSessionFuture = null;
+      }
+    }
+  }
+
+  Future<void> _refreshForActiveSessionImpl() async {
     if (!_sdkConfigured) {
       await ensureInitialized();
     }
     if (!_sdkConfigured) return;
     await _ensureRevenueCatUserLinked();
+
+    final now = DateTime.now();
+    final offeringsFresh = _lastOfferingsRefreshAt != null &&
+        now.difference(_lastOfferingsRefreshAt!) < _offeringsRefreshMinInterval;
+
+    if (offeringsFresh) {
+      await _fetchCustomerInfo();
+      return;
+    }
+
     await Future.wait([
-      refreshCustomerInfo(),
+      _fetchCustomerInfo(),
       refreshOfferings(),
     ]);
+    _lastOfferingsRefreshAt = DateTime.now();
   }
 
   /// Reloads RevenueCat offerings (e.g. when opening the paywall).
@@ -504,6 +633,7 @@ class SubscriptionService extends ChangeNotifier {
     if (!_sdkConfigured) return;
     try {
       _offerings = await Purchases.getOfferings();
+      _lastOfferingsRefreshAt = DateTime.now();
       _logOfferingsSnapshot();
       notifyListeners();
     } on PlatformException catch (e) {

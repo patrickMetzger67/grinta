@@ -41,10 +41,16 @@ class AppSession extends ChangeNotifier {
 
   final Map<String, StreamSubscription<List<Team>>> _teamsAsPlayerSubs = {};
   final Map<String, StreamSubscription<List<Team>>> _teamsAsManagerSubs = {};
+  final Map<String, StreamSubscription<List<Team>>> _teamsAsGrintaPlayerSubs =
+      {};
+  StreamSubscription<List<Team>>? _teamsAsOwnerSub;
 
   /// Données internes séparées pour éviter qu’un flux écrase l’autre
   final Map<String, Map<String, Map<String, Team>>> _teamsAsPlayerData = {};
   final Map<String, Map<String, Map<String, Team>>> _teamsAsManagerData = {};
+  final Map<String, Map<String, Map<String, Team>>> _teamsAsGrintaPlayerData =
+      {};
+  final Map<String, Map<String, Map<String, Team>>> _teamsAsOwnerData = {};
 
 
   Map<String, Season> _allSeasonMap = {};
@@ -57,19 +63,26 @@ class AppSession extends ChangeNotifier {
   String? _initInFlightUid;
   String? _lastRefreshedAuthPhotoUrl;
   String? _lastHandledAuthProfilePhotoUrl;
+  String? _oauthPhotoUrl;
   Future<void>? _avatarRefreshInFlight;
   DateTime? _lastAvatarRefreshRequestAt;
   Timer? _webAvatarPollTimer;
   int _webAvatarPollAttempts = 0;
   bool _webAvatarPollExhausted = false;
 
-  /// WEB AVATAR RACE — do not re-add Firestore Storage URLs to the display
+  /// On web, OAuth photoURL can arrive before [User.photoURL] is populated.
+  void cacheOAuthPhotoUrl(String? url) {
+    final trimmed = url?.trim();
+    if (trimmed == null || trimmed.isEmpty) return;
+    _oauthPhotoUrl = normalizeAuthPhotoDisplayUrl(trimmed);
+  }
+
   /// chain (see [resolvePlayerAvatarUrls]).
   ///
   /// On web, [authStateChanges] often fires before OAuth providers populate
-  /// [User.photoURL]. [User.reload] hangs on web and must not be called there;
-  /// use [FirebaseAuth.currentUser.photoURL] directly. [userChanges] and
-  /// [idTokenChanges] plus a capped timed poll cover late photoURL arrival.
+  /// [User.photoURL]. [userChanges] and [idTokenChanges] plus a capped timed
+  /// poll cover late photoURL arrival; [User.reload] is attempted with a
+  /// short timeout when resolving avatars.
   static const Duration _kWebAvatarPollInterval = Duration(milliseconds: 750);
   static const int _kWebAvatarPollMaxAttempts = 8;
   static const Duration _kAuthReloadTimeout = Duration(seconds: 5);
@@ -145,24 +158,16 @@ class AppSession extends ChangeNotifier {
     return getSeasonsForPlayer(selectedPlayerId!);
   }
 
+  /// Seasons available in the player/season selector.
+  ///
+  /// Lists every configured season document, not only seasons where the player
+  /// already has teams (teams still filter by [selectedSeason] elsewhere).
   Map<String, Season> getSeasonsForPlayer(String playerId) {
-    final Map<String, Map<String, Team>> seasonTeams =
-        teams[playerId] ?? <String, Map<String, Team>>{};
-
-    final Map<String, Season> result = {};
-
-    for (final String seasonId in seasonTeams.keys) {
-      final season = _allSeasonMap[seasonId];
-      if (season != null) {
-        result[seasonId] = season;
-      }
+    if (_allSeasonMap.isNotEmpty) {
+      return Map<String, Season>.from(_allSeasonMap);
     }
 
-    if (result.isEmpty) {
-      return _currentSeasonsFromCache();
-    }
-
-    return result;
+    return _currentSeasonsFromCache();
   }
 
   Map<String, Season> _currentSeasonsFromCache() {
@@ -188,6 +193,12 @@ class AppSession extends ChangeNotifier {
 
     if (alreadyLoadedForSameUser) {
       debugPrint('AppSession init ignoré: déjà chargé pour uid=$uid');
+      _webAvatarPollExhausted = false;
+      final User? current = FirebaseAuth.instance.currentUser;
+      if (current != null && current.uid == uid) {
+        user = current;
+        _safeNotify();
+      }
       unawaited(_refreshAvatarsIfLinkedAuthPhotoMissing());
       return;
     }
@@ -215,7 +226,11 @@ class AppSession extends ChangeNotifier {
       await _cancelDataSubscriptions();
 
       isLoading = true;
-      user = firebaseUser;
+      final User? liveUser = FirebaseAuth.instance.currentUser;
+      user = liveUser != null && liveUser.uid == firebaseUser.uid
+          ? liveUser
+          : firebaseUser;
+      cacheOAuthPhotoUrl(readAuthUserPhotoUrl(user));
 
       players.clear();
       teams.clear();
@@ -224,6 +239,8 @@ class AppSession extends ChangeNotifier {
       PlayerService.clearPlayerPhotoUrlCache();
       _teamsAsPlayerData.clear();
       _teamsAsManagerData.clear();
+      _teamsAsGrintaPlayerData.clear();
+      _teamsAsOwnerData.clear();
       _allSeasonMap.clear();
       currentSeason = null;
       selectedSeason = null;
@@ -260,6 +277,16 @@ class AppSession extends ChangeNotifier {
           asPlayer: true,
         );
 
+        final List<Team> teamsAsGrintaPlayer =
+            await TeamService().getTeamsForPlayerGrintaMembership(player);
+
+        if (!_isCurrentGeneration(generation, firebaseUser.uid)) return;
+
+        _replaceGrintaMemberTeams(
+          playerId: playerId,
+          teamsList: teamsAsGrintaPlayer,
+        );
+
         if (_isManagerCarrier(player, firebaseUser.uid)) {
           final List<Team> teamsAsManager =
           await TeamService().getTeamsForAManger(firebaseUser.uid);
@@ -275,6 +302,13 @@ class AppSession extends ChangeNotifier {
           _teamsAsManagerData[playerId] = <String, Map<String, Team>>{};
         }
       }
+
+      final List<Team> teamsAsOwner =
+          await TeamService().getTeamsByOwnerUid(firebaseUser.uid);
+
+      if (!_isCurrentGeneration(generation, firebaseUser.uid)) return;
+
+      _replaceOwnerTeamsForAllPlayers(teamsAsOwner);
 
       _rebuildMergedTeamsAndSeasons();
       _syncSelectedPlayerAndSeason();
@@ -384,6 +418,22 @@ class AppSession extends ChangeNotifier {
         player: entry.value,
       );
     }
+
+    _teamsAsOwnerSub ??=
+        TeamService().watchTeamsByOwnerUid(firebaseUid).listen(
+              (teamsList) {
+            if (!_isCurrentGeneration(generation, firebaseUid)) return;
+
+            _replaceOwnerTeamsForAllPlayers(teamsList);
+            _rebuildMergedTeamsAndSeasons();
+            _syncSelectedPlayerAndSeason();
+            _safeNotify();
+          },
+          onError: (Object e, StackTrace stackTrace) {
+            debugPrint('Erreur watchTeamsByOwnerUid($firebaseUid): $e');
+            debugPrint('$stackTrace');
+          },
+        );
   }
 
   Future<void> _onPlayersChanged({
@@ -406,6 +456,8 @@ class AppSession extends ChangeNotifier {
       await _removePlayerSubscriptions(removedId);
       _teamsAsPlayerData.remove(removedId);
       _teamsAsManagerData.remove(removedId);
+      _teamsAsGrintaPlayerData.remove(removedId);
+      _teamsAsOwnerData.remove(removedId);
       teams.remove(removedId);
       seasons.remove(removedId);
       playersPhotoUrls.remove(removedId);
@@ -423,6 +475,21 @@ class AppSession extends ChangeNotifier {
         playerId: addedId,
         player: player,
       );
+    }
+
+    if (addedIds.isNotEmpty) {
+      final Map<String, Team> ownerTeamsById = {};
+      for (final Map<String, Map<String, Team>> seasonMap
+          in _teamsAsOwnerData.values) {
+        for (final Map<String, Team> teamMap in seasonMap.values) {
+          for (final MapEntry<String, Team> entry in teamMap.entries) {
+            ownerTeamsById.putIfAbsent(entry.key, () => entry.value);
+          }
+        }
+      }
+      if (ownerTeamsById.isNotEmpty) {
+        _replaceOwnerTeamsForAllPlayers(ownerTeamsById.values.toList());
+      }
     }
 
     _rebuildMergedTeamsAndSeasons();
@@ -452,6 +519,27 @@ class AppSession extends ChangeNotifier {
           },
           onError: (Object e, StackTrace stackTrace) {
             debugPrint('Erreur watchTeamsByPlayerId($playerId): $e');
+            debugPrint('$stackTrace');
+          },
+        );
+
+    _teamsAsGrintaPlayerSubs[playerId] ??=
+        TeamService().watchTeamsForPlayerGrintaMembership(player).listen(
+              (teamsList) {
+            if (!_isCurrentGeneration(generation, firebaseUid)) return;
+
+            _replaceGrintaMemberTeams(
+              playerId: playerId,
+              teamsList: teamsList,
+            );
+            _rebuildMergedTeamsAndSeasons();
+            _syncSelectedPlayerAndSeason();
+            _safeNotify();
+          },
+          onError: (Object e, StackTrace stackTrace) {
+            debugPrint(
+              'Erreur watchTeamsForPlayerGrintaMembership($playerId): $e',
+            );
             debugPrint('$stackTrace');
           },
         );
@@ -508,8 +596,103 @@ class AppSession extends ChangeNotifier {
     }
   }
 
+  void _replaceGrintaMemberTeams({
+    required String playerId,
+    required List<Team> teamsList,
+  }) {
+    final Map<String, Map<String, Team>> rebuilt = <String, Map<String, Team>>{};
+
+    for (final Team t in teamsList) {
+      if (t.keyTeam == null || t.seasonID == null) continue;
+
+      final String seasonId = t.seasonID!;
+      final String teamId = t.keyTeam!;
+
+      if (!_allSeasonMap.containsKey(seasonId)) continue;
+
+      rebuilt.putIfAbsent(seasonId, () => <String, Team>{});
+      rebuilt[seasonId]![teamId] = t;
+    }
+
+    _teamsAsGrintaPlayerData[playerId] = rebuilt;
+  }
+
+  /// Picks up grinta roster membership from teams already loaded via legacy
+  /// players, manager, or owner paths (covers stale index / id-alias gaps).
+  void _supplementGrintaTeamsForAllPlayers() {
+    final String? uid = user?.uid;
+    if (uid == null) return;
+
+    final Map<String, Player> playerMap = players[uid] ?? {};
+    for (final MapEntry<String, Player> entry in playerMap.entries) {
+      final String playerId = entry.key;
+      final Player player = entry.value;
+      final Map<String, Map<String, Team>> rebuilt =
+          Map<String, Map<String, Team>>.from(
+            _teamsAsGrintaPlayerData[playerId] ?? const <String, Map<String, Team>>{},
+          );
+
+      void absorb(Map<String, Map<String, Team>>? source) {
+        if (source == null) return;
+        for (final MapEntry<String, Map<String, Team>> seasonEntry
+            in source.entries) {
+          final String seasonId = seasonEntry.key;
+          if (!_allSeasonMap.containsKey(seasonId)) continue;
+          for (final MapEntry<String, Team> teamEntry
+              in seasonEntry.value.entries) {
+            if (!teamContainsGrintaMemberForPlayer(teamEntry.value, player)) {
+              continue;
+            }
+            rebuilt.putIfAbsent(seasonId, () => <String, Team>{});
+            rebuilt[seasonId]![teamEntry.key] = teamEntry.value;
+          }
+        }
+      }
+
+      absorb(_teamsAsPlayerData[playerId]);
+      absorb(_teamsAsManagerData[playerId]);
+      absorb(_teamsAsOwnerData[playerId]);
+
+      _teamsAsGrintaPlayerData[playerId] = rebuilt;
+    }
+  }
+
+  void _replaceOwnerTeamsForAllPlayers(List<Team> teamsList) {
+    final Map<String, Map<String, Team>> rebuilt =
+        <String, Map<String, Team>>{};
+
+    for (final Team t in teamsList) {
+      if (t.keyTeam == null || t.seasonID == null) continue;
+
+      final String seasonId = t.seasonID!;
+      final String teamId = t.keyTeam!;
+
+      if (!_allSeasonMap.containsKey(seasonId)) continue;
+
+      rebuilt.putIfAbsent(seasonId, () => <String, Team>{});
+      rebuilt[seasonId]![teamId] = t;
+    }
+
+    final Map<String, Player> playerMap = currentUserPlayers;
+    if (playerMap.isEmpty) {
+      _teamsAsOwnerData.clear();
+      return;
+    }
+
+    for (final String playerId in playerMap.keys) {
+      _teamsAsOwnerData[playerId] = rebuilt;
+    }
+
+    final Set<String> staleOwnerKeys =
+        _teamsAsOwnerData.keys.toSet().difference(playerMap.keys.toSet());
+    for (final String staleKey in staleOwnerKeys) {
+      _teamsAsOwnerData.remove(staleKey);
+    }
+  }
 
   void _rebuildMergedTeamsAndSeasons() {
+    _supplementGrintaTeamsForAllPlayers();
+
     final Map<String, Map<String, Map<String, Team>>> mergedTeams = {};
     final Map<String, Map<String, Season>> mergedSeasons = {};
 
@@ -521,6 +704,8 @@ class AppSession extends ChangeNotifier {
 
     playerIds.addAll(_teamsAsPlayerData.keys);
     playerIds.addAll(_teamsAsManagerData.keys);
+    playerIds.addAll(_teamsAsGrintaPlayerData.keys);
+    playerIds.addAll(_teamsAsOwnerData.keys);
 
     for (final String playerId in playerIds) {
       final Map<String, Map<String, Team>> mergedSeasonMap = {};
@@ -529,6 +714,10 @@ class AppSession extends ChangeNotifier {
           _teamsAsPlayerData[playerId] ?? <String, Map<String, Team>>{};
       final Map<String, Map<String, Team>> sourceAsManager =
           _teamsAsManagerData[playerId] ?? <String, Map<String, Team>>{};
+      final Map<String, Map<String, Team>> sourceAsGrintaPlayer =
+          _teamsAsGrintaPlayerData[playerId] ?? <String, Map<String, Team>>{};
+      final Map<String, Map<String, Team>> sourceAsOwner =
+          _teamsAsOwnerData[playerId] ?? <String, Map<String, Team>>{};
 
       _mergeSeasonTeamMap(
         target: mergedSeasonMap,
@@ -538,6 +727,16 @@ class AppSession extends ChangeNotifier {
       _mergeSeasonTeamMap(
         target: mergedSeasonMap,
         source: sourceAsManager,
+      );
+
+      _mergeSeasonTeamMap(
+        target: mergedSeasonMap,
+        source: sourceAsGrintaPlayer,
+      );
+
+      _mergeSeasonTeamMap(
+        target: mergedSeasonMap,
+        source: sourceAsOwner,
       );
 
       mergedTeams[playerId] = mergedSeasonMap;
@@ -554,6 +753,46 @@ class AppSession extends ChangeNotifier {
 
     teams = mergedTeams;
     seasons = mergedSeasons;
+
+    if (kDebugMode) {
+      for (final MapEntry<String, Map<String, Map<String, Team>>> playerEntry
+          in mergedTeams.entries) {
+        final String playerId = playerEntry.key;
+        final Map<String, Map<String, Team>> asPlayer =
+            _teamsAsPlayerData[playerId] ?? const {};
+        final Map<String, Map<String, Team>> asGrinta =
+            _teamsAsGrintaPlayerData[playerId] ?? const {};
+        final Map<String, Map<String, Team>> asManager =
+            _teamsAsManagerData[playerId] ?? const {};
+        final Map<String, Map<String, Team>> asOwner =
+            _teamsAsOwnerData[playerId] ?? const {};
+
+        String summarizeSource(Map<String, Map<String, Team>> source, String label) {
+          if (source.isEmpty) return '$label=[]';
+          final List<String> parts = <String>[];
+          source.forEach((String seasonId, Map<String, Team> teamMap) {
+            for (final Team team in teamMap.values) {
+              parts.add(
+                '$label:${team.keyTeam}(season=$seasonId,'
+                'isGrinta=${team.isGrinta},'
+                'players=${team.players?.length ?? 0},'
+                'grintaPlayers=${team.grintaPlayers?.length ?? 0})',
+              );
+            }
+          });
+          return parts.join('; ');
+        }
+
+        debugPrint(
+          'AppSession mergedTeams playerId=$playerId '
+          '${summarizeSource(asPlayer, 'legacyPlayers')} | '
+          '${summarizeSource(asGrinta, 'grintaRoster')} | '
+          '${summarizeSource(asManager, 'manager')} | '
+          '${summarizeSource(asOwner, 'owner')} | '
+          'mergedCount=${playerEntry.value.values.fold<int>(0, (int n, Map<String, Team> m) => n + m.length)}',
+        );
+      }
+    }
   }
 
   void _mergeSeasonTeamMap({
@@ -570,11 +809,15 @@ class AppSession extends ChangeNotifier {
     final Map<String, Player> playerMap = {};
     final User? authUser = await _authUserReadyForAvatarResolution();
 
+    playersPhotoUrls.remove('');
+
     for (final Player player in playersLst) {
       debugPrint('player=$player');
 
-      if (player.keyMember == null) continue;
-      final String playerId = player.keyMember!;
+      normalizePlayerMemberId(player);
+      final String? playerId = effectiveMemberId(player);
+      if (playerId == null) continue;
+
       playerMap[playerId] = player;
 
       final urls = await PlayerService().getCachedPlayerAvatarUrls(
@@ -590,6 +833,7 @@ class AppSession extends ChangeNotifier {
     }
 
     unawaited(_refreshAvatarsIfLinkedAuthPhotoMissing());
+    _safeNotify();
     return playerMap;
   }
 
@@ -609,6 +853,24 @@ class AppSession extends ChangeNotifier {
           user = current;
         }
       }
+      try {
+        await authUser.reload().timeout(
+          _kAuthReloadTimeout,
+          onTimeout: () {
+            debugPrint(
+              'User.reload timed out during avatar resolution on web; '
+              'using cached user',
+            );
+          },
+        );
+        final User? reloaded = FirebaseAuth.instance.currentUser;
+        if (reloaded != null) {
+          authUser = reloaded;
+          if (user?.uid == reloaded.uid) {
+            user = reloaded;
+          }
+        }
+      } catch (_) {}
     } else {
       try {
         await authUser.reload().timeout(
@@ -687,10 +949,12 @@ class AppSession extends ChangeNotifier {
     }
 
     PlayerService.clearPlayerPhotoUrlCache();
+    playersPhotoUrls.remove('');
     final User? authUser = await _authUserReadyForAvatarResolution();
 
     for (final Player player in playersLst) {
-      final String? playerId = player.keyMember;
+      normalizePlayerMemberId(player);
+      final String? playerId = effectiveMemberId(player);
       if (playerId == null) continue;
 
       final urls = await PlayerService().getCachedPlayerAvatarUrls(
@@ -732,14 +996,29 @@ class AppSession extends ChangeNotifier {
   Future<void> _onAuthProfileMaybeUpdated(User? authUser) async {
     if (authUser == null) return;
 
-    final String? uid = user?.uid;
-    if (uid == null || uid != authUser.uid) return;
+    final String authUid = authUser.uid.trim();
+    if (authUid.isEmpty) return;
 
-    if (user?.uid == authUser.uid) {
+    final String? sessionUid = user?.uid.trim();
+    if (sessionUid != null && sessionUid != authUid) return;
+
+    final String? previousPhoto = _liveAuthUserPhotoUrl();
+
+    final User? liveUser = FirebaseAuth.instance.currentUser;
+    if (liveUser != null && liveUser.uid.trim() == authUid) {
+      user = liveUser;
+    } else {
       user = authUser;
     }
 
+    final String uid = authUid;
     final String? authPhoto = _liveAuthUserPhotoUrl(authUser: authUser);
+    if (authPhoto != null &&
+        authPhoto.isNotEmpty &&
+        authPhoto != previousPhoto) {
+      _resetWebAvatarPollBudget();
+      _safeNotify();
+    }
     if (authPhoto != null &&
         authPhoto.isNotEmpty &&
         authPhoto == _lastHandledAuthProfilePhotoUrl &&
@@ -778,7 +1057,7 @@ class AppSession extends ChangeNotifier {
       if (_linkedPlayerAvatarMissingAuthPhoto(
         player,
         uid,
-        playersPhotoUrls[player.keyMember],
+        playersPhotoUrls[effectiveMemberId(player)],
         authPhoto,
       )) {
         return true;
@@ -844,23 +1123,33 @@ class AppSession extends ChangeNotifier {
     if (urls == null || urls.isEmpty) return true;
 
     final String? authPhoto = _liveAuthUserPhotoUrl();
-    if (authPhoto == null || authPhoto.isEmpty) return kIsWeb;
+    if (authPhoto == null || authPhoto.isEmpty) return true;
     return !_avatarUrlsContainAuthPhoto(urls, authPhoto);
   }
 
   String? _liveAuthUserPhotoUrl({User? authUser}) {
     final User? liveUser = FirebaseAuth.instance.currentUser;
-    final String? livePhoto = liveUser?.photoURL?.trim();
+    final String? livePhoto = readAuthUserPhotoUrl(liveUser);
     if (livePhoto != null && livePhoto.isNotEmpty) {
       return livePhoto;
     }
 
-    final String? eventPhoto = authUser?.photoURL?.trim();
+    final String? eventPhoto = readAuthUserPhotoUrl(authUser);
     if (eventPhoto != null && eventPhoto.isNotEmpty) {
       return eventPhoto;
     }
 
-    return user?.photoURL?.trim();
+    final String? sessionPhoto = readAuthUserPhotoUrl(user);
+    if (sessionPhoto != null && sessionPhoto.isNotEmpty) {
+      return sessionPhoto;
+    }
+
+    final String? cached = _oauthPhotoUrl?.trim();
+    if (cached != null && cached.isNotEmpty) {
+      return cached;
+    }
+
+    return null;
   }
 
   void _syncLastRefreshedAuthPhotoUrl(User? authUser) {
@@ -959,6 +1248,11 @@ class AppSession extends ChangeNotifier {
     _webAvatarPollAttempts = 0;
   }
 
+  void _resetWebAvatarPollBudget() {
+    _webAvatarPollExhausted = false;
+    _webAvatarPollAttempts = 0;
+  }
+
   void _updateSeasonCache(List<Season> allSeasons) {
     final Map<String, Season> nextSeasonMap = {};
     Season? nextCurrentSeason;
@@ -977,11 +1271,13 @@ class AppSession extends ChangeNotifier {
     currentSeason = nextCurrentSeason;
 
     final String? selectedSeasonId = selectedSeason?.ref?.id;
-    if (selectedSeasonId != null && _allSeasonMap.containsKey(selectedSeasonId)) {
+    if (selectedSeasonId != null &&
+        _allSeasonMap.containsKey(selectedSeasonId)) {
       selectedSeason = _allSeasonMap[selectedSeasonId];
-    } else {
-      selectedSeason = nextCurrentSeason;
+      return;
     }
+
+    selectedSeason = _defaultSeasonFrom(_allSeasonMap);
   }
 
   void _syncSelectedPlayerAndSeason() {
@@ -1018,13 +1314,31 @@ class AppSession extends ChangeNotifier {
       return;
     }
 
+    selectedSeason = _defaultSeasonFrom(playerSeasons);
+  }
+
+  Season? _defaultSeasonFrom(Map<String, Season> availableSeasons) {
     final String? currentSeasonId = currentSeason?.ref?.id;
-    if (currentSeasonId != null && playerSeasons.containsKey(currentSeasonId)) {
-      selectedSeason = playerSeasons[currentSeasonId];
-      return;
+    if (currentSeasonId != null &&
+        availableSeasons.containsKey(currentSeasonId)) {
+      return availableSeasons[currentSeasonId];
     }
 
-    selectedSeason = playerSeasons.values.first;
+    if (availableSeasons.isEmpty) {
+      return currentSeason;
+    }
+
+    final List<Season> sorted = availableSeasons.values.toList()
+      ..sort((Season a, Season b) {
+        final DateTime? aStart = a.startDate?.toDate();
+        final DateTime? bStart = b.startDate?.toDate();
+        if (aStart == null && bStart == null) return 0;
+        if (aStart == null) return 1;
+        if (bStart == null) return -1;
+        return bStart.compareTo(aStart);
+      });
+
+    return sorted.first;
   }
 
   bool _isCurrentGeneration(int generation, String firebaseUid) {
@@ -1036,6 +1350,7 @@ class AppSession extends ChangeNotifier {
   Future<void> _removePlayerSubscriptions(String playerId) async {
     await _teamsAsPlayerSubs.remove(playerId)?.cancel();
     await _teamsAsManagerSubs.remove(playerId)?.cancel();
+    await _teamsAsGrintaPlayerSubs.remove(playerId)?.cancel();
   }
 
   Future<void> _cancelDataSubscriptions() async {
@@ -1054,6 +1369,15 @@ class AppSession extends ChangeNotifier {
       await sub.cancel();
     }
     _teamsAsManagerSubs.clear();
+
+    for (final StreamSubscription<List<Team>> sub
+        in _teamsAsGrintaPlayerSubs.values) {
+      await sub.cancel();
+    }
+    _teamsAsGrintaPlayerSubs.clear();
+
+    await _teamsAsOwnerSub?.cancel();
+    _teamsAsOwnerSub = null;
   }
 
   void setSelectedPlayerId(String? playerId) {
@@ -1100,6 +1424,8 @@ class AppSession extends ChangeNotifier {
     PlayerService.clearPlayerPhotoUrlCache();
     _teamsAsPlayerData.clear();
     _teamsAsManagerData.clear();
+    _teamsAsGrintaPlayerData.clear();
+    _teamsAsOwnerData.clear();
     _allSeasonMap.clear();
     currentSeason = null;
     selectedSeason = null;
@@ -1108,6 +1434,7 @@ class AppSession extends ChangeNotifier {
     _lastInitializedUid = null;
     _lastRefreshedAuthPhotoUrl = null;
     _lastHandledAuthProfilePhotoUrl = null;
+    _oauthPhotoUrl = null;
     _lastAvatarRefreshRequestAt = null;
     _webAvatarPollExhausted = false;
     _stopWebAvatarPoll();

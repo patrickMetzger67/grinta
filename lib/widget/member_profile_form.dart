@@ -5,7 +5,7 @@ import 'package:flutter/material.dart';
 import '../core/extensions/l10n_extension.dart';
 import '../model/player.dart';
 import '../util/nationalities.dart';
-import '../util/player_positions.dart';
+import '../services/player_positions_service.dart';
 import '../util/player_profile_validator.dart';
 import '../util/app_theme.dart';
 import 'international_phone_field.dart';
@@ -51,6 +51,8 @@ class MemberProfileFormState extends State<MemberProfileForm> {
   String? _seedPhoneE164;
   String? _seedPhoneCountryCode;
   final Set<int> _selectedPositionCodes = {};
+  final PlayerPositionsService _playerPositionsService =
+      PlayerPositionsService.instance;
   List<NationalityOption> _nationalityOptions = const [];
 
   bool _initializedDefaults = false;
@@ -62,6 +64,13 @@ class MemberProfileFormState extends State<MemberProfileForm> {
   @override
   void initState() {
     super.initState();
+    unawaited(
+      _playerPositionsService.ensureInitialized().then((_) {
+        if (mounted) {
+          setState(() {});
+        }
+      }),
+    );
     _applyInitialProfileIfNeeded();
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (mounted) {
@@ -410,9 +419,9 @@ class MemberProfileFormState extends State<MemberProfileForm> {
           spacing: 8,
           runSpacing: 8,
           children: [
-            for (final code in selectablePlayerPositionCodes)
+            for (final code in _playerPositionsService.selectableCodes)
               FilterChip(
-                label: Text(playerPositionLabel(code, l10n)),
+                label: Text(_playerPositionsService.labelForCode(code, l10n)),
                 selected: _selectedPositionCodes.contains(code),
                 onSelected: widget.enabled ? (_) => _togglePosition(code) : null,
                 showCheckmark: true,

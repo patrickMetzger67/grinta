@@ -1,11 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:grinta/core/extensions/l10n_extension.dart';
-import 'package:grinta/provider/appSession.dart';
 import 'package:grinta/services/subscription_service.dart';
 import 'package:grinta/services/user_trial_service.dart';
 import 'package:grinta/util/app_theme.dart';
 import 'package:grinta/widget/subscription_paywall.dart';
-import 'package:provider/provider.dart';
 
 /// Informational banner showing remaining free trial days with a paywall CTA.
 class TrialStatusBanner extends StatelessWidget {
@@ -15,15 +13,8 @@ class TrialStatusBanner extends StatelessWidget {
     await SubscriptionService.instance.refreshForActiveSession();
     if (!context.mounted) return;
 
-    final appSession = context.read<AppSession>();
-    final isCoach = appSession.managedTeamsIdsForSelectedSeason.isNotEmpty ||
-        appSession.hasManagedTeamsInSelectedSeason;
-
     await SubscriptionPaywall.show(
       context,
-      initialKind: isCoach
-          ? SubscriptionOfferingKind.coach
-          : SubscriptionOfferingKind.player,
       allowSkip: true,
     );
   }

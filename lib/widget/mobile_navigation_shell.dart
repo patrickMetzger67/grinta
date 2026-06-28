@@ -26,7 +26,9 @@ import 'package:grinta/services/account_deletion_service.dart';
 import 'package:grinta/services/subscription_service.dart';
 import 'package:grinta/services/feature_discovery_service.dart';
 import 'package:grinta/widget/app_shell_scope.dart';
+import 'package:grinta/widget/account_create_profile_entry.dart';
 import 'package:grinta/widget/edit_member_profile.dart';
+import 'package:grinta/widget/nav_icon_count_badge.dart';
 import 'package:grinta/widget/subscription_details_sheet.dart';
 import 'package:provider/provider.dart';
 
@@ -395,6 +397,14 @@ class _MobileNavigationShellState extends State<MobileNavigationShell> {
                     );
                   },
                 ),
+                AccountCreateProfileListTile(
+                  onTap: () {
+                    closeSheetThen(
+                      () => openAccountCreateProfileFlow(context),
+                      sheetContext,
+                    );
+                  },
+                ),
                 ListTile(
                   leading: _isSigningOut
                       ? SizedBox(
@@ -455,7 +465,8 @@ class _MobileNavigationShellState extends State<MobileNavigationShell> {
           builder: (context, appSession, _) {
             final managedTeamsIds =
                 appSession.managedTeamsIdsForSelectedSeason;
-            final showManagerMenu = managedTeamsIds.isNotEmpty;
+            final showManagerTools = managedTeamsIds.isNotEmpty;
+            final teamCount = appSession.selectedTeams.length;
 
             return SafeArea(
               child: SingleChildScrollView(
@@ -477,51 +488,52 @@ class _MobileNavigationShellState extends State<MobileNavigationShell> {
                       child: AppSessionPlayerSeasonSelector(),
                     ),
                     const SizedBox(height: 12),
-                    if (showManagerMenu) ...[
-                      const Divider(height: 1),
-                      ListTile(
-                        leading: Icon(
-                          Icons.groups_rounded,
-                          color: colors.primary,
-                        ),
-                        title: Text(l10n.navTeams),
-                        onTap: () {
-                          closeSheetThen(
-                            () => navigator.push(
-                              analyticsMaterialRoute<void>(
-                                screenName: AnalyticsScreenNames.teamsList,
-                                builder: (_) => TeamsListScreen(
-                                  managedTeamsIds: managedTeamsIds,
-                                  onTeamTap: (ctx, team, isManager) {
-                                    AnalyticsInteractions.logFeature(
-                                      AnalyticsFeatures.openTeamDetail,
-                                      parameters: <String, Object>{
-                                        'is_manager': isManager,
-                                        'source': 'teams_list',
-                                      },
-                                    );
-                                    Navigator.of(ctx).push(
-                                      analyticsMaterialRoute<void>(
-                                        screenName:
-                                            AnalyticsScreenNames.teamDetail,
-                                        builder: (_) => TeamDetailScreen(
-                                          team: team,
-                                          seasonId: appSession
-                                              .selectedSeason
-                                              ?.ref
-                                              ?.id,
-                                          isManager: isManager,
-                                        ),
+                    const Divider(height: 1),
+                    ListTile(
+                      leading: NavIconCountBadge(
+                        icon: Icons.groups_rounded,
+                        count: teamCount,
+                        iconColor: colors.primary,
+                      ),
+                      title: Text(l10n.navTeams),
+                      onTap: () {
+                        closeSheetThen(
+                          () => navigator.push(
+                            analyticsMaterialRoute<void>(
+                              screenName: AnalyticsScreenNames.teamsList,
+                              builder: (_) => TeamsListScreen(
+                                managedTeamsIds: managedTeamsIds,
+                                onTeamTap: (ctx, team, isManager) {
+                                  AnalyticsInteractions.logFeature(
+                                    AnalyticsFeatures.openTeamDetail,
+                                    parameters: <String, Object>{
+                                      'is_manager': isManager,
+                                      'source': 'teams_list',
+                                    },
+                                  );
+                                  Navigator.of(ctx).push(
+                                    analyticsMaterialRoute<void>(
+                                      screenName:
+                                          AnalyticsScreenNames.teamDetail,
+                                      builder: (_) => TeamDetailScreen(
+                                        team: team,
+                                        seasonId: appSession
+                                            .selectedSeason
+                                            ?.ref
+                                            ?.id,
+                                        isManager: isManager,
                                       ),
-                                    );
-                                  },
-                                ),
+                                    ),
+                                  );
+                                },
                               ),
                             ),
-                            sheetContext,
-                          );
-                        },
-                      ),
+                          ),
+                          sheetContext,
+                        );
+                      },
+                    ),
+                    if (showManagerTools) ...[
                       ListTile(
                         leading: Icon(
                           Icons.stadium_outlined,
@@ -724,15 +736,12 @@ class _MobileAvatarMenuButton extends StatelessWidget {
     return Consumer<AppSession>(
       builder: (context, appSession, _) {
         final Player? player = appSession.selectedPlayer;
-        if (player == null || player.keyMember == null) {
+        if (player == null) {
           return IconButton(
             onPressed: onTap,
             icon: const Icon(Icons.account_circle_outlined),
           );
         }
-
-        final imageUrls =
-            appSession.playersPhotoUrls[player.keyMember!];
 
         return Material(
           color: Colors.transparent,
@@ -741,7 +750,6 @@ class _MobileAvatarMenuButton extends StatelessWidget {
             customBorder: const CircleBorder(),
             child: AppSessionPlayerAvatar(
               player: player,
-              imageUrls: imageUrls,
               radius: 20,
               watchSessionForStaleWebAvatar: true,
             ),
