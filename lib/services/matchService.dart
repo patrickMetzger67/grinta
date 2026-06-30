@@ -1,6 +1,8 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/foundation.dart';
+import '../model/engagement.dart';
 import '../model/match.dart';
+import 'engagement_service.dart';
 
 class MatchService {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
@@ -216,6 +218,248 @@ class MatchService {
           .toList();
     } catch (e) {
       rethrow;
+    }
+  }
+
+  /// Loads matches for a team by resolving its engagements, then querying
+  /// [matchCalendar] with competition/poule/stage and date range. Club
+  /// filtering is applied in Dart after the query (not in Firestore).
+  ///
+  /// When [clubId] is non-empty, only matches whose [clubs] array contains
+  /// that id are kept — no fallback to unfiltered competition results.
+  ///
+  /// Falls back to the legacy [teams] arrayContains query only when no
+  /// engagements are found, or when [clubId] is empty and engagement
+  /// queries return no matches.
+  Future<List<Match>> getMatchesForTeamEngagementsBetweenDates({
+    required String teamId,
+    required String clubId,
+    required Timestamp start,
+    required Timestamp end,
+    String? seasonId,
+    EngagementService? engagementService,
+  }) async {
+    final service = engagementService ?? EngagementService();
+    final engagements = await service.getEngagementsForTeamAgenda(
+      teamId: teamId,
+      seasonId: seasonId,
+    );
+
+    if (kDebugMode) {
+      debugPrint(
+        'Agenda matches: teamId=$teamId clubId=$clubId '
+        'seasonId=${seasonId ?? '(any)'} engagements=${engagements.length}',
+      );
+    }
+
+    final Map<String, Match> matchesById = <String, Match>{};
+
+    if (engagements.isNotEmpty) {
+      await Future.wait(
+        engagements.map(
+          (engagement) => _loadMatchesForEngagementBetweenDates(
+            engagement: engagement,
+            clubId: clubId,
+            start: start,
+            end: end,
+            matchesById: matchesById,
+          ),
+        ),
+      );
+    }
+
+    final int engagementMatchCount = matchesById.length;
+    final String trimmedClubId = clubId.trim();
+    final bool shouldUseTeamFallback = trimmedClubId.isEmpty
+        ? (engagements.isEmpty || matchesById.isEmpty)
+        : engagements.isEmpty;
+
+    if (shouldUseTeamFallback) {
+      final List<Match> fallbackMatches =
+          await _loadMatchesByTeamIdBetweenDatesFallback(
+        teamId: teamId,
+        start: start,
+        end: end,
+      );
+
+      for (final Match match in fallbackMatches) {
+        final String? matchId = match.id?.trim();
+        if (matchId != null && matchId.isNotEmpty) {
+          matchesById[matchId] = match;
+        }
+      }
+
+      if (kDebugMode) {
+        debugPrint(
+          'Agenda matches fallback: teamId=$teamId '
+          'engagementMatches=$engagementMatchCount '
+          'fallbackAdded=${fallbackMatches.length} '
+          'total=${matchesById.length}',
+        );
+      }
+    } else if (kDebugMode) {
+      debugPrint(
+        'Agenda matches: teamId=$teamId engagements=${engagements.length} '
+        'matches=${matchesById.length}',
+      );
+    }
+
+    final List<Match> matches = matchesById.values.toList();
+    matches.sort((a, b) {
+      final Timestamp? aTs = a.timestamp;
+      final Timestamp? bTs = b.timestamp;
+      if (aTs == null && bTs == null) return 0;
+      if (aTs == null) return 1;
+      if (bTs == null) return -1;
+      return aTs.compareTo(bTs);
+    });
+    return matches;
+  }
+
+  Future<List<Match>> _loadMatchesByTeamIdBetweenDatesFallback({
+    required String teamId,
+    required Timestamp start,
+    required Timestamp end,
+  }) async {
+    try {
+      return await getMatchesByTeamIdBetweenDates(
+        teamId: teamId,
+        start: start,
+        end: end,
+      );
+    } on FirebaseException catch (e) {
+      debugPrint(
+        'Firestore error in agenda fallback getMatchesByTeamIdBetweenDates'
+        '(teamId: $teamId): ${e.code} - ${e.message}',
+      );
+      return <Match>[];
+    } catch (e) {
+      debugPrint(
+        'Unexpected error in agenda fallback getMatchesByTeamIdBetweenDates'
+        '(teamId: $teamId): $e',
+      );
+      return <Match>[];
+    }
+  }
+
+  Future<void> _loadMatchesForEngagementBetweenDates({
+    required Engagement engagement,
+    required String clubId,
+    required Timestamp start,
+    required Timestamp end,
+    required Map<String, Match> matchesById,
+  }) async {
+    final String competitionId = engagement.competitionId?.trim() ?? '';
+    final String? engagementDocId = engagement.ref?.id;
+
+    if (competitionId.isEmpty) {
+      if (kDebugMode) {
+        debugPrint(
+          'Agenda engagement skip: empty competitionId '
+          'engagementId=${engagementDocId ?? '(unknown)'} '
+          'teamId=${engagement.teamId} teamIds=${engagement.teamIds}',
+        );
+      }
+      return;
+    }
+
+    final String group = engagement.group?.trim() ?? '';
+    final String stage = engagement.stage?.trim() ?? '';
+    final String engagementClubId = engagement.clubId?.trim() ?? '';
+    final String trimmedClubId = clubId.trim().isNotEmpty
+        ? clubId.trim()
+        : engagementClubId;
+
+    final int beforeCount = matchesById.length;
+
+    await _queryEngagementMatchesIntoMap(
+      competitionId: competitionId,
+      group: group,
+      stage: stage,
+      clubId: trimmedClubId,
+      start: start,
+      end: end,
+      matchesById: matchesById,
+      engagementDocId: engagementDocId,
+    );
+
+    final int totalForEngagement = matchesById.length - beforeCount;
+
+    if (kDebugMode) {
+      debugPrint(
+        'Agenda engagement: id=${engagementDocId ?? '(unknown)'} '
+        'competitionId=$competitionId group=${group.isEmpty ? '(any)' : group} '
+        'stage=${stage.isEmpty ? '(any)' : stage} '
+        'clubId=${trimmedClubId.isEmpty ? '(any)' : trimmedClubId} '
+        'total=$totalForEngagement',
+      );
+    }
+  }
+
+  Future<void> _queryEngagementMatchesIntoMap({
+    required String competitionId,
+    required String group,
+    required String stage,
+    required String clubId,
+    required Timestamp start,
+    required Timestamp end,
+    required Map<String, Match> matchesById,
+    required String? engagementDocId,
+  }) async {
+    try {
+      Query<Map<String, dynamic>> query = _collection.where(
+        keyMatchCompetitionID,
+        isEqualTo: competitionId,
+      );
+
+      if (group.isNotEmpty) {
+        query = query.where(keyMatchPoule, isEqualTo: group);
+      }
+
+      if (stage.isNotEmpty) {
+        query = query.where(keyMatchStage, isEqualTo: stage);
+      }
+
+      final QuerySnapshot<Map<String, dynamic>> snapshot = await query
+          .where(keyMatchTimestamp, isGreaterThanOrEqualTo: start)
+          .where(keyMatchTimestamp, isLessThanOrEqualTo: end)
+          .get();
+
+      final List<Match> matches = snapshot.docs
+          .map((doc) => Match.fromDocumentSnapshot(doc))
+          .toList();
+
+      Iterable<Match> matchesToAdd = matches;
+      if (clubId.isNotEmpty) {
+        matchesToAdd = matches.where((match) {
+          final List<dynamic>? clubs = match.clubs;
+          if (clubs == null || clubs.isEmpty) {
+            return false;
+          }
+          return clubs.any((club) => club?.toString() == clubId);
+        });
+      }
+
+      for (final Match match in matchesToAdd) {
+        final String? matchId = match.id?.trim();
+        if (matchId != null && matchId.isNotEmpty) {
+          matchesById[matchId] = match;
+        }
+      }
+    } on FirebaseException catch (e) {
+      debugPrint(
+        'Firestore error loading matches for engagement '
+        '(engagementId: ${engagementDocId ?? '(unknown)'}, '
+        'competitionId: $competitionId, group: $group, stage: $stage, '
+        'clubId: ${clubId.isEmpty ? '(any)' : clubId}): '
+        '${e.code} - ${e.message}',
+      );
+    } catch (e) {
+      debugPrint(
+        'Unexpected error loading matches for engagement '
+        '(engagementId: ${engagementDocId ?? '(unknown)'}, '
+        'competitionId: $competitionId): $e',
+      );
     }
   }
 

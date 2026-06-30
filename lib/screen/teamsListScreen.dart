@@ -161,16 +161,44 @@ class _TeamsListScreenState extends State<TeamsListScreen> {
                       gate == TeamCreationGate.needsUpgrade;
 
                   return Padding(
-                    padding: const EdgeInsets.only(right: 4),
-                    child: IconButton(
-                      tooltip: l10n.actionCreateTeam,
-                      icon: SubscriptionPremiumBadge.withIconOverlay(
-                        context: context,
-                        colors: colors,
-                        showPremium: showPremiumBadge,
-                        icon: const Icon(Icons.add_rounded),
+                    padding: const EdgeInsets.only(right: 8, top: 4, bottom: 4),
+                    child: Tooltip(
+                      message: l10n.actionCreateTeam,
+                      child: Material(
+                        color: Colors.transparent,
+                        child: InkWell(
+                          borderRadius: BorderRadius.circular(18),
+                          onTap: () => _onCreateTeam(context),
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 12,
+                              vertical: 8,
+                            ),
+                            decoration: BoxDecoration(
+                              color: colors.card,
+                              borderRadius: BorderRadius.circular(18),
+                              border: Border.all(color: colors.border),
+                            ),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Icon(
+                                  Icons.add_rounded,
+                                  color: colors.primary,
+                                  size: 22,
+                                ),
+                                if (showPremiumBadge) ...[
+                                  const SizedBox(width: 8),
+                                  SubscriptionPremiumBadge(
+                                    colors: colors,
+                                    compact: true,
+                                  ),
+                                ],
+                              ],
+                            ),
+                          ),
+                        ),
                       ),
-                      onPressed: () => _onCreateTeam(context),
                     ),
                   );
                 },

@@ -62,6 +62,7 @@ class NotificationFCMService {
   static const String _androidChannelName = 'Notifications';
 
   static bool _initialized = false;
+  static Timer? _iosFcmTokenRetryTimer;
 
   /// Call from [main] after [Firebase.initializeApp].
   static Future<void> init() async {
@@ -191,21 +192,78 @@ class NotificationFCMService {
   }
 
   /// Web requires [kFcmWebVapidKey]; native uses default APNs/FCM registration.
-  static Future<String?> _getFcmToken() {
+  static Future<String?> _getFcmToken() async {
     if (kIsWeb) {
-      if (!fcmWebVapidKeyConfigured) return Future.value(null);
+      if (!fcmWebVapidKeyConfigured) return null;
       return _messaging.getToken(vapidKey: kFcmWebVapidKey);
+    }
+    if (NotificationFcmPlatform.isIOS) {
+      return _getFcmTokenWithIosApnsRetry();
     }
     return _messaging.getToken();
   }
 
-  static Future<void> _registerFCMToken() async {
-    final token = await _getFcmToken();
-    debugPrint('FCM token: $token');
+  static bool _isApnsTokenNotSetError(Object e) {
+    final text = e.toString().toLowerCase();
+    return text.contains('apns-token-not-set') ||
+        text.contains('apns token has not been received');
+  }
 
-    final uid = FirebaseAuth.instance.currentUser?.uid;
-    if (uid != null) {
-      await saveTokenToFirestore(uid);
+  /// iOS may not have an APNS token at cold start (simulator/device timing).
+  static Future<String?> _getFcmTokenWithIosApnsRetry() async {
+    const attempts = 5;
+    const delay = Duration(milliseconds: 800);
+
+    for (var attempt = 0; attempt < attempts; attempt++) {
+      try {
+        final apnsToken = await _messaging.getAPNSToken();
+        if (apnsToken == null && attempt < attempts - 1) {
+          await Future<void>.delayed(delay);
+          continue;
+        }
+        return await _messaging.getToken();
+      } catch (e) {
+        if (_isApnsTokenNotSetError(e) && attempt < attempts - 1) {
+          await Future<void>.delayed(delay);
+          continue;
+        }
+        if (_isApnsTokenNotSetError(e)) {
+          _scheduleIosFcmTokenRetry();
+          return null;
+        }
+        rethrow;
+      }
+    }
+
+    _scheduleIosFcmTokenRetry();
+    return null;
+  }
+
+  static void _scheduleIosFcmTokenRetry() {
+    if (kIsWeb || !NotificationFcmPlatform.isIOS) return;
+    _iosFcmTokenRetryTimer?.cancel();
+    _iosFcmTokenRetryTimer = Timer(const Duration(seconds: 5), () {
+      unawaited(_registerFCMToken());
+    });
+  }
+
+  static Future<void> _registerFCMToken() async {
+    try {
+      final token = await _getFcmToken();
+      if (token == null || token.isEmpty) return;
+
+      debugPrint('FCM token: $token');
+
+      final uid = FirebaseAuth.instance.currentUser?.uid;
+      if (uid != null) {
+        await saveTokenToFirestore(uid);
+      }
+    } catch (e, st) {
+      if (_isApnsTokenNotSetError(e)) {
+        _scheduleIosFcmTokenRetry();
+        return;
+      }
+      debugPrint('FCM token registration failed: $e\n$st');
     }
   }
 
@@ -611,6 +669,12 @@ class NotificationFCMService {
       }
 
       return true;
+    } on FirebaseException catch (e) {
+      if (kIsWeb && e.code == 'permission-denied') {
+        return false;
+      }
+      debugPrint('saveTokenToFirestore error: $e');
+      return false;
     } catch (e, st) {
       debugPrint('saveTokenToFirestore error: $e\n$st');
       return false;

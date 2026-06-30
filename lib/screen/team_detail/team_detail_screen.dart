@@ -130,15 +130,17 @@ class _TeamDetailScreenState extends State<TeamDetailScreen> {
     }
   }
 
-  /// Legacy managers ([widget.isManager]) or Grinta team owners ([Team.uid]).
+  /// Managers ([widget.isManager]), Grinta owners ([Team.uid]), or entries in
+  /// [Team.managers] for the signed-in Firebase user.
   bool _canManageTeam(BuildContext context) {
-    if (widget.isManager) {
-      return true;
-    }
     final String? currentUserUid =
         context.read<AppSession>().user?.uid ??
         FirebaseAuth.instance.currentUser?.uid;
-    return isTeamOwner(_team, currentUserUid);
+    return canManageTeam(
+      _serverTeam ?? _team,
+      currentUserUid,
+      isManager: widget.isManager,
+    );
   }
 
   /// Roster mutations are disabled when players are managed in another app.

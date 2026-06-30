@@ -80,6 +80,10 @@
 		<string>Grinta needs camera access to take photos for chat attachments.</string>
 		<key>NSPhotoLibraryUsageDescription</key>
 		<string>Grinta needs photo library access to share images in team chat.</string>
+		<key>NSCalendarsUsageDescription</key>
+		<string>Grinta synchronise vos matchs et entraînements avec le calendrier de votre téléphone. / Grinta syncs your matches and training sessions with your phone calendar.</string>
+		<key>NSCalendarsFullAccessUsageDescription</key>
+		<string>Grinta synchronise vos matchs et entraînements avec le calendrier de votre téléphone. / Grinta syncs your matches and training sessions with your phone calendar.</string>
 		<key>CFBundleURLTypes</key>
 		<array>
 			<dict>
@@ -88,6 +92,14 @@
 				<key>CFBundleURLSchemes</key>
 				<array>
 					<string>com.googleusercontent.apps.626293600533-mo43u2rcr958qudvq7gfgn578pua44j3</string>
+				</array>
+			</dict>
+			<dict>
+				<key>CFBundleTypeRole</key>
+				<string>Editor</string>
+				<key>CFBundleURLSchemes</key>
+				<array>
+					<string>grinta</string>
 				</array>
 			</dict>
 		</array>

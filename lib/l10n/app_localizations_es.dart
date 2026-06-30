@@ -1962,6 +1962,24 @@ class AppLocalizationsEs extends AppLocalizations {
   }
 
   @override
+  String get agendaAddEventTitle => 'Crear';
+
+  @override
+  String get agendaAddEventMatch => 'Un partido / encuentro';
+
+  @override
+  String get agendaAddEventTraining => 'Una sesión de entrenamiento';
+
+  @override
+  String get agendaAddEventPersonalSport => 'Una actividad deportiva personal';
+
+  @override
+  String get agendaAddEventPersonalSportHint => 'Running, preparación, …';
+
+  @override
+  String get agendaAddEventNonSport => 'Un evento / actividad no deportiva';
+
+  @override
   String get agendaLegend => 'Leyenda';
 
   @override
@@ -2643,4 +2661,35 @@ class AppLocalizationsEs extends AppLocalizations {
   String teamDeleteSuccess(String teamName) {
     return 'El equipo «$teamName» ha sido eliminado.';
   }
+
+  @override
+  String get calendarSyncToggleLabel => 'Sync. calendario';
+
+  @override
+  String get calendarSyncToggleSubtitle =>
+      'Partidos y entrenamientos del perfil seleccionado';
+
+  @override
+  String get calendarSyncWebSubtitle =>
+      'Descarga un archivo ICS para importarlo en tu calendario';
+
+  @override
+  String get calendarSyncWebRedownloadHint =>
+      'Toca para volver a descargar el archivo del calendario';
+
+  @override
+  String get calendarSyncWebDownloaded =>
+      'Archivo de calendario descargado. Impórtalo en tu aplicación de calendario.';
+
+  @override
+  String get calendarSyncPermissionDenied =>
+      'Se denegó el acceso al calendario. Actívalo en los ajustes del dispositivo.';
+
+  @override
+  String get calendarSyncCalendarCreationFailed =>
+      'No se pudo crear el calendario de Grinta en este dispositivo.';
+
+  @override
+  String get calendarSyncEnableFailed =>
+      'No se pudo activar la sincronización del calendario. Inténtalo de nuevo.';
 }

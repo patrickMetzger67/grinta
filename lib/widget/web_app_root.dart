@@ -1,3 +1,5 @@
+import 'dart:async' show unawaited;
+
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
@@ -6,6 +8,7 @@ import 'package:grinta/provider/appSession.dart';
 import 'package:grinta/screen/agendaScreen.dart';
 import 'package:grinta/screen/dashboardScreen.dart';
 import 'package:grinta/screen/teamsListScreen.dart';
+import 'package:grinta/services/calendar_sync_service.dart';
 import 'package:grinta/services/matchService.dart';
 import 'package:grinta/services/teamWorkloadSummaryService.dart';
 import 'package:grinta/services/trainingService.dart';
@@ -19,8 +22,6 @@ import 'package:grinta/widget/app_session_player_season_selector.dart';
 import 'package:provider/provider.dart';
 
 import '../model/agendaItem.dart';
-import '../screen/compo_screen.dart';
-import '../screen/field_localization_screen.dart';
 import '../screen/responsive_chat.dart';
 import '../screen/syncScreen.dart';
 import '../screen/teamDetailScreen.dart';
@@ -65,11 +66,35 @@ class _WebAppRootState extends State<WebAppRoot> {
     final timestampNow = Timestamp.now();
 
 
-    for (final t in appSession.selectedTeams) {
+    final seasonId = appSession.selectedSeason?.ref?.id;
+    final teams = appSession.teamsForAgendaSelectedSeason;
+
+    if (kDebugMode) {
+      debugPrint(
+        'Agenda load: seasonId=$seasonId teams=${teams.length} '
+        'memberTeams=${appSession.memberTeamsForSelectedSeason.length} '
+        'range=$start → $end',
+      );
+    }
+
+    var totalMatches = 0;
+    var totalTrainings = 0;
+
+    for (final t in teams) {
       if (t.keyTeam == null) continue;
 
-      final matchsWrk = await MatchService().getMatchesByTeamIdBetweenDates(
+      if (kDebugMode) {
+        debugPrint(
+          'Agenda load team: name=${t.name} keyTeam=${t.keyTeam} '
+          'clubId=${t.clubId ?? '(empty)'}',
+        );
+      }
+
+      final matchsWrk =
+          await MatchService().getMatchesForTeamEngagementsBetweenDates(
         teamId: t.keyTeam!,
+        clubId: t.clubId ?? '',
+        seasonId: seasonId,
         start: Timestamp.fromDate(start),
         end: Timestamp.fromDate(end),
         /*
@@ -90,6 +115,8 @@ class _WebAppRootState extends State<WebAppRoot> {
          */
       );
 
+      totalMatches += matchsWrk.length;
+
       for (final m in matchsWrk) {
         DateTime? startAt;
         if (m.timestamp != null) {
@@ -101,7 +128,14 @@ class _WebAppRootState extends State<WebAppRoot> {
           ).toDate();
         }
 
-        if (startAt == null) continue;
+        if (startAt == null) {
+          if (kDebugMode) {
+            debugPrint(
+              'Agenda match skip: id=${m.id} no timestamp/dateCh+timeCh',
+            );
+          }
+          continue;
+        }
 
         final DateTime endAt = startAt.add(const Duration(minutes: 90));
 
@@ -126,6 +160,8 @@ class _WebAppRootState extends State<WebAppRoot> {
           ),
         );
       }
+
+      totalTrainings += trainingsWrk.length;
 
       for (final tr in trainingsWrk) {
         if (tr.dateTime == null) continue;
@@ -163,16 +199,23 @@ class _WebAppRootState extends State<WebAppRoot> {
       unique['${item.type.name}_${item.id}'] = item;
     }
 
-    return unique.values.toList()
+    final items = unique.values.toList()
       ..sort((a, b) => a.startAt.compareTo(b.startAt));
-  }
 
-  void _onAddEvent() {
-    debugPrint('player=${appSession.selectedPlayerId}');
-    debugPrint('season=${appSession.selectedSeason?.ref?.id}');
-    debugPrint(
-      'teams=${appSession.selectedTeams.map((e) => e.name).toList()}',
+    if (kDebugMode) {
+      debugPrint(
+        'Agenda load done: rawMatches=$totalMatches rawTrainings=$totalTrainings '
+        'agendaItems=${items.length}',
+      );
+    }
+
+    unawaited(
+      CalendarSyncService.instance.maybeSyncAfterAgendaLoad(
+        appSession: appSession,
+      ),
     );
+
+    return items;
   }
 
   @override
@@ -193,13 +236,18 @@ class _WebAppRootState extends State<WebAppRoot> {
           (session) => session.selectedTeams.length,
     );
 
+    final agendaTeamsKey = context.select<AppSession, String>(
+          (session) => session.agendaTeamsKey,
+    );
+
     final l10n = context.l10n;
     final localeCode = Localizations.localeOf(context).languageCode;
 
     final agendaPage = AgendaScreen(
-      key: ValueKey('agenda-$selectedPlayerId-$selectedSeasonId-$localeCode'),
+      key: ValueKey(
+        'agenda-$selectedPlayerId-$selectedSeasonId-$agendaTeamsKey-$localeCode',
+      ),
       loadItems: _loadAgendaItems,
-      onAddEvent: _onAddEvent,
     );
 
     final bool isMobileNative = !kIsWeb &&
@@ -274,24 +322,6 @@ class _WebAppRootState extends State<WebAppRoot> {
                 screenName: AnalyticsScreenNames.sync,
                 featureId: FeatureDiscoveryIds.tabSync,
               ),
-              if (getManagedTeamsIds.isNotEmpty) ...[
-                WebShellItem(
-                  label: l10n.navFields,
-                  icon: Icons.stadium_outlined,
-                  page: const FootballFieldLocalizationScreen(),
-                  screenName: AnalyticsScreenNames.fields,
-                  featureId: FeatureDiscoveryIds.tabFields,
-                ),
-              ],
-              if (getManagedTeamsIds.isNotEmpty) ...[
-                WebShellItem(
-                  label: l10n.navCompo,
-                  icon: Icons.groups_outlined,
-                  page: const CompoScreen(),
-                  screenName: AnalyticsScreenNames.compo,
-                  featureId: FeatureDiscoveryIds.tabCompo,
-                ),
-              ],
             ],
           )
         : isMobileNative

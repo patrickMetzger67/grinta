@@ -1,6 +1,7 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:grinta/core/extensions/l10n_extension.dart';
+import 'package:grinta/model/player.dart';
 import 'package:grinta/model/team.dart';
 import 'package:grinta/provider/appSession.dart';
 import 'package:grinta/analytics/analytics_routes.dart';
@@ -8,18 +9,29 @@ import 'package:grinta/analytics/analytics_screen_names.dart';
 import 'package:grinta/screen/teamDetailScreen.dart';
 import 'package:grinta/services/user_trial_service.dart';
 import 'package:grinta/util/app_theme.dart';
+import 'package:grinta/util/player_positions.dart';
 import 'package:grinta/util/team_deletion_access.dart';
 import 'package:grinta/widget/subscription_paywall.dart';
 import 'package:provider/provider.dart';
 
-/// Free accounts cannot open team detail for teams they own.
-bool isTeamDetailBlockedForUser(Team team, String? currentUserUid) {
-  if (!UserTrialService.instance.hasPremiumAccess) {
-    if (isTeamOwner(team, currentUserUid)) {
-      return true;
-    }
+/// Free member-profile field players cannot open team detail for teams they own.
+bool isTeamDetailBlockedForUser(
+  Team team,
+  String? currentUserUid, {
+  Player? memberProfile,
+}) {
+  if (!isTeamOwner(team, currentUserUid)) {
+    return false;
   }
-  return false;
+  if (UserTrialService.instance.hasPremiumAccess) {
+    return false;
+  }
+  final Iterable<int> positionCodes =
+      memberProfile?.positionCodes ?? const <int>[];
+  if (hasStaffProfilePositionCodes(positionCodes)) {
+    return false;
+  }
+  return hasMemberProfileFieldPlayerRole(positionCodes);
 }
 
 /// Blocks navigation and prompts upgrade when a free player taps their team.
@@ -31,7 +43,11 @@ Future<bool> ensureCanOpenTeamDetail(
   final String? currentUserUid =
       appSession.user?.uid ?? FirebaseAuth.instance.currentUser?.uid;
 
-  if (!isTeamDetailBlockedForUser(team, currentUserUid)) {
+  if (!isTeamDetailBlockedForUser(
+    team,
+    currentUserUid,
+    memberProfile: appSession.selectedPlayer,
+  )) {
     return true;
   }
 

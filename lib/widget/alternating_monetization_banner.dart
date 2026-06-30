@@ -1,3 +1,5 @@
+import 'dart:async' show unawaited;
+
 import 'package:flutter/material.dart';
 import 'package:grinta/services/monetization_banner_rotation_service.dart';
 import 'package:grinta/services/shopify_storefront_service.dart';
@@ -42,7 +44,9 @@ class _AlternatingMonetizationBannerState
   }
 
   void _onSubscriptionChanged() {
-    _resolveBanner();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) unawaited(_resolveBanner());
+    });
   }
 
   Future<void> _resolveBanner() async {

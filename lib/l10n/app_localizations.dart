@@ -3579,6 +3579,42 @@ abstract class AppLocalizations {
   /// **'Période chargée : {range}'**
   String periodLoaded(String range);
 
+  /// No description provided for @agendaAddEventTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Créer'**
+  String get agendaAddEventTitle;
+
+  /// No description provided for @agendaAddEventMatch.
+  ///
+  /// In fr, this message translates to:
+  /// **'Une rencontre / match'**
+  String get agendaAddEventMatch;
+
+  /// No description provided for @agendaAddEventTraining.
+  ///
+  /// In fr, this message translates to:
+  /// **'Une session d\'entraînement'**
+  String get agendaAddEventTraining;
+
+  /// No description provided for @agendaAddEventPersonalSport.
+  ///
+  /// In fr, this message translates to:
+  /// **'Une activité sportive personnelle'**
+  String get agendaAddEventPersonalSport;
+
+  /// No description provided for @agendaAddEventPersonalSportHint.
+  ///
+  /// In fr, this message translates to:
+  /// **'Running, préparation, …'**
+  String get agendaAddEventPersonalSportHint;
+
+  /// No description provided for @agendaAddEventNonSport.
+  ///
+  /// In fr, this message translates to:
+  /// **'Un évènement / activité non sportive'**
+  String get agendaAddEventNonSport;
+
   /// No description provided for @agendaLegend.
   ///
   /// In fr, this message translates to:
@@ -4712,6 +4748,54 @@ abstract class AppLocalizations {
   /// In fr, this message translates to:
   /// **'L\'équipe « {teamName} » a été supprimée.'**
   String teamDeleteSuccess(String teamName);
+
+  /// No description provided for @calendarSyncToggleLabel.
+  ///
+  /// In fr, this message translates to:
+  /// **'Sync. calendrier'**
+  String get calendarSyncToggleLabel;
+
+  /// No description provided for @calendarSyncToggleSubtitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Matchs et entraînements du profil sélectionné'**
+  String get calendarSyncToggleSubtitle;
+
+  /// No description provided for @calendarSyncWebSubtitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Télécharge un fichier ICS à importer dans ton calendrier'**
+  String get calendarSyncWebSubtitle;
+
+  /// No description provided for @calendarSyncWebRedownloadHint.
+  ///
+  /// In fr, this message translates to:
+  /// **'Appuie pour télécharger à nouveau le fichier calendrier'**
+  String get calendarSyncWebRedownloadHint;
+
+  /// No description provided for @calendarSyncWebDownloaded.
+  ///
+  /// In fr, this message translates to:
+  /// **'Fichier calendrier téléchargé. Importe-le dans ton application de calendrier.'**
+  String get calendarSyncWebDownloaded;
+
+  /// No description provided for @calendarSyncPermissionDenied.
+  ///
+  /// In fr, this message translates to:
+  /// **'L\'accès au calendrier a été refusé. Activez-le dans les réglages de l\'appareil.'**
+  String get calendarSyncPermissionDenied;
+
+  /// No description provided for @calendarSyncCalendarCreationFailed.
+  ///
+  /// In fr, this message translates to:
+  /// **'Impossible de créer le calendrier Grinta sur cet appareil.'**
+  String get calendarSyncCalendarCreationFailed;
+
+  /// No description provided for @calendarSyncEnableFailed.
+  ///
+  /// In fr, this message translates to:
+  /// **'La synchronisation du calendrier n\'a pas pu être activée. Réessayez.'**
+  String get calendarSyncEnableFailed;
 }
 
 class _AppLocalizationsDelegate

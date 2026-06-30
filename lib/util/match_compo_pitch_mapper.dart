@@ -4,6 +4,57 @@ import '../model/matchCompo.dart';
 import '../model/player.dart';
 import '../widget/half_pitch_compo_widget.dart';
 
+List<String> normalizeTeamIdList(Iterable<dynamic> rawIds) {
+  return rawIds
+      .map((dynamic raw) => raw?.toString().trim() ?? '')
+      .where((String id) => id.isNotEmpty)
+      .toList();
+}
+
+/// Équipes du profil pertinentes pour un match (intersection avec [match.teams]).
+List<String> profileTeamIdsForMatch({
+  required List<String> profileTeamIds,
+  required models.Match match,
+}) {
+  final Set<String> profileIds = normalizeTeamIdList(profileTeamIds).toSet();
+  if (profileIds.isEmpty) return const <String>[];
+
+  final Set<String> matchTeamIds =
+      normalizeTeamIdList(match.teams ?? const <dynamic>[]).toSet();
+  if (matchTeamIds.isEmpty) return profileIds.toList();
+
+  final List<String> intersection =
+      profileIds.where(matchTeamIds.contains).toList();
+  return intersection.isNotEmpty ? intersection : profileIds.toList();
+}
+
+/// Choisit la compo du match appartenant au profil (plusieurs équipes possibles).
+MatchCompo? pickMatchCompoForProfileTeams(
+  List<MatchCompo> compos, {
+  required List<String> profileTeamIds,
+  String? preferredTeamId,
+}) {
+  final Set<String> allowed = normalizeTeamIdList(profileTeamIds).toSet();
+  if (allowed.isEmpty) return null;
+
+  final List<MatchCompo> filtered = compos.where((MatchCompo compo) {
+    final String teamId = compo.teamID?.trim() ?? '';
+    return teamId.isNotEmpty && allowed.contains(teamId);
+  }).toList();
+
+  if (filtered.isEmpty) return null;
+  if (filtered.length == 1) return filtered.first;
+
+  final String? preferred = preferredTeamId?.trim();
+  if (preferred != null && preferred.isNotEmpty) {
+    for (final MatchCompo compo in filtered) {
+      if (compo.teamID?.trim() == preferred) return compo;
+    }
+  }
+
+  return filtered.first;
+}
+
 /// Identifiant d'équipe Grinta pour un match (teamID, compo ou liste `teams`).
 String? resolveTeamIdForMatch(
   models.Match match, {
@@ -24,6 +75,31 @@ String? resolveTeamIdForMatch(
   for (final raw in linkedTeams) {
     final id = raw?.toString().trim() ?? '';
     if (id.isNotEmpty) return id;
+  }
+
+  return null;
+}
+
+/// Nom affiché (team1/team2) pour un identifiant d'équipe Grinta du match.
+String? teamDisplayNameForTeamId(models.Match match, String? teamId) {
+  final String? id = teamId?.trim();
+  if (id == null || id.isEmpty) return null;
+
+  final String? primaryId = match.teamID?.trim();
+  if (primaryId != null && primaryId.isNotEmpty && primaryId == id) {
+    final String? name = match.team1?.trim();
+    if (name != null && name.isNotEmpty) return name;
+  }
+
+  final List<String> linkedTeamIds =
+      normalizeTeamIdList(match.teams ?? const <dynamic>[]);
+  if (linkedTeamIds.isNotEmpty && linkedTeamIds.first == id) {
+    final String? name = match.team1?.trim();
+    if (name != null && name.isNotEmpty) return name;
+  }
+  if (linkedTeamIds.length > 1 && linkedTeamIds[1] == id) {
+    final String? name = match.team2?.trim();
+    if (name != null && name.isNotEmpty) return name;
   }
 
   return null;

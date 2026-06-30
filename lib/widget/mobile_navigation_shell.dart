@@ -6,8 +6,6 @@ import 'package:grinta/core/extensions/l10n_extension.dart';
 import 'package:grinta/main.dart';
 import 'package:grinta/model/player.dart';
 import 'package:grinta/provider/appSession.dart';
-import 'package:grinta/screen/compo_screen.dart';
-import 'package:grinta/screen/field_localization_screen.dart';
 import 'package:grinta/screen/teamDetailScreen.dart';
 import 'package:grinta/screen/teamsListScreen.dart';
 import 'package:grinta/util/app_theme.dart';
@@ -29,6 +27,7 @@ import 'package:grinta/widget/app_shell_scope.dart';
 import 'package:grinta/widget/account_create_profile_entry.dart';
 import 'package:grinta/widget/edit_member_profile.dart';
 import 'package:grinta/widget/nav_icon_count_badge.dart';
+import 'package:grinta/widget/calendar_sync_toggle.dart';
 import 'package:grinta/widget/subscription_details_sheet.dart';
 import 'package:provider/provider.dart';
 
@@ -348,6 +347,10 @@ class _MobileNavigationShellState extends State<MobileNavigationShell> {
                     ),
                   ),
                 ),
+                const Padding(
+                  padding: EdgeInsets.symmetric(horizontal: 16),
+                  child: CalendarSyncToggle(contentPadding: EdgeInsets.zero),
+                ),
                 const Divider(height: 1),
                 ListenableBuilder(
                   listenable: SubscriptionService.instance,
@@ -465,7 +468,6 @@ class _MobileNavigationShellState extends State<MobileNavigationShell> {
           builder: (context, appSession, _) {
             final managedTeamsIds =
                 appSession.managedTeamsIdsForSelectedSeason;
-            final showManagerTools = managedTeamsIds.isNotEmpty;
             final teamCount = appSession.selectedTeams.length;
 
             return SafeArea(
@@ -533,45 +535,6 @@ class _MobileNavigationShellState extends State<MobileNavigationShell> {
                         );
                       },
                     ),
-                    if (showManagerTools) ...[
-                      ListTile(
-                        leading: Icon(
-                          Icons.stadium_outlined,
-                          color: colors.primary,
-                        ),
-                        title: Text(l10n.navFields),
-                        onTap: () {
-                          closeSheetThen(
-                            () => navigator.push(
-                              analyticsMaterialRoute<void>(
-                                screenName: AnalyticsScreenNames.fields,
-                                builder: (_) =>
-                                    const FootballFieldLocalizationScreen(),
-                              ),
-                            ),
-                            sheetContext,
-                          );
-                        },
-                      ),
-                      ListTile(
-                        leading: Icon(
-                          Icons.groups_outlined,
-                          color: colors.primary,
-                        ),
-                        title: Text(l10n.navCompo),
-                        onTap: () {
-                          closeSheetThen(
-                            () => navigator.push(
-                              analyticsMaterialRoute<void>(
-                                screenName: AnalyticsScreenNames.compo,
-                                builder: (_) => const CompoScreen(),
-                              ),
-                            ),
-                            sheetContext,
-                          );
-                        },
-                      ),
-                    ],
                     const Divider(height: 1),
                     ListTile(
                       leading: Icon(

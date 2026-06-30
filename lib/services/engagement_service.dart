@@ -1,4 +1,5 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:flutter/foundation.dart';
 
 import '../model/engagement.dart';
 
@@ -100,6 +101,88 @@ class EngagementService {
     required String seasonId,
   }) =>
       streamByClubIdAndSeasonId(clubId: clubId, seasonId: seasonId);
+
+  /// READ ALL where [teamId] is listed in [teamIds].
+  Future<List<Engagement>> getByTeamIdInTeamIds(String teamId) async {
+    final trimmedTeamId = teamId.trim();
+    if (trimmedTeamId.isEmpty) {
+      return <Engagement>[];
+    }
+
+    final snapshot = await _collection
+        .where(keyEngagementTeamIds, arrayContains: trimmedTeamId)
+        .get();
+
+    return snapshot.docs.map(fromFirestore).toList();
+  }
+
+  /// Engagements linked to [teamId] for agenda match loading.
+  ///
+  /// Merges documents where [teamId] appears in [teamIds] or in legacy
+  /// [teamId], optionally filtered to [seasonId] when provided.
+  Future<List<Engagement>> getEngagementsForTeamAgenda({
+    required String teamId,
+    String? seasonId,
+  }) async {
+    final trimmedTeamId = teamId.trim();
+    if (trimmedTeamId.isEmpty) {
+      return <Engagement>[];
+    }
+
+    final trimmedSeasonId = seasonId?.trim() ?? '';
+    final Map<String, Engagement> byDocumentId = <String, Engagement>{};
+
+    void absorb(Iterable<Engagement> engagements) {
+      for (final Engagement engagement in engagements) {
+        final String? documentId = engagement.ref?.id;
+        if (documentId == null || documentId.isEmpty) {
+          continue;
+        }
+
+        if (trimmedSeasonId.isNotEmpty) {
+          final String engagementSeasonId = engagement.seasonId?.trim() ?? '';
+          if (engagementSeasonId.isNotEmpty &&
+              engagementSeasonId != trimmedSeasonId) {
+            continue;
+          }
+        }
+
+        byDocumentId[documentId] = engagement;
+      }
+    }
+
+    final List<Engagement> fromTeamIds =
+        await getByTeamIdInTeamIds(trimmedTeamId);
+    final List<Engagement> fromLegacyTeamId =
+        await getByTeamId(trimmedTeamId);
+
+    absorb(fromTeamIds);
+    absorb(fromLegacyTeamId);
+
+    if (kDebugMode) {
+      debugPrint(
+        'Agenda engagements: teamId=$trimmedTeamId '
+        'seasonId=${trimmedSeasonId.isEmpty ? '(any)' : trimmedSeasonId} '
+        'fromTeamIds=${fromTeamIds.length} '
+        'fromLegacyTeamId=${fromLegacyTeamId.length} '
+        'merged=${byDocumentId.length}',
+      );
+    }
+
+    return byDocumentId.values.toList();
+  }
+
+  Stream<List<Engagement>> streamByTeamIdInTeamIds(String teamId) {
+    final trimmedTeamId = teamId.trim();
+    if (trimmedTeamId.isEmpty) {
+      return Stream<List<Engagement>>.value(<Engagement>[]);
+    }
+
+    return _collection
+        .where(keyEngagementTeamIds, arrayContains: trimmedTeamId)
+        .snapshots()
+        .map((snapshot) => snapshot.docs.map(fromFirestore).toList());
+  }
 
   /// READ ALL for a team.
   Future<List<Engagement>> getByTeamId(String teamId) async {

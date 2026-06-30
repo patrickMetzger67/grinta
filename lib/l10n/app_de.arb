@@ -879,5 +879,21 @@
     "placeholders": {
       "teamName": { "type": "String" }
     }
-  }
+  },
+
+  "agendaAddEventTitle": "Erstellen",
+  "agendaAddEventMatch": "Ein Spiel / Match",
+  "agendaAddEventTraining": "Eine Trainingseinheit",
+  "agendaAddEventPersonalSport": "Eine persönliche Sportaktivität",
+  "agendaAddEventPersonalSportHint": "Laufen, Vorbereitung, …",
+  "agendaAddEventNonSport": "Ein nicht-sportliches Ereignis / Aktivität",
+
+  "calendarSyncToggleLabel": "Kalender-Sync",
+  "calendarSyncToggleSubtitle": "Spiele und Trainingseinheiten des ausgewählten Profils",
+  "calendarSyncWebSubtitle": "ICS-Datei herunterladen und in den Kalender importieren",
+  "calendarSyncWebRedownloadHint": "Tippen, um die Kalenderdatei erneut herunterzuladen",
+  "calendarSyncWebDownloaded": "Kalenderdatei heruntergeladen. Importiere sie in deine Kalender-App.",
+  "calendarSyncPermissionDenied": "Kalenderzugriff wurde verweigert. Aktivieren Sie ihn in den Geräteeinstellungen.",
+  "calendarSyncCalendarCreationFailed": "Der Grinta-Kalender konnte auf diesem Gerät nicht erstellt werden.",
+  "calendarSyncEnableFailed": "Kalendersynchronisation konnte nicht aktiviert werden. Bitte versuchen Sie es erneut."
 }

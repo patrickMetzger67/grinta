@@ -12,6 +12,7 @@ import 'package:grinta/services/seasonService.dart';
 import 'package:grinta/services/teamService.dart';
 import 'package:grinta/services/user_avatar_service.dart';
 import 'package:grinta/util/player_photo_resolver.dart';
+import 'package:grinta/util/team_list_visibility.dart';
 
 class AppSession extends ChangeNotifier {
   User? user;
@@ -123,22 +124,27 @@ class AppSession extends ChangeNotifier {
   }
 
   List<String> get managedTeamsIdsForSelectedSeason {
-    List<String> ids = [];
-
     final String? seasonId = selectedSeason?.ref?.id;
-    if (seasonId == null) return ids;
+    if (seasonId == null) return const <String>[];
 
-    Map<String, Map<String, Team>>? teamsAsManager = _teamsAsManagerData[selectedPlayerId];
-    if(teamsAsManager == null || teamsAsManager.isEmpty) return ids;
-    Map<String, Team>? teamsForSeasonId = teamsAsManager[seasonId];
-    if(teamsForSeasonId == null || teamsForSeasonId.isEmpty) return ids;
+    final Set<String> ids = <String>{};
 
-
-    for (final entry in teamsForSeasonId.entries) {
-        final String teamId = entry.key;
-        ids.add(teamId);
+    final Map<String, Map<String, Team>>? teamsAsManager =
+        _teamsAsManagerData[selectedPlayerId];
+    final Map<String, Team>? managerTeamsForSeason =
+        teamsAsManager?[seasonId];
+    if (managerTeamsForSeason != null) {
+      ids.addAll(managerTeamsForSeason.keys);
     }
-    return ids;
+
+    final Map<String, Map<String, Team>>? teamsAsOwner =
+        _teamsAsOwnerData[selectedPlayerId];
+    final Map<String, Team>? ownedTeamsForSeason = teamsAsOwner?[seasonId];
+    if (ownedTeamsForSeason != null) {
+      ids.addAll(ownedTeamsForSeason.keys);
+    }
+
+    return ids.toList();
   }
 
 
@@ -287,20 +293,16 @@ class AppSession extends ChangeNotifier {
           teamsList: teamsAsGrintaPlayer,
         );
 
-        if (_isManagerCarrier(player, firebaseUser.uid)) {
-          final List<Team> teamsAsManager =
-          await TeamService().getTeamsForAManger(firebaseUser.uid);
+        final List<Team> teamsAsManager =
+            await TeamService().getTeamsForAManger(firebaseUser.uid);
 
-          if (!_isCurrentGeneration(generation, firebaseUser.uid)) return;
+        if (!_isCurrentGeneration(generation, firebaseUser.uid)) return;
 
-          _replaceTeamsForPlayerSource(
-            playerId: playerId,
-            teamsList: teamsAsManager,
-            asPlayer: false,
-          );
-        } else {
-          _teamsAsManagerData[playerId] = <String, Map<String, Team>>{};
-        }
+        _replaceTeamsForPlayerSource(
+          playerId: playerId,
+          teamsList: teamsAsManager,
+          asPlayer: false,
+        );
       }
 
       final List<Team> teamsAsOwner =
@@ -544,30 +546,25 @@ class AppSession extends ChangeNotifier {
           },
         );
 
-    if (_isManagerCarrier(player, firebaseUid)) {
-      _teamsAsManagerSubs[playerId] ??=
-          TeamService().watchTeamsForAManger(firebaseUid).listen(
-                (teamsList) {
-              if (!_isCurrentGeneration(generation, firebaseUid)) return;
+    _teamsAsManagerSubs[playerId] ??=
+        TeamService().watchTeamsForAManger(firebaseUid).listen(
+              (teamsList) {
+            if (!_isCurrentGeneration(generation, firebaseUid)) return;
 
-              _replaceTeamsForPlayerSource(
-                playerId: playerId,
-                teamsList: teamsList,
-                asPlayer: false,
-              );
-              _rebuildMergedTeamsAndSeasons();
-              _syncSelectedPlayerAndSeason();
-              _safeNotify();
-            },
-            onError: (Object e, StackTrace stackTrace) {
-              debugPrint('Erreur watchTeamsForAManger($firebaseUid): $e');
-              debugPrint('$stackTrace');
-            },
-          );
-    } else {
-      unawaited(_teamsAsManagerSubs.remove(playerId)?.cancel());
-      _teamsAsManagerData[playerId] = <String, Map<String, Team>>{};
-    }
+            _replaceTeamsForPlayerSource(
+              playerId: playerId,
+              teamsList: teamsList,
+              asPlayer: false,
+            );
+            _rebuildMergedTeamsAndSeasons();
+            _syncSelectedPlayerAndSeason();
+            _safeNotify();
+          },
+          onError: (Object e, StackTrace stackTrace) {
+            debugPrint('Erreur watchTeamsForAManger($firebaseUid): $e');
+            debugPrint('$stackTrace');
+          },
+        );
   }
 
   void _replaceTeamsForPlayerSource({
@@ -707,6 +704,9 @@ class AppSession extends ChangeNotifier {
     playerIds.addAll(_teamsAsGrintaPlayerData.keys);
     playerIds.addAll(_teamsAsOwnerData.keys);
 
+    final Map<String, Player> playerMap =
+        user != null ? (players[user!.uid] ?? const <String, Player>{}) : const <String, Player>{};
+
     for (final String playerId in playerIds) {
       final Map<String, Map<String, Team>> mergedSeasonMap = {};
 
@@ -738,6 +738,22 @@ class AppSession extends ChangeNotifier {
         target: mergedSeasonMap,
         source: sourceAsOwner,
       );
+
+      final Player? memberProfile = playerMap[playerId];
+      if (memberProfile != null &&
+          !memberProfileShowsNonRosterOwnedTeams(memberProfile)) {
+        for (final MapEntry<String, Map<String, Team>> seasonEntry
+            in mergedSeasonMap.entries.toList()) {
+          final Map<String, Team> teamMap = seasonEntry.value;
+          teamMap.removeWhere(
+            (String teamId, Team team) =>
+                !shouldIncludeTeamInMemberProfileList(team, memberProfile),
+          );
+          if (teamMap.isEmpty) {
+            mergedSeasonMap.remove(seasonEntry.key);
+          }
+        }
+      }
 
       mergedTeams[playerId] = mergedSeasonMap;
 
@@ -1406,8 +1422,76 @@ class AppSession extends ChangeNotifier {
     return selectedTeamsMap.values.toList();
   }
 
-  bool _isManagerCarrier(Player player, String firebaseUid) {
-    return player.userID == firebaseUid;
+  /// Identifiants d'équipes du profil sélectionné pour la saison courante.
+  List<String> get teamIdsForSelectedSeason {
+    return teamsForAgendaSelectedSeason
+        .map((Team team) => team.keyTeam)
+        .whereType<String>()
+        .map((String id) => id.trim())
+        .where((String id) => id.isNotEmpty)
+        .toList();
+  }
+
+  /// Teams where the selected player is on the roster or a Grinta member,
+  /// for the selected season (excludes manager/owner-only access).
+  List<Team> get memberTeamsForSelectedSeason {
+    final String? playerId = selectedPlayerId;
+    final String? seasonId = selectedSeason?.ref?.id;
+    if (playerId == null || seasonId == null) {
+      return const <Team>[];
+    }
+
+    final Map<String, Team> merged = <String, Team>{};
+
+    void absorb(Map<String, Map<String, Map<String, Team>>> source) {
+      final Map<String, Team>? seasonTeams = source[playerId]?[seasonId];
+      if (seasonTeams != null) {
+        merged.addAll(seasonTeams);
+      }
+    }
+
+    absorb(_teamsAsPlayerData);
+    absorb(_teamsAsGrintaPlayerData);
+
+    return merged.values.toList();
+  }
+
+  /// Teams whose matches/trainings should appear on the agenda for the
+  /// selected season (roster, Grinta member, manager, or owner).
+  List<Team> get teamsForAgendaSelectedSeason {
+    final String? playerId = selectedPlayerId;
+    final String? seasonId = selectedSeason?.ref?.id;
+    if (playerId == null || seasonId == null) {
+      return const <Team>[];
+    }
+
+    final Map<String, Team> merged = <String, Team>{};
+
+    void absorb(Map<String, Map<String, Map<String, Team>>> source) {
+      final Map<String, Team>? seasonTeams = source[playerId]?[seasonId];
+      if (seasonTeams != null) {
+        merged.addAll(seasonTeams);
+      }
+    }
+
+    absorb(_teamsAsPlayerData);
+    absorb(_teamsAsGrintaPlayerData);
+    absorb(_teamsAsManagerData);
+    absorb(_teamsAsOwnerData);
+
+    return merged.values.toList();
+  }
+
+  /// Stable key fragment for agenda reload when team membership changes.
+  String get agendaTeamsKey {
+    final List<String> teamIds = teamsForAgendaSelectedSeason
+        .map((Team team) => team.keyTeam)
+        .whereType<String>()
+        .map((String id) => id.trim())
+        .where((String id) => id.isNotEmpty)
+        .toList()
+      ..sort();
+    return teamIds.join(',');
   }
 
   void clear() {

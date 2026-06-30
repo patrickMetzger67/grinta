@@ -204,9 +204,11 @@ query PromoCollectionProducts($handle: String!, $first: Int!) {
       );
 
       if (response.statusCode != 200) {
-        debugPrint(
-          'ShopifyStorefrontService HTTP ${response.statusCode}: ${response.body}',
-        );
+        if (kDebugMode && response.statusCode != 401) {
+          debugPrint(
+            'ShopifyStorefrontService HTTP ${response.statusCode}: ${response.body}',
+          );
+        }
         return _fallbackToMock(limit);
       }
 

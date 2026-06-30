@@ -90,8 +90,10 @@ class _SubscriptionDetailsBodyState extends State<_SubscriptionDetailsBody> {
   @override
   void initState() {
     super.initState();
-    UserTrialService.instance.ensureInitialized();
-    SubscriptionService.instance.refreshForActiveSession();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      UserTrialService.instance.ensureInitialized();
+      SubscriptionService.instance.refreshForActiveSession();
+    });
   }
 
   String _formatDate(BuildContext context, DateTime date) {

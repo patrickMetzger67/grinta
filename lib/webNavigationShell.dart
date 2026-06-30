@@ -17,6 +17,7 @@ import 'widget/app_logo.dart';
 import 'widget/account_create_profile_entry.dart';
 import 'widget/edit_member_profile.dart';
 import 'widget/nav_icon_count_badge.dart';
+import 'widget/calendar_sync_toggle.dart';
 import 'widget/subscription_details_sheet.dart';
 
 import 'main.dart';
@@ -382,7 +383,12 @@ class _WebNavigationShellState extends State<WebNavigationShell> {
                     ),
                   ),
                   Divider(color: colors.border, height: 1),
-                  _buildSettingsSection(context),
+                  Flexible(
+                    fit: FlexFit.loose,
+                    child: SingleChildScrollView(
+                      child: _buildSettingsSection(context),
+                    ),
+                  ),
                 ],
               ),
             ),
@@ -442,6 +448,12 @@ class _WebNavigationShellState extends State<WebNavigationShell> {
         if (_settingsExpanded && !_collapsed) ...[
           _buildLanguageSelector(context),
           _buildThemeToggle(context),
+          const Padding(
+            padding: EdgeInsets.fromLTRB(12, 0, 12, 0),
+            child: CalendarSyncToggle(
+              contentPadding: EdgeInsets.symmetric(horizontal: 2),
+            ),
+          ),
           ListenableBuilder(
             listenable: SubscriptionService.instance,
             builder: (context, _) {

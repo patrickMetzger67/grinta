@@ -117,7 +117,9 @@ class _SubscriptionPaywallState extends State<SubscriptionPaywall> {
     } else {
       _applyProfileOpeningDefaults();
     }
-    unawaited(_refreshPaywallState());
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      unawaited(_refreshPaywallState());
+    });
   }
 
   void _applyProfileOpeningDefaults() {
@@ -128,8 +130,6 @@ class _SubscriptionPaywallState extends State<SubscriptionPaywall> {
 
   Future<void> _refreshPaywallState() async {
     await _service.refreshForActiveSession();
-    if (!mounted) return;
-    setState(() {});
   }
 
   bool _isCurrentlyActivePlan({

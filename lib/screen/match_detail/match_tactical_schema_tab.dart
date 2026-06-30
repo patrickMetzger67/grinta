@@ -42,16 +42,50 @@ class _MatchTacticalSchemaTabState extends State<MatchTacticalSchemaTab>
     with AutomaticKeepAliveClientMixin {
   final _matchCompoService = MatchCompoService();
   MatchCompo? _cachedMatchCompo;
-  late final Stream<MatchCompo?> _matchCompoStream;
+  Stream<MatchCompo?>? _matchCompoStream;
+  String? _streamMatchId;
+  List<String> _streamProfileTeamIds = const <String>[];
+  String? _streamPreferredTeamId;
 
   @override
   bool get wantKeepAlive => true;
 
   @override
-  void initState() {
-    super.initState();
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+
     final matchId = widget.match.id?.trim() ?? '';
-    _matchCompoStream = _matchCompoService.streamFirstMatchCompoByMatchId(matchId);
+    final appSession = context.read<AppSession>();
+    final profileTeamIds = profileTeamIdsForMatch(
+      profileTeamIds: appSession.teamIdsForSelectedSeason,
+      match: widget.match,
+    );
+    final preferredTeamId = resolveTeamIdForMatch(
+      widget.match,
+      managedTeamIds: appSession.managedTeamsIdsForSelectedSeason,
+    );
+
+    final bool streamInputsChanged = _streamMatchId != matchId ||
+        !_setEquals(_streamProfileTeamIds, profileTeamIds) ||
+        _streamPreferredTeamId != preferredTeamId;
+
+    if (streamInputsChanged) {
+      _streamMatchId = matchId;
+      _streamProfileTeamIds = List<String>.from(profileTeamIds);
+      _streamPreferredTeamId = preferredTeamId;
+      _matchCompoStream = matchId.isEmpty
+          ? Stream<MatchCompo?>.value(null)
+          : _matchCompoService.streamMatchCompoForMatchAndTeamIds(
+              matchId,
+              profileTeamIds: profileTeamIds,
+              preferredTeamId: preferredTeamId,
+            );
+    }
+  }
+
+  bool _setEquals(List<String> a, List<String> b) {
+    return Set<String>.from(a).containsAll(b) &&
+        Set<String>.from(b).containsAll(a);
   }
 
   @override
@@ -67,7 +101,7 @@ class _MatchTacticalSchemaTabState extends State<MatchTacticalSchemaTab>
     }
 
     return StreamBuilder<MatchCompo?>(
-      stream: _matchCompoStream,
+      stream: _matchCompoStream ?? Stream<MatchCompo?>.value(null),
       builder: (context, snapshot) {
         if (snapshot.hasData) {
           _cachedMatchCompo = snapshot.data;

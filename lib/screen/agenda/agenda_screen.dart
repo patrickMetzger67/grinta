@@ -29,6 +29,7 @@ import '../../widget/tracker_kit_icon_pill.dart';
 import '../../widget/tracker_player_analysis_widget.dart';
 import '../match_detail_screen.dart';
 import '../team_players_screen.dart';
+import 'agenda_add_event_menu.dart';
 part 'agenda_calendar_widgets.dart';
 part 'agenda_list_widgets.dart';
 part 'agenda_status_views.dart';
@@ -42,13 +43,11 @@ enum AgendaCalendarMode {
 class AgendaScreen extends StatefulWidget {
   final AgendaItemsLoader loadItems;
   final DateTime? initialDate;
-  final VoidCallback? onAddEvent;
 
   const AgendaScreen({
     super.key,
     required this.loadItems,
     this.initialDate,
-    this.onAddEvent,
   });
 
   @override
@@ -73,6 +72,7 @@ class _AgendaScreenState extends State<AgendaScreen> {
   late DateTime _displayedMonth;
   AgendaCalendarMode _calendarMode = AgendaCalendarMode.day;
   bool _forceLoadItemsOnNextMonthPageChange = false;
+  bool _suppressNextMonthPageChange = false;
 
   final Map<int, GlobalKey> _weekKeys = <int, GlobalKey>{};
 
@@ -99,13 +99,8 @@ class _AgendaScreenState extends State<AgendaScreen> {
     _selectedDate = now;
     _selectedWeekStart = _startOfWeek(now);
     _selectedWeekEnd = _endOfWeek(now);
-    /*
     _rangeStart = _startOfMonth(now);
     _rangeEnd = _endOfMonth(now);
-     */
-
-    _rangeStart = _selectedWeekStart;
-    _rangeEnd = _selectedWeekEnd;
 
     _monthPagerAnchor = DateTime(now.year, now.month, 1);
     _displayedMonth = DateTime(now.year, now.month, 1);
@@ -206,6 +201,41 @@ class _AgendaScreenState extends State<AgendaScreen> {
     });
 
     _jumpMonthPagerToDisplayedMonth();
+
+    if (mode == AgendaCalendarMode.month) {
+      _ensureRangeCoversMonth(_displayedMonth);
+    }
+  }
+
+  bool _monthIsCoveredByRange(DateTime month) {
+    final monthStart = _startOfMonth(month);
+    final monthEnd = _endOfMonth(month);
+
+    return !_rangeStart.isAfter(monthStart) && !_rangeEnd.isBefore(monthEnd);
+  }
+
+  Future<void> _ensureRangeCoversMonth(
+    DateTime month, {
+    bool scrollToSelection = true,
+  }) async {
+    if (_monthIsCoveredByRange(month)) {
+      if (scrollToSelection && _calendarMode == AgendaCalendarMode.month) {
+        await _scrollToSelectedWeek();
+      }
+      return;
+    }
+
+    final monthStart = _startOfMonth(month);
+    final monthEnd = _endOfMonth(month);
+
+    if (_rangeStart.isAfter(monthStart)) {
+      _rangeStart = monthStart;
+    }
+    if (_rangeEnd.isBefore(monthEnd)) {
+      _rangeEnd = monthEnd;
+    }
+
+    await _loadItems(scrollToSelection: scrollToSelection);
   }
 
   void _jumpMonthPagerToDisplayedMonth() {
@@ -217,10 +247,15 @@ class _AgendaScreenState extends State<AgendaScreen> {
     final currentPage = _monthPageController.page?.round();
     if (currentPage == targetPage) return;
 
+    _suppressNextMonthPageChange = true;
     _monthPageController.jumpToPage(targetPage);
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _suppressNextMonthPageChange = false;
+    });
   }
 
   void _onMonthPageChanged(int page) {
+    if (_suppressNextMonthPageChange) return;
     _handleMonthPageChanged(page);
   }
 
@@ -243,7 +278,7 @@ class _AgendaScreenState extends State<AgendaScreen> {
       _selectedWeekStart = newSelectedWeek;
     });
 
-    if (forceLoadItems) {
+    if (forceLoadItems || _calendarMode == AgendaCalendarMode.month) {
       _rangeStart = _startOfMonth(newMonth);
       _rangeEnd = _endOfMonth(newMonth);
       await _loadItems(scrollToSelection: true);
@@ -282,6 +317,11 @@ class _AgendaScreenState extends State<AgendaScreen> {
 
     _jumpMonthPagerToDisplayedMonth();
 
+    if (_calendarMode == AgendaCalendarMode.month) {
+      await _ensureRangeCoversMonth(targetMonth);
+      return;
+    }
+
     final isBeforeRange =
         targetWeek.millisecondsSinceEpoch < _rangeStart.millisecondsSinceEpoch;
     final isAfterRange =
@@ -295,11 +335,6 @@ class _AgendaScreenState extends State<AgendaScreen> {
         _rangeEnd = _endOfWeek(targetWeek);
       }
       await _loadItems(scrollToSelection: true);
-      return;
-    }
-
-    if (_calendarMode == AgendaCalendarMode.month) {
-      await _scrollToSelectedWeek();
     }
   }
 
@@ -345,8 +380,9 @@ class _AgendaScreenState extends State<AgendaScreen> {
     }
   }
 
-  Future<void> _goToPreviousWeek({bool forceLoadItems = false}) async {
+  Future<void> _goToPreviousWeek() async {
     final previousWeek = _selectedWeekStart.subtract(const Duration(days: 7));
+    final previousWeekEnd = _endOfWeek(previousWeek);
 
     setState(() {
       _selectedWeekStart = previousWeek;
@@ -354,21 +390,23 @@ class _AgendaScreenState extends State<AgendaScreen> {
       _displayedMonth = DateTime(_selectedDate.year, _selectedDate.month, 1);
     });
 
-    if (forceLoadItems) {
-      _rangeStart = previousWeek;
-      _rangeEnd = _endOfWeek(previousWeek);
-    }
-
     _jumpMonthPagerToDisplayedMonth();
 
-    if (forceLoadItems) {
-      await _loadItems(scrollToSelection: true);
-      return;
-    }
+    var needsReload = false;
 
     if (previousWeek.millisecondsSinceEpoch < _rangeStart.millisecondsSinceEpoch) {
       _rangeStart = previousWeek;
-      await _loadItems(scrollToSelection: true);
+      needsReload = true;
+    }
+    if (previousWeekEnd.millisecondsSinceEpoch > _rangeEnd.millisecondsSinceEpoch) {
+      _rangeEnd = previousWeekEnd;
+      needsReload = true;
+    }
+
+    if (needsReload) {
+      await _loadItems(
+        scrollToSelection: _calendarMode == AgendaCalendarMode.month,
+      );
       return;
     }
 
@@ -377,8 +415,9 @@ class _AgendaScreenState extends State<AgendaScreen> {
     }
   }
 
-  Future<void> _goToNextWeek({bool forceLoadItems = false}) async {
+  Future<void> _goToNextWeek() async {
     final nextWeek = _selectedWeekStart.add(const Duration(days: 7));
+    final nextWeekEnd = _endOfWeek(nextWeek);
 
     setState(() {
       _selectedWeekStart = nextWeek;
@@ -386,21 +425,23 @@ class _AgendaScreenState extends State<AgendaScreen> {
       _displayedMonth = DateTime(_selectedDate.year, _selectedDate.month, 1);
     });
 
-    if (forceLoadItems) {
-      _rangeStart = nextWeek;
-      _rangeEnd = _endOfWeek(nextWeek);
-    }
-
     _jumpMonthPagerToDisplayedMonth();
 
-    if (forceLoadItems) {
-      await _loadItems(scrollToSelection: true);
-      return;
+    var needsReload = false;
+
+    if (nextWeek.millisecondsSinceEpoch < _rangeStart.millisecondsSinceEpoch) {
+      _rangeStart = nextWeek;
+      needsReload = true;
+    }
+    if (nextWeekEnd.millisecondsSinceEpoch > _rangeEnd.millisecondsSinceEpoch) {
+      _rangeEnd = nextWeekEnd;
+      needsReload = true;
     }
 
-    if (nextWeek.millisecondsSinceEpoch > _rangeEnd.millisecondsSinceEpoch) {
-      _rangeEnd = _endOfWeek(nextWeek);
-      await _loadItems(scrollToSelection: true);
+    if (needsReload) {
+      await _loadItems(
+        scrollToSelection: _calendarMode == AgendaCalendarMode.month,
+      );
       return;
     }
 
@@ -706,10 +747,10 @@ class _AgendaScreenState extends State<AgendaScreen> {
                   await _goToNextMonthFromHeader();
                 },
                 onPreviousWeek: () async {
-                  await _goToPreviousWeek(forceLoadItems: true);
+                  await _goToPreviousWeek();
                 },
                 onNextWeek: () async {
-                  await _goToNextWeek(forceLoadItems: true);
+                  await _goToNextWeek();
                 },
                 onPreviousDay: () async {
                   await _selectDate(
@@ -744,11 +785,9 @@ class _AgendaScreenState extends State<AgendaScreen> {
           ),
         ),
       ),
-      floatingActionButton: widget.onAddEvent == null
-          ? null
-          : FloatingActionButton(
+      floatingActionButton: FloatingActionButton(
         heroTag: 'grinta-fab-agenda',
-        onPressed: widget.onAddEvent,
+        onPressed: () => showAgendaAddEventMenu(context),
         child: const Icon(Icons.add),
       ),
     );

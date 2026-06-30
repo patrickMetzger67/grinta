@@ -1,3 +1,5 @@
+import 'dart:async' show unawaited;
+
 import 'package:flutter/material.dart';
 import 'package:grinta/core/extensions/l10n_extension.dart';
 import 'package:grinta/services/subscription_prompt_service.dart';
@@ -33,7 +35,9 @@ class _SubscriptionPromptBannerState extends State<SubscriptionPromptBanner> {
   }
 
   void _onSubscriptionChanged() {
-    _evaluateVisibility();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) unawaited(_evaluateVisibility());
+    });
   }
 
   Future<void> _evaluateVisibility() async {

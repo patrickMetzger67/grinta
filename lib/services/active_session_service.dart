@@ -31,7 +31,8 @@ class ActiveSessionService {
   static final ActiveSessionService instance = ActiveSessionService._();
 
   static const Uuid _uuid = Uuid();
-  static const Duration _claimWriteTimeout = Duration(seconds: 15);
+  static Duration get _claimWriteTimeout =>
+      kIsWeb ? const Duration(seconds: 30) : const Duration(seconds: 15);
 
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
 
@@ -115,9 +116,11 @@ class ActiveSessionService {
 
       _startListener(uid);
     } on TimeoutException {
-      debugPrint(
-        'ActiveSessionService claim write timed out for uid=$uid; continuing',
-      );
+      if (kDebugMode) {
+        debugPrint(
+          'ActiveSessionService claim write timed out for uid=$uid; continuing',
+        );
+      }
       if (FirebaseAuth.instance.currentUser?.uid == uid) {
         _startListener(uid);
       } else {

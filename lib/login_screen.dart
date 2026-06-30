@@ -142,11 +142,28 @@ class _LoginScreenState extends State<LoginScreen> {
     bool manageParentLoading = true,
     BuildContext? snackBarContext,
   }) async {
-    FocusScope.of(context).unfocus();
+    if (mounted) {
+      FocusScope.of(context).unfocus();
+    } else if (snackBarContext != null && snackBarContext.mounted) {
+      FocusScope.of(snackBarContext).unfocus();
+    }
+
+    final rootContext = appNavigatorKey.currentContext;
+    final l10n = (mounted ? context.l10n : null) ??
+        (snackBarContext != null && snackBarContext.mounted
+            ? snackBarContext.l10n
+            : null) ??
+        (rootContext != null && rootContext.mounted
+            ? rootContext.l10n
+            : null);
+    if (l10n == null) {
+      debugPrint('login: email sign-in aborted — no context for l10n');
+      return;
+    }
 
     if (email.isEmpty || password.isEmpty) {
       _showSnackBar(
-        context.l10n.emailAndPasswordRequired,
+        l10n.emailAndPasswordRequired,
         snackBarContext: snackBarContext,
       );
       return;
@@ -154,13 +171,25 @@ class _LoginScreenState extends State<LoginScreen> {
 
     if (manageParentLoading) {
       if (_isLoading) return;
+      if (!mounted) return;
       setState(() => _isLoading = true);
     }
 
     AnalyticsInteractions.logFeature(AnalyticsFeatures.loginAttempt);
 
-    final appSession = context.read<AppSession>();
-    final l10n = context.l10n;
+    final sessionContext = mounted
+        ? context
+        : (snackBarContext != null && snackBarContext.mounted
+            ? snackBarContext
+            : rootContext);
+    if (sessionContext == null || !sessionContext.mounted) {
+      debugPrint('login: email sign-in aborted — no context for AppSession');
+      if (manageParentLoading && mounted) {
+        setState(() => _isLoading = false);
+      }
+      return;
+    }
+    final appSession = sessionContext.read<AppSession>();
 
     try {
       final credential = await FirebaseAuth.instance.signInWithEmailAndPassword(
@@ -174,12 +203,12 @@ class _LoginScreenState extends State<LoginScreen> {
         feature: AnalyticsFeatures.loginSuccess,
       );
 
-      if (!mounted) return;
-
       // Ferme le bottom sheet mobile avant que AuthGate retire LoginScreen.
-      final navigator = Navigator.of(context);
-      if (navigator.canPop()) {
-        navigator.pop();
+      if (mounted) {
+        final navigator = Navigator.of(context);
+        if (navigator.canPop()) {
+          navigator.pop();
+        }
       }
 
       await appSession.init();
@@ -1354,18 +1383,22 @@ class _LoginCardState extends State<_LoginCard> {
   bool get _showBackButton => widget.onBack != null || _isSignUpMode;
 
   Future<void> _handleSubmit() async {
+    if (!mounted) return;
+
     final email = widget.emailCtrl.text.trim();
     final password = widget.passwordCtrl.text.trim();
 
     if (_isSignUpMode) {
       final confirmPassword = _confirmPasswordCtrl.text.trim();
       if (confirmPassword != password) {
+        if (!mounted) return;
         showLoginSnackBar(context, context.l10n.passwordsDoNotMatch);
         return;
       }
 
       await widget.onSignUp(email, password);
     } else {
+      if (!mounted) return;
       widget.onSignIn();
     }
   }
@@ -1618,15 +1651,17 @@ class _LoginBottomSheetState extends State<_LoginBottomSheet> {
   }
 
   Future<void> _handleSignIn() async {
-    if (_isLoading) return;
+    if (_isLoading || !mounted) return;
 
+    final snackBarContext = context;
     setState(() => _isLoading = true);
     try {
       await widget.onSignIn(
         _emailCtrl.text.trim(),
         _passwordCtrl.text.trim(),
         manageParentLoading: false,
-        snackBarContext: context,
+        snackBarContext:
+            snackBarContext.mounted ? snackBarContext : null,
       );
     } finally {
       if (mounted) {

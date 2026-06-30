@@ -1,5 +1,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+
 import '../model/matchCompo.dart';
+import '../util/match_compo_pitch_mapper.dart';
 
 String collectionMatchCompo = "matchCompo";
 
@@ -148,6 +150,33 @@ class MatchCompoService {
         .map((snapshot) {
       if (snapshot.docs.isEmpty) return null;
       return MatchCompo.fromSnapshot(snapshot.docs.first);
+    });
+  }
+
+  Future<MatchCompo?> getMatchCompoForMatchAndTeamIds(
+    String matchId, {
+    required List<String> profileTeamIds,
+    String? preferredTeamId,
+  }) async {
+    final compos = await getMatchComposByMatchId(matchId);
+    return pickMatchCompoForProfileTeams(
+      compos,
+      profileTeamIds: profileTeamIds,
+      preferredTeamId: preferredTeamId,
+    );
+  }
+
+  Stream<MatchCompo?> streamMatchCompoForMatchAndTeamIds(
+    String matchId, {
+    required List<String> profileTeamIds,
+    String? preferredTeamId,
+  }) {
+    return streamMatchComposByMatchId(matchId).map((List<MatchCompo> compos) {
+      return pickMatchCompoForProfileTeams(
+        compos,
+        profileTeamIds: profileTeamIds,
+        preferredTeamId: preferredTeamId,
+      );
     });
   }
 }

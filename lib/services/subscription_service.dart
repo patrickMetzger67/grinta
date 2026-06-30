@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/foundation.dart';
+import 'package:flutter/scheduler.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter/widgets.dart' show AppLifecycleState, WidgetsBinding, WidgetsBindingObserver;
 import 'package:grinta/config/subscription_config.dart';
@@ -33,6 +34,26 @@ class SubscriptionService extends ChangeNotifier {
   _SubscriptionLifecycleObserver? _lifecycleObserver;
 
   static const Duration _offeringsRefreshMinInterval = Duration(seconds: 60);
+
+  bool _notifyListenersScheduled = false;
+
+  /// Defers listener notifications while a frame is building to avoid
+  /// "setState/markNeedsBuild called during build" on web shells and paywalls.
+  @override
+  void notifyListeners() {
+    final phase = SchedulerBinding.instance.schedulerPhase;
+    if (phase == SchedulerPhase.persistentCallbacks ||
+        phase == SchedulerPhase.midFrameMicrotasks) {
+      if (_notifyListenersScheduled) return;
+      _notifyListenersScheduled = true;
+      SchedulerBinding.instance.addPostFrameCallback((_) {
+        _notifyListenersScheduled = false;
+        if (hasListeners) super.notifyListeners();
+      });
+      return;
+    }
+    super.notifyListeners();
+  }
 
   SubscriptionState get state => _state;
   Offerings? get offerings => _offerings;
@@ -266,6 +287,18 @@ class SubscriptionService extends ChangeNotifier {
         text.contains('another request in flight');
   }
 
+  bool _isInvalidCredentialsError(Object e) {
+    if (e is PlatformException) {
+      final code = PurchasesErrorHelper.getErrorCode(e);
+      if (code == PurchasesErrorCode.invalidCredentialsError) {
+        return true;
+      }
+    }
+    final text = e.toString().toLowerCase();
+    return text.contains('invalid api key') ||
+        text.contains('invalid_credentials');
+  }
+
   bool _isRevenueCatLinkedToUid(CustomerInfo info, String uid) {
     final rcId = info.originalAppUserId;
     return rcId == uid || !_isAnonymousRevenueCatUser(rcId);
@@ -291,12 +324,27 @@ class SubscriptionService extends ChangeNotifier {
 
       LogInResult? result;
 
-      for (var attempt = 0; attempt < 2; attempt++) {
+      final maxAttempts = kIsWeb ? 4 : 2;
+      for (var attempt = 0; attempt < maxAttempts; attempt++) {
         try {
           result = await Purchases.logIn(uid);
+          if (kIsWeb &&
+              _isAnonymousRevenueCatUser(result.customerInfo.originalAppUserId) &&
+              attempt < maxAttempts - 1) {
+            if (kDebugMode) {
+              debugPrint(
+                'SubscriptionService: web logIn still anonymous '
+                '(firebaseUid=$uid), retrying (${attempt + 1}/$maxAttempts)',
+              );
+            }
+            await Future<void>.delayed(
+              Duration(milliseconds: 400 * (attempt + 1)),
+            );
+            continue;
+          }
           break;
         } catch (e) {
-          if (attempt == 0 && _isConcurrentLoginError(e)) {
+          if (attempt < maxAttempts - 1 && _isConcurrentLoginError(e)) {
             if (kDebugMode) {
               debugPrint(
                 'SubscriptionService: Purchases.logIn concurrent request '
@@ -336,14 +384,20 @@ class SubscriptionService extends ChangeNotifier {
         }
       }
     } catch (e, st) {
-      debugPrint(
-        'SubscriptionService: Purchases.logIn FAILED (firebaseUid=$uid): $e\n$st',
-      );
-      _state = _state.copyWith(
-        isLoading: false,
-        isInitialized: true,
-        lastError: e.toString(),
-      );
+      if (_isInvalidCredentialsError(e)) {
+        if (kDebugMode) {
+          debugPrint(
+            'SubscriptionService: Purchases.logIn skipped (invalid RevenueCat API key). '
+            'Check REVENUECAT_* dart_defines for this build.',
+          );
+        }
+      } else {
+        debugPrint(
+          'SubscriptionService: Purchases.logIn FAILED (firebaseUid=$uid): $e\n$st',
+        );
+        _state = _state.copyWith(lastError: e.toString());
+      }
+      _state = _state.copyWith(isLoading: false, isInitialized: true);
       notifyListeners();
     }
   }
@@ -648,11 +702,29 @@ class SubscriptionService extends ChangeNotifier {
         }
         return;
       }
+      if (code == PurchasesErrorCode.invalidCredentialsError) {
+        if (kDebugMode) {
+          debugPrint(
+            'SubscriptionService: getOfferings skipped (invalid RevenueCat API key). '
+            'Check REVENUECAT_* dart_defines for this build.',
+          );
+        }
+        return;
+      }
       debugPrint(
         'SubscriptionService: getOfferings failed '
         '(${kIsWeb ? 'web' : defaultTargetPlatform.name}): $e',
       );
     } catch (e, st) {
+      if (_isInvalidCredentialsError(e)) {
+        if (kDebugMode) {
+          debugPrint(
+            'SubscriptionService: getOfferings skipped (invalid RevenueCat API key). '
+            'Check REVENUECAT_* dart_defines for this build.',
+          );
+        }
+        return;
+      }
       debugPrint(
         'SubscriptionService: getOfferings failed '
         '(${kIsWeb ? 'web' : defaultTargetPlatform.name}): $e\n$st',

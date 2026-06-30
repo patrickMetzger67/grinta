@@ -639,6 +639,12 @@
   "actionSave": "Save",
   "actionSaving": "Registration...",
   "periodLoaded": "Period loaded: {range}",
+  "agendaAddEventTitle": "Create",
+  "agendaAddEventMatch": "A match",
+  "agendaAddEventTraining": "A training session",
+  "agendaAddEventPersonalSport": "A personal sports activity",
+  "agendaAddEventPersonalSportHint": "Running, preparation, …",
+  "agendaAddEventNonSport": "A non-sporting event / activity",
   "agendaLegend": "Legend",
   "agendaOverviewEventsCount": "{count, plural, =1{1 event} other{{count} events}}",
   "agendaEventSummaryMatches": "{count, plural, =1{1 match} other{{count} matches}}",
@@ -879,5 +885,13 @@
     "placeholders": {
       "teamName": { "type": "String" }
     }
-  }
+  },
+  "calendarSyncToggleLabel": "Calendar sync",
+  "calendarSyncToggleSubtitle": "Matches and training sessions for the selected profile",
+  "calendarSyncWebSubtitle": "Download an ICS file to import into your calendar",
+  "calendarSyncWebRedownloadHint": "Tap to download the calendar file again",
+  "calendarSyncWebDownloaded": "Calendar file downloaded. Import it into your calendar app.",
+  "calendarSyncPermissionDenied": "Calendar access was denied. Enable it in your device settings.",
+  "calendarSyncCalendarCreationFailed": "Could not create the Grinta calendar on this device.",
+  "calendarSyncEnableFailed": "Calendar sync could not be enabled. Please try again."
 }

@@ -27,6 +27,20 @@ const List<int> grintaStaffRoleCodes = <int>[
 bool hasStaffProfilePositionCodes(Iterable<int> codes) =>
     codes.any(isStaffProfilePositionCode);
 
+/// Legacy member-profile field roles (goalkeeper, defender, midfielder, forward).
+bool isMemberProfileFieldPlayerRole(int code) =>
+    code == positionCodeGoalkeeper ||
+    code == positionCodeDefender ||
+    code == positionCodeMidfielder ||
+    code == positionCodeForward;
+
+bool hasMemberProfileFieldPlayerRole(Iterable<int> codes) =>
+    codes.any(isMemberProfileFieldPlayerRole);
+
+/// True when the creator should be added to [Team.players] / [Team.grintaPlayers].
+bool shouldAutoAddMemberProfileToTeamRoster(Iterable<int> positionCodes) =>
+    hasMemberProfileFieldPlayerRole(positionCodes);
+
 /// Pitch/field position from Grinta config (`config/playerPositions`), codes 1–23.
 bool isGrintaPitchPositionCode(int code) =>
     code >= 1 && code <= grintaPlayerPositionCount;
@@ -132,6 +146,20 @@ const List<Map<String, Object>> defaultGrintaPlayerPositionEntries = <Map<String
 
 /// Selectable codes when Firestore config is unavailable.
 const List<int> selectablePlayerPositionCodes = grintaPlayerPositionCodes;
+
+/// Selectable profile roles when creating or editing a member profile.
+///
+/// Distinct from [selectablePlayerPositionCodes] / [PlayerPositionsService]:
+/// member profiles use legacy staff + field role codes (educator, executive,
+/// goalkeeper, defender, midfielder, forward), not Grinta pitch codes 1–23.
+const List<int> selectableMemberProfilePositionCodes = <int>[
+  positionCodeEducator,
+  positionCodeExecutive,
+  positionCodeGoalkeeper,
+  positionCodeDefender,
+  positionCodeMidfielder,
+  positionCodeForward,
+];
 
 /// Legacy l10n labels for effectives / historical member profiles (codes 1–6).
 String playerPositionLabel(int code, AppLocalizations l10n) {

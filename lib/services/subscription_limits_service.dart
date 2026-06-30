@@ -8,6 +8,7 @@ import 'package:grinta/model/subscription_state.dart';
 import 'package:grinta/model/subscription_tier_limits.dart';
 import 'package:grinta/model/team.dart';
 import 'package:grinta/util/player_positions.dart';
+import 'package:grinta/util/team_list_visibility.dart';
 import 'package:grinta/services/effectivesService.dart';
 import 'package:grinta/services/playerService.dart';
 import 'package:grinta/services/subscription_service.dart';
@@ -335,6 +336,13 @@ class SubscriptionLimitsService {
     }
 
     absorb(await teamService.getTeamsByOwnerUid(userId));
+
+    if (player != null && !memberProfileShowsNonRosterOwnedTeams(player)) {
+      merged.removeWhere(
+        (String teamId, Team team) =>
+            !shouldIncludeTeamInMemberProfileList(team, player),
+      );
+    }
 
     return merged.length;
   }

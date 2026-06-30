@@ -26,6 +26,7 @@ import 'package:grinta/analytics/analytics_route_aware.dart';
 import 'package:grinta/services/analytics_service.dart';
 import 'package:grinta/widget/web_app_root.dart';
 import 'package:grinta/services/notification_fcm_service.dart';
+import 'package:grinta/services/calendar_deep_link_service.dart';
 import 'package:grinta/util/firebase_auth_ready.dart';
 
 const String kStreamApiKey = 'vg9g2zz7s2fc';
@@ -39,6 +40,7 @@ Future<void> main() async {
   );
 
   await NotificationFCMService.init();
+  await CalendarDeepLinkService.instance.init();
 
   if (kIsWeb) {
     await firebase_auth.FirebaseAuth.instance.setPersistence(
@@ -91,6 +93,7 @@ class MyAppState extends State<MyApp> {
 
   late final StreamChatClient _streamChatClient = StreamChatClient(
     kStreamApiKey,
+    logLevel: kIsWeb ? Level.OFF : Level.WARNING,
   );
 
   ThemeMode _themeMode = ThemeMode.dark;

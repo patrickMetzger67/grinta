@@ -18,6 +18,7 @@ import 'package:grinta/util/app_snackbar.dart';
 import 'package:grinta/util/app_theme.dart';
 import 'package:grinta/util/engagement_sync.dart';
 import 'package:grinta/util/subscription_limits_access.dart';
+import 'package:grinta/util/player_positions.dart';
 import 'package:grinta/util/team_detail_access.dart';
 import 'package:grinta/widget/club_picker_sheet.dart';
 import 'package:grinta/widget/equipe_picker_sheet.dart';
@@ -135,15 +136,20 @@ Future<void> openTeamCreationFlow(BuildContext context) async {
   }
 
   try {
-    final GrintaPlayer ownerGrintaPlayer = _grintaPlayerFromProfile(
-      playerId: playerId,
-      player: player,
-    );
+    final bool autoAddCreatorToRoster =
+        shouldAutoAddMemberProfileToTeamRoster(player?.positionCodes ?? const []);
+
+    final GrintaPlayer? creatorGrintaPlayer = autoAddCreatorToRoster
+        ? _grintaPlayerFromProfile(
+            playerId: playerId,
+            player: player,
+          )
+        : null;
 
     final team = Team(
       name: draft.name,
       seasonID: seasonId,
-      players: <dynamic>[],
+      players: autoAddCreatorToRoster ? <dynamic>[playerId] : <dynamic>[],
       users: <dynamic>[userId],
       order: 1,
       soccerType: draft.soccerType,
@@ -152,7 +158,9 @@ Future<void> openTeamCreationFlow(BuildContext context) async {
       clubId: draft.clubAffiliation,
       isGrinta: true,
       uid: userId,
-      grintaPlayers: <GrintaPlayer>[ownerGrintaPlayer],
+      grintaPlayers: creatorGrintaPlayer == null
+          ? <GrintaPlayer>[]
+          : <GrintaPlayer>[creatorGrintaPlayer],
     )..isVisible = true;
 
     final String teamId = await TeamService().createTeam(team);
@@ -172,7 +180,11 @@ Future<void> openTeamCreationFlow(BuildContext context) async {
     await appSession.init();
     if (!context.mounted) return;
 
-    if (isTeamDetailBlockedForUser(team, userId)) {
+    if (isTeamDetailBlockedForUser(
+      team,
+      userId,
+      memberProfile: player,
+    )) {
       AppSnackbar.show(
         context,
         context.l10n.subscriptionLimitTeamCreatedFreePlayer,

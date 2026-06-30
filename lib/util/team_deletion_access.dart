@@ -18,6 +18,30 @@ bool isTeamOwner(Team team, String? currentUserUid) {
   return ownerUid.isNotEmpty && ownerUid == userId;
 }
 
+/// True when [team.managers] contains the signed-in Firebase user id.
+bool isTeamManager(Team team, String? currentUserUid) {
+  final userId = currentUserUid?.trim() ?? '';
+  if (userId.isEmpty) {
+    return false;
+  }
+
+  for (final dynamic raw in team.managers ?? const <dynamic>[]) {
+    if (raw?.toString().trim() == userId) {
+      return true;
+    }
+  }
+  return false;
+}
+
+/// True when the signed-in user may manage roster/staff for [team].
+bool canManageTeam(Team team, String? currentUserUid, {bool isManager = false}) {
+  if (isManager) {
+    return true;
+  }
+  return isTeamOwner(team, currentUserUid) ||
+      isTeamManager(team, currentUserUid);
+}
+
 String _teamDisplayName(BuildContext context, Team team) {
   final name = team.name?.trim() ?? '';
   if (name.isNotEmpty) {
