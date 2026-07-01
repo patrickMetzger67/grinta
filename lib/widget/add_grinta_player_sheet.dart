@@ -32,6 +32,10 @@ Future<AddGrintaPlayerDetails?> showAddGrintaPlayerSheet(
   BuildContext context, {
   required Player member,
   GrintaPlayer? existingGrintaPlayer,
+  bool showManagerToggle = false,
+  ValueNotifier<bool>? isManagerListenable,
+  Future<bool> Function()? onToggleManager,
+  Future<void> Function(AddGrintaPlayerDetails details)? onSubmit,
 }) {
   return showModalBottomSheet<AddGrintaPlayerDetails>(
     context: context,
@@ -41,6 +45,10 @@ Future<AddGrintaPlayerDetails?> showAddGrintaPlayerSheet(
     builder: (_) => AddGrintaPlayerSheet(
       member: member,
       existingGrintaPlayer: existingGrintaPlayer,
+      showManagerToggle: showManagerToggle,
+      isManagerListenable: isManagerListenable,
+      onToggleManager: onToggleManager,
+      onSubmit: onSubmit,
     ),
   );
 }
@@ -50,10 +58,18 @@ class AddGrintaPlayerSheet extends StatefulWidget {
     super.key,
     required this.member,
     this.existingGrintaPlayer,
+    this.showManagerToggle = false,
+    this.isManagerListenable,
+    this.onToggleManager,
+    this.onSubmit,
   });
 
   final Player member;
   final GrintaPlayer? existingGrintaPlayer;
+  final bool showManagerToggle;
+  final ValueNotifier<bool>? isManagerListenable;
+  final Future<bool> Function()? onToggleManager;
+  final Future<void> Function(AddGrintaPlayerDetails details)? onSubmit;
 
   bool get isEditMode => existingGrintaPlayer != null;
 
@@ -82,6 +98,8 @@ class _AddGrintaPlayerSheetState extends State<AddGrintaPlayerSheet> {
   String? _weightError;
   DateTime? _birthday;
   bool _positionsReady = false;
+  bool _isTogglingManager = false;
+  bool _isSubmitting = false;
 
   @override
   void initState() {
@@ -218,8 +236,10 @@ class _AddGrintaPlayerSheetState extends State<AddGrintaPlayerSheet> {
     );
   }
 
-  void _onConfirm() {
+  Future<void> _onConfirm() async {
     final l10n = context.l10n;
+
+    if (_isSubmitting) return;
 
     if (_selectedPositionCode == null) {
       setState(() {
@@ -254,15 +274,50 @@ class _AddGrintaPlayerSheetState extends State<AddGrintaPlayerSheet> {
     }
 
     final phoneE164 = _phoneE164!.trim();
-    Navigator.of(context).pop(
-      AddGrintaPlayerDetails(
-        positions: <int>[_selectedPositionCode!],
-        phoneE164: phoneE164,
-        email: email.isEmpty ? null : email,
-        birthday: _birthday,
-        initialMeasurement: _buildInitialMeasurement(),
-      ),
+    final details = AddGrintaPlayerDetails(
+      positions: <int>[_selectedPositionCode!],
+      phoneE164: phoneE164,
+      email: email.isEmpty ? null : email,
+      birthday: _birthday,
+      initialMeasurement: _buildInitialMeasurement(),
     );
+
+    final submit = widget.onSubmit;
+    if (submit != null) {
+      setState(() => _isSubmitting = true);
+      try {
+        await submit(details);
+        if (!mounted) return;
+        Navigator.of(context).pop(details);
+      } catch (e) {
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(l10n.errorGeneric(e.toString()))),
+        );
+      } finally {
+        if (mounted) {
+          setState(() => _isSubmitting = false);
+        }
+      }
+      return;
+    }
+
+    Navigator.of(context).pop(details);
+  }
+
+  Future<void> _onToggleManagerPressed() async {
+    final toggle = widget.onToggleManager;
+    if (toggle == null || _isTogglingManager) return;
+
+    setState(() => _isTogglingManager = true);
+    try {
+      final bool isManager = await toggle();
+      widget.isManagerListenable?.value = isManager;
+    } finally {
+      if (mounted) {
+        setState(() => _isTogglingManager = false);
+      }
+    }
   }
 
   @override
@@ -454,24 +509,69 @@ class _AddGrintaPlayerSheetState extends State<AddGrintaPlayerSheet> {
                     ),
                   ],
                 ),
+                if (widget.isEditMode &&
+                    widget.showManagerToggle &&
+                    widget.onToggleManager != null &&
+                    widget.isManagerListenable != null) ...[
+                  const SizedBox(height: 20),
+                  ValueListenableBuilder<bool>(
+                    valueListenable: widget.isManagerListenable!,
+                    builder: (context, isManager, _) {
+                      return OutlinedButton.icon(
+                        onPressed:
+                            _isTogglingManager ? null : _onToggleManagerPressed,
+                        icon: _isTogglingManager
+                            ? SizedBox(
+                                width: 18,
+                                height: 18,
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2,
+                                  color: colors.primary,
+                                ),
+                              )
+                            : Icon(
+                                Icons.verified_rounded,
+                                color: isManager ? colors.success : null,
+                              ),
+                        label: Text(
+                          isManager
+                              ? l10n.teamDetailRevokeManager
+                              : l10n.teamDetailGrantManager,
+                        ),
+                      );
+                    },
+                  ),
+                ],
                 const SizedBox(height: 20),
                 Row(
                   children: [
                     Expanded(
                       child: OutlinedButton(
-                        onPressed: () => Navigator.of(context).pop(),
+                        onPressed: _isSubmitting
+                            ? null
+                            : () => Navigator.of(context).pop(),
                         child: Text(l10n.actionCancel),
                       ),
                     ),
                     const SizedBox(width: 12),
                     Expanded(
                       child: FilledButton(
-                        onPressed: _positionsReady ? _onConfirm : null,
-                        child: Text(
-                          widget.isEditMode
-                              ? l10n.actionSave
-                              : l10n.actionAddPlayer,
-                        ),
+                        onPressed:
+                            _positionsReady && !_isSubmitting ? _onConfirm : null,
+                        child: _isSubmitting
+                            ? SizedBox(
+                                width: 20,
+                                height: 20,
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2.2,
+                                  color: Colors.white,
+                                ),
+                              )
+                            : Text(
+                                widget.isEditMode
+                                    ? l10n.actionSave
+                                    : l10n.actionAddPlayer,
+                              ),
                       ),
                     ),
                   ],

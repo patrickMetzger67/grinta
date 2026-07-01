@@ -4,6 +4,7 @@ import 'grinta_player_hw.dart';
 
 String keyGrintaPlayerId = 'playerId';
 String keyGrintaPlayerPositions = 'positions';
+String keyGrintaPlayerFonction = 'fonction';
 String keyGrintaPlayerTrackers = 'trackers';
 String keyGrintaPlayerEmail = 'email';
 String keyGrintaPlayerPhoneE164 = 'phoneE164';
@@ -14,6 +15,8 @@ String keyGrintaPlayerInvitationId = 'invitationId';
 class GrintaPlayer {
   String playerId;
   List<int> positions;
+  /// Staff role code (educator, executive, medical). Field players leave this null.
+  int? fonction;
   List<String> trackers;
   String? email;
   String? phoneE164;
@@ -24,6 +27,7 @@ class GrintaPlayer {
   GrintaPlayer({
     this.playerId = '',
     List<int>? positions,
+    this.fonction,
     List<String>? trackers,
     this.email,
     this.phoneE164,
@@ -89,10 +93,12 @@ class GrintaPlayer {
     final DateTime? birthday = _parseBirthday(map?[keyGrintaPlayerBirthday]);
     final String? invitationId =
         _optionalTrimmedString(map?[keyGrintaPlayerInvitationId]);
+    final int? fonction = _parseOptionalPositiveInt(map?[keyGrintaPlayerFonction]);
 
     return GrintaPlayer(
       playerId: playerId,
       positions: positions,
+      fonction: fonction,
       trackers: trackers,
       email: email,
       phoneE164: phoneE164,
@@ -114,6 +120,14 @@ class GrintaPlayer {
     return null;
   }
 
+  static int? _parseOptionalPositiveInt(dynamic value) {
+    final int? parsed = _parsePositionCode(value);
+    if (parsed == null || parsed <= 0) {
+      return null;
+    }
+    return parsed;
+  }
+
   static int? _parsePositionCode(dynamic value) {
     if (value is int) return value;
     if (value is num) return value.toInt();
@@ -129,6 +143,8 @@ class GrintaPlayer {
     return {
       keyGrintaPlayerId: playerId,
       keyGrintaPlayerPositions: positions,
+      if (fonction != null && fonction! > 0)
+        keyGrintaPlayerFonction: fonction,
       keyGrintaPlayerTrackers: trackers,
       if (email != null && email!.trim().isNotEmpty)
         keyGrintaPlayerEmail: email!.trim(),
@@ -147,7 +163,7 @@ class GrintaPlayer {
   @override
   String toString() {
     return 'GrintaPlayer(playerId=$playerId, positions=$positions, '
-        'trackers=$trackers, email=$email, phoneE164=$phoneE164, '
+        'fonction=$fonction, trackers=$trackers, email=$email, phoneE164=$phoneE164, '
         'birthday=$birthday, hwHistory=$hwHistory, invitationId=$invitationId)';
   }
 }

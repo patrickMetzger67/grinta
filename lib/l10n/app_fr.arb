@@ -925,11 +925,25 @@
     }
   },
   "teamDetailConfirmRemoveTracker": "Voulez-vous supprimer l'affectation du tracker « {trackerName} » ?",
+  "teamDetailColumnApp": "App",
+  "teamDetailPlayerDetailsTitle": "Détails du joueur",
+  "teamDetailGrantManager": "Accorder les droits manager",
+  "teamDetailRevokeManager": "Retirer les droits manager",
+  "teamDetailRemoveFromTeam": "Retirer",
   "@teamDetailConfirmRemoveTracker": {
     "placeholders": {
       "trackerName": { "type": "String" }
     }
   },
+  "teamDetailTrackerOwnersTitle": "Trackers GPS",
+  "teamDetailTrackerOwnersEmpty": "Aucun kit tracker disponible pour votre compte.",
+  "teamDetailTrackerOwnerType": "Type : {type}",
+  "@teamDetailTrackerOwnerType": {
+    "placeholders": {
+      "type": { "type": "String" }
+    }
+  },
+  "teamDetailTrackerOwnersSaved": "Kits tracker mis à jour.",
   "roleCoach": "Coach",
   "roleExecutive": "Dirigeant",
   "grintaStaffRoleEducator": "Entraîneur / Éducateur",
@@ -1194,11 +1208,14 @@
     }
   },
   "calendarSyncToggleLabel": "Sync. calendrier",
-  "calendarSyncToggleSubtitle": "Matchs et entraînements du profil sélectionné",
+  "calendarSyncToggleSubtitle": "Mise à jour auto à l'ouverture de l'agenda (max 1×/15 min)",
   "calendarSyncWebSubtitle": "Télécharge un fichier ICS à importer dans ton calendrier",
   "calendarSyncWebRedownloadHint": "Appuie pour télécharger à nouveau le fichier calendrier",
   "calendarSyncWebDownloaded": "Fichier calendrier téléchargé. Importe-le dans ton application de calendrier.",
   "calendarSyncPermissionDenied": "L'accès au calendrier a été refusé. Activez-le dans les réglages de l'appareil.",
   "calendarSyncCalendarCreationFailed": "Impossible de créer le calendrier Grinta sur cet appareil.",
-  "calendarSyncEnableFailed": "La synchronisation du calendrier n'a pas pu être activée. Réessayez."
+  "calendarSyncEnableFailed": "La synchronisation du calendrier n'a pas pu être activée. Réessayez.",
+  "calendarSyncForceNow": "Synchroniser maintenant",
+  "calendarSyncForceSuccess": "Calendrier synchronisé.",
+  "calendarSyncForceFailed": "La synchronisation a échoué. Réessayez."
 }

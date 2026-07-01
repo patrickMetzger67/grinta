@@ -3735,6 +3735,60 @@ abstract class AppLocalizations {
   /// **'Voulez-vous supprimer l\'affectation du tracker « {trackerName} » ?'**
   String teamDetailConfirmRemoveTracker(String trackerName);
 
+  /// No description provided for @teamDetailColumnApp.
+  ///
+  /// In fr, this message translates to:
+  /// **'App'**
+  String get teamDetailColumnApp;
+
+  /// No description provided for @teamDetailPlayerDetailsTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Détails du joueur'**
+  String get teamDetailPlayerDetailsTitle;
+
+  /// No description provided for @teamDetailGrantManager.
+  ///
+  /// In fr, this message translates to:
+  /// **'Accorder les droits manager'**
+  String get teamDetailGrantManager;
+
+  /// No description provided for @teamDetailRevokeManager.
+  ///
+  /// In fr, this message translates to:
+  /// **'Retirer les droits manager'**
+  String get teamDetailRevokeManager;
+
+  /// No description provided for @teamDetailRemoveFromTeam.
+  ///
+  /// In fr, this message translates to:
+  /// **'Retirer'**
+  String get teamDetailRemoveFromTeam;
+
+  /// No description provided for @teamDetailTrackerOwnersTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Trackers GPS'**
+  String get teamDetailTrackerOwnersTitle;
+
+  /// No description provided for @teamDetailTrackerOwnersEmpty.
+  ///
+  /// In fr, this message translates to:
+  /// **'Aucun kit tracker disponible pour votre compte.'**
+  String get teamDetailTrackerOwnersEmpty;
+
+  /// No description provided for @teamDetailTrackerOwnerType.
+  ///
+  /// In fr, this message translates to:
+  /// **'Type : {type}'**
+  String teamDetailTrackerOwnerType(String type);
+
+  /// No description provided for @teamDetailTrackerOwnersSaved.
+  ///
+  /// In fr, this message translates to:
+  /// **'Kits tracker mis à jour.'**
+  String get teamDetailTrackerOwnersSaved;
+
   /// No description provided for @roleCoach.
   ///
   /// In fr, this message translates to:
@@ -4758,7 +4812,7 @@ abstract class AppLocalizations {
   /// No description provided for @calendarSyncToggleSubtitle.
   ///
   /// In fr, this message translates to:
-  /// **'Matchs et entraînements du profil sélectionné'**
+  /// **'Mise à jour auto à l\'ouverture de l\'agenda (max 1×/15 min)'**
   String get calendarSyncToggleSubtitle;
 
   /// No description provided for @calendarSyncWebSubtitle.
@@ -4796,6 +4850,24 @@ abstract class AppLocalizations {
   /// In fr, this message translates to:
   /// **'La synchronisation du calendrier n\'a pas pu être activée. Réessayez.'**
   String get calendarSyncEnableFailed;
+
+  /// No description provided for @calendarSyncForceNow.
+  ///
+  /// In fr, this message translates to:
+  /// **'Synchroniser maintenant'**
+  String get calendarSyncForceNow;
+
+  /// No description provided for @calendarSyncForceSuccess.
+  ///
+  /// In fr, this message translates to:
+  /// **'Calendrier synchronisé.'**
+  String get calendarSyncForceSuccess;
+
+  /// No description provided for @calendarSyncForceFailed.
+  ///
+  /// In fr, this message translates to:
+  /// **'La synchronisation a échoué. Réessayez.'**
+  String get calendarSyncForceFailed;
 }
 
 class _AppLocalizationsDelegate

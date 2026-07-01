@@ -665,6 +665,20 @@
   "teamDetailHeightCm": "{value} cm",
   "teamDetailWeightKg": "{value} kg",
   "teamDetailConfirmRemoveTracker": "Remove tracker assignment for \"{trackerName}\"?",
+  "teamDetailTrackerOwnersTitle": "GPS trackers",
+  "teamDetailTrackerOwnersEmpty": "No tracker kit available for your account.",
+  "teamDetailTrackerOwnerType": "Type: {type}",
+  "@teamDetailTrackerOwnerType": {
+    "placeholders": {
+      "type": { "type": "String" }
+    }
+  },
+  "teamDetailTrackerOwnersSaved": "Tracker kits updated.",
+  "teamDetailColumnApp": "App",
+  "teamDetailPlayerDetailsTitle": "Player details",
+  "teamDetailGrantManager": "Grant manager rights",
+  "teamDetailRevokeManager": "Revoke manager rights",
+  "teamDetailRemoveFromTeam": "Remove",
   "roleCoach": "Coach",
   "roleExecutive": "Executive",
   "grintaStaffRoleEducator": "Coach / Educator",
@@ -887,11 +901,14 @@
     }
   },
   "calendarSyncToggleLabel": "Calendar sync",
-  "calendarSyncToggleSubtitle": "Matches and training sessions for the selected profile",
+  "calendarSyncToggleSubtitle": "Auto-updates when agenda opens (max once every 15 min)",
   "calendarSyncWebSubtitle": "Download an ICS file to import into your calendar",
   "calendarSyncWebRedownloadHint": "Tap to download the calendar file again",
   "calendarSyncWebDownloaded": "Calendar file downloaded. Import it into your calendar app.",
   "calendarSyncPermissionDenied": "Calendar access was denied. Enable it in your device settings.",
   "calendarSyncCalendarCreationFailed": "Could not create the Grinta calendar on this device.",
-  "calendarSyncEnableFailed": "Calendar sync could not be enabled. Please try again."
+  "calendarSyncEnableFailed": "Calendar sync could not be enabled. Please try again.",
+  "calendarSyncForceNow": "Sync now",
+  "calendarSyncForceSuccess": "Calendar synced.",
+  "calendarSyncForceFailed": "Sync failed. Please try again."
 }

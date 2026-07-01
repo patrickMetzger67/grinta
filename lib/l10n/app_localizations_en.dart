@@ -2055,6 +2055,36 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
+  String get teamDetailColumnApp => 'App';
+
+  @override
+  String get teamDetailPlayerDetailsTitle => 'Player details';
+
+  @override
+  String get teamDetailGrantManager => 'Grant manager rights';
+
+  @override
+  String get teamDetailRevokeManager => 'Revoke manager rights';
+
+  @override
+  String get teamDetailRemoveFromTeam => 'Remove';
+
+  @override
+  String get teamDetailTrackerOwnersTitle => 'GPS trackers';
+
+  @override
+  String get teamDetailTrackerOwnersEmpty =>
+      'No tracker kit available for your account.';
+
+  @override
+  String teamDetailTrackerOwnerType(String type) {
+    return 'Type: $type';
+  }
+
+  @override
+  String get teamDetailTrackerOwnersSaved => 'Tracker kits updated.';
+
+  @override
   String get roleCoach => 'Coach';
 
   @override
@@ -2634,7 +2664,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get calendarSyncToggleSubtitle =>
-      'Matches and training sessions for the selected profile';
+      'Auto-updates when agenda opens (max once every 15 min)';
 
   @override
   String get calendarSyncWebSubtitle =>
@@ -2659,4 +2689,13 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get calendarSyncEnableFailed =>
       'Calendar sync could not be enabled. Please try again.';
+
+  @override
+  String get calendarSyncForceNow => 'Sync now';
+
+  @override
+  String get calendarSyncForceSuccess => 'Calendar synced.';
+
+  @override
+  String get calendarSyncForceFailed => 'Sync failed. Please try again.';
 }

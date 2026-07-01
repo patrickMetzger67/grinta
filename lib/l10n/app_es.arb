@@ -659,6 +659,20 @@
   "teamDetailHeightCm": "{value} cm",
   "teamDetailWeightKg": "{value} kg",
   "teamDetailConfirmRemoveTracker": "¿Eliminar la asignación del tracker «{trackerName}»?",
+  "teamDetailTrackerOwnersTitle": "Trackers GPS",
+  "teamDetailTrackerOwnersEmpty": "No hay kit tracker disponible para su cuenta.",
+  "teamDetailTrackerOwnerType": "Tipo: {type}",
+  "@teamDetailTrackerOwnerType": {
+    "placeholders": {
+      "type": { "type": "String" }
+    }
+  },
+  "teamDetailTrackerOwnersSaved": "Kits tracker actualizados.",
+  "teamDetailColumnApp": "App",
+  "teamDetailPlayerDetailsTitle": "Detalles del jugador",
+  "teamDetailGrantManager": "Otorgar derechos de manager",
+  "teamDetailRevokeManager": "Revocar derechos de manager",
+  "teamDetailRemoveFromTeam": "Eliminar",
   "roleCoach": "Entrenador",
   "roleExecutive": "Directivo",
   "grintaStaffRoleEducator": "Entrenador / Educador",
@@ -889,11 +903,14 @@
   "agendaAddEventNonSport": "Un evento / actividad no deportiva",
 
   "calendarSyncToggleLabel": "Sync. calendario",
-  "calendarSyncToggleSubtitle": "Partidos y entrenamientos del perfil seleccionado",
+  "calendarSyncToggleSubtitle": "Actualización al abrir la agenda (máx. 1×/15 min)",
   "calendarSyncWebSubtitle": "Descarga un archivo ICS para importarlo en tu calendario",
   "calendarSyncWebRedownloadHint": "Toca para volver a descargar el archivo del calendario",
   "calendarSyncWebDownloaded": "Archivo de calendario descargado. Impórtalo en tu aplicación de calendario.",
   "calendarSyncPermissionDenied": "Se denegó el acceso al calendario. Actívalo en los ajustes del dispositivo.",
   "calendarSyncCalendarCreationFailed": "No se pudo crear el calendario de Grinta en este dispositivo.",
-  "calendarSyncEnableFailed": "No se pudo activar la sincronización del calendario. Inténtalo de nuevo."
+  "calendarSyncEnableFailed": "No se pudo activar la sincronización del calendario. Inténtalo de nuevo.",
+  "calendarSyncForceNow": "Sincronizar ahora",
+  "calendarSyncForceSuccess": "Calendario sincronizado.",
+  "calendarSyncForceFailed": "Error de sincronización. Inténtalo de nuevo."
 }

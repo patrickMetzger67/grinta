@@ -117,7 +117,10 @@ Future<bool> deleteOwnedTeam(
       currentUserUid: currentUserUid!,
     );
 
-    await appSession.init();
+    final String teamId = team.keyTeam?.trim() ?? '';
+    if (teamId.isNotEmpty) {
+      appSession.removeTeamFromSession(teamId);
+    }
     if (!context.mounted) {
       return true;
     }

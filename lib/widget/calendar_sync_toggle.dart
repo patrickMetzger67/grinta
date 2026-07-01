@@ -25,9 +25,21 @@ class CalendarSyncToggle extends StatefulWidget {
   State<CalendarSyncToggle> createState() => _CalendarSyncToggleState();
 }
 
-class _CalendarSyncToggleState extends State<CalendarSyncToggle> {
+class _CalendarSyncToggleState extends State<CalendarSyncToggle>
+    with SingleTickerProviderStateMixin {
   final CalendarSyncRepository _repository = CalendarSyncRepository();
   bool _busy = false;
+  bool _forceSyncInProgress = false;
+  late final AnimationController _syncSpinController = AnimationController(
+    vsync: this,
+    duration: const Duration(milliseconds: 900),
+  );
+
+  @override
+  void dispose() {
+    _syncSpinController.dispose();
+    super.dispose();
+  }
 
   Future<void> _onChanged(bool value) async {
     if (_busy) return;
@@ -88,8 +100,8 @@ class _CalendarSyncToggleState extends State<CalendarSyncToggle> {
     }
   }
 
-  Future<void> _redownloadWebCalendar() async {
-    if (_busy || !kIsWeb) return;
+  Future<void> _forceSyncNow() async {
+    if (_forceSyncInProgress || _busy) return;
 
     final uid = FirebaseAuth.instance.currentUser?.uid;
     final appSession = context.read<AppSession>();
@@ -97,28 +109,49 @@ class _CalendarSyncToggleState extends State<CalendarSyncToggle> {
 
     if (uid == null || playerId == null) return;
 
-    setState(() => _busy = true);
+    setState(() => _forceSyncInProgress = true);
+    _syncSpinController.repeat();
     try {
-      final result = await CalendarSyncService.instance.redownloadWebCalendar(
-        uid: uid,
-        playerId: playerId,
-        appSession: appSession,
-      );
+      final result = kIsWeb
+          ? await CalendarSyncService.instance.redownloadWebCalendar(
+              uid: uid,
+              playerId: playerId,
+              appSession: appSession,
+            )
+          : await CalendarSyncService.instance.syncForPlayer(
+              uid: uid,
+              playerId: playerId,
+              appSession: appSession,
+              force: true,
+            );
 
       if (!mounted) return;
 
       if (result.success) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(context.l10n.calendarSyncWebDownloaded)),
+          SnackBar(
+            content: Text(
+              kIsWeb
+                  ? context.l10n.calendarSyncWebDownloaded
+                  : context.l10n.calendarSyncForceSuccess,
+            ),
+          ),
         );
-      } else if (!result.success) {
+      } else {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(context.l10n.calendarSyncEnableFailed)),
+          SnackBar(content: Text(context.l10n.calendarSyncForceFailed)),
         );
       }
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(context.l10n.calendarSyncForceFailed)),
+      );
     } finally {
       if (mounted) {
-        setState(() => _busy = false);
+        _syncSpinController.stop();
+        _syncSpinController.reset();
+        setState(() => _forceSyncInProgress = false);
       }
     }
   }
@@ -141,49 +174,76 @@ class _CalendarSyncToggleState extends State<CalendarSyncToggle> {
       builder: (context, snapshot) {
         final enabled = snapshot.data?.enabled == true;
 
-        return ListTile(
-          contentPadding: widget.contentPadding,
-          dense: widget.dense,
-          onTap: kIsWeb && enabled && !_busy ? _redownloadWebCalendar : null,
-          leading: _busy
-              ? SizedBox(
-                  width: 24,
-                  height: 24,
-                  child: CircularProgressIndicator(
-                    strokeWidth: 2.2,
-                    color: colors.primary,
-                  ),
-                )
-              : Icon(
-                  Icons.calendar_month_outlined,
-                  color: colors.primary,
+        return Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            ListTile(
+              contentPadding: widget.contentPadding,
+              dense: widget.dense,
+              leading: _busy
+                  ? SizedBox(
+                      width: 24,
+                      height: 24,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2.2,
+                        color: colors.primary,
+                      ),
+                    )
+                  : Icon(
+                      Icons.calendar_month_outlined,
+                      color: colors.primary,
+                    ),
+              title: Text(
+                l10n.calendarSyncToggleLabel,
+                style: TextStyle(
+                  color: colors.textPrimary,
+                  fontWeight: FontWeight.w600,
                 ),
-          title: Text(
-            l10n.calendarSyncToggleLabel,
-            style: TextStyle(
-              color: colors.textPrimary,
-              fontWeight: FontWeight.w600,
+              ),
+              subtitle: Text(
+                kIsWeb
+                    ? l10n.calendarSyncWebSubtitle
+                    : l10n.calendarSyncToggleSubtitle,
+                style: TextStyle(
+                  color: colors.textSecondary,
+                  fontSize: 12,
+                ),
+              ),
+              trailing: Switch(
+                value: enabled,
+                onChanged: (_busy || _forceSyncInProgress) ? null : _onChanged,
+                activeThumbColor: Colors.white,
+                activeTrackColor: colors.primary,
+                inactiveThumbColor: colors.textSecondary,
+                inactiveTrackColor: colors.border,
+              ),
             ),
-          ),
-          subtitle: Text(
-            kIsWeb
-                ? (enabled
-                    ? l10n.calendarSyncWebRedownloadHint
-                    : l10n.calendarSyncWebSubtitle)
-                : l10n.calendarSyncToggleSubtitle,
-            style: TextStyle(
-              color: colors.textSecondary,
-              fontSize: 12,
-            ),
-          ),
-          trailing: Switch(
-            value: enabled,
-            onChanged: _busy ? null : _onChanged,
-            activeThumbColor: Colors.white,
-            activeTrackColor: colors.primary,
-            inactiveThumbColor: colors.textSecondary,
-            inactiveTrackColor: colors.border,
-          ),
+            if (enabled)
+              Padding(
+                padding: const EdgeInsets.only(left: 16, right: 16, bottom: 4),
+                child: Align(
+                  alignment: Alignment.centerLeft,
+                  child: TextButton.icon(
+                    onPressed: _forceSyncNow,
+                    icon: RotationTransition(
+                      turns: _syncSpinController,
+                      child: Icon(
+                        Icons.sync,
+                        size: 18,
+                        color: colors.primary,
+                      ),
+                    ),
+                    label: Text(l10n.calendarSyncForceNow),
+                    style: TextButton.styleFrom(
+                      foregroundColor: colors.primary,
+                      padding: const EdgeInsets.symmetric(horizontal: 8),
+                      visualDensity: VisualDensity.compact,
+                    ),
+                  ),
+                ),
+              ),
+          ],
         );
       },
     );

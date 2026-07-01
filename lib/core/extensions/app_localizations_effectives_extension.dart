@@ -22,14 +22,22 @@ extension AppLocalizationsEffectives on AppLocalizations {
     }
   }
 
+  /// Staff function from [Effectives.type] or Grinta staff [roleCode].
+  ///
+  /// Legacy goaltime: 2=entraineur, 3=dirigeant. Grinta staff add stores
+  /// [positionCodeEducator]/[positionCodeExecutive]/[positionCodeMedical] as type.
   String staffRoleLabel(int type) {
     switch (type) {
       case 0:
         return entityPlayer;
-      case 1:
-        return roleCoach;
-      case 2:
-        return roleExecutive;
+      case positionCodeEducator:
+        return grintaStaffRoleEducator;
+      case positionCodeExecutive:
+        return grintaStaffRoleExecutive;
+      case 3:
+        return grintaStaffRoleExecutive;
+      case 4:
+        return grintaStaffRoleEducator;
       case positionCodeMedical:
         return grintaStaffRoleMedical;
       default:

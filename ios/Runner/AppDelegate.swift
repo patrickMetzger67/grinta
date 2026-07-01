@@ -1,6 +1,7 @@
 import Flutter
 import GoogleMaps
 import UIKit
+import app_links
 
 @main
 @objc class AppDelegate: FlutterAppDelegate, FlutterImplicitEngineDelegate {
@@ -24,7 +25,12 @@ import UIKit
   ) -> Bool {
     // Doit être appelé avant super (cf. exemple google_maps_flutter_ios).
     provideGoogleMapsApiKey()
-    return super.application(application, didFinishLaunchingWithOptions: launchOptions)
+    let result = super.application(application, didFinishLaunchingWithOptions: launchOptions)
+    // Cold-start custom scheme / universal link (required for app_links).
+    if let url = AppLinks.shared.getLink(launchOptions: launchOptions) {
+      AppLinks.shared.handleLink(url: url)
+    }
+    return result
   }
 
   func didInitializeImplicitFlutterEngine(_ engineBridge: FlutterImplicitEngineBridge) {

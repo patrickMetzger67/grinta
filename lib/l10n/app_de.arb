@@ -659,6 +659,20 @@
   "teamDetailHeightCm": "{value} cm",
   "teamDetailWeightKg": "{value} kg",
   "teamDetailConfirmRemoveTracker": "Zuweisung des Trackers „{trackerName}“ entfernen?",
+  "teamDetailTrackerOwnersTitle": "GPS-Tracker",
+  "teamDetailTrackerOwnersEmpty": "Kein Tracker-Kit für Ihr Konto verfügbar.",
+  "teamDetailTrackerOwnerType": "Typ: {type}",
+  "@teamDetailTrackerOwnerType": {
+    "placeholders": {
+      "type": { "type": "String" }
+    }
+  },
+  "teamDetailTrackerOwnersSaved": "Tracker-Kits aktualisiert.",
+  "teamDetailColumnApp": "App",
+  "teamDetailPlayerDetailsTitle": "Spielerdetails",
+  "teamDetailGrantManager": "Managerrechte erteilen",
+  "teamDetailRevokeManager": "Managerrechte entziehen",
+  "teamDetailRemoveFromTeam": "Entfernen",
   "roleCoach": "Trainer",
   "roleExecutive": "Funktionär",
   "grintaStaffRoleEducator": "Trainer / Erzieher",
@@ -889,11 +903,14 @@
   "agendaAddEventNonSport": "Ein nicht-sportliches Ereignis / Aktivität",
 
   "calendarSyncToggleLabel": "Kalender-Sync",
-  "calendarSyncToggleSubtitle": "Spiele und Trainingseinheiten des ausgewählten Profils",
+  "calendarSyncToggleSubtitle": "Aktualisierung beim Öffnen der Agenda (max. 1×/15 Min.)",
   "calendarSyncWebSubtitle": "ICS-Datei herunterladen und in den Kalender importieren",
   "calendarSyncWebRedownloadHint": "Tippen, um die Kalenderdatei erneut herunterzuladen",
   "calendarSyncWebDownloaded": "Kalenderdatei heruntergeladen. Importiere sie in deine Kalender-App.",
   "calendarSyncPermissionDenied": "Kalenderzugriff wurde verweigert. Aktivieren Sie ihn in den Geräteeinstellungen.",
   "calendarSyncCalendarCreationFailed": "Der Grinta-Kalender konnte auf diesem Gerät nicht erstellt werden.",
-  "calendarSyncEnableFailed": "Kalendersynchronisation konnte nicht aktiviert werden. Bitte versuchen Sie es erneut."
+  "calendarSyncEnableFailed": "Kalendersynchronisation konnte nicht aktiviert werden. Bitte versuchen Sie es erneut.",
+  "calendarSyncForceNow": "Jetzt synchronisieren",
+  "calendarSyncForceSuccess": "Kalender synchronisiert.",
+  "calendarSyncForceFailed": "Synchronisation fehlgeschlagen. Bitte erneut versuchen."
 }

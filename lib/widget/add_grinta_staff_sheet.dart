@@ -25,6 +25,7 @@ Future<AddGrintaStaffDetails?> showAddGrintaStaffSheet(
   BuildContext context, {
   required Player member,
   GrintaPlayer? existingGrintaStaff,
+  Future<void> Function(AddGrintaStaffDetails details)? onSubmit,
 }) {
   return showModalBottomSheet<AddGrintaStaffDetails>(
     context: context,
@@ -34,6 +35,7 @@ Future<AddGrintaStaffDetails?> showAddGrintaStaffSheet(
     builder: (_) => AddGrintaStaffSheet(
       member: member,
       existingGrintaStaff: existingGrintaStaff,
+      onSubmit: onSubmit,
     ),
   );
 }
@@ -43,10 +45,12 @@ class AddGrintaStaffSheet extends StatefulWidget {
     super.key,
     required this.member,
     this.existingGrintaStaff,
+    this.onSubmit,
   });
 
   final Player member;
   final GrintaPlayer? existingGrintaStaff;
+  final Future<void> Function(AddGrintaStaffDetails details)? onSubmit;
 
   bool get isEditMode => existingGrintaStaff != null;
 
@@ -62,6 +66,7 @@ class _AddGrintaStaffSheetState extends State<AddGrintaStaffSheet> {
   String? _phoneE164;
   String? _emailError;
   String? _phoneError;
+  bool _isSubmitting = false;
 
   @override
   void initState() {
@@ -74,10 +79,15 @@ class _AddGrintaStaffSheetState extends State<AddGrintaStaffSheet> {
     _phoneE164 = existing?.phoneE164?.trim() ??
         widget.member.phoneE164?.trim();
 
-    if (existing != null && existing.positions.isNotEmpty) {
-      final int code = existing.positions.first;
-      if (grintaStaffRoleCodes.contains(code)) {
-        _selectedRoleCode = code;
+    if (existing != null) {
+      final int? existingFonction = existing.fonction;
+      if (existingFonction != null && existingFonction > 0) {
+        _selectedRoleCode = existingFonction;
+      } else if (existing.positions.isNotEmpty) {
+        final int code = existing.positions.first;
+        if (grintaStaffRoleCodes.contains(code)) {
+          _selectedRoleCode = code;
+        }
       }
     }
   }
@@ -108,8 +118,10 @@ class _AddGrintaStaffSheetState extends State<AddGrintaStaffSheet> {
     return null;
   }
 
-  void _onConfirm() {
+  Future<void> _onConfirm() async {
     final l10n = context.l10n;
+
+    if (_isSubmitting) return;
 
     if (_selectedRoleCode == null) {
       setState(() {
@@ -135,13 +147,33 @@ class _AddGrintaStaffSheetState extends State<AddGrintaStaffSheet> {
     }
 
     final phoneE164 = _phoneE164!.trim();
-    Navigator.of(context).pop(
-      AddGrintaStaffDetails(
-        roleCode: _selectedRoleCode!,
-        phoneE164: phoneE164,
-        email: email.isEmpty ? null : email,
-      ),
+    final details = AddGrintaStaffDetails(
+      roleCode: _selectedRoleCode!,
+      phoneE164: phoneE164,
+      email: email.isEmpty ? null : email,
     );
+
+    final submit = widget.onSubmit;
+    if (submit != null) {
+      setState(() => _isSubmitting = true);
+      try {
+        await submit(details);
+        if (!mounted) return;
+        Navigator.of(context).pop(details);
+      } catch (e) {
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(l10n.errorGeneric(e.toString()))),
+        );
+      } finally {
+        if (mounted) {
+          setState(() => _isSubmitting = false);
+        }
+      }
+      return;
+    }
+
+    Navigator.of(context).pop(details);
   }
 
   @override
@@ -260,19 +292,30 @@ class _AddGrintaStaffSheetState extends State<AddGrintaStaffSheet> {
                   children: [
                     Expanded(
                       child: OutlinedButton(
-                        onPressed: () => Navigator.of(context).pop(),
+                        onPressed: _isSubmitting
+                            ? null
+                            : () => Navigator.of(context).pop(),
                         child: Text(l10n.actionCancel),
                       ),
                     ),
                     const SizedBox(width: 12),
                     Expanded(
                       child: FilledButton(
-                        onPressed: _onConfirm,
-                        child: Text(
-                          widget.isEditMode
-                              ? l10n.actionSave
-                              : l10n.actionAddStaff,
-                        ),
+                        onPressed: _isSubmitting ? null : _onConfirm,
+                        child: _isSubmitting
+                            ? SizedBox(
+                                width: 20,
+                                height: 20,
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2.2,
+                                  color: Colors.white,
+                                ),
+                              )
+                            : Text(
+                                widget.isEditMode
+                                    ? l10n.actionSave
+                                    : l10n.actionAddStaff,
+                              ),
                       ),
                     ),
                   ],

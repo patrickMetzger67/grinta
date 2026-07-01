@@ -2098,6 +2098,36 @@ class AppLocalizationsDe extends AppLocalizations {
   }
 
   @override
+  String get teamDetailColumnApp => 'App';
+
+  @override
+  String get teamDetailPlayerDetailsTitle => 'Spielerdetails';
+
+  @override
+  String get teamDetailGrantManager => 'Managerrechte erteilen';
+
+  @override
+  String get teamDetailRevokeManager => 'Managerrechte entziehen';
+
+  @override
+  String get teamDetailRemoveFromTeam => 'Entfernen';
+
+  @override
+  String get teamDetailTrackerOwnersTitle => 'GPS-Tracker';
+
+  @override
+  String get teamDetailTrackerOwnersEmpty =>
+      'Kein Tracker-Kit für Ihr Konto verfügbar.';
+
+  @override
+  String teamDetailTrackerOwnerType(String type) {
+    return 'Typ: $type';
+  }
+
+  @override
+  String get teamDetailTrackerOwnersSaved => 'Tracker-Kits aktualisiert.';
+
+  @override
   String get roleCoach => 'Trainer';
 
   @override
@@ -2678,7 +2708,7 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get calendarSyncToggleSubtitle =>
-      'Spiele und Trainingseinheiten des ausgewählten Profils';
+      'Aktualisierung beim Öffnen der Agenda (max. 1×/15 Min.)';
 
   @override
   String get calendarSyncWebSubtitle =>
@@ -2703,4 +2733,14 @@ class AppLocalizationsDe extends AppLocalizations {
   @override
   String get calendarSyncEnableFailed =>
       'Kalendersynchronisation konnte nicht aktiviert werden. Bitte versuchen Sie es erneut.';
+
+  @override
+  String get calendarSyncForceNow => 'Jetzt synchronisieren';
+
+  @override
+  String get calendarSyncForceSuccess => 'Kalender synchronisiert.';
+
+  @override
+  String get calendarSyncForceFailed =>
+      'Synchronisation fehlgeschlagen. Bitte erneut versuchen.';
 }

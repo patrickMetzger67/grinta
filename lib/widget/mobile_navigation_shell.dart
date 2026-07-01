@@ -70,6 +70,7 @@ class _MobileNavigationShellState extends State<MobileNavigationShell> {
   @override
   void initState() {
     super.initState();
+    ShellNavigationScope.registerGlobalNavigator(_selectTabByFeatureId);
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _markTabFeatureVisited(_selectedIndex);
       _logTabScreen(_selectedIndex);
@@ -79,6 +80,7 @@ class _MobileNavigationShellState extends State<MobileNavigationShell> {
 
   @override
   void dispose() {
+    ShellNavigationScope.registerGlobalNavigator(null);
     _tabAnalytics.dispose();
     super.dispose();
   }

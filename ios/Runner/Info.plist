@@ -84,6 +84,8 @@
 		<string>Grinta synchronise vos matchs et entraînements avec le calendrier de votre téléphone. / Grinta syncs your matches and training sessions with your phone calendar.</string>
 		<key>NSCalendarsFullAccessUsageDescription</key>
 		<string>Grinta synchronise vos matchs et entraînements avec le calendrier de votre téléphone. / Grinta syncs your matches and training sessions with your phone calendar.</string>
+		<key>FlutterDeepLinkingEnabled</key>
+		<false/>
 		<key>CFBundleURLTypes</key>
 		<array>
 			<dict>

@@ -1,5 +1,7 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/foundation.dart';
+import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:grinta/core/extensions/app_localizations_effectives_extension.dart';
 import 'package:grinta/analytics/analytics_features.dart';
@@ -34,12 +36,15 @@ import '../../services/deviceService.dart';
 import '../../services/invitationService.dart';
 import '../../services/member_invitation_service.dart';
 import '../../services/ownerService.dart';
+import '../../services/userService.dart';
 import '../../services/player_positions_service.dart';
 import '../../widget/add_grinta_player_sheet.dart';
+import '../../widget/team_tracker_owners_sheet.dart';
 import '../../widget/add_grinta_staff_sheet.dart';
 import '../../widget/member_search_sheet.dart';
 import '../../widget/playerPhoto.dart';
 import '../../widget/player_contact_lines.dart';
+import '../team_players/training_team_players_tracker.dart';
 
 part 'team_detail_widgets.dart';
 
@@ -82,6 +87,7 @@ class _TeamDetailScreenState extends State<TeamDetailScreen> {
   late final DeviceOwnerService _deviceOwnerService;
   late final DeviceService _deviceService;
   late final OwnerService _ownerService;
+  late final UserService _userService;
 
   late Future<List<_TeamMemberVm>> _future;
 
@@ -94,6 +100,10 @@ class _TeamDetailScreenState extends State<TeamDetailScreen> {
   Team? _serverTeam;
   int _headerPlayersCount = 0;
   int _headerStaffCount = 0;
+  bool _userOwnersLoaded = false;
+  List<Owner> _userOwnersByEmail = const [];
+  bool _isMemberOperationLoading = false;
+  MemberInvitationResult? _pendingMemberInvitationResult;
 
   @override
   void initState() {
@@ -105,12 +115,17 @@ class _TeamDetailScreenState extends State<TeamDetailScreen> {
     _deviceOwnerService = DeviceOwnerService();
     _deviceService = DeviceService();
     _ownerService = OwnerService();
+    _userService = UserService();
 
     _team = widget.team;
     _serverTeam = null;
     _headerPlayersCount = 0;
     _headerStaffCount = 0;
-    _future = _fetchTeamFromFirestore().then((_) => _loadMembers());
+    _future = _fetchTeamFromFirestore().then((_) async {
+      final List<_TeamMemberVm> members = await _loadMembers();
+      await _refreshUserOwnersAvailability();
+      return members;
+    });
   }
 
   @override
@@ -125,27 +140,128 @@ class _TeamDetailScreenState extends State<TeamDetailScreen> {
         _serverTeam = null;
         _headerPlayersCount = 0;
         _headerStaffCount = 0;
-        _future = _fetchTeamFromFirestore().then((_) => _loadMembers());
+        _userOwnersLoaded = false;
+        _userOwnersByEmail = const [];
+        _future = _fetchTeamFromFirestore().then((_) async {
+          final List<_TeamMemberVm> members = await _loadMembers();
+          await _refreshUserOwnersAvailability();
+          return members;
+        });
       });
     }
   }
 
-  /// Managers ([widget.isManager]), Grinta owners ([Team.uid]), or entries in
-  /// [Team.managers] for the signed-in Firebase user.
-  bool _canManageTeam(BuildContext context) {
-    final String? currentUserUid =
-        context.read<AppSession>().user?.uid ??
-        FirebaseAuth.instance.currentUser?.uid;
-    return canManageTeam(
-      _serverTeam ?? _team,
-      currentUserUid,
-      isManager: widget.isManager,
+  Future<String> _teamOwnerEmail() async {
+    final Team team = _serverTeam ?? _team;
+    final String uid = team.uid?.trim() ?? '';
+    if (uid.isEmpty) return '';
+    final profile = await _userService.getById(uid);
+    return profile?.email.trim() ?? '';
+  }
+
+  Future<void> _refreshUserOwnersAvailability() async {
+    if (_team.hasAnyTrackerOwners) {
+      if (mounted) {
+        setState(() {
+          _userOwnersLoaded = true;
+          _userOwnersByEmail = const [];
+        });
+      }
+      return;
+    }
+
+    final String email = await _teamOwnerEmail();
+    final List<Owner> owners =
+        email.isEmpty ? const [] : await _ownerService.getOwnersByEmail(email);
+    if (!mounted) return;
+    setState(() {
+      _userOwnersLoaded = true;
+      _userOwnersByEmail = owners;
+    });
+  }
+
+  bool _showTrackerOwnersButton(BuildContext context) {
+    if (_team.hasAnyTrackerOwners) return true;
+    if (!_canManageTeam(context)) return false;
+    return _userOwnersLoaded && _userOwnersByEmail.isNotEmpty;
+  }
+
+  Future<void> _onTrackerOwnersPressed(BuildContext context) async {
+    final bool? updated = await showTeamTrackerOwnersSheet(
+      context,
+      team: _serverTeam ?? _team,
+      isManager: _canManageTeam(context),
+      ownerService: _ownerService,
+      teamService: TeamService(),
+      userService: _userService,
+    );
+    if (updated == true && mounted) {
+      await _reloadTeamAndMembers();
+      await _refreshUserOwnersAvailability();
+    }
+  }
+
+  Widget _buildTrackerOwnersHeaderButton(
+    BuildContext context, {
+    double size = 50,
+    double iconSize = 24,
+  }) {
+    if (!_showTrackerOwnersButton(context)) {
+      return const SizedBox.shrink();
+    }
+    return _HeaderSquareIconButton(
+      size: size,
+      iconSize: iconSize,
+      icon: Icons.sensors_rounded,
+      onTap: () => _onTrackerOwnersPressed(context),
     );
   }
 
-  /// Roster mutations are disabled when players are managed in another app.
+  /// Managers ([widget.isManager] / session managed teams), Grinta owners
+  /// ([Team.uid]), or entries in [Team.managers] for the signed-in Firebase user.
+  bool _canManageTeam(BuildContext context) {
+    final AppSession appSession = context.read<AppSession>();
+    final String? currentUserUid =
+        appSession.user?.uid ?? FirebaseAuth.instance.currentUser?.uid;
+    final Team team = _serverTeam ?? _team;
+    final String teamId = team.keyTeam?.trim() ?? '';
+    final bool sessionManagedTeam = teamId.isNotEmpty &&
+        appSession.managedTeamsIdsForSelectedSeason.contains(teamId);
+    return canManageTeam(
+      team,
+      currentUserUid,
+      isManager: widget.isManager || sessionManagedTeam,
+    );
+  }
+
+  /// Display roster comes from legacy `team.players` when that array has IDs.
+  bool _rosterDisplayUsesLegacy() => _teamHasLegacyPlayers();
+
+  /// Add/edit/delete targets `grintaPlayers` for Grinta teams even when legacy
+  /// `players` is still shown for display (stale migration data).
+  bool _mutationsTargetGrintaRosterFor(Team team) {
+    if (team.isGrinta == true) {
+      return true;
+    }
+    return _teamUsesGrintaRosterFor(team);
+  }
+
+  /// Managers on Grinta teams may mutate `grintaPlayers` regardless of legacy
+  /// `players` display state.
+  bool _canMutateGrintaRoster(BuildContext context) {
+    return _canManageTeam(context) && _team.isGrinta == true;
+  }
+
+  /// Roster mutations: allowed for Grinta managers; otherwise blocked when the
+  /// roster is displayed from legacy `players` (externally managed).
   bool _canManageRoster(BuildContext context) {
-    return !_teamUsesExternalLegacyRoster() && _canManageTeam(context);
+    if (!_canManageTeam(context)) {
+      return false;
+    }
+    if (_canMutateGrintaRoster(context)) {
+      return true;
+    }
+    return !_rosterDisplayUsesLegacy();
   }
 
   void _applyFetchedTeamState({
@@ -308,11 +424,17 @@ class _TeamDetailScreenState extends State<TeamDetailScreen> {
       return null;
     }
 
-    if (raw is! String) {
-      return null;
+    if (raw is DocumentReference) {
+      final String id = raw.id.trim();
+      return id.isEmpty ? null : id;
     }
 
-    final String id = raw.trim();
+    if (raw is String) {
+      final String id = raw.trim();
+      return id.isEmpty ? null : id;
+    }
+
+    final String id = raw.toString().trim();
     return id.isEmpty ? null : id;
   }
 
@@ -335,7 +457,6 @@ class _TeamDetailScreenState extends State<TeamDetailScreen> {
     if (_teamUsesGrintaRosterFor(team)) {
       var players = 0;
       var staff = 0;
-      final Set<String> managerIds = _legacyManagerRosterIdsFor(team);
 
       for (final GrintaPlayer grintaPlayer
           in team.grintaPlayers ?? const <GrintaPlayer>[]) {
@@ -346,7 +467,8 @@ class _TeamDetailScreenState extends State<TeamDetailScreen> {
 
         if (isGrintaRosterStaff(
           positions: grintaPlayer.positions,
-          listedInManagers: managerIds.contains(playerId),
+          fonction: grintaPlayer.fonction,
+          listedInManagers: false,
         )) {
           staff++;
         } else {
@@ -357,9 +479,18 @@ class _TeamDetailScreenState extends State<TeamDetailScreen> {
       return (players: players, staff: staff);
     }
 
+    final Set<String> playerIds = _legacyPlayerRosterIdsFor(team);
+    final Set<String> managerIds = _legacyManagerRosterIdsFor(team);
+    var staffOnly = 0;
+    for (final String id in managerIds) {
+      if (!playerIds.contains(id)) {
+        staffOnly++;
+      }
+    }
+
     return (
       players: _nonEmptyRosterIdCount(team.players),
-      staff: _nonEmptyRosterIdCount(team.managers),
+      staff: staffOnly,
     );
   }
 
@@ -368,9 +499,6 @@ class _TeamDetailScreenState extends State<TeamDetailScreen> {
   }
 
   bool _teamHasLegacyPlayers() => _teamHasLegacyPlayersFor(_team);
-
-  /// Players/staff roster is managed in another app when `team.players` has IDs.
-  bool _teamUsesExternalLegacyRoster() => _teamHasLegacyPlayers();
 
   bool _teamHasGrintaPlayersFor(Team team) {
     for (final GrintaPlayer grintaPlayer
@@ -438,17 +566,66 @@ class _TeamDetailScreenState extends State<TeamDetailScreen> {
       return false;
     }
 
-    final String keyMember = row.player.keyMember?.trim() ?? '';
-    if (keyMember.isNotEmpty && rosterIds.contains(keyMember)) {
-      return true;
+    for (final String id in playerMemberLookupIds(row.player)) {
+      if (rosterIds.contains(id)) {
+        return true;
+      }
     }
 
-    final String userId = row.player.userID?.trim() ?? '';
-    if (userId.isNotEmpty && rosterIds.contains(userId)) {
-      return true;
+    for (final dynamic raw in row.player.users ?? const <dynamic>[]) {
+      final String? id = _rosterMemberId(raw);
+      if (id != null && rosterIds.contains(id)) {
+        return true;
+      }
     }
 
     return false;
+  }
+
+  /// Legacy effectives [Effectives.type]: 1=joueur, 2=entraineur, 3=dirigeant,
+  /// 4=entraineur/joueur. Type 0 is a legacy player marker used elsewhere.
+  bool _legacyEffectivesMeansPlayer(Effectives effectives) {
+    final int type = effectives.type ?? 1;
+    return type == 0 || type == 1 || type == 4;
+  }
+
+  bool _legacyEffectivesMeansStaff(Effectives effectives) {
+    final int type = effectives.type ?? 1;
+    return type == 2 || type == 3;
+  }
+
+  bool _isPlayerManager(_TeamMemberVm row) {
+    return _rowMatchesRosterIds(row, _legacyManagerRosterIds());
+  }
+
+  /// Edit targets `grintaPlayers` for Grinta roster rows, or legacy-display rows
+  /// on Grinta teams (managers may edit even without a prior grintaPlayers entry).
+  bool _canEditPlayerRow(_TeamMemberVm row) {
+    if (row.isGrintaRoster) {
+      return true;
+    }
+    if (!_usesGrintaRosterPathFor(_team)) {
+      return false;
+    }
+    if (_team.isGrinta == true && _isPlayerMember(row)) {
+      return true;
+    }
+    return _resolveGrintaPlayerForRow(row) != null;
+  }
+
+  Set<String> _linkedManagerUserIds(Player player, String memberId) {
+    final Set<String> ids = <String>{};
+    final String? userId = player.userID?.trim();
+    if (userId != null && userId.isNotEmpty && userId != memberId) {
+      ids.add(userId);
+    }
+    for (final dynamic raw in player.users ?? const <dynamic>[]) {
+      final String trimmed = raw?.toString().trim() ?? '';
+      if (trimmed.isNotEmpty && trimmed != memberId) {
+        ids.add(trimmed);
+      }
+    }
+    return ids;
   }
 
   Set<String> _explicitRosterMemberIds() {
@@ -470,13 +647,11 @@ class _TeamDetailScreenState extends State<TeamDetailScreen> {
     return ids;
   }
 
-  Set<String> _grintaManagerIds() => _legacyManagerRosterIds();
-
   bool _isGrintaStaffGrintaPlayer(GrintaPlayer entry) {
     return isGrintaRosterStaff(
       positions: entry.positions,
-      listedInManagers:
-          _grintaManagerIds().contains(entry.playerId.trim()),
+      fonction: entry.fonction,
+      listedInManagers: false,
     );
   }
 
@@ -550,30 +725,39 @@ class _TeamDetailScreenState extends State<TeamDetailScreen> {
   }
 
   bool _isListedOnTeamRoster(_TeamMemberVm row) {
-    final Set<String> rosterIds = _explicitRosterMemberIds();
-    if (rosterIds.isEmpty) {
-      return false;
+    return _rowMatchesRosterIds(row, _explicitRosterMemberIds());
+  }
+
+  Future<Effectives?> _resolveLegacyEffectivesForRow({
+    required Player player,
+    required String rosterMemberId,
+    required String teamId,
+  }) async {
+    final Set<String> candidateIds = <String>{
+      rosterMemberId.trim(),
+      ...playerMemberLookupIds(player),
+    }..removeWhere((String id) => id.isEmpty);
+
+    for (final String memberId in candidateIds) {
+      final Effectives? effectives =
+          await _effectivesService.getEffectivesByMemberIdAndTeamId(
+        memberId,
+        teamId,
+      );
+      if (effectives != null) {
+        return effectives;
+      }
     }
 
-    final String keyMember = row.player.keyMember?.trim() ?? '';
-    if (keyMember.isNotEmpty && rosterIds.contains(keyMember)) {
-      return true;
-    }
-
-    final String userId = row.player.userID?.trim() ?? '';
-    if (userId.isNotEmpty && rosterIds.contains(userId)) {
-      return true;
-    }
-
-    return false;
+    return null;
   }
 
   bool _hasStaffProfilePosition(_TeamMemberVm row) {
     if (row.isGrintaRoster) {
       return isGrintaRosterStaff(
         positions: row.grintaPositions,
-        listedInManagers:
-            _rowMatchesRosterIds(row, _legacyManagerRosterIds()),
+        fonction: row.grintaFonction,
+        listedInManagers: false,
       );
     }
 
@@ -589,13 +773,18 @@ class _TeamDetailScreenState extends State<TeamDetailScreen> {
       return !_hasStaffProfilePosition(row);
     }
 
+    // Legacy roster: `team.players` defines the player section. Manager
+    // permissions (`team.managers`) must not move a field player to staff.
     if (_rowMatchesRosterIds(row, _legacyPlayerRosterIds())) {
-      final Effectives? effectives = row.effectives;
-      return effectives == null || effectives.type == 0;
+      return true;
+    }
+
+    if (_rowMatchesRosterIds(row, _legacyManagerRosterIds())) {
+      return false;
     }
 
     final Effectives? effectives = row.effectives;
-    return effectives != null && effectives.type == 0;
+    return effectives != null && _legacyEffectivesMeansPlayer(effectives);
   }
 
   bool _isStaffMember(_TeamMemberVm row) {
@@ -607,13 +796,17 @@ class _TeamDetailScreenState extends State<TeamDetailScreen> {
       return _hasStaffProfilePosition(row);
     }
 
+    // Legacy roster: staff = managers not listed in `team.players`.
+    if (_rowMatchesRosterIds(row, _legacyPlayerRosterIds())) {
+      return false;
+    }
+
     if (_rowMatchesRosterIds(row, _legacyManagerRosterIds())) {
-      final Effectives? effectives = row.effectives;
-      return effectives == null || effectives.type != 0;
+      return true;
     }
 
     final Effectives? effectives = row.effectives;
-    return effectives != null && effectives.type != 0;
+    return effectives != null && _legacyEffectivesMeansStaff(effectives);
   }
 
   Future<List<_TeamMemberVm>> _loadMembers() async {
@@ -663,15 +856,11 @@ class _TeamDetailScreenState extends State<TeamDetailScreen> {
             return null;
           }
 
-          final String effectiveMemberId =
-              player.keyMember?.trim().isNotEmpty == true
-                  ? player.keyMember!.trim()
-                  : memberId;
-
           final Effectives? effectives =
-          await _effectivesService.getEffectivesByMemberIdAndTeamId(
-            effectiveMemberId,
-            teamId,
+              await _resolveLegacyEffectivesForRow(
+            player: player,
+            rosterMemberId: memberId,
+            teamId: teamId,
           );
 
           final List<_TrackerChipVm> trackers = await _loadTrackers(
@@ -748,6 +937,7 @@ class _TeamDetailScreenState extends State<TeamDetailScreen> {
             effectives: null,
             trackers: trackers,
             grintaPositions: List<int>.from(grintaPlayer.positions),
+            grintaFonction: grintaPlayer.fonction,
             isGrintaRoster: true,
             grintaEmail: grintaPlayer.email,
             grintaPhoneE164: grintaPlayer.phoneE164,
@@ -817,12 +1007,13 @@ class _TeamDetailScreenState extends State<TeamDetailScreen> {
 
     int orderForRow(_TeamMemberVm row, int fallbackIndex) {
       final String memberKey = effectiveMemberId(row.player)?.trim() ?? '';
+      final bool rowIsStaff = _hasStaffProfilePosition(row);
       for (int index = 0; index < grintaPlayers.length; index++) {
         final GrintaPlayer entry = grintaPlayers[index];
         if (entry.playerId.trim() != memberKey) {
           continue;
         }
-        if (listEquals(entry.positions, row.grintaPositions)) {
+        if (_isGrintaStaffGrintaPlayer(entry) == rowIsStaff) {
           return rosterOrder['$memberKey#$index'] ?? index;
         }
       }
@@ -846,7 +1037,7 @@ class _TeamDetailScreenState extends State<TeamDetailScreen> {
   String _positionLabelForRow(_TeamMemberVm row, AppLocalizations l10n) {
     if (row.isGrintaRoster) {
       if (row.grintaPositions.isEmpty) {
-        return l10n.entityPlayer;
+        return _legacyProfileFieldPositionLabel(row.player, l10n);
       }
 
       final PlayerPositionsService positionsService =
@@ -856,7 +1047,46 @@ class _TeamDetailScreenState extends State<TeamDetailScreen> {
           .join(', ');
     }
 
-    return getStrPosition(row.effectives?.position ?? 0, l10n);
+    final int? effectivesPosition = row.effectives?.position;
+    if (effectivesPosition != null &&
+        isMemberProfileFieldPlayerRole(effectivesPosition)) {
+      return getStrPosition(effectivesPosition, l10n);
+    }
+
+    if (effectivesPosition != null &&
+        isDefiniteGrintaFieldPitchCode(effectivesPosition)) {
+      return PlayerPositionsService.instance.labelForCode(
+        effectivesPosition,
+        l10n,
+      );
+    }
+
+    return _legacyProfileFieldPositionLabel(row.player, l10n);
+  }
+
+  String _legacyProfileFieldPositionLabel(Player player, AppLocalizations l10n) {
+    final PlayerPositionsService positionsService =
+        PlayerPositionsService.instance;
+
+    final List<int> grintaPitchCodes = player.positionCodes
+        .where(isDefiniteGrintaFieldPitchCode)
+        .toList(growable: false);
+    if (grintaPitchCodes.isNotEmpty) {
+      return grintaPitchCodes
+          .map((int code) => positionsService.labelForCode(code, l10n))
+          .join(', ');
+    }
+
+    final List<int> legacyFieldCodes = player.positionCodes
+        .where(isMemberProfileFieldPlayerRole)
+        .toList(growable: false);
+    if (legacyFieldCodes.isNotEmpty) {
+      return legacyFieldCodes
+          .map((int code) => getStrPosition(code, l10n))
+          .join(', ');
+    }
+
+    return l10n.entityPlayer;
   }
 
   Widget _playerContactLinesForRow(_TeamMemberVm row) {
@@ -890,9 +1120,194 @@ class _TeamDetailScreenState extends State<TeamDetailScreen> {
     return result;
   }
 
+  bool _canAssignTeamTrackers(BuildContext context) {
+    if (!_canManageRoster(context)) {
+      return false;
+    }
+    return (_serverTeam ?? _team).hasAnyTrackerOwners;
+  }
+
+  Iterable<String> _teamTrackerOwnerIds() {
+    return (_serverTeam ?? _team)
+        .ownerRefs
+        .map((TeamOwnerRef ref) => ref.id.trim())
+        .where((String id) => id.isNotEmpty);
+  }
+
+  Future<List<DeviceOwner>> _loadTeamTrackerDevices() async {
+    final List<DeviceOwner> devices = <DeviceOwner>[];
+    for (final String ownerId in _teamTrackerOwnerIds()) {
+      final List<DeviceOwner> ownerDevices =
+          await _deviceOwnerService.listByOwnerId(ownerId);
+      devices.addAll(ownerDevices);
+    }
+    devices.sort(compareDeviceOwnersByCustomName);
+    return devices;
+  }
+
+  Set<String> _collectAssignedTrackerDocIds(List<_TeamMemberVm> members) {
+    final Set<String> assignedIds = <String>{};
+    for (final _TeamMemberVm member in members) {
+      for (final _TrackerChipVm tracker in member.trackers) {
+        final String id = tracker.id.trim();
+        if (id.isNotEmpty) {
+          assignedIds.add(id);
+        }
+      }
+    }
+    for (final GrintaPlayer grintaPlayer
+        in _team.grintaPlayers ?? const <GrintaPlayer>[]) {
+      for (final String trackerId in grintaPlayer.trackers) {
+        final String id = trackerId.trim();
+        if (id.isNotEmpty) {
+          assignedIds.add(id);
+        }
+      }
+    }
+    return assignedIds;
+  }
+
+  Future<DeviceOwner?> _resolveDeviceOwnerByTrackerId(String trackerId) async {
+    final String trimmed = trackerId.trim();
+    if (trimmed.isEmpty) {
+      return null;
+    }
+
+    final DeviceOwner? byDocId = await _deviceOwnerService.getById(trimmed);
+    if (byDocId != null) {
+      return byDocId;
+    }
+
+    for (final String ownerId in _teamTrackerOwnerIds()) {
+      final DeviceOwner? byCustomName =
+          await _deviceOwnerService.getByOwnerIdAndCustomName(ownerId, trimmed);
+      if (byCustomName != null) {
+        return byCustomName;
+      }
+    }
+    return null;
+  }
+
+  Future<void> _persistTrackerChange({
+    required _TeamMemberVm row,
+    required String deviceOwnerDocId,
+    required bool add,
+  }) async {
+    final String? teamId = _team.keyTeam?.trim();
+    if (teamId == null || teamId.isEmpty) {
+      throw StateError('Missing team id');
+    }
+
+    if (_mutationsTargetGrintaRosterFor(_team)) {
+      final String? memberId = effectiveMemberId(row.player);
+      if (memberId == null || memberId.isEmpty) {
+        throw StateError('Missing player id');
+      }
+
+      GrintaPlayer? existing = _resolveGrintaPlayerForRow(row);
+      if (existing != null) {
+        final List<String> trackers = List<String>.from(existing.trackers);
+        if (add) {
+          if (!trackers.contains(deviceOwnerDocId)) {
+            trackers.add(deviceOwnerDocId);
+          }
+        } else {
+          trackers.remove(deviceOwnerDocId);
+        }
+
+        final GrintaPlayer updated = GrintaPlayer(
+          playerId: existing.playerId,
+          positions: List<int>.from(existing.positions),
+          fonction: existing.fonction,
+          trackers: trackers,
+          email: existing.email,
+          phoneE164: existing.phoneE164,
+          birthday: existing.birthday,
+          hwHistory: List<GrintaPlayerHW>.from(existing.hwHistory),
+          invitationId: existing.invitationId,
+        );
+
+        final GrintaPlayer resolvedExisting = existing;
+        await TeamService().updateGrintaPlayer(
+          teamId: teamId,
+          playerId: resolvedExisting.playerId,
+          player: updated,
+          staffEntry: _isGrintaStaffGrintaPlayer(resolvedExisting),
+        );
+
+        final List<GrintaPlayer> grintaPlayers =
+            List<GrintaPlayer>.from(_team.grintaPlayers ?? const <GrintaPlayer>[]);
+        final int index = grintaPlayers.indexWhere(
+          (GrintaPlayer entry) =>
+              entry.playerId.trim() == resolvedExisting.playerId.trim() &&
+              _isGrintaStaffGrintaPlayer(entry) ==
+                  _isGrintaStaffGrintaPlayer(resolvedExisting),
+        );
+        if (index >= 0) {
+          grintaPlayers[index] = updated;
+          _team.grintaPlayers = grintaPlayers;
+        }
+        return;
+      }
+
+      if (!add) {
+        return;
+      }
+
+      final List<int> positions = row.isGrintaRoster
+          ? List<int>.from(row.grintaPositions)
+          : <int>[];
+      final GrintaPlayer created = GrintaPlayer(
+        playerId: memberId,
+        positions: positions,
+        trackers: <String>[deviceOwnerDocId],
+        email: row.grintaEmail,
+        phoneE164: row.grintaPhoneE164,
+        birthday: row.grintaBirthday,
+      );
+      await TeamService().addGrintaPlayer(
+        teamId: teamId,
+        player: created,
+        firebaseUserId: FirebaseAuth.instance.currentUser?.uid,
+        staffEntry: false,
+      );
+
+      final List<GrintaPlayer> grintaPlayers =
+          List<GrintaPlayer>.from(_team.grintaPlayers ?? const <GrintaPlayer>[]);
+      final bool alreadyOnRoster = grintaPlayers.any(
+        (GrintaPlayer entry) =>
+            entry.playerId.trim() == memberId.trim() &&
+            !_isGrintaStaffGrintaPlayer(entry),
+      );
+      if (!alreadyOnRoster) {
+        grintaPlayers.add(created);
+      }
+      _team.grintaPlayers = grintaPlayers;
+      return;
+    }
+
+    final String? effectivesId = row.effectives?.ref?.id;
+    if (effectivesId == null || effectivesId.isEmpty) {
+      throw StateError('Missing effectives document');
+    }
+
+    if (add) {
+      await _effectivesService.addTracker(
+        effectivesId: effectivesId,
+        trackerId: deviceOwnerDocId,
+      );
+    } else {
+      await _effectivesService.removeTracker(
+        effectivesId: effectivesId,
+        trackerId: deviceOwnerDocId,
+      );
+    }
+  }
+
   Future<_TrackerChipVm?> _loadTrackerById(String trackerId) async {
     try {
-      final DeviceOwner? deviceOwner = await _deviceOwnerService.getById(trackerId);
+      final DeviceOwner? deviceOwner =
+          await _resolveDeviceOwnerByTrackerId(trackerId);
       if (deviceOwner == null) {
         debugPrint('deviceOwner null pour trackerId=$trackerId');
         return null;
@@ -973,11 +1388,7 @@ class _TeamDetailScreenState extends State<TeamDetailScreen> {
   }
 
   String _displayName(Player player, AppLocalizations l10n) {
-    final String first = player.firstName ?? '';
-    final String last = player.lastName ?? '';
-    final String value = '$first $last'.trim();
-
-    return value.isEmpty ? l10n.entityPlayer : value;
+    return formatPlayerShortName(player, unknownLabel: l10n.entityPlayer);
   }
 
   void _onSort(_RosterSortColumn column) {
@@ -1189,12 +1600,30 @@ class _TeamDetailScreenState extends State<TeamDetailScreen> {
     return row.trackers.map((tracker) => tracker.label).join(' ');
   }
 
-  String _buildStaffRole(Effectives? effectives, AppLocalizations l10n) {
-    if (effectives == null) {
-      return l10n.entityStaff;
+  String _staffRoleLabelFromProfile(Player player, AppLocalizations l10n) {
+    for (final int code in player.positionCodes) {
+      if (grintaStaffRoleCodes.contains(code)) {
+        return grintaStaffRoleLabel(code, l10n);
+      }
+    }
+    return '';
+  }
+
+  String _buildStaffRole(_TeamMemberVm row, AppLocalizations l10n) {
+    final Effectives? effectives = row.effectives;
+    if (effectives != null) {
+      final String fromType = l10n.staffRoleLabel(effectives.type ?? -1);
+      if (fromType != l10n.entityStaff && fromType != l10n.entityPlayer) {
+        return fromType;
+      }
     }
 
-    return l10n.staffRoleLabel(effectives.type ?? -1);
+    final String fromProfile = _staffRoleLabelFromProfile(row.player, l10n);
+    if (fromProfile.isNotEmpty) {
+      return fromProfile;
+    }
+
+    return l10n.entityStaff;
   }
 
   List<Widget> _buildMemberStatusIcons(BuildContext context, _TeamMemberVm row) {
@@ -1238,26 +1667,203 @@ class _TeamDetailScreenState extends State<TeamDetailScreen> {
 
   String _buildStaffRoleForRow(_TeamMemberVm row, AppLocalizations l10n) {
     if (row.isGrintaRoster) {
-      for (final int code in row.grintaPositions) {
-        if (grintaStaffRoleCodes.contains(code)) {
-          return grintaStaffRoleLabel(code, l10n);
-        }
+      final int? fonction = resolveGrintaStaffFonction(
+        fonction: row.grintaFonction,
+        positions: row.grintaPositions,
+      );
+      if (fonction != null) {
+        return grintaStaffRoleLabel(fonction, l10n);
       }
     }
 
-    return _buildStaffRole(row.effectives, l10n);
+    return _buildStaffRole(row, l10n);
+  }
+
+  bool _isMobileTeamDetailLayout(BuildContext context) {
+    return !kIsWeb && MediaQuery.sizeOf(context).width < 900;
+  }
+
+  bool _canAddPlayers(BuildContext context) {
+    final bool isEducatorOrCoach = context.select<AppSession, bool>(
+      (session) => session.selectedPlayer?.isEducatorOrCoach ?? false,
+    );
+    return _canManageRoster(context) ||
+        (!_rosterDisplayUsesLegacy() && isEducatorOrCoach);
+  }
+
+  Future<void> _showTeamInfoSheet(
+    BuildContext context, {
+    required int playersCount,
+    required int staffsCount,
+    required double averageAge,
+  }) async {
+    final colors = context.appColors;
+    final textTheme = Theme.of(context).textTheme;
+
+    await showModalBottomSheet<void>(
+      context: context,
+      showDragHandle: true,
+      backgroundColor: colors.card,
+      builder: (sheetContext) {
+        final sheetL10n = sheetContext.l10n;
+        return SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(8, 0, 8, 20),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                ListTile(
+                  leading: Icon(
+                    Icons.groups_2_outlined,
+                    color: colors.primary,
+                  ),
+                  title: Text(
+                    sheetL10n.teamMembersPlayers(playersCount),
+                    style: textTheme.bodyLarge?.copyWith(
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ),
+                ListTile(
+                  leading: Icon(
+                    Icons.shield_outlined,
+                    color: colors.primary,
+                  ),
+                  title: Text(
+                    sheetL10n.teamMembersStaff(staffsCount),
+                    style: textTheme.bodyLarge?.copyWith(
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ),
+                ListTile(
+                  leading: Icon(
+                    Icons.cake_outlined,
+                    color: colors.primary,
+                  ),
+                  title: Text(
+                    sheetL10n.teamDetailAverageAge(
+                      averageAge.toStringAsFixed(0),
+                    ),
+                    style: textTheme.bodyLarge?.copyWith(
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  Future<void> _showAddMemberMenu(
+    BuildContext context, {
+    required bool canAddPlayers,
+    required bool canAddStaff,
+  }) async {
+    final colors = context.appColors;
+    final textTheme = Theme.of(context).textTheme;
+
+    await showModalBottomSheet<void>(
+      context: context,
+      showDragHandle: true,
+      backgroundColor: colors.card,
+      builder: (sheetContext) {
+        final sheetL10n = sheetContext.l10n;
+        return SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(16, 0, 16, 20),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                if (canAddPlayers)
+                  ListTile(
+                    leading: Icon(
+                      Icons.person_add_outlined,
+                      color: colors.primary,
+                    ),
+                    title: Text(
+                      sheetL10n.actionAddPlayer,
+                      style: textTheme.bodyLarge?.copyWith(
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                    onTap: () {
+                      Navigator.of(sheetContext).pop();
+                      _onAddPlayerPressed(context);
+                    },
+                  ),
+                if (canAddPlayers && canAddStaff) const Divider(height: 1),
+                if (canAddStaff)
+                  ListTile(
+                    leading: Icon(
+                      Icons.shield_outlined,
+                      color: colors.primary,
+                    ),
+                    title: Text(
+                      sheetL10n.actionAddStaff,
+                      style: textTheme.bodyLarge?.copyWith(
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                    onTap: () {
+                      Navigator.of(sheetContext).pop();
+                      _onAddStaffPressed(context);
+                    },
+                  ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  Color _mobileRowBackgroundColor(AppColors colors, bool odd) {
+    if (!odd) {
+      return colors.card;
+    }
+    return Color.alphaBlend(
+      colors.background.withValues(alpha: 0.45),
+      colors.card,
+    );
   }
 
   @override
   Widget build(BuildContext context) {
     final colors = context.appColors;
+    final bool isMobileLayout = _isMobileTeamDetailLayout(context);
+    final bool canAddPlayers = _canAddPlayers(context);
+    final bool canAddStaff = _canManageRoster(context);
+    final bool showMobileAddFab =
+        isMobileLayout && (canAddPlayers || canAddStaff);
 
     return Scaffold(
       backgroundColor: colors.background,
-      body: SafeArea(
-        child: FutureBuilder<List<_TeamMemberVm>>(
-          future: _future,
-          builder: (context, snapshot) {
+      floatingActionButton: showMobileAddFab
+          ? FloatingActionButton(
+              heroTag: 'grinta-fab-team-detail',
+              onPressed: _isMemberOperationLoading
+                  ? null
+                  : () => _showAddMemberMenu(
+                        context,
+                        canAddPlayers: canAddPlayers,
+                        canAddStaff: canAddStaff,
+                      ),
+              child: const Icon(Icons.add),
+            )
+          : null,
+      body: Stack(
+        children: [
+          SafeArea(
+            child: FutureBuilder<List<_TeamMemberVm>>(
+              future: _future,
+              builder: (context, snapshot) {
+            final l10n = context.l10n;
             if (snapshot.connectionState != ConnectionState.done) {
               return Center(
                 child: CircularProgressIndicator(
@@ -1267,7 +1873,6 @@ class _TeamDetailScreenState extends State<TeamDetailScreen> {
             }
 
             final List<_TeamMemberVm> rows = snapshot.data ?? <_TeamMemberVm>[];
-            final l10n = context.l10n;
             final List<_TeamMemberVm> rosterRows = rows
                 .where(_isListedOnTeamRoster)
                 .toList();
@@ -1279,7 +1884,12 @@ class _TeamDetailScreenState extends State<TeamDetailScreen> {
             final double averageAge = _averagePlayersAge(playerRows);
 
             return SingleChildScrollView(
-              padding: const EdgeInsets.all(24),
+              padding: EdgeInsets.fromLTRB(
+                isMobileLayout ? 16 : 24,
+                isMobileLayout ? 16 : 24,
+                isMobileLayout ? 16 : 24,
+                showMobileAddFab ? 96 : (isMobileLayout ? 16 : 24),
+              ),
               child: Column(
                 children: [
                   _buildHeader(
@@ -1289,15 +1899,30 @@ class _TeamDetailScreenState extends State<TeamDetailScreen> {
                     staffsCount: staffsCount,
                     averageAge: averageAge,
                   ),
-                  const SizedBox(height: 24),
+                  SizedBox(height: isMobileLayout ? 16 : 24),
                   _buildRosterCard(context, playerRows),
-                  const SizedBox(height: 24),
+                  SizedBox(height: isMobileLayout ? 16 : 24),
                   _buildStaffCard(context, staffRows),
                 ],
               ),
             );
           },
-        ),
+            ),
+          ),
+          if (_isMemberOperationLoading)
+            Positioned.fill(
+              child: AbsorbPointer(
+                child: ColoredBox(
+                  color: colors.background.withValues(alpha: 0.55),
+                  child: Center(
+                    child: CircularProgressIndicator(
+                      color: colors.primary,
+                    ),
+                  ),
+                ),
+              ),
+            ),
+        ],
       ),
     );
   }
@@ -1315,6 +1940,7 @@ class _TeamDetailScreenState extends State<TeamDetailScreen> {
 
     final colors = context.appColors;
     final textTheme = Theme.of(context).textTheme;
+    final bool isMobileLayout = _isMobileTeamDetailLayout(context);
 
     final l10n = context.l10n;
     final String? currentUserUid =
@@ -1329,6 +1955,150 @@ class _TeamDetailScreenState extends State<TeamDetailScreen> {
       'TeamDetailScreen header chips teamId=${_team.keyTeam} '
       'playersCount=$playersCount staffsCount=$staffsCount',
     );
+
+    if (isMobileLayout) {
+      return Container(
+        width: double.infinity,
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(18),
+          gradient: LinearGradient(
+            colors: <Color>[
+              colors.primary,
+              colors.secondary.withValues(alpha: 0.9),
+            ],
+            begin: Alignment.centerLeft,
+            end: Alignment.centerRight,
+          ),
+          boxShadow: [
+            BoxShadow(
+              color: colors.secondary.withValues(alpha: 0.16),
+              blurRadius: 16,
+              offset: const Offset(0, 8),
+            ),
+          ],
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.center,
+              children: [
+                Expanded(
+                  child: Text(
+                    title,
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                    style: textTheme.titleLarge?.copyWith(
+                      color: Colors.white,
+                      fontWeight: FontWeight.w800,
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 8),
+                if (isOwner)
+                  _HeaderSquareIconButton(
+                    size: 40,
+                    iconSize: 20,
+                    icon: Icons.delete_outline_rounded,
+                    onTap: () async {
+                      await deleteOwnedTeam(
+                        context,
+                        team: _team,
+                      );
+                    },
+                  ),
+                if (isOwner) const SizedBox(width: 8),
+                if (_canManageTeam(context))
+                  _HeaderSquareIconButton(
+                    size: 40,
+                    iconSize: 20,
+                    icon: Icons.edit_outlined,
+                    onTap: () {},
+                  ),
+                if (_canManageTeam(context)) const SizedBox(width: 8),
+                _HeaderSquareIconButton(
+                  size: 40,
+                  iconSize: 20,
+                  icon: Icons.tune_rounded,
+                  onTap: () async {
+                    AnalyticsInteractions.logFeature(
+                      AnalyticsFeatures.openTeamParam,
+                      parameters: <String, Object>{
+                        'is_manager': _canManageTeam(context),
+                      },
+                    );
+                    final bool? updated =
+                        await Navigator.of(context).push<bool>(
+                      analyticsMaterialRoute<bool>(
+                        screenName: AnalyticsScreenNames.teamParam,
+                        builder: (_) => TeamParamScreen(
+                          team: _team,
+                          isManager: _canManageTeam(context),
+                        ),
+                      ),
+                    );
+
+                    if (updated == true && mounted) {
+                      _reloadTeamAndMembers();
+                    }
+                  },
+                ),
+                if (_showTrackerOwnersButton(context)) ...[
+                  const SizedBox(width: 8),
+                  _buildTrackerOwnersHeaderButton(
+                    context,
+                    size: 40,
+                    iconSize: 20,
+                  ),
+                ],
+                const SizedBox(width: 8),
+                _HeaderSquareIconButton(
+                  size: 40,
+                  iconSize: 20,
+                  icon: Icons.info_outline_rounded,
+                  onTap: () => _showTeamInfoSheet(
+                    context,
+                    playersCount: playersCount,
+                    staffsCount: staffsCount,
+                    averageAge: averageAge,
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 12),
+            InkWell(
+              onTap: () => Navigator.of(context).maybePop(),
+              borderRadius: BorderRadius.circular(12),
+              child: Padding(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 2,
+                  vertical: 4,
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    const Icon(
+                      Icons.arrow_back_rounded,
+                      color: Colors.white,
+                      size: 20,
+                    ),
+                    const SizedBox(width: 8),
+                    Text(
+                      l10n.teamDetailBackToTeams,
+                      style: textTheme.bodyLarge?.copyWith(
+                        color: Colors.white,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ],
+        ),
+      );
+    }
 
     final List<Widget> chips = <Widget>[
       if ((widget.categoryLabel ?? '').trim().isNotEmpty)
@@ -1430,6 +2200,8 @@ class _TeamDetailScreenState extends State<TeamDetailScreen> {
                             }
                           },
                         ),
+                        if (_showTrackerOwnersButton(context))
+                          _buildTrackerOwnersHeaderButton(context),
                       ],
                     ),
                     const SizedBox(height: 18),
@@ -1481,11 +2253,8 @@ class _TeamDetailScreenState extends State<TeamDetailScreen> {
     final colors = context.appColors;
     final textTheme = Theme.of(context).textTheme;
     final List<_TeamMemberVm> visibleRows = _sortedRosterRows(rows, l10n);
-    final bool isEducatorOrCoach = context.select<AppSession, bool>(
-      (session) => session.selectedPlayer?.isEducatorOrCoach ?? false,
-    );
-    final bool canAddPlayers = !_teamUsesExternalLegacyRoster() &&
-        (_canManageTeam(context) || isEducatorOrCoach);
+    final bool isMobileLayout = _isMobileTeamDetailLayout(context);
+    final bool canAddPlayers = _canAddPlayers(context);
 
     return Container(
       width: double.infinity,
@@ -1497,56 +2266,169 @@ class _TeamDetailScreenState extends State<TeamDetailScreen> {
       child: Column(
         children: [
           Padding(
-            padding: const EdgeInsets.fromLTRB(24, 20, 24, 20),
+            padding: EdgeInsets.fromLTRB(
+              isMobileLayout ? 16 : 24,
+              isMobileLayout ? 12 : 20,
+              isMobileLayout ? 16 : 24,
+              isMobileLayout ? 12 : 20,
+            ),
             child: Row(
               children: [
                 Icon(
                   Icons.groups_2_rounded,
                   color: colors.primary,
-                  size: 30,
+                  size: isMobileLayout ? 24 : 30,
                 ),
                 const SizedBox(width: 12),
                 Expanded(
                   child: Text(
                     l10n.entityPlayers,
-                    style: textTheme.headlineSmall?.copyWith(
+                    style: (isMobileLayout
+                            ? textTheme.titleLarge
+                            : textTheme.headlineSmall)
+                        ?.copyWith(
                       fontWeight: FontWeight.w800,
                     ),
                   ),
                 ),
-                if (canAddPlayers) ... [
+                if (canAddPlayers && !isMobileLayout) ...[
                   FilledButton(
-                    onPressed: () => _onAddPlayerPressed(context),
+                    onPressed: _isMemberOperationLoading
+                        ? null
+                        : () => _onAddPlayerPressed(context),
                     child: Text(l10n.actionAddPlayer),
                   ),
-                ]
-
+                ],
               ],
             ),
           ),
-          _buildTableHeader(context),
-          if (visibleRows.isEmpty)
-            Padding(
-              padding: const EdgeInsets.all(24),
-              child: Text(
-                l10n.emptyNoPlayerForTeam,
-                style: textTheme.titleMedium?.copyWith(
-                  color: colors.textSecondary,
-                ),
-              ),
-            )
-          else
-            ...List.generate(
-              visibleRows.length,
-                  (index) => _buildRow(
-                context,
-                row: visibleRows[index],
-                odd: index.isOdd,
-              ),
-            ),
+          LayoutBuilder(
+            builder: (context, constraints) {
+              final bool mobileRoster =
+                  !kIsWeb && constraints.maxWidth < 900;
+
+              return Column(
+                children: [
+                  mobileRoster
+                      ? _buildMobileTableHeader(context)
+                      : _buildTableHeader(context, mobile: false),
+                  if (visibleRows.isEmpty)
+                    Padding(
+                      padding: const EdgeInsets.all(24),
+                      child: Text(
+                        l10n.emptyNoPlayerForTeam,
+                        style: textTheme.titleMedium?.copyWith(
+                          color: colors.textSecondary,
+                        ),
+                      ),
+                    )
+                  else if (mobileRoster)
+                    ...List.generate(
+                      visibleRows.length,
+                      (index) => _buildMobileRow(
+                        context,
+                        row: visibleRows[index],
+                        odd: index.isOdd,
+                      ),
+                    )
+                  else
+                    ...List.generate(
+                      visibleRows.length,
+                      (index) => _buildRow(
+                        context,
+                        row: visibleRows[index],
+                        odd: index.isOdd,
+                      ),
+                    ),
+                ],
+              );
+            },
+          ),
         ],
       ),
     );
+  }
+
+  void _setMemberOperationLoading(bool value) {
+    if (_isMemberOperationLoading == value || !mounted) return;
+    setState(() => _isMemberOperationLoading = value);
+  }
+
+  Future<void> _persistNewGrintaPlayer({
+    required BuildContext context,
+    required Player selected,
+    required String memberId,
+    required String teamId,
+    required AddGrintaPlayerDetails details,
+  }) async {
+    final l10n = context.l10n;
+    final MemberInvitationResult invitationResult =
+        await MemberInvitationService.instance.notifyOrInviteMember(
+      l10n: l10n,
+      member: selected,
+      memberId: memberId,
+      phoneE164: details.phoneE164,
+      teamId: teamId,
+      seasonId: widget.seasonId,
+      teamName: _team.name ?? '',
+    );
+    debugPrint(
+      'TeamDetailScreen._persistNewGrintaPlayer notifyOrInviteMember result=$invitationResult',
+    );
+    if (!invitationResult.success && !invitationResult.invitationCreated) {
+      throw StateError(invitationResult.error ?? '');
+    }
+    await _addPlayerToGrintaTeam(
+      teamId: teamId,
+      memberId: memberId,
+      details: details,
+      invitationId: invitationResult.invitationId,
+    );
+    debugPrint(
+      'TeamDetailScreen._persistNewGrintaPlayer added player memberId=$memberId '
+      'invitationId=${invitationResult.invitationId}',
+    );
+    await _reloadTeamAndMembers();
+    _pendingMemberInvitationResult = invitationResult;
+  }
+
+  Future<void> _persistNewGrintaStaff({
+    required BuildContext context,
+    required Player selected,
+    required String memberId,
+    required String teamId,
+    required AddGrintaStaffDetails details,
+  }) async {
+    final l10n = context.l10n;
+    final MemberInvitationResult invitationResult =
+        await MemberInvitationService.instance.notifyOrInviteMember(
+      l10n: l10n,
+      member: selected,
+      memberId: memberId,
+      phoneE164: details.phoneE164,
+      teamId: teamId,
+      seasonId: widget.seasonId,
+      teamName: _team.name ?? '',
+    );
+    debugPrint(
+      'TeamDetailScreen._persistNewGrintaStaff notifyOrInviteMember result=$invitationResult',
+    );
+    if (!invitationResult.success && !invitationResult.invitationCreated) {
+      throw StateError(invitationResult.error ?? '');
+    }
+    await _addStaffToGrintaTeam(
+      teamId: teamId,
+      memberId: memberId,
+      details: details,
+      profile: selected,
+      invitationId: invitationResult.invitationId,
+    );
+    debugPrint(
+      'TeamDetailScreen._persistNewGrintaStaff added staff memberId=$memberId '
+      'invitationId=${invitationResult.invitationId}',
+    );
+    await _reloadTeamAndMembers();
+    _pendingMemberInvitationResult = invitationResult;
   }
 
   Future<void> _onAddPlayerPressed(BuildContext context) async {
@@ -1590,78 +2472,72 @@ class _TeamDetailScreenState extends State<TeamDetailScreen> {
       return;
     }
 
-    final canAdd = await SubscriptionLimitsAccess.ensureCanAddPlayer(
-      context,
-      teamId: teamId,
-      memberId: selectedMemberId,
-      firebaseUserId: FirebaseAuth.instance.currentUser?.uid,
-    );
+    _setMemberOperationLoading(true);
+    bool canAdd = false;
+    try {
+      canAdd = await SubscriptionLimitsAccess.ensureCanAddPlayer(
+        context,
+        teamId: teamId,
+        memberId: selectedMemberId,
+        firebaseUserId: FirebaseAuth.instance.currentUser?.uid,
+      );
+    } finally {
+      _setMemberOperationLoading(false);
+    }
     if (!canAdd || !context.mounted) return;
 
-    AddGrintaPlayerDetails? playerDetails;
-    if (_usesGrintaRosterPathFor(_team)) {
-      playerDetails = await showAddGrintaPlayerSheet(
-        context,
-        member: selected,
-      );
-      if (playerDetails == null || !context.mounted) return;
-    }
+    _pendingMemberInvitationResult = null;
 
     try {
-      MemberInvitationResult? invitationResult;
       if (_usesGrintaRosterPathFor(_team)) {
-        invitationResult =
-            await MemberInvitationService.instance.notifyOrInviteMember(
-          l10n: l10n,
+        final AddGrintaPlayerDetails? playerDetails =
+            await showAddGrintaPlayerSheet(
+          context,
           member: selected,
-          memberId: selectedMemberId,
-          phoneE164: playerDetails!.phoneE164,
-          teamId: teamId,
-          seasonId: widget.seasonId,
-          teamName: _team.name ?? '',
+          onSubmit: (details) => _persistNewGrintaPlayer(
+            context: context,
+            selected: selected,
+            memberId: selectedMemberId,
+            teamId: teamId,
+            details: details,
+          ),
         );
-        debugPrint(
-          'TeamDetailScreen._onAddPlayerPressed notifyOrInviteMember result=$invitationResult',
+        if (playerDetails == null || !context.mounted) return;
+
+        AppSnackbar.show(
+          context,
+          '${l10n.actionAddPlayer}: ${playerDisplayName(selected, unknownLabel: l10n.entityPlayerUnknown)}',
+          isError: false,
         );
-        if (!invitationResult.success && !invitationResult.invitationCreated) {
-          if (!context.mounted) return;
-          AppSnackbar.show(
-            context,
-            l10n.errorGeneric(invitationResult.error ?? ''),
-            isError: true,
-          );
-          return;
-        }
-        await _addPlayerToGrintaTeam(
-          teamId: teamId,
-          memberId: selectedMemberId,
-          details: playerDetails,
-          invitationId: invitationResult.invitationId,
-        );
-        debugPrint(
-          'TeamDetailScreen._onAddPlayerPressed added player memberId=$selectedMemberId '
-          'invitationId=${invitationResult.invitationId}',
+        _showMemberInvitationResultIfNeeded(
+          context,
+          l10n,
+          _pendingMemberInvitationResult,
         );
       } else {
-        await _addPlayerToLegacyTeam(
-          teamId: teamId,
-          memberId: selectedMemberId,
-        );
+        _setMemberOperationLoading(true);
+        try {
+          await _addPlayerToLegacyTeam(
+            teamId: teamId,
+            memberId: selectedMemberId,
+          );
+
+          if (!context.mounted) return;
+
+          _dismissOpenSheets(context);
+          await _reloadTeamAndMembers();
+
+          if (!context.mounted) return;
+
+          AppSnackbar.show(
+            context,
+            '${l10n.actionAddPlayer}: ${playerDisplayName(selected, unknownLabel: l10n.entityPlayerUnknown)}',
+            isError: false,
+          );
+        } finally {
+          _setMemberOperationLoading(false);
+        }
       }
-
-      if (!context.mounted) return;
-
-      _dismissOpenSheets(context);
-      await _reloadTeamAndMembers();
-
-      if (!context.mounted) return;
-
-      AppSnackbar.show(
-        context,
-        '${l10n.actionAddPlayer}: ${playerDisplayName(selected, unknownLabel: l10n.entityPlayerUnknown)}',
-        isError: false,
-      );
-      _showMemberInvitationResultIfNeeded(context, l10n, invitationResult);
     } catch (e) {
       if (!context.mounted) return;
       AppSnackbar.show(
@@ -1774,17 +2650,99 @@ class _TeamDetailScreenState extends State<TeamDetailScreen> {
     _team.players = players;
   }
 
-  bool _usesGrintaRosterPathFor(Team team) => _teamUsesGrintaRosterFor(team);
+  bool _usesGrintaRosterPathFor(Team team) =>
+      _mutationsTargetGrintaRosterFor(team);
 
   GrintaPlayer? _grintaPlayerForMemberId(String memberId) {
     return _grintaEntryForMemberId(memberId, staff: false);
+  }
+
+  /// Resolves a Grinta roster entry using every stable member id on [row.player].
+  GrintaPlayer? _resolveGrintaPlayerForRow(_TeamMemberVm row) {
+    for (final String id in playerMemberLookupIds(row.player)) {
+      final GrintaPlayer? entry = _grintaPlayerForMemberId(id);
+      if (entry != null) {
+        return entry;
+      }
+    }
+    return null;
+  }
+
+  Future<void> _onTogglePlayerManagerPressed(
+    BuildContext context,
+    _TeamMemberVm row,
+  ) async {
+    await _togglePlayerManager(context, row);
+  }
+
+  Future<bool> _togglePlayerManager(
+    BuildContext context,
+    _TeamMemberVm row,
+  ) async {
+    if (!_canManageTeam(context)) return _isPlayerManager(row);
+
+    final String? teamId = _team.keyTeam?.trim();
+    if (teamId == null || teamId.isEmpty) return _isPlayerManager(row);
+
+    final String? memberId = effectiveMemberId(row.player);
+    if (memberId == null || memberId.isEmpty) return _isPlayerManager(row);
+
+    final Player player = row.player;
+    final bool isManager = _isPlayerManager(row);
+    final Set<String> linkedUserIds =
+        _linkedManagerUserIds(player, memberId);
+
+    try {
+      if (isManager) {
+        await TeamService().removeManager(teamId: teamId, managerId: memberId);
+        for (final String userId in linkedUserIds) {
+          await TeamService().removeManager(teamId: teamId, managerId: userId);
+        }
+      } else {
+        await TeamService().addManager(teamId: teamId, managerId: memberId);
+        for (final String userId in linkedUserIds) {
+          await TeamService().addManager(teamId: teamId, managerId: userId);
+        }
+      }
+
+      final List<dynamic> managers =
+          List<dynamic>.from(_team.managers ?? const <dynamic>[]);
+      if (isManager) {
+        managers.remove(memberId);
+        for (final String userId in linkedUserIds) {
+          managers.remove(userId);
+        }
+      } else {
+        if (!managers.contains(memberId)) {
+          managers.add(memberId);
+        }
+        for (final String userId in linkedUserIds) {
+          if (!managers.contains(userId)) {
+            managers.add(userId);
+          }
+        }
+      }
+      _team.managers = managers;
+
+      if (!context.mounted) return !isManager;
+      await _reloadTeamAndMembers();
+      return !isManager;
+    } catch (e) {
+      if (!context.mounted) return isManager;
+      AppSnackbar.show(
+        context,
+        context.l10n.errorGeneric(e.toString()),
+        isError: true,
+      );
+      return isManager;
+    }
   }
 
   Future<void> _onEditPlayerPressed(
     BuildContext context,
     _TeamMemberVm row,
   ) async {
-    if (!row.isGrintaRoster) {
+    if (!_canEditPlayerRow(row)) {
       return;
     }
 
@@ -1794,21 +2752,28 @@ class _TeamDetailScreenState extends State<TeamDetailScreen> {
     final String? memberId = effectiveMemberId(row.player);
     if (memberId == null || memberId.isEmpty) return;
 
-    final GrintaPlayer? existing = _grintaPlayerForMemberId(memberId);
-    if (existing == null) return;
+    final GrintaPlayer? existing = _resolveGrintaPlayerForRow(row);
 
     final l10n = context.l10n;
+    final bool canToggleManager = _canManageTeam(context);
+    final ValueNotifier<bool> managerNotifier =
+        ValueNotifier<bool>(_isPlayerManager(row));
     final AddGrintaPlayerDetails? details = await showAddGrintaPlayerSheet(
       context,
       member: row.player,
       existingGrintaPlayer: existing,
+      showManagerToggle: canToggleManager,
+      isManagerListenable: canToggleManager ? managerNotifier : null,
+      onToggleManager: canToggleManager
+          ? () => _togglePlayerManager(context, row)
+          : null,
     );
+    managerNotifier.dispose();
     if (details == null || !context.mounted) return;
 
     try {
       MemberInvitationResult? invitationResult;
-      String? invitationId = existing.invitationId;
-      if (_phoneE164Changed(existing.phoneE164, details.phoneE164)) {
+      if (existing == null) {
         invitationResult =
             await MemberInvitationService.instance.notifyOrInviteMember(
           l10n: l10n,
@@ -1818,7 +2783,6 @@ class _TeamDetailScreenState extends State<TeamDetailScreen> {
           teamId: teamId,
           seasonId: widget.seasonId,
           teamName: _team.name ?? '',
-          notifyIfLinked: false,
         );
         if (!invitationResult.success && !invitationResult.invitationCreated) {
           if (!context.mounted) return;
@@ -1829,19 +2793,50 @@ class _TeamDetailScreenState extends State<TeamDetailScreen> {
           );
           return;
         }
-        if (invitationResult.invitationId != null &&
-            invitationResult.invitationId!.trim().isNotEmpty) {
-          invitationId = invitationResult.invitationId;
+        await _addPlayerToGrintaTeam(
+          teamId: teamId,
+          memberId: memberId,
+          details: details,
+          invitationId: invitationResult.invitationId,
+        );
+      } else {
+        String? invitationId = existing.invitationId;
+        if (_phoneE164Changed(existing.phoneE164, details.phoneE164)) {
+          invitationResult =
+              await MemberInvitationService.instance.notifyOrInviteMember(
+            l10n: l10n,
+            member: row.player,
+            memberId: memberId,
+            phoneE164: details.phoneE164,
+            teamId: teamId,
+            seasonId: widget.seasonId,
+            teamName: _team.name ?? '',
+            notifyIfLinked: false,
+          );
+          if (!invitationResult.success &&
+              !invitationResult.invitationCreated) {
+            if (!context.mounted) return;
+            AppSnackbar.show(
+              context,
+              l10n.errorGeneric(invitationResult.error ?? ''),
+              isError: true,
+            );
+            return;
+          }
+          if (invitationResult.invitationId != null &&
+              invitationResult.invitationId!.trim().isNotEmpty) {
+            invitationId = invitationResult.invitationId;
+          }
         }
-      }
 
-      await _updateGrintaTeamPlayer(
-        teamId: teamId,
-        memberId: memberId,
-        existing: existing,
-        details: details,
-        invitationId: invitationId,
-      );
+        await _updateGrintaTeamPlayer(
+          teamId: teamId,
+          memberId: memberId,
+          existing: existing,
+          details: details,
+          invitationId: invitationId,
+        );
+      }
 
       if (!context.mounted) return;
 
@@ -1936,101 +2931,137 @@ class _TeamDetailScreenState extends State<TeamDetailScreen> {
       barrierDismissible: true,
       builder: (BuildContext dialogContext) {
         final dialogL10n = dialogContext.l10n;
-        return AlertDialog(
-          backgroundColor: appColors.surface,
-          surfaceTintColor: Colors.transparent,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(20),
-            side: BorderSide(color: appColors.border),
-          ),
-          title: Row(
-            children: [
-              Icon(
-                Icons.warning_amber_rounded,
-                color: appColors.danger,
-              ),
-              const SizedBox(width: 10),
-              Expanded(
-                child: Text(
-                  dialogL10n.teamDetailConfirmDeleteTitle,
-                  style: TextStyle(
-                    color: appColors.textPrimary,
-                    fontWeight: FontWeight.w700,
+        bool isDeleting = false;
+
+        return StatefulBuilder(
+          builder: (context, setDialogState) {
+            Future<void> onDeletePressed() async {
+              if (isDeleting) return;
+              setDialogState(() => isDeleting = true);
+
+              try {
+                if (row.isGrintaRoster) {
+                  final String? memberId = effectiveMemberId(player);
+                  final String? teamId = _team.keyTeam?.trim();
+                  if (memberId == null ||
+                      memberId.isEmpty ||
+                      teamId == null ||
+                      teamId.isEmpty) {
+                    throw StateError('Missing member or team id');
+                  }
+
+                  await TeamService().removeGrintaPlayer(
+                    teamId: teamId,
+                    playerId: memberId,
+                  );
+
+                  final List<GrintaPlayer> grintaPlayers = List<GrintaPlayer>.from(
+                      _team.grintaPlayers ?? const <GrintaPlayer>[]);
+                  grintaPlayers.removeWhere(
+                    (GrintaPlayer entry) =>
+                        entry.playerId.trim() == memberId.trim() &&
+                        !_isGrintaStaffGrintaPlayer(entry),
+                  );
+                  _team.grintaPlayers = grintaPlayers;
+                } else if (row.effectives != null) {
+                  await EffectivesService().deleteEffectives(row.effectives!);
+
+                  rawPlayers.remove(player.keyMember);
+                  _team.players = rawPlayers;
+                  await TeamService().updateTeam(_team);
+                }
+
+                if (!dialogContext.mounted) return;
+                Navigator.of(dialogContext).pop(true);
+              } catch (e) {
+                if (!dialogContext.mounted) return;
+                setDialogState(() => isDeleting = false);
+                ScaffoldMessenger.of(dialogContext).showSnackBar(
+                  SnackBar(
+                    content: Text(
+                      dialogL10n.errorDeleteFailed(e.toString()),
+                    ),
+                    backgroundColor: appColors.danger,
                   ),
-                ),
-              ),
-            ],
-          ),
-          content: Text(
-            dialogL10n.teamDetailConfirmRemovePlayerTeam(playerName),
-            style: TextStyle(
-              color: appColors.textSecondary,
-              fontSize: 15,
-            ),
-          ),
-          actionsPadding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
-          actions: [
-            OutlinedButton(
-              onPressed: () {
-                Navigator.of(dialogContext).pop(false);
-              },
-              style: OutlinedButton.styleFrom(
-                foregroundColor: appColors.textSecondary,
+                );
+              }
+            }
+
+            return AlertDialog(
+              backgroundColor: appColors.surface,
+              surfaceTintColor: Colors.transparent,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(20),
                 side: BorderSide(color: appColors.border),
               ),
-              child: Text(dialogL10n.actionCancel),
-            ),
-            FilledButton.icon(
-              onPressed: () {
-                Navigator.of(dialogContext).pop(true);
-              },
-              style: FilledButton.styleFrom(
-                backgroundColor: appColors.danger,
-                foregroundColor: Colors.white,
+              title: Row(
+                children: [
+                  Icon(
+                    Icons.warning_amber_rounded,
+                    color: appColors.danger,
+                  ),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: Text(
+                      dialogL10n.teamDetailConfirmDeleteTitle,
+                      style: TextStyle(
+                        color: appColors.textPrimary,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                  ),
+                ],
               ),
-              icon: const Icon(Icons.delete_outline_rounded),
-              label: Text(dialogL10n.actionDelete),
-            ),
-          ],
+              content: Text(
+                dialogL10n.teamDetailConfirmRemovePlayerTeam(playerName),
+                style: TextStyle(
+                  color: appColors.textSecondary,
+                  fontSize: 15,
+                ),
+              ),
+              actionsPadding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+              actions: [
+                OutlinedButton(
+                  onPressed: isDeleting
+                      ? null
+                      : () {
+                          Navigator.of(dialogContext).pop(false);
+                        },
+                  style: OutlinedButton.styleFrom(
+                    foregroundColor: appColors.textSecondary,
+                    side: BorderSide(color: appColors.border),
+                  ),
+                  child: Text(dialogL10n.actionCancel),
+                ),
+                FilledButton.icon(
+                  onPressed: isDeleting ? null : onDeletePressed,
+                  style: FilledButton.styleFrom(
+                    backgroundColor: appColors.danger,
+                    foregroundColor: Colors.white,
+                  ),
+                  icon: isDeleting
+                      ? SizedBox(
+                          width: 18,
+                          height: 18,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2,
+                            color: Colors.white,
+                          ),
+                        )
+                      : const Icon(Icons.delete_outline_rounded),
+                  label: Text(dialogL10n.actionDelete),
+                ),
+              ],
+            );
+          },
         );
       },
     );
 
     if (confirm != true || !context.mounted) return;
 
+    _setMemberOperationLoading(true);
     try {
-      if (row.isGrintaRoster) {
-        final String? memberId = effectiveMemberId(player);
-        final String? teamId = _team.keyTeam?.trim();
-        if (memberId == null ||
-            memberId.isEmpty ||
-            teamId == null ||
-            teamId.isEmpty) {
-          throw StateError('Missing member or team id');
-        }
-
-        await TeamService().removeGrintaPlayer(
-          teamId: teamId,
-          playerId: memberId,
-        );
-
-        final List<GrintaPlayer> grintaPlayers =
-            List<GrintaPlayer>.from(_team.grintaPlayers ?? const <GrintaPlayer>[]);
-        grintaPlayers.removeWhere(
-          (GrintaPlayer entry) =>
-              entry.playerId.trim() == memberId.trim() &&
-              !_isGrintaStaffGrintaPlayer(entry),
-        );
-        _team.grintaPlayers = grintaPlayers;
-      } else if (row.effectives != null) {
-        await EffectivesService().deleteEffectives(row.effectives!);
-
-        rawPlayers.remove(player.keyMember);
-        _team.players = rawPlayers;
-        await TeamService().updateTeam(_team);
-      }
-
-      if (!context.mounted) return;
       await _reloadTeamAndMembers();
 
       if (!context.mounted) return;
@@ -2043,17 +3074,8 @@ class _TeamDetailScreenState extends State<TeamDetailScreen> {
           backgroundColor: appColors.success,
         ),
       );
-    } catch (e) {
-      if (!context.mounted) return;
-
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
-            l10n.errorDeleteFailed(e.toString()),
-          ),
-          backgroundColor: appColors.danger,
-        ),
-      );
+    } finally {
+      _setMemberOperationLoading(false);
     }
   }
 
@@ -2066,7 +3088,7 @@ class _TeamDetailScreenState extends State<TeamDetailScreen> {
   }) async {
     final GrintaPlayer newStaff = GrintaPlayer(
       playerId: memberId,
-      positions: <int>[details.roleCode],
+      fonction: details.roleCode,
       email: details.email,
       phoneE164: details.phoneE164,
       invitationId: invitationId,
@@ -2190,73 +3212,72 @@ class _TeamDetailScreenState extends State<TeamDetailScreen> {
       return;
     }
 
-    final AddGrintaStaffDetails? details = await showAddGrintaStaffSheet(
-      context,
-      member: selected,
-    );
-    if (details == null || !context.mounted) return;
+    _pendingMemberInvitationResult = null;
 
     try {
-      MemberInvitationResult? invitationResult;
       if (_usesGrintaRosterPathFor(_team)) {
-        invitationResult =
-            await MemberInvitationService.instance.notifyOrInviteMember(
-          l10n: l10n,
+        final AddGrintaStaffDetails? details = await showAddGrintaStaffSheet(
+          context,
           member: selected,
-          memberId: memberId,
-          phoneE164: details.phoneE164,
-          teamId: teamId,
-          seasonId: widget.seasonId,
-          teamName: _team.name ?? '',
+          onSubmit: (staffDetails) => _persistNewGrintaStaff(
+            context: context,
+            selected: selected,
+            memberId: memberId,
+            teamId: teamId,
+            details: staffDetails,
+          ),
         );
-        debugPrint(
-          'TeamDetailScreen._onAddStaffPressed notifyOrInviteMember result=$invitationResult',
+        if (details == null || !context.mounted) return;
+
+        final String playerName = playerDisplayName(
+          selected,
+          unknownLabel: l10n.entityStaff,
         );
-        if (!invitationResult.success && !invitationResult.invitationCreated) {
-          if (!context.mounted) return;
-          AppSnackbar.show(
-            context,
-            l10n.errorGeneric(invitationResult.error ?? ''),
-            isError: true,
-          );
-          return;
-        }
-        await _addStaffToGrintaTeam(
-          teamId: teamId,
-          memberId: memberId,
-          details: details,
-          profile: selected,
-          invitationId: invitationResult.invitationId,
+        AppSnackbar.show(
+          context,
+          '${l10n.actionAddStaff}: $playerName',
+          isError: false,
         );
-        debugPrint(
-          'TeamDetailScreen._onAddStaffPressed added staff memberId=$memberId '
-          'invitationId=${invitationResult.invitationId}',
+        _showMemberInvitationResultIfNeeded(
+          context,
+          l10n,
+          _pendingMemberInvitationResult,
         );
       } else {
-        await _addStaffToLegacyTeam(
-          teamId: teamId,
-          memberId: memberId,
-          details: details,
+        final AddGrintaStaffDetails? details = await showAddGrintaStaffSheet(
+          context,
+          member: selected,
         );
+        if (details == null || !context.mounted) return;
+
+        _setMemberOperationLoading(true);
+        try {
+          await _addStaffToLegacyTeam(
+            teamId: teamId,
+            memberId: memberId,
+            details: details,
+          );
+
+          if (!context.mounted) return;
+
+          _dismissOpenSheets(context);
+          await _reloadTeamAndMembers();
+
+          if (!context.mounted) return;
+
+          final String playerName = playerDisplayName(
+            selected,
+            unknownLabel: l10n.entityStaff,
+          );
+          AppSnackbar.show(
+            context,
+            '${l10n.actionAddStaff}: $playerName',
+            isError: false,
+          );
+        } finally {
+          _setMemberOperationLoading(false);
+        }
       }
-
-      if (!context.mounted) return;
-
-      _dismissOpenSheets(context);
-      await _reloadTeamAndMembers();
-
-      if (!context.mounted) return;
-
-      final String playerName = playerDisplayName(
-        selected,
-        unknownLabel: l10n.entityStaff,
-      );
-      AppSnackbar.show(
-        context,
-        '${l10n.actionAddStaff}: $playerName',
-        isError: false,
-      );
-      _showMemberInvitationResultIfNeeded(context, l10n, invitationResult);
     } catch (e) {
       if (!context.mounted) return;
       AppSnackbar.show(
@@ -2363,7 +3384,7 @@ class _TeamDetailScreenState extends State<TeamDetailScreen> {
   }) async {
     final GrintaPlayer updated = GrintaPlayer(
       playerId: memberId,
-      positions: <int>[details.roleCode],
+      fonction: details.roleCode,
       trackers: List<String>.from(existing.trackers),
       email: details.email,
       phoneE164: details.phoneE164,
@@ -2406,118 +3427,189 @@ class _TeamDetailScreenState extends State<TeamDetailScreen> {
       barrierDismissible: true,
       builder: (BuildContext dialogContext) {
         final dialogL10n = dialogContext.l10n;
-        return AlertDialog(
-          backgroundColor: appColors.surface,
-          surfaceTintColor: Colors.transparent,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(20),
-            side: BorderSide(color: appColors.border),
-          ),
-          title: Row(
-            children: [
-              Icon(
-                Icons.warning_amber_rounded,
-                color: appColors.danger,
-              ),
-              const SizedBox(width: 10),
-              Expanded(
-                child: Text(
-                  dialogL10n.teamDetailConfirmDeleteTitle,
-                  style: TextStyle(
-                    color: appColors.textPrimary,
-                    fontWeight: FontWeight.w700,
+        bool isDeleting = false;
+
+        return StatefulBuilder(
+          builder: (context, setDialogState) {
+            Future<void> onDeletePressed() async {
+              if (isDeleting) return;
+              setDialogState(() => isDeleting = true);
+
+              try {
+                if (row.isGrintaRoster) {
+                  final String? memberId = effectiveMemberId(player);
+                  final String? teamId = _team.keyTeam?.trim();
+                  if (memberId == null ||
+                      memberId.isEmpty ||
+                      teamId == null ||
+                      teamId.isEmpty) {
+                    throw StateError('Missing member or team id');
+                  }
+
+                  final String? staffUserId = player.userID?.trim();
+                  final Iterable<String> extraManagerIds = staffUserId != null &&
+                          staffUserId.isNotEmpty &&
+                          staffUserId != memberId
+                      ? <String>[staffUserId]
+                      : const <String>[];
+
+                  await TeamService().removeGrintaStaff(
+                    teamId: teamId,
+                    playerId: memberId,
+                    extraManagerIds: extraManagerIds,
+                  );
+
+                  final List<GrintaPlayer> grintaPlayers =
+                      List<GrintaPlayer>.from(
+                          _team.grintaPlayers ?? const <GrintaPlayer>[]);
+                  grintaPlayers.removeWhere(
+                    (GrintaPlayer entry) =>
+                        entry.playerId.trim() == memberId.trim() &&
+                        _isGrintaStaffGrintaPlayer(entry),
+                  );
+                  _team.grintaPlayers = grintaPlayers;
+                  _team.grintaPlayerMemberIds =
+                      grintaPlayerMemberIdsFromGrintaPlayers(grintaPlayers);
+
+                  final List<dynamic> managers =
+                      List<dynamic>.from(_team.managers ?? const <dynamic>[]);
+                  managers.remove(memberId);
+                  for (final String extraId in extraManagerIds) {
+                    managers.remove(extraId);
+                  }
+                  _team.managers = managers;
+                } else {
+                  final String? teamId = _team.keyTeam?.trim();
+                  if (teamId == null || teamId.isEmpty) {
+                    throw StateError('Missing team id');
+                  }
+
+                  if (row.effectives != null) {
+                    await EffectivesService().deleteEffectives(row.effectives!);
+                  }
+
+                  final String? memberId = effectiveMemberId(player);
+                  if (memberId == null || memberId.isEmpty) {
+                    throw StateError('Missing member id');
+                  }
+
+                  await TeamService().removeManager(
+                    teamId: teamId,
+                    managerId: memberId,
+                  );
+
+                  final String? staffUserId = player.userID?.trim();
+                  if (staffUserId != null &&
+                      staffUserId.isNotEmpty &&
+                      staffUserId != memberId) {
+                    await TeamService().removeManager(
+                      teamId: teamId,
+                      managerId: staffUserId,
+                    );
+                  }
+
+                  final List<dynamic> managers =
+                      List<dynamic>.from(_team.managers ?? const <dynamic>[]);
+                  managers.remove(memberId);
+                  if (staffUserId != null &&
+                      staffUserId.isNotEmpty &&
+                      staffUserId != memberId) {
+                    managers.remove(staffUserId);
+                  }
+                  _team.managers = managers;
+                }
+
+                if (!dialogContext.mounted) return;
+                Navigator.of(dialogContext).pop(true);
+              } catch (e) {
+                if (!dialogContext.mounted) return;
+                setDialogState(() => isDeleting = false);
+                ScaffoldMessenger.of(dialogContext).showSnackBar(
+                  SnackBar(
+                    content: Text(
+                      dialogL10n.errorDeleteFailed(e.toString()),
+                    ),
+                    backgroundColor: appColors.danger,
                   ),
-                ),
-              ),
-            ],
-          ),
-          content: Text(
-            dialogL10n.teamDetailConfirmRemoveStaff(playerName),
-            style: TextStyle(
-              color: appColors.textSecondary,
-              fontSize: 15,
-            ),
-          ),
-          actionsPadding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
-          actions: [
-            OutlinedButton(
-              onPressed: () {
-                Navigator.of(dialogContext).pop(false);
-              },
-              style: OutlinedButton.styleFrom(
-                foregroundColor: appColors.textSecondary,
+                );
+              }
+            }
+
+            return AlertDialog(
+              backgroundColor: appColors.surface,
+              surfaceTintColor: Colors.transparent,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(20),
                 side: BorderSide(color: appColors.border),
               ),
-              child: Text(dialogL10n.actionCancel),
-            ),
-            FilledButton.icon(
-              onPressed: () {
-                Navigator.of(dialogContext).pop(true);
-              },
-              style: FilledButton.styleFrom(
-                backgroundColor: appColors.danger,
-                foregroundColor: Colors.white,
+              title: Row(
+                children: [
+                  Icon(
+                    Icons.warning_amber_rounded,
+                    color: appColors.danger,
+                  ),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: Text(
+                      dialogL10n.teamDetailConfirmDeleteTitle,
+                      style: TextStyle(
+                        color: appColors.textPrimary,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                  ),
+                ],
               ),
-              icon: const Icon(Icons.delete_outline_rounded),
-              label: Text(dialogL10n.actionDelete),
-            ),
-          ],
+              content: Text(
+                dialogL10n.teamDetailConfirmRemoveStaff(playerName),
+                style: TextStyle(
+                  color: appColors.textSecondary,
+                  fontSize: 15,
+                ),
+              ),
+              actionsPadding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+              actions: [
+                OutlinedButton(
+                  onPressed: isDeleting
+                      ? null
+                      : () {
+                          Navigator.of(dialogContext).pop(false);
+                        },
+                  style: OutlinedButton.styleFrom(
+                    foregroundColor: appColors.textSecondary,
+                    side: BorderSide(color: appColors.border),
+                  ),
+                  child: Text(dialogL10n.actionCancel),
+                ),
+                FilledButton.icon(
+                  onPressed: isDeleting ? null : onDeletePressed,
+                  style: FilledButton.styleFrom(
+                    backgroundColor: appColors.danger,
+                    foregroundColor: Colors.white,
+                  ),
+                  icon: isDeleting
+                      ? SizedBox(
+                          width: 18,
+                          height: 18,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2,
+                            color: Colors.white,
+                          ),
+                        )
+                      : const Icon(Icons.delete_outline_rounded),
+                  label: Text(dialogL10n.actionDelete),
+                ),
+              ],
+            );
+          },
         );
       },
     );
 
     if (confirm != true || !context.mounted) return;
 
+    _setMemberOperationLoading(true);
     try {
-      if (row.isGrintaRoster) {
-        final String? memberId = effectiveMemberId(player);
-        final String? teamId = _team.keyTeam?.trim();
-        if (memberId == null ||
-            memberId.isEmpty ||
-            teamId == null ||
-            teamId.isEmpty) {
-          throw StateError('Missing member or team id');
-        }
-
-        final String? staffUserId = player.userID?.trim();
-        await TeamService().removeGrintaStaff(
-          teamId: teamId,
-          playerId: memberId,
-          extraManagerIds: staffUserId != null &&
-                  staffUserId.isNotEmpty &&
-                  staffUserId != memberId
-              ? <String>[staffUserId]
-              : const <String>[],
-        );
-
-        final List<GrintaPlayer> grintaPlayers =
-            List<GrintaPlayer>.from(
-                _team.grintaPlayers ?? const <GrintaPlayer>[]);
-        grintaPlayers.removeWhere(
-          (GrintaPlayer entry) =>
-              entry.playerId.trim() == memberId.trim() &&
-              _isGrintaStaffGrintaPlayer(entry),
-        );
-        _team.grintaPlayers = grintaPlayers;
-
-        final List<dynamic> managers =
-            List<dynamic>.from(_team.managers ?? const <dynamic>[]);
-        managers.remove(memberId);
-        if (staffUserId != null &&
-            staffUserId.isNotEmpty &&
-            staffUserId != memberId) {
-          managers.remove(staffUserId);
-        }
-        _team.managers = managers;
-      } else if (row.effectives != null) {
-        await EffectivesService().deleteEffectives(row.effectives!);
-        final List<dynamic>? rawManagers = _team.managers;
-        rawManagers?.remove(player.keyMember);
-        _team.managers = rawManagers;
-        await TeamService().updateTeam(_team);
-      }
-
-      if (!context.mounted) return;
       await _reloadTeamAndMembers();
 
       if (!context.mounted) return;
@@ -2530,17 +3622,8 @@ class _TeamDetailScreenState extends State<TeamDetailScreen> {
           backgroundColor: appColors.success,
         ),
       );
-    } catch (e) {
-      if (!context.mounted) return;
-
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
-            l10n.errorDeleteFailed(e.toString()),
-          ),
-          backgroundColor: appColors.danger,
-        ),
-      );
+    } finally {
+      _setMemberOperationLoading(false);
     }
   }
 
@@ -2548,10 +3631,12 @@ class _TeamDetailScreenState extends State<TeamDetailScreen> {
     final l10n = context.l10n;
     final colors = context.appColors;
     final textTheme = Theme.of(context).textTheme;
+    final bool isMobileLayout = _isMobileTeamDetailLayout(context);
+    final bool canAddStaff = _canManageRoster(context);
 
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.all(24),
+      padding: EdgeInsets.all(isMobileLayout ? 16 : 24),
       decoration: BoxDecoration(
         color: colors.card,
         borderRadius: BorderRadius.circular(22),
@@ -2571,27 +3656,31 @@ class _TeamDetailScreenState extends State<TeamDetailScreen> {
               Icon(
                 Icons.shield_outlined,
                 color: colors.primary,
-                size: 32,
+                size: isMobileLayout ? 24 : 32,
               ),
               const SizedBox(width: 12),
               Expanded(
                 child: Text(
                   l10n.entityStaff,
-                  style: textTheme.headlineSmall?.copyWith(
+                  style: (isMobileLayout
+                          ? textTheme.titleLarge
+                          : textTheme.headlineSmall)
+                      ?.copyWith(
                     fontWeight: FontWeight.w800,
                   ),
                 ),
               ),
-              if (_canManageTeam(context) &&
-                  !_teamUsesExternalLegacyRoster()) ...[
+              if (canAddStaff && !isMobileLayout) ...[
                 FilledButton(
-                  onPressed: () => _onAddStaffPressed(context),
+                  onPressed: _isMemberOperationLoading
+                      ? null
+                      : () => _onAddStaffPressed(context),
                   child: Text(l10n.actionAddStaff),
                 ),
-              ]
+              ],
             ],
           ),
-          const SizedBox(height: 24),
+          SizedBox(height: isMobileLayout ? 16 : 24),
           if (staffRows.isEmpty)
             Container(
               width: double.infinity,
@@ -2736,7 +3825,11 @@ class _TeamDetailScreenState extends State<TeamDetailScreen> {
     );
   }
 
-  Widget _buildTableHeader(BuildContext context) {
+  Widget _buildTableHeader(BuildContext context, {required bool mobile}) {
+    if (mobile) {
+      return _buildMobileTableHeader(context);
+    }
+
     final colors = context.appColors;
     final textTheme = Theme.of(context).textTheme;
     final l10n = context.l10n;
@@ -2758,8 +3851,8 @@ class _TeamDetailScreenState extends State<TeamDetailScreen> {
             textTheme: textTheme,
             sortColumn: _RosterSortColumn.player,
           ),
-          if (_canManageRoster(context)) ...[
-            _headerCell('', flex: 1, textTheme: textTheme),
+          if (_canManageTeam(context) || _canManageRoster(context)) ...[
+            _headerCell('', flex: 2, textTheme: textTheme),
           ],
           _headerCell(
             l10n.teamDetailColumnAge,
@@ -2861,6 +3954,502 @@ class _TeamDetailScreenState extends State<TeamDetailScreen> {
     );
   }
 
+  Widget _buildMobileTableHeader(BuildContext context) {
+    final colors = context.appColors;
+    final textTheme = Theme.of(context).textTheme;
+    final l10n = context.l10n;
+    final bool canManageRoster = _canManageRoster(context);
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 10),
+      decoration: BoxDecoration(
+        color: colors.surface.withValues(alpha: 0.8),
+        border: Border(
+          top: BorderSide(color: colors.border),
+          bottom: BorderSide(color: colors.border),
+        ),
+      ),
+      child: Row(
+        children: [
+          _headerCell(
+            l10n.entityPlayer,
+            flex: 4,
+            textTheme: textTheme,
+            sortColumn: _RosterSortColumn.player,
+          ),
+          _headerCell(
+            l10n.teamDetailColumnApp,
+            flex: 1,
+            textTheme: textTheme,
+            center: true,
+          ),
+          _mobileStaticIconHeaderCell(
+            icon: Icons.verified_rounded,
+            tooltip: l10n.teamDetailGrantManager,
+            flex: 1,
+          ),
+          _headerCell(
+            l10n.teamDetailColumnPosition,
+            flex: 2,
+            textTheme: textTheme,
+            center: true,
+            sortColumn: _RosterSortColumn.position,
+          ),
+          _mobileIconHeaderCell(
+            icon: Icons.sensors_rounded,
+            tooltip: l10n.entityTracker,
+            flex: 1,
+            textTheme: textTheme,
+            sortColumn: _RosterSortColumn.tracker,
+          ),
+          if (canManageRoster)
+            _mobileStaticIconHeaderCell(
+              icon: Icons.edit_outlined,
+              tooltip: l10n.actionEditPlayer,
+              flex: 1,
+            ),
+          _mobileStaticIconHeaderCell(
+            icon: Icons.info_outline_rounded,
+            tooltip: l10n.teamDetailPlayerDetailsTitle,
+            flex: 1,
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _mobileStaticIconHeaderCell({
+    required IconData icon,
+    required String tooltip,
+    required int flex,
+  }) {
+    final colors = context.appColors;
+
+    return Expanded(
+      flex: flex,
+      child: Center(
+        child: Tooltip(
+          message: tooltip,
+          child: Icon(
+            icon,
+            size: 16,
+            color: colors.textSecondary,
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _mobileIconHeaderCell({
+    required IconData icon,
+    required String tooltip,
+    required int flex,
+    required TextTheme textTheme,
+    required _RosterSortColumn sortColumn,
+  }) {
+    final colors = context.appColors;
+    final bool active = _sortColumn == sortColumn;
+
+    return Expanded(
+      flex: flex,
+      child: InkWell(
+        onTap: () => _onSort(sortColumn),
+        borderRadius: BorderRadius.circular(8),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(vertical: 4),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Tooltip(
+                message: tooltip,
+                child: Icon(
+                  icon,
+                  size: 16,
+                  color: active ? colors.primary : colors.textSecondary,
+                ),
+              ),
+              const SizedBox(width: 2),
+              Icon(
+                active
+                    ? (_sortAscending
+                        ? Icons.arrow_upward_rounded
+                        : Icons.arrow_downward_rounded)
+                    : Icons.unfold_more_rounded,
+                size: 15,
+                color: active ? colors.primary : colors.textSecondary,
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildAppAccountIndicator(BuildContext context, _TeamMemberVm row) {
+    final colors = context.appColors;
+    final l10n = context.l10n;
+
+    if (isMemberLinkedToAppAccount(row.player)) {
+      return Tooltip(
+        message: l10n.memberAppAccountLinked,
+        child: Icon(
+          Icons.check_circle_rounded,
+          size: 18,
+          color: colors.success,
+        ),
+      );
+    }
+
+    if (row.isGrintaRoster) {
+      final String? invitationId = row.grintaInvitationId?.trim();
+      if (invitationId != null &&
+          invitationId.isNotEmpty &&
+          row.invitationAccepted != true) {
+        return Tooltip(
+          message: l10n.invitationPending,
+          child: Icon(
+            Icons.schedule_rounded,
+            size: 18,
+            color: colors.warning,
+          ),
+        );
+      }
+    }
+
+    return Icon(
+      Icons.circle_outlined,
+      size: 14,
+      color: colors.textSecondary.withValues(alpha: 0.35),
+    );
+  }
+
+  Widget _buildManagerIndicator(BuildContext context, _TeamMemberVm row) {
+    final colors = context.appColors;
+    final l10n = context.l10n;
+    final bool isManager = _isPlayerManager(row);
+    final bool canToggle = _canManageTeam(context);
+
+    final Widget icon = Icon(
+      Icons.verified_rounded,
+      size: 18,
+      color: isManager
+          ? colors.success
+          : colors.textSecondary.withValues(alpha: 0.25),
+    );
+
+    if (!canToggle) {
+      return icon;
+    }
+
+    return IconButton(
+      padding: EdgeInsets.zero,
+      constraints: const BoxConstraints(
+        minWidth: 32,
+        minHeight: 32,
+      ),
+      tooltip: isManager
+          ? l10n.teamDetailRevokeManager
+          : l10n.teamDetailGrantManager,
+      onPressed: () => _onTogglePlayerManagerPressed(context, row),
+      icon: icon,
+    );
+  }
+
+  Future<void> _showPlayerDetailsSheet(
+    BuildContext context,
+    _TeamMemberVm row,
+  ) async {
+    final l10n = context.l10n;
+    final colors = context.appColors;
+    final textTheme = Theme.of(context).textTheme;
+    final Effectives? effectives = row.effectives;
+
+    final String age = _buildAgeForRow(row);
+    final int? heightCm = _heightCmForRow(row);
+    final String taille = heightCm != null
+        ? l10n.teamDetailHeightCm(heightCm)
+        : '-';
+    final double? weightKg =
+        row.isGrintaRoster ? row.grintaWeightKg : effectives?.poids?.toDouble();
+    final String poids = weightKg != null && weightKg > 0
+        ? (row.isGrintaRoster
+            ? _formatWeightLabel(weightKg, l10n)
+            : l10n.teamDetailWeightKg(weightKg.round()))
+        : '-';
+
+    await showModalBottomSheet<void>(
+      context: context,
+      showDragHandle: true,
+      backgroundColor: colors.card,
+      builder: (sheetContext) {
+        final sheetL10n = sheetContext.l10n;
+        return SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(20, 0, 20, 20),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Text(
+                  sheetL10n.teamDetailPlayerDetailsTitle,
+                  style: textTheme.titleMedium?.copyWith(
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+                const SizedBox(height: 16),
+                _playerDetailLine(
+                  context,
+                  label: sheetL10n.teamDetailColumnAge,
+                  value: age,
+                ),
+                const SizedBox(height: 10),
+                _playerDetailLine(
+                  context,
+                  label: sheetL10n.teamDetailColumnHeight,
+                  value: taille,
+                ),
+                const SizedBox(height: 10),
+                _playerDetailLine(
+                  context,
+                  label: sheetL10n.teamDetailColumnWeight,
+                  value: poids,
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _playerDetailLine(
+    BuildContext context, {
+    required String label,
+    required String value,
+  }) {
+    final colors = context.appColors;
+
+    return Row(
+      children: [
+        Expanded(
+          child: Text(
+            label,
+            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                  color: colors.textSecondary,
+                ),
+          ),
+        ),
+        Text(
+          value,
+          style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                fontWeight: FontWeight.w700,
+              ),
+        ),
+      ],
+    );
+  }
+
+  Future<void> _showPlayerTrackersSheet(
+    BuildContext context,
+    _TeamMemberVm row,
+  ) async {
+    final colors = context.appColors;
+
+    await showModalBottomSheet<void>(
+      context: context,
+      showDragHandle: true,
+      isScrollControlled: true,
+      backgroundColor: colors.card,
+      builder: (sheetContext) {
+        final NavigatorState sheetNavigator = Navigator.of(sheetContext);
+        void closeSheetOnTrackerAssign() {
+          if (sheetNavigator.mounted) {
+            sheetNavigator.pop();
+          }
+        }
+
+        return SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(16, 0, 16, 20),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Text(
+                  sheetContext.l10n.entityTracker,
+                  style: Theme.of(sheetContext).textTheme.titleMedium?.copyWith(
+                        color: colors.textPrimary,
+                        fontWeight: FontWeight.w700,
+                      ),
+                ),
+                const SizedBox(height: 16),
+                _buildTrackerChipsCell(
+                  sheetContext,
+                  row,
+                  closeSheetOnTrackerAssign: closeSheetOnTrackerAssign,
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildMobileRow(
+    BuildContext context, {
+    required _TeamMemberVm row,
+    required bool odd,
+  }) {
+    final colors = context.appColors;
+    final textTheme = Theme.of(context).textTheme;
+    final Player player = row.player;
+    final Effectives? effectives = row.effectives;
+
+    if (effectives == null &&
+        !row.isGrintaRoster &&
+        _teamUsesGrintaRoster()) {
+      return const SizedBox.shrink();
+    }
+
+    final l10n = context.l10n;
+    final String playerName = _displayName(player, l10n);
+    final String position = _positionLabelForRow(row, l10n);
+    final bool canManageRoster = _canManageRoster(context);
+    final Color rowColor = _mobileRowBackgroundColor(colors, odd);
+    final bool hasTrackers = row.trackers.isNotEmpty;
+
+    final Widget rowContent = Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 10),
+      decoration: BoxDecoration(
+        color: rowColor,
+        border: Border(
+          bottom: BorderSide(
+            color: colors.border.withValues(alpha: 0.35),
+          ),
+        ),
+      ),
+      child: Row(
+        children: [
+          Expanded(
+            flex: 4,
+            child: Row(
+              children: [
+                PlayerPhoto(player: player),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    playerName,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: textTheme.bodySmall?.copyWith(
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          Expanded(
+            flex: 1,
+            child: _CompactIconCell(
+              child: _buildAppAccountIndicator(context, row),
+            ),
+          ),
+          Expanded(
+            flex: 1,
+            child: _CompactIconCell(
+              width: 34,
+              child: _buildManagerIndicator(context, row),
+            ),
+          ),
+          _valueCell(position, flex: 2, center: true),
+          Expanded(
+            flex: 1,
+            child: _CompactIconCell(
+              width: 34,
+              child: IconButton(
+                padding: EdgeInsets.zero,
+                constraints: const BoxConstraints(
+                  minWidth: 32,
+                  minHeight: 32,
+                ),
+                tooltip: l10n.entityTracker,
+                onPressed: () => _showPlayerTrackersSheet(context, row),
+                icon: Badge(
+                  isLabelVisible: hasTrackers,
+                  label: Text('${row.trackers.length}'),
+                  child: Icon(
+                    Icons.sensors_rounded,
+                    size: 20,
+                    color: hasTrackers
+                        ? colors.primary
+                        : colors.textSecondary.withValues(alpha: 0.45),
+                  ),
+                ),
+              ),
+            ),
+          ),
+          if (canManageRoster)
+            Expanded(
+              flex: 1,
+              child: _CompactIconCell(
+                width: 34,
+                child: IconButton(
+                  padding: EdgeInsets.zero,
+                  constraints: const BoxConstraints(
+                    minWidth: 32,
+                    minHeight: 32,
+                  ),
+                  tooltip: l10n.actionEditPlayer,
+                  onPressed: () => _onEditPlayerPressed(context, row),
+                  icon: Icon(
+                    Icons.edit_outlined,
+                    size: 20,
+                    color: colors.primary,
+                  ),
+                ),
+              ),
+            ),
+          Expanded(
+            flex: 1,
+            child: _CompactIconCell(
+              width: 34,
+              child: IconButton(
+                padding: EdgeInsets.zero,
+                constraints: const BoxConstraints(
+                  minWidth: 32,
+                  minHeight: 32,
+                ),
+                tooltip: l10n.teamDetailPlayerDetailsTitle,
+                onPressed: () => _showPlayerDetailsSheet(context, row),
+                icon: Icon(
+                  Icons.info_outline_rounded,
+                  size: 20,
+                  color: colors.textSecondary,
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+
+    if (!canManageRoster) {
+      return rowContent;
+    }
+
+    return _TeamPlayerSwipeRow(
+      backgroundColor: rowColor,
+      editLabel: l10n.actionEditPlayer,
+      removeLabel: l10n.teamDetailRemoveFromTeam,
+    //r  onEdit: () => _onEditPlayerPressed(context, row),
+      onRemove: () => _onDeletePlayerPressed(context, row),
+      child: rowContent,
+    );
+  }
+
   Widget _buildRow(
       BuildContext context, {
         required _TeamMemberVm row,
@@ -2941,26 +4530,43 @@ class _TeamDetailScreenState extends State<TeamDetailScreen> {
               ],
             ),
           ),
-          if (_canManageRoster(context)) ...[
+          if (_canManageTeam(context) || _canManageRoster(context)) ...[
             Expanded(
-              flex: 1,
+              flex: 2,
               child: Center(
-                child: FittedBox(
-                  fit: BoxFit.scaleDown,
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    if (_canManageTeam(context)) ...[
+                      _CircleGhostButton(
+                        icon: Icons.verified_rounded,
+                        size: _CircleGhostButton.webTableButtonSize,
+                        iconSize: _CircleGhostButton.webTableIconSize,
+                        iconColor: _isPlayerManager(row)
+                            ? context.appColors.success
+                            : null,
+                        onTap: () =>
+                            _onTogglePlayerManagerPressed(context, row),
+                      ),
+                      if (_canManageRoster(context))
+                        const SizedBox(width: 6),
+                    ],
+                    if (_canManageRoster(context)) ...[
                       _CircleGhostButton(
                         icon: Icons.edit_outlined,
+                        size: _CircleGhostButton.webTableButtonSize,
+                        iconSize: _CircleGhostButton.webTableIconSize,
                         onTap: () => _onEditPlayerPressed(context, row),
                       ),
                       const SizedBox(width: 6),
                       _CircleGhostButton(
                         icon: Icons.delete_outline_rounded,
+                        size: _CircleGhostButton.webTableButtonSize,
+                        iconSize: _CircleGhostButton.webTableIconSize,
                         onTap: () => _onDeletePlayerPressed(context, row),
                       ),
                     ],
-                  ),
+                  ],
                 ),
               ),
             ),
@@ -2978,7 +4584,11 @@ class _TeamDetailScreenState extends State<TeamDetailScreen> {
     );
   }
 
-  Widget _buildTrackerChipsCell(BuildContext context, _TeamMemberVm row) {
+  Widget _buildTrackerChipsCell(
+    BuildContext context,
+    _TeamMemberVm row, {
+    VoidCallback? closeSheetOnTrackerAssign,
+  }) {
     final colors = context.appColors;
     final textTheme = Theme.of(context).textTheme;
 
@@ -2998,44 +4608,61 @@ class _TeamDetailScreenState extends State<TeamDetailScreen> {
             ),
 
           ...row.trackers.map((tracker) {
+            final bool canDelete = _canManageRoster(context);
 
-            return InputChip(
-              label: Text(tracker.label),
-              labelStyle: textTheme.bodySmall?.copyWith(
-                color: colors.textPrimary,
-                fontWeight: FontWeight.w500,
-              ),
-              backgroundColor: colors.surface,
-              side: BorderSide(
-                color: colors.border,
-              ),
-              shape: RoundedRectangleBorder(
+            return Container(
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+              decoration: BoxDecoration(
+                color: colors.primary.withValues(alpha: 0.12),
                 borderRadius: BorderRadius.circular(18),
+                border: Border.all(
+                  color: colors.primary.withValues(alpha: 0.3),
+                ),
               ),
-              deleteIcon: _canManageRoster(context)
-                  ? Icon(
-                Icons.delete_outline,
-                size: 18,
-                color: colors.danger,
-              )
-                  : null,
-              onDeleted: _canManageRoster(context)
-                  ? () async {
-                await _deleteTrackerAffectation(
-                  context: context,
-                  row: row,
-                  tracker: tracker,
-                );
-              }
-                  : null,
-              materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
-              visualDensity: VisualDensity.compact,
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Flexible(
+                    child: Text(
+                      tracker.label,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: textTheme.bodySmall?.copyWith(
+                        color: colors.textPrimary,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ),
+                  if (canDelete) ...[
+                    const SizedBox(width: 4),
+                    InkWell(
+                      onTap: () async {
+                        await _deleteTrackerAffectation(
+                          context: context,
+                          row: row,
+                          tracker: tracker,
+                        );
+                      },
+                      borderRadius: BorderRadius.circular(12),
+                      child: Padding(
+                        padding: const EdgeInsets.all(2),
+                        child: Icon(
+                          Icons.delete_outline,
+                          size: 18,
+                          color: colors.danger,
+                        ),
+                      ),
+                    ),
+                  ],
+                ],
+              ),
             );
           }),
-          if (_canManageRoster(context)) ...[
+          if (_canAssignTeamTrackers(context)) ...[
             _buildAddTrackerButton(
               context: context,
               row: row,
+              closeSheetOnTrackerAssign: closeSheetOnTrackerAssign,
             ),
           ]
 
@@ -3046,6 +4673,7 @@ class _TeamDetailScreenState extends State<TeamDetailScreen> {
   Widget _buildAddTrackerButton({
     required BuildContext context,
     required _TeamMemberVm row,
+    VoidCallback? closeSheetOnTrackerAssign,
   }) {
     final colors = context.appColors;
 
@@ -3055,6 +4683,7 @@ class _TeamDetailScreenState extends State<TeamDetailScreen> {
         await _addTrackerAffectation(
           context: context,
           row: row,
+          closeSheetOnTrackerAssign: closeSheetOnTrackerAssign,
         );
       },
       child: Container(
@@ -3078,28 +4707,63 @@ class _TeamDetailScreenState extends State<TeamDetailScreen> {
   Future<void> _addTrackerAffectation({
     required BuildContext context,
     required _TeamMemberVm row,
+    VoidCallback? closeSheetOnTrackerAssign,
   }) async {
-    // Ouvre ici un Dialog ou BottomSheet permettant de sélectionner
-    // un tracker supplémentaire à affecter au joueur.
+    if (!_canAssignTeamTrackers(context)) {
+      return;
+    }
 
-    // Exemple :
-    //
-    // final selectedTracker = await showModalBottomSheet<Tracker>(
-    //   context: context,
-    //   builder: (_) => TrackerSelectionBottomSheet(
-    //     playerId: row.player.id,
-    //     alreadyAssignedTrackers: row.trackers,
-    //   ),
-    // );
-    //
-    // if (selectedTracker == null) return;
-    //
-    // await trackerService.assignTrackerToPlayer(
-    //   playerId: row.player.id,
-    //   trackerId: selectedTracker.id,
-    // );
-    //
-    // setState(() {});
+    final Team team = _serverTeam ?? _team;
+    if (!team.hasAnyTrackerOwners) {
+      if (!context.mounted) return;
+      AppSnackbar.show(
+        context,
+        context.l10n.trainingPlayersNoTrackerAvailable,
+      );
+      return;
+    }
+
+    final List<DeviceOwner> allDevices = await _loadTeamTrackerDevices();
+    final List<_TeamMemberVm> members = await _future;
+    final Set<String> assignedIds = _collectAssignedTrackerDocIds(members);
+    final List<DeviceOwner> available = allDevices
+        .where((DeviceOwner device) => !assignedIds.contains(device.id))
+        .toList()
+      ..sort(compareDeviceOwnersByCustomName);
+
+    if (!context.mounted) {
+      return;
+    }
+
+    final DeviceOwner? selected = await showAssignTrackerDialog(
+      context: context,
+      availableDevices: available,
+    );
+    if (selected == null || !context.mounted) {
+      return;
+    }
+
+    try {
+      await _persistTrackerChange(
+        row: row,
+        deviceOwnerDocId: selected.id,
+        add: true,
+      );
+      if (!context.mounted) {
+        return;
+      }
+      closeSheetOnTrackerAssign?.call();
+      await _reloadTeamAndMembers();
+    } catch (e) {
+      if (!context.mounted) {
+        return;
+      }
+      AppSnackbar.show(
+        context,
+        context.l10n.errorGeneric(e.toString()),
+        isError: true,
+      );
+    }
   }
 
   Future<void> _deleteTrackerAffectation({
@@ -3155,14 +4819,26 @@ class _TeamDetailScreenState extends State<TeamDetailScreen> {
 
     if (confirm != true) return;
 
-    // À adapter avec ton service / ta collection Firestore.
-    //
-    // await trackerService.removeTrackerFromPlayer(
-    //   playerId: row.player.id,
-    //   trackerId: tracker.id,
-    // );
-
-    // setState(() {});
+    try {
+      await _persistTrackerChange(
+        row: row,
+        deviceOwnerDocId: tracker.id,
+        add: false,
+      );
+      if (!context.mounted) {
+        return;
+      }
+      await _reloadTeamAndMembers();
+    } catch (e) {
+      if (!context.mounted) {
+        return;
+      }
+      AppSnackbar.show(
+        context,
+        context.l10n.errorGeneric(e.toString()),
+        isError: true,
+      );
+    }
   }
 
   String _buildAgeForRow(_TeamMemberVm row) {

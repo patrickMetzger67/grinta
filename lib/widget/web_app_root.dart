@@ -9,6 +9,7 @@ import 'package:grinta/screen/agendaScreen.dart';
 import 'package:grinta/screen/dashboardScreen.dart';
 import 'package:grinta/screen/teamsListScreen.dart';
 import 'package:grinta/services/calendar_sync_service.dart';
+import 'package:grinta/services/calendar_deep_link_service.dart';
 import 'package:grinta/services/matchService.dart';
 import 'package:grinta/services/teamWorkloadSummaryService.dart';
 import 'package:grinta/services/trainingService.dart';
@@ -45,7 +46,26 @@ class _WebAppRootState extends State<WebAppRoot> {
   @override
   void initState() {
     super.initState();
+    CalendarDeepLinkService.instance.pendingAgendaDate.addListener(
+      _onPendingAgendaDateChanged,
+    );
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      unawaited(CalendarDeepLinkService.instance.processPendingIfReady());
+    });
     _initApp();
+  }
+
+  @override
+  void dispose() {
+    CalendarDeepLinkService.instance.pendingAgendaDate.removeListener(
+      _onPendingAgendaDateChanged,
+    );
+    super.dispose();
+  }
+
+  void _onPendingAgendaDateChanged() {
+    if (!mounted) return;
+    setState(() {});
   }
 
   Future<void> _initApp() async {
@@ -55,6 +75,11 @@ class _WebAppRootState extends State<WebAppRoot> {
 
     setState(() {
       _isLoading = false;
+    });
+
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      CalendarDeepLinkService.instance.notifyShellReady();
+      unawaited(CalendarDeepLinkService.instance.processPendingIfReady());
     });
   }
 
@@ -243,11 +268,24 @@ class _WebAppRootState extends State<WebAppRoot> {
     final l10n = context.l10n;
     final localeCode = Localizations.localeOf(context).languageCode;
 
+    final pendingAgendaDate =
+        CalendarDeepLinkService.instance.pendingAgendaDate.value;
+    if (pendingAgendaDate != null) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        final notifier = CalendarDeepLinkService.instance.pendingAgendaDate;
+        if (notifier.value != null) {
+          notifier.value = null;
+        }
+      });
+    }
+
     final agendaPage = AgendaScreen(
       key: ValueKey(
-        'agenda-$selectedPlayerId-$selectedSeasonId-$agendaTeamsKey-$localeCode',
+        'agenda-$selectedPlayerId-$selectedSeasonId-$agendaTeamsKey-$localeCode'
+        '-${pendingAgendaDate?.millisecondsSinceEpoch ?? 0}',
       ),
       loadItems: _loadAgendaItems,
+      initialDate: pendingAgendaDate,
     );
 
     final bool isMobileNative = !kIsWeb &&

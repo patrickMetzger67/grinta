@@ -1396,6 +1396,48 @@ class AppSession extends ChangeNotifier {
     _teamsAsOwnerSub = null;
   }
 
+  /// Removes [teamId] from all in-memory team caches after a successful delete.
+  void removeTeamFromSession(String teamId) {
+    final String trimmedTeamId = teamId.trim();
+    if (trimmedTeamId.isEmpty) {
+      return;
+    }
+
+    var removed = false;
+
+    void removeFromSource(Map<String, Map<String, Map<String, Team>>> source) {
+      for (final MapEntry<String, Map<String, Map<String, Team>>> playerEntry
+          in source.entries.toList()) {
+        final Map<String, Map<String, Team>> seasonMaps = playerEntry.value;
+        for (final MapEntry<String, Map<String, Team>> seasonEntry
+            in seasonMaps.entries.toList()) {
+          if (seasonEntry.value.remove(trimmedTeamId) != null) {
+            removed = true;
+          }
+          if (seasonEntry.value.isEmpty) {
+            seasonMaps.remove(seasonEntry.key);
+          }
+        }
+        if (seasonMaps.isEmpty) {
+          source.remove(playerEntry.key);
+        }
+      }
+    }
+
+    removeFromSource(_teamsAsPlayerData);
+    removeFromSource(_teamsAsManagerData);
+    removeFromSource(_teamsAsGrintaPlayerData);
+    removeFromSource(_teamsAsOwnerData);
+
+    if (!removed) {
+      return;
+    }
+
+    _rebuildMergedTeamsAndSeasons();
+    _syncSelectedPlayerAndSeason();
+    _safeNotify();
+  }
+
   void setSelectedPlayerId(String? playerId) {
     selectedPlayerId = playerId;
     _syncSelectedPlayerAndSeason();

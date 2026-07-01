@@ -317,6 +317,7 @@ class TeamService {
     final bool isStaff = staffEntry ||
         isGrintaRosterStaff(
           positions: player.positions,
+          fonction: player.fonction,
           listedInManagers: managerIds.contains(trimmedPlayerId),
         );
     if (!isStaff) {
@@ -456,24 +457,49 @@ class TeamService {
     final List<GrintaPlayer> grintaPlayers =
         List<GrintaPlayer>.from(team.grintaPlayers ?? const <GrintaPlayer>[]);
 
-    final int index = _indexOfGrintaEntry(
+    // When removing staff, include the target id in the managers snapshot used
+    // for roster classification. Educator/executive codes (1/2) overlap pitch
+    // codes 1–23 and require listedInManagers; callers must not clear managers
+    // before this read-modify-write, but this keeps lookup correct if they do.
+    final Set<String> classificationManagerIds = <String>{...managerIds};
+    if (staffEntry) {
+      classificationManagerIds.add(trimmedPlayerId);
+      for (final String extraId in extraManagerIds) {
+        final String trimmed = extraId.trim();
+        if (trimmed.isNotEmpty) {
+          classificationManagerIds.add(trimmed);
+        }
+      }
+    }
+
+    int index = _indexOfGrintaEntry(
       grintaPlayers,
       trimmedPlayerId,
       staffEntry: staffEntry,
-      managerIds: managerIds,
+      managerIds: classificationManagerIds,
     );
-    if (index < 0) {
-      return;
+    if (index < 0 && staffEntry) {
+      index = grintaPlayers.indexWhere(
+        (GrintaPlayer entry) =>
+            entry.playerId.trim() == trimmedPlayerId &&
+            isGrintaRosterStaff(
+              positions: entry.positions,
+              fonction: entry.fonction,
+              listedInManagers:
+                  classificationManagerIds.contains(trimmedPlayerId),
+            ),
+      );
     }
 
-    grintaPlayers.removeAt(index);
+    final Map<String, dynamic> update = <String, dynamic>{};
 
-    final Map<String, dynamic> update = <String, dynamic>{
-      keyTeamGrintaPlayers:
-          grintaPlayers.map((GrintaPlayer entry) => entry.toMap()).toList(),
-      keyTeamGrintaPlayerMemberIds:
-          grintaPlayerMemberIdsFromGrintaPlayers(grintaPlayers),
-    };
+    if (index >= 0) {
+      grintaPlayers.removeAt(index);
+      update[keyTeamGrintaPlayers] =
+          grintaPlayers.map((GrintaPlayer entry) => entry.toMap()).toList();
+      update[keyTeamGrintaPlayerMemberIds] =
+          grintaPlayerMemberIdsFromGrintaPlayers(grintaPlayers);
+    }
 
     if (removeFromManagers) {
       final List<dynamic> managers =
@@ -488,16 +514,24 @@ class TeamService {
       update[keyTeamManagers] = managers;
     }
 
+    if (update.isEmpty) {
+      return;
+    }
+
     await _collection.doc(trimmedTeamId).update(update);
   }
 
+  /// Roster read-modify-write slot for staff vs field player (same memberId
+  /// may appear twice). Display lists use [isGrintaRosterStaff] instead.
   static bool _isGrintaStaffEntry(
     GrintaPlayer entry,
     Set<String> managerIds,
   ) {
-    return isGrintaRosterStaff(
+    return isGrintaStaffCrudEntry(
       positions: entry.positions,
-      listedInManagers: managerIds.contains(entry.playerId.trim()),
+      fonction: entry.fonction,
+      playerId: entry.playerId,
+      managerIds: managerIds,
     );
   }
 

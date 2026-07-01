@@ -73,6 +73,7 @@ class _WebNavigationShellState extends State<WebNavigationShell> {
   @override
   void initState() {
     super.initState();
+    ShellNavigationScope.registerGlobalNavigator(_selectTabByFeatureId);
     _selectedIndex = widget.initialIndex.clamp(0, widget.items.length - 1);
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _markTabFeatureVisited(_selectedIndex);
@@ -83,6 +84,7 @@ class _WebNavigationShellState extends State<WebNavigationShell> {
 
   @override
   void dispose() {
+    ShellNavigationScope.registerGlobalNavigator(null);
     _tabAnalytics.dispose();
     super.dispose();
   }

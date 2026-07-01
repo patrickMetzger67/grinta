@@ -14,6 +14,7 @@ import 'package:grinta/services/calendar_sync_repository.dart';
 import 'package:grinta/services/matchService.dart';
 import 'package:grinta/services/trainingService.dart';
 import 'package:grinta/util/buildTimestampFromDateAndTime.dart';
+import 'package:grinta/util/calendar_event_formatter.dart';
 import 'package:grinta/util/calendar_ics_builder.dart';
 import 'package:grinta/util/download_ics.dart';
 import 'package:grinta/util/playerDisplayName.dart';
@@ -44,17 +45,21 @@ class CalendarSyncService {
     return 'grinta://event?type=$eventType&id=$eventId&playerId=$playerId';
   }
 
-  String computeContentHash(AgendaItem item) {
+  String computeContentHash(AgendaItem item, {required String deepLink}) {
     final buffer = StringBuffer()
       ..write(item.id)
       ..write('|')
       ..write(item.type.name)
       ..write('|')
-      ..write(item.title)
+      ..write(CalendarEventFormatter.eventTitle(item))
+      ..write('|')
+      ..write(CalendarEventFormatter.eventLocation(item) ?? '')
       ..write('|')
       ..write(item.startAt.toUtc().millisecondsSinceEpoch)
       ..write('|')
-      ..write(item.endAt.toUtc().millisecondsSinceEpoch);
+      ..write(item.endAt.toUtc().millisecondsSinceEpoch)
+      ..write('|')
+      ..write(deepLink);
     return sha256.convert(utf8.encode(buffer.toString())).toString();
   }
 
@@ -66,17 +71,6 @@ class CalendarSyncService {
         return 'training';
       case AgendaItemType.preparationPhysique:
         return 'training';
-    }
-  }
-
-  String _calendarEventTitle(AgendaItem item) {
-    switch (item.type) {
-      case AgendaItemType.match:
-        return item.title;
-      case AgendaItemType.entrainement:
-        return item.title;
-      case AgendaItemType.preparationPhysique:
-        return item.title;
     }
   }
 
@@ -116,6 +110,47 @@ class CalendarSyncService {
     }
 
     return null;
+  }
+
+  /// Returns a valid local calendar id, recreating the calendar and clearing
+  /// stale Firestore event maps when the stored id no longer exists (e.g. after
+  /// a phone reset).
+  Future<String?> _resolveCalendarId({
+    required String uid,
+    required String playerId,
+    required CalendarSyncConfig config,
+    required String displayName,
+  }) async {
+    final calendarsResult = await _plugin.retrieveCalendars();
+    if (!calendarsResult.isSuccess) {
+      return config.calendarExternalId;
+    }
+
+    final calendars = calendarsResult.data ?? const <Calendar>[];
+    final storedId = config.calendarExternalId;
+    if (storedId != null &&
+        storedId.isNotEmpty &&
+        calendars.any((calendar) => calendar.id == storedId)) {
+      return storedId;
+    }
+
+    await _repository.deleteAllEventMaps(uid, playerId);
+
+    final calendarId = await ensureCalendar(displayName);
+    if (calendarId == null) return null;
+
+    await _repository.saveConfig(
+      uid: uid,
+      playerId: playerId,
+      config: CalendarSyncConfig(
+        enabled: true,
+        calendarExternalId: calendarId,
+        calendarDisplayName: displayName,
+        platform: config.platform,
+      ),
+    );
+
+    return calendarId;
   }
 
   Future<CalendarSyncResult> enableSync({
@@ -203,7 +238,7 @@ class CalendarSyncService {
   Future<void> maybeSyncAfterAgendaLoad({
     required AppSession appSession,
   }) async {
-    // Web uses manual ICS download; no background sync.
+    // Web uses manual ICS download; native syncs after each agenda load (debounced).
     if (kIsWeb) return;
 
     final uid = FirebaseAuth.instance.currentUser?.uid;
@@ -255,26 +290,21 @@ class CalendarSyncService {
 
     _syncInProgress = true;
     try {
-      var calendarId = config.calendarExternalId;
-      if (calendarId == null || calendarId.isEmpty) {
-        final player = appSession.selectedPlayer;
-        if (player == null) {
-          return CalendarSyncResult.playerNotFound;
-        }
-        calendarId = await ensureCalendar(calendarDisplayNameForPlayer(player));
-        if (calendarId == null) {
-          return CalendarSyncResult.calendarCreationFailed;
-        }
-        await _repository.saveConfig(
-          uid: uid,
-          playerId: playerId,
-          config: CalendarSyncConfig(
-            enabled: true,
-            calendarExternalId: calendarId,
-            calendarDisplayName: calendarDisplayNameForPlayer(player),
-            platform: config.platform,
-          ),
-        );
+      final player = appSession.selectedPlayer;
+      if (player == null) {
+        return CalendarSyncResult.playerNotFound;
+      }
+
+      final displayName =
+          config.calendarDisplayName ?? calendarDisplayNameForPlayer(player);
+      final calendarId = await _resolveCalendarId(
+        uid: uid,
+        playerId: playerId,
+        config: config,
+        displayName: displayName,
+      );
+      if (calendarId == null) {
+        return CalendarSyncResult.calendarCreationFailed;
       }
 
       final items = await _loadSeasonAgendaItems(appSession);
@@ -294,29 +324,46 @@ class CalendarSyncService {
 
       for (final item in syncableItems) {
         final eventType = _eventTypeForAgendaItem(item);
-        final contentHash = computeContentHash(item);
+        final deepLink = buildDeepLink(
+          eventType: eventType,
+          eventId: item.id,
+          playerId: playerId,
+        );
+        final contentHash = computeContentHash(item, deepLink: deepLink);
         final existing = existingById[item.id];
 
         if (existing != null && existing.contentHash == contentHash) {
           continue;
         }
 
-        final deepLink = buildDeepLink(
-          eventType: eventType,
-          eventId: item.id,
-          playerId: playerId,
-        );
-
         final event = Event(
           calendarId,
           eventId: existing?.externalEventId,
-          title: _calendarEventTitle(item),
-          description: deepLink,
+          title: CalendarEventFormatter.eventTitle(item),
+          description: CalendarEventFormatter.eventDescription(
+            deepLink: deepLink,
+            item: item,
+          ),
           start: item.startAt,
           end: item.endAt,
-        )..url = Uri.parse(deepLink);
+        )
+          ..location = CalendarEventFormatter.eventLocation(item)
+          ..url = Uri.parse(deepLink);
 
-        final result = await _plugin.createOrUpdateEvent(event);
+        var result = await _plugin.createOrUpdateEvent(event);
+        if ((result == null || !result.isSuccess || result.data == null) &&
+            existing?.externalEventId.isNotEmpty == true) {
+          final freshEvent = Event(
+            calendarId,
+            title: event.title,
+            description: event.description,
+            start: event.start,
+            end: event.end,
+          )
+            ..location = event.location
+            ..url = event.url;
+          result = await _plugin.createOrUpdateEvent(freshEvent);
+        }
         if (result == null || !result.isSuccess || result.data == null) {
           debugPrint(
             'CalendarSyncService: failed to sync event ${item.id}: '

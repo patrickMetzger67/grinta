@@ -600,6 +600,7 @@ class SubscriptionLimitsService {
       }
       if (isGrintaRosterStaff(
         positions: grintaPlayer.positions,
+        fonction: grintaPlayer.fonction,
         listedInManagers:
             managerIds.contains(grintaPlayer.playerId.trim()),
       )) {

@@ -27,6 +27,34 @@ const List<int> grintaStaffRoleCodes = <int>[
 bool hasStaffProfilePositionCodes(Iterable<int> codes) =>
     codes.any(isStaffProfilePositionCode);
 
+/// True when [GrintaPlayer.fonction] holds a staff role (new model).
+bool hasExplicitGrintaStaffFonction(int? fonction) =>
+    fonction != null &&
+    fonction > 0 &&
+    isStaffProfilePositionCode(fonction);
+
+/// Staff role from explicit [fonction] or legacy medical code (24) in [positions].
+///
+/// Pitch codes 1–23 in [positions] are never interpreted as staff roles when
+/// [fonction] is unset (codes 1–2 overlap educator/executive staff roles).
+int? resolveGrintaStaffFonction({
+  int? fonction,
+  Iterable<int> positions = const [],
+}) {
+  if (hasExplicitGrintaStaffFonction(fonction)) {
+    return fonction;
+  }
+  if (hasGrintaPitchPositionCodes(positions)) {
+    return null;
+  }
+  for (final int code in positions) {
+    if (code == positionCodeMedical) {
+      return code;
+    }
+  }
+  return null;
+}
+
 /// Legacy member-profile field roles (goalkeeper, defender, midfielder, forward).
 bool isMemberProfileFieldPlayerRole(int code) =>
     code == positionCodeGoalkeeper ||
@@ -48,30 +76,74 @@ bool isGrintaPitchPositionCode(int code) =>
 bool hasGrintaPitchPositionCodes(Iterable<int> codes) =>
     codes.any(isGrintaPitchPositionCode);
 
-/// Classifies staff on a Grinta roster entry.
+/// On-pitch Grinta roles (codes 3–23). Codes 1–2 overlap staff profile roles
+/// (educator, executive) and are not treated as definite field-player rows.
+bool isDefiniteGrintaFieldPitchCode(int code) =>
+    isGrintaPitchPositionCode(code) && code > positionCodeExecutive;
+
+bool hasDefiniteGrintaFieldPitchCodes(Iterable<int> codes) =>
+    codes.any(isDefiniteGrintaFieldPitchCode);
+
+/// Classifies staff on a Grinta roster entry for UI lists and limits.
 ///
-/// [positions] from [GrintaPlayer] may be pitch codes (1–23) or legacy profile
-/// staff codes (1=educator, 2=executive). Codes 1 and 2 overlap both systems;
-/// pitch codes always win unless the member is explicitly listed in
-/// [listedInManagers] (team `managers` array).
+/// Staff roles live in [GrintaPlayer.fonction]. [positions] are pitch codes
+/// (1–23) for field players only. Without explicit [fonction], any pitch code
+/// in [positions] means field player (codes 1–2 overlap legacy staff roles).
+/// Legacy medical staff may still use code 24 in [positions].
+///
+/// [listedInManagers] is ignored: `team.managers` grants manager permissions
+/// only and must not move a member into the staff section.
 bool isGrintaRosterStaff({
   required Iterable<int> positions,
+  int? fonction,
   required bool listedInManagers,
 }) {
-  if (hasGrintaPitchPositionCodes(positions)) {
-    final List<int> codes =
-        positions.where((int code) => code > 0).toList(growable: false);
-    if (codes.isNotEmpty &&
-        codes.every(isStaffProfilePositionCode) &&
-        listedInManagers) {
-      return true;
-    }
-    return false;
-  }
-  if (hasStaffProfilePositionCodes(positions)) {
+  if (hasExplicitGrintaStaffFonction(fonction)) {
     return true;
   }
-  return listedInManagers;
+  if (hasGrintaPitchPositionCodes(positions)) {
+    return false;
+  }
+  return positions.any((int code) => code == positionCodeMedical);
+}
+
+/// CRUD slot lookup for staff vs field-player [GrintaPlayer] rows (same
+/// memberId may appear twice). Matches [isGrintaRosterStaff] except legacy
+/// educator/executive rows stored only in [positions] without [fonction],
+/// which require [managerIds] for disambiguation.
+bool isGrintaStaffCrudEntry({
+  required Iterable<int> positions,
+  int? fonction,
+  required String playerId,
+  required Set<String> managerIds,
+}) {
+  if (hasExplicitGrintaStaffFonction(fonction)) {
+    return true;
+  }
+
+  if (hasGrintaPitchPositionCodes(positions)) {
+    return false;
+  }
+
+  if (positions.any((int code) => code == positionCodeMedical)) {
+    return true;
+  }
+
+  final String trimmedPlayerId = playerId.trim();
+  if (trimmedPlayerId.isEmpty || !managerIds.contains(trimmedPlayerId)) {
+    return false;
+  }
+
+  final List<int> codes =
+      positions.where((int code) => code > 0).toList(growable: false);
+  if (codes.isEmpty) {
+    return false;
+  }
+
+  return codes.every(
+    (int code) =>
+        code == positionCodeEducator || code == positionCodeExecutive,
+  );
 }
 
 /// Localized label for a Grinta staff role profile code.
