@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:grinta/core/extensions/l10n_extension.dart';
 import 'package:grinta/util/app_snackbar.dart';
 import 'package:grinta/util/app_theme.dart';
+import 'package:grinta/widget/create_training_sheet.dart';
 
 enum AgendaAddEventKind {
   match,
@@ -11,7 +12,11 @@ enum AgendaAddEventKind {
   nonSport,
 }
 
-Future<void> showAgendaAddEventMenu(BuildContext context) async {
+Future<void> showAgendaAddEventMenu(
+  BuildContext context, {
+  DateTime? initialDate,
+  VoidCallback? onTrainingCreated,
+}) async {
   if (kIsWeb) {
     await showDialog<void>(
       context: context,
@@ -19,6 +24,8 @@ Future<void> showAgendaAddEventMenu(BuildContext context) async {
       builder: (dialogContext) => _AgendaAddEventDialog(
         hostContext: context,
         overlayContext: dialogContext,
+        initialDate: initialDate,
+        onTrainingCreated: onTrainingCreated,
       ),
     );
     return;
@@ -40,8 +47,13 @@ Future<void> showAgendaAddEventMenu(BuildContext context) async {
         child: SafeArea(
           top: false,
           child: _AgendaAddEventBody(
-            onSelected: (kind) =>
-                _handleSelection(context, sheetContext, kind),
+            onSelected: (kind) => _handleSelection(
+              context,
+              sheetContext,
+              kind,
+              initialDate: initialDate,
+              onTrainingCreated: onTrainingCreated,
+            ),
           ),
         ),
       );
@@ -49,24 +61,43 @@ Future<void> showAgendaAddEventMenu(BuildContext context) async {
   );
 }
 
-void _handleSelection(
+Future<void> _handleSelection(
   BuildContext hostContext,
   BuildContext overlayContext,
-  AgendaAddEventKind kind,
-) {
-  final message = hostContext.l10n.matchDetailTrackerKitComingSoon;
+  AgendaAddEventKind kind, {
+  DateTime? initialDate,
+  VoidCallback? onTrainingCreated,
+}) async {
   Navigator.of(overlayContext).pop();
-  AppSnackbar.show(hostContext, message, isError: false);
+
+  if (kind == AgendaAddEventKind.training) {
+    await showCreateTrainingSheet(
+      hostContext,
+      initialDate: initialDate,
+      onSaved: onTrainingCreated,
+    );
+    return;
+  }
+
+  AppSnackbar.show(
+    hostContext,
+    hostContext.l10n.matchDetailTrackerKitComingSoon,
+    isError: false,
+  );
 }
 
 class _AgendaAddEventDialog extends StatelessWidget {
   const _AgendaAddEventDialog({
     required this.hostContext,
     required this.overlayContext,
+    this.initialDate,
+    this.onTrainingCreated,
   });
 
   final BuildContext hostContext;
   final BuildContext overlayContext;
+  final DateTime? initialDate;
+  final VoidCallback? onTrainingCreated;
 
   @override
   Widget build(BuildContext context) {
@@ -82,8 +113,13 @@ class _AgendaAddEventDialog extends StatelessWidget {
       child: ConstrainedBox(
         constraints: const BoxConstraints(maxWidth: 420),
         child: _AgendaAddEventBody(
-          onSelected: (kind) =>
-              _handleSelection(hostContext, overlayContext, kind),
+          onSelected: (kind) => _handleSelection(
+            hostContext,
+            overlayContext,
+            kind,
+            initialDate: initialDate,
+            onTrainingCreated: onTrainingCreated,
+          ),
         ),
       ),
     );

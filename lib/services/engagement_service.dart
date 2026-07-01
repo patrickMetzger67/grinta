@@ -1,3 +1,5 @@
+import 'dart:async' show StreamSubscription, unawaited;
+
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/foundation.dart';
 
@@ -116,19 +118,11 @@ class EngagementService {
     return snapshot.docs.map(fromFirestore).toList();
   }
 
-  /// Engagements linked to [teamId] for agenda match loading.
-  ///
-  /// Merges documents where [teamId] appears in [teamIds] or in legacy
-  /// [teamId], optionally filtered to [seasonId] when provided.
-  Future<List<Engagement>> getEngagementsForTeamAgenda({
-    required String teamId,
+  static List<Engagement> mergeEngagementsForTeamAgenda({
+    required Iterable<Engagement> fromTeamIds,
+    required Iterable<Engagement> fromLegacyTeamId,
     String? seasonId,
-  }) async {
-    final trimmedTeamId = teamId.trim();
-    if (trimmedTeamId.isEmpty) {
-      return <Engagement>[];
-    }
-
+  }) {
     final trimmedSeasonId = seasonId?.trim() ?? '';
     final Map<String, Engagement> byDocumentId = <String, Engagement>{};
 
@@ -151,25 +145,98 @@ class EngagementService {
       }
     }
 
+    absorb(fromTeamIds);
+    absorb(fromLegacyTeamId);
+
+    return byDocumentId.values.toList();
+  }
+
+  /// Engagements linked to [teamId] for agenda match loading.
+  ///
+  /// Merges documents where [teamId] appears in [teamIds] or in legacy
+  /// [teamId], optionally filtered to [seasonId] when provided.
+  Future<List<Engagement>> getEngagementsForTeamAgenda({
+    required String teamId,
+    String? seasonId,
+  }) async {
+    final trimmedTeamId = teamId.trim();
+    if (trimmedTeamId.isEmpty) {
+      return <Engagement>[];
+    }
+
     final List<Engagement> fromTeamIds =
         await getByTeamIdInTeamIds(trimmedTeamId);
     final List<Engagement> fromLegacyTeamId =
         await getByTeamId(trimmedTeamId);
 
-    absorb(fromTeamIds);
-    absorb(fromLegacyTeamId);
+    final merged = mergeEngagementsForTeamAgenda(
+      fromTeamIds: fromTeamIds,
+      fromLegacyTeamId: fromLegacyTeamId,
+      seasonId: seasonId,
+    );
 
     if (kDebugMode) {
+      final trimmedSeasonId = seasonId?.trim() ?? '';
       debugPrint(
         'Agenda engagements: teamId=$trimmedTeamId '
         'seasonId=${trimmedSeasonId.isEmpty ? '(any)' : trimmedSeasonId} '
         'fromTeamIds=${fromTeamIds.length} '
         'fromLegacyTeamId=${fromLegacyTeamId.length} '
-        'merged=${byDocumentId.length}',
+        'merged=${merged.length}',
       );
     }
 
-    return byDocumentId.values.toList();
+    return merged;
+  }
+
+  /// Realtime engagements for agenda match loading (same merge rules as
+  /// [getEngagementsForTeamAgenda]).
+  Stream<List<Engagement>> streamEngagementsForTeamAgenda({
+    required String teamId,
+    String? seasonId,
+  }) {
+    final trimmedTeamId = teamId.trim();
+    if (trimmedTeamId.isEmpty) {
+      return Stream<List<Engagement>>.value(<Engagement>[]);
+    }
+
+    return Stream<List<Engagement>>.multi((controller) {
+      List<Engagement> fromTeamIds = <Engagement>[];
+      List<Engagement> fromLegacyTeamId = <Engagement>[];
+
+      void emitMerged() {
+        controller.add(
+          mergeEngagementsForTeamAgenda(
+            fromTeamIds: fromTeamIds,
+            fromLegacyTeamId: fromLegacyTeamId,
+            seasonId: seasonId,
+          ),
+        );
+      }
+
+      final StreamSubscription<List<Engagement>> teamIdsSub =
+          streamByTeamIdInTeamIds(trimmedTeamId).listen(
+        (List<Engagement> engagements) {
+          fromTeamIds = engagements;
+          emitMerged();
+        },
+        onError: controller.addError,
+      );
+
+      final StreamSubscription<List<Engagement>> legacySub =
+          streamByTeamId(trimmedTeamId).listen(
+        (List<Engagement> engagements) {
+          fromLegacyTeamId = engagements;
+          emitMerged();
+        },
+        onError: controller.addError,
+      );
+
+      controller.onCancel = () {
+        unawaited(teamIdsSub.cancel());
+        unawaited(legacySub.cancel());
+      };
+    });
   }
 
   Stream<List<Engagement>> streamByTeamIdInTeamIds(String teamId) {

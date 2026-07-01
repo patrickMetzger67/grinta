@@ -912,5 +912,38 @@
   "calendarSyncEnableFailed": "Kalendersynchronisation konnte nicht aktiviert werden. Bitte versuchen Sie es erneut.",
   "calendarSyncForceNow": "Jetzt synchronisieren",
   "calendarSyncForceSuccess": "Kalender synchronisiert.",
-  "calendarSyncForceFailed": "Synchronisation fehlgeschlagen. Bitte erneut versuchen."
+  "calendarSyncForceFailed": "Synchronisation fehlgeschlagen. Bitte erneut versuchen.",
+  "createTrainingTitle": "Neue Trainingseinheit",
+  "createTrainingTeam": "Team",
+  "createTrainingTeamRequired": "Team auswählen",
+  "createTrainingDate": "Datum",
+  "createTrainingTime": "Uhrzeit",
+  "createTrainingDuration": "Dauer",
+  "createTrainingDurationMinutes": "{minutes} Min.",
+  "@createTrainingDurationMinutes": {
+    "placeholders": {
+      "minutes": { "type": "int" }
+    }
+  },
+  "createTrainingRecurrent": "Wiederkehrend",
+  "createTrainingRecurrentDays": "Wochentag(e)",
+  "createTrainingRecurrentDaysRequired": "Mindestens einen Tag auswählen",
+  "createTrainingRecurrentFrom": "Von",
+  "createTrainingRecurrentTo": "Bis",
+  "createTrainingRecurrentInvalidRange": "Das Enddatum darf nicht vor dem Startdatum liegen",
+  "createTrainingWithTracker": "Mit GPS-Tracker",
+  "createTrainingSelectOwner": "Tracker-Kit (Besitzer)",
+  "createTrainingOwnerRequired": "Tracker-Besitzer auswählen",
+  "createTrainingNoOwners": "Diesem Team ist kein Tracker-Kit zugewiesen.",
+  "createTrainingNoManagedTeams": "Sie verwalten in dieser Saison kein Team.",
+  "createTrainingSaved": "{count, plural, =1{1 Training erstellt} other{{count} Trainings erstellt}}",
+  "@createTrainingSaved": {
+    "placeholders": {
+      "count": { "type": "int" }
+    }
+  },
+  "createTrainingError": "Training konnte nicht erstellt werden. Bitte erneut versuchen.",
+  "createTrainingSubmit": "Training erstellen",
+  "createTrainingRecurrentConfirmTitle": "Wiederkehrendes Training",
+  "createTrainingRecurrentConfirmMessage": "Möchten Sie die Wiederholungen erstellen?"
 }

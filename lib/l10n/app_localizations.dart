@@ -4868,6 +4868,144 @@ abstract class AppLocalizations {
   /// In fr, this message translates to:
   /// **'La synchronisation a échoué. Réessayez.'**
   String get calendarSyncForceFailed;
+
+  /// No description provided for @createTrainingTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Nouvelle session d\'entraînement'**
+  String get createTrainingTitle;
+
+  /// No description provided for @createTrainingTeam.
+  ///
+  /// In fr, this message translates to:
+  /// **'Équipe'**
+  String get createTrainingTeam;
+
+  /// No description provided for @createTrainingTeamRequired.
+  ///
+  /// In fr, this message translates to:
+  /// **'Sélectionnez une équipe'**
+  String get createTrainingTeamRequired;
+
+  /// No description provided for @createTrainingDate.
+  ///
+  /// In fr, this message translates to:
+  /// **'Date'**
+  String get createTrainingDate;
+
+  /// No description provided for @createTrainingTime.
+  ///
+  /// In fr, this message translates to:
+  /// **'Heure'**
+  String get createTrainingTime;
+
+  /// No description provided for @createTrainingDuration.
+  ///
+  /// In fr, this message translates to:
+  /// **'Durée'**
+  String get createTrainingDuration;
+
+  /// No description provided for @createTrainingDurationMinutes.
+  ///
+  /// In fr, this message translates to:
+  /// **'{minutes} min'**
+  String createTrainingDurationMinutes(int minutes);
+
+  /// No description provided for @createTrainingRecurrent.
+  ///
+  /// In fr, this message translates to:
+  /// **'Récurrent'**
+  String get createTrainingRecurrent;
+
+  /// No description provided for @createTrainingRecurrentDays.
+  ///
+  /// In fr, this message translates to:
+  /// **'Jour(s) de la semaine'**
+  String get createTrainingRecurrentDays;
+
+  /// No description provided for @createTrainingRecurrentDaysRequired.
+  ///
+  /// In fr, this message translates to:
+  /// **'Sélectionnez au moins un jour'**
+  String get createTrainingRecurrentDaysRequired;
+
+  /// No description provided for @createTrainingRecurrentFrom.
+  ///
+  /// In fr, this message translates to:
+  /// **'De'**
+  String get createTrainingRecurrentFrom;
+
+  /// No description provided for @createTrainingRecurrentTo.
+  ///
+  /// In fr, this message translates to:
+  /// **'À'**
+  String get createTrainingRecurrentTo;
+
+  /// No description provided for @createTrainingRecurrentInvalidRange.
+  ///
+  /// In fr, this message translates to:
+  /// **'La date de fin ne peut pas être antérieure à la date de début'**
+  String get createTrainingRecurrentInvalidRange;
+
+  /// No description provided for @createTrainingWithTracker.
+  ///
+  /// In fr, this message translates to:
+  /// **'Avec tracker GPS'**
+  String get createTrainingWithTracker;
+
+  /// No description provided for @createTrainingSelectOwner.
+  ///
+  /// In fr, this message translates to:
+  /// **'Kit tracker (propriétaire)'**
+  String get createTrainingSelectOwner;
+
+  /// No description provided for @createTrainingOwnerRequired.
+  ///
+  /// In fr, this message translates to:
+  /// **'Sélectionnez un propriétaire tracker'**
+  String get createTrainingOwnerRequired;
+
+  /// No description provided for @createTrainingNoOwners.
+  ///
+  /// In fr, this message translates to:
+  /// **'Aucun kit tracker n\'est assigné à cette équipe.'**
+  String get createTrainingNoOwners;
+
+  /// No description provided for @createTrainingNoManagedTeams.
+  ///
+  /// In fr, this message translates to:
+  /// **'Vous ne gérez aucune équipe pour cette saison.'**
+  String get createTrainingNoManagedTeams;
+
+  /// No description provided for @createTrainingSaved.
+  ///
+  /// In fr, this message translates to:
+  /// **'{count, plural, =1{1 entraînement créé} other{{count} entraînements créés}}'**
+  String createTrainingSaved(int count);
+
+  /// No description provided for @createTrainingError.
+  ///
+  /// In fr, this message translates to:
+  /// **'Impossible de créer l\'entraînement. Réessayez.'**
+  String get createTrainingError;
+
+  /// No description provided for @createTrainingSubmit.
+  ///
+  /// In fr, this message translates to:
+  /// **'Créer l\'entraînement'**
+  String get createTrainingSubmit;
+
+  /// No description provided for @createTrainingRecurrentConfirmTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Entraînement récurrent'**
+  String get createTrainingRecurrentConfirmTitle;
+
+  /// No description provided for @createTrainingRecurrentConfirmMessage.
+  ///
+  /// In fr, this message translates to:
+  /// **'Souhaitez-vous créer les récurrences ?'**
+  String get createTrainingRecurrentConfirmMessage;
 }
 
 class _AppLocalizationsDelegate

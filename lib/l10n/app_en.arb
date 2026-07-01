@@ -910,5 +910,38 @@
   "calendarSyncEnableFailed": "Calendar sync could not be enabled. Please try again.",
   "calendarSyncForceNow": "Sync now",
   "calendarSyncForceSuccess": "Calendar synced.",
-  "calendarSyncForceFailed": "Sync failed. Please try again."
+  "calendarSyncForceFailed": "Sync failed. Please try again.",
+  "createTrainingTitle": "New training session",
+  "createTrainingTeam": "Team",
+  "createTrainingTeamRequired": "Select a team",
+  "createTrainingDate": "Date",
+  "createTrainingTime": "Time",
+  "createTrainingDuration": "Duration",
+  "createTrainingDurationMinutes": "{minutes} min",
+  "@createTrainingDurationMinutes": {
+    "placeholders": {
+      "minutes": { "type": "int" }
+    }
+  },
+  "createTrainingRecurrent": "Recurring",
+  "createTrainingRecurrentDays": "Day(s) of the week",
+  "createTrainingRecurrentDaysRequired": "Select at least one day",
+  "createTrainingRecurrentFrom": "From",
+  "createTrainingRecurrentTo": "To",
+  "createTrainingRecurrentInvalidRange": "End date must not be before start date",
+  "createTrainingWithTracker": "With GPS tracker",
+  "createTrainingSelectOwner": "Tracker kit (owner)",
+  "createTrainingOwnerRequired": "Select a tracker owner",
+  "createTrainingNoOwners": "No tracker kit is assigned to this team.",
+  "createTrainingNoManagedTeams": "You do not manage any team for this season.",
+  "createTrainingSaved": "{count, plural, =1{1 training created} other{{count} trainings created}}",
+  "@createTrainingSaved": {
+    "placeholders": {
+      "count": { "type": "int" }
+    }
+  },
+  "createTrainingError": "Could not create the training. Please try again.",
+  "createTrainingSubmit": "Create training",
+  "createTrainingRecurrentConfirmTitle": "Recurring training",
+  "createTrainingRecurrentConfirmMessage": "Do you want to create the recurring sessions?"
 }

@@ -1,3 +1,5 @@
+import 'dart:async' show StreamSubscription, unawaited;
+
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/foundation.dart';
 import '../model/engagement.dart';
@@ -314,6 +316,287 @@ class MatchService {
       return aTs.compareTo(bTs);
     });
     return matches;
+  }
+
+  /// Realtime matches for agenda: resolves engagements, listens to each
+  /// competition query, and falls back to the legacy team query when needed.
+  Stream<List<Match>> streamMatchesForTeamEngagementsBetweenDates({
+    required String teamId,
+    required String clubId,
+    required Timestamp start,
+    required Timestamp end,
+    String? seasonId,
+    EngagementService? engagementService,
+  }) {
+    final service = engagementService ?? EngagementService();
+    final String trimmedClubId = clubId.trim();
+
+    return Stream<List<Match>>.multi((controller) {
+      StreamSubscription<List<Engagement>>? engagementsSub;
+      StreamSubscription<List<Match>>? fallbackSub;
+      final Map<String, StreamSubscription<List<Match>>> engagementMatchSubs =
+          <String, StreamSubscription<List<Match>>>{};
+      final Map<String, List<Match>> matchesByEngagementKey =
+          <String, List<Match>>{};
+      final Set<String> pendingEngagementKeys = <String>{};
+      List<Match> fallbackMatches = <Match>[];
+      List<Engagement> latestEngagements = <Engagement>[];
+
+      List<Match> buildEngagementMatches() {
+        final Map<String, Match> matchesById = <String, Match>{};
+
+        for (final List<Match> matches in matchesByEngagementKey.values) {
+          for (final Match match in matches) {
+            final String? matchId = match.id?.trim();
+            if (matchId != null && matchId.isNotEmpty) {
+              matchesById[matchId] = match;
+            }
+          }
+        }
+
+        final List<Match> matches = matchesById.values.toList();
+        matches.sort((Match a, Match b) {
+          final Timestamp? aTs = a.timestamp;
+          final Timestamp? bTs = b.timestamp;
+          if (aTs == null && bTs == null) return 0;
+          if (aTs == null) return 1;
+          if (bTs == null) return -1;
+          return aTs.compareTo(bTs);
+        });
+        return matches;
+      }
+
+      List<Match> buildMergedMatches() {
+        final Map<String, Match> matchesById = <String, Match>{};
+
+        for (final Match match in buildEngagementMatches()) {
+          final String? matchId = match.id?.trim();
+          if (matchId != null && matchId.isNotEmpty) {
+            matchesById[matchId] = match;
+          }
+        }
+
+        final bool shouldUseTeamFallback = _shouldUseAgendaTeamFallback(
+          trimmedClubId: trimmedClubId,
+          engagements: latestEngagements,
+          engagementMatchCount: matchesById.length,
+          pendingEngagementKeys: pendingEngagementKeys,
+        );
+
+        if (shouldUseTeamFallback) {
+          for (final Match match in fallbackMatches) {
+            final String? matchId = match.id?.trim();
+            if (matchId != null && matchId.isNotEmpty) {
+              matchesById[matchId] = match;
+            }
+          }
+        }
+
+        final List<Match> matches = matchesById.values.toList();
+        matches.sort((Match a, Match b) {
+          final Timestamp? aTs = a.timestamp;
+          final Timestamp? bTs = b.timestamp;
+          if (aTs == null && bTs == null) return 0;
+          if (aTs == null) return 1;
+          if (bTs == null) return -1;
+          return aTs.compareTo(bTs);
+        });
+        return matches;
+      }
+
+      void emitMerged() {
+        controller.add(buildMergedMatches());
+      }
+
+      void syncFallbackSubscription() {
+        final bool shouldUseTeamFallback = _shouldUseAgendaTeamFallback(
+          trimmedClubId: trimmedClubId,
+          engagements: latestEngagements,
+          engagementMatchCount: buildEngagementMatches().length,
+          pendingEngagementKeys: pendingEngagementKeys,
+        );
+
+        if (shouldUseTeamFallback) {
+          fallbackSub ??= streamMatchesByTeamIdBetweenDates(
+            teamId: teamId,
+            start: start,
+            end: end,
+          ).listen(
+            (List<Match> matches) {
+              fallbackMatches = matches;
+              emitMerged();
+            },
+            onError: controller.addError,
+          );
+          return;
+        }
+
+        if (fallbackSub != null) {
+          unawaited(fallbackSub!.cancel());
+          fallbackSub = null;
+          fallbackMatches = <Match>[];
+        }
+      }
+
+      void syncEngagementMatchStreams(List<Engagement> engagements) {
+        latestEngagements = engagements;
+        final Set<String> activeKeys = <String>{};
+
+        for (final Engagement engagement in engagements) {
+          final String? engagementDocId = engagement.ref?.id;
+          if (engagementDocId == null || engagementDocId.isEmpty) {
+            continue;
+          }
+
+          activeKeys.add(engagementDocId);
+
+          if (engagementMatchSubs.containsKey(engagementDocId)) {
+            continue;
+          }
+
+          pendingEngagementKeys.add(engagementDocId);
+
+          final String engagementClubId = engagement.clubId?.trim() ?? '';
+          final String resolvedClubId = trimmedClubId.isNotEmpty
+              ? trimmedClubId
+              : engagementClubId;
+
+          engagementMatchSubs[engagementDocId] =
+              _streamEngagementMatchesBetweenDates(
+            engagement: engagement,
+            clubId: resolvedClubId,
+            start: start,
+            end: end,
+          ).listen(
+            (List<Match> matches) {
+              pendingEngagementKeys.remove(engagementDocId);
+              matchesByEngagementKey[engagementDocId] = matches;
+              syncFallbackSubscription();
+              emitMerged();
+            },
+            onError: (Object error) {
+              if (error is FirebaseException) {
+                debugPrint(
+                  'Firestore error streaming matches for engagement '
+                  '(engagementId: $engagementDocId): '
+                  '${error.code} - ${error.message}',
+                );
+              } else {
+                debugPrint(
+                  'Unexpected error streaming matches for engagement '
+                  '(engagementId: $engagementDocId): $error',
+                );
+              }
+              pendingEngagementKeys.remove(engagementDocId);
+              matchesByEngagementKey[engagementDocId] = <Match>[];
+              syncFallbackSubscription();
+              emitMerged();
+            },
+          );
+        }
+
+        for (final String key in engagementMatchSubs.keys.toList()) {
+          if (!activeKeys.contains(key)) {
+            unawaited(engagementMatchSubs.remove(key)?.cancel());
+            matchesByEngagementKey.remove(key);
+            pendingEngagementKeys.remove(key);
+          }
+        }
+
+        syncFallbackSubscription();
+        emitMerged();
+      }
+
+      engagementsSub = service
+          .streamEngagementsForTeamAgenda(
+            teamId: teamId,
+            seasonId: seasonId,
+          )
+          .listen(
+        syncEngagementMatchStreams,
+        onError: controller.addError,
+      );
+
+      controller.onCancel = () {
+        unawaited(engagementsSub?.cancel());
+        unawaited(fallbackSub?.cancel());
+        for (final StreamSubscription<List<Match>> sub
+            in engagementMatchSubs.values) {
+          unawaited(sub.cancel());
+        }
+      };
+    });
+  }
+
+  bool _shouldUseAgendaTeamFallback({
+    required String trimmedClubId,
+    required List<Engagement> engagements,
+    required int engagementMatchCount,
+    required Set<String> pendingEngagementKeys,
+  }) {
+    if (pendingEngagementKeys.isNotEmpty) {
+      return false;
+    }
+
+    if (trimmedClubId.isEmpty) {
+      return engagements.isEmpty || engagementMatchCount == 0;
+    }
+
+    return engagements.isEmpty;
+  }
+
+  Stream<List<Match>> _streamEngagementMatchesBetweenDates({
+    required Engagement engagement,
+    required String clubId,
+    required Timestamp start,
+    required Timestamp end,
+  }) {
+    final String competitionId = engagement.competitionId?.trim() ?? '';
+    if (competitionId.isEmpty) {
+      return Stream<List<Match>>.value(<Match>[]);
+    }
+
+    final String group = engagement.group?.trim() ?? '';
+    final String stage = engagement.stage?.trim() ?? '';
+    final String trimmedClubId = clubId.trim();
+
+    Query<Map<String, dynamic>> query = _collection.where(
+      keyMatchCompetitionID,
+      isEqualTo: competitionId,
+    );
+
+    if (group.isNotEmpty) {
+      query = query.where(keyMatchPoule, isEqualTo: group);
+    }
+
+    if (stage.isNotEmpty) {
+      query = query.where(keyMatchStage, isEqualTo: stage);
+    }
+
+    return query
+        .where(keyMatchTimestamp, isGreaterThanOrEqualTo: start)
+        .where(keyMatchTimestamp, isLessThanOrEqualTo: end)
+        .snapshots()
+        .map((QuerySnapshot<Map<String, dynamic>> snapshot) {
+      final List<Match> matches = snapshot.docs
+          .map((QueryDocumentSnapshot<Map<String, dynamic>> doc) =>
+              Match.fromDocumentSnapshot(doc))
+          .toList();
+
+      if (trimmedClubId.isEmpty) {
+        return matches;
+      }
+
+      return matches
+          .where((Match match) {
+            final List<dynamic>? clubs = match.clubs;
+            if (clubs == null || clubs.isEmpty) {
+              return false;
+            }
+            return clubs.any((club) => club?.toString() == trimmedClubId);
+          })
+          .toList();
+    });
   }
 
   Future<List<Match>> _loadMatchesByTeamIdBetweenDatesFallback({

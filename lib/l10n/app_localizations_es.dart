@@ -2732,4 +2732,90 @@ class AppLocalizationsEs extends AppLocalizations {
   @override
   String get calendarSyncForceFailed =>
       'Error de sincronización. Inténtalo de nuevo.';
+
+  @override
+  String get createTrainingTitle => 'Nueva sesión de entrenamiento';
+
+  @override
+  String get createTrainingTeam => 'Equipo';
+
+  @override
+  String get createTrainingTeamRequired => 'Selecciona un equipo';
+
+  @override
+  String get createTrainingDate => 'Fecha';
+
+  @override
+  String get createTrainingTime => 'Hora';
+
+  @override
+  String get createTrainingDuration => 'Duración';
+
+  @override
+  String createTrainingDurationMinutes(int minutes) {
+    return '$minutes min';
+  }
+
+  @override
+  String get createTrainingRecurrent => 'Recurrente';
+
+  @override
+  String get createTrainingRecurrentDays => 'Día(s) de la semana';
+
+  @override
+  String get createTrainingRecurrentDaysRequired =>
+      'Selecciona al menos un día';
+
+  @override
+  String get createTrainingRecurrentFrom => 'Desde';
+
+  @override
+  String get createTrainingRecurrentTo => 'Hasta';
+
+  @override
+  String get createTrainingRecurrentInvalidRange =>
+      'La fecha de fin no puede ser anterior a la de inicio';
+
+  @override
+  String get createTrainingWithTracker => 'Con tracker GPS';
+
+  @override
+  String get createTrainingSelectOwner => 'Kit tracker (propietario)';
+
+  @override
+  String get createTrainingOwnerRequired =>
+      'Selecciona un propietario del tracker';
+
+  @override
+  String get createTrainingNoOwners =>
+      'No hay kit tracker asignado a este equipo.';
+
+  @override
+  String get createTrainingNoManagedTeams =>
+      'No gestionas ningún equipo en esta temporada.';
+
+  @override
+  String createTrainingSaved(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count entrenamientos creados',
+      one: '1 entrenamiento creado',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get createTrainingError =>
+      'No se pudo crear el entrenamiento. Inténtalo de nuevo.';
+
+  @override
+  String get createTrainingSubmit => 'Crear entrenamiento';
+
+  @override
+  String get createTrainingRecurrentConfirmTitle => 'Entrenamiento recurrente';
+
+  @override
+  String get createTrainingRecurrentConfirmMessage =>
+      '¿Desea crear las repeticiones?';
 }

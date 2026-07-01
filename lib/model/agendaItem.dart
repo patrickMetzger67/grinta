@@ -43,6 +43,11 @@ class AgendaItem {
 }
 
 typedef AgendaItemsLoader = Future<List<AgendaItem>> Function({
-required DateTime start,
-required DateTime end,
+  required DateTime start,
+  required DateTime end,
+});
+
+typedef AgendaItemsWatcher = Stream<List<AgendaItem>> Function({
+  required DateTime start,
+  required DateTime end,
 });

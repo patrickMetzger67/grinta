@@ -1,19 +1,14 @@
 import 'dart:async' show unawaited;
 
-import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
-import 'package:grinta/model/tracker/team_workload_summary.dart';
 import 'package:grinta/provider/appSession.dart';
 import 'package:grinta/screen/agendaScreen.dart';
 import 'package:grinta/screen/dashboardScreen.dart';
 import 'package:grinta/screen/teamsListScreen.dart';
 import 'package:grinta/services/calendar_sync_service.dart';
 import 'package:grinta/services/calendar_deep_link_service.dart';
-import 'package:grinta/services/matchService.dart';
-import 'package:grinta/services/teamWorkloadSummaryService.dart';
-import 'package:grinta/services/trainingService.dart';
-import 'package:grinta/util/buildTimestampFromDateAndTime.dart';
+import 'package:grinta/services/agenda_service.dart';
 import 'package:grinta/analytics/analytics_features.dart';
 import 'package:grinta/analytics/analytics_interactions.dart';
 import 'package:grinta/analytics/analytics_routes.dart';
@@ -83,164 +78,30 @@ class _WebAppRootState extends State<WebAppRoot> {
     });
   }
 
-  Future<List<AgendaItem>> _loadAgendaItems({
+  Stream<List<AgendaItem>> _watchAgendaItems({
     required DateTime start,
     required DateTime end,
-  }) async {
-    final List<AgendaItem> allItems = [];
-    final timestampNow = Timestamp.now();
-
-
-    final seasonId = appSession.selectedSeason?.ref?.id;
-    final teams = appSession.teamsForAgendaSelectedSeason;
-
-    if (kDebugMode) {
-      debugPrint(
-        'Agenda load: seasonId=$seasonId teams=${teams.length} '
-        'memberTeams=${appSession.memberTeamsForSelectedSeason.length} '
-        'range=$start → $end',
-      );
-    }
-
-    var totalMatches = 0;
-    var totalTrainings = 0;
-
-    for (final t in teams) {
-      if (t.keyTeam == null) continue;
-
-      if (kDebugMode) {
-        debugPrint(
-          'Agenda load team: name=${t.name} keyTeam=${t.keyTeam} '
-          'clubId=${t.clubId ?? '(empty)'}',
-        );
-      }
-
-      final matchsWrk =
-          await MatchService().getMatchesForTeamEngagementsBetweenDates(
-        teamId: t.keyTeam!,
-        clubId: t.clubId ?? '',
-        seasonId: seasonId,
-        start: Timestamp.fromDate(start),
-        end: Timestamp.fromDate(end),
-        /*
-        start: appSession.selectedSeason!.startDate!,
-        end: appSession.selectedSeason!.endDate!,
-         */
-      );
-
-      final trainingsWrk =
-      await TrainingService().getTrainingsByTeamIdBetweenDates(
-        teamId: t.keyTeam!,
-        start: Timestamp.fromDate(start),
-        end: Timestamp.fromDate(end),
-        /*
-        start: appSession.selectedSeason!.startDate!,
-        end: appSession.selectedSeason!.endDate!,
-
-         */
-      );
-
-      totalMatches += matchsWrk.length;
-
-      for (final m in matchsWrk) {
-        DateTime? startAt;
-        if (m.timestamp != null) {
-          startAt = m.timestamp!.toDate();
-        } else if (m.dateCh != null && m.timeCh != null) {
-          startAt = buildTimestampFromDateAndTime(
-            date: m.dateCh!,
-            time: m.timeCh!,
-          ).toDate();
-        }
-
-        if (startAt == null) {
-          if (kDebugMode) {
-            debugPrint(
-              'Agenda match skip: id=${m.id} no timestamp/dateCh+timeCh',
-            );
-          }
-          continue;
-        }
-
-        final DateTime endAt = startAt.add(const Duration(minutes: 90));
-
-        TeamWorkloadSummary? teamWorkloadSummary;
-        if(m.withTracker == true && (m.id != null && m.id!.isNotEmpty)) {
-          teamWorkloadSummary = await TeamWorkloadSummaryService().getByEventId(m.id!);
-        }
-
-        allItems.add(
-          AgendaItem(
-            id: m.id!,
-            startAt: startAt,
-            endAt: endAt,
-            title: '${t.name}',
-            type: AgendaItemType.match,
-            match: m,
-            isDone: Timestamp.fromDate(endAt).millisecondsSinceEpoch <
-                timestampNow.millisecondsSinceEpoch,
-            withTracker: m.withTracker,
-            areTrackersSynchronized: m.isTrackerDataUploaded!,
-            teamWorkloadSummary: teamWorkloadSummary,
-          ),
-        );
-      }
-
-      totalTrainings += trainingsWrk.length;
-
-      for (final tr in trainingsWrk) {
-        if (tr.dateTime == null) continue;
-
-        final DateTime endAt =
-        tr.dateTime!.toDate().add(const Duration(minutes: 90));
-
-
-        TeamWorkloadSummary? teamWorkloadSummary;
-        if(tr.withTracker && (tr.docId != null && tr.docId!.isNotEmpty)) {
-          teamWorkloadSummary = await TeamWorkloadSummaryService().getByEventId(tr.docId!);
-        }
-
-
-        allItems.add(
-          AgendaItem(
-            id: tr.ref!.id,
-            startAt: tr.dateTime!.toDate(),
-            endAt: endAt,
-            title: '${t.name}: Entraînement',
-            type: AgendaItemType.entrainement,
-            training: tr,
-            isDone: Timestamp.fromDate(endAt).millisecondsSinceEpoch <
-                timestampNow.millisecondsSinceEpoch,
-            withTracker: tr.withTracker,
-            areTrackersSynchronized: tr.isTrackerDataUploaded,
-            teamWorkloadSummary: teamWorkloadSummary,
-          ),
-        );
-      }
-    }
-
-    final unique = <String, AgendaItem>{};
-    for (final item in allItems) {
-      unique['${item.type.name}_${item.id}'] = item;
-    }
-
-    final items = unique.values.toList()
-      ..sort((a, b) => a.startAt.compareTo(b.startAt));
-
-    if (kDebugMode) {
-      debugPrint(
-        'Agenda load done: rawMatches=$totalMatches rawTrainings=$totalTrainings '
-        'agendaItems=${items.length}',
-      );
-    }
-
-    unawaited(
-      CalendarSyncService.instance.maybeSyncAfterAgendaLoad(
-        appSession: appSession,
-      ),
+  }) {
+    final stream = AgendaService().watchAgendaItems(
+      teams: appSession.teamsForAgendaSelectedSeason,
+      seasonId: appSession.selectedSeason?.ref?.id,
+      start: start,
+      end: end,
     );
 
-    return items;
+    var didTriggerCalendarSync = false;
+
+    return stream.map((List<AgendaItem> items) {
+      if (!didTriggerCalendarSync) {
+        didTriggerCalendarSync = true;
+        unawaited(
+          CalendarSyncService.instance.maybeSyncAfterAgendaLoad(
+            appSession: appSession,
+          ),
+        );
+      }
+      return items;
+    });
   }
 
   @override
@@ -284,7 +145,7 @@ class _WebAppRootState extends State<WebAppRoot> {
         'agenda-$selectedPlayerId-$selectedSeasonId-$agendaTeamsKey-$localeCode'
         '-${pendingAgendaDate?.millisecondsSinceEpoch ?? 0}',
       ),
-      loadItems: _loadAgendaItems,
+      watchItems: _watchAgendaItems,
       initialDate: pendingAgendaDate,
     );
 

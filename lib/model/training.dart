@@ -366,7 +366,7 @@ class Training {
   String? trainingId;
   String? seasonId;
   String? clubId;
-  Timestamp? dateTime;
+    Timestamp? dateTime;
   String? dateTg;
   String? teamId;
   String? fieldId;
@@ -591,8 +591,6 @@ class Training {
 
   /// toMap SECURE (Firestore)
   Map<String, dynamic> toMap() {
-
-    print('toMap $isTrackerDataUploaded}');
     return {
       keyTgTrainingId: trainingId,
       keyTgSeasonId: seasonId,

@@ -12,6 +12,7 @@ import 'package:grinta/services/seasonService.dart';
 import 'package:grinta/services/teamService.dart';
 import 'package:grinta/services/user_avatar_service.dart';
 import 'package:grinta/util/player_photo_resolver.dart';
+import 'package:grinta/util/team_deletion_access.dart';
 import 'package:grinta/util/team_list_visibility.dart';
 
 class AppSession extends ChangeNotifier {
@@ -112,15 +113,7 @@ class AppSession extends ChangeNotifier {
 
 
   bool get hasManagedTeamsInSelectedSeason {
-    final String? seasonId = selectedSeason?.ref?.id;
-    if (seasonId == null) return false;
-
-    Map<String, Map<String, Team>>? teamsAsManager = _teamsAsManagerData[selectedPlayerId];
-    if(teamsAsManager == null || teamsAsManager.isEmpty) return false;
-    Map<String, Team>? teamsForSeasonId = teamsAsManager[seasonId];
-    if(teamsForSeasonId == null || teamsForSeasonId.isEmpty) return false;
-
-    return true;
+    return managerTeamsForSelectedSeason.isNotEmpty;
   }
 
   List<String> get managedTeamsIdsForSelectedSeason {
@@ -1471,6 +1464,40 @@ class AppSession extends ChangeNotifier {
         .whereType<String>()
         .map((String id) => id.trim())
         .where((String id) => id.isNotEmpty)
+        .toList();
+  }
+
+  /// Teams the selected player manages for the selected season.
+  ///
+  /// Includes manager/owner session caches and any merged team where the
+  /// signed-in user is [Team.uid] or listed in [Team.managers] (same rules as
+  /// [canManageTeam] on team detail).
+  List<Team> get managerTeamsForSelectedSeason {
+    final String? playerId = selectedPlayerId;
+    final String? seasonId = selectedSeason?.ref?.id;
+    if (playerId == null || seasonId == null) {
+      return const <Team>[];
+    }
+
+    final Map<String, Team>? seasonTeams = teams[playerId]?[seasonId];
+    if (seasonTeams == null || seasonTeams.isEmpty) {
+      return const <Team>[];
+    }
+
+    final String? currentUserUid = user?.uid;
+    final Set<String> sessionManagedIds =
+        managedTeamsIdsForSelectedSeason.toSet();
+
+    return seasonTeams.values
+        .where((Team team) {
+          final String teamId = team.keyTeam?.trim() ?? '';
+          return canManageTeam(
+            team,
+            currentUserUid,
+            isManager:
+                teamId.isNotEmpty && sessionManagedIds.contains(teamId),
+          );
+        })
         .toList();
   }
 

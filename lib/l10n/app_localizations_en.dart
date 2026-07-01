@@ -2698,4 +2698,88 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get calendarSyncForceFailed => 'Sync failed. Please try again.';
+
+  @override
+  String get createTrainingTitle => 'New training session';
+
+  @override
+  String get createTrainingTeam => 'Team';
+
+  @override
+  String get createTrainingTeamRequired => 'Select a team';
+
+  @override
+  String get createTrainingDate => 'Date';
+
+  @override
+  String get createTrainingTime => 'Time';
+
+  @override
+  String get createTrainingDuration => 'Duration';
+
+  @override
+  String createTrainingDurationMinutes(int minutes) {
+    return '$minutes min';
+  }
+
+  @override
+  String get createTrainingRecurrent => 'Recurring';
+
+  @override
+  String get createTrainingRecurrentDays => 'Day(s) of the week';
+
+  @override
+  String get createTrainingRecurrentDaysRequired => 'Select at least one day';
+
+  @override
+  String get createTrainingRecurrentFrom => 'From';
+
+  @override
+  String get createTrainingRecurrentTo => 'To';
+
+  @override
+  String get createTrainingRecurrentInvalidRange =>
+      'End date must not be before start date';
+
+  @override
+  String get createTrainingWithTracker => 'With GPS tracker';
+
+  @override
+  String get createTrainingSelectOwner => 'Tracker kit (owner)';
+
+  @override
+  String get createTrainingOwnerRequired => 'Select a tracker owner';
+
+  @override
+  String get createTrainingNoOwners =>
+      'No tracker kit is assigned to this team.';
+
+  @override
+  String get createTrainingNoManagedTeams =>
+      'You do not manage any team for this season.';
+
+  @override
+  String createTrainingSaved(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count trainings created',
+      one: '1 training created',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get createTrainingError =>
+      'Could not create the training. Please try again.';
+
+  @override
+  String get createTrainingSubmit => 'Create training';
+
+  @override
+  String get createTrainingRecurrentConfirmTitle => 'Recurring training';
+
+  @override
+  String get createTrainingRecurrentConfirmMessage =>
+      'Do you want to create the recurring sessions?';
 }

@@ -912,5 +912,38 @@
   "calendarSyncEnableFailed": "Impossibile attivare la sincronizzazione del calendario. Riprova.",
   "calendarSyncForceNow": "Sincronizza ora",
   "calendarSyncForceSuccess": "Calendario sincronizzato.",
-  "calendarSyncForceFailed": "Sincronizzazione non riuscita. Riprova."
+  "calendarSyncForceFailed": "Sincronizzazione non riuscita. Riprova.",
+  "createTrainingTitle": "Nuova sessione di allenamento",
+  "createTrainingTeam": "Squadra",
+  "createTrainingTeamRequired": "Seleziona una squadra",
+  "createTrainingDate": "Data",
+  "createTrainingTime": "Ora",
+  "createTrainingDuration": "Durata",
+  "createTrainingDurationMinutes": "{minutes} min",
+  "@createTrainingDurationMinutes": {
+    "placeholders": {
+      "minutes": { "type": "int" }
+    }
+  },
+  "createTrainingRecurrent": "Ricorrente",
+  "createTrainingRecurrentDays": "Giorno/i della settimana",
+  "createTrainingRecurrentDaysRequired": "Seleziona almeno un giorno",
+  "createTrainingRecurrentFrom": "Da",
+  "createTrainingRecurrentTo": "A",
+  "createTrainingRecurrentInvalidRange": "La data di fine non può essere precedente a quella di inizio",
+  "createTrainingWithTracker": "Con tracker GPS",
+  "createTrainingSelectOwner": "Kit tracker (proprietario)",
+  "createTrainingOwnerRequired": "Seleziona un proprietario tracker",
+  "createTrainingNoOwners": "Nessun kit tracker assegnato a questa squadra.",
+  "createTrainingNoManagedTeams": "Non gestisci alcuna squadra in questa stagione.",
+  "createTrainingSaved": "{count, plural, =1{1 allenamento creato} other{{count} allenamenti creati}}",
+  "@createTrainingSaved": {
+    "placeholders": {
+      "count": { "type": "int" }
+    }
+  },
+  "createTrainingError": "Impossibile creare l'allenamento. Riprova.",
+  "createTrainingSubmit": "Crea allenamento",
+  "createTrainingRecurrentConfirmTitle": "Allenamento ricorrente",
+  "createTrainingRecurrentConfirmMessage": "Vuoi creare le ricorrenze?"
 }

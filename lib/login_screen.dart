@@ -204,12 +204,8 @@ class _LoginScreenState extends State<LoginScreen> {
       );
 
       // Ferme le bottom sheet mobile avant que AuthGate retire LoginScreen.
-      if (mounted) {
-        final navigator = Navigator.of(context);
-        if (navigator.canPop()) {
-          navigator.pop();
-        }
-      }
+      _dismissLoginBottomSheetIfOpen(sheetContext: snackBarContext);
+      await _waitForBottomSheetDismissal();
 
       await appSession.init();
       await appSession.refreshPlayerAvatarUrls();

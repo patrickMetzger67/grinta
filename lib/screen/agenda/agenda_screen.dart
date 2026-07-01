@@ -1,3 +1,5 @@
+import 'dart:async' show StreamSubscription, unawaited;
+
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:grinta/analytics/analytics_features.dart';
@@ -41,12 +43,12 @@ enum AgendaCalendarMode {
 }
 
 class AgendaScreen extends StatefulWidget {
-  final AgendaItemsLoader loadItems;
+  final AgendaItemsWatcher watchItems;
   final DateTime? initialDate;
 
   const AgendaScreen({
     super.key,
-    required this.loadItems,
+    required this.watchItems,
     this.initialDate,
   });
 
@@ -79,6 +81,8 @@ class _AgendaScreenState extends State<AgendaScreen> {
   List<AgendaItem> _items = <AgendaItem>[];
   bool _isLoading = false;
   String? _error;
+  StreamSubscription<List<AgendaItem>>? _itemsSub;
+  int _subscriptionGeneration = 0;
 
   @override
   void initState() {
@@ -108,11 +112,13 @@ class _AgendaScreenState extends State<AgendaScreen> {
 
     _scrollController.addListener(_handleScroll);
 
-    _loadItems();
+    _subscribeItems();
   }
 
   @override
   void dispose() {
+    unawaited(_itemsSub?.cancel());
+    _itemsSub = null;
     _scrollController.removeListener(_handleScroll);
     _scrollController.dispose();
     _monthPageController.dispose();
@@ -235,7 +241,7 @@ class _AgendaScreenState extends State<AgendaScreen> {
       _rangeEnd = monthEnd;
     }
 
-    await _loadItems(scrollToSelection: scrollToSelection);
+    await _subscribeItems(scrollToSelection: scrollToSelection);
   }
 
   void _jumpMonthPagerToDisplayedMonth() {
@@ -281,7 +287,7 @@ class _AgendaScreenState extends State<AgendaScreen> {
     if (forceLoadItems || _calendarMode == AgendaCalendarMode.month) {
       _rangeStart = _startOfMonth(newMonth);
       _rangeEnd = _endOfMonth(newMonth);
-      await _loadItems(scrollToSelection: true);
+      await _subscribeItems(scrollToSelection: true);
       return;
     }
 
@@ -297,7 +303,7 @@ class _AgendaScreenState extends State<AgendaScreen> {
       if (isAfterRange) {
         _rangeEnd = _endOfWeek(newSelectedWeek);
       }
-      await _loadItems(scrollToSelection: true);
+      await _subscribeItems(scrollToSelection: true);
       return;
     }
 
@@ -334,50 +340,63 @@ class _AgendaScreenState extends State<AgendaScreen> {
       if (isAfterRange) {
         _rangeEnd = _endOfWeek(targetWeek);
       }
-      await _loadItems(scrollToSelection: true);
+      await _subscribeItems(scrollToSelection: true);
     }
   }
 
-  Future<void> _loadItems({bool scrollToSelection = true}) async {
+  Future<void> _subscribeItems({bool scrollToSelection = true}) async {
+    final int generation = ++_subscriptionGeneration;
+    await _itemsSub?.cancel();
+    _itemsSub = null;
+
     if (mounted) {
       setState(() {
-        _isLoading = true;
+        _isLoading = _items.isEmpty;
         _error = null;
       });
     }
 
-    try {
-      final loadedItems = await widget.loadItems(
-        start: DateUtils.dateOnly(_rangeStart),
-        end: _endOfDay(_rangeEnd),
-      );
-
-      loadedItems.sort((a, b) => a.startAt.compareTo(b.startAt));
-
-      if (!mounted) return;
-
-      setState(() {
-        _items = loadedItems;
-        _isLoading = false;
-      });
-
-      WidgetsBinding.instance.addPostFrameCallback((_) async {
-        if (!mounted) return;
-
-        if (scrollToSelection && _calendarMode == AgendaCalendarMode.month) {
-          await _scrollToSelectedWeek(animated: false);
-        } else {
-          _handleScroll();
+    _itemsSub = widget
+        .watchItems(
+          start: DateUtils.dateOnly(_rangeStart),
+          end: _endOfDay(_rangeEnd),
+        )
+        .listen(
+      (List<AgendaItem> loadedItems) {
+        if (!mounted || generation != _subscriptionGeneration) {
+          return;
         }
-      });
-    } catch (e) {
-      if (!mounted) return;
 
-      setState(() {
-        _isLoading = false;
-        _error = e.toString();
-      });
-    }
+        setState(() {
+          _items = List<AgendaItem>.from(loadedItems)
+            ..sort((AgendaItem a, AgendaItem b) => a.startAt.compareTo(b.startAt));
+          _isLoading = false;
+          _error = null;
+        });
+
+        WidgetsBinding.instance.addPostFrameCallback((_) async {
+          if (!mounted || generation != _subscriptionGeneration) {
+            return;
+          }
+
+          if (scrollToSelection && _calendarMode == AgendaCalendarMode.month) {
+            await _scrollToSelectedWeek(animated: false);
+          } else {
+            _handleScroll();
+          }
+        });
+      },
+      onError: (Object error) {
+        if (!mounted || generation != _subscriptionGeneration) {
+          return;
+        }
+
+        setState(() {
+          _isLoading = false;
+          _error = error.toString();
+        });
+      },
+    );
   }
 
   Future<void> _goToPreviousWeek() async {
@@ -404,7 +423,7 @@ class _AgendaScreenState extends State<AgendaScreen> {
     }
 
     if (needsReload) {
-      await _loadItems(
+      await _subscribeItems(
         scrollToSelection: _calendarMode == AgendaCalendarMode.month,
       );
       return;
@@ -439,7 +458,7 @@ class _AgendaScreenState extends State<AgendaScreen> {
     }
 
     if (needsReload) {
-      await _loadItems(
+      await _subscribeItems(
         scrollToSelection: _calendarMode == AgendaCalendarMode.month,
       );
       return;
@@ -491,7 +510,7 @@ class _AgendaScreenState extends State<AgendaScreen> {
     if (mustReload) {
       _rangeStart = monthStart;
       _rangeEnd = monthEnd;
-      await _loadItems(scrollToSelection: true);
+      await _subscribeItems(scrollToSelection: true);
       return;
     }
 
@@ -528,7 +547,7 @@ class _AgendaScreenState extends State<AgendaScreen> {
 
     _jumpMonthPagerToDisplayedMonth();
 
-    await _loadItems(scrollToSelection: true);
+    await _subscribeItems(scrollToSelection: true);
   }
 
   Future<void> _extendBefore() async {
@@ -536,7 +555,7 @@ class _AgendaScreenState extends State<AgendaScreen> {
       _rangeStart = _rangeStart.subtract(const Duration(days: 28));
     });
 
-    await _loadItems(scrollToSelection: false);
+    await _subscribeItems(scrollToSelection: false);
   }
 
   Future<void> _extendAfter() async {
@@ -544,7 +563,7 @@ class _AgendaScreenState extends State<AgendaScreen> {
       _rangeEnd = _endOfWeek(_rangeEnd.add(const Duration(days: 28)));
     });
 
-    await _loadItems(scrollToSelection: false);
+    await _subscribeItems(scrollToSelection: false);
   }
 
   Future<void> _scrollToSelectedWeek({bool animated = true}) async {
@@ -787,7 +806,11 @@ class _AgendaScreenState extends State<AgendaScreen> {
       ),
       floatingActionButton: FloatingActionButton(
         heroTag: 'grinta-fab-agenda',
-        onPressed: () => showAgendaAddEventMenu(context),
+        onPressed: () => showAgendaAddEventMenu(
+          context,
+          initialDate: _selectedDate,
+          onTrainingCreated: () => _subscribeItems(),
+        ),
         child: const Icon(Icons.add),
       ),
     );
@@ -831,12 +854,12 @@ class _AgendaScreenState extends State<AgendaScreen> {
     if (_error != null && _items.isEmpty) {
       return _AgendaErrorView(
         message: _error!,
-        onRetry: _loadItems,
+        onRetry: () => _subscribeItems(),
       );
     }
 
     return RefreshIndicator(
-      onRefresh: _loadItems,
+      onRefresh: () => _subscribeItems(),
       child: _AgendaWeeksList(
         controller: _scrollController,
         weeks: weeks,
@@ -870,7 +893,7 @@ class _AgendaScreenState extends State<AgendaScreen> {
     if (_error != null && _items.isEmpty) {
       return _AgendaErrorView(
         message: _error!,
-        onRetry: _loadItems,
+        onRetry: () => _subscribeItems(),
       );
     }
 
@@ -879,7 +902,7 @@ class _AgendaScreenState extends State<AgendaScreen> {
     ]..sort((a, b) => a.startAt.compareTo(b.startAt));
 
     return RefreshIndicator(
-      onRefresh: _loadItems,
+      onRefresh: () => _subscribeItems(),
       child: ListView(
         controller: _scrollController,
         physics: const AlwaysScrollableScrollPhysics(),
@@ -905,7 +928,7 @@ class _AgendaScreenState extends State<AgendaScreen> {
     if (_error != null && _items.isEmpty) {
       return _AgendaErrorView(
         message: _error!,
-        onRetry: _loadItems,
+        onRetry: () => _subscribeItems(),
       );
     }
 
@@ -915,7 +938,7 @@ class _AgendaScreenState extends State<AgendaScreen> {
       ..sort((a, b) => a.startAt.compareTo(b.startAt));
 
     return RefreshIndicator(
-      onRefresh: _loadItems,
+      onRefresh: () => _subscribeItems(),
       child: ListView(
         controller: _scrollController,
         physics: const AlwaysScrollableScrollPhysics(),

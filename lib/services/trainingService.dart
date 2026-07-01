@@ -26,6 +26,33 @@ class TrainingService {
     }
   }
 
+  /// CREATE many trainings in Firestore write batches (max 450 docs per batch).
+  Future<int> createTrainings(List<Training> trainings) async {
+    if (trainings.isEmpty) return 0;
+
+    const int batchLimit = 450;
+    var created = 0;
+
+    for (var offset = 0; offset < trainings.length; offset += batchLimit) {
+      final end = (offset + batchLimit < trainings.length)
+          ? offset + batchLimit
+          : trainings.length;
+      final chunk = trainings.sublist(offset, end);
+      final WriteBatch batch = _firestore.batch();
+
+      for (final Training training in chunk) {
+        final DocumentReference<Map<String, dynamic>> docRef = _collection.doc();
+        training.trainingId = docRef.id;
+        batch.set(docRef, training.toMap());
+      }
+
+      await batch.commit();
+      created += chunk.length;
+    }
+
+    return created;
+  }
+
   /// SET / UPSERT
   Future<void> setTraining(Training training) async {
     try {
