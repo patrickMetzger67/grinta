@@ -380,7 +380,7 @@ class NotificationFCMService {
           await _openMatchDetail(
             context,
             matchId: id,
-            initialTabIndex: 2,
+            initialTabIndex: 3,
           );
           break;
 
@@ -388,7 +388,7 @@ class NotificationFCMService {
           await _openMatchDetail(
             context,
             matchId: id,
-            initialTabIndex: 0,
+            initialTabIndex: 1,
             convocationBody: body,
           );
           break;
@@ -577,27 +577,46 @@ class NotificationFCMService {
 
   /// Reads Grinta FCM device tokens from `users/{uid}/fcmTokens` (document ids).
   ///
-  /// Only tokens with `app: [FcmConfig.brandGrinta]` are returned (strict filter).
+  /// Prefers tokens with `app: [FcmConfig.brandGrinta]`. When none match, falls
+  /// back to legacy documents without `app`, excluding `app: aserstein`.
   static Future<List<String>> fetchFcmTokensForUser(String uid) async {
     final trimmedUid = uid.trim();
     if (trimmedUid.isEmpty) return const [];
 
     try {
-      final snapshot = await FirebaseFirestore.instance
+      final tokensRef = FirebaseFirestore.instance
           .collection('users')
           .doc(trimmedUid)
-          .collection('fcmTokens')
+          .collection('fcmTokens');
+
+      final brandedSnapshot = await tokensRef
           .where('app', isEqualTo: FcmConfig.brandGrinta)
           .get();
 
-      return snapshot.docs
-          .map((doc) => doc.id.trim())
-          .where((token) => token.isNotEmpty)
-          .toList();
+      if (brandedSnapshot.docs.isNotEmpty) {
+        return _tokenIdsFromSnapshotDocs(brandedSnapshot.docs);
+      }
+
+      final allSnapshot = await tokensRef.get();
+      return _tokenIdsFromSnapshotDocs(
+        allSnapshot.docs.where((doc) {
+          final app = doc.data()['app']?.toString().trim() ?? '';
+          return app.isEmpty || app == FcmConfig.brandGrinta;
+        }),
+      );
     } catch (e, st) {
       debugPrint('fetchFcmTokensForUser error uid=$trimmedUid: $e\n$st');
       return const [];
     }
+  }
+
+  static List<String> _tokenIdsFromSnapshotDocs(
+    Iterable<QueryDocumentSnapshot<Map<String, dynamic>>> docs,
+  ) {
+    return docs
+        .map((doc) => doc.id.trim())
+        .where((token) => token.isNotEmpty)
+        .toList();
   }
 
   /// Reads FCM tokens for each uid in [uids] and returns a deduplicated list.
@@ -703,7 +722,8 @@ class NotificationFCMService {
   ///
   /// Always sends [FcmConfig.brandGrinta] so the server attaches Grinta icon/image
   /// (shared Firebase project with Aserstein). See [fcm_config.dart].
-  Future<void> postNotification({
+  /// Returns `true` when the Cloud Function call succeeds.
+  Future<bool> postNotification({
     required List<String> tokens,
     required String title,
     required String body,
@@ -713,7 +733,7 @@ class NotificationFCMService {
   }) async {
     if (tokens.isEmpty) {
       debugPrint('postNotification: no tokens provided');
-      return;
+      return false;
     }
 
     try {
@@ -730,8 +750,10 @@ class NotificationFCMService {
       });
 
       debugPrint('postNotification success: ${result.data}');
+      return true;
     } catch (e, st) {
       debugPrint('postNotification error: $e\n$st');
+      return false;
     }
   }
 

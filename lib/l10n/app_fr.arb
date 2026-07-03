@@ -143,6 +143,9 @@
   "actionLoadAfter": "Charger après",
   "actionToday": "Aujourd’hui",
   "actionEditProfile": "Modifier mon profil",
+  "settingsMyUnavailabilities": "Mes indisponibilités",
+  "myUnavailabilitiesNoPlayer": "Aucun profil joueur lié à ton compte.",
+  "myUnavailabilitiesNoSeason": "Aucune saison sélectionnée. Choisis une saison dans le menu compte.",
   "actionCreateNewProfile": "Créer un nouveau profil",
   "actionLogout": "Déconnexion",
   "actionLogoutConfirmTitle": "Déconnexion",
@@ -290,6 +293,102 @@
   "navSettings": "Paramètres",
 
   "tabCompo": "Compo",
+  "tabConvocations": "Convocations",
+  "tabConvocationsShort": "Convo",
+  "matchConvocationsSaved": "Convocations enregistrées",
+  "matchConvocationsUnavailable": "Convocations indisponibles pour ce match",
+  "matchPlayerUnavailableOnMatchDate": "Indisponible à la date du match",
+  "matchPlayerCannotConvokeUnavailable": "Ce joueur est indisponible à la date de la rencontre et ne peut pas être convoqué.",
+  "matchConvocationsStatusPresent": "Présent confirmé",
+  "matchConvocationsStatusPending": "En attente de réponse",
+  "matchConvocationsSendAction": "Envoyer les convocations",
+  "matchConvocationsSendTitle": "Envoyer les convocations",
+  "matchConvocationsSendSubtitle": "{count, plural, =1{1 joueur convoqué} other{{count} joueurs convoqués}}",
+  "@matchConvocationsSendSubtitle": {
+    "placeholders": {
+      "count": { "type": "int" }
+    }
+  },
+  "matchConvocationsSendMessage": "Message",
+  "matchConvocationsSendMessageHint": "Informations complémentaires pour les joueurs",
+  "matchConvocationsSendMessageRequired": "Saisis un message",
+  "matchConvocationsSendTime": "Heure de convocation",
+  "matchConvocationsSendAddress": "Adresse de convocation",
+  "matchConvocationsSendAddressHint": "Lieu de rendez-vous",
+  "matchConvocationsSendAddressRequired": "Saisis une adresse",
+  "matchConvocationsSendSubmit": "Envoyer",
+  "matchConvocationsSendSuccess": "{count, plural, =1{1 convocation envoyée} other{{count} convocations envoyées}}",
+  "@matchConvocationsSendSuccess": {
+    "placeholders": {
+      "count": { "type": "int" }
+    }
+  },
+  "matchConvocationsSendSkippedNoAccount": "{count, plural, =1{1 joueur sans compte lié} other{{count} joueurs sans compte lié}}",
+  "@matchConvocationsSendSkippedNoAccount": {
+    "placeholders": {
+      "count": { "type": "int" }
+    }
+  },
+  "matchConvocationsSendSkippedNoPush": "{count, plural, =1{1 joueur sans notification push} other{{count} joueurs sans notification push}}",
+  "@matchConvocationsSendSkippedNoPush": {
+    "placeholders": {
+      "count": { "type": "int" }
+    }
+  },
+  "matchConvocationsSendNoRecipients": "Aucun joueur convoqué n'a de compte Grinta lié.",
+  "matchConvocationsSendError": "Échec de l'envoi : {error}",
+  "@matchConvocationsSendError": {
+    "placeholders": {
+      "error": { "type": "String" }
+    }
+  },
+  "matchConvocationsSendErrorAuth": "Connecte-toi pour envoyer les convocations.",
+  "matchConvocationsSendDateTimeValue": "{date} à {time}",
+  "@matchConvocationsSendDateTimeValue": {
+    "placeholders": {
+      "date": { "type": "String" },
+      "time": { "type": "String" }
+    }
+  },
+  "matchConvocationsSendMatchLine": "Match : {opponent}",
+  "@matchConvocationsSendMatchLine": {
+    "placeholders": {
+      "opponent": { "type": "String" }
+    }
+  },
+  "matchConvocationsSendTimeLine": "Heure : {time}",
+  "@matchConvocationsSendTimeLine": {
+    "placeholders": {
+      "time": { "type": "String" }
+    }
+  },
+  "matchConvocationsSendAddressLine": "Adresse : {address}",
+  "@matchConvocationsSendAddressLine": {
+    "placeholders": {
+      "address": { "type": "String" }
+    }
+  },
+  "matchConvocationNotificationTitle": "Convocation · {opponent}",
+  "@matchConvocationNotificationTitle": {
+    "placeholders": {
+      "opponent": { "type": "String" }
+    }
+  },
+  "matchConvocationNotificationBody": "{opponent} · RDV {time}",
+  "@matchConvocationNotificationBody": {
+    "placeholders": {
+      "opponent": { "type": "String" },
+      "time": { "type": "String" }
+    }
+  },
+  "matchConvocationNotificationBodyWithMessage": "{opponent} · RDV {time} · {message}",
+  "@matchConvocationNotificationBodyWithMessage": {
+    "placeholders": {
+      "opponent": { "type": "String" },
+      "time": { "type": "String" },
+      "message": { "type": "String" }
+    }
+  },
   "tabTacticalSchema": "Schéma tactique",
   "tabTacticalSchemaShort": "Schéma",
   "matchTacticalSchemaConvocation": "Convoquer des joueurs",
@@ -733,10 +832,82 @@
   "entityPeriods": "Périodes",
   "tabHighlightsShort": "Temps",
   "emptyNoHighlightsMessage": "Les buts, cartons et changements apparaîtront ici.",
+  "matchHighlightsSourceFmi": "Temps forts de la FMI",
+  "matchHighlightsSourceGrinta": "Temps forts Grinta",
+  "matchHighlightsGrintaPlaceholderMessage": "À détailler ensemble après.",
+  "matchGrintaHighlightsAddAction": "Ajouter un temps fort",
+  "matchGrintaHighlightsPickTypeTitle": "Choisir le type de temps fort",
+  "matchGrintaHighlightsPickTimeEventTitle": "Choisir l'événement",
+  "matchGrintaHighlightsEmptyMessage": "Commencez par le coup d'envoi avec le bouton +.",
+  "matchGrintaHighlightsDetailsComingSoon": "Le détail de ce temps fort arrive bientôt.",
+  "matchGrintaHighlightsActionTimeEvent": "Événement de temps",
+  "matchGrintaHighlightsAllTimeEventsRecorded": "Tous les événements de temps ont déjà été enregistrés pour ce match.",
+  "matchGrintaHighlightDeleteConfirmTitle": "Supprimer ce temps fort ?",
+  "matchGrintaHighlightDeleteConfirmMessage": "Voulez-vous vraiment supprimer « {highlightLabel} » ? Cette action est définitive.",
+  "@matchGrintaHighlightDeleteConfirmMessage": {
+    "placeholders": {
+      "highlightLabel": { "type": "String" }
+    }
+  },
+  "matchGrintaHighlightDeleted": "Temps fort supprimé",
+  "matchGoalAddTitle": "Enregistrer un but",
+  "matchGoalPickTeamTitle": "Quelle équipe a marqué ?",
+  "matchGoalPickScorerTitle": "Buteur",
+  "matchGoalPickAssisterTitle": "Passeur décisif (optionnel)",
+  "matchGoalNoAssister": "Sans passeur",
+  "matchGoalOpponentJerseyTitle": "Numéro du buteur (optionnel)",
+  "matchGoalOpponentJerseyHint": "ex. 10",
+  "matchGoalScorerRequired": "Sélectionnez un buteur.",
+  "matchGoalInvalidJerseyNumber": "Saisissez un numéro de maillot valide.",
+  "matchGoalMinuteTitle": "Minute",
+  "matchGoalMinuteHint": "ex. 67",
+  "matchGoalInvalidMinute": "Saisissez une minute d'au moins 1.",
+  "matchGoalSelectScorer": "Choisir un buteur",
+  "matchGoalSelectAssister": "Choisir un passeur",
+  "matchCardYellowAddTitle": "Enregistrer un carton jaune",
+  "matchCardRedAddTitle": "Enregistrer un carton rouge",
+  "matchCardPickTeamTitle": "Quelle équipe reçoit le carton ?",
+  "matchCardPickPlayerTitle": "Joueur",
+  "matchCardSelectPlayer": "Choisir un joueur",
+  "matchCardPlayerRequired": "Sélectionnez un joueur.",
+  "matchCardOpponentJerseyTitle": "Numéro du joueur (optionnel)",
+  "matchCardOpponentJerseyHint": "ex. 10",
+  "matchSubstitutionAddTitle": "Enregistrer un changement",
+  "matchSubstitutionPickTeamTitle": "Quelle équipe effectue le changement ?",
+  "matchSubstitutionPickOutgoingTitle": "Joueur sortant",
+  "matchSubstitutionPickIncomingTitle": "Joueur entrant",
+  "matchSubstitutionSelectOutgoing": "Choisir le joueur sortant",
+  "matchSubstitutionSelectIncoming": "Choisir le joueur entrant",
+  "matchSubstitutionOutgoingRequired": "Sélectionnez le joueur sortant.",
+  "matchSubstitutionIncomingRequired": "Sélectionnez le joueur entrant.",
+  "matchSubstitutionSamePlayerError": "Les deux joueurs doivent être différents.",
+  "matchSubstitutionOpponentOutgoingJerseyTitle": "Numéro du joueur sortant (optionnel)",
+  "matchSubstitutionOpponentIncomingJerseyTitle": "Numéro du joueur entrant (optionnel)",
+  "highlightGoalScored": "But — {scorer}",
+  "@highlightGoalScored": {
+    "placeholders": {
+      "scorer": { "type": "String" }
+    }
+  },
+  "highlightTimeHalfTime": "Mi-temps",
+  "highlightTimeSecondHalf": "Deuxième mi-temps",
+  "highlightTimeStartExtraTime": "Prolongations",
   "highlightTypeGoal": "But",
   "highlightTypeSubstitution": "Changement",
   "highlightTypeYellowCard": "Carton jaune",
   "highlightTypeRedCard": "Carton rouge",
+  "highlightYellowCardShown": "Carton jaune — {player}",
+  "@highlightYellowCardShown": {
+    "placeholders": {
+      "player": { "type": "String" }
+    }
+  },
+  "highlightRedCardShown": "Carton rouge — {player}",
+  "@highlightRedCardShown": {
+    "placeholders": {
+      "player": { "type": "String" }
+    }
+  },
   "highlightTypeOwnGoal": "But contre son camp",
   "highlightTypePenalty": "Penalty",
   "highlightTypeGeneric": "Temps fort",
@@ -1250,5 +1421,89 @@
   "createTrainingError": "Impossible de créer l'entraînement. Réessayez.",
   "createTrainingSubmit": "Créer l'entraînement",
   "createTrainingRecurrentConfirmTitle": "Entraînement récurrent",
-  "createTrainingRecurrentConfirmMessage": "Souhaitez-vous créer les récurrences ?"
+  "createTrainingRecurrentConfirmMessage": "Souhaitez-vous créer les récurrences ?",
+  "editTrainingTitle": "Modifier l'entraînement",
+  "editTrainingSubmit": "Enregistrer",
+  "editTrainingSaved": "Entraînement modifié",
+  "editTrainingError": "Impossible de modifier l'entraînement. Réessayez.",
+  "trainingDeleteConfirmTitle": "Supprimer l'entraînement ?",
+  "trainingDeleteConfirmMessage": "Voulez-vous vraiment supprimer cet entraînement ? Cette action est définitive.",
+  "trainingDeleted": "Entraînement supprimé",
+  "trainingDeleteError": "Impossible de supprimer l'entraînement. Réessayez.",
+  "finishTrainingTitle": "Terminer l'entraînement",
+  "trainingFinishConfirmTitle": "Terminer l'entraînement ?",
+  "trainingFinishConfirmMessage": "Les joueurs indisponibles encore marqués présents seront passés absents. Voulez-vous terminer cet entraînement ?",
+  "trainingFinished": "Entraînement terminé",
+  "trainingFinishError": "Impossible de terminer l'entraînement. Réessayez.",
+  "createMatchTitle": "Nouvelle rencontre",
+  "createMatchTeam": "Équipe",
+  "createMatchTeamRequired": "Sélectionnez une équipe",
+  "createMatchHome": "Rencontre à domicile",
+  "createMatchFriendly": "Match amical",
+  "createMatchDate": "Date",
+  "createMatchTime": "Heure",
+  "createMatchDuration": "Durée",
+  "createMatchDurationMinutes": "{minutes} min",
+  "@createMatchDurationMinutes": {
+    "placeholders": {
+      "minutes": { "type": "int" }
+    }
+  },
+  "createMatchOpponent": "Adversaire",
+  "createMatchSelectOpponentClub": "Rechercher un club",
+  "createMatchClubNotFound": "Club non trouvé",
+  "createMatchOpponentNameManual": "Nom de l'adversaire",
+  "createMatchOpponentRequired": "Indiquez l'adversaire",
+  "createMatchVenue": "Lieu / adresse du terrain",
+  "createMatchWithTracker": "Avec tracker GPS",
+  "createMatchSelectOwner": "Kit tracker (propriétaire)",
+  "createMatchOwnerRequired": "Sélectionnez un propriétaire tracker",
+  "createMatchNoOwners": "Aucun kit tracker n'est assigné à cette équipe.",
+  "createMatchNoManagedTeams": "Vous ne gérez aucune équipe pour cette saison.",
+  "createMatchSaved": "Rencontre créée",
+  "createMatchError": "Impossible de créer la rencontre. Réessayez.",
+  "createMatchSubmit": "Créer la rencontre",
+  "editMatchTitle": "Modifier la rencontre",
+  "editMatchSubmit": "Enregistrer",
+  "editMatchSaved": "Rencontre modifiée",
+  "editMatchError": "Impossible de modifier la rencontre. Réessayez.",
+  "matchDeleteConfirmTitle": "Supprimer la rencontre ?",
+  "matchDeleteConfirmMessage": "Voulez-vous vraiment supprimer cette rencontre ? Cette action est définitive.",
+  "matchRemoveFromTeamConfirmTitle": "Retirer la rencontre du calendrier ?",
+  "matchRemoveFromTeamConfirmMessage": "Cette action retire la rencontre du calendrier de votre équipe. La rencontre restera visible pour les autres équipes.",
+  "matchDeleted": "Rencontre supprimée",
+  "matchRemovedFromTeam": "Rencontre retirée du calendrier de votre équipe",
+  "matchDeleteError": "Impossible de supprimer la rencontre. Réessayez.",
+  "teamDetailManageUnavailabilities": "Gérer les indisponibilités",
+  "manageUnavailabilitiesTitle": "Indisponibilités",
+  "manageUnavailabilitiesEmpty": "Aucune indisponibilité pour cette saison.",
+  "manageUnavailabilitiesAdd": "Ajouter une indisponibilité",
+  "manageUnavailabilitiesEditTitle": "Modifier l'indisponibilité",
+  "manageUnavailabilitiesFromDate": "Du",
+  "manageUnavailabilitiesToDate": "Au",
+  "manageUnavailabilitiesType": "Type",
+  "manageUnavailabilitiesDetails": "Détails",
+  "manageUnavailabilitiesDetailsHint": "Détails optionnels",
+  "manageUnavailabilitiesVisible": "Visible par l'équipe",
+  "manageUnavailabilitiesVisibleHint": "Si désactivé, seuls les managers voient cette entrée",
+  "manageUnavailabilitiesDateRange": "{from} – {to}",
+  "@manageUnavailabilitiesDateRange": {
+    "placeholders": {
+      "from": { "type": "String" },
+      "to": { "type": "String" }
+    }
+  },
+  "manageUnavailabilitiesHidden": "Masqué",
+  "manageUnavailabilitiesSaved": "Indisponibilité enregistrée",
+  "manageUnavailabilitiesDeleted": "Indisponibilité supprimée",
+  "manageUnavailabilitiesError": "Impossible d'enregistrer l'indisponibilité. Veuillez réessayer.",
+  "manageUnavailabilitiesDeleteError": "Impossible de supprimer l'indisponibilité. Veuillez réessayer.",
+  "manageUnavailabilitiesDeleteConfirmTitle": "Supprimer l'indisponibilité ?",
+  "manageUnavailabilitiesDeleteConfirmMessage": "Cette action est définitive.",
+  "manageUnavailabilitiesInvalidRange": "La date de fin ne peut pas être antérieure à la date de début",
+  "manageUnavailabilitiesTypeRequired": "Veuillez choisir un type",
+  "unavailabilityTypeHoliday": "Vacances",
+  "unavailabilityTypeUnwell": "Malade",
+  "unavailabilityTypeInjured": "Blessé",
+  "unavailabilityTypeOther": "Autre motif"
 }

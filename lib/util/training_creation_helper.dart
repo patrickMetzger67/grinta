@@ -1,5 +1,12 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
+import 'package:grinta/core/extensions/l10n_extension.dart';
+import 'package:grinta/navigation/app_navigator.dart';
+import 'package:grinta/provider/appSession.dart';
+import 'package:grinta/services/trainingService.dart';
+import 'package:grinta/util/app_snackbar.dart';
+import 'package:grinta/util/app_theme.dart';
+import 'package:grinta/util/team_deletion_access.dart';
 
 import '../model/grinta_player.dart';
 import '../model/season.dart';
@@ -19,6 +26,157 @@ String formatTrainingTime(DateTime dateTime) {
   final hour = dateTime.hour.toString().padLeft(2, '0');
   final minute = dateTime.minute.toString().padLeft(2, '0');
   return '$hour:$minute';
+}
+
+/// Parses [Training.dateTg] (`dd/MM/yyyy`) into a local date.
+DateTime? parseTrainingDateTg(String? dateTg) {
+  final String raw = dateTg?.trim() ?? '';
+  if (raw.isEmpty) return null;
+
+  final parts = raw.split('/');
+  if (parts.length != 3) return null;
+
+  try {
+    return DateTime(
+      int.parse(parts[2]),
+      int.parse(parts[1]),
+      int.parse(parts[0]),
+    );
+  } catch (_) {
+    return null;
+  }
+}
+
+/// Parses [Training.startTime] (`HH:mm`) into a [TimeOfDay].
+TimeOfDay? parseTrainingTime(String? startTime) {
+  final String raw = startTime?.trim() ?? '';
+  if (raw.isEmpty) return null;
+
+  final parts = raw.split(':');
+  if (parts.length != 2) return null;
+
+  try {
+    return TimeOfDay(
+      hour: int.parse(parts[0]),
+      minute: int.parse(parts[1]),
+    );
+  } catch (_) {
+    return null;
+  }
+}
+
+/// Returns the team id when [Training.teamId] is set.
+String? managedTrainingTeamId(Training training) {
+  final String teamId = training.teamId?.trim() ?? '';
+  if (teamId.isEmpty) {
+    return null;
+  }
+  return teamId;
+}
+
+/// True when the training belongs to one team and the user can manage that team.
+bool canManageTraining(Training training, AppSession session) {
+  final String? teamId = managedTrainingTeamId(training);
+  if (teamId == null) {
+    return false;
+  }
+
+  Team? team;
+  for (final Team candidate in session.teamsForAgendaSelectedSeason) {
+    if (candidate.keyTeam?.trim() == teamId) {
+      team = candidate;
+      break;
+    }
+  }
+  if (team == null) {
+    return false;
+  }
+
+  return canManageTeam(
+    team,
+    session.user?.uid,
+    isManager: session.managedTeamsIdsForSelectedSeason.contains(teamId),
+  );
+}
+
+/// Shows a confirmation dialog before deleting a manually managed training.
+Future<bool> confirmDeleteTraining(
+  BuildContext context, {
+  required Training training,
+}) async {
+  final colors = context.appColors;
+  final l10n = context.l10n;
+
+  final confirmed = await showDialog<bool>(
+    context: context,
+    useRootNavigator: true,
+    builder: (dialogContext) {
+      return AlertDialog(
+        title: Text(l10n.trainingDeleteConfirmTitle),
+        content: Text(l10n.trainingDeleteConfirmMessage),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(16),
+          side: BorderSide(color: colors.border),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(dialogContext, rootNavigator: true)
+                .pop(false),
+            child: Text(l10n.actionCancel),
+          ),
+          TextButton(
+            onPressed: () =>
+                Navigator.of(dialogContext, rootNavigator: true).pop(true),
+            child: Text(
+              l10n.actionDelete,
+              style: TextStyle(
+                color: colors.danger,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ),
+        ],
+      );
+    },
+  );
+
+  return confirmed == true;
+}
+
+/// Deletes a training after confirmation and shows a snackbar on the root navigator.
+Future<bool> deleteManagedTraining(
+  BuildContext context, {
+  required Training training,
+  VoidCallback? onDeleted,
+}) async {
+  final String? trainingId = training.docId?.trim();
+  if (trainingId == null || trainingId.isEmpty) {
+    return false;
+  }
+
+  final confirmed = await confirmDeleteTraining(context, training: training);
+  if (!confirmed || !context.mounted) {
+    return false;
+  }
+
+  final String successMessage = context.l10n.trainingDeleted;
+  final String errorMessage = context.l10n.trainingDeleteError;
+
+  try {
+    await TrainingService().deleteTraining(trainingId);
+    onDeleted?.call();
+
+    final BuildContext? rootContext = appNavigatorKey.currentContext;
+    if (rootContext != null && rootContext.mounted) {
+      AppSnackbar.show(rootContext, successMessage, isError: false);
+    }
+    return true;
+  } catch (_) {
+    if (context.mounted) {
+      AppSnackbar.show(context, errorMessage);
+    }
+    return false;
+  }
 }
 
 /// Builds [PlayerTraining] rows for field players only (present by default).
@@ -138,6 +296,7 @@ Training buildTrainingForCreation({
         isRecurrent ? Timestamp.fromDate(DateUtils.dateOnly(recurrentEnd)) : null,
     withTracker: withTracker,
     ownerId: withTracker ? (ownerId ?? '') : '',
+    isTrackerDataUploaded: false,
     version: '2',
   );
 }
@@ -207,6 +366,75 @@ List<Training> buildTrainingsForCreation({
         ),
       )
       .toList();
+}
+
+/// Applies agenda form values to an existing training while preserving unrelated fields.
+Training buildTrainingForUpdate({
+  required Training existing,
+  required DateTime date,
+  required TimeOfDay time,
+  required int durationMinutes,
+  required Team team,
+  required Season season,
+  required bool withTracker,
+  String? ownerId,
+}) {
+  final DateTime dateTime = DateTime(
+    date.year,
+    date.month,
+    date.day,
+    time.hour,
+    time.minute,
+  );
+  final DateTime endDateTime =
+      dateTime.add(Duration(minutes: durationMinutes));
+
+  final Training updated = Training(
+    docId: existing.docId,
+    trainingId: existing.trainingId,
+    seasonId: season.ref?.id,
+    clubId: team.clubId ?? existing.clubId,
+    teamId: team.keyTeam ?? existing.teamId,
+    dateTime: Timestamp.fromDate(dateTime),
+    dateTg: formatTrainingDateTg(date),
+    duration: durationMinutes,
+    startTime: formatTrainingTime(dateTime),
+    endTime: formatTrainingTime(endDateTime),
+    playerTraining: existing.playerTraining,
+    isFinish: existing.isFinish,
+    withRPE: existing.withRPE,
+    withVICP: existing.withVICP,
+    isNotifBeforeSended: existing.isNotifBeforeSended,
+    dateTimeNotifBeforeSended: existing.dateTimeNotifBeforeSended,
+    isNotifAfterSended: existing.isNotifAfterSended,
+    dateTimeNotifAfterSended: existing.dateTimeNotifAfterSended,
+    sessionType: existing.sessionType,
+    gameState: existing.gameState,
+    fieldPosition: existing.fieldPosition,
+    gamePhases: existing.gamePhases,
+    gamePrinciple: existing.gamePrinciple,
+    mentalDominant: existing.mentalDominant,
+    associatedTechnicalMeans: existing.associatedTechnicalMeans,
+    athleticDominant: existing.athleticDominant,
+    tacticalPrinciple: existing.tacticalPrinciple,
+    version: existing.version ?? '2',
+    isReccurent: existing.isReccurent,
+    reccurentCode: existing.reccurentCode,
+    reccurentDay: existing.reccurentDay,
+    reccurentStart: existing.reccurentStart,
+    reccurentEnd: existing.reccurentEnd,
+    withTracker: withTracker,
+    ownerId: withTracker ? (ownerId ?? '') : '',
+    isTrackerDataUploaded: existing.isTrackerDataUploaded,
+    trainingStartAt: existing.trainingStartAt,
+    trainingEndAt: existing.trainingEndAt,
+    trainingGroup: existing.trainingGroup,
+    trainingWorkshop: existing.trainingWorkshop,
+    trainingWorkshopCompleted: existing.trainingWorkshopCompleted,
+    ref: existing.ref,
+  );
+
+  return updated;
 }
 
 /// Firestore collection name for [Training] (avoids circular import with service).

@@ -149,7 +149,8 @@ class AgendaService {
       return null;
     }
 
-    final DateTime endAt = startAt.add(const Duration(minutes: 90));
+    final int durationMinutes = match.duration ?? 90;
+    final DateTime endAt = startAt.add(Duration(minutes: durationMinutes));
     final Timestamp timestampNow = Timestamp.now();
 
     return AgendaItem(

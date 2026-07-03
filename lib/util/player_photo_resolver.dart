@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter/foundation.dart';
@@ -257,6 +258,11 @@ Future<String> _defaultAvatarUrl(String filename) async {
 String? _normalizeLinkedUserId(dynamic entry) {
   if (entry == null) return null;
 
+  if (entry is DocumentReference) {
+    final pathUid = entry.path.split('/').last.trim();
+    return pathUid.isNotEmpty ? pathUid : null;
+  }
+
   if (entry is String) {
     final trimmed = entry.trim();
     if (trimmed.isEmpty) return null;
@@ -304,19 +310,20 @@ bool isAuthUsersSessionPlayer(
 /// Normalizes, trims, deduplicates, and drops empty values.
 Set<String> collectMemberLinkedUserIds(Player player) {
   final ids = <String>{};
+  final memberId = effectiveMemberId(player);
 
-  final userId = _normalizeLinkedUserId(player.userID);
-  if (userId != null && userId.isNotEmpty) {
-    ids.add(userId);
+  void addUid(String? uid) {
+    if (uid == null || uid.isEmpty) return;
+    if (memberId != null && uid == memberId) return;
+    ids.add(uid);
   }
+
+  addUid(_normalizeLinkedUserId(player.userID));
 
   final users = player.users;
   if (users != null) {
     for (final entry in users) {
-      final uid = _normalizeLinkedUserId(entry);
-      if (uid != null && uid.isNotEmpty) {
-        ids.add(uid);
-      }
+      addUid(_normalizeLinkedUserId(entry));
     }
   }
 

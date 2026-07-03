@@ -41,9 +41,11 @@ import '../../services/player_positions_service.dart';
 import '../../widget/add_grinta_player_sheet.dart';
 import '../../widget/team_tracker_owners_sheet.dart';
 import '../../widget/add_grinta_staff_sheet.dart';
+import '../../widget/manage_unavailabilities_sheet.dart';
 import '../../widget/member_search_sheet.dart';
 import '../../widget/playerPhoto.dart';
 import '../../widget/player_contact_lines.dart';
+import '../team_players/training_team_players_presence.dart';
 import '../team_players/training_team_players_tracker.dart';
 
 part 'team_detail_widgets.dart';
@@ -2306,11 +2308,27 @@ class _TeamDetailScreenState extends State<TeamDetailScreen> {
             builder: (context, constraints) {
               final bool mobileRoster =
                   !kIsWeb && constraints.maxWidth < 900;
+              final bool canManageTeam = _canManageTeam(context);
+              final bool canManageRoster = _canManageRoster(context);
+              final _MobileRosterLayout rosterLayout = mobileRoster
+                  ? _MobileRosterLayout.fromWidth(
+                      constraints.maxWidth,
+                      canManageTeam: canManageTeam,
+                      canManageRoster: canManageRoster,
+                    )
+                  : const _MobileRosterLayout(
+                      showPositionColumn: true,
+                      showInlineEditColumn: true,
+                      playerFlex: 4,
+                    );
 
               return Column(
                 children: [
                   mobileRoster
-                      ? _buildMobileTableHeader(context)
+                      ? _buildMobileTableHeader(
+                          context,
+                          layout: rosterLayout,
+                        )
                       : _buildTableHeader(context, mobile: false),
                   if (visibleRows.isEmpty)
                     Padding(
@@ -2327,6 +2345,7 @@ class _TeamDetailScreenState extends State<TeamDetailScreen> {
                       visibleRows.length,
                       (index) => _buildMobileRow(
                         context,
+                        layout: rosterLayout,
                         row: visibleRows[index],
                         odd: index.isOdd,
                       ),
@@ -3827,7 +3846,15 @@ class _TeamDetailScreenState extends State<TeamDetailScreen> {
 
   Widget _buildTableHeader(BuildContext context, {required bool mobile}) {
     if (mobile) {
-      return _buildMobileTableHeader(context);
+      final double width = MediaQuery.sizeOf(context).width;
+      return _buildMobileTableHeader(
+        context,
+        layout: _MobileRosterLayout.fromWidth(
+          width,
+          canManageTeam: _canManageTeam(context),
+          canManageRoster: _canManageRoster(context),
+        ),
+      );
     }
 
     final colors = context.appColors;
@@ -3852,7 +3879,7 @@ class _TeamDetailScreenState extends State<TeamDetailScreen> {
             sortColumn: _RosterSortColumn.player,
           ),
           if (_canManageTeam(context) || _canManageRoster(context)) ...[
-            _headerCell('', flex: 2, textTheme: textTheme),
+            _headerCell('', flex: 3, textTheme: textTheme),
           ],
           _headerCell(
             l10n.teamDetailColumnAge,
@@ -3905,39 +3932,73 @@ class _TeamDetailScreenState extends State<TeamDetailScreen> {
     final bool sortable = sortColumn != null;
     final bool active = _sortColumn == sortColumn;
 
-    final Widget content = Align(
-      alignment: center ? Alignment.center : Alignment.centerLeft,
-      child: Row(
-        mainAxisSize: center ? MainAxisSize.min : MainAxisSize.max,
-        mainAxisAlignment:
-        center ? MainAxisAlignment.center : MainAxisAlignment.start,
-        children: [
-          Flexible(
-            child: Text(
-              label,
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-              style: textTheme.bodySmall?.copyWith(
-                fontWeight: FontWeight.w800,
-                color: active ? colors.primary : null,
+    final Widget content = center
+        ? FittedBox(
+            fit: BoxFit.scaleDown,
+            alignment: Alignment.center,
+            child: Align(
+              alignment: Alignment.center,
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Text(
+                    label,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: textTheme.bodySmall?.copyWith(
+                      fontWeight: FontWeight.w800,
+                      color: active ? colors.primary : null,
+                    ),
+                  ),
+                  if (sortable) ...[
+                    const SizedBox(width: 4),
+                    Icon(
+                      active
+                          ? (_sortAscending
+                              ? Icons.arrow_upward_rounded
+                              : Icons.arrow_downward_rounded)
+                          : Icons.unfold_more_rounded,
+                      size: 15,
+                      color: active ? colors.primary : colors.textSecondary,
+                    ),
+                  ],
+                ],
               ),
             ),
-          ),
-          if (sortable) ...[
-            const SizedBox(width: 4),
-            Icon(
-              active
-                  ? (_sortAscending
-                  ? Icons.arrow_upward_rounded
-                  : Icons.arrow_downward_rounded)
-                  : Icons.unfold_more_rounded,
-              size: 15,
-              color: active ? colors.primary : colors.textSecondary,
+          )
+        : Align(
+            alignment: Alignment.centerLeft,
+            child: Row(
+              mainAxisSize: MainAxisSize.max,
+              mainAxisAlignment: MainAxisAlignment.start,
+              children: [
+                Flexible(
+                  child: Text(
+                    label,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: textTheme.bodySmall?.copyWith(
+                      fontWeight: FontWeight.w800,
+                      color: active ? colors.primary : null,
+                    ),
+                  ),
+                ),
+                if (sortable) ...[
+                  const SizedBox(width: 4),
+                  Icon(
+                    active
+                        ? (_sortAscending
+                            ? Icons.arrow_upward_rounded
+                            : Icons.arrow_downward_rounded)
+                        : Icons.unfold_more_rounded,
+                    size: 15,
+                    color: active ? colors.primary : colors.textSecondary,
+                  ),
+                ],
+              ],
             ),
-          ],
-        ],
-      ),
-    );
+          );
 
     return Expanded(
       flex: flex,
@@ -3954,14 +4015,17 @@ class _TeamDetailScreenState extends State<TeamDetailScreen> {
     );
   }
 
-  Widget _buildMobileTableHeader(BuildContext context) {
+  Widget _buildMobileTableHeader(
+    BuildContext context, {
+    required _MobileRosterLayout layout,
+  }) {
     final colors = context.appColors;
     final textTheme = Theme.of(context).textTheme;
     final l10n = context.l10n;
     final bool canManageRoster = _canManageRoster(context);
 
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 10),
+      padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 10),
       decoration: BoxDecoration(
         color: colors.surface.withValues(alpha: 0.8),
         border: Border(
@@ -3973,7 +4037,7 @@ class _TeamDetailScreenState extends State<TeamDetailScreen> {
         children: [
           _headerCell(
             l10n.entityPlayer,
-            flex: 4,
+            flex: layout.playerFlex,
             textTheme: textTheme,
             sortColumn: _RosterSortColumn.player,
           ),
@@ -3983,18 +4047,14 @@ class _TeamDetailScreenState extends State<TeamDetailScreen> {
             textTheme: textTheme,
             center: true,
           ),
-          _mobileStaticIconHeaderCell(
-            icon: Icons.verified_rounded,
-            tooltip: l10n.teamDetailGrantManager,
-            flex: 1,
-          ),
-          _headerCell(
-            l10n.teamDetailColumnPosition,
-            flex: 2,
-            textTheme: textTheme,
-            center: true,
-            sortColumn: _RosterSortColumn.position,
-          ),
+          if (layout.showPositionColumn)
+            _headerCell(
+              l10n.teamDetailColumnPosition,
+              flex: 1,
+              textTheme: textTheme,
+              center: true,
+              sortColumn: _RosterSortColumn.position,
+            ),
           _mobileIconHeaderCell(
             icon: Icons.sensors_rounded,
             tooltip: l10n.entityTracker,
@@ -4002,7 +4062,18 @@ class _TeamDetailScreenState extends State<TeamDetailScreen> {
             textTheme: textTheme,
             sortColumn: _RosterSortColumn.tracker,
           ),
-          if (canManageRoster)
+          _mobileStaticIconHeaderCell(
+            icon: Icons.verified_rounded,
+            tooltip: l10n.teamDetailGrantManager,
+            flex: 1,
+          ),
+          if (_canManageTeam(context))
+            _mobileStaticIconHeaderCell(
+              icon: Icons.event_busy_outlined,
+              tooltip: l10n.teamDetailManageUnavailabilities,
+              flex: 1,
+            ),
+          if (canManageRoster && layout.showInlineEditColumn)
             _mobileStaticIconHeaderCell(
               icon: Icons.edit_outlined,
               tooltip: l10n.actionEditPlayer,
@@ -4028,12 +4099,15 @@ class _TeamDetailScreenState extends State<TeamDetailScreen> {
     return Expanded(
       flex: flex,
       child: Center(
-        child: Tooltip(
-          message: tooltip,
-          child: Icon(
-            icon,
-            size: 16,
-            color: colors.textSecondary,
+        child: FittedBox(
+          fit: BoxFit.scaleDown,
+          child: Tooltip(
+            message: tooltip,
+            child: Icon(
+              icon,
+              size: 16,
+              color: colors.textSecondary,
+            ),
           ),
         ),
       ),
@@ -4057,29 +4131,32 @@ class _TeamDetailScreenState extends State<TeamDetailScreen> {
         borderRadius: BorderRadius.circular(8),
         child: Padding(
           padding: const EdgeInsets.symmetric(vertical: 4),
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Tooltip(
-                message: tooltip,
-                child: Icon(
-                  icon,
-                  size: 16,
+          child: FittedBox(
+            fit: BoxFit.scaleDown,
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Tooltip(
+                  message: tooltip,
+                  child: Icon(
+                    icon,
+                    size: 16,
+                    color: active ? colors.primary : colors.textSecondary,
+                  ),
+                ),
+                const SizedBox(width: 2),
+                Icon(
+                  active
+                      ? (_sortAscending
+                          ? Icons.arrow_upward_rounded
+                          : Icons.arrow_downward_rounded)
+                      : Icons.unfold_more_rounded,
+                  size: 15,
                   color: active ? colors.primary : colors.textSecondary,
                 ),
-              ),
-              const SizedBox(width: 2),
-              Icon(
-                active
-                    ? (_sortAscending
-                        ? Icons.arrow_upward_rounded
-                        : Icons.arrow_downward_rounded)
-                    : Icons.unfold_more_rounded,
-                size: 15,
-                color: active ? colors.primary : colors.textSecondary,
-              ),
-            ],
+              ],
+            ),
           ),
         ),
       ),
@@ -4144,9 +4221,10 @@ class _TeamDetailScreenState extends State<TeamDetailScreen> {
 
     return IconButton(
       padding: EdgeInsets.zero,
+      visualDensity: VisualDensity.compact,
       constraints: const BoxConstraints(
-        minWidth: 32,
-        minHeight: 32,
+        minWidth: 26,
+        minHeight: 26,
       ),
       tooltip: isManager
           ? l10n.teamDetailRevokeManager
@@ -4250,6 +4328,24 @@ class _TeamDetailScreenState extends State<TeamDetailScreen> {
     );
   }
 
+  Future<void> _showManageUnavailabilitiesSheet(
+    BuildContext context,
+    _TeamMemberVm row,
+  ) async {
+    if (!_canManageTeam(context)) return;
+
+    final String? memberId = effectiveMemberId(row.player);
+    if (memberId == null || memberId.isEmpty) return;
+
+    await showManageUnavailabilitiesSheet(
+      context,
+      player: row.player,
+      seasonId: widget.seasonId,
+      isManager: true,
+      onChanged: _reloadTeamAndMembers,
+    );
+  }
+
   Future<void> _showPlayerTrackersSheet(
     BuildContext context,
     _TeamMemberVm row,
@@ -4299,6 +4395,7 @@ class _TeamDetailScreenState extends State<TeamDetailScreen> {
 
   Widget _buildMobileRow(
     BuildContext context, {
+    required _MobileRosterLayout layout,
     required _TeamMemberVm row,
     required bool odd,
   }) {
@@ -4317,11 +4414,18 @@ class _TeamDetailScreenState extends State<TeamDetailScreen> {
     final String playerName = _displayName(player, l10n);
     final String position = _positionLabelForRow(row, l10n);
     final bool canManageRoster = _canManageRoster(context);
-    final Color rowColor = _mobileRowBackgroundColor(colors, odd);
+    final bool isUnavailable = isPlayerCurrentlyUnavailable(
+      player,
+      widget.seasonId,
+      managerView: _canManageTeam(context),
+    );
+    final Color rowColor = isUnavailable
+        ? colors.warning.withValues(alpha: 0.12)
+        : _mobileRowBackgroundColor(colors, odd);
     final bool hasTrackers = row.trackers.isNotEmpty;
 
     final Widget rowContent = Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 10),
+      padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 10),
       decoration: BoxDecoration(
         color: rowColor,
         border: Border(
@@ -4333,11 +4437,11 @@ class _TeamDetailScreenState extends State<TeamDetailScreen> {
       child: Row(
         children: [
           Expanded(
-            flex: 4,
+            flex: layout.playerFlex,
             child: Row(
               children: [
-                PlayerPhoto(player: player),
-                const SizedBox(width: 8),
+                PlayerPhoto(player: player, radius: 16),
+                const SizedBox(width: 6),
                 Expanded(
                   child: Text(
                     playerName,
@@ -4354,26 +4458,22 @@ class _TeamDetailScreenState extends State<TeamDetailScreen> {
           Expanded(
             flex: 1,
             child: _CompactIconCell(
+              width: 26,
               child: _buildAppAccountIndicator(context, row),
             ),
           ),
+          if (layout.showPositionColumn)
+            _valueCell(position, flex: 1, center: true),
           Expanded(
             flex: 1,
             child: _CompactIconCell(
-              width: 34,
-              child: _buildManagerIndicator(context, row),
-            ),
-          ),
-          _valueCell(position, flex: 2, center: true),
-          Expanded(
-            flex: 1,
-            child: _CompactIconCell(
-              width: 34,
+              width: 26,
               child: IconButton(
                 padding: EdgeInsets.zero,
+                visualDensity: VisualDensity.compact,
                 constraints: const BoxConstraints(
-                  minWidth: 32,
-                  minHeight: 32,
+                  minWidth: 26,
+                  minHeight: 26,
                 ),
                 tooltip: l10n.entityTracker,
                 onPressed: () => _showPlayerTrackersSheet(context, row),
@@ -4382,7 +4482,7 @@ class _TeamDetailScreenState extends State<TeamDetailScreen> {
                   label: Text('${row.trackers.length}'),
                   child: Icon(
                     Icons.sensors_rounded,
-                    size: 20,
+                    size: 17,
                     color: hasTrackers
                         ? colors.primary
                         : colors.textSecondary.withValues(alpha: 0.45),
@@ -4391,22 +4491,53 @@ class _TeamDetailScreenState extends State<TeamDetailScreen> {
               ),
             ),
           ),
-          if (canManageRoster)
+          Expanded(
+            flex: 1,
+            child: _CompactIconCell(
+              width: 26,
+              child: _buildManagerIndicator(context, row),
+            ),
+          ),
+          if (_canManageTeam(context))
             Expanded(
               flex: 1,
               child: _CompactIconCell(
-                width: 34,
+                width: 26,
                 child: IconButton(
                   padding: EdgeInsets.zero,
+                  visualDensity: VisualDensity.compact,
                   constraints: const BoxConstraints(
-                    minWidth: 32,
-                    minHeight: 32,
+                    minWidth: 26,
+                    minHeight: 26,
+                  ),
+                  tooltip: l10n.teamDetailManageUnavailabilities,
+                  onPressed: () =>
+                      _showManageUnavailabilitiesSheet(context, row),
+                  icon: Icon(
+                    Icons.event_busy_outlined,
+                    size: 17,
+                    color: colors.primary,
+                  ),
+                ),
+              ),
+            ),
+          if (canManageRoster && layout.showInlineEditColumn)
+            Expanded(
+              flex: 1,
+              child: _CompactIconCell(
+                width: 26,
+                child: IconButton(
+                  padding: EdgeInsets.zero,
+                  visualDensity: VisualDensity.compact,
+                  constraints: const BoxConstraints(
+                    minWidth: 26,
+                    minHeight: 26,
                   ),
                   tooltip: l10n.actionEditPlayer,
                   onPressed: () => _onEditPlayerPressed(context, row),
                   icon: Icon(
                     Icons.edit_outlined,
-                    size: 20,
+                    size: 17,
                     color: colors.primary,
                   ),
                 ),
@@ -4415,18 +4546,19 @@ class _TeamDetailScreenState extends State<TeamDetailScreen> {
           Expanded(
             flex: 1,
             child: _CompactIconCell(
-              width: 34,
+              width: 26,
               child: IconButton(
                 padding: EdgeInsets.zero,
+                visualDensity: VisualDensity.compact,
                 constraints: const BoxConstraints(
-                  minWidth: 32,
-                  minHeight: 32,
+                  minWidth: 26,
+                  minHeight: 26,
                 ),
                 tooltip: l10n.teamDetailPlayerDetailsTitle,
                 onPressed: () => _showPlayerDetailsSheet(context, row),
                 icon: Icon(
                   Icons.info_outline_rounded,
-                  size: 20,
+                  size: 17,
                   color: colors.textSecondary,
                 ),
               ),
@@ -4440,11 +4572,18 @@ class _TeamDetailScreenState extends State<TeamDetailScreen> {
       return rowContent;
     }
 
+    final VoidCallback? swipeEdit = layout.showInlineEditColumn
+        ? null
+        : () => _onEditPlayerPressed(context, row);
+
     return _TeamPlayerSwipeRow(
+      key: ValueKey(
+        'team-player-swipe-${effectiveMemberId(player) ?? player.keyMember ?? playerName}',
+      ),
       backgroundColor: rowColor,
       editLabel: l10n.actionEditPlayer,
       removeLabel: l10n.teamDetailRemoveFromTeam,
-    //r  onEdit: () => _onEditPlayerPressed(context, row),
+      onEdit: swipeEdit,
       onRemove: () => _onDeletePlayerPressed(context, row),
       child: rowContent,
     );
@@ -4484,13 +4623,20 @@ class _TeamDetailScreenState extends State<TeamDetailScreen> {
         : '-';
 
     final String age = _buildAgeForRow(row);
+    final bool isUnavailable = isPlayerCurrentlyUnavailable(
+      player,
+      widget.seasonId,
+      managerView: _canManageTeam(context),
+    );
 
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
       decoration: BoxDecoration(
-        color: odd
-            ? colors.background.withValues(alpha: 0.45)
-            : Colors.transparent,
+        color: isUnavailable
+            ? colors.warning.withValues(alpha: 0.12)
+            : odd
+                ? colors.background.withValues(alpha: 0.45)
+                : Colors.transparent,
         border: Border(
           bottom: BorderSide(
             color: colors.border.withValues(alpha: 0.35),
@@ -4532,8 +4678,10 @@ class _TeamDetailScreenState extends State<TeamDetailScreen> {
           ),
           if (_canManageTeam(context) || _canManageRoster(context)) ...[
             Expanded(
-              flex: 2,
-              child: Center(
+              flex: 3,
+              child: FittedBox(
+                fit: BoxFit.scaleDown,
+                alignment: Alignment.center,
                 child: Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
@@ -4548,8 +4696,15 @@ class _TeamDetailScreenState extends State<TeamDetailScreen> {
                         onTap: () =>
                             _onTogglePlayerManagerPressed(context, row),
                       ),
-                      if (_canManageRoster(context))
-                        const SizedBox(width: 6),
+                      const SizedBox(width: 3),
+                      _CircleGhostButton(
+                        icon: Icons.event_busy_outlined,
+                        size: _CircleGhostButton.webTableButtonSize,
+                        iconSize: _CircleGhostButton.webTableIconSize,
+                        onTap: () =>
+                            _showManageUnavailabilitiesSheet(context, row),
+                      ),
+                      if (_canManageRoster(context)) const SizedBox(width: 3),
                     ],
                     if (_canManageRoster(context)) ...[
                       _CircleGhostButton(
@@ -4558,7 +4713,7 @@ class _TeamDetailScreenState extends State<TeamDetailScreen> {
                         iconSize: _CircleGhostButton.webTableIconSize,
                         onTap: () => _onEditPlayerPressed(context, row),
                       ),
-                      const SizedBox(width: 6),
+                      const SizedBox(width: 3),
                       _CircleGhostButton(
                         icon: Icons.delete_outline_rounded,
                         size: _CircleGhostButton.webTableButtonSize,

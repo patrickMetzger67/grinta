@@ -631,19 +631,37 @@ class _AgendaItemCard extends StatelessWidget {
 
     bool isManager = false;
     String teamId='';
+    bool canManageThisMatch = false;
+    bool canManageThisTraining = false;
 
     if(item.match != null) {
-      for(var t in item.match!.teams!) {
-        isManager = managedTeamsIds.contains(t);
-        teamId = t;
-        if(isManager) {
-          break;
+      final AppSession session = context.watch<AppSession>();
+      canManageThisMatch = canManageMatch(item.match!, session);
+      final String? managedTeamId = singleManagedMatchTeamId(item.match!);
+      if (managedTeamId != null) {
+        isManager = session.managedTeamsIdsForSelectedSeason.contains(managedTeamId);
+        teamId = managedTeamId;
+      } else {
+        for (var t in item.match!.teams!) {
+          isManager = managedTeamsIds.contains(t);
+          teamId = t;
+          if(isManager) {
+            break;
+          }
         }
       }
     }
     if (item.training != null) {
-      isManager = managedTeamsIds.contains(item.training!.teamId!);
-      teamId = item.training!.teamId ?? '';
+      final AppSession session = context.watch<AppSession>();
+      canManageThisTraining = canManageTraining(item.training!, session);
+      final String? managedTeamId = managedTrainingTeamId(item.training!);
+      if (managedTeamId != null) {
+        isManager = session.managedTeamsIdsForSelectedSeason.contains(managedTeamId);
+        teamId = managedTeamId;
+      } else {
+        isManager = managedTeamsIds.contains(item.training!.teamId!);
+        teamId = item.training!.teamId ?? '';
+      }
     }
 
     TeamPlayerMetricScores? teamPlayerMetricScores;
@@ -684,6 +702,112 @@ class _AgendaItemCard extends StatelessWidget {
                     ),
                   ),
                 ),
+                if (canManageThisMatch) ...[
+                  IconButton(
+                    visualDensity: VisualDensity.compact,
+                    padding: EdgeInsets.zero,
+                    constraints: const BoxConstraints(
+                      minWidth: 32,
+                      minHeight: 32,
+                    ),
+                    tooltip: context.l10n.editMatchTitle,
+                    icon: Icon(
+                      Icons.edit_outlined,
+                      size: 20,
+                      color: colors.textPrimary,
+                    ),
+                    onPressed: () {
+                      showCreateMatchSheet(
+                        context,
+                        matchToEdit: item.match!,
+                      );
+                    },
+                  ),
+                  IconButton(
+                    visualDensity: VisualDensity.compact,
+                    padding: EdgeInsets.zero,
+                    constraints: const BoxConstraints(
+                      minWidth: 32,
+                      minHeight: 32,
+                    ),
+                    tooltip: context.l10n.actionDelete,
+                    icon: Icon(
+                      Icons.delete_outline_rounded,
+                      size: 20,
+                      color: colors.textPrimary,
+                    ),
+                    onPressed: () async {
+                      await deleteManagedMatch(
+                        context,
+                        match: item.match!,
+                        session: context.read<AppSession>(),
+                      );
+                    },
+                  ),
+                ],
+                if (canManageThisTraining) ...[
+                  if (item.training!.trainingEndAt == null)
+                    IconButton(
+                      visualDensity: VisualDensity.compact,
+                      padding: EdgeInsets.zero,
+                      constraints: const BoxConstraints(
+                        minWidth: 32,
+                        minHeight: 32,
+                      ),
+                      tooltip: context.l10n.finishTrainingTitle,
+                      icon: Icon(
+                        Icons.sports_score_rounded,
+                        size: 20,
+                        color: colors.textPrimary,
+                      ),
+                      onPressed: () async {
+                        await finishManagedTraining(
+                          context,
+                          training: item.training!,
+                        );
+                      },
+                    ),
+                  IconButton(
+                    visualDensity: VisualDensity.compact,
+                    padding: EdgeInsets.zero,
+                    constraints: const BoxConstraints(
+                      minWidth: 32,
+                      minHeight: 32,
+                    ),
+                    tooltip: context.l10n.editTrainingTitle,
+                    icon: Icon(
+                      Icons.edit_outlined,
+                      size: 20,
+                      color: colors.textPrimary,
+                    ),
+                    onPressed: () {
+                      showCreateTrainingSheet(
+                        context,
+                        trainingToEdit: item.training!,
+                      );
+                    },
+                  ),
+                  IconButton(
+                    visualDensity: VisualDensity.compact,
+                    padding: EdgeInsets.zero,
+                    constraints: const BoxConstraints(
+                      minWidth: 32,
+                      minHeight: 32,
+                    ),
+                    tooltip: context.l10n.actionDelete,
+                    icon: Icon(
+                      Icons.delete_outline_rounded,
+                      size: 20,
+                      color: colors.textPrimary,
+                    ),
+                    onPressed: () async {
+                      await deleteManagedTraining(
+                        context,
+                        training: item.training!,
+                      );
+                    },
+                  ),
+                ],
                 if (item.type == AgendaItemType.match &&
                     item.match != null) ...[
                   const SizedBox(width: 8),

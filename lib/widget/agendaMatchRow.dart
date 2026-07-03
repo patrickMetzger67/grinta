@@ -41,6 +41,12 @@ class AgendaMatchRow extends StatelessWidget {
     final hasTerrain = match.nomDuTerrain?.trim().isNotEmpty ?? false;
     final hasAdresse = match.terrainAdresse1?.trim().isNotEmpty ?? false;
 
+    // Mirror match detail: show score when played or live (highlights / goals).
+    final bool showScore = match.isMatchPlayed == true ||
+        match.isInHighLight == true ||
+        (match.homeScore ?? 0) > 0 ||
+        (match.outSideScore ?? 0) > 0;
+
     return LayoutBuilder(
       builder: (context, constraints) {
         final contentWidth =
@@ -92,7 +98,7 @@ class AgendaMatchRow extends StatelessWidget {
                         context: context,
                         logoUrl: match.team1UrlLogo ?? '',
                         teamName: team1,
-                        isPlayed: match.isMatchPlayed == true,
+                        isPlayed: showScore,
                         score: '${match.homeScore ?? 0}',
                         isForfeit: match.isTeam1Forfeit == true,
                         scoreFirst: false,
@@ -132,7 +138,7 @@ class AgendaMatchRow extends StatelessWidget {
                         context: context,
                         logoUrl: match.team2UrlLogo ?? '',
                         teamName: team2,
-                        isPlayed: match.isMatchPlayed == true,
+                        isPlayed: showScore,
                         score: '${match.outSideScore ?? 0}',
                         isForfeit: match.isTeam2Forfeit == true,
                         scoreFirst: true,

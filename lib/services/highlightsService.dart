@@ -50,28 +50,56 @@ class HighlightsService {
         snapshot.docs.map((doc) => Highlights.fromSnapshot(doc)).toList());
   }
 
-  /// READ by matchCalendarId
+  /// READ by matchCalendarId (optionally scoped to [teamId]).
   Future<List<Highlights>> getHighlightsByMatchCalendarId(
-      String matchCalendarId,
-      ) async {
-    final snapshot = await _collection
-        .where(keyHlMatchCalendarId, isEqualTo: matchCalendarId)
-        .get();
+    String matchCalendarId, {
+    String? teamId,
+  }) async {
+    Query<Map<String, dynamic>> query = _collection.where(
+      keyHlMatchCalendarId,
+      isEqualTo: matchCalendarId,
+    );
+    if (teamId != null && teamId.trim().isNotEmpty) {
+      query = query.where(keyHlTeamId, isEqualTo: teamId.trim());
+    }
+    final snapshot = await query.get();
     return snapshot.docs.map((doc) => Highlights.fromSnapshot(doc)).toList();
   }
 
-  /// STREAM by matchCalendarId
+  /// STREAM by matchCalendarId (optionally scoped to [teamId]).
   Stream<List<Highlights>> streamHighlightsByMatchCalendarId(
-      String matchCalendarId,
-      ) {
-    return _collection
-        .where(keyHlMatchCalendarId, isEqualTo: matchCalendarId)
-        .orderBy(keyHlMinute, descending: false)
-        .orderBy(keyHlExtraTime, descending: false)
-        .orderBy(keyHlDateTime, descending: false)
-        .snapshots()
-        .map((snapshot) =>
-        snapshot.docs.map((doc) => Highlights.fromSnapshot(doc)).toList());
+    String matchCalendarId, {
+    String? teamId,
+  }) {
+    Query<Map<String, dynamic>> query = _collection.where(
+      keyHlMatchCalendarId,
+      isEqualTo: matchCalendarId,
+    );
+    if (teamId != null && teamId.trim().isNotEmpty) {
+      query = query.where(keyHlTeamId, isEqualTo: teamId.trim());
+    }
+    return query.snapshots().map((snapshot) {
+      final highlights =
+          snapshot.docs.map((doc) => Highlights.fromSnapshot(doc)).toList();
+      highlights.sort(_compareHighlights);
+      return highlights;
+    });
+  }
+
+  int _compareHighlights(Highlights a, Highlights b) {
+    final minuteCompare = (a.minute ?? 0).compareTo(b.minute ?? 0);
+    if (minuteCompare != 0) {
+      return minuteCompare;
+    }
+
+    final extraCompare = (a.extraTime ?? 0).compareTo(b.extraTime ?? 0);
+    if (extraCompare != 0) {
+      return extraCompare;
+    }
+
+    final aDate = a.dateTime?.millisecondsSinceEpoch ?? 0;
+    final bDate = b.dateTime?.millisecondsSinceEpoch ?? 0;
+    return aDate.compareTo(bDate);
   }
 
   /// READ by actionType
@@ -127,11 +155,19 @@ class HighlightsService {
     await highlight.ref!.delete();
   }
 
-  /// DELETE all highlights of a match
-  Future<void> deleteHighlightsByMatchCalendarId(String matchCalendarId) async {
-    final snapshot = await _collection
-        .where(keyHlMatchCalendarId, isEqualTo: matchCalendarId)
-        .get();
+  /// DELETE all highlights of a match (optionally scoped to [teamId]).
+  Future<void> deleteHighlightsByMatchCalendarId(
+    String matchCalendarId, {
+    String? teamId,
+  }) async {
+    Query<Map<String, dynamic>> query = _collection.where(
+      keyHlMatchCalendarId,
+      isEqualTo: matchCalendarId,
+    );
+    if (teamId != null && teamId.trim().isNotEmpty) {
+      query = query.where(keyHlTeamId, isEqualTo: teamId.trim());
+    }
+    final snapshot = await query.get();
 
     final batch = _firestore.batch();
     for (final doc in snapshot.docs) {
@@ -140,11 +176,19 @@ class HighlightsService {
     await batch.commit();
   }
 
-  /// Count highlights for a match
-  Future<int> countHighlightsByMatchCalendarId(String matchCalendarId) async {
-    final snapshot = await _collection
-        .where(keyHlMatchCalendarId, isEqualTo: matchCalendarId)
-        .get();
+  /// Count highlights for a match (optionally scoped to [teamId]).
+  Future<int> countHighlightsByMatchCalendarId(
+    String matchCalendarId, {
+    String? teamId,
+  }) async {
+    Query<Map<String, dynamic>> query = _collection.where(
+      keyHlMatchCalendarId,
+      isEqualTo: matchCalendarId,
+    );
+    if (teamId != null && teamId.trim().isNotEmpty) {
+      query = query.where(keyHlTeamId, isEqualTo: teamId.trim());
+    }
+    final snapshot = await query.get();
 
     return snapshot.docs.length;
   }

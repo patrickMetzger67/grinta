@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:grinta/core/extensions/l10n_extension.dart';
 import 'package:grinta/model/season.dart';
 import 'package:grinta/model/team.dart';
+import 'package:grinta/model/training.dart';
 import 'package:grinta/provider/appSession.dart';
 import 'package:grinta/services/ownerService.dart';
 import 'package:grinta/services/trainingService.dart';
@@ -20,6 +21,7 @@ const List<int> kTrainingDurationOptions = <int>[45, 60, 75, 90, 105, 120, 150];
 Future<bool?> showCreateTrainingSheet(
   BuildContext context, {
   DateTime? initialDate,
+  Training? trainingToEdit,
   VoidCallback? onSaved,
 }) {
   if (kIsWeb) {
@@ -38,6 +40,7 @@ Future<bool?> showCreateTrainingSheet(
           constraints: const BoxConstraints(maxWidth: 520, maxHeight: 720),
           child: CreateTrainingSheet(
             initialDate: initialDate,
+            trainingToEdit: trainingToEdit,
             onSaved: onSaved,
           ),
         ),
@@ -53,16 +56,25 @@ Future<bool?> showCreateTrainingSheet(
     backgroundColor: context.appColors.card,
     builder: (_) => CreateTrainingSheet(
       initialDate: initialDate,
+      trainingToEdit: trainingToEdit,
       onSaved: onSaved,
     ),
   );
 }
 
 class CreateTrainingSheet extends StatefulWidget {
-  const CreateTrainingSheet({super.key, this.initialDate, this.onSaved});
+  const CreateTrainingSheet({
+    super.key,
+    this.initialDate,
+    this.trainingToEdit,
+    this.onSaved,
+  });
 
   final DateTime? initialDate;
+  final Training? trainingToEdit;
   final VoidCallback? onSaved;
+
+  bool get isEditMode => trainingToEdit != null;
 
   @override
   State<CreateTrainingSheet> createState() => _CreateTrainingSheetState();
@@ -86,16 +98,50 @@ class _CreateTrainingSheetState extends State<CreateTrainingSheet> {
   List<TeamOwnerRef> _ownerOptions = const <TeamOwnerRef>[];
   bool _ownersLoading = false;
   bool _isSubmitting = false;
+  bool _isPrefilling = false;
+
+  bool get _isEditMode => widget.isEditMode;
 
   @override
   void initState() {
     super.initState();
     final DateTime now = DateTime.now();
-    _selectedDate = DateUtils.dateOnly(widget.initialDate ?? now);
-    _selectedTime = TimeOfDay(hour: now.hour, minute: 0);
-    _selectedWeekdays = <int>{_selectedDate.weekday};
-    _resetRecurrentRange();
+    if (_isEditMode) {
+      _initFromExistingTraining(widget.trainingToEdit!);
+    } else {
+      _selectedDate = DateUtils.dateOnly(widget.initialDate ?? now);
+      _selectedTime = TimeOfDay(hour: now.hour, minute: 0);
+      _selectedWeekdays = <int>{_selectedDate.weekday};
+      _resetRecurrentRange();
+      _initTeams();
+    }
+  }
+
+  Future<void> _initFromExistingTraining(Training training) async {
+    _isPrefilling = true;
+
+    final DateTime now = DateTime.now();
+    final DateTime? parsedDate = training.dateTime?.toDate() ??
+        parseTrainingDateTg(training.dateTg);
+    final TimeOfDay? parsedTime =
+        parseTrainingTime(training.startTime) ??
+            (training.dateTime != null
+                ? TimeOfDay.fromDateTime(training.dateTime!.toDate())
+                : null);
+
+    _selectedDate = DateUtils.dateOnly(parsedDate ?? now);
+    _selectedTime = parsedTime ?? TimeOfDay(hour: now.hour, minute: 0);
+    _durationMinutes = training.duration ?? 90;
+    _withTracker = training.withTracker;
+    _selectedOwnerId =
+        training.ownerId?.trim().isNotEmpty == true ? training.ownerId : null;
+
     _initTeams();
+    _selectedTeamId = managedTrainingTeamId(training) ?? _selectedTeamId;
+    await _refreshOwnerOptions();
+
+    if (!mounted) return;
+    setState(() => _isPrefilling = false);
   }
 
   static DateTime _addOneMonth(DateTime date) {
@@ -332,7 +378,7 @@ class _CreateTrainingSheetState extends State<CreateTrainingSheet> {
       return;
     }
 
-    if (_isRecurrent) {
+    if (_isRecurrent && !_isEditMode) {
       final bool? confirmed = await _confirmRecurrentCreation();
       if (!mounted || confirmed != true) return;
     }
@@ -348,44 +394,62 @@ class _CreateTrainingSheetState extends State<CreateTrainingSheet> {
 
     final NavigatorState navigator = Navigator.of(context, rootNavigator: true);
     final VoidCallback? onSaved = widget.onSaved;
+    final Training? existingTraining = widget.trainingToEdit;
+    final String successMessage = _isEditMode
+        ? context.l10n.editTrainingSaved
+        : context.l10n.createTrainingSaved(1);
+    final String errorMessage =
+        _isEditMode ? context.l10n.editTrainingError : context.l10n.createTrainingError;
 
     setState(() => _isSubmitting = true);
 
     var didPop = false;
     try {
-      final playerTraining = playerTrainingFromGrintaPlayers(
-        team.grintaPlayers ?? const [],
-        managerIds: managerIdsFromTeam(team),
-      );
+      if (_isEditMode && existingTraining != null) {
+        final Training training = buildTrainingForUpdate(
+          existing: existingTraining,
+          date: _selectedDate,
+          time: _selectedTime,
+          durationMinutes: _durationMinutes,
+          team: team,
+          season: season,
+          withTracker: _withTracker,
+          ownerId: _selectedOwnerId,
+        );
+        await _trainingService.updateTraining(training);
+      } else {
+        final playerTraining = playerTrainingFromGrintaPlayers(
+          team.grintaPlayers ?? const [],
+          managerIds: managerIdsFromTeam(team),
+        );
 
-      final trainings = buildTrainingsForCreation(
-        startDate: _selectedDate,
-        time: _selectedTime,
-        durationMinutes: _durationMinutes,
-        team: team,
-        season: season,
-        playerTraining: playerTraining,
-        isRecurrent: _isRecurrent,
-        recurrentWeekdays: _selectedWeekdays,
-        withTracker: _withTracker,
-        ownerId: _selectedOwnerId,
-        recurrentFrom: _isRecurrent ? _recurrentFromDate : null,
-        recurrentTo: _isRecurrent ? _recurrentToDate : null,
-      );
+        final trainings = buildTrainingsForCreation(
+          startDate: _selectedDate,
+          time: _selectedTime,
+          durationMinutes: _durationMinutes,
+          team: team,
+          season: season,
+          playerTraining: playerTraining,
+          isRecurrent: _isRecurrent,
+          recurrentWeekdays: _selectedWeekdays,
+          withTracker: _withTracker,
+          ownerId: _selectedOwnerId,
+          recurrentFrom: _isRecurrent ? _recurrentFromDate : null,
+          recurrentTo: _isRecurrent ? _recurrentToDate : null,
+        );
 
-      if (trainings.isEmpty) {
-        if (mounted) {
-          AppSnackbar.show(context, context.l10n.createTrainingRecurrentDaysRequired);
+        if (trainings.isEmpty) {
+          if (mounted) {
+            AppSnackbar.show(context, context.l10n.createTrainingRecurrentDaysRequired);
+          }
+          return;
         }
-        return;
-      }
 
-      await _trainingService.createTrainings(trainings);
+        await _trainingService.createTrainings(trainings);
+      }
 
       if (!mounted) return;
 
-      final String successMessage =
-          context.l10n.createTrainingSaved(trainings.length);
       navigator.pop(true);
       didPop = true;
 
@@ -398,7 +462,7 @@ class _CreateTrainingSheetState extends State<CreateTrainingSheet> {
       });
     } catch (_) {
       if (mounted) {
-        AppSnackbar.show(context, context.l10n.createTrainingError);
+        AppSnackbar.show(context, errorMessage);
       }
     } finally {
       if (mounted && !didPop) {
@@ -453,13 +517,19 @@ class _CreateTrainingSheetState extends State<CreateTrainingSheet> {
               mainAxisSize: MainAxisSize.min,
               children: [
                 Text(
-                  l10n.createTrainingTitle,
+                  _isEditMode ? l10n.editTrainingTitle : l10n.createTrainingTitle,
                   style: theme.textTheme.titleMedium?.copyWith(
                     color: colors.textPrimary,
                     fontWeight: FontWeight.w700,
                   ),
                 ),
                 const SizedBox(height: 16),
+                if (_isPrefilling)
+                  const Padding(
+                    padding: EdgeInsets.symmetric(vertical: 24),
+                    child: Center(child: CircularProgressIndicator()),
+                  )
+                else ...[
                 if (_teams.isEmpty)
                   Padding(
                     padding: const EdgeInsets.symmetric(vertical: 12),
@@ -493,7 +563,7 @@ class _CreateTrainingSheetState extends State<CreateTrainingSheet> {
                           ),
                         )
                         .toList(),
-                    onChanged: _onTeamChanged,
+                    onChanged: _isEditMode ? null : _onTeamChanged,
                   ),
                 const SizedBox(height: 12),
                 ListTile(
@@ -561,29 +631,30 @@ class _CreateTrainingSheetState extends State<CreateTrainingSheet> {
                   },
                 ),
                 const SizedBox(height: 8),
-                SwitchListTile(
-                  contentPadding: EdgeInsets.zero,
-                  title: Text(
-                    l10n.createTrainingRecurrent,
-                    style: theme.textTheme.bodyLarge?.copyWith(
-                      color: colors.textPrimary,
+                if (!_isEditMode)
+                  SwitchListTile(
+                    contentPadding: EdgeInsets.zero,
+                    title: Text(
+                      l10n.createTrainingRecurrent,
+                      style: theme.textTheme.bodyLarge?.copyWith(
+                        color: colors.textPrimary,
+                      ),
                     ),
-                  ),
-                  value: _isRecurrent,
-                  activeThumbColor: colors.primary,
-                  onChanged: (bool value) {
-                    setState(() {
-                      _isRecurrent = value;
-                      if (value) {
-                        _resetRecurrentRange();
-                        if (_selectedWeekdays.isEmpty) {
-                          _selectedWeekdays = <int>{_selectedDate.weekday};
+                    value: _isRecurrent,
+                    activeThumbColor: colors.primary,
+                    onChanged: (bool value) {
+                      setState(() {
+                        _isRecurrent = value;
+                        if (value) {
+                          _resetRecurrentRange();
+                          if (_selectedWeekdays.isEmpty) {
+                            _selectedWeekdays = <int>{_selectedDate.weekday};
+                          }
                         }
-                      }
-                    });
-                  },
-                ),
-                if (_isRecurrent) ...[
+                      });
+                    },
+                  ),
+                if (!_isEditMode && _isRecurrent) ...[
                   const SizedBox(height: 4),
                   Row(
                     children: [
@@ -769,11 +840,16 @@ class _CreateTrainingSheetState extends State<CreateTrainingSheet> {
                                   color: Colors.white,
                                 ),
                               )
-                            : Text(l10n.createTrainingSubmit),
+                            : Text(
+                                _isEditMode
+                                    ? l10n.editTrainingSubmit
+                                    : l10n.createTrainingSubmit,
+                              ),
                       ),
                     ),
                   ],
                 ),
+                ],
               ],
             ),
           ),

@@ -40,3 +40,39 @@ class NavIconCountBadge extends StatelessWidget {
     );
   }
 }
+
+/// Standalone success-colored count badge (hidden when [count] is 0).
+class CountBadgeLabel extends StatelessWidget {
+  const CountBadgeLabel({
+    super.key,
+    required this.count,
+  });
+
+  final int count;
+
+  @override
+  Widget build(BuildContext context) {
+    if (count <= 0) {
+      return const SizedBox.shrink();
+    }
+
+    final colors = context.appColors;
+    final label = count > 99 ? '99+' : '$count';
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+      decoration: BoxDecoration(
+        color: colors.success,
+        borderRadius: BorderRadius.circular(999),
+      ),
+      child: Text(
+        label,
+        style: const TextStyle(
+          color: Colors.white,
+          fontSize: 11,
+          fontWeight: FontWeight.w700,
+        ),
+      ),
+    );
+  }
+}

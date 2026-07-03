@@ -39,25 +39,100 @@ Map<UnavailabilityType, String> reasonsMap={
   UnavailabilityType.other:"Autre motif"
 };
 
-class Unavailability {
+String keyUnavailabilityId = 'id';
+String keyUnavailabilityFrom = 'from';
+String keyUnavailabilityTo = 'to';
+String keyUnavailabilityType = 'type';
+String keyUnavailabilityDetails = 'details';
+String keyUnavailabilityIsVisible = 'isVisible';
+String keyUnavailabilitySeasonId = 'seasonId';
 
+/// Legacy flat-list entries without [seasonId] are grouped under this key.
+const String legacyUnavailabilitySeasonKey = '';
+
+class Unavailability {
   String? id;
   Timestamp? from;
   Timestamp? to;
   UnavailabilityType? unavailabilityType;
   String? details;
   bool? isVisible;
+  String? seasonId;
 
-  Unavailability({this.from, this.to, this.unavailabilityType, this.details, this.id, this.isVisible=true});
+  Unavailability({
+    this.from,
+    this.to,
+    this.unavailabilityType,
+    this.details,
+    this.id,
+    this.isVisible = true,
+    this.seasonId,
+  });
+
+  static UnavailabilityType? _typeFromFirestore(String? type) {
+    switch (type) {
+      case 'holiday':
+        return UnavailabilityType.holiday;
+      case 'unwell':
+        return UnavailabilityType.unwell;
+      case 'injured':
+        return UnavailabilityType.injured;
+      case 'other':
+        return UnavailabilityType.other;
+      default:
+        return null;
+    }
+  }
+
+  static String? _typeToFirestore(UnavailabilityType? type) {
+    switch (type) {
+      case UnavailabilityType.holiday:
+        return 'holiday';
+      case UnavailabilityType.unwell:
+        return 'unwell';
+      case UnavailabilityType.injured:
+        return 'injured';
+      case UnavailabilityType.other:
+        return 'other';
+      case null:
+        return null;
+    }
+  }
+
+  static Unavailability fromMap(Map<String, dynamic> map) {
+    return Unavailability(
+      id: map[keyUnavailabilityId]?.toString(),
+      from: map[keyUnavailabilityFrom] as Timestamp?,
+      to: map[keyUnavailabilityTo] as Timestamp?,
+      details: map[keyUnavailabilityDetails]?.toString(),
+      isVisible: map[keyUnavailabilityIsVisible] as bool? ?? true,
+      seasonId: map[keyUnavailabilitySeasonId]?.toString(),
+      unavailabilityType: _typeFromFirestore(
+        map[keyUnavailabilityType]?.toString(),
+      ),
+    );
+  }
+
+  Map<String, dynamic> toMap() {
+    return {
+      keyUnavailabilityId: id,
+      keyUnavailabilityFrom: from,
+      keyUnavailabilityTo: to,
+      keyUnavailabilityDetails: details,
+      keyUnavailabilityIsVisible: isVisible ?? true,
+      keyUnavailabilitySeasonId: seasonId,
+      keyUnavailabilityType: _typeToFirestore(unavailabilityType),
+    };
+  }
 
   @override
   String toString() {
-    return 'from=${from!.millisecondsSinceEpoch.toString()} ' +
-      'to=${to!.millisecondsSinceEpoch.toString()} ' +
-      'unavailabilityType=${unavailabilityType.toString()} ' +
-      'details=$details';
+    return 'from=${from!.millisecondsSinceEpoch.toString()} '
+        'to=${to!.millisecondsSinceEpoch.toString()} '
+        'unavailabilityType=${unavailabilityType.toString()} '
+        'details=$details '
+        'seasonId=$seasonId';
   }
-
 }
 
 
@@ -85,7 +160,8 @@ class Player {
   List<dynamic>? users=[];
 
   List<dynamic>? searchOptions=[];
-  List<dynamic>? unavailable=[];
+  /// seasonId -> unavailabilities for that season.
+  Map<String, List<Unavailability>> unavailableMap = {};
 
   DocumentReference? ref;
 
@@ -110,9 +186,19 @@ class Player {
     this.phoneE164,
     this.phoneCountryCode,
     this.searchOptions,
-    this.unavailable,
+    Map<String, List<Unavailability>>? unavailableMap,
     this.users,
-  });
+  }) : unavailableMap = unavailableMap ?? {};
+
+  List<Unavailability> unavailabilitiesForSeason(String? seasonId) {
+    if (seasonId == null || seasonId.trim().isEmpty) {
+      return const [];
+    }
+    return unavailableMap[seasonId.trim()] ?? const [];
+  }
+
+  Iterable<Unavailability> get allUnavailabilities =>
+      unavailableMap.values.expand((entries) => entries);
 
   List<int> get positionCodes {
     final raw = positions;
@@ -269,7 +355,7 @@ class Player {
     String? phoneCountryCode,
     List<dynamic>? users,
     List<dynamic>? searchOptions,
-    List<dynamic>? unavailable,
+    Map<String, List<Unavailability>>? unavailableMap,
     DocumentReference? ref,
   }) {
     return Player(
@@ -294,7 +380,7 @@ class Player {
       phoneCountryCode: phoneCountryCode ?? this.phoneCountryCode,
       users: users ?? this.users,
       searchOptions: searchOptions ?? this.searchOptions,
-      unavailable: unavailable ?? this.unavailable,
+      unavailableMap: unavailableMap ?? this.unavailableMap,
     )
       ..creatorUserId = creatorUserId ?? this.creatorUserId
       ..ref = ref ?? this.ref;
@@ -391,37 +477,10 @@ class Player {
     }
 
     if (map[keyPlayerUnavailability] != null) {
-      player.unavailable = [];
-      final unavailabilityList = map[keyPlayerUnavailability];
-      for (int i = 0; i < unavailabilityList.length; i++) {
-        final unavailability = Unavailability();
-        unavailability.id = unavailabilityList[i]['id'];
-        unavailability.from = unavailabilityList[i]['from'];
-        unavailability.to = unavailabilityList[i]['to'];
-        unavailability.details = unavailabilityList[i]['details'];
-        if (unavailabilityList[i]['isVisible'] != null) {
-          unavailability.isVisible = unavailabilityList[i]['isVisible'];
-        } else {
-          unavailability.isVisible = true;
-        }
-        switch (unavailabilityList[i]['type']) {
-          case 'holiday':
-            unavailability.unavailabilityType = UnavailabilityType.holiday;
-            break;
-          case 'unwell':
-            unavailability.unavailabilityType = UnavailabilityType.unwell;
-            break;
-          case 'injured':
-            unavailability.unavailabilityType = UnavailabilityType.injured;
-            break;
-          case 'other':
-            unavailability.unavailabilityType = UnavailabilityType.other;
-            break;
-        }
-        player.unavailable!.add(unavailability);
-      }
+      player.unavailableMap =
+          _parseUnavailableMap(map[keyPlayerUnavailability]);
     } else {
-      player.unavailable = [];
+      player.unavailableMap = {};
     }
 
     if (map[keyPlayerUsers] != null) {
@@ -463,44 +522,69 @@ class Player {
     email = parsed.email;
     phoneE164 = parsed.phoneE164;
     phoneCountryCode = parsed.phoneCountryCode;
-    unavailable = parsed.unavailable;
+    unavailableMap = parsed.unavailableMap;
     users = parsed.users;
   }
 
-  Map<String, dynamic> toMap() {
+  static Map<String, List<Unavailability>> _parseUnavailableMap(dynamic raw) {
+    final parsed = <String, List<Unavailability>>{};
 
-    List<dynamic> _unavailabilityList = [];
-
-    if(unavailable != null) {
-      for(int i=0; i < unavailable!.length;i++) {
-        Unavailability _unavailability = unavailable![i];
-        Map<dynamic, dynamic> _mapUnavailability = {};
-
-        _mapUnavailability['id'] = _unavailability.id;
-        _mapUnavailability['from'] = _unavailability.from;
-        _mapUnavailability['to'] = _unavailability.to;
-        _mapUnavailability['details'] = _unavailability.details;
-        _mapUnavailability['isVisible'] = _unavailability.isVisible;
-
-        switch(_unavailability.unavailabilityType!) {
-
-          case UnavailabilityType.holiday:
-            _mapUnavailability['type'] = 'holiday';
-            break;
-          case UnavailabilityType.unwell:
-            _mapUnavailability['type'] = 'unwell';
-            break;
-          case UnavailabilityType.injured:
-            _mapUnavailability['type'] = 'injured';
-            break;
-          case UnavailabilityType.other:
-            _mapUnavailability['type'] = 'other';
-            break;
-        }
-        _unavailabilityList.add(_mapUnavailability);
-      }
+    void addEntry(String seasonId, Unavailability entry) {
+      final resolvedSeasonId = seasonId.trim().isNotEmpty
+          ? seasonId.trim()
+          : (entry.seasonId?.trim().isNotEmpty == true
+              ? entry.seasonId!.trim()
+              : legacyUnavailabilitySeasonKey);
+      entry.seasonId ??= resolvedSeasonId;
+      parsed.putIfAbsent(resolvedSeasonId, () => <Unavailability>[]).add(entry);
     }
 
+    if (raw is List) {
+      for (final item in raw) {
+        if (item is! Map) continue;
+        addEntry(
+          legacyUnavailabilitySeasonKey,
+          Unavailability.fromMap(Map<String, dynamic>.from(item)),
+        );
+      }
+      return parsed;
+    }
+
+    if (raw is Map) {
+      raw.forEach((key, value) {
+        final seasonId = key.toString();
+        if (value is List) {
+          for (final item in value) {
+            if (item is! Map) continue;
+            addEntry(
+              seasonId,
+              Unavailability.fromMap(Map<String, dynamic>.from(item)),
+            );
+          }
+          return;
+        }
+        if (value is Map) {
+          addEntry(
+            seasonId,
+            Unavailability.fromMap(Map<String, dynamic>.from(value)),
+          );
+        }
+      });
+    }
+
+    return parsed;
+  }
+
+  Map<String, dynamic> _unavailabilityMapToFirestore() {
+    final firestoreMap = <String, dynamic>{};
+    unavailableMap.forEach((seasonId, entries) {
+      if (entries.isEmpty) return;
+      firestoreMap[seasonId] = entries.map((entry) => entry.toMap()).toList();
+    });
+    return firestoreMap;
+  }
+
+  Map<String, dynamic> toMap() {
 
     Map<String, dynamic> map = {
       keyPlayerKeyMember: keyMember,
@@ -521,7 +605,7 @@ class Player {
       keyPlayerPersonNumber:personNumber,
       keyPlayerClubId:clubId,
       keyPlayerSearchOptions:searchOptions,
-      keyPlayerUnavailability:_unavailabilityList,
+      keyPlayerUnavailability:_unavailabilityMapToFirestore(),
       keyPlayerUsers:users,
       keyPlayerEmail: email?.trim() ?? '',
       keyPlayerPhoneE164: phoneE164?.trim() ?? '',
@@ -551,7 +635,7 @@ class Player {
         'statut: >$statut< ' +
         'creatorUserId:$creatorUserId '+
         'clubId:$clubId '+
-        'unavailable=$unavailable ' +
+        'unavailableMap=$unavailableMap ' +
         'users=$users';
   }
 

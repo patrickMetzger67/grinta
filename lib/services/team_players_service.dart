@@ -1,5 +1,9 @@
 import '../model/effectives.dart';
 import '../model/player.dart';
+import '../model/grinta_player.dart';
+import '../model/team.dart';
+import '../util/player_photo_resolver.dart';
+import '../util/player_positions.dart';
 import 'effectivesService.dart';
 import 'playerService.dart';
 import 'teamService.dart';
@@ -30,14 +34,20 @@ class TeamPlayersService {
     }
 
     final playerIds = <String>{};
+    var usesGrintaRoster = false;
 
     final team = await _teamService.getTeamById(normalizedTeamId);
-    if (team?.players != null) {
-      for (final rawId in team!.players!) {
-        final id = rawId?.toString().trim() ?? '';
-        if (id.isNotEmpty) {
-          playerIds.add(id);
+    if (team != null) {
+      if (_teamHasLegacyPlayers(team)) {
+        for (final rawId in team.players!) {
+          final id = rawId?.toString().trim() ?? '';
+          if (id.isNotEmpty) {
+            playerIds.add(id);
+          }
         }
+      } else if (_teamUsesGrintaRoster(team)) {
+        usesGrintaRoster = true;
+        playerIds.addAll(_grintaFieldPlayerIds(team));
       }
     }
 
@@ -50,7 +60,9 @@ class TeamPlayersService {
       }
     }
 
-    final rosterPlayerIds = await _rosterPlayerMemberIds(normalizedTeamId);
+    final rosterPlayerIds = usesGrintaRoster
+        ? playerIds
+        : await _rosterPlayerMemberIds(normalizedTeamId);
 
     final players = <Player>[];
     for (final id in playerIds) {
@@ -62,8 +74,72 @@ class TeamPlayersService {
       }
     }
 
-    players.sort(_comparePlayersByName);
-    return players;
+    players.sort(comparePlayersByName);
+    return dedupePlayersByMemberId(players);
+  }
+
+  /// One roster entry per member ([effectiveMemberId]).
+  static List<Player> dedupePlayersByMemberId(List<Player> players) {
+    final seenMemberIds = <String>{};
+    final deduped = <Player>[];
+
+    for (final player in players) {
+      final memberId = effectiveMemberId(player);
+      if (memberId == null) {
+        deduped.add(player);
+        continue;
+      }
+      if (seenMemberIds.add(memberId)) {
+        deduped.add(player);
+      }
+    }
+
+    return deduped;
+  }
+
+  static int comparePlayersByName(Player a, Player b) {
+    return _comparePlayersByName(a, b);
+  }
+
+  bool _teamHasLegacyPlayers(Team team) {
+    for (final dynamic rawId in team.players ?? const <dynamic>[]) {
+      if (rawId?.toString().trim().isNotEmpty == true) {
+        return true;
+      }
+    }
+    return false;
+  }
+
+  bool _teamUsesGrintaRoster(Team team) {
+    if (_teamHasLegacyPlayers(team)) {
+      return false;
+    }
+    if (team.isGrinta == true) {
+      return true;
+    }
+    for (final GrintaPlayer entry in team.grintaPlayers ?? const <GrintaPlayer>[]) {
+      if (entry.playerId.trim().isNotEmpty) {
+        return true;
+      }
+    }
+    return false;
+  }
+
+  Iterable<String> _grintaFieldPlayerIds(Team team) sync* {
+    for (final GrintaPlayer entry in team.grintaPlayers ?? const <GrintaPlayer>[]) {
+      final String id = entry.playerId.trim();
+      if (id.isEmpty) {
+        continue;
+      }
+      if (isGrintaRosterStaff(
+        positions: entry.positions,
+        fonction: entry.fonction,
+        listedInManagers: false,
+      )) {
+        continue;
+      }
+      yield id;
+    }
   }
 
   /// Membres de l'équipe avec effectif joueur ([Effectives.type] == 0).

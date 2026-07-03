@@ -1,7 +1,10 @@
+import 'package:flutter/material.dart';
+
 import '../model/compoType.dart';
 import '../model/match.dart' as models;
 import '../model/matchCompo.dart';
 import '../model/player.dart';
+import '../util/app_theme.dart';
 import '../widget/half_pitch_compo_widget.dart';
 
 List<String> normalizeTeamIdList(Iterable<dynamic> rawIds) {
@@ -198,19 +201,21 @@ void applyAssignmentsToMatchCompo({
   compo.midfielderDefensive = [];
   compo.stricker = [];
 
-  final sortedSlots = startersBySlotId.keys.toList()
-    ..sort((a, b) {
-      final roleCmp = slotRoleFromSlotId(a).compareTo(slotRoleFromSlotId(b));
-      if (roleCmp != 0) return roleCmp;
-      return _slotIndex(a).compareTo(_slotIndex(b));
-    });
-
-  for (final slotId in sortedSlots) {
-    final player = startersBySlotId[slotId];
-    if (player == null) continue;
+  for (final entry in startersBySlotId.entries) {
+    final slotId = entry.key;
+    final player = entry.value;
     final role = slotRoleFromSlotId(slotId);
-    _addToRoleList(compo, role, player);
+    final slotIndex = _slotIndex(slotId);
+    if (slotIndex <= 0) continue;
+    _setPlayerAtRoleSlotIndex(compo, role, slotIndex, player);
   }
+
+  _trimTrailingEmptyPlayers(compo.goalkeeper!);
+  _trimTrailingEmptyPlayers(compo.defender!);
+  _trimTrailingEmptyPlayers(compo.midfielder!);
+  _trimTrailingEmptyPlayers(compo.midfielderAttaking!);
+  _trimTrailingEmptyPlayers(compo.midfielderDefensive!);
+  _trimTrailingEmptyPlayers(compo.stricker!);
 
   compo.substitute = List<PlayerCompo>.from(substitutes);
 }
@@ -221,26 +226,44 @@ int _slotIndex(String slotId) {
   return int.tryParse(suffix) ?? 0;
 }
 
-void _addToRoleList(MatchCompo compo, String slotRole, PlayerCompo player) {
+List<PlayerCompo> _roleListForSlot(MatchCompo compo, String slotRole) {
   switch (matchCompoListRole(slotRole)) {
     case 'goalkeeper':
-      compo.goalkeeper!.add(player);
-      break;
+      return compo.goalkeeper!;
     case 'defender':
-      compo.defender!.add(player);
-      break;
+      return compo.defender!;
     case 'midfielder':
-      compo.midfielder!.add(player);
-      break;
+      return compo.midfielder!;
     case 'midfielderAttacking':
-      compo.midfielderAttaking!.add(player);
-      break;
+      return compo.midfielderAttaking!;
     case 'midfielderDefensive':
-      compo.midfielderDefensive!.add(player);
-      break;
+      return compo.midfielderDefensive!;
     case 'stricker':
-      compo.stricker!.add(player);
-      break;
+      return compo.stricker!;
+    default:
+      return compo.midfielder!;
+  }
+}
+
+void _setPlayerAtRoleSlotIndex(
+  MatchCompo compo,
+  String slotRole,
+  int oneBasedIndex,
+  PlayerCompo player,
+) {
+  final list = _roleListForSlot(compo, slotRole);
+  final index = oneBasedIndex - 1;
+  while (list.length <= index) {
+    list.add(PlayerCompo());
+  }
+  list[index] = player;
+}
+
+void _trimTrailingEmptyPlayers(List<PlayerCompo> list) {
+  while (list.isNotEmpty) {
+    final id = list.last.playerID?.trim();
+    if (id != null && id.isNotEmpty) break;
+    list.removeLast();
   }
 }
 
@@ -351,6 +374,60 @@ List<PlayerConvo> convocationFromPlayerIds(Set<String> playerIds) {
   return playerIds
       .map((id) => PlayerConvo(playerID: id, isPresent: true, asAnswer: false))
       .toList();
+}
+
+/// Fond de carte pour un joueur convoqué (`null` = pas convoqué).
+Color? convocationCardBackground(AppColors colors, PlayerConvo? convo) {
+  if (convo == null) {
+    return null;
+  }
+  if (convo.isPresent == true && convo.asAnswer == true) {
+    return colors.success.withValues(alpha: 0.12);
+  }
+  if (convo.isPresent != true || convo.asAnswer != true) {
+    return colors.warning.withValues(alpha: 0.12);
+  }
+  return null;
+}
+
+PlayerConvo? convocationForPlayerId(
+  List<PlayerConvo>? convocations,
+  String playerId,
+) {
+  final trimmed = playerId.trim();
+  if (trimmed.isEmpty) {
+    return null;
+  }
+  for (final PlayerConvo convo in convocations ?? const <PlayerConvo>[]) {
+    if (convo.playerID?.trim() == trimmed) {
+      return convo;
+    }
+  }
+  return null;
+}
+
+List<PlayerConvo> toggleConvocation({
+  required List<PlayerConvo> convocations,
+  required String playerId,
+  required bool selected,
+}) {
+  final trimmed = playerId.trim();
+  if (trimmed.isEmpty) {
+    return convocations;
+  }
+
+  final updated = List<PlayerConvo>.from(convocations);
+  final index = updated.indexWhere((c) => c.playerID?.trim() == trimmed);
+  if (selected) {
+    if (index < 0) {
+      updated.add(
+        PlayerConvo(playerID: trimmed, isPresent: true, asAnswer: false),
+      );
+    }
+  } else if (index >= 0) {
+    updated.removeAt(index);
+  }
+  return updated;
 }
 
 String? resolveCompoTypeDocumentId(String? stored) {

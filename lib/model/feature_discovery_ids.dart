@@ -10,6 +10,8 @@ abstract final class FeatureDiscoveryIds {
 
   /// Match detail sub-tabs (cross-device visited tracking).
   static const String matchDetailTabCompo = 'match_detail_tab_compo';
+  static const String matchDetailTabConvocations =
+      'match_detail_tab_convocations';
   static const String matchDetailTabTacticalSchema =
       'match_detail_tab_tactical_schema';
   static const String matchDetailTabHighlights = 'match_detail_tab_highlights';

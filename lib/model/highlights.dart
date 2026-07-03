@@ -1,5 +1,25 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 
+double _firestoreDouble(dynamic value, {double fallback = 0.0}) {
+  if (value == null) {
+    return fallback;
+  }
+  if (value is num) {
+    return value.toDouble();
+  }
+  return fallback;
+}
+
+int? _firestoreInt(dynamic value) {
+  if (value == null) {
+    return null;
+  }
+  if (value is num) {
+    return value.toInt();
+  }
+  return int.tryParse(value.toString());
+}
+
 enum ActionType {
   timeEvent,
   goal,
@@ -47,10 +67,10 @@ class Substitution {
     affiliationTeam       = map![keySubstitutionAffiliationTeam];
     enteringPlayerId      = map[keySubstitutionEnteringPlayerId];
     enteringPlayerName    = map[keySubstitutionEnteringPlayerName];
-    enteringPlayerNumber  = map[keySubstitutionEnteringPlayerNumber];
+    enteringPlayerNumber  = _firestoreInt(map[keySubstitutionEnteringPlayerNumber]);
     outgoingPlayerId      = map[keySubstitutionOutgoingPlayerId];
     outgoingPlayerName    = map[keySubstitutionOutgoingPlayerName];
-    outgoingPlayerNumber  = map[keySubstitutionOutgoingPlayerNumber];
+    outgoingPlayerNumber  = _firestoreInt(map[keySubstitutionOutgoingPlayerNumber]);
   }
 
   @override
@@ -110,7 +130,7 @@ class TimeEvent {
         type = TimeType.secondHalf;
         break;
     }
-    value = map[keyTimeEventValue];
+    value = _firestoreInt(map[keyTimeEventValue]) ?? 0;
   }
 
   @override
@@ -157,7 +177,7 @@ class YellowRedCard {
     affiliationTeam = map![keyYellowRedCardAffiliationTeam];
     playerId        = map[keyYellowRedCardPlayerId];
     playerName      = map[keyYellowRedCardPlayerName];
-    playerNumber    = map[keyYellowRedCardPlayerNumber];
+    playerNumber    = _firestoreInt(map[keyYellowRedCardPlayerNumber]);
     switch(map[keyYellowRedCardCardType]) {
       case 'CardType.yellow':
         cardType = CardType.yellow;
@@ -259,30 +279,14 @@ class Goal {
     playerId = map[keyGoalScorerPlayerId];
     decisivePasserPlayerId =  map[keyGoalDecisivePasserPlayerID];
     playerName = map[keyGoalPlayerName];
-    playerNumber = map[keyGoalPlayerNumber];
+    playerNumber = _firestoreInt(map[keyGoalPlayerNumber]);
     playerDecisivePasser = map[keyGoalDecisivePasser];
-    playerDecisivePasserNumber = map[keyGoalPlayerDecisivePasserNumber];
-    if(map[keyGoalPlayerScorerPosDx] != null) {
-      scorerPosDx = map[keyGoalPlayerScorerPosDx];
-    } else {
-      scorerPosDx = 0.0;
-    }
-    if(map[keyGoalPlayerScorerPosDy] != null) {
-      scorerPosDy = map[keyGoalPlayerScorerPosDy];
-    } else {
-      scorerPosDy = 0.0;
-    }
-
-    if(map[keyGoalPlayerPasserPosDx] != null) {
-      passerPosDx = map[keyGoalPlayerPasserPosDx];
-    } else {
-      passerPosDx = 0.0;
-    }
-    if(map[keyGoalPlayerPasserPosDy] != null) {
-      passerPosDy = map[keyGoalPlayerPasserPosDy];
-    } else {
-      passerPosDy = 0.0;
-    }
+    playerDecisivePasserNumber =
+        _firestoreInt(map[keyGoalPlayerDecisivePasserNumber]);
+    scorerPosDx = _firestoreDouble(map[keyGoalPlayerScorerPosDx]);
+    scorerPosDy = _firestoreDouble(map[keyGoalPlayerScorerPosDy]);
+    passerPosDx = _firestoreDouble(map[keyGoalPlayerPasserPosDx]);
+    passerPosDy = _firestoreDouble(map[keyGoalPlayerPasserPosDy]);
 
   }
   @override
@@ -304,6 +308,7 @@ class Goal {
 }
 
 String keyHlMatchCalendarId = 'matchCalendarId';
+String keyHlTeamId = 'teamId';
 String keyHlMinute = 'minute';
 String keyHlExtraTime = 'extraTime';
 String keyHlAction = 'action';
@@ -314,6 +319,7 @@ String keyHlDateTime = 'dateTime';
 
 class Highlights {
   String? matchCalendarId;
+  String? teamId;
   int? minute;
   int? extraTime;
   ActionType? actionType;
@@ -324,6 +330,7 @@ class Highlights {
 
   Highlights(
       {this.matchCalendarId,
+      this.teamId,
       this.minute=0,
       this.extraTime=0,
       this.actionType,
@@ -337,12 +344,9 @@ class Highlights {
     Map<String, dynamic>? map = documentSnapshot.data() as Map<String, dynamic>?;
 
     matchCalendarId = map![keyHlMatchCalendarId];
-    minute = map[keyHlMinute];
-    if(map[keyHlExtraTime] != null) {
-      extraTime = map[keyHlExtraTime];
-    } else {
-      extraTime = 0;
-    }
+    teamId = map[keyHlTeamId];
+    minute = _firestoreInt(map[keyHlMinute]) ?? 0;
+    extraTime = _firestoreInt(map[keyHlExtraTime]) ?? 0;
     photo = map[keyHlPhoto];
     dateTime = map[keyHlDateTime];
 
@@ -393,6 +397,7 @@ class Highlights {
 
     Map<String, dynamic> map = {
       keyHlMatchCalendarId: matchCalendarId,
+      keyHlTeamId: teamId,
       keyHlMinute: minute,
       keyHlExtraTime: extraTime,
       keyHlAction:actionType.toString(),
@@ -406,6 +411,7 @@ class Highlights {
   @override
   String toString() {
     return 'HighLights: matchCalendarId=$matchCalendarId ' +
+      'teamId=$teamId ' +
       'minute=$minute ' +
       'extraTime=$extraTime ' +
       'actionType=${actionType.toString()} ' +

@@ -67,7 +67,7 @@ class TrainingTeamPlayersLoader {
 
     final team = await _teamService.getTeamById(teamId);
     if (team?.players == null || team!.players!.isEmpty) {
-      return _fallbackFromTrainingOnly(training);
+      return _fallbackFromTrainingOnly(training, seasonId: seasonId);
     }
 
     final trainingDate = training.dateTime?.toDate();
@@ -124,11 +124,19 @@ class TrainingTeamPlayersLoader {
           playerTrainingById[playerId] ??
           PlayerTraining(
             playerId: playerId,
-            presenceType: defaultPresenceForPlayer(player, trainingDate),
+            presenceType: defaultPresenceForPlayer(
+              player,
+              trainingDate,
+              seasonId: seasonId,
+            ),
           );
 
-      if (isPlayerUnavailableOnTrainingDate(player, trainingDate)) {
-        playerTraining.presenceType = PresenceType.excuse;
+      if (isPlayerUnavailableOnTrainingDate(
+        player,
+        trainingDate,
+        seasonId: seasonId,
+      )) {
+        playerTraining.presenceType = PresenceType.absent;
       }
 
       rows.add(
@@ -269,8 +277,10 @@ class TrainingTeamPlayersLoader {
   }
 
   Future<List<TrainingPlayerRowVm>> _fallbackFromTrainingOnly(
-    Training training,
-  ) async {
+    Training training, {
+    String? seasonId,
+  }) async {
+    final trainingDate = training.dateTime?.toDate();
     final rows = <TrainingPlayerRowVm>[];
 
     for (final pt in training.playerTraining) {
@@ -279,6 +289,14 @@ class TrainingTeamPlayersLoader {
 
       final player = await _playerService.getPlayerById(playerId);
       if (player == null) continue;
+
+      if (isPlayerUnavailableOnTrainingDate(
+        player,
+        trainingDate,
+        seasonId: seasonId,
+      )) {
+        pt.presenceType = PresenceType.absent;
+      }
 
       rows.add(
         TrainingPlayerRowVm(

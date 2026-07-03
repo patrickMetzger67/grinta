@@ -69,12 +69,14 @@ class MatchService {
     });
   }
 
-  /// GET MATCHES BY TEAM IN teams + withTracker = true + isTrackerDataUploaded = false
+  /// GET MATCHES BY TEAM IN teams + withTracker = true + isMatchPlayed = true
+  /// + isTrackerDataUploaded = false
   Future<List<Match>> getMatchesToUploadTrackerData(String teamId) async {
     try {
       final query = await _collection
           .where(keyMatchTeams, arrayContains: teamId)
           .where(keyMatchWithTracker, isEqualTo: true)
+          .where(keyMatchIsMatchPlayed, isEqualTo: true)
           .where(keyMatchIsTrackerDataUploaded, isEqualTo: false)
           .get();
 
@@ -92,11 +94,13 @@ class MatchService {
       return [];
     }
   }
-  /// STREAM MATCHES BY TEAM IN teams + withTracker = true + isTrackerDataUploaded = false
+  /// STREAM MATCHES BY TEAM IN teams + withTracker = true + isMatchPlayed = true
+  /// + isTrackerDataUploaded = false
   Stream<List<Match>> streamMatchesToUploadTrackerData(String teamId) {
     return _collection
         .where(keyMatchTeams, arrayContains: teamId)
         .where(keyMatchWithTracker, isEqualTo: true)
+        .where(keyMatchIsMatchPlayed, isEqualTo: true)
         .where(keyMatchIsTrackerDataUploaded, isEqualTo: false)
         .snapshots()
         .map((snapshot) =>
@@ -149,6 +153,20 @@ class MatchService {
   Future<void> deleteMatch(String matchId) async {
     try {
       await _collection.doc(matchId).delete();
+    } catch (e) {
+      rethrow;
+    }
+  }
+
+  /// Removes one team id from [Match.teams] without deleting the document.
+  Future<void> removeTeamFromMatch({
+    required String matchId,
+    required String teamId,
+  }) async {
+    try {
+      await _collection.doc(matchId).update({
+        keyMatchTeams: FieldValue.arrayRemove([teamId]),
+      });
     } catch (e) {
       rethrow;
     }
@@ -272,37 +290,30 @@ class MatchService {
 
     final int engagementMatchCount = matchesById.length;
     final String trimmedClubId = clubId.trim();
-    final bool shouldUseTeamFallback = trimmedClubId.isEmpty
-        ? (engagements.isEmpty || matchesById.isEmpty)
-        : engagements.isEmpty;
+    final List<Match> fallbackMatches =
+        await _loadMatchesByTeamIdBetweenDatesFallback(
+      teamId: teamId,
+      start: start,
+      end: end,
+    );
+    final List<Match> filteredFallback = _filterTeamMatchesForAgenda(
+      matches: fallbackMatches,
+      clubId: trimmedClubId,
+    );
 
-    if (shouldUseTeamFallback) {
-      final List<Match> fallbackMatches =
-          await _loadMatchesByTeamIdBetweenDatesFallback(
-        teamId: teamId,
-        start: start,
-        end: end,
-      );
-
-      for (final Match match in fallbackMatches) {
-        final String? matchId = match.id?.trim();
-        if (matchId != null && matchId.isNotEmpty) {
-          matchesById[matchId] = match;
-        }
+    for (final Match match in filteredFallback) {
+      final String? matchId = match.id?.trim();
+      if (matchId != null && matchId.isNotEmpty) {
+        matchesById[matchId] = match;
       }
+    }
 
-      if (kDebugMode) {
-        debugPrint(
-          'Agenda matches fallback: teamId=$teamId '
-          'engagementMatches=$engagementMatchCount '
-          'fallbackAdded=${fallbackMatches.length} '
-          'total=${matchesById.length}',
-        );
-      }
-    } else if (kDebugMode) {
+    if (kDebugMode) {
       debugPrint(
         'Agenda matches: teamId=$teamId engagements=${engagements.length} '
-        'matches=${matchesById.length}',
+        'engagementMatches=$engagementMatchCount '
+        'teamMatches=${filteredFallback.length} '
+        'total=${matchesById.length}',
       );
     }
 
@@ -319,7 +330,8 @@ class MatchService {
   }
 
   /// Realtime matches for agenda: resolves engagements, listens to each
-  /// competition query, and falls back to the legacy team query when needed.
+  /// competition query, and always merges the legacy team query for manually
+  /// added matches.
   Stream<List<Match>> streamMatchesForTeamEngagementsBetweenDates({
     required String teamId,
     required String clubId,
@@ -338,9 +350,7 @@ class MatchService {
           <String, StreamSubscription<List<Match>>>{};
       final Map<String, List<Match>> matchesByEngagementKey =
           <String, List<Match>>{};
-      final Set<String> pendingEngagementKeys = <String>{};
       List<Match> fallbackMatches = <Match>[];
-      List<Engagement> latestEngagements = <Engagement>[];
 
       List<Match> buildEngagementMatches() {
         final Map<String, Match> matchesById = <String, Match>{};
@@ -376,19 +386,10 @@ class MatchService {
           }
         }
 
-        final bool shouldUseTeamFallback = _shouldUseAgendaTeamFallback(
-          trimmedClubId: trimmedClubId,
-          engagements: latestEngagements,
-          engagementMatchCount: matchesById.length,
-          pendingEngagementKeys: pendingEngagementKeys,
-        );
-
-        if (shouldUseTeamFallback) {
-          for (final Match match in fallbackMatches) {
-            final String? matchId = match.id?.trim();
-            if (matchId != null && matchId.isNotEmpty) {
-              matchesById[matchId] = match;
-            }
+        for (final Match match in fallbackMatches) {
+          final String? matchId = match.id?.trim();
+          if (matchId != null && matchId.isNotEmpty) {
+            matchesById[matchId] = match;
           }
         }
 
@@ -408,38 +409,22 @@ class MatchService {
         controller.add(buildMergedMatches());
       }
 
-      void syncFallbackSubscription() {
-        final bool shouldUseTeamFallback = _shouldUseAgendaTeamFallback(
-          trimmedClubId: trimmedClubId,
-          engagements: latestEngagements,
-          engagementMatchCount: buildEngagementMatches().length,
-          pendingEngagementKeys: pendingEngagementKeys,
-        );
-
-        if (shouldUseTeamFallback) {
-          fallbackSub ??= streamMatchesByTeamIdBetweenDates(
-            teamId: teamId,
-            start: start,
-            end: end,
-          ).listen(
-            (List<Match> matches) {
-              fallbackMatches = matches;
-              emitMerged();
-            },
-            onError: controller.addError,
+      fallbackSub = streamMatchesByTeamIdBetweenDates(
+        teamId: teamId,
+        start: start,
+        end: end,
+      ).listen(
+        (List<Match> matches) {
+          fallbackMatches = _filterTeamMatchesForAgenda(
+            matches: matches,
+            clubId: trimmedClubId,
           );
-          return;
-        }
-
-        if (fallbackSub != null) {
-          unawaited(fallbackSub!.cancel());
-          fallbackSub = null;
-          fallbackMatches = <Match>[];
-        }
-      }
+          emitMerged();
+        },
+        onError: controller.addError,
+      );
 
       void syncEngagementMatchStreams(List<Engagement> engagements) {
-        latestEngagements = engagements;
         final Set<String> activeKeys = <String>{};
 
         for (final Engagement engagement in engagements) {
@@ -454,8 +439,6 @@ class MatchService {
             continue;
           }
 
-          pendingEngagementKeys.add(engagementDocId);
-
           final String engagementClubId = engagement.clubId?.trim() ?? '';
           final String resolvedClubId = trimmedClubId.isNotEmpty
               ? trimmedClubId
@@ -469,9 +452,7 @@ class MatchService {
             end: end,
           ).listen(
             (List<Match> matches) {
-              pendingEngagementKeys.remove(engagementDocId);
               matchesByEngagementKey[engagementDocId] = matches;
-              syncFallbackSubscription();
               emitMerged();
             },
             onError: (Object error) {
@@ -487,9 +468,7 @@ class MatchService {
                   '(engagementId: $engagementDocId): $error',
                 );
               }
-              pendingEngagementKeys.remove(engagementDocId);
               matchesByEngagementKey[engagementDocId] = <Match>[];
-              syncFallbackSubscription();
               emitMerged();
             },
           );
@@ -499,11 +478,9 @@ class MatchService {
           if (!activeKeys.contains(key)) {
             unawaited(engagementMatchSubs.remove(key)?.cancel());
             matchesByEngagementKey.remove(key);
-            pendingEngagementKeys.remove(key);
           }
         }
 
-        syncFallbackSubscription();
         emitMerged();
       }
 
@@ -528,21 +505,24 @@ class MatchService {
     });
   }
 
-  bool _shouldUseAgendaTeamFallback({
-    required String trimmedClubId,
-    required List<Engagement> engagements,
-    required int engagementMatchCount,
-    required Set<String> pendingEngagementKeys,
+  List<Match> _filterTeamMatchesForAgenda({
+    required List<Match> matches,
+    required String clubId,
   }) {
-    if (pendingEngagementKeys.isNotEmpty) {
-      return false;
-    }
-
+    final String trimmedClubId = clubId.trim();
     if (trimmedClubId.isEmpty) {
-      return engagements.isEmpty || engagementMatchCount == 0;
+      return matches;
     }
 
-    return engagements.isEmpty;
+    return matches
+        .where((Match match) {
+          final List<dynamic>? clubs = match.clubs;
+          if (clubs == null || clubs.isEmpty) {
+            return false;
+          }
+          return clubs.any((dynamic club) => club?.toString() == trimmedClubId);
+        })
+        .toList();
   }
 
   Stream<List<Match>> _streamEngagementMatchesBetweenDates({
@@ -1021,6 +1001,25 @@ class MatchService {
       if (data.isNotEmpty) {
         await _collection.doc(matchId).update(data);
       }
+    } catch (e) {
+      rethrow;
+    }
+  }
+
+  /// Marks a match as played after a full-time highlight; optionally marks
+  /// tracker data as uploaded for owners without external syncing.
+  Future<void> markMatchPlayedAfterEndEvent({
+    required String matchId,
+    bool markTrackerDataUploaded = false,
+  }) async {
+    try {
+      final Map<String, dynamic> data = {
+        keyMatchIsMatchPlayed: true,
+      };
+      if (markTrackerDataUploaded) {
+        data[keyMatchIsTrackerDataUploaded] = true;
+      }
+      await _collection.doc(matchId).update(data);
     } catch (e) {
       rethrow;
     }

@@ -11,9 +11,15 @@ import '../model/matchStats.dart';
 import '../model/player.dart';
 import '../model/tracker/team_workload_summary.dart';
 import '../services/matchStatsService.dart';
+import '../services/matchService.dart';
 import '../services/playerService.dart';
 import '../services/teamWorkloadSummaryService.dart';
-import '../util/app_theme.dart';
+import 'package:grinta/util/app_theme.dart';
+import 'package:grinta/util/match_creation_helper.dart';
+import 'package:grinta/widget/create_match_sheet.dart';
+import 'package:provider/provider.dart';
+
+import '../provider/appSession.dart';
 import '../model/match.dart' as models;
 import '../util/playerDisplayName.dart';
 import '../widget/match_compo_widget.dart';
@@ -21,6 +27,8 @@ import '../widget/match_highlights_timeline.dart';
 import '../widget/match_tracker_stats_table.dart';
 import '../widget/tracker_kit_icon_pill.dart';
 import '../widget/tracker_player_analysis_widget.dart';
+import 'match_detail/match_convocations_tab.dart';
+import 'match_detail/match_grinta_highlights_tab.dart';
 import 'match_detail/match_tactical_schema_tab.dart';
 
 class MatchDetailScreen extends StatelessWidget {
@@ -41,7 +49,7 @@ class MatchDetailScreen extends StatelessWidget {
   final bool isManager;
   final String? playerId;
 
-  /// Index de l’onglet affiché à l’ouverture (0 = Compo, …).
+  /// Index logique de l’onglet à l’ouverture (0 = Compo si affiché, sinon Convocations).
   final int initialTabIndex;
 
   const MatchDetailScreen({
@@ -56,78 +64,74 @@ class MatchDetailScreen extends StatelessWidget {
     this.initialTabIndex = 0,
   });
 
-  /// Index de l’onglet Statistiques quand le match a un tracker.
-  static List<String> _tabNamesForMatch(models.Match match) {
-    final names = <String>[
-      AnalyticsScreenNames.matchDetailTabCompo,
+  static List<String> _tabNamesForMatch(
+    models.Match match, {
+    required bool showCompo,
+  }) {
+    final names = <String>[];
+    if (showCompo) {
+      names.add(AnalyticsScreenNames.matchDetailTabCompo);
+    }
+    names.add(AnalyticsScreenNames.matchDetailTabConvocations);
+    names.addAll([
       AnalyticsScreenNames.matchDetailTabTacticalSchema,
       AnalyticsScreenNames.matchDetailTabHighlights,
-    ];
+    ]);
     if (match.withTracker == true) {
       names.add(AnalyticsScreenNames.matchDetailTabStats);
     }
     return names;
   }
 
-  static List<String> _featureDiscoveryIdsForMatch(models.Match match) {
-    final ids = <String>[
-      FeatureDiscoveryIds.matchDetailTabCompo,
+  static List<String> _featureDiscoveryIdsForMatch(
+    models.Match match, {
+    required bool showCompo,
+  }) {
+    final ids = <String>[];
+    if (showCompo) {
+      ids.add(FeatureDiscoveryIds.matchDetailTabCompo);
+    }
+    ids.add(FeatureDiscoveryIds.matchDetailTabConvocations);
+    ids.addAll([
       FeatureDiscoveryIds.matchDetailTabTacticalSchema,
       FeatureDiscoveryIds.matchDetailTabHighlights,
-    ];
+    ]);
     if (match.withTracker == true) {
       ids.add(FeatureDiscoveryIds.matchDetailTabStats);
     }
     return ids;
   }
 
-  static int statsTabIndexFor(models.Match match) {
+  /// Index logique de l’onglet Statistiques (4 si Compo affiché, 3 sinon).
+  static int statsTabIndexFor(models.Match match, {bool showCompo = true}) {
     if (match.withTracker != true) {
+      return showCompo ? 0 : 0;
+    }
+    return showCompo ? 4 : 3;
+  }
+
+  /// Index logique de l’onglet Convocations (1 si Compo affiché, 0 sinon).
+  static int convocationsTabIndexFor({required bool showCompo}) {
+    return showCompo ? 1 : 0;
+  }
+
+  static int _physicalTabIndex({
+    required int logicalIndex,
+    required bool showCompo,
+  }) {
+    if (showCompo) {
+      return logicalIndex;
+    }
+    if (logicalIndex <= 0) {
       return 0;
     }
-    return 3;
+    return logicalIndex - 1;
   }
 
   @override
   Widget build(BuildContext context) {
     final colors = context.appColors;
     final bool showStats = match.withTracker == true;
-
-    final l10n = context.l10n;
-    final tabs = <Widget>[
-      _MatchDetailTab(
-        icon: Icons.groups_rounded,
-        label: l10n.tabCompo,
-        compactLabel: l10n.tabCompo,
-      ),
-      _MatchDetailTab(
-        icon: Icons.grid_view_rounded,
-        label: l10n.tabTacticalSchema,
-        compactLabel: l10n.tabTacticalSchemaShort,
-      ),
-      _MatchDetailTab(
-        icon: Icons.flash_on_rounded,
-        label: l10n.tabHighlights,
-        compactLabel: l10n.tabHighlightsShort,
-      ),
-      if (showStats)
-        _MatchDetailTab(
-          icon: Icons.query_stats_rounded,
-          label: l10n.navStatistics,
-          compactLabel: l10n.tabStats,
-        ),
-    ];
-
-    final views = <Widget>[
-      compoBuilder?.call(context, match) ?? _CompoTab(match: match),
-      tacticalSchemaBuilder?.call(context, match) ??
-          MatchTacticalSchemaTab(match: match, isManager: isManager),
-      highlightsBuilder?.call(context, match) ?? _HighlightsTab(match: match),
-      if (showStats) statsBuilder?.call(context, match) ?? _StatsTab(match: match, isManager: isManager,playerId: playerId,),
-    ];
-
-    final int safeInitialIndex =
-        initialTabIndex.clamp(0, tabs.length - 1);
 
     return Scaffold(
       backgroundColor: colors.background,
@@ -157,14 +161,100 @@ class MatchDetailScreen extends StatelessWidget {
                     child: Column(
                       children: [
                         _MatchHeader(match: match, isManager: isManager),
-                        _MatchDetailTabShell(
-                          tabs: tabs,
-                          views: views,
-                          tabNames: _tabNamesForMatch(match),
-                          featureDiscoveryIds:
-                              _featureDiscoveryIdsForMatch(match),
-                          initialIndex: safeInitialIndex,
-                          matchHasTracker: showStats,
+                        Expanded(
+                          child: StreamBuilder<MatchStats?>(
+                            stream: MatchStatsService()
+                                .streamMatchStatsByMatchId(match.id ?? ''),
+                            builder: (context, snapshot) {
+                              if (snapshot.connectionState ==
+                                  ConnectionState.waiting) {
+                                return const Center(
+                                  child: CircularProgressIndicator(),
+                                );
+                              }
+
+                              final bool showCompo = snapshot.data != null;
+                              final l10n = context.l10n;
+
+                              final tabs = <Widget>[
+                                if (showCompo)
+                                  _MatchDetailTab(
+                                    icon: Icons.groups_rounded,
+                                    label: l10n.tabCompo,
+                                    compactLabel: l10n.tabCompo,
+                                  ),
+                                _MatchDetailTab(
+                                  icon: Icons.event_available_rounded,
+                                  label: l10n.tabConvocations,
+                                  compactLabel: l10n.tabConvocationsShort,
+                                ),
+                                _MatchDetailTab(
+                                  icon: Icons.grid_view_rounded,
+                                  label: l10n.tabTacticalSchema,
+                                  compactLabel: l10n.tabTacticalSchemaShort,
+                                ),
+                                _MatchDetailTab(
+                                  icon: Icons.flash_on_rounded,
+                                  label: l10n.tabHighlights,
+                                  compactLabel: l10n.tabHighlightsShort,
+                                ),
+                                if (showStats)
+                                  _MatchDetailTab(
+                                    icon: Icons.query_stats_rounded,
+                                    label: l10n.navStatistics,
+                                    compactLabel: l10n.tabStats,
+                                  ),
+                              ];
+
+                              final views = <Widget>[
+                                if (showCompo)
+                                  compoBuilder?.call(context, match) ??
+                                      _CompoTab(match: match),
+                                MatchConvocationsTab(
+                                  match: match,
+                                  isManager: isManager,
+                                ),
+                                tacticalSchemaBuilder?.call(context, match) ??
+                                    MatchTacticalSchemaTab(
+                                      match: match,
+                                      isManager: isManager,
+                                    ),
+                                highlightsBuilder?.call(context, match) ??
+                                    _HighlightsTab(
+                                      match: match,
+                                      isManager: isManager,
+                                    ),
+                                if (showStats)
+                                  statsBuilder?.call(context, match) ??
+                                      _StatsTab(
+                                        match: match,
+                                        isManager: isManager,
+                                        playerId: playerId,
+                                      ),
+                              ];
+
+                              final int safeInitialIndex = _physicalTabIndex(
+                                logicalIndex: initialTabIndex,
+                                showCompo: showCompo,
+                              ).clamp(0, tabs.length - 1);
+
+                              return _MatchDetailTabShell(
+                                tabs: tabs,
+                                views: views,
+                                tabNames: _tabNamesForMatch(
+                                  match,
+                                  showCompo: showCompo,
+                                ),
+                                featureDiscoveryIds:
+                                    _featureDiscoveryIdsForMatch(
+                                  match,
+                                  showCompo: showCompo,
+                                ),
+                                initialIndex: safeInitialIndex,
+                                matchHasTracker: showStats,
+                              );
+                            },
+                          ),
                         ),
                       ],
                     ),
@@ -189,6 +279,8 @@ class _TopBar extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final colors = context.appColors;
+    final session = context.watch<AppSession>();
+    final bool canManageThisMatch = canManageMatch(match, session);
 
     return Container(
       padding: const EdgeInsets.fromLTRB(16, 8, 8, 8),
@@ -212,6 +304,40 @@ class _TopBar extends StatelessWidget {
               ),
             ),
           ),
+          if (canManageThisMatch) ...[
+            IconButton(
+              tooltip: context.l10n.editMatchTitle,
+              onPressed: () {
+                showCreateMatchSheet(
+                  context,
+                  matchToEdit: match,
+                );
+              },
+              icon: Icon(
+                Icons.edit_outlined,
+                color: colors.textPrimary,
+              ),
+            ),
+            IconButton(
+              tooltip: context.l10n.actionDelete,
+              onPressed: () async {
+                await deleteManagedMatch(
+                  context,
+                  match: match,
+                  session: session,
+                  onDeleted: () {
+                    if (context.mounted) {
+                      Navigator.of(context).pop();
+                    }
+                  },
+                );
+              },
+              icon: Icon(
+                Icons.delete_outline_rounded,
+                color: colors.danger,
+              ),
+            ),
+          ],
           IconButton(
             tooltip: context.l10n.actionClose,
             onPressed: () => Navigator.of(context).pop(),
@@ -586,6 +712,24 @@ class _MatchHeaderState extends State<_MatchHeader> {
 
   @override
   Widget build(BuildContext context) {
+    final String matchId = widget.match.id?.trim() ?? '';
+    if (matchId.isEmpty) {
+      return _buildHeader(context, widget.match);
+    }
+
+    return StreamBuilder<models.Match?>(
+      stream: MatchService().streamMatchById(matchId),
+      builder: (context, snapshot) {
+        final models.Match liveMatch = snapshot.data ?? _match;
+        if (snapshot.hasData && snapshot.data != null) {
+          _match = snapshot.data!;
+        }
+        return _buildHeader(context, liveMatch);
+      },
+    );
+  }
+
+  Widget _buildHeader(BuildContext context, models.Match match) {
     final colors = context.appColors;
 
     final l10n = context.l10n;
@@ -593,10 +737,14 @@ class _MatchHeaderState extends State<_MatchHeader> {
     final String team2 = _clean(match.team2, fallback: l10n.entityTeamWithIndex(2));
 
     final bool played = match.isMatchPlayed == true;
+    final bool liveScore = match.isInHighLight == true ||
+        (match.homeScore ?? 0) > 0 ||
+        (match.outSideScore ?? 0) > 0;
+    final bool showScore = played || liveScore;
     final bool isReport = match.isReport == true;
     final bool hasVenue = _hasVenueInfo(match);
 
-    final String score = played
+    final String score = showScore
         ? '${match.homeScore ?? 0} - ${match.outSideScore ?? 0}'
         : '-';
 
@@ -662,7 +810,7 @@ class _MatchHeaderState extends State<_MatchHeader> {
                     _ScoreBlock(
                       score: score,
                       tab: match.tab,
-                      played: played,
+                      played: showScore,
                     ),
                     const SizedBox(height: 6),
                     _TeamBlock(
@@ -690,7 +838,7 @@ class _MatchHeaderState extends State<_MatchHeader> {
                     child: _ScoreBlock(
                       score: score,
                       tab: match.tab,
-                      played: played,
+                      played: showScore,
                     ),
                   ),
                   Expanded(
@@ -1098,39 +1246,102 @@ class _CompoTab extends StatelessWidget {
   }
 }
 
-class _HighlightsTab extends StatelessWidget {
+enum _HighlightsSource { fmi, grinta }
+
+class _HighlightsTab extends StatefulWidget {
   final models.Match match;
+  final bool isManager;
 
   const _HighlightsTab({
     required this.match,
+    required this.isManager,
   });
 
   @override
+  State<_HighlightsTab> createState() => _HighlightsTabState();
+}
+
+class _HighlightsTabState extends State<_HighlightsTab> {
+  _HighlightsSource? _source;
+
+  @override
   Widget build(BuildContext context) {
-    return _TabContainer(
-      children: [
-        StreamBuilder<MatchStats?>(
-          stream: MatchStatsService().streamMatchStatsByMatchId(match.id ?? ''),
-          builder: (context, snapshot) {
-            if (snapshot.connectionState == ConnectionState.waiting) {
-              return const Center(
-                child: Padding(
-                  padding: EdgeInsets.all(24),
-                  child: CircularProgressIndicator(),
-                ),
-              );
-            }
+    final l10n = context.l10n;
 
-            final matchStats = snapshot.data;
+    return StreamBuilder<MatchStats?>(
+      stream: MatchStatsService()
+          .streamMatchStatsByMatchId(widget.match.id ?? ''),
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting &&
+            _source == null) {
+          return const Center(
+            child: Padding(
+              padding: EdgeInsets.all(24),
+              child: CircularProgressIndicator(),
+            ),
+          );
+        }
 
-            return MatchHighlightsTimeline(
-              matchStats: matchStats,
-              team1: match.team1,
-              team2: match.team2,
-            );
-          },
-        ),
-      ],
+        final matchStats = snapshot.data;
+        final source = _source ??
+            (matchStats != null
+                ? _HighlightsSource.fmi
+                : _HighlightsSource.grinta);
+
+        final width = MediaQuery.of(context).size.width;
+        final double horizontalPadding = width >= 900
+            ? 8
+            : width >= 600
+                ? 10
+                : 12;
+
+        return Padding(
+          padding: EdgeInsets.fromLTRB(
+            horizontalPadding,
+            0,
+            horizontalPadding,
+            0,
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              SegmentedButton<_HighlightsSource>(
+                showSelectedIcon: false,
+                segments: [
+                  ButtonSegment(
+                    value: _HighlightsSource.fmi,
+                    label: Text(l10n.matchHighlightsSourceFmi),
+                  ),
+                  ButtonSegment(
+                    value: _HighlightsSource.grinta,
+                    label: Text(l10n.matchHighlightsSourceGrinta),
+                  ),
+                ],
+                selected: {source},
+                onSelectionChanged: (selection) {
+                  setState(() => _source = selection.first);
+                },
+              ),
+              const SizedBox(height: 14),
+              Expanded(
+                child: source == _HighlightsSource.fmi
+                    ? SingleChildScrollView(
+                        padding: const EdgeInsets.only(bottom: 24),
+                        child: MatchHighlightsTimeline(
+                          matchStats: matchStats,
+                          team1: widget.match.team1,
+                          team2: widget.match.team2,
+                        ),
+                      )
+                    : MatchGrintaHighlightsTab(
+                        match: widget.match,
+                        isManager: widget.isManager,
+                      ),
+              ),
+            ],
+          ),
+        );
+      },
     );
   }
 }

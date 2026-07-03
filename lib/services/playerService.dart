@@ -292,23 +292,25 @@ class PlayerService {
 
     Player player = Player.fromDocumentsnapshot(snapshot);
 
-    player.unavailable ??= [];
-    player.unavailable!.add(unavailability);
+    final seasonId = unavailability.seasonId?.trim() ?? legacyUnavailabilitySeasonKey;
+    unavailability.seasonId = seasonId;
+    player.unavailableMap.putIfAbsent(seasonId, () => <Unavailability>[]);
+    player.unavailableMap[seasonId]!.add(unavailability);
 
     await docRef.update({
       keyPlayerUnavailability:
-      _buildUnavailabilityMapList(player.unavailable!),
+          _buildUnavailabilityFirestoreMap(player.unavailableMap),
     });
   }
 
-  /// Remplacer complètement la liste des indisponibilités
-  Future<void> updateUnavailabilityList({
+  /// Remplacer complètement les indisponibilités
+  Future<void> updateUnavailabilityMap({
     required String playerId,
-    required List<dynamic> unavailabilityList,
+    required Map<String, List<Unavailability>> unavailableMap,
   }) async {
     await _collection.doc(playerId).update({
       keyPlayerUnavailability:
-      _buildUnavailabilityMapList(unavailabilityList),
+          _buildUnavailabilityFirestoreMap(unavailableMap),
     });
   }
 
@@ -325,17 +327,14 @@ class PlayerService {
 
     Player player = Player.fromDocumentsnapshot(snapshot);
 
-    player.unavailable ??= [];
-    player.unavailable!.removeWhere((item) {
-      if (item is Unavailability) {
-        return item.id == unavailabilityId;
-      }
-      return false;
+    player.unavailableMap.forEach((seasonId, entries) {
+      entries.removeWhere((item) => item.id == unavailabilityId);
     });
+    player.unavailableMap.removeWhere((_, entries) => entries.isEmpty);
 
     await docRef.update({
       keyPlayerUnavailability:
-      _buildUnavailabilityMapList(player.unavailable!),
+          _buildUnavailabilityFirestoreMap(player.unavailableMap),
     });
   }
 
@@ -386,46 +385,16 @@ class PlayerService {
     });
   }
 
-  /// Construire la liste Firestore des indisponibilités
-  List<Map<String, dynamic>> _buildUnavailabilityMapList(
-      List<dynamic> unavailable,
-      ) {
-    List<Map<String, dynamic>> list = [];
-
-    for (int i = 0; i < unavailable.length; i++) {
-      if (unavailable[i] is Unavailability) {
-        Unavailability item = unavailable[i];
-
-        String? type;
-        switch (item.unavailabilityType) {
-          case UnavailabilityType.holiday:
-            type = 'holiday';
-            break;
-          case UnavailabilityType.unwell:
-            type = 'unwell';
-            break;
-          case UnavailabilityType.injured:
-            type = 'injured';
-            break;
-          case UnavailabilityType.other:
-            type = 'other';
-            break;
-          default:
-            type = 'other';
-        }
-
-        list.add({
-          'id': item.id,
-          'from': item.from,
-          'to': item.to,
-          'details': item.details,
-          'isVisible': item.isVisible ?? true,
-          'type': type,
-        });
-      }
-    }
-
-    return list;
+  /// Construire la map Firestore des indisponibilités par saison
+  Map<String, dynamic> _buildUnavailabilityFirestoreMap(
+    Map<String, List<Unavailability>> unavailableMap,
+  ) {
+    final map = <String, dynamic>{};
+    unavailableMap.forEach((seasonId, entries) {
+      if (entries.isEmpty) return;
+      map[seasonId] = entries.map((item) => item.toMap()).toList();
+    });
+    return map;
   }
 
   /// URLs avatar mises en cache (joueur → utilisateur → défaut).

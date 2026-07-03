@@ -168,93 +168,106 @@ class _MemberSearchSheetState extends State<MemberSearchSheet> {
     final colors = context.appColors;
     final searchToken = _firestoreSearchToken(_query);
 
+    final fabBottomPadding = widget.showCreateButton ? 88.0 : 0.0;
+
     return SizedBox(
       height: height,
-      child: Column(
-        children: [
-          const SizedBox(height: 4),
-          Padding(
-            padding: const EdgeInsets.only(left: 4, right: 14),
-            child: Row(
-              children: [
-                IconButton(
-                  onPressed: () => Navigator.pop(context),
-                  icon: const Icon(Icons.arrow_back_rounded),
-                  tooltip: l10n.actionBack,
-                ),
-                Expanded(
-                  child: Text(
-                    widget.title,
-                    style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                          fontWeight: FontWeight.w700,
-                          color: colors.textPrimary,
-                        ),
-                  ),
-                ),
-                if (widget.showCreateButton)
+      child: Scaffold(
+        backgroundColor: Colors.transparent,
+        floatingActionButton: widget.showCreateButton
+            ? FloatingActionButton(
+                heroTag: 'grinta-fab-member-search-create',
+                tooltip: l10n.actionCreatePlayer,
+                onPressed: _onCreateMemberPressed,
+                child: const Icon(Icons.person_add_outlined),
+              )
+            : null,
+        body: Column(
+          children: [
+            const SizedBox(height: 4),
+            Padding(
+              padding: const EdgeInsets.only(left: 4, right: 14),
+              child: Row(
+                children: [
                   IconButton(
-                    onPressed: _onCreateMemberPressed,
-                    icon: const Icon(Icons.add_rounded),
-                    tooltip: l10n.actionCreatePlayer,
+                    onPressed: () => Navigator.pop(context),
+                    icon: const Icon(Icons.arrow_back_rounded),
+                    tooltip: l10n.actionBack,
                   ),
-              ],
+                  Expanded(
+                    child: Text(
+                      widget.title,
+                      style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                            fontWeight: FontWeight.w700,
+                            color: colors.textPrimary,
+                          ),
+                    ),
+                  ),
+                ],
+              ),
             ),
-          ),
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-            child: TextField(
-              controller: _searchController,
-              autofocus: true,
-              decoration: InputDecoration(
-                labelText: l10n.hintSearchMember,
-                hintText: l10n.hintSearchMember,
-                prefixIcon: const Icon(Icons.search),
-                border: OutlineInputBorder(
-                  borderSide: BorderSide(
-                    color: const Color(0xFF8C98A8).withValues(alpha: 0.2),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+              child: TextField(
+                controller: _searchController,
+                autofocus: true,
+                decoration: InputDecoration(
+                  labelText: l10n.hintSearchMember,
+                  hintText: l10n.hintSearchMember,
+                  prefixIcon: const Icon(Icons.search),
+                  border: OutlineInputBorder(
+                    borderSide: BorderSide(
+                      color: const Color(0xFF8C98A8).withValues(alpha: 0.2),
+                    ),
                   ),
                 ),
               ),
             ),
-          ),
-          Expanded(
-            child: searchToken.isEmpty
-                ? Center(
-                    child: Text(
-                      l10n.memberSearchPrompt,
-                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                            color: colors.textSecondary,
-                          ),
-                      textAlign: TextAlign.center,
-                    ),
-                  )
-                : StreamBuilder<List<Player>>(
-                    stream: _playerService.streamMembersBySearchOptions(
-                      searchToken,
-                    ),
-                    builder: (context, snapshot) {
-                      if (snapshot.connectionState == ConnectionState.waiting &&
-                          !snapshot.hasData) {
-                        return const Center(child: CircularProgressIndicator());
-                      }
+            Expanded(
+              child: searchToken.isEmpty
+                  ? Center(
+                      child: Text(
+                        l10n.memberSearchPrompt,
+                        style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                              color: colors.textSecondary,
+                            ),
+                        textAlign: TextAlign.center,
+                      ),
+                    )
+                  : StreamBuilder<List<Player>>(
+                      stream: _playerService.streamMembersBySearchOptions(
+                        searchToken,
+                      ),
+                      builder: (context, snapshot) {
+                        if (snapshot.connectionState ==
+                                ConnectionState.waiting &&
+                            !snapshot.hasData) {
+                          return const Center(
+                            child: CircularProgressIndicator(),
+                          );
+                        }
 
-                      final members = _filterResults(snapshot.data ?? const []);
+                        final members =
+                            _filterResults(snapshot.data ?? const []);
 
-                      if (members.isEmpty) {
-                        return Center(
-                          child: Text(
-                            l10n.emptyNoData,
-                            style:
-                                Theme.of(context).textTheme.bodyMedium?.copyWith(
-                                      color: colors.textSecondary,
-                                    ),
-                          ),
-                        );
-                      }
+                        if (members.isEmpty) {
+                          return Center(
+                            child: Text(
+                              l10n.emptyNoData,
+                              style: Theme.of(context)
+                                  .textTheme
+                                  .bodyMedium
+                                  ?.copyWith(
+                                    color: colors.textSecondary,
+                                  ),
+                            ),
+                          );
+                        }
 
-                      return ListView.builder(
-                        itemCount: members.length,
-                        itemBuilder: (context, index) {
+                        return ListView.builder(
+                          padding: EdgeInsets.only(bottom: fabBottomPadding),
+                          itemCount: members.length,
+                          itemBuilder: (context, index) {
                           final member = members[index];
                           final name = playerDisplayName(
                             member,
@@ -303,8 +316,9 @@ class _MemberSearchSheetState extends State<MemberSearchSheet> {
                       );
                     },
                   ),
-          ),
-        ],
+            ),
+          ],
+        ),
       ),
     );
   }

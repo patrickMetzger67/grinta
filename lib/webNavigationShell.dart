@@ -16,6 +16,7 @@ import 'widget/app_language_dropdown.dart';
 import 'widget/app_logo.dart';
 import 'widget/account_create_profile_entry.dart';
 import 'widget/edit_member_profile.dart';
+import 'screen/my_unavailabilities_screen.dart';
 import 'widget/nav_icon_count_badge.dart';
 import 'widget/calendar_sync_toggle.dart';
 import 'widget/subscription_details_sheet.dart';
@@ -466,6 +467,7 @@ class _WebNavigationShellState extends State<WebNavigationShell> {
             },
           ),
           _buildEditProfileButton(context),
+          _buildMyUnavailabilitiesButton(context),
           AccountCreateProfileSidebarButton(
             collapsed: _collapsed,
             onTap: () => openAccountCreateProfileFlow(context),
@@ -784,6 +786,74 @@ class _WebNavigationShellState extends State<WebNavigationShell> {
               Expanded(
                 child: Text(
                   context.l10n.actionEditProfile,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: textTheme.bodyLarge?.copyWith(
+                    color: colors.textPrimary,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildMyUnavailabilitiesButton(BuildContext context) {
+    final colors = context.appColors;
+    final textTheme = Theme.of(context).textTheme;
+
+    if (_collapsed) {
+      return Padding(
+        padding: const EdgeInsets.fromLTRB(12, 0, 12, 12),
+        child: Tooltip(
+          message: context.l10n.settingsMyUnavailabilities,
+          child: InkWell(
+            borderRadius: BorderRadius.circular(16),
+            onTap: () => openMyUnavailabilitiesScreen(context),
+            child: Container(
+              width: double.infinity,
+              height: 52,
+              decoration: BoxDecoration(
+                color: colors.card,
+                borderRadius: BorderRadius.circular(16),
+                border: Border.all(color: colors.border),
+              ),
+              child: Icon(
+                Icons.event_busy_outlined,
+                color: colors.primary,
+              ),
+            ),
+          ),
+        ),
+      );
+    }
+
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(12, 0, 12, 12),
+      child: InkWell(
+        borderRadius: BorderRadius.circular(18),
+        onTap: () => openMyUnavailabilitiesScreen(context),
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+          decoration: BoxDecoration(
+            color: colors.card,
+            borderRadius: BorderRadius.circular(18),
+            border: Border.all(color: colors.border),
+          ),
+          child: Row(
+            children: [
+              Icon(
+                Icons.event_busy_outlined,
+                color: colors.primary,
+                size: 22,
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Text(
+                  context.l10n.settingsMyUnavailabilities,
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                   style: textTheme.bodyLarge?.copyWith(

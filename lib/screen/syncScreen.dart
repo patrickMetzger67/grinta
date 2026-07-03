@@ -27,11 +27,11 @@ import '../model/matchCompo.dart';
 import '../model/season.dart';
 import '../model/team.dart';
 import '../model/training.dart';
-import '../services/teamService.dart';
 import '../model/feature_discovery_ids.dart';
 import '../util/app_theme.dart';
 import '../util/french_address_parser.dart';
 import '../widget/feature_discovery_random_banner.dart';
+import '../widget/nav_icon_count_badge.dart';
 
 
 class SyncScreen extends StatefulWidget {
@@ -42,7 +42,6 @@ class SyncScreen extends StatefulWidget {
 }
 
 class _SyncScreenState extends State<SyncScreen> {
-  final TeamService _teamService = TeamService();
   final MatchService _matchService = MatchService();
   final TrackerFieldService _trackerFieldService = TrackerFieldService();
   String? _selectedTeamId;
@@ -415,6 +414,29 @@ class _SyncScreenState extends State<SyncScreen> {
     );
   }
 
+  Widget _buildEventsSectionTitle({
+    required BuildContext context,
+    required AppColors colors,
+    required TextTheme textTheme,
+    required String title,
+    required int count,
+  }) {
+    return Row(
+      children: [
+        Expanded(
+          child: Text(
+            title,
+            style: textTheme.titleMedium?.copyWith(
+              color: colors.textPrimary,
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+        ),
+        CountBadgeLabel(count: count),
+      ],
+    );
+  }
+
   Widget _buildTeamsDropdown({
     required BuildContext context,
     required AppColors colors,
@@ -466,58 +488,32 @@ class _SyncScreenState extends State<SyncScreen> {
       );
     }
 
-    return StreamBuilder<List<Team>>(
-      stream: _teamService.streamTeamsBySeasonIdAndManager(
-        seasonId: seasonId,
-        userId: userId,
-      ),
-      builder: (context, snapshot) {
-        if (snapshot.connectionState == ConnectionState.waiting) {
-          return Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                context.l10n.myTeams,
-                style: textTheme.titleMedium?.copyWith(
-                  color: colors.textPrimary,
-                  fontWeight: FontWeight.w700,
-                ),
-              ),
-              const SizedBox(height: 16),
-              Center(
-                child: CircularProgressIndicator(
-                  color: colors.primary,
-                ),
-              ),
-            ],
-          );
-        }
+    final session = context.watch<AppSession>();
 
-        if (snapshot.hasError) {
-          return Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                context.l10n.myTeams,
-                style: textTheme.titleMedium?.copyWith(
-                  color: colors.textPrimary,
-                  fontWeight: FontWeight.w700,
-                ),
-              ),
-              const SizedBox(height: 8),
-              Text(
-                context.l10n.errorLoadingResource(context.l10n.entityTeams),
-                style: textTheme.bodyMedium?.copyWith(
-                  color: colors.danger,
-                ),
-              ),
-            ],
-          );
-        }
+    if (session.isLoading) {
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            context.l10n.myTeams,
+            style: textTheme.titleMedium?.copyWith(
+              color: colors.textPrimary,
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+          const SizedBox(height: 16),
+          Center(
+            child: CircularProgressIndicator(
+              color: colors.primary,
+            ),
+          ),
+        ],
+      );
+    }
 
-        final teams = snapshot.data ?? [];
+    final teams = session.managerTeamsForSelectedSeason;
 
-        if (teams.isEmpty) {
+    if (teams.isEmpty) {
           return Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -621,369 +617,427 @@ class _SyncScreenState extends State<SyncScreen> {
               },
             ),
             const SizedBox(height: 14),
-            Text(
-              context.l10n.syncMatchesToSync,
-              style: textTheme.titleMedium?.copyWith(
-                color: colors.textPrimary,
-                fontWeight: FontWeight.w700,
-              ),
-            ),
-            const SizedBox(height: 10),
             StreamBuilder<List<match_model.Match>>(
               stream: _matchService.streamMatchesToUploadTrackerData(
                 selectedValue,
               ),
               builder: (context, matchSnapshot) {
                 if (matchSnapshot.connectionState == ConnectionState.waiting) {
-                  return Center(
-                    child: Padding(
-                      padding: const EdgeInsets.all(16),
-                      child: CircularProgressIndicator(
-                        color: colors.primary,
+                  return Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      _buildEventsSectionTitle(
+                        context: context,
+                        colors: colors,
+                        textTheme: textTheme,
+                        title: context.l10n.syncMatchesToSync,
+                        count: 0,
                       ),
-                    ),
+                      const SizedBox(height: 10),
+                      Center(
+                        child: Padding(
+                          padding: const EdgeInsets.all(16),
+                          child: CircularProgressIndicator(
+                            color: colors.primary,
+                          ),
+                        ),
+                      ),
+                    ],
                   );
                 }
 
                 if (matchSnapshot.hasError) {
-                  return Padding(
-                    padding: const EdgeInsets.symmetric(vertical: 8),
-                    child: Text(
-                      context.l10n.errorLoadingResource(context.l10n.entityMatches),
-                      style: textTheme.bodyMedium?.copyWith(
-                        color: colors.danger,
+                  return Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      _buildEventsSectionTitle(
+                        context: context,
+                        colors: colors,
+                        textTheme: textTheme,
+                        title: context.l10n.syncMatchesToSync,
+                        count: 0,
                       ),
-                    ),
+                      const SizedBox(height: 10),
+                      Padding(
+                        padding: const EdgeInsets.symmetric(vertical: 8),
+                        child: Text(
+                          context.l10n.errorLoadingResource(context.l10n.entityMatches),
+                          style: textTheme.bodyMedium?.copyWith(
+                            color: colors.danger,
+                          ),
+                        ),
+                      ),
+                    ],
                   );
                 }
 
                 final matches = matchSnapshot.data ?? <match_model.Match>[];
 
-                if (matches.isEmpty) {
-                  return Container(
-                    width: double.infinity,
-                    padding: const EdgeInsets.all(14),
-                    decoration: BoxDecoration(
-                      color: colors.surface,
-                      borderRadius: BorderRadius.circular(14),
-                      border: Border.all(color: colors.border),
-                    ),
-                    child: Text(
-                      context.l10n.emptyNoPendingMatch,
-                      style: textTheme.bodyMedium?.copyWith(
-                        color: colors.textSecondary,
-                      ),
-                    ),
-                  );
-                }
-
                 return Column(
-                  children: matches.map((match) {
-                    return Card(
-                      color: colors.card,
-                      margin: const EdgeInsets.only(bottom: 12),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(18),
-                        side: BorderSide(color: colors.border),
-                      ),
-                      child: Padding(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    _buildEventsSectionTitle(
+                      context: context,
+                      colors: colors,
+                      textTheme: textTheme,
+                      title: context.l10n.syncMatchesToSync,
+                      count: matches.length,
+                    ),
+                    const SizedBox(height: 10),
+                    if (matches.isEmpty)
+                      Container(
+                        width: double.infinity,
                         padding: const EdgeInsets.all(14),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              '${match.team1 ?? ''} vs ${match.team2 ?? ''}',
-                              style: textTheme.bodyLarge?.copyWith(
-                                color: colors.textPrimary,
-                                fontWeight: FontWeight.w700,
-                              ),
+                        decoration: BoxDecoration(
+                          color: colors.surface,
+                          borderRadius: BorderRadius.circular(14),
+                          border: Border.all(color: colors.border),
+                        ),
+                        child: Text(
+                          context.l10n.emptyNoPendingMatch,
+                          style: textTheme.bodyMedium?.copyWith(
+                            color: colors.textSecondary,
+                          ),
+                        ),
+                      )
+                    else
+                      Column(
+                        children: matches.map((match) {
+                          return Card(
+                            color: colors.card,
+                            margin: const EdgeInsets.only(bottom: 12),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(18),
+                              side: BorderSide(color: colors.border),
                             ),
-                            const SizedBox(height: 8),
-                            Row(
-                              children: [
-                                Icon(
-                                  Icons.calendar_today_outlined,
-                                  size: 16,
-                                  color: colors.primary,
-                                ),
-                                const SizedBox(width: 8),
-                                Expanded(
-                                  child: Text(
-                                    '${match.dateCh ?? '-'} ${match.timeCh ?? ''}',
-                                    style: textTheme.bodyMedium?.copyWith(
-                                      color: colors.textSecondary,
+                            child: Padding(
+                              padding: const EdgeInsets.all(14),
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    '${match.team1 ?? ''} vs ${match.team2 ?? ''}',
+                                    style: textTheme.bodyLarge?.copyWith(
+                                      color: colors.textPrimary,
+                                      fontWeight: FontWeight.w700,
                                     ),
                                   ),
-                                ),
-                              ],
-                            ),
-                            const SizedBox(height: 6),
-                            Row(
-                              children: [
-                                Icon(
-                                  Icons.location_on_outlined,
-                                  size: 16,
-                                  color: colors.primary,
-                                ),
-                                const SizedBox(width: 8),
-                                Expanded(
-                                  child: Text(
-                                    match.nomDuTerrain?.isNotEmpty == true
-                                        ? match.nomDuTerrain!
-                                        : (match.terrainAdresse1?.isNotEmpty == true
-                                        ? match.terrainAdresse1!
-                                        : '-'),
-                                    style: textTheme.bodyMedium?.copyWith(
-                                      color: colors.textSecondary,
-                                    ),
-                                  ),
-                                ),
-                              ],
-                            ),
-                            const SizedBox(height: 10),
-                            UploadTrackerButton(
-                              onPressed: () async {
-                                try {
-                                  final owner = await OwnerService().getOwnerById(match.ownerId!);
-
-                                  if (owner != null && owner.typeTracker == "inspirit") {
-                                    final matchCompo = await MatchCompoService()
-                                        .getFirstMatchCompoByMatchId(match.id!);
-
-                                    if (matchCompo == null) {
-                                      debugPrint('matchCompo introuvable');
-                                      return;
-                                    }
-
-                                    final ownerDevices =
-                                        await DeviceOwnerService()
-                                            .getByOwnerId(owner.id);
-                                    final ownerDevicesByDocId = {
-                                      for (final od in ownerDevices) od.id: od,
-                                    };
-
-                                    final devicePlayerMap =
-                                        await _buildMatchDevicePlayerMap(
-                                      matchCompo: matchCompo,
-                                      ownerDevicesByDocId: ownerDevicesByDocId,
-                                      seasonId: currentSeason?.ref?.id,
-                                    );
-                                    final trackerIdsToSend =
-                                        _sortTrackerIds(devicePlayerMap.keys);
-
-                                    if (!mounted) return;
-
-                                    if (trackerIdsToSend.isEmpty) {
-                                      ScaffoldMessenger.of(context).showSnackBar(
-                                        SnackBar(
-                                          content: Text(
-                                            context.l10n.syncNoDeviceForMatch,
+                                  const SizedBox(height: 8),
+                                  Row(
+                                    children: [
+                                      Icon(
+                                        Icons.calendar_today_outlined,
+                                        size: 16,
+                                        color: colors.primary,
+                                      ),
+                                      const SizedBox(width: 8),
+                                      Expanded(
+                                        child: Text(
+                                          '${match.dateCh ?? '-'} ${match.timeCh ?? ''}',
+                                          style: textTheme.bodyMedium?.copyWith(
+                                            color: colors.textSecondary,
                                           ),
                                         ),
-                                      );
-                                      return;
-                                    }
+                                      ),
+                                    ],
+                                  ),
+                                  const SizedBox(height: 6),
+                                  Row(
+                                    children: [
+                                      Icon(
+                                        Icons.location_on_outlined,
+                                        size: 16,
+                                        color: colors.primary,
+                                      ),
+                                      const SizedBox(width: 8),
+                                      Expanded(
+                                        child: Text(
+                                          match.nomDuTerrain?.isNotEmpty == true
+                                              ? match.nomDuTerrain!
+                                              : (match.terrainAdresse1?.isNotEmpty == true
+                                              ? match.terrainAdresse1!
+                                              : '-'),
+                                          style: textTheme.bodyMedium?.copyWith(
+                                            color: colors.textSecondary,
+                                          ),
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                  const SizedBox(height: 10),
+                                  UploadTrackerButton(
+                                    onPressed: () async {
+                                      try {
+                                        final owner = await OwnerService().getOwnerById(match.ownerId!);
 
-                                    final fieldGpsCorners =
-                                        await _ensureMatchFieldGpsCorners(match);
-                                    if (fieldGpsCorners == null || !mounted) {
-                                      return;
-                                    }
+                                        if (owner != null && owner.typeTracker == "inspirit") {
+                                          final matchCompo = await MatchCompoService()
+                                              .getFirstMatchCompoByMatchId(match.id!);
 
-                                    await _openMatchTrackerHub(
-                                      match: match,
-                                      trackerIdsToSend: trackerIdsToSend,
-                                      devicePlayerMap: devicePlayerMap,
-                                      fieldGpsCorners: fieldGpsCorners,
-                                    );
-                                  }
-                                } catch (e, st) {
-                                  debugPrint('Erreur upload match: $e');
-                                  debugPrintStack(stackTrace: st);
-                                }
-                              },
+                                          if (matchCompo == null) {
+                                            debugPrint('matchCompo introuvable');
+                                            return;
+                                          }
+
+                                          final ownerDevices =
+                                              await DeviceOwnerService()
+                                                  .getByOwnerId(owner.id);
+                                          final ownerDevicesByDocId = {
+                                            for (final od in ownerDevices) od.id: od,
+                                          };
+
+                                          final devicePlayerMap =
+                                              await _buildMatchDevicePlayerMap(
+                                            matchCompo: matchCompo,
+                                            ownerDevicesByDocId: ownerDevicesByDocId,
+                                            seasonId: currentSeason?.ref?.id,
+                                          );
+                                          final trackerIdsToSend =
+                                              _sortTrackerIds(devicePlayerMap.keys);
+
+                                          if (!mounted) return;
+
+                                          if (trackerIdsToSend.isEmpty) {
+                                            ScaffoldMessenger.of(context).showSnackBar(
+                                              SnackBar(
+                                                content: Text(
+                                                  context.l10n.syncNoDeviceForMatch,
+                                                ),
+                                              ),
+                                            );
+                                            return;
+                                          }
+
+                                          final fieldGpsCorners =
+                                              await _ensureMatchFieldGpsCorners(match);
+                                          if (fieldGpsCorners == null || !mounted) {
+                                            return;
+                                          }
+
+                                          await _openMatchTrackerHub(
+                                            match: match,
+                                            trackerIdsToSend: trackerIdsToSend,
+                                            devicePlayerMap: devicePlayerMap,
+                                            fieldGpsCorners: fieldGpsCorners,
+                                          );
+                                        }
+                                      } catch (e, st) {
+                                        debugPrint('Erreur upload match: $e');
+                                        debugPrintStack(stackTrace: st);
+                                      }
+                                    },
+                                  ),
+                                ],
+                              ),
                             ),
-                          ],
-                        ),
+                          );
+                        }).toList(),
                       ),
-                    );
-                  }).toList(),
+                  ],
                 );
               },
             ),
             const SizedBox(height: 14),
-            Text(
-              context.l10n.syncTrainingsToSync,
-              style: textTheme.titleMedium?.copyWith(
-                color: colors.textPrimary,
-                fontWeight: FontWeight.w700,
-              ),
-            ),
-            const SizedBox(height: 10),
             StreamBuilder<List<Training>>(
               stream: TrainingService().streamTrainingsToUploadTrackerData(
                 selectedValue,
               ),
               builder: (context, trainingSnapshot) {
                 if (trainingSnapshot.connectionState == ConnectionState.waiting) {
-                  return Center(
-                    child: Padding(
-                      padding: const EdgeInsets.all(16),
-                      child: CircularProgressIndicator(
-                        color: colors.primary,
+                  return Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      _buildEventsSectionTitle(
+                        context: context,
+                        colors: colors,
+                        textTheme: textTheme,
+                        title: context.l10n.syncTrainingsToSync,
+                        count: 0,
                       ),
-                    ),
+                      const SizedBox(height: 10),
+                      Center(
+                        child: Padding(
+                          padding: const EdgeInsets.all(16),
+                          child: CircularProgressIndicator(
+                            color: colors.primary,
+                          ),
+                        ),
+                      ),
+                    ],
                   );
                 }
 
                 if (trainingSnapshot.hasError) {
-                  return Padding(
-                    padding: const EdgeInsets.symmetric(vertical: 8),
-                    child: Text(
-                      context.l10n.errorLoadingResource(context.l10n.entityTrainings),
-                      style: textTheme.bodyMedium?.copyWith(
-                        color: colors.danger,
+                  return Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      _buildEventsSectionTitle(
+                        context: context,
+                        colors: colors,
+                        textTheme: textTheme,
+                        title: context.l10n.syncTrainingsToSync,
+                        count: 0,
                       ),
-                    ),
+                      const SizedBox(height: 10),
+                      Padding(
+                        padding: const EdgeInsets.symmetric(vertical: 8),
+                        child: Text(
+                          context.l10n.errorLoadingResource(context.l10n.entityTrainings),
+                          style: textTheme.bodyMedium?.copyWith(
+                            color: colors.danger,
+                          ),
+                        ),
+                      ),
+                    ],
                   );
                 }
 
                 final trainings = trainingSnapshot.data ?? <Training>[];
 
-                if (trainings.isEmpty) {
-                  return Container(
-                    width: double.infinity,
-                    padding: const EdgeInsets.all(14),
-                    decoration: BoxDecoration(
-                      color: colors.surface,
-                      borderRadius: BorderRadius.circular(14),
-                      border: Border.all(color: colors.border),
-                    ),
-                    child: Text(
-                      context.l10n.emptyNoPendingTraining,
-                      style: textTheme.bodyMedium?.copyWith(
-                        color: colors.textSecondary,
-                      ),
-                    ),
-                  );
-                }
-
                 return Column(
-                  children: trainings.map((training) {
-                    return Card(
-                      color: colors.card,
-                      margin: const EdgeInsets.only(bottom: 12),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(18),
-                        side: BorderSide(color: colors.border),
-                      ),
-                      child: Padding(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    _buildEventsSectionTitle(
+                      context: context,
+                      colors: colors,
+                      textTheme: textTheme,
+                      title: context.l10n.syncTrainingsToSync,
+                      count: trainings.length,
+                    ),
+                    const SizedBox(height: 10),
+                    if (trainings.isEmpty)
+                      Container(
+                        width: double.infinity,
                         padding: const EdgeInsets.all(14),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              context.l10n.entityTraining,
-                              style: textTheme.bodyLarge?.copyWith(
-                                color: colors.textPrimary,
-                                fontWeight: FontWeight.w700,
-                              ),
+                        decoration: BoxDecoration(
+                          color: colors.surface,
+                          borderRadius: BorderRadius.circular(14),
+                          border: Border.all(color: colors.border),
+                        ),
+                        child: Text(
+                          context.l10n.emptyNoPendingTraining,
+                          style: textTheme.bodyMedium?.copyWith(
+                            color: colors.textSecondary,
+                          ),
+                        ),
+                      )
+                    else
+                      Column(
+                        children: trainings.map((training) {
+                          return Card(
+                            color: colors.card,
+                            margin: const EdgeInsets.only(bottom: 12),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(18),
+                              side: BorderSide(color: colors.border),
                             ),
-                            const SizedBox(height: 8),
-                            Row(
-                              children: [
-                                Icon(
-                                  Icons.calendar_today_outlined,
-                                  size: 16,
-                                  color: colors.primary,
-                                ),
-                                const SizedBox(width: 8),
-                                Expanded(
-                                  child: Text(
-                                    '${training.dateTg ?? '-'} ${training.startTime ?? ''}',
-                                    style: textTheme.bodyMedium?.copyWith(
-                                      color: colors.textSecondary,
+                            child: Padding(
+                              padding: const EdgeInsets.all(14),
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    context.l10n.entityTraining,
+                                    style: textTheme.bodyLarge?.copyWith(
+                                      color: colors.textPrimary,
+                                      fontWeight: FontWeight.w700,
                                     ),
                                   ),
-                                ),
-                              ],
-                            ),
-                            const SizedBox(height: 6),
-                            Row(
-                              children: [
-                                Icon(
-                                  Icons.sports_soccer_outlined,
-                                  size: 16,
-                                  color: colors.primary,
-                                ),
-                                const SizedBox(width: 8),
-                              ],
-                            ),
-                            const SizedBox(height: 10),
-                            UploadTrackerButton(
-                              onPressed: () async {
-                                try {
-
-                                  final owner = await OwnerService()
-                                      .getOwnerById(training.ownerId!);
-                                  if (owner != null &&
-                                      owner.typeTracker == 'inspirit') {
-                                    final seasonId = currentSeason?.ref?.id;
-                                    if (seasonId == null || seasonId.isEmpty) {
-                                      return;
-                                    }
-
-                                    final ownerDevices =
-                                        await DeviceOwnerService()
-                                            .getByOwnerId(owner.id);
-                                    final ownerDevicesByDocId = {
-                                      for (final od in ownerDevices) od.id: od,
-                                    };
-
-                                    final devicePlayerMap =
-                                        await _buildTrainingDevicePlayerMap(
-                                      training: training,
-                                      ownerDevicesByDocId: ownerDevicesByDocId,
-                                      seasonId: seasonId,
-                                    );
-                                    final trackerIdsToSend =
-                                        _sortTrackerIds(devicePlayerMap.keys);
-
-                                    if (!mounted) return;
-
-                                    if (trackerIdsToSend.isEmpty) {
-                                      ScaffoldMessenger.of(context).showSnackBar(
-                                        SnackBar(
-                                          content: Text(
-                                            context.l10n.syncNoDeviceForTraining,
+                                  const SizedBox(height: 8),
+                                  Row(
+                                    children: [
+                                      Icon(
+                                        Icons.calendar_today_outlined,
+                                        size: 16,
+                                        color: colors.primary,
+                                      ),
+                                      const SizedBox(width: 8),
+                                      Expanded(
+                                        child: Text(
+                                          '${training.dateTg ?? '-'} ${training.startTime ?? ''}',
+                                          style: textTheme.bodyMedium?.copyWith(
+                                            color: colors.textSecondary,
                                           ),
                                         ),
-                                      );
-                                      return;
-                                    }
+                                      ),
+                                    ],
+                                  ),
+                                  const SizedBox(height: 6),
+                                  Row(
+                                    children: [
+                                      Icon(
+                                        Icons.sports_soccer_outlined,
+                                        size: 16,
+                                        color: colors.primary,
+                                      ),
+                                      const SizedBox(width: 8),
+                                    ],
+                                  ),
+                                  const SizedBox(height: 10),
+                                  UploadTrackerButton(
+                                    onPressed: () async {
+                                      try {
 
-                                    await _openTrainingTrackerHub(
-                                      training: training,
-                                      trackerIdsToSend: trackerIdsToSend,
-                                      devicePlayerMap: devicePlayerMap,
-                                    );
-                                  }
-                                } catch (e) {
-                                  debugPrint('Erreur upload training: $e');
-                                }
-                              },
+                                        final owner = await OwnerService()
+                                            .getOwnerById(training.ownerId!);
+                                        if (owner != null &&
+                                            owner.typeTracker == 'inspirit') {
+                                          final seasonId = currentSeason?.ref?.id;
+                                          if (seasonId == null || seasonId.isEmpty) {
+                                            return;
+                                          }
+
+                                          final ownerDevices =
+                                              await DeviceOwnerService()
+                                                  .getByOwnerId(owner.id);
+                                          final ownerDevicesByDocId = {
+                                            for (final od in ownerDevices) od.id: od,
+                                          };
+
+                                          final devicePlayerMap =
+                                              await _buildTrainingDevicePlayerMap(
+                                            training: training,
+                                            ownerDevicesByDocId: ownerDevicesByDocId,
+                                            seasonId: seasonId,
+                                          );
+                                          final trackerIdsToSend =
+                                              _sortTrackerIds(devicePlayerMap.keys);
+
+                                          if (!mounted) return;
+
+                                          if (trackerIdsToSend.isEmpty) {
+                                            ScaffoldMessenger.of(context).showSnackBar(
+                                              SnackBar(
+                                                content: Text(
+                                                  context.l10n.syncNoDeviceForTraining,
+                                                ),
+                                              ),
+                                            );
+                                            return;
+                                          }
+
+                                          await _openTrainingTrackerHub(
+                                            training: training,
+                                            trackerIdsToSend: trackerIdsToSend,
+                                            devicePlayerMap: devicePlayerMap,
+                                          );
+                                        }
+                                      } catch (e) {
+                                        debugPrint('Erreur upload training: $e');
+                                      }
+                                    },
+                                  ),
+                                ],
+                              ),
                             ),
-                          ],
-                        ),
+                          );
+                        }).toList(),
                       ),
-                    );
-                  }).toList(),
+                  ],
                 );
               },
             )
           ],
         );
-      },
-    );
   }
 }

@@ -26,6 +26,7 @@ import 'package:grinta/services/feature_discovery_service.dart';
 import 'package:grinta/widget/app_shell_scope.dart';
 import 'package:grinta/widget/account_create_profile_entry.dart';
 import 'package:grinta/widget/edit_member_profile.dart';
+import 'package:grinta/screen/my_unavailabilities_screen.dart';
 import 'package:grinta/widget/nav_icon_count_badge.dart';
 import 'package:grinta/widget/calendar_sync_toggle.dart';
 import 'package:grinta/widget/subscription_details_sheet.dart';
@@ -380,6 +381,25 @@ class _MobileNavigationShellState extends State<MobileNavigationShell> {
                           sheetContext,
                         );
                       },
+                    );
+                  },
+                ),
+                ListTile(
+                  leading: Icon(
+                    Icons.event_busy_outlined,
+                    color: colors.primary,
+                  ),
+                  title: Text(
+                    l10n.settingsMyUnavailabilities,
+                    style: TextStyle(
+                      color: colors.textPrimary,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                  onTap: () {
+                    closeSheetThen(
+                      () => openMyUnavailabilitiesScreen(context),
+                      sheetContext,
                     );
                   },
                 ),

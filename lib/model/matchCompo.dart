@@ -110,6 +110,9 @@ class PlayerConvo {
 class MatchCompo {
 
   String? matchID;
+  String? get matchId => matchID;
+  set matchId(String? value) => matchID = value;
+
   String? seasonID;
   String? compoTypeID;
   String? teamID;

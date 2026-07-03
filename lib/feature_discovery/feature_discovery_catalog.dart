@@ -113,6 +113,7 @@ const Set<String> _mobileOffShellIds = <String>{
 
 const Set<String> _matchDetailTabIds = <String>{
   FeatureDiscoveryIds.matchDetailTabCompo,
+  FeatureDiscoveryIds.matchDetailTabConvocations,
   FeatureDiscoveryIds.matchDetailTabTacticalSchema,
   FeatureDiscoveryIds.matchDetailTabHighlights,
   FeatureDiscoveryIds.matchDetailTabStats,

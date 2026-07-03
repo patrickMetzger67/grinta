@@ -369,6 +369,17 @@ class AppLocalizationsEn extends AppLocalizations {
   String get actionEditProfile => 'Edit profile';
 
   @override
+  String get settingsMyUnavailabilities => 'My unavailabilities';
+
+  @override
+  String get myUnavailabilitiesNoPlayer =>
+      'No player profile linked to your account.';
+
+  @override
+  String get myUnavailabilitiesNoSeason =>
+      'No season selected. Choose a season from the account menu.';
+
+  @override
   String get actionCreateNewProfile => 'Create a new profile';
 
   @override
@@ -744,6 +755,155 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get tabCompo => 'Composition';
+
+  @override
+  String get tabConvocations => 'Call-ups';
+
+  @override
+  String get tabConvocationsShort => 'Calls';
+
+  @override
+  String get matchConvocationsSaved => 'Call-ups saved';
+
+  @override
+  String get matchConvocationsUnavailable =>
+      'Call-ups unavailable for this match';
+
+  @override
+  String get matchPlayerUnavailableOnMatchDate => 'Unavailable on match date';
+
+  @override
+  String get matchPlayerCannotConvokeUnavailable =>
+      'This player is unavailable on the match date and cannot be called up.';
+
+  @override
+  String get matchConvocationsStatusPresent => 'Confirmed';
+
+  @override
+  String get matchConvocationsStatusPending => 'Awaiting response';
+
+  @override
+  String get matchConvocationsSendAction => 'Send call-ups';
+
+  @override
+  String get matchConvocationsSendTitle => 'Send call-ups';
+
+  @override
+  String matchConvocationsSendSubtitle(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count players called up',
+      one: '1 player called up',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get matchConvocationsSendMessage => 'Message';
+
+  @override
+  String get matchConvocationsSendMessageHint =>
+      'Additional information for players';
+
+  @override
+  String get matchConvocationsSendMessageRequired => 'Enter a message';
+
+  @override
+  String get matchConvocationsSendTime => 'Call-up time';
+
+  @override
+  String get matchConvocationsSendAddress => 'Call-up address';
+
+  @override
+  String get matchConvocationsSendAddressHint => 'Meeting point';
+
+  @override
+  String get matchConvocationsSendAddressRequired => 'Enter an address';
+
+  @override
+  String get matchConvocationsSendSubmit => 'Send';
+
+  @override
+  String matchConvocationsSendSuccess(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count call-ups sent',
+      one: '1 call-up sent',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String matchConvocationsSendSkippedNoAccount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count players without a linked account',
+      one: '1 player without a linked account',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String matchConvocationsSendSkippedNoPush(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count players without a push notification',
+      one: '1 player without a push notification',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get matchConvocationsSendNoRecipients =>
+      'No called-up player has a linked Grinta account.';
+
+  @override
+  String matchConvocationsSendError(String error) {
+    return 'Send failed: $error';
+  }
+
+  @override
+  String get matchConvocationsSendErrorAuth => 'Sign in to send call-ups.';
+
+  @override
+  String matchConvocationsSendDateTimeValue(String date, String time) {
+    return '$date at $time';
+  }
+
+  @override
+  String matchConvocationsSendMatchLine(String opponent) {
+    return 'Match: $opponent';
+  }
+
+  @override
+  String matchConvocationsSendTimeLine(String time) {
+    return 'Time: $time';
+  }
+
+  @override
+  String matchConvocationsSendAddressLine(String address) {
+    return 'Address: $address';
+  }
+
+  @override
+  String matchConvocationNotificationTitle(String opponent) {
+    return 'Call-up · $opponent';
+  }
+
+  @override
+  String matchConvocationNotificationBody(String opponent, String time) {
+    return '$opponent · Meet at $time';
+  }
+
+  @override
+  String matchConvocationNotificationBodyWithMessage(
+      String opponent, String time, String message) {
+    return '$opponent · Meet at $time · $message';
+  }
 
   @override
   String get tabTacticalSchema => 'Tactical setup';
@@ -1697,6 +1857,169 @@ class AppLocalizationsEn extends AppLocalizations {
       'Goals, cards and substitutions will appear here.';
 
   @override
+  String get matchHighlightsSourceFmi => 'FMI highlights';
+
+  @override
+  String get matchHighlightsSourceGrinta => 'Grinta highlights';
+
+  @override
+  String get matchHighlightsGrintaPlaceholderMessage =>
+      'To be detailed together later.';
+
+  @override
+  String get matchGrintaHighlightsAddAction => 'Add highlight';
+
+  @override
+  String get matchGrintaHighlightsPickTypeTitle => 'Choose highlight type';
+
+  @override
+  String get matchGrintaHighlightsPickTimeEventTitle => 'Choose time event';
+
+  @override
+  String get matchGrintaHighlightsEmptyMessage =>
+      'Start with kick-off using the + button.';
+
+  @override
+  String get matchGrintaHighlightsDetailsComingSoon =>
+      'Details for this highlight are coming soon.';
+
+  @override
+  String get matchGrintaHighlightsActionTimeEvent => 'Time event';
+
+  @override
+  String get matchGrintaHighlightsAllTimeEventsRecorded =>
+      'All time events have already been recorded for this match.';
+
+  @override
+  String get matchGrintaHighlightDeleteConfirmTitle => 'Delete highlight?';
+
+  @override
+  String matchGrintaHighlightDeleteConfirmMessage(String highlightLabel) {
+    return 'Are you sure you want to delete \"$highlightLabel\"? This action is permanent.';
+  }
+
+  @override
+  String get matchGrintaHighlightDeleted => 'Highlight deleted';
+
+  @override
+  String get matchGoalAddTitle => 'Record a goal';
+
+  @override
+  String get matchGoalPickTeamTitle => 'Which team scored?';
+
+  @override
+  String get matchGoalPickScorerTitle => 'Scorer';
+
+  @override
+  String get matchGoalPickAssisterTitle => 'Assister (optional)';
+
+  @override
+  String get matchGoalNoAssister => 'No assister';
+
+  @override
+  String get matchGoalOpponentJerseyTitle => 'Scorer jersey number (optional)';
+
+  @override
+  String get matchGoalOpponentJerseyHint => 'e.g. 10';
+
+  @override
+  String get matchGoalScorerRequired => 'Select a scorer.';
+
+  @override
+  String get matchGoalInvalidJerseyNumber => 'Enter a valid jersey number.';
+
+  @override
+  String get matchGoalMinuteTitle => 'Minute';
+
+  @override
+  String get matchGoalMinuteHint => 'e.g. 67';
+
+  @override
+  String get matchGoalInvalidMinute => 'Enter a minute of at least 1.';
+
+  @override
+  String get matchGoalSelectScorer => 'Select a scorer';
+
+  @override
+  String get matchGoalSelectAssister => 'Select an assister';
+
+  @override
+  String get matchCardYellowAddTitle => 'Record a yellow card';
+
+  @override
+  String get matchCardRedAddTitle => 'Record a red card';
+
+  @override
+  String get matchCardPickTeamTitle => 'Which team received the card?';
+
+  @override
+  String get matchCardPickPlayerTitle => 'Player';
+
+  @override
+  String get matchCardSelectPlayer => 'Select a player';
+
+  @override
+  String get matchCardPlayerRequired => 'Select a player.';
+
+  @override
+  String get matchCardOpponentJerseyTitle => 'Player jersey number (optional)';
+
+  @override
+  String get matchCardOpponentJerseyHint => 'e.g. 10';
+
+  @override
+  String get matchSubstitutionAddTitle => 'Record a substitution';
+
+  @override
+  String get matchSubstitutionPickTeamTitle => 'Which team made the change?';
+
+  @override
+  String get matchSubstitutionPickOutgoingTitle => 'Player off';
+
+  @override
+  String get matchSubstitutionPickIncomingTitle => 'Player on';
+
+  @override
+  String get matchSubstitutionSelectOutgoing => 'Select player off';
+
+  @override
+  String get matchSubstitutionSelectIncoming => 'Select player on';
+
+  @override
+  String get matchSubstitutionOutgoingRequired =>
+      'Select the player coming off.';
+
+  @override
+  String get matchSubstitutionIncomingRequired =>
+      'Select the player coming on.';
+
+  @override
+  String get matchSubstitutionSamePlayerError =>
+      'The two players must be different.';
+
+  @override
+  String get matchSubstitutionOpponentOutgoingJerseyTitle =>
+      'Player off jersey number (optional)';
+
+  @override
+  String get matchSubstitutionOpponentIncomingJerseyTitle =>
+      'Player on jersey number (optional)';
+
+  @override
+  String highlightGoalScored(String scorer) {
+    return 'Goal — $scorer';
+  }
+
+  @override
+  String get highlightTimeHalfTime => 'Half-time';
+
+  @override
+  String get highlightTimeSecondHalf => 'Second half';
+
+  @override
+  String get highlightTimeStartExtraTime => 'Extra time';
+
+  @override
   String get highlightTypeGoal => 'Aim';
 
   @override
@@ -1707,6 +2030,16 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get highlightTypeRedCard => 'Red card';
+
+  @override
+  String highlightYellowCardShown(String player) {
+    return 'Yellow card — $player';
+  }
+
+  @override
+  String highlightRedCardShown(String player) {
+    return 'Red card — $player';
+  }
 
   @override
   String get highlightTypeOwnGoal => 'Own goal';
@@ -2782,4 +3115,244 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get createTrainingRecurrentConfirmMessage =>
       'Do you want to create the recurring sessions?';
+
+  @override
+  String get editTrainingTitle => 'Edit training';
+
+  @override
+  String get editTrainingSubmit => 'Save changes';
+
+  @override
+  String get editTrainingSaved => 'Training updated';
+
+  @override
+  String get editTrainingError =>
+      'Could not update the training. Please try again.';
+
+  @override
+  String get trainingDeleteConfirmTitle => 'Delete training?';
+
+  @override
+  String get trainingDeleteConfirmMessage =>
+      'Are you sure you want to delete this training? This action is permanent.';
+
+  @override
+  String get trainingDeleted => 'Training deleted';
+
+  @override
+  String get trainingDeleteError =>
+      'Could not delete the training. Please try again.';
+
+  @override
+  String get finishTrainingTitle => 'Finish training';
+
+  @override
+  String get trainingFinishConfirmTitle => 'Finish training?';
+
+  @override
+  String get trainingFinishConfirmMessage =>
+      'Unavailable players marked as present will be set to absent. Do you want to finish this training?';
+
+  @override
+  String get trainingFinished => 'Training finished';
+
+  @override
+  String get trainingFinishError =>
+      'Could not finish the training. Please try again.';
+
+  @override
+  String get createMatchTitle => 'New match';
+
+  @override
+  String get createMatchTeam => 'Team';
+
+  @override
+  String get createMatchTeamRequired => 'Select a team';
+
+  @override
+  String get createMatchHome => 'Home match';
+
+  @override
+  String get createMatchFriendly => 'Friendly match';
+
+  @override
+  String get createMatchDate => 'Date';
+
+  @override
+  String get createMatchTime => 'Time';
+
+  @override
+  String get createMatchDuration => 'Duration';
+
+  @override
+  String createMatchDurationMinutes(int minutes) {
+    return '$minutes min';
+  }
+
+  @override
+  String get createMatchOpponent => 'Opponent';
+
+  @override
+  String get createMatchSelectOpponentClub => 'Search for a club';
+
+  @override
+  String get createMatchClubNotFound => 'Club not found';
+
+  @override
+  String get createMatchOpponentNameManual => 'Opponent name';
+
+  @override
+  String get createMatchOpponentRequired => 'Enter the opponent';
+
+  @override
+  String get createMatchVenue => 'Venue / field address';
+
+  @override
+  String get createMatchWithTracker => 'With GPS tracker';
+
+  @override
+  String get createMatchSelectOwner => 'Tracker kit (owner)';
+
+  @override
+  String get createMatchOwnerRequired => 'Select a tracker owner';
+
+  @override
+  String get createMatchNoOwners => 'No tracker kit is assigned to this team.';
+
+  @override
+  String get createMatchNoManagedTeams =>
+      'You do not manage any team for this season.';
+
+  @override
+  String get createMatchSaved => 'Match created';
+
+  @override
+  String get createMatchError =>
+      'Could not create the match. Please try again.';
+
+  @override
+  String get createMatchSubmit => 'Create match';
+
+  @override
+  String get editMatchTitle => 'Edit match';
+
+  @override
+  String get editMatchSubmit => 'Save changes';
+
+  @override
+  String get editMatchSaved => 'Match updated';
+
+  @override
+  String get editMatchError => 'Could not update the match. Please try again.';
+
+  @override
+  String get matchDeleteConfirmTitle => 'Delete match?';
+
+  @override
+  String get matchDeleteConfirmMessage =>
+      'Are you sure you want to delete this match? This action is permanent.';
+
+  @override
+  String get matchRemoveFromTeamConfirmTitle => 'Remove match from calendar?';
+
+  @override
+  String get matchRemoveFromTeamConfirmMessage =>
+      'This will remove the match from your team\'s calendar. The match will remain for other teams.';
+
+  @override
+  String get matchDeleted => 'Match deleted';
+
+  @override
+  String get matchRemovedFromTeam => 'Match removed from your team\'s calendar';
+
+  @override
+  String get matchDeleteError =>
+      'Could not delete the match. Please try again.';
+
+  @override
+  String get teamDetailManageUnavailabilities => 'Manage unavailabilities';
+
+  @override
+  String get manageUnavailabilitiesTitle => 'Unavailabilities';
+
+  @override
+  String get manageUnavailabilitiesEmpty =>
+      'No unavailabilities for this season.';
+
+  @override
+  String get manageUnavailabilitiesAdd => 'Add unavailability';
+
+  @override
+  String get manageUnavailabilitiesEditTitle => 'Edit unavailability';
+
+  @override
+  String get manageUnavailabilitiesFromDate => 'From';
+
+  @override
+  String get manageUnavailabilitiesToDate => 'To';
+
+  @override
+  String get manageUnavailabilitiesType => 'Type';
+
+  @override
+  String get manageUnavailabilitiesDetails => 'Details';
+
+  @override
+  String get manageUnavailabilitiesDetailsHint => 'Optional details';
+
+  @override
+  String get manageUnavailabilitiesVisible => 'Visible to team';
+
+  @override
+  String get manageUnavailabilitiesVisibleHint =>
+      'If disabled, only managers can see this entry';
+
+  @override
+  String manageUnavailabilitiesDateRange(String from, String to) {
+    return '$from – $to';
+  }
+
+  @override
+  String get manageUnavailabilitiesHidden => 'Hidden';
+
+  @override
+  String get manageUnavailabilitiesSaved => 'Unavailability saved';
+
+  @override
+  String get manageUnavailabilitiesDeleted => 'Unavailability deleted';
+
+  @override
+  String get manageUnavailabilitiesError =>
+      'Could not save unavailability. Please try again.';
+
+  @override
+  String get manageUnavailabilitiesDeleteError =>
+      'Could not delete unavailability. Please try again.';
+
+  @override
+  String get manageUnavailabilitiesDeleteConfirmTitle =>
+      'Delete unavailability?';
+
+  @override
+  String get manageUnavailabilitiesDeleteConfirmMessage =>
+      'This action is permanent.';
+
+  @override
+  String get manageUnavailabilitiesInvalidRange =>
+      'End date must not be before start date';
+
+  @override
+  String get manageUnavailabilitiesTypeRequired => 'Please select a type';
+
+  @override
+  String get unavailabilityTypeHoliday => 'Holiday';
+
+  @override
+  String get unavailabilityTypeUnwell => 'Unwell';
+
+  @override
+  String get unavailabilityTypeInjured => 'Injured';
+
+  @override
+  String get unavailabilityTypeOther => 'Other';
 }

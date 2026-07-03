@@ -777,6 +777,24 @@ abstract class AppLocalizations {
   /// **'Modifier mon profil'**
   String get actionEditProfile;
 
+  /// No description provided for @settingsMyUnavailabilities.
+  ///
+  /// In fr, this message translates to:
+  /// **'Mes indisponibilités'**
+  String get settingsMyUnavailabilities;
+
+  /// No description provided for @myUnavailabilitiesNoPlayer.
+  ///
+  /// In fr, this message translates to:
+  /// **'Aucun profil joueur lié à ton compte.'**
+  String get myUnavailabilitiesNoPlayer;
+
+  /// No description provided for @myUnavailabilitiesNoSeason.
+  ///
+  /// In fr, this message translates to:
+  /// **'Aucune saison sélectionnée. Choisis une saison dans le menu compte.'**
+  String get myUnavailabilitiesNoSeason;
+
   /// No description provided for @actionCreateNewProfile.
   ///
   /// In fr, this message translates to:
@@ -1454,6 +1472,199 @@ abstract class AppLocalizations {
   /// In fr, this message translates to:
   /// **'Compo'**
   String get tabCompo;
+
+  /// No description provided for @tabConvocations.
+  ///
+  /// In fr, this message translates to:
+  /// **'Convocations'**
+  String get tabConvocations;
+
+  /// No description provided for @tabConvocationsShort.
+  ///
+  /// In fr, this message translates to:
+  /// **'Convo'**
+  String get tabConvocationsShort;
+
+  /// No description provided for @matchConvocationsSaved.
+  ///
+  /// In fr, this message translates to:
+  /// **'Convocations enregistrées'**
+  String get matchConvocationsSaved;
+
+  /// No description provided for @matchConvocationsUnavailable.
+  ///
+  /// In fr, this message translates to:
+  /// **'Convocations indisponibles pour ce match'**
+  String get matchConvocationsUnavailable;
+
+  /// No description provided for @matchPlayerUnavailableOnMatchDate.
+  ///
+  /// In fr, this message translates to:
+  /// **'Indisponible à la date du match'**
+  String get matchPlayerUnavailableOnMatchDate;
+
+  /// No description provided for @matchPlayerCannotConvokeUnavailable.
+  ///
+  /// In fr, this message translates to:
+  /// **'Ce joueur est indisponible à la date de la rencontre et ne peut pas être convoqué.'**
+  String get matchPlayerCannotConvokeUnavailable;
+
+  /// No description provided for @matchConvocationsStatusPresent.
+  ///
+  /// In fr, this message translates to:
+  /// **'Présent confirmé'**
+  String get matchConvocationsStatusPresent;
+
+  /// No description provided for @matchConvocationsStatusPending.
+  ///
+  /// In fr, this message translates to:
+  /// **'En attente de réponse'**
+  String get matchConvocationsStatusPending;
+
+  /// No description provided for @matchConvocationsSendAction.
+  ///
+  /// In fr, this message translates to:
+  /// **'Envoyer les convocations'**
+  String get matchConvocationsSendAction;
+
+  /// No description provided for @matchConvocationsSendTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Envoyer les convocations'**
+  String get matchConvocationsSendTitle;
+
+  /// No description provided for @matchConvocationsSendSubtitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'{count, plural, =1{1 joueur convoqué} other{{count} joueurs convoqués}}'**
+  String matchConvocationsSendSubtitle(int count);
+
+  /// No description provided for @matchConvocationsSendMessage.
+  ///
+  /// In fr, this message translates to:
+  /// **'Message'**
+  String get matchConvocationsSendMessage;
+
+  /// No description provided for @matchConvocationsSendMessageHint.
+  ///
+  /// In fr, this message translates to:
+  /// **'Informations complémentaires pour les joueurs'**
+  String get matchConvocationsSendMessageHint;
+
+  /// No description provided for @matchConvocationsSendMessageRequired.
+  ///
+  /// In fr, this message translates to:
+  /// **'Saisis un message'**
+  String get matchConvocationsSendMessageRequired;
+
+  /// No description provided for @matchConvocationsSendTime.
+  ///
+  /// In fr, this message translates to:
+  /// **'Heure de convocation'**
+  String get matchConvocationsSendTime;
+
+  /// No description provided for @matchConvocationsSendAddress.
+  ///
+  /// In fr, this message translates to:
+  /// **'Adresse de convocation'**
+  String get matchConvocationsSendAddress;
+
+  /// No description provided for @matchConvocationsSendAddressHint.
+  ///
+  /// In fr, this message translates to:
+  /// **'Lieu de rendez-vous'**
+  String get matchConvocationsSendAddressHint;
+
+  /// No description provided for @matchConvocationsSendAddressRequired.
+  ///
+  /// In fr, this message translates to:
+  /// **'Saisis une adresse'**
+  String get matchConvocationsSendAddressRequired;
+
+  /// No description provided for @matchConvocationsSendSubmit.
+  ///
+  /// In fr, this message translates to:
+  /// **'Envoyer'**
+  String get matchConvocationsSendSubmit;
+
+  /// No description provided for @matchConvocationsSendSuccess.
+  ///
+  /// In fr, this message translates to:
+  /// **'{count, plural, =1{1 convocation envoyée} other{{count} convocations envoyées}}'**
+  String matchConvocationsSendSuccess(int count);
+
+  /// No description provided for @matchConvocationsSendSkippedNoAccount.
+  ///
+  /// In fr, this message translates to:
+  /// **'{count, plural, =1{1 joueur sans compte lié} other{{count} joueurs sans compte lié}}'**
+  String matchConvocationsSendSkippedNoAccount(int count);
+
+  /// No description provided for @matchConvocationsSendSkippedNoPush.
+  ///
+  /// In fr, this message translates to:
+  /// **'{count, plural, =1{1 joueur sans notification push} other{{count} joueurs sans notification push}}'**
+  String matchConvocationsSendSkippedNoPush(int count);
+
+  /// No description provided for @matchConvocationsSendNoRecipients.
+  ///
+  /// In fr, this message translates to:
+  /// **'Aucun joueur convoqué n\'a de compte Grinta lié.'**
+  String get matchConvocationsSendNoRecipients;
+
+  /// No description provided for @matchConvocationsSendError.
+  ///
+  /// In fr, this message translates to:
+  /// **'Échec de l\'envoi : {error}'**
+  String matchConvocationsSendError(String error);
+
+  /// No description provided for @matchConvocationsSendErrorAuth.
+  ///
+  /// In fr, this message translates to:
+  /// **'Connecte-toi pour envoyer les convocations.'**
+  String get matchConvocationsSendErrorAuth;
+
+  /// No description provided for @matchConvocationsSendDateTimeValue.
+  ///
+  /// In fr, this message translates to:
+  /// **'{date} à {time}'**
+  String matchConvocationsSendDateTimeValue(String date, String time);
+
+  /// No description provided for @matchConvocationsSendMatchLine.
+  ///
+  /// In fr, this message translates to:
+  /// **'Match : {opponent}'**
+  String matchConvocationsSendMatchLine(String opponent);
+
+  /// No description provided for @matchConvocationsSendTimeLine.
+  ///
+  /// In fr, this message translates to:
+  /// **'Heure : {time}'**
+  String matchConvocationsSendTimeLine(String time);
+
+  /// No description provided for @matchConvocationsSendAddressLine.
+  ///
+  /// In fr, this message translates to:
+  /// **'Adresse : {address}'**
+  String matchConvocationsSendAddressLine(String address);
+
+  /// No description provided for @matchConvocationNotificationTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Convocation · {opponent}'**
+  String matchConvocationNotificationTitle(String opponent);
+
+  /// No description provided for @matchConvocationNotificationBody.
+  ///
+  /// In fr, this message translates to:
+  /// **'{opponent} · RDV {time}'**
+  String matchConvocationNotificationBody(String opponent, String time);
+
+  /// No description provided for @matchConvocationNotificationBodyWithMessage.
+  ///
+  /// In fr, this message translates to:
+  /// **'{opponent} · RDV {time} · {message}'**
+  String matchConvocationNotificationBodyWithMessage(
+      String opponent, String time, String message);
 
   /// No description provided for @tabTacticalSchema.
   ///
@@ -3171,6 +3382,306 @@ abstract class AppLocalizations {
   /// **'Les buts, cartons et changements apparaîtront ici.'**
   String get emptyNoHighlightsMessage;
 
+  /// No description provided for @matchHighlightsSourceFmi.
+  ///
+  /// In fr, this message translates to:
+  /// **'Temps forts de la FMI'**
+  String get matchHighlightsSourceFmi;
+
+  /// No description provided for @matchHighlightsSourceGrinta.
+  ///
+  /// In fr, this message translates to:
+  /// **'Temps forts Grinta'**
+  String get matchHighlightsSourceGrinta;
+
+  /// No description provided for @matchHighlightsGrintaPlaceholderMessage.
+  ///
+  /// In fr, this message translates to:
+  /// **'À détailler ensemble après.'**
+  String get matchHighlightsGrintaPlaceholderMessage;
+
+  /// No description provided for @matchGrintaHighlightsAddAction.
+  ///
+  /// In fr, this message translates to:
+  /// **'Ajouter un temps fort'**
+  String get matchGrintaHighlightsAddAction;
+
+  /// No description provided for @matchGrintaHighlightsPickTypeTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Choisir le type de temps fort'**
+  String get matchGrintaHighlightsPickTypeTitle;
+
+  /// No description provided for @matchGrintaHighlightsPickTimeEventTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Choisir l\'événement'**
+  String get matchGrintaHighlightsPickTimeEventTitle;
+
+  /// No description provided for @matchGrintaHighlightsEmptyMessage.
+  ///
+  /// In fr, this message translates to:
+  /// **'Commencez par le coup d\'envoi avec le bouton +.'**
+  String get matchGrintaHighlightsEmptyMessage;
+
+  /// No description provided for @matchGrintaHighlightsDetailsComingSoon.
+  ///
+  /// In fr, this message translates to:
+  /// **'Le détail de ce temps fort arrive bientôt.'**
+  String get matchGrintaHighlightsDetailsComingSoon;
+
+  /// No description provided for @matchGrintaHighlightsActionTimeEvent.
+  ///
+  /// In fr, this message translates to:
+  /// **'Événement de temps'**
+  String get matchGrintaHighlightsActionTimeEvent;
+
+  /// No description provided for @matchGrintaHighlightsAllTimeEventsRecorded.
+  ///
+  /// In fr, this message translates to:
+  /// **'Tous les événements de temps ont déjà été enregistrés pour ce match.'**
+  String get matchGrintaHighlightsAllTimeEventsRecorded;
+
+  /// No description provided for @matchGrintaHighlightDeleteConfirmTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Supprimer ce temps fort ?'**
+  String get matchGrintaHighlightDeleteConfirmTitle;
+
+  /// No description provided for @matchGrintaHighlightDeleteConfirmMessage.
+  ///
+  /// In fr, this message translates to:
+  /// **'Voulez-vous vraiment supprimer « {highlightLabel} » ? Cette action est définitive.'**
+  String matchGrintaHighlightDeleteConfirmMessage(String highlightLabel);
+
+  /// No description provided for @matchGrintaHighlightDeleted.
+  ///
+  /// In fr, this message translates to:
+  /// **'Temps fort supprimé'**
+  String get matchGrintaHighlightDeleted;
+
+  /// No description provided for @matchGoalAddTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Enregistrer un but'**
+  String get matchGoalAddTitle;
+
+  /// No description provided for @matchGoalPickTeamTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Quelle équipe a marqué ?'**
+  String get matchGoalPickTeamTitle;
+
+  /// No description provided for @matchGoalPickScorerTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Buteur'**
+  String get matchGoalPickScorerTitle;
+
+  /// No description provided for @matchGoalPickAssisterTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Passeur décisif (optionnel)'**
+  String get matchGoalPickAssisterTitle;
+
+  /// No description provided for @matchGoalNoAssister.
+  ///
+  /// In fr, this message translates to:
+  /// **'Sans passeur'**
+  String get matchGoalNoAssister;
+
+  /// No description provided for @matchGoalOpponentJerseyTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Numéro du buteur (optionnel)'**
+  String get matchGoalOpponentJerseyTitle;
+
+  /// No description provided for @matchGoalOpponentJerseyHint.
+  ///
+  /// In fr, this message translates to:
+  /// **'ex. 10'**
+  String get matchGoalOpponentJerseyHint;
+
+  /// No description provided for @matchGoalScorerRequired.
+  ///
+  /// In fr, this message translates to:
+  /// **'Sélectionnez un buteur.'**
+  String get matchGoalScorerRequired;
+
+  /// No description provided for @matchGoalInvalidJerseyNumber.
+  ///
+  /// In fr, this message translates to:
+  /// **'Saisissez un numéro de maillot valide.'**
+  String get matchGoalInvalidJerseyNumber;
+
+  /// No description provided for @matchGoalMinuteTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Minute'**
+  String get matchGoalMinuteTitle;
+
+  /// No description provided for @matchGoalMinuteHint.
+  ///
+  /// In fr, this message translates to:
+  /// **'ex. 67'**
+  String get matchGoalMinuteHint;
+
+  /// No description provided for @matchGoalInvalidMinute.
+  ///
+  /// In fr, this message translates to:
+  /// **'Saisissez une minute d\'au moins 1.'**
+  String get matchGoalInvalidMinute;
+
+  /// No description provided for @matchGoalSelectScorer.
+  ///
+  /// In fr, this message translates to:
+  /// **'Choisir un buteur'**
+  String get matchGoalSelectScorer;
+
+  /// No description provided for @matchGoalSelectAssister.
+  ///
+  /// In fr, this message translates to:
+  /// **'Choisir un passeur'**
+  String get matchGoalSelectAssister;
+
+  /// No description provided for @matchCardYellowAddTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Enregistrer un carton jaune'**
+  String get matchCardYellowAddTitle;
+
+  /// No description provided for @matchCardRedAddTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Enregistrer un carton rouge'**
+  String get matchCardRedAddTitle;
+
+  /// No description provided for @matchCardPickTeamTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Quelle équipe reçoit le carton ?'**
+  String get matchCardPickTeamTitle;
+
+  /// No description provided for @matchCardPickPlayerTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Joueur'**
+  String get matchCardPickPlayerTitle;
+
+  /// No description provided for @matchCardSelectPlayer.
+  ///
+  /// In fr, this message translates to:
+  /// **'Choisir un joueur'**
+  String get matchCardSelectPlayer;
+
+  /// No description provided for @matchCardPlayerRequired.
+  ///
+  /// In fr, this message translates to:
+  /// **'Sélectionnez un joueur.'**
+  String get matchCardPlayerRequired;
+
+  /// No description provided for @matchCardOpponentJerseyTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Numéro du joueur (optionnel)'**
+  String get matchCardOpponentJerseyTitle;
+
+  /// No description provided for @matchCardOpponentJerseyHint.
+  ///
+  /// In fr, this message translates to:
+  /// **'ex. 10'**
+  String get matchCardOpponentJerseyHint;
+
+  /// No description provided for @matchSubstitutionAddTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Enregistrer un changement'**
+  String get matchSubstitutionAddTitle;
+
+  /// No description provided for @matchSubstitutionPickTeamTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Quelle équipe effectue le changement ?'**
+  String get matchSubstitutionPickTeamTitle;
+
+  /// No description provided for @matchSubstitutionPickOutgoingTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Joueur sortant'**
+  String get matchSubstitutionPickOutgoingTitle;
+
+  /// No description provided for @matchSubstitutionPickIncomingTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Joueur entrant'**
+  String get matchSubstitutionPickIncomingTitle;
+
+  /// No description provided for @matchSubstitutionSelectOutgoing.
+  ///
+  /// In fr, this message translates to:
+  /// **'Choisir le joueur sortant'**
+  String get matchSubstitutionSelectOutgoing;
+
+  /// No description provided for @matchSubstitutionSelectIncoming.
+  ///
+  /// In fr, this message translates to:
+  /// **'Choisir le joueur entrant'**
+  String get matchSubstitutionSelectIncoming;
+
+  /// No description provided for @matchSubstitutionOutgoingRequired.
+  ///
+  /// In fr, this message translates to:
+  /// **'Sélectionnez le joueur sortant.'**
+  String get matchSubstitutionOutgoingRequired;
+
+  /// No description provided for @matchSubstitutionIncomingRequired.
+  ///
+  /// In fr, this message translates to:
+  /// **'Sélectionnez le joueur entrant.'**
+  String get matchSubstitutionIncomingRequired;
+
+  /// No description provided for @matchSubstitutionSamePlayerError.
+  ///
+  /// In fr, this message translates to:
+  /// **'Les deux joueurs doivent être différents.'**
+  String get matchSubstitutionSamePlayerError;
+
+  /// No description provided for @matchSubstitutionOpponentOutgoingJerseyTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Numéro du joueur sortant (optionnel)'**
+  String get matchSubstitutionOpponentOutgoingJerseyTitle;
+
+  /// No description provided for @matchSubstitutionOpponentIncomingJerseyTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Numéro du joueur entrant (optionnel)'**
+  String get matchSubstitutionOpponentIncomingJerseyTitle;
+
+  /// No description provided for @highlightGoalScored.
+  ///
+  /// In fr, this message translates to:
+  /// **'But — {scorer}'**
+  String highlightGoalScored(String scorer);
+
+  /// No description provided for @highlightTimeHalfTime.
+  ///
+  /// In fr, this message translates to:
+  /// **'Mi-temps'**
+  String get highlightTimeHalfTime;
+
+  /// No description provided for @highlightTimeSecondHalf.
+  ///
+  /// In fr, this message translates to:
+  /// **'Deuxième mi-temps'**
+  String get highlightTimeSecondHalf;
+
+  /// No description provided for @highlightTimeStartExtraTime.
+  ///
+  /// In fr, this message translates to:
+  /// **'Prolongations'**
+  String get highlightTimeStartExtraTime;
+
   /// No description provided for @highlightTypeGoal.
   ///
   /// In fr, this message translates to:
@@ -3194,6 +3705,18 @@ abstract class AppLocalizations {
   /// In fr, this message translates to:
   /// **'Carton rouge'**
   String get highlightTypeRedCard;
+
+  /// No description provided for @highlightYellowCardShown.
+  ///
+  /// In fr, this message translates to:
+  /// **'Carton jaune — {player}'**
+  String highlightYellowCardShown(String player);
+
+  /// No description provided for @highlightRedCardShown.
+  ///
+  /// In fr, this message translates to:
+  /// **'Carton rouge — {player}'**
+  String highlightRedCardShown(String player);
 
   /// No description provided for @highlightTypeOwnGoal.
   ///
@@ -5006,6 +5529,444 @@ abstract class AppLocalizations {
   /// In fr, this message translates to:
   /// **'Souhaitez-vous créer les récurrences ?'**
   String get createTrainingRecurrentConfirmMessage;
+
+  /// No description provided for @editTrainingTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Modifier l\'entraînement'**
+  String get editTrainingTitle;
+
+  /// No description provided for @editTrainingSubmit.
+  ///
+  /// In fr, this message translates to:
+  /// **'Enregistrer'**
+  String get editTrainingSubmit;
+
+  /// No description provided for @editTrainingSaved.
+  ///
+  /// In fr, this message translates to:
+  /// **'Entraînement modifié'**
+  String get editTrainingSaved;
+
+  /// No description provided for @editTrainingError.
+  ///
+  /// In fr, this message translates to:
+  /// **'Impossible de modifier l\'entraînement. Réessayez.'**
+  String get editTrainingError;
+
+  /// No description provided for @trainingDeleteConfirmTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Supprimer l\'entraînement ?'**
+  String get trainingDeleteConfirmTitle;
+
+  /// No description provided for @trainingDeleteConfirmMessage.
+  ///
+  /// In fr, this message translates to:
+  /// **'Voulez-vous vraiment supprimer cet entraînement ? Cette action est définitive.'**
+  String get trainingDeleteConfirmMessage;
+
+  /// No description provided for @trainingDeleted.
+  ///
+  /// In fr, this message translates to:
+  /// **'Entraînement supprimé'**
+  String get trainingDeleted;
+
+  /// No description provided for @trainingDeleteError.
+  ///
+  /// In fr, this message translates to:
+  /// **'Impossible de supprimer l\'entraînement. Réessayez.'**
+  String get trainingDeleteError;
+
+  /// No description provided for @finishTrainingTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Terminer l\'entraînement'**
+  String get finishTrainingTitle;
+
+  /// No description provided for @trainingFinishConfirmTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Terminer l\'entraînement ?'**
+  String get trainingFinishConfirmTitle;
+
+  /// No description provided for @trainingFinishConfirmMessage.
+  ///
+  /// In fr, this message translates to:
+  /// **'Les joueurs indisponibles encore marqués présents seront passés absents. Voulez-vous terminer cet entraînement ?'**
+  String get trainingFinishConfirmMessage;
+
+  /// No description provided for @trainingFinished.
+  ///
+  /// In fr, this message translates to:
+  /// **'Entraînement terminé'**
+  String get trainingFinished;
+
+  /// No description provided for @trainingFinishError.
+  ///
+  /// In fr, this message translates to:
+  /// **'Impossible de terminer l\'entraînement. Réessayez.'**
+  String get trainingFinishError;
+
+  /// No description provided for @createMatchTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Nouvelle rencontre'**
+  String get createMatchTitle;
+
+  /// No description provided for @createMatchTeam.
+  ///
+  /// In fr, this message translates to:
+  /// **'Équipe'**
+  String get createMatchTeam;
+
+  /// No description provided for @createMatchTeamRequired.
+  ///
+  /// In fr, this message translates to:
+  /// **'Sélectionnez une équipe'**
+  String get createMatchTeamRequired;
+
+  /// No description provided for @createMatchHome.
+  ///
+  /// In fr, this message translates to:
+  /// **'Rencontre à domicile'**
+  String get createMatchHome;
+
+  /// No description provided for @createMatchFriendly.
+  ///
+  /// In fr, this message translates to:
+  /// **'Match amical'**
+  String get createMatchFriendly;
+
+  /// No description provided for @createMatchDate.
+  ///
+  /// In fr, this message translates to:
+  /// **'Date'**
+  String get createMatchDate;
+
+  /// No description provided for @createMatchTime.
+  ///
+  /// In fr, this message translates to:
+  /// **'Heure'**
+  String get createMatchTime;
+
+  /// No description provided for @createMatchDuration.
+  ///
+  /// In fr, this message translates to:
+  /// **'Durée'**
+  String get createMatchDuration;
+
+  /// No description provided for @createMatchDurationMinutes.
+  ///
+  /// In fr, this message translates to:
+  /// **'{minutes} min'**
+  String createMatchDurationMinutes(int minutes);
+
+  /// No description provided for @createMatchOpponent.
+  ///
+  /// In fr, this message translates to:
+  /// **'Adversaire'**
+  String get createMatchOpponent;
+
+  /// No description provided for @createMatchSelectOpponentClub.
+  ///
+  /// In fr, this message translates to:
+  /// **'Rechercher un club'**
+  String get createMatchSelectOpponentClub;
+
+  /// No description provided for @createMatchClubNotFound.
+  ///
+  /// In fr, this message translates to:
+  /// **'Club non trouvé'**
+  String get createMatchClubNotFound;
+
+  /// No description provided for @createMatchOpponentNameManual.
+  ///
+  /// In fr, this message translates to:
+  /// **'Nom de l\'adversaire'**
+  String get createMatchOpponentNameManual;
+
+  /// No description provided for @createMatchOpponentRequired.
+  ///
+  /// In fr, this message translates to:
+  /// **'Indiquez l\'adversaire'**
+  String get createMatchOpponentRequired;
+
+  /// No description provided for @createMatchVenue.
+  ///
+  /// In fr, this message translates to:
+  /// **'Lieu / adresse du terrain'**
+  String get createMatchVenue;
+
+  /// No description provided for @createMatchWithTracker.
+  ///
+  /// In fr, this message translates to:
+  /// **'Avec tracker GPS'**
+  String get createMatchWithTracker;
+
+  /// No description provided for @createMatchSelectOwner.
+  ///
+  /// In fr, this message translates to:
+  /// **'Kit tracker (propriétaire)'**
+  String get createMatchSelectOwner;
+
+  /// No description provided for @createMatchOwnerRequired.
+  ///
+  /// In fr, this message translates to:
+  /// **'Sélectionnez un propriétaire tracker'**
+  String get createMatchOwnerRequired;
+
+  /// No description provided for @createMatchNoOwners.
+  ///
+  /// In fr, this message translates to:
+  /// **'Aucun kit tracker n\'est assigné à cette équipe.'**
+  String get createMatchNoOwners;
+
+  /// No description provided for @createMatchNoManagedTeams.
+  ///
+  /// In fr, this message translates to:
+  /// **'Vous ne gérez aucune équipe pour cette saison.'**
+  String get createMatchNoManagedTeams;
+
+  /// No description provided for @createMatchSaved.
+  ///
+  /// In fr, this message translates to:
+  /// **'Rencontre créée'**
+  String get createMatchSaved;
+
+  /// No description provided for @createMatchError.
+  ///
+  /// In fr, this message translates to:
+  /// **'Impossible de créer la rencontre. Réessayez.'**
+  String get createMatchError;
+
+  /// No description provided for @createMatchSubmit.
+  ///
+  /// In fr, this message translates to:
+  /// **'Créer la rencontre'**
+  String get createMatchSubmit;
+
+  /// No description provided for @editMatchTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Modifier la rencontre'**
+  String get editMatchTitle;
+
+  /// No description provided for @editMatchSubmit.
+  ///
+  /// In fr, this message translates to:
+  /// **'Enregistrer'**
+  String get editMatchSubmit;
+
+  /// No description provided for @editMatchSaved.
+  ///
+  /// In fr, this message translates to:
+  /// **'Rencontre modifiée'**
+  String get editMatchSaved;
+
+  /// No description provided for @editMatchError.
+  ///
+  /// In fr, this message translates to:
+  /// **'Impossible de modifier la rencontre. Réessayez.'**
+  String get editMatchError;
+
+  /// No description provided for @matchDeleteConfirmTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Supprimer la rencontre ?'**
+  String get matchDeleteConfirmTitle;
+
+  /// No description provided for @matchDeleteConfirmMessage.
+  ///
+  /// In fr, this message translates to:
+  /// **'Voulez-vous vraiment supprimer cette rencontre ? Cette action est définitive.'**
+  String get matchDeleteConfirmMessage;
+
+  /// No description provided for @matchRemoveFromTeamConfirmTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Retirer la rencontre du calendrier ?'**
+  String get matchRemoveFromTeamConfirmTitle;
+
+  /// No description provided for @matchRemoveFromTeamConfirmMessage.
+  ///
+  /// In fr, this message translates to:
+  /// **'Cette action retire la rencontre du calendrier de votre équipe. La rencontre restera visible pour les autres équipes.'**
+  String get matchRemoveFromTeamConfirmMessage;
+
+  /// No description provided for @matchDeleted.
+  ///
+  /// In fr, this message translates to:
+  /// **'Rencontre supprimée'**
+  String get matchDeleted;
+
+  /// No description provided for @matchRemovedFromTeam.
+  ///
+  /// In fr, this message translates to:
+  /// **'Rencontre retirée du calendrier de votre équipe'**
+  String get matchRemovedFromTeam;
+
+  /// No description provided for @matchDeleteError.
+  ///
+  /// In fr, this message translates to:
+  /// **'Impossible de supprimer la rencontre. Réessayez.'**
+  String get matchDeleteError;
+
+  /// No description provided for @teamDetailManageUnavailabilities.
+  ///
+  /// In fr, this message translates to:
+  /// **'Gérer les indisponibilités'**
+  String get teamDetailManageUnavailabilities;
+
+  /// No description provided for @manageUnavailabilitiesTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Indisponibilités'**
+  String get manageUnavailabilitiesTitle;
+
+  /// No description provided for @manageUnavailabilitiesEmpty.
+  ///
+  /// In fr, this message translates to:
+  /// **'Aucune indisponibilité pour cette saison.'**
+  String get manageUnavailabilitiesEmpty;
+
+  /// No description provided for @manageUnavailabilitiesAdd.
+  ///
+  /// In fr, this message translates to:
+  /// **'Ajouter une indisponibilité'**
+  String get manageUnavailabilitiesAdd;
+
+  /// No description provided for @manageUnavailabilitiesEditTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Modifier l\'indisponibilité'**
+  String get manageUnavailabilitiesEditTitle;
+
+  /// No description provided for @manageUnavailabilitiesFromDate.
+  ///
+  /// In fr, this message translates to:
+  /// **'Du'**
+  String get manageUnavailabilitiesFromDate;
+
+  /// No description provided for @manageUnavailabilitiesToDate.
+  ///
+  /// In fr, this message translates to:
+  /// **'Au'**
+  String get manageUnavailabilitiesToDate;
+
+  /// No description provided for @manageUnavailabilitiesType.
+  ///
+  /// In fr, this message translates to:
+  /// **'Type'**
+  String get manageUnavailabilitiesType;
+
+  /// No description provided for @manageUnavailabilitiesDetails.
+  ///
+  /// In fr, this message translates to:
+  /// **'Détails'**
+  String get manageUnavailabilitiesDetails;
+
+  /// No description provided for @manageUnavailabilitiesDetailsHint.
+  ///
+  /// In fr, this message translates to:
+  /// **'Détails optionnels'**
+  String get manageUnavailabilitiesDetailsHint;
+
+  /// No description provided for @manageUnavailabilitiesVisible.
+  ///
+  /// In fr, this message translates to:
+  /// **'Visible par l\'équipe'**
+  String get manageUnavailabilitiesVisible;
+
+  /// No description provided for @manageUnavailabilitiesVisibleHint.
+  ///
+  /// In fr, this message translates to:
+  /// **'Si désactivé, seuls les managers voient cette entrée'**
+  String get manageUnavailabilitiesVisibleHint;
+
+  /// No description provided for @manageUnavailabilitiesDateRange.
+  ///
+  /// In fr, this message translates to:
+  /// **'{from} – {to}'**
+  String manageUnavailabilitiesDateRange(String from, String to);
+
+  /// No description provided for @manageUnavailabilitiesHidden.
+  ///
+  /// In fr, this message translates to:
+  /// **'Masqué'**
+  String get manageUnavailabilitiesHidden;
+
+  /// No description provided for @manageUnavailabilitiesSaved.
+  ///
+  /// In fr, this message translates to:
+  /// **'Indisponibilité enregistrée'**
+  String get manageUnavailabilitiesSaved;
+
+  /// No description provided for @manageUnavailabilitiesDeleted.
+  ///
+  /// In fr, this message translates to:
+  /// **'Indisponibilité supprimée'**
+  String get manageUnavailabilitiesDeleted;
+
+  /// No description provided for @manageUnavailabilitiesError.
+  ///
+  /// In fr, this message translates to:
+  /// **'Impossible d\'enregistrer l\'indisponibilité. Veuillez réessayer.'**
+  String get manageUnavailabilitiesError;
+
+  /// No description provided for @manageUnavailabilitiesDeleteError.
+  ///
+  /// In fr, this message translates to:
+  /// **'Impossible de supprimer l\'indisponibilité. Veuillez réessayer.'**
+  String get manageUnavailabilitiesDeleteError;
+
+  /// No description provided for @manageUnavailabilitiesDeleteConfirmTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Supprimer l\'indisponibilité ?'**
+  String get manageUnavailabilitiesDeleteConfirmTitle;
+
+  /// No description provided for @manageUnavailabilitiesDeleteConfirmMessage.
+  ///
+  /// In fr, this message translates to:
+  /// **'Cette action est définitive.'**
+  String get manageUnavailabilitiesDeleteConfirmMessage;
+
+  /// No description provided for @manageUnavailabilitiesInvalidRange.
+  ///
+  /// In fr, this message translates to:
+  /// **'La date de fin ne peut pas être antérieure à la date de début'**
+  String get manageUnavailabilitiesInvalidRange;
+
+  /// No description provided for @manageUnavailabilitiesTypeRequired.
+  ///
+  /// In fr, this message translates to:
+  /// **'Veuillez choisir un type'**
+  String get manageUnavailabilitiesTypeRequired;
+
+  /// No description provided for @unavailabilityTypeHoliday.
+  ///
+  /// In fr, this message translates to:
+  /// **'Vacances'**
+  String get unavailabilityTypeHoliday;
+
+  /// No description provided for @unavailabilityTypeUnwell.
+  ///
+  /// In fr, this message translates to:
+  /// **'Malade'**
+  String get unavailabilityTypeUnwell;
+
+  /// No description provided for @unavailabilityTypeInjured.
+  ///
+  /// In fr, this message translates to:
+  /// **'Blessé'**
+  String get unavailabilityTypeInjured;
+
+  /// No description provided for @unavailabilityTypeOther.
+  ///
+  /// In fr, this message translates to:
+  /// **'Autre motif'**
+  String get unavailabilityTypeOther;
 }
 
 class _AppLocalizationsDelegate

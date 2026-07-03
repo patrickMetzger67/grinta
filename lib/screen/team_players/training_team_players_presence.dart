@@ -106,15 +106,25 @@ Color presenceAccent(AppColors colors, PresenceType? type) {
   }
 }
 
-bool isPlayerUnavailableOnTrainingDate(Player player, DateTime? trainingDate) {
-  if (trainingDate == null) return false;
-  final unavailable = player.unavailable;
-  if (unavailable == null || unavailable.isEmpty) return false;
+bool _isPlayerUnavailableAtMs(
+  Player player,
+  int eventMs, {
+  String? seasonId,
+  bool managerView = true,
+}) {
+  final Iterable<Unavailability> entries;
+  if (seasonId != null && seasonId.trim().isNotEmpty) {
+    entries = player.unavailabilitiesForSeason(seasonId);
+  } else {
+    entries = player.allUnavailabilities;
+  }
 
-  final eventMs = trainingDate.millisecondsSinceEpoch;
+  final visibleEntries = managerView
+      ? entries
+      : entries.where((entry) => entry.isVisible ?? true);
+  if (visibleEntries.isEmpty) return false;
 
-  for (final entry in unavailable) {
-    if (entry is! Unavailability) continue;
+  for (final entry in visibleEntries) {
     final from = entry.from?.millisecondsSinceEpoch;
     final to = entry.to?.millisecondsSinceEpoch;
     if (from == null || to == null) continue;
@@ -126,9 +136,60 @@ bool isPlayerUnavailableOnTrainingDate(Player player, DateTime? trainingDate) {
   return false;
 }
 
-PresenceType defaultPresenceForPlayer(Player player, DateTime? trainingDate) {
-  if (isPlayerUnavailableOnTrainingDate(player, trainingDate)) {
-    return PresenceType.excuse;
+/// Whether [player] has a visible unavailability covering [date] for [seasonId].
+bool isPlayerUnavailableOnDate(
+  Player player,
+  String? seasonId,
+  DateTime? date, {
+  bool managerView = true,
+}) {
+  if (date == null) return false;
+
+  return _isPlayerUnavailableAtMs(
+    player,
+    date.millisecondsSinceEpoch,
+    seasonId: seasonId,
+    managerView: managerView,
+  );
+}
+
+bool isPlayerUnavailableOnTrainingDate(
+  Player player,
+  DateTime? trainingDate, {
+  String? seasonId,
+}) {
+  return isPlayerUnavailableOnDate(
+    player,
+    seasonId,
+    trainingDate,
+  );
+}
+
+bool isPlayerCurrentlyUnavailable(
+  Player player,
+  String? seasonId, {
+  bool managerView = false,
+  DateTime? at,
+}) {
+  return _isPlayerUnavailableAtMs(
+    player,
+    (at ?? DateTime.now()).millisecondsSinceEpoch,
+    seasonId: seasonId,
+    managerView: managerView,
+  );
+}
+
+PresenceType defaultPresenceForPlayer(
+  Player player,
+  DateTime? trainingDate, {
+  String? seasonId,
+}) {
+  if (isPlayerUnavailableOnTrainingDate(
+    player,
+    trainingDate,
+    seasonId: seasonId,
+  )) {
+    return PresenceType.absent;
   }
   return PresenceType.present;
 }

@@ -428,6 +428,28 @@ class TrainingService {
     }
   }
 
+  /// Marks a training as finished; optionally marks tracker data as uploaded
+  /// for owners without external syncing.
+  Future<void> markTrainingFinished({
+    required String trainingId,
+    required List<PlayerTraining> playerTraining,
+    required Timestamp trainingEndAt,
+    bool markTrackerDataUploaded = false,
+  }) async {
+    try {
+      final Map<String, dynamic> data = {
+        keyTgEndAt: trainingEndAt,
+        keyTgPlayerTraining: playerTraining.map((e) => e.toMap()).toList(),
+      };
+      if (markTrackerDataUploaded) {
+        data[keyTgIsTrackerDataUploaded] = true;
+      }
+      await _collection.doc(trainingId).update(data);
+    } catch (e) {
+      rethrow;
+    }
+  }
+
   /// UPDATE TRAINING TIMES
   Future<void> updateTrainingTimes({
     required String trainingId,

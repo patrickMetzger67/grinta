@@ -61,6 +61,8 @@ String keyMatchIsInHighLight = 'isInHighLight';
 String keyMatchWithTracker = 'withTracker';
 String keyMatchIsTrackerDataUploaded = 'isTrackerDataUploaded';
 String keyMatchTimestamp = 'timestamp';
+String keyMatchDuration = 'duration';
+String keyMatchIsScrapping = 'isScrapping';
 
 class Match {
 
@@ -131,6 +133,8 @@ class Match {
   String? ownerId;
   bool? isTrackerDataUploaded;
   Timestamp? timestamp;
+  int? duration;
+  bool? isScrapping;
 
 
   DocumentReference? ref;
@@ -191,6 +195,8 @@ class Match {
     this.ownerId,
     this.isTrackerDataUploaded,
     this.timestamp,
+    this.duration,
+    this.isScrapping = true,
   });
 
 
@@ -422,6 +428,13 @@ class Match {
     withTracker = map[keyMatchWithTracker] ?? false;
     isTrackerDataUploaded = map[keyMatchIsTrackerDataUploaded] ?? false;
     timestamp = map[keyMatchTimestamp]?? null;
+    duration = map[keyMatchDuration] ?? 90;
+
+    if (map[keyMatchIsScrapping] != null) {
+      isScrapping = map[keyMatchIsScrapping];
+    } else {
+      isScrapping = true;
+    }
 
   }
 
@@ -484,8 +497,10 @@ class Match {
       keyMatchWithTracker:withTracker,
       'fieldGpsCorners': fieldGpsCorners?.toMap(),
       'ownerId':ownerId,
-      keyMatchIsTrackerDataUploaded:isTrackerDataUploaded,
+      keyMatchIsTrackerDataUploaded:isTrackerDataUploaded ?? false,
       keyMatchTimestamp:timestamp,
+      keyMatchDuration:duration,
+      keyMatchIsScrapping:isScrapping ?? true,
     };
     return map;
   }

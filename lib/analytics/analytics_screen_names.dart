@@ -16,6 +16,7 @@ abstract final class AnalyticsScreenNames {
   // Match
   static const matchDetail = 'match_detail';
   static const matchDetailTabCompo = 'match_detail_tab_compo';
+  static const matchDetailTabConvocations = 'match_detail_tab_convocations';
   static const matchDetailTabTacticalSchema = 'match_detail_tab_tactical_schema';
   static const matchDetailTabHighlights = 'match_detail_tab_highlights';
   static const matchDetailTabStats = 'match_detail_tab_stats';
@@ -36,4 +37,7 @@ abstract final class AnalyticsScreenNames {
 
   // Shop
   static const shop = 'shop';
+
+  // Settings
+  static const myUnavailabilities = 'my_unavailabilities';
 }

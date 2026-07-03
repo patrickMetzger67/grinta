@@ -9,6 +9,7 @@ class Owner {
   final String name;
   final String typeTracker; // "inspirit", "footbar", ...
   final bool isActive;
+    final bool withSyncing;
 
   final String email;
   final String firstname;
@@ -25,6 +26,7 @@ class Owner {
     required this.name,
     required this.typeTracker,
     required this.isActive,
+    this.withSyncing = true,
     required this.email,
     required this.firstname,
     required this.lastname,
@@ -43,6 +45,7 @@ class Owner {
     String? firstname,
     String? lastname,
     bool? isActive,
+    bool? withSyncing,
     Timestamp? createdAt,
     String? uidCreate,
     Timestamp? updatedAt,
@@ -54,6 +57,7 @@ class Owner {
       name: name ?? this.name,
       typeTracker: typeTracker ?? this.typeTracker,
       isActive: isActive ?? this.isActive,
+      withSyncing: withSyncing ?? this.withSyncing,
       email: email ?? this.email,
       firstname: firstname ?? this.firstname,
       lastname: lastname ?? this.lastname,
@@ -71,6 +75,7 @@ class Owner {
       'name': name,
       'typeTracker': typeTracker,
       'isActive': isActive,
+      'withSyncing': withSyncing,
       'email':email,
       'firstname': firstname,
       'lastname':lastname,
@@ -88,6 +93,7 @@ class Owner {
       name: (map['name'] ?? '').toString(),
       typeTracker: (map['typeTracker'] ?? '').toString(),
       isActive: (map['isActive'] ?? false) == true,
+      withSyncing: (map['withSyncing'] ?? true) == true,
       email: (map['email'] ?? '').toString(),
       firstname: (map['firstname'] ?? '').toString(),
       lastname: (map['lastname'] ?? '').toString(),

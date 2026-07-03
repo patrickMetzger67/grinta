@@ -11,19 +11,23 @@ import '../../provider/appSession.dart';
 import '../../services/compoTypeService.dart';
 import '../../services/deviceOwnerService.dart' as device_owner_svc;
 import '../../services/matchCompoService.dart';
+import '../../services/playerService.dart';
 import '../../services/teamService.dart';
 import '../../services/team_players_service.dart';
 import '../../screen/team_players/training_team_players_tracker.dart';
+import '../../screen/team_players/training_team_players_presence.dart';
 import '../../util/app_theme.dart';
 import '../../util/match_compo_pitch_mapper.dart';
+import '../../util/match_convocation_helper.dart';
 import '../../util/playerDisplayName.dart';
+import '../../util/player_photo_resolver.dart';
 import '../../widget/half_pitch_compo_widget.dart';
 import '../../widget/player_info_bubble.dart';
 import '../../widget/playerPhoto.dart';
 
 const Object _clearSlotToken = Object();
 
-/// Onglet schéma tactique (convocation + terrain) pour un match.
+/// Onglet schéma tactique pour un match.
 class MatchTacticalSchemaTab extends StatefulWidget {
   const MatchTacticalSchemaTab({
     super.key,
@@ -176,6 +180,7 @@ class _MatchTacticalSchemaBodyState extends State<_MatchTacticalSchemaBody>
     with AutomaticKeepAliveClientMixin {
   final _teamPlayersService = TeamPlayersService();
   final _teamService = TeamService();
+  final _playerService = PlayerService();
   final _compoTypeService = CompoTypeService();
   final _matchCompoService = MatchCompoService();
 
@@ -197,9 +202,26 @@ class _MatchTacticalSchemaBodyState extends State<_MatchTacticalSchemaBody>
   CompoType? _selectedCompoType;
   String? _selectedCompoTypeKey;
   bool _saving = false;
-  bool _convocationExpanded = false;
 
-  bool get _readOnly => !widget.isManager;
+  Map<String, PlayerCompo> _baselineStartersBySlot = {};
+  List<PlayerCompo> _baselineSubstitutes = [];
+  String? _baselineCompoTypeKey;
+
+  bool get _canEdit =>
+      widget.isManager && widget.match.isMatchPlayed != true;
+
+  bool get _hasUnsavedChanges {
+    if (_selectedCompoTypeKey != _baselineCompoTypeKey) return true;
+    if (!_startersMapsEqual(_startersBySlot, _baselineStartersBySlot)) {
+      return true;
+    }
+    if (!_substitutesListsEqual(_substitutes, _baselineSubstitutes)) {
+      return true;
+    }
+    return false;
+  }
+
+  bool get _readOnly => !_canEdit;
 
   @override
   void initState() {
@@ -210,8 +232,15 @@ class _MatchTacticalSchemaBodyState extends State<_MatchTacticalSchemaBody>
   @override
   void didUpdateWidget(covariant _MatchTacticalSchemaBody oldWidget) {
     super.didUpdateWidget(oldWidget);
+    final oldIds = convokedPlayerIds(
+      oldWidget.initialMatchCompo ?? MatchCompo(),
+    );
+    final newIds = convokedPlayerIds(
+      widget.initialMatchCompo ?? MatchCompo(),
+    );
     if (oldWidget.initialMatchCompo?.ref?.path !=
-        widget.initialMatchCompo?.ref?.path) {
+            widget.initialMatchCompo?.ref?.path ||
+        oldIds != newIds) {
       _hydrateFromMatchCompo(widget.initialMatchCompo);
     }
   }
@@ -282,6 +311,8 @@ class _MatchTacticalSchemaBodyState extends State<_MatchTacticalSchemaBody>
         _convokedIds = {};
         _startersBySlot = {};
         _substitutes = [];
+        _selectedCompoType = null;
+        _selectedCompoTypeKey = null;
       });
       return;
     }
@@ -301,14 +332,118 @@ class _MatchTacticalSchemaBodyState extends State<_MatchTacticalSchemaBody>
         });
       }
     }
-    if (mounted) setState(() {});
+    if (mounted) {
+      setState(() {});
+      _resetSavedBaseline();
+      await _ensureConvokedPlayersLoaded();
+    }
+  }
+
+  void _resetSavedBaseline() {
+    _baselineStartersBySlot = {
+      for (final entry in _startersBySlot.entries)
+        entry.key: _copyPlayerCompo(entry.value),
+    };
+    _baselineSubstitutes =
+        _substitutes.map(_copyPlayerCompo).toList(growable: false);
+    _baselineCompoTypeKey = _selectedCompoTypeKey;
+  }
+
+  PlayerCompo _copyPlayerCompo(PlayerCompo source) {
+    return PlayerCompo.fromMap(source.toMap());
+  }
+
+  bool _playerCompoEquals(PlayerCompo a, PlayerCompo b) {
+    return (a.playerID?.trim() ?? '') == (b.playerID?.trim() ?? '') &&
+        a.number == b.number &&
+        (a.deviceOwnerId?.trim() ?? '') == (b.deviceOwnerId?.trim() ?? '') &&
+        (a.customName?.trim() ?? '') == (b.customName?.trim() ?? '');
+  }
+
+  bool _startersMapsEqual(
+    Map<String, PlayerCompo> a,
+    Map<String, PlayerCompo> b,
+  ) {
+    if (a.length != b.length) return false;
+    for (final entry in a.entries) {
+      final other = b[entry.key];
+      if (other == null || !_playerCompoEquals(entry.value, other)) {
+        return false;
+      }
+    }
+    return true;
+  }
+
+  bool _substitutesListsEqual(List<PlayerCompo> a, List<PlayerCompo> b) {
+    if (a.length != b.length) return false;
+    for (var i = 0; i < a.length; i++) {
+      if (!_playerCompoEquals(a[i], b[i])) return false;
+    }
+    return true;
+  }
+
+  Future<void> _ensureConvokedPlayersLoaded() async {
+    if (_convokedIds.isEmpty) {
+      return;
+    }
+
+    final rosterLookupIds = <String>{
+      for (final player in _teamPlayers) ...playerMemberLookupIds(player),
+    };
+
+    final missingIds = _convokedIds
+        .where((id) => id.isNotEmpty && !rosterLookupIds.contains(id))
+        .toList();
+
+    if (missingIds.isEmpty) {
+      return;
+    }
+
+    final extraPlayers = <Player>[];
+    for (final id in missingIds) {
+      final player = await _playerService.getPlayerById(id);
+      if (player != null) {
+        extraPlayers.add(player);
+      }
+    }
+
+    if (extraPlayers.isEmpty || !mounted) {
+      return;
+    }
+
+    setState(() {
+      _teamPlayers = TeamPlayersService.dedupePlayersByMemberId(
+        <Player>[..._teamPlayers, ...extraPlayers],
+      )..sort(TeamPlayersService.comparePlayersByName);
+      for (final player in extraPlayers) {
+        final id = effectiveMemberId(player);
+        if (id != null && id.isNotEmpty) {
+          _playersById[id] = player;
+        }
+        final docId = player.ref?.id ?? '';
+        if (docId.isNotEmpty) {
+          _playersById[docId] = player;
+        }
+      }
+    });
   }
 
   List<Player> get _playerPool {
-    if (_convokedIds.isEmpty) return _teamPlayers;
-    return _teamPlayers
-        .where((p) => _convokedIds.contains(p.ref?.id))
-        .toList();
+    final seasonId = widget.match.seasonID?.trim();
+    final eventDate = matchEventDateTime(widget.match);
+    return _teamPlayers.where((p) {
+      final lookupIds = playerMemberLookupIds(p);
+      if (!lookupIds.any(_convokedIds.contains)) return false;
+      if (isPlayerUnavailableOnDate(
+        p,
+        seasonId,
+        eventDate,
+        managerView: widget.isManager,
+      )) {
+        return false;
+      }
+      return true;
+    }).toList();
   }
 
   Set<String> get _assignedPlayerIds {
@@ -566,7 +701,7 @@ class _MatchTacticalSchemaBodyState extends State<_MatchTacticalSchemaBody>
   }
 
   Future<void> _onSlotTap(CompoSlot slot) async {
-    if (_readOnly || _selectedCompoType == null) return;
+    if (_readOnly) return;
 
     final existing = _startersBySlot[slot.id];
     final currentId = existing?.playerID?.trim();
@@ -652,7 +787,6 @@ class _MatchTacticalSchemaBodyState extends State<_MatchTacticalSchemaBody>
       compo.teamID = teamId;
       compo.seasonID = widget.match.seasonID;
       compo.compoTypeID = _selectedCompoType!.ref?.id;
-      compo.convocation = convocationFromPlayerIds(_convokedIds);
 
       applyAssignmentsToMatchCompo(
         compo: compo,
@@ -662,6 +796,7 @@ class _MatchTacticalSchemaBodyState extends State<_MatchTacticalSchemaBody>
 
       await _matchCompoService.saveMatchCompo(compo);
       _draftCompo = compo;
+      _resetSavedBaseline();
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -739,16 +874,16 @@ class _MatchTacticalSchemaBodyState extends State<_MatchTacticalSchemaBody>
         }
 
         final selectedType = _resolveCompoType(compoTypes);
-        if (_selectedCompoType == null && widget.initialMatchCompo == null) {
+        if (_selectedCompoType == null) {
           WidgetsBinding.instance.addPostFrameCallback((_) {
-            if (mounted) _onCompoTypeChanged(selectedType);
+            if (!mounted) return;
+            _onCompoTypeChanged(selectedType);
+            _resetSavedBaseline();
           });
         }
 
         final hasSchema = _startersBySlot.isNotEmpty || _substitutes.isNotEmpty;
-        final showEditor = widget.isManager;
-        final showConvocation =
-            showEditor && widget.match.isMatchPlayed != true;
+        final showEditor = _canEdit;
 
         return LayoutBuilder(
           builder: (context, constraints) {
@@ -765,36 +900,6 @@ class _MatchTacticalSchemaBodyState extends State<_MatchTacticalSchemaBody>
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  if (showConvocation) ...[
-                    _ConvocationCard(
-                      expanded: _convocationExpanded,
-                      convokedCount: _convokedIds.length,
-                      onToggle: () => setState(
-                        () => _convocationExpanded = !_convocationExpanded,
-                      ),
-                      child: _ConvocationCheckList(
-                        players: _teamPlayers,
-                        convokedIds: _convokedIds,
-                        maxListHeight: isPhone ? 160 : 280,
-                        onChanged: (id, selected) {
-                          setState(() {
-                            if (selected) {
-                              _convokedIds.add(id);
-                            } else {
-                              _convokedIds.remove(id);
-                              _startersBySlot.removeWhere(
-                                (_, p) => p.playerID == id,
-                              );
-                              _substitutes.removeWhere(
-                                (p) => p.playerID == id,
-                              );
-                            }
-                          });
-                        },
-                      ),
-                    ),
-                    SizedBox(height: sectionGap),
-                  ],
                   if (showEditor)
                     _CompoTypeSelector(
                       compoTypes: compoTypes,
@@ -856,7 +961,7 @@ class _MatchTacticalSchemaBodyState extends State<_MatchTacticalSchemaBody>
                       ),
                     ),
                   ),
-                  if (showEditor) ...[
+                  if (showEditor && _hasUnsavedChanges) ...[
                     SizedBox(height: sectionGap),
                     FilledButton.icon(
                       onPressed:
@@ -896,147 +1001,6 @@ class _MatchTacticalSchemaBodyState extends State<_MatchTacticalSchemaBody>
       return _selectedCompoType!;
     }
     return types.first;
-  }
-}
-
-class _ConvocationCard extends StatelessWidget {
-  const _ConvocationCard({
-    required this.expanded,
-    required this.convokedCount,
-    required this.onToggle,
-    required this.child,
-  });
-
-  final bool expanded;
-  final int convokedCount;
-  final VoidCallback onToggle;
-  final Widget child;
-
-  @override
-  Widget build(BuildContext context) {
-    final colors = context.appColors;
-    final l10n = context.l10n;
-
-    return Material(
-      color: colors.card,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(16),
-        side: BorderSide(color: colors.border),
-      ),
-      clipBehavior: Clip.antiAlias,
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          InkWell(
-            onTap: onToggle,
-            child: Padding(
-              padding: const EdgeInsets.all(14),
-              child: Row(
-                children: [
-                  Icon(Icons.campaign_outlined, color: colors.primary),
-                  const SizedBox(width: 10),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          l10n.matchTacticalSchemaConvocation,
-                          style: TextStyle(
-                            color: colors.textPrimary,
-                            fontWeight: FontWeight.w700,
-                          ),
-                        ),
-                        Text(
-                          l10n.matchTacticalSchemaConvocationHint,
-                          style: TextStyle(
-                            color: colors.textSecondary,
-                            fontSize: 12,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  if (convokedCount > 0)
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 8,
-                        vertical: 4,
-                      ),
-                      decoration: BoxDecoration(
-                        color: colors.primary.withValues(alpha: 0.12),
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      child: Text(
-                        '$convokedCount',
-                        style: TextStyle(
-                          color: colors.primary,
-                          fontWeight: FontWeight.w800,
-                        ),
-                      ),
-                    ),
-                  Icon(
-                    expanded
-                        ? Icons.expand_less
-                        : Icons.expand_more,
-                    color: colors.textSecondary,
-                  ),
-                ],
-              ),
-            ),
-          ),
-          if (expanded) ...[
-            Divider(height: 1, color: colors.border),
-            child,
-          ],
-        ],
-      ),
-    );
-  }
-}
-
-class _ConvocationCheckList extends StatelessWidget {
-  const _ConvocationCheckList({
-    required this.players,
-    required this.convokedIds,
-    required this.onChanged,
-    this.maxListHeight = 280,
-  });
-
-  final List<Player> players;
-  final Set<String> convokedIds;
-  final void Function(String playerId, bool selected) onChanged;
-  final double maxListHeight;
-
-  @override
-  Widget build(BuildContext context) {
-    final colors = context.appColors;
-    final l10n = context.l10n;
-
-    return ConstrainedBox(
-      constraints: BoxConstraints(maxHeight: maxListHeight),
-      child: ListView.builder(
-        shrinkWrap: true,
-        padding: const EdgeInsets.symmetric(vertical: 4),
-        itemCount: players.length,
-        itemBuilder: (context, index) {
-          final player = players[index];
-          final id = player.ref?.id ?? '';
-          final selected = convokedIds.contains(id);
-
-          return CheckboxListTile(
-            value: selected,
-            activeColor: colors.primary,
-            onChanged: (v) => onChanged(id, v == true),
-            secondary: PlayerPhoto(player: player, radius: 18),
-            title: Text(
-              playerDisplayName(player, unknownLabel: l10n.entityPlayer),
-              style: TextStyle(color: colors.textPrimary, fontSize: 14),
-            ),
-            controlAffinity: ListTileControlAffinity.leading,
-          );
-        },
-      ),
-    );
   }
 }
 

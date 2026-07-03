@@ -81,6 +81,16 @@ class _TeamPlayersScreenState extends State<TeamPlayersScreen> {
       widget.training.ownerId != null &&
       widget.training.ownerId!.trim().isNotEmpty;
 
+  DateTime? get _trainingDate => widget.training.dateTime?.toDate();
+
+  bool _isPlayerUnavailableOnTrainingDate(Player player) {
+    return isPlayerUnavailableOnTrainingDate(
+      player,
+      _trainingDate,
+      seasonId: widget.seasonId,
+    );
+  }
+
   @override
   void initState() {
     super.initState();
@@ -282,6 +292,7 @@ class _TeamPlayersScreenState extends State<TeamPlayersScreen> {
             itemCount: _rows.length,
             itemBuilder: (context, index) {
               final row = _rows[index];
+                    final unavailable = _isPlayerUnavailableOnTrainingDate(row.player);
                     final style = _presenceStyle(
                       context,
                       row.playerTraining.presenceType,
@@ -317,7 +328,7 @@ class _TeamPlayersScreenState extends State<TeamPlayersScreen> {
                             canEditTracker: _canEdit && _showTracker,
                             onAssignTracker: () => _assignTracker(row),
                             onRemoveTracker: () => _unassignTracker(row),
-                            onPresenceTap: _canEdit
+                            onPresenceTap: _canEdit && !unavailable
                                 ? () => _showPresencePicker(row)
                                 : null,
                           ),
@@ -366,6 +377,7 @@ class _TeamPlayersScreenState extends State<TeamPlayersScreen> {
 
   Future<void> _showPresencePicker(TrainingPlayerRowVm row) async {
     if (!_canEdit || _saving) return;
+    if (_isPlayerUnavailableOnTrainingDate(row.player)) return;
 
     final colors = context.appColors;
     final l10n = context.l10n;
@@ -484,6 +496,7 @@ class _TeamPlayersScreenState extends State<TeamPlayersScreen> {
     required PresenceType presenceType,
   }) async {
     if (!_canEdit || _saving) return;
+    if (_isPlayerUnavailableOnTrainingDate(row.player)) return;
 
     setState(() => _saving = true);
 
@@ -650,7 +663,11 @@ class _TeamPlayersScreenState extends State<TeamPlayersScreen> {
       final trainingDate = widget.training.dateTime?.toDate();
       final pt = PlayerTraining(
         playerId: playerId,
-        presenceType: defaultPresenceForPlayer(player, trainingDate),
+        presenceType: defaultPresenceForPlayer(
+          player,
+          trainingDate,
+          seasonId: widget.seasonId,
+        ),
       );
 
       widget.training.playerTraining.add(pt);

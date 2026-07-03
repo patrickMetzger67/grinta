@@ -52,6 +52,35 @@ class _TrackerChipVm {
   final String label;
 }
 
+/// Responsive column plan for the mobile player roster table.
+class _MobileRosterLayout {
+  const _MobileRosterLayout({
+    required this.showPositionColumn,
+    required this.showInlineEditColumn,
+    required this.playerFlex,
+  });
+
+  final bool showPositionColumn;
+  final bool showInlineEditColumn;
+  final int playerFlex;
+
+  static _MobileRosterLayout fromWidth(
+    double width, {
+    required bool canManageTeam,
+    required bool canManageRoster,
+  }) {
+    final bool showPosition = width >= 360;
+    final bool showInlineEdit = !canManageRoster || width >= 380;
+    final int playerFlex = width < 360 ? 5 : 4;
+
+    return _MobileRosterLayout(
+      showPositionColumn: showPosition,
+      showInlineEditColumn: showInlineEdit,
+      playerFlex: playerFlex,
+    );
+  }
+}
+
 
 
 class _TrackerChip extends StatelessWidget {
@@ -171,8 +200,8 @@ class _CircleGhostButton extends StatelessWidget {
   final double size;
   final double iconSize;
 
-  static const double webTableButtonSize = 32;
-  static const double webTableIconSize = 18;
+  static const double webTableButtonSize = 28;
+  static const double webTableIconSize = 17;
 
   @override
   Widget build(BuildContext context) {
@@ -244,6 +273,7 @@ class _ThresholdCard extends StatelessWidget {
 
 class _TeamPlayerSwipeRow extends StatefulWidget {
   const _TeamPlayerSwipeRow({
+    super.key,
     required this.child,
     required this.backgroundColor,
     this.onEdit,
@@ -326,12 +356,27 @@ class _TeamPlayerSwipeRowState extends State<_TeamPlayerSwipeRow> {
     });
   }
 
-  void _onHorizontalDragEnd(DragEndDetails details) {
-    if (_horizontalDragActive) {
-      final threshold = _maxOffset / 2;
-      setState(() {
+  void _snapOffset({double? velocity}) {
+    final threshold = _maxOffset / 2;
+    final bool openByVelocity =
+        velocity != null && velocity < -300 && _offset > 0;
+    final bool closeByVelocity =
+        velocity != null && velocity > 300 && _offset < _maxOffset;
+
+    setState(() {
+      if (openByVelocity) {
+        _offset = _maxOffset;
+      } else if (closeByVelocity) {
+        _offset = 0;
+      } else {
         _offset = _offset > threshold ? _maxOffset : 0;
-      });
+      }
+    });
+  }
+
+  void _onHorizontalDragEnd(DragEndDetails details) {
+    if (_horizontalDragActive || (_offset > 0 && _offset < _maxOffset)) {
+      _snapOffset(velocity: details.primaryVelocity);
     }
     _dragStartPosition = null;
     _horizontalDragActive = false;
@@ -339,15 +384,60 @@ class _TeamPlayerSwipeRowState extends State<_TeamPlayerSwipeRow> {
   }
 
   void _onHorizontalDragCancel() {
+    if (_offset > 0 && _offset < _maxOffset) {
+      _snapOffset();
+    }
     _dragStartPosition = null;
     _horizontalDragActive = false;
     _releaseScrollHold();
+  }
+
+  bool _onScrollNotification(ScrollNotification notification) {
+    if (_offset <= 0) {
+      return false;
+    }
+    if (notification is ScrollUpdateNotification ||
+        notification is ScrollStartNotification) {
+      _close();
+    }
+    return false;
   }
 
   void _close() {
     if (_offset > 0) {
       setState(() => _offset = 0);
     }
+  }
+
+  Widget _buildSwipeActions(BuildContext context) {
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      mainAxisAlignment: MainAxisAlignment.end,
+      children: [
+        if (widget.onEdit != null)
+          _SwipeActionButton(
+            width: _actionWidth,
+            color: context.appColors.primary,
+            icon: Icons.edit_outlined,
+            label: widget.editLabel,
+            onTap: () {
+              _close();
+              widget.onEdit!();
+            },
+          ),
+        if (widget.onRemove != null)
+          _SwipeActionButton(
+            width: _actionWidth,
+            color: context.appColors.danger,
+            icon: Icons.delete_outline_rounded,
+            label: widget.removeLabel,
+            onTap: () {
+              _close();
+              widget.onRemove!();
+            },
+          ),
+      ],
+    );
   }
 
   @override
@@ -362,57 +452,47 @@ class _TeamPlayerSwipeRowState extends State<_TeamPlayerSwipeRow> {
       return widget.child;
     }
 
-    return ClipRect(
-      child: Stack(
-        clipBehavior: Clip.hardEdge,
-        children: [
-          Positioned.fill(
-            child: Row(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              mainAxisAlignment: MainAxisAlignment.end,
-              children: [
-                if (widget.onEdit != null)
-                  _SwipeActionButton(
-                    width: _actionWidth,
-                    color: context.appColors.primary,
-                    icon: Icons.edit_outlined,
-                    label: widget.editLabel,
-                    onTap: () {
-                      _close();
-                      widget.onEdit!();
-                    },
+    return NotificationListener<ScrollNotification>(
+      onNotification: _onScrollNotification,
+      child: ClipRect(
+        child: Stack(
+          clipBehavior: Clip.hardEdge,
+          children: [
+            if (_offset > 0)
+              Positioned(
+                right: 0,
+                top: 0,
+                bottom: 0,
+                width: _offset,
+                child: ClipRect(
+                  child: OverflowBox(
+                    alignment: Alignment.centerRight,
+                    maxWidth: _maxOffset,
+                    child: SizedBox(
+                      width: _maxOffset,
+                      child: _buildSwipeActions(context),
+                    ),
                   ),
-                if (widget.onRemove != null)
-                  _SwipeActionButton(
-                    width: _actionWidth,
-                    color: context.appColors.danger,
-                    icon: Icons.delete_outline_rounded,
-                    label: widget.removeLabel,
-                    onTap: () {
-                      _close();
-                      widget.onRemove!();
-                    },
-                  ),
-              ],
-            ),
-          ),
-          GestureDetector(
-            behavior: HitTestBehavior.opaque,
-            dragStartBehavior: DragStartBehavior.down,
-            onHorizontalDragStart: _onHorizontalDragStart,
-            onHorizontalDragUpdate: _onHorizontalDragUpdate,
-            onHorizontalDragEnd: _onHorizontalDragEnd,
-            onHorizontalDragCancel: _onHorizontalDragCancel,
-            onTap: _close,
-            child: Transform.translate(
-              offset: Offset(-_offset, 0),
-              child: ColoredBox(
-                color: widget.backgroundColor,
-                child: widget.child,
+                ),
+              ),
+            GestureDetector(
+              behavior: HitTestBehavior.opaque,
+              dragStartBehavior: DragStartBehavior.down,
+              onHorizontalDragStart: _onHorizontalDragStart,
+              onHorizontalDragUpdate: _onHorizontalDragUpdate,
+              onHorizontalDragEnd: _onHorizontalDragEnd,
+              onHorizontalDragCancel: _onHorizontalDragCancel,
+              onTap: _close,
+              child: Transform.translate(
+                offset: Offset(-_offset, 0),
+                child: ColoredBox(
+                  color: widget.backgroundColor,
+                  child: widget.child,
+                ),
               ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
@@ -467,7 +547,7 @@ class _SwipeActionButton extends StatelessWidget {
 class _CompactIconCell extends StatelessWidget {
   const _CompactIconCell({
     required this.child,
-    this.width = 30,
+    this.width = 26,
   });
 
   final Widget child;
@@ -475,9 +555,15 @@ class _CompactIconCell extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return SizedBox(
-      width: width,
-      child: Center(child: child),
+    return Center(
+      child: FittedBox(
+        fit: BoxFit.scaleDown,
+        child: SizedBox(
+          width: width,
+          height: width,
+          child: Center(child: child),
+        ),
+      ),
     );
   }
 }

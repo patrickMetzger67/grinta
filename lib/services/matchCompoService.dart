@@ -11,25 +11,57 @@ class MatchCompoService {
   CollectionReference get _collection =>
       _firestore.collection(collectionMatchCompo);
 
+  /// Deterministic doc id: `{matchId}_{teamId}`.
+  static String buildDocumentId({
+    required String matchId,
+    required String teamId,
+  }) {
+    return '${matchId.trim()}_${teamId.trim()}';
+  }
+
+  DocumentReference docRefFor({
+    required String matchId,
+    required String teamId,
+  }) {
+    return _collection.doc(
+      buildDocumentId(matchId: matchId, teamId: teamId),
+    );
+  }
+
   Future<DocumentReference> addMatchCompo(MatchCompo matchCompo) async {
-    return await _collection.add(matchCompo.toMap());
+    final matchId = matchCompo.matchID?.trim() ?? '';
+    final teamId = matchCompo.teamID?.trim() ?? '';
+    if (matchId.isEmpty || teamId.isEmpty) {
+      throw Exception('matchID et teamID requis pour créer un MatchCompo');
+    }
+
+    final docRef = docRefFor(matchId: matchId, teamId: teamId);
+    await docRef.set(matchCompo.toMap());
+    return docRef;
   }
 
   Future<void> updateMatchCompo(MatchCompo matchCompo) async {
-    if (matchCompo.ref == null) {
-      throw Exception("La référence du MatchCompo est nulle");
+    final matchId = matchCompo.matchID?.trim() ?? '';
+    final teamId = matchCompo.teamID?.trim() ?? '';
+    if (matchId.isEmpty || teamId.isEmpty) {
+      throw Exception('matchID et teamID requis pour mettre à jour un MatchCompo');
     }
 
-    await matchCompo.ref!.update(matchCompo.toMap());
+    final docRef = docRefFor(matchId: matchId, teamId: teamId);
+    matchCompo.ref = docRef;
+    await docRef.set(matchCompo.toMap(), SetOptions(merge: true));
   }
 
   Future<void> saveMatchCompo(MatchCompo matchCompo) async {
-    if (matchCompo.ref == null) {
-      final docRef = await addMatchCompo(matchCompo);
-      matchCompo.ref = docRef;
-    } else {
-      await updateMatchCompo(matchCompo);
+    final matchId = matchCompo.matchID?.trim() ?? '';
+    final teamId = matchCompo.teamID?.trim() ?? '';
+    if (matchId.isEmpty || teamId.isEmpty) {
+      throw Exception('matchID et teamID requis pour enregistrer un MatchCompo');
     }
+
+    final docRef = docRefFor(matchId: matchId, teamId: teamId);
+    matchCompo.ref = docRef;
+    await docRef.set(matchCompo.toMap(), SetOptions(merge: true));
   }
 
   Future<void> deleteMatchCompo(MatchCompo matchCompo) async {
@@ -50,6 +82,57 @@ class MatchCompoService {
     if (!doc.exists) return null;
 
     return MatchCompo.fromSnapshot(doc);
+  }
+
+  Future<MatchCompo?> getMatchCompoByMatchAndTeamId(
+    String matchId,
+    String teamId,
+  ) async {
+    final trimmedMatchId = matchId.trim();
+    final trimmedTeamId = teamId.trim();
+    if (trimmedMatchId.isEmpty || trimmedTeamId.isEmpty) return null;
+
+    final canonicalDoc =
+        await docRefFor(matchId: trimmedMatchId, teamId: trimmedTeamId).get();
+    if (canonicalDoc.exists) {
+      return MatchCompo.fromSnapshot(canonicalDoc);
+    }
+
+    return _loadLegacyMatchCompo(
+      matchId: trimmedMatchId,
+      teamId: trimmedTeamId,
+    );
+  }
+
+  Stream<MatchCompo?> streamMatchCompoByMatchAndTeamId(
+    String matchId,
+    String teamId,
+  ) {
+    final trimmedMatchId = matchId.trim();
+    final trimmedTeamId = teamId.trim();
+    if (trimmedMatchId.isEmpty || trimmedTeamId.isEmpty) {
+      return Stream<MatchCompo?>.value(null);
+    }
+
+    final canonicalRef =
+        docRefFor(matchId: trimmedMatchId, teamId: trimmedTeamId);
+    final legacyQuery = _collection
+        .where(keyMatchCompoMatchId, isEqualTo: trimmedMatchId)
+        .where(keyMatchCompoTeamID, isEqualTo: trimmedTeamId)
+        .limit(1);
+
+    return canonicalRef.snapshots().asyncExpand((canonicalSnap) {
+      if (canonicalSnap.exists) {
+        return Stream<MatchCompo?>.value(
+          MatchCompo.fromSnapshot(canonicalSnap),
+        );
+      }
+
+      return legacyQuery.snapshots().map((querySnap) {
+        if (querySnap.docs.isEmpty) return null;
+        return MatchCompo.fromSnapshot(querySnap.docs.first);
+      });
+    });
   }
 
   Future<List<MatchCompo>> getAllMatchCompos() async {
@@ -158,7 +241,19 @@ class MatchCompoService {
     required List<String> profileTeamIds,
     String? preferredTeamId,
   }) async {
-    final compos = await getMatchComposByMatchId(matchId);
+    final teamId = _resolveTeamId(
+      profileTeamIds: profileTeamIds,
+      preferredTeamId: preferredTeamId,
+    );
+    if (teamId == null) return null;
+
+    final trimmedMatchId = matchId.trim();
+    if (trimmedMatchId.isEmpty) return null;
+
+    final direct = await getMatchCompoByMatchAndTeamId(trimmedMatchId, teamId);
+    if (direct != null) return direct;
+
+    final compos = await getMatchComposByMatchId(trimmedMatchId);
     return pickMatchCompoForProfileTeams(
       compos,
       profileTeamIds: profileTeamIds,
@@ -171,12 +266,46 @@ class MatchCompoService {
     required List<String> profileTeamIds,
     String? preferredTeamId,
   }) {
-    return streamMatchComposByMatchId(matchId).map((List<MatchCompo> compos) {
-      return pickMatchCompoForProfileTeams(
-        compos,
-        profileTeamIds: profileTeamIds,
-        preferredTeamId: preferredTeamId,
-      );
-    });
+    final teamId = _resolveTeamId(
+      profileTeamIds: profileTeamIds,
+      preferredTeamId: preferredTeamId,
+    );
+    if (teamId == null) {
+      return Stream<MatchCompo?>.value(null);
+    }
+
+    final trimmedMatchId = matchId.trim();
+    if (trimmedMatchId.isEmpty) {
+      return Stream<MatchCompo?>.value(null);
+    }
+
+    return streamMatchCompoByMatchAndTeamId(trimmedMatchId, teamId);
+  }
+
+  String? _resolveTeamId({
+    required List<String> profileTeamIds,
+    String? preferredTeamId,
+  }) {
+    final preferred = preferredTeamId?.trim();
+    if (preferred != null && preferred.isNotEmpty) return preferred;
+
+    final ids = normalizeTeamIdList(profileTeamIds);
+    if (ids.isEmpty) return null;
+    return ids.first;
+  }
+
+  Future<MatchCompo?> _loadLegacyMatchCompo({
+    required String matchId,
+    required String teamId,
+  }) async {
+    final querySnapshot = await _collection
+        .where(keyMatchCompoMatchId, isEqualTo: matchId)
+        .where(keyMatchCompoTeamID, isEqualTo: teamId)
+        .limit(1)
+        .get();
+
+    if (querySnapshot.docs.isEmpty) return null;
+
+    return MatchCompo.fromSnapshot(querySnapshot.docs.first);
   }
 }
