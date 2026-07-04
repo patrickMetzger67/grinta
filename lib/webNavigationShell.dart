@@ -20,6 +20,7 @@ import 'screen/my_unavailabilities_screen.dart';
 import 'widget/nav_icon_count_badge.dart';
 import 'widget/calendar_sync_toggle.dart';
 import 'widget/subscription_details_sheet.dart';
+import 'widget/notifications_sheet.dart';
 
 import 'main.dart';
 
@@ -359,29 +360,37 @@ class _WebNavigationShellState extends State<WebNavigationShell> {
                         horizontal: 12,
                         vertical: _collapsed ? 18 : 10,
                       ),
-                      child: ListView.separated(
-                        itemCount: widget.items.length,
-                        separatorBuilder: (_, __) => const SizedBox(height: 8),
-                        itemBuilder: (context, index) {
-                          final item = widget.items[index];
-                          final selected = index == safeSelectedIndex;
+                      child: Column(
+                        children: [
+                          Expanded(
+                            child: ListView.separated(
+                              itemCount: widget.items.length,
+                              separatorBuilder: (_, __) =>
+                                  const SizedBox(height: 8),
+                              itemBuilder: (context, index) {
+                                final item = widget.items[index];
+                                final selected = index == safeSelectedIndex;
 
-                          return _SidebarItem(
-                            collapsed: _collapsed,
-                            selected: selected,
-                            label: item.label,
-                            icon: item.icon,
-                            badgeCount: item.badgeCount,
-                            onTap: () {
-                              if (index == safeSelectedIndex) return;
-                              setState(() {
-                                _selectedIndex = index;
-                              });
-                              _markTabFeatureVisited(index);
-                              _logTabScreen(index);
-                            },
-                          );
-                        },
+                                return _SidebarItem(
+                                  collapsed: _collapsed,
+                                  selected: selected,
+                                  label: item.label,
+                                  icon: item.icon,
+                                  badgeCount: item.badgeCount,
+                                  onTap: () {
+                                    if (index == safeSelectedIndex) return;
+                                    setState(() {
+                                      _selectedIndex = index;
+                                    });
+                                    _markTabFeatureVisited(index);
+                                    _logTabScreen(index);
+                                  },
+                                );
+                              },
+                            ),
+                          ),
+                          NotificationSidebarEntry(collapsed: _collapsed),
+                        ],
                       ),
                     ),
                   ),

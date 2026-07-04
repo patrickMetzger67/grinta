@@ -30,6 +30,7 @@ import 'package:grinta/screen/my_unavailabilities_screen.dart';
 import 'package:grinta/widget/nav_icon_count_badge.dart';
 import 'package:grinta/widget/calendar_sync_toggle.dart';
 import 'package:grinta/widget/subscription_details_sheet.dart';
+import 'package:grinta/widget/notifications_sheet.dart';
 import 'package:provider/provider.dart';
 
 const List<String> _kMobileTabFeatureIds = <String>[
@@ -653,6 +654,7 @@ class _MobileNavigationShellState extends State<MobileNavigationShell> {
             height: 32,
           ),
           actions: [
+            const NotificationAppBarButton(),
             Padding(
               padding: const EdgeInsets.only(right: 12),
               child: _MobileAvatarMenuButton(

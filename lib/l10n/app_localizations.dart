@@ -1287,6 +1287,90 @@ abstract class AppLocalizations {
   /// **'Synchronisation'**
   String get navSync;
 
+  /// No description provided for @navNotifications.
+  ///
+  /// In fr, this message translates to:
+  /// **'Notifications'**
+  String get navNotifications;
+
+  /// No description provided for @notificationsTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Notifications'**
+  String get notificationsTitle;
+
+  /// No description provided for @notificationsEmptyTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Aucune notification'**
+  String get notificationsEmptyTitle;
+
+  /// No description provided for @notificationsEmptyMessage.
+  ///
+  /// In fr, this message translates to:
+  /// **'Vous n\'avez aucune notification non lue.'**
+  String get notificationsEmptyMessage;
+
+  /// No description provided for @notificationsMarkAsRead.
+  ///
+  /// In fr, this message translates to:
+  /// **'Marquer comme lue'**
+  String get notificationsMarkAsRead;
+
+  /// No description provided for @notificationsMarkAsReadError.
+  ///
+  /// In fr, this message translates to:
+  /// **'Impossible de marquer la notification comme lue.'**
+  String get notificationsMarkAsReadError;
+
+  /// No description provided for @notificationsConvocationMatchDetails.
+  ///
+  /// In fr, this message translates to:
+  /// **'Détails du match'**
+  String get notificationsConvocationMatchDetails;
+
+  /// No description provided for @notificationsConvocationPresent.
+  ///
+  /// In fr, this message translates to:
+  /// **'Je serai présent'**
+  String get notificationsConvocationPresent;
+
+  /// No description provided for @notificationsConvocationAbsent.
+  ///
+  /// In fr, this message translates to:
+  /// **'Pas présent'**
+  String get notificationsConvocationAbsent;
+
+  /// No description provided for @notificationsConvocationAbsentDialogTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Motif d\'absence'**
+  String get notificationsConvocationAbsentDialogTitle;
+
+  /// No description provided for @notificationsConvocationAbsentMessageHint.
+  ///
+  /// In fr, this message translates to:
+  /// **'Expliquez pourquoi vous ne serez pas présent'**
+  String get notificationsConvocationAbsentMessageHint;
+
+  /// No description provided for @notificationsConvocationAbsentConfirm.
+  ///
+  /// In fr, this message translates to:
+  /// **'Confirmer'**
+  String get notificationsConvocationAbsentConfirm;
+
+  /// No description provided for @notificationsConvocationAbsentMessageRequired.
+  ///
+  /// In fr, this message translates to:
+  /// **'Veuillez saisir un message.'**
+  String get notificationsConvocationAbsentMessageRequired;
+
+  /// No description provided for @notificationsConvocationActionError.
+  ///
+  /// In fr, this message translates to:
+  /// **'Impossible de répondre à la convocation.'**
+  String get notificationsConvocationActionError;
+
   /// No description provided for @featureDiscoveryAgendaTitle.
   ///
   /// In fr, this message translates to:
@@ -1652,6 +1736,12 @@ abstract class AppLocalizations {
   /// In fr, this message translates to:
   /// **'Convocation · {opponent}'**
   String matchConvocationNotificationTitle(String opponent);
+
+  /// No description provided for @matchConvocationFeedbackNotificationTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Réponse convocation · {opponent}'**
+  String matchConvocationFeedbackNotificationTitle(String opponent);
 
   /// No description provided for @matchConvocationNotificationBody.
   ///

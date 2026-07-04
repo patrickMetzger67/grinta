@@ -33,6 +33,7 @@ String keyNotifDateTimeCreated = 'dateTimeCreated';
 String keyNotifDateTimeViewed = 'dateTimeViewed';
 String keyNotifCreatedUserId = 'createdUserId';
 String keyNotifClubId = 'clubId';
+String keyNotifPlayerId = 'playerId';
 
 class NotificationApp {
   String? userId;
@@ -46,6 +47,7 @@ class NotificationApp {
   Timestamp? dateTimeViewed;
   String? createdUserId;
   String? clubId;
+  String? playerId;
   DocumentReference? ref;
 
   NotificationApp(
@@ -58,7 +60,8 @@ class NotificationApp {
       this.isViewed = false,
       this.dateTimeCreated,
       this.createdUserId,
-      this.clubId
+      this.clubId,
+      this.playerId,
       });
 
   NotificationApp.fromSnapshot(DocumentSnapshot documentSnapshot) {
@@ -169,6 +172,9 @@ class NotificationApp {
     } else {
       clubId = '';
     }
+    if (map[keyNotifPlayerId] != null) {
+      playerId = map[keyNotifPlayerId];
+    }
   }
 
   Map<String, dynamic> toMap() {
@@ -183,7 +189,8 @@ class NotificationApp {
       keyNotifDateTimeCreated: dateTimeCreated,
       keyNotifDateTimeViewed: dateTimeViewed,
       keyNotifCreatedUserId: createdUserId,
-      keyNotifClubId:clubId,
+      keyNotifClubId: clubId,
+      keyNotifPlayerId: playerId,
     };
     return map;
   }
@@ -200,7 +207,8 @@ class NotificationApp {
         'dateTimeCreated:${dateTimeCreated.toString()} ' +
         'dateTimeViewed:${dateTimeViewed.toString()} ' +
         'createUserId:$createdUserId ' +
-        'clubId:$clubId';
+        'clubId:$clubId ' +
+        'playerId:$playerId';
   }
 }
 class Token {

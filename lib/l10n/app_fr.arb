@@ -260,6 +260,20 @@
   "navTeams": "Équipes",
   "navChat": "Messagerie",
   "navSync": "Synchronisation",
+  "navNotifications": "Notifications",
+  "notificationsTitle": "Notifications",
+  "notificationsEmptyTitle": "Aucune notification",
+  "notificationsEmptyMessage": "Vous n'avez aucune notification non lue.",
+  "notificationsMarkAsRead": "Marquer comme lue",
+  "notificationsMarkAsReadError": "Impossible de marquer la notification comme lue.",
+  "notificationsConvocationMatchDetails": "Détails du match",
+  "notificationsConvocationPresent": "Je serai présent",
+  "notificationsConvocationAbsent": "Pas présent",
+  "notificationsConvocationAbsentDialogTitle": "Motif d'absence",
+  "notificationsConvocationAbsentMessageHint": "Expliquez pourquoi vous ne serez pas présent",
+  "notificationsConvocationAbsentConfirm": "Confirmer",
+  "notificationsConvocationAbsentMessageRequired": "Veuillez saisir un message.",
+  "notificationsConvocationActionError": "Impossible de répondre à la convocation.",
 
   "featureDiscoveryAgendaTitle": "Découvrez l’agenda",
   "featureDiscoveryAgendaMessage": "Consultez vos matchs et entraînements à venir depuis l’onglet Agenda.",
@@ -370,6 +384,12 @@
   },
   "matchConvocationNotificationTitle": "Convocation · {opponent}",
   "@matchConvocationNotificationTitle": {
+    "placeholders": {
+      "opponent": { "type": "String" }
+    }
+  },
+  "matchConvocationFeedbackNotificationTitle": "Réponse convocation · {opponent}",
+  "@matchConvocationFeedbackNotificationTitle": {
     "placeholders": {
       "opponent": { "type": "String" }
     }

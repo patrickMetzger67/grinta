@@ -1,4 +1,5 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:flutter/foundation.dart';
 
 import '../model/notification.dart';
 
@@ -9,6 +10,76 @@ class NotificationService {
 
   CollectionReference<Map<String, dynamic>> get _collection =>
       _firestore.collection(collectionName);
+
+  static bool isNotificationUnviewed(NotificationApp notification) {
+    return notification.isViewed != true;
+  }
+
+  static bool isNotificationUnviewedData(Map<String, dynamic> data) {
+    return data[keyNotifIsViewed] != true;
+  }
+
+  static List<NotificationApp> sortNotificationsNewestFirst(
+    List<NotificationApp> notifications,
+  ) {
+    final sorted = List<NotificationApp>.from(notifications);
+    sorted.sort((a, b) {
+      final aTime = a.dateTimeCreated?.millisecondsSinceEpoch ?? 0;
+      final bTime = b.dateTimeCreated?.millisecondsSinceEpoch ?? 0;
+      return bTime.compareTo(aTime);
+    });
+    return sorted;
+  }
+
+  List<NotificationApp> _parseUnviewedNotifications(
+    QuerySnapshot<Map<String, dynamic>> snapshot,
+  ) {
+    return sortNotificationsNewestFirst(
+      snapshot.docs
+          .map((doc) => NotificationApp.fromSnapshot(doc))
+          .where(isNotificationUnviewed)
+          .toList(),
+    );
+  }
+
+  void _logFirestoreReadError({
+    required String method,
+    required String queryContext,
+    required Object error,
+  }) {
+    if (error is FirebaseException) {
+      debugPrint(
+        'Firestore read failed in NotificationService.$method: '
+        'collection=$collectionName filters=[$queryContext] '
+        'code=${error.code} message=${error.message}',
+      );
+      if (error.code == 'failed-precondition') {
+        debugPrint(
+          'Firestore index may be missing for $method. Full error: $error',
+        );
+      }
+    } else {
+      debugPrint(
+        'Unexpected error in NotificationService.$method: '
+        'collection=$collectionName filters=[$queryContext] $error',
+      );
+    }
+  }
+
+  Stream<T> _withReadErrorLogging<T>({
+    required Stream<T> stream,
+    required String method,
+    required String queryContext,
+  }) {
+    return stream.handleError((Object error, StackTrace stackTrace) {
+      _logFirestoreReadError(
+        method: method,
+        queryContext: queryContext,
+        error: error,
+      );
+      Error.throwWithStackTrace(error, stackTrace);
+    });
+  }
 
   /// CREATE
   Future<String> createNotification(NotificationApp notification) async {
@@ -168,38 +239,45 @@ class NotificationService {
     });
   }
 
-  /// GET UNVIEWED BY USER ID
-  Future<List<NotificationApp>> getUnviewedNotificationsByUserId(
-    String userId,
+  /// GET UNVIEWED BY PLAYER ID
+  ///
+  /// Queries by [keyNotifPlayerId] only, then filters/sorts client-side so we
+  /// do not require a composite index and still treat missing [keyNotifIsViewed]
+  /// as unread.
+  Future<List<NotificationApp>> getUnviewedNotificationsByPlayerId(
+    String playerId,
   ) async {
+    const method = 'getUnviewedNotificationsByPlayerId';
+    final queryContext = '$keyNotifPlayerId==$playerId';
     try {
       final query = await _collection
-          .where(keyNotifUserId, isEqualTo: userId)
-          .where(keyNotifIsViewed, isEqualTo: false)
-          .orderBy(keyNotifDateTimeCreated, descending: true)
+          .where(keyNotifPlayerId, isEqualTo: playerId)
           .get();
 
-      return query.docs
-          .map((doc) => NotificationApp.fromSnapshot(doc))
-          .toList();
+      return _parseUnviewedNotifications(query);
     } catch (e) {
+      _logFirestoreReadError(
+        method: method,
+        queryContext: queryContext,
+        error: e,
+      );
       rethrow;
     }
   }
 
-  Stream<List<NotificationApp>> streamUnviewedNotificationsByUserId(
-    String userId,
+  Stream<List<NotificationApp>> streamUnviewedNotificationsByPlayerId(
+    String playerId,
   ) {
-    return _collection
-        .where(keyNotifUserId, isEqualTo: userId)
-        .where(keyNotifIsViewed, isEqualTo: false)
-        .orderBy(keyNotifDateTimeCreated, descending: true)
-        .snapshots()
-        .map((snapshot) {
-      return snapshot.docs
-          .map((doc) => NotificationApp.fromSnapshot(doc))
-          .toList();
-    });
+    const method = 'streamUnviewedNotificationsByPlayerId';
+    final queryContext = '$keyNotifPlayerId==$playerId';
+    return _withReadErrorLogging(
+      method: method,
+      queryContext: queryContext,
+      stream: _collection
+          .where(keyNotifPlayerId, isEqualTo: playerId)
+          .snapshots()
+          .map(_parseUnviewedNotifications),
+    );
   }
 
   /// GET BY CLUB ID
@@ -300,19 +378,23 @@ class NotificationService {
     }
   }
 
-  Future<void> markAllNotificationsAsViewedForUser(String userId) async {
+  Future<void> markAllNotificationsAsViewedForPlayer(String playerId) async {
+    const method = 'markAllNotificationsAsViewedForPlayer';
+    final queryContext = '$keyNotifPlayerId==$playerId';
     try {
       final query = await _collection
-          .where(keyNotifUserId, isEqualTo: userId)
-          .where(keyNotifIsViewed, isEqualTo: false)
+          .where(keyNotifPlayerId, isEqualTo: playerId)
           .get();
 
-      if (query.docs.isEmpty) return;
+      final unviewedDocs = query.docs.where(
+        (doc) => isNotificationUnviewedData(doc.data()),
+      );
+      if (unviewedDocs.isEmpty) return;
 
       final batch = _firestore.batch();
       final now = Timestamp.now();
 
-      for (final doc in query.docs) {
+      for (final doc in unviewedDocs) {
         batch.update(doc.reference, {
           keyNotifIsViewed: true,
           keyNotifDateTimeViewed: now,
@@ -321,6 +403,11 @@ class NotificationService {
 
       await batch.commit();
     } catch (e) {
+      _logFirestoreReadError(
+        method: method,
+        queryContext: queryContext,
+        error: e,
+      );
       rethrow;
     }
   }

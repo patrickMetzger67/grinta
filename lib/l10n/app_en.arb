@@ -251,6 +251,20 @@
   "navTeams": "teams",
   "navChat": "Messaging",
   "navSync": "Synchronization",
+  "navNotifications": "Notifications",
+  "notificationsTitle": "Notifications",
+  "notificationsEmptyTitle": "No notifications",
+  "notificationsEmptyMessage": "You have no unread notifications.",
+  "notificationsMarkAsRead": "Mark as read",
+  "notificationsMarkAsReadError": "Could not mark notification as read.",
+  "notificationsConvocationMatchDetails": "Match details",
+  "notificationsConvocationPresent": "I'll be there",
+  "notificationsConvocationAbsent": "Not attending",
+  "notificationsConvocationAbsentDialogTitle": "Reason for absence",
+  "notificationsConvocationAbsentMessageHint": "Explain why you cannot attend",
+  "notificationsConvocationAbsentConfirm": "Confirm",
+  "notificationsConvocationAbsentMessageRequired": "Please enter a message.",
+  "notificationsConvocationActionError": "Could not respond to the call-up.",
 
   "featureDiscoveryAgendaTitle": "Discover the calendar",
   "featureDiscoveryAgendaMessage": "View upcoming matches and training sessions from the Agenda tab.",
@@ -360,6 +374,12 @@
   },
   "matchConvocationNotificationTitle": "Call-up · {opponent}",
   "@matchConvocationNotificationTitle": {
+    "placeholders": {
+      "opponent": { "type": "String" }
+    }
+  },
+  "matchConvocationFeedbackNotificationTitle": "Call-up response · {opponent}",
+  "@matchConvocationFeedbackNotificationTitle": {
     "placeholders": {
       "opponent": { "type": "String" }
     }

@@ -40,4 +40,5 @@ abstract final class AnalyticsScreenNames {
 
   // Settings
   static const myUnavailabilities = 'my_unavailabilities';
+  static const notifications = 'notifications';
 }

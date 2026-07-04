@@ -276,3 +276,29 @@ IconData _typeIcon(AgendaItemType type) {
       return Icons.directions_run_rounded;
   }
 }
+
+String? _formatTimeHmForLocale(String? timeHm, String locale) {
+  final trimmed = timeHm?.trim() ?? '';
+  if (trimmed.isEmpty) return null;
+
+  final timeOfDay = parseMatchTimeCh(trimmed);
+  if (timeOfDay == null) return trimmed;
+
+  final dateTime = DateTime(2000, 1, 1, timeOfDay.hour, timeOfDay.minute);
+  return DateFormat.Hm(locale).format(dateTime);
+}
+
+String? _agendaEventTimeLabel(AgendaItem item, String locale) {
+  String? timeHm;
+  switch (item.type) {
+    case AgendaItemType.match:
+      timeHm = item.match?.timeCh;
+    case AgendaItemType.entrainement:
+      timeHm = item.training?.startTime;
+    case AgendaItemType.preparationPhysique:
+      return null;
+  }
+
+  return _formatTimeHmForLocale(timeHm, locale) ??
+      DateFormat.Hm(locale).format(item.startAt);
+}

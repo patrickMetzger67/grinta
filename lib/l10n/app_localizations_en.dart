@@ -653,6 +653,52 @@ class AppLocalizationsEn extends AppLocalizations {
   String get navSync => 'Synchronization';
 
   @override
+  String get navNotifications => 'Notifications';
+
+  @override
+  String get notificationsTitle => 'Notifications';
+
+  @override
+  String get notificationsEmptyTitle => 'No notifications';
+
+  @override
+  String get notificationsEmptyMessage => 'You have no unread notifications.';
+
+  @override
+  String get notificationsMarkAsRead => 'Mark as read';
+
+  @override
+  String get notificationsMarkAsReadError =>
+      'Could not mark notification as read.';
+
+  @override
+  String get notificationsConvocationMatchDetails => 'Match details';
+
+  @override
+  String get notificationsConvocationPresent => 'I\'ll be there';
+
+  @override
+  String get notificationsConvocationAbsent => 'Not attending';
+
+  @override
+  String get notificationsConvocationAbsentDialogTitle => 'Reason for absence';
+
+  @override
+  String get notificationsConvocationAbsentMessageHint =>
+      'Explain why you cannot attend';
+
+  @override
+  String get notificationsConvocationAbsentConfirm => 'Confirm';
+
+  @override
+  String get notificationsConvocationAbsentMessageRequired =>
+      'Please enter a message.';
+
+  @override
+  String get notificationsConvocationActionError =>
+      'Could not respond to the call-up.';
+
+  @override
   String get featureDiscoveryAgendaTitle => 'Discover the calendar';
 
   @override
@@ -892,6 +938,11 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String matchConvocationNotificationTitle(String opponent) {
     return 'Call-up · $opponent';
+  }
+
+  @override
+  String matchConvocationFeedbackNotificationTitle(String opponent) {
+    return 'Call-up response · $opponent';
   }
 
   @override

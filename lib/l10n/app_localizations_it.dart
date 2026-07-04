@@ -653,6 +653,53 @@ class AppLocalizationsIt extends AppLocalizations {
   String get navSync => 'Sincronizzazione';
 
   @override
+  String get navNotifications => 'Notifiche';
+
+  @override
+  String get notificationsTitle => 'Notifiche';
+
+  @override
+  String get notificationsEmptyTitle => 'Nessuna notifica';
+
+  @override
+  String get notificationsEmptyMessage => 'Non hai notifiche non lette.';
+
+  @override
+  String get notificationsMarkAsRead => 'Segna come letta';
+
+  @override
+  String get notificationsMarkAsReadError =>
+      'Impossibile segnare la notifica come letta.';
+
+  @override
+  String get notificationsConvocationMatchDetails => 'Dettagli partita';
+
+  @override
+  String get notificationsConvocationPresent => 'Sarò presente';
+
+  @override
+  String get notificationsConvocationAbsent => 'Non presente';
+
+  @override
+  String get notificationsConvocationAbsentDialogTitle =>
+      'Motivo dell\'assenza';
+
+  @override
+  String get notificationsConvocationAbsentMessageHint =>
+      'Spiega perché non potrai partecipare';
+
+  @override
+  String get notificationsConvocationAbsentConfirm => 'Conferma';
+
+  @override
+  String get notificationsConvocationAbsentMessageRequired =>
+      'Inserisci un messaggio.';
+
+  @override
+  String get notificationsConvocationActionError =>
+      'Impossibile rispondere alla convocazione.';
+
+  @override
   String get featureDiscoveryAgendaTitle => 'Scopri l’agenda';
 
   @override
@@ -894,6 +941,11 @@ class AppLocalizationsIt extends AppLocalizations {
   @override
   String matchConvocationNotificationTitle(String opponent) {
     return 'Convocazione · $opponent';
+  }
+
+  @override
+  String matchConvocationFeedbackNotificationTitle(String opponent) {
+    return 'Risposta convocazione · $opponent';
   }
 
   @override

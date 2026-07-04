@@ -256,6 +256,20 @@
   "navTeams": "squadre",
   "navChat": "Messaggi",
   "navSync": "Sincronizzazione",
+  "navNotifications": "Notifiche",
+  "notificationsTitle": "Notifiche",
+  "notificationsEmptyTitle": "Nessuna notifica",
+  "notificationsEmptyMessage": "Non hai notifiche non lette.",
+  "notificationsMarkAsRead": "Segna come letta",
+  "notificationsMarkAsReadError": "Impossibile segnare la notifica come letta.",
+  "notificationsConvocationMatchDetails": "Dettagli partita",
+  "notificationsConvocationPresent": "Sarò presente",
+  "notificationsConvocationAbsent": "Non presente",
+  "notificationsConvocationAbsentDialogTitle": "Motivo dell'assenza",
+  "notificationsConvocationAbsentMessageHint": "Spiega perché non potrai partecipare",
+  "notificationsConvocationAbsentConfirm": "Conferma",
+  "notificationsConvocationAbsentMessageRequired": "Inserisci un messaggio.",
+  "notificationsConvocationActionError": "Impossibile rispondere alla convocazione.",
 
   "featureDiscoveryAgendaTitle": "Scopri l’agenda",
   "featureDiscoveryAgendaMessage": "Consulta partite e allenamenti in arrivo dalla scheda Agenda.",
@@ -365,6 +379,12 @@
   },
   "matchConvocationNotificationTitle": "Convocazione · {opponent}",
   "@matchConvocationNotificationTitle": {
+    "placeholders": {
+      "opponent": { "type": "String" }
+    }
+  },
+  "matchConvocationFeedbackNotificationTitle": "Risposta convocazione · {opponent}",
+  "@matchConvocationFeedbackNotificationTitle": {
     "placeholders": {
       "opponent": { "type": "String" }
     }

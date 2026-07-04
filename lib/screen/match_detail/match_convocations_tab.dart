@@ -215,6 +215,43 @@ class _MatchConvocationsTabState extends State<MatchConvocationsTab>
     _ensureConvokedPlayersLoaded();
   }
 
+  /// True when local convocation answers match the Firestore snapshot.
+  bool _convocationsMatchRemote(MatchCompo? draft, MatchCompo? remote) {
+    if (draft == null || remote == null) {
+      return draft == remote;
+    }
+
+    final draftList = draft.convocation ?? const <PlayerConvo>[];
+    final remoteList = remote.convocation ?? const <PlayerConvo>[];
+    if (draftList.length != remoteList.length) {
+      return false;
+    }
+
+    final remoteByPlayerId = <String, PlayerConvo>{};
+    for (final PlayerConvo convo in remoteList) {
+      final id = convo.playerID?.trim();
+      if (id != null && id.isNotEmpty) {
+        remoteByPlayerId[id] = convo;
+      }
+    }
+
+    for (final PlayerConvo convo in draftList) {
+      final id = convo.playerID?.trim();
+      if (id == null || id.isEmpty) {
+        return false;
+      }
+      final other = remoteByPlayerId[id];
+      if (other == null) {
+        return false;
+      }
+      if (convo.isPresent != other.isPresent ||
+          convo.asAnswer != other.asAnswer) {
+        return false;
+      }
+    }
+    return true;
+  }
+
   Map<String, PlayerConvo> get _convocationsByPlayerId {
     final map = <String, PlayerConvo>{};
     for (final PlayerConvo convo in _draftCompo?.convocation ?? const []) {
@@ -537,15 +574,19 @@ class _MatchConvocationsTabState extends State<MatchConvocationsTab>
     return StreamBuilder<MatchCompo?>(
       stream: _matchCompoStream ?? Stream<MatchCompo?>.value(null),
       builder: (context, snapshot) {
-        if (snapshot.hasData && _draftCompo?.ref?.path != snapshot.data?.ref?.path) {
-          _cachedMatchCompo = snapshot.data;
-          WidgetsBinding.instance.addPostFrameCallback((_) {
-            if (mounted) {
-              _hydrateFromMatchCompo(snapshot.data);
-            }
-          });
-        } else if (snapshot.hasData) {
-          _cachedMatchCompo = snapshot.data;
+        if (snapshot.hasData) {
+          final streamCompo = snapshot.data;
+          _cachedMatchCompo = streamCompo;
+          final shouldHydrate = !_saving &&
+              (_draftCompo == null ||
+                  !_convocationsMatchRemote(_draftCompo, streamCompo));
+          if (shouldHydrate) {
+            WidgetsBinding.instance.addPostFrameCallback((_) {
+              if (mounted && !_saving) {
+                _hydrateFromMatchCompo(streamCompo);
+              }
+            });
+          }
         }
 
         final matchCompo = _draftCompo ?? _cachedMatchCompo;

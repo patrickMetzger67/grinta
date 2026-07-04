@@ -294,6 +294,76 @@ class MatchCompoService {
     return ids.first;
   }
 
+  /// Updates one player's convocation answer atomically (safe under concurrent edits).
+  Future<void> updatePlayerConvocationAnswer({
+    required String matchId,
+    required String teamId,
+    required String playerId,
+    required bool isPresent,
+  }) async {
+    final trimmedMatchId = matchId.trim();
+    final trimmedTeamId = teamId.trim();
+    final trimmedPlayerId = playerId.trim();
+    if (trimmedMatchId.isEmpty ||
+        trimmedTeamId.isEmpty ||
+        trimmedPlayerId.isEmpty) {
+      throw ArgumentError('matchId, teamId and playerId are required');
+    }
+
+    final existing = await getMatchCompoByMatchAndTeamId(
+      trimmedMatchId,
+      trimmedTeamId,
+    );
+    final docRef =
+        existing?.ref ?? docRefFor(matchId: trimmedMatchId, teamId: trimmedTeamId);
+
+    await _firestore.runTransaction((transaction) async {
+      final snap = await transaction.get(docRef);
+
+      final MatchCompo compo;
+      if (snap.exists) {
+        compo = MatchCompo.fromSnapshot(snap);
+      } else {
+        compo = MatchCompo(
+          matchID: trimmedMatchId,
+          teamID: trimmedTeamId,
+        );
+      }
+
+      final convocations = List<PlayerConvo>.from(compo.convocation ?? const []);
+      var updated = false;
+      for (final PlayerConvo convo in convocations) {
+        if (convo.playerID?.trim() == trimmedPlayerId) {
+          convo.isPresent = isPresent;
+          convo.asAnswer = true;
+          updated = true;
+          break;
+        }
+      }
+
+      if (!updated) {
+        convocations.add(
+          PlayerConvo(
+            playerID: trimmedPlayerId,
+            isPresent: isPresent,
+            asAnswer: true,
+          ),
+        );
+      }
+
+      transaction.set(
+        docRef,
+        {
+          keyMatchCompoMatchId: trimmedMatchId,
+          keyMatchCompoTeamID: trimmedTeamId,
+          keyMatchCompoConvocation:
+              convocations.map((PlayerConvo c) => c.toMap()).toList(),
+        },
+        SetOptions(merge: true),
+      );
+    });
+  }
+
   Future<MatchCompo?> _loadLegacyMatchCompo({
     required String matchId,
     required String teamId,

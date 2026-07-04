@@ -619,6 +619,8 @@ class _AgendaItemCard extends StatelessWidget {
     final colors = context.appColors;
     final accent = _typeColor(context, item.type);
     final icon = _typeIcon(item.type);
+    final locale = Localizations.localeOf(context).toString();
+    final timeLabel = _agendaEventTimeLabel(item, locale);
 
     final List<String> managedTeamsIds =
     context.select<AppSession, List<String>>(
@@ -836,6 +838,29 @@ class _AgendaItemCard extends StatelessWidget {
                 ],
               ],
             ),
+            if (timeLabel != null) ...[
+              const SizedBox(height: 8),
+              Center(
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    const Icon(
+                      Icons.schedule_rounded,
+                      size: 18,
+                      color: Colors.white,
+                    ),
+                    const SizedBox(width: 8),
+                    Text(
+                      timeLabel,
+                      style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                        color: Colors.white,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
             if(isManager == false && item.withTracker == true && teamPlayerMetricScores != null) ... [
               const SizedBox(height: 10),
               InkWell(

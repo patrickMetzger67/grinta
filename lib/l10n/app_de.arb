@@ -256,6 +256,20 @@
   "navTeams": "Mannschaften",
   "navChat": "Nachrichten",
   "navSync": "Synchronisation",
+  "navNotifications": "Benachrichtigungen",
+  "notificationsTitle": "Benachrichtigungen",
+  "notificationsEmptyTitle": "Keine Benachrichtigungen",
+  "notificationsEmptyMessage": "Sie haben keine ungelesenen Benachrichtigungen.",
+  "notificationsMarkAsRead": "Als gelesen markieren",
+  "notificationsMarkAsReadError": "Benachrichtigung konnte nicht als gelesen markiert werden.",
+  "notificationsConvocationMatchDetails": "Spieldetails",
+  "notificationsConvocationPresent": "Ich werde anwesend sein",
+  "notificationsConvocationAbsent": "Nicht anwesend",
+  "notificationsConvocationAbsentDialogTitle": "Grund für die Abwesenheit",
+  "notificationsConvocationAbsentMessageHint": "Erklären Sie, warum Sie nicht teilnehmen können",
+  "notificationsConvocationAbsentConfirm": "Bestätigen",
+  "notificationsConvocationAbsentMessageRequired": "Bitte geben Sie eine Nachricht ein.",
+  "notificationsConvocationActionError": "Antwort auf die Einberufung fehlgeschlagen.",
 
   "featureDiscoveryAgendaTitle": "Kalender entdecken",
   "featureDiscoveryAgendaMessage": "Sehen Sie kommende Spiele und Trainings im Agenda-Tab.",
@@ -365,6 +379,12 @@
   },
   "matchConvocationNotificationTitle": "Einberufung · {opponent}",
   "@matchConvocationNotificationTitle": {
+    "placeholders": {
+      "opponent": { "type": "String" }
+    }
+  },
+  "matchConvocationFeedbackNotificationTitle": "Antwort Einberufung · {opponent}",
+  "@matchConvocationFeedbackNotificationTitle": {
     "placeholders": {
       "opponent": { "type": "String" }
     }
