@@ -6057,6 +6057,492 @@ abstract class AppLocalizations {
   /// In fr, this message translates to:
   /// **'Autre motif'**
   String get unavailabilityTypeOther;
+
+  /// No description provided for @teamStatsScreenTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Statistiques — {teamName}'**
+  String teamStatsScreenTitle(String teamName);
+
+  /// No description provided for @teamStatsTabAnalysis.
+  ///
+  /// In fr, this message translates to:
+  /// **'Analyse'**
+  String get teamStatsTabAnalysis;
+
+  /// No description provided for @teamStatsTabCalendars.
+  ///
+  /// In fr, this message translates to:
+  /// **'Calendriers'**
+  String get teamStatsTabCalendars;
+
+  /// No description provided for @teamStatsCompetitionFilterLabel.
+  ///
+  /// In fr, this message translates to:
+  /// **'Compétitions'**
+  String get teamStatsCompetitionFilterLabel;
+
+  /// No description provided for @teamStatsOpponentFilterLabel.
+  ///
+  /// In fr, this message translates to:
+  /// **'Club'**
+  String get teamStatsOpponentFilterLabel;
+
+  /// No description provided for @teamStatsNoOpponents.
+  ///
+  /// In fr, this message translates to:
+  /// **'Aucun club dans cette compétition'**
+  String get teamStatsNoOpponents;
+
+  /// No description provided for @teamStatsTabTrainings.
+  ///
+  /// In fr, this message translates to:
+  /// **'Entraînements'**
+  String get teamStatsTabTrainings;
+
+  /// No description provided for @teamStatsTabOpponents.
+  ///
+  /// In fr, this message translates to:
+  /// **'Adversaires'**
+  String get teamStatsTabOpponents;
+
+  /// No description provided for @teamStatsSubTabMatches.
+  ///
+  /// In fr, this message translates to:
+  /// **'Rencontres'**
+  String get teamStatsSubTabMatches;
+
+  /// No description provided for @teamStatsSubTabRanking.
+  ///
+  /// In fr, this message translates to:
+  /// **'Classement'**
+  String get teamStatsSubTabRanking;
+
+  /// No description provided for @teamStatsSubTabGoals.
+  ///
+  /// In fr, this message translates to:
+  /// **'Buts'**
+  String get teamStatsSubTabGoals;
+
+  /// No description provided for @teamStatsSubTabPlayers.
+  ///
+  /// In fr, this message translates to:
+  /// **'Joueurs'**
+  String get teamStatsSubTabPlayers;
+
+  /// No description provided for @teamStatsSubTabTypicalTeam.
+  ///
+  /// In fr, this message translates to:
+  /// **'Equipe type'**
+  String get teamStatsSubTabTypicalTeam;
+
+  /// No description provided for @teamStatsTypicalTeamStartersSection.
+  ///
+  /// In fr, this message translates to:
+  /// **'Titulaires probables'**
+  String get teamStatsTypicalTeamStartersSection;
+
+  /// No description provided for @teamStatsTypicalTeamSubstitutesSection.
+  ///
+  /// In fr, this message translates to:
+  /// **'Remplaçants probables'**
+  String get teamStatsTypicalTeamSubstitutesSection;
+
+  /// No description provided for @teamStatsTypicalTeamStartsLabel.
+  ///
+  /// In fr, this message translates to:
+  /// **'{starts}/{total} titularisations'**
+  String teamStatsTypicalTeamStartsLabel(int starts, int total);
+
+  /// No description provided for @teamStatsTypicalTeamSubsLabel.
+  ///
+  /// In fr, this message translates to:
+  /// **'{subs}/{total} remplacements'**
+  String teamStatsTypicalTeamSubsLabel(int subs, int total);
+
+  /// No description provided for @teamStatsTypicalTeamNoData.
+  ///
+  /// In fr, this message translates to:
+  /// **'Aucune donnée de composition disponible pour cet adversaire'**
+  String get teamStatsTypicalTeamNoData;
+
+  /// No description provided for @teamStatsTypicalTeamIncompleteStarters.
+  ///
+  /// In fr, this message translates to:
+  /// **'Seulement {count} joueurs avec des données de titularisation'**
+  String teamStatsTypicalTeamIncompleteStarters(int count);
+
+  /// No description provided for @teamStatsTypicalTeamMatchesBasis.
+  ///
+  /// In fr, this message translates to:
+  /// **'Basé sur {count, plural, =1{1 match avec composition} other{{count} matchs avec composition}}'**
+  String teamStatsTypicalTeamMatchesBasis(int count);
+
+  /// No description provided for @teamStatsRankingAtDate.
+  ///
+  /// In fr, this message translates to:
+  /// **'A date'**
+  String get teamStatsRankingAtDate;
+
+  /// No description provided for @teamStatsRankingEvolution.
+  ///
+  /// In fr, this message translates to:
+  /// **'Evolution'**
+  String get teamStatsRankingEvolution;
+
+  /// No description provided for @teamStatsRankingNoData.
+  ///
+  /// In fr, this message translates to:
+  /// **'Aucun classement disponible pour cette compétition'**
+  String get teamStatsRankingNoData;
+
+  /// No description provided for @teamStatsRankingSelectCompetition.
+  ///
+  /// In fr, this message translates to:
+  /// **'Sélectionnez une compétition pour afficher le classement'**
+  String get teamStatsRankingSelectCompetition;
+
+  /// No description provided for @teamStatsRankingColumnRank.
+  ///
+  /// In fr, this message translates to:
+  /// **'#'**
+  String get teamStatsRankingColumnRank;
+
+  /// No description provided for @teamStatsRankingColumnTeam.
+  ///
+  /// In fr, this message translates to:
+  /// **'Equipe'**
+  String get teamStatsRankingColumnTeam;
+
+  /// No description provided for @teamStatsRankingColumnPts.
+  ///
+  /// In fr, this message translates to:
+  /// **'Pts'**
+  String get teamStatsRankingColumnPts;
+
+  /// No description provided for @teamStatsRankingColumnPlayed.
+  ///
+  /// In fr, this message translates to:
+  /// **'J'**
+  String get teamStatsRankingColumnPlayed;
+
+  /// No description provided for @teamStatsRankingColumnWon.
+  ///
+  /// In fr, this message translates to:
+  /// **'G'**
+  String get teamStatsRankingColumnWon;
+
+  /// No description provided for @teamStatsRankingColumnDrawn.
+  ///
+  /// In fr, this message translates to:
+  /// **'N'**
+  String get teamStatsRankingColumnDrawn;
+
+  /// No description provided for @teamStatsRankingColumnLost.
+  ///
+  /// In fr, this message translates to:
+  /// **'P'**
+  String get teamStatsRankingColumnLost;
+
+  /// No description provided for @teamStatsRankingColumnDiff.
+  ///
+  /// In fr, this message translates to:
+  /// **'+/-'**
+  String get teamStatsRankingColumnDiff;
+
+  /// No description provided for @teamStatsRankingAddClubs.
+  ///
+  /// In fr, this message translates to:
+  /// **'Comparer des clubs'**
+  String get teamStatsRankingAddClubs;
+
+  /// No description provided for @teamStatsRankingSelectClubsTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Sélectionner des clubs à comparer'**
+  String get teamStatsRankingSelectClubsTitle;
+
+  /// No description provided for @teamStatsRankingOwnTeamLabel.
+  ///
+  /// In fr, this message translates to:
+  /// **'Votre équipe'**
+  String get teamStatsRankingOwnTeamLabel;
+
+  /// No description provided for @teamStatsRankingTooltipRank.
+  ///
+  /// In fr, this message translates to:
+  /// **'Rang {rank}'**
+  String teamStatsRankingTooltipRank(String rank);
+
+  /// No description provided for @teamStatsAllCompetitions.
+  ///
+  /// In fr, this message translates to:
+  /// **'Toutes les compétitions'**
+  String get teamStatsAllCompetitions;
+
+  /// No description provided for @teamStatsContentComingSoon.
+  ///
+  /// In fr, this message translates to:
+  /// **'Contenu à venir'**
+  String get teamStatsContentComingSoon;
+
+  /// No description provided for @teamStatsNoCompetitions.
+  ///
+  /// In fr, this message translates to:
+  /// **'Aucune compétition disponible'**
+  String get teamStatsNoCompetitions;
+
+  /// No description provided for @teamStatsPlayerComingSoon.
+  ///
+  /// In fr, this message translates to:
+  /// **'Vue joueur à venir'**
+  String get teamStatsPlayerComingSoon;
+
+  /// No description provided for @teamStatsPeriodFullSeason.
+  ///
+  /// In fr, this message translates to:
+  /// **'Saison complète'**
+  String get teamStatsPeriodFullSeason;
+
+  /// No description provided for @teamStatsPeriodFirstHalf.
+  ///
+  /// In fr, this message translates to:
+  /// **'1ère partie'**
+  String get teamStatsPeriodFirstHalf;
+
+  /// No description provided for @teamStatsPeriodSecondHalf.
+  ///
+  /// In fr, this message translates to:
+  /// **'2ème partie'**
+  String get teamStatsPeriodSecondHalf;
+
+  /// No description provided for @teamStatsNoPlayedMatches.
+  ///
+  /// In fr, this message translates to:
+  /// **'Aucun match joué sur cette période'**
+  String get teamStatsNoPlayedMatches;
+
+  /// No description provided for @teamStatsWdlMatchesDialogTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'{outcome} — {period}'**
+  String teamStatsWdlMatchesDialogTitle(String outcome, String period);
+
+  /// No description provided for @teamStatsTrendLabel.
+  ///
+  /// In fr, this message translates to:
+  /// **'Tendance'**
+  String get teamStatsTrendLabel;
+
+  /// No description provided for @teamStatsTrendUp.
+  ///
+  /// In fr, this message translates to:
+  /// **'En progression'**
+  String get teamStatsTrendUp;
+
+  /// No description provided for @teamStatsTrendDown.
+  ///
+  /// In fr, this message translates to:
+  /// **'En baisse'**
+  String get teamStatsTrendDown;
+
+  /// No description provided for @teamStatsTrendFlat.
+  ///
+  /// In fr, this message translates to:
+  /// **'Stable'**
+  String get teamStatsTrendFlat;
+
+  /// No description provided for @teamStatsTrendInsufficientData.
+  ///
+  /// In fr, this message translates to:
+  /// **'Données insuffisantes'**
+  String get teamStatsTrendInsufficientData;
+
+  /// No description provided for @teamStatsGoalsScored.
+  ///
+  /// In fr, this message translates to:
+  /// **'Buts marqués'**
+  String get teamStatsGoalsScored;
+
+  /// No description provided for @teamStatsGoalsConceded.
+  ///
+  /// In fr, this message translates to:
+  /// **'Buts encaissés'**
+  String get teamStatsGoalsConceded;
+
+  /// No description provided for @teamStatsGoalsTrendScored.
+  ///
+  /// In fr, this message translates to:
+  /// **'Buts marqués'**
+  String get teamStatsGoalsTrendScored;
+
+  /// No description provided for @teamStatsGoalsTrendConceded.
+  ///
+  /// In fr, this message translates to:
+  /// **'Buts encaissés'**
+  String get teamStatsGoalsTrendConceded;
+
+  /// No description provided for @teamStatsGoalsAvgPerMatch.
+  ///
+  /// In fr, this message translates to:
+  /// **'{avg}/match'**
+  String teamStatsGoalsAvgPerMatch(double avg);
+
+  /// No description provided for @teamStatsGoalsMatchCount.
+  ///
+  /// In fr, this message translates to:
+  /// **'{count, plural, =1{1 match} other{{count} matchs}}'**
+  String teamStatsGoalsMatchCount(int count);
+
+  /// No description provided for @teamStatsAvgPointsPerMatch.
+  ///
+  /// In fr, this message translates to:
+  /// **'{avg}'**
+  String teamStatsAvgPointsPerMatch(double avg);
+
+  /// No description provided for @teamStatsPlayersColumnPlayer.
+  ///
+  /// In fr, this message translates to:
+  /// **'Joueur'**
+  String get teamStatsPlayersColumnPlayer;
+
+  /// No description provided for @teamStatsPlayersColumnConvocations.
+  ///
+  /// In fr, this message translates to:
+  /// **'Convo'**
+  String get teamStatsPlayersColumnConvocations;
+
+  /// No description provided for @teamStatsPlayersColumnStarts.
+  ///
+  /// In fr, this message translates to:
+  /// **'Titu.'**
+  String get teamStatsPlayersColumnStarts;
+
+  /// No description provided for @teamStatsPlayersColumnPlayTime.
+  ///
+  /// In fr, this message translates to:
+  /// **'Tps jeu'**
+  String get teamStatsPlayersColumnPlayTime;
+
+  /// No description provided for @teamStatsPlayersColumnGoals.
+  ///
+  /// In fr, this message translates to:
+  /// **'Buts'**
+  String get teamStatsPlayersColumnGoals;
+
+  /// No description provided for @teamStatsPlayersNoData.
+  ///
+  /// In fr, this message translates to:
+  /// **'Aucune donnée joueur sur cette période'**
+  String get teamStatsPlayersNoData;
+
+  /// No description provided for @teamStatsPlayersPlayTimeMinutes.
+  ///
+  /// In fr, this message translates to:
+  /// **'{minutes} min'**
+  String teamStatsPlayersPlayTimeMinutes(int minutes);
+
+  /// No description provided for @teamStatsAllMonths.
+  ///
+  /// In fr, this message translates to:
+  /// **'Tous les mois'**
+  String get teamStatsAllMonths;
+
+  /// No description provided for @teamStatsTrainingsCount.
+  ///
+  /// In fr, this message translates to:
+  /// **'{count, plural, =1{1 entraînement} other{{count} entraînements}}'**
+  String teamStatsTrainingsCount(int count);
+
+  /// No description provided for @teamStatsTrainingsAttendanceRate.
+  ///
+  /// In fr, this message translates to:
+  /// **'Taux de présence'**
+  String get teamStatsTrainingsAttendanceRate;
+
+  /// No description provided for @teamStatsTrainingsAttendanceRateValue.
+  ///
+  /// In fr, this message translates to:
+  /// **'{value} %'**
+  String teamStatsTrainingsAttendanceRateValue(String value);
+
+  /// No description provided for @teamStatsTrainingsNoData.
+  ///
+  /// In fr, this message translates to:
+  /// **'Aucun entraînement passé sur cette période'**
+  String get teamStatsTrainingsNoData;
+
+  /// No description provided for @teamStatsTrainingsNoSeasonMonths.
+  ///
+  /// In fr, this message translates to:
+  /// **'Aucun mois disponible pour cette saison'**
+  String get teamStatsTrainingsNoSeasonMonths;
+
+  /// No description provided for @teamStatsTrainingsColumnPresent.
+  ///
+  /// In fr, this message translates to:
+  /// **'Prés.'**
+  String get teamStatsTrainingsColumnPresent;
+
+  /// No description provided for @teamStatsTrainingsColumnAbsent.
+  ///
+  /// In fr, this message translates to:
+  /// **'Abs.'**
+  String get teamStatsTrainingsColumnAbsent;
+
+  /// No description provided for @teamStatsTrainingsColumnAttendanceRate.
+  ///
+  /// In fr, this message translates to:
+  /// **'Taux'**
+  String get teamStatsTrainingsColumnAttendanceRate;
+
+  /// No description provided for @teamStatsTrainingsPlayersNoData.
+  ///
+  /// In fr, this message translates to:
+  /// **'Aucune donnée joueur sur cette période'**
+  String get teamStatsTrainingsPlayersNoData;
+
+  /// No description provided for @teamStatsTrainingsGlobalSection.
+  ///
+  /// In fr, this message translates to:
+  /// **'Équipe'**
+  String get teamStatsTrainingsGlobalSection;
+
+  /// No description provided for @teamStatsTrainingsPersonalSection.
+  ///
+  /// In fr, this message translates to:
+  /// **'Mes stats'**
+  String get teamStatsTrainingsPersonalSection;
+
+  /// No description provided for @teamStatsCalendarNoMatchdays.
+  ///
+  /// In fr, this message translates to:
+  /// **'Aucun match pour cette compétition'**
+  String get teamStatsCalendarNoMatchdays;
+
+  /// No description provided for @teamStatsCalendarNoMatchesForMatchday.
+  ///
+  /// In fr, this message translates to:
+  /// **'Aucun match pour cette journée'**
+  String get teamStatsCalendarNoMatchesForMatchday;
+
+  /// No description provided for @teamStatsCalendarDatesLabel.
+  ///
+  /// In fr, this message translates to:
+  /// **'Dates'**
+  String get teamStatsCalendarDatesLabel;
+
+  /// No description provided for @teamStatsCalendarNoMatchDates.
+  ///
+  /// In fr, this message translates to:
+  /// **'Aucune date programmée'**
+  String get teamStatsCalendarNoMatchDates;
+
+  /// No description provided for @teamStatsCalendarDateSeparator.
+  ///
+  /// In fr, this message translates to:
+  /// **', '**
+  String get teamStatsCalendarDateSeparator;
 }
 
 class _AppLocalizationsDelegate

@@ -3453,4 +3453,312 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get unavailabilityTypeOther => 'Otro motivo';
+
+  @override
+  String teamStatsScreenTitle(String teamName) {
+    return 'Estadísticas — $teamName';
+  }
+
+  @override
+  String get teamStatsTabAnalysis => 'Análisis';
+
+  @override
+  String get teamStatsTabCalendars => 'Calendarios';
+
+  @override
+  String get teamStatsCompetitionFilterLabel => 'Competiciones';
+
+  @override
+  String get teamStatsOpponentFilterLabel => 'Club';
+
+  @override
+  String get teamStatsNoOpponents => 'Ningún club en esta competición';
+
+  @override
+  String get teamStatsTabTrainings => 'Entrenamientos';
+
+  @override
+  String get teamStatsTabOpponents => 'Adversarios';
+
+  @override
+  String get teamStatsSubTabMatches => 'Partidos';
+
+  @override
+  String get teamStatsSubTabRanking => 'Clasificación';
+
+  @override
+  String get teamStatsSubTabGoals => 'Goles';
+
+  @override
+  String get teamStatsSubTabPlayers => 'Jugadores';
+
+  @override
+  String get teamStatsSubTabTypicalTeam => 'Equipo tipo';
+
+  @override
+  String get teamStatsTypicalTeamStartersSection => 'Titulares probables';
+
+  @override
+  String get teamStatsTypicalTeamSubstitutesSection => 'Suplentes probables';
+
+  @override
+  String teamStatsTypicalTeamStartsLabel(int starts, int total) {
+    return '$starts/$total titularidades';
+  }
+
+  @override
+  String teamStatsTypicalTeamSubsLabel(int subs, int total) {
+    return '$subs/$total como suplente';
+  }
+
+  @override
+  String get teamStatsTypicalTeamNoData =>
+      'No hay datos de alineación para este adversario';
+
+  @override
+  String teamStatsTypicalTeamIncompleteStarters(int count) {
+    return 'Solo $count jugadores con datos de titularidad';
+  }
+
+  @override
+  String teamStatsTypicalTeamMatchesBasis(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count partidos con alineación',
+      one: '1 partido con alineación',
+    );
+    return 'Basado en $_temp0';
+  }
+
+  @override
+  String get teamStatsRankingAtDate => 'Actual';
+
+  @override
+  String get teamStatsRankingEvolution => 'Evolución';
+
+  @override
+  String get teamStatsRankingNoData =>
+      'No hay clasificación disponible para esta competición';
+
+  @override
+  String get teamStatsRankingSelectCompetition =>
+      'Seleccione una competición para ver la clasificación';
+
+  @override
+  String get teamStatsRankingColumnRank => '#';
+
+  @override
+  String get teamStatsRankingColumnTeam => 'Equipo';
+
+  @override
+  String get teamStatsRankingColumnPts => 'Pts';
+
+  @override
+  String get teamStatsRankingColumnPlayed => 'J';
+
+  @override
+  String get teamStatsRankingColumnWon => 'G';
+
+  @override
+  String get teamStatsRankingColumnDrawn => 'E';
+
+  @override
+  String get teamStatsRankingColumnLost => 'P';
+
+  @override
+  String get teamStatsRankingColumnDiff => '+/-';
+
+  @override
+  String get teamStatsRankingAddClubs => 'Comparar clubes';
+
+  @override
+  String get teamStatsRankingSelectClubsTitle =>
+      'Seleccionar clubes para comparar';
+
+  @override
+  String get teamStatsRankingOwnTeamLabel => 'Tu equipo';
+
+  @override
+  String teamStatsRankingTooltipRank(String rank) {
+    return 'Puesto $rank';
+  }
+
+  @override
+  String get teamStatsAllCompetitions => 'Todas las competiciones';
+
+  @override
+  String get teamStatsContentComingSoon => 'Contenido próximamente';
+
+  @override
+  String get teamStatsNoCompetitions => 'No hay competiciones disponibles';
+
+  @override
+  String get teamStatsPlayerComingSoon => 'Vista jugador próximamente';
+
+  @override
+  String get teamStatsPeriodFullSeason => 'Temporada completa';
+
+  @override
+  String get teamStatsPeriodFirstHalf => '1.er semestre';
+
+  @override
+  String get teamStatsPeriodSecondHalf => '2.º semestre';
+
+  @override
+  String get teamStatsNoPlayedMatches =>
+      'Ningún partido jugado en este periodo';
+
+  @override
+  String teamStatsWdlMatchesDialogTitle(String outcome, String period) {
+    return '$outcome — $period';
+  }
+
+  @override
+  String get teamStatsTrendLabel => 'Tendencia';
+
+  @override
+  String get teamStatsTrendUp => 'En ascenso';
+
+  @override
+  String get teamStatsTrendDown => 'En descenso';
+
+  @override
+  String get teamStatsTrendFlat => 'Estable';
+
+  @override
+  String get teamStatsTrendInsufficientData => 'Datos insuficientes';
+
+  @override
+  String get teamStatsGoalsScored => 'Goles marcados';
+
+  @override
+  String get teamStatsGoalsConceded => 'Goles encajados';
+
+  @override
+  String get teamStatsGoalsTrendScored => 'Goles marcados';
+
+  @override
+  String get teamStatsGoalsTrendConceded => 'Goles encajados';
+
+  @override
+  String teamStatsGoalsAvgPerMatch(double avg) {
+    final intl.NumberFormat avgNumberFormat =
+        intl.NumberFormat.decimalPatternDigits(
+            locale: localeName, decimalDigits: 2);
+    final String avgString = avgNumberFormat.format(avg);
+
+    return '$avgString/partido';
+  }
+
+  @override
+  String teamStatsGoalsMatchCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count partidos',
+      one: '1 partido',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String teamStatsAvgPointsPerMatch(double avg) {
+    final intl.NumberFormat avgNumberFormat =
+        intl.NumberFormat.decimalPatternDigits(
+            locale: localeName, decimalDigits: 2);
+    final String avgString = avgNumberFormat.format(avg);
+
+    return '$avgString';
+  }
+
+  @override
+  String get teamStatsPlayersColumnPlayer => 'Jugador';
+
+  @override
+  String get teamStatsPlayersColumnConvocations => 'Conv.';
+
+  @override
+  String get teamStatsPlayersColumnStarts => 'Titu.';
+
+  @override
+  String get teamStatsPlayersColumnPlayTime => 'T. juego';
+
+  @override
+  String get teamStatsPlayersColumnGoals => 'Goles';
+
+  @override
+  String get teamStatsPlayersNoData =>
+      'Sin datos de jugadores para este periodo';
+
+  @override
+  String teamStatsPlayersPlayTimeMinutes(int minutes) {
+    return '$minutes min';
+  }
+
+  @override
+  String get teamStatsAllMonths => 'Todos los meses';
+
+  @override
+  String teamStatsTrainingsCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count entrenamientos',
+      one: '1 entrenamiento',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get teamStatsTrainingsAttendanceRate => 'Tasa de presencia';
+
+  @override
+  String teamStatsTrainingsAttendanceRateValue(String value) {
+    return '$value %';
+  }
+
+  @override
+  String get teamStatsTrainingsNoData =>
+      'Ningún entrenamiento pasado en este periodo';
+
+  @override
+  String get teamStatsTrainingsNoSeasonMonths =>
+      'No hay meses disponibles para esta temporada';
+
+  @override
+  String get teamStatsTrainingsColumnPresent => 'Pres.';
+
+  @override
+  String get teamStatsTrainingsColumnAbsent => 'Aus.';
+
+  @override
+  String get teamStatsTrainingsColumnAttendanceRate => 'Tasa';
+
+  @override
+  String get teamStatsTrainingsPlayersNoData =>
+      'Sin datos de jugadores para este periodo';
+
+  @override
+  String get teamStatsTrainingsGlobalSection => 'Equipo';
+
+  @override
+  String get teamStatsTrainingsPersonalSection => 'Mis stats';
+
+  @override
+  String get teamStatsCalendarNoMatchdays =>
+      'No hay partidos para esta competición';
+
+  @override
+  String get teamStatsCalendarNoMatchesForMatchday =>
+      'No hay partidos para esta jornada';
+
+  @override
+  String get teamStatsCalendarDatesLabel => 'Fechas';
+
+  @override
+  String get teamStatsCalendarNoMatchDates => 'Sin fechas programadas';
+
+  @override
+  String get teamStatsCalendarDateSeparator => ', ';
 }

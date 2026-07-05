@@ -956,7 +956,7 @@ class _AgendaScreenState extends State<AgendaScreen> {
             ...dayItems.map(
                   (item) => Padding(
                 padding: const EdgeInsets.only(bottom: 10),
-                child: _AgendaItemCard(item: item),
+                child: AgendaItemCard(item: item),
               ),
             ),
         ],

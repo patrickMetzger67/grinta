@@ -436,30 +436,28 @@ class _MatchDetailTabShellState extends State<_MatchDetailTabShell>
     return MatchDetailTabNavigationScope(
       featureIdsByTabIndex: widget.featureDiscoveryIds,
       onNavigateToTabIndex: _goToTabIndex,
-      child: Expanded(
-        child: Column(
-          children: [
-            FeatureDiscoveryRandomBanner(
-              parentScreenId: FeatureDiscoveryIds.screenMatchDetail,
-              includeBaseScreens: false,
-              matchHasTracker: widget.matchHasTracker,
-            ),
-            const SizedBox(height: 6),
-            _TabsContainer(
-              tabs: widget.tabs,
+      child: Column(
+        children: [
+          FeatureDiscoveryRandomBanner(
+            parentScreenId: FeatureDiscoveryIds.screenMatchDetail,
+            includeBaseScreens: false,
+            matchHasTracker: widget.matchHasTracker,
+          ),
+          const SizedBox(height: 6),
+          _TabsContainer(
+            tabs: widget.tabs,
+            controller: _tabController,
+            onTap: _onTabTapped,
+          ),
+          const SizedBox(height: 12),
+          Expanded(
+            child: TabBarView(
               controller: _tabController,
-              onTap: _onTabTapped,
+              physics: const NeverScrollableScrollPhysics(),
+              children: widget.views,
             ),
-            const SizedBox(height: 12),
-            Expanded(
-              child: TabBarView(
-                controller: _tabController,
-                physics: const NeverScrollableScrollPhysics(),
-                children: widget.views,
-              ),
-            ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }

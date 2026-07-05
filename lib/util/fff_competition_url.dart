@@ -113,6 +113,27 @@ List<FffCompetitionInfo> parseFffCompetitionUrls(List<String> urls) {
       .toList();
 }
 
+/// Whether [url] refers to an FFF friendly-matches competition
+/// (e.g. slug `matchs-amicaux-seniors` → "Matchs Amicaux Seniors").
+bool isFriendlyCompetitionUrl(String url) {
+  final trimmed = url.trim();
+  if (trimmed.isEmpty) return false;
+
+  final info = parseFffCompetitionUrl(trimmed);
+  if (info != null) {
+    final slug = info.slug?.toLowerCase() ?? '';
+    if (slug.contains('amicaux') || slug.contains('amical')) {
+      return true;
+    }
+
+    final name = info.name.toLowerCase();
+    return name.contains('amicaux') || name.contains('amical');
+  }
+
+  final lower = trimmed.toLowerCase();
+  return lower.contains('amicaux') || lower.contains('amical');
+}
+
 /// Converts the slug portion (without numeric engagement id) to a display name.
 String slugToCompetitionName(String slug) {
   var parts = slug

@@ -26,6 +26,7 @@ abstract final class AnalyticsScreenNames {
   static const teamDetail = 'team_detail';
   static const teamParam = 'team_param';
   static const teamPlayers = 'team_players';
+  static const teamStats = 'team_stats';
 
   // Tracker / sync
   static const trackerHub = 'tracker_hub';

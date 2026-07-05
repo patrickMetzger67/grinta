@@ -91,6 +91,35 @@ void main() {
     });
   });
 
+  group('isFriendlyCompetitionUrl', () {
+    test('detects matchs amicaux FFF engagement URLs', () {
+      expect(
+        isFriendlyCompetitionUrl(
+          'https://epreuves.fff.fr/competition/engagement/'
+          '440556-matchs-amicaux-seniors/phase/1/1',
+        ),
+        isTrue,
+      );
+      expect(
+        isFriendlyCompetitionUrl(
+          'https://epreuves.fff.fr/competition/engagement/'
+          '444915-matches-amicaux-seniors/phase/1/1',
+        ),
+        isTrue,
+      );
+    });
+
+    test('returns false for regular competitions', () {
+      expect(
+        isFriendlyCompetitionUrl(
+          'https://epreuves.fff.fr/competition/engagement/'
+          '436278-u18-regional-1/phase/1/2',
+        ),
+        isFalse,
+      );
+    });
+  });
+
   group('slugToCompetitionName', () {
     test('applies French accents and title casing', () {
       expect(

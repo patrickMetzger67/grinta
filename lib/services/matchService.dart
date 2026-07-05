@@ -670,27 +670,14 @@ class MatchService {
     required String? engagementDocId,
   }) async {
     try {
-      Query<Map<String, dynamic>> query = _collection.where(
-        keyMatchCompetitionID,
-        isEqualTo: competitionId,
+      final List<Match> matches =
+          await getMatchesByCompetitionPouleStageBetweenDates(
+        competitionId: competitionId,
+        poule: group,
+        stage: stage,
+        start: start,
+        end: end,
       );
-
-      if (group.isNotEmpty) {
-        query = query.where(keyMatchPoule, isEqualTo: group);
-      }
-
-      if (stage.isNotEmpty) {
-        query = query.where(keyMatchStage, isEqualTo: stage);
-      }
-
-      final QuerySnapshot<Map<String, dynamic>> snapshot = await query
-          .where(keyMatchTimestamp, isGreaterThanOrEqualTo: start)
-          .where(keyMatchTimestamp, isLessThanOrEqualTo: end)
-          .get();
-
-      final List<Match> matches = snapshot.docs
-          .map((doc) => Match.fromDocumentSnapshot(doc))
-          .toList();
 
       Iterable<Match> matchesToAdd = matches;
       if (clubId.isNotEmpty) {
@@ -732,6 +719,50 @@ class MatchService {
         .snapshots()
         .map((snapshot) =>
         snapshot.docs.map((doc) => Match.fromDocumentSnapshot(doc)).toList());
+  }
+
+  /// Loads all matches in [matchCalendar] for a competition pool within a date
+  /// range. Filters by [competitionId], and optionally [poule] and [stage].
+  /// Does not filter by team or club — use for full-pool calendars.
+  Future<List<Match>> getMatchesByCompetitionPouleStageBetweenDates({
+    required String competitionId,
+    required String poule,
+    required String stage,
+    required Timestamp start,
+    required Timestamp end,
+  }) async {
+    final String normalizedCompetitionId = competitionId.trim();
+    if (normalizedCompetitionId.isEmpty) {
+      return const <Match>[];
+    }
+
+    try {
+      Query<Map<String, dynamic>> query = _collection.where(
+        keyMatchCompetitionID,
+        isEqualTo: normalizedCompetitionId,
+      );
+
+      final String normalizedPoule = poule.trim();
+      if (normalizedPoule.isNotEmpty) {
+        query = query.where(keyMatchPoule, isEqualTo: normalizedPoule);
+      }
+
+      final String normalizedStage = stage.trim();
+      if (normalizedStage.isNotEmpty) {
+        query = query.where(keyMatchStage, isEqualTo: normalizedStage);
+      }
+
+      final QuerySnapshot<Map<String, dynamic>> snapshot = await query
+          .where(keyMatchTimestamp, isGreaterThanOrEqualTo: start)
+          .where(keyMatchTimestamp, isLessThanOrEqualTo: end)
+          .get();
+
+      return snapshot.docs
+          .map((doc) => Match.fromDocumentSnapshot(doc))
+          .toList();
+    } catch (e) {
+      rethrow;
+    }
   }
 
   /// GET BY COMPETITION ID

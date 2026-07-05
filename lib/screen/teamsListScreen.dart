@@ -12,11 +12,13 @@ import 'package:grinta/services/user_trial_service.dart';
 import 'package:grinta/util/team_creation_access.dart';
 import 'package:grinta/util/team_deletion_access.dart';
 import 'package:grinta/util/team_detail_access.dart';
+import 'package:grinta/screen/team_stats/team_stats_screen.dart';
 import 'package:grinta/util/team_equipe_lookup.dart';
 import 'package:grinta/widget/account_create_profile_entry.dart';
 import 'package:grinta/widget/club_picker_sheet.dart';
 import 'package:grinta/widget/equipe_competitions_count_label.dart';
 import 'package:grinta/widget/equipe_competitions_sheet.dart';
+import 'package:grinta/widget/subscription_paywall.dart';
 import '../core/extensions/l10n_extension.dart';
 import '../util/app_theme.dart';
 import 'package:provider/provider.dart';
@@ -97,6 +99,34 @@ class _TeamsListScreenState extends State<TeamsListScreen> {
 
   Future<void> _onCreateTeam(BuildContext context) async {
     await openTeamCreationFlow(context);
+  }
+
+  Future<void> _onTeamStatsPressed(BuildContext context, Team team) async {
+    await UserTrialService.instance.ensureInitialized();
+    await SubscriptionService.instance.refreshForActiveSession();
+    if (!UserTrialService.instance.hasPremiumAccess) {
+      if (!context.mounted) return;
+      final appSession = context.read<AppSession>();
+      await SubscriptionPaywall.show(
+        context,
+        allowSkip: true,
+        initialKind: prefersCoachSubscriptionOffering(appSession)
+            ? SubscriptionOfferingKind.coach
+            : SubscriptionOfferingKind.player,
+      );
+      return;
+    }
+
+    if (!context.mounted) return;
+
+    final isManager = team.keyTeam != null &&
+        widget.managedTeamsIds.contains(team.keyTeam!);
+
+    await openTeamStatsScreen(
+      context,
+      team: team,
+      isManager: isManager,
+    );
   }
 
   @override
@@ -278,6 +308,9 @@ class _TeamsListScreenState extends State<TeamsListScreen> {
                       final int competitionCount =
                           equipe?.competitions.length ?? 0;
                       final bool hasCompetitions = competitionCount > 0;
+                      final bool hasTeamStatsLink =
+                          (team.teamIdInTeamsPerClub?.trim().isNotEmpty ??
+                              false);
 
                       final bool isManager = team.keyTeam != null && widget.managedTeamsIds.contains(team.keyTeam!);
                       final String? currentUserUid =
@@ -349,6 +382,22 @@ class _TeamsListScreenState extends State<TeamsListScreen> {
                                     ],
                                   ),
                                 ),
+                                if (hasTeamStatsLink) ...[
+                                  IconButton(
+                                    icon:
+                                        SubscriptionPremiumBadge.withIconOverlay(
+                                      context: context,
+                                      colors: colors,
+                                      showPremium: true,
+                                      icon: const Icon(
+                                        Icons.bar_chart_outlined,
+                                      ),
+                                    ),
+                                    tooltip: l10n.tabStats,
+                                    onPressed: () =>
+                                        _onTeamStatsPressed(context, team),
+                                  ),
+                                ],
                                 if (hasCompetitions && equipe != null) ...[
                                   IconButton(
                                     icon: const Icon(

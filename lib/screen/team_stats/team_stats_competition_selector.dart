@@ -1,0 +1,172 @@
+import 'package:flutter/material.dart';
+import 'package:grinta/core/extensions/l10n_extension.dart';
+import 'package:grinta/l10n/app_localizations.dart';
+import 'package:grinta/model/team.dart';
+import 'package:grinta/model/teams_per_club.dart';
+import 'package:grinta/services/teams_per_club_service.dart';
+import 'package:grinta/util/app_theme.dart';
+import 'package:grinta/util/fff_competition_url.dart';
+
+/// Sentinel value for the "all competitions" dropdown option.
+const String kTeamStatsAllCompetitionsValue = '__all__';
+
+class TeamStatsCompetitionOption {
+  const TeamStatsCompetitionOption({
+    required this.value,
+    required this.label,
+    this.url,
+  });
+
+  final String value;
+  final String label;
+  final String? url;
+}
+
+String? teamStatsSeasonIdForTeam(Team team, String? fallbackSeasonId) {
+  final teamSeasonId = team.seasonID?.trim() ?? '';
+  if (teamSeasonId.isNotEmpty) return teamSeasonId;
+  final fallback = fallbackSeasonId?.trim() ?? '';
+  return fallback.isEmpty ? null : fallback;
+}
+
+Future<List<TeamStatsCompetitionOption>> loadTeamStatsCompetitionOptions({
+  required Team team,
+  required AppLocalizations l10n,
+  String? fallbackSeasonId,
+  TeamsPerClubService? teamsPerClubService,
+  bool includeAllOption = true,
+}) async {
+  final clubId = team.clubId?.trim() ?? '';
+  final equipeId = team.teamIdInTeamsPerClub?.trim() ?? '';
+  final seasonId = teamStatsSeasonIdForTeam(team, fallbackSeasonId);
+
+  if (clubId.isEmpty || equipeId.isEmpty || seasonId == null) {
+    return const [];
+  }
+
+  final service = teamsPerClubService ?? TeamsPerClubService();
+  final teamsPerClub = await service.getByClubIdAndSeason(
+    clubId: clubId,
+    seasonId: seasonId,
+  );
+
+  Equipe? equipe;
+  if (teamsPerClub != null) {
+    for (final entry in teamsPerClub.equipes) {
+      if ((entry.id?.trim() ?? '') == equipeId) {
+        equipe = entry;
+        break;
+      }
+    }
+  }
+
+  final competitionOptions = <TeamStatsCompetitionOption>[];
+  if (includeAllOption) {
+    competitionOptions.add(
+      TeamStatsCompetitionOption(
+        value: kTeamStatsAllCompetitionsValue,
+        label: l10n.teamStatsAllCompetitions,
+      ),
+    );
+  }
+
+  for (final url in equipe?.competitions ?? const <String>[]) {
+    if (url.trim().isEmpty) continue;
+    if (isFriendlyCompetitionUrl(url)) continue;
+    final info = parseFffCompetitionUrl(url);
+    competitionOptions.add(
+      TeamStatsCompetitionOption(
+        value: url,
+        label: info?.name ?? url,
+        url: url,
+      ),
+    );
+  }
+
+  return competitionOptions;
+}
+
+String? teamStatsSelectedCompetitionUrl(String selectedValue) {
+  if (selectedValue == kTeamStatsAllCompetitionsValue) {
+    return null;
+  }
+  return selectedValue;
+}
+
+class TeamStatsCompetitionDropdown extends StatelessWidget {
+  const TeamStatsCompetitionDropdown({
+    super.key,
+    required this.options,
+    required this.selectedValue,
+    required this.onChanged,
+  });
+
+  final List<TeamStatsCompetitionOption> options;
+  final String selectedValue;
+  final ValueChanged<String> onChanged;
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = context.l10n;
+    final colors = context.appColors;
+    final textTheme = Theme.of(context).textTheme;
+
+    return InputDecorator(
+      decoration: InputDecoration(
+        labelText: l10n.teamStatsCompetitionFilterLabel,
+        contentPadding: const EdgeInsets.symmetric(
+          horizontal: 14,
+          vertical: 4,
+        ),
+        filled: true,
+        fillColor: colors.surface,
+        enabledBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(14),
+          borderSide: BorderSide(color: colors.border),
+        ),
+        focusedBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(14),
+          borderSide: BorderSide(
+            color: colors.primary,
+            width: 1.4,
+          ),
+        ),
+      ),
+      child: DropdownButtonHideUnderline(
+        child: DropdownButton<String>(
+          value: selectedValue,
+          isExpanded: true,
+          dropdownColor: colors.surface,
+          icon: Icon(
+            Icons.keyboard_arrow_down_rounded,
+            color: colors.textSecondary,
+            size: 22,
+          ),
+          style: textTheme.bodyMedium?.copyWith(
+            color: colors.textPrimary,
+            fontWeight: FontWeight.w600,
+          ),
+          items: options
+              .map(
+                (option) => DropdownMenuItem<String>(
+                  value: option.value,
+                  child: Text(
+                    option.label,
+                    overflow: TextOverflow.ellipsis,
+                    style: textTheme.bodyMedium?.copyWith(
+                      color: colors.textPrimary,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ),
+              )
+              .toList(),
+          onChanged: (value) {
+            if (value == null) return;
+            onChanged(value);
+          },
+        ),
+      ),
+    );
+  }
+}

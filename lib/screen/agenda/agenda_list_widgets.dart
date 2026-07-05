@@ -561,7 +561,7 @@ class _DayContent extends StatelessWidget {
           .map(
             (item) => Padding(
           padding: const EdgeInsets.only(bottom: 10),
-          child: _AgendaItemCard(item: item),
+          child: AgendaItemCard(item: item),
         ),
       )
           .toList(),
@@ -607,10 +607,11 @@ class _EmptyDayTile extends StatelessWidget {
   }
 }
 
-class _AgendaItemCard extends StatelessWidget {
+class AgendaItemCard extends StatelessWidget {
   final AgendaItem item;
 
-  const _AgendaItemCard({
+  const AgendaItemCard({
+    super.key,
     required this.item,
   });
 

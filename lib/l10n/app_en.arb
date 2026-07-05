@@ -1218,5 +1218,162 @@
   "unavailabilityTypeHoliday": "Holiday",
   "unavailabilityTypeUnwell": "Unwell",
   "unavailabilityTypeInjured": "Injured",
-  "unavailabilityTypeOther": "Other"
+  "unavailabilityTypeOther": "Other",
+  "teamStatsScreenTitle": "Statistics — {teamName}",
+  "@teamStatsScreenTitle": {
+    "placeholders": {
+      "teamName": { "type": "String" }
+    }
+  },
+  "teamStatsTabAnalysis": "Analysis",
+  "teamStatsTabCalendars": "Calendars",
+  "teamStatsCompetitionFilterLabel": "Competitions",
+  "teamStatsOpponentFilterLabel": "Club",
+  "teamStatsNoOpponents": "No clubs in this competition",
+  "teamStatsTabTrainings": "Training sessions",
+  "teamStatsTabOpponents": "Opponents",
+  "teamStatsSubTabMatches": "Matches",
+  "teamStatsSubTabRanking": "Standings",
+  "teamStatsSubTabGoals": "Goals",
+  "teamStatsSubTabPlayers": "Players",
+  "teamStatsSubTabTypicalTeam": "Typical team",
+  "teamStatsTypicalTeamStartersSection": "Probable starters",
+  "teamStatsTypicalTeamSubstitutesSection": "Probable substitutes",
+  "teamStatsTypicalTeamStartsLabel": "{starts}/{total} starts",
+  "@teamStatsTypicalTeamStartsLabel": {
+    "placeholders": {
+      "starts": { "type": "int" },
+      "total": { "type": "int" }
+    }
+  },
+  "teamStatsTypicalTeamSubsLabel": "{subs}/{total} as sub",
+  "@teamStatsTypicalTeamSubsLabel": {
+    "placeholders": {
+      "subs": { "type": "int" },
+      "total": { "type": "int" }
+    }
+  },
+  "teamStatsTypicalTeamNoData": "No lineup data available for this opponent",
+  "teamStatsTypicalTeamIncompleteStarters": "Only {count} players with starter data",
+  "@teamStatsTypicalTeamIncompleteStarters": {
+    "placeholders": {
+      "count": { "type": "int" }
+    }
+  },
+  "teamStatsTypicalTeamMatchesBasis": "Based on {count, plural, =1{1 match with lineup data} other{{count} matches with lineup data}}",
+  "@teamStatsTypicalTeamMatchesBasis": {
+    "placeholders": {
+      "count": { "type": "int" }
+    }
+  },
+  "teamStatsRankingAtDate": "Current",
+  "teamStatsRankingEvolution": "Trend",
+  "teamStatsRankingNoData": "No standings available for this competition",
+  "teamStatsRankingSelectCompetition": "Select a competition to view standings",
+  "teamStatsRankingColumnRank": "#",
+  "teamStatsRankingColumnTeam": "Team",
+  "teamStatsRankingColumnPts": "Pts",
+  "teamStatsRankingColumnPlayed": "P",
+  "teamStatsRankingColumnWon": "W",
+  "teamStatsRankingColumnDrawn": "D",
+  "teamStatsRankingColumnLost": "L",
+  "teamStatsRankingColumnDiff": "+/-",
+  "teamStatsRankingAddClubs": "Compare clubs",
+  "teamStatsRankingSelectClubsTitle": "Select clubs to compare",
+  "teamStatsRankingOwnTeamLabel": "Your team",
+  "teamStatsRankingTooltipRank": "Rank {rank}",
+  "@teamStatsRankingTooltipRank": {
+    "placeholders": {
+      "rank": { "type": "String" }
+    }
+  },
+  "teamStatsAllCompetitions": "All competitions",
+  "teamStatsContentComingSoon": "Content coming soon",
+  "teamStatsNoCompetitions": "No competitions available",
+  "teamStatsPlayerComingSoon": "Player view coming soon",
+  "teamStatsPeriodFullSeason": "Full season",
+  "teamStatsPeriodFirstHalf": "First half",
+  "teamStatsPeriodSecondHalf": "Second half",
+  "teamStatsNoPlayedMatches": "No played matches in this period",
+  "teamStatsWdlMatchesDialogTitle": "{outcome} — {period}",
+  "@teamStatsWdlMatchesDialogTitle": {
+    "placeholders": {
+      "outcome": { "type": "String" },
+      "period": { "type": "String" }
+    }
+  },
+  "teamStatsTrendLabel": "Trend",
+  "teamStatsTrendUp": "Improving",
+  "teamStatsTrendDown": "Declining",
+  "teamStatsTrendFlat": "Stable",
+  "teamStatsTrendInsufficientData": "Not enough match data",
+  "teamStatsGoalsScored": "Goals scored",
+  "teamStatsGoalsConceded": "Goals conceded",
+  "teamStatsGoalsTrendScored": "Goals scored",
+  "teamStatsGoalsTrendConceded": "Goals conceded",
+  "teamStatsGoalsAvgPerMatch": "{avg}/match",
+  "@teamStatsGoalsAvgPerMatch": {
+    "placeholders": {
+      "avg": {
+        "type": "double",
+        "format": "decimalPatternDigits",
+        "optionalParameters": { "decimalDigits": 2 }
+      }
+    }
+  },
+  "teamStatsGoalsMatchCount": "{count, plural, =1{1 match} other{{count} matches}}",
+  "@teamStatsGoalsMatchCount": {
+    "placeholders": {
+      "count": { "type": "int" }
+    }
+  },
+  "teamStatsAvgPointsPerMatch": "{avg}",
+  "@teamStatsAvgPointsPerMatch": {
+    "placeholders": {
+      "avg": {
+        "type": "double",
+        "format": "decimalPatternDigits",
+        "optionalParameters": { "decimalDigits": 2 }
+      }
+    }
+  },
+  "teamStatsPlayersColumnPlayer": "Player",
+  "teamStatsPlayersColumnConvocations": "Convo",
+  "teamStatsPlayersColumnStarts": "Starts",
+  "teamStatsPlayersColumnPlayTime": "Mins",
+  "teamStatsPlayersColumnGoals": "Goals",
+  "teamStatsPlayersNoData": "No player data for this period",
+  "teamStatsPlayersPlayTimeMinutes": "{minutes} min",
+  "@teamStatsPlayersPlayTimeMinutes": {
+    "placeholders": {
+      "minutes": { "type": "int" }
+    }
+  },
+  "teamStatsAllMonths": "All months",
+  "teamStatsTrainingsCount": "{count, plural, =1{1 training session} other{{count} training sessions}}",
+  "@teamStatsTrainingsCount": {
+    "placeholders": {
+      "count": { "type": "int" }
+    }
+  },
+  "teamStatsTrainingsAttendanceRate": "Attendance rate",
+  "teamStatsTrainingsAttendanceRateValue": "{value} %",
+  "@teamStatsTrainingsAttendanceRateValue": {
+    "placeholders": {
+      "value": { "type": "String" }
+    }
+  },
+  "teamStatsTrainingsNoData": "No past training sessions in this period",
+  "teamStatsTrainingsNoSeasonMonths": "No months available for this season",
+  "teamStatsTrainingsColumnPresent": "Pres.",
+  "teamStatsTrainingsColumnAbsent": "Abs.",
+  "teamStatsTrainingsColumnAttendanceRate": "Rate",
+  "teamStatsTrainingsPlayersNoData": "No player data for this period",
+  "teamStatsTrainingsGlobalSection": "Team",
+  "teamStatsTrainingsPersonalSection": "My stats",
+  "teamStatsCalendarNoMatchdays": "No matches for this competition",
+  "teamStatsCalendarNoMatchesForMatchday": "No matches for this matchday",
+  "teamStatsCalendarDatesLabel": "Dates",
+  "teamStatsCalendarNoMatchDates": "No dates scheduled",
+  "teamStatsCalendarDateSeparator": ", "
 }

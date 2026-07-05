@@ -69,7 +69,7 @@ class AgendaService {
               .listen(
             (List<grinta_match.Match> matches) {
               partialItems[matchKey] = matches
-                  .map((grinta_match.Match match) => _matchToAgendaItem(
+                  .map((grinta_match.Match match) => matchToAgendaItem(
                         match: match,
                         team: team,
                       ))
@@ -126,7 +126,7 @@ class AgendaService {
       ..sort((AgendaItem a, AgendaItem b) => a.startAt.compareTo(b.startAt));
   }
 
-  static AgendaItem? _matchToAgendaItem({
+  static AgendaItem? matchToAgendaItem({
     required grinta_match.Match match,
     required Team team,
   }) {
