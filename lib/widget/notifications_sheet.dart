@@ -80,9 +80,11 @@ class NotificationSidebarEntry extends StatelessWidget {
   const NotificationSidebarEntry({
     super.key,
     required this.collapsed,
+    this.itemHeight = 48,
   });
 
   final bool collapsed;
+  final double itemHeight;
 
   @override
   Widget build(BuildContext context) {
@@ -94,6 +96,7 @@ class NotificationSidebarEntry extends StatelessWidget {
       return _NotificationSidebarTile(
         collapsed: collapsed,
         count: 0,
+        itemHeight: itemHeight,
         onTap: () => showNotificationsPanel(context),
       );
     }
@@ -113,6 +116,7 @@ class NotificationSidebarEntry extends StatelessWidget {
         return _NotificationSidebarTile(
           collapsed: collapsed,
           count: count,
+          itemHeight: itemHeight,
           onTap: () => showNotificationsPanel(context),
         );
       },
@@ -172,11 +176,13 @@ class _NotificationSidebarTile extends StatefulWidget {
   const _NotificationSidebarTile({
     required this.collapsed,
     required this.count,
+    required this.itemHeight,
     required this.onTap,
   });
 
   final bool collapsed;
   final int count;
+  final double itemHeight;
   final VoidCallback onTap;
 
   @override
@@ -195,18 +201,18 @@ class _NotificationSidebarTileState extends State<_NotificationSidebarTile> {
     final tile = Material(
       color: Colors.transparent,
       child: InkWell(
-        borderRadius: BorderRadius.circular(18),
+        borderRadius: BorderRadius.circular(16),
         onTap: widget.onTap,
         child: AnimatedContainer(
           duration: const Duration(milliseconds: 180),
           curve: Curves.easeInOut,
-          height: 56,
+          height: widget.itemHeight,
           padding: EdgeInsets.symmetric(
-            horizontal: widget.collapsed ? 0 : 16,
+            horizontal: widget.collapsed ? 0 : 14,
           ),
           decoration: BoxDecoration(
             color: _hovered ? colors.card : Colors.transparent,
-            borderRadius: BorderRadius.circular(18),
+            borderRadius: BorderRadius.circular(16),
           ),
           child: Row(
             mainAxisAlignment: widget.collapsed
@@ -217,14 +223,15 @@ class _NotificationSidebarTileState extends State<_NotificationSidebarTile> {
                 icon: Icons.notifications_outlined,
                 count: widget.count,
                 iconColor: colors.textSecondary,
+                iconSize: 22,
               ),
               if (!widget.collapsed) ...[
-                const SizedBox(width: 14),
+                const SizedBox(width: 12),
                 Expanded(
                   child: Text(
                     l10n.navNotifications,
                     overflow: TextOverflow.ellipsis,
-                    style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                           color: colors.textSecondary,
                           fontWeight: FontWeight.w500,
                         ),
@@ -238,26 +245,20 @@ class _NotificationSidebarTileState extends State<_NotificationSidebarTile> {
     );
 
     if (widget.collapsed) {
-      return Padding(
-        padding: const EdgeInsets.only(top: 8),
-        child: MouseRegion(
-          onEnter: (_) => setState(() => _hovered = true),
-          onExit: (_) => setState(() => _hovered = false),
-          child: Tooltip(
-            message: l10n.navNotifications,
-            child: tile,
-          ),
+      return MouseRegion(
+        onEnter: (_) => setState(() => _hovered = true),
+        onExit: (_) => setState(() => _hovered = false),
+        child: Tooltip(
+          message: l10n.navNotifications,
+          child: tile,
         ),
       );
     }
 
-    return Padding(
-      padding: const EdgeInsets.only(top: 8),
-      child: MouseRegion(
-        onEnter: (_) => setState(() => _hovered = true),
-        onExit: (_) => setState(() => _hovered = false),
-        child: tile,
-      ),
+    return MouseRegion(
+      onEnter: (_) => setState(() => _hovered = true),
+      onExit: (_) => setState(() => _hovered = false),
+      child: tile,
     );
   }
 }

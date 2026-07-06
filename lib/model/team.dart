@@ -28,6 +28,9 @@ String keyTeamGrintaPlayers = 'grintaPlayers';
 String keyTeamGrintaPlayerMemberIds = 'grintaPlayerMemberIds';
 String keyTeamUsers = 'users';
 String keyTeamUid = 'uid';
+String keyTeamStreamChannelType = 'streamChannelType';
+String keyTeamStreamChannelId = 'streamChannelId';
+String keyTeamStreamChannelSyncedAt = 'streamChannelSyncedAt';
 String keyCompetitionName = "name";
 String keyCompetitonChType = "chType";
 String keyCompetitionUrlCalendar = "urlCalendar";
@@ -122,6 +125,9 @@ class Team {
   bool? isGrinta=false;
   List<dynamic> owners=[];
   String? uid;
+  String? streamChannelType;
+  String? streamChannelId;
+  DateTime? streamChannelSyncedAt;
 
   DocumentReference? ref;
 
@@ -147,6 +153,9 @@ class Team {
         this.withTracker,
         this.isGrinta,
         this.uid,
+        this.streamChannelType,
+        this.streamChannelId,
+        this.streamChannelSyncedAt,
       });
 
   Team.fromDocumentSnapshot(DocumentSnapshot snapshot) {
@@ -242,6 +251,10 @@ class Team {
       (map['owners'] as List<dynamic>?) ?? const <dynamic>[],
     );
     uid = map[keyTeamUid]?.toString();
+    streamChannelType = map[keyTeamStreamChannelType]?.toString();
+    streamChannelId = map[keyTeamStreamChannelId]?.toString();
+    streamChannelSyncedAt =
+        _parseStreamChannelSyncedAt(map[keyTeamStreamChannelSyncedAt]);
 
   }
 
@@ -261,6 +274,18 @@ class Team {
   }
 
   bool get hasAnyTrackerOwners => hasTrackerOwners || hasRawOwners;
+
+  /// True when the GetStream team channel was created and synced (see Cloud Functions).
+  bool get hasStreamChannel {
+    if (streamChannelSyncedAt != null) {
+      return true;
+    }
+    final id = streamChannelId?.trim() ?? '';
+    return id.isNotEmpty;
+  }
+
+  /// Grinta team without a synced GetStream channel yet.
+  bool get isStreamChannelPending => isGrinta == true && !hasStreamChannel;
 
   @override
   String toString() {
@@ -544,6 +569,16 @@ class TeamOwnerRef {
     }
     return null;
   }
+}
+
+DateTime? _parseStreamChannelSyncedAt(dynamic value) {
+  if (value is Timestamp) {
+    return value.toDate();
+  }
+  if (value is DateTime) {
+    return value;
+  }
+  return null;
 }
 
 String removeDiacritics(String str) {

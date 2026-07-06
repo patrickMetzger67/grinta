@@ -26,6 +26,9 @@ class TeamStatsOpponentsTab extends StatefulWidget {
     required this.team,
     required this.isManager,
     this.fallbackSeasonId,
+    this.initialCompetitionUrl,
+    this.initialOpponentKey,
+    this.initialOpponentName,
     TeamsPerClubService? teamsPerClubService,
     TeamCompetitionStatsService? teamCompetitionStatsService,
     TeamPlayerStatsService? teamPlayerStatsService,
@@ -38,6 +41,9 @@ class TeamStatsOpponentsTab extends StatefulWidget {
   final Team team;
   final bool isManager;
   final String? fallbackSeasonId;
+  final String? initialCompetitionUrl;
+  final String? initialOpponentKey;
+  final String? initialOpponentName;
   final TeamsPerClubService? _teamsPerClubService;
   final TeamCompetitionStatsService? _teamCompetitionStatsService;
   final TeamPlayerStatsService? _teamPlayerStatsService;
@@ -117,6 +123,38 @@ class _TeamStatsOpponentsTabState extends State<TeamStatsOpponentsTab>
     return null;
   }
 
+  String? _resolveOpponentKey(List<TeamStatsOpponent> opponents) {
+    final initialKey = widget.initialOpponentKey?.trim() ?? '';
+    if (initialKey.isNotEmpty &&
+        opponents.any((opponent) => opponent.key == initialKey)) {
+      return initialKey;
+    }
+
+    final initialName = widget.initialOpponentName?.trim() ?? '';
+    if (initialName.isNotEmpty) {
+      final normalized = initialName.toLowerCase();
+      for (final opponent in opponents) {
+        if (opponent.displayName.trim().toLowerCase() == normalized) {
+          return opponent.key;
+        }
+      }
+    }
+
+    return opponents.isNotEmpty ? opponents.first.key : null;
+  }
+
+  String? _resolveCompetitionValue(List<TeamStatsCompetitionOption> options) {
+    final initialUrl = widget.initialCompetitionUrl?.trim() ?? '';
+    if (initialUrl.isNotEmpty) {
+      for (final option in options) {
+        if (option.value == initialUrl || option.url == initialUrl) {
+          return option.value;
+        }
+      }
+    }
+    return options.isNotEmpty ? options.first.value : null;
+  }
+
   Future<void> _loadCompetitions() async {
     final options = await loadTeamStatsCompetitionOptions(
       team: widget.team,
@@ -128,7 +166,7 @@ class _TeamStatsOpponentsTabState extends State<TeamStatsOpponentsTab>
 
     if (!mounted) return;
 
-    final selectedValue = options.isNotEmpty ? options.first.value : null;
+    final selectedValue = _resolveCompetitionValue(options);
     setState(() {
       _loadingCompetitions = false;
       _competitionOptions = options;
@@ -177,8 +215,7 @@ class _TeamStatsOpponentsTabState extends State<TeamStatsOpponentsTab>
 
     if (!mounted) return;
 
-    final selectedKey =
-        opponents.isNotEmpty ? opponents.first.key : null;
+    final selectedKey = _resolveOpponentKey(opponents);
     setState(() {
       _loadingOpponents = false;
       _opponents = opponents;

@@ -4,6 +4,7 @@ abstract final class AnalyticsScreenNames {
   static const agenda = 'agenda';
   static const dashboard = 'dashboard';
   static const chat = 'chat';
+  static const chatBot = 'chat_bot';
   static const sync = 'sync';
   static const teams = 'teams';
   static const fields = 'fields';

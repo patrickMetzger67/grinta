@@ -1843,6 +1843,40 @@ class AppLocalizationsIt extends AppLocalizations {
   String get teamsListNoTeams => 'Nessuna squadra disponibile';
 
   @override
+  String get teamStreamChannelSynced => 'Gruppo Stream attivo';
+
+  @override
+  String get teamStreamChannelPending => 'Gruppo Stream non sincronizzato';
+
+  @override
+  String get teamStreamChannelCreateTitle => 'Creare il gruppo Stream?';
+
+  @override
+  String teamStreamChannelCreateMessage(String teamName) {
+    return 'Creare il gruppo Stream per la squadra $teamName? Giocatori e staff verranno aggiunti automaticamente.';
+  }
+
+  @override
+  String get teamStreamChannelCreateConfirm => 'Crea';
+
+  @override
+  String get teamStreamChannelCreateLoading => 'Creazione del gruppo Stream…';
+
+  @override
+  String teamStreamChannelCreateSuccess(String teamName) {
+    return 'Gruppo Stream creato per $teamName.';
+  }
+
+  @override
+  String teamStreamChannelCreateError(String details) {
+    return 'Impossibile creare il gruppo Stream: $details';
+  }
+
+  @override
+  String get teamStreamChannelCreateNotManager =>
+      'Solo i manager possono creare il gruppo Stream.';
+
+  @override
   String get navHome => 'Benvenuto';
 
   @override
@@ -1862,6 +1896,15 @@ class AppLocalizationsIt extends AppLocalizations {
 
   @override
   String get chatUsersAppearHere => 'Gli altri utenti appariranno qui.';
+
+  @override
+  String get chatChannelMembersTitle => 'Membri';
+
+  @override
+  String get chatMessageReadByTitle => 'Letto da';
+
+  @override
+  String get chatMessageNotReadYet => 'Non ancora letto';
 
   @override
   String get matchDetailTitle => 'Dettagli della partita';
@@ -3750,4 +3793,74 @@ class AppLocalizationsIt extends AppLocalizations {
 
   @override
   String get teamStatsCalendarDateSeparator => ', ';
+
+  @override
+  String get askDiegoTitle => 'Ask Diego';
+
+  @override
+  String get askDiegoWelcome =>
+      'Ciao! Sono Diego. Posso aiutarti con l\'agenda, il prossimo avversario o le statistiche della squadra.';
+
+  @override
+  String get askDiegoInputHint => 'Chiedi a Diego…';
+
+  @override
+  String get askDiegoSend => 'Invia';
+
+  @override
+  String get askDiegoListen => 'Ascolta la risposta';
+
+  @override
+  String get askDiegoOpenScreen => 'Apri';
+
+  @override
+  String get askDiegoOpenOpponentStats => 'Vedi statistiche avversario';
+
+  @override
+  String get askDiegoStartListening => 'Detta una domanda';
+
+  @override
+  String get askDiegoStopListening => 'Interrompi ascolto';
+
+  @override
+  String get askDiegoSpeechUnavailable =>
+      'Il riconoscimento vocale non è disponibile su questo dispositivo.';
+
+  @override
+  String get askDiegoSpeechPermissionDenied =>
+      'Permesso microfono o riconoscimento vocale negato. Attivalo in Impostazioni.';
+
+  @override
+  String askDiegoSpeechError(String reason) {
+    return 'Riconoscimento vocale non riuscito: $reason';
+  }
+
+  @override
+  String get askDiegoEmptyResponse => 'Non ho una risposta al momento.';
+
+  @override
+  String get askDiegoCloseSpeedDial => 'Chiudi';
+
+  @override
+  String askDiegoNavigationUnknown(String route) {
+    return 'Navigazione sconosciuta: $route';
+  }
+
+  @override
+  String get askDiegoNavigationAgendaHint =>
+      'Apri la scheda Agenda per vedere il calendario.';
+
+  @override
+  String get askDiegoNavigationMatchMissing =>
+      'ID partita mancante per la navigazione.';
+
+  @override
+  String get askDiegoNavigationMatchNotFound => 'Partita non trovata.';
+
+  @override
+  String get askDiegoNavigationNoTeam => 'Nessuna squadra selezionata.';
+
+  @override
+  String get askDiegoNavigationOpponentsManagerOnly =>
+      'Le statistiche avversari sono riservate agli allenatori.';
 }

@@ -75,7 +75,9 @@
 		<key>NSLocationWhenInUseUsageDescription</key>
 		<string>Grinta utilise votre position pour centrer la carte sur le terrain / Grinta uses your location to center the map on the pitch.</string>
 		<key>NSMicrophoneUsageDescription</key>
-		<string>Grinta needs microphone access to record voice messages in team chat.</string>
+		<string>Grinta needs microphone access to record voice messages in team chat and for the AI assistant voice input.</string>
+		<key>NSSpeechRecognitionUsageDescription</key>
+		<string>Grinta uses speech recognition so you can ask the AI assistant questions by voice.</string>
 		<key>NSCameraUsageDescription</key>
 		<string>Grinta needs camera access to take photos for chat attachments.</string>
 		<key>NSPhotoLibraryUsageDescription</key>

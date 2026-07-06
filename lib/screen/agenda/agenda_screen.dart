@@ -37,6 +37,7 @@ import '../../widget/create_training_sheet.dart';
 import '../match_detail_screen.dart';
 import '../team_players_screen.dart';
 import 'agenda_add_event_menu.dart';
+import '../../widget/ask_diego/ask_diego_speed_dial.dart';
 part 'agenda_calendar_widgets.dart';
 part 'agenda_list_widgets.dart';
 part 'agenda_status_views.dart';
@@ -809,14 +810,18 @@ class _AgendaScreenState extends State<AgendaScreen> {
           ),
         ),
       ),
-      floatingActionButton: FloatingActionButton(
-        heroTag: 'grinta-fab-agenda',
-        onPressed: () => showAgendaAddEventMenu(
-          context,
-          initialDate: _selectedDate,
-          onTrainingCreated: () => _subscribeItems(),
+      floatingActionButton: AskDiegoSpeedDial(
+        heroTagPrefix: 'agenda',
+        primaryAction: AskDiegoPrimaryAction(
+          heroTag: 'grinta-fab-agenda',
+          icon: Icons.add,
+          tooltip: context.l10n.agendaAddEventTitle,
+          onPressed: () => showAgendaAddEventMenu(
+            context,
+            initialDate: _selectedDate,
+            onTrainingCreated: () => _subscribeItems(),
+          ),
         ),
-        child: const Icon(Icons.add),
       ),
     );
   }

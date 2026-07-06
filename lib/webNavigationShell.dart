@@ -21,8 +21,14 @@ import 'widget/nav_icon_count_badge.dart';
 import 'widget/calendar_sync_toggle.dart';
 import 'widget/subscription_details_sheet.dart';
 import 'widget/notifications_sheet.dart';
+import 'widget/ask_diego/ask_diego_sidebar_entry.dart';
 
 import 'main.dart';
+
+const double _kWebSidebarExpandedWidth = 300;
+const double _kWebSidebarCollapsedWidth = 92;
+const double _kWebSidebarNavItemHeight = 48;
+const double _kWebSidebarNavItemSpacing = 4;
 
 class WebShellItem {
   final String label;
@@ -338,7 +344,7 @@ class _WebNavigationShellState extends State<WebNavigationShell> {
             AnimatedContainer(
               duration: const Duration(milliseconds: 220),
               curve: Curves.easeInOut,
-              width: _collapsed ? 92 : 280,
+              width: _collapsed ? _kWebSidebarCollapsedWidth : _kWebSidebarExpandedWidth,
               decoration: BoxDecoration(
                 color: colors.surface,
                 border: Border(
@@ -351,56 +357,27 @@ class _WebNavigationShellState extends State<WebNavigationShell> {
                   Divider(color: colors.border, height: 1),
                   if (!_collapsed && widget.sidebarHeaderBottom != null)
                     Padding(
-                      padding: const EdgeInsets.fromLTRB(12, 12, 12, 8),
+                      padding: const EdgeInsets.fromLTRB(12, 8, 12, 4),
                       child: widget.sidebarHeaderBottom!,
                     ),
                   Expanded(
-                    child: Padding(
+                    child: ListView(
                       padding: EdgeInsets.symmetric(
                         horizontal: 12,
-                        vertical: _collapsed ? 18 : 10,
+                        vertical: _collapsed ? 18 : 6,
                       ),
-                      child: Column(
-                        children: [
-                          Expanded(
-                            child: ListView.separated(
-                              itemCount: widget.items.length,
-                              separatorBuilder: (_, __) =>
-                                  const SizedBox(height: 8),
-                              itemBuilder: (context, index) {
-                                final item = widget.items[index];
-                                final selected = index == safeSelectedIndex;
-
-                                return _SidebarItem(
-                                  collapsed: _collapsed,
-                                  selected: selected,
-                                  label: item.label,
-                                  icon: item.icon,
-                                  badgeCount: item.badgeCount,
-                                  onTap: () {
-                                    if (index == safeSelectedIndex) return;
-                                    setState(() {
-                                      _selectedIndex = index;
-                                    });
-                                    _markTabFeatureVisited(index);
-                                    _logTabScreen(index);
-                                  },
-                                );
-                              },
-                            ),
-                          ),
-                          NotificationSidebarEntry(collapsed: _collapsed),
-                        ],
-                      ),
+                      children: _buildNavListItems(safeSelectedIndex),
                     ),
                   ),
                   Divider(color: colors.border, height: 1),
-                  Flexible(
-                    fit: FlexFit.loose,
-                    child: SingleChildScrollView(
-                      child: _buildSettingsSection(context),
+                  if (_settingsExpanded && !_collapsed)
+                    Flexible(
+                      fit: FlexFit.loose,
+                      child: SingleChildScrollView(
+                        child: _buildSettingsExpandedContent(context),
+                      ),
                     ),
-                  ),
+                  _buildSettingsToggle(context),
                 ],
               ),
             ),
@@ -452,38 +429,81 @@ class _WebNavigationShellState extends State<WebNavigationShell> {
     });
   }
 
-  Widget _buildSettingsSection(BuildContext context) {
+  List<Widget> _buildNavListItems(int safeSelectedIndex) {
+    final children = <Widget>[];
+
+    for (var index = 0; index < widget.items.length + 2; index++) {
+      if (index > 0) {
+        children.add(const SizedBox(height: _kWebSidebarNavItemSpacing));
+      }
+
+      if (index < widget.items.length) {
+        children.add(
+          _SidebarItem(
+            collapsed: _collapsed,
+            selected: index == safeSelectedIndex,
+            label: widget.items[index].label,
+            icon: widget.items[index].icon,
+            badgeCount: widget.items[index].badgeCount,
+            onTap: () {
+              if (index == safeSelectedIndex) return;
+              setState(() {
+                _selectedIndex = index;
+              });
+              _markTabFeatureVisited(index);
+              _logTabScreen(index);
+            },
+          ),
+        );
+      } else if (index == widget.items.length) {
+        children.add(
+          AskDiegoSidebarEntry(
+            collapsed: _collapsed,
+            itemHeight: _kWebSidebarNavItemHeight,
+          ),
+        );
+      } else {
+        children.add(
+          NotificationSidebarEntry(
+            collapsed: _collapsed,
+            itemHeight: _kWebSidebarNavItemHeight,
+          ),
+        );
+      }
+    }
+
+    return children;
+  }
+
+  Widget _buildSettingsExpandedContent(BuildContext context) {
     return Column(
       mainAxisSize: MainAxisSize.min,
       children: [
-        _buildSettingsToggle(context),
-        if (_settingsExpanded && !_collapsed) ...[
-          _buildLanguageSelector(context),
-          _buildThemeToggle(context),
-          const Padding(
-            padding: EdgeInsets.fromLTRB(12, 0, 12, 0),
-            child: CalendarSyncToggle(
-              contentPadding: EdgeInsets.symmetric(horizontal: 2),
-            ),
+        _buildLanguageSelector(context),
+        _buildThemeToggle(context),
+        const Padding(
+          padding: EdgeInsets.fromLTRB(12, 0, 12, 0),
+          child: CalendarSyncToggle(
+            contentPadding: EdgeInsets.symmetric(horizontal: 2),
           ),
-          ListenableBuilder(
-            listenable: SubscriptionService.instance,
-            builder: (context, _) {
-              if (!SubscriptionService.instance.hasActivePaidSubscription) {
-                return const SizedBox.shrink();
-              }
-              return _buildSubscriptionButton(context);
-            },
-          ),
-          _buildEditProfileButton(context),
-          _buildMyUnavailabilitiesButton(context),
-          AccountCreateProfileSidebarButton(
-            collapsed: _collapsed,
-            onTap: () => openAccountCreateProfileFlow(context),
-          ),
-          _buildDeleteAccountButton(context),
-          _buildLogoutButton(context),
-        ],
+        ),
+        ListenableBuilder(
+          listenable: SubscriptionService.instance,
+          builder: (context, _) {
+            if (!SubscriptionService.instance.hasActivePaidSubscription) {
+              return const SizedBox.shrink();
+            }
+            return _buildSubscriptionButton(context);
+          },
+        ),
+        _buildEditProfileButton(context),
+        _buildMyUnavailabilitiesButton(context),
+        AccountCreateProfileSidebarButton(
+          collapsed: _collapsed,
+          onTap: () => openAccountCreateProfileFlow(context),
+        ),
+        _buildDeleteAccountButton(context),
+        _buildLogoutButton(context),
       ],
     );
   }
@@ -1093,8 +1113,8 @@ class _WebNavigationShellState extends State<WebNavigationShell> {
     }
 
     return Container(
-      height: 88,
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+      height: 80,
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
       child: Row(
         children: [
           Expanded(
@@ -1175,18 +1195,18 @@ class _SidebarItemState extends State<_SidebarItem> {
       child: Material(
         color: Colors.transparent,
         child: InkWell(
-          borderRadius: BorderRadius.circular(18),
+          borderRadius: BorderRadius.circular(16),
           onTap: widget.onTap,
           child: AnimatedContainer(
             duration: const Duration(milliseconds: 180),
             curve: Curves.easeInOut,
-            height: 56,
+            height: _kWebSidebarNavItemHeight,
             padding: EdgeInsets.symmetric(
-              horizontal: widget.collapsed ? 0 : 16,
+              horizontal: widget.collapsed ? 0 : 14,
             ),
             decoration: BoxDecoration(
               color: backgroundColor,
-              borderRadius: BorderRadius.circular(18),
+              borderRadius: BorderRadius.circular(16),
               border: widget.selected
                   ? Border.all(color: colors.primary.withOpacity(0.18))
                   : null,
@@ -1200,14 +1220,15 @@ class _SidebarItemState extends State<_SidebarItem> {
                   icon: widget.icon,
                   count: widget.badgeCount,
                   iconColor: foregroundColor,
+                  iconSize: 22,
                 ),
                 if (!widget.collapsed) ...[
-                  const SizedBox(width: 14),
+                  const SizedBox(width: 12),
                   Expanded(
                     child: Text(
                       widget.label,
                       overflow: TextOverflow.ellipsis,
-                      style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                         color: widget.selected
                             ? colors.textPrimary
                             : colors.textSecondary,

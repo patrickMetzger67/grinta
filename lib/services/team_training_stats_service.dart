@@ -461,52 +461,12 @@ class TeamTrainingStatsService {
     required String seasonId,
     required SeasonPeriodRange period,
   }) async {
-    final start = Timestamp.fromDate(
-      DateTime(period.start.year, period.start.month, period.start.day),
-    );
-    final end = Timestamp.fromDate(
-      DateTime(
-        period.end.year,
-        period.end.month,
-        period.end.day,
-        23,
-        59,
-        59,
-        999,
-      ),
-    );
-
-    final trainings =
-        await _trainingService.getTrainingsByTeamIdBetweenDates(
+    return loadPastTrainingsForTeamSeason(
+      trainingService: _trainingService,
       teamId: teamId,
-      start: start,
-      end: end,
+      seasonId: seasonId,
+      period: period,
     );
-
-    final today = DateTime.now();
-    final todayEnd = DateTime(today.year, today.month, today.day, 23, 59, 59);
-
-    return trainings.where((training) {
-      final trainingSeasonId = training.seasonId?.trim() ?? '';
-      if (trainingSeasonId.isNotEmpty && trainingSeasonId != seasonId) {
-        return false;
-      }
-
-      final date = trainingDateForStats(training);
-      if (date == null) {
-        return false;
-      }
-
-      return !date.isAfter(todayEnd);
-    }).toList()
-      ..sort((a, b) {
-        final dateA = trainingDateForStats(a);
-        final dateB = trainingDateForStats(b);
-        if (dateA == null || dateB == null) {
-          return 0;
-        }
-        return dateA.compareTo(dateB);
-      });
   }
 
   List<Training> _filterTrainingsByMonth({
@@ -597,6 +557,60 @@ class TeamTrainingStatsService {
     }
     return (present / total) * 100;
   }
+}
+
+/// Past trainings for [teamId] in [seasonId], within [period] (excludes future).
+Future<List<Training>> loadPastTrainingsForTeamSeason({
+  required TrainingService trainingService,
+  required String teamId,
+  required String seasonId,
+  required SeasonPeriodRange period,
+}) async {
+  final start = Timestamp.fromDate(
+    DateTime(period.start.year, period.start.month, period.start.day),
+  );
+  final end = Timestamp.fromDate(
+    DateTime(
+      period.end.year,
+      period.end.month,
+      period.end.day,
+      23,
+      59,
+      59,
+      999,
+    ),
+  );
+
+  final trainings = await trainingService.getTrainingsByTeamIdBetweenDates(
+    teamId: teamId,
+    start: start,
+    end: end,
+  );
+
+  final today = DateTime.now();
+  final todayEnd = DateTime(today.year, today.month, today.day, 23, 59, 59);
+
+  return trainings.where((training) {
+    final trainingSeasonId = training.seasonId?.trim() ?? '';
+    if (trainingSeasonId.isNotEmpty && trainingSeasonId != seasonId) {
+      return false;
+    }
+
+    final date = trainingDateForStats(training);
+    if (date == null) {
+      return false;
+    }
+
+    return !date.isAfter(todayEnd);
+  }).toList()
+    ..sort((a, b) {
+      final dateA = trainingDateForStats(a);
+      final dateB = trainingDateForStats(b);
+      if (dateA == null || dateB == null) {
+        return 0;
+      }
+      return dateA.compareTo(dateB);
+    });
 }
 
 /// Calendar date for a training, used when filtering stats by period.

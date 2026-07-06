@@ -658,6 +658,30 @@
   "teamsListCountFiltered": "{filtered} / {total}",
   "teamsListNoResults": "No teams found",
   "teamsListNoTeams": "No teams available",
+  "teamStreamChannelSynced": "Stream group active",
+  "teamStreamChannelPending": "Stream group not synced yet",
+  "teamStreamChannelCreateTitle": "Create Stream group?",
+  "teamStreamChannelCreateMessage": "Create the Stream group for team {teamName}? Players and staff will be added automatically.",
+  "@teamStreamChannelCreateMessage": {
+    "placeholders": {
+      "teamName": { "type": "String" }
+    }
+  },
+  "teamStreamChannelCreateConfirm": "Create",
+  "teamStreamChannelCreateLoading": "Creating Stream group…",
+  "teamStreamChannelCreateSuccess": "Stream group created for {teamName}.",
+  "@teamStreamChannelCreateSuccess": {
+    "placeholders": {
+      "teamName": { "type": "String" }
+    }
+  },
+  "teamStreamChannelCreateError": "Could not create Stream group: {details}",
+  "@teamStreamChannelCreateError": {
+    "placeholders": {
+      "details": { "type": "String" }
+    }
+  },
+  "teamStreamChannelCreateNotManager": "Only managers can create the Stream group.",
   "navHome": "Welcome",
   "myTeams": "My teams",
   "syncTrainingsToSync": "Workouts to sync",
@@ -665,6 +689,9 @@
   "chatStartNewHint": "Press \"New\" to start a chat.",
   "chatTryAnotherName": "Try another name.",
   "chatUsersAppearHere": "Other users will appear here.",
+  "chatChannelMembersTitle": "Members",
+  "chatMessageReadByTitle": "Read by",
+  "chatMessageNotReadYet": "Not read yet",
   "matchDetailTitle": "Match details",
   "matchDetailVenueTitle": "Match venue",
   "matchDetailTrackerKitTitle": "Kit selection",
@@ -1375,5 +1402,35 @@
   "teamStatsCalendarNoMatchesForMatchday": "No matches for this matchday",
   "teamStatsCalendarDatesLabel": "Dates",
   "teamStatsCalendarNoMatchDates": "No dates scheduled",
-  "teamStatsCalendarDateSeparator": ", "
+  "teamStatsCalendarDateSeparator": ", ",
+  "askDiegoTitle": "Ask Diego",
+  "askDiegoWelcome": "Hi! I'm Diego. I can help with your schedule, next opponent, or team statistics. Ask a question or use the microphone.",
+  "askDiegoInputHint": "Ask Diego…",
+  "askDiegoSend": "Send",
+  "askDiegoListen": "Listen to response",
+  "askDiegoOpenScreen": "Open",
+  "askDiegoOpenOpponentStats": "View opponent stats",
+  "askDiegoStartListening": "Dictate a question",
+  "askDiegoStopListening": "Stop listening",
+  "askDiegoSpeechUnavailable": "Speech recognition is not available on this device.",
+  "askDiegoSpeechPermissionDenied": "Microphone or speech recognition permission denied. Enable it in Settings.",
+  "askDiegoSpeechError": "Speech recognition failed: {reason}",
+  "@askDiegoSpeechError": {
+    "placeholders": {
+      "reason": { "type": "String" }
+    }
+  },
+  "askDiegoEmptyResponse": "I don't have an answer right now.",
+  "askDiegoCloseSpeedDial": "Close",
+  "askDiegoNavigationUnknown": "Unknown navigation: {route}",
+  "@askDiegoNavigationUnknown": {
+    "placeholders": {
+      "route": { "type": "String" }
+    }
+  },
+  "askDiegoNavigationAgendaHint": "Open the Agenda tab to view your calendar.",
+  "askDiegoNavigationMatchMissing": "Match id missing for navigation.",
+  "askDiegoNavigationMatchNotFound": "Match not found.",
+  "askDiegoNavigationNoTeam": "No team selected.",
+  "askDiegoNavigationOpponentsManagerOnly": "Opponent statistics are for coaches only."
 }

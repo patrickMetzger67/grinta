@@ -813,6 +813,30 @@
   },
   "teamsListNoResults": "Aucune équipe trouvée",
   "teamsListNoTeams": "Aucune équipe disponible",
+  "teamStreamChannelSynced": "Groupe Stream actif",
+  "teamStreamChannelPending": "Groupe Stream non synchronisé",
+  "teamStreamChannelCreateTitle": "Créer le groupe Stream ?",
+  "teamStreamChannelCreateMessage": "Créer le groupe Stream pour l'équipe {teamName} ? Les joueurs et le staff seront ajoutés automatiquement.",
+  "@teamStreamChannelCreateMessage": {
+    "placeholders": {
+      "teamName": { "type": "String" }
+    }
+  },
+  "teamStreamChannelCreateConfirm": "Créer",
+  "teamStreamChannelCreateLoading": "Création du groupe Stream…",
+  "teamStreamChannelCreateSuccess": "Groupe Stream créé pour {teamName}.",
+  "@teamStreamChannelCreateSuccess": {
+    "placeholders": {
+      "teamName": { "type": "String" }
+    }
+  },
+  "teamStreamChannelCreateError": "Impossible de créer le groupe Stream : {details}",
+  "@teamStreamChannelCreateError": {
+    "placeholders": {
+      "details": { "type": "String" }
+    }
+  },
+  "teamStreamChannelCreateNotManager": "Seuls les managers peuvent créer le groupe Stream.",
 
   "navHome": "Accueil",
   "myTeams": "Mes équipes",
@@ -821,6 +845,9 @@
   "chatStartNewHint": "Appuie sur \"Nouveau\" pour démarrer un chat.",
   "chatTryAnotherName": "Essaie avec un autre nom.",
   "chatUsersAppearHere": "Les autres utilisateurs apparaîtront ici.",
+  "chatChannelMembersTitle": "Membres",
+  "chatMessageReadByTitle": "Lu par",
+  "chatMessageNotReadYet": "Pas encore lu",
   "matchDetailTitle": "Détail du match",
   "matchDetailVenueTitle": "Lieu du match",
   "matchDetailTrackerKitTitle": "Sélection du kit",
@@ -1682,5 +1709,35 @@
   "teamStatsCalendarNoMatchesForMatchday": "Aucun match pour cette journée",
   "teamStatsCalendarDatesLabel": "Dates",
   "teamStatsCalendarNoMatchDates": "Aucune date programmée",
-  "teamStatsCalendarDateSeparator": ", "
+  "teamStatsCalendarDateSeparator": ", ",
+  "askDiegoTitle": "Ask Diego",
+  "askDiegoWelcome": "Bonjour ! Je suis Diego. Je peux vous aider avec votre agenda, votre prochain adversaire ou les statistiques de votre équipe. Posez-moi une question ou utilisez le micro.",
+  "askDiegoInputHint": "Demandez à Diego…",
+  "askDiegoSend": "Envoyer",
+  "askDiegoListen": "Écouter la réponse",
+  "askDiegoOpenScreen": "Ouvrir",
+  "askDiegoOpenOpponentStats": "Voir les stats adversaire",
+  "askDiegoStartListening": "Dicter une question",
+  "askDiegoStopListening": "Arrêter l'écoute",
+  "askDiegoSpeechUnavailable": "La reconnaissance vocale n'est pas disponible sur cet appareil.",
+  "askDiegoSpeechPermissionDenied": "Autorisation micro ou reconnaissance vocale refusée. Activez-la dans Réglages.",
+  "askDiegoSpeechError": "Échec de la reconnaissance vocale : {reason}",
+  "@askDiegoSpeechError": {
+    "placeholders": {
+      "reason": { "type": "String" }
+    }
+  },
+  "askDiegoEmptyResponse": "Je n'ai pas de réponse pour le moment.",
+  "askDiegoCloseSpeedDial": "Fermer",
+  "askDiegoNavigationUnknown": "Navigation non reconnue : {route}",
+  "@askDiegoNavigationUnknown": {
+    "placeholders": {
+      "route": { "type": "String" }
+    }
+  },
+  "askDiegoNavigationAgendaHint": "Ouvrez l'onglet Agenda pour voir votre calendrier.",
+  "askDiegoNavigationMatchMissing": "Identifiant de match manquant pour la navigation.",
+  "askDiegoNavigationMatchNotFound": "Match introuvable.",
+  "askDiegoNavigationNoTeam": "Aucune équipe sélectionnée.",
+  "askDiegoNavigationOpponentsManagerOnly": "Les statistiques adversaires sont réservées aux entraîneurs."
 }

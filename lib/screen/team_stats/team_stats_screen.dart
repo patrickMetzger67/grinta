@@ -16,6 +16,10 @@ Future<void> openTeamStatsScreen(
   BuildContext context, {
   required Team team,
   required bool isManager,
+  int initialTabIndex = 0,
+  String? initialCompetitionUrl,
+  String? initialOpponentKey,
+  String? initialOpponentName,
 }) {
   final seasonId = context.read<AppSession>().selectedSeason?.ref?.id;
 
@@ -26,6 +30,10 @@ Future<void> openTeamStatsScreen(
         team: team,
         isManager: isManager,
         fallbackSeasonId: seasonId,
+        initialTabIndex: initialTabIndex,
+        initialCompetitionUrl: initialCompetitionUrl,
+        initialOpponentKey: initialOpponentKey,
+        initialOpponentName: initialOpponentName,
       ),
     ),
   );
@@ -37,11 +45,19 @@ class TeamStatsScreen extends StatefulWidget {
     required this.team,
     required this.isManager,
     this.fallbackSeasonId,
+    this.initialTabIndex = 0,
+    this.initialCompetitionUrl,
+    this.initialOpponentKey,
+    this.initialOpponentName,
   });
 
   final Team team;
   final bool isManager;
   final String? fallbackSeasonId;
+  final int initialTabIndex;
+  final String? initialCompetitionUrl;
+  final String? initialOpponentKey;
+  final String? initialOpponentName;
 
   @override
   State<TeamStatsScreen> createState() => _TeamStatsScreenState();
@@ -59,9 +75,12 @@ class _TeamStatsScreenState extends State<TeamStatsScreen>
   @override
   void initState() {
     super.initState();
+    final tabCount = widget.isManager ? 4 : 3;
+    final maxIndex = tabCount - 1;
     _tabController = TabController(
-      length: widget.isManager ? 4 : 3,
+      length: tabCount,
       vsync: this,
+      initialIndex: widget.initialTabIndex.clamp(0, maxIndex),
     );
   }
 
@@ -119,6 +138,9 @@ class _TeamStatsScreenState extends State<TeamStatsScreen>
               team: widget.team,
               isManager: widget.isManager,
               fallbackSeasonId: widget.fallbackSeasonId,
+              initialCompetitionUrl: widget.initialCompetitionUrl,
+              initialOpponentKey: widget.initialOpponentKey,
+              initialOpponentName: widget.initialOpponentName,
             ),
           TeamStatsCalendarsTab(
             team: widget.team,

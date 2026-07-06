@@ -3310,6 +3310,60 @@ abstract class AppLocalizations {
   /// **'Aucune équipe disponible'**
   String get teamsListNoTeams;
 
+  /// No description provided for @teamStreamChannelSynced.
+  ///
+  /// In fr, this message translates to:
+  /// **'Groupe Stream actif'**
+  String get teamStreamChannelSynced;
+
+  /// No description provided for @teamStreamChannelPending.
+  ///
+  /// In fr, this message translates to:
+  /// **'Groupe Stream non synchronisé'**
+  String get teamStreamChannelPending;
+
+  /// No description provided for @teamStreamChannelCreateTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Créer le groupe Stream ?'**
+  String get teamStreamChannelCreateTitle;
+
+  /// No description provided for @teamStreamChannelCreateMessage.
+  ///
+  /// In fr, this message translates to:
+  /// **'Créer le groupe Stream pour l\'équipe {teamName} ? Les joueurs et le staff seront ajoutés automatiquement.'**
+  String teamStreamChannelCreateMessage(String teamName);
+
+  /// No description provided for @teamStreamChannelCreateConfirm.
+  ///
+  /// In fr, this message translates to:
+  /// **'Créer'**
+  String get teamStreamChannelCreateConfirm;
+
+  /// No description provided for @teamStreamChannelCreateLoading.
+  ///
+  /// In fr, this message translates to:
+  /// **'Création du groupe Stream…'**
+  String get teamStreamChannelCreateLoading;
+
+  /// No description provided for @teamStreamChannelCreateSuccess.
+  ///
+  /// In fr, this message translates to:
+  /// **'Groupe Stream créé pour {teamName}.'**
+  String teamStreamChannelCreateSuccess(String teamName);
+
+  /// No description provided for @teamStreamChannelCreateError.
+  ///
+  /// In fr, this message translates to:
+  /// **'Impossible de créer le groupe Stream : {details}'**
+  String teamStreamChannelCreateError(String details);
+
+  /// No description provided for @teamStreamChannelCreateNotManager.
+  ///
+  /// In fr, this message translates to:
+  /// **'Seuls les managers peuvent créer le groupe Stream.'**
+  String get teamStreamChannelCreateNotManager;
+
   /// No description provided for @navHome.
   ///
   /// In fr, this message translates to:
@@ -3351,6 +3405,24 @@ abstract class AppLocalizations {
   /// In fr, this message translates to:
   /// **'Les autres utilisateurs apparaîtront ici.'**
   String get chatUsersAppearHere;
+
+  /// No description provided for @chatChannelMembersTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Membres'**
+  String get chatChannelMembersTitle;
+
+  /// No description provided for @chatMessageReadByTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Lu par'**
+  String get chatMessageReadByTitle;
+
+  /// No description provided for @chatMessageNotReadYet.
+  ///
+  /// In fr, this message translates to:
+  /// **'Pas encore lu'**
+  String get chatMessageNotReadYet;
 
   /// No description provided for @matchDetailTitle.
   ///
@@ -6543,6 +6615,126 @@ abstract class AppLocalizations {
   /// In fr, this message translates to:
   /// **', '**
   String get teamStatsCalendarDateSeparator;
+
+  /// No description provided for @askDiegoTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Ask Diego'**
+  String get askDiegoTitle;
+
+  /// No description provided for @askDiegoWelcome.
+  ///
+  /// In fr, this message translates to:
+  /// **'Bonjour ! Je suis Diego. Je peux vous aider avec votre agenda, votre prochain adversaire ou les statistiques de votre équipe. Posez-moi une question ou utilisez le micro.'**
+  String get askDiegoWelcome;
+
+  /// No description provided for @askDiegoInputHint.
+  ///
+  /// In fr, this message translates to:
+  /// **'Demandez à Diego…'**
+  String get askDiegoInputHint;
+
+  /// No description provided for @askDiegoSend.
+  ///
+  /// In fr, this message translates to:
+  /// **'Envoyer'**
+  String get askDiegoSend;
+
+  /// No description provided for @askDiegoListen.
+  ///
+  /// In fr, this message translates to:
+  /// **'Écouter la réponse'**
+  String get askDiegoListen;
+
+  /// No description provided for @askDiegoOpenScreen.
+  ///
+  /// In fr, this message translates to:
+  /// **'Ouvrir'**
+  String get askDiegoOpenScreen;
+
+  /// No description provided for @askDiegoOpenOpponentStats.
+  ///
+  /// In fr, this message translates to:
+  /// **'Voir les stats adversaire'**
+  String get askDiegoOpenOpponentStats;
+
+  /// No description provided for @askDiegoStartListening.
+  ///
+  /// In fr, this message translates to:
+  /// **'Dicter une question'**
+  String get askDiegoStartListening;
+
+  /// No description provided for @askDiegoStopListening.
+  ///
+  /// In fr, this message translates to:
+  /// **'Arrêter l\'écoute'**
+  String get askDiegoStopListening;
+
+  /// No description provided for @askDiegoSpeechUnavailable.
+  ///
+  /// In fr, this message translates to:
+  /// **'La reconnaissance vocale n\'est pas disponible sur cet appareil.'**
+  String get askDiegoSpeechUnavailable;
+
+  /// No description provided for @askDiegoSpeechPermissionDenied.
+  ///
+  /// In fr, this message translates to:
+  /// **'Autorisation micro ou reconnaissance vocale refusée. Activez-la dans Réglages.'**
+  String get askDiegoSpeechPermissionDenied;
+
+  /// No description provided for @askDiegoSpeechError.
+  ///
+  /// In fr, this message translates to:
+  /// **'Échec de la reconnaissance vocale : {reason}'**
+  String askDiegoSpeechError(String reason);
+
+  /// No description provided for @askDiegoEmptyResponse.
+  ///
+  /// In fr, this message translates to:
+  /// **'Je n\'ai pas de réponse pour le moment.'**
+  String get askDiegoEmptyResponse;
+
+  /// No description provided for @askDiegoCloseSpeedDial.
+  ///
+  /// In fr, this message translates to:
+  /// **'Fermer'**
+  String get askDiegoCloseSpeedDial;
+
+  /// No description provided for @askDiegoNavigationUnknown.
+  ///
+  /// In fr, this message translates to:
+  /// **'Navigation non reconnue : {route}'**
+  String askDiegoNavigationUnknown(String route);
+
+  /// No description provided for @askDiegoNavigationAgendaHint.
+  ///
+  /// In fr, this message translates to:
+  /// **'Ouvrez l\'onglet Agenda pour voir votre calendrier.'**
+  String get askDiegoNavigationAgendaHint;
+
+  /// No description provided for @askDiegoNavigationMatchMissing.
+  ///
+  /// In fr, this message translates to:
+  /// **'Identifiant de match manquant pour la navigation.'**
+  String get askDiegoNavigationMatchMissing;
+
+  /// No description provided for @askDiegoNavigationMatchNotFound.
+  ///
+  /// In fr, this message translates to:
+  /// **'Match introuvable.'**
+  String get askDiegoNavigationMatchNotFound;
+
+  /// No description provided for @askDiegoNavigationNoTeam.
+  ///
+  /// In fr, this message translates to:
+  /// **'Aucune équipe sélectionnée.'**
+  String get askDiegoNavigationNoTeam;
+
+  /// No description provided for @askDiegoNavigationOpponentsManagerOnly.
+  ///
+  /// In fr, this message translates to:
+  /// **'Les statistiques adversaires sont réservées aux entraîneurs.'**
+  String get askDiegoNavigationOpponentsManagerOnly;
 }
 
 class _AppLocalizationsDelegate

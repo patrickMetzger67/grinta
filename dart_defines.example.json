@@ -8,5 +8,7 @@
   "STRIPE_PUBLISHABLE_KEY_TEST": "",
   "STRIPE_PUBLISHABLE_KEY_LIVE": "",
   "SHOPIFY_STOREFRONT_TOKEN": "",
-  "FCM_WEB_VAPID_KEY": "BYour_Web_Push_Public_Key_From_Firebase_Console"
+  "FCM_WEB_VAPID_KEY": "BYour_Web_Push_Public_Key_From_Firebase_Console",
+  "GEMINI_API_KEY": "YOUR_GEMINI_API_KEY_HERE",
+  "GEMINI_CHAT_USE_DIRECT_API": "false"
 }

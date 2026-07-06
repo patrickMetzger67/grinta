@@ -5,7 +5,9 @@ import 'package:grinta/model/team.dart';
 import 'package:grinta/model/teams_per_club.dart';
 import 'package:grinta/services/teams_per_club_service.dart';
 import 'package:grinta/util/app_theme.dart';
+import 'package:grinta/model/match.dart';
 import 'package:grinta/util/fff_competition_url.dart';
+import 'package:grinta/util/team_stats_competition_filter.dart';
 
 /// Sentinel value for the "all competitions" dropdown option.
 const String kTeamStatsAllCompetitionsValue = '__all__';
@@ -84,6 +86,69 @@ Future<List<TeamStatsCompetitionOption>> loadTeamStatsCompetitionOptions({
   }
 
   return competitionOptions;
+}
+
+/// FFF engagement URLs for [team] (excludes friendlies and the "all" sentinel).
+Future<List<String>> loadTeamStatsCompetitionUrls({
+  required Team team,
+  String? fallbackSeasonId,
+  TeamsPerClubService? teamsPerClubService,
+}) async {
+  final clubId = team.clubId?.trim() ?? '';
+  final equipeId = team.teamIdInTeamsPerClub?.trim() ?? '';
+  final seasonId = teamStatsSeasonIdForTeam(team, fallbackSeasonId);
+
+  if (clubId.isEmpty || equipeId.isEmpty || seasonId == null) {
+    return const [];
+  }
+
+  final service = teamsPerClubService ?? TeamsPerClubService();
+  final teamsPerClub = await service.getByClubIdAndSeason(
+    clubId: clubId,
+    seasonId: seasonId,
+  );
+
+  Equipe? equipe;
+  if (teamsPerClub != null) {
+    for (final entry in teamsPerClub.equipes) {
+      if ((entry.id?.trim() ?? '') == equipeId) {
+        equipe = entry;
+        break;
+      }
+    }
+  }
+
+  final urls = <String>[];
+  for (final url in equipe?.competitions ?? const <String>[]) {
+    final trimmed = url.trim();
+    if (trimmed.isEmpty || isFriendlyCompetitionUrl(trimmed)) {
+      continue;
+    }
+    urls.add(trimmed);
+  }
+  return urls;
+}
+
+/// Resolves the team-stats competition URL that matches [match] fields.
+Future<String?> resolveTeamStatsCompetitionUrlForMatch({
+  required Team team,
+  required Match match,
+  String? fallbackSeasonId,
+  TeamsPerClubService? teamsPerClubService,
+}) async {
+  final urls = await loadTeamStatsCompetitionUrls(
+    team: team,
+    fallbackSeasonId: fallbackSeasonId,
+    teamsPerClubService: teamsPerClubService,
+  );
+
+  for (final url in urls) {
+    final filter = competitionFilterFromUrl(url);
+    if (filter != null && matchMatchesCompetitionFilter(match, filter)) {
+      return url;
+    }
+  }
+  return null;
 }
 
 String? teamStatsSelectedCompetitionUrl(String selectedValue) {

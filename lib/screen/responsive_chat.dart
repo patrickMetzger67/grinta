@@ -11,9 +11,11 @@ import 'package:responsive_builder/responsive_builder.dart';
 import 'package:stream_chat_flutter/stream_chat_flutter.dart';
 
 import '../model/feature_discovery_ids.dart';
+import 'chat/stream_channel_ui_helpers.dart';
 import '../util/app_theme.dart';
 import '../widget/feature_discovery_random_banner.dart';
 import '../widget/alternating_monetization_banner.dart';
+import '../widget/ask_diego/ask_diego_speed_dial.dart';
 
 
 class ResponsiveChat extends StatelessWidget {
@@ -228,13 +230,14 @@ class _ChannelListPageState extends State<_ChannelListPage> {
 
     return Scaffold(
       backgroundColor: colors.background,
-      floatingActionButton: FloatingActionButton.extended(
-        heroTag: 'grinta-fab-chat',
-        onPressed: _openUserPicker,
-        backgroundColor: colors.primary,
-        foregroundColor: Colors.white,
-        icon: const Icon(Icons.add_comment_rounded),
-        label: Text(context.l10n.actionNew),
+      floatingActionButton: AskDiegoSpeedDial(
+        heroTagPrefix: 'chat',
+        primaryAction: AskDiegoPrimaryAction(
+          heroTag: 'grinta-fab-chat',
+          icon: Icons.add_comment_rounded,
+          tooltip: context.l10n.actionNew,
+          onPressed: _openUserPicker,
+        ),
       ),
       body: RefreshIndicator(
         color: colors.primary,
@@ -565,6 +568,14 @@ class _ChatChannelPageState extends State<_ChatChannelPage> {
         onBackPressed: widget.onBackPressed != null
             ? () => widget.onBackPressed!(context)
             : null,
+        onTitleTap: () => openStreamChannelInfo(
+          context,
+          StreamChannel.of(context).channel,
+        ),
+        onImageTap: () => openStreamChannelInfo(
+          context,
+          StreamChannel.of(context).channel,
+        ),
       ),
       body: Column(
         children: [
@@ -635,7 +646,9 @@ class _ChatChannelPageState extends State<_ChatChannelPage> {
                       ),
                     );
                   },
-                  child: defaultWidget.copyWith(
+                  child: decorateStreamMessageForReadReceipts(
+                    defaultWidget: defaultWidget,
+                    isMyMessage: isMyMessage,
                     onReplyTap: _reply,
                   ),
                 );
@@ -674,6 +687,17 @@ class _ThreadPage extends StatelessWidget {
           Expanded(
             child: StreamMessageListView(
               parentMessage: parent,
+              messageBuilder: (
+                context,
+                details,
+                messages,
+                defaultWidget,
+              ) {
+                return decorateStreamMessageForReadReceipts(
+                  defaultWidget: defaultWidget,
+                  isMyMessage: details.isMyMessage,
+                );
+              },
             ),
           ),
           StreamMessageInput(

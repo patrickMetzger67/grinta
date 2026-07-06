@@ -12,6 +12,8 @@ import 'package:grinta/services/user_trial_service.dart';
 import 'package:grinta/util/team_creation_access.dart';
 import 'package:grinta/util/team_deletion_access.dart';
 import 'package:grinta/util/team_detail_access.dart';
+import 'package:grinta/services/stream_channel_service.dart';
+import 'package:grinta/util/team_stream_channel_access.dart';
 import 'package:grinta/screen/team_stats/team_stats_screen.dart';
 import 'package:grinta/util/team_equipe_lookup.dart';
 import 'package:grinta/widget/account_create_profile_entry.dart';
@@ -348,6 +350,14 @@ class _TeamsListScreenState extends State<TeamsListScreen> {
                                     size: 18,
                                   ),
                                 ],
+                                if (team.isGrinta == true) ...[
+                                  const SizedBox(width: 8),
+                                  _TeamStreamChannelIndicator(
+                                    team: team,
+                                    isManager: isManager,
+                                    colors: colors,
+                                  ),
+                                ],
                                 const SizedBox(width: 12),
                                 Expanded(
                                   child: Column(
@@ -477,6 +487,63 @@ TeamCreationGate _resolveTeamCreationGate({
   return SubscriptionLimitsService.instance.resolveTeamCreationGate(
     teamCount,
   );
+}
+
+class _TeamStreamChannelIndicator extends StatelessWidget {
+  const _TeamStreamChannelIndicator({
+    required this.team,
+    required this.isManager,
+    required this.colors,
+  });
+
+  final Team team;
+  final bool isManager;
+  final AppColors colors;
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = context.l10n;
+    final synced = team.hasStreamChannel;
+    final pending = team.isStreamChannelPending;
+    final icon = Icon(
+      synced ? Icons.chat_bubble_rounded : Icons.chat_bubble_outline_rounded,
+      color: synced
+          ? colors.primary
+          : colors.textSecondary.withValues(alpha: 0.55),
+      size: 18,
+    );
+
+    return Tooltip(
+      message: synced
+          ? l10n.teamStreamChannelSynced
+          : l10n.teamStreamChannelPending,
+      child: pending && isManager
+          ? Material(
+              color: Colors.transparent,
+              child: InkWell(
+                borderRadius: BorderRadius.circular(12),
+                onTap: () {
+                  StreamChannelService.log(
+                    'indicator widget tapped:'
+                    ' teamId=${team.keyTeam}'
+                    ' teamName="${team.name ?? ''}"'
+                    ' pending=$pending synced=$synced',
+                  );
+                  onPendingStreamChannelIndicatorTap(
+                    context,
+                    team: team,
+                    isManager: isManager,
+                  );
+                },
+                child: Padding(
+                  padding: const EdgeInsets.all(2),
+                  child: icon,
+                ),
+              ),
+            )
+          : icon,
+    );
+  }
 }
 
 class _TeamAvatar extends StatefulWidget {

@@ -27,6 +27,8 @@ import 'package:grinta/services/notification_fcm_platform.dart';
 import 'package:grinta/services/notification_fcm_web_notify.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:provider/provider.dart';
+import 'package:grinta/screen/chat/stream_channel_ui_helpers.dart';
+import 'package:grinta/util/app_theme.dart';
 import 'package:stream_chat_flutter/stream_chat_flutter.dart';
 
 /// Push notification (FCM) setup, token persistence, and tap navigation.
@@ -818,12 +820,38 @@ class _FcmChatChannelPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colors = context.appColors;
+
     return Scaffold(
-      appBar: const StreamChannelHeader(),
+      backgroundColor: colors.background,
+      appBar: StreamChannelHeader(
+        onTitleTap: () => openStreamChannelInfo(
+          context,
+          StreamChannel.of(context).channel,
+        ),
+        onImageTap: () => openStreamChannelInfo(
+          context,
+          StreamChannel.of(context).channel,
+        ),
+      ),
       body: Column(
-        children: const [
-          Expanded(child: StreamMessageListView()),
-          StreamMessageInput(),
+        children: [
+          Expanded(
+            child: StreamMessageListView(
+              messageBuilder: (
+                context,
+                details,
+                messages,
+                defaultWidget,
+              ) {
+                return decorateStreamMessageForReadReceipts(
+                  defaultWidget: defaultWidget,
+                  isMyMessage: details.isMyMessage,
+                );
+              },
+            ),
+          ),
+          const StreamMessageInput(),
         ],
       ),
     );

@@ -863,6 +863,10 @@ class _SummaryChip extends StatelessWidget {
   }
 }
 
+/// Fixed trailing column widths so tracker (+) and presence badges align across rows.
+const double _kTrackerColumnWidth = 88;
+const double _kPresenceColumnWidth = 118;
+
 class _PlayerPresenceTile extends StatelessWidget {
   const _PlayerPresenceTile({
     required this.player,
@@ -914,81 +918,111 @@ class _PlayerPresenceTile extends StatelessWidget {
           ),
           if (showTracker) ...[
             const SizedBox(width: 8),
-            if (trackerLabel != null)
-              InkWell(
-                onTap: canEditTracker ? onRemoveTracker : null,
-                borderRadius: BorderRadius.circular(8),
-                child: Container(
-                  constraints: const BoxConstraints(maxWidth: 88),
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                  decoration: BoxDecoration(
-                    color: colors.primary.withValues(alpha: 0.12),
-                    borderRadius: BorderRadius.circular(8),
-                    border: Border.all(
-                      color: colors.primary.withValues(alpha: 0.35),
-                    ),
+            SizedBox(
+              width: _kTrackerColumnWidth,
+              child: Align(
+                alignment: Alignment.center,
+                child: trackerLabel != null
+                    ? InkWell(
+                        onTap: canEditTracker ? onRemoveTracker : null,
+                        borderRadius: BorderRadius.circular(8),
+                        child: Container(
+                          width: _kTrackerColumnWidth,
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 8,
+                            vertical: 4,
+                          ),
+                          decoration: BoxDecoration(
+                            color: colors.primary.withValues(alpha: 0.12),
+                            borderRadius: BorderRadius.circular(8),
+                            border: Border.all(
+                              color: colors.primary.withValues(alpha: 0.35),
+                            ),
+                          ),
+                          child: Row(
+                            children: [
+                              Expanded(
+                                child: Text(
+                                  trackerLabel!,
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: TextStyle(
+                                    fontSize: 12,
+                                    fontWeight: FontWeight.w700,
+                                    color: colors.primary,
+                                  ),
+                                ),
+                              ),
+                              if (canEditTracker) ...[
+                                const SizedBox(width: 4),
+                                Icon(
+                                  Icons.close,
+                                  size: 14,
+                                  color: colors.primary,
+                                ),
+                              ],
+                            ],
+                          ),
+                        ),
+                      )
+                    : canEditTracker
+                        ? IconButton(
+                            tooltip: l10n.trainingPlayersAssignTracker,
+                            padding: EdgeInsets.zero,
+                            constraints: const BoxConstraints(
+                              minWidth: 36,
+                              minHeight: 36,
+                            ),
+                            onPressed: onAssignTracker,
+                            icon: Icon(
+                              Icons.add_circle_outline,
+                              color: colors.primary,
+                            ),
+                          )
+                        : null,
+              ),
+            ),
+          ],
+          const SizedBox(width: 8),
+          SizedBox(
+            width: _kPresenceColumnWidth,
+            child: Material(
+              color: badgeBackground,
+              borderRadius: BorderRadius.circular(20),
+              child: InkWell(
+                onTap: onPresenceTap,
+                borderRadius: BorderRadius.circular(20),
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 10,
+                    vertical: 5,
                   ),
                   child: Row(
-                    mainAxisSize: MainAxisSize.min,
+                    mainAxisAlignment: MainAxisAlignment.center,
                     children: [
                       Flexible(
                         child: Text(
-                          trackerLabel!,
+                          presenceLabel,
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
+                          textAlign: TextAlign.center,
                           style: TextStyle(
+                            color: badgeForeground,
+                            fontWeight: FontWeight.w600,
                             fontSize: 12,
-                            fontWeight: FontWeight.w700,
-                            color: colors.primary,
                           ),
                         ),
                       ),
-                      if (canEditTracker) ...[
-                        const SizedBox(width: 4),
-                        Icon(Icons.close, size: 14, color: colors.primary),
+                      if (onPresenceTap != null) ...[
+                        const SizedBox(width: 2),
+                        Icon(
+                          Icons.arrow_drop_down,
+                          size: 18,
+                          color: badgeForeground,
+                        ),
                       ],
                     ],
                   ),
-                ),
-              )
-            else if (canEditTracker)
-              IconButton(
-                tooltip: l10n.trainingPlayersAssignTracker,
-                padding: EdgeInsets.zero,
-                constraints: const BoxConstraints(minWidth: 36, minHeight: 36),
-                onPressed: onAssignTracker,
-                icon: Icon(Icons.add_circle_outline, color: colors.primary),
-              ),
-          ],
-          const SizedBox(width: 8),
-          Material(
-            color: badgeBackground,
-            borderRadius: BorderRadius.circular(20),
-            child: InkWell(
-              onTap: onPresenceTap,
-              borderRadius: BorderRadius.circular(20),
-              child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Text(
-                      presenceLabel,
-                      style: TextStyle(
-                        color: badgeForeground,
-                        fontWeight: FontWeight.w600,
-                        fontSize: 12,
-                      ),
-                    ),
-                    if (onPresenceTap != null) ...[
-                      const SizedBox(width: 4),
-                      Icon(
-                        Icons.arrow_drop_down,
-                        size: 18,
-                        color: badgeForeground,
-                      ),
-                    ],
-                  ],
                 ),
               ),
             ),

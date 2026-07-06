@@ -29,6 +29,8 @@ import '../../util/app_theme.dart';
 import '../../widget/activity_rings_card.dart';
 import '../../widget/feature_discovery_random_banner.dart';
 import '../../widget/alternating_monetization_banner.dart';
+import '../../widget/app_shell_scope.dart';
+import '../../widget/ask_diego/ask_diego_speed_dial.dart';
 import '../../widget/agendaMatchRow.dart';
 import '../../widget/metrics_panel.dart';
 import '../match_detail_screen.dart';
@@ -158,6 +160,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
     return Scaffold(
       backgroundColor: colors.background,
+      floatingActionButton: (AppShellScope.maybeOf(context)?.isMobileShell ?? false)
+          ? const AskDiegoSpeedDial(heroTagPrefix: 'dashboard')
+          : null,
       body: SafeArea(
         child: LayoutBuilder(
           builder: (context, constraints) {

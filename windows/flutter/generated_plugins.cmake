@@ -11,12 +11,14 @@ list(APPEND FLUTTER_PLUGIN_LIST
   firebase_auth
   firebase_core
   firebase_storage
+  flutter_tts
   gal
   geolocator_windows
   media_kit_video
   permission_handler_windows
   record_windows
   share_plus
+  speech_to_text_windows
   thumblr_windows
   url_launcher_windows
 )

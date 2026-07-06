@@ -116,6 +116,114 @@ class AgendaService {
     });
   }
 
+  /// Loads agenda items using the same Firestore sources as [watchAgendaItems].
+  ///
+  /// Uses explicit one-shot queries instead of [watchAgendaItems] because match
+  /// streams emit in phases (fallback → engagements → per-engagement queries).
+  /// A timed "settle" on that stream often completes after the first phases and
+  /// cancels before competition matches arrive; the agenda screen keeps listening
+  /// and eventually shows them, but chat would send an empty partial snapshot.
+  Future<List<AgendaItem>> loadAgendaItems({
+    required List<Team> teams,
+    required String? seasonId,
+    required DateTime start,
+    required DateTime end,
+  }) async {
+    final Timestamp timestampStart = Timestamp.fromDate(start);
+    final Timestamp timestampEnd = Timestamp.fromDate(end);
+
+    final List<Future<List<AgendaItem>>> teamLoads =
+        <Future<List<AgendaItem>>>[];
+
+    for (final Team team in teams) {
+      final String? teamId = team.keyTeam?.trim();
+      if (teamId == null || teamId.isEmpty) {
+        continue;
+      }
+
+      teamLoads.add(
+        _loadAgendaItemsForTeam(
+          team: team,
+          teamId: teamId,
+          seasonId: seasonId,
+          start: timestampStart,
+          end: timestampEnd,
+        ),
+      );
+    }
+
+    if (teamLoads.isEmpty) {
+      return const <AgendaItem>[];
+    }
+
+    if (kDebugMode) {
+      debugPrint(
+        'Agenda load: seasonId=$seasonId teams=${teamLoads.length} '
+        'range=$start → $end',
+      );
+    }
+
+    final List<List<AgendaItem>> results = await Future.wait(teamLoads);
+    final List<AgendaItem> merged =
+        _dedupeAndSort(results.expand((List<AgendaItem> items) => items));
+
+    if (kDebugMode) {
+      debugPrint('Agenda load: itemCount=${merged.length}');
+    }
+
+    return merged;
+  }
+
+  Future<List<AgendaItem>> _loadAgendaItemsForTeam({
+    required Team team,
+    required String teamId,
+    required String? seasonId,
+    required Timestamp start,
+    required Timestamp end,
+  }) async {
+    final List<dynamic> results = await Future.wait<dynamic>(<Future<dynamic>>[
+      _matchService.getMatchesForTeamEngagementsBetweenDates(
+        teamId: teamId,
+        clubId: team.clubId ?? '',
+        seasonId: seasonId,
+        start: start,
+        end: end,
+      ),
+      _trainingService.getTrainingsByTeamIdBetweenDates(
+        teamId: teamId,
+        start: start,
+        end: Timestamp.fromMillisecondsSinceEpoch(
+          end.millisecondsSinceEpoch + 1,
+        ),
+      ),
+    ]);
+
+    final List<grinta_match.Match> matches =
+        results[0] as List<grinta_match.Match>;
+    final List<Training> trainings = results[1] as List<Training>;
+
+    final List<AgendaItem> items = <AgendaItem>[
+      ...matches
+          .map(
+            (grinta_match.Match match) => matchToAgendaItem(
+              match: match,
+              team: team,
+            ),
+          )
+          .whereType<AgendaItem>(),
+      ...trainings
+          .map(
+            (Training training) => _trainingToAgendaItem(
+              training: training,
+              team: team,
+            ),
+          )
+          .whereType<AgendaItem>(),
+    ];
+
+    return items;
+  }
+
   static List<AgendaItem> _dedupeAndSort(Iterable<AgendaItem> items) {
     final Map<String, AgendaItem> unique = <String, AgendaItem>{};
     for (final AgendaItem item in items) {
