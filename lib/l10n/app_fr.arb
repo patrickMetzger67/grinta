@@ -304,7 +304,7 @@
   "navStatistics": "Statistiques",
   "navOverview": "Vue d’ensemble",
   "navNavigation": "Navigation",
-  "navSettings": "Paramètres",
+  "navSettings": "Réglages",
 
   "tabCompo": "Compo",
   "tabConvocations": "Convocations",
@@ -1502,6 +1502,9 @@
   "createMatchOpponentNameManual": "Nom de l'adversaire",
   "createMatchOpponentRequired": "Indiquez l'adversaire",
   "createMatchVenue": "Lieu / adresse du terrain",
+  "createMatchSurface": "Surface de jeu",
+  "createMatchSurfaceSynthetic": "Synthétique",
+  "createMatchSurfaceNatural": "Pelouse naturelle",
   "createMatchWithTracker": "Avec tracker GPS",
   "createMatchSelectOwner": "Kit tracker (propriétaire)",
   "createMatchOwnerRequired": "Sélectionnez un propriétaire tracker",
@@ -1739,5 +1742,154 @@
   "askDiegoNavigationMatchMissing": "Identifiant de match manquant pour la navigation.",
   "askDiegoNavigationMatchNotFound": "Match introuvable.",
   "askDiegoNavigationNoTeam": "Aucune équipe sélectionnée.",
-  "askDiegoNavigationOpponentsManagerOnly": "Les statistiques adversaires sont réservées aux entraîneurs."
+  "askDiegoNavigationOpponentsManagerOnly": "Les statistiques adversaires sont réservées aux entraîneurs.",
+  "askDiegoNavigationOpponentsPremiumOnly": "Les statistiques adversaires nécessitent un abonnement.",
+  "settingsNotificationsSection": "Notifications",
+  "settingsRemindersSubtitle": "Rappels locaux pour entraînements et matchs.",
+  "settingsRemindersEnabled": "Activer les rappels",
+  "settingsQuietDaysLabel": "Jours silencieux",
+  "settingsQuietHoursLabel": "Heures silencieuses",
+  "settingsQuietHoursStart": "Début",
+  "settingsQuietHoursEnd": "Fin",
+  "settingsMorningReminderHour": "Heure du rappel matinal",
+  "reminderWeekdayMon": "Lun",
+  "reminderWeekdayTue": "Mar",
+  "reminderWeekdayWed": "Mer",
+  "reminderWeekdayThu": "Jeu",
+  "reminderWeekdayFri": "Ven",
+  "reminderWeekdaySat": "Sam",
+  "reminderWeekdaySun": "Dim",
+  "reminderTrainingTitle": "Entraînement aujourd'hui",
+  "reminderTrainingBody": "Entraînement aujourd'hui à {time}, préviens ton coach si tu es absent",
+  "@reminderTrainingBody": {
+    "placeholders": {
+      "time": { "type": "String" }
+    }
+  },
+  "reminderMatchOpponentStatsTitle": "Match aujourd'hui",
+  "reminderMatchOpponentStatsBody": "Aujourd'hui à {time}, tu rencontres {opponent} — découvre ses statistiques",
+  "@reminderMatchOpponentStatsBody": {
+    "placeholders": {
+      "time": { "type": "String" },
+      "opponent": { "type": "String" }
+    }
+  },
+  "trainingPresenceConfirmPresent": "Je serai présent",
+  "trainingPresenceConfirmAbsent": "Je serai absent",
+  "trainingPresenceConfirmedPresent": "Présence confirmée",
+  "trainingPresenceConfirmedAbsent": "Absence signalée",
+  "matchDetailOpponentStats": "Stats adversaire",
+  "adminTitle": "Admin",
+  "adminSubtitle": "Outils d'administration de la plateforme.",
+  "adminPromoCodesSection": "Codes promo",
+  "adminPromoCodesSectionDesc": "Créer et gérer les codes promo d'abonnement.",
+  "adminPromoCodesTitle": "Codes promo",
+  "adminPromoCodeCreate": "Créer un code",
+  "adminPromoCodesLoadError": "Impossible de charger les codes promo.",
+  "adminPromoCodesEmpty": "Aucun code promo pour le moment.",
+  "adminPromoCodeUpdateFailed": "Impossible de mettre à jour le code promo.",
+  "adminPromoCodeCreated": "Code promo créé.",
+  "adminPromoCodeEntitlementLabel": "Droit : {entitlement}",
+  "@adminPromoCodeEntitlementLabel": {
+    "placeholders": {
+      "entitlement": { "type": "String" }
+    }
+  },
+  "adminPromoCodeUsageLabel": "Utilisations : {used} / {max}",
+  "@adminPromoCodeUsageLabel": {
+    "placeholders": {
+      "used": { "type": "int" },
+      "max": { "type": "int" }
+    }
+  },
+  "adminPromoCodeDurationLabel": "Durée : {days} jours",
+  "@adminPromoCodeDurationLabel": {
+    "placeholders": {
+      "days": { "type": "int" }
+    }
+  },
+  "adminPromoCodeTeamLabel": "Club : {teamId}",
+  "@adminPromoCodeTeamLabel": {
+    "placeholders": {
+      "teamId": { "type": "String" }
+    }
+  },
+  "adminPromoCodeExpiresLabel": "Expire le : {date}",
+  "@adminPromoCodeExpiresLabel": {
+    "placeholders": {
+      "date": { "type": "String" }
+    }
+  },
+  "adminPromoCodeStatusInactive": "Inactif",
+  "adminPromoCodeStatusExpired": "Expiré",
+  "adminPromoCodeStatusExhausted": "Épuisé",
+  "adminPromoCodeStatusActive": "Actif",
+  "adminPromoCodeFieldCode": "Code",
+  "adminPromoCodeFieldCodeInvalid": "Le code doit contenir au moins 4 caractères.",
+  "adminPromoCodeFieldEntitlement": "Droit",
+  "adminPromoCodeFieldMaxUses": "Nombre d'utilisations max.",
+  "adminPromoCodeFieldMaxUsesInvalid": "Saisissez un nombre supérieur à 0.",
+  "adminPromoCodeFieldDurationDays": "Durée d'abonnement (jours)",
+  "adminPromoCodeFieldDurationDaysInvalid": "Saisissez un nombre supérieur à 0.",
+  "adminPromoCodeFieldTeamId": "ID club (optionnel)",
+  "adminPromoCodeFieldTeamIdHint": "Limiter l'utilisation aux membres de ce club.",
+  "adminPromoCodeFieldExpiresOptional": "Définir une date d'expiration (optionnel)",
+  "adminPromoCodeAlreadyExists": "Ce code promo existe déjà.",
+  "adminPromoCodeCreateFailed": "Impossible de créer le code promo.",
+  "adminPromoCodePermissionDenied": "Un accès admin est requis pour gérer les codes promo.",
+  "adminPromoCodeAuthRequired": "Vous devez être connecté pour créer un code promo.",
+  "adminPromoCodeActions": "Actions",
+  "adminPromoCodeEdit": "Modifier",
+  "adminPromoCodeEditTitle": "Modifier le code promo",
+  "adminPromoCodeDelete": "Supprimer",
+  "adminPromoCodeDeleteConfirmTitle": "Supprimer le code promo ?",
+  "adminPromoCodeDeleteConfirmMessage": "Voulez-vous vraiment supprimer le code {code} ? Cette action est définitive.",
+  "@adminPromoCodeDeleteConfirmMessage": {
+    "placeholders": {
+      "code": { "type": "String" }
+    }
+  },
+  "adminPromoCodeDeleted": "Code promo supprimé.",
+  "adminPromoCodeDeleteFailed": "Impossible de supprimer le code promo.",
+  "adminPromoCodeUpdated": "Code promo mis à jour.",
+  "adminPromoCodeSave": "Enregistrer",
+  "adminPromoCodeFieldCodeReadOnly": "Le code ne peut pas être modifié.",
+  "adminPromoCodeFieldMaxUsesBelowUsed": "Le nombre max. doit être au moins {used} (déjà utilisé).",
+  "@adminPromoCodeFieldMaxUsesBelowUsed": {
+    "placeholders": {
+      "used": { "type": "int" }
+    }
+  },
+  "adminPromoCodeFieldActive": "Actif",
+  "adminPromoCodeClearExpiry": "Supprimer la date d'expiration",
+  "adminPromoCodeNotFound": "Code promo introuvable.",
+  "promoCodeMenuLabel": "Code promo",
+  "promoCodeDialogValidate": "Valider",
+  "promoCodeRedeemTitle": "Vous avez un code promo ?",
+  "promoCodeRedeemHint": "Saisissez votre code",
+  "promoCodeRedeemAction": "Utiliser",
+  "promoCodeRedeemEmpty": "Veuillez saisir un code promo.",
+  "promoCodeRedeemSuccess": "Code promo appliqué : {days} jours de {entitlement}.",
+  "@promoCodeRedeemSuccess": {
+    "placeholders": {
+      "days": { "type": "int" },
+      "entitlement": { "type": "String" }
+    }
+  },
+  "promoCodeRedeemSuccessVerified": "{entitlement} actif jusqu'au {expiresAt} ({days} jours offerts).",
+  "@promoCodeRedeemSuccessVerified": {
+    "placeholders": {
+      "entitlement": { "type": "String" },
+      "expiresAt": { "type": "String" },
+      "days": { "type": "int" }
+    }
+  },
+  "promoCodeRedeemSyncPending": "Code enregistré côté serveur, mais l'abonnement n'apparaît pas encore. Ouvrez Réglages → Abonnement dans un instant, ou déconnectez-vous puis reconnectez-vous.",
+  "promoCodeRedeemRcUnavailable": "Code enregistré côté serveur, mais RevenueCat n'est pas configuré sur cet appareil (vérifiez les clés API). Essayez sur iOS ou web, ou relancez avec dart_defines.json.",
+  "promoCodeRedeemNotFound": "Code promo introuvable.",
+  "promoCodeRedeemInvalid": "Ce code promo n'est plus valide.",
+  "promoCodeRedeemExhausted": "Ce code promo a atteint sa limite d'utilisation.",
+  "promoCodeRedeemTeamMismatch": "Ce code promo est réservé à un autre club.",
+  "promoCodeRedeemUnauthenticated": "Vous devez être connecté pour utiliser un code promo.",
+  "promoCodeRedeemFailed": "Impossible d'utiliser le code promo."
 }

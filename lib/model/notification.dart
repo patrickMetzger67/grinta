@@ -18,6 +18,8 @@ enum NotifType {
   match,
   userAppCreation,
   payment,
+  trainingReminder,
+  matchOpponentStatsReminder,
 }
 
 enum SendBy { notification, sms, email }
@@ -120,6 +122,12 @@ class NotificationApp {
           break;
         case 'NotifType.match':
           type = NotifType.match;
+          break;
+        case 'NotifType.trainingReminder':
+          type = NotifType.trainingReminder;
+          break;
+        case 'NotifType.matchOpponentStatsReminder':
+          type = NotifType.matchOpponentStatsReminder;
           break;
       }
     }

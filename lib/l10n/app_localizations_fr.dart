@@ -803,7 +803,7 @@ class AppLocalizationsFr extends AppLocalizations {
   String get navNavigation => 'Navigation';
 
   @override
-  String get navSettings => 'Paramètres';
+  String get navSettings => 'Réglages';
 
   @override
   String get tabCompo => 'Compo';
@@ -3337,6 +3337,15 @@ class AppLocalizationsFr extends AppLocalizations {
   String get createMatchVenue => 'Lieu / adresse du terrain';
 
   @override
+  String get createMatchSurface => 'Surface de jeu';
+
+  @override
+  String get createMatchSurfaceSynthetic => 'Synthétique';
+
+  @override
+  String get createMatchSurfaceNatural => 'Pelouse naturelle';
+
+  @override
   String get createMatchWithTracker => 'Avec tracker GPS';
 
   @override
@@ -3863,4 +3872,313 @@ class AppLocalizationsFr extends AppLocalizations {
   @override
   String get askDiegoNavigationOpponentsManagerOnly =>
       'Les statistiques adversaires sont réservées aux entraîneurs.';
+
+  @override
+  String get askDiegoNavigationOpponentsPremiumOnly =>
+      'Les statistiques adversaires nécessitent un abonnement.';
+
+  @override
+  String get settingsNotificationsSection => 'Notifications';
+
+  @override
+  String get settingsRemindersSubtitle =>
+      'Rappels locaux pour entraînements et matchs.';
+
+  @override
+  String get settingsRemindersEnabled => 'Activer les rappels';
+
+  @override
+  String get settingsQuietDaysLabel => 'Jours silencieux';
+
+  @override
+  String get settingsQuietHoursLabel => 'Heures silencieuses';
+
+  @override
+  String get settingsQuietHoursStart => 'Début';
+
+  @override
+  String get settingsQuietHoursEnd => 'Fin';
+
+  @override
+  String get settingsMorningReminderHour => 'Heure du rappel matinal';
+
+  @override
+  String get reminderWeekdayMon => 'Lun';
+
+  @override
+  String get reminderWeekdayTue => 'Mar';
+
+  @override
+  String get reminderWeekdayWed => 'Mer';
+
+  @override
+  String get reminderWeekdayThu => 'Jeu';
+
+  @override
+  String get reminderWeekdayFri => 'Ven';
+
+  @override
+  String get reminderWeekdaySat => 'Sam';
+
+  @override
+  String get reminderWeekdaySun => 'Dim';
+
+  @override
+  String get reminderTrainingTitle => 'Entraînement aujourd\'hui';
+
+  @override
+  String reminderTrainingBody(String time) {
+    return 'Entraînement aujourd\'hui à $time, préviens ton coach si tu es absent';
+  }
+
+  @override
+  String get reminderMatchOpponentStatsTitle => 'Match aujourd\'hui';
+
+  @override
+  String reminderMatchOpponentStatsBody(String time, String opponent) {
+    return 'Aujourd\'hui à $time, tu rencontres $opponent — découvre ses statistiques';
+  }
+
+  @override
+  String get trainingPresenceConfirmPresent => 'Je serai présent';
+
+  @override
+  String get trainingPresenceConfirmAbsent => 'Je serai absent';
+
+  @override
+  String get trainingPresenceConfirmedPresent => 'Présence confirmée';
+
+  @override
+  String get trainingPresenceConfirmedAbsent => 'Absence signalée';
+
+  @override
+  String get matchDetailOpponentStats => 'Stats adversaire';
+
+  @override
+  String get adminTitle => 'Admin';
+
+  @override
+  String get adminSubtitle => 'Outils d\'administration de la plateforme.';
+
+  @override
+  String get adminPromoCodesSection => 'Codes promo';
+
+  @override
+  String get adminPromoCodesSectionDesc =>
+      'Créer et gérer les codes promo d\'abonnement.';
+
+  @override
+  String get adminPromoCodesTitle => 'Codes promo';
+
+  @override
+  String get adminPromoCodeCreate => 'Créer un code';
+
+  @override
+  String get adminPromoCodesLoadError =>
+      'Impossible de charger les codes promo.';
+
+  @override
+  String get adminPromoCodesEmpty => 'Aucun code promo pour le moment.';
+
+  @override
+  String get adminPromoCodeUpdateFailed =>
+      'Impossible de mettre à jour le code promo.';
+
+  @override
+  String get adminPromoCodeCreated => 'Code promo créé.';
+
+  @override
+  String adminPromoCodeEntitlementLabel(String entitlement) {
+    return 'Droit : $entitlement';
+  }
+
+  @override
+  String adminPromoCodeUsageLabel(int used, int max) {
+    return 'Utilisations : $used / $max';
+  }
+
+  @override
+  String adminPromoCodeDurationLabel(int days) {
+    return 'Durée : $days jours';
+  }
+
+  @override
+  String adminPromoCodeTeamLabel(String teamId) {
+    return 'Club : $teamId';
+  }
+
+  @override
+  String adminPromoCodeExpiresLabel(String date) {
+    return 'Expire le : $date';
+  }
+
+  @override
+  String get adminPromoCodeStatusInactive => 'Inactif';
+
+  @override
+  String get adminPromoCodeStatusExpired => 'Expiré';
+
+  @override
+  String get adminPromoCodeStatusExhausted => 'Épuisé';
+
+  @override
+  String get adminPromoCodeStatusActive => 'Actif';
+
+  @override
+  String get adminPromoCodeFieldCode => 'Code';
+
+  @override
+  String get adminPromoCodeFieldCodeInvalid =>
+      'Le code doit contenir au moins 4 caractères.';
+
+  @override
+  String get adminPromoCodeFieldEntitlement => 'Droit';
+
+  @override
+  String get adminPromoCodeFieldMaxUses => 'Nombre d\'utilisations max.';
+
+  @override
+  String get adminPromoCodeFieldMaxUsesInvalid =>
+      'Saisissez un nombre supérieur à 0.';
+
+  @override
+  String get adminPromoCodeFieldDurationDays => 'Durée d\'abonnement (jours)';
+
+  @override
+  String get adminPromoCodeFieldDurationDaysInvalid =>
+      'Saisissez un nombre supérieur à 0.';
+
+  @override
+  String get adminPromoCodeFieldTeamId => 'ID club (optionnel)';
+
+  @override
+  String get adminPromoCodeFieldTeamIdHint =>
+      'Limiter l\'utilisation aux membres de ce club.';
+
+  @override
+  String get adminPromoCodeFieldExpiresOptional =>
+      'Définir une date d\'expiration (optionnel)';
+
+  @override
+  String get adminPromoCodeAlreadyExists => 'Ce code promo existe déjà.';
+
+  @override
+  String get adminPromoCodeCreateFailed => 'Impossible de créer le code promo.';
+
+  @override
+  String get adminPromoCodePermissionDenied =>
+      'Un accès admin est requis pour gérer les codes promo.';
+
+  @override
+  String get adminPromoCodeAuthRequired =>
+      'Vous devez être connecté pour créer un code promo.';
+
+  @override
+  String get adminPromoCodeActions => 'Actions';
+
+  @override
+  String get adminPromoCodeEdit => 'Modifier';
+
+  @override
+  String get adminPromoCodeEditTitle => 'Modifier le code promo';
+
+  @override
+  String get adminPromoCodeDelete => 'Supprimer';
+
+  @override
+  String get adminPromoCodeDeleteConfirmTitle => 'Supprimer le code promo ?';
+
+  @override
+  String adminPromoCodeDeleteConfirmMessage(String code) {
+    return 'Voulez-vous vraiment supprimer le code $code ? Cette action est définitive.';
+  }
+
+  @override
+  String get adminPromoCodeDeleted => 'Code promo supprimé.';
+
+  @override
+  String get adminPromoCodeDeleteFailed =>
+      'Impossible de supprimer le code promo.';
+
+  @override
+  String get adminPromoCodeUpdated => 'Code promo mis à jour.';
+
+  @override
+  String get adminPromoCodeSave => 'Enregistrer';
+
+  @override
+  String get adminPromoCodeFieldCodeReadOnly =>
+      'Le code ne peut pas être modifié.';
+
+  @override
+  String adminPromoCodeFieldMaxUsesBelowUsed(int used) {
+    return 'Le nombre max. doit être au moins $used (déjà utilisé).';
+  }
+
+  @override
+  String get adminPromoCodeFieldActive => 'Actif';
+
+  @override
+  String get adminPromoCodeClearExpiry => 'Supprimer la date d\'expiration';
+
+  @override
+  String get adminPromoCodeNotFound => 'Code promo introuvable.';
+
+  @override
+  String get promoCodeMenuLabel => 'Code promo';
+
+  @override
+  String get promoCodeDialogValidate => 'Valider';
+
+  @override
+  String get promoCodeRedeemTitle => 'Vous avez un code promo ?';
+
+  @override
+  String get promoCodeRedeemHint => 'Saisissez votre code';
+
+  @override
+  String get promoCodeRedeemAction => 'Utiliser';
+
+  @override
+  String get promoCodeRedeemEmpty => 'Veuillez saisir un code promo.';
+
+  @override
+  String promoCodeRedeemSuccess(int days, String entitlement) {
+    return 'Code promo appliqué : $days jours de $entitlement.';
+  }
+
+  @override
+  String promoCodeRedeemSuccessVerified(
+      String entitlement, String expiresAt, int days) {
+    return '$entitlement actif jusqu\'au $expiresAt ($days jours offerts).';
+  }
+
+  @override
+  String get promoCodeRedeemSyncPending =>
+      'Code enregistré côté serveur, mais l\'abonnement n\'apparaît pas encore. Ouvrez Réglages → Abonnement dans un instant, ou déconnectez-vous puis reconnectez-vous.';
+
+  @override
+  String get promoCodeRedeemRcUnavailable =>
+      'Code enregistré côté serveur, mais RevenueCat n\'est pas configuré sur cet appareil (vérifiez les clés API). Essayez sur iOS ou web, ou relancez avec dart_defines.json.';
+
+  @override
+  String get promoCodeRedeemNotFound => 'Code promo introuvable.';
+
+  @override
+  String get promoCodeRedeemInvalid => 'Ce code promo n\'est plus valide.';
+
+  @override
+  String get promoCodeRedeemExhausted =>
+      'Ce code promo a atteint sa limite d\'utilisation.';
+
+  @override
+  String get promoCodeRedeemTeamMismatch =>
+      'Ce code promo est réservé à un autre club.';
+
+  @override
+  String get promoCodeRedeemUnauthenticated =>
+      'Vous devez être connecté pour utiliser un code promo.';
+
+  @override
+  String get promoCodeRedeemFailed => 'Impossible d\'utiliser le code promo.';
 }

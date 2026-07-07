@@ -10,6 +10,7 @@ import 'package:grinta/services/subscription_service.dart';
 import 'package:grinta/util/app_snackbar.dart';
 import 'package:grinta/util/app_theme.dart';
 import 'package:grinta/widget/legal_links_footer.dart';
+import 'package:grinta/widget/promo_code_redeem_section.dart';
 import 'package:provider/provider.dart';
 import 'package:purchases_flutter/purchases_flutter.dart';
 
@@ -276,6 +277,8 @@ class _SubscriptionPaywallState extends State<SubscriptionPaywall> {
                 ..._coachTierCards(context, offerings, state)
               else
                 _playerCard(context, offerings, state),
+              const SizedBox(height: 16),
+              const PromoCodePaywallLink(),
               const SizedBox(height: 16),
               if (_service.hasActivePaidSubscription && !widget.changePlanMode)
                 Padding(

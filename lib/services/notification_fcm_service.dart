@@ -23,12 +23,14 @@ import 'package:grinta/screen/match_detail_screen.dart';
 import 'package:grinta/screen/teamDetailScreen.dart';
 import 'package:grinta/services/matchService.dart';
 import 'package:grinta/services/teamService.dart';
+import 'package:grinta/services/internal_notification_navigation.dart';
 import 'package:grinta/services/notification_fcm_platform.dart';
 import 'package:grinta/services/notification_fcm_web_notify.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:provider/provider.dart';
 import 'package:grinta/screen/chat/stream_channel_ui_helpers.dart';
 import 'package:grinta/util/app_theme.dart';
+import 'package:grinta/widget/grinta_stream_message_input.dart';
 import 'package:stream_chat_flutter/stream_chat_flutter.dart';
 
 /// Push notification (FCM) setup, token persistence, and tap navigation.
@@ -59,6 +61,9 @@ class NotificationFCMService {
   static final FirebaseMessaging _messaging = FirebaseMessaging.instance;
   static final FlutterLocalNotificationsPlugin _localNotificationsPlugin =
       FlutterLocalNotificationsPlugin();
+
+  static FlutterLocalNotificationsPlugin get localNotificationsPlugin =>
+      _localNotificationsPlugin;
 
   static const String _androidChannelId = 'fcm_channel';
   static const String _androidChannelName = 'Notifications';
@@ -184,7 +189,13 @@ class NotificationFCMService {
         try {
           final data = Map<String, dynamic>.from(jsonDecode(payload));
           WidgetsBinding.instance.addPostFrameCallback((_) {
-            unawaited(_handleOpenFromData(data));
+            final type = data['type']?.toString().trim() ?? '';
+            if (type == 'trainingReminder' ||
+                type == 'matchOpponentStatsReminder') {
+              unawaited(InternalNotificationNavigation.handlePayload(data));
+            } else {
+              unawaited(_handleOpenFromData(data));
+            }
           });
         } catch (e, st) {
           debugPrint('Local notif tap parse error: $e\n$st');
@@ -412,6 +423,11 @@ class NotificationFCMService {
             teamId: id,
             seasonId: data['seasonId']?.toString(),
           );
+          break;
+
+        case 'trainingReminder':
+        case 'matchOpponentStatsReminder':
+          await InternalNotificationNavigation.handlePayload(data);
           break;
 
         default:
@@ -851,7 +867,7 @@ class _FcmChatChannelPage extends StatelessWidget {
               },
             ),
           ),
-          const StreamMessageInput(),
+          const GrintaStreamMessageInput(),
         ],
       ),
     );

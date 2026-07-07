@@ -1197,6 +1197,9 @@
   "createMatchOpponentNameManual": "Nombre del rival",
   "createMatchOpponentRequired": "Indica el rival",
   "createMatchVenue": "Lugar / dirección del campo",
+  "createMatchSurface": "Superficie de juego",
+  "createMatchSurfaceSynthetic": "Césped sintético",
+  "createMatchSurfaceNatural": "Césped natural",
   "createMatchWithTracker": "Con tracker GPS",
   "createMatchSelectOwner": "Kit tracker (propietario)",
   "createMatchOwnerRequired": "Selecciona un propietario del tracker",
@@ -1434,5 +1437,154 @@
   "askDiegoNavigationMatchMissing": "Falta el identificador del partido.",
   "askDiegoNavigationMatchNotFound": "Partido no encontrado.",
   "askDiegoNavigationNoTeam": "Ningún equipo seleccionado.",
-  "askDiegoNavigationOpponentsManagerOnly": "Las estadísticas de rivales son solo para entrenadores."
+  "askDiegoNavigationOpponentsManagerOnly": "Las estadísticas de rivales son solo para entrenadores.",
+  "askDiegoNavigationOpponentsPremiumOnly": "Las estadísticas de rivales requieren suscripción.",
+  "settingsNotificationsSection": "Notificaciones",
+  "settingsRemindersSubtitle": "Recordatorios locales para entrenamientos y partidos.",
+  "settingsRemindersEnabled": "Activar recordatorios",
+  "settingsQuietDaysLabel": "Días silenciosos",
+  "settingsQuietHoursLabel": "Horas silenciosas",
+  "settingsQuietHoursStart": "Inicio",
+  "settingsQuietHoursEnd": "Fin",
+  "settingsMorningReminderHour": "Hora del recordatorio matinal",
+  "reminderWeekdayMon": "Lun",
+  "reminderWeekdayTue": "Mar",
+  "reminderWeekdayWed": "Mié",
+  "reminderWeekdayThu": "Jue",
+  "reminderWeekdayFri": "Vie",
+  "reminderWeekdaySat": "Sáb",
+  "reminderWeekdaySun": "Dom",
+  "reminderTrainingTitle": "Entrenamiento hoy",
+  "reminderTrainingBody": "Entrenamiento hoy a las {time} — avisa a tu entrenador si estás ausente",
+  "@reminderTrainingBody": {
+    "placeholders": {
+      "time": { "type": "String" }
+    }
+  },
+  "reminderMatchOpponentStatsTitle": "Partido hoy",
+  "reminderMatchOpponentStatsBody": "Hoy a las {time} juegas contra {opponent} — descubre sus estadísticas",
+  "@reminderMatchOpponentStatsBody": {
+    "placeholders": {
+      "time": { "type": "String" },
+      "opponent": { "type": "String" }
+    }
+  },
+  "trainingPresenceConfirmPresent": "Estaré presente",
+  "trainingPresenceConfirmAbsent": "Estaré ausente",
+  "trainingPresenceConfirmedPresent": "Presencia confirmada",
+  "trainingPresenceConfirmedAbsent": "Ausencia registrada",
+  "matchDetailOpponentStats": "Stats del rival",
+  "adminTitle": "Admin",
+  "adminSubtitle": "Herramientas de administración de la plataforma.",
+  "adminPromoCodesSection": "Códigos promo",
+  "adminPromoCodesSectionDesc": "Crear y gestionar códigos promo de suscripción.",
+  "adminPromoCodesTitle": "Códigos promo",
+  "adminPromoCodeCreate": "Crear código",
+  "adminPromoCodesLoadError": "No se pudieron cargar los códigos promo.",
+  "adminPromoCodesEmpty": "Aún no hay códigos promo.",
+  "adminPromoCodeUpdateFailed": "No se pudo actualizar el código promo.",
+  "adminPromoCodeCreated": "Código promo creado.",
+  "adminPromoCodeEntitlementLabel": "Derecho: {entitlement}",
+  "@adminPromoCodeEntitlementLabel": {
+    "placeholders": {
+      "entitlement": { "type": "String" }
+    }
+  },
+  "adminPromoCodeUsageLabel": "Usos: {used} / {max}",
+  "@adminPromoCodeUsageLabel": {
+    "placeholders": {
+      "used": { "type": "int" },
+      "max": { "type": "int" }
+    }
+  },
+  "adminPromoCodeDurationLabel": "Duración: {days} días",
+  "@adminPromoCodeDurationLabel": {
+    "placeholders": {
+      "days": { "type": "int" }
+    }
+  },
+  "adminPromoCodeTeamLabel": "Club: {teamId}",
+  "@adminPromoCodeTeamLabel": {
+    "placeholders": {
+      "teamId": { "type": "String" }
+    }
+  },
+  "adminPromoCodeExpiresLabel": "Caduca: {date}",
+  "@adminPromoCodeExpiresLabel": {
+    "placeholders": {
+      "date": { "type": "String" }
+    }
+  },
+  "adminPromoCodeStatusInactive": "Inactivo",
+  "adminPromoCodeStatusExpired": "Caducado",
+  "adminPromoCodeStatusExhausted": "Agotado",
+  "adminPromoCodeStatusActive": "Activo",
+  "adminPromoCodeFieldCode": "Código",
+  "adminPromoCodeFieldCodeInvalid": "El código debe tener al menos 4 caracteres.",
+  "adminPromoCodeFieldEntitlement": "Derecho",
+  "adminPromoCodeFieldMaxUses": "Usos máximos",
+  "adminPromoCodeFieldMaxUsesInvalid": "Introduce un número mayor que 0.",
+  "adminPromoCodeFieldDurationDays": "Duración de suscripción (días)",
+  "adminPromoCodeFieldDurationDaysInvalid": "Introduce un número mayor que 0.",
+  "adminPromoCodeFieldTeamId": "ID del club (opcional)",
+  "adminPromoCodeFieldTeamIdHint": "Restringir el canje a miembros de este club.",
+  "adminPromoCodeFieldExpiresOptional": "Definir fecha de caducidad (opcional)",
+  "adminPromoCodeAlreadyExists": "Este código promo ya existe.",
+  "adminPromoCodeCreateFailed": "No se pudo crear el código promo.",
+  "adminPromoCodePermissionDenied": "Se requiere acceso de administrador para gestionar códigos promo.",
+  "adminPromoCodeAuthRequired": "Debes iniciar sesión para crear códigos promo.",
+  "adminPromoCodeActions": "Acciones",
+  "adminPromoCodeEdit": "Editar",
+  "adminPromoCodeEditTitle": "Editar código promo",
+  "adminPromoCodeDelete": "Eliminar",
+  "adminPromoCodeDeleteConfirmTitle": "¿Eliminar código promo?",
+  "adminPromoCodeDeleteConfirmMessage": "¿Seguro que quieres eliminar el código {code}? Esta acción es definitiva.",
+  "@adminPromoCodeDeleteConfirmMessage": {
+    "placeholders": {
+      "code": { "type": "String" }
+    }
+  },
+  "adminPromoCodeDeleted": "Código promo eliminado.",
+  "adminPromoCodeDeleteFailed": "No se pudo eliminar el código promo.",
+  "adminPromoCodeUpdated": "Código promo actualizado.",
+  "adminPromoCodeSave": "Guardar",
+  "adminPromoCodeFieldCodeReadOnly": "El código no se puede modificar.",
+  "adminPromoCodeFieldMaxUsesBelowUsed": "Los usos máximos deben ser al menos {used} (ya canjeados).",
+  "@adminPromoCodeFieldMaxUsesBelowUsed": {
+    "placeholders": {
+      "used": { "type": "int" }
+    }
+  },
+  "adminPromoCodeFieldActive": "Activo",
+  "adminPromoCodeClearExpiry": "Quitar fecha de caducidad",
+  "adminPromoCodeNotFound": "Código promo no encontrado.",
+  "promoCodeMenuLabel": "Código promo",
+  "promoCodeDialogValidate": "Validar",
+  "promoCodeRedeemTitle": "¿Tienes un código promo?",
+  "promoCodeRedeemHint": "Introduce tu código",
+  "promoCodeRedeemAction": "Canjear",
+  "promoCodeRedeemEmpty": "Introduce un código promo.",
+  "promoCodeRedeemSuccess": "Código promo aplicado: {days} días de {entitlement}.",
+  "@promoCodeRedeemSuccess": {
+    "placeholders": {
+      "days": { "type": "int" },
+      "entitlement": { "type": "String" }
+    }
+  },
+  "promoCodeRedeemSuccessVerified": "{entitlement} activo hasta el {expiresAt} ({days} días concedidos).",
+  "@promoCodeRedeemSuccessVerified": {
+    "placeholders": {
+      "entitlement": { "type": "String" },
+      "expiresAt": { "type": "String" },
+      "days": { "type": "int" }
+    }
+  },
+  "promoCodeRedeemSyncPending": "Código registrado en el servidor, pero la suscripción aún no es visible. Abre Ajustes → Suscripción en un momento, o cierra sesión y vuelve a entrar.",
+  "promoCodeRedeemRcUnavailable": "Código registrado en el servidor, pero RevenueCat no está configurado en este dispositivo (comprueba las claves API). Prueba en iOS o web, o reinicia con dart_defines.json.",
+  "promoCodeRedeemNotFound": "Código promo no encontrado.",
+  "promoCodeRedeemInvalid": "Este código promo ya no es válido.",
+  "promoCodeRedeemExhausted": "Este código promo ha alcanzado su límite de uso.",
+  "promoCodeRedeemTeamMismatch": "Este código promo está reservado a otro club.",
+  "promoCodeRedeemUnauthenticated": "Debes iniciar sesión para canjear un código promo.",
+  "promoCodeRedeemFailed": "No se pudo canjear el código promo."
 }

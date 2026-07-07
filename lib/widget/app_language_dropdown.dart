@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../core/extensions/l10n_extension.dart';
 import '../main.dart';
 import '../util/app_theme.dart';
+import 'settings_menu_style.dart';
 
 class AppLanguageOption {
   final Locale locale;
@@ -130,10 +131,7 @@ class AppLanguageDropdown extends StatelessWidget {
         ),
         borderRadius: BorderRadius.circular(14),
         dropdownColor: colors.card,
-        style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-              color: colors.textPrimary,
-              fontWeight: FontWeight.w600,
-            ),
+        style: settingsMenuTitleStyle(context),
         items: languages.map((language) {
           return DropdownMenuItem<String>(
             value: language.locale.languageCode,
@@ -189,7 +187,6 @@ class AppLanguageSidebarTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final colors = context.appColors;
-    final textTheme = Theme.of(context).textTheme;
     final l10n = context.l10n;
 
     return Container(
@@ -207,7 +204,7 @@ class AppLanguageSidebarTile extends StatelessWidget {
               Icon(
                 Icons.language_rounded,
                 color: colors.primary,
-                size: 22,
+                size: kWebMenuIconSize,
               ),
               const SizedBox(width: 12),
               Expanded(
@@ -215,10 +212,7 @@ class AppLanguageSidebarTile extends StatelessWidget {
                   l10n.settingsLanguageLabel,
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
-                  style: textTheme.bodyLarge?.copyWith(
-                    color: colors.textPrimary,
-                    fontWeight: FontWeight.w600,
-                  ),
+                  style: settingsMenuTitleStyle(context),
                 ),
               ),
             ],

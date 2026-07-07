@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:grinta/core/extensions/l10n_extension.dart';
 import 'package:grinta/l10n/app_localizations.dart';
+import 'package:grinta/model/highlights.dart';
 import 'package:grinta/model/player.dart';
 import 'package:grinta/services/team_player_stats_service.dart';
 import 'package:grinta/util/app_theme.dart';
+import 'package:grinta/util/highlight_type_icons.dart';
 import 'package:grinta/util/match_outcome_helper.dart';
 import 'package:grinta/util/playerDisplayName.dart';
 import 'package:grinta/widget/playerPhoto.dart';
@@ -14,6 +16,8 @@ enum TeamStatsPlayersSortColumn {
   starts,
   playTime,
   goals,
+  yellowCards,
+  redCards,
 }
 
 class TeamStatsPlayersTable extends StatefulWidget {
@@ -38,6 +42,7 @@ class _TeamStatsPlayersTableState extends State<TeamStatsPlayersTable> {
   static const double _startsColumnWidth = 64;
   static const double _playTimeColumnWidth = 88;
   static const double _goalsColumnWidth = 64;
+  static const double _cardsColumnWidth = 64;
 
   TeamStatsPlayersSortColumn _sortColumn = TeamStatsPlayersSortColumn.player;
   bool _sortAscending = true;
@@ -87,6 +92,12 @@ class _TeamStatsPlayersTableState extends State<TeamStatsPlayersTable> {
           break;
         case TeamStatsPlayersSortColumn.goals:
           result = a.goals.compareTo(b.goals);
+          break;
+        case TeamStatsPlayersSortColumn.yellowCards:
+          result = a.yellowCards.compareTo(b.yellowCards);
+          break;
+        case TeamStatsPlayersSortColumn.redCards:
+          result = a.redCards.compareTo(b.redCards);
           break;
       }
 
@@ -191,6 +202,14 @@ class _TeamStatsPlayersTableState extends State<TeamStatsPlayersTable> {
       color: colors.textSecondary,
       fontWeight: FontWeight.w700,
     );
+    final yellowCardIconStyle = HighlightTypeIcons.forActionType(
+      context,
+      ActionType.yellowCard,
+    );
+    final redCardIconStyle = HighlightTypeIcons.forActionType(
+      context,
+      ActionType.redCard,
+    );
 
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -291,6 +310,32 @@ class _TeamStatsPlayersTableState extends State<TeamStatsPlayersTable> {
                         showBottomBorder: true,
                         colors: colors,
                       ),
+                      _SortableHeaderCell(
+                        width: _cardsColumnWidth,
+                        height: _headingRowHeight,
+                        tooltip: l10n.highlightTypeYellowCard,
+                        iconStyle: yellowCardIconStyle,
+                        sortColumn: TeamStatsPlayersSortColumn.yellowCards,
+                        activeSortColumn: _sortColumn,
+                        sortAscending: _sortAscending,
+                        onSort: _onSortColumn,
+                        alignRight: true,
+                        showBottomBorder: true,
+                        colors: colors,
+                      ),
+                      _SortableHeaderCell(
+                        width: _cardsColumnWidth,
+                        height: _headingRowHeight,
+                        tooltip: l10n.highlightTypeRedCard,
+                        iconStyle: redCardIconStyle,
+                        sortColumn: TeamStatsPlayersSortColumn.redCards,
+                        activeSortColumn: _sortColumn,
+                        sortAscending: _sortAscending,
+                        onSort: _onSortColumn,
+                        alignRight: true,
+                        showBottomBorder: true,
+                        colors: colors,
+                      ),
                     ],
                   ),
                 ),
@@ -333,6 +378,20 @@ class _TeamStatsPlayersTableState extends State<TeamStatsPlayersTable> {
                               trend: row.trends.goals,
                             ),
                           ),
+                          SizedBox(
+                            width: _cardsColumnWidth,
+                            child: _StatTrendPill(
+                              text: '${row.yellowCards}',
+                              trend: row.trends.yellowCards,
+                            ),
+                          ),
+                          SizedBox(
+                            width: _cardsColumnWidth,
+                            child: _StatTrendPill(
+                              text: '${row.redCards}',
+                              trend: row.trends.redCards,
+                            ),
+                          ),
                         ],
                       ),
                     ),
@@ -349,22 +408,26 @@ class _TeamStatsPlayersTableState extends State<TeamStatsPlayersTable> {
 class _SortableHeaderCell extends StatelessWidget {
   const _SortableHeaderCell({
     required this.height,
-    required this.label,
-    required this.labelStyle,
     required this.sortColumn,
     required this.activeSortColumn,
     required this.sortAscending,
     required this.onSort,
     required this.colors,
     this.width,
+    this.label,
+    this.labelStyle,
+    this.tooltip,
+    this.iconStyle,
     this.alignRight = false,
     this.showBottomBorder = false,
   });
 
   final double? width;
   final double height;
-  final String label;
+  final String? label;
   final TextStyle? labelStyle;
+  final String? tooltip;
+  final HighlightTypeIconStyle? iconStyle;
   final TeamStatsPlayersSortColumn sortColumn;
   final TeamStatsPlayersSortColumn activeSortColumn;
   final bool sortAscending;
@@ -377,26 +440,46 @@ class _SortableHeaderCell extends StatelessWidget {
   Widget build(BuildContext context) {
     final isSorted = sortColumn == activeSortColumn;
 
+    Widget headerContent;
+    if (iconStyle != null) {
+      headerContent = HighlightTypeIconBadge(
+        style: iconStyle!,
+        size: 24,
+        iconSize: 14,
+      );
+    } else {
+      headerContent = Text(
+        label ?? '',
+        maxLines: 1,
+        overflow: TextOverflow.ellipsis,
+        textAlign: alignRight ? TextAlign.right : TextAlign.left,
+        style: labelStyle,
+      );
+    }
+
+    if (tooltip != null && tooltip!.isNotEmpty) {
+      headerContent = Semantics(
+        label: tooltip,
+        button: true,
+        child: Tooltip(
+          message: tooltip!,
+          child: headerContent,
+        ),
+      );
+    }
+
     final content = InkWell(
       onTap: () => onSort(sortColumn),
       child: Padding(
-        padding: EdgeInsets.symmetric(
-          horizontal: alignRight ? 8 : 8,
+        padding: const EdgeInsets.symmetric(
+          horizontal: 8,
           vertical: 12,
         ),
         child: Row(
           mainAxisAlignment:
               alignRight ? MainAxisAlignment.end : MainAxisAlignment.start,
           children: [
-            Flexible(
-              child: Text(
-                label,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                textAlign: alignRight ? TextAlign.right : TextAlign.left,
-                style: labelStyle,
-              ),
-            ),
+            Flexible(child: headerContent),
             if (isSorted) ...[
               const SizedBox(width: 4),
               Icon(
@@ -595,6 +678,21 @@ class _PlayerStatsCard extends StatelessWidget {
                 l10n.teamStatsPlayersColumnGoals,
                 '${row.goals}',
                 row.trends.goals,
+              ),
+            ],
+          ),
+          const SizedBox(height: 16),
+          Row(
+            children: [
+              statTile(
+                l10n.highlightTypeYellowCard,
+                '${row.yellowCards}',
+                row.trends.yellowCards,
+              ),
+              statTile(
+                l10n.highlightTypeRedCard,
+                '${row.redCards}',
+                row.trends.redCards,
               ),
             ],
           ),

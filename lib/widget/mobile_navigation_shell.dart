@@ -22,15 +22,22 @@ import 'package:grinta/feature_discovery/shell_navigation_scope.dart';
 import 'package:grinta/model/feature_discovery_ids.dart';
 import 'package:grinta/services/account_deletion_service.dart';
 import 'package:grinta/services/subscription_service.dart';
+import 'package:grinta/services/user_root_service.dart';
+import 'package:grinta/services/user_trial_service.dart';
+import 'package:grinta/screen/admin/admin_screen.dart';
 import 'package:grinta/services/feature_discovery_service.dart';
 import 'package:grinta/widget/app_shell_scope.dart';
 import 'package:grinta/widget/account_create_profile_entry.dart';
 import 'package:grinta/widget/edit_member_profile.dart';
 import 'package:grinta/screen/my_unavailabilities_screen.dart';
 import 'package:grinta/widget/nav_icon_count_badge.dart';
+import 'package:grinta/widget/stream_chat_nav_unread_badge.dart';
 import 'package:grinta/widget/calendar_sync_toggle.dart';
+import 'package:grinta/widget/notification_preferences_section.dart';
 import 'package:grinta/widget/subscription_details_sheet.dart';
 import 'package:grinta/widget/notifications_sheet.dart';
+import 'package:grinta/widget/promo_code_redeem_section.dart';
+import 'package:grinta/widget/settings_menu_style.dart';
 import 'package:provider/provider.dart';
 
 const List<String> _kMobileTabFeatureIds = <String>[
@@ -77,6 +84,7 @@ class _MobileNavigationShellState extends State<MobileNavigationShell> {
       _markTabFeatureVisited(_selectedIndex);
       _logTabScreen(_selectedIndex);
       unawaited(SubscriptionService.instance.refreshForActiveSession());
+      unawaited(UserRootService.instance.reload());
     });
   }
 
@@ -311,10 +319,7 @@ class _MobileNavigationShellState extends State<MobileNavigationShell> {
                   ),
                   title: Text(
                     l10n.navSettings,
-                    style: TextStyle(
-                      color: colors.textPrimary,
-                      fontWeight: FontWeight.w700,
-                    ),
+                    style: settingsMenuTitleStyle(sheetContext),
                   ),
                 ),
                 const Divider(height: 1),
@@ -334,10 +339,7 @@ class _MobileNavigationShellState extends State<MobileNavigationShell> {
                     ),
                     title: Text(
                       l10n.themeDarkModeLabel,
-                      style: TextStyle(
-                        color: colors.textPrimary,
-                        fontWeight: FontWeight.w600,
-                      ),
+                      style: settingsMenuTitleStyle(sheetContext),
                     ),
                     trailing: Switch(
                       value: app.isDarkMode,
@@ -355,12 +357,41 @@ class _MobileNavigationShellState extends State<MobileNavigationShell> {
                   padding: EdgeInsets.symmetric(horizontal: 16),
                   child: CalendarSyncToggle(contentPadding: EdgeInsets.zero),
                 ),
+                const NotificationPreferencesSection(),
                 const Divider(height: 1),
                 ListenableBuilder(
-                  listenable: SubscriptionService.instance,
+                  listenable: UserRootService.instance,
                   builder: (context, _) {
-                    if (!SubscriptionService.instance
-                        .hasActivePaidSubscription) {
+                    if (!UserRootService.instance.isRoot) {
+                      return const SizedBox.shrink();
+                    }
+
+                    return ListTile(
+                      leading: Icon(
+                        Icons.admin_panel_settings_outlined,
+                        color: colors.primary,
+                      ),
+                      title: Text(
+                        l10n.adminTitle,
+                        style: settingsMenuTitleStyle(context),
+                      ),
+                      onTap: () {
+                        closeSheetThen(
+                          () => openAdminScreen(context),
+                          sheetContext,
+                        );
+                      },
+                    );
+                  },
+                ),
+                const PromoCodeRedeemSection(),
+                ListenableBuilder(
+                  listenable: Listenable.merge([
+                    SubscriptionService.instance,
+                    UserTrialService.instance,
+                  ]),
+                  builder: (context, _) {
+                    if (!UserTrialService.instance.shouldShowSubscriptionMenu) {
                       return const SizedBox.shrink();
                     }
 
@@ -371,10 +402,7 @@ class _MobileNavigationShellState extends State<MobileNavigationShell> {
                       ),
                       title: Text(
                         l10n.subscriptionMenu,
-                        style: TextStyle(
-                          color: colors.textPrimary,
-                          fontWeight: FontWeight.w600,
-                        ),
+                        style: settingsMenuTitleStyle(context),
                       ),
                       onTap: () {
                         closeSheetThen(
@@ -392,10 +420,7 @@ class _MobileNavigationShellState extends State<MobileNavigationShell> {
                   ),
                   title: Text(
                     l10n.settingsMyUnavailabilities,
-                    style: TextStyle(
-                      color: colors.textPrimary,
-                      fontWeight: FontWeight.w600,
-                    ),
+                    style: settingsMenuTitleStyle(sheetContext),
                   ),
                   onTap: () {
                     closeSheetThen(
@@ -411,10 +436,7 @@ class _MobileNavigationShellState extends State<MobileNavigationShell> {
                   ),
                   title: Text(
                     l10n.actionEditProfile,
-                    style: TextStyle(
-                      color: colors.textPrimary,
-                      fontWeight: FontWeight.w600,
-                    ),
+                    style: settingsMenuTitleStyle(sheetContext),
                   ),
                   onTap: () {
                     closeSheetThen(
@@ -444,10 +466,7 @@ class _MobileNavigationShellState extends State<MobileNavigationShell> {
                       : Icon(Icons.logout_rounded, color: colors.primary),
                   title: Text(
                     l10n.actionLogout,
-                    style: TextStyle(
-                      color: colors.textPrimary,
-                      fontWeight: FontWeight.w600,
-                    ),
+                    style: settingsMenuTitleStyle(sheetContext),
                   ),
                   onTap: _isAccountActionBusy
                       ? null
@@ -566,10 +585,7 @@ class _MobileNavigationShellState extends State<MobileNavigationShell> {
                       ),
                       title: Text(
                         l10n.navSettings,
-                        style: TextStyle(
-                          color: colors.textPrimary,
-                          fontWeight: FontWeight.w600,
-                        ),
+                        style: settingsMenuTitleStyle(sheetContext),
                       ),
                       trailing: Icon(
                         Icons.chevron_right_rounded,
@@ -600,9 +616,8 @@ class _MobileNavigationShellState extends State<MobileNavigationShell> {
                             ),
                       title: Text(
                         l10n.actionDeleteAccount,
-                        style: TextStyle(
+                        style: settingsMenuTitleStyle(sheetContext).copyWith(
                           color: colors.warning,
-                          fontWeight: FontWeight.w600,
                         ),
                       ),
                       onTap: _isAccountActionBusy
@@ -679,33 +694,45 @@ class _MobileNavigationShellState extends State<MobileNavigationShell> {
               )
               .toList(),
         ),
-        bottomNavigationBar: NavigationBar(
-          selectedIndex: _selectedIndex,
-          onDestinationSelected: (index) {
-            if (index == _selectedIndex) return;
-            setState(() => _selectedIndex = index);
-            _markTabFeatureVisited(index);
-            _logTabScreen(index);
+        bottomNavigationBar: StreamChatUnreadCountBuilder(
+          builder: (context, unreadChatCount) {
+            return NavigationBar(
+              selectedIndex: _selectedIndex,
+              onDestinationSelected: (index) {
+                if (index == _selectedIndex) return;
+                setState(() => _selectedIndex = index);
+                _markTabFeatureVisited(index);
+                _logTabScreen(index);
+              },
+              backgroundColor: colors.surface,
+              indicatorColor: colors.primary.withValues(alpha: 0.15),
+              destinations: [
+                NavigationDestination(
+                  icon: const Icon(Icons.calendar_month_outlined),
+                  selectedIcon: Icon(Icons.calendar_month, color: colors.primary),
+                  label: l10n.navAgenda,
+                ),
+                NavigationDestination(
+                  icon: const Icon(Icons.bar_chart_outlined),
+                  selectedIcon: Icon(Icons.bar_chart, color: colors.primary),
+                  label: l10n.navDashboard,
+                ),
+                NavigationDestination(
+                  icon: NavIconCountBadge(
+                    icon: Icons.chat_bubble_outline_rounded,
+                    count: unreadChatCount,
+                    iconColor: colors.textSecondary,
+                  ),
+                  selectedIcon: NavIconCountBadge(
+                    icon: Icons.chat_bubble_rounded,
+                    count: unreadChatCount,
+                    iconColor: colors.primary,
+                  ),
+                  label: l10n.navChat,
+                ),
+              ],
+            );
           },
-          backgroundColor: colors.surface,
-          indicatorColor: colors.primary.withValues(alpha: 0.15),
-          destinations: [
-            NavigationDestination(
-              icon: const Icon(Icons.calendar_month_outlined),
-              selectedIcon: Icon(Icons.calendar_month, color: colors.primary),
-              label: l10n.navAgenda,
-            ),
-            NavigationDestination(
-              icon: const Icon(Icons.bar_chart_outlined),
-              selectedIcon: Icon(Icons.bar_chart, color: colors.primary),
-              label: l10n.navDashboard,
-            ),
-            NavigationDestination(
-              icon: const Icon(Icons.chat_bubble_outline_rounded),
-              selectedIcon: Icon(Icons.chat_bubble_rounded, color: colors.primary),
-              label: l10n.navChat,
-            ),
-          ],
         ),
       ),
     ),

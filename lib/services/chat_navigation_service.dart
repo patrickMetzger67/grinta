@@ -10,7 +10,9 @@ import 'package:grinta/provider/appSession.dart';
 import 'package:grinta/screen/match_detail_screen.dart';
 import 'package:grinta/screen/team_stats/team_stats_screen.dart';
 import 'package:grinta/services/matchService.dart';
+import 'package:grinta/services/user_trial_service.dart';
 import 'package:grinta/util/app_snackbar.dart';
+import 'package:grinta/widget/subscription_paywall.dart';
 import 'package:provider/provider.dart';
 
 /// Executes navigation actions returned by the Gemini assistant.
@@ -149,14 +151,26 @@ class ChatNavigationService {
     final isManager = teamId != null &&
         session.managedTeamsIdsForSelectedSeason.contains(teamId);
 
-    if (opponentsTab && !isManager) {
+    await UserTrialService.instance.ensureInitialized();
+
+    if (opponentsTab && !UserTrialService.instance.hasPremiumAccess) {
       if (context.mounted) {
-        AppSnackbar.show(context, context.l10n.askDiegoNavigationOpponentsManagerOnly);
+        AppSnackbar.show(
+          context,
+          context.l10n.askDiegoNavigationOpponentsPremiumOnly,
+        );
+        await SubscriptionPaywall.show(
+          context,
+          allowSkip: true,
+          initialKind: SubscriptionOfferingKind.player,
+        );
       }
       return false;
     }
 
-    final opponentsTabIndex = isManager ? 2 : 0;
+    final showOpponentsTab =
+        isManager || UserTrialService.instance.hasPremiumAccess;
+    final opponentsTabIndex = showOpponentsTab ? 2 : 0;
 
     final competitionUrl = (params['competitionUrl'] ?? '').toString().trim();
     final opponentKey = (params['opponentKey'] ?? '').toString().trim();

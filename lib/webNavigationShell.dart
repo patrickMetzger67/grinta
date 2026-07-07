@@ -10,6 +10,10 @@ import 'package:grinta/feature_discovery/shell_navigation_scope.dart';
 import 'package:grinta/services/account_deletion_service.dart';
 import 'package:grinta/services/feature_discovery_service.dart';
 import 'package:grinta/services/subscription_service.dart';
+import 'package:grinta/services/user_root_service.dart';
+import 'package:grinta/services/user_trial_service.dart';
+import 'package:grinta/screen/admin/admin_screen.dart';
+import 'package:grinta/widget/promo_code_redeem_section.dart';
 import 'core/extensions/l10n_extension.dart';
 import 'util/app_theme.dart';
 import 'widget/app_language_dropdown.dart';
@@ -19,6 +23,8 @@ import 'widget/edit_member_profile.dart';
 import 'screen/my_unavailabilities_screen.dart';
 import 'widget/nav_icon_count_badge.dart';
 import 'widget/calendar_sync_toggle.dart';
+import 'widget/notification_preferences_section.dart';
+import 'widget/settings_menu_style.dart';
 import 'widget/subscription_details_sheet.dart';
 import 'widget/notifications_sheet.dart';
 import 'widget/ask_diego/ask_diego_sidebar_entry.dart';
@@ -27,6 +33,7 @@ import 'main.dart';
 
 const double _kWebSidebarExpandedWidth = 300;
 const double _kWebSidebarCollapsedWidth = 92;
+const double _kWebSettingsPanelWidth = 300;
 const double _kWebSidebarNavItemHeight = 48;
 const double _kWebSidebarNavItemSpacing = 4;
 
@@ -78,6 +85,12 @@ class _WebNavigationShellState extends State<WebNavigationShell> {
 
   bool get _isAccountActionBusy => _isSigningOut || _isDeletingAccount;
 
+  bool get _sidebarCollapsed =>
+      _collapsed || _settingsExpanded;
+
+  bool get _settingsContentCollapsed =>
+      _collapsed && !_settingsExpanded;
+
   @override
   void initState() {
     super.initState();
@@ -87,6 +100,7 @@ class _WebNavigationShellState extends State<WebNavigationShell> {
       _markTabFeatureVisited(_selectedIndex);
       _logTabScreen(_selectedIndex);
       unawaited(SubscriptionService.instance.refreshForActiveSession());
+      unawaited(UserRootService.instance.reload());
     });
   }
 
@@ -315,14 +329,6 @@ class _WebNavigationShellState extends State<WebNavigationShell> {
 
   @override
   Widget build(BuildContext context) {
-    if (!kIsWeb) {
-      return Scaffold(
-        body: Center(
-          child: Text(context.l10n.infoWebShellOnly),
-        ),
-      );
-    }
-
     final colors = context.appColors;
 
     _ensureValidSelectedIndex();
@@ -344,7 +350,9 @@ class _WebNavigationShellState extends State<WebNavigationShell> {
             AnimatedContainer(
               duration: const Duration(milliseconds: 220),
               curve: Curves.easeInOut,
-              width: _collapsed ? _kWebSidebarCollapsedWidth : _kWebSidebarExpandedWidth,
+              width: _sidebarCollapsed
+                  ? _kWebSidebarCollapsedWidth
+                  : _kWebSidebarExpandedWidth,
               decoration: BoxDecoration(
                 color: colors.surface,
                 border: Border(
@@ -355,7 +363,7 @@ class _WebNavigationShellState extends State<WebNavigationShell> {
                 children: [
                   _buildHeader(context),
                   Divider(color: colors.border, height: 1),
-                  if (!_collapsed && widget.sidebarHeaderBottom != null)
+                  if (!_sidebarCollapsed && widget.sidebarHeaderBottom != null)
                     Padding(
                       padding: const EdgeInsets.fromLTRB(12, 8, 12, 4),
                       child: widget.sidebarHeaderBottom!,
@@ -364,23 +372,17 @@ class _WebNavigationShellState extends State<WebNavigationShell> {
                     child: ListView(
                       padding: EdgeInsets.symmetric(
                         horizontal: 12,
-                        vertical: _collapsed ? 18 : 6,
+                        vertical: _sidebarCollapsed ? 18 : 6,
                       ),
                       children: _buildNavListItems(safeSelectedIndex),
                     ),
                   ),
                   Divider(color: colors.border, height: 1),
-                  if (_settingsExpanded && !_collapsed)
-                    Flexible(
-                      fit: FlexFit.loose,
-                      child: SingleChildScrollView(
-                        child: _buildSettingsExpandedContent(context),
-                      ),
-                    ),
                   _buildSettingsToggle(context),
                 ],
               ),
             ),
+            if (_settingsExpanded) _buildSettingsPanel(context),
             Expanded(
               child: Container(
                 color: colors.background,
@@ -410,23 +412,34 @@ class _WebNavigationShellState extends State<WebNavigationShell> {
   }
 
   void _toggleSidebarCollapsed() {
+    if (_settingsExpanded) {
+      _closeSettingsPanel();
+      return;
+    }
+
+    setState(() => _collapsed = !_collapsed);
+  }
+
+  void _openSettingsPanel() {
     setState(() {
-      _collapsed = !_collapsed;
-      if (_collapsed) {
-        _settingsExpanded = false;
-      }
+      _settingsExpanded = true;
+      _collapsed = true;
+    });
+  }
+
+  void _closeSettingsPanel() {
+    setState(() {
+      _settingsExpanded = false;
+      _collapsed = false;
     });
   }
 
   void _toggleSettingsExpanded() {
-    setState(() {
-      if (_collapsed) {
-        _collapsed = false;
-        _settingsExpanded = true;
-      } else {
-        _settingsExpanded = !_settingsExpanded;
-      }
-    });
+    if (_settingsExpanded) {
+      _closeSettingsPanel();
+    } else {
+      _openSettingsPanel();
+    }
   }
 
   List<Widget> _buildNavListItems(int safeSelectedIndex) {
@@ -440,7 +453,7 @@ class _WebNavigationShellState extends State<WebNavigationShell> {
       if (index < widget.items.length) {
         children.add(
           _SidebarItem(
-            collapsed: _collapsed,
+            collapsed: _sidebarCollapsed,
             selected: index == safeSelectedIndex,
             label: widget.items[index].label,
             icon: widget.items[index].icon,
@@ -458,14 +471,14 @@ class _WebNavigationShellState extends State<WebNavigationShell> {
       } else if (index == widget.items.length) {
         children.add(
           AskDiegoSidebarEntry(
-            collapsed: _collapsed,
+            collapsed: _sidebarCollapsed,
             itemHeight: _kWebSidebarNavItemHeight,
           ),
         );
       } else {
         children.add(
           NotificationSidebarEntry(
-            collapsed: _collapsed,
+            collapsed: _sidebarCollapsed,
             itemHeight: _kWebSidebarNavItemHeight,
           ),
         );
@@ -487,10 +500,27 @@ class _WebNavigationShellState extends State<WebNavigationShell> {
             contentPadding: EdgeInsets.symmetric(horizontal: 2),
           ),
         ),
+        const NotificationPreferencesSection(
+          contentPadding: EdgeInsets.zero,
+          webCardStyle: true,
+        ),
         ListenableBuilder(
-          listenable: SubscriptionService.instance,
+          listenable: UserRootService.instance,
           builder: (context, _) {
-            if (!SubscriptionService.instance.hasActivePaidSubscription) {
+            if (!UserRootService.instance.isRoot) {
+              return const SizedBox.shrink();
+            }
+            return _buildAdminButton(context);
+          },
+        ),
+        const PromoCodeRedeemSection(webCardStyle: true),
+        ListenableBuilder(
+          listenable: Listenable.merge([
+            SubscriptionService.instance,
+            UserTrialService.instance,
+          ]),
+          builder: (context, _) {
+            if (!UserTrialService.instance.shouldShowSubscriptionMenu) {
               return const SizedBox.shrink();
             }
             return _buildSubscriptionButton(context);
@@ -499,7 +529,7 @@ class _WebNavigationShellState extends State<WebNavigationShell> {
         _buildEditProfileButton(context),
         _buildMyUnavailabilitiesButton(context),
         AccountCreateProfileSidebarButton(
-          collapsed: _collapsed,
+          collapsed: _settingsContentCollapsed,
           onTap: () => openAccountCreateProfileFlow(context),
         ),
         _buildDeleteAccountButton(context),
@@ -508,12 +538,72 @@ class _WebNavigationShellState extends State<WebNavigationShell> {
     );
   }
 
+  Widget _buildSettingsPanel(BuildContext context) {
+    final colors = context.appColors;
+    final l10n = context.l10n;
+    final textTheme = Theme.of(context).textTheme;
+
+    return AnimatedContainer(
+      duration: const Duration(milliseconds: 220),
+      curve: Curves.easeInOut,
+      width: _kWebSettingsPanelWidth,
+      decoration: BoxDecoration(
+        color: colors.surface,
+        border: Border(
+          right: BorderSide(color: colors.border),
+        ),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 14, 8, 14),
+            child: Row(
+              children: [
+                Icon(
+                  Icons.settings_outlined,
+                  color: colors.primary,
+                  size: kWebMenuIconSize,
+                ),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: Text(
+                    l10n.navSettings,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: textTheme.titleMedium?.copyWith(
+                      color: colors.textPrimary,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                ),
+                TextButton(
+                  onPressed: _closeSettingsPanel,
+                  style: TextButton.styleFrom(
+                    foregroundColor: colors.primary,
+                  ),
+                  child: Text(l10n.actionClose),
+                ),
+              ],
+            ),
+          ),
+          Divider(color: colors.border, height: 1),
+          Expanded(
+            child: SingleChildScrollView(
+              padding: const EdgeInsets.only(bottom: 16),
+              child: _buildSettingsExpandedContent(context),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   Widget _buildSettingsToggle(BuildContext context) {
     final colors = context.appColors;
-    final textTheme = Theme.of(context).textTheme;
     final l10n = context.l10n;
 
-    if (_collapsed) {
+    if (_sidebarCollapsed) {
       return Padding(
         padding: const EdgeInsets.fromLTRB(12, 12, 12, 16),
         child: Tooltip(
@@ -525,13 +615,20 @@ class _WebNavigationShellState extends State<WebNavigationShell> {
               width: double.infinity,
               height: 52,
               decoration: BoxDecoration(
-                color: colors.card,
+                color: _settingsExpanded
+                    ? colors.primary.withValues(alpha: 0.12)
+                    : colors.card,
                 borderRadius: BorderRadius.circular(16),
-                border: Border.all(color: colors.border),
+                border: Border.all(
+                  color: _settingsExpanded
+                      ? colors.primary.withValues(alpha: 0.35)
+                      : colors.border,
+                ),
               ),
               child: Icon(
                 Icons.settings_outlined,
                 color: colors.primary,
+                size: kWebMenuIconSize,
               ),
             ),
           ),
@@ -540,7 +637,7 @@ class _WebNavigationShellState extends State<WebNavigationShell> {
     }
 
     return Padding(
-      padding: EdgeInsets.fromLTRB(12, 12, 12, _settingsExpanded ? 0 : 16),
+      padding: const EdgeInsets.fromLTRB(12, 12, 12, 16),
       child: InkWell(
         borderRadius: BorderRadius.circular(18),
         onTap: _toggleSettingsExpanded,
@@ -556,7 +653,7 @@ class _WebNavigationShellState extends State<WebNavigationShell> {
               Icon(
                 Icons.settings_outlined,
                 color: colors.primary,
-                size: 22,
+                size: kWebMenuIconSize,
               ),
               const SizedBox(width: 12),
               Expanded(
@@ -564,18 +661,8 @@ class _WebNavigationShellState extends State<WebNavigationShell> {
                   l10n.navSettings,
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
-                  style: textTheme.bodyLarge?.copyWith(
-                    color: colors.textPrimary,
-                    fontWeight: FontWeight.w600,
-                  ),
+                  style: settingsMenuTitleStyle(context),
                 ),
-              ),
-              Icon(
-                _settingsExpanded
-                    ? Icons.expand_less_rounded
-                    : Icons.expand_more_rounded,
-                color: colors.textSecondary,
-                size: 22,
               ),
             ],
           ),
@@ -585,7 +672,7 @@ class _WebNavigationShellState extends State<WebNavigationShell> {
   }
 
   Widget _buildLanguageSelector(BuildContext context) {
-    if (_collapsed) {
+    if (_settingsContentCollapsed) {
       return const Padding(
         padding: EdgeInsets.fromLTRB(12, 12, 12, 0),
         child: AppLanguageDropdown(compact: true),
@@ -600,7 +687,6 @@ class _WebNavigationShellState extends State<WebNavigationShell> {
 
   Widget _buildThemeToggle(BuildContext context) {
     final colors = context.appColors;
-    final textTheme = Theme.of(context).textTheme;
     final l10n = context.l10n;
     final app = MyApp.of(context);
 
@@ -633,6 +719,7 @@ class _WebNavigationShellState extends State<WebNavigationShell> {
                         ? Icons.dark_mode_rounded
                         : Icons.light_mode_rounded,
                     color: colors.primary,
+                    size: kWebMenuIconSize,
                   ),
                 ),
               ),
@@ -656,7 +743,7 @@ class _WebNavigationShellState extends State<WebNavigationShell> {
                       ? Icons.dark_mode_rounded
                       : Icons.light_mode_rounded,
                   color: colors.primary,
-                  size: 22,
+                  size: kWebMenuIconSize,
                 ),
                 const SizedBox(width: 12),
                 Expanded(
@@ -667,10 +754,7 @@ class _WebNavigationShellState extends State<WebNavigationShell> {
                         l10n.themeDarkModeLabel,
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
-                        style: textTheme.bodyLarge?.copyWith(
-                          color: colors.textPrimary,
-                          fontWeight: FontWeight.w600,
-                        ),
+                        style: settingsMenuTitleStyle(context),
                       ),
                     ],
                   ),
@@ -696,9 +780,7 @@ class _WebNavigationShellState extends State<WebNavigationShell> {
 
   Widget _buildSubscriptionButton(BuildContext context) {
     final colors = context.appColors;
-    final textTheme = Theme.of(context).textTheme;
-
-    if (_collapsed) {
+    if (_settingsContentCollapsed) {
       return Padding(
         padding: const EdgeInsets.fromLTRB(12, 0, 12, 12),
         child: Tooltip(
@@ -717,6 +799,7 @@ class _WebNavigationShellState extends State<WebNavigationShell> {
               child: Icon(
                 Icons.card_membership_outlined,
                 color: colors.primary,
+                size: kWebMenuIconSize,
               ),
             ),
           ),
@@ -741,7 +824,7 @@ class _WebNavigationShellState extends State<WebNavigationShell> {
               Icon(
                 Icons.card_membership_outlined,
                 color: colors.primary,
-                size: 22,
+                size: kWebMenuIconSize,
               ),
               const SizedBox(width: 12),
               Expanded(
@@ -749,10 +832,71 @@ class _WebNavigationShellState extends State<WebNavigationShell> {
                   context.l10n.subscriptionMenu,
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
-                  style: textTheme.bodyLarge?.copyWith(
-                    color: colors.textPrimary,
-                    fontWeight: FontWeight.w600,
-                  ),
+                  style: settingsMenuTitleStyle(context),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildAdminButton(BuildContext context) {
+    final colors = context.appColors;
+    if (_settingsContentCollapsed) {
+      return Padding(
+        padding: const EdgeInsets.fromLTRB(12, 0, 12, 12),
+        child: Tooltip(
+          message: context.l10n.adminTitle,
+          child: InkWell(
+            borderRadius: BorderRadius.circular(16),
+            onTap: () => openAdminScreen(context),
+            child: Container(
+              width: double.infinity,
+              height: 52,
+              decoration: BoxDecoration(
+                color: colors.card,
+                borderRadius: BorderRadius.circular(16),
+                border: Border.all(color: colors.border),
+              ),
+              child: Icon(
+                Icons.admin_panel_settings_outlined,
+                color: colors.primary,
+                size: kWebMenuIconSize,
+              ),
+            ),
+          ),
+        ),
+      );
+    }
+
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(12, 0, 12, 12),
+      child: InkWell(
+        borderRadius: BorderRadius.circular(18),
+        onTap: () => openAdminScreen(context),
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+          decoration: BoxDecoration(
+            color: colors.card,
+            borderRadius: BorderRadius.circular(18),
+            border: Border.all(color: colors.border),
+          ),
+          child: Row(
+            children: [
+              Icon(
+                Icons.admin_panel_settings_outlined,
+                color: colors.primary,
+                size: kWebMenuIconSize,
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Text(
+                  context.l10n.adminTitle,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: settingsMenuTitleStyle(context),
                 ),
               ),
             ],
@@ -764,9 +908,7 @@ class _WebNavigationShellState extends State<WebNavigationShell> {
 
   Widget _buildEditProfileButton(BuildContext context) {
     final colors = context.appColors;
-    final textTheme = Theme.of(context).textTheme;
-
-    if (_collapsed) {
+    if (_settingsContentCollapsed) {
       return Padding(
         padding: const EdgeInsets.fromLTRB(12, 0, 12, 12),
         child: Tooltip(
@@ -785,6 +927,7 @@ class _WebNavigationShellState extends State<WebNavigationShell> {
               child: Icon(
                 Icons.person_outline_rounded,
                 color: colors.primary,
+                size: kWebMenuIconSize,
               ),
             ),
           ),
@@ -809,7 +952,7 @@ class _WebNavigationShellState extends State<WebNavigationShell> {
               Icon(
                 Icons.person_outline_rounded,
                 color: colors.primary,
-                size: 22,
+                size: kWebMenuIconSize,
               ),
               const SizedBox(width: 12),
               Expanded(
@@ -817,10 +960,7 @@ class _WebNavigationShellState extends State<WebNavigationShell> {
                   context.l10n.actionEditProfile,
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
-                  style: textTheme.bodyLarge?.copyWith(
-                    color: colors.textPrimary,
-                    fontWeight: FontWeight.w600,
-                  ),
+                  style: settingsMenuTitleStyle(context),
                 ),
               ),
             ],
@@ -832,9 +972,7 @@ class _WebNavigationShellState extends State<WebNavigationShell> {
 
   Widget _buildMyUnavailabilitiesButton(BuildContext context) {
     final colors = context.appColors;
-    final textTheme = Theme.of(context).textTheme;
-
-    if (_collapsed) {
+    if (_settingsContentCollapsed) {
       return Padding(
         padding: const EdgeInsets.fromLTRB(12, 0, 12, 12),
         child: Tooltip(
@@ -853,6 +991,7 @@ class _WebNavigationShellState extends State<WebNavigationShell> {
               child: Icon(
                 Icons.event_busy_outlined,
                 color: colors.primary,
+                size: kWebMenuIconSize,
               ),
             ),
           ),
@@ -877,7 +1016,7 @@ class _WebNavigationShellState extends State<WebNavigationShell> {
               Icon(
                 Icons.event_busy_outlined,
                 color: colors.primary,
-                size: 22,
+                size: kWebMenuIconSize,
               ),
               const SizedBox(width: 12),
               Expanded(
@@ -885,10 +1024,7 @@ class _WebNavigationShellState extends State<WebNavigationShell> {
                   context.l10n.settingsMyUnavailabilities,
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
-                  style: textTheme.bodyLarge?.copyWith(
-                    color: colors.textPrimary,
-                    fontWeight: FontWeight.w600,
-                  ),
+                  style: settingsMenuTitleStyle(context),
                 ),
               ),
             ],
@@ -900,9 +1036,7 @@ class _WebNavigationShellState extends State<WebNavigationShell> {
 
   Widget _buildDeleteAccountButton(BuildContext context) {
     final colors = context.appColors;
-    final textTheme = Theme.of(context).textTheme;
-
-    if (_collapsed) {
+    if (_settingsContentCollapsed) {
       return Padding(
         padding: const EdgeInsets.fromLTRB(12, 0, 12, 12),
         child: Tooltip(
@@ -929,6 +1063,7 @@ class _WebNavigationShellState extends State<WebNavigationShell> {
                   : Icon(
                       Icons.delete_forever_outlined,
                       color: colors.warning,
+                      size: kWebMenuIconSize,
                     ),
             ),
           ),
@@ -952,8 +1087,8 @@ class _WebNavigationShellState extends State<WebNavigationShell> {
             children: [
               _isDeletingAccount
                   ? SizedBox(
-                      width: 22,
-                      height: 22,
+                      width: kWebMenuIconSize,
+                      height: kWebMenuIconSize,
                       child: CircularProgressIndicator(
                         strokeWidth: 2.2,
                         color: colors.warning,
@@ -962,7 +1097,7 @@ class _WebNavigationShellState extends State<WebNavigationShell> {
                   : Icon(
                       Icons.delete_forever_outlined,
                       color: colors.warning,
-                      size: 22,
+                      size: kWebMenuIconSize,
                     ),
               const SizedBox(width: 12),
               Expanded(
@@ -970,9 +1105,8 @@ class _WebNavigationShellState extends State<WebNavigationShell> {
                   context.l10n.actionDeleteAccount,
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
-                  style: textTheme.bodyLarge?.copyWith(
+                  style: settingsMenuTitleStyle(context).copyWith(
                     color: colors.warning,
-                    fontWeight: FontWeight.w600,
                   ),
                 ),
               ),
@@ -985,9 +1119,7 @@ class _WebNavigationShellState extends State<WebNavigationShell> {
 
   Widget _buildLogoutButton(BuildContext context) {
     final colors = context.appColors;
-    final textTheme = Theme.of(context).textTheme;
-
-    if (_collapsed) {
+    if (_settingsContentCollapsed) {
       return Padding(
         padding: const EdgeInsets.fromLTRB(12, 0, 12, 16),
         child: Tooltip(
@@ -1014,6 +1146,7 @@ class _WebNavigationShellState extends State<WebNavigationShell> {
                   : Icon(
                 Icons.logout_rounded,
                 color: colors.primary,
+                size: kWebMenuIconSize,
               ),
             ),
           ),
@@ -1037,8 +1170,8 @@ class _WebNavigationShellState extends State<WebNavigationShell> {
             children: [
               _isSigningOut
                   ? SizedBox(
-                width: 22,
-                height: 22,
+                width: kWebMenuIconSize,
+                height: kWebMenuIconSize,
                 child: CircularProgressIndicator(
                   strokeWidth: 2.2,
                   color: colors.primary,
@@ -1047,7 +1180,7 @@ class _WebNavigationShellState extends State<WebNavigationShell> {
                   : Icon(
                 Icons.logout_rounded,
                 color: colors.primary,
-                size: 22,
+                size: kWebMenuIconSize,
               ),
               const SizedBox(width: 12),
               Expanded(
@@ -1055,9 +1188,8 @@ class _WebNavigationShellState extends State<WebNavigationShell> {
                   context.l10n.actionLogout,
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
-                  style: textTheme.bodyLarge?.copyWith(
+                  style: settingsMenuTitleStyle(context).copyWith(
                     color: colors.primary,
-                    fontWeight: FontWeight.w600,
                   ),
                 ),
               ),
@@ -1071,7 +1203,7 @@ class _WebNavigationShellState extends State<WebNavigationShell> {
   Widget _buildHeader(BuildContext context) {
     final colors = context.appColors;
 
-    if (_collapsed) {
+    if (_sidebarCollapsed) {
       return Container(
         height: 110,
         padding: const EdgeInsets.symmetric(vertical: 10),
@@ -1101,9 +1233,11 @@ class _WebNavigationShellState extends State<WebNavigationShell> {
                   border: Border.all(color: colors.border),
                 ),
                 child: Icon(
-                  Icons.chevron_right_rounded,
+                  _settingsExpanded
+                      ? Icons.expand_less_rounded
+                      : Icons.chevron_right_rounded,
                   color: colors.textPrimary,
-                  size: 22,
+                  size: kWebMenuIconSize,
                 ),
               ),
             ),
@@ -1220,7 +1354,7 @@ class _SidebarItemState extends State<_SidebarItem> {
                   icon: widget.icon,
                   count: widget.badgeCount,
                   iconColor: foregroundColor,
-                  iconSize: 22,
+                  iconSize: kWebMenuIconSize,
                 ),
                 if (!widget.collapsed) ...[
                   const SizedBox(width: 12),
@@ -1228,13 +1362,9 @@ class _SidebarItemState extends State<_SidebarItem> {
                     child: Text(
                       widget.label,
                       overflow: TextOverflow.ellipsis,
-                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                        color: widget.selected
-                            ? colors.textPrimary
-                            : colors.textSecondary,
-                        fontWeight: widget.selected
-                            ? FontWeight.w600
-                            : FontWeight.w500,
+                      style: webSidebarNavLabelStyle(
+                        context,
+                        selected: widget.selected,
                       ),
                     ),
                   ),

@@ -51,6 +51,9 @@ class UserTrialService extends ChangeNotifier {
   bool get hasPremiumAccess =>
       SubscriptionService.instance.hasActivePaidSubscription || shouldShowTrial;
 
+  /// Réglages → Abonnement: show for store/web/promo entitlements or active trial.
+  bool get shouldShowSubscriptionMenu => hasPremiumAccess;
+
   void _onAuthChanged(User? user) {
     final uid = user?.uid;
     if (uid == _loadedUid) return;

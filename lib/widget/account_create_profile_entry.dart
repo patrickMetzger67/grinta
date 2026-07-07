@@ -6,6 +6,7 @@ import 'package:grinta/services/subscription_limits_service.dart';
 import 'package:grinta/services/subscription_service.dart';
 import 'package:grinta/util/app_theme.dart';
 import 'package:grinta/util/subscription_limits_access.dart';
+import 'package:grinta/widget/settings_menu_style.dart';
 import 'package:provider/provider.dart';
 
 /// Account-menu entry to create an additional member profile.
@@ -41,10 +42,7 @@ class AccountCreateProfileListTile extends StatelessWidget {
               ),
               title: Text(
                 l10n.actionCreateNewProfile,
-                style: TextStyle(
-                  color: colors.textPrimary,
-                  fontWeight: FontWeight.w600,
-                ),
+                style: settingsMenuTitleStyle(context),
               ),
               trailing: showPremiumBadge
                   ? SubscriptionPremiumBadge(colors: colors)
@@ -73,7 +71,6 @@ class AccountCreateProfileSidebarButton extends StatelessWidget {
   Widget build(BuildContext context) {
     final l10n = context.l10n;
     final colors = context.appColors;
-    final textTheme = Theme.of(context).textTheme;
 
     return Consumer<AppSession>(
       builder: (context, appSession, _) {
@@ -109,6 +106,7 @@ class AccountCreateProfileSidebarButton extends StatelessWidget {
                           Icon(
                             Icons.person_add_outlined,
                             color: colors.primary,
+                            size: kWebMenuIconSize,
                           ),
                           if (showPremiumBadge)
                             Positioned(
@@ -146,7 +144,7 @@ class AccountCreateProfileSidebarButton extends StatelessWidget {
                       Icon(
                         Icons.person_add_outlined,
                         color: colors.primary,
-                        size: 22,
+                        size: kWebMenuIconSize,
                       ),
                       const SizedBox(width: 12),
                       Expanded(
@@ -154,10 +152,7 @@ class AccountCreateProfileSidebarButton extends StatelessWidget {
                           l10n.actionCreateNewProfile,
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
-                          style: textTheme.bodyLarge?.copyWith(
-                            color: colors.textPrimary,
-                            fontWeight: FontWeight.w600,
-                          ),
+                          style: settingsMenuTitleStyle(context),
                         ),
                       ),
                       if (showPremiumBadge) ...[

@@ -8,8 +8,11 @@ import 'package:grinta/model/team.dart';
 import 'package:grinta/provider/appSession.dart';
 import 'package:grinta/screen/team_stats/team_stats_competition_selector.dart';
 import 'package:grinta/services/agenda_service.dart';
+import 'package:grinta/services/match_location_service.dart';
 import 'package:grinta/services/player_chat_stats_service.dart';
 import 'package:grinta/services/teams_per_club_service.dart';
+import 'package:grinta/services/weather_service.dart';
+import 'package:grinta/util/calendar_event_formatter.dart';
 import 'package:grinta/util/playerDisplayName.dart';
 import 'package:grinta/util/season_period_ranges.dart';
 import 'package:grinta/util/team_stats_opponent_helper.dart';
@@ -25,14 +28,20 @@ class ChatContextService {
     AgendaService? agendaService,
     TeamsPerClubService? teamsPerClubService,
     PlayerChatStatsService? playerChatStatsService,
+    MatchLocationService? matchLocationService,
+    WeatherService? weatherService,
   })  : _agendaService = agendaService ?? AgendaService(),
         _teamsPerClubService = teamsPerClubService ?? TeamsPerClubService(),
         _playerChatStatsService =
-            playerChatStatsService ?? PlayerChatStatsService();
+            playerChatStatsService ?? PlayerChatStatsService(),
+        _matchLocationService = matchLocationService ?? MatchLocationService(),
+        _weatherService = weatherService ?? WeatherService();
 
   final AgendaService _agendaService;
   final TeamsPerClubService _teamsPerClubService;
   final PlayerChatStatsService _playerChatStatsService;
+  final MatchLocationService _matchLocationService;
+  final WeatherService _weatherService;
 
   Future<Map<String, dynamic>> buildContext({
     required AppSession session,
@@ -135,13 +144,15 @@ class ChatContextService {
 
     final teamNames = _teamNameById(teams);
     final nextMatchItem = _findNextMatchItem(seasonItems, now);
+    final userPosition = await _matchLocationService.getCurrentUserPosition();
     final nextMatch = await _buildNextMatchContext(
       item: nextMatchItem,
       teams: teams,
       teamNames: teamNames,
       fallbackSeasonId: seasonId,
+      userPosition: userPosition,
     );
-    final agenda = _buildSeasonAgenda(
+    final agenda = await _buildSeasonAgenda(
       items: seasonItems,
       seasonId: seasonId,
       seasonStart: seasonStart,
@@ -149,20 +160,26 @@ class ChatContextService {
       today: today,
       teamNames: teamNames,
       localeCode: localeCode,
+      userPosition: userPosition,
+      enrichWeatherForUpcomingDays: 7,
     );
-    final weeklyAgenda = _buildWeeklyAgenda(
+    final weeklyAgenda = await _buildWeeklyAgenda(
       items: weekItems,
       weekStart: weekStart,
       weekEnd: weekEndInclusive,
       teamNames: teamNames,
       localeCode: localeCode,
+      userPosition: userPosition,
+      enrichWeatherForUpcomingDays: 7,
     );
-    final lastWeekAgenda = _buildWeeklyAgenda(
+    final lastWeekAgenda = await _buildWeeklyAgenda(
       items: lastWeekItems,
       weekStart: lastWeekStart,
       weekEnd: lastWeekEnd,
       teamNames: teamNames,
       localeCode: localeCode,
+      userPosition: userPosition,
+      enrichWeatherForUpcomingDays: 0,
     );
 
     Map<String, dynamic> playerStats;
@@ -200,6 +217,11 @@ class ChatContextService {
       'weeklyAgenda': weeklyAgenda,
       'lastWeekAgenda': lastWeekAgenda,
       if (nextMatch != null) 'nextMatch': nextMatch,
+      if (userPosition != null)
+        'userLocation': <String, dynamic>{
+          'latitude': userPosition.latitude,
+          'longitude': userPosition.longitude,
+        },
       'playerStats': playerStats,
     };
   }
@@ -263,7 +285,7 @@ class ChatContextService {
     };
   }
 
-  static Map<String, dynamic> _buildSeasonAgenda({
+  Future<Map<String, dynamic>> _buildSeasonAgenda({
     required List<AgendaItem> items,
     required String? seasonId,
     required DateTime seasonStart,
@@ -271,13 +293,31 @@ class ChatContextService {
     required DateTime today,
     required Map<String, String> teamNames,
     required String localeCode,
-  }) {
+    required ({double latitude, double longitude})? userPosition,
+    required int enrichWeatherForUpcomingDays,
+  }) async {
     final dateFormat = DateFormat('yyyy-MM-dd', localeCode);
     final timeFormat = DateFormat('HH:mm', localeCode);
     final dayFormat = DateFormat.EEEE(localeCode);
 
     final sorted = List<AgendaItem>.from(items)
       ..sort((AgendaItem a, AgendaItem b) => a.startAt.compareTo(b.startAt));
+
+    final jsonItems = <Map<String, dynamic>>[];
+    for (final AgendaItem item in sorted) {
+      jsonItems.add(
+        await _agendaItemToJson(
+          item,
+          teamNames: teamNames,
+          dateFormat: dateFormat,
+          timeFormat: timeFormat,
+          dayFormat: dayFormat,
+          userPosition: userPosition,
+          today: today,
+          enrichWeatherForUpcomingDays: enrichWeatherForUpcomingDays,
+        ),
+      );
+    }
 
     return <String, dynamic>{
       'seasonId': seasonId,
@@ -286,34 +326,43 @@ class ChatContextService {
       'today': dateFormat.format(today),
       'itemCount': sorted.length,
       'teamIds': teamNames.keys.toList()..sort(),
-      'items': sorted
-          .map(
-            (AgendaItem item) => _agendaItemToJson(
-              item,
-              teamNames: teamNames,
-              dateFormat: dateFormat,
-              timeFormat: timeFormat,
-              dayFormat: dayFormat,
-            ),
-          )
-          .toList(),
+      'items': jsonItems,
     };
   }
 
-  static Map<String, dynamic> _buildWeeklyAgenda({
+  Future<Map<String, dynamic>> _buildWeeklyAgenda({
     required List<AgendaItem> items,
     required DateTime weekStart,
     required DateTime weekEnd,
     required Map<String, String> teamNames,
     required String localeCode,
-  }) {
+    required ({double latitude, double longitude})? userPosition,
+    required int enrichWeatherForUpcomingDays,
+  }) async {
     final dateFormat = DateFormat('yyyy-MM-dd', localeCode);
     final timeFormat = DateFormat('HH:mm', localeCode);
     final dayFormat = DateFormat.EEEE(localeCode);
     final weekLabelFormat = DateFormat.yMMMMd(localeCode);
+    final today = DateUtils.dateOnly(DateTime.now());
 
     final sorted = List<AgendaItem>.from(items)
       ..sort((AgendaItem a, AgendaItem b) => a.startAt.compareTo(b.startAt));
+
+    final jsonItems = <Map<String, dynamic>>[];
+    for (final AgendaItem item in sorted) {
+      jsonItems.add(
+        await _agendaItemToJson(
+          item,
+          teamNames: teamNames,
+          dateFormat: dateFormat,
+          timeFormat: timeFormat,
+          dayFormat: dayFormat,
+          userPosition: userPosition,
+          today: today,
+          enrichWeatherForUpcomingDays: enrichWeatherForUpcomingDays,
+        ),
+      );
+    }
 
     return <String, dynamic>{
       'weekStart': dateFormat.format(weekStart),
@@ -321,27 +370,20 @@ class ChatContextService {
       'weekLabel':
           'Semaine du ${weekLabelFormat.format(weekStart)} au ${weekLabelFormat.format(weekEnd)}',
       'itemCount': sorted.length,
-      'items': sorted
-          .map(
-            (AgendaItem item) => _agendaItemToJson(
-              item,
-              teamNames: teamNames,
-              dateFormat: dateFormat,
-              timeFormat: timeFormat,
-              dayFormat: dayFormat,
-            ),
-          )
-          .toList(),
+      'items': jsonItems,
     };
   }
 
-  static Map<String, dynamic> _agendaItemToJson(
+  Future<Map<String, dynamic>> _agendaItemToJson(
     AgendaItem item, {
     required Map<String, String> teamNames,
     required DateFormat dateFormat,
     required DateFormat timeFormat,
     required DateFormat dayFormat,
-  }) {
+    required ({double latitude, double longitude})? userPosition,
+    required DateTime today,
+    required int enrichWeatherForUpcomingDays,
+  }) async {
     final match = item.match;
     final teamId = match?.teamID?.trim();
     final teamName = teamId != null ? teamNames[teamId] : null;
@@ -372,6 +414,16 @@ class ChatContextService {
         map['homeScore'] = match.homeScore;
         map['outSideScore'] = match.outSideScore;
       }
+      map.addAll(_matchStaticContextFields(match));
+      await _enrichMatchLocationWeather(
+        map: map,
+        match: match,
+        dateIso: dateFormat.format(item.startAt),
+        time: timeFormat.format(item.startAt),
+        userPosition: userPosition,
+        today: today,
+        enrichWeatherForUpcomingDays: enrichWeatherForUpcomingDays,
+      );
     }
 
     final training = item.training;
@@ -412,6 +464,7 @@ class ChatContextService {
     required List<Team> teams,
     required Map<String, String> teamNames,
     required String? fallbackSeasonId,
+    required ({double latitude, double longitude})? userPosition,
   }) async {
     if (item?.match == null) return null;
 
@@ -435,6 +488,18 @@ class ChatContextService {
       'poule': match.poule,
       'stage': match.stage,
     };
+
+    map.addAll(_matchStaticContextFields(match));
+    await _enrichMatchLocationWeather(
+      map: map,
+      match: match,
+      dateIso: DateFormat('yyyy-MM-dd').format(item.startAt),
+      time: DateFormat('HH:mm').format(item.startAt),
+      userPosition: userPosition,
+      today: DateUtils.dateOnly(DateTime.now()),
+      enrichWeatherForUpcomingDays: 14,
+      alwaysEnrichWeather: true,
+    );
 
     Team? team;
     if (teamId != null) {
@@ -479,6 +544,126 @@ class ChatContextService {
     }
 
     return map;
+  }
+
+  static Map<String, dynamic> _matchStaticContextFields(grinta_match.Match match) {
+    final map = <String, dynamic>{};
+    final surface = match.surfaceDeJeu?.trim() ?? '';
+    if (surface.isNotEmpty) {
+      map['surfaceDeJeu'] = surface;
+    }
+
+    final venueName = match.nomDuTerrain?.trim() ?? '';
+    if (venueName.isNotEmpty) {
+      map['venueName'] = venueName;
+    }
+
+    final venueAddress = match.terrainAdresse1?.trim() ?? '';
+    if (venueAddress.isNotEmpty) {
+      map['venueAddress'] = venueAddress;
+    }
+
+    final location = CalendarEventFormatter.matchLocation(match);
+    if (location != null && location.isNotEmpty) {
+      map['location'] = location;
+    }
+
+    final mapsUrl = CalendarEventFormatter.mapsUrl(match);
+    if (mapsUrl != null && mapsUrl.isNotEmpty) {
+      map['mapsUrl'] = mapsUrl;
+    }
+
+    final coords = CalendarEventFormatter.matchCoordinates(match);
+    if (coords != null) {
+      map['latitude'] = coords.latitude;
+      map['longitude'] = coords.longitude;
+    }
+
+    final competitionId = match.competitionID?.trim() ?? '';
+    if (competitionId.isNotEmpty) {
+      map['competitionId'] = competitionId;
+    }
+
+    final poule = match.poule?.trim() ?? '';
+    if (poule.isNotEmpty) {
+      map['poule'] = poule;
+    }
+
+    final stage = match.stage?.trim() ?? '';
+    if (stage.isNotEmpty) {
+      map['stage'] = stage;
+    }
+
+    final tour = match.tour?.trim() ?? '';
+    if (tour.isNotEmpty) {
+      map['tour'] = tour;
+    }
+
+    if ((match.day ?? 0) > 0) {
+      map['day'] = match.day;
+    }
+
+    final chType = match.chType?.trim() ?? '';
+    if (chType.isNotEmpty) {
+      map['chType'] = chType;
+    }
+
+    return map;
+  }
+
+  Future<void> _enrichMatchLocationWeather({
+    required Map<String, dynamic> map,
+    required grinta_match.Match match,
+    required String dateIso,
+    required String time,
+    required ({double latitude, double longitude})? userPosition,
+    required DateTime today,
+    required int enrichWeatherForUpcomingDays,
+    bool alwaysEnrichWeather = false,
+  }) async {
+    final matchDay = DateTime.tryParse(dateIso);
+    final bool withinWeatherWindow = matchDay != null &&
+        !matchDay.isBefore(today) &&
+        !matchDay.isAfter(
+          today.add(Duration(days: enrichWeatherForUpcomingDays)),
+        );
+    final bool shouldEnrich = alwaysEnrichWeather || withinWeatherWindow;
+
+    final gpsCoords = CalendarEventFormatter.matchCoordinates(match);
+    if (gpsCoords != null) {
+      map['latitude'] = gpsCoords.latitude;
+      map['longitude'] = gpsCoords.longitude;
+    }
+
+    if (!shouldEnrich) return;
+
+    final coords =
+        gpsCoords ?? await _matchLocationService.resolveMatchCoordinates(match);
+    if (coords != null) {
+      map['latitude'] = coords.latitude;
+      map['longitude'] = coords.longitude;
+    }
+
+    if (userPosition != null && coords != null) {
+      map['distanceKm'] = _matchLocationService.distanceKm(
+        fromLatitude: userPosition.latitude,
+        fromLongitude: userPosition.longitude,
+        toLatitude: coords.latitude,
+        toLongitude: coords.longitude,
+      );
+    }
+
+    if (coords != null) {
+      final weather = await _weatherService.fetchMatchDayForecast(
+        latitude: coords.latitude,
+        longitude: coords.longitude,
+        dateIso: dateIso,
+        hourMinute: time,
+      );
+      if (weather != null) {
+        map['weather'] = weather;
+      }
+    }
   }
 
   static String? _opponentNameForMatch(

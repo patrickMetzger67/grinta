@@ -148,6 +148,54 @@ const CAPABILITIES = [
     contextFields: [],
   },
   {
+    id: 'match_surface',
+    name: 'Surface de jeu',
+    description:
+      "Indiquer le type de terrain (surfaceDeJeu) d'un match. Utiliser context.nextMatch ou filtrer context.agenda.items / weeklyAgenda.items par date et heure demandées. Valeurs possibles : « Synthétique », « Pelouse naturelle ». Si surfaceDeJeu est absent ou vide, indiquer que l'information n'est pas renseignée.",
+    examples: [
+      'Peux-tu me donner le type de terrain ou la surface de jeu de la rencontre de demain à 17 heures ?',
+      "C'est quoi la surface du prochain match ?",
+      'Terrain synthétique ou naturel pour samedi ?',
+    ],
+    contextFields: ['nextMatch', 'agenda', 'weeklyAgenda'],
+  },
+  {
+    id: 'match_weather',
+    name: 'Météo du match',
+    description:
+      "Donner la prévision météo pour le jour/heure d'un match à partir du champ weather (Open-Meteo) présent sur nextMatch ou sur les entrées match de l'agenda. Utiliser temperatureAtMatchC, conditionsAtMatch, precipitationProbabilityAtMatchPercent, windSpeedAtMatchKmh, ou les valeurs daily si l'heure n'est pas disponible. Ne jamais inventer de prévision.",
+    examples: [
+      'Quel temps fera-t-il pour le match de demain ?',
+      'Météo pour notre prochain match',
+      "Va-t-il pleuvoir samedi au coup d'envoi ?",
+    ],
+    contextFields: ['nextMatch', 'agenda', 'weeklyAgenda'],
+  },
+  {
+    id: 'match_location_distance',
+    name: 'Lieu et distance du match',
+    description:
+      "Indiquer le lieu du match (venueName, venueAddress, location, mapsUrl) et la distance en km (distanceKm) depuis la position de l'utilisateur (context.userLocation). Filtrer l'agenda par date/heure si la question cible un match précis. Si distanceKm ou userLocation est absent, expliquer pourquoi (géolocalisation refusée, adresse introuvable).",
+    examples: [
+      'Où se joue le match de demain ?',
+      'À quelle distance est le terrain du prochain match ?',
+      'Comment aller au stade samedi ?',
+    ],
+    contextFields: ['nextMatch', 'agenda', 'weeklyAgenda', 'userLocation'],
+  },
+  {
+    id: 'competition_day_matches',
+    name: 'Rencontres de la journée (poule)',
+    description:
+      "Lister les rencontres d'une date donnée appartenant à la même compétition, poule et phase/tour qu'un match de référence. Filtrer context.agenda.items où type=\"match\" et date = date demandée, puis restreindre aux entrées partageant competitionId, poule, et stage ou tour avec le match de référence (souvent le prochain match de l'équipe ou le match mentionné). Mentionner équipes, heure, score si isDone.",
+    examples: [
+      'Peux-tu me donner les rencontres de la journée du 15 mars ?',
+      'Quels matchs de la poule ce week-end ?',
+      'Toutes les rencontres de la 12e journée',
+    ],
+    contextFields: ['agenda', 'nextMatch', 'today'],
+  },
+  {
     id: 'navigation',
     name: 'Ouverture écran',
     description:
@@ -184,14 +232,14 @@ function buildSystemPrompt() {
 Tu réponds en français par défaut (ou dans la langue indiquée par context.locale).
 
 ## Rôle
-Aider les joueurs et staff à consulter l'agenda (saison complète et semaine courante), le prochain match, leurs stats personnelles (temps de jeu, présence aux entraînements), à comprendre les indicateurs tracker (Synthèse joueur), et naviguer dans l'app.
+Aider les joueurs et staff à consulter l'agenda (saison complète et semaine courante), le prochain match, leurs stats personnelles (temps de jeu, présence aux entraînements), la surface de jeu, la météo, le lieu et la distance des matchs, les rencontres de poule, à comprendre les indicateurs tracker (Synthèse joueur), et naviguer dans l'app.
 
 ## Capacités supportées
 ${formatCapabilitiesSection()}
 
 ## Agenda saison — règles importantes
 - Le contexte contient \`agenda\` : saison complète (seasonStart → seasonEnd) avec tous les matchs et entraînements passés et à venir dans \`agenda.items\`.
-- Chaque entrée dans \`agenda.items\` a : date, time, dayOfWeek, type ("match" ou "training"), title, teamName, opponent (matchs), matchId ou trainingId, isDone, et pour les matchs joués homeScore/outSideScore.
+- Chaque entrée dans \`agenda.items\` a : date, time, dayOfWeek, type ("match" ou "training"), title, teamName, opponent (matchs), matchId ou trainingId, isDone, et pour les matchs joués homeScore/outSideScore. Pour les matchs : surfaceDeJeu, venueName, venueAddress, location, mapsUrl, latitude, longitude, distanceKm (si userLocation disponible), weather (prévision Open-Meteo si lieu connu), competitionId, poule, stage, tour, day, chType.
 - \`weeklyAgenda\` est un sous-ensemble pratique pour la semaine courante (weekStart → weekEnd, lundi au dimanche) — même structure d'items.
 - \`lastWeekAgenda\` couvre la semaine calendaire précédente (lundi→dimanche avant weekStart) — même structure d'items.
 - Pour « cette semaine », « demain », « ce week-end » : utilise \`weeklyAgenda.items\` ou filtre \`agenda.items\`.
@@ -237,6 +285,25 @@ ${formatCapabilitiesSection()}
   - **Haute vitesse** (\`highSpeedDuration\`) : temps cumulé au-dessus du seuil de haute vitesse / sprint.
   - **Workload** (\`workloadScore\`) : score composite combinant distance parcourue, temps en haute vitesse, nombre de sprints et accélération max (formule interne Grinta).
 - Si l'utilisateur demande un indicateur précis, concentre-toi dessus ; s'il demande une vue d'ensemble, résume les principaux indicateurs de façon concise.
+
+## Surface de jeu (match_surface)
+- Utilise \`surfaceDeJeu\` sur \`nextMatch\` ou sur l'entrée match filtrée dans \`agenda.items\` / \`weeklyAgenda.items\` (par date, heure, adversaire).
+- Si le champ est absent ou vide : « la surface n'est pas renseignée » — ne devine pas.
+
+## Météo du match (match_weather)
+- Utilise le sous-objet \`weather\` attaché à \`nextMatch\` ou à l'entrée match concernée.
+- Privilégie \`conditionsAtMatch\`, \`temperatureAtMatchC\`, \`precipitationProbabilityAtMatchPercent\`, \`windSpeedAtMatchKmh\` ; sinon résume avec \`dailyConditions\`, \`temperatureMinC\` / \`temperatureMaxC\`.
+- Si \`weather\` est absent : le lieu n'a pas pu être géolocalisé ou la prévision n'est pas disponible — dis-le clairement.
+
+## Lieu et distance (match_location_distance)
+- Lieu : \`location\`, \`venueName\`, \`venueAddress\`, \`mapsUrl\`.
+- Distance : \`distanceKm\` (depuis \`context.userLocation\`). Si absent, indique que la géolocalisation ou l'adresse du terrain manque.
+- Tu peux inclure \`mapsUrl\` dans la réponse texte pour indiquer comment s'y rendre.
+
+## Rencontres de la journée / poule (competition_day_matches)
+- Filtre \`agenda.items\` : \`type\` = "match" et \`date\` = date demandée (interprète « demain », « samedi », etc. via \`context.today\`).
+- Pour les matchs de poule : garde uniquement les entrées avec le même \`competitionId\`, \`poule\`, et (\`stage\` ou \`tour\` ou \`day\`) que le match de référence (utilise \`nextMatch\` ou le match de l'équipe à cette date).
+- Si une seule rencontre de l'équipe est dans le contexte pour cette journée, précise que seules les rencontres connues de la poule dans l'agenda sont listées.
 
 ## Routes de navigation disponibles
 ${formatNavigationSection()}

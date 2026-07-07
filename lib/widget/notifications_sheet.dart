@@ -10,8 +10,10 @@ import 'package:grinta/screen/match_detail_screen.dart';
 import 'package:grinta/services/analytics_service.dart';
 import 'package:grinta/services/matchService.dart';
 import 'package:grinta/services/match_convocation_service.dart';
+import 'package:grinta/services/internal_notification_navigation.dart';
 import 'package:grinta/services/notificationService.dart';
 import 'package:grinta/util/app_theme.dart';
+import 'package:grinta/widget/settings_menu_style.dart';
 import 'package:grinta/util/match_compo_pitch_mapper.dart';
 import 'package:grinta/util/player_photo_resolver.dart';
 import 'package:grinta/widget/nav_icon_count_badge.dart';
@@ -223,7 +225,7 @@ class _NotificationSidebarTileState extends State<_NotificationSidebarTile> {
                 icon: Icons.notifications_outlined,
                 count: widget.count,
                 iconColor: colors.textSecondary,
-                iconSize: 22,
+                iconSize: kWebMenuIconSize,
               ),
               if (!widget.collapsed) ...[
                 const SizedBox(width: 12),
@@ -231,10 +233,10 @@ class _NotificationSidebarTileState extends State<_NotificationSidebarTile> {
                   child: Text(
                     l10n.navNotifications,
                     overflow: TextOverflow.ellipsis,
-                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                          color: colors.textSecondary,
-                          fontWeight: FontWeight.w500,
-                        ),
+                    style: webSidebarNavLabelStyle(
+                      context,
+                      selected: false,
+                    ),
                   ),
                 ),
               ],
@@ -415,6 +417,40 @@ class _NotificationListTileState extends State<_NotificationListTile> {
 
   bool get _showsConvocationActions =>
       widget.notification.type == NotifType.convocation;
+
+  bool get _isTappableReminder =>
+      widget.notification.type == NotifType.trainingReminder ||
+      widget.notification.type == NotifType.matchOpponentStatsReminder;
+
+  Future<void> _openReminderTarget() async {
+    if (_isConvocationActionInProgress) return;
+
+    final objectId = widget.notification.objectId?.trim() ?? '';
+    if (objectId.isEmpty) return;
+
+    final typeName = widget.notification.type == NotifType.trainingReminder
+        ? 'trainingReminder'
+        : 'matchOpponentStatsReminder';
+
+    setState(() => _isConvocationActionInProgress = true);
+    try {
+      await InternalNotificationNavigation.handlePayload(<String, dynamic>{
+        'type': typeName,
+        'id': objectId,
+        if (widget.notification.type == NotifType.trainingReminder)
+          'trainingId': objectId
+        else
+          'matchId': objectId,
+        if (widget.notification.playerId != null)
+          'playerId': widget.notification.playerId,
+      });
+      await _markAsRead();
+    } finally {
+      if (mounted) {
+        setState(() => _isConvocationActionInProgress = false);
+      }
+    }
+  }
 
   String? _formatCreatedAt(BuildContext context) {
     final created = widget.notification.dateTimeCreated?.toDate();
@@ -631,10 +667,15 @@ class _NotificationListTileState extends State<_NotificationListTile> {
     final title = widget.notification.title?.trim();
     final body = widget.notification.body?.trim();
 
-    return Container(
+    return Material(
+      color: colors.surface,
+      borderRadius: BorderRadius.circular(16),
+      child: InkWell(
+        borderRadius: BorderRadius.circular(16),
+        onTap: _isTappableReminder ? _openReminderTarget : null,
+        child: Container(
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
-        color: colors.surface,
         borderRadius: BorderRadius.circular(16),
         border: Border.all(color: colors.border),
       ),
@@ -742,6 +783,8 @@ class _NotificationListTileState extends State<_NotificationListTile> {
             ),
           ],
         ],
+      ),
+        ),
       ),
     );
   }

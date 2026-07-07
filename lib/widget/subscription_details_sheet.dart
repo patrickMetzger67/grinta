@@ -159,7 +159,8 @@ class _SubscriptionDetailsBodyState extends State<_SubscriptionDetailsBody> {
         final subscription = SubscriptionService.instance;
         final trial = UserTrialService.instance;
         final tierName = _tierName(l10n, subscription);
-        final isSubscribed = subscription.hasActivePaidSubscription && tierName != null;
+        final isSubscribed = subscription.hasActivePaidSubscription;
+        final activeTierName = tierName ?? l10n.subscriptionTierActive;
         final renewalDate = subscription.renewalDate;
         final billingPeriodLabel =
             _billingPeriodLabel(l10n, subscription.billingPeriod);
@@ -219,7 +220,7 @@ class _SubscriptionDetailsBodyState extends State<_SubscriptionDetailsBody> {
                           crossAxisAlignment: CrossAxisAlignment.stretch,
                           children: [
                             _ActiveSubscriptionCard(
-                              tierName: tierName,
+                              tierName: activeTierName,
                               billingPeriodLabel: billingPeriodLabel,
                               renewalDateLabel: renewalDate != null
                                   ? _formatDate(context, renewalDate)

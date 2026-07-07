@@ -23,6 +23,8 @@ class TeamPlayerSeasonStats {
     required this.starts,
     required this.minutesPlayed,
     required this.goals,
+    required this.yellowCards,
+    required this.redCards,
     required this.trends,
     this.displayName,
   });
@@ -33,6 +35,8 @@ class TeamPlayerSeasonStats {
   final int starts;
   final int minutesPlayed;
   final int goals;
+  final int yellowCards;
+  final int redCards;
   final TeamPlayerStatTrends trends;
 
   /// Full name from external sources (e.g. FFF matchStats), shown as-is in the UI.
@@ -141,7 +145,9 @@ class TeamPlayerStatsService {
             ..convocations = entry.value.convocations
             ..starts = entry.value.starts
             ..minutesPlayed = entry.value.minutesPlayed
-            ..goals = entry.value.goals;
+            ..goals = entry.value.goals
+            ..yellowCards = entry.value.yellowCards
+            ..redCards = entry.value.redCards;
         } else {
           existing.merge(entry.value);
         }
@@ -232,6 +238,8 @@ class TeamPlayerStatsService {
         starts: accumulator?.starts ?? 0,
         minutesPlayed: accumulator?.minutesPlayed ?? 0,
         goals: accumulator?.goals ?? 0,
+        yellowCards: accumulator?.yellowCards ?? 0,
+        redCards: accumulator?.redCards ?? 0,
         trends: trends,
         displayName: resolvedDisplayName,
       );

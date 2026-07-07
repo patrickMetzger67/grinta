@@ -1,0 +1,134 @@
+import 'package:flutter/material.dart';
+import 'package:grinta/analytics/analytics_routes.dart';
+import 'package:grinta/analytics/analytics_screen_names.dart';
+import 'package:grinta/core/extensions/l10n_extension.dart';
+import 'package:grinta/screen/admin/admin_promo_codes_screen.dart';
+import 'package:grinta/util/app_theme.dart';
+
+Future<void> openAdminScreen(BuildContext context) async {
+  await Navigator.of(context, rootNavigator: true).push(
+    analyticsMaterialRoute<void>(
+      screenName: AnalyticsScreenNames.admin,
+      builder: (_) => const AdminScreen(),
+    ),
+  );
+}
+
+class AdminScreen extends StatelessWidget {
+  const AdminScreen({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = context.l10n;
+    final colors = context.appColors;
+    final textTheme = Theme.of(context).textTheme;
+
+    return Scaffold(
+      backgroundColor: colors.background,
+      appBar: AppBar(
+        title: Text(
+          l10n.adminTitle,
+          style: textTheme.titleLarge?.copyWith(
+            color: colors.textPrimary,
+            fontWeight: FontWeight.w700,
+          ),
+        ),
+      ),
+      body: ListView(
+        padding: const EdgeInsets.all(16),
+        children: [
+          Text(
+            l10n.adminSubtitle,
+            style: textTheme.bodyMedium?.copyWith(color: colors.textSecondary),
+          ),
+          const SizedBox(height: 20),
+          _AdminSectionCard(
+            icon: Icons.local_offer_outlined,
+            title: l10n.adminPromoCodesSection,
+            subtitle: l10n.adminPromoCodesSectionDesc,
+            onTap: () {
+              Navigator.of(context).push(
+                analyticsMaterialRoute<void>(
+                  screenName: AnalyticsScreenNames.adminPromoCodes,
+                  builder: (_) => const AdminPromoCodesScreen(),
+                ),
+              );
+            },
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _AdminSectionCard extends StatelessWidget {
+  const _AdminSectionCard({
+    required this.icon,
+    required this.title,
+    required this.subtitle,
+    required this.onTap,
+  });
+
+  final IconData icon;
+  final String title;
+  final String subtitle;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = context.appColors;
+    final textTheme = Theme.of(context).textTheme;
+
+    return Material(
+      color: colors.card,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(16),
+        side: BorderSide(color: colors.border),
+      ),
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(16),
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: Row(
+            children: [
+              Container(
+                width: 44,
+                height: 44,
+                decoration: BoxDecoration(
+                  color: colors.primary.withValues(alpha: 0.12),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Icon(icon, color: colors.primary),
+              ),
+              const SizedBox(width: 14),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      title,
+                      style: textTheme.titleMedium?.copyWith(
+                        color: colors.textPrimary,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      subtitle,
+                      style: textTheme.bodySmall?.copyWith(
+                        color: colors.textSecondary,
+                        height: 1.3,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              Icon(Icons.chevron_right_rounded, color: colors.textSecondary),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}

@@ -6,6 +6,7 @@ import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'util/app_theme.dart';
+import 'util/stream_chat_theme.dart';
 import 'package:provider/provider.dart';
 import 'package:stream_chat_flutter/stream_chat_flutter.dart';
 import 'package:stream_chat_localizations/stream_chat_localizations.dart';
@@ -21,11 +22,13 @@ import 'package:grinta/services/feature_discovery_service.dart';
 import 'package:grinta/services/subscription_limits_service.dart';
 import 'package:grinta/services/subscription_service.dart';
 import 'package:grinta/services/user_trial_service.dart';
+import 'package:grinta/services/user_root_service.dart';
 import 'package:grinta/analytics/analytics_observer.dart';
 import 'package:grinta/analytics/analytics_route_aware.dart';
 import 'package:grinta/services/analytics_service.dart';
 import 'package:grinta/widget/web_app_root.dart';
 import 'package:grinta/services/notification_fcm_service.dart';
+import 'package:grinta/services/internal_reminder_service.dart';
 import 'package:grinta/services/calendar_deep_link_service.dart';
 import 'package:grinta/util/firebase_auth_ready.dart';
 
@@ -40,6 +43,7 @@ Future<void> main() async {
   );
 
   await NotificationFCMService.init();
+  await InternalReminderService.instance.init();
   await CalendarDeepLinkService.instance.init();
 
   if (kIsWeb) {
@@ -55,6 +59,8 @@ Future<void> main() async {
   await FeatureDiscoveryService.instance.ensureInitialized();
   UserTrialService.instance;
   await UserTrialService.instance.ensureInitialized();
+  UserRootService.instance;
+  await UserRootService.instance.ensureInitialized();
   await SubscriptionService.instance.ensureInitialized();
   await SubscriptionLimitsService.instance.ensureInitialized();
 
@@ -69,6 +75,9 @@ Future<void> main() async {
         ),
         ChangeNotifierProvider<UserTrialService>.value(
           value: UserTrialService.instance,
+        ),
+        ChangeNotifierProvider<UserRootService>.value(
+          value: UserRootService.instance,
         ),
       ],
       child: const MyApp(),
@@ -153,8 +162,16 @@ class MyAppState extends State<MyApp> {
         Locale('it'),
       ],
       builder: (context, child) {
+        final brightness = Theme.of(context).brightness;
+        final appColors = Theme.of(context).extension<AppColors>()!;
+
         return StreamChat(
           client: _streamChatClient,
+          streamChatThemeData: GrintaStreamChatTheme.themeFor(
+            brightness: brightness,
+            colors: appColors,
+          ),
+          streamChatConfigData: GrintaStreamChatTheme.config(),
           child: child ?? const SizedBox.shrink(),
         );
       },
@@ -277,6 +294,7 @@ class _AuthGateState extends State<AuthGate> {
         debugPrint('AppSession.init timed out; continuing to Stream connect');
         appSession.releaseStuckInit(expectedUid: firebaseUser.uid);
       });
+      InternalReminderService.instance.onSessionReady();
       // Init already resolves avatars; on web skip a second refresh that would
       // stack with userChanges/idTokenChanges listeners and web avatar polling.
       if (mounted && !kIsWeb) {

@@ -1,10 +1,25 @@
 const { onCall, HttpsError } = require('firebase-functions/v2/https');
 const { defineSecret } = require('firebase-functions/params');
+const { initializeApp } = require('firebase-admin/app');
+const { getFirestore, FieldValue, Timestamp } = require('firebase-admin/firestore');
 const { GoogleGenerativeAI } = require('@google/generative-ai');
 const { buildSystemPrompt } = require('./ask_diego_prompt');
 const { GEMINI_CHAT_MODEL } = require('./gemini_chat_config');
 
+initializeApp();
+
 const geminiApiKey = defineSecret('GEMINI_API_KEY');
+const revenueCatApiKey = defineSecret('REVENUECAT_API_KEY');
+
+const VALID_ENTITLEMENTS = new Set([
+  'player',
+  'coach_basic',
+  'coach_elite',
+  'coach_pro',
+]);
+
+const PROMO_CODES_COLLECTION = 'admin_promo_codes';
+const REVENUECAT_API_BASE = 'https://api.revenuecat.com/v1';
 
 /**
  * Callable: chatWithGemini
@@ -169,3 +184,337 @@ function normalizeActions(actions) {
 
   return normalized;
 }
+
+function normalizePromoCode(raw) {
+  return (raw ?? '').toString().trim().toUpperCase().replace(/\s+/g, '');
+}
+
+function readTimestamp(value) {
+  if (!value) return null;
+  if (value instanceof Timestamp) return value.toDate();
+  if (value.toDate) return value.toDate();
+  if (value instanceof Date) return value;
+  return null;
+}
+
+async function resolvePromoCodeRef(db, normalizedCode) {
+  const directRef = db.collection(PROMO_CODES_COLLECTION).doc(normalizedCode);
+  const directSnap = await directRef.get();
+  if (directSnap.exists) {
+    return directRef;
+  }
+
+  const querySnap = await db
+    .collection(PROMO_CODES_COLLECTION)
+    .where('code', '==', normalizedCode)
+    .limit(1)
+    .get();
+  if (!querySnap.empty) {
+    return querySnap.docs[0].ref;
+  }
+
+  return null;
+}
+
+function validatePromoData(data) {
+  if (data.active === false) {
+    throw new HttpsError('failed-precondition', 'Promo code is inactive.');
+  }
+
+  const expiresAt = readTimestamp(data.expiresAt);
+  if (expiresAt && expiresAt.getTime() < Date.now()) {
+    throw new HttpsError('failed-precondition', 'Promo code has expired.');
+  }
+
+  const maxUses = Number(data.maxUses ?? 0);
+  const usedCount = Number(data.usedCount ?? 0);
+  if (maxUses < 1 || usedCount >= maxUses) {
+    throw new HttpsError('resource-exhausted', 'Promo code is exhausted.');
+  }
+
+  const entitlement = (data.entitlement ?? '').toString();
+  if (!VALID_ENTITLEMENTS.has(entitlement)) {
+    throw new HttpsError('failed-precondition', 'Invalid promo entitlement.');
+  }
+
+  const durationDays = Number(data.durationDays ?? 0);
+  if (durationDays < 1) {
+    throw new HttpsError('failed-precondition', 'Invalid promo duration.');
+  }
+
+  return { entitlement, durationDays, maxUses, usedCount };
+}
+
+async function collectUserMemberIds(db, uid) {
+  const memberSnap = await db
+    .collection('member')
+    .where('users', 'array-contains', uid)
+    .limit(20)
+    .get();
+
+  const memberIds = new Set();
+  for (const doc of memberSnap.docs) {
+    memberIds.add(doc.id);
+    const keyMember = (doc.data()?.keyMember ?? '').toString().trim();
+    if (keyMember) {
+      memberIds.add(keyMember);
+    }
+  }
+  return memberIds;
+}
+
+async function userBelongsToTeam(db, uid, teamId) {
+  const teamSnap = await db.collection('team').doc(teamId).get();
+  if (!teamSnap.exists) {
+    return false;
+  }
+
+  const teamData = teamSnap.data() ?? {};
+  const teamUsers = Array.isArray(teamData.users) ? teamData.users : [];
+  if (teamUsers.some((entry) => String(entry) === uid)) {
+    return true;
+  }
+
+  const userMemberIds = await collectUserMemberIds(db, uid);
+  if (userMemberIds.size === 0) {
+    return false;
+  }
+
+  const memberIds = Array.isArray(teamData.grintaPlayerMemberIds)
+    ? teamData.grintaPlayerMemberIds
+    : [];
+  if (memberIds.some((entry) => userMemberIds.has(String(entry).trim()))) {
+    return true;
+  }
+
+  const grintaPlayers = Array.isArray(teamData.grintaPlayers)
+    ? teamData.grintaPlayers
+    : [];
+  return grintaPlayers.some((entry) => {
+    const playerId = (entry?.playerId ?? entry?.playerID ?? '').toString().trim();
+    return playerId && userMemberIds.has(playerId);
+  });
+}
+
+function readRevenueCatEntitlementExpiry(entitlement) {
+  if (!entitlement || typeof entitlement !== 'object') {
+    return null;
+  }
+
+  const raw =
+    entitlement.expires_date ??
+    entitlement.expiresDate ??
+    entitlement.grace_period_expires_date ??
+    entitlement.gracePeriodExpiresDate ??
+    null;
+  if (!raw) return null;
+
+  const parsed = new Date(raw);
+  return Number.isNaN(parsed.getTime()) ? null : parsed;
+}
+
+function extractGrantedEntitlement(subscriber, entitlementId) {
+  const entitlements = subscriber?.entitlements;
+  if (!entitlements || typeof entitlements !== 'object') {
+    return null;
+  }
+  return entitlements[entitlementId] ?? null;
+}
+
+async function grantPromotionalEntitlement(appUserId, entitlementId, durationDays) {
+  const apiKey = revenueCatApiKey.value();
+  if (!apiKey) {
+    throw new HttpsError(
+      'failed-precondition',
+      'REVENUECAT_API_KEY secret is not configured.',
+    );
+  }
+
+  const endTimeMs = Date.now() + durationDays * 24 * 60 * 60 * 1000;
+  const url = `${REVENUECAT_API_BASE}/subscribers/${encodeURIComponent(appUserId)}/entitlements/${encodeURIComponent(entitlementId)}/promotional`;
+
+  const response = await fetch(url, {
+    method: 'POST',
+    headers: {
+      Authorization: `Bearer ${apiKey}`,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({ end_time_ms: endTimeMs }),
+  });
+
+  const body = await response.text();
+
+  if (!response.ok) {
+    console.error('RevenueCat promotional grant failed', response.status, body);
+    let detail = body.trim();
+    try {
+      const parsed = JSON.parse(body);
+      detail =
+        parsed?.message ??
+        parsed?.error?.message ??
+        parsed?.error ??
+        detail;
+    } catch (_) {
+      // Keep raw body.
+    }
+
+    if (response.status === 401 || response.status === 403) {
+      throw new HttpsError(
+        'failed-precondition',
+        `RevenueCat API key rejected (${response.status}). Check REVENUECAT_API_KEY secret matches the same RC project as the app SDK keys.`,
+      );
+    }
+    if (response.status === 404) {
+      throw new HttpsError(
+        'failed-precondition',
+        `RevenueCat entitlement "${entitlementId}" was not found. Check RevenueCat dashboard identifiers.`,
+      );
+    }
+
+    throw new HttpsError(
+      'internal',
+      `RevenueCat grant failed (${response.status}): ${detail || 'unknown error'}`,
+    );
+  }
+
+  let parsed;
+  try {
+    parsed = body ? JSON.parse(body) : null;
+  } catch (_) {
+    parsed = null;
+  }
+
+  const subscriber = parsed?.subscriber ?? parsed;
+  const granted = extractGrantedEntitlement(subscriber, entitlementId);
+  const expiresAt = readRevenueCatEntitlementExpiry(granted);
+
+  if (!granted) {
+    console.error(
+      'RevenueCat grant HTTP OK but entitlement missing in response',
+      { appUserId, entitlementId, body },
+    );
+    throw new HttpsError(
+      'internal',
+      `RevenueCat grant did not activate entitlement "${entitlementId}".`,
+    );
+  }
+
+  if (expiresAt && expiresAt.getTime() <= Date.now()) {
+    throw new HttpsError(
+      'internal',
+      `RevenueCat grant returned an already-expired entitlement "${entitlementId}".`,
+    );
+  }
+
+  console.log('RevenueCat promotional grant OK', {
+    appUserId,
+    entitlementId,
+    durationDays,
+    expiresAt: expiresAt ? expiresAt.toISOString() : null,
+  });
+
+  return {
+    expiresAt: expiresAt ? expiresAt.toISOString() : null,
+  };
+}
+
+/**
+ * Callable: redeemPromoCode
+ *
+ * Request: { code }
+ * Response: { entitlement, durationDays, expiresAt? }
+ *
+ * Deploy:
+ *   firebase functions:secrets:set REVENUECAT_API_KEY
+ *   firebase deploy --only functions:redeemPromoCode
+ */
+exports.redeemPromoCode = onCall(
+  {
+    region: 'europe-west1',
+    secrets: [revenueCatApiKey],
+    timeoutSeconds: 30,
+  },
+  async (request) => {
+    if (!request.auth) {
+      throw new HttpsError('unauthenticated', 'Authentication required.');
+    }
+
+    const code = normalizePromoCode(request.data?.code);
+    if (!code || code.length < 4) {
+      throw new HttpsError('invalid-argument', 'code is required.');
+    }
+
+    const db = getFirestore();
+    const uid = request.auth.uid;
+
+    const promoRef = await resolvePromoCodeRef(db, code);
+    if (!promoRef) {
+      throw new HttpsError('not-found', `Promo code "${code}" not found.`);
+    }
+
+    const promoSnap = await promoRef.get();
+    const data = promoSnap.data() ?? {};
+    const { entitlement, durationDays } = validatePromoData(data);
+
+    const teamId = (data.teamId ?? '').toString().trim();
+    if (teamId) {
+      const belongsToTeam = await userBelongsToTeam(db, uid, teamId);
+      if (!belongsToTeam) {
+        throw new HttpsError(
+          'permission-denied',
+          'Promo code is restricted to a specific club.',
+        );
+      }
+    }
+
+    const redemptionRef = promoRef.collection('redemptions').doc(uid);
+    const redemptionSnap = await redemptionRef.get();
+    if (redemptionSnap.exists) {
+      throw new HttpsError(
+        'failed-precondition',
+        'You have already redeemed this promo code.',
+      );
+    }
+
+    const grant = await grantPromotionalEntitlement(uid, entitlement, durationDays);
+
+    await db.runTransaction(async (transaction) => {
+      const latestPromoSnap = await transaction.get(promoRef);
+      if (!latestPromoSnap.exists) {
+        throw new HttpsError('not-found', `Promo code "${code}" not found.`);
+      }
+
+      validatePromoData(latestPromoSnap.data() ?? {});
+
+      const latestRedemptionSnap = await transaction.get(redemptionRef);
+      if (latestRedemptionSnap.exists) {
+        throw new HttpsError(
+          'failed-precondition',
+          'You have already redeemed this promo code.',
+        );
+      }
+
+      transaction.update(promoRef, {
+        usedCount: FieldValue.increment(1),
+      });
+      transaction.set(redemptionRef, {
+        uid,
+        redeemedAt: FieldValue.serverTimestamp(),
+      });
+    });
+
+    console.log('redeemPromoCode success', {
+      uid,
+      code,
+      entitlement,
+      durationDays,
+      expiresAt: grant.expiresAt,
+    });
+
+    return {
+      entitlement,
+      durationDays,
+      expiresAt: grant.expiresAt,
+    };
+  },
+);

@@ -1548,7 +1548,7 @@ abstract class AppLocalizations {
   /// No description provided for @navSettings.
   ///
   /// In fr, this message translates to:
-  /// **'Paramètres'**
+  /// **'Réglages'**
   String get navSettings;
 
   /// No description provided for @tabCompo.
@@ -5860,6 +5860,24 @@ abstract class AppLocalizations {
   /// **'Lieu / adresse du terrain'**
   String get createMatchVenue;
 
+  /// No description provided for @createMatchSurface.
+  ///
+  /// In fr, this message translates to:
+  /// **'Surface de jeu'**
+  String get createMatchSurface;
+
+  /// No description provided for @createMatchSurfaceSynthetic.
+  ///
+  /// In fr, this message translates to:
+  /// **'Synthétique'**
+  String get createMatchSurfaceSynthetic;
+
+  /// No description provided for @createMatchSurfaceNatural.
+  ///
+  /// In fr, this message translates to:
+  /// **'Pelouse naturelle'**
+  String get createMatchSurfaceNatural;
+
   /// No description provided for @createMatchWithTracker.
   ///
   /// In fr, this message translates to:
@@ -6735,6 +6753,541 @@ abstract class AppLocalizations {
   /// In fr, this message translates to:
   /// **'Les statistiques adversaires sont réservées aux entraîneurs.'**
   String get askDiegoNavigationOpponentsManagerOnly;
+
+  /// No description provided for @askDiegoNavigationOpponentsPremiumOnly.
+  ///
+  /// In fr, this message translates to:
+  /// **'Les statistiques adversaires nécessitent un abonnement.'**
+  String get askDiegoNavigationOpponentsPremiumOnly;
+
+  /// No description provided for @settingsNotificationsSection.
+  ///
+  /// In fr, this message translates to:
+  /// **'Notifications'**
+  String get settingsNotificationsSection;
+
+  /// No description provided for @settingsRemindersSubtitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Rappels locaux pour entraînements et matchs.'**
+  String get settingsRemindersSubtitle;
+
+  /// No description provided for @settingsRemindersEnabled.
+  ///
+  /// In fr, this message translates to:
+  /// **'Activer les rappels'**
+  String get settingsRemindersEnabled;
+
+  /// No description provided for @settingsQuietDaysLabel.
+  ///
+  /// In fr, this message translates to:
+  /// **'Jours silencieux'**
+  String get settingsQuietDaysLabel;
+
+  /// No description provided for @settingsQuietHoursLabel.
+  ///
+  /// In fr, this message translates to:
+  /// **'Heures silencieuses'**
+  String get settingsQuietHoursLabel;
+
+  /// No description provided for @settingsQuietHoursStart.
+  ///
+  /// In fr, this message translates to:
+  /// **'Début'**
+  String get settingsQuietHoursStart;
+
+  /// No description provided for @settingsQuietHoursEnd.
+  ///
+  /// In fr, this message translates to:
+  /// **'Fin'**
+  String get settingsQuietHoursEnd;
+
+  /// No description provided for @settingsMorningReminderHour.
+  ///
+  /// In fr, this message translates to:
+  /// **'Heure du rappel matinal'**
+  String get settingsMorningReminderHour;
+
+  /// No description provided for @reminderWeekdayMon.
+  ///
+  /// In fr, this message translates to:
+  /// **'Lun'**
+  String get reminderWeekdayMon;
+
+  /// No description provided for @reminderWeekdayTue.
+  ///
+  /// In fr, this message translates to:
+  /// **'Mar'**
+  String get reminderWeekdayTue;
+
+  /// No description provided for @reminderWeekdayWed.
+  ///
+  /// In fr, this message translates to:
+  /// **'Mer'**
+  String get reminderWeekdayWed;
+
+  /// No description provided for @reminderWeekdayThu.
+  ///
+  /// In fr, this message translates to:
+  /// **'Jeu'**
+  String get reminderWeekdayThu;
+
+  /// No description provided for @reminderWeekdayFri.
+  ///
+  /// In fr, this message translates to:
+  /// **'Ven'**
+  String get reminderWeekdayFri;
+
+  /// No description provided for @reminderWeekdaySat.
+  ///
+  /// In fr, this message translates to:
+  /// **'Sam'**
+  String get reminderWeekdaySat;
+
+  /// No description provided for @reminderWeekdaySun.
+  ///
+  /// In fr, this message translates to:
+  /// **'Dim'**
+  String get reminderWeekdaySun;
+
+  /// No description provided for @reminderTrainingTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Entraînement aujourd\'hui'**
+  String get reminderTrainingTitle;
+
+  /// No description provided for @reminderTrainingBody.
+  ///
+  /// In fr, this message translates to:
+  /// **'Entraînement aujourd\'hui à {time}, préviens ton coach si tu es absent'**
+  String reminderTrainingBody(String time);
+
+  /// No description provided for @reminderMatchOpponentStatsTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Match aujourd\'hui'**
+  String get reminderMatchOpponentStatsTitle;
+
+  /// No description provided for @reminderMatchOpponentStatsBody.
+  ///
+  /// In fr, this message translates to:
+  /// **'Aujourd\'hui à {time}, tu rencontres {opponent} — découvre ses statistiques'**
+  String reminderMatchOpponentStatsBody(String time, String opponent);
+
+  /// No description provided for @trainingPresenceConfirmPresent.
+  ///
+  /// In fr, this message translates to:
+  /// **'Je serai présent'**
+  String get trainingPresenceConfirmPresent;
+
+  /// No description provided for @trainingPresenceConfirmAbsent.
+  ///
+  /// In fr, this message translates to:
+  /// **'Je serai absent'**
+  String get trainingPresenceConfirmAbsent;
+
+  /// No description provided for @trainingPresenceConfirmedPresent.
+  ///
+  /// In fr, this message translates to:
+  /// **'Présence confirmée'**
+  String get trainingPresenceConfirmedPresent;
+
+  /// No description provided for @trainingPresenceConfirmedAbsent.
+  ///
+  /// In fr, this message translates to:
+  /// **'Absence signalée'**
+  String get trainingPresenceConfirmedAbsent;
+
+  /// No description provided for @matchDetailOpponentStats.
+  ///
+  /// In fr, this message translates to:
+  /// **'Stats adversaire'**
+  String get matchDetailOpponentStats;
+
+  /// No description provided for @adminTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Admin'**
+  String get adminTitle;
+
+  /// No description provided for @adminSubtitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Outils d\'administration de la plateforme.'**
+  String get adminSubtitle;
+
+  /// No description provided for @adminPromoCodesSection.
+  ///
+  /// In fr, this message translates to:
+  /// **'Codes promo'**
+  String get adminPromoCodesSection;
+
+  /// No description provided for @adminPromoCodesSectionDesc.
+  ///
+  /// In fr, this message translates to:
+  /// **'Créer et gérer les codes promo d\'abonnement.'**
+  String get adminPromoCodesSectionDesc;
+
+  /// No description provided for @adminPromoCodesTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Codes promo'**
+  String get adminPromoCodesTitle;
+
+  /// No description provided for @adminPromoCodeCreate.
+  ///
+  /// In fr, this message translates to:
+  /// **'Créer un code'**
+  String get adminPromoCodeCreate;
+
+  /// No description provided for @adminPromoCodesLoadError.
+  ///
+  /// In fr, this message translates to:
+  /// **'Impossible de charger les codes promo.'**
+  String get adminPromoCodesLoadError;
+
+  /// No description provided for @adminPromoCodesEmpty.
+  ///
+  /// In fr, this message translates to:
+  /// **'Aucun code promo pour le moment.'**
+  String get adminPromoCodesEmpty;
+
+  /// No description provided for @adminPromoCodeUpdateFailed.
+  ///
+  /// In fr, this message translates to:
+  /// **'Impossible de mettre à jour le code promo.'**
+  String get adminPromoCodeUpdateFailed;
+
+  /// No description provided for @adminPromoCodeCreated.
+  ///
+  /// In fr, this message translates to:
+  /// **'Code promo créé.'**
+  String get adminPromoCodeCreated;
+
+  /// No description provided for @adminPromoCodeEntitlementLabel.
+  ///
+  /// In fr, this message translates to:
+  /// **'Droit : {entitlement}'**
+  String adminPromoCodeEntitlementLabel(String entitlement);
+
+  /// No description provided for @adminPromoCodeUsageLabel.
+  ///
+  /// In fr, this message translates to:
+  /// **'Utilisations : {used} / {max}'**
+  String adminPromoCodeUsageLabel(int used, int max);
+
+  /// No description provided for @adminPromoCodeDurationLabel.
+  ///
+  /// In fr, this message translates to:
+  /// **'Durée : {days} jours'**
+  String adminPromoCodeDurationLabel(int days);
+
+  /// No description provided for @adminPromoCodeTeamLabel.
+  ///
+  /// In fr, this message translates to:
+  /// **'Club : {teamId}'**
+  String adminPromoCodeTeamLabel(String teamId);
+
+  /// No description provided for @adminPromoCodeExpiresLabel.
+  ///
+  /// In fr, this message translates to:
+  /// **'Expire le : {date}'**
+  String adminPromoCodeExpiresLabel(String date);
+
+  /// No description provided for @adminPromoCodeStatusInactive.
+  ///
+  /// In fr, this message translates to:
+  /// **'Inactif'**
+  String get adminPromoCodeStatusInactive;
+
+  /// No description provided for @adminPromoCodeStatusExpired.
+  ///
+  /// In fr, this message translates to:
+  /// **'Expiré'**
+  String get adminPromoCodeStatusExpired;
+
+  /// No description provided for @adminPromoCodeStatusExhausted.
+  ///
+  /// In fr, this message translates to:
+  /// **'Épuisé'**
+  String get adminPromoCodeStatusExhausted;
+
+  /// No description provided for @adminPromoCodeStatusActive.
+  ///
+  /// In fr, this message translates to:
+  /// **'Actif'**
+  String get adminPromoCodeStatusActive;
+
+  /// No description provided for @adminPromoCodeFieldCode.
+  ///
+  /// In fr, this message translates to:
+  /// **'Code'**
+  String get adminPromoCodeFieldCode;
+
+  /// No description provided for @adminPromoCodeFieldCodeInvalid.
+  ///
+  /// In fr, this message translates to:
+  /// **'Le code doit contenir au moins 4 caractères.'**
+  String get adminPromoCodeFieldCodeInvalid;
+
+  /// No description provided for @adminPromoCodeFieldEntitlement.
+  ///
+  /// In fr, this message translates to:
+  /// **'Droit'**
+  String get adminPromoCodeFieldEntitlement;
+
+  /// No description provided for @adminPromoCodeFieldMaxUses.
+  ///
+  /// In fr, this message translates to:
+  /// **'Nombre d\'utilisations max.'**
+  String get adminPromoCodeFieldMaxUses;
+
+  /// No description provided for @adminPromoCodeFieldMaxUsesInvalid.
+  ///
+  /// In fr, this message translates to:
+  /// **'Saisissez un nombre supérieur à 0.'**
+  String get adminPromoCodeFieldMaxUsesInvalid;
+
+  /// No description provided for @adminPromoCodeFieldDurationDays.
+  ///
+  /// In fr, this message translates to:
+  /// **'Durée d\'abonnement (jours)'**
+  String get adminPromoCodeFieldDurationDays;
+
+  /// No description provided for @adminPromoCodeFieldDurationDaysInvalid.
+  ///
+  /// In fr, this message translates to:
+  /// **'Saisissez un nombre supérieur à 0.'**
+  String get adminPromoCodeFieldDurationDaysInvalid;
+
+  /// No description provided for @adminPromoCodeFieldTeamId.
+  ///
+  /// In fr, this message translates to:
+  /// **'ID club (optionnel)'**
+  String get adminPromoCodeFieldTeamId;
+
+  /// No description provided for @adminPromoCodeFieldTeamIdHint.
+  ///
+  /// In fr, this message translates to:
+  /// **'Limiter l\'utilisation aux membres de ce club.'**
+  String get adminPromoCodeFieldTeamIdHint;
+
+  /// No description provided for @adminPromoCodeFieldExpiresOptional.
+  ///
+  /// In fr, this message translates to:
+  /// **'Définir une date d\'expiration (optionnel)'**
+  String get adminPromoCodeFieldExpiresOptional;
+
+  /// No description provided for @adminPromoCodeAlreadyExists.
+  ///
+  /// In fr, this message translates to:
+  /// **'Ce code promo existe déjà.'**
+  String get adminPromoCodeAlreadyExists;
+
+  /// No description provided for @adminPromoCodeCreateFailed.
+  ///
+  /// In fr, this message translates to:
+  /// **'Impossible de créer le code promo.'**
+  String get adminPromoCodeCreateFailed;
+
+  /// No description provided for @adminPromoCodePermissionDenied.
+  ///
+  /// In fr, this message translates to:
+  /// **'Un accès admin est requis pour gérer les codes promo.'**
+  String get adminPromoCodePermissionDenied;
+
+  /// No description provided for @adminPromoCodeAuthRequired.
+  ///
+  /// In fr, this message translates to:
+  /// **'Vous devez être connecté pour créer un code promo.'**
+  String get adminPromoCodeAuthRequired;
+
+  /// No description provided for @adminPromoCodeActions.
+  ///
+  /// In fr, this message translates to:
+  /// **'Actions'**
+  String get adminPromoCodeActions;
+
+  /// No description provided for @adminPromoCodeEdit.
+  ///
+  /// In fr, this message translates to:
+  /// **'Modifier'**
+  String get adminPromoCodeEdit;
+
+  /// No description provided for @adminPromoCodeEditTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Modifier le code promo'**
+  String get adminPromoCodeEditTitle;
+
+  /// No description provided for @adminPromoCodeDelete.
+  ///
+  /// In fr, this message translates to:
+  /// **'Supprimer'**
+  String get adminPromoCodeDelete;
+
+  /// No description provided for @adminPromoCodeDeleteConfirmTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Supprimer le code promo ?'**
+  String get adminPromoCodeDeleteConfirmTitle;
+
+  /// No description provided for @adminPromoCodeDeleteConfirmMessage.
+  ///
+  /// In fr, this message translates to:
+  /// **'Voulez-vous vraiment supprimer le code {code} ? Cette action est définitive.'**
+  String adminPromoCodeDeleteConfirmMessage(String code);
+
+  /// No description provided for @adminPromoCodeDeleted.
+  ///
+  /// In fr, this message translates to:
+  /// **'Code promo supprimé.'**
+  String get adminPromoCodeDeleted;
+
+  /// No description provided for @adminPromoCodeDeleteFailed.
+  ///
+  /// In fr, this message translates to:
+  /// **'Impossible de supprimer le code promo.'**
+  String get adminPromoCodeDeleteFailed;
+
+  /// No description provided for @adminPromoCodeUpdated.
+  ///
+  /// In fr, this message translates to:
+  /// **'Code promo mis à jour.'**
+  String get adminPromoCodeUpdated;
+
+  /// No description provided for @adminPromoCodeSave.
+  ///
+  /// In fr, this message translates to:
+  /// **'Enregistrer'**
+  String get adminPromoCodeSave;
+
+  /// No description provided for @adminPromoCodeFieldCodeReadOnly.
+  ///
+  /// In fr, this message translates to:
+  /// **'Le code ne peut pas être modifié.'**
+  String get adminPromoCodeFieldCodeReadOnly;
+
+  /// No description provided for @adminPromoCodeFieldMaxUsesBelowUsed.
+  ///
+  /// In fr, this message translates to:
+  /// **'Le nombre max. doit être au moins {used} (déjà utilisé).'**
+  String adminPromoCodeFieldMaxUsesBelowUsed(int used);
+
+  /// No description provided for @adminPromoCodeFieldActive.
+  ///
+  /// In fr, this message translates to:
+  /// **'Actif'**
+  String get adminPromoCodeFieldActive;
+
+  /// No description provided for @adminPromoCodeClearExpiry.
+  ///
+  /// In fr, this message translates to:
+  /// **'Supprimer la date d\'expiration'**
+  String get adminPromoCodeClearExpiry;
+
+  /// No description provided for @adminPromoCodeNotFound.
+  ///
+  /// In fr, this message translates to:
+  /// **'Code promo introuvable.'**
+  String get adminPromoCodeNotFound;
+
+  /// No description provided for @promoCodeMenuLabel.
+  ///
+  /// In fr, this message translates to:
+  /// **'Code promo'**
+  String get promoCodeMenuLabel;
+
+  /// No description provided for @promoCodeDialogValidate.
+  ///
+  /// In fr, this message translates to:
+  /// **'Valider'**
+  String get promoCodeDialogValidate;
+
+  /// No description provided for @promoCodeRedeemTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Vous avez un code promo ?'**
+  String get promoCodeRedeemTitle;
+
+  /// No description provided for @promoCodeRedeemHint.
+  ///
+  /// In fr, this message translates to:
+  /// **'Saisissez votre code'**
+  String get promoCodeRedeemHint;
+
+  /// No description provided for @promoCodeRedeemAction.
+  ///
+  /// In fr, this message translates to:
+  /// **'Utiliser'**
+  String get promoCodeRedeemAction;
+
+  /// No description provided for @promoCodeRedeemEmpty.
+  ///
+  /// In fr, this message translates to:
+  /// **'Veuillez saisir un code promo.'**
+  String get promoCodeRedeemEmpty;
+
+  /// No description provided for @promoCodeRedeemSuccess.
+  ///
+  /// In fr, this message translates to:
+  /// **'Code promo appliqué : {days} jours de {entitlement}.'**
+  String promoCodeRedeemSuccess(int days, String entitlement);
+
+  /// No description provided for @promoCodeRedeemSuccessVerified.
+  ///
+  /// In fr, this message translates to:
+  /// **'{entitlement} actif jusqu\'au {expiresAt} ({days} jours offerts).'**
+  String promoCodeRedeemSuccessVerified(
+      String entitlement, String expiresAt, int days);
+
+  /// No description provided for @promoCodeRedeemSyncPending.
+  ///
+  /// In fr, this message translates to:
+  /// **'Code enregistré côté serveur, mais l\'abonnement n\'apparaît pas encore. Ouvrez Réglages → Abonnement dans un instant, ou déconnectez-vous puis reconnectez-vous.'**
+  String get promoCodeRedeemSyncPending;
+
+  /// No description provided for @promoCodeRedeemRcUnavailable.
+  ///
+  /// In fr, this message translates to:
+  /// **'Code enregistré côté serveur, mais RevenueCat n\'est pas configuré sur cet appareil (vérifiez les clés API). Essayez sur iOS ou web, ou relancez avec dart_defines.json.'**
+  String get promoCodeRedeemRcUnavailable;
+
+  /// No description provided for @promoCodeRedeemNotFound.
+  ///
+  /// In fr, this message translates to:
+  /// **'Code promo introuvable.'**
+  String get promoCodeRedeemNotFound;
+
+  /// No description provided for @promoCodeRedeemInvalid.
+  ///
+  /// In fr, this message translates to:
+  /// **'Ce code promo n\'est plus valide.'**
+  String get promoCodeRedeemInvalid;
+
+  /// No description provided for @promoCodeRedeemExhausted.
+  ///
+  /// In fr, this message translates to:
+  /// **'Ce code promo a atteint sa limite d\'utilisation.'**
+  String get promoCodeRedeemExhausted;
+
+  /// No description provided for @promoCodeRedeemTeamMismatch.
+  ///
+  /// In fr, this message translates to:
+  /// **'Ce code promo est réservé à un autre club.'**
+  String get promoCodeRedeemTeamMismatch;
+
+  /// No description provided for @promoCodeRedeemUnauthenticated.
+  ///
+  /// In fr, this message translates to:
+  /// **'Vous devez être connecté pour utiliser un code promo.'**
+  String get promoCodeRedeemUnauthenticated;
+
+  /// No description provided for @promoCodeRedeemFailed.
+  ///
+  /// In fr, this message translates to:
+  /// **'Impossible d\'utiliser le code promo.'**
+  String get promoCodeRedeemFailed;
 }
 
 class _AppLocalizationsDelegate

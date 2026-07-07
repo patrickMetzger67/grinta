@@ -38,6 +38,7 @@ import '../match_detail_screen.dart';
 import '../team_players_screen.dart';
 import 'agenda_add_event_menu.dart';
 import '../../widget/ask_diego/ask_diego_speed_dial.dart';
+import '../../widget/agenda_training_presence_actions.dart';
 part 'agenda_calendar_widgets.dart';
 part 'agenda_list_widgets.dart';
 part 'agenda_status_views.dart';

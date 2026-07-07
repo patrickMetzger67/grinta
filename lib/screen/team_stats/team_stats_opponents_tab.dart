@@ -4,6 +4,7 @@ import 'package:grinta/l10n/app_localizations.dart';
 import 'package:grinta/model/team.dart';
 import 'package:grinta/provider/appSession.dart';
 import 'package:grinta/screen/team_stats/team_stats_competition_selector.dart';
+import 'package:grinta/services/opponent_stats_view_tracker.dart';
 import 'package:grinta/services/team_competition_stats_service.dart';
 import 'package:grinta/services/team_player_stats_service.dart';
 import 'package:grinta/services/team_typical_team_service.dart';
@@ -29,6 +30,7 @@ class TeamStatsOpponentsTab extends StatefulWidget {
     this.initialCompetitionUrl,
     this.initialOpponentKey,
     this.initialOpponentName,
+    this.initialMatchIdForViewTracking,
     TeamsPerClubService? teamsPerClubService,
     TeamCompetitionStatsService? teamCompetitionStatsService,
     TeamPlayerStatsService? teamPlayerStatsService,
@@ -44,6 +46,7 @@ class TeamStatsOpponentsTab extends StatefulWidget {
   final String? initialCompetitionUrl;
   final String? initialOpponentKey;
   final String? initialOpponentName;
+  final String? initialMatchIdForViewTracking;
   final TeamsPerClubService? _teamsPerClubService;
   final TeamCompetitionStatsService? _teamCompetitionStatsService;
   final TeamPlayerStatsService? _teamPlayerStatsService;
@@ -78,6 +81,21 @@ class _TeamStatsOpponentsTabState extends State<TeamStatsOpponentsTab>
     super.initState();
     _subTabController = TabController(length: 3, vsync: this);
     _subTabController.addListener(_onSubTabChanged);
+    _trackOpponentViewIfNeeded();
+  }
+
+  void _trackOpponentViewIfNeeded() {
+    final matchId = widget.initialMatchIdForViewTracking?.trim() ?? '';
+    final opponentKey = _selectedOpponentKey?.trim() ??
+        widget.initialOpponentKey?.trim() ??
+        '';
+    if (matchId.isEmpty || opponentKey.isEmpty) return;
+
+    OpponentStatsViewTracker.instance.markViewed(
+      matchId: matchId,
+      opponentKey: opponentKey,
+      teamId: widget.team.keyTeam,
+    );
   }
 
   void _onSubTabChanged() {

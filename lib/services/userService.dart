@@ -7,6 +7,7 @@ abstract final class UserDocumentFields {
   static const lastName = 'lastName';
   static const createdAt = 'createdAt';
   static const trialEndsAt = 'trialEndsAt';
+  static const isRoot = 'isRoot';
 }
 
 /// Free trial length applied on first account creation.
@@ -17,12 +18,14 @@ class UserProfile {
   final String firstName;
   final String lastName;
   final String email;
+  final bool isRoot;
 
   const UserProfile({
     required this.uid,
     required this.firstName,
     required this.lastName,
     required this.email,
+    this.isRoot = false,
   });
 }
 
@@ -56,6 +59,7 @@ class UserService {
       firstName: _readNameField(data, 'firstName', 'firstname'),
       lastName: _readNameField(data, 'lastName', 'lastname'),
       email: data['email']?.toString() ?? '',
+      isRoot: data[UserDocumentFields.isRoot] == true,
     );
   }
 

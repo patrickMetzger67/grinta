@@ -176,6 +176,83 @@ List<TeamStatsMatchdayGroup> groupMatchesByMatchday(
   return groups;
 }
 
+/// Index of the matchday/tour group to show by default for [referenceDate]
+/// (today when omitted).
+///
+/// Prefers a group whose calendar dates include [referenceDate]; otherwise
+/// picks the group with the nearest match date, breaking ties toward the future.
+int defaultMatchdayIndex(
+  List<TeamStatsMatchdayGroup> groups, {
+  DateTime? referenceDate,
+}) {
+  if (groups.isEmpty) {
+    return 0;
+  }
+
+  final today = DateUtils.dateOnly(referenceDate ?? DateTime.now());
+
+  final containingToday = <int>[];
+  for (var index = 0; index < groups.length; index++) {
+    final range = _matchdayGroupDateRange(groups[index]);
+    if (range == null) {
+      continue;
+    }
+    if (!today.isBefore(range.start) && !today.isAfter(range.end)) {
+      containingToday.add(index);
+    }
+  }
+  if (containingToday.isNotEmpty) {
+    return containingToday.first;
+  }
+
+  int? bestIndex;
+  int? bestDistance;
+  var bestIsFuture = false;
+
+  for (var index = 0; index < groups.length; index++) {
+    final range = _matchdayGroupDateRange(groups[index]);
+    if (range == null) {
+      continue;
+    }
+
+    final distance = _distanceFromDateToRange(today, range);
+    final isFuture = range.start.isAfter(today);
+
+    if (bestDistance == null ||
+        distance < bestDistance ||
+        (distance == bestDistance && isFuture && !bestIsFuture)) {
+      bestIndex = index;
+      bestDistance = distance;
+      bestIsFuture = isFuture;
+    }
+  }
+
+  return bestIndex ?? 0;
+}
+
+({DateTime start, DateTime end})? _matchdayGroupDateRange(
+  TeamStatsMatchdayGroup group,
+) {
+  final dates = group.uniqueDates;
+  if (dates.isEmpty) {
+    return null;
+  }
+  return (start: dates.first, end: dates.last);
+}
+
+int _distanceFromDateToRange(
+  DateTime date,
+  ({DateTime start, DateTime end}) range,
+) {
+  if (date.isBefore(range.start)) {
+    return range.start.difference(date).inDays;
+  }
+  if (date.isAfter(range.end)) {
+    return date.difference(range.end).inDays;
+  }
+  return 0;
+}
+
 int _compareMatchdayGroups(
   TeamStatsMatchdayGroup a,
   TeamStatsMatchdayGroup b,

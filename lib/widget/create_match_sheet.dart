@@ -1,6 +1,7 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:grinta/core/extensions/l10n_extension.dart';
+import 'package:grinta/l10n/app_localizations.dart';
 import 'package:grinta/model/club.dart';
 import 'package:grinta/model/match.dart';
 import 'package:grinta/model/season.dart';
@@ -101,6 +102,7 @@ class _CreateMatchSheetState extends State<CreateMatchSheet> {
   bool _ownClubLoading = false;
   bool _withTracker = false;
   String? _selectedOwnerId;
+  String? _selectedSurface;
   List<TeamOwnerRef> _ownerOptions = const <TeamOwnerRef>[];
   bool _ownersLoading = false;
   bool _isSubmitting = false;
@@ -137,6 +139,9 @@ class _CreateMatchSheetState extends State<CreateMatchSheet> {
     _selectedOwnerId =
         match.ownerId?.trim().isNotEmpty == true ? match.ownerId : null;
     _venueController.text = match.terrainAdresse1?.trim() ?? '';
+    final String surface = match.surfaceDeJeu?.trim() ?? '';
+    _selectedSurface =
+        kMatchSurfaceOptions.contains(surface) ? surface : null;
 
     _initTeams();
     _selectedTeamId = singleManagedMatchTeamId(match) ?? _selectedTeamId;
@@ -422,6 +427,7 @@ class _CreateMatchSheetState extends State<CreateMatchSheet> {
               opponentAffiliation: _selectedOpponentClub?.affiliation,
               opponentLogoUrl: _selectedOpponentClub?.logo,
               venueAddress: venueAddress,
+              surfaceDeJeu: _selectedSurface,
               withTracker: _withTracker,
               ownerId: _selectedOwnerId,
               ownClub: _ownClub,
@@ -438,6 +444,7 @@ class _CreateMatchSheetState extends State<CreateMatchSheet> {
               opponentAffiliation: _selectedOpponentClub?.affiliation,
               opponentLogoUrl: _selectedOpponentClub?.logo,
               venueAddress: venueAddress,
+              surfaceDeJeu: _selectedSurface,
               withTracker: _withTracker,
               ownerId: _selectedOwnerId,
               ownClub: _ownClub,
@@ -474,6 +481,17 @@ class _CreateMatchSheetState extends State<CreateMatchSheet> {
 
   void _closeWithoutSaving() {
     Navigator.of(context, rootNavigator: true).pop(false);
+  }
+
+  String _surfaceLabel(AppLocalizations l10n, String surface) {
+    switch (surface) {
+      case kMatchSurfaceSynthetic:
+        return l10n.createMatchSurfaceSynthetic;
+      case kMatchSurfaceNatural:
+        return l10n.createMatchSurfaceNatural;
+      default:
+        return surface;
+    }
   }
 
   InputDecoration _fieldDecoration(BuildContext context, String label) {
@@ -719,6 +737,24 @@ class _CreateMatchSheetState extends State<CreateMatchSheet> {
                   minLines: 2,
                   maxLines: 4,
                   decoration: _fieldDecoration(context, l10n.createMatchVenue),
+                ),
+                const SizedBox(height: 12),
+                DropdownButtonFormField<String>(
+                  value: _selectedSurface,
+                  isExpanded: true,
+                  dropdownColor: colors.surface,
+                  decoration: _fieldDecoration(context, l10n.createMatchSurface),
+                  items: kMatchSurfaceOptions
+                      .map(
+                        (String surface) => DropdownMenuItem<String>(
+                          value: surface,
+                          child: Text(_surfaceLabel(l10n, surface)),
+                        ),
+                      )
+                      .toList(),
+                  onChanged: (String? value) {
+                    setState(() => _selectedSurface = value);
+                  },
                 ),
                 if (_ownClubLoading)
                   const Padding(

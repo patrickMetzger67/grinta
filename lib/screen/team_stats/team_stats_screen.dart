@@ -8,6 +8,8 @@ import 'package:grinta/screen/team_stats/team_stats_calendars_tab.dart';
 import 'package:grinta/screen/team_stats/team_stats_competitions_tab.dart';
 import 'package:grinta/screen/team_stats/team_stats_opponents_tab.dart';
 import 'package:grinta/screen/team_stats/team_stats_trainings_tab.dart';
+import 'package:grinta/services/opponent_stats_view_tracker.dart';
+import 'package:grinta/services/user_trial_service.dart';
 import 'package:grinta/util/app_theme.dart';
 import 'package:provider/provider.dart';
 
@@ -20,6 +22,7 @@ Future<void> openTeamStatsScreen(
   String? initialCompetitionUrl,
   String? initialOpponentKey,
   String? initialOpponentName,
+  String? initialMatchIdForViewTracking,
 }) {
   final seasonId = context.read<AppSession>().selectedSeason?.ref?.id;
 
@@ -34,6 +37,7 @@ Future<void> openTeamStatsScreen(
         initialCompetitionUrl: initialCompetitionUrl,
         initialOpponentKey: initialOpponentKey,
         initialOpponentName: initialOpponentName,
+        initialMatchIdForViewTracking: initialMatchIdForViewTracking,
       ),
     ),
   );
@@ -49,6 +53,7 @@ class TeamStatsScreen extends StatefulWidget {
     this.initialCompetitionUrl,
     this.initialOpponentKey,
     this.initialOpponentName,
+    this.initialMatchIdForViewTracking,
   });
 
   final Team team;
@@ -58,6 +63,7 @@ class TeamStatsScreen extends StatefulWidget {
   final String? initialCompetitionUrl;
   final String? initialOpponentKey;
   final String? initialOpponentName;
+  final String? initialMatchIdForViewTracking;
 
   @override
   State<TeamStatsScreen> createState() => _TeamStatsScreenState();
@@ -72,16 +78,35 @@ class _TeamStatsScreenState extends State<TeamStatsScreen>
     return value.isEmpty ? context.l10n.entityTeam : value;
   }
 
+  bool get _showOpponentsTab =>
+      widget.isManager || UserTrialService.instance.hasPremiumAccess;
+
+  int get _tabCount => _showOpponentsTab ? 4 : 3;
+
   @override
   void initState() {
     super.initState();
-    final tabCount = widget.isManager ? 4 : 3;
-    final maxIndex = tabCount - 1;
+    final maxIndex = _tabCount - 1;
     _tabController = TabController(
-      length: tabCount,
+      length: _tabCount,
       vsync: this,
       initialIndex: widget.initialTabIndex.clamp(0, maxIndex),
     );
+    _trackOpponentStatsViewIfNeeded();
+  }
+
+  void _trackOpponentStatsViewIfNeeded() {
+    final matchId = widget.initialMatchIdForViewTracking?.trim() ?? '';
+    final opponentKey = widget.initialOpponentKey?.trim() ?? '';
+    if (matchId.isEmpty || opponentKey.isEmpty) return;
+
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      OpponentStatsViewTracker.instance.markViewed(
+        matchId: matchId,
+        opponentKey: opponentKey,
+        teamId: widget.team.keyTeam,
+      );
+    });
   }
 
   @override
@@ -97,57 +122,64 @@ class _TeamStatsScreenState extends State<TeamStatsScreen>
     final textTheme = Theme.of(context).textTheme;
     final teamName = _teamName(context);
 
-    return Scaffold(
-      backgroundColor: colors.background,
-      appBar: AppBar(
-        title: Text(
-          l10n.teamStatsScreenTitle(teamName),
-          style: textTheme.titleLarge?.copyWith(
-            color: colors.textPrimary,
-            fontWeight: FontWeight.w700,
-          ),
-        ),
-        bottom: TabBar(
-          controller: _tabController,
-          labelColor: colors.primary,
-          unselectedLabelColor: colors.textSecondary,
-          indicatorColor: colors.primary,
-          tabs: [
-            Tab(text: l10n.teamStatsTabAnalysis),
-            Tab(text: l10n.teamStatsTabTrainings),
-            if (widget.isManager) Tab(text: l10n.teamStatsTabOpponents),
-            Tab(text: l10n.teamStatsTabCalendars),
-          ],
-        ),
-      ),
-      body: TabBarView(
-        controller: _tabController,
-        children: [
-          TeamStatsCompetitionsTab(
-            team: widget.team,
-            isManager: widget.isManager,
-            fallbackSeasonId: widget.fallbackSeasonId,
-          ),
-          TeamStatsTrainingsTab(
-            team: widget.team,
-            isManager: widget.isManager,
-            fallbackSeasonId: widget.fallbackSeasonId,
-          ),
-          if (widget.isManager)
-            TeamStatsOpponentsTab(
-              team: widget.team,
-              isManager: widget.isManager,
-              fallbackSeasonId: widget.fallbackSeasonId,
-              initialCompetitionUrl: widget.initialCompetitionUrl,
-              initialOpponentKey: widget.initialOpponentKey,
-              initialOpponentName: widget.initialOpponentName,
+    return ListenableBuilder(
+      listenable: UserTrialService.instance,
+      builder: (context, _) {
+        return Scaffold(
+          backgroundColor: colors.background,
+          appBar: AppBar(
+            title: Text(
+              l10n.teamStatsScreenTitle(teamName),
+              style: textTheme.titleLarge?.copyWith(
+                color: colors.textPrimary,
+                fontWeight: FontWeight.w700,
+              ),
             ),
-          TeamStatsCalendarsTab(
-            team: widget.team,
-            fallbackSeasonId: widget.fallbackSeasonId,
+            bottom: TabBar(
+              controller: _tabController,
+              labelColor: colors.primary,
+              unselectedLabelColor: colors.textSecondary,
+              indicatorColor: colors.primary,
+              tabs: [
+                Tab(text: l10n.teamStatsTabAnalysis),
+                Tab(text: l10n.teamStatsTabTrainings),
+                if (_showOpponentsTab) Tab(text: l10n.teamStatsTabOpponents),
+                Tab(text: l10n.teamStatsTabCalendars),
+              ],
+            ),
           ),
-        ],
-      ),
+          body: TabBarView(
+            controller: _tabController,
+            children: [
+              TeamStatsCompetitionsTab(
+                team: widget.team,
+                isManager: widget.isManager,
+                fallbackSeasonId: widget.fallbackSeasonId,
+              ),
+              TeamStatsTrainingsTab(
+                team: widget.team,
+                isManager: widget.isManager,
+                fallbackSeasonId: widget.fallbackSeasonId,
+              ),
+              if (_showOpponentsTab)
+                TeamStatsOpponentsTab(
+                  team: widget.team,
+                  isManager: widget.isManager,
+                  fallbackSeasonId: widget.fallbackSeasonId,
+                  initialCompetitionUrl: widget.initialCompetitionUrl,
+                  initialOpponentKey: widget.initialOpponentKey,
+                  initialOpponentName: widget.initialOpponentName,
+                  initialMatchIdForViewTracking:
+                      widget.initialMatchIdForViewTracking,
+                ),
+              TeamStatsCalendarsTab(
+                team: widget.team,
+                fallbackSeasonId: widget.fallbackSeasonId,
+              ),
+            ],
+          ),
+        );
+      },
     );
   }
 }

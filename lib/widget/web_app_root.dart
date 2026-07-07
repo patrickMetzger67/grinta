@@ -7,6 +7,7 @@ import 'package:grinta/screen/agendaScreen.dart';
 import 'package:grinta/screen/dashboardScreen.dart';
 import 'package:grinta/screen/teamsListScreen.dart';
 import 'package:grinta/services/calendar_sync_service.dart';
+import 'package:grinta/services/internal_reminder_service.dart';
 import 'package:grinta/services/calendar_deep_link_service.dart';
 import 'package:grinta/services/agenda_service.dart';
 import 'package:grinta/services/sync_pending_count_service.dart';
@@ -25,6 +26,7 @@ import '../screen/teamDetailScreen.dart';
 import '../util/app_theme.dart';
 import '../core/extensions/l10n_extension.dart';
 import 'mobile_navigation_shell.dart';
+import 'stream_chat_nav_unread_badge.dart';
 import '../webNavigationShell.dart';
 
 class WebAppRoot extends StatefulWidget {
@@ -101,6 +103,7 @@ class _WebAppRootState extends State<WebAppRoot> {
           ),
         );
       }
+      InternalReminderService.instance.onAgendaChanged();
       return items;
     });
   }
@@ -167,75 +170,80 @@ class _WebAppRootState extends State<WebAppRoot> {
             builder: (context, pendingSyncSnapshot) {
               final pendingSyncCount = pendingSyncSnapshot.data ?? 0;
 
-              return WebNavigationShell(
-                appTitle: l10n.appName,
-                appIcon: Icons.sports_soccer_rounded,
-                initialIndex: 0,
-                sidebarHeaderBottom: const AppSessionPlayerSeasonSelector(),
-                items: [
-                  WebShellItem(
-                    label: l10n.navDashboard,
-                    icon: Icons.dashboard_outlined,
-                    page: const DashboardScreen(),
-                    screenName: AnalyticsScreenNames.dashboard,
-                    featureId: FeatureDiscoveryIds.tabDashboard,
-                  ),
-                  WebShellItem(
-                    label: l10n.navAgenda,
-                    icon: Icons.calendar_month_outlined,
-                    page: agendaPage,
-                    screenName: AnalyticsScreenNames.agenda,
-                    featureId: FeatureDiscoveryIds.tabAgenda,
-                  ),
-                  WebShellItem(
-                    label: l10n.navTeams,
-                    icon: Icons.groups_rounded,
-                    badgeCount: selectedTeamCount,
-                    screenName: AnalyticsScreenNames.teams,
-                    featureId: FeatureDiscoveryIds.tabTeams,
-                    page: TeamsListScreen(
-                      managedTeamsIds: getManagedTeamsIds,
-                      onTeamTap: (context, team, isManager) {
-                        AnalyticsInteractions.logFeature(
-                          AnalyticsFeatures.openTeamDetail,
-                          parameters: <String, Object>{
-                            'is_manager': isManager,
-                            'source': 'teams_list',
+              return StreamChatUnreadCountBuilder(
+                builder: (context, unreadChatCount) {
+                  return WebNavigationShell(
+                    appTitle: l10n.appName,
+                    appIcon: Icons.sports_soccer_rounded,
+                    initialIndex: 0,
+                    sidebarHeaderBottom: const AppSessionPlayerSeasonSelector(),
+                    items: [
+                      WebShellItem(
+                        label: l10n.navDashboard,
+                        icon: Icons.dashboard_outlined,
+                        page: const DashboardScreen(),
+                        screenName: AnalyticsScreenNames.dashboard,
+                        featureId: FeatureDiscoveryIds.tabDashboard,
+                      ),
+                      WebShellItem(
+                        label: l10n.navAgenda,
+                        icon: Icons.calendar_month_outlined,
+                        page: agendaPage,
+                        screenName: AnalyticsScreenNames.agenda,
+                        featureId: FeatureDiscoveryIds.tabAgenda,
+                      ),
+                      WebShellItem(
+                        label: l10n.navTeams,
+                        icon: Icons.groups_rounded,
+                        badgeCount: selectedTeamCount,
+                        screenName: AnalyticsScreenNames.teams,
+                        featureId: FeatureDiscoveryIds.tabTeams,
+                        page: TeamsListScreen(
+                          managedTeamsIds: getManagedTeamsIds,
+                          onTeamTap: (context, team, isManager) {
+                            AnalyticsInteractions.logFeature(
+                              AnalyticsFeatures.openTeamDetail,
+                              parameters: <String, Object>{
+                                'is_manager': isManager,
+                                'source': 'teams_list',
+                              },
+                            );
+                            Navigator.of(context).push(
+                              analyticsMaterialRoute<void>(
+                                screenName: AnalyticsScreenNames.teamDetail,
+                                builder: (_) => TeamDetailScreen(
+                                  team: team,
+                                  seasonId: context
+                                      .read<AppSession>()
+                                      .selectedSeason
+                                      ?.ref
+                                      ?.id,
+                                  isManager: isManager,
+                                ),
+                              ),
+                            );
                           },
-                        );
-                        Navigator.of(context).push(
-                          analyticsMaterialRoute<void>(
-                            screenName: AnalyticsScreenNames.teamDetail,
-                            builder: (_) => TeamDetailScreen(
-                              team: team,
-                              seasonId: context
-                                  .read<AppSession>()
-                                  .selectedSeason
-                                  ?.ref
-                                  ?.id,
-                              isManager: isManager,
-                            ),
-                          ),
-                        );
-                      },
-                    ),
-                  ),
-                  WebShellItem(
-                    label: l10n.navChat,
-                    icon: Icons.chat,
-                    page: const ResponsiveChat(),
-                    screenName: AnalyticsScreenNames.chat,
-                    featureId: FeatureDiscoveryIds.tabChat,
-                  ),
-                  WebShellItem(
-                    label: l10n.navSync,
-                    icon: Icons.sync,
-                    badgeCount: pendingSyncCount,
-                    page: const SyncScreen(),
-                    screenName: AnalyticsScreenNames.sync,
-                    featureId: FeatureDiscoveryIds.tabSync,
-                  ),
-                ],
+                        ),
+                      ),
+                      WebShellItem(
+                        label: l10n.navChat,
+                        icon: Icons.chat,
+                        badgeCount: unreadChatCount,
+                        page: const ResponsiveChat(),
+                        screenName: AnalyticsScreenNames.chat,
+                        featureId: FeatureDiscoveryIds.tabChat,
+                      ),
+                      WebShellItem(
+                        label: l10n.navSync,
+                        icon: Icons.sync,
+                        badgeCount: pendingSyncCount,
+                        page: const SyncScreen(),
+                        screenName: AnalyticsScreenNames.sync,
+                        featureId: FeatureDiscoveryIds.tabSync,
+                      ),
+                    ],
+                  );
+                },
               );
             },
           )

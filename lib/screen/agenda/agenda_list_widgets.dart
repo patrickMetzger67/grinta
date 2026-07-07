@@ -1194,6 +1194,17 @@ class AgendaItemCard extends StatelessWidget {
                 ),
               ),
             ],
+            if (item.training != null &&
+                isManager == false &&
+                !item.isDone &&
+                !item.startAt.isBefore(DateUtils.dateOnly(DateTime.now()))) ...[
+              const SizedBox(height: 10),
+              AgendaTrainingPresenceActions(
+                training: item.training!,
+                trainingDate: item.startAt,
+                seasonId: context.read<AppSession>().selectedSeason?.ref?.id,
+              ),
+            ],
             if (item.match != null) ...[
               const SizedBox(height: 10),
               InkWell(

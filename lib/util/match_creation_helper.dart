@@ -25,6 +25,15 @@ const String kGoogleMapsGeocodingApiKey = String.fromEnvironment(
 /// Common match durations (minutes).
 const List<int> kMatchDurationOptions = <int>[45, 60, 75, 90, 105, 120, 150];
 
+/// Canonical Firestore values for [Match.surfaceDeJeu].
+const String kMatchSurfaceSynthetic = 'Synthétique';
+const String kMatchSurfaceNatural = 'Pelouse naturelle';
+
+const List<String> kMatchSurfaceOptions = <String>[
+  kMatchSurfaceSynthetic,
+  kMatchSurfaceNatural,
+];
+
 /// Formats a date as `dd/MM/yyyy` for [Match.dateCh].
 String formatMatchDateCh(DateTime date) {
   final day = date.day.toString().padLeft(2, '0');
@@ -313,6 +322,7 @@ Match buildMatchForCreation({
   String? opponentAffiliation,
   String? opponentLogoUrl,
   required String venueAddress,
+  String? surfaceDeJeu,
   required bool withTracker,
   String? ownerId,
   Club? ownClub,
@@ -410,7 +420,7 @@ Match buildMatchForCreation({
     ownerId: withTracker ? (ownerId ?? '') : '',
     isTrackerDataUploaded: false,
     soccerType: team.soccerType ?? 11,
-    surfaceDeJeu: '',
+    surfaceDeJeu: surfaceDeJeu?.trim() ?? '',
     isStatApplied: false,
     isScrapping: false,
   );
@@ -430,6 +440,7 @@ Match buildMatchForUpdate({
   String? opponentAffiliation,
   String? opponentLogoUrl,
   required String venueAddress,
+  String? surfaceDeJeu,
   required bool withTracker,
   String? ownerId,
   Club? ownClub,
@@ -446,6 +457,7 @@ Match buildMatchForUpdate({
     opponentAffiliation: opponentAffiliation,
     opponentLogoUrl: opponentLogoUrl,
     venueAddress: venueAddress,
+    surfaceDeJeu: surfaceDeJeu,
     withTracker: withTracker,
     ownerId: ownerId,
     ownClub: ownClub,
@@ -490,7 +502,6 @@ Match buildMatchForUpdate({
   updated.accompanyingDelegate = existing.accompanyingDelegate;
   updated.terrainAddress2 = existing.terrainAddress2;
   updated.nomDuTerrain = existing.nomDuTerrain;
-  updated.surfaceDeJeu = existing.surfaceDeJeu;
   updated.isScrapping = existing.isScrapping;
 
   return updated;

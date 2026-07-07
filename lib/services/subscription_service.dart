@@ -61,7 +61,7 @@ class SubscriptionService extends ChangeNotifier {
   /// True when RevenueCat reports at least one non-expired paid entitlement.
   bool get isSubscribed => _state.isSubscribed;
 
-  /// Active RevenueCat entitlement (paid store subscription), not trial-only.
+  /// Active RevenueCat entitlement (store, web, or promotional grant), not trial-only.
   bool get hasActivePaidSubscription => _state.activeEntitlements.isNotEmpty;
 
   CoachTier? get coachTier => _state.coachTier;
@@ -299,23 +299,18 @@ class SubscriptionService extends ChangeNotifier {
         text.contains('invalid_credentials');
   }
 
-  bool _isRevenueCatLinkedToUid(CustomerInfo info, String uid) {
-    final rcId = info.originalAppUserId;
-    return rcId == uid || !_isAnonymousRevenueCatUser(rcId);
-  }
-
   void _markRevenueCatLoggedIn(String uid, CustomerInfo info) {
-    if (!_isRevenueCatLinkedToUid(info, uid)) {
-      if (kDebugMode) {
-        debugPrint(
-          'SubscriptionService: logIn completed but RC user still anonymous '
-          '(firebaseUid=$uid rcAppUserId=${info.originalAppUserId}); '
-          'will retry on next refresh',
-        );
-      }
-      return;
-    }
+    // originalAppUserId can remain the first anonymous RC id even after
+    // Purchases.logIn(firebaseUid); linking is determined by logIn success.
     _loggedInUid = uid;
+    if (kDebugMode) {
+      final activeKeys = info.entitlements.active.keys.toList();
+      debugPrint(
+        'SubscriptionService: RevenueCat linked firebaseUid=$uid '
+        'rcOriginalAppUserId=${info.originalAppUserId} '
+        'activeEntitlements=${activeKeys.isEmpty ? '(none)' : activeKeys.join(', ')}',
+      );
+    }
   }
 
   Future<void> _performLogInRevenueCat(String uid) async {
@@ -424,13 +419,16 @@ class SubscriptionService extends ChangeNotifier {
 
   void _applyCustomerInfo(CustomerInfo info) {
     final firebaseUid = FirebaseAuth.instance.currentUser?.uid;
+    // Drop stale anonymous snapshots before Purchases.logIn(firebaseUid) completes.
+    // After logIn, apply CustomerInfo even when originalAppUserId is still the
+    // first-seen anonymous id (RevenueCat keeps that field on identified users).
     if (firebaseUid != null &&
         _loggedInUid != firebaseUid &&
         _isAnonymousRevenueCatUser(info.originalAppUserId)) {
       if (kDebugMode) {
         debugPrint(
           'SubscriptionService: ignoring anonymous CustomerInfo '
-          '(rcAppUserId=${info.originalAppUserId}) while Firebase uid=$firebaseUid '
+          '(rcOriginalAppUserId=${info.originalAppUserId}) while Firebase uid=$firebaseUid '
           'is not yet linked to RevenueCat',
         );
       }
@@ -460,29 +458,54 @@ class SubscriptionService extends ChangeNotifier {
       subscriptionExpiresAt: expiresAt,
       managementUrl: info.managementURL,
     );
+
+    if (kDebugMode) {
+      final rcActive = info.entitlements.active.keys.toList();
+      debugPrint(
+        'SubscriptionService: applied CustomerInfo '
+        'rcOriginalAppUserId=${info.originalAppUserId} '
+        'rcActiveKeys=${rcActive.isEmpty ? '(none)' : rcActive.join(', ')} '
+        'recognized=${active.isEmpty ? '(none)' : active.join(', ')} '
+        'hasActivePaidSubscription=${active.isNotEmpty}',
+      );
+    }
+
     notifyListeners();
   }
 
   Set<String> _extractActiveEntitlements(CustomerInfo info) {
     final Set<String> active = <String>{};
-    for (final id in SubscriptionEntitlementIds.coachTiersOrdered) {
-      final entitlement = info.entitlements.active[id];
-      if (entitlement != null && _isEntitlementCurrentlyValid(entitlement)) {
-        active.add(id);
+    const knownIds = <String>[
+      ...SubscriptionEntitlementIds.coachTiersOrdered,
+      SubscriptionEntitlementIds.player,
+    ];
+
+    for (final id in knownIds) {
+      if (_addEntitlementIfValid(active, id, info.entitlements.active[id])) {
+        continue;
       }
-    }
-    final playerEntitlement =
-        info.entitlements.active[SubscriptionEntitlementIds.player];
-    if (playerEntitlement != null &&
-        _isEntitlementCurrentlyValid(playerEntitlement)) {
-      active.add(SubscriptionEntitlementIds.player);
+      // Promotional grants can appear in `all` before `active` syncs locally.
+      _addEntitlementIfValid(active, id, info.entitlements.all[id]);
     }
     return active;
+  }
+
+  bool _addEntitlementIfValid(
+    Set<String> active,
+    String id,
+    EntitlementInfo? entitlement,
+  ) {
+    if (entitlement == null || !_isEntitlementCurrentlyValid(entitlement)) {
+      return false;
+    }
+    active.add(id);
+    return true;
   }
 
   /// RevenueCat normally omits expired entitlements from [active]; this guards
   /// stale sandbox payloads so expired subscribers can re-subscribe.
   bool _isEntitlementCurrentlyValid(EntitlementInfo entitlement) {
+    if (!entitlement.isActive) return false;
     final expiration = _parseRevenueCatDate(entitlement.expirationDate);
     if (expiration == null) return true;
     return expiration.isAfter(DateTime.now());
@@ -641,7 +664,74 @@ class SubscriptionService extends ChangeNotifier {
     }
   }
 
-  /// Refreshes RevenueCat state when the user opens profile / navigation.
+  /// Refreshes RevenueCat after a promotional grant.
+  ///
+  /// Returns true when [expectedEntitlement] is active locally. The Cloud
+  /// Function only succeeds after RevenueCat confirms the grant server-side.
+  Future<bool> refreshAfterPromoRedeem({
+    required String expectedEntitlement,
+  }) async {
+    if (!isPurchaseAvailable) {
+      if (kDebugMode) {
+        debugPrint(
+          'SubscriptionService: refreshAfterPromoRedeem skipped — '
+          'RevenueCat SDK not configured on this platform/build.',
+        );
+      }
+      return false;
+    }
+
+    await ensureInitialized();
+    if (!_sdkConfigured) return false;
+
+    final uid = FirebaseAuth.instance.currentUser?.uid;
+    if (uid == null) return false;
+
+    // Promo grants target the Firebase UID; re-alias from any anonymous RC user.
+    _loggedInUid = null;
+    _lastOfferingsRefreshAt = null;
+
+    const maxAttempts = 6;
+    const retryDelay = Duration(milliseconds: 800);
+    for (var attempt = 0; attempt < maxAttempts; attempt++) {
+      if (attempt == 0) {
+        try {
+          await Purchases.invalidateCustomerInfoCache();
+        } catch (e, st) {
+          debugPrint(
+            'SubscriptionService: invalidateCustomerInfoCache failed: $e\n$st',
+          );
+        }
+      }
+
+      await _logInRevenueCat(uid);
+      await _fetchCustomerInfo();
+
+      if (hasEntitlement(expectedEntitlement)) {
+        if (kDebugMode) {
+          debugPrint(
+            'SubscriptionService: promo entitlement verified '
+            '($expectedEntitlement, attempt=${attempt + 1})',
+          );
+        }
+        return true;
+      }
+
+      if (attempt < maxAttempts - 1) {
+        await Future<void>.delayed(retryDelay);
+      }
+    }
+
+    if (kDebugMode) {
+      debugPrint(
+        'SubscriptionService: promo entitlement NOT visible after refresh '
+        '(expected=$expectedEntitlement firebaseUid=$uid '
+        'active=${_state.activeEntitlements.join(', ')})',
+      );
+    }
+    return false;
+  }
+
   Future<void> refreshForActiveSession() async {
     if (_refreshForActiveSessionFuture != null) {
       await _refreshForActiveSessionFuture;

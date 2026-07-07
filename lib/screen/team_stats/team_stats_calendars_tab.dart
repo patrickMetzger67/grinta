@@ -40,6 +40,7 @@ class _TeamStatsCalendarsTabState extends State<TeamStatsCalendarsTab> {
   String? _selectedValue;
   List<TeamStatsMatchdayGroup> _matchdays = const [];
   int _selectedMatchdayIndex = 0;
+  bool _userSelectedMatchday = false;
 
   TeamCompetitionStatsService get _statsService =>
       widget._teamCompetitionStatsService ?? TeamCompetitionStatsService();
@@ -109,7 +110,9 @@ class _TeamStatsCalendarsTabState extends State<TeamStatsCalendarsTab> {
         teamId: widget.team.keyTeam,
         clubId: widget.team.clubId,
       );
-      _selectedMatchdayIndex = 0;
+      if (!_userSelectedMatchday) {
+        _selectedMatchdayIndex = defaultMatchdayIndex(_matchdays);
+      }
     });
   }
 
@@ -118,6 +121,7 @@ class _TeamStatsCalendarsTabState extends State<TeamStatsCalendarsTab> {
       _selectedValue = value;
       _matchdays = const [];
       _selectedMatchdayIndex = 0;
+      _userSelectedMatchday = false;
     });
     _loadMatches(value);
   }
@@ -126,21 +130,30 @@ class _TeamStatsCalendarsTabState extends State<TeamStatsCalendarsTab> {
     if (_selectedMatchdayIndex <= 0) {
       return;
     }
-    setState(() => _selectedMatchdayIndex--);
+    setState(() {
+      _userSelectedMatchday = true;
+      _selectedMatchdayIndex--;
+    });
   }
 
   void _goToNextMatchday() {
     if (_selectedMatchdayIndex >= _matchdays.length - 1) {
       return;
     }
-    setState(() => _selectedMatchdayIndex++);
+    setState(() {
+      _userSelectedMatchday = true;
+      _selectedMatchdayIndex++;
+    });
   }
 
   void _goToMatchday(int index) {
     if (index < 0 || index >= _matchdays.length) {
       return;
     }
-    setState(() => _selectedMatchdayIndex = index);
+    setState(() {
+      _userSelectedMatchday = true;
+      _selectedMatchdayIndex = index;
+    });
   }
 
   TeamStatsMatchdayGroup? get _selectedMatchday {

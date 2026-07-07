@@ -3,6 +3,7 @@ import 'package:grinta/core/extensions/l10n_extension.dart';
 import 'package:grinta/util/app_theme.dart';
 import 'package:grinta/widget/ask_diego/ask_diego_access.dart';
 import 'package:grinta/widget/ask_diego/ask_diego_avatar.dart';
+import 'package:grinta/widget/settings_menu_style.dart';
 
 /// Web sidebar tile for Ask Diego (premium-gated).
 class AskDiegoSidebarEntry extends StatefulWidget {
@@ -51,17 +52,21 @@ class _AskDiegoSidebarEntryState extends State<AskDiegoSidebarEntry> {
                   ? MainAxisAlignment.center
                   : MainAxisAlignment.start,
               children: [
-                AskDiegoAvatar(size: widget.collapsed ? 22 : 26),
+                AskDiegoAvatar(
+                  size: widget.collapsed
+                      ? kWebSidebarDiegoAvatarSizeCollapsed
+                      : kWebSidebarDiegoAvatarSizeExpanded,
+                ),
                 if (!widget.collapsed) ...[
                   const SizedBox(width: 12),
                   Expanded(
                     child: Text(
                       l10n.askDiegoTitle,
                       overflow: TextOverflow.ellipsis,
-                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                            color: colors.textSecondary,
-                            fontWeight: FontWeight.w500,
-                          ),
+                      style: webSidebarNavLabelStyle(
+                        context,
+                        selected: false,
+                      ),
                     ),
                   ),
                 ],

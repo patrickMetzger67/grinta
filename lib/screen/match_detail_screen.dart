@@ -24,6 +24,7 @@ import '../model/match.dart' as models;
 import '../util/playerDisplayName.dart';
 import '../widget/match_compo_widget.dart';
 import '../widget/match_highlights_timeline.dart';
+import '../widget/match_opponent_stats_button.dart';
 import '../widget/match_tracker_stats_table.dart';
 import '../widget/tracker_kit_icon_pill.dart';
 import '../widget/tracker_player_analysis_widget.dart';
@@ -927,6 +928,10 @@ class _MatchHeaderState extends State<_MatchHeader> {
               ),
             ),
           ],
+          MatchOpponentStatsButton(
+            match: match,
+            isManager: isManager,
+          ),
         ],
       ),
     );

@@ -16,6 +16,7 @@ import 'services/invitationService.dart';
 import 'services/playerService.dart';
 import 'services/userService.dart';
 import 'services/user_trial_service.dart';
+import 'services/user_root_service.dart';
 import 'util/team_creation_access.dart';
 import 'util/player_photo_resolver.dart';
 import 'services/active_session_service.dart';
@@ -209,6 +210,7 @@ class _LoginScreenState extends State<LoginScreen> {
 
       await appSession.init();
       await appSession.refreshPlayerAvatarUrls();
+      await UserRootService.instance.reload();
 
       // AuthGate réagit à authStateChanges et affiche l'app sans navigation.
     } on FirebaseAuthException catch (e) {
@@ -558,6 +560,7 @@ class _LoginScreenState extends State<LoginScreen> {
           allowSkip: true,
         );
         await UserTrialService.instance.reload();
+        await UserRootService.instance.reload();
       }
 
       if (wantsCreateTeam == true && rootContext.mounted) {
@@ -640,6 +643,7 @@ class _LoginScreenState extends State<LoginScreen> {
       lastName: profile.lastName?.trim() ?? '',
     );
     await UserTrialService.instance.reload();
+    await UserRootService.instance.reload();
   }
 
   Future<void> _signInWithSocial(
@@ -809,10 +813,12 @@ class _LoginScreenState extends State<LoginScreen> {
           final session = sessionContext.read<AppSession>();
           await session.init();
           await session.refreshPlayerAvatarUrls();
+          await UserRootService.instance.reload();
         } else if (mounted) {
           final session = context.read<AppSession>();
           await session.init();
           await session.refreshPlayerAvatarUrls();
+          await UserRootService.instance.reload();
         }
       }
       debugPrint('login: social sign-in complete, appSession initialized');

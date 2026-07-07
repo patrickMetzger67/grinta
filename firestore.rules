@@ -1,6 +1,57 @@
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
+    function isRootUser() {
+      return request.auth != null
+        && exists(/databases/$(database)/documents/users/$(request.auth.uid))
+        && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.get('isRoot', false) == true;
+    }
+
+    function isValidEntitlement(value) {
+      return value in ['player', 'coach_basic', 'coach_elite', 'coach_pro'];
+    }
+
+    function isValidPromoCodeCreate(codeId) {
+      return request.resource.data.code == codeId
+        && request.resource.data.code is string
+        && request.resource.data.keys().hasAll([
+          'code',
+          'maxUses',
+          'usedCount',
+          'entitlement',
+          'durationDays',
+          'createdBy',
+          'createdAt',
+          'active',
+        ])
+        && request.resource.data.maxUses is int
+        && request.resource.data.maxUses >= 1
+        && request.resource.data.usedCount is int
+        && request.resource.data.usedCount == 0
+        && request.resource.data.durationDays is int
+        && request.resource.data.durationDays >= 1
+        && request.resource.data.entitlement is string
+        && isValidEntitlement(request.resource.data.entitlement)
+        && request.resource.data.createdBy == request.auth.uid
+        && request.resource.data.createdAt is timestamp
+        && request.resource.data.active == true
+        && (!('expiresAt' in request.resource.data)
+          || request.resource.data.expiresAt is timestamp)
+        && (!('teamId' in request.resource.data)
+          || request.resource.data.teamId is string);
+    }
+
+    // Collections with dedicated write rules must not fall through to the catch-all.
+    function isCatchAllWritePath() {
+      return request.path.size() >= 5
+        && (
+          request.path[4] == 'admin_promo_codes'
+          || request.path[4] == 'invitations'
+          || request.path[4] == 'member'
+          || (request.path[4] == 'users' && request.path.size() == 5)
+        );
+    }
+
     // Signup: verify member invitation code and read sender profile (unauthenticated).
     match /invitations/{invitationId} {
       allow read: if resource.data.type == 1;
@@ -14,7 +65,13 @@ service cloud.firestore {
       allow read: if request.auth == null
         || (request.auth != null && request.auth.uid == userId);
 
-      allow create, update: if request.auth != null && request.auth.uid == userId;
+      allow create: if request.auth != null
+        && request.auth.uid == userId
+        && !('isRoot' in request.resource.data);
+
+      allow update: if request.auth != null
+        && request.auth.uid == userId
+        && !request.resource.data.diff(resource.data).affectedKeys().hasAny(['isRoot']);
 
       allow delete: if request.auth != null && request.auth.uid == userId;
 
@@ -22,6 +79,17 @@ service cloud.firestore {
       match /app_state/{docId} {
         allow read, write: if request.auth != null && request.auth.uid == userId;
       }
+
+      // Opponent stats view tracking for reminder deduplication.
+      match /app_state/opponent_stats_views/views/{matchId} {
+        allow read, write: if request.auth != null && request.auth.uid == userId;
+      }
+    }
+
+    // Platform admin promo codes — managed by isRoot users, redeemed via Cloud Function.
+    match /admin_promo_codes/{codeId} {
+      allow read, update, delete: if isRootUser();
+      allow create: if isRootUser() && isValidPromoCodeCreate(codeId);
     }
 
     // Member self-registration without invitation code.
@@ -64,6 +132,13 @@ service cloud.firestore {
             && !(request.auth.uid in request.resource.data.users)
           )
         );
+    }
+
+    // Catch-all for the rest of the app (matches deployed prod behavior).
+    // Excludes paths above so dedicated rules are enforced (Firestore ORs allows).
+    match /{document=**} {
+      allow read: if true;
+      allow write: if request.auth != null && !isCatchAllWritePath();
     }
   }
 }

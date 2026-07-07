@@ -1,8 +1,77 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:grinta/model/match.dart';
 import 'package:grinta/util/team_stats_matchday_helper.dart';
 
 void main() {
+  group('defaultMatchdayIndex', () {
+    Match datedMatch({required String id, required int day, required DateTime date}) {
+      return Match(
+        id: id,
+        day: day,
+        timestamp: Timestamp.fromDate(date),
+      );
+    }
+
+    test('selects matchday whose date range contains reference date', () {
+      final reference = DateTime(2026, 3, 15);
+      final groups = groupMatchesByMatchday([
+        datedMatch(id: '1', day: 1, date: DateTime(2026, 3, 1)),
+        datedMatch(id: '2a', day: 2, date: DateTime(2026, 3, 14)),
+        datedMatch(id: '2b', day: 2, date: DateTime(2026, 3, 16)),
+        datedMatch(id: '3', day: 3, date: DateTime(2026, 3, 25)),
+      ]);
+
+      expect(
+        defaultMatchdayIndex(groups, referenceDate: reference),
+        1,
+      );
+    });
+
+    test('prefers upcoming matchday when equally distant', () {
+      final reference = DateTime(2026, 3, 15);
+      final groups = groupMatchesByMatchday([
+        datedMatch(id: '1', day: 1, date: DateTime(2026, 3, 10)),
+        datedMatch(id: '2', day: 2, date: DateTime(2026, 3, 20)),
+      ]);
+
+      expect(
+        defaultMatchdayIndex(groups, referenceDate: reference),
+        1,
+      );
+    });
+
+    test('selects closest past matchday when all are in the past', () {
+      final reference = DateTime(2026, 4, 1);
+      final groups = groupMatchesByMatchday([
+        datedMatch(id: '1', day: 1, date: DateTime(2026, 3, 1)),
+        datedMatch(id: '2', day: 2, date: DateTime(2026, 3, 20)),
+      ]);
+
+      expect(
+        defaultMatchdayIndex(groups, referenceDate: reference),
+        1,
+      );
+    });
+
+    test('selects closest future matchday when all are in the future', () {
+      final reference = DateTime(2026, 3, 1);
+      final groups = groupMatchesByMatchday([
+        datedMatch(id: '1', day: 1, date: DateTime(2026, 3, 10)),
+        datedMatch(id: '2', day: 2, date: DateTime(2026, 3, 25)),
+      ]);
+
+      expect(
+        defaultMatchdayIndex(groups, referenceDate: reference),
+        0,
+      );
+    });
+
+    test('returns zero for empty groups', () {
+      expect(defaultMatchdayIndex(const []), 0);
+    });
+  });
+
   group('groupMatchesByMatchday', () {
     test('groups league matches by day', () {
       final matches = [

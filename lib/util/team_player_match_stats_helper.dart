@@ -16,12 +16,16 @@ class TeamPlayerMatchStatsAccumulator {
   int starts = 0;
   int minutesPlayed = 0;
   int goals = 0;
+  int yellowCards = 0;
+  int redCards = 0;
 
   void merge(TeamPlayerMatchStatsAccumulator other) {
     convocations += other.convocations;
     starts += other.starts;
     minutesPlayed += other.minutesPlayed;
     goals += other.goals;
+    yellowCards += other.yellowCards;
+    redCards += other.redCards;
   }
 }
 
@@ -32,6 +36,8 @@ class TeamPlayerHalfCounts {
     this.starts = 0,
     this.minutesPlayed = 0,
     this.goals = 0,
+    this.yellowCards = 0,
+    this.redCards = 0,
     this.teamMatchCount = 0,
   });
 
@@ -39,6 +45,8 @@ class TeamPlayerHalfCounts {
   final int starts;
   final int minutesPlayed;
   final int goals;
+  final int yellowCards;
+  final int redCards;
   final int teamMatchCount;
 
   factory TeamPlayerHalfCounts.fromAccumulator({
@@ -50,6 +58,8 @@ class TeamPlayerHalfCounts {
       starts: accumulator?.starts ?? 0,
       minutesPlayed: accumulator?.minutesPlayed ?? 0,
       goals: accumulator?.goals ?? 0,
+      yellowCards: accumulator?.yellowCards ?? 0,
+      redCards: accumulator?.redCards ?? 0,
       teamMatchCount: teamMatchCount,
     );
   }
@@ -63,6 +73,12 @@ class TeamPlayerHalfCounts {
       teamMatchCount == 0 ? null : minutesPlayed / teamMatchCount;
 
   double? get goalsRate => teamMatchCount == 0 ? null : goals / teamMatchCount;
+
+  double? get yellowCardsRate =>
+      teamMatchCount == 0 ? null : yellowCards / teamMatchCount;
+
+  double? get redCardsRate =>
+      teamMatchCount == 0 ? null : redCards / teamMatchCount;
 }
 
 /// H1 vs H2 trend directions for each sortable player stat column.
@@ -72,12 +88,16 @@ class TeamPlayerStatTrends {
     this.starts = TeamWdlTrendDirection.insufficientData,
     this.playTime = TeamWdlTrendDirection.insufficientData,
     this.goals = TeamWdlTrendDirection.insufficientData,
+    this.yellowCards = TeamWdlTrendDirection.insufficientData,
+    this.redCards = TeamWdlTrendDirection.insufficientData,
   });
 
   final TeamWdlTrendDirection convocations;
   final TeamWdlTrendDirection starts;
   final TeamWdlTrendDirection playTime;
   final TeamWdlTrendDirection goals;
+  final TeamWdlTrendDirection yellowCards;
+  final TeamWdlTrendDirection redCards;
 
   /// Compares per-match rates between [firstHalf] and [secondHalf].
   static TeamPlayerStatTrends compare({
@@ -103,6 +123,16 @@ class TeamPlayerStatTrends {
       goals: _compareRates(
         firstRate: firstHalf.goalsRate,
         secondRate: secondHalf.goalsRate,
+        flatThreshold: 0.05,
+      ),
+      yellowCards: _compareRates(
+        firstRate: firstHalf.yellowCardsRate,
+        secondRate: secondHalf.yellowCardsRate,
+        flatThreshold: 0.05,
+      ),
+      redCards: _compareRates(
+        firstRate: firstHalf.redCardsRate,
+        secondRate: secondHalf.redCardsRate,
         flatThreshold: 0.05,
       ),
     );
@@ -260,17 +290,31 @@ Map<String, TeamPlayerMatchStatsAccumulator> statsForMatch({
   }
 
   for (final highlight in highlights) {
-    if (highlight.actionType != ActionType.goal) {
-      continue;
+    switch (highlight.actionType) {
+      case ActionType.goal:
+        final goal = highlight.value as Goal?;
+        final scorerId = goal?.playerId?.trim() ?? '';
+        if (scorerId.isEmpty) {
+          continue;
+        }
+        statsFor(scorerId).goals += 1;
+      case ActionType.yellowCard:
+        final card = highlight.value as YellowRedCard?;
+        final playerId = card?.playerId?.trim() ?? '';
+        if (playerId.isEmpty) {
+          continue;
+        }
+        statsFor(playerId).yellowCards += 1;
+      case ActionType.redCard:
+        final card = highlight.value as YellowRedCard?;
+        final playerId = card?.playerId?.trim() ?? '';
+        if (playerId.isEmpty) {
+          continue;
+        }
+        statsFor(playerId).redCards += 1;
+      default:
+        break;
     }
-
-    final goal = highlight.value as Goal?;
-    final scorerId = goal?.playerId?.trim() ?? '';
-    if (scorerId.isEmpty) {
-      continue;
-    }
-
-    statsFor(scorerId).goals += 1;
   }
 
   return statsByPlayerId;
@@ -396,6 +440,30 @@ bool _isMatchStatGoalHighlight(MatchStatHighLight highlight) {
     case 'goal':
     case 'but':
     case 'penalty':
+      return true;
+    default:
+      return false;
+  }
+}
+
+bool _isMatchStatYellowCardHighlight(MatchStatHighLight highlight) {
+  switch (_normalizeMatchStatHighlightType(highlight.type)) {
+    case 'yellowcard':
+    case 'yellow_card':
+    case 'cartonjaune':
+    case 'carton_jaune':
+      return true;
+    default:
+      return false;
+  }
+}
+
+bool _isMatchStatRedCardHighlight(MatchStatHighLight highlight) {
+  switch (_normalizeMatchStatHighlightType(highlight.type)) {
+    case 'redcard':
+    case 'red_card':
+    case 'cartonrouge':
+    case 'carton_rouge':
       return true;
     default:
       return false;
@@ -670,24 +738,33 @@ Map<String, TeamPlayerMatchStatsAccumulator> statsForMatchFromMatchStats({
   }
 
   for (final highlight in highlights) {
-    if (!_isMatchStatGoalHighlight(highlight)) {
+    final isGoal = _isMatchStatGoalHighlight(highlight);
+    final isYellowCard = _isMatchStatYellowCardHighlight(highlight);
+    final isRedCard = _isMatchStatRedCardHighlight(highlight);
+    if (!isGoal && !isYellowCard && !isRedCard) {
       continue;
     }
 
-    final scorerKey = normalizeMatchStatPlayerKey(highlight.player);
-    if (scorerKey.isEmpty) {
+    final playerKey = normalizeMatchStatPlayerKey(highlight.player);
+    if (playerKey.isEmpty) {
       continue;
     }
 
-    var targetKey = scorerKey;
+    var targetKey = playerKey;
     for (final key in convokedKeys) {
-      if (sameMatchStatPlayer(key, scorerKey)) {
+      if (sameMatchStatPlayer(key, playerKey)) {
         targetKey = key;
         break;
       }
     }
 
-    statsFor(targetKey).goals += 1;
+    if (isGoal) {
+      statsFor(targetKey).goals += 1;
+    } else if (isYellowCard) {
+      statsFor(targetKey).yellowCards += 1;
+    } else if (isRedCard) {
+      statsFor(targetKey).redCards += 1;
+    }
   }
 
   return statsByPlayerKey;

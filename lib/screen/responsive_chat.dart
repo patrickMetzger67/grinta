@@ -16,6 +16,7 @@ import '../util/app_theme.dart';
 import '../widget/feature_discovery_random_banner.dart';
 import '../widget/alternating_monetization_banner.dart';
 import '../widget/ask_diego/ask_diego_speed_dial.dart';
+import '../widget/grinta_stream_message_input.dart';
 
 
 class ResponsiveChat extends StatelessWidget {
@@ -102,9 +103,8 @@ class _SplitChatViewState extends State<_SplitChatView> {
                 child: Text(
                   context.l10n.chatSelectConversation,
                   textAlign: TextAlign.center,
-                  style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                    color: colors.textPrimary,
-                    fontWeight: FontWeight.w600,
+                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                    color: colors.textSecondary,
                   ),
                 ),
               ),
@@ -655,7 +655,7 @@ class _ChatChannelPageState extends State<_ChatChannelPage> {
               },
             ),
           ),
-          StreamMessageInput(
+          GrintaStreamMessageInput(
             focusNode: _focusNode,
             messageInputController: _messageInputController,
             enableVoiceRecording: true,
@@ -700,7 +700,7 @@ class _ThreadPage extends StatelessWidget {
               },
             ),
           ),
-          StreamMessageInput(
+          GrintaStreamMessageInput(
             enableVoiceRecording: true,
             messageInputController: StreamMessageInputController(
               message: Message(parentId: parent.id),
