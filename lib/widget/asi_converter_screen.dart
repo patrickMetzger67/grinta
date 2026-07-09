@@ -33,6 +33,39 @@ enum HeatmapDisplayPeriod {
   fullMatch,
 }
 
+/// ---------------------------------------------------------------------------
+/// Feature flag — CLOUD vs LOCAL capteur analysis
+/// ---------------------------------------------------------------------------
+/// Bascule l'analyse des données capteur (ASI / inspirit USB) entre :
+///   - `true`  : fonction cloud `analyzeInsidersSensorData`
+///               (region europe-west1). Le cloud calcule l'analyse ET
+///               persiste lui-même (TRACKER_Analysis + TRACKER_Svg + PNG).
+///   - `false` : ancien chemin 100% local `SensorAnalysisService`
+///               + `TrackerAnalysisService.saveAnalysis`
+///               + `HeatmapSvgGenerator.saveSvgToFirestore`.
+///
+/// On garde volontairement le chemin LOCAL intact pour pouvoir vérifier le
+/// cloud sans rien casser : il suffit de repasser ce booléen à `false`.
+const bool kUseCloudSensorAnalysis = true;
+
+/// Debug : quand `true` ET que le cloud est actif, on relance aussi l'analyse
+/// LOCALE (full match) et on logue une comparaison des métriques clés.
+/// Laisser à `false` en production (double le calcul).
+const bool kCompareCloudAndLocalSensorAnalysis = false;
+
+/// Regroupe l'analyse cloud (match complet + mi-temps) renvoyée en un seul appel.
+class _CloudSensorAnalysisBundle {
+  final TrackerAnalysisResult full;
+  final TrackerAnalysisResult? firstHalf;
+  final TrackerAnalysisResult? secondHalf;
+
+  const _CloudSensorAnalysisBundle({
+    required this.full,
+    this.firstHalf,
+    this.secondHalf,
+  });
+}
+
 class AsiConverterScreen extends StatefulWidget {
   final String deviceId;
   final List<TimeRange> periods;
@@ -87,6 +120,10 @@ class _AsiConverterScreenState extends State<AsiConverterScreen> {
 
   static const double _sprintThresholdKmh = 20.0;
   static const int _minSprintPoints = 4;
+
+  /// Seuil minimal d'échantillons exploitables après parsing du CSV en dessous
+  /// duquel on considère le fichier .asi comme vide / sans donnée.
+  static const int _minRequiredSamples = 1;
 
 
   String? svgFullMatch;
@@ -178,6 +215,189 @@ class _AsiConverterScreenState extends State<AsiConverterScreen> {
 
     final data = Map<String, dynamic>.from(result.data['data'] as Map);
     return data['csv'] as String;
+  }
+
+  /// Appelle la fonction cloud `analyzeInsidersSensorData` (europe-west1).
+  ///
+  /// On envoie directement les `samples` déjà parsés localement (mode "raw" de
+  /// la cloud function, cf. `resolveSamplesFromRequest` -> `data.samples`), donc
+  /// AUCUN appel à l'API Insiders n'est déclenché ici.
+  ///
+  /// Le cloud persiste lui-même l'analyse (TRACKER_Analysis) et les heatmaps
+  /// (TRACKER_Svg + PNG Storage). On demande `includeHeatmapPoints: true` pour
+  /// pouvoir reconstruire le même `TrackerAnalysisResult` côté app et afficher
+  /// les heatmaps localement (à l'identique du chemin local).
+  Future<_CloudSensorAnalysisBundle> _analyzeSensorDataViaCloud({
+    required String deviceId,
+    required List<TrackerRaw> samples,
+  }) async {
+    final callable = FirebaseFunctions.instanceFor(region: 'europe-west1')
+        .httpsCallable('analyzeInsidersSensorData');
+
+    // Garde-fou : la cloud function `analyzeInsidersSensorData`
+    // (resolveSamplesFromRequest) exige un tableau `samples[]` NON vide, sinon
+    // elle lève `invalid-argument: Provide samples[] OR insidersDeviceId ...`.
+    // On échoue ici avec un message clair plutôt que de subir l'erreur cloud.
+    debugPrint(
+      '[ASI][CLOUD] preparing analyzeInsidersSensorData '
+      'trackerId=$deviceId samples=${samples.length}',
+    );
+    if (samples.length < _minRequiredSamples) {
+      throw Exception(
+        'Aucun échantillon exploitable à envoyer au cloud '
+        '(samples=${samples.length}). Vérifiez le fichier .asi et le deviceId.',
+      );
+    }
+
+    final payload = <String, dynamic>{
+      'trackerId': deviceId,
+      'playerId': widget.playerId,
+      'eventId': widget.eventId,
+      'isMatch': widget.isMatch,
+      'docId': '${widget.eventId}_${widget.deviceId}',
+      'teamId': '0',
+      'generateHeatmaps': true,
+      'generatePng': true,
+      'includeHeatmapPoints': true,
+      // On force `trackerId` = `deviceId` (paramètre de la requête) pour CHAQUE
+      // échantillon : la cloud (`sensorAnalysisCore.analyzeSensorData`) filtre
+      // `allSamples` sur `s.trackerId === trackerId`. Si un échantillon portait
+      // un trackerId différent/vide, il serait silencieusement écarté -> analyse
+      // vide. Ici on garantit la correspondance (le parsing local utilise déjà
+      // ce même deviceId, donc aucun changement de comportement).
+      'samples': samples
+          .map((s) => {
+                'trackerId': deviceId,
+                'timeMs': s.timeMs,
+                'latitude': s.latitude,
+                'longitude': s.longitude,
+                'speedMps': s.speedMps,
+              })
+          .toList(growable: false),
+      if (footballFieldGps != null) 'fieldGps': footballFieldGps!.toMap(),
+    };
+
+    final result = await callable.call(payload);
+    final data = Map<String, dynamic>.from(result.data as Map);
+
+    final full = _trackerAnalysisResultFromCloudMap(
+      Map<String, dynamic>.from(data['fullAnalysis'] as Map),
+      fieldGps: footballFieldGps,
+    );
+
+    TrackerAnalysisResult? firstHalf;
+    if (data['firstHalfAnalysis'] != null) {
+      firstHalf = _trackerAnalysisResultFromCloudMap(
+        Map<String, dynamic>.from(data['firstHalfAnalysis'] as Map),
+        fieldGps: footballFieldGps,
+      );
+    }
+
+    TrackerAnalysisResult? secondHalf;
+    if (data['secondHalfAnalysis'] != null) {
+      secondHalf = _trackerAnalysisResultFromCloudMap(
+        Map<String, dynamic>.from(data['secondHalfAnalysis'] as Map),
+        fieldGps: footballFieldGps,
+      );
+    }
+
+    debugPrint(
+      '[ASI][CLOUD] analyzeInsidersSensorData '
+      'docId=${data['docId']} source=${data['analysisSource']} '
+      'distanceKm=${full.distanceKm.toStringAsFixed(3)} '
+      'avgKmh=${full.averageSpeedKmh.toStringAsFixed(2)} '
+      'maxKmh=${full.maxSpeedKmh.toStringAsFixed(2)} '
+      'sprints=${full.sprintCount} '
+      'points=${full.heatmapPoints.length}',
+    );
+
+    return _CloudSensorAnalysisBundle(
+      full: full,
+      firstHalf: firstHalf,
+      secondHalf: secondHalf,
+    );
+  }
+
+  /// Reconstruit un [TrackerAnalysisResult] à partir de l'objet d'analyse
+  /// renvoyé par la cloud function (structure de `sensorAnalysisCore.js`).
+  ///
+  /// Le `fieldGps` n'est pas re-parsé depuis la réponse : on réutilise
+  /// directement l'instance locale déjà construite.
+  TrackerAnalysisResult _trackerAnalysisResultFromCloudMap(
+    Map<String, dynamic> m, {
+    required FootballFieldGps? fieldGps,
+  }) {
+    final heatmapPoints = (m['heatmapPoints'] as List?)
+            ?.map((e) {
+              final p = Map<String, dynamic>.from(e as Map);
+              return HeatmapPoint(
+                xMeters: _cloudDouble(p['xMeters']),
+                yMeters: _cloudDouble(p['yMeters']),
+                timeMs: _cloudInt(p['timeMs']),
+                intensity: _cloudDouble(p['intensity']),
+              );
+            })
+            .toList(growable: false) ??
+        const <HeatmapPoint>[];
+
+    return TrackerAnalysisResult(
+      trackerId: (m['trackerId'] ?? '').toString(),
+      playerId: (m['playerId'] ?? '').toString(),
+      eventId: (m['eventId'] ?? '').toString(),
+      distanceKm: _cloudDouble(m['distanceKm']),
+      duration: Duration(milliseconds: _cloudInt(m['durationMs'])),
+      averageSpeedKmh: _cloudDouble(m['averageSpeedKmh']),
+      maxSpeedKmh: _cloudDouble(m['maxSpeedKmh']),
+      maxValidatedSpeedKmh: _cloudDouble(m['maxValidatedSpeedKmh']),
+      samplesCount: _cloudInt(m['samplesCount']),
+      heatmapPoints: heatmapPoints,
+      fieldGps: fieldGps,
+      sprintCount: _cloudInt(m['sprintCount']),
+      highAccelerationCount: _cloudInt(m['highAccelerationCount']),
+      highSpeedDuration:
+          Duration(milliseconds: _cloudInt(m['highSpeedDurationMs'])),
+      maxAccelerationMps2: _cloudDouble(m['maxAccelerationMps2']),
+      distanceByZones: (m['distanceByZones'] as List?)
+              ?.map((e) =>
+                  FieldZoneStats.fromMap(Map<String, dynamic>.from(e as Map)))
+              .toList() ??
+          const [],
+      speedZones: (m['speedZones'] as List?)
+              ?.map((e) =>
+                  SpeedZoneStat.fromMap(Map<String, dynamic>.from(e as Map)))
+              .toList() ??
+          const [],
+      halfStats: (m['halfStats'] as List?)
+              ?.map((e) =>
+                  HalfStats.fromMap(Map<String, dynamic>.from(e as Map)))
+              .toList() ??
+          const [],
+      workloadScore: _cloudDouble(m['workloadScore']),
+      workloadScorePerMinute: _cloudDouble(m['workloadScorePerMinute']),
+      playerProfile: (m['playerProfile'] ?? '').toString(),
+      fatigueIndex: _cloudDouble(m['fatigueIndex']),
+      firstHalfDistanceKm: _cloudDouble(m['firstHalfDistanceKm']),
+      secondHalfDistanceKm: _cloudDouble(m['secondHalfDistanceKm']),
+      distanceTimeline: (m['distanceTimeline'] as List?)
+              ?.map((e) => DistanceTimelineStat.fromMap(
+                  Map<String, dynamic>.from(e as Map)))
+              .toList() ??
+          const [],
+    );
+  }
+
+  static double _cloudDouble(dynamic v) {
+    if (v == null) return 0.0;
+    if (v is double) return v;
+    if (v is int) return v.toDouble();
+    return double.tryParse(v.toString().replaceAll(',', '.')) ?? 0.0;
+  }
+
+  static int _cloudInt(dynamic v) {
+    if (v == null) return 0;
+    if (v is int) return v;
+    if (v is double) return v.toInt();
+    return int.tryParse(v.toString()) ?? 0;
   }
 
   String _buildCsvFromRows(List<TrackerDeviceRaw> rows) {
@@ -449,6 +669,16 @@ class _AsiConverterScreenState extends State<AsiConverterScreen> {
 
       _allTrackerSamples = trackerSamples;
 
+      // Fichier .asi vide / aucune donnée exploitable après parsing CSV :
+      // on affiche un message clair et on stoppe AVANT toute analyse
+      // (cloud OU local), pour éviter l'erreur cryptique renvoyée par le cloud
+      // ("Provide samples[] OR insidersDeviceId with start/end query").
+      if (trackerSamples.length < _minRequiredSamples) {
+        if (!mounted) return;
+        _showSnackBar(context.l10n.asiFileEmptyOrNoData);
+        return;
+      }
+
       if (widget.fieldGpsCorners != null) {
         footballFieldGps = FootballFieldGps.fromFieldGpsCorners(
           widget.fieldGpsCorners!,
@@ -459,24 +689,65 @@ class _AsiConverterScreenState extends State<AsiConverterScreen> {
         cornersM = [];
       }
 
-      _analysisResult = SensorAnalysisService.analyzeSensorData(
-        trackerId: deviceId,
-        allSamples: trackerSamples,
-        isMatch: widget.isMatch,
-        playerId: widget.playerId,
-        fieldGps: footballFieldGps,
-        eventId: widget.eventId,
-      );
+      // Analyse capteur : CLOUD (analyzeInsidersSensorData) ou LOCAL selon le flag.
+      // cf. kUseCloudSensorAnalysis en tête de fichier.
+      _CloudSensorAnalysisBundle? cloudBundle;
+
+      if (kUseCloudSensorAnalysis) {
+        cloudBundle = await _analyzeSensorDataViaCloud(
+          deviceId: deviceId,
+          samples: trackerSamples,
+        );
+        _analysisResult = cloudBundle.full;
+      } else {
+        _analysisResult = SensorAnalysisService.analyzeSensorData(
+          trackerId: deviceId,
+          allSamples: trackerSamples,
+          isMatch: widget.isMatch,
+          playerId: widget.playerId,
+          fieldGps: footballFieldGps,
+          eventId: widget.eventId,
+        );
+      }
 
       if (_analysisResult == null) {
         throw Exception('Analyse impossible');
       }
 
-      await TrackerAnalysisService.saveAnalysis(
-        docId: '${widget.eventId}_${widget.deviceId}',
-        _analysisResult!,
-        eventId: widget.eventId,
-      );
+      // Debug optionnel : compare les métriques clés cloud vs local.
+      if (kUseCloudSensorAnalysis && kCompareCloudAndLocalSensorAnalysis) {
+        final local = SensorAnalysisService.analyzeSensorData(
+          trackerId: deviceId,
+          allSamples: trackerSamples,
+          isMatch: widget.isMatch,
+          playerId: widget.playerId,
+          fieldGps: footballFieldGps,
+          eventId: widget.eventId,
+        );
+        debugPrint(
+          '[ASI][COMPARE] '
+          'distanceKm cloud=${_analysisResult!.distanceKm.toStringAsFixed(3)} '
+          'local=${local.distanceKm.toStringAsFixed(3)} | '
+          'maxKmh cloud=${_analysisResult!.maxSpeedKmh.toStringAsFixed(2)} '
+          'local=${local.maxSpeedKmh.toStringAsFixed(2)} | '
+          'sprints cloud=${_analysisResult!.sprintCount} '
+          'local=${local.sprintCount} | '
+          'points cloud=${_analysisResult!.heatmapPoints.length} '
+          'local=${local.heatmapPoints.length}',
+        );
+      }
+
+      // Persistance de l'analyse (TRACKER_Analysis) :
+      // - LOCAL : l'app écrit via TrackerAnalysisService.saveAnalysis.
+      // - CLOUD : la cloud function a déjà persisté -> on n'écrit PAS ici
+      //   (évite les doubles écritures).
+      if (!kUseCloudSensorAnalysis) {
+        await TrackerAnalysisService.saveAnalysis(
+          docId: '${widget.eventId}_${widget.deviceId}',
+          _analysisResult!,
+          eventId: widget.eventId,
+        );
+      }
 
 
       if(widget.isMatch) {
@@ -491,10 +762,13 @@ class _AsiConverterScreenState extends State<AsiConverterScreen> {
           svgHeight: 1000,
         );
 
-        await HeatmapSvgGenerator.saveSvgToFirestore(
-          fileName: '${widget.deviceId}-${widget.eventId}_fullMatch',
-          svg: svgFullMatch!,
-        );
+        // CLOUD : les SVG/PNG sont déjà persistés par la cloud function.
+        if (!kUseCloudSensorAnalysis) {
+          await HeatmapSvgGenerator.saveSvgToFirestore(
+            fileName: '${widget.deviceId}-${widget.eventId}_fullMatch',
+            svg: svgFullMatch!,
+          );
+        }
 
         final fullMatchSprintPolylines = _buildSprintPolylines(trackerSamples);
 
@@ -508,10 +782,12 @@ class _AsiConverterScreenState extends State<AsiConverterScreen> {
           svgHeight: 1000,
         );
 
-        await HeatmapSvgGenerator.saveSvgToFirestore(
-          fileName: '${widget.deviceId}-${widget.eventId}_fullMatchWithSprints',
-          svg: svgFullMatchWithSprints!,
-        );
+        if (!kUseCloudSensorAnalysis) {
+          await HeatmapSvgGenerator.saveSvgToFirestore(
+            fileName: '${widget.deviceId}-${widget.eventId}_fullMatchWithSprints',
+            svg: svgFullMatchWithSprints!,
+          );
+        }
 
         // MI-TEMPS
         final firstHalfSamples = _getSamplesForPeriod(_firstHalfPeriod);
@@ -520,26 +796,33 @@ class _AsiConverterScreenState extends State<AsiConverterScreen> {
         TrackerAnalysisResult? firstHalfAnalysis;
         TrackerAnalysisResult? secondHalfAnalysis;
 
-        if (firstHalfSamples.isNotEmpty) {
-          firstHalfAnalysis = SensorAnalysisService.analyzeSensorData(
-            trackerId: deviceId,
-            allSamples: firstHalfSamples,
-            isMatch: widget.isMatch,
-            playerId: deviceId,
-            fieldGps: footballFieldGps,
-            eventId: widget.eventId,
-          );
-        }
+        if (kUseCloudSensorAnalysis) {
+          // CLOUD : les analyses des deux mi-temps sont renvoyées par l'appel
+          // cloud (découpage par temps médian côté serveur).
+          firstHalfAnalysis = cloudBundle?.firstHalf;
+          secondHalfAnalysis = cloudBundle?.secondHalf;
+        } else {
+          if (firstHalfSamples.isNotEmpty) {
+            firstHalfAnalysis = SensorAnalysisService.analyzeSensorData(
+              trackerId: deviceId,
+              allSamples: firstHalfSamples,
+              isMatch: widget.isMatch,
+              playerId: deviceId,
+              fieldGps: footballFieldGps,
+              eventId: widget.eventId,
+            );
+          }
 
-        if (secondHalfSamples.isNotEmpty) {
-          secondHalfAnalysis = SensorAnalysisService.analyzeSensorData(
-            trackerId: deviceId,
-            allSamples: secondHalfSamples,
-            isMatch: widget.isMatch,
-            playerId: deviceId,
-            fieldGps: footballFieldGps,
-            eventId: widget.eventId,
-          );
+          if (secondHalfSamples.isNotEmpty) {
+            secondHalfAnalysis = SensorAnalysisService.analyzeSensorData(
+              trackerId: deviceId,
+              allSamples: secondHalfSamples,
+              isMatch: widget.isMatch,
+              playerId: deviceId,
+              fieldGps: footballFieldGps,
+              eventId: widget.eventId,
+            );
+          }
         }
 
         const bool flipFirstHalfY = false;
@@ -570,10 +853,12 @@ class _AsiConverterScreenState extends State<AsiConverterScreen> {
             svgWidth: 1600,
             svgHeight: 1000,
           );
-          await HeatmapSvgGenerator.saveSvgToFirestore(
-            fileName: '${widget.deviceId}-${widget.eventId}_firstHalf',
-            svg: svgFirstHalf!,
-          );
+          if (!kUseCloudSensorAnalysis) {
+            await HeatmapSvgGenerator.saveSvgToFirestore(
+              fileName: '${widget.deviceId}-${widget.eventId}_firstHalf',
+              svg: svgFirstHalf!,
+            );
+          }
 
           svgFirstHalfWithSprints = HeatmapSvgGenerator.generateSvg(
             field: footballFieldGps!,
@@ -585,10 +870,12 @@ class _AsiConverterScreenState extends State<AsiConverterScreen> {
             svgHeight: 1000,
           );
 
-          await HeatmapSvgGenerator.saveSvgToFirestore(
-            fileName: '${widget.deviceId}-${widget.eventId}_firstHalfWithSprints',
-            svg: svgFirstHalfWithSprints!,
-          );
+          if (!kUseCloudSensorAnalysis) {
+            await HeatmapSvgGenerator.saveSvgToFirestore(
+              fileName: '${widget.deviceId}-${widget.eventId}_firstHalfWithSprints',
+              svg: svgFirstHalfWithSprints!,
+            );
+          }
         }
 
         if (secondHalfAnalysis != null) {
@@ -617,10 +904,12 @@ class _AsiConverterScreenState extends State<AsiConverterScreen> {
             svgHeight: 1000,
           );
 
-          await HeatmapSvgGenerator.saveSvgToFirestore(
-            fileName: '${widget.deviceId}-${widget.eventId}_secondHalf',
-            svg: svgSecondHalf!,
-          );
+          if (!kUseCloudSensorAnalysis) {
+            await HeatmapSvgGenerator.saveSvgToFirestore(
+              fileName: '${widget.deviceId}-${widget.eventId}_secondHalf',
+              svg: svgSecondHalf!,
+            );
+          }
 
           svgSecondHalfWithSprints = HeatmapSvgGenerator.generateSvg(
             field: footballFieldGps!,
@@ -632,10 +921,12 @@ class _AsiConverterScreenState extends State<AsiConverterScreen> {
             svgHeight: 1000,
           );
 
-          await HeatmapSvgGenerator.saveSvgToFirestore(
-            fileName: '${widget.deviceId}-${widget.eventId}_secondHalfWithSprints',
-            svg: svgSecondHalfWithSprints!,
-          );
+          if (!kUseCloudSensorAnalysis) {
+            await HeatmapSvgGenerator.saveSvgToFirestore(
+              fileName: '${widget.deviceId}-${widget.eventId}_secondHalfWithSprints',
+              svg: svgSecondHalfWithSprints!,
+            );
+          }
         }
 
       }

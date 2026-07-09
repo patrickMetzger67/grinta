@@ -15,6 +15,7 @@ abstract final class FeatureDiscoveryIds {
   static const String matchDetailTabTacticalSchema =
       'match_detail_tab_tactical_schema';
   static const String matchDetailTabHighlights = 'match_detail_tab_highlights';
+  static const String matchDetailTabLive = 'match_detail_tab_live';
   static const String matchDetailTabStats = 'match_detail_tab_stats';
 
   /// Parent screen id for match-detail related discovery prompts.

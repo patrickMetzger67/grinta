@@ -3,6 +3,8 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:grinta/analytics/analytics_routes.dart';
 import 'package:grinta/analytics/analytics_screen_names.dart';
+import 'package:grinta/config/subscription_config.dart';
+import 'package:grinta/services/eshop_config_service.dart';
 import 'package:grinta/feature_discovery/shell_navigation_scope.dart';
 import 'package:grinta/model/feature_discovery_ids.dart';
 import 'package:grinta/model/match.dart' as models;
@@ -28,6 +30,10 @@ class InternalNotificationNavigation {
     if (context == null) return;
 
     final type = data['type']?.toString().trim() ?? '';
+    if (!EshopConfigService.instance.commerceNotificationsEnabled &&
+        isCommerceNotificationPayloadType(type)) {
+      return;
+    }
     switch (type) {
       case 'trainingReminder':
         await _openTrainingAgenda(context, data);

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:grinta/util/app_theme.dart';
 
-const String kAskDiegoAvatarAsset = 'assets/images/ask_diego_avatar.png';
+const String kAskDiegoAvatarAsset = 'assets/images/ask_gio_avatar.png';
 
 class AskDiegoAvatar extends StatelessWidget {
   const AskDiegoAvatar({
@@ -12,11 +13,23 @@ class AskDiegoAvatar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Image.asset(
-      kAskDiegoAvatarAsset,
+    return SizedBox(
       width: size,
       height: size,
-      fit: BoxFit.contain,
+      child: DecoratedBox(
+        decoration: BoxDecoration(
+          color: AppColors.light.primary,
+          shape: BoxShape.circle,
+        ),
+        child: ClipOval(
+          child: Image.asset(
+            kAskDiegoAvatarAsset,
+            width: size,
+            height: size,
+            fit: BoxFit.cover,
+          ),
+        ),
+      ),
     );
   }
 }

@@ -6,6 +6,7 @@ import 'package:flutter/foundation.dart';
 
 const String kStreamFunctionsRegion = 'europe-west1';
 const String kCreateTeamStreamChannelFunctionName = 'createTeamStreamChannel';
+const String kDeleteTeamStreamChannelFunctionName = 'deleteTeamStreamChannel';
 const String _logPrefix = '[StreamChannel]';
 
 /// Parsed callable failure from [FirebaseFunctionsException].
@@ -58,6 +59,60 @@ class StreamChannelService {
       error: error,
       stackTrace: stackTrace,
     );
+  }
+
+  /// Best-effort cleanup when a Grinta team is deleted. Failures are logged but
+  /// should not block Firestore team removal (see [TeamService.deleteTeamAsOwner]).
+  Future<Map<String, dynamic>?> deleteTeamStreamChannel({
+    required String teamId,
+  }) async {
+    final trimmedTeamId = teamId.trim();
+    if (trimmedTeamId.isEmpty) {
+      return null;
+    }
+
+    log(
+      '$kDeleteTeamStreamChannelFunctionName starting:'
+      ' teamId=$trimmedTeamId'
+      ' function=$kDeleteTeamStreamChannelFunctionName'
+      ' region=$kStreamFunctionsRegion',
+    );
+
+    try {
+      final functions = FirebaseFunctions.instanceFor(
+        region: kStreamFunctionsRegion,
+      );
+      final callable =
+          functions.httpsCallable(kDeleteTeamStreamChannelFunctionName);
+
+      final result = await callable.call<Map<String, dynamic>>({
+        'teamId': trimmedTeamId,
+      });
+
+      final data = Map<String, dynamic>.from(result.data);
+
+      log(
+        '$kDeleteTeamStreamChannelFunctionName succeeded:'
+        ' teamId=$trimmedTeamId'
+        ' response=${encodeForLog(data)}',
+      );
+
+      return data;
+    } on FirebaseFunctionsException catch (e, st) {
+      _logDeleteFunctionsException(
+        teamId: trimmedTeamId,
+        error: e,
+        stackTrace: st,
+      );
+      rethrow;
+    } catch (e, st) {
+      _logDeleteGenericFailure(
+        teamId: trimmedTeamId,
+        error: e,
+        stackTrace: st,
+      );
+      rethrow;
+    }
   }
 
   Future<Map<String, dynamic>> createTeamStreamChannel({
@@ -236,6 +291,40 @@ class StreamChannelService {
     log('message=${error.message ?? "(null)"}');
     log('details=${encodeForLog(error.details)}');
     log('formatted=${formatFunctionsException(error)}');
+    if (stackTrace != null) {
+      log('stackTrace=$stackTrace', stackTrace: stackTrace);
+    }
+  }
+
+  void _logDeleteFunctionsException({
+    required String teamId,
+    required FirebaseFunctionsException error,
+    StackTrace? stackTrace,
+  }) {
+    log(
+      '$kDeleteTeamStreamChannelFunctionName failed: teamId=$teamId',
+      error: error,
+    );
+    log('code=${error.code}');
+    log('message=${error.message ?? "(null)"}');
+    log('details=${encodeForLog(error.details)}');
+    log('formatted=${formatFunctionsException(error)}');
+    if (stackTrace != null) {
+      log('stackTrace=$stackTrace', stackTrace: stackTrace);
+    }
+  }
+
+  void _logDeleteGenericFailure({
+    required String teamId,
+    required Object error,
+    StackTrace? stackTrace,
+  }) {
+    log(
+      '$kDeleteTeamStreamChannelFunctionName failed:'
+      ' teamId=$teamId error=${error.toString()}',
+      error: error,
+      stackTrace: stackTrace,
+    );
     if (stackTrace != null) {
       log('stackTrace=$stackTrace', stackTrace: stackTrace);
     }

@@ -8,6 +8,7 @@ import '../model/team.dart';
 import '../util/player_photo_resolver.dart';
 import '../util/player_positions.dart';
 import 'engagement_service.dart';
+import 'stream_channel_service.dart';
 import 'subscription_limits_service.dart';
 
 class TeamService {
@@ -504,9 +505,8 @@ class TeamService {
     if (removeFromManagers) {
       final List<dynamic> managers =
           List<dynamic>.from(team.managers ?? const <dynamic>[]);
-      managers.remove(trimmedPlayerId);
-      for (final String extraId in extraManagerIds) {
-        final String trimmed = extraId.trim();
+      for (final String managerUserId in extraManagerIds) {
+        final String trimmed = managerUserId.trim();
         if (trimmed.isNotEmpty) {
           managers.remove(trimmed);
         }
@@ -602,6 +602,22 @@ class TeamService {
 
     try {
       await engagements.removeTeamIdFromAllEngagements(teamId);
+
+      if (team.isGrinta == true) {
+        try {
+          await StreamChannelService.instance.deleteTeamStreamChannel(
+            teamId: teamId,
+          );
+        } catch (e, stackTrace) {
+          StreamChannelService.log(
+            'deleteTeamStreamChannel failed during team delete (continuing):'
+            ' teamId=$teamId',
+            error: e,
+            stackTrace: stackTrace,
+          );
+        }
+      }
+
       await _collection.doc(teamId).delete();
     } catch (e, stackTrace) {
       debugPrint('deleteTeamAsOwner failed for teamId=$teamId: $e');

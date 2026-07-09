@@ -19,6 +19,7 @@ import 'navigation/app_navigator.dart';
 import 'package:grinta/provider/appSession.dart';
 import 'package:grinta/services/active_session_service.dart';
 import 'package:grinta/services/feature_discovery_service.dart';
+import 'package:grinta/services/eshop_config_service.dart';
 import 'package:grinta/services/subscription_limits_service.dart';
 import 'package:grinta/services/subscription_service.dart';
 import 'package:grinta/services/user_trial_service.dart';
@@ -63,6 +64,7 @@ Future<void> main() async {
   await UserRootService.instance.ensureInitialized();
   await SubscriptionService.instance.ensureInitialized();
   await SubscriptionLimitsService.instance.ensureInitialized();
+  await EshopConfigService.instance.ensureInitialized();
 
   runApp(
     MultiProvider(
@@ -78,6 +80,9 @@ Future<void> main() async {
         ),
         ChangeNotifierProvider<UserRootService>.value(
           value: UserRootService.instance,
+        ),
+        ChangeNotifierProvider<EshopConfigService>.value(
+          value: EshopConfigService.instance,
         ),
       ],
       child: const MyApp(),

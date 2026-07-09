@@ -22,6 +22,7 @@ import 'package:provider/provider.dart';
 Future<bool?> showCreateMatchSheet(
   BuildContext context, {
   DateTime? initialDate,
+  TimeOfDay? initialTime,
   Match? matchToEdit,
   VoidCallback? onSaved,
 }) {
@@ -41,6 +42,7 @@ Future<bool?> showCreateMatchSheet(
           constraints: const BoxConstraints(maxWidth: 520, maxHeight: 820),
           child: CreateMatchSheet(
             initialDate: initialDate,
+            initialTime: initialTime,
             matchToEdit: matchToEdit,
             onSaved: onSaved,
           ),
@@ -57,6 +59,7 @@ Future<bool?> showCreateMatchSheet(
     backgroundColor: context.appColors.card,
     builder: (_) => CreateMatchSheet(
       initialDate: initialDate,
+      initialTime: initialTime,
       matchToEdit: matchToEdit,
       onSaved: onSaved,
     ),
@@ -67,11 +70,13 @@ class CreateMatchSheet extends StatefulWidget {
   const CreateMatchSheet({
     super.key,
     this.initialDate,
+    this.initialTime,
     this.matchToEdit,
     this.onSaved,
   });
 
   final DateTime? initialDate;
+  final TimeOfDay? initialTime;
   final Match? matchToEdit;
   final VoidCallback? onSaved;
 
@@ -118,7 +123,8 @@ class _CreateMatchSheetState extends State<CreateMatchSheet> {
       _initFromExistingMatch(widget.matchToEdit!);
     } else {
       _selectedDate = DateUtils.dateOnly(widget.initialDate ?? now);
-      _selectedTime = TimeOfDay(hour: now.hour, minute: 0);
+      _selectedTime =
+          widget.initialTime ?? TimeOfDay(hour: now.hour, minute: 0);
       _initTeams();
     }
   }

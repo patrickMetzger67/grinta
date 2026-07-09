@@ -7,6 +7,7 @@ import 'package:grinta/services/teamService.dart';
 import 'package:grinta/services/userService.dart';
 import 'package:grinta/util/app_snackbar.dart' show AppSnackbar;
 import 'package:grinta/util/app_theme.dart';
+import 'package:grinta/util/team_tracker_access.dart';
 
 /// Bottom sheet to view or manage GPS tracker owners linked to a team.
 Future<bool?> showTeamTrackerOwnersSheet(
@@ -16,7 +17,20 @@ Future<bool?> showTeamTrackerOwnersSheet(
   required OwnerService ownerService,
   required TeamService teamService,
   UserService? userService,
-}) {
+}) async {
+  final bool canEditTrackerOwners =
+      isManager && TeamTrackerAccess.hasCoachProTrackerAccess();
+
+  if (isManager && !canEditTrackerOwners && !team.hasAnyTrackerOwners) {
+    final allowed = await TeamTrackerAccess.ensureCoachProForTeamTrackers(context);
+    if (!allowed || !context.mounted) {
+      return null;
+    }
+  }
+
+  final bool effectiveCanEdit =
+      isManager && TeamTrackerAccess.hasCoachProTrackerAccess();
+
   return showModalBottomSheet<bool>(
     context: context,
     isScrollControlled: true,
@@ -25,6 +39,7 @@ Future<bool?> showTeamTrackerOwnersSheet(
     builder: (sheetContext) => TeamTrackerOwnersSheet(
       team: team,
       isManager: isManager,
+      canEditTrackerOwners: effectiveCanEdit,
       ownerService: ownerService,
       teamService: teamService,
       userService: userService ?? UserService(),
@@ -37,6 +52,7 @@ class TeamTrackerOwnersSheet extends StatefulWidget {
     super.key,
     required this.team,
     required this.isManager,
+    required this.canEditTrackerOwners,
     required this.ownerService,
     required this.teamService,
     required this.userService,
@@ -44,6 +60,7 @@ class TeamTrackerOwnersSheet extends StatefulWidget {
 
   final Team team;
   final bool isManager;
+  final bool canEditTrackerOwners;
   final OwnerService ownerService;
   final TeamService teamService;
   final UserService userService;
@@ -60,22 +77,16 @@ class _TeamTrackerOwnersSheetState extends State<TeamTrackerOwnersSheet> {
   bool _saving = false;
 
   bool get _readOnly =>
-      widget.team.hasAnyTrackerOwners && !widget.isManager;
+      !widget.canEditTrackerOwners &&
+      (widget.team.hasAnyTrackerOwners || !widget.isManager);
 
-  bool get _editable => widget.isManager;
+  bool get _editable => widget.canEditTrackerOwners;
 
   @override
   void initState() {
     super.initState();
     _selectedIds = widget.team.ownerRefs.map((ref) => ref.id).toSet();
     _loadOwners();
-  }
-
-  Future<String> _teamOwnerEmail() async {
-    final String uid = widget.team.uid?.trim() ?? '';
-    if (uid.isEmpty) return '';
-    final profile = await widget.userService.getById(uid);
-    return profile?.email.trim() ?? '';
   }
 
   Future<void> _loadOwners() async {
@@ -104,16 +115,17 @@ class _TeamTrackerOwnersSheetState extends State<TeamTrackerOwnersSheet> {
         return;
       }
 
-      final String teamOwnerEmail = await _teamOwnerEmail();
-      final List<Owner> ownersByTeamUidEmail = teamOwnerEmail.isEmpty
-          ? const <Owner>[]
-          : await widget.ownerService.getOwnersByEmail(teamOwnerEmail);
+      final List<Owner> availableOwners =
+          await widget.ownerService.getOwnersForTeamManagers(
+        team: widget.team,
+        userService: widget.userService,
+      );
 
       if (widget.team.hasAnyTrackerOwners) {
         final List<Owner> assignedOwners = await _loadTeamOwners();
         if (!mounted) return;
         setState(() {
-          _displayOwners = _mergeOwners(assignedOwners, ownersByTeamUidEmail);
+          _displayOwners = _mergeOwners(assignedOwners, availableOwners);
           _loading = false;
         });
         return;
@@ -121,7 +133,7 @@ class _TeamTrackerOwnersSheetState extends State<TeamTrackerOwnersSheet> {
 
       if (!mounted) return;
       setState(() {
-        _displayOwners = ownersByTeamUidEmail;
+        _displayOwners = availableOwners;
         _loading = false;
       });
     } catch (_) {

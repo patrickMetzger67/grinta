@@ -86,6 +86,24 @@ Set<String> playerMemberLookupIds(Player player) {
   return ids;
 }
 
+/// Firebase Auth user ids linked to [player] ([Player.userID] and [users]).
+Set<String> playerFirebaseUserIds(Player player) {
+  final Set<String> ids = <String>{};
+
+  void add(String? raw) {
+    final String trimmed = raw?.trim() ?? '';
+    if (trimmed.isNotEmpty) {
+      ids.add(trimmed);
+    }
+  }
+
+  add(player.userID);
+  for (final dynamic raw in player.users ?? const <dynamic>[]) {
+    add(raw?.toString());
+  }
+  return ids;
+}
+
 /// True when [team.grintaPlayers] references any [playerMemberLookupIds] entry.
 bool teamContainsGrintaMemberForPlayer(Team team, Player player) {
   for (final String id in playerMemberLookupIds(player)) {

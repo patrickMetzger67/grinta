@@ -5,20 +5,27 @@ import 'package:flutter/foundation.dart';
 import 'package:grinta/model/agendaItem.dart';
 import 'package:grinta/model/match.dart' as grinta_match;
 import 'package:grinta/model/team.dart';
+import 'package:grinta/model/tracker/team_workload_summary.dart';
 import 'package:grinta/model/training.dart';
 import 'package:grinta/services/matchService.dart';
+import 'package:grinta/services/teamWorkloadSummaryService.dart';
 import 'package:grinta/services/trainingService.dart';
 import 'package:grinta/util/buildTimestampFromDateAndTime.dart';
+import 'package:grinta/util/intense_live_eligibility.dart';
 
 class AgendaService {
   final TrainingService _trainingService;
   final MatchService _matchService;
+  final TeamWorkloadSummaryService _teamWorkloadSummaryService;
 
   AgendaService({
     TrainingService? trainingService,
     MatchService? matchService,
+    TeamWorkloadSummaryService? teamWorkloadSummaryService,
   })  : _trainingService = trainingService ?? TrainingService(),
-        _matchService = matchService ?? MatchService();
+        _matchService = matchService ?? MatchService(),
+        _teamWorkloadSummaryService =
+            teamWorkloadSummaryService ?? TeamWorkloadSummaryService();
 
   Stream<List<AgendaItem>> watchAgendaItems({
     required List<Team> teams,
@@ -31,7 +38,7 @@ class AgendaService {
     final Timestamp trainingStreamEnd =
         Timestamp.fromMillisecondsSinceEpoch(timestampEnd.millisecondsSinceEpoch + 1);
 
-    return Stream<List<AgendaItem>>.multi((controller) {
+    final Stream<List<AgendaItem>> rawStream = Stream<List<AgendaItem>>.multi((controller) {
       final Map<String, List<AgendaItem>> partialItems =
           <String, List<AgendaItem>>{};
       final List<StreamSubscription<dynamic>> subscriptions =
@@ -114,6 +121,8 @@ class AgendaService {
         }
       };
     });
+
+    return rawStream.asyncMap(_enrichWithTeamWorkloadSummaries);
   }
 
   /// Loads agenda items using the same Firestore sources as [watchAgendaItems].
@@ -171,7 +180,54 @@ class AgendaService {
       debugPrint('Agenda load: itemCount=${merged.length}');
     }
 
-    return merged;
+    return _enrichWithTeamWorkloadSummaries(merged);
+  }
+
+  Future<List<AgendaItem>> _enrichWithTeamWorkloadSummaries(
+    List<AgendaItem> items,
+  ) async {
+    if (items.isEmpty) {
+      return items;
+    }
+
+    final List<AgendaItem> enriched = await Future.wait(
+      items.map((AgendaItem item) async {
+        if (item.withTracker != true || item.id.isEmpty) {
+          return item;
+        }
+
+        final TeamWorkloadSummary? summary =
+            await _teamWorkloadSummaryService.getByEventId(item.id);
+        if (summary == null) {
+          return item;
+        }
+
+        return _withTeamWorkloadSummary(item, summary);
+      }),
+    );
+
+    return enriched;
+  }
+
+  static AgendaItem _withTeamWorkloadSummary(
+    AgendaItem item,
+    TeamWorkloadSummary summary,
+  ) {
+    return AgendaItem(
+      id: item.id,
+      startAt: item.startAt,
+      endAt: item.endAt,
+      title: item.title,
+      subtitle: item.subtitle,
+      type: item.type,
+      isDone: item.isDone,
+      match: item.match,
+      training: item.training,
+      activityMetrics: item.activityMetrics,
+      withTracker: item.withTracker,
+      areTrackersSynchronized: item.areTrackersSynchronized,
+      teamWorkloadSummary: summary,
+    );
   }
 
   Future<List<AgendaItem>> _loadAgendaItemsForTeam({
@@ -289,7 +345,10 @@ class AgendaService {
     }
 
     final DateTime startAt = training.dateTime!.toDate();
-    final DateTime endAt = startAt.add(const Duration(minutes: 90));
+    final int durationMinutes = training.duration ?? 90;
+    final DateTime endAt = startAt.add(
+      Duration(minutes: durationMinutes > 0 ? durationMinutes : 90),
+    );
     final Timestamp timestampNow = Timestamp.now();
 
     return AgendaItem(
@@ -299,8 +358,9 @@ class AgendaService {
       title: '${team.name ?? ''}: Entraînement',
       type: AgendaItemType.entrainement,
       training: training,
-      isDone: Timestamp.fromDate(endAt).millisecondsSinceEpoch <
-          timestampNow.millisecondsSinceEpoch,
+      isDone: training.isFinish == true ||
+          Timestamp.fromDate(endAt).millisecondsSinceEpoch <
+              timestampNow.millisecondsSinceEpoch,
       withTracker: training.withTracker,
       areTrackersSynchronized: training.isTrackerDataUploaded,
     );

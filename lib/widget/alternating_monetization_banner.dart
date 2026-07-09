@@ -1,6 +1,7 @@
 import 'dart:async' show unawaited;
 
 import 'package:flutter/material.dart';
+import 'package:grinta/services/eshop_config_service.dart';
 import 'package:grinta/services/monetization_banner_rotation_service.dart';
 import 'package:grinta/services/shopify_storefront_service.dart';
 import 'package:grinta/services/subscription_prompt_service.dart';
@@ -34,12 +35,14 @@ class _AlternatingMonetizationBannerState
     _resolveBanner();
     SubscriptionService.instance.addListener(_onSubscriptionChanged);
     UserTrialService.instance.addListener(_onSubscriptionChanged);
+    EshopConfigService.instance.addListener(_onSubscriptionChanged);
   }
 
   @override
   void dispose() {
     SubscriptionService.instance.removeListener(_onSubscriptionChanged);
     UserTrialService.instance.removeListener(_onSubscriptionChanged);
+    EshopConfigService.instance.removeListener(_onSubscriptionChanged);
     super.dispose();
   }
 
@@ -80,9 +83,11 @@ class _AlternatingMonetizationBannerState
       isSubscribed: false,
     );
 
+    await EshopConfigService.instance.ensureInitialized();
     final products =
         await ShopifyStorefrontService.instance.fetchPromoProducts(limit: 1);
-    final shopVisible = products.isNotEmpty;
+    final shopVisible =
+        EshopConfigService.instance.isOpen && products.isNotEmpty;
 
     if (!subscriptionVisible && !shopVisible) {
       if (!mounted) return;

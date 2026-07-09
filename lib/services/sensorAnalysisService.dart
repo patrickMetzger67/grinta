@@ -19,6 +19,7 @@ class SensorAnalysisService {
     required bool isMatch,
     FootballFieldGps? fieldGps,
     TeamParam? teamParam,
+    double minMeaningfulStepDistanceMeters = 0,
   }) {
     final params = teamParam ?? TeamParam.defaultConfig();
 
@@ -187,7 +188,10 @@ class SensorAnalysisService {
       final maxStepDistance = maxPlausibleSpeedMps * dtSec * 1.5;
       final isGpsStepValid = rawDistance >= 0 && rawDistance <= maxStepDistance;
 
-      final stepDistance = isGpsStepValid ? rawDistance : 0.0;
+      final stepDistance = isGpsStepValid &&
+              rawDistance >= minMeaningfulStepDistanceMeters
+          ? rawDistance
+          : 0.0;
       totalDistanceMeters += stepDistance;
 
       if (current.timeMs <= midTimeMs) {

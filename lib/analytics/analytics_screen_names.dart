@@ -20,6 +20,7 @@ abstract final class AnalyticsScreenNames {
   static const matchDetailTabConvocations = 'match_detail_tab_convocations';
   static const matchDetailTabTacticalSchema = 'match_detail_tab_tactical_schema';
   static const matchDetailTabHighlights = 'match_detail_tab_highlights';
+  static const matchDetailTabLive = 'match_detail_tab_live';
   static const matchDetailTabStats = 'match_detail_tab_stats';
 
   // Teams
@@ -28,6 +29,8 @@ abstract final class AnalyticsScreenNames {
   static const teamParam = 'team_param';
   static const teamPlayers = 'team_players';
   static const teamStats = 'team_stats';
+
+  static const intenseLiveSession = 'intense_live_session';
 
   // Tracker / sync
   static const trackerHub = 'tracker_hub';
@@ -45,4 +48,7 @@ abstract final class AnalyticsScreenNames {
   static const notifications = 'notifications';
   static const admin = 'admin';
   static const adminPromoCodes = 'admin_promo_codes';
+  static const adminTrackerOwners = 'admin_tracker_owners';
+  static const adminTrackerDevices = 'admin_tracker_devices';
+  static const adminStreamGroups = 'admin_stream_groups';
 }

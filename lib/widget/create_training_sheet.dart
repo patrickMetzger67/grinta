@@ -5,6 +5,8 @@ import 'package:grinta/model/season.dart';
 import 'package:grinta/model/team.dart';
 import 'package:grinta/model/training.dart';
 import 'package:grinta/provider/appSession.dart';
+import 'package:grinta/model/tracker/deviceOwner.dart';
+import 'package:grinta/services/deviceOwnerService.dart' as device_owner_svc;
 import 'package:grinta/services/ownerService.dart';
 import 'package:grinta/services/trainingService.dart';
 import 'package:grinta/navigation/app_navigator.dart';
@@ -21,6 +23,7 @@ const List<int> kTrainingDurationOptions = <int>[45, 60, 75, 90, 105, 120, 150];
 Future<bool?> showCreateTrainingSheet(
   BuildContext context, {
   DateTime? initialDate,
+  TimeOfDay? initialTime,
   Training? trainingToEdit,
   VoidCallback? onSaved,
 }) {
@@ -40,6 +43,7 @@ Future<bool?> showCreateTrainingSheet(
           constraints: const BoxConstraints(maxWidth: 520, maxHeight: 720),
           child: CreateTrainingSheet(
             initialDate: initialDate,
+            initialTime: initialTime,
             trainingToEdit: trainingToEdit,
             onSaved: onSaved,
           ),
@@ -56,6 +60,7 @@ Future<bool?> showCreateTrainingSheet(
     backgroundColor: context.appColors.card,
     builder: (_) => CreateTrainingSheet(
       initialDate: initialDate,
+      initialTime: initialTime,
       trainingToEdit: trainingToEdit,
       onSaved: onSaved,
     ),
@@ -66,11 +71,13 @@ class CreateTrainingSheet extends StatefulWidget {
   const CreateTrainingSheet({
     super.key,
     this.initialDate,
+    this.initialTime,
     this.trainingToEdit,
     this.onSaved,
   });
 
   final DateTime? initialDate;
+  final TimeOfDay? initialTime;
   final Training? trainingToEdit;
   final VoidCallback? onSaved;
 
@@ -110,7 +117,8 @@ class _CreateTrainingSheetState extends State<CreateTrainingSheet> {
       _initFromExistingTraining(widget.trainingToEdit!);
     } else {
       _selectedDate = DateUtils.dateOnly(widget.initialDate ?? now);
-      _selectedTime = TimeOfDay(hour: now.hour, minute: 0);
+      _selectedTime =
+          widget.initialTime ?? TimeOfDay(hour: now.hour, minute: 0);
       _selectedWeekdays = <int>{_selectedDate.weekday};
       _resetRecurrentRange();
       _initTeams();
@@ -418,9 +426,21 @@ class _CreateTrainingSheetState extends State<CreateTrainingSheet> {
         );
         await _trainingService.updateTraining(training);
       } else {
+        Map<String, DeviceOwner>? ownerDevicesByDocId;
+        if (_withTracker) {
+          final String ownerId = _selectedOwnerId!.trim();
+          final devices =
+              await device_owner_svc.DeviceOwnerService().listByOwnerId(ownerId);
+          ownerDevicesByDocId = {
+            for (final DeviceOwner device in devices) device.id: device,
+          };
+        }
+
         final playerTraining = playerTrainingFromGrintaPlayers(
           team.grintaPlayers ?? const [],
           managerIds: managerIdsFromTeam(team),
+          withTracker: _withTracker,
+          ownerDevicesByDocId: ownerDevicesByDocId,
         );
 
         final trainings = buildTrainingsForCreation(

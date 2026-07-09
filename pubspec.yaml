@@ -92,8 +92,7 @@ flutter:
     - assets/images/splash_logo_dark.png
     - assets/images/google_logo.svg
     - assets/images/apple_logo.svg
-    - assets/images/ask_diego_avatar.png
-    - assets/images/ask_diego_avatar.png
+    - assets/images/ask_gio_avatar.png
 
   fonts:
     - family: SFPro

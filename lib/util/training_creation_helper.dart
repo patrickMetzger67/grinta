@@ -11,6 +11,7 @@ import 'package:grinta/util/team_deletion_access.dart';
 import '../model/grinta_player.dart';
 import '../model/season.dart';
 import '../model/team.dart';
+import '../model/tracker/deviceOwner.dart';
 import '../model/training.dart';
 import 'player_positions.dart';
 
@@ -179,15 +180,61 @@ Future<bool> deleteManagedTraining(
   }
 }
 
+/// Assigns the first available tracker from [trackers] (DeviceOwner doc ids) to
+/// [playerTraining], mirroring [TrainingTrackerContext.applyDefaultFromEffectives].
+///
+/// [PlayerTraining.deviceId] stores the DeviceOwner Firestore doc id (for lookup).
+/// [PlayerTraining.customName] stores the display label (e.g. "7").
+/// Insiders API calls must use [DeviceOwner.deviceId] (TRACKER_Device UUID), never
+/// [PlayerTraining.customName].
+void applyTrackerToPlayerTraining({
+  required PlayerTraining playerTraining,
+  required List<String> trackers,
+  required Map<String, DeviceOwner> ownerDevicesByDocId,
+  required Set<String> devicesAffected,
+}) {
+  if (playerTraining.deviceId != null && playerTraining.deviceId!.isNotEmpty) {
+    devicesAffected.add(playerTraining.deviceId!);
+    return;
+  }
+
+  if (trackers.isEmpty || ownerDevicesByDocId.isEmpty) return;
+
+  for (final trackerDocId in trackers) {
+    final String id = trackerDocId.trim();
+    if (id.isEmpty) continue;
+
+    final device = ownerDevicesByDocId[id];
+    if (device == null) continue;
+    if (devicesAffected.contains(device.id)) continue;
+
+    playerTraining.deviceId = device.id;
+    final name = device.customName?.trim();
+    playerTraining.customName =
+        (name != null && name.isNotEmpty) ? name : device.deviceId;
+    devicesAffected.add(device.id);
+    break;
+  }
+}
+
 /// Builds [PlayerTraining] rows for field players only (present by default).
 ///
 /// Staff members ([hasExplicitGrintaStaffFonction] / [isGrintaRosterStaff]) are
 /// excluded from attendance tracking.
+///
+/// When [withTracker] is true and [ownerDevicesByDocId] is provided, each player's
+/// assigned tracker from [GrintaPlayer.trackers] is copied to [PlayerTraining.deviceId]
+/// (DeviceOwner doc id), using the same resolution rules as the training players screen.
 List<PlayerTraining> playerTrainingFromGrintaPlayers(
   List<GrintaPlayer> players, {
   Set<String> managerIds = const <String>{},
+  bool withTracker = false,
+  Map<String, DeviceOwner>? ownerDevicesByDocId,
 }) {
   final rows = <PlayerTraining>[];
+  final devicesAffected = <String>{};
+  final ownerDevices = ownerDevicesByDocId ?? const <String, DeviceOwner>{};
+
   for (final GrintaPlayer player in players) {
     final String playerId = player.playerId.trim();
     if (playerId.isEmpty) continue;
@@ -200,12 +247,21 @@ List<PlayerTraining> playerTrainingFromGrintaPlayers(
       continue;
     }
 
-    rows.add(
-      PlayerTraining(
-        playerId: playerId,
-        presenceType: PresenceType.present,
-      ),
+    final playerTraining = PlayerTraining(
+      playerId: playerId,
+      presenceType: PresenceType.present,
     );
+
+    if (withTracker && ownerDevices.isNotEmpty) {
+      applyTrackerToPlayerTraining(
+        playerTraining: playerTraining,
+        trackers: player.trackers,
+        ownerDevicesByDocId: ownerDevices,
+        devicesAffected: devicesAffected,
+      );
+    }
+
+    rows.add(playerTraining);
   }
   return rows;
 }

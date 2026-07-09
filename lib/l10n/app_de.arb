@@ -647,6 +647,7 @@
   "asiSelectFile": "Bitte wählen Sie eine .asi-Datei aus",
   "asiEnterDeviceId": "Bitte geben Sie die Geräte-ID ein",
   "asiCannotReadFile": "Die ausgewählte Datei kann nicht abgespielt werden",
+  "asiFileEmptyOrNoData": "Die .asi-Datei ist leer oder enthält keine verwertbaren Daten.",
   "asiFileMismatch": "Die Datei passt nicht zum ausgewählten Tracker",
   "asiTrackerUnknown": "Tracker nicht erkannt",
   "asiFilePickError": "Fehler bei der Dateiauswahl: {details}",
@@ -886,6 +887,8 @@
     }
   },
   "teamDetailTrackerOwnersSaved": "Tracker-Kits aktualisiert.",
+  "teamDetailTrackerCoachProRequiredTitle": "GPS-Tracker",
+  "teamDetailTrackerCoachProRequiredMessage": "Das Verknüpfen von GPS-Tracker-Kits mit einem Team erfordert ein Coach Pro-Abo.",
   "teamDetailColumnApp": "App",
   "teamDetailPlayerDetailsTitle": "Spielerdetails",
   "teamDetailGrantManager": "Managerrechte erteilen",
@@ -1177,6 +1180,30 @@
   "trainingFinishConfirmMessage": "Nicht verfügbare Spieler, die als anwesend markiert sind, werden als abwesend gesetzt. Möchten Sie dieses Training beenden?",
   "trainingFinished": "Training beendet",
   "trainingFinishError": "Training konnte nicht beendet werden. Bitte erneut versuchen.",
+  "trainingIntenseFinishTitle": "Sensordaten werden abgerufen",
+  "trainingIntenseFinishMessage": "Daten der anwesenden Spieler mit zugewiesenem Tracker werden abgerufen. Fenster nicht schließen.",
+  "trainingIntenseFinishSyncing": "Synchronisierung läuft…",
+  "trainingIntenseFinishStagePending": "Ausstehend",
+  "trainingIntenseFinishStageFetching": "Rohdaten werden abgerufen…",
+  "trainingIntenseFinishStageConverting": "Daten werden konvertiert…",
+  "trainingIntenseFinishStageAnalyzing": "Analyse läuft…",
+  "trainingIntenseFinishStageDone": "Fertig",
+  "trainingIntenseFinishStageError": "Fehler",
+  "trainingIntenseFinishNoTrackers": "Kein anwesender Spieler hat einen Tracker. Training kann ohne Abruf beendet werden.",
+  "trainingIntenseFinishPartialError": "Einige Abrufe sind fehlgeschlagen. Problem beheben und erneut versuchen.",
+  "intenseLiveTitle": "Live",
+  "intenseLiveOpenTooltip": "Live-Trackerdaten anzeigen",
+  "intenseLiveSelectPlayer": "Spieler auswählen",
+  "intenseLiveNoPlayers": "Kein anwesender Spieler mit zugewiesenem Tracker",
+  "intenseLiveRefresh": "Aktualisieren",
+  "intenseLiveLastUpdate": "Aktualisiert um {time}",
+  "@intenseLiveLastUpdate": {
+    "placeholders": {
+      "time": { "type": "String" }
+    }
+  },
+  "tabLive": "Live",
+  "tabLiveShort": "Live",
   "createMatchTitle": "Neues Spiel",
   "createMatchTeam": "Mannschaft",
   "createMatchTeamRequired": "Mannschaft auswählen",
@@ -1408,9 +1435,9 @@
   "teamStatsCalendarDatesLabel": "Termine",
   "teamStatsCalendarNoMatchDates": "Keine Termine geplant",
   "teamStatsCalendarDateSeparator": ", ",
-  "askDiegoTitle": "Ask Diego",
-  "askDiegoWelcome": "Hallo! Ich bin Diego. Ich kann bei Ihrem Spielplan, dem nächsten Gegner oder Teamstatistiken helfen.",
-  "askDiegoInputHint": "Frag Diego…",
+  "askDiegoTitle": "Ask Gio",
+  "askDiegoWelcome": "Hallo! Ich bin Gio. Ich kann bei Ihrem Spielplan, dem nächsten Gegner oder Teamstatistiken helfen.",
+  "askDiegoInputHint": "Frag Gio…",
   "askDiegoSend": "Senden",
   "askDiegoListen": "Antwort anhören",
   "askDiegoOpenScreen": "Öffnen",
@@ -1558,6 +1585,143 @@
   "adminPromoCodeFieldActive": "Aktiv",
   "adminPromoCodeClearExpiry": "Ablaufdatum entfernen",
   "adminPromoCodeNotFound": "Promo-Code nicht gefunden.",
+  "adminTrackerOwnersSection": "Tracker-Besitzer",
+  "adminTrackerOwnersSectionDesc": "Tracker-Besitzer erstellen und verwalten.",
+  "adminTrackerOwnersTitle": "Tracker-Besitzer",
+  "adminTrackerOwnersEmpty": "Noch keine Besitzer.",
+  "adminTrackerOwnersLoadError": "Besitzer konnten nicht geladen werden.",
+  "adminTrackerOwnerCreate": "Besitzer hinzufügen",
+  "adminTrackerOwnerCreateTitle": "Besitzer hinzufügen",
+  "adminTrackerOwnerEditTitle": "Besitzer bearbeiten",
+  "adminTrackerOwnerFieldName": "Name",
+  "adminTrackerOwnerFieldEmail": "E-Mail",
+  "adminTrackerOwnerFieldFirstname": "Vorname",
+  "adminTrackerOwnerFieldLastname": "Nachname",
+  "adminTrackerOwnerFieldActive": "Aktiv",
+  "adminTrackerOwnerFieldTypeTracker": "Tracker-Typ",
+  "adminTrackerOwnerTypeInspirit": "Inspirit",
+  "adminTrackerOwnerTypeFootbar": "Footbar",
+  "adminTrackerOwnerTypeIntense": "Intense (SIM, Cloud-Stream)",
+  "adminTrackerOwnerFieldRequired": "Pflichtfeld",
+  "adminTrackerOwnerFieldEmailInvalid": "Ungültige E-Mail",
+  "adminTrackerOwnerStatusActive": "Aktiv",
+  "adminTrackerOwnerStatusInactive": "Inaktiv",
+  "adminTrackerOwnerSave": "Speichern",
+  "adminTrackerOwnerDelete": "Löschen",
+  "adminTrackerOwnerDeleteConfirmTitle": "Besitzer löschen?",
+  "adminTrackerOwnerDeleteConfirmMessage": "Möchtest du {name} wirklich löschen? Diese Aktion ist endgültig.",
+  "@adminTrackerOwnerDeleteConfirmMessage": {
+    "placeholders": {
+      "name": { "type": "String" }
+    }
+  },
+  "adminTrackerOwnerCreated": "Besitzer erstellt.",
+  "adminTrackerOwnerUpdated": "Besitzer aktualisiert.",
+  "adminTrackerOwnerDeleted": "Besitzer gelöscht.",
+  "adminTrackerOwnerSaveFailed": "Besitzer konnte nicht gespeichert werden.",
+  "adminTrackerOwnerDeleteFailed": "Besitzer konnte nicht gelöscht werden.",
+  "adminTrackerOwnerPermissionDenied": "Für die Verwaltung der Tracker-Besitzer ist Administratorzugriff erforderlich.",
+  "adminTrackerDevicesSection": "Tracker-Verwaltung",
+  "adminTrackerDevicesSectionDesc": "Tracker-Geräte synchronisieren, zuweisen und verwalten.",
+  "adminTrackerDevicesTitle": "Tracker-Verwaltung",
+  "adminTrackerDevicesManageAction": "Tracker-Verwaltung",
+  "adminTrackerDevicesShowUnassigned": "Nicht zugewiesene Geräte anzeigen",
+  "adminTrackerDevicesSelectOwner": "Verantwortlichen auswählen",
+  "adminTrackerDevicesResetFilter": "Zurücksetzen",
+  "adminTrackerDevicesEmpty": "Keine Geräte",
+  "adminTrackerDevicesEmptySubtitle": "Keine Dokumente in TRACKER_Device.",
+  "adminTrackerDevicesLoadError": "Geräte konnten nicht geladen werden.",
+  "adminTrackerDevicesSource": "Quelle: {provider}",
+  "@adminTrackerDevicesSource": {
+    "placeholders": {
+      "provider": { "type": "String" }
+    }
+  },
+  "adminTrackerDevicesSerial": "Seriennummer: {serial}",
+  "@adminTrackerDevicesSerial": {
+    "placeholders": {
+      "serial": { "type": "String" }
+    }
+  },
+  "adminTrackerDevicesUpdatedAt": "Aktualisiert: {date}",
+  "@adminTrackerDevicesUpdatedAt": {
+    "placeholders": {
+      "date": { "type": "String" }
+    }
+  },
+  "adminTrackerDevicesStatusActive": "Aktiv",
+  "adminTrackerDevicesStatusInactive": "Inaktiv",
+  "adminTrackerDevicesAssign": "Zuweisen",
+  "adminTrackerDevicesUnassign": "Zuweisung aufheben",
+  "adminTrackerDevicesAssignTitle": "Gerät zuweisen",
+  "adminTrackerDevicesCustomName": "Name (optional)",
+  "adminTrackerDevicesCancel": "Abbrechen",
+  "adminTrackerDevicesValidate": "Bestätigen",
+  "adminTrackerDevicesSelectOwnerRequired": "Bitte wählen Sie einen Verantwortlichen aus.",
+  "adminTrackerDevicesAssignSuccess": "Zuweisung gespeichert.",
+  "adminTrackerDevicesUnassignSuccess": "Zuweisung aufgehoben.",
+  "adminTrackerDevicesError": "Fehler: {error}",
+  "@adminTrackerDevicesError": {
+    "placeholders": {
+      "error": { "type": "String" }
+    }
+  },
+  "adminTrackerDevicesSyncInspirit": "Inspirit synchronisieren",
+  "adminTrackerDevicesSyncFootbar": "Footbar synchronisieren",
+  "adminTrackerDevicesSyncInProgress": "Synchronisierung...",
+  "adminTrackerDevicesSyncInspiritInProgress": "Inspirit-Sync (Insiders) läuft...",
+  "adminTrackerDevicesSyncFootbarInProgress": "Footbar-Sync läuft...",
+  "adminTrackerDevicesSyncInspiritSuccess": "Inspirit-Sync: {count} Gerät(e) aktualisiert.",
+  "@adminTrackerDevicesSyncInspiritSuccess": {
+    "placeholders": {
+      "count": { "type": "int" }
+    }
+  },
+  "adminTrackerDevicesSyncInspiritError": "Inspirit-Sync-Fehler: {error}",
+  "@adminTrackerDevicesSyncInspiritError": {
+    "placeholders": {
+      "error": { "type": "String" }
+    }
+  },
+  "adminTrackerDevicesPermissionDenied": "Für die Verwaltung der Geräte ist Administratorzugriff erforderlich.",
+  "adminStreamGroupsSection": "Messaging - Gruppen",
+  "adminStreamGroupsSectionDesc": "GetStream-Team-Chatgruppen auflisten und löschen.",
+  "adminStreamGroupsTitle": "Messaging - Gruppen",
+  "adminStreamGroupsEmpty": "Keine Chatgruppen",
+  "adminStreamGroupsEmptySubtitle": "Keine Teamkanäle auf GetStream gefunden.",
+  "adminStreamGroupsLoadError": "Chatgruppen konnten nicht geladen werden.",
+  "adminStreamGroupsRefresh": "Aktualisieren",
+  "adminStreamGroupsCid": "CID: {cid}",
+  "@adminStreamGroupsCid": {
+    "placeholders": {
+      "cid": { "type": "String" }
+    }
+  },
+  "adminStreamGroupsMemberCount": "{count} Mitglieder",
+  "@adminStreamGroupsMemberCount": {
+    "placeholders": {
+      "count": { "type": "int" }
+    }
+  },
+  "adminStreamGroupsLastMessageAt": "Letzte Nachricht: {date}",
+  "@adminStreamGroupsLastMessageAt": {
+    "placeholders": {
+      "date": { "type": "String" }
+    }
+  },
+  "adminStreamGroupsDelete": "Löschen",
+  "adminStreamGroupsCancel": "Abbrechen",
+  "adminStreamGroupsDeleteConfirmTitle": "Gruppe löschen?",
+  "adminStreamGroupsDeleteConfirmMessage": "Möchten Sie die Gruppe {name} ({cid}) wirklich löschen? Diese Aktion ist endgültig.",
+  "@adminStreamGroupsDeleteConfirmMessage": {
+    "placeholders": {
+      "name": { "type": "String" },
+      "cid": { "type": "String" }
+    }
+  },
+  "adminStreamGroupsDeleted": "Gruppe gelöscht.",
+  "adminStreamGroupsDeleteFailed": "Gruppe konnte nicht gelöscht werden.",
+  "adminStreamGroupsPermissionDenied": "Für die Verwaltung der Chatgruppen ist Administratorzugriff erforderlich.",
   "promoCodeMenuLabel": "Promo-Code",
   "promoCodeDialogValidate": "Einlösen",
   "promoCodeRedeemTitle": "Haben Sie einen Promo-Code?",

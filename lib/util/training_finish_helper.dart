@@ -4,15 +4,60 @@ import 'package:grinta/core/extensions/l10n_extension.dart';
 import 'package:grinta/navigation/app_navigator.dart';
 import 'package:grinta/services/ownerService.dart';
 import 'package:grinta/services/playerService.dart';
+import 'package:grinta/services/teamWorkloadSummaryService.dart';
+import 'package:grinta/services/trackerDataAnalysisService.dart';
 import 'package:grinta/services/trainingService.dart';
 import 'package:grinta/util/app_snackbar.dart';
 import 'package:grinta/util/app_theme.dart';
+import 'package:grinta/widget/training_intense_finish_dialog.dart';
 
 import '../model/training.dart';
 import '../screen/team_players/training_team_players_presence.dart';
 
 bool isPresentOrDefaultPresence(PresenceType? presenceType) {
   return presenceType == null || presenceType == PresenceType.present;
+}
+
+bool isTrainingFinished(Training training) {
+  return training.isFinish == true || training.trainingEndAt != null;
+}
+
+/// Aggregates per-player [TRACKER_Analysis] docs into [TRACKER_TeamAnalysis].
+///
+/// Mirrors [TrackerHubPage._confirmCloseSync] after manual USB sync.
+Future<void> computeTeamWorkloadSummaryForEvent({
+  required String eventId,
+  Training? training,
+}) async {
+  final analyses =
+      await TrackerAnalysisService.getAnalysesByEvent(eventId);
+  if (analyses.isEmpty) return;
+
+  Duration? sessionDuration;
+  if (training != null) {
+    final durationMinutes = training.duration;
+    if (durationMinutes != null && durationMinutes > 0) {
+      sessionDuration = Duration(minutes: durationMinutes);
+    } else if (training.trainingStartAt != null &&
+        training.trainingEndAt != null) {
+      sessionDuration = training.trainingEndAt!
+          .toDate()
+          .difference(training.trainingStartAt!.toDate());
+    }
+  }
+
+  await TeamWorkloadSummaryService().computeAndSave(
+    eventId: eventId,
+    playerResults: analyses,
+    sessionDuration: sessionDuration,
+  );
+}
+
+/// Placeholder for post-finish processing (notifications, stats, etc.).
+Future<void> onTrainingFinishedProcessing({
+  required Training training,
+}) async {
+  // Reserved for future post-finish hooks (notifications, etc.).
 }
 
 /// Marks players still listed as present (or unset) as absent when they are
@@ -60,6 +105,8 @@ Future<List<PlayerTraining>> markUnavailablePresentPlayersAbsent({
 /// externally.
 Future<void> finishTrainingAfterConfirm({
   required Training training,
+  bool? markTrackerDataUploaded,
+  bool aggregateTeamWorkload = false,
 }) async {
   final trainingId = training.docId?.trim() ?? training.trainingId?.trim();
   if (trainingId == null || trainingId.isEmpty) {
@@ -78,23 +125,35 @@ Future<void> finishTrainingAfterConfirm({
     seasonId: fresh.seasonId,
   );
 
-  var markTrackerDataUploaded = false;
-  if (fresh.withTracker) {
+  var trackerDataUploaded = markTrackerDataUploaded;
+  if (trackerDataUploaded == null && fresh.withTracker) {
     final ownerId = fresh.ownerId?.trim() ?? '';
     if (ownerId.isNotEmpty) {
       final owner = await OwnerService().getOwnerById(ownerId);
       if (owner != null && !owner.withSyncing) {
-        markTrackerDataUploaded = true;
+        trackerDataUploaded = true;
       }
     }
+  }
+
+  if (aggregateTeamWorkload) {
+    await computeTeamWorkloadSummaryForEvent(
+      eventId: trainingId,
+      training: fresh,
+    );
   }
 
   await TrainingService().markTrainingFinished(
     trainingId: trainingId,
     playerTraining: updatedPlayerTraining,
     trainingEndAt: Timestamp.now(),
-    markTrackerDataUploaded: markTrackerDataUploaded,
+    markTrackerDataUploaded: trackerDataUploaded == true,
   );
+
+  fresh.isFinish = true;
+  fresh.trainingEndAt = Timestamp.now();
+  fresh.playerTraining = updatedPlayerTraining;
+  await onTrainingFinishedProcessing(training: fresh);
 }
 
 /// Shows a confirmation dialog before finishing a training session.
@@ -141,6 +200,17 @@ Future<bool> confirmFinishTraining(
   return confirmed == true;
 }
 
+/// Returns true when the training owner uses Intense/SIM cloud sync (no USB).
+Future<bool> shouldUseIntenseFinishFlow(Training training) async {
+  if (training.withTracker != true) return false;
+
+  final ownerId = training.ownerId?.trim() ?? '';
+  if (ownerId.isEmpty) return false;
+
+  final owner = await OwnerService().getOwnerById(ownerId);
+  return owner != null && !owner.withSyncing;
+}
+
 /// Finishes a training after confirmation and shows a snackbar on the root
 /// navigator.
 Future<bool> finishManagedTraining(
@@ -148,8 +218,28 @@ Future<bool> finishManagedTraining(
   required Training training,
   VoidCallback? onFinished,
 }) async {
-  if (training.trainingEndAt != null) {
+  if (isTrainingFinished(training)) {
     return false;
+  }
+
+  final useIntenseFlow = await shouldUseIntenseFinishFlow(training);
+  if (!context.mounted) return false;
+
+  if (useIntenseFlow) {
+    final finished = await TrainingIntenseFinishDialog.show(
+      context,
+      training: training,
+    );
+    if (finished != true || !context.mounted) {
+      return false;
+    }
+
+    onFinished?.call();
+    final BuildContext? rootContext = appNavigatorKey.currentContext;
+    if (rootContext != null && rootContext.mounted) {
+      AppSnackbar.show(rootContext, context.l10n.trainingFinished, isError: false);
+    }
+    return true;
   }
 
   final confirmed = await confirmFinishTraining(context, training: training);

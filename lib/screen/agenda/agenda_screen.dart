@@ -1,6 +1,7 @@
-import 'dart:async' show StreamSubscription, unawaited;
+import 'dart:async' show StreamSubscription, Timer, unawaited;
 
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:grinta/analytics/analytics_features.dart';
 import 'package:grinta/analytics/analytics_interactions.dart';
@@ -31,7 +32,9 @@ import '../../widget/tracker_kit_icon_pill.dart';
 import '../../widget/tracker_player_analysis_widget.dart';
 import '../../util/match_creation_helper.dart';
 import '../../util/training_creation_helper.dart';
+import '../../util/intense_live_eligibility.dart';
 import '../../util/training_finish_helper.dart';
+import '../intense_live/intense_live_session_screen.dart';
 import '../../widget/create_match_sheet.dart';
 import '../../widget/create_training_sheet.dart';
 import '../match_detail_screen.dart';

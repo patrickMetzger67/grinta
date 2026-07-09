@@ -92,6 +92,32 @@ service cloud.firestore {
       allow create: if isRootUser() && isValidPromoCodeCreate(codeId);
     }
 
+    // Shared tracker owners (managed by isRoot from the Grinta admin panel).
+    // This rule is additive: the catch-all below still grants authenticated
+    // read/write so goaltimefootball's existing access is preserved. It is
+    // intentionally NOT listed in isCatchAllWritePath().
+    match /TRACKER_Owner/{ownerId} {
+      allow read, write: if isRootUser();
+    }
+
+    // Shared tracker devices and owner assignments (managed by isRoot from Grinta admin).
+    // Additive: catch-all below still grants authenticated read/write for goaltimefootball.
+    match /TRACKER_Device/{deviceId} {
+      allow read, write: if isRootUser();
+    }
+
+    match /TRACKER_DeviceOwner/{assignmentId} {
+      allow read, write: if isRootUser();
+    }
+
+    // Remote app config (subscription limits, e-shop flags).
+    match /config/{docId} {
+      allow read: if request.auth != null
+        && docId in ['subscription_limits', 'eshop'];
+      allow write: if isRootUser()
+        && docId in ['subscription_limits', 'eshop'];
+    }
+
     // Member self-registration without invitation code.
     match /member/{memberId} {
       allow create: if request.auth != null

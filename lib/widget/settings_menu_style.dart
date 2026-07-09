@@ -5,11 +5,11 @@ import 'package:grinta/util/app_theme.dart';
 /// Icon size for web sidebar nav and settings panel rows.
 const double kWebMenuIconSize = 22;
 
-/// Diego avatar size in the web sidebar (expanded / collapsed).
+/// Gio avatar size in the web sidebar (expanded / collapsed).
 const double kWebSidebarDiegoAvatarSizeExpanded = 34;
 const double kWebSidebarDiegoAvatarSizeCollapsed = 28;
 
-/// Label style for web sidebar navigation items (Agenda, Diego, notifications…).
+/// Label style for web sidebar navigation items (Agenda, Gio, notifications…).
 TextStyle webSidebarNavLabelStyle(
   BuildContext context, {
   required bool selected,

@@ -779,6 +779,7 @@
   "asiSelectFile": "Veuillez sélectionner un fichier .asi",
   "asiEnterDeviceId": "Veuillez renseigner le deviceId",
   "asiCannotReadFile": "Impossible de lire le fichier sélectionné",
+  "asiFileEmptyOrNoData": "Le fichier .asi est vide ou ne contient aucune donnée exploitable.",
   "asiFileMismatch": "Le fichier ne correspond pas au tracker sélectionné",
   "asiTrackerUnknown": "Tracker non reconnu",
   "asiFilePickError": "Erreur lors de la sélection du fichier : {details}",
@@ -1162,6 +1163,8 @@
     }
   },
   "teamDetailTrackerOwnersSaved": "Kits tracker mis à jour.",
+  "teamDetailTrackerCoachProRequiredTitle": "Trackers GPS",
+  "teamDetailTrackerCoachProRequiredMessage": "L'association de kits tracker GPS à une équipe nécessite un abonnement Coach Pro.",
   "roleCoach": "Coach",
   "roleExecutive": "Dirigeant",
   "grintaStaffRoleEducator": "Entraîneur / Éducateur",
@@ -1482,6 +1485,30 @@
   "trainingFinishConfirmMessage": "Les joueurs indisponibles encore marqués présents seront passés absents. Voulez-vous terminer cet entraînement ?",
   "trainingFinished": "Entraînement terminé",
   "trainingFinishError": "Impossible de terminer l'entraînement. Réessayez.",
+  "trainingIntenseFinishTitle": "Récupération des données capteurs",
+  "trainingIntenseFinishMessage": "Récupération des données des joueurs présents avec capteur assigné. Ne fermez pas cette fenêtre.",
+  "trainingIntenseFinishSyncing": "Synchronisation en cours…",
+  "trainingIntenseFinishStagePending": "En attente",
+  "trainingIntenseFinishStageFetching": "Récupération des données brutes…",
+  "trainingIntenseFinishStageConverting": "Conversion des données…",
+  "trainingIntenseFinishStageAnalyzing": "Analyse en cours…",
+  "trainingIntenseFinishStageDone": "Terminé",
+  "trainingIntenseFinishStageError": "Erreur",
+  "trainingIntenseFinishNoTrackers": "Aucun joueur présent n'a de capteur assigné. Vous pouvez terminer l'entraînement sans récupération.",
+  "trainingIntenseFinishPartialError": "Certaines récupérations ont échoué. Corrigez le problème puis réessayez.",
+  "intenseLiveTitle": "Live",
+  "intenseLiveOpenTooltip": "Voir le live capteurs",
+  "intenseLiveSelectPlayer": "Sélectionner un joueur",
+  "intenseLiveNoPlayers": "Aucun joueur présent avec capteur assigné",
+  "intenseLiveRefresh": "Actualiser",
+  "intenseLiveLastUpdate": "Mis à jour à {time}",
+  "@intenseLiveLastUpdate": {
+    "placeholders": {
+      "time": { "type": "String" }
+    }
+  },
+  "tabLive": "Live",
+  "tabLiveShort": "Live",
   "createMatchTitle": "Nouvelle rencontre",
   "createMatchTeam": "Équipe",
   "createMatchTeamRequired": "Sélectionnez une équipe",
@@ -1713,9 +1740,9 @@
   "teamStatsCalendarDatesLabel": "Dates",
   "teamStatsCalendarNoMatchDates": "Aucune date programmée",
   "teamStatsCalendarDateSeparator": ", ",
-  "askDiegoTitle": "Ask Diego",
-  "askDiegoWelcome": "Bonjour ! Je suis Diego. Je peux vous aider avec votre agenda, votre prochain adversaire ou les statistiques de votre équipe. Posez-moi une question ou utilisez le micro.",
-  "askDiegoInputHint": "Demandez à Diego…",
+  "askDiegoTitle": "Ask Gio",
+  "askDiegoWelcome": "Bonjour ! Je suis Gio. Je peux vous aider avec votre agenda, votre prochain adversaire ou les statistiques de votre équipe. Posez-moi une question ou utilisez le micro.",
+  "askDiegoInputHint": "Demandez à Gio…",
   "askDiegoSend": "Envoyer",
   "askDiegoListen": "Écouter la réponse",
   "askDiegoOpenScreen": "Ouvrir",
@@ -1863,6 +1890,143 @@
   "adminPromoCodeFieldActive": "Actif",
   "adminPromoCodeClearExpiry": "Supprimer la date d'expiration",
   "adminPromoCodeNotFound": "Code promo introuvable.",
+  "adminTrackerOwnersSection": "Propriétaires trackers",
+  "adminTrackerOwnersSectionDesc": "Créer et gérer les propriétaires de trackers.",
+  "adminTrackerOwnersTitle": "Propriétaires trackers",
+  "adminTrackerOwnersEmpty": "Aucun propriétaire pour le moment.",
+  "adminTrackerOwnersLoadError": "Impossible de charger les propriétaires.",
+  "adminTrackerOwnerCreate": "Ajouter un propriétaire",
+  "adminTrackerOwnerCreateTitle": "Ajouter un propriétaire",
+  "adminTrackerOwnerEditTitle": "Modifier le propriétaire",
+  "adminTrackerOwnerFieldName": "Nom",
+  "adminTrackerOwnerFieldEmail": "Email",
+  "adminTrackerOwnerFieldFirstname": "Prénom",
+  "adminTrackerOwnerFieldLastname": "Nom de famille",
+  "adminTrackerOwnerFieldActive": "Actif",
+  "adminTrackerOwnerFieldTypeTracker": "Type de tracker",
+  "adminTrackerOwnerTypeInspirit": "Inspirit",
+  "adminTrackerOwnerTypeFootbar": "Footbar",
+  "adminTrackerOwnerTypeIntense": "Intense (SIM, flux cloud)",
+  "adminTrackerOwnerFieldRequired": "Champ obligatoire",
+  "adminTrackerOwnerFieldEmailInvalid": "Email invalide",
+  "adminTrackerOwnerStatusActive": "Actif",
+  "adminTrackerOwnerStatusInactive": "Inactif",
+  "adminTrackerOwnerSave": "Enregistrer",
+  "adminTrackerOwnerDelete": "Supprimer",
+  "adminTrackerOwnerDeleteConfirmTitle": "Supprimer le propriétaire ?",
+  "adminTrackerOwnerDeleteConfirmMessage": "Voulez-vous vraiment supprimer {name} ? Cette action est définitive.",
+  "@adminTrackerOwnerDeleteConfirmMessage": {
+    "placeholders": {
+      "name": { "type": "String" }
+    }
+  },
+  "adminTrackerOwnerCreated": "Propriétaire créé.",
+  "adminTrackerOwnerUpdated": "Propriétaire mis à jour.",
+  "adminTrackerOwnerDeleted": "Propriétaire supprimé.",
+  "adminTrackerOwnerSaveFailed": "Impossible d'enregistrer le propriétaire.",
+  "adminTrackerOwnerDeleteFailed": "Impossible de supprimer le propriétaire.",
+  "adminTrackerOwnerPermissionDenied": "Un accès administrateur est requis pour gérer les propriétaires.",
+  "adminTrackerDevicesSection": "Gestion des trackers",
+  "adminTrackerDevicesSectionDesc": "Synchroniser, affecter et gérer les devices trackers.",
+  "adminTrackerDevicesTitle": "Gestion des trackers",
+  "adminTrackerDevicesManageAction": "Gestion des trackers",
+  "adminTrackerDevicesShowUnassigned": "Afficher les devices sans affectation",
+  "adminTrackerDevicesSelectOwner": "Sélectionner un responsable",
+  "adminTrackerDevicesResetFilter": "Réinitialiser",
+  "adminTrackerDevicesEmpty": "Aucun device",
+  "adminTrackerDevicesEmptySubtitle": "Aucun document dans TRACKER_Device.",
+  "adminTrackerDevicesLoadError": "Impossible de charger les devices.",
+  "adminTrackerDevicesSource": "Source : {provider}",
+  "@adminTrackerDevicesSource": {
+    "placeholders": {
+      "provider": { "type": "String" }
+    }
+  },
+  "adminTrackerDevicesSerial": "Serial : {serial}",
+  "@adminTrackerDevicesSerial": {
+    "placeholders": {
+      "serial": { "type": "String" }
+    }
+  },
+  "adminTrackerDevicesUpdatedAt": "Maj : {date}",
+  "@adminTrackerDevicesUpdatedAt": {
+    "placeholders": {
+      "date": { "type": "String" }
+    }
+  },
+  "adminTrackerDevicesStatusActive": "Actif",
+  "adminTrackerDevicesStatusInactive": "Inactif",
+  "adminTrackerDevicesAssign": "Affecter",
+  "adminTrackerDevicesUnassign": "Désaffecter",
+  "adminTrackerDevicesAssignTitle": "Affecter un device",
+  "adminTrackerDevicesCustomName": "Nom (optionnel)",
+  "adminTrackerDevicesCancel": "Annuler",
+  "adminTrackerDevicesValidate": "Valider",
+  "adminTrackerDevicesSelectOwnerRequired": "Veuillez sélectionner un responsable.",
+  "adminTrackerDevicesAssignSuccess": "Affectation enregistrée.",
+  "adminTrackerDevicesUnassignSuccess": "Désaffectation enregistrée.",
+  "adminTrackerDevicesError": "Erreur : {error}",
+  "@adminTrackerDevicesError": {
+    "placeholders": {
+      "error": { "type": "String" }
+    }
+  },
+  "adminTrackerDevicesSyncInspirit": "Sync Inspirit",
+  "adminTrackerDevicesSyncFootbar": "Sync Footbar",
+  "adminTrackerDevicesSyncInProgress": "Synchronisation...",
+  "adminTrackerDevicesSyncInspiritInProgress": "Sync Inspirit (insiders) en cours...",
+  "adminTrackerDevicesSyncFootbarInProgress": "Sync Footbar en cours...",
+  "adminTrackerDevicesSyncInspiritSuccess": "Sync Inspirit : {count} device(s) mis à jour.",
+  "@adminTrackerDevicesSyncInspiritSuccess": {
+    "placeholders": {
+      "count": { "type": "int" }
+    }
+  },
+  "adminTrackerDevicesSyncInspiritError": "Erreur Sync Inspirit : {error}",
+  "@adminTrackerDevicesSyncInspiritError": {
+    "placeholders": {
+      "error": { "type": "String" }
+    }
+  },
+  "adminTrackerDevicesPermissionDenied": "Un accès administrateur est requis pour gérer les devices.",
+  "adminStreamGroupsSection": "Messagerie - Groupe",
+  "adminStreamGroupsSectionDesc": "Lister et supprimer les groupes de chat GetStream des équipes.",
+  "adminStreamGroupsTitle": "Messagerie - Groupe",
+  "adminStreamGroupsEmpty": "Aucun groupe",
+  "adminStreamGroupsEmptySubtitle": "Aucun canal d'équipe trouvé sur GetStream.",
+  "adminStreamGroupsLoadError": "Impossible de charger les groupes.",
+  "adminStreamGroupsRefresh": "Actualiser",
+  "adminStreamGroupsCid": "CID : {cid}",
+  "@adminStreamGroupsCid": {
+    "placeholders": {
+      "cid": { "type": "String" }
+    }
+  },
+  "adminStreamGroupsMemberCount": "{count} membres",
+  "@adminStreamGroupsMemberCount": {
+    "placeholders": {
+      "count": { "type": "int" }
+    }
+  },
+  "adminStreamGroupsLastMessageAt": "Dernier message : {date}",
+  "@adminStreamGroupsLastMessageAt": {
+    "placeholders": {
+      "date": { "type": "String" }
+    }
+  },
+  "adminStreamGroupsDelete": "Supprimer",
+  "adminStreamGroupsCancel": "Annuler",
+  "adminStreamGroupsDeleteConfirmTitle": "Supprimer le groupe ?",
+  "adminStreamGroupsDeleteConfirmMessage": "Voulez-vous vraiment supprimer le groupe {name} ({cid}) ? Cette action est définitive.",
+  "@adminStreamGroupsDeleteConfirmMessage": {
+    "placeholders": {
+      "name": { "type": "String" },
+      "cid": { "type": "String" }
+    }
+  },
+  "adminStreamGroupsDeleted": "Groupe supprimé.",
+  "adminStreamGroupsDeleteFailed": "Impossible de supprimer le groupe.",
+  "adminStreamGroupsPermissionDenied": "Un accès administrateur est requis pour gérer les groupes.",
   "promoCodeMenuLabel": "Code promo",
   "promoCodeDialogValidate": "Valider",
   "promoCodeRedeemTitle": "Vous avez un code promo ?",

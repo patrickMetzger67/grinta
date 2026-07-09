@@ -163,7 +163,6 @@ class _WebAppRootState extends State<WebAppRoot> {
 
     final Widget shell = kIsWeb
         ? StreamBuilder<int>(
-            key: ValueKey(managedTeamIds.join(',')),
             stream: const SyncPendingCountService()
                 .watchPendingEventsCount(managedTeamIds),
             initialData: 0,

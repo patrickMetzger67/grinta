@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/foundation.dart';
@@ -28,6 +30,7 @@ import '../../util/player_positions.dart';
 import '../../util/playerDisplayName.dart';
 import '../../util/subscription_limits_access.dart';
 import '../../util/team_deletion_access.dart';
+import '../../util/team_tracker_access.dart';
 import '../../util/player_photo_resolver.dart';
 
 import '../../model/tracker/owner.dart';
@@ -153,16 +156,9 @@ class _TeamDetailScreenState extends State<TeamDetailScreen> {
     }
   }
 
-  Future<String> _teamOwnerEmail() async {
-    final Team team = _serverTeam ?? _team;
-    final String uid = team.uid?.trim() ?? '';
-    if (uid.isEmpty) return '';
-    final profile = await _userService.getById(uid);
-    return profile?.email.trim() ?? '';
-  }
-
   Future<void> _refreshUserOwnersAvailability() async {
-    if (_team.hasAnyTrackerOwners) {
+    final Team team = _serverTeam ?? _team;
+    if (team.hasAnyTrackerOwners) {
       if (mounted) {
         setState(() {
           _userOwnersLoaded = true;
@@ -171,10 +167,10 @@ class _TeamDetailScreenState extends State<TeamDetailScreen> {
       }
       return;
     }
-
-    final String email = await _teamOwnerEmail();
-    final List<Owner> owners =
-        email.isEmpty ? const [] : await _ownerService.getOwnersByEmail(email);
+    final List<Owner> owners = await _ownerService.getOwnersForTeamManagers(
+      team: team,
+      userService: _userService,
+    );
     if (!mounted) return;
     setState(() {
       _userOwnersLoaded = true;
@@ -183,12 +179,36 @@ class _TeamDetailScreenState extends State<TeamDetailScreen> {
   }
 
   bool _showTrackerOwnersButton(BuildContext context) {
-    if (_team.hasAnyTrackerOwners) return true;
-    if (!_canManageTeam(context)) return false;
-    return _userOwnersLoaded && _userOwnersByEmail.isNotEmpty;
+    final Team team = _serverTeam ?? _team;
+    if (team.hasAnyTrackerOwners) {
+      return true;
+    }
+    if (!_canManageTeam(context)) {
+      return false;
+    }
+    if (!_userOwnersLoaded || _userOwnersByEmail.isEmpty) {
+      return false;
+    }
+    return true;
   }
 
   Future<void> _onTrackerOwnersPressed(BuildContext context) async {
+    final Team team = _serverTeam ?? _team;
+    final bool isManager = _canManageTeam(context);
+    if (isManager &&
+        !team.hasAnyTrackerOwners &&
+        !TeamTrackerAccess.hasCoachProTrackerAccess()) {
+      final allowed =
+          await TeamTrackerAccess.ensureCoachProForTeamTrackers(context);
+      if (!allowed || !mounted) {
+        return;
+      }
+    }
+
+    if (!context.mounted) {
+      return;
+    }
+
     final bool? updated = await showTeamTrackerOwnersSheet(
       context,
       team: _serverTeam ?? _team,
@@ -286,6 +306,10 @@ class _TeamDetailScreenState extends State<TeamDetailScreen> {
       _headerPlayersCount = playersCount;
       _headerStaffCount = staffCount;
     });
+
+    if (serverTeam != null) {
+      unawaited(_refreshUserOwnersAvailability());
+    }
   }
 
   Future<void> _fetchTeamFromFirestore({bool preferCache = false}) async {
@@ -386,6 +410,10 @@ class _TeamDetailScreenState extends State<TeamDetailScreen> {
     _mergeLocalGrintaPlayers(localGrintaPlayers);
 
     final List<_TeamMemberVm> members = await _loadMembers();
+    if (!mounted) {
+      return;
+    }
+    await _refreshUserOwnersAvailability();
     if (!mounted) {
       return;
     }
@@ -597,7 +625,76 @@ class _TeamDetailScreenState extends State<TeamDetailScreen> {
   }
 
   bool _isPlayerManager(_TeamMemberVm row) {
-    return _rowMatchesRosterIds(row, _legacyManagerRosterIds());
+    return _playerHasManagerRights(row.player);
+  }
+
+  Set<String> _teamManagerUserIds([Team? team]) {
+    final Set<String> ids = <String>{};
+    for (final dynamic raw in (team ?? _team).managers ?? const <dynamic>[]) {
+      final String trimmed = raw?.toString().trim() ?? '';
+      if (trimmed.isNotEmpty) {
+        ids.add(trimmed);
+      }
+    }
+    return ids;
+  }
+
+  bool _playerHasManagerRights(Player player, [Team? team]) {
+    final Set<String> managerUserIds = _teamManagerUserIds(team);
+    if (managerUserIds.isEmpty) {
+      return false;
+    }
+    return playerFirebaseUserIds(player).any(managerUserIds.contains);
+  }
+
+  void _syncLocalManagersForPlayer({
+    required Player player,
+    required bool grant,
+    String? legacyMemberId,
+  }) {
+    final List<dynamic> managers =
+        List<dynamic>.from(_team.managers ?? const <dynamic>[]);
+    final Set<String> userIds = playerFirebaseUserIds(player);
+    if (grant) {
+      for (final String userId in userIds) {
+        if (!managers.contains(userId)) {
+          managers.add(userId);
+        }
+      }
+    } else {
+      for (final String userId in userIds) {
+        managers.remove(userId);
+      }
+      final String? memberId = legacyMemberId?.trim();
+      if (memberId != null && memberId.isNotEmpty) {
+        managers.remove(memberId);
+      }
+    }
+    _team.managers = managers;
+  }
+
+  Future<void> _persistManagerRightsForPlayer({
+    required String teamId,
+    required Player player,
+    required bool grant,
+    String? legacyMemberId,
+  }) async {
+    final Set<String> userIds = playerFirebaseUserIds(player);
+    if (grant) {
+      for (final String userId in userIds) {
+        await TeamService().addManager(teamId: teamId, managerId: userId);
+        await TeamService().addUser(teamId: teamId, userId: userId);
+      }
+      return;
+    }
+
+    for (final String userId in userIds) {
+      await TeamService().removeManager(teamId: teamId, managerId: userId);
+    }
+    final String? memberId = legacyMemberId?.trim();
+    if (memberId != null && memberId.isNotEmpty) {
+      await TeamService().removeManager(teamId: teamId, managerId: memberId);
+    }
   }
 
   /// Edit targets `grintaPlayers` for Grinta roster rows, or legacy-display rows
@@ -613,21 +710,6 @@ class _TeamDetailScreenState extends State<TeamDetailScreen> {
       return true;
     }
     return _resolveGrintaPlayerForRow(row) != null;
-  }
-
-  Set<String> _linkedManagerUserIds(Player player, String memberId) {
-    final Set<String> ids = <String>{};
-    final String? userId = player.userID?.trim();
-    if (userId != null && userId.isNotEmpty && userId != memberId) {
-      ids.add(userId);
-    }
-    for (final dynamic raw in player.users ?? const <dynamic>[]) {
-      final String trimmed = raw?.toString().trim() ?? '';
-      if (trimmed.isNotEmpty && trimmed != memberId) {
-        ids.add(trimmed);
-      }
-    }
-    return ids;
   }
 
   Set<String> _explicitRosterMemberIds() {
@@ -1126,7 +1208,10 @@ class _TeamDetailScreenState extends State<TeamDetailScreen> {
     if (!_canManageRoster(context)) {
       return false;
     }
-    return (_serverTeam ?? _team).hasAnyTrackerOwners;
+    if (!(_serverTeam ?? _team).hasAnyTrackerOwners) {
+      return false;
+    }
+    return TeamTrackerAccess.hasCoachProTrackerAccess();
   }
 
   Iterable<String> _teamTrackerOwnerIds() {
@@ -2708,40 +2793,32 @@ class _TeamDetailScreenState extends State<TeamDetailScreen> {
 
     final Player player = row.player;
     final bool isManager = _isPlayerManager(row);
-    final Set<String> linkedUserIds =
-        _linkedManagerUserIds(player, memberId);
+    final Set<String> managerUserIds = playerFirebaseUserIds(player);
+
+    if (!isManager && managerUserIds.isEmpty) {
+      if (context.mounted) {
+        AppSnackbar.show(
+          context,
+          context.l10n.errorGeneric(context.l10n.infoUserNotConnected),
+          isError: true,
+        );
+      }
+      return isManager;
+    }
 
     try {
-      if (isManager) {
-        await TeamService().removeManager(teamId: teamId, managerId: memberId);
-        for (final String userId in linkedUserIds) {
-          await TeamService().removeManager(teamId: teamId, managerId: userId);
-        }
-      } else {
-        await TeamService().addManager(teamId: teamId, managerId: memberId);
-        for (final String userId in linkedUserIds) {
-          await TeamService().addManager(teamId: teamId, managerId: userId);
-        }
-      }
+      await _persistManagerRightsForPlayer(
+        teamId: teamId,
+        player: player,
+        grant: !isManager,
+        legacyMemberId: memberId,
+      );
 
-      final List<dynamic> managers =
-          List<dynamic>.from(_team.managers ?? const <dynamic>[]);
-      if (isManager) {
-        managers.remove(memberId);
-        for (final String userId in linkedUserIds) {
-          managers.remove(userId);
-        }
-      } else {
-        if (!managers.contains(memberId)) {
-          managers.add(memberId);
-        }
-        for (final String userId in linkedUserIds) {
-          if (!managers.contains(userId)) {
-            managers.add(userId);
-          }
-        }
-      }
-      _team.managers = managers;
+      _syncLocalManagersForPlayer(
+        player: player,
+        grant: !isManager,
+        legacyMemberId: memberId,
+      );
 
       if (!context.mounted) return !isManager;
       await _reloadTeamAndMembers();
@@ -3118,15 +3195,11 @@ class _TeamDetailScreenState extends State<TeamDetailScreen> {
       'invitationId=$invitationId staff=$newStaff',
     );
 
-    await TeamService().addManager(teamId: teamId, managerId: memberId);
-
-    final String? staffUserId = profile.userID?.trim();
-    if (staffUserId != null &&
-        staffUserId.isNotEmpty &&
-        staffUserId != memberId) {
-      await TeamService().addManager(teamId: teamId, managerId: staffUserId);
-      await TeamService().addUser(teamId: teamId, userId: staffUserId);
-    }
+    await _persistManagerRightsForPlayer(
+      teamId: teamId,
+      player: profile,
+      grant: true,
+    );
 
     await TeamService().addGrintaPlayer(
       teamId: teamId,
@@ -3147,23 +3220,14 @@ class _TeamDetailScreenState extends State<TeamDetailScreen> {
     }
     _team.grintaPlayers = grintaPlayers;
 
-    final List<dynamic> managers =
-        List<dynamic>.from(_team.managers ?? const <dynamic>[]);
-    if (!managers.contains(memberId)) {
-      managers.add(memberId);
-    }
-    if (staffUserId != null &&
-        staffUserId.isNotEmpty &&
-        !managers.contains(staffUserId)) {
-      managers.add(staffUserId);
-    }
-    _team.managers = managers;
+    _syncLocalManagersForPlayer(player: profile, grant: true);
   }
 
   Future<void> _addStaffToLegacyTeam({
     required String teamId,
     required String memberId,
     required AddGrintaStaffDetails details,
+    required Player profile,
   }) async {
     final String? seasonId = widget.seasonId?.trim();
     if (seasonId == null || seasonId.isEmpty) {
@@ -3180,12 +3244,10 @@ class _TeamDetailScreenState extends State<TeamDetailScreen> {
       ),
     );
 
-    final List<dynamic> managers =
-        List<dynamic>.from(_team.managers ?? const <dynamic>[]);
-    if (!managers.contains(memberId)) {
-      managers.add(memberId);
+    _syncLocalManagersForPlayer(player: profile, grant: true);
+    for (final String userId in playerFirebaseUserIds(profile)) {
+      await TeamService().addUser(teamId: teamId, userId: userId);
     }
-    _team.managers = managers;
     await TeamService().updateTeam(_team);
   }
 
@@ -3222,7 +3284,8 @@ class _TeamDetailScreenState extends State<TeamDetailScreen> {
         );
         return;
       }
-    } else if (_legacyManagerRosterIds().contains(memberId)) {
+    } else if (playerFirebaseUserIds(selected)
+        .any(_legacyManagerRosterIds().contains)) {
       AppSnackbar.show(
         context,
         l10n.memberAlreadyOnTeamRoster,
@@ -3275,6 +3338,7 @@ class _TeamDetailScreenState extends State<TeamDetailScreen> {
             teamId: teamId,
             memberId: memberId,
             details: details,
+            profile: selected,
           );
 
           if (!context.mounted) return;
@@ -3465,17 +3529,12 @@ class _TeamDetailScreenState extends State<TeamDetailScreen> {
                     throw StateError('Missing member or team id');
                   }
 
-                  final String? staffUserId = player.userID?.trim();
-                  final Iterable<String> extraManagerIds = staffUserId != null &&
-                          staffUserId.isNotEmpty &&
-                          staffUserId != memberId
-                      ? <String>[staffUserId]
-                      : const <String>[];
+                  final Set<String> managerUserIds = playerFirebaseUserIds(player);
 
                   await TeamService().removeGrintaStaff(
                     teamId: teamId,
                     playerId: memberId,
-                    extraManagerIds: extraManagerIds,
+                    extraManagerIds: managerUserIds,
                   );
 
                   final List<GrintaPlayer> grintaPlayers =
@@ -3490,13 +3549,11 @@ class _TeamDetailScreenState extends State<TeamDetailScreen> {
                   _team.grintaPlayerMemberIds =
                       grintaPlayerMemberIdsFromGrintaPlayers(grintaPlayers);
 
-                  final List<dynamic> managers =
-                      List<dynamic>.from(_team.managers ?? const <dynamic>[]);
-                  managers.remove(memberId);
-                  for (final String extraId in extraManagerIds) {
-                    managers.remove(extraId);
-                  }
-                  _team.managers = managers;
+                  _syncLocalManagersForPlayer(
+                    player: player,
+                    grant: false,
+                    legacyMemberId: memberId,
+                  );
                 } else {
                   final String? teamId = _team.keyTeam?.trim();
                   if (teamId == null || teamId.isEmpty) {
@@ -3512,30 +3569,17 @@ class _TeamDetailScreenState extends State<TeamDetailScreen> {
                     throw StateError('Missing member id');
                   }
 
-                  await TeamService().removeManager(
+                  await _persistManagerRightsForPlayer(
                     teamId: teamId,
-                    managerId: memberId,
+                    player: player,
+                    grant: false,
+                    legacyMemberId: memberId,
                   );
-
-                  final String? staffUserId = player.userID?.trim();
-                  if (staffUserId != null &&
-                      staffUserId.isNotEmpty &&
-                      staffUserId != memberId) {
-                    await TeamService().removeManager(
-                      teamId: teamId,
-                      managerId: staffUserId,
-                    );
-                  }
-
-                  final List<dynamic> managers =
-                      List<dynamic>.from(_team.managers ?? const <dynamic>[]);
-                  managers.remove(memberId);
-                  if (staffUserId != null &&
-                      staffUserId.isNotEmpty &&
-                      staffUserId != memberId) {
-                    managers.remove(staffUserId);
-                  }
-                  _team.managers = managers;
+                  _syncLocalManagersForPlayer(
+                    player: player,
+                    grant: false,
+                    legacyMemberId: memberId,
+                  );
                 }
 
                 if (!dialogContext.mounted) return;

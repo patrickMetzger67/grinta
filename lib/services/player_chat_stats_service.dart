@@ -62,7 +62,7 @@ class PlayerChatStatsService {
       );
     }
 
-    final teams = _resolveTeamsForPlayerStats(session);
+    final teams = resolveTeamsForPlayerStats(session);
     if (teams.isEmpty) {
       return _emptyPlayerStatsContext(
         playerId: playerId,
@@ -142,7 +142,7 @@ class PlayerChatStatsService {
   /// Prefer [AppSession.memberTeamsForSelectedSeason], then merged session teams,
   /// then agenda-visible teams — Grinta members are often only present on the
   /// manager/agenda path when the grinta index query lags.
-  static List<Team> _resolveTeamsForPlayerStats(AppSession session) {
+  static List<Team> resolveTeamsForPlayerStats(AppSession session) {
     final Player? player = session.selectedPlayer;
     final String? playerId = session.selectedPlayerId?.trim();
     final String? seasonId = session.selectedSeason?.ref?.id;

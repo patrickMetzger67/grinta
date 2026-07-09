@@ -56,6 +56,8 @@
 library;
 
 import 'package:flutter/foundation.dart';
+import 'package:grinta/model/notification.dart';
+import 'package:grinta/services/eshop_config_service.dart';
 
 /// Billing period for subscription purchases.
 enum SubscriptionBillingPeriod {
@@ -323,6 +325,47 @@ abstract final class SubscriptionEntitlementIds {
     coachElite,
     coachBasic,
   ];
+}
+
+/// FCM / local reminder payload `type` values gated by
+/// [EshopConfigService.commerceNotificationsEnabled].
+bool isCommerceNotificationPayloadType(String? type) {
+  if (type == null || type.isEmpty) return false;
+  switch (type) {
+    case 'payment':
+    case 'shop':
+    case 'shopPromo':
+    case 'boutique':
+    case 'commerce':
+    case 'subscription':
+    case 'subscriptionPromo':
+    case 'trialReminder':
+    case 'trialExpiring':
+    case 'paywall':
+      return true;
+    default:
+      return false;
+  }
+}
+
+/// In-app [NotifType] values gated by
+/// [EshopConfigService.commerceNotificationsEnabled].
+bool isCommerceNotifType(NotifType type) => type == NotifType.payment;
+
+/// Hides commerce in-app notifications when commerce notifications are disabled.
+List<NotificationApp> filterCommerceNotifications(
+  List<NotificationApp> notifications,
+) {
+  if (EshopConfigService.instance.commerceNotificationsEnabled) {
+    return notifications;
+  }
+  return notifications
+      .where(
+        (notification) =>
+            notification.type == null ||
+            !isCommerceNotifType(notification.type!),
+      )
+      .toList();
 }
 
 /// Fallback display prices when RevenueCat offerings are unavailable (dev / web).

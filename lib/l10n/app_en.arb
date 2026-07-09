@@ -647,6 +647,7 @@
   "asiSelectFile": "Please select an .asi file",
   "asiEnterDeviceId": "Please enter the deviceId",
   "asiCannotReadFile": "Unable to play selected file",
+  "asiFileEmptyOrNoData": "The .asi file is empty or contains no usable data.",
   "asiFileMismatch": "The file does not match the selected tracker",
   "asiTrackerUnknown": "Tracker not recognized",
   "asiFilePickError": "Error selecting file: {details}",
@@ -892,6 +893,8 @@
     }
   },
   "teamDetailTrackerOwnersSaved": "Tracker kits updated.",
+  "teamDetailTrackerCoachProRequiredTitle": "GPS trackers",
+  "teamDetailTrackerCoachProRequiredMessage": "Linking GPS tracker kits to a team requires a Coach Pro subscription.",
   "teamDetailColumnApp": "App",
   "teamDetailPlayerDetailsTitle": "Player details",
   "teamDetailGrantManager": "Grant manager rights",
@@ -1175,6 +1178,30 @@
   "trainingFinishConfirmMessage": "Unavailable players marked as present will be set to absent. Do you want to finish this training?",
   "trainingFinished": "Training finished",
   "trainingFinishError": "Could not finish the training. Please try again.",
+  "trainingIntenseFinishTitle": "Recovering sensor data",
+  "trainingIntenseFinishMessage": "Recovering data for present players with an assigned tracker. Do not close this window.",
+  "trainingIntenseFinishSyncing": "Sync in progress…",
+  "trainingIntenseFinishStagePending": "Pending",
+  "trainingIntenseFinishStageFetching": "Fetching raw data…",
+  "trainingIntenseFinishStageConverting": "Converting data…",
+  "trainingIntenseFinishStageAnalyzing": "Analyzing…",
+  "trainingIntenseFinishStageDone": "Done",
+  "trainingIntenseFinishStageError": "Error",
+  "trainingIntenseFinishNoTrackers": "No present player has an assigned tracker. You can finish the training without recovery.",
+  "trainingIntenseFinishPartialError": "Some recoveries failed. Fix the issue and retry.",
+  "intenseLiveTitle": "Live",
+  "intenseLiveOpenTooltip": "View live tracker data",
+  "intenseLiveSelectPlayer": "Select a player",
+  "intenseLiveNoPlayers": "No present player with an assigned tracker",
+  "intenseLiveRefresh": "Refresh",
+  "intenseLiveLastUpdate": "Updated at {time}",
+  "@intenseLiveLastUpdate": {
+    "placeholders": {
+      "time": { "type": "String" }
+    }
+  },
+  "tabLive": "Live",
+  "tabLiveShort": "Live",
   "createMatchTitle": "New match",
   "createMatchTeam": "Team",
   "createMatchTeamRequired": "Select a team",
@@ -1406,9 +1433,9 @@
   "teamStatsCalendarDatesLabel": "Dates",
   "teamStatsCalendarNoMatchDates": "No dates scheduled",
   "teamStatsCalendarDateSeparator": ", ",
-  "askDiegoTitle": "Ask Diego",
-  "askDiegoWelcome": "Hi! I'm Diego. I can help with your schedule, next opponent, or team statistics. Ask a question or use the microphone.",
-  "askDiegoInputHint": "Ask Diego…",
+  "askDiegoTitle": "Ask Gio",
+  "askDiegoWelcome": "Hi! I'm Gio. I can help with your schedule, next opponent, or team statistics. Ask a question or use the microphone.",
+  "askDiegoInputHint": "Ask Gio…",
   "askDiegoSend": "Send",
   "askDiegoListen": "Listen to response",
   "askDiegoOpenScreen": "Open",
@@ -1556,6 +1583,143 @@
   "adminPromoCodeFieldActive": "Active",
   "adminPromoCodeClearExpiry": "Remove expiry date",
   "adminPromoCodeNotFound": "Promo code not found.",
+  "adminTrackerOwnersSection": "Tracker owners",
+  "adminTrackerOwnersSectionDesc": "Create and manage tracker owners.",
+  "adminTrackerOwnersTitle": "Tracker owners",
+  "adminTrackerOwnersEmpty": "No tracker owners yet.",
+  "adminTrackerOwnersLoadError": "Unable to load tracker owners.",
+  "adminTrackerOwnerCreate": "Add owner",
+  "adminTrackerOwnerCreateTitle": "Add owner",
+  "adminTrackerOwnerEditTitle": "Edit owner",
+  "adminTrackerOwnerFieldName": "Name",
+  "adminTrackerOwnerFieldEmail": "Email",
+  "adminTrackerOwnerFieldFirstname": "First name",
+  "adminTrackerOwnerFieldLastname": "Last name",
+  "adminTrackerOwnerFieldActive": "Active",
+  "adminTrackerOwnerFieldTypeTracker": "Tracker type",
+  "adminTrackerOwnerTypeInspirit": "Inspirit",
+  "adminTrackerOwnerTypeFootbar": "Footbar",
+  "adminTrackerOwnerTypeIntense": "Intense (SIM, cloud stream)",
+  "adminTrackerOwnerFieldRequired": "Required field",
+  "adminTrackerOwnerFieldEmailInvalid": "Invalid email",
+  "adminTrackerOwnerStatusActive": "Active",
+  "adminTrackerOwnerStatusInactive": "Inactive",
+  "adminTrackerOwnerSave": "Save",
+  "adminTrackerOwnerDelete": "Delete",
+  "adminTrackerOwnerDeleteConfirmTitle": "Delete owner?",
+  "adminTrackerOwnerDeleteConfirmMessage": "Do you really want to delete {name}? This action is permanent.",
+  "@adminTrackerOwnerDeleteConfirmMessage": {
+    "placeholders": {
+      "name": { "type": "String" }
+    }
+  },
+  "adminTrackerOwnerCreated": "Owner created.",
+  "adminTrackerOwnerUpdated": "Owner updated.",
+  "adminTrackerOwnerDeleted": "Owner deleted.",
+  "adminTrackerOwnerSaveFailed": "Unable to save owner.",
+  "adminTrackerOwnerDeleteFailed": "Unable to delete owner.",
+  "adminTrackerOwnerPermissionDenied": "Admin access is required to manage tracker owners.",
+  "adminTrackerDevicesSection": "Tracker management",
+  "adminTrackerDevicesSectionDesc": "Sync, assign and manage tracker devices.",
+  "adminTrackerDevicesTitle": "Tracker management",
+  "adminTrackerDevicesManageAction": "Tracker management",
+  "adminTrackerDevicesShowUnassigned": "Show unassigned devices",
+  "adminTrackerDevicesSelectOwner": "Select an owner",
+  "adminTrackerDevicesResetFilter": "Reset",
+  "adminTrackerDevicesEmpty": "No devices",
+  "adminTrackerDevicesEmptySubtitle": "No documents in TRACKER_Device.",
+  "adminTrackerDevicesLoadError": "Unable to load devices.",
+  "adminTrackerDevicesSource": "Source: {provider}",
+  "@adminTrackerDevicesSource": {
+    "placeholders": {
+      "provider": { "type": "String" }
+    }
+  },
+  "adminTrackerDevicesSerial": "Serial: {serial}",
+  "@adminTrackerDevicesSerial": {
+    "placeholders": {
+      "serial": { "type": "String" }
+    }
+  },
+  "adminTrackerDevicesUpdatedAt": "Updated: {date}",
+  "@adminTrackerDevicesUpdatedAt": {
+    "placeholders": {
+      "date": { "type": "String" }
+    }
+  },
+  "adminTrackerDevicesStatusActive": "Active",
+  "adminTrackerDevicesStatusInactive": "Inactive",
+  "adminTrackerDevicesAssign": "Assign",
+  "adminTrackerDevicesUnassign": "Unassign",
+  "adminTrackerDevicesAssignTitle": "Assign a device",
+  "adminTrackerDevicesCustomName": "Name (optional)",
+  "adminTrackerDevicesCancel": "Cancel",
+  "adminTrackerDevicesValidate": "Confirm",
+  "adminTrackerDevicesSelectOwnerRequired": "Please select an owner.",
+  "adminTrackerDevicesAssignSuccess": "Assignment saved.",
+  "adminTrackerDevicesUnassignSuccess": "Device unassigned.",
+  "adminTrackerDevicesError": "Error: {error}",
+  "@adminTrackerDevicesError": {
+    "placeholders": {
+      "error": { "type": "String" }
+    }
+  },
+  "adminTrackerDevicesSyncInspirit": "Sync Inspirit",
+  "adminTrackerDevicesSyncFootbar": "Sync Footbar",
+  "adminTrackerDevicesSyncInProgress": "Syncing...",
+  "adminTrackerDevicesSyncInspiritInProgress": "Inspirit sync (insiders) in progress...",
+  "adminTrackerDevicesSyncFootbarInProgress": "Footbar sync in progress...",
+  "adminTrackerDevicesSyncInspiritSuccess": "Inspirit sync: {count} device(s) updated.",
+  "@adminTrackerDevicesSyncInspiritSuccess": {
+    "placeholders": {
+      "count": { "type": "int" }
+    }
+  },
+  "adminTrackerDevicesSyncInspiritError": "Inspirit sync error: {error}",
+  "@adminTrackerDevicesSyncInspiritError": {
+    "placeholders": {
+      "error": { "type": "String" }
+    }
+  },
+  "adminTrackerDevicesPermissionDenied": "Admin access is required to manage devices.",
+  "adminStreamGroupsSection": "Messaging - Groups",
+  "adminStreamGroupsSectionDesc": "List and delete GetStream team chat groups.",
+  "adminStreamGroupsTitle": "Messaging - Groups",
+  "adminStreamGroupsEmpty": "No chat groups",
+  "adminStreamGroupsEmptySubtitle": "No team channels found on GetStream.",
+  "adminStreamGroupsLoadError": "Unable to load chat groups.",
+  "adminStreamGroupsRefresh": "Refresh",
+  "adminStreamGroupsCid": "CID: {cid}",
+  "@adminStreamGroupsCid": {
+    "placeholders": {
+      "cid": { "type": "String" }
+    }
+  },
+  "adminStreamGroupsMemberCount": "{count} members",
+  "@adminStreamGroupsMemberCount": {
+    "placeholders": {
+      "count": { "type": "int" }
+    }
+  },
+  "adminStreamGroupsLastMessageAt": "Last message: {date}",
+  "@adminStreamGroupsLastMessageAt": {
+    "placeholders": {
+      "date": { "type": "String" }
+    }
+  },
+  "adminStreamGroupsDelete": "Delete",
+  "adminStreamGroupsCancel": "Cancel",
+  "adminStreamGroupsDeleteConfirmTitle": "Delete group?",
+  "adminStreamGroupsDeleteConfirmMessage": "Do you really want to delete group {name} ({cid})? This action is permanent.",
+  "@adminStreamGroupsDeleteConfirmMessage": {
+    "placeholders": {
+      "name": { "type": "String" },
+      "cid": { "type": "String" }
+    }
+  },
+  "adminStreamGroupsDeleted": "Group deleted.",
+  "adminStreamGroupsDeleteFailed": "Unable to delete group.",
+  "adminStreamGroupsPermissionDenied": "Admin access is required to manage chat groups.",
   "promoCodeMenuLabel": "Promo code",
   "promoCodeDialogValidate": "Validate",
   "promoCodeRedeemTitle": "Have a promo code?",

@@ -13,6 +13,8 @@ import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:grinta/analytics/analytics_routes.dart';
 import 'package:grinta/analytics/analytics_screen_names.dart';
 import 'package:grinta/config/fcm_config.dart';
+import 'package:grinta/config/subscription_config.dart';
+import 'package:grinta/services/eshop_config_service.dart';
 import 'package:grinta/feature_discovery/shell_navigation_scope.dart';
 import 'package:grinta/firebase_options.dart';
 import 'package:grinta/model/feature_discovery_ids.dart';
@@ -190,6 +192,10 @@ class NotificationFCMService {
           final data = Map<String, dynamic>.from(jsonDecode(payload));
           WidgetsBinding.instance.addPostFrameCallback((_) {
             final type = data['type']?.toString().trim() ?? '';
+            if (!EshopConfigService.instance.commerceNotificationsEnabled &&
+                isCommerceNotificationPayloadType(type)) {
+              return;
+            }
             if (type == 'trainingReminder' ||
                 type == 'matchOpponentStatsReminder') {
               unawaited(InternalNotificationNavigation.handlePayload(data));
@@ -303,6 +309,13 @@ class NotificationFCMService {
     FirebaseMessaging.onMessage.listen((message) async {
       debugPrint('[FCM foreground] data=${message.data}');
 
+      final type = message.data['type']?.toString().trim() ?? '';
+      if (!EshopConfigService.instance.commerceNotificationsEnabled &&
+          isCommerceNotificationPayloadType(type)) {
+        debugPrint('[FCM foreground] commerce notification suppressed: $type');
+        return;
+      }
+
       final notification = message.notification;
       if (notification == null) return;
 
@@ -362,6 +375,12 @@ class NotificationFCMService {
     final id = data['id']?.toString();
     final type = data['type']?.toString();
     final body = data['body']?.toString();
+
+    if (!EshopConfigService.instance.commerceNotificationsEnabled &&
+        isCommerceNotificationPayloadType(type)) {
+      debugPrint('[FCM navigation] commerce notification suppressed: $type');
+      return;
+    }
 
     try {
       switch (type) {
@@ -751,6 +770,12 @@ class NotificationFCMService {
   }) async {
     if (tokens.isEmpty) {
       debugPrint('postNotification: no tokens provided');
+      return false;
+    }
+
+    if (!EshopConfigService.instance.commerceNotificationsEnabled &&
+        isCommerceNotificationPayloadType(type)) {
+      debugPrint('postNotification: commerce notification suppressed: $type');
       return false;
     }
 

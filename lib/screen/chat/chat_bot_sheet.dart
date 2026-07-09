@@ -10,6 +10,7 @@ import 'package:grinta/provider/appSession.dart';
 import 'package:grinta/services/chat_context_service.dart';
 import 'package:grinta/services/chat_navigation_service.dart';
 import 'package:grinta/services/gemini_chat_service.dart';
+import 'package:grinta/services/opponent_typical_team_chat_context.dart';
 import 'package:grinta/util/app_theme.dart';
 import 'package:grinta/widget/ask_diego/ask_diego_avatar.dart';
 import 'package:grinta/widget/chat_bot/chat_input_bar.dart';
@@ -90,6 +91,7 @@ class _AskDiegoSheetState extends State<AskDiegoSheet> {
     _preloadedContextFuture = _contextService.buildContext(
       session: session,
       localeCode: localeCode,
+      preloadNextMatchTypicalTeam: true,
     );
   }
 
@@ -236,9 +238,13 @@ class _AskDiegoSheetState extends State<AskDiegoSheet> {
   Future<Map<String, dynamic>> _resolveContextForSend({
     required AppSession session,
     required String localeCode,
+    required String userMessage,
   }) async {
+    final needsOpponentTypicalTeam =
+        OpponentTypicalTeamChatContext.detectsTypicalTeamIntent(userMessage);
+
     final preloaded = _preloadedContextFuture;
-    if (preloaded != null) {
+    if (!needsOpponentTypicalTeam && preloaded != null) {
       try {
         final cached = await preloaded;
         final teams = session.teamsForAgendaSelectedSeason;
@@ -263,6 +269,8 @@ class _AskDiegoSheetState extends State<AskDiegoSheet> {
     return _contextService.buildContext(
       session: session,
       localeCode: localeCode,
+      userMessage: userMessage,
+      preloadNextMatchTypicalTeam: false,
     );
   }
 
@@ -327,6 +335,7 @@ class _AskDiegoSheetState extends State<AskDiegoSheet> {
     final appContext = await _resolveContextForSend(
       session: session,
       localeCode: localeCode,
+      userMessage: text,
     );
     _logAgendaContextDebug(appContext);
     _preloadedContextFuture = null;
@@ -377,6 +386,7 @@ class _AskDiegoSheetState extends State<AskDiegoSheet> {
         context,
         navigateAction.route,
         navigateAction.params,
+        userMessage: text,
       );
     }
   }
@@ -386,6 +396,10 @@ class _AskDiegoSheetState extends State<AskDiegoSheet> {
     switch (route.trim().toLowerCase()) {
       case 'team_stats_opponents':
         return context.l10n.askDiegoOpenOpponentStats;
+      case 'create_training':
+        return context.l10n.createTrainingTitle;
+      case 'create_match':
+        return context.l10n.createMatchTitle;
       default:
         return context.l10n.askDiegoOpenScreen;
     }

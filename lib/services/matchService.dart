@@ -5,6 +5,7 @@ import 'package:flutter/foundation.dart';
 import '../model/engagement.dart';
 import '../model/match.dart';
 import 'engagement_service.dart';
+import 'teamWorkloadSummaryService.dart';
 
 class MatchService {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
@@ -153,6 +154,15 @@ class MatchService {
   Future<void> deleteMatch(String matchId) async {
     try {
       await _collection.doc(matchId).delete();
+      try {
+        await TeamWorkloadSummaryService().deleteByEventId(matchId);
+      } catch (e) {
+        if (kDebugMode) {
+          debugPrint(
+            'Failed to delete TRACKER_TeamAnalysis for match $matchId: $e',
+          );
+        }
+      }
     } catch (e) {
       rethrow;
     }

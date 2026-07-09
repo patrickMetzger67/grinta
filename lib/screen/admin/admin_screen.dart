@@ -3,6 +3,9 @@ import 'package:grinta/analytics/analytics_routes.dart';
 import 'package:grinta/analytics/analytics_screen_names.dart';
 import 'package:grinta/core/extensions/l10n_extension.dart';
 import 'package:grinta/screen/admin/admin_promo_codes_screen.dart';
+import 'package:grinta/screen/admin/admin_stream_groups_screen.dart';
+import 'package:grinta/screen/admin/admin_tracker_devices_screen.dart';
+import 'package:grinta/screen/admin/admin_tracker_owners_screen.dart';
 import 'package:grinta/util/app_theme.dart';
 
 Future<void> openAdminScreen(BuildContext context) async {
@@ -51,6 +54,48 @@ class AdminScreen extends StatelessWidget {
                 analyticsMaterialRoute<void>(
                   screenName: AnalyticsScreenNames.adminPromoCodes,
                   builder: (_) => const AdminPromoCodesScreen(),
+                ),
+              );
+            },
+          ),
+          const SizedBox(height: 12),
+          _AdminSectionCard(
+            icon: Icons.gps_fixed,
+            title: l10n.adminTrackerOwnersSection,
+            subtitle: l10n.adminTrackerOwnersSectionDesc,
+            onTap: () {
+              Navigator.of(context).push(
+                analyticsMaterialRoute<void>(
+                  screenName: AnalyticsScreenNames.adminTrackerOwners,
+                  builder: (_) => const AdminTrackerOwnersScreen(),
+                ),
+              );
+            },
+          ),
+          const SizedBox(height: 12),
+          _AdminSectionCard(
+            icon: Icons.devices_outlined,
+            title: l10n.adminTrackerDevicesSection,
+            subtitle: l10n.adminTrackerDevicesSectionDesc,
+            onTap: () {
+              Navigator.of(context).push(
+                analyticsMaterialRoute<void>(
+                  screenName: AnalyticsScreenNames.adminTrackerDevices,
+                  builder: (_) => const AdminTrackerDevicesScreen(),
+                ),
+              );
+            },
+          ),
+          const SizedBox(height: 12),
+          _AdminSectionCard(
+            icon: Icons.forum_outlined,
+            title: l10n.adminStreamGroupsSection,
+            subtitle: l10n.adminStreamGroupsSectionDesc,
+            onTap: () {
+              Navigator.of(context).push(
+                analyticsMaterialRoute<void>(
+                  screenName: AnalyticsScreenNames.adminStreamGroups,
+                  builder: (_) => const AdminStreamGroupsScreen(),
                 ),
               );
             },

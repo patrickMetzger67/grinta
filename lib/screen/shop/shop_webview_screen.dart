@@ -4,6 +4,7 @@ import 'package:grinta/analytics/analytics_routes.dart';
 import 'package:grinta/analytics/analytics_screen_names.dart';
 import 'package:grinta/config/shopify_config.dart';
 import 'package:grinta/core/extensions/l10n_extension.dart';
+import 'package:grinta/services/eshop_config_service.dart';
 import 'package:grinta/util/app_theme.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:webview_flutter/webview_flutter.dart';
@@ -26,15 +27,19 @@ class ShopWebViewScreen extends StatefulWidget {
     BuildContext context, {
     String? url,
     String? title,
-  }) {
+  }) async {
+    await EshopConfigService.instance.ensureInitialized();
+    if (!EshopConfigService.instance.isOpen) return;
+
     final targetUrl = url ?? kShopifyShopUrl;
     if (kIsWeb) {
-      return launchUrl(
+      await launchUrl(
         Uri.parse(targetUrl),
         mode: LaunchMode.externalApplication,
       );
+      return;
     }
-    return Navigator.of(context).push<void>(
+    await Navigator.of(context).push<void>(
       analyticsMaterialRoute<void>(
         screenName: AnalyticsScreenNames.shop,
         builder: (_) => ShopWebViewScreen(initialUrl: targetUrl, title: title),

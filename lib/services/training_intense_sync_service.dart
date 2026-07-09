@@ -1,0 +1,462 @@
+import 'dart:convert';
+
+import 'package:cloud_functions/cloud_functions.dart';
+import 'package:flutter/foundation.dart';
+import 'package:grinta/model/fieldGpsCorners.dart';
+import 'package:grinta/model/tracker/trackerData.dart';
+import 'package:grinta/model/training.dart';
+import 'package:grinta/services/sensorAnalysisService.dart';
+import 'package:grinta/services/trackerDataAnalysisService.dart';
+
+/// Pipeline step for one player's Intense tracker during training finish.
+enum IntenseDeviceSyncStage {
+  pending,
+  fetching,
+  converting,
+  analyzing,
+  done,
+  error,
+}
+
+/// Formats [utc] for Insiders API `start`/`stop` query params.
+///
+/// Example: `2026-07-09T16:00:00+0000` (UTC, no subseconds, `+0000` not `.000Z`).
+String formatInsidersApiTimestamp(DateTime utc) {
+  final iso = utc.toUtc().toIso8601String();
+  return iso.replaceFirst(RegExp(r'\.\d+Z$'), '+0000').replaceFirst('Z', '+0000');
+}
+
+/// Time window used for Insiders preprocessed fetch.
+///
+/// Start = scheduled training datetime ([Training.trainingStartAt] or
+/// [Training.dateTime]); stop is capped to the training slot when a scheduled
+/// end exists (start + [Training.duration] or [Training.trainingEndAt]):
+/// `min(sync click, scheduled end)`. Early finish therefore analyzes only
+/// elapsed time; late finish does not extend past the créneau.
+/// Cloud must send `start`/`stop` query params (not `start_iso`/`stop_iso`).
+/// Insiders returns HTTP 403 if [start] precedes manager-account ownership.
+class TrainingIntenseTimeWindow {
+  const TrainingIntenseTimeWindow({
+    required this.start,
+    required this.stop,
+  });
+
+  final DateTime start;
+  final DateTime stop;
+
+  int get startMs => start.toUtc().millisecondsSinceEpoch;
+  int get stopMs => stop.toUtc().millisecondsSinceEpoch;
+
+  Map<String, dynamic> toCloudPayload() {
+    return <String, dynamic>{
+      'start': formatInsidersApiTimestamp(start),
+      'stop': formatInsidersApiTimestamp(stop),
+    };
+  }
+}
+
+/// One present player with an assigned Intense/SIM tracker to sync at finish.
+class IntenseTrainingDeviceTarget {
+  IntenseTrainingDeviceTarget({
+    required this.playerId,
+    required this.playerLabel,
+    required this.trackerLabel,
+    required this.insidersDeviceId,
+    required this.trackerId,
+    required this.deviceOwnerDocId,
+    this.deviceOwnerDeviceId = '',
+  });
+
+  final String playerId;
+  final String playerLabel;
+  final String trackerLabel;
+  final String insidersDeviceId;
+  final String trackerId;
+  final String deviceOwnerDocId;
+  /// Raw `TRACKER_DeviceOwner.deviceId` for diagnostics (should match [insidersDeviceId]).
+  final String deviceOwnerDeviceId;
+
+  IntenseDeviceSyncStage stage = IntenseDeviceSyncStage.pending;
+  double progress = 0;
+  String? errorMessage;
+}
+
+TrainingIntenseTimeWindow resolveTrainingIntenseTimeWindow(
+  Training training, {
+  required DateTime syncStopAt,
+}) {
+  final startTs = training.trainingStartAt ?? training.dateTime;
+  final startUtc = (startTs?.toDate() ?? syncStopAt).toUtc();
+  final syncStopUtc = syncStopAt.toUtc();
+
+  DateTime? scheduledEndUtc;
+  if (training.isFinish == true && training.trainingEndAt != null) {
+    scheduledEndUtc = training.trainingEndAt!.toDate().toUtc();
+  } else {
+    final durationMinutes = training.duration;
+    if (durationMinutes != null && durationMinutes > 0) {
+      scheduledEndUtc = startUtc.add(Duration(minutes: durationMinutes));
+    }
+  }
+
+  final stopUtc = scheduledEndUtc == null
+      ? syncStopUtc
+      : (syncStopUtc.isBefore(scheduledEndUtc) ? syncStopUtc : scheduledEndUtc);
+
+  return TrainingIntenseTimeWindow(
+    start: startUtc,
+    stop: stopUtc,
+  );
+}
+
+/// GNSS steps shorter than this are ignored for Intense analysis (desk/indoor drift).
+const double kIntenseMinMeaningfulStepDistanceMeters = 3.0;
+
+/// Keeps only samples whose timestamps fall within [window] (inclusive).
+List<TrackerRaw> intenseSamplesWithinWindow(
+  List<TrackerRaw> samples,
+  TrainingIntenseTimeWindow window,
+) {
+  if (samples.isEmpty) return samples;
+
+  final startMs = window.startMs;
+  final stopMs = window.stopMs;
+  return samples
+      .where((s) => s.timeMs >= startMs && s.timeMs <= stopMs)
+      .toList(growable: false);
+}
+
+/// Cloud + optional local fallback for Intense tracker recovery at training finish.
+class TrainingIntenseSyncService {
+  TrainingIntenseSyncService({FirebaseFunctions? functions})
+      : _functions =
+            functions ?? FirebaseFunctions.instanceFor(region: 'europe-west1');
+
+  final FirebaseFunctions _functions;
+
+  static const int _minRequiredSamples = 1;
+
+  Future<void> syncDevice({
+    required IntenseTrainingDeviceTarget target,
+    required Training training,
+    required TrainingIntenseTimeWindow window,
+    FieldGpsCorners? fieldGpsCorners,
+    void Function(IntenseTrainingDeviceTarget target)? onProgress,
+  }) async {
+    final trainingId = training.docId?.trim() ?? training.trainingId?.trim();
+    if (trainingId == null || trainingId.isEmpty) {
+      throw StateError('Training id missing');
+    }
+
+    void emit(IntenseDeviceSyncStage stage, double progress) {
+      target.stage = stage;
+      target.progress = progress;
+      onProgress?.call(target);
+    }
+
+    try {
+      target.errorMessage = null;
+      emit(IntenseDeviceSyncStage.fetching, 0.15);
+
+      final insidersDeviceId = target.insidersDeviceId.trim();
+      if (insidersDeviceId.isEmpty) {
+        throw StateError(
+          'Identifiant Insiders manquant pour ${target.trackerLabel}.',
+        );
+      }
+
+      final windowPayload = window.toCloudPayload();
+      final start = windowPayload['start'] as String;
+      final stop = windowPayload['stop'] as String;
+      final fetchPayload = <String, dynamic>{
+        'insidersDeviceId': insidersDeviceId,
+        'trackerId': target.trackerId,
+        ...windowPayload,
+      };
+
+      debugPrint(
+        '[IntenseSync] Insiders query → device=$insidersDeviceId start=$start stop=$stop',
+      );
+      debugPrint(
+        '[IntenseSync] fetchIntensePreprocessedSamples → '
+        'insidersDeviceId=$insidersDeviceId '
+        'deviceOwner.deviceId=${target.deviceOwnerDeviceId} '
+        'deviceOwnerDocId=${target.deviceOwnerDocId} '
+        'trackerId=${target.trackerId}',
+      );
+
+      late final HttpsCallableResult<dynamic> fetchResult;
+      try {
+        fetchResult = await _functions
+            .httpsCallable('fetchIntensePreprocessedSamples')
+            .call(fetchPayload);
+      } on FirebaseFunctionsException catch (e) {
+        if (e.code == 'failed-precondition' &&
+            _looksLikeEmptyGnssWindow(
+              '${e.message ?? ''} ${e.details ?? ''}',
+            )) {
+          debugPrint(
+            '[IntenseSync] fetchIntensePreprocessedSamples empty GNSS window '
+            'for ${target.trackerLabel} — treating as success',
+          );
+          emit(IntenseDeviceSyncStage.done, 1);
+          return;
+        }
+        _logInsidersRequestUrlFromDetails(e.details, label: 'error');
+        debugPrint(
+          '[IntenseSync] fetchIntensePreprocessedSamples FAILED '
+          'code=${e.code} message=${e.message} details=${e.details}',
+        );
+        rethrow;
+      } catch (e) {
+        debugPrint('[IntenseSync] fetchIntensePreprocessedSamples FAILED error=$e');
+        rethrow;
+      }
+
+      final fetchData = Map<String, dynamic>.from(fetchResult.data as Map);
+      _logInsidersRequestUrlFromDetails(fetchData, label: 'response');
+      final insidersQuery = fetchData['insidersQuery'];
+      if (insidersQuery is Map) {
+        final q = Map<String, dynamic>.from(insidersQuery);
+        debugPrint(
+          '[IntenseSync] insidersQuery → start=${q['start']} stop=${q['stop']}',
+        );
+      }
+      final metadataKeys = fetchData.keys.where((k) => k != 'samples').toList();
+      debugPrint(
+        '[IntenseSync] fetchIntensePreprocessedSamples OK '
+        'sampleCount=${(fetchData['samples'] as List?)?.length ?? 0} '
+        'hasAsiBase64=${fetchData['asiBase64'] != null && fetchData['asiBase64'].toString().isNotEmpty} '
+        'metadataKeys=$metadataKeys',
+      );
+      final rawSamples = (fetchData['samples'] as List?)
+              ?.whereType<Map>()
+              .map((e) => Map<String, dynamic>.from(e))
+              .toList() ??
+          <Map<String, dynamic>>[];
+
+      emit(IntenseDeviceSyncStage.converting, 0.45);
+
+      var samples = rawSamples
+          .map(
+            (s) => TrackerRaw(
+              trackerId: target.trackerId,
+              timeMs: _asInt(s['timeMs']),
+              latitude: _asDouble(s['latitude']),
+              longitude: _asDouble(s['longitude']),
+              speedMps: _asDouble(s['speedMps']),
+            ),
+          )
+          .toList(growable: false);
+
+      final asiBase64 = fetchData['asiBase64']?.toString();
+      if (samples.length < _minRequiredSamples &&
+          asiBase64 != null &&
+          asiBase64.isNotEmpty) {
+        final csv = await _convertAsiBase64ToCsv(asiBase64);
+        samples = _samplesFromCsv(csv, trackerId: target.trackerId);
+      }
+
+      samples = intenseSamplesWithinWindow(samples, window);
+
+      if (samples.length < _minRequiredSamples) {
+        debugPrint(
+          '[IntenseSync] no GNSS samples for ${target.trackerLabel} '
+          'on requested window — treating as success',
+        );
+        emit(IntenseDeviceSyncStage.done, 1);
+        return;
+      }
+
+      emit(IntenseDeviceSyncStage.analyzing, 0.7);
+
+      FootballFieldGps? fieldGps;
+      if (fieldGpsCorners != null) {
+        fieldGps = FootballFieldGps.fromFieldGpsCorners(fieldGpsCorners);
+      }
+
+      // Same local analysis path as live Intense metrics (not cloud USB pipeline).
+      await _analyzeLocally(
+        target: target,
+        trainingId: trainingId,
+        samples: samples,
+        fieldGps: fieldGps,
+      );
+
+      emit(IntenseDeviceSyncStage.done, 1);
+    } catch (e) {
+      target.errorMessage = formatIntenseSyncError(e, target: target);
+      debugPrint(
+        '[IntenseSync] syncDevice FAILED trackerId=${target.trackerId} '
+        'insidersDeviceId=${target.insidersDeviceId} '
+        'errorMessage=${target.errorMessage}',
+      );
+      emit(IntenseDeviceSyncStage.error, target.progress);
+      rethrow;
+    }
+  }
+
+  /// Maps cloud/local errors to user-facing French messages for the finish dialog.
+  static String formatIntenseSyncError(
+    Object error, {
+    required IntenseTrainingDeviceTarget target,
+  }) {
+    final raw = error.toString();
+
+    if (error is FirebaseFunctionsException) {
+      if (error.code == 'permission-denied') {
+        return _permissionDeniedMessage(target);
+      }
+      if (error.code == 'failed-precondition' &&
+          _looksLikeEmptyGnssWindow(raw)) {
+        return _noGnssDataMessage(target);
+      }
+      if (error.code == 'not-found') {
+        return 'Capteur Insiders introuvable pour « ${target.trackerLabel} » '
+            '(identifiant ${target.insidersDeviceId}). '
+            'Vérifiez la synchronisation Inspirit dans l\'admin.';
+      }
+      if (error.code == 'invalid-argument' &&
+          raw.toLowerCase().contains('insidersdeviceid')) {
+        return 'Identifiant Insiders invalide pour « ${target.trackerLabel} » '
+            '(${target.insidersDeviceId}).';
+      }
+    }
+
+    if (raw.contains('403') ||
+        raw.contains('You do not have permission') ||
+        raw.contains('permission-denied')) {
+      return _permissionDeniedMessage(target);
+    }
+
+    if (error is StateError) {
+      return raw.replaceFirst('Bad state: ', '');
+    }
+
+    return raw;
+  }
+
+  static String _permissionDeniedMessage(IntenseTrainingDeviceTarget target) {
+    return 'Accès refusé Insiders pour « ${target.trackerLabel} » : '
+        'la période demandée (start/stop) ne doit pas commencer avant '
+        'l\'affectation du capteur au compte manager Insiders '
+        '(TRACKER_SERVER_CONFIG). Vérifiez l\'horaire de l\'entraînement '
+        'par rapport à la date d\'affectation côté Insiders.';
+  }
+
+  static void _logInsidersRequestUrlFromDetails(
+    Object? details, {
+    required String label,
+  }) {
+    if (details is! Map) return;
+    final map = Map<String, dynamic>.from(details);
+    final url = map['insidersRequestUrl'] ??
+        map['requestUrl'] ??
+        map['url'] ??
+        map['insidersUrl'] ??
+        map['request_url'];
+    if (url == null || url.toString().trim().isEmpty) return;
+    debugPrint('[IntenseSync] Insiders request URL ($label): $url');
+  }
+
+  static bool _looksLikeEmptyGnssWindow(String raw) {
+    final lower = raw.toLowerCase();
+    return lower.contains('no gnss data') ||
+        lower.contains('no sensor samples') ||
+        lower.contains('count=0');
+  }
+
+  static String _noGnssDataMessage(IntenseTrainingDeviceTarget target) {
+    return 'Aucune donnée GNSS pour « ${target.trackerLabel} » sur la période '
+        'demandée : le capteur doit être utilisé en extérieur. '
+        '(Une réponse Insiders vide n\'est pas une erreur d\'accès.)';
+  }
+
+  Future<void> _analyzeLocally({
+    required IntenseTrainingDeviceTarget target,
+    required String trainingId,
+    required List<TrackerRaw> samples,
+    required FootballFieldGps? fieldGps,
+  }) async {
+    final result = SensorAnalysisService.analyzeSensorData(
+      trackerId: target.trackerId,
+      playerId: target.playerId,
+      eventId: trainingId,
+      allSamples: samples,
+      isMatch: false,
+      fieldGps: fieldGps,
+      minMeaningfulStepDistanceMeters: kIntenseMinMeaningfulStepDistanceMeters,
+    );
+
+    await TrackerAnalysisService.saveAnalysis(
+      docId: '${trainingId}_${target.trackerId}',
+      result,
+      eventId: trainingId,
+    );
+  }
+
+  Future<String> _convertAsiBase64ToCsv(String asiBase64) async {
+    final result = await _functions.httpsCallable('insidersConvertAsiToCsv').call(
+      <String, dynamic>{
+        'asiBase64': asiBase64,
+        'filename': 'inspirit_data.ASI',
+      },
+    );
+    final data = Map<String, dynamic>.from(result.data['data'] as Map);
+    return data['csv'] as String;
+  }
+
+  List<TrackerRaw> _samplesFromCsv(String csv, {required String trackerId}) {
+    final lines = const LineSplitter().convert(csv);
+    if (lines.isEmpty) return const <TrackerRaw>[];
+
+    final header = lines.first.split(',').map((e) => e.trim()).toList();
+    final timeIdx = header.indexOf('time [POSIXms]');
+    final latIdx = header.indexOf('latitude [deg]');
+    final lonIdx = header.indexOf('longitude [deg]');
+    final speedIdx = header.indexOf('speed [m/s]');
+
+    final samples = <TrackerRaw>[];
+    for (var i = 1; i < lines.length; i++) {
+      final cols = lines[i].split(',').map((e) => e.trim()).toList();
+      if (cols.length < 3) continue;
+
+      final timeMs = timeIdx >= 0 && timeIdx < cols.length
+          ? int.tryParse(cols[timeIdx]) ?? 0
+          : 0;
+      final latitude = latIdx >= 0 && latIdx < cols.length
+          ? double.tryParse(cols[latIdx]) ?? 0
+          : 0;
+      final longitude = lonIdx >= 0 && lonIdx < cols.length
+          ? double.tryParse(cols[lonIdx]) ?? 0
+          : 0;
+      final speedMps = speedIdx >= 0 && speedIdx < cols.length
+          ? double.tryParse(cols[speedIdx]) ?? 0
+          : 0;
+
+      if (timeMs <= 0) continue;
+      samples.add(
+        TrackerRaw(
+          trackerId: trackerId,
+          timeMs: timeMs,
+          latitude: latitude.toDouble(),
+          longitude: longitude.toDouble(),
+          speedMps: speedMps.toDouble(),
+        ),
+      );
+    }
+    return samples;
+  }
+
+  int _asInt(dynamic value) {
+    if (value is int) return value;
+    if (value is num) return value.toInt();
+    return int.tryParse(value?.toString() ?? '') ?? 0;
+  }
+
+  double _asDouble(dynamic value) {
+    if (value is double) return value;
+    if (value is num) return value.toDouble();
+    return double.tryParse(value?.toString() ?? '') ?? 0;
+  }
+}

@@ -1,14 +1,16 @@
+import 'dart:async' show unawaited;
+
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
-import 'package:grinta/analytics/analytics_routes.dart';
-import 'package:grinta/analytics/analytics_screen_names.dart';
 import 'package:grinta/core/extensions/l10n_extension.dart';
+import 'package:grinta/feature_discovery/shell_navigation_scope.dart';
+import 'package:grinta/model/feature_discovery_ids.dart';
 import 'package:grinta/model/grinta_player.dart';
 import 'package:grinta/model/player.dart';
 import 'package:grinta/model/team.dart';
 import 'package:grinta/model/teams_per_club.dart';
+import 'package:grinta/navigation/app_navigator.dart';
 import 'package:grinta/provider/appSession.dart';
-import 'package:grinta/screen/teamDetailScreen.dart';
 import 'package:grinta/services/subscription_limits_service.dart';
 import 'package:grinta/services/subscription_service.dart';
 import 'package:grinta/services/teamService.dart';
@@ -18,6 +20,7 @@ import 'package:grinta/util/app_snackbar.dart';
 import 'package:grinta/util/app_theme.dart';
 import 'package:grinta/util/engagement_sync.dart';
 import 'package:grinta/util/subscription_limits_access.dart';
+import 'package:grinta/util/player_photo_resolver.dart';
 import 'package:grinta/util/player_positions.dart';
 import 'package:grinta/util/team_detail_access.dart';
 import 'package:grinta/widget/club_picker_sheet.dart';
@@ -146,6 +149,11 @@ Future<void> openTeamCreationFlow(BuildContext context) async {
           )
         : null;
 
+    final Set<String> creatorManagerUserIds = <String>{userId};
+    if (player != null) {
+      creatorManagerUserIds.addAll(playerFirebaseUserIds(player));
+    }
+
     final team = Team(
       name: draft.name,
       seasonID: seasonId,
@@ -161,7 +169,9 @@ Future<void> openTeamCreationFlow(BuildContext context) async {
       grintaPlayers: creatorGrintaPlayer == null
           ? <GrintaPlayer>[]
           : <GrintaPlayer>[creatorGrintaPlayer],
-    )..isVisible = true;
+    )
+      ..isVisible = true
+      ..managers = creatorManagerUserIds.toList();
 
     final String teamId = await TeamService().createTeam(team);
     team.keyTeam = teamId;
@@ -178,7 +188,9 @@ Future<void> openTeamCreationFlow(BuildContext context) async {
     }
 
     await appSession.init();
-    if (!context.mounted) return;
+
+    final BuildContext? rootContext = appNavigatorKey.currentContext;
+    if (rootContext == null || !rootContext.mounted) return;
 
     if (isTeamDetailBlockedForUser(
       team,
@@ -186,33 +198,42 @@ Future<void> openTeamCreationFlow(BuildContext context) async {
       memberProfile: player,
     )) {
       AppSnackbar.show(
-        context,
-        context.l10n.subscriptionLimitTeamCreatedFreePlayer,
+        rootContext,
+        rootContext.l10n.subscriptionLimitTeamCreatedFreePlayer,
       );
       return;
     }
 
-    await Navigator.of(context).push(
-      analyticsMaterialRoute<void>(
-        screenName: AnalyticsScreenNames.teamDetail,
-        builder: (_) => TeamDetailScreen(
+    ShellNavigationScope.tryNavigateToTab(
+      rootContext,
+      FeatureDiscoveryIds.tabTeams,
+    );
+
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final BuildContext? navContext = appNavigatorKey.currentContext;
+      if (navContext == null || !navContext.mounted) return;
+      unawaited(
+        openTeamDetailScreen(
+          navContext,
           team: team,
           seasonId: seasonId,
           isManager: true,
         ),
-      ),
-    );
+      );
+    });
   } catch (e, stackTrace) {
     debugPrint('openTeamCreationFlow failed: $e');
     debugPrint('$stackTrace');
-    if (!context.mounted) return;
+    final BuildContext? snackContext =
+        appNavigatorKey.currentContext ?? (context.mounted ? context : null);
+    if (snackContext == null || !snackContext.mounted) return;
     if (e is SubscriptionLimitExceeded) {
-      SubscriptionLimitsAccess.showLimitExceeded(context, e);
+      SubscriptionLimitsAccess.showLimitExceeded(snackContext, e);
       return;
     }
     AppSnackbar.show(
-      context,
-      context.l10n.errorGeneric(e.toString()),
+      snackContext,
+      snackContext.l10n.errorGeneric(e.toString()),
       isError: true,
     );
   }

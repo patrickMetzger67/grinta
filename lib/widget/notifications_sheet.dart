@@ -3,6 +3,8 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:grinta/analytics/analytics_routes.dart';
 import 'package:grinta/analytics/analytics_screen_names.dart';
+import 'package:grinta/config/subscription_config.dart';
+import 'package:grinta/services/eshop_config_service.dart';
 import 'package:grinta/core/extensions/l10n_extension.dart';
 import 'package:grinta/model/notification.dart';
 import 'package:grinta/provider/appSession.dart';
@@ -26,6 +28,10 @@ String? _selectedPlayerMemberId(AppSession session) {
   final memberId = effectiveMemberId(player);
   if (memberId == null || memberId.trim().isEmpty) return null;
   return memberId;
+}
+
+int _visibleNotificationCount(List<NotificationApp> notifications) {
+  return filterCommerceNotifications(notifications).length;
 }
 
 void _logNotificationsStreamError({
@@ -103,23 +109,30 @@ class NotificationSidebarEntry extends StatelessWidget {
       );
     }
 
-    return StreamBuilder<List<NotificationApp>>(
-      stream: NotificationService()
-          .streamUnviewedNotificationsByPlayerId(playerId),
-      builder: (context, snapshot) {
-        if (snapshot.hasError) {
-          _logNotificationsStreamError(
-            source: 'NotificationSidebarEntry',
-            playerId: playerId,
-            error: snapshot.error!,
-          );
-        }
-        final count = snapshot.hasError ? 0 : (snapshot.data?.length ?? 0);
-        return _NotificationSidebarTile(
-          collapsed: collapsed,
-          count: count,
-          itemHeight: itemHeight,
-          onTap: () => showNotificationsPanel(context),
+    return ListenableBuilder(
+      listenable: EshopConfigService.instance,
+      builder: (context, _) {
+        return StreamBuilder<List<NotificationApp>>(
+          stream: NotificationService()
+              .streamUnviewedNotificationsByPlayerId(playerId),
+          builder: (context, snapshot) {
+            if (snapshot.hasError) {
+              _logNotificationsStreamError(
+                source: 'NotificationSidebarEntry',
+                playerId: playerId,
+                error: snapshot.error!,
+              );
+            }
+            final count = snapshot.hasError
+                ? 0
+                : _visibleNotificationCount(snapshot.data ?? const []);
+            return _NotificationSidebarTile(
+              collapsed: collapsed,
+              count: count,
+              itemHeight: itemHeight,
+              onTap: () => showNotificationsPanel(context),
+            );
+          },
         );
       },
     );
@@ -148,26 +161,33 @@ class NotificationAppBarButton extends StatelessWidget {
       );
     }
 
-    return StreamBuilder<List<NotificationApp>>(
-      stream: NotificationService()
-          .streamUnviewedNotificationsByPlayerId(playerId),
-      builder: (context, snapshot) {
-        if (snapshot.hasError) {
-          _logNotificationsStreamError(
-            source: 'NotificationAppBarButton',
-            playerId: playerId,
-            error: snapshot.error!,
-          );
-        }
-        final count = snapshot.hasError ? 0 : (snapshot.data?.length ?? 0);
-        return IconButton(
-          tooltip: context.l10n.navNotifications,
-          onPressed: () => showNotificationsPanel(context),
-          icon: NavIconCountBadge(
-            icon: Icons.notifications_outlined,
-            count: count,
-            iconColor: colors.textPrimary,
-          ),
+    return ListenableBuilder(
+      listenable: EshopConfigService.instance,
+      builder: (context, _) {
+        return StreamBuilder<List<NotificationApp>>(
+          stream: NotificationService()
+              .streamUnviewedNotificationsByPlayerId(playerId),
+          builder: (context, snapshot) {
+            if (snapshot.hasError) {
+              _logNotificationsStreamError(
+                source: 'NotificationAppBarButton',
+                playerId: playerId,
+                error: snapshot.error!,
+              );
+            }
+            final count = snapshot.hasError
+                ? 0
+                : _visibleNotificationCount(snapshot.data ?? const []);
+            return IconButton(
+              tooltip: context.l10n.navNotifications,
+              onPressed: () => showNotificationsPanel(context),
+              icon: NavIconCountBadge(
+                icon: Icons.notifications_outlined,
+                count: count,
+                iconColor: colors.textPrimary,
+              ),
+            );
+          },
         );
       },
     );
@@ -353,35 +373,43 @@ class _NotificationsListBody extends StatelessWidget {
         Expanded(
           child: playerId == null
               ? _NotificationsEmptyState(message: l10n.notificationsEmptyMessage)
-              : StreamBuilder<List<NotificationApp>>(
-                  stream: NotificationService()
-                      .streamUnviewedNotificationsByPlayerId(playerId),
-                  builder: (context, snapshot) {
-                    if (snapshot.hasError) {
-                      _logNotificationsStreamError(
-                        source: '_NotificationsListBody',
-                        playerId: playerId,
-                        error: snapshot.error!,
-                      );
-                      return _NotificationsEmptyState(
-                        message: l10n.notificationsEmptyMessage,
-                      );
-                    }
+              : ListenableBuilder(
+                  listenable: EshopConfigService.instance,
+                  builder: (context, _) {
+                    return StreamBuilder<List<NotificationApp>>(
+                      stream: NotificationService()
+                          .streamUnviewedNotificationsByPlayerId(playerId),
+                      builder: (context, snapshot) {
+                        if (snapshot.hasError) {
+                          _logNotificationsStreamError(
+                            source: '_NotificationsListBody',
+                            playerId: playerId,
+                            error: snapshot.error!,
+                          );
+                          return _NotificationsEmptyState(
+                            message: l10n.notificationsEmptyMessage,
+                          );
+                        }
 
-                    final notifications = snapshot.data ?? const [];
-                    if (notifications.isEmpty) {
-                      return _NotificationsEmptyState(
-                        message: l10n.notificationsEmptyMessage,
-                      );
-                    }
+                        final notifications = filterCommerceNotifications(
+                          snapshot.data ?? const [],
+                        );
+                        if (notifications.isEmpty) {
+                          return _NotificationsEmptyState(
+                            message: l10n.notificationsEmptyMessage,
+                          );
+                        }
 
-                    return ListView.separated(
-                      padding: const EdgeInsets.fromLTRB(12, 12, 12, 16),
-                      itemCount: notifications.length,
-                      separatorBuilder: (_, __) => const SizedBox(height: 8),
-                      itemBuilder: (context, index) {
-                        return _NotificationListTile(
-                          notification: notifications[index],
+                        return ListView.separated(
+                          padding: const EdgeInsets.fromLTRB(12, 12, 12, 16),
+                          itemCount: notifications.length,
+                          separatorBuilder: (_, __) =>
+                              const SizedBox(height: 8),
+                          itemBuilder: (context, index) {
+                            return _NotificationListTile(
+                              notification: notifications[index],
+                            );
+                          },
                         );
                       },
                     );

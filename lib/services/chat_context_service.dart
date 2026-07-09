@@ -9,6 +9,8 @@ import 'package:grinta/provider/appSession.dart';
 import 'package:grinta/screen/team_stats/team_stats_competition_selector.dart';
 import 'package:grinta/services/agenda_service.dart';
 import 'package:grinta/services/match_location_service.dart';
+import 'package:grinta/services/opponent_typical_team_chat_context.dart';
+import 'package:grinta/services/player_activity_report_chat_context.dart';
 import 'package:grinta/services/player_chat_stats_service.dart';
 import 'package:grinta/services/teams_per_club_service.dart';
 import 'package:grinta/services/weather_service.dart';
@@ -30,22 +32,32 @@ class ChatContextService {
     PlayerChatStatsService? playerChatStatsService,
     MatchLocationService? matchLocationService,
     WeatherService? weatherService,
+    OpponentTypicalTeamChatContext? opponentTypicalTeamChatContext,
+    PlayerActivityReportChatContext? playerActivityReportChatContext,
   })  : _agendaService = agendaService ?? AgendaService(),
         _teamsPerClubService = teamsPerClubService ?? TeamsPerClubService(),
         _playerChatStatsService =
             playerChatStatsService ?? PlayerChatStatsService(),
         _matchLocationService = matchLocationService ?? MatchLocationService(),
-        _weatherService = weatherService ?? WeatherService();
+        _weatherService = weatherService ?? WeatherService(),
+        _opponentTypicalTeamChatContext =
+            opponentTypicalTeamChatContext ?? OpponentTypicalTeamChatContext(),
+        _playerActivityReportChatContext =
+            playerActivityReportChatContext ?? PlayerActivityReportChatContext();
 
   final AgendaService _agendaService;
   final TeamsPerClubService _teamsPerClubService;
   final PlayerChatStatsService _playerChatStatsService;
   final MatchLocationService _matchLocationService;
   final WeatherService _weatherService;
+  final OpponentTypicalTeamChatContext _opponentTypicalTeamChatContext;
+  final PlayerActivityReportChatContext _playerActivityReportChatContext;
 
   Future<Map<String, dynamic>> buildContext({
     required AppSession session,
     required String localeCode,
+    String? userMessage,
+    bool preloadNextMatchTypicalTeam = true,
   }) async {
     final userId = session.user?.uid;
     final season = session.selectedSeason;
@@ -197,6 +209,47 @@ class ChatContextService {
       );
     }
 
+    Map<String, dynamic>? playerActivityReport;
+    try {
+      playerActivityReport =
+          await _playerActivityReportChatContext.buildContext(
+        session: session,
+        localeCode: localeCode,
+        userMessage: userMessage,
+        referenceDate: today,
+      );
+    } catch (error, stackTrace) {
+      if (kDebugMode) {
+        debugPrint(
+          'ChatContext playerActivityReport failed: $error\n$stackTrace',
+        );
+      }
+    }
+
+    Map<String, dynamic>? opponentTypicalTeam;
+    try {
+      opponentTypicalTeam = await _opponentTypicalTeamChatContext.buildContext(
+        session: session,
+        teams: teams,
+        seasonId: seasonId,
+        seasonItems: seasonItems,
+        teamNames: teamNames,
+        nextMatchContext: nextMatch,
+        userMessage: userMessage,
+        preloadNextMatchOpponent: preloadNextMatchTypicalTeam &&
+            (userMessage == null || userMessage.trim().isEmpty),
+      );
+    } catch (error, stackTrace) {
+      if (kDebugMode) {
+        debugPrint(
+          'ChatContext opponentTypicalTeam failed: $error\n$stackTrace',
+        );
+      }
+    }
+
+    final managedTeamIds = session.managedTeamsIdsForSelectedSeason.toSet();
+    final managerTeams = session.managerTeamsForSelectedSeason;
+
     return <String, dynamic>{
       'userId': userId,
       'seasonId': seasonId,
@@ -204,12 +257,29 @@ class ChatContextService {
       'playerName': player == null ? null : playerDisplayName(player),
       'locale': localeCode,
       'today': DateFormat('yyyy-MM-dd').format(today),
+      'managerAccess': <String, dynamic>{
+        'isManagerOfAnyTeam': managerTeams.isNotEmpty,
+        'managedTeamIds': managedTeamIds.toList()..sort(),
+        'managedTeams': managerTeams
+            .map(
+              (Team team) => <String, dynamic>{
+                'teamId': team.keyTeam,
+                'name': team.name,
+              },
+            )
+            .toList(),
+      },
       'teams': teams
           .map(
-            (Team team) => <String, dynamic>{
-              'teamId': team.keyTeam,
-              'name': team.name,
-              'clubId': team.clubId,
+            (Team team) {
+              final teamId = team.keyTeam?.trim() ?? '';
+              return <String, dynamic>{
+                'teamId': team.keyTeam,
+                'name': team.name,
+                'clubId': team.clubId,
+                if (teamId.isNotEmpty)
+                  'isManagedByUser': managedTeamIds.contains(teamId),
+              };
             },
           )
           .toList(),
@@ -223,6 +293,10 @@ class ChatContextService {
           'longitude': userPosition.longitude,
         },
       'playerStats': playerStats,
+      if (playerActivityReport != null)
+        'playerActivityReport': playerActivityReport,
+      if (opponentTypicalTeam != null)
+        'opponentTypicalTeam': opponentTypicalTeam,
     };
   }
 

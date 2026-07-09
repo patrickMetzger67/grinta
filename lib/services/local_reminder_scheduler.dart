@@ -3,6 +3,8 @@ import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:grinta/config/fcm_config.dart';
+import 'package:grinta/config/subscription_config.dart';
+import 'package:grinta/services/eshop_config_service.dart';
 import 'package:grinta/services/notification_fcm_service.dart';
 import 'package:timezone/data/latest.dart' as tz_data;
 import 'package:timezone/timezone.dart' as tz;
@@ -65,6 +67,12 @@ class LocalReminderScheduler {
     required Map<String, dynamic> payload,
   }) async {
     if (kIsWeb) return;
+    if (!EshopConfigService.instance.commerceNotificationsEnabled &&
+        isCommerceNotificationPayloadType(
+          payload['type']?.toString().trim(),
+        )) {
+      return;
+    }
     if (scheduledAtLocal.isBefore(DateTime.now())) return;
 
     await init();

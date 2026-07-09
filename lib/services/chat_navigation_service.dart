@@ -12,6 +12,9 @@ import 'package:grinta/screen/team_stats/team_stats_screen.dart';
 import 'package:grinta/services/matchService.dart';
 import 'package:grinta/services/user_trial_service.dart';
 import 'package:grinta/util/app_snackbar.dart';
+import 'package:grinta/util/ask_diego_datetime_params.dart';
+import 'package:grinta/widget/create_match_sheet.dart';
+import 'package:grinta/widget/create_training_sheet.dart';
 import 'package:grinta/widget/subscription_paywall.dart';
 import 'package:provider/provider.dart';
 
@@ -28,19 +31,26 @@ class ChatNavigationService {
 
   Future<void> handleActions(
     BuildContext context,
-    List<ChatAction> actions,
-  ) async {
+    List<ChatAction> actions, {
+    String? userMessage,
+  }) async {
     for (final action in actions) {
       if (action is! ChatNavigateAction) continue;
-      await navigate(context, action.route, action.params);
+      await navigate(
+        context,
+        action.route,
+        action.params,
+        userMessage: userMessage,
+      );
     }
   }
 
   Future<bool> navigate(
     BuildContext context,
     String route,
-    Map<String, dynamic> params,
-  ) async {
+    Map<String, dynamic> params, {
+    String? userMessage,
+  }) async {
     final normalized = route.trim().toLowerCase();
 
     switch (normalized) {
@@ -54,6 +64,10 @@ class ChatNavigationService {
         return _openTeamStats(context, params, opponentsTab: false);
       case 'team_stats_opponents':
         return _openTeamStats(context, params, opponentsTab: true);
+      case 'create_training':
+        return _openCreateTraining(context, params, userMessage: userMessage);
+      case 'create_match':
+        return _openCreateMatch(context, params, userMessage: userMessage);
       default:
         if (context.mounted) {
           AppSnackbar.show(
@@ -81,6 +95,58 @@ class ChatNavigationService {
       context,
       FeatureDiscoveryIds.tabDashboard,
     );
+  }
+
+  Future<bool> _openCreateTraining(
+    BuildContext context,
+    Map<String, dynamic> params, {
+    String? userMessage,
+  }) async {
+    final session = context.read<AppSession>();
+    if (!session.hasManagedTeamsInSelectedSeason) {
+      if (context.mounted) {
+        AppSnackbar.show(context, context.l10n.createTrainingNoManagedTeams);
+      }
+      return false;
+    }
+
+    final AskDiegoCreateEventDateTime resolved = resolveCreateEventDateTime(
+      params: params,
+      userMessage: userMessage,
+    );
+
+    await showCreateTrainingSheet(
+      context,
+      initialDate: resolved.date,
+      initialTime: resolved.time,
+    );
+    return true;
+  }
+
+  Future<bool> _openCreateMatch(
+    BuildContext context,
+    Map<String, dynamic> params, {
+    String? userMessage,
+  }) async {
+    final session = context.read<AppSession>();
+    if (!session.hasManagedTeamsInSelectedSeason) {
+      if (context.mounted) {
+        AppSnackbar.show(context, context.l10n.createMatchNoManagedTeams);
+      }
+      return false;
+    }
+
+    final AskDiegoCreateEventDateTime resolved = resolveCreateEventDateTime(
+      params: params,
+      userMessage: userMessage,
+    );
+
+    await showCreateMatchSheet(
+      context,
+      initialDate: resolved.date,
+      initialTime: resolved.time,
+    );
+    return true;
   }
 
   Future<bool> _openMatchDetail(

@@ -470,14 +470,14 @@ class _WebNavigationShellState extends State<WebNavigationShell> {
         );
       } else if (index == widget.items.length) {
         children.add(
-          AskDiegoSidebarEntry(
+          NotificationSidebarEntry(
             collapsed: _sidebarCollapsed,
             itemHeight: _kWebSidebarNavItemHeight,
           ),
         );
       } else {
         children.add(
-          NotificationSidebarEntry(
+          AskDiegoSidebarEntry(
             collapsed: _sidebarCollapsed,
             itemHeight: _kWebSidebarNavItemHeight,
           ),

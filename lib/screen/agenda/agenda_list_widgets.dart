@@ -749,27 +749,6 @@ class AgendaItemCard extends StatelessWidget {
                   ),
                 ],
                 if (canManageThisTraining) ...[
-                  if (item.training!.trainingEndAt == null)
-                    IconButton(
-                      visualDensity: VisualDensity.compact,
-                      padding: EdgeInsets.zero,
-                      constraints: const BoxConstraints(
-                        minWidth: 32,
-                        minHeight: 32,
-                      ),
-                      tooltip: context.l10n.finishTrainingTitle,
-                      icon: Icon(
-                        Icons.sports_score_rounded,
-                        size: 20,
-                        color: colors.textPrimary,
-                      ),
-                      onPressed: () async {
-                        await finishManagedTraining(
-                          context,
-                          training: item.training!,
-                        );
-                      },
-                    ),
                   IconButton(
                     visualDensity: VisualDensity.compact,
                     padding: EdgeInsets.zero,
@@ -819,14 +798,6 @@ class AgendaItemCard extends StatelessWidget {
                     isManager: isManager,
                     variant: TrackerKitPillVariant.agendaCard,
                     showForNonManagerWithTracker: true,
-                  ),
-                ] else if (item.type == AgendaItemType.entrainement &&
-                    item.withTracker == true) ...[
-                  const SizedBox(width: 8),
-                  TrackerKitGpsPill(
-                    withTracker: true,
-                    isManager: isManager,
-                    variant: TrackerKitPillVariant.agendaCard,
                   ),
                 ],
                 if (item.isDone) ...[
@@ -1168,6 +1139,18 @@ class AgendaItemCard extends StatelessWidget {
                 ),
               ),
             ],
+            if (item.training != null) ...[
+              _AgendaIntenseLiveButton(
+                training: item.training!,
+                scheduledStart: item.startAt,
+                scheduledEnd: item.endAt,
+                title: item.title,
+                showFinish: canManageThisTraining &&
+                    item.training!.withTracker == true &&
+                    item.startAt.isBefore(DateTime.now()) &&
+                    !isTrainingFinished(item.training!),
+              ),
+            ],
             if (item.training != null && isManager == true) ...[
               const SizedBox(height: 10),
               InkWell(
@@ -1374,6 +1357,131 @@ class _AgendaTrainingPlayersRow extends StatelessWidget {
           ),
         ],
       ),
+    );
+  }
+}
+
+class _AgendaIntenseLiveButton extends StatefulWidget {
+  const _AgendaIntenseLiveButton({
+    required this.training,
+    required this.scheduledStart,
+    required this.scheduledEnd,
+    required this.title,
+    required this.showFinish,
+  });
+
+  final Training training;
+  final DateTime scheduledStart;
+  final DateTime scheduledEnd;
+  final String title;
+  final bool showFinish;
+
+  @override
+  State<_AgendaIntenseLiveButton> createState() =>
+      _AgendaIntenseLiveButtonState();
+}
+
+class _AgendaIntenseLiveButtonState extends State<_AgendaIntenseLiveButton> {
+  Timer? _slotTimer;
+
+  @override
+  void initState() {
+    super.initState();
+    _slotTimer = Timer.periodic(const Duration(seconds: 30), (_) {
+      if (mounted) {
+        setState(() {});
+      }
+    });
+  }
+
+  @override
+  void dispose() {
+    _slotTimer?.cancel();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    if (widget.training.withTracker != true) {
+      return const SizedBox.shrink();
+    }
+
+    final ownerId = widget.training.ownerId?.trim() ?? '';
+    if (ownerId.isEmpty) {
+      return const SizedBox.shrink();
+    }
+
+    final isLive = isTrainingSessionLive(
+      training: widget.training,
+      scheduledStart: widget.scheduledStart,
+      scheduledEnd: widget.scheduledEnd,
+    );
+
+    if (kDebugMode) {
+      final end = trainingScheduledEndAt(widget.training, widget.scheduledStart) ??
+          widget.scheduledEnd;
+      debugPrint(
+        '[IntenseLive] agenda training=${widget.training.docId} '
+        'ownerId=$ownerId withTracker=${widget.training.withTracker} '
+        'duration=${widget.training.duration} live=$isLive '
+        'start=${widget.scheduledStart} end=$end now=${DateTime.now()}',
+      );
+    }
+
+    if (!isLive && !widget.showFinish) {
+      return const SizedBox.shrink();
+    }
+
+    final colors = context.appColors;
+
+    return Column(
+      children: [
+        if (isLive) ...[
+          const SizedBox(height: 10),
+          SizedBox(
+            width: double.infinity,
+            child: FilledButton.icon(
+              onPressed: () {
+                IntenseLiveSessionScreen.openForTraining(
+                  context,
+                  training: widget.training,
+                  title: widget.title,
+                  scheduledStart: widget.scheduledStart,
+                );
+              },
+              icon: const Icon(Icons.sensors_rounded, size: 18),
+              label: Text(context.l10n.intenseLiveTitle),
+              style: FilledButton.styleFrom(
+                backgroundColor: colors.danger,
+                foregroundColor: Colors.white,
+                padding: const EdgeInsets.symmetric(vertical: 12),
+              ),
+            ),
+          ),
+        ],
+        if (widget.showFinish) ...[
+          const SizedBox(height: 10),
+          SizedBox(
+            width: double.infinity,
+            child: FilledButton.icon(
+              onPressed: () async {
+                await finishManagedTraining(
+                  context,
+                  training: widget.training,
+                );
+              },
+              icon: const Icon(Icons.sports_score_rounded, size: 18),
+              label: Text(context.l10n.finishTrainingTitle),
+              style: FilledButton.styleFrom(
+                backgroundColor: colors.card.withValues(alpha: 0.55),
+                foregroundColor: colors.textPrimary,
+                side: BorderSide(color: colors.border),
+                padding: const EdgeInsets.symmetric(vertical: 12),
+              ),
+            ),
+          ),
+        ],
+      ],
     );
   }
 }

@@ -55,6 +55,15 @@ import '../model/tracker/device.dart';
     );
   }
 
+  /// STREAM ALL ordered by [updatedAt] descending (admin device list).
+  Stream<List<QueryDocumentSnapshot<Map<String, dynamic>>>>
+      streamDevicesOrderedByUpdatedAt() {
+    return _collection
+        .orderBy('updatedAt', descending: true)
+        .snapshots()
+        .map((snapshot) => snapshot.docs);
+  }
+
   /// STREAM ONE
   Stream<Device?> streamDeviceById(String id) {
     return _collection.doc(id).snapshots().map((doc) {
@@ -138,6 +147,18 @@ import '../model/tracker/device.dart';
   Future<Device?> getDeviceByDeviceName(String deviceName) async {
     final querySnapshot = await _collection
         .where('device_name', isEqualTo: deviceName)
+        .limit(1)
+        .get();
+
+    if (querySnapshot.docs.isEmpty) return null;
+
+    return Device.fromDocument(querySnapshot.docs.first);
+  }
+
+  /// Recherche par custom_name (libellé d'affectation Inspirit).
+  Future<Device?> getDeviceByCustomName(String customName) async {
+    final querySnapshot = await _collection
+        .where('custom_name', isEqualTo: customName)
         .limit(1)
         .get();
 

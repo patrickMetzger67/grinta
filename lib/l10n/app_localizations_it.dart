@@ -1801,6 +1801,10 @@ class AppLocalizationsIt extends AppLocalizations {
   String get asiCannotReadFile => 'Impossibile riprodurre il file selezionato';
 
   @override
+  String get asiFileEmptyOrNoData =>
+      'Il file .asi è vuoto o non contiene dati utilizzabili.';
+
+  @override
   String get asiFileMismatch =>
       'Il file non corrisponde al tracker selezionato';
 
@@ -2542,6 +2546,13 @@ class AppLocalizationsIt extends AppLocalizations {
 
   @override
   String get teamDetailTrackerOwnersSaved => 'Kit tracker aggiornati.';
+
+  @override
+  String get teamDetailTrackerCoachProRequiredTitle => 'Tracker GPS';
+
+  @override
+  String get teamDetailTrackerCoachProRequiredMessage =>
+      'Associare kit tracker GPS a una squadra richiede un abbonamento Coach Pro.';
 
   @override
   String get roleCoach => 'Allenatore';
@@ -3290,6 +3301,69 @@ class AppLocalizationsIt extends AppLocalizations {
       'Impossibile terminare l\'allenamento. Riprova.';
 
   @override
+  String get trainingIntenseFinishTitle => 'Recupero dati sensore';
+
+  @override
+  String get trainingIntenseFinishMessage =>
+      'Recupero dati dei giocatori presenti con tracker assegnato. Non chiudere questa finestra.';
+
+  @override
+  String get trainingIntenseFinishSyncing => 'Sincronizzazione in corso…';
+
+  @override
+  String get trainingIntenseFinishStagePending => 'In attesa';
+
+  @override
+  String get trainingIntenseFinishStageFetching => 'Recupero dati grezzi…';
+
+  @override
+  String get trainingIntenseFinishStageConverting => 'Conversione dati…';
+
+  @override
+  String get trainingIntenseFinishStageAnalyzing => 'Analisi in corso…';
+
+  @override
+  String get trainingIntenseFinishStageDone => 'Completato';
+
+  @override
+  String get trainingIntenseFinishStageError => 'Errore';
+
+  @override
+  String get trainingIntenseFinishNoTrackers =>
+      'Nessun giocatore presente ha un tracker assegnato. Puoi terminare l\'allenamento senza recupero.';
+
+  @override
+  String get trainingIntenseFinishPartialError =>
+      'Alcuni recuperi non sono riusciti. Correggi il problema e riprova.';
+
+  @override
+  String get intenseLiveTitle => 'Live';
+
+  @override
+  String get intenseLiveOpenTooltip => 'Visualizza live tracker';
+
+  @override
+  String get intenseLiveSelectPlayer => 'Seleziona un giocatore';
+
+  @override
+  String get intenseLiveNoPlayers =>
+      'Nessun giocatore presente con tracker assegnato';
+
+  @override
+  String get intenseLiveRefresh => 'Aggiorna';
+
+  @override
+  String intenseLiveLastUpdate(String time) {
+    return 'Aggiornato alle $time';
+  }
+
+  @override
+  String get tabLive => 'Live';
+
+  @override
+  String get tabLiveShort => 'Live';
+
+  @override
   String get createMatchTitle => 'Nuova partita';
 
   @override
@@ -3804,14 +3878,14 @@ class AppLocalizationsIt extends AppLocalizations {
   String get teamStatsCalendarDateSeparator => ', ';
 
   @override
-  String get askDiegoTitle => 'Ask Diego';
+  String get askDiegoTitle => 'Ask Gio';
 
   @override
   String get askDiegoWelcome =>
-      'Ciao! Sono Diego. Posso aiutarti con l\'agenda, il prossimo avversario o le statistiche della squadra.';
+      'Ciao! Sono Gio. Posso aiutarti con l\'agenda, il prossimo avversario o le statistiche della squadra.';
 
   @override
-  String get askDiegoInputHint => 'Chiedi a Diego…';
+  String get askDiegoInputHint => 'Chiedi a Gio…';
 
   @override
   String get askDiegoSend => 'Invia';
@@ -4123,6 +4197,290 @@ class AppLocalizationsIt extends AppLocalizations {
 
   @override
   String get adminPromoCodeNotFound => 'Codice promo non trovato.';
+
+  @override
+  String get adminTrackerOwnersSection => 'Proprietari tracker';
+
+  @override
+  String get adminTrackerOwnersSectionDesc =>
+      'Crea e gestisci i proprietari dei tracker.';
+
+  @override
+  String get adminTrackerOwnersTitle => 'Proprietari tracker';
+
+  @override
+  String get adminTrackerOwnersEmpty => 'Ancora nessun proprietario.';
+
+  @override
+  String get adminTrackerOwnersLoadError =>
+      'Impossibile caricare i proprietari.';
+
+  @override
+  String get adminTrackerOwnerCreate => 'Aggiungi proprietario';
+
+  @override
+  String get adminTrackerOwnerCreateTitle => 'Aggiungi proprietario';
+
+  @override
+  String get adminTrackerOwnerEditTitle => 'Modifica proprietario';
+
+  @override
+  String get adminTrackerOwnerFieldName => 'Nome';
+
+  @override
+  String get adminTrackerOwnerFieldEmail => 'Email';
+
+  @override
+  String get adminTrackerOwnerFieldFirstname => 'Nome';
+
+  @override
+  String get adminTrackerOwnerFieldLastname => 'Cognome';
+
+  @override
+  String get adminTrackerOwnerFieldActive => 'Attivo';
+
+  @override
+  String get adminTrackerOwnerFieldTypeTracker => 'Tipo di tracker';
+
+  @override
+  String get adminTrackerOwnerTypeInspirit => 'Inspirit';
+
+  @override
+  String get adminTrackerOwnerTypeFootbar => 'Footbar';
+
+  @override
+  String get adminTrackerOwnerTypeIntense => 'Intense (SIM, streaming cloud)';
+
+  @override
+  String get adminTrackerOwnerFieldRequired => 'Campo obbligatorio';
+
+  @override
+  String get adminTrackerOwnerFieldEmailInvalid => 'Email non valida';
+
+  @override
+  String get adminTrackerOwnerStatusActive => 'Attivo';
+
+  @override
+  String get adminTrackerOwnerStatusInactive => 'Inattivo';
+
+  @override
+  String get adminTrackerOwnerSave => 'Salva';
+
+  @override
+  String get adminTrackerOwnerDelete => 'Elimina';
+
+  @override
+  String get adminTrackerOwnerDeleteConfirmTitle =>
+      'Eliminare il proprietario?';
+
+  @override
+  String adminTrackerOwnerDeleteConfirmMessage(String name) {
+    return 'Vuoi davvero eliminare $name? Questa azione è definitiva.';
+  }
+
+  @override
+  String get adminTrackerOwnerCreated => 'Proprietario creato.';
+
+  @override
+  String get adminTrackerOwnerUpdated => 'Proprietario aggiornato.';
+
+  @override
+  String get adminTrackerOwnerDeleted => 'Proprietario eliminato.';
+
+  @override
+  String get adminTrackerOwnerSaveFailed =>
+      'Impossibile salvare il proprietario.';
+
+  @override
+  String get adminTrackerOwnerDeleteFailed =>
+      'Impossibile eliminare il proprietario.';
+
+  @override
+  String get adminTrackerOwnerPermissionDenied =>
+      'È richiesto l\'accesso da amministratore per gestire i proprietari.';
+
+  @override
+  String get adminTrackerDevicesSection => 'Gestione tracker';
+
+  @override
+  String get adminTrackerDevicesSectionDesc =>
+      'Sincronizza, assegna e gestisci i dispositivi tracker.';
+
+  @override
+  String get adminTrackerDevicesTitle => 'Gestione tracker';
+
+  @override
+  String get adminTrackerDevicesManageAction => 'Gestione tracker';
+
+  @override
+  String get adminTrackerDevicesShowUnassigned =>
+      'Mostra dispositivi non assegnati';
+
+  @override
+  String get adminTrackerDevicesSelectOwner => 'Seleziona un responsabile';
+
+  @override
+  String get adminTrackerDevicesResetFilter => 'Reimposta';
+
+  @override
+  String get adminTrackerDevicesEmpty => 'Nessun dispositivo';
+
+  @override
+  String get adminTrackerDevicesEmptySubtitle =>
+      'Nessun documento in TRACKER_Device.';
+
+  @override
+  String get adminTrackerDevicesLoadError =>
+      'Impossibile caricare i dispositivi.';
+
+  @override
+  String adminTrackerDevicesSource(String provider) {
+    return 'Fonte: $provider';
+  }
+
+  @override
+  String adminTrackerDevicesSerial(String serial) {
+    return 'Serial: $serial';
+  }
+
+  @override
+  String adminTrackerDevicesUpdatedAt(String date) {
+    return 'Aggiornato: $date';
+  }
+
+  @override
+  String get adminTrackerDevicesStatusActive => 'Attivo';
+
+  @override
+  String get adminTrackerDevicesStatusInactive => 'Inattivo';
+
+  @override
+  String get adminTrackerDevicesAssign => 'Assegna';
+
+  @override
+  String get adminTrackerDevicesUnassign => 'Rimuovi assegnazione';
+
+  @override
+  String get adminTrackerDevicesAssignTitle => 'Assegna un dispositivo';
+
+  @override
+  String get adminTrackerDevicesCustomName => 'Nome (opzionale)';
+
+  @override
+  String get adminTrackerDevicesCancel => 'Annulla';
+
+  @override
+  String get adminTrackerDevicesValidate => 'Conferma';
+
+  @override
+  String get adminTrackerDevicesSelectOwnerRequired =>
+      'Seleziona un responsabile.';
+
+  @override
+  String get adminTrackerDevicesAssignSuccess => 'Assegnazione salvata.';
+
+  @override
+  String get adminTrackerDevicesUnassignSuccess => 'Dispositivo rimosso.';
+
+  @override
+  String adminTrackerDevicesError(String error) {
+    return 'Errore: $error';
+  }
+
+  @override
+  String get adminTrackerDevicesSyncInspirit => 'Sync Inspirit';
+
+  @override
+  String get adminTrackerDevicesSyncFootbar => 'Sync Footbar';
+
+  @override
+  String get adminTrackerDevicesSyncInProgress => 'Sincronizzazione...';
+
+  @override
+  String get adminTrackerDevicesSyncInspiritInProgress =>
+      'Sync Inspirit (insiders) in corso...';
+
+  @override
+  String get adminTrackerDevicesSyncFootbarInProgress =>
+      'Sync Footbar in corso...';
+
+  @override
+  String adminTrackerDevicesSyncInspiritSuccess(int count) {
+    return 'Sync Inspirit: $count dispositivo/i aggiornato/i.';
+  }
+
+  @override
+  String adminTrackerDevicesSyncInspiritError(String error) {
+    return 'Errore Sync Inspirit: $error';
+  }
+
+  @override
+  String get adminTrackerDevicesPermissionDenied =>
+      'È richiesto l\'accesso da amministratore per gestire i dispositivi.';
+
+  @override
+  String get adminStreamGroupsSection => 'Messaggistica - Gruppi';
+
+  @override
+  String get adminStreamGroupsSectionDesc =>
+      'Elenca ed elimina i gruppi chat di squadra su GetStream.';
+
+  @override
+  String get adminStreamGroupsTitle => 'Messaggistica - Gruppi';
+
+  @override
+  String get adminStreamGroupsEmpty => 'Nessun gruppo chat';
+
+  @override
+  String get adminStreamGroupsEmptySubtitle =>
+      'Nessun canale squadra trovato su GetStream.';
+
+  @override
+  String get adminStreamGroupsLoadError =>
+      'Impossibile caricare i gruppi chat.';
+
+  @override
+  String get adminStreamGroupsRefresh => 'Aggiorna';
+
+  @override
+  String adminStreamGroupsCid(String cid) {
+    return 'CID: $cid';
+  }
+
+  @override
+  String adminStreamGroupsMemberCount(int count) {
+    return '$count membri';
+  }
+
+  @override
+  String adminStreamGroupsLastMessageAt(String date) {
+    return 'Ultimo messaggio: $date';
+  }
+
+  @override
+  String get adminStreamGroupsDelete => 'Elimina';
+
+  @override
+  String get adminStreamGroupsCancel => 'Annulla';
+
+  @override
+  String get adminStreamGroupsDeleteConfirmTitle => 'Eliminare il gruppo?';
+
+  @override
+  String adminStreamGroupsDeleteConfirmMessage(String name, String cid) {
+    return 'Vuoi davvero eliminare il gruppo $name ($cid)? Questa azione è permanente.';
+  }
+
+  @override
+  String get adminStreamGroupsDeleted => 'Gruppo eliminato.';
+
+  @override
+  String get adminStreamGroupsDeleteFailed =>
+      'Impossibile eliminare il gruppo.';
+
+  @override
+  String get adminStreamGroupsPermissionDenied =>
+      'È richiesto l\'accesso da amministratore per gestire i gruppi chat.';
 
   @override
   String get promoCodeMenuLabel => 'Codice promo';

@@ -4,6 +4,8 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:grinta/config/subscription_config.dart';
+import 'package:grinta/services/eshop_config_service.dart';
 import 'package:grinta/core/extensions/l10n_extension.dart';
 import 'package:grinta/l10n/app_localizations.dart';
 import 'package:grinta/model/agendaItem.dart';
@@ -321,6 +323,11 @@ class InternalReminderService with WidgetsBindingObserver {
     required String body,
     String? playerId,
   }) async {
+    if (!EshopConfigService.instance.commerceNotificationsEnabled &&
+        isCommerceNotifType(type)) {
+      return;
+    }
+
     final todayKey =
         DateFormat('yyyy-MM-dd').format(DateTime.now());
     final dedupeId = '${type.name}_${objectId}_$todayKey';

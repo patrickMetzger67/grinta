@@ -1,3 +1,4 @@
+import 'package:grinta/services/eshop_config_service.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 /// Which monetization banner to show on home tabs for non-subscribers.
@@ -43,6 +44,9 @@ class MonetizationBannerRotationService {
 
   /// Banner kind for the current visit count (call after [recordVisit]).
   MonetizationBannerKind bannerKindForCurrentVisit() {
+    if (!EshopConfigService.instance.isOpen) {
+      return MonetizationBannerKind.subscription;
+    }
     return _visitCount.isEven
         ? MonetizationBannerKind.subscription
         : MonetizationBannerKind.shopPromo;

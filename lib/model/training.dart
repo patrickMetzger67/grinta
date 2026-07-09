@@ -350,11 +350,24 @@ String keyTgOwnerId = 'ownerId';
 
 
 String _asString(dynamic v, {String fallback = ''}) => v is String ? v : fallback;
-bool _asBool(dynamic v, {bool fallback = false}) => v is bool ? v : fallback;
+bool _asBool(dynamic v, {bool fallback = false}) {
+  if (v is bool) return v;
+  if (v is num) return v != 0;
+  if (v is String) {
+    final normalized = v.trim().toLowerCase();
+    if (normalized == 'true' || normalized == '1') return true;
+    if (normalized == 'false' || normalized == '0') return false;
+  }
+  return fallback;
+}
 
 int _asInt(dynamic v, {int fallback = 0}) {
   if (v is int) return v;
   if (v is num) return v.toInt();
+  if (v is String) {
+    final parsed = int.tryParse(v.trim());
+    if (parsed != null) return parsed;
+  }
   return fallback;
 }
 
@@ -577,8 +590,8 @@ class Training {
       reccurentEnd: _asTimestamp(map[keyTgRecurrentEnd]),
       startTime: _asString(map[keyTgStartTime]),
       endTime: _asString(map[keyTgStartEnd]),
-      withTracker: map[keyTgWithTracker] ?? false,
-      isTrackerDataUploaded: map[keyTgIsTrackerDataUploaded] ?? false,
+      withTracker: _asBool(map[keyTgWithTracker]),
+      isTrackerDataUploaded: _asBool(map[keyTgIsTrackerDataUploaded]),
       trainingStartAt: _asTimestamp(map[keyTgStartAt]),
       trainingEndAt: _asTimestamp(map[keyTgEndAt]),
       ownerId: _asString(map[keyTgOwnerId]),

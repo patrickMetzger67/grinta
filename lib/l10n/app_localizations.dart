@@ -3244,6 +3244,12 @@ abstract class AppLocalizations {
   /// **'Impossible de lire le fichier sélectionné'**
   String get asiCannotReadFile;
 
+  /// No description provided for @asiFileEmptyOrNoData.
+  ///
+  /// In fr, this message translates to:
+  /// **'Le fichier .asi est vide ou ne contient aucune donnée exploitable.'**
+  String get asiFileEmptyOrNoData;
+
   /// No description provided for @asiFileMismatch.
   ///
   /// In fr, this message translates to:
@@ -4473,6 +4479,18 @@ abstract class AppLocalizations {
   /// In fr, this message translates to:
   /// **'Kits tracker mis à jour.'**
   String get teamDetailTrackerOwnersSaved;
+
+  /// No description provided for @teamDetailTrackerCoachProRequiredTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Trackers GPS'**
+  String get teamDetailTrackerCoachProRequiredTitle;
+
+  /// No description provided for @teamDetailTrackerCoachProRequiredMessage.
+  ///
+  /// In fr, this message translates to:
+  /// **'L\'association de kits tracker GPS à une équipe nécessite un abonnement Coach Pro.'**
+  String get teamDetailTrackerCoachProRequiredMessage;
 
   /// No description provided for @roleCoach.
   ///
@@ -5770,6 +5788,120 @@ abstract class AppLocalizations {
   /// **'Impossible de terminer l\'entraînement. Réessayez.'**
   String get trainingFinishError;
 
+  /// No description provided for @trainingIntenseFinishTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Récupération des données capteurs'**
+  String get trainingIntenseFinishTitle;
+
+  /// No description provided for @trainingIntenseFinishMessage.
+  ///
+  /// In fr, this message translates to:
+  /// **'Récupération des données des joueurs présents avec capteur assigné. Ne fermez pas cette fenêtre.'**
+  String get trainingIntenseFinishMessage;
+
+  /// No description provided for @trainingIntenseFinishSyncing.
+  ///
+  /// In fr, this message translates to:
+  /// **'Synchronisation en cours…'**
+  String get trainingIntenseFinishSyncing;
+
+  /// No description provided for @trainingIntenseFinishStagePending.
+  ///
+  /// In fr, this message translates to:
+  /// **'En attente'**
+  String get trainingIntenseFinishStagePending;
+
+  /// No description provided for @trainingIntenseFinishStageFetching.
+  ///
+  /// In fr, this message translates to:
+  /// **'Récupération des données brutes…'**
+  String get trainingIntenseFinishStageFetching;
+
+  /// No description provided for @trainingIntenseFinishStageConverting.
+  ///
+  /// In fr, this message translates to:
+  /// **'Conversion des données…'**
+  String get trainingIntenseFinishStageConverting;
+
+  /// No description provided for @trainingIntenseFinishStageAnalyzing.
+  ///
+  /// In fr, this message translates to:
+  /// **'Analyse en cours…'**
+  String get trainingIntenseFinishStageAnalyzing;
+
+  /// No description provided for @trainingIntenseFinishStageDone.
+  ///
+  /// In fr, this message translates to:
+  /// **'Terminé'**
+  String get trainingIntenseFinishStageDone;
+
+  /// No description provided for @trainingIntenseFinishStageError.
+  ///
+  /// In fr, this message translates to:
+  /// **'Erreur'**
+  String get trainingIntenseFinishStageError;
+
+  /// No description provided for @trainingIntenseFinishNoTrackers.
+  ///
+  /// In fr, this message translates to:
+  /// **'Aucun joueur présent n\'a de capteur assigné. Vous pouvez terminer l\'entraînement sans récupération.'**
+  String get trainingIntenseFinishNoTrackers;
+
+  /// No description provided for @trainingIntenseFinishPartialError.
+  ///
+  /// In fr, this message translates to:
+  /// **'Certaines récupérations ont échoué. Corrigez le problème puis réessayez.'**
+  String get trainingIntenseFinishPartialError;
+
+  /// No description provided for @intenseLiveTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Live'**
+  String get intenseLiveTitle;
+
+  /// No description provided for @intenseLiveOpenTooltip.
+  ///
+  /// In fr, this message translates to:
+  /// **'Voir le live capteurs'**
+  String get intenseLiveOpenTooltip;
+
+  /// No description provided for @intenseLiveSelectPlayer.
+  ///
+  /// In fr, this message translates to:
+  /// **'Sélectionner un joueur'**
+  String get intenseLiveSelectPlayer;
+
+  /// No description provided for @intenseLiveNoPlayers.
+  ///
+  /// In fr, this message translates to:
+  /// **'Aucun joueur présent avec capteur assigné'**
+  String get intenseLiveNoPlayers;
+
+  /// No description provided for @intenseLiveRefresh.
+  ///
+  /// In fr, this message translates to:
+  /// **'Actualiser'**
+  String get intenseLiveRefresh;
+
+  /// No description provided for @intenseLiveLastUpdate.
+  ///
+  /// In fr, this message translates to:
+  /// **'Mis à jour à {time}'**
+  String intenseLiveLastUpdate(String time);
+
+  /// No description provided for @tabLive.
+  ///
+  /// In fr, this message translates to:
+  /// **'Live'**
+  String get tabLive;
+
+  /// No description provided for @tabLiveShort.
+  ///
+  /// In fr, this message translates to:
+  /// **'Live'**
+  String get tabLiveShort;
+
   /// No description provided for @createMatchTitle.
   ///
   /// In fr, this message translates to:
@@ -6637,19 +6769,19 @@ abstract class AppLocalizations {
   /// No description provided for @askDiegoTitle.
   ///
   /// In fr, this message translates to:
-  /// **'Ask Diego'**
+  /// **'Ask Gio'**
   String get askDiegoTitle;
 
   /// No description provided for @askDiegoWelcome.
   ///
   /// In fr, this message translates to:
-  /// **'Bonjour ! Je suis Diego. Je peux vous aider avec votre agenda, votre prochain adversaire ou les statistiques de votre équipe. Posez-moi une question ou utilisez le micro.'**
+  /// **'Bonjour ! Je suis Gio. Je peux vous aider avec votre agenda, votre prochain adversaire ou les statistiques de votre équipe. Posez-moi une question ou utilisez le micro.'**
   String get askDiegoWelcome;
 
   /// No description provided for @askDiegoInputHint.
   ///
   /// In fr, this message translates to:
-  /// **'Demandez à Diego…'**
+  /// **'Demandez à Gio…'**
   String get askDiegoInputHint;
 
   /// No description provided for @askDiegoSend.
@@ -7191,6 +7323,492 @@ abstract class AppLocalizations {
   /// In fr, this message translates to:
   /// **'Code promo introuvable.'**
   String get adminPromoCodeNotFound;
+
+  /// No description provided for @adminTrackerOwnersSection.
+  ///
+  /// In fr, this message translates to:
+  /// **'Propriétaires trackers'**
+  String get adminTrackerOwnersSection;
+
+  /// No description provided for @adminTrackerOwnersSectionDesc.
+  ///
+  /// In fr, this message translates to:
+  /// **'Créer et gérer les propriétaires de trackers.'**
+  String get adminTrackerOwnersSectionDesc;
+
+  /// No description provided for @adminTrackerOwnersTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Propriétaires trackers'**
+  String get adminTrackerOwnersTitle;
+
+  /// No description provided for @adminTrackerOwnersEmpty.
+  ///
+  /// In fr, this message translates to:
+  /// **'Aucun propriétaire pour le moment.'**
+  String get adminTrackerOwnersEmpty;
+
+  /// No description provided for @adminTrackerOwnersLoadError.
+  ///
+  /// In fr, this message translates to:
+  /// **'Impossible de charger les propriétaires.'**
+  String get adminTrackerOwnersLoadError;
+
+  /// No description provided for @adminTrackerOwnerCreate.
+  ///
+  /// In fr, this message translates to:
+  /// **'Ajouter un propriétaire'**
+  String get adminTrackerOwnerCreate;
+
+  /// No description provided for @adminTrackerOwnerCreateTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Ajouter un propriétaire'**
+  String get adminTrackerOwnerCreateTitle;
+
+  /// No description provided for @adminTrackerOwnerEditTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Modifier le propriétaire'**
+  String get adminTrackerOwnerEditTitle;
+
+  /// No description provided for @adminTrackerOwnerFieldName.
+  ///
+  /// In fr, this message translates to:
+  /// **'Nom'**
+  String get adminTrackerOwnerFieldName;
+
+  /// No description provided for @adminTrackerOwnerFieldEmail.
+  ///
+  /// In fr, this message translates to:
+  /// **'Email'**
+  String get adminTrackerOwnerFieldEmail;
+
+  /// No description provided for @adminTrackerOwnerFieldFirstname.
+  ///
+  /// In fr, this message translates to:
+  /// **'Prénom'**
+  String get adminTrackerOwnerFieldFirstname;
+
+  /// No description provided for @adminTrackerOwnerFieldLastname.
+  ///
+  /// In fr, this message translates to:
+  /// **'Nom de famille'**
+  String get adminTrackerOwnerFieldLastname;
+
+  /// No description provided for @adminTrackerOwnerFieldActive.
+  ///
+  /// In fr, this message translates to:
+  /// **'Actif'**
+  String get adminTrackerOwnerFieldActive;
+
+  /// No description provided for @adminTrackerOwnerFieldTypeTracker.
+  ///
+  /// In fr, this message translates to:
+  /// **'Type de tracker'**
+  String get adminTrackerOwnerFieldTypeTracker;
+
+  /// No description provided for @adminTrackerOwnerTypeInspirit.
+  ///
+  /// In fr, this message translates to:
+  /// **'Inspirit'**
+  String get adminTrackerOwnerTypeInspirit;
+
+  /// No description provided for @adminTrackerOwnerTypeFootbar.
+  ///
+  /// In fr, this message translates to:
+  /// **'Footbar'**
+  String get adminTrackerOwnerTypeFootbar;
+
+  /// No description provided for @adminTrackerOwnerTypeIntense.
+  ///
+  /// In fr, this message translates to:
+  /// **'Intense (SIM, flux cloud)'**
+  String get adminTrackerOwnerTypeIntense;
+
+  /// No description provided for @adminTrackerOwnerFieldRequired.
+  ///
+  /// In fr, this message translates to:
+  /// **'Champ obligatoire'**
+  String get adminTrackerOwnerFieldRequired;
+
+  /// No description provided for @adminTrackerOwnerFieldEmailInvalid.
+  ///
+  /// In fr, this message translates to:
+  /// **'Email invalide'**
+  String get adminTrackerOwnerFieldEmailInvalid;
+
+  /// No description provided for @adminTrackerOwnerStatusActive.
+  ///
+  /// In fr, this message translates to:
+  /// **'Actif'**
+  String get adminTrackerOwnerStatusActive;
+
+  /// No description provided for @adminTrackerOwnerStatusInactive.
+  ///
+  /// In fr, this message translates to:
+  /// **'Inactif'**
+  String get adminTrackerOwnerStatusInactive;
+
+  /// No description provided for @adminTrackerOwnerSave.
+  ///
+  /// In fr, this message translates to:
+  /// **'Enregistrer'**
+  String get adminTrackerOwnerSave;
+
+  /// No description provided for @adminTrackerOwnerDelete.
+  ///
+  /// In fr, this message translates to:
+  /// **'Supprimer'**
+  String get adminTrackerOwnerDelete;
+
+  /// No description provided for @adminTrackerOwnerDeleteConfirmTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Supprimer le propriétaire ?'**
+  String get adminTrackerOwnerDeleteConfirmTitle;
+
+  /// No description provided for @adminTrackerOwnerDeleteConfirmMessage.
+  ///
+  /// In fr, this message translates to:
+  /// **'Voulez-vous vraiment supprimer {name} ? Cette action est définitive.'**
+  String adminTrackerOwnerDeleteConfirmMessage(String name);
+
+  /// No description provided for @adminTrackerOwnerCreated.
+  ///
+  /// In fr, this message translates to:
+  /// **'Propriétaire créé.'**
+  String get adminTrackerOwnerCreated;
+
+  /// No description provided for @adminTrackerOwnerUpdated.
+  ///
+  /// In fr, this message translates to:
+  /// **'Propriétaire mis à jour.'**
+  String get adminTrackerOwnerUpdated;
+
+  /// No description provided for @adminTrackerOwnerDeleted.
+  ///
+  /// In fr, this message translates to:
+  /// **'Propriétaire supprimé.'**
+  String get adminTrackerOwnerDeleted;
+
+  /// No description provided for @adminTrackerOwnerSaveFailed.
+  ///
+  /// In fr, this message translates to:
+  /// **'Impossible d\'enregistrer le propriétaire.'**
+  String get adminTrackerOwnerSaveFailed;
+
+  /// No description provided for @adminTrackerOwnerDeleteFailed.
+  ///
+  /// In fr, this message translates to:
+  /// **'Impossible de supprimer le propriétaire.'**
+  String get adminTrackerOwnerDeleteFailed;
+
+  /// No description provided for @adminTrackerOwnerPermissionDenied.
+  ///
+  /// In fr, this message translates to:
+  /// **'Un accès administrateur est requis pour gérer les propriétaires.'**
+  String get adminTrackerOwnerPermissionDenied;
+
+  /// No description provided for @adminTrackerDevicesSection.
+  ///
+  /// In fr, this message translates to:
+  /// **'Gestion des trackers'**
+  String get adminTrackerDevicesSection;
+
+  /// No description provided for @adminTrackerDevicesSectionDesc.
+  ///
+  /// In fr, this message translates to:
+  /// **'Synchroniser, affecter et gérer les devices trackers.'**
+  String get adminTrackerDevicesSectionDesc;
+
+  /// No description provided for @adminTrackerDevicesTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Gestion des trackers'**
+  String get adminTrackerDevicesTitle;
+
+  /// No description provided for @adminTrackerDevicesManageAction.
+  ///
+  /// In fr, this message translates to:
+  /// **'Gestion des trackers'**
+  String get adminTrackerDevicesManageAction;
+
+  /// No description provided for @adminTrackerDevicesShowUnassigned.
+  ///
+  /// In fr, this message translates to:
+  /// **'Afficher les devices sans affectation'**
+  String get adminTrackerDevicesShowUnassigned;
+
+  /// No description provided for @adminTrackerDevicesSelectOwner.
+  ///
+  /// In fr, this message translates to:
+  /// **'Sélectionner un responsable'**
+  String get adminTrackerDevicesSelectOwner;
+
+  /// No description provided for @adminTrackerDevicesResetFilter.
+  ///
+  /// In fr, this message translates to:
+  /// **'Réinitialiser'**
+  String get adminTrackerDevicesResetFilter;
+
+  /// No description provided for @adminTrackerDevicesEmpty.
+  ///
+  /// In fr, this message translates to:
+  /// **'Aucun device'**
+  String get adminTrackerDevicesEmpty;
+
+  /// No description provided for @adminTrackerDevicesEmptySubtitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Aucun document dans TRACKER_Device.'**
+  String get adminTrackerDevicesEmptySubtitle;
+
+  /// No description provided for @adminTrackerDevicesLoadError.
+  ///
+  /// In fr, this message translates to:
+  /// **'Impossible de charger les devices.'**
+  String get adminTrackerDevicesLoadError;
+
+  /// No description provided for @adminTrackerDevicesSource.
+  ///
+  /// In fr, this message translates to:
+  /// **'Source : {provider}'**
+  String adminTrackerDevicesSource(String provider);
+
+  /// No description provided for @adminTrackerDevicesSerial.
+  ///
+  /// In fr, this message translates to:
+  /// **'Serial : {serial}'**
+  String adminTrackerDevicesSerial(String serial);
+
+  /// No description provided for @adminTrackerDevicesUpdatedAt.
+  ///
+  /// In fr, this message translates to:
+  /// **'Maj : {date}'**
+  String adminTrackerDevicesUpdatedAt(String date);
+
+  /// No description provided for @adminTrackerDevicesStatusActive.
+  ///
+  /// In fr, this message translates to:
+  /// **'Actif'**
+  String get adminTrackerDevicesStatusActive;
+
+  /// No description provided for @adminTrackerDevicesStatusInactive.
+  ///
+  /// In fr, this message translates to:
+  /// **'Inactif'**
+  String get adminTrackerDevicesStatusInactive;
+
+  /// No description provided for @adminTrackerDevicesAssign.
+  ///
+  /// In fr, this message translates to:
+  /// **'Affecter'**
+  String get adminTrackerDevicesAssign;
+
+  /// No description provided for @adminTrackerDevicesUnassign.
+  ///
+  /// In fr, this message translates to:
+  /// **'Désaffecter'**
+  String get adminTrackerDevicesUnassign;
+
+  /// No description provided for @adminTrackerDevicesAssignTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Affecter un device'**
+  String get adminTrackerDevicesAssignTitle;
+
+  /// No description provided for @adminTrackerDevicesCustomName.
+  ///
+  /// In fr, this message translates to:
+  /// **'Nom (optionnel)'**
+  String get adminTrackerDevicesCustomName;
+
+  /// No description provided for @adminTrackerDevicesCancel.
+  ///
+  /// In fr, this message translates to:
+  /// **'Annuler'**
+  String get adminTrackerDevicesCancel;
+
+  /// No description provided for @adminTrackerDevicesValidate.
+  ///
+  /// In fr, this message translates to:
+  /// **'Valider'**
+  String get adminTrackerDevicesValidate;
+
+  /// No description provided for @adminTrackerDevicesSelectOwnerRequired.
+  ///
+  /// In fr, this message translates to:
+  /// **'Veuillez sélectionner un responsable.'**
+  String get adminTrackerDevicesSelectOwnerRequired;
+
+  /// No description provided for @adminTrackerDevicesAssignSuccess.
+  ///
+  /// In fr, this message translates to:
+  /// **'Affectation enregistrée.'**
+  String get adminTrackerDevicesAssignSuccess;
+
+  /// No description provided for @adminTrackerDevicesUnassignSuccess.
+  ///
+  /// In fr, this message translates to:
+  /// **'Désaffectation enregistrée.'**
+  String get adminTrackerDevicesUnassignSuccess;
+
+  /// No description provided for @adminTrackerDevicesError.
+  ///
+  /// In fr, this message translates to:
+  /// **'Erreur : {error}'**
+  String adminTrackerDevicesError(String error);
+
+  /// No description provided for @adminTrackerDevicesSyncInspirit.
+  ///
+  /// In fr, this message translates to:
+  /// **'Sync Inspirit'**
+  String get adminTrackerDevicesSyncInspirit;
+
+  /// No description provided for @adminTrackerDevicesSyncFootbar.
+  ///
+  /// In fr, this message translates to:
+  /// **'Sync Footbar'**
+  String get adminTrackerDevicesSyncFootbar;
+
+  /// No description provided for @adminTrackerDevicesSyncInProgress.
+  ///
+  /// In fr, this message translates to:
+  /// **'Synchronisation...'**
+  String get adminTrackerDevicesSyncInProgress;
+
+  /// No description provided for @adminTrackerDevicesSyncInspiritInProgress.
+  ///
+  /// In fr, this message translates to:
+  /// **'Sync Inspirit (insiders) en cours...'**
+  String get adminTrackerDevicesSyncInspiritInProgress;
+
+  /// No description provided for @adminTrackerDevicesSyncFootbarInProgress.
+  ///
+  /// In fr, this message translates to:
+  /// **'Sync Footbar en cours...'**
+  String get adminTrackerDevicesSyncFootbarInProgress;
+
+  /// No description provided for @adminTrackerDevicesSyncInspiritSuccess.
+  ///
+  /// In fr, this message translates to:
+  /// **'Sync Inspirit : {count} device(s) mis à jour.'**
+  String adminTrackerDevicesSyncInspiritSuccess(int count);
+
+  /// No description provided for @adminTrackerDevicesSyncInspiritError.
+  ///
+  /// In fr, this message translates to:
+  /// **'Erreur Sync Inspirit : {error}'**
+  String adminTrackerDevicesSyncInspiritError(String error);
+
+  /// No description provided for @adminTrackerDevicesPermissionDenied.
+  ///
+  /// In fr, this message translates to:
+  /// **'Un accès administrateur est requis pour gérer les devices.'**
+  String get adminTrackerDevicesPermissionDenied;
+
+  /// No description provided for @adminStreamGroupsSection.
+  ///
+  /// In fr, this message translates to:
+  /// **'Messagerie - Groupe'**
+  String get adminStreamGroupsSection;
+
+  /// No description provided for @adminStreamGroupsSectionDesc.
+  ///
+  /// In fr, this message translates to:
+  /// **'Lister et supprimer les groupes de chat GetStream des équipes.'**
+  String get adminStreamGroupsSectionDesc;
+
+  /// No description provided for @adminStreamGroupsTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Messagerie - Groupe'**
+  String get adminStreamGroupsTitle;
+
+  /// No description provided for @adminStreamGroupsEmpty.
+  ///
+  /// In fr, this message translates to:
+  /// **'Aucun groupe'**
+  String get adminStreamGroupsEmpty;
+
+  /// No description provided for @adminStreamGroupsEmptySubtitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Aucun canal d\'équipe trouvé sur GetStream.'**
+  String get adminStreamGroupsEmptySubtitle;
+
+  /// No description provided for @adminStreamGroupsLoadError.
+  ///
+  /// In fr, this message translates to:
+  /// **'Impossible de charger les groupes.'**
+  String get adminStreamGroupsLoadError;
+
+  /// No description provided for @adminStreamGroupsRefresh.
+  ///
+  /// In fr, this message translates to:
+  /// **'Actualiser'**
+  String get adminStreamGroupsRefresh;
+
+  /// No description provided for @adminStreamGroupsCid.
+  ///
+  /// In fr, this message translates to:
+  /// **'CID : {cid}'**
+  String adminStreamGroupsCid(String cid);
+
+  /// No description provided for @adminStreamGroupsMemberCount.
+  ///
+  /// In fr, this message translates to:
+  /// **'{count} membres'**
+  String adminStreamGroupsMemberCount(int count);
+
+  /// No description provided for @adminStreamGroupsLastMessageAt.
+  ///
+  /// In fr, this message translates to:
+  /// **'Dernier message : {date}'**
+  String adminStreamGroupsLastMessageAt(String date);
+
+  /// No description provided for @adminStreamGroupsDelete.
+  ///
+  /// In fr, this message translates to:
+  /// **'Supprimer'**
+  String get adminStreamGroupsDelete;
+
+  /// No description provided for @adminStreamGroupsCancel.
+  ///
+  /// In fr, this message translates to:
+  /// **'Annuler'**
+  String get adminStreamGroupsCancel;
+
+  /// No description provided for @adminStreamGroupsDeleteConfirmTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Supprimer le groupe ?'**
+  String get adminStreamGroupsDeleteConfirmTitle;
+
+  /// No description provided for @adminStreamGroupsDeleteConfirmMessage.
+  ///
+  /// In fr, this message translates to:
+  /// **'Voulez-vous vraiment supprimer le groupe {name} ({cid}) ? Cette action est définitive.'**
+  String adminStreamGroupsDeleteConfirmMessage(String name, String cid);
+
+  /// No description provided for @adminStreamGroupsDeleted.
+  ///
+  /// In fr, this message translates to:
+  /// **'Groupe supprimé.'**
+  String get adminStreamGroupsDeleted;
+
+  /// No description provided for @adminStreamGroupsDeleteFailed.
+  ///
+  /// In fr, this message translates to:
+  /// **'Impossible de supprimer le groupe.'**
+  String get adminStreamGroupsDeleteFailed;
+
+  /// No description provided for @adminStreamGroupsPermissionDenied.
+  ///
+  /// In fr, this message translates to:
+  /// **'Un accès administrateur est requis pour gérer les groupes.'**
+  String get adminStreamGroupsPermissionDenied;
 
   /// No description provided for @promoCodeMenuLabel.
   ///

@@ -1,6 +1,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart';
 import '../model/training.dart';
+import 'teamWorkloadSummaryService.dart';
 
 class TrainingService {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
@@ -146,6 +147,15 @@ class TrainingService {
   Future<void> deleteTraining(String trainingId) async {
     try {
       await _collection.doc(trainingId).delete();
+      try {
+        await TeamWorkloadSummaryService().deleteByEventId(trainingId);
+      } catch (e) {
+        if (kDebugMode) {
+          debugPrint(
+            'Failed to delete TRACKER_TeamAnalysis for training $trainingId: $e',
+          );
+        }
+      }
     } catch (e) {
       rethrow;
     }
@@ -438,6 +448,7 @@ class TrainingService {
   }) async {
     try {
       final Map<String, dynamic> data = {
+        keyTgIsFinish: true,
         keyTgEndAt: trainingEndAt,
         keyTgPlayerTraining: playerTraining.map((e) => e.toMap()).toList(),
       };
@@ -660,13 +671,14 @@ class TrainingService {
       rethrow;
     }
   }
-  /// GET TRAININGS BY TEAM + withTracker = true + isTrackerDataUploaded = false
+  /// GET TRAININGS BY TEAM + withTracker = true + isTrackerDataUploaded = false + isFinish = true
   Future<List<Training>> getTrainingsToUploadTrackerData(String teamId) async {
     try {
       final query = await _collection
           .where(keyTgTeamId, isEqualTo: teamId)
           .where(keyTgWithTracker, isEqualTo: true)
           .where(keyTgIsTrackerDataUploaded, isEqualTo: false)
+          .where(keyTgIsFinish, isEqualTo: true)
           .orderBy(keyTgDateTime, descending: false)
           .get();
 
@@ -703,13 +715,14 @@ class TrainingService {
           .toList();
     });
   }
-  /// STREAM TRAININGS BY TEAM + withTracker = true + isTrackerDataUploaded = false
+  /// STREAM TRAININGS BY TEAM + withTracker = true + isTrackerDataUploaded = false + isFinish = true
   Stream<List<Training>> streamTrainingsToUploadTrackerData(String teamId) {
 
     return _collection
         .where(keyTgTeamId, isEqualTo: teamId)
         .where(keyTgWithTracker, isEqualTo: true)
         .where(keyTgIsTrackerDataUploaded, isEqualTo: false)
+        .where(keyTgIsFinish, isEqualTo: true)
         .orderBy(keyTgDateTime, descending: false)
         .snapshots()
         .map(
