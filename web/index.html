@@ -45,7 +45,17 @@
 
       const devices = await navigator.usb.getDevices();
 
-      return devices.map(device => ({
+      // Si le navigateur connaît déjà un seul capteur ASI autorisé,
+      // on restaure automatiquement la référence WebUSB réelle.
+      const asiDevices = devices.filter(device =>
+        device.vendorId === 0x1915 && device.productId === 0x5203
+      );
+
+      if (!this._device && asiDevices.length === 1) {
+        this._device = asiDevices[0];
+      }
+
+      return asiDevices.map(device => ({
         vendorId: device.vendorId,
         productId: device.productId,
         productName: device.productName || "",
@@ -53,9 +63,32 @@
       }));
     },
 
+    async _restoreSelectedDevice() {
+      if (this._device) {
+        return this._device;
+      }
+
+      if (!navigator.usb) {
+        throw new Error("WebUSB non supporté");
+      }
+
+      const devices = await navigator.usb.getDevices();
+
+      const asiDevices = devices.filter(device =>
+        device.vendorId === 0x1915 && device.productId === 0x5203
+      );
+
+      if (asiDevices.length === 0) {
+        throw new Error("No device selected");
+      }
+
+      // L'application ne pilote qu'un capteur à la fois.
+      this._device = asiDevices[0];
+      return this._device;
+    },
+
     async open() {
-      const device = this._device;
-      if (!device) throw new Error("No device selected");
+      const device = await this._restoreSelectedDevice();
 
       if (!device.opened) {
         await device.open();
@@ -65,7 +98,13 @@
         await device.selectConfiguration(1);
       }
 
-      await device.claimInterface(0);
+      try {
+        await device.claimInterface(0);
+      } catch (e) {
+        // Chrome peut signaler que l'interface est déjà réclamée.
+        // Dans ce cas, la session est tout de même utilisable.
+        console.warn("claimInterface(0)", e);
+      }
     },
 
     async close() {
@@ -74,16 +113,36 @@
 
       try { await device.releaseInterface(0); } catch (_) {}
       try { await device.close(); } catch (_) {}
-      this._device = null;
+
+      // IMPORTANT :
+      // on conserve la référence USBDevice afin de pouvoir rouvrir
+      // immédiatement le même capteur sans redemander l'autorisation.
+      // Ne pas faire : this._device = null;
     },
 
     async prepareEndpoints(inEndpointNumber, outEndpointNumber) {
-      const device = this._device;
-      if (!device) throw new Error("No device selected");
+      const device = await this._restoreSelectedDevice();
 
+      if (!device.opened) {
+        await device.open();
+      }
+
+      if (!device.configuration) {
+        await device.selectConfiguration(1);
+      }
+
+      try {
+        await device.claimInterface(0);
+      } catch (_) {
+        // L'interface peut déjà être réclamée.
+      }
+
+      // IMPORTANT :
+      // ne pas appeler device.reset() ici.
+      // reset() réinitialise le périphérique et peut invalider la session
+      // juste avant l'envoi de CMD_DATA_READ.
       try { await device.clearHalt('in', inEndpointNumber); } catch (_) {}
       try { await device.clearHalt('out', outEndpointNumber); } catch (_) {}
-      try { await device.reset(); } catch (_) {}
     },
 
     async transferOut(endpointNumber, data) {

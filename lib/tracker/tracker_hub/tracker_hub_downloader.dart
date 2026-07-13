@@ -57,20 +57,34 @@ class _AsiDownloaderPanelState extends State<AsiDownloaderPanel> {
   @override
   void didUpdateWidget(covariant AsiDownloaderPanel oldWidget) {
     super.didUpdateWidget(oldWidget);
-    if (oldWidget.trackerId != widget.trackerId) {
-      setState(() {
-        logs = '';
-        loading = false;
-        availableDevices = [];
-        selectedDevice = null;
-        session = null;
-        deviceId = null;
-        deviceConnected = false;
-        dataDownloaded = false;
-        dataErased = false;
+
+    if (oldWidget.trackerId == widget.trackerId) return;
+
+    final previousSession = session;
+    session = null;
+
+    if (previousSession != null) {
+      client.close(previousSession).catchError((e) {
+        debugPrint(
+          'Erreur fermeture session lors du changement de tracker: $e',
+        );
       });
-      appendLog('Tracker sélectionné: ${widget.trackerId}');
     }
+
+    setState(() {
+      logs = '';
+      loading = false;
+      availableDevices = [];
+      selectedDevice = null;
+      deviceId = null;
+      deviceConnected = false;
+      dataDownloaded = false;
+      dataErased = false;
+      footballFieldGps = null;
+      eventSync = widget.eventSync;
+    });
+
+    appendLog('Tracker sélectionné: ${widget.trackerId}');
   }
 
   void appendLog(String text) {
@@ -150,16 +164,16 @@ class _AsiDownloaderPanelState extends State<AsiDownloaderPanel> {
 
     setState(() => loading = true);
 
+    AsiSession? identificationSession;
+    AsiSession? downloadSession;
+
     try {
-      AsiDeviceInfo? deviceToUse;
+      final AsiDeviceInfo initialDevice;
 
-      // Si on a déjà un device sélectionné et qu'on est déjà connecté, on évite de redemander.
-      if (selectedDevice != null && session == null) {
-        deviceToUse = selectedDevice;
-      }
-
-      // Sinon on demande explicitement la permission utilisateur.
-      if (deviceToUse == null) {
+      final currentSelectedDevice = selectedDevice;
+      if (currentSelectedDevice != null) {
+        initialDevice = currentSelectedDevice;
+      } else {
         final grantedDevice = await client.requestDevicePermission();
 
         if (grantedDevice == null) {
@@ -167,68 +181,302 @@ class _AsiDownloaderPanelState extends State<AsiDownloaderPanel> {
           return;
         }
 
-        deviceToUse = grantedDevice;
+        initialDevice = grantedDevice;
         appendLog(
-          'Autorisation accordée: ${deviceToUse.productName ?? deviceToUse.id}',
+          'Autorisation accordée: '
+              '${initialDevice.productName ?? initialDevice.id}',
         );
       }
 
-      // Ferme une ancienne session si besoin
-      if (session != null) {
+      final previousSession = session;
+      session = null;
+      deviceConnected = false;
+
+      if (previousSession != null) {
         try {
-          await client.close(session!);
-        } catch (_) {}
-        session = null;
+          await client.close(previousSession);
+        } catch (e) {
+          debugPrint('Fermeture ancienne session ignorée: $e');
+        }
+
+        await Future<void>.delayed(
+          const Duration(milliseconds: 500),
+        );
       }
 
-      // IMPORTANT : ouvrir exactement le device renvoyé / retenu
-      final openedSession = await client.open(deviceToUse);
+      // 1. Première session : lecture et validation de l'identifiant.
+      appendLog('Ouverture de la session d’identification...');
 
-      // Petit délai pour laisser le périphérique devenir réellement prêt
-      await Future.delayed(const Duration(milliseconds: 1200));
+      identificationSession = await client.open(initialDevice);
 
-      // Validation réelle du dialogue avec le device
-      final uuid = await client.readDeviceId(openedSession);
+      await Future<void>.delayed(
+        const Duration(milliseconds: 1200),
+      );
+
+      final uuid = await client.readDeviceId(identificationSession);
+      appendLog('UUID détecté: $uuid');
 
       final deviceTmp = await DeviceService().getDeviceByDeviceName(uuid);
+
       if (deviceTmp == null) {
         appendLog('Tracker ${widget.trackerId} inexistant !');
-        await client.close(openedSession);
         return;
       }
 
-      final deviceOwner = await DeviceOwnerService().getByDeviceId(deviceTmp.id);
+      final deviceOwner =
+      await DeviceOwnerService().getByDeviceId(deviceTmp.id);
+
       if (deviceOwner == null ||
-          (deviceOwner.customName?.trim() ?? '') != widget.trackerId.trim()) {
-        appendLog('Le tracker branché ne correspond pas à celui sélectionné');
-        await client.close(openedSession);
+          (deviceOwner.customName?.trim() ?? '') !=
+              widget.trackerId.trim()) {
+        appendLog(
+          'Le tracker branché ne correspond pas à celui sélectionné',
+        );
         return;
       }
+
+      // 2. Reproduit automatiquement la déconnexion qui débloque
+      // actuellement le premier téléchargement.
+      appendLog('Réinitialisation de la connexion USB...');
+
+      await client.close(identificationSession);
+      identificationSession = null;
+
+      // Le capteur a besoin d'un vrai temps de libération après la
+      // première commande GET_ID.
+      await Future<void>.delayed(
+        const Duration(milliseconds: 1800),
+      );
+
+      // 3. Récupère de nouveau le device déjà autorisé.
+      // Avec l'index.html corrigé, getDevices() restaure également
+      // window.asiUsb._device après le close().
+      final authorizedDevices = await client.listDevices();
+
+      appendLog(
+        '${authorizedDevices.length} périphérique(s) ASI autorisé(s)',
+      );
+
+      AsiDeviceInfo? reopenedDevice;
+
+      for (final device in authorizedDevices) {
+        if (device.id == initialDevice.id) {
+          reopenedDevice = device;
+          break;
+        }
+      }
+
+      if (reopenedDevice == null && authorizedDevices.length == 1) {
+        reopenedDevice = authorizedDevices.first;
+      }
+
+      if (reopenedDevice == null) {
+        appendLog(
+          'Impossible de retrouver automatiquement le périphérique USB',
+        );
+
+        final grantedAgain = await client.requestDevicePermission();
+
+        if (grantedAgain == null) {
+          throw const AsiUsbDeviceNotFoundException(
+            'Le périphérique USB doit être sélectionné à nouveau',
+          );
+        }
+
+        reopenedDevice = grantedAgain;
+      }
+
+      // 4. Deuxième session : uniquement pour downloadData/eraseData.
+      appendLog('Ouverture de la session de téléchargement...');
+
+      downloadSession = await client.open(reopenedDevice);
+
+      await Future<void>.delayed(
+        const Duration(milliseconds: 1200),
+      );
+
+      if (!mounted) {
+        await client.close(downloadSession);
+        downloadSession = null;
+        return;
+      }
+
+      final activeDownloadSession = downloadSession;
 
       setState(() {
-        session = openedSession;
-        selectedDevice = deviceToUse;
+        session = activeDownloadSession;
+        selectedDevice = reopenedDevice;
         deviceConnected = true;
         deviceId = uuid;
         dataDownloaded = false;
         dataErased = false;
-
       });
 
-      appendLog('UUID: $uuid');
-      appendLog('Connecté: ${deviceToUse.productName ?? deviceToUse.id}');
+      downloadSession = null;
+
+      appendLog(
+        'Connecté: '
+            '${reopenedDevice.productName ?? reopenedDevice.id}',
+      );
+      appendLog('Session USB prête pour le téléchargement');
     } catch (e, st) {
-      setState(() {
-        deviceConnected = false;
-        session = null;
-        deviceId = null;
-      });
+      if (identificationSession != null) {
+        try {
+          await client.close(identificationSession);
+        } catch (_) {}
+      }
+
+      if (downloadSession != null) {
+        try {
+          await client.close(downloadSession);
+        } catch (_) {}
+      }
+
+      final activeSession = session;
+      session = null;
+
+      if (activeSession != null) {
+        try {
+          await client.close(activeSession);
+        } catch (_) {}
+      }
+
+      if (mounted) {
+        setState(() {
+          deviceConnected = false;
+          deviceId = null;
+        });
+      }
+
       appendLog('Erreur connexion: $e');
       debugPrint('CONNECT_ERROR: $e');
       debugPrintStack(stackTrace: st);
     } finally {
       if (mounted) {
         setState(() => loading = false);
+      }
+    }
+  }
+
+
+  Future<Uint8List> _downloadWithAutomaticReconnect() async {
+    final firstSession = session;
+
+    if (firstSession == null) {
+      throw const AsiUsbConnectionException(
+        message: 'Aucune session USB ouverte',
+      );
+    }
+
+    try {
+      appendLog('Premier essai de téléchargement...');
+      return await client.downloadData(firstSession);
+    } on AsiDownloadTimeoutException catch (firstError) {
+      appendLog('Premier essai sans réponse');
+      appendLog('Réinitialisation automatique du capteur USB...');
+
+      debugPrint('FIRST_DOWNLOAD_TIMEOUT: $firstError');
+
+      final currentDevice = selectedDevice;
+
+      if (currentDevice == null) {
+        rethrow;
+      }
+
+      /*
+       * Reproduit exactement le cycle manuel qui fonctionne :
+       * téléchargement en échec -> déconnexion -> connexion ->
+       * lecture UUID -> nouveau téléchargement.
+       */
+      try {
+        await client.close(firstSession);
+      } catch (e) {
+        debugPrint('AUTO_RECONNECT_CLOSE_ERROR: $e');
+      }
+
+      if (mounted) {
+        setState(() {
+          session = null;
+          deviceConnected = false;
+        });
+      } else {
+        session = null;
+        deviceConnected = false;
+      }
+
+      await Future<void>.delayed(
+        const Duration(milliseconds: 1500),
+      );
+
+      final authorizedDevices = await client.listDevices();
+
+      AsiDeviceInfo? deviceToReopen;
+
+      for (final device in authorizedDevices) {
+        if (device.id == currentDevice.id) {
+          deviceToReopen = device;
+          break;
+        }
+      }
+
+      if (deviceToReopen == null && authorizedDevices.length == 1) {
+        deviceToReopen = authorizedDevices.first;
+      }
+
+      if (deviceToReopen == null) {
+        throw const AsiUsbDeviceNotFoundException(
+          'Impossible de retrouver le capteur après la réinitialisation USB',
+        );
+      }
+
+      appendLog('Réouverture automatique de la connexion USB...');
+
+      final reopenedSession = await client.open(deviceToReopen);
+
+      try {
+        await Future<void>.delayed(
+          const Duration(milliseconds: 1200),
+        );
+
+        /*
+         * Le cycle manuel repasse par connectDevice(), qui relit l'UUID.
+         * On reproduit également cette commande avant le second download.
+         */
+        final reopenedUuid = await client.readDeviceId(reopenedSession);
+
+        if (reopenedUuid.trim().isNotEmpty) {
+          deviceId = reopenedUuid;
+          appendLog('UUID après reconnexion: $reopenedUuid');
+        }
+
+        if (mounted) {
+          setState(() {
+            session = reopenedSession;
+            selectedDevice = deviceToReopen;
+            deviceConnected = true;
+          });
+        } else {
+          session = reopenedSession;
+          selectedDevice = deviceToReopen;
+          deviceConnected = true;
+        }
+
+        await Future<void>.delayed(
+          const Duration(milliseconds: 500),
+        );
+
+        appendLog('Deuxième essai de téléchargement...');
+
+        return await client.downloadData(reopenedSession);
+      } catch (_) {
+        /*
+         * En cas d'échec, la session reste référencée dans session afin que
+         * le bouton Déconnecter puisse encore la fermer proprement.
+         */
+        if (session == null) {
+          session = reopenedSession;
+        }
+        rethrow;
       }
     }
   }
@@ -248,7 +496,7 @@ class _AsiDownloaderPanelState extends State<AsiDownloaderPanel> {
 
       await Future.delayed(const Duration(milliseconds: 500));
 
-      final Uint8List data = await client.downloadData(session!);
+      final Uint8List data = await _downloadWithAutomaticReconnect();
 
       watch.stop();
       appendLog('Lecture RAW terminée en ${watch.elapsed.inSeconds}s');

@@ -421,8 +421,18 @@ class WebAsiUsbClient implements AsiUsbClient {
       final firstChunk = await _readFirstStreamChunkOrEmpty(packetSize);
 
       if (firstChunk.isEmpty) {
-        print('DOWNLOAD: aucune donnée disponible');
-        return Uint8List(0);
+        print(
+          'DOWNLOAD: aucun premier paquet reçu après CMD_DATA_READ',
+        );
+
+        throw AsiDownloadTimeoutException.usbRead(
+          expectedBytes: packetSize,
+          receivedBytes: 0,
+          timeout: const Duration(
+            milliseconds: 8 * 900,
+          ),
+          step: 'attente du premier paquet après CMD_DATA_READ',
+        );
       }
 
       allBytes.addAll(firstChunk);
