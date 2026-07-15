@@ -57,6 +57,7 @@ dependencies:
   speech_to_text: ^7.0.0
   flutter_tts: ^4.2.0
   timezone: ^0.10.1
+  health: ^13.1.4
 
 
 dev_dependencies:

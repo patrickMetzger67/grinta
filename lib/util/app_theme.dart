@@ -1,5 +1,11 @@
 import 'package:flutter/material.dart';
 
+/// Converts a [Color] to a CSS hex string `#RRGGBB` (alpha omitted).
+String colorToCssHex(Color color) {
+  final int rgb = color.toARGB32() & 0xFFFFFF;
+  return '#${rgb.toRadixString(16).padLeft(6, '0').toUpperCase()}';
+}
+
 class AppColors extends ThemeExtension<AppColors> {
   final Color primary;
   final Color secondary;

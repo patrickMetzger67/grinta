@@ -23,6 +23,7 @@ import 'widget/edit_member_profile.dart';
 import 'screen/my_unavailabilities_screen.dart';
 import 'widget/nav_icon_count_badge.dart';
 import 'widget/calendar_sync_toggle.dart';
+import 'widget/devices_settings_section.dart';
 import 'widget/notification_preferences_section.dart';
 import 'widget/settings_menu_style.dart';
 import 'widget/subscription_details_sheet.dart';
@@ -499,6 +500,10 @@ class _WebNavigationShellState extends State<WebNavigationShell> {
           child: CalendarSyncToggle(
             contentPadding: EdgeInsets.symmetric(horizontal: 2),
           ),
+        ),
+        const DevicesSettingsSection(
+          contentPadding: EdgeInsets.symmetric(horizontal: 14),
+          webCardStyle: true,
         ),
         const NotificationPreferencesSection(
           contentPadding: EdgeInsets.zero,

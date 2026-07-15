@@ -100,7 +100,10 @@ class _AddGrintaStaffSheetState extends State<AddGrintaStaffSheet> {
 
   String? _validateEmail(String? value) {
     final trimmed = value?.trim() ?? '';
-    if (trimmed.isEmpty) return null;
+    final bool requiredForInvite = widget.onSubmit != null;
+    if (trimmed.isEmpty) {
+      return requiredForInvite ? context.l10n.memberEmailRequired : null;
+    }
     if (!isValidEmailFormat(trimmed)) {
       return context.l10n.memberEmailInvalid;
     }
@@ -110,7 +113,7 @@ class _AddGrintaStaffSheetState extends State<AddGrintaStaffSheet> {
   String? _validatePhone(String? value) {
     final trimmed = value?.trim() ?? '';
     if (trimmed.isEmpty) {
-      return context.l10n.memberPhoneRequired;
+      return null;
     }
     if (!isValidE164Phone(trimmed)) {
       return context.l10n.memberPhoneInvalid;
@@ -146,7 +149,9 @@ class _AddGrintaStaffSheetState extends State<AddGrintaStaffSheet> {
       return;
     }
 
-    final phoneE164 = _phoneE164!.trim();
+    final phoneE164 = (_phoneE164?.trim().isNotEmpty ?? false)
+        ? _phoneE164!.trim()
+        : '';
     final details = AddGrintaStaffDetails(
       roleCode: _selectedRoleCode!,
       phoneE164: phoneE164,
@@ -251,7 +256,9 @@ class _AddGrintaStaffSheetState extends State<AddGrintaStaffSheet> {
                   keyboardType: TextInputType.emailAddress,
                   autocorrect: false,
                   decoration: InputDecoration(
-                    labelText: l10n.memberEmailOptional,
+                    labelText: widget.onSubmit != null
+                        ? l10n.memberEmail
+                        : l10n.memberEmailOptional,
                     prefixIcon: const Icon(Icons.email_outlined),
                     errorText: _emailError,
                   ),
@@ -264,7 +271,7 @@ class _AddGrintaStaffSheetState extends State<AddGrintaStaffSheet> {
                 const SizedBox(height: 12),
                 InternationalPhoneField(
                   enabled: true,
-                  labelText: l10n.memberPhone,
+                  labelText: l10n.memberPhoneOptional,
                   initialPhoneE164: widget.existingGrintaStaff?.phoneE164 ??
                       widget.member.phoneE164,
                   initialPhoneCountryCode: widget.member.phoneCountryCode,

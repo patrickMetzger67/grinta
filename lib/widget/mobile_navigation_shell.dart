@@ -33,6 +33,7 @@ import 'package:grinta/screen/my_unavailabilities_screen.dart';
 import 'package:grinta/widget/nav_icon_count_badge.dart';
 import 'package:grinta/widget/stream_chat_nav_unread_badge.dart';
 import 'package:grinta/widget/calendar_sync_toggle.dart';
+import 'package:grinta/widget/devices_settings_section.dart';
 import 'package:grinta/widget/notification_preferences_section.dart';
 import 'package:grinta/widget/subscription_details_sheet.dart';
 import 'package:grinta/widget/notifications_sheet.dart';
@@ -356,6 +357,9 @@ class _MobileNavigationShellState extends State<MobileNavigationShell> {
                 const Padding(
                   padding: EdgeInsets.symmetric(horizontal: 16),
                   child: CalendarSyncToggle(contentPadding: EdgeInsets.zero),
+                ),
+                const DevicesSettingsSection(
+                  contentPadding: EdgeInsets.symmetric(horizontal: 16),
                 ),
                 const NotificationPreferencesSection(),
                 const Divider(height: 1),

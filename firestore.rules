@@ -47,9 +47,43 @@ service cloud.firestore {
         && (
           request.path[4] == 'admin_promo_codes'
           || request.path[4] == 'invitations'
+          || request.path[4] == 'mail'
           || request.path[4] == 'member'
           || (request.path[4] == 'users' && request.path.size() == 5)
         );
+    }
+
+    function isValidMailCreate() {
+      return request.resource.data.keys().hasAll(['to', 'message'])
+        && request.resource.data.to is string
+        && request.resource.data.to.size() > 0
+        && request.resource.data.message is map
+        && request.resource.data.message.keys().hasAll(['subject', 'text', 'html'])
+        && request.resource.data.message.subject is string
+        && request.resource.data.message.text is string
+        && request.resource.data.message.html is string
+        && (!('from' in request.resource.data)
+          || request.resource.data.from is string)
+        && (!('replyTo' in request.resource.data)
+          || request.resource.data.replyTo is string)
+        && (!('clubId' in request.resource.data)
+          || request.resource.data.clubId is string)
+        && !('delivery' in request.resource.data);
+    }
+
+    // Server-only OAuth / token collections (Phase 1 Whoop / Strava).
+    function isServerOnlyCollection() {
+      return request.path.size() >= 2
+        && request.path[0] in [
+          'whoop_integrations',
+          'whoop_oauth_pending',
+          'strava_integrations',
+          'strava_oauth_pending',
+          'polar_integrations',
+          'polar_oauth_pending',
+          'fitbit_integrations',
+          'fitbit_oauth_pending'
+        ];
     }
 
     // Signup: verify member invitation code and read sender profile (unauthenticated).
@@ -84,6 +118,72 @@ service cloud.firestore {
       match /app_state/opponent_stats_views/views/{matchId} {
         allow read, write: if request.auth != null && request.auth.uid == userId;
       }
+
+      // Whoop connection metadata (no tokens — server stores tokens separately).
+      match /whoopSync/{playerId} {
+        allow read, write: if request.auth != null && request.auth.uid == userId;
+      }
+
+      // Strava connection metadata (no tokens — server stores tokens separately).
+      match /stravaSync/{playerId} {
+        allow read, write: if request.auth != null && request.auth.uid == userId;
+      }
+
+      // Polar connection metadata (no tokens — server stores tokens separately).
+      match /polarSync/{playerId} {
+        allow read, write: if request.auth != null && request.auth.uid == userId;
+      }
+
+      // Fitbit connection metadata (no tokens — server stores tokens separately).
+      match /fitbitSync/{playerId} {
+        allow read, write: if request.auth != null && request.auth.uid == userId;
+      }
+
+      // Apple Health connection metadata (on-device HealthKit — no OAuth tokens).
+      match /appleHealthSync/{playerId} {
+        allow read, write: if request.auth != null && request.auth.uid == userId;
+      }
+
+      // Google Health Connect metadata (on-device — no OAuth tokens).
+      match /googleHealthSync/{playerId} {
+        allow read, write: if request.auth != null && request.auth.uid == userId;
+      }
+    }
+
+    // Whoop OAuth tokens — Cloud Functions / Admin SDK only.
+    match /whoop_integrations/{integrationId} {
+      allow read, write: if false;
+    }
+
+    match /whoop_oauth_pending/{stateId} {
+      allow read, write: if false;
+    }
+
+    // Strava OAuth tokens — Cloud Functions / Admin SDK only.
+    match /strava_integrations/{integrationId} {
+      allow read, write: if false;
+    }
+
+    match /strava_oauth_pending/{stateId} {
+      allow read, write: if false;
+    }
+
+    // Polar OAuth tokens — Cloud Functions / Admin SDK only.
+    match /polar_integrations/{integrationId} {
+      allow read, write: if false;
+    }
+
+    match /polar_oauth_pending/{stateId} {
+      allow read, write: if false;
+    }
+
+    // Fitbit OAuth tokens — Cloud Functions / Admin SDK only.
+    match /fitbit_integrations/{integrationId} {
+      allow read, write: if false;
+    }
+
+    match /fitbit_oauth_pending/{stateId} {
+      allow read, write: if false;
     }
 
     // Platform admin promo codes — managed by isRoot users, redeemed via Cloud Function.
@@ -110,12 +210,12 @@ service cloud.firestore {
       allow read, write: if isRootUser();
     }
 
-    // Remote app config (subscription limits, e-shop flags).
+    // Remote app config (subscription limits, e-shop flags, invitation emails).
     match /config/{docId} {
       allow read: if request.auth != null
-        && docId in ['subscription_limits', 'eshop'];
+        && docId in ['subscription_limits', 'eshop', 'invitation'];
       allow write: if isRootUser()
-        && docId in ['subscription_limits', 'eshop'];
+        && docId in ['subscription_limits', 'eshop', 'invitation'];
     }
 
     // Member self-registration without invitation code.
@@ -160,10 +260,16 @@ service cloud.firestore {
         );
     }
 
+    // Invitation emails queued by authenticated coaches (sendMailOnCreate Cloud Function).
+    match /mail/{mailId} {
+      allow create: if request.auth != null && isValidMailCreate();
+      allow read, update, delete: if false;
+    }
+
     // Catch-all for the rest of the app (matches deployed prod behavior).
     // Excludes paths above so dedicated rules are enforced (Firestore ORs allows).
     match /{document=**} {
-      allow read: if true;
+      allow read: if !isServerOnlyCollection();
       allow write: if request.auth != null && !isCatchAllWritePath();
     }
   }

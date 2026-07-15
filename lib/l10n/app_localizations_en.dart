@@ -184,14 +184,41 @@ class AppLocalizationsEn extends AppLocalizations {
       'Phone number is required for player invitations';
 
   @override
+  String get memberEmailRequired => 'Email is required for member invitations';
+
+  @override
+  String invitationEmailSubject(String appName) {
+    return 'Your coach invites you to join $appName';
+  }
+
+  @override
+  String invitationEmailIntro(String appName) {
+    return 'Your coach invites you to join $appName';
+  }
+
+  @override
+  String get invitationEmailCodeLabel => 'Your invitation code';
+
+  @override
+  String get invitationEmailDownloadIos => 'Download on iPhone';
+
+  @override
+  String get invitationEmailDownloadAndroid => 'Download on Android';
+
+  @override
+  String invitationEmailFooter(String appName) {
+    return 'You received this email because a coach added you on $appName. If you were not expecting this message, you can ignore it.';
+  }
+
+  @override
   String invitationSmsMessage(
       String appName, String code, String appleStoreUrl, String googlePlayUrl) {
     return 'Your coach invites you to join $appName. Your code: $code.\niPhone: $appleStoreUrl\nAndroid: $googlePlayUrl';
   }
 
   @override
-  String get memberInvitationSmsFailed =>
-      'Member added, but the invitation SMS could not be sent.';
+  String get memberInvitationEmailFailed =>
+      'Member added, but the invitation email could not be sent.';
 
   @override
   String get memberAddedToTeamNotificationTitle => 'Team update';
@@ -209,6 +236,19 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get memberAppAccountLinked => 'App account linked';
+
+  @override
+  String get resendInvitationTooltip => 'Resend invitation email';
+
+  @override
+  String get resendInvitationNoEmailTooltip =>
+      'Add an email address to send an invitation';
+
+  @override
+  String get resendInvitationSuccess => 'Invitation email sent';
+
+  @override
+  String get resendInvitationFailed => 'Could not send the invitation email';
 
   @override
   String get memberBirthDate => 'Date of birth';
@@ -3136,6 +3176,429 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get calendarSyncForceFailed => 'Sync failed. Please try again.';
+
+  @override
+  String get settingsDevicesSection => 'Devices/Applications';
+
+  @override
+  String get settingsDevicesClose => 'Close';
+
+  @override
+  String get settingsDevicesSync => 'Sync';
+
+  @override
+  String get settingsDevicesConnectedTitle => 'Connected devices/applications';
+
+  @override
+  String get settingsDevicesConnectedStatus => 'Connected';
+
+  @override
+  String get settingsDevicesDisconnect => 'Disconnect';
+
+  @override
+  String get settingsDevicesNoConnected =>
+      'No devices or applications connected';
+
+  @override
+  String settingsDevicesBadgeLabel(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count connected devices/applications',
+      one: '1 connected device/application',
+      zero: 'No connected devices/applications',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get wearableDeviceTypeLabel => 'Device/application type';
+
+  @override
+  String get wearableDeviceWhoop => 'Whoop';
+
+  @override
+  String get wearableDeviceStrava => 'Strava';
+
+  @override
+  String get wearableDevicePolar => 'Polar';
+
+  @override
+  String get wearableDeviceFitbit => 'Fitbit';
+
+  @override
+  String get wearableDeviceAppleHealth => 'Apple Fitness';
+
+  @override
+  String get wearableDeviceGoogleHealthConnect => 'Google Fit / Health Connect';
+
+  @override
+  String get whoopConnectToggleLabel => 'Whoop sync';
+
+  @override
+  String get whoopConnectToggleSubtitle =>
+      'Connect your Whoop account to import recovery, sleep, and workouts';
+
+  @override
+  String get whoopConnectToggleConnectedSubtitle =>
+      'Whoop connected — data sync coming in Phase 2';
+
+  @override
+  String get whoopConnectSuccess => 'Whoop account connected.';
+
+  @override
+  String get whoopConnectFailed => 'Whoop connection failed. Please try again.';
+
+  @override
+  String get whoopConnectLaunchFailed =>
+      'Could not open the Whoop sign-in page.';
+
+  @override
+  String get whoopConnectAuthRequired => 'Sign in to Grinta to connect Whoop.';
+
+  @override
+  String get whoopDisconnectFailed => 'Whoop disconnect failed.';
+
+  @override
+  String get whoopCoachVisibilityTitle => 'Coach visibility';
+
+  @override
+  String get whoopCoachVisibilitySubtitle =>
+      'Allow your coach to see this data type';
+
+  @override
+  String get whoopCoachVisibilitySaveFailed =>
+      'Could not save Whoop preferences.';
+
+  @override
+  String get whoopMetricRecovery => 'Recovery';
+
+  @override
+  String get whoopMetricCycles => 'Cycles';
+
+  @override
+  String get whoopMetricSleep => 'Sleep';
+
+  @override
+  String get whoopMetricWorkout => 'Workouts';
+
+  @override
+  String get whoopMetricProfile => 'Profile';
+
+  @override
+  String get whoopMetricBodyMeasurement => 'Body measurements';
+
+  @override
+  String get whoopCoachConnectTitle => 'Whoop';
+
+  @override
+  String whoopCoachConnectSubtitle(String playerName) {
+    return 'Connect Whoop for $playerName';
+  }
+
+  @override
+  String get whoopCoachConnectAction => 'Connect';
+
+  @override
+  String whoopCoachConnectConnectedSubtitle(String playerName) {
+    return 'Whoop connected for $playerName';
+  }
+
+  @override
+  String get stravaConnectToggleSubtitle =>
+      'Connect your Strava account to import activities and workouts';
+
+  @override
+  String get stravaConnectToggleConnectedSubtitle =>
+      'Strava connected — data sync coming in Phase 2';
+
+  @override
+  String get stravaConnectSuccess => 'Strava account connected.';
+
+  @override
+  String get stravaConnectFailed =>
+      'Strava connection failed. Please try again.';
+
+  @override
+  String get stravaConnectLaunchFailed =>
+      'Could not open the Strava sign-in page.';
+
+  @override
+  String get stravaConnectAuthRequired =>
+      'Sign in to Grinta to connect Strava.';
+
+  @override
+  String get stravaDisconnectFailed => 'Strava disconnect failed.';
+
+  @override
+  String get stravaCoachVisibilitySaveFailed =>
+      'Could not save Strava preferences.';
+
+  @override
+  String get stravaMetricActivities => 'Activities';
+
+  @override
+  String get stravaMetricProfile => 'Profile';
+
+  @override
+  String stravaCoachConnectSubtitle(String playerName) {
+    return 'Connect Strava for $playerName';
+  }
+
+  @override
+  String stravaCoachConnectConnectedSubtitle(String playerName) {
+    return 'Strava connected for $playerName';
+  }
+
+  @override
+  String get polarConnectToggleSubtitle =>
+      'Connect your Polar account to import training, sleep, and heart rate data from Loop or Verity Sense via Polar Flow';
+
+  @override
+  String get polarConnectToggleConnectedSubtitle =>
+      'Polar connected — data sync coming in Phase 2';
+
+  @override
+  String get polarConnectSuccess => 'Polar account connected.';
+
+  @override
+  String get polarConnectFailed => 'Polar connection failed. Please try again.';
+
+  @override
+  String get polarConnectLaunchFailed =>
+      'Could not open the Polar sign-in page.';
+
+  @override
+  String get polarConnectAuthRequired => 'Sign in to Grinta to connect Polar.';
+
+  @override
+  String get polarDisconnectFailed => 'Polar disconnect failed.';
+
+  @override
+  String get polarCoachVisibilityTitle => 'Coach visibility';
+
+  @override
+  String get polarCoachVisibilitySubtitle =>
+      'Allow your coach to see this data type';
+
+  @override
+  String get polarCoachVisibilitySaveFailed =>
+      'Could not save Polar preferences.';
+
+  @override
+  String get polarMetricTraining => 'Training / workouts';
+
+  @override
+  String get polarMetricSleep => 'Sleep';
+
+  @override
+  String get polarMetricRecoveryHr => 'Recovery / heart rate';
+
+  @override
+  String get polarMetricProfile => 'Profile';
+
+  @override
+  String get polarMetricBody => 'Body measurements';
+
+  @override
+  String polarCoachConnectSubtitle(String playerName) {
+    return 'Connect Polar for $playerName';
+  }
+
+  @override
+  String polarCoachConnectConnectedSubtitle(String playerName) {
+    return 'Polar connected for $playerName';
+  }
+
+  @override
+  String get fitbitConnectToggleSubtitle =>
+      'Connect your Fitbit account to import activity, heart rate, sleep, and weight data from your Fitbit bracelet via Fitbit cloud';
+
+  @override
+  String get fitbitConnectToggleConnectedSubtitle =>
+      'Fitbit connected — data sync coming in Phase 2';
+
+  @override
+  String get fitbitConnectSuccess => 'Fitbit account connected.';
+
+  @override
+  String get fitbitConnectFailed =>
+      'Fitbit connection failed. Please try again.';
+
+  @override
+  String get fitbitConnectLaunchFailed =>
+      'Could not open the Fitbit sign-in page.';
+
+  @override
+  String get fitbitConnectAuthRequired =>
+      'Sign in to Grinta to connect Fitbit.';
+
+  @override
+  String get fitbitDisconnectFailed => 'Fitbit disconnect failed.';
+
+  @override
+  String get fitbitCoachVisibilityTitle => 'Coach visibility';
+
+  @override
+  String get fitbitCoachVisibilitySubtitle =>
+      'Allow your coach to see this data type';
+
+  @override
+  String get fitbitCoachVisibilitySaveFailed =>
+      'Could not save Fitbit preferences.';
+
+  @override
+  String get fitbitMetricActivity => 'Activity / workouts / steps';
+
+  @override
+  String get fitbitMetricHeartrate => 'Heart rate';
+
+  @override
+  String get fitbitMetricSleep => 'Sleep';
+
+  @override
+  String get fitbitMetricProfile => 'Profile';
+
+  @override
+  String get fitbitMetricBody => 'Weight / body';
+
+  @override
+  String fitbitCoachConnectSubtitle(String playerName) {
+    return 'Connect Fitbit for $playerName';
+  }
+
+  @override
+  String fitbitCoachConnectConnectedSubtitle(String playerName) {
+    return 'Fitbit connected for $playerName';
+  }
+
+  @override
+  String get appleHealthConnectToggleSubtitle =>
+      'Connect Apple Fitness to import workouts, heart rate, and active energy from the Health app (iOS only)';
+
+  @override
+  String get appleHealthConnectToggleConnectedSubtitle =>
+      'Apple Fitness connected — full workout sync coming in Phase 2';
+
+  @override
+  String get appleHealthConnectSuccess => 'Apple Fitness connected.';
+
+  @override
+  String get appleHealthConnectFailed =>
+      'Apple Fitness connection failed. Please try again.';
+
+  @override
+  String get appleHealthConnectDenied =>
+      'Health access was denied. Enable it in Settings → Health → Data Access & Devices → Grinta.';
+
+  @override
+  String get appleHealthConnectAuthRequired =>
+      'Sign in to Grinta to connect Apple Fitness.';
+
+  @override
+  String get appleHealthIosOnlyMessage =>
+      'Apple Fitness is available on iPhone only. Health data is read on-device via Apple HealthKit.';
+
+  @override
+  String get appleHealthDisconnectFailed => 'Apple Fitness disconnect failed.';
+
+  @override
+  String get appleHealthCoachVisibilityTitle => 'Coach visibility';
+
+  @override
+  String get appleHealthCoachVisibilitySubtitle =>
+      'Allow your coach to see this data type';
+
+  @override
+  String get appleHealthCoachVisibilitySaveFailed =>
+      'Could not save Apple Fitness preferences.';
+
+  @override
+  String get appleHealthMetricActivity => 'Workouts / activity';
+
+  @override
+  String get appleHealthMetricHeartrate => 'Heart rate';
+
+  @override
+  String get appleHealthMetricActiveEnergy => 'Active energy';
+
+  @override
+  String get appleHealthMetricSleep => 'Sleep';
+
+  @override
+  String appleHealthCoachConnectSubtitle(String playerName) {
+    return 'Connect Apple Fitness for $playerName';
+  }
+
+  @override
+  String appleHealthCoachConnectConnectedSubtitle(String playerName) {
+    return 'Apple Fitness connected for $playerName';
+  }
+
+  @override
+  String get googleHealthConnectToggleSubtitle =>
+      'Connect Google Fit to import workouts, heart rate, and active energy from Health Connect (Android only)';
+
+  @override
+  String get googleHealthConnectToggleConnectedSubtitle =>
+      'Google Fit / Health Connect connected — full workout sync coming in Phase 2';
+
+  @override
+  String get googleHealthConnectSuccess =>
+      'Google Fit / Health Connect connected.';
+
+  @override
+  String get googleHealthConnectFailed =>
+      'Google Fit / Health Connect connection failed. Please try again.';
+
+  @override
+  String get googleHealthConnectDenied =>
+      'Health Connect access was denied. Enable it in Health Connect → App permissions → Grinta.';
+
+  @override
+  String get googleHealthConnectAuthRequired =>
+      'Sign in to Grinta to connect Google Fit / Health Connect.';
+
+  @override
+  String get googleHealthAndroidOnlyMessage =>
+      'Google Fit / Health Connect is available on Android only. Health data is read on-device via Health Connect.';
+
+  @override
+  String get googleHealthDisconnectFailed =>
+      'Google Fit / Health Connect disconnect failed.';
+
+  @override
+  String get googleHealthCoachVisibilityTitle => 'Coach visibility';
+
+  @override
+  String get googleHealthCoachVisibilitySubtitle =>
+      'Allow your coach to see this data type';
+
+  @override
+  String get googleHealthCoachVisibilitySaveFailed =>
+      'Could not save Google Fit / Health Connect preferences.';
+
+  @override
+  String get googleHealthMetricActivity => 'Workouts / activity';
+
+  @override
+  String get googleHealthMetricHeartrate => 'Heart rate';
+
+  @override
+  String get googleHealthMetricActiveEnergy => 'Active energy';
+
+  @override
+  String get googleHealthMetricSleep => 'Sleep';
+
+  @override
+  String googleHealthCoachConnectSubtitle(String playerName) {
+    return 'Connect Google Fit / Health Connect for $playerName';
+  }
+
+  @override
+  String googleHealthCoachConnectConnectedSubtitle(String playerName) {
+    return 'Google Fit / Health Connect connected for $playerName';
+  }
 
   @override
   String get createTrainingTitle => 'New training session';

@@ -86,6 +86,8 @@
 		<string>Grinta synchronise vos matchs et entraînements avec le calendrier de votre téléphone. / Grinta syncs your matches and training sessions with your phone calendar.</string>
 		<key>NSCalendarsFullAccessUsageDescription</key>
 		<string>Grinta synchronise vos matchs et entraînements avec le calendrier de votre téléphone. / Grinta syncs your matches and training sessions with your phone calendar.</string>
+		<key>NSHealthShareUsageDescription</key>
+		<string>Grinta lit vos entraînements Apple Forme et données associées (fréquence cardiaque, énergie active) pour les partager avec votre coach si vous l'autorisez. / Grinta reads your Apple Fitness workouts and related data (heart rate, active energy) to share with your coach when you allow it.</string>
 		<key>FlutterDeepLinkingEnabled</key>
 		<false/>
 		<key>CFBundleURLTypes</key>

@@ -434,6 +434,48 @@ abstract class AppLocalizations {
   /// **'Le numéro de téléphone est requis pour les invitations'**
   String get memberPhoneRequired;
 
+  /// No description provided for @memberEmailRequired.
+  ///
+  /// In fr, this message translates to:
+  /// **'L\'e-mail est requis pour les invitations'**
+  String get memberEmailRequired;
+
+  /// No description provided for @invitationEmailSubject.
+  ///
+  /// In fr, this message translates to:
+  /// **'Ton coach t\'invite à rejoindre {appName}'**
+  String invitationEmailSubject(String appName);
+
+  /// No description provided for @invitationEmailIntro.
+  ///
+  /// In fr, this message translates to:
+  /// **'Ton coach t\'invite à rejoindre {appName}'**
+  String invitationEmailIntro(String appName);
+
+  /// No description provided for @invitationEmailCodeLabel.
+  ///
+  /// In fr, this message translates to:
+  /// **'Ton code d\'invitation'**
+  String get invitationEmailCodeLabel;
+
+  /// No description provided for @invitationEmailDownloadIos.
+  ///
+  /// In fr, this message translates to:
+  /// **'Télécharger sur iPhone'**
+  String get invitationEmailDownloadIos;
+
+  /// No description provided for @invitationEmailDownloadAndroid.
+  ///
+  /// In fr, this message translates to:
+  /// **'Télécharger sur Android'**
+  String get invitationEmailDownloadAndroid;
+
+  /// No description provided for @invitationEmailFooter.
+  ///
+  /// In fr, this message translates to:
+  /// **'Tu as reçu cet e-mail parce qu\'un coach t\'a ajouté sur {appName}. Si tu n\'attendais pas ce message, tu peux l\'ignorer.'**
+  String invitationEmailFooter(String appName);
+
   /// No description provided for @invitationSmsMessage.
   ///
   /// In fr, this message translates to:
@@ -441,11 +483,11 @@ abstract class AppLocalizations {
   String invitationSmsMessage(
       String appName, String code, String appleStoreUrl, String googlePlayUrl);
 
-  /// No description provided for @memberInvitationSmsFailed.
+  /// No description provided for @memberInvitationEmailFailed.
   ///
   /// In fr, this message translates to:
-  /// **'Membre ajouté, mais l\'envoi du SMS d\'invitation a échoué.'**
-  String get memberInvitationSmsFailed;
+  /// **'Membre ajouté, mais l\'envoi de l\'e-mail d\'invitation a échoué.'**
+  String get memberInvitationEmailFailed;
 
   /// No description provided for @memberAddedToTeamNotificationTitle.
   ///
@@ -476,6 +518,30 @@ abstract class AppLocalizations {
   /// In fr, this message translates to:
   /// **'Compte application lié'**
   String get memberAppAccountLinked;
+
+  /// No description provided for @resendInvitationTooltip.
+  ///
+  /// In fr, this message translates to:
+  /// **'Renvoyer l\'e-mail d\'invitation'**
+  String get resendInvitationTooltip;
+
+  /// No description provided for @resendInvitationNoEmailTooltip.
+  ///
+  /// In fr, this message translates to:
+  /// **'Ajoutez une adresse e-mail pour envoyer une invitation'**
+  String get resendInvitationNoEmailTooltip;
+
+  /// No description provided for @resendInvitationSuccess.
+  ///
+  /// In fr, this message translates to:
+  /// **'E-mail d\'invitation envoyé'**
+  String get resendInvitationSuccess;
+
+  /// No description provided for @resendInvitationFailed.
+  ///
+  /// In fr, this message translates to:
+  /// **'Impossible d\'envoyer l\'e-mail d\'invitation'**
+  String get resendInvitationFailed;
 
   /// No description provided for @memberBirthDate.
   ///
@@ -5571,6 +5637,702 @@ abstract class AppLocalizations {
   /// In fr, this message translates to:
   /// **'La synchronisation a échoué. Réessayez.'**
   String get calendarSyncForceFailed;
+
+  /// No description provided for @settingsDevicesSection.
+  ///
+  /// In fr, this message translates to:
+  /// **'Appareils/Applications'**
+  String get settingsDevicesSection;
+
+  /// No description provided for @settingsDevicesClose.
+  ///
+  /// In fr, this message translates to:
+  /// **'Fermer'**
+  String get settingsDevicesClose;
+
+  /// No description provided for @settingsDevicesSync.
+  ///
+  /// In fr, this message translates to:
+  /// **'Synchroniser'**
+  String get settingsDevicesSync;
+
+  /// No description provided for @settingsDevicesConnectedTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Appareils/applications connectés'**
+  String get settingsDevicesConnectedTitle;
+
+  /// No description provided for @settingsDevicesConnectedStatus.
+  ///
+  /// In fr, this message translates to:
+  /// **'Connecté'**
+  String get settingsDevicesConnectedStatus;
+
+  /// No description provided for @settingsDevicesDisconnect.
+  ///
+  /// In fr, this message translates to:
+  /// **'Déconnecter'**
+  String get settingsDevicesDisconnect;
+
+  /// No description provided for @settingsDevicesNoConnected.
+  ///
+  /// In fr, this message translates to:
+  /// **'Aucun appareil ou application connecté'**
+  String get settingsDevicesNoConnected;
+
+  /// No description provided for @settingsDevicesBadgeLabel.
+  ///
+  /// In fr, this message translates to:
+  /// **'{count, plural, =0{Aucun appareil/application connecté} =1{1 appareil/application connecté} other{{count} appareils/applications connectés}}'**
+  String settingsDevicesBadgeLabel(int count);
+
+  /// No description provided for @wearableDeviceTypeLabel.
+  ///
+  /// In fr, this message translates to:
+  /// **'Type d\'appareil/application'**
+  String get wearableDeviceTypeLabel;
+
+  /// No description provided for @wearableDeviceWhoop.
+  ///
+  /// In fr, this message translates to:
+  /// **'Whoop'**
+  String get wearableDeviceWhoop;
+
+  /// No description provided for @wearableDeviceStrava.
+  ///
+  /// In fr, this message translates to:
+  /// **'Strava'**
+  String get wearableDeviceStrava;
+
+  /// No description provided for @wearableDevicePolar.
+  ///
+  /// In fr, this message translates to:
+  /// **'Polar'**
+  String get wearableDevicePolar;
+
+  /// No description provided for @wearableDeviceFitbit.
+  ///
+  /// In fr, this message translates to:
+  /// **'Fitbit'**
+  String get wearableDeviceFitbit;
+
+  /// No description provided for @wearableDeviceAppleHealth.
+  ///
+  /// In fr, this message translates to:
+  /// **'Apple Forme'**
+  String get wearableDeviceAppleHealth;
+
+  /// No description provided for @wearableDeviceGoogleHealthConnect.
+  ///
+  /// In fr, this message translates to:
+  /// **'Google Fit / Health Connect'**
+  String get wearableDeviceGoogleHealthConnect;
+
+  /// No description provided for @whoopConnectToggleLabel.
+  ///
+  /// In fr, this message translates to:
+  /// **'Sync. Whoop'**
+  String get whoopConnectToggleLabel;
+
+  /// No description provided for @whoopConnectToggleSubtitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Connecte ton compte Whoop pour importer récupération, sommeil et entraînements'**
+  String get whoopConnectToggleSubtitle;
+
+  /// No description provided for @whoopConnectToggleConnectedSubtitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Whoop connecté — synchronisation des données à venir (Phase 2)'**
+  String get whoopConnectToggleConnectedSubtitle;
+
+  /// No description provided for @whoopConnectSuccess.
+  ///
+  /// In fr, this message translates to:
+  /// **'Compte Whoop connecté.'**
+  String get whoopConnectSuccess;
+
+  /// No description provided for @whoopConnectFailed.
+  ///
+  /// In fr, this message translates to:
+  /// **'La connexion Whoop a échoué. Réessayez.'**
+  String get whoopConnectFailed;
+
+  /// No description provided for @whoopConnectLaunchFailed.
+  ///
+  /// In fr, this message translates to:
+  /// **'Impossible d\'ouvrir la page de connexion Whoop.'**
+  String get whoopConnectLaunchFailed;
+
+  /// No description provided for @whoopConnectAuthRequired.
+  ///
+  /// In fr, this message translates to:
+  /// **'Connecte-toi à Grinta pour lier Whoop.'**
+  String get whoopConnectAuthRequired;
+
+  /// No description provided for @whoopDisconnectFailed.
+  ///
+  /// In fr, this message translates to:
+  /// **'La déconnexion Whoop a échoué.'**
+  String get whoopDisconnectFailed;
+
+  /// No description provided for @whoopCoachVisibilityTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Visibilité coach'**
+  String get whoopCoachVisibilityTitle;
+
+  /// No description provided for @whoopCoachVisibilitySubtitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Autoriser ton coach à voir cette donnée'**
+  String get whoopCoachVisibilitySubtitle;
+
+  /// No description provided for @whoopCoachVisibilitySaveFailed.
+  ///
+  /// In fr, this message translates to:
+  /// **'Impossible d\'enregistrer les préférences Whoop.'**
+  String get whoopCoachVisibilitySaveFailed;
+
+  /// No description provided for @whoopMetricRecovery.
+  ///
+  /// In fr, this message translates to:
+  /// **'Récupération'**
+  String get whoopMetricRecovery;
+
+  /// No description provided for @whoopMetricCycles.
+  ///
+  /// In fr, this message translates to:
+  /// **'Cycles'**
+  String get whoopMetricCycles;
+
+  /// No description provided for @whoopMetricSleep.
+  ///
+  /// In fr, this message translates to:
+  /// **'Sommeil'**
+  String get whoopMetricSleep;
+
+  /// No description provided for @whoopMetricWorkout.
+  ///
+  /// In fr, this message translates to:
+  /// **'Entraînements'**
+  String get whoopMetricWorkout;
+
+  /// No description provided for @whoopMetricProfile.
+  ///
+  /// In fr, this message translates to:
+  /// **'Profil'**
+  String get whoopMetricProfile;
+
+  /// No description provided for @whoopMetricBodyMeasurement.
+  ///
+  /// In fr, this message translates to:
+  /// **'Mensurations'**
+  String get whoopMetricBodyMeasurement;
+
+  /// No description provided for @whoopCoachConnectTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Whoop'**
+  String get whoopCoachConnectTitle;
+
+  /// No description provided for @whoopCoachConnectSubtitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Connecter le compte Whoop de {playerName}'**
+  String whoopCoachConnectSubtitle(String playerName);
+
+  /// No description provided for @whoopCoachConnectAction.
+  ///
+  /// In fr, this message translates to:
+  /// **'Connecter'**
+  String get whoopCoachConnectAction;
+
+  /// No description provided for @whoopCoachConnectConnectedSubtitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Whoop connecté pour {playerName}'**
+  String whoopCoachConnectConnectedSubtitle(String playerName);
+
+  /// No description provided for @stravaConnectToggleSubtitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Connecte ton compte Strava pour importer activités et entraînements'**
+  String get stravaConnectToggleSubtitle;
+
+  /// No description provided for @stravaConnectToggleConnectedSubtitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Strava connecté — synchronisation des données à venir (Phase 2)'**
+  String get stravaConnectToggleConnectedSubtitle;
+
+  /// No description provided for @stravaConnectSuccess.
+  ///
+  /// In fr, this message translates to:
+  /// **'Compte Strava connecté.'**
+  String get stravaConnectSuccess;
+
+  /// No description provided for @stravaConnectFailed.
+  ///
+  /// In fr, this message translates to:
+  /// **'La connexion Strava a échoué. Réessayez.'**
+  String get stravaConnectFailed;
+
+  /// No description provided for @stravaConnectLaunchFailed.
+  ///
+  /// In fr, this message translates to:
+  /// **'Impossible d\'ouvrir la page de connexion Strava.'**
+  String get stravaConnectLaunchFailed;
+
+  /// No description provided for @stravaConnectAuthRequired.
+  ///
+  /// In fr, this message translates to:
+  /// **'Connecte-toi à Grinta pour lier Strava.'**
+  String get stravaConnectAuthRequired;
+
+  /// No description provided for @stravaDisconnectFailed.
+  ///
+  /// In fr, this message translates to:
+  /// **'La déconnexion Strava a échoué.'**
+  String get stravaDisconnectFailed;
+
+  /// No description provided for @stravaCoachVisibilitySaveFailed.
+  ///
+  /// In fr, this message translates to:
+  /// **'Impossible d\'enregistrer les préférences Strava.'**
+  String get stravaCoachVisibilitySaveFailed;
+
+  /// No description provided for @stravaMetricActivities.
+  ///
+  /// In fr, this message translates to:
+  /// **'Activités'**
+  String get stravaMetricActivities;
+
+  /// No description provided for @stravaMetricProfile.
+  ///
+  /// In fr, this message translates to:
+  /// **'Profil'**
+  String get stravaMetricProfile;
+
+  /// No description provided for @stravaCoachConnectSubtitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Connecter le compte Strava de {playerName}'**
+  String stravaCoachConnectSubtitle(String playerName);
+
+  /// No description provided for @stravaCoachConnectConnectedSubtitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Strava connecté pour {playerName}'**
+  String stravaCoachConnectConnectedSubtitle(String playerName);
+
+  /// No description provided for @polarConnectToggleSubtitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Connecte ton compte Polar pour importer entraînements, sommeil et fréquence cardiaque depuis Loop ou Verity Sense via Polar Flow'**
+  String get polarConnectToggleSubtitle;
+
+  /// No description provided for @polarConnectToggleConnectedSubtitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Polar connecté — synchronisation des données à venir (Phase 2)'**
+  String get polarConnectToggleConnectedSubtitle;
+
+  /// No description provided for @polarConnectSuccess.
+  ///
+  /// In fr, this message translates to:
+  /// **'Compte Polar connecté.'**
+  String get polarConnectSuccess;
+
+  /// No description provided for @polarConnectFailed.
+  ///
+  /// In fr, this message translates to:
+  /// **'La connexion Polar a échoué. Réessayez.'**
+  String get polarConnectFailed;
+
+  /// No description provided for @polarConnectLaunchFailed.
+  ///
+  /// In fr, this message translates to:
+  /// **'Impossible d\'ouvrir la page de connexion Polar.'**
+  String get polarConnectLaunchFailed;
+
+  /// No description provided for @polarConnectAuthRequired.
+  ///
+  /// In fr, this message translates to:
+  /// **'Connecte-toi à Grinta pour lier Polar.'**
+  String get polarConnectAuthRequired;
+
+  /// No description provided for @polarDisconnectFailed.
+  ///
+  /// In fr, this message translates to:
+  /// **'La déconnexion Polar a échoué.'**
+  String get polarDisconnectFailed;
+
+  /// No description provided for @polarCoachVisibilityTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Visibilité coach'**
+  String get polarCoachVisibilityTitle;
+
+  /// No description provided for @polarCoachVisibilitySubtitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Autoriser ton coach à voir cette donnée'**
+  String get polarCoachVisibilitySubtitle;
+
+  /// No description provided for @polarCoachVisibilitySaveFailed.
+  ///
+  /// In fr, this message translates to:
+  /// **'Impossible d\'enregistrer les préférences Polar.'**
+  String get polarCoachVisibilitySaveFailed;
+
+  /// No description provided for @polarMetricTraining.
+  ///
+  /// In fr, this message translates to:
+  /// **'Entraînements'**
+  String get polarMetricTraining;
+
+  /// No description provided for @polarMetricSleep.
+  ///
+  /// In fr, this message translates to:
+  /// **'Sommeil'**
+  String get polarMetricSleep;
+
+  /// No description provided for @polarMetricRecoveryHr.
+  ///
+  /// In fr, this message translates to:
+  /// **'Récupération / fréquence cardiaque'**
+  String get polarMetricRecoveryHr;
+
+  /// No description provided for @polarMetricProfile.
+  ///
+  /// In fr, this message translates to:
+  /// **'Profil'**
+  String get polarMetricProfile;
+
+  /// No description provided for @polarMetricBody.
+  ///
+  /// In fr, this message translates to:
+  /// **'Mensurations'**
+  String get polarMetricBody;
+
+  /// No description provided for @polarCoachConnectSubtitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Connecter le compte Polar de {playerName}'**
+  String polarCoachConnectSubtitle(String playerName);
+
+  /// No description provided for @polarCoachConnectConnectedSubtitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Polar connecté pour {playerName}'**
+  String polarCoachConnectConnectedSubtitle(String playerName);
+
+  /// No description provided for @fitbitConnectToggleSubtitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Connecte ton compte Fitbit pour importer activité, fréquence cardiaque, sommeil et poids depuis ton bracelet via le cloud Fitbit'**
+  String get fitbitConnectToggleSubtitle;
+
+  /// No description provided for @fitbitConnectToggleConnectedSubtitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Fitbit connecté — synchronisation des données à venir (Phase 2)'**
+  String get fitbitConnectToggleConnectedSubtitle;
+
+  /// No description provided for @fitbitConnectSuccess.
+  ///
+  /// In fr, this message translates to:
+  /// **'Compte Fitbit connecté.'**
+  String get fitbitConnectSuccess;
+
+  /// No description provided for @fitbitConnectFailed.
+  ///
+  /// In fr, this message translates to:
+  /// **'La connexion Fitbit a échoué. Réessayez.'**
+  String get fitbitConnectFailed;
+
+  /// No description provided for @fitbitConnectLaunchFailed.
+  ///
+  /// In fr, this message translates to:
+  /// **'Impossible d\'ouvrir la page de connexion Fitbit.'**
+  String get fitbitConnectLaunchFailed;
+
+  /// No description provided for @fitbitConnectAuthRequired.
+  ///
+  /// In fr, this message translates to:
+  /// **'Connecte-toi à Grinta pour lier Fitbit.'**
+  String get fitbitConnectAuthRequired;
+
+  /// No description provided for @fitbitDisconnectFailed.
+  ///
+  /// In fr, this message translates to:
+  /// **'La déconnexion Fitbit a échoué.'**
+  String get fitbitDisconnectFailed;
+
+  /// No description provided for @fitbitCoachVisibilityTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Visibilité coach'**
+  String get fitbitCoachVisibilityTitle;
+
+  /// No description provided for @fitbitCoachVisibilitySubtitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Autoriser ton coach à voir cette donnée'**
+  String get fitbitCoachVisibilitySubtitle;
+
+  /// No description provided for @fitbitCoachVisibilitySaveFailed.
+  ///
+  /// In fr, this message translates to:
+  /// **'Impossible d\'enregistrer les préférences Fitbit.'**
+  String get fitbitCoachVisibilitySaveFailed;
+
+  /// No description provided for @fitbitMetricActivity.
+  ///
+  /// In fr, this message translates to:
+  /// **'Activité / entraînements / pas'**
+  String get fitbitMetricActivity;
+
+  /// No description provided for @fitbitMetricHeartrate.
+  ///
+  /// In fr, this message translates to:
+  /// **'Fréquence cardiaque'**
+  String get fitbitMetricHeartrate;
+
+  /// No description provided for @fitbitMetricSleep.
+  ///
+  /// In fr, this message translates to:
+  /// **'Sommeil'**
+  String get fitbitMetricSleep;
+
+  /// No description provided for @fitbitMetricProfile.
+  ///
+  /// In fr, this message translates to:
+  /// **'Profil'**
+  String get fitbitMetricProfile;
+
+  /// No description provided for @fitbitMetricBody.
+  ///
+  /// In fr, this message translates to:
+  /// **'Poids / mensurations'**
+  String get fitbitMetricBody;
+
+  /// No description provided for @fitbitCoachConnectSubtitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Connecter le compte Fitbit de {playerName}'**
+  String fitbitCoachConnectSubtitle(String playerName);
+
+  /// No description provided for @fitbitCoachConnectConnectedSubtitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Fitbit connecté pour {playerName}'**
+  String fitbitCoachConnectConnectedSubtitle(String playerName);
+
+  /// No description provided for @appleHealthConnectToggleSubtitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Connecte Apple Forme pour importer entraînements, fréquence cardiaque et énergie active depuis l\'app Santé (iOS uniquement)'**
+  String get appleHealthConnectToggleSubtitle;
+
+  /// No description provided for @appleHealthConnectToggleConnectedSubtitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Apple Forme connecté — synchronisation complète des entraînements à venir (Phase 2)'**
+  String get appleHealthConnectToggleConnectedSubtitle;
+
+  /// No description provided for @appleHealthConnectSuccess.
+  ///
+  /// In fr, this message translates to:
+  /// **'Apple Forme connecté.'**
+  String get appleHealthConnectSuccess;
+
+  /// No description provided for @appleHealthConnectFailed.
+  ///
+  /// In fr, this message translates to:
+  /// **'La connexion Apple Forme a échoué. Réessayez.'**
+  String get appleHealthConnectFailed;
+
+  /// No description provided for @appleHealthConnectDenied.
+  ///
+  /// In fr, this message translates to:
+  /// **'L\'accès Santé a été refusé. Active-le dans Réglages → Santé → Accès aux données et appareils → Grinta.'**
+  String get appleHealthConnectDenied;
+
+  /// No description provided for @appleHealthConnectAuthRequired.
+  ///
+  /// In fr, this message translates to:
+  /// **'Connecte-toi à Grinta pour lier Apple Forme.'**
+  String get appleHealthConnectAuthRequired;
+
+  /// No description provided for @appleHealthIosOnlyMessage.
+  ///
+  /// In fr, this message translates to:
+  /// **'Apple Forme est disponible uniquement sur iPhone. Les données sont lues sur l\'appareil via Apple HealthKit.'**
+  String get appleHealthIosOnlyMessage;
+
+  /// No description provided for @appleHealthDisconnectFailed.
+  ///
+  /// In fr, this message translates to:
+  /// **'La déconnexion Apple Forme a échoué.'**
+  String get appleHealthDisconnectFailed;
+
+  /// No description provided for @appleHealthCoachVisibilityTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Visibilité coach'**
+  String get appleHealthCoachVisibilityTitle;
+
+  /// No description provided for @appleHealthCoachVisibilitySubtitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Autoriser ton coach à voir cette donnée'**
+  String get appleHealthCoachVisibilitySubtitle;
+
+  /// No description provided for @appleHealthCoachVisibilitySaveFailed.
+  ///
+  /// In fr, this message translates to:
+  /// **'Impossible d\'enregistrer les préférences Apple Forme.'**
+  String get appleHealthCoachVisibilitySaveFailed;
+
+  /// No description provided for @appleHealthMetricActivity.
+  ///
+  /// In fr, this message translates to:
+  /// **'Entraînements / activité'**
+  String get appleHealthMetricActivity;
+
+  /// No description provided for @appleHealthMetricHeartrate.
+  ///
+  /// In fr, this message translates to:
+  /// **'Fréquence cardiaque'**
+  String get appleHealthMetricHeartrate;
+
+  /// No description provided for @appleHealthMetricActiveEnergy.
+  ///
+  /// In fr, this message translates to:
+  /// **'Énergie active'**
+  String get appleHealthMetricActiveEnergy;
+
+  /// No description provided for @appleHealthMetricSleep.
+  ///
+  /// In fr, this message translates to:
+  /// **'Sommeil'**
+  String get appleHealthMetricSleep;
+
+  /// No description provided for @appleHealthCoachConnectSubtitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Connecter Apple Forme pour {playerName}'**
+  String appleHealthCoachConnectSubtitle(String playerName);
+
+  /// No description provided for @appleHealthCoachConnectConnectedSubtitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Apple Forme connecté pour {playerName}'**
+  String appleHealthCoachConnectConnectedSubtitle(String playerName);
+
+  /// No description provided for @googleHealthConnectToggleSubtitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Connecte Google Fit pour importer entraînements, fréquence cardiaque et énergie active depuis Health Connect (Android uniquement)'**
+  String get googleHealthConnectToggleSubtitle;
+
+  /// No description provided for @googleHealthConnectToggleConnectedSubtitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Google Fit / Health Connect connecté — synchronisation complète des entraînements à venir (Phase 2)'**
+  String get googleHealthConnectToggleConnectedSubtitle;
+
+  /// No description provided for @googleHealthConnectSuccess.
+  ///
+  /// In fr, this message translates to:
+  /// **'Google Fit / Health Connect connecté.'**
+  String get googleHealthConnectSuccess;
+
+  /// No description provided for @googleHealthConnectFailed.
+  ///
+  /// In fr, this message translates to:
+  /// **'La connexion Google Fit / Health Connect a échoué. Réessayez.'**
+  String get googleHealthConnectFailed;
+
+  /// No description provided for @googleHealthConnectDenied.
+  ///
+  /// In fr, this message translates to:
+  /// **'L\'accès Health Connect a été refusé. Active-le dans Health Connect → Autorisations des applis → Grinta.'**
+  String get googleHealthConnectDenied;
+
+  /// No description provided for @googleHealthConnectAuthRequired.
+  ///
+  /// In fr, this message translates to:
+  /// **'Connecte-toi à Grinta pour lier Google Fit / Health Connect.'**
+  String get googleHealthConnectAuthRequired;
+
+  /// No description provided for @googleHealthAndroidOnlyMessage.
+  ///
+  /// In fr, this message translates to:
+  /// **'Google Fit / Health Connect est disponible uniquement sur Android. Les données sont lues sur l\'appareil via Health Connect.'**
+  String get googleHealthAndroidOnlyMessage;
+
+  /// No description provided for @googleHealthDisconnectFailed.
+  ///
+  /// In fr, this message translates to:
+  /// **'La déconnexion Google Fit / Health Connect a échoué.'**
+  String get googleHealthDisconnectFailed;
+
+  /// No description provided for @googleHealthCoachVisibilityTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Visibilité coach'**
+  String get googleHealthCoachVisibilityTitle;
+
+  /// No description provided for @googleHealthCoachVisibilitySubtitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Autoriser ton coach à voir cette donnée'**
+  String get googleHealthCoachVisibilitySubtitle;
+
+  /// No description provided for @googleHealthCoachVisibilitySaveFailed.
+  ///
+  /// In fr, this message translates to:
+  /// **'Impossible d\'enregistrer les préférences Google Fit / Health Connect.'**
+  String get googleHealthCoachVisibilitySaveFailed;
+
+  /// No description provided for @googleHealthMetricActivity.
+  ///
+  /// In fr, this message translates to:
+  /// **'Entraînements / activité'**
+  String get googleHealthMetricActivity;
+
+  /// No description provided for @googleHealthMetricHeartrate.
+  ///
+  /// In fr, this message translates to:
+  /// **'Fréquence cardiaque'**
+  String get googleHealthMetricHeartrate;
+
+  /// No description provided for @googleHealthMetricActiveEnergy.
+  ///
+  /// In fr, this message translates to:
+  /// **'Énergie active'**
+  String get googleHealthMetricActiveEnergy;
+
+  /// No description provided for @googleHealthMetricSleep.
+  ///
+  /// In fr, this message translates to:
+  /// **'Sommeil'**
+  String get googleHealthMetricSleep;
+
+  /// No description provided for @googleHealthCoachConnectSubtitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Connecter Google Fit / Health Connect pour {playerName}'**
+  String googleHealthCoachConnectSubtitle(String playerName);
+
+  /// No description provided for @googleHealthCoachConnectConnectedSubtitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Google Fit / Health Connect connecté pour {playerName}'**
+  String googleHealthCoachConnectConnectedSubtitle(String playerName);
 
   /// No description provided for @createTrainingTitle.
   ///

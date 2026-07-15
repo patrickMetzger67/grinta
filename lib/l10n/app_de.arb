@@ -61,6 +61,28 @@
   "memberEmailInvalid": "Bitte geben Sie eine gültige E-Mail-Adresse ein",
   "memberPhoneInvalid": "Bitte geben Sie eine gültige Telefonnummer ein",
   "memberPhoneRequired": "Telefonnummer ist für Spielereinladungen erforderlich",
+  "memberEmailRequired": "E-Mail ist für Einladungen erforderlich",
+  "invitationEmailSubject": "Dein Coach lädt dich ein, {appName} beizutreten",
+  "@invitationEmailSubject": {
+    "placeholders": {
+      "appName": { "type": "String" }
+    }
+  },
+  "invitationEmailIntro": "Dein Coach lädt dich ein, {appName} beizutreten",
+  "@invitationEmailIntro": {
+    "placeholders": {
+      "appName": { "type": "String" }
+    }
+  },
+  "invitationEmailCodeLabel": "Dein Einladungscode",
+  "invitationEmailDownloadIos": "Für iPhone herunterladen",
+  "invitationEmailDownloadAndroid": "Für Android herunterladen",
+  "invitationEmailFooter": "Du hast diese E-Mail erhalten, weil ein Coach dich auf {appName} hinzugefügt hat. Wenn du diese Nachricht nicht erwartet hast, kannst du sie ignorieren.",
+  "@invitationEmailFooter": {
+    "placeholders": {
+      "appName": { "type": "String" }
+    }
+  },
   "invitationSmsMessage": "Dein Coach lädt dich ein, {appName} beizutreten. Dein Code: {code}.\niPhone: {appleStoreUrl}\nAndroid: {googlePlayUrl}",
   "@invitationSmsMessage": {
     "placeholders": {
@@ -70,7 +92,7 @@
       "googlePlayUrl": { "type": "String" }
     }
   },
-  "memberInvitationSmsFailed": "Mitglied hinzugefügt, aber die Einladungs-SMS konnte nicht gesendet werden.",
+  "memberInvitationEmailFailed": "Mitglied hinzugefügt, aber die Einladungs-E-Mail konnte nicht gesendet werden.",
   "memberAddedToTeamNotificationTitle": "Team-Update",
   "memberAddedToTeamNotificationBody": "Dein Coach hat dich zu {teamName} hinzugefügt.",
   "@memberAddedToTeamNotificationBody": {
@@ -81,6 +103,10 @@
   "invitationAccepted": "Einladung angenommen",
   "invitationPending": "Einladung ausstehend",
   "memberAppAccountLinked": "App-Konto verknüpft",
+  "resendInvitationTooltip": "Resend invitation email",
+  "resendInvitationNoEmailTooltip": "Add an email address to send an invitation",
+  "resendInvitationSuccess": "Invitation email sent",
+  "resendInvitationFailed": "Could not send the invitation email",
   "memberBirthDate": "Geburtsdatum",
   "memberBirthDateOptional": "Geburtsdatum (optional)",
   "memberBirthPlace": "Geburtsort",

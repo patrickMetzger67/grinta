@@ -192,13 +192,17 @@ class _CircleGhostButton extends StatelessWidget {
     this.iconColor,
     this.size = 34,
     this.iconSize = 18,
+    this.tooltip,
+    this.enabled = true,
   });
 
   final IconData icon;
-  final VoidCallback onTap;
+  final VoidCallback? onTap;
   final Color? iconColor;
   final double size;
   final double iconSize;
+  final String? tooltip;
+  final bool enabled;
 
   static const double webTableButtonSize = 28;
   static const double webTableIconSize = 17;
@@ -206,9 +210,12 @@ class _CircleGhostButton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final colors = context.appColors;
+    final Color resolvedIconColor = !enabled
+        ? colors.textSecondary.withValues(alpha: 0.35)
+        : iconColor ?? colors.textSecondary;
 
-    return InkWell(
-      onTap: onTap,
+    Widget button = InkWell(
+      onTap: enabled ? onTap : null,
       customBorder: const CircleBorder(),
       child: Container(
         width: size,
@@ -222,10 +229,16 @@ class _CircleGhostButton extends StatelessWidget {
         child: Icon(
           icon,
           size: iconSize,
-          color: iconColor ?? colors.textSecondary,
+          color: resolvedIconColor,
         ),
       ),
     );
+
+    if (tooltip != null && tooltip!.isNotEmpty) {
+      button = Tooltip(message: tooltip!, child: button);
+    }
+
+    return button;
   }
 }
 

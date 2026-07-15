@@ -5,6 +5,27 @@ const { getFirestore, FieldValue, Timestamp } = require('firebase-admin/firestor
 const { GoogleGenerativeAI } = require('@google/generative-ai');
 const { buildSystemPrompt } = require('./ask_diego_prompt');
 const { GEMINI_CHAT_MODEL } = require('./gemini_chat_config');
+const {
+  createWhoopOAuthStart,
+  createWhoopOAuthCallback,
+  createWhoopDisconnect,
+} = require('./whoop_oauth');
+const {
+  createStravaOAuthStart,
+  createStravaOAuthCallback,
+  createStravaDisconnect,
+} = require('./strava_oauth');
+const {
+  createPolarOAuthStart,
+  createPolarOAuthCallback,
+  createPolarDisconnect,
+} = require('./polar_oauth');
+const {
+  createFitbitOAuthStart,
+  createFitbitOAuthCallback,
+  createFitbitDisconnect,
+} = require('./fitbit_oauth');
+const { createSendMailOnCreate } = require('./send_mail');
 
 initializeApp();
 
@@ -518,3 +539,60 @@ exports.redeemPromoCode = onCall(
     };
   },
 );
+
+/**
+ * Whoop OAuth (Phase 1 scaffolding).
+ *
+ * Deploy:
+ *   firebase functions:secrets:set WHOOP_CLIENT_ID
+ *   firebase functions:secrets:set WHOOP_CLIENT_SECRET
+ *   firebase deploy --only functions:whoopOAuthStart,functions:whoopOAuthCallback,functions:whoopDisconnect
+ */
+exports.whoopOAuthStart = createWhoopOAuthStart();
+exports.whoopOAuthCallback = createWhoopOAuthCallback();
+exports.whoopDisconnect = createWhoopDisconnect();
+
+/**
+ * Strava OAuth (Phase 1 scaffolding).
+ *
+ * Deploy:
+ *   firebase functions:secrets:set STRAVA_CLIENT_ID
+ *   firebase functions:secrets:set STRAVA_CLIENT_SECRET
+ *   firebase deploy --only functions:stravaOAuthStart,functions:stravaOAuthCallback,functions:stravaDisconnect
+ */
+exports.stravaOAuthStart = createStravaOAuthStart();
+exports.stravaOAuthCallback = createStravaOAuthCallback();
+exports.stravaDisconnect = createStravaDisconnect();
+
+/**
+ * Polar AccessLink OAuth (Phase 1 scaffolding).
+ *
+ * Deploy:
+ *   firebase functions:secrets:set POLAR_CLIENT_ID
+ *   firebase functions:secrets:set POLAR_CLIENT_SECRET
+ *   firebase deploy --only functions:polarOAuthStart,functions:polarOAuthCallback,functions:polarDisconnect
+ */
+exports.polarOAuthStart = createPolarOAuthStart();
+exports.polarOAuthCallback = createPolarOAuthCallback();
+exports.polarDisconnect = createPolarDisconnect();
+
+/**
+ * Fitbit Web API OAuth (Phase 1 scaffolding).
+ *
+ * Deploy:
+ *   firebase functions:secrets:set FITBIT_CLIENT_ID
+ *   firebase functions:secrets:set FITBIT_CLIENT_SECRET
+ *   firebase deploy --only functions:fitbitOAuthStart,functions:fitbitOAuthCallback,functions:fitbitDisconnect
+ */
+exports.fitbitOAuthStart = createFitbitOAuthStart();
+exports.fitbitOAuthCallback = createFitbitOAuthCallback();
+exports.fitbitDisconnect = createFitbitDisconnect();
+
+/**
+ * Firestore trigger: send queued mail documents via SendGrid.
+ *
+ * Deploy:
+ *   firebase functions:secrets:set SENDGRID_API_KEY
+ *   firebase deploy --only functions:sendMailOnCreate
+ */
+exports.sendMailOnCreate = createSendMailOnCreate();

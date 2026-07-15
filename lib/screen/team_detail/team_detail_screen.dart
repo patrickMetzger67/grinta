@@ -32,6 +32,7 @@ import '../../util/subscription_limits_access.dart';
 import '../../util/team_deletion_access.dart';
 import '../../util/team_tracker_access.dart';
 import '../../util/player_photo_resolver.dart';
+import '../../util/player_profile_validator.dart';
 
 import '../../model/tracker/owner.dart';
 import '../../services/effectivesService.dart';
@@ -48,6 +49,7 @@ import '../../widget/manage_unavailabilities_sheet.dart';
 import '../../widget/member_search_sheet.dart';
 import '../../widget/playerPhoto.dart';
 import '../../widget/player_contact_lines.dart';
+import '../../widget/coach_wearable_device_connect_section.dart';
 import '../team_players/training_team_players_presence.dart';
 import '../team_players/training_team_players_tracker.dart';
 
@@ -108,6 +110,7 @@ class _TeamDetailScreenState extends State<TeamDetailScreen> {
   bool _userOwnersLoaded = false;
   List<Owner> _userOwnersByEmail = const [];
   bool _isMemberOperationLoading = false;
+  String? _resendingInvitationMemberId;
   MemberInvitationResult? _pendingMemberInvitationResult;
 
   @override
@@ -2471,7 +2474,7 @@ class _TeamDetailScreenState extends State<TeamDetailScreen> {
       l10n: l10n,
       member: selected,
       memberId: memberId,
-      phoneE164: details.phoneE164,
+      email: details.email ?? '',
       teamId: teamId,
       seasonId: widget.seasonId,
       teamName: _team.name ?? '',
@@ -2509,7 +2512,7 @@ class _TeamDetailScreenState extends State<TeamDetailScreen> {
       l10n: l10n,
       member: selected,
       memberId: memberId,
-      phoneE164: details.phoneE164,
+      email: details.email ?? '',
       teamId: teamId,
       seasonId: widget.seasonId,
       teamName: _team.name ?? '',
@@ -2664,19 +2667,256 @@ class _TeamDetailScreenState extends State<TeamDetailScreen> {
     if (result == null ||
         result.success ||
         !result.invitationCreated ||
-        result.smsSent) {
+        result.emailSent) {
       return;
     }
     final error = result.error?.trim();
     if (error != null && error.isNotEmpty) {
-      debugPrint('TeamDetailScreen member invitation SMS failed: $error');
+      debugPrint('TeamDetailScreen member invitation email failed: $error');
     }
     AppSnackbar.show(
       context,
       kDebugMode && error != null && error.isNotEmpty
           ? l10n.errorGeneric(error)
-          : l10n.memberInvitationSmsFailed,
+          : l10n.memberInvitationEmailFailed,
       isError: true,
+    );
+  }
+
+  bool _shouldShowResendInvitation(BuildContext context, _TeamMemberVm row) {
+    if (!_canManageRoster(context)) {
+      return false;
+    }
+    if (!row.isGrintaRoster) {
+      return false;
+    }
+    return !isMemberLinkedToAppAccount(row.player);
+  }
+
+  bool _isResendInvitationEnabled(_TeamMemberVm row) {
+    final String email = row.grintaEmail?.trim() ?? '';
+    return email.isNotEmpty && isValidEmailFormat(email);
+  }
+
+  String _resendInvitationTooltip(AppLocalizations l10n, _TeamMemberVm row) {
+    return _isResendInvitationEnabled(row)
+        ? l10n.resendInvitationTooltip
+        : l10n.resendInvitationNoEmailTooltip;
+  }
+
+  bool _isResendingInvitationForRow(_TeamMemberVm row) {
+    final String? memberId = effectiveMemberId(row.player)?.trim();
+    return memberId != null &&
+        memberId.isNotEmpty &&
+        memberId == _resendingInvitationMemberId;
+  }
+
+  Future<void> _persistGrintaInvitationId({
+    required String teamId,
+    required String memberId,
+    required String invitationId,
+    required bool staff,
+  }) async {
+    final GrintaPlayer? existing =
+        _grintaEntryForMemberId(memberId, staff: staff);
+    if (existing == null) {
+      return;
+    }
+
+    final GrintaPlayer updated = GrintaPlayer(
+      playerId: existing.playerId,
+      positions: List<int>.from(existing.positions),
+      fonction: existing.fonction,
+      trackers: List<String>.from(existing.trackers),
+      email: existing.email,
+      phoneE164: existing.phoneE164,
+      birthday: existing.birthday,
+      hwHistory: List<GrintaPlayerHW>.from(existing.hwHistory),
+      invitationId: invitationId,
+    );
+
+    await TeamService().updateGrintaPlayer(
+      teamId: teamId,
+      playerId: memberId,
+      player: updated,
+      staffEntry: staff,
+    );
+
+    final List<GrintaPlayer> grintaPlayers =
+        List<GrintaPlayer>.from(_team.grintaPlayers ?? const <GrintaPlayer>[]);
+    final int index = grintaPlayers.indexWhere(
+      (GrintaPlayer entry) =>
+          entry.playerId.trim() == memberId.trim() &&
+          _isGrintaStaffGrintaPlayer(entry) == staff,
+    );
+    if (index >= 0) {
+      grintaPlayers[index] = updated;
+      _team.grintaPlayers = grintaPlayers;
+    }
+  }
+
+  Future<void> _onResendInvitationPressed(
+    BuildContext context,
+    _TeamMemberVm row,
+  ) async {
+    if (!_shouldShowResendInvitation(context, row) ||
+        !_isResendInvitationEnabled(row) ||
+        _isResendingInvitationForRow(row)) {
+      return;
+    }
+
+    final String? memberId = effectiveMemberId(row.player)?.trim();
+    if (memberId == null || memberId.isEmpty) {
+      return;
+    }
+
+    final String? teamId = _team.keyTeam?.trim();
+    if (teamId == null || teamId.isEmpty) {
+      return;
+    }
+
+    final AppLocalizations l10n = context.l10n;
+    final String email = row.grintaEmail?.trim() ?? '';
+    final bool staff = _isStaffMember(row);
+
+    setState(() => _resendingInvitationMemberId = memberId);
+    try {
+      final MemberInvitationResult result =
+          await MemberInvitationService.instance.resendInvitation(
+        l10n: l10n,
+        memberId: memberId,
+        email: email,
+        teamId: teamId,
+        seasonId: widget.seasonId,
+      );
+
+      if (!context.mounted) {
+        return;
+      }
+
+      if (result.success && result.emailSent) {
+        final String? invitationId = result.invitationId?.trim();
+        if (invitationId != null && invitationId.isNotEmpty) {
+          await _persistGrintaInvitationId(
+            teamId: teamId,
+            memberId: memberId,
+            invitationId: invitationId,
+            staff: staff,
+          );
+          await _reloadTeamAndMembers();
+        }
+
+        if (!context.mounted) {
+          return;
+        }
+
+        AppSnackbar.show(
+          context,
+          l10n.resendInvitationSuccess,
+          isError: false,
+        );
+        return;
+      }
+
+      if (result.skipped) {
+        return;
+      }
+
+      AppSnackbar.show(
+        context,
+        kDebugMode &&
+                result.error != null &&
+                result.error!.trim().isNotEmpty
+            ? l10n.errorGeneric(result.error!)
+            : l10n.resendInvitationFailed,
+        isError: true,
+      );
+    } catch (e) {
+      if (!context.mounted) {
+        return;
+      }
+      AppSnackbar.show(
+        context,
+        l10n.errorGeneric(e.toString()),
+        isError: true,
+      );
+    } finally {
+      if (mounted) {
+        setState(() => _resendingInvitationMemberId = null);
+      }
+    }
+  }
+
+  Widget _buildResendInvitationButton(
+    BuildContext context,
+    _TeamMemberVm row, {
+    required bool compact,
+  }) {
+    if (!_shouldShowResendInvitation(context, row)) {
+      return const SizedBox.shrink();
+    }
+
+    final AppLocalizations l10n = context.l10n;
+    final colors = context.appColors;
+    final bool enabled = _isResendInvitationEnabled(row) &&
+        !_isResendingInvitationForRow(row);
+    final String tooltip = _resendInvitationTooltip(l10n, row);
+    final bool loading = _isResendingInvitationForRow(row);
+
+    if (compact) {
+      return IconButton(
+        padding: EdgeInsets.zero,
+        visualDensity: VisualDensity.compact,
+        constraints: const BoxConstraints(
+          minWidth: 26,
+          minHeight: 26,
+        ),
+        tooltip: tooltip,
+        onPressed: enabled ? () => _onResendInvitationPressed(context, row) : null,
+        icon: loading
+            ? SizedBox(
+                width: 17,
+                height: 17,
+                child: CircularProgressIndicator(
+                  strokeWidth: 2,
+                  color: colors.primary,
+                ),
+              )
+            : Icon(
+                Icons.mail_outline_rounded,
+                size: 17,
+                color: enabled
+                    ? colors.primary
+                    : colors.textSecondary.withValues(alpha: 0.35),
+              ),
+      );
+    }
+
+    if (loading) {
+      return SizedBox(
+        width: _CircleGhostButton.webTableButtonSize,
+        height: _CircleGhostButton.webTableButtonSize,
+        child: Center(
+          child: SizedBox(
+            width: 15,
+            height: 15,
+            child: CircularProgressIndicator(
+              strokeWidth: 2,
+              color: colors.primary,
+            ),
+          ),
+        ),
+      );
+    }
+
+    return _CircleGhostButton(
+      icon: Icons.mail_outline_rounded,
+      size: _CircleGhostButton.webTableButtonSize,
+      iconSize: _CircleGhostButton.webTableIconSize,
+      tooltip: tooltip,
+      enabled: enabled,
+      iconColor: enabled ? colors.primary : null,
+      onTap: loading ? null : () => _onResendInvitationPressed(context, row),
     );
   }
 
@@ -2875,7 +3115,7 @@ class _TeamDetailScreenState extends State<TeamDetailScreen> {
           l10n: l10n,
           member: row.player,
           memberId: memberId,
-          phoneE164: details.phoneE164,
+          email: details.email ?? '',
           teamId: teamId,
           seasonId: widget.seasonId,
           teamName: _team.name ?? '',
@@ -2897,13 +3137,13 @@ class _TeamDetailScreenState extends State<TeamDetailScreen> {
         );
       } else {
         String? invitationId = existing.invitationId;
-        if (_phoneE164Changed(existing.phoneE164, details.phoneE164)) {
+        if (_invitationEmailChanged(existing.email, details.email)) {
           invitationResult =
               await MemberInvitationService.instance.notifyOrInviteMember(
             l10n: l10n,
             member: row.player,
             memberId: memberId,
-            phoneE164: details.phoneE164,
+            email: details.email ?? '',
             teamId: teamId,
             seasonId: widget.seasonId,
             teamName: _team.name ?? '',
@@ -2957,7 +3197,7 @@ class _TeamDetailScreenState extends State<TeamDetailScreen> {
     }
   }
 
-  bool _phoneE164Changed(String? previous, String? next) {
+  bool _invitationEmailChanged(String? previous, String? next) {
     return previous?.trim() != next?.trim();
   }
 
@@ -3400,13 +3640,13 @@ class _TeamDetailScreenState extends State<TeamDetailScreen> {
     try {
       MemberInvitationResult? invitationResult;
       String? invitationId = existing.invitationId;
-      if (_phoneE164Changed(existing.phoneE164, details.phoneE164)) {
+      if (_invitationEmailChanged(existing.email, details.email)) {
         invitationResult =
             await MemberInvitationService.instance.notifyOrInviteMember(
           l10n: l10n,
           member: row.player,
           memberId: memberId,
-          phoneE164: details.phoneE164,
+          email: details.email ?? '',
           teamId: teamId,
           seasonId: widget.seasonId,
           teamName: _team.name ?? '',
@@ -3870,6 +4110,10 @@ class _TeamDetailScreenState extends State<TeamDetailScreen> {
           ),
           const SizedBox(width: 12),
           if (_canManageRoster(context)) ...[
+            if (_shouldShowResendInvitation(context, row)) ...[
+              _buildResendInvitationButton(context, row, compact: false),
+              const SizedBox(width: 6),
+            ],
             if (row.isGrintaRoster) ...[
               _CircleGhostButton(
                 icon: Icons.edit_outlined,
@@ -4111,6 +4355,12 @@ class _TeamDetailScreenState extends State<TeamDetailScreen> {
             tooltip: l10n.teamDetailGrantManager,
             flex: 1,
           ),
+          if (canManageRoster)
+            _mobileStaticIconHeaderCell(
+              icon: Icons.mail_outline_rounded,
+              tooltip: l10n.resendInvitationTooltip,
+              flex: 1,
+            ),
           if (_canManageTeam(context))
             _mobileStaticIconHeaderCell(
               icon: Icons.event_busy_outlined,
@@ -4424,6 +4674,15 @@ class _TeamDetailScreenState extends State<TeamDetailScreen> {
                       ),
                 ),
                 const SizedBox(height: 16),
+                if (_canManageTeam(context)) ...[
+                  CoachWearableDeviceConnectSection(
+                    playerId: (row.player.keyMember ?? '').trim(),
+                    playerName: _displayName(row.player, sheetContext.l10n),
+                  ),
+                  const SizedBox(height: 16),
+                  Divider(color: colors.border.withValues(alpha: 0.5)),
+                  const SizedBox(height: 12),
+                ],
                 _buildTrackerChipsCell(
                   sheetContext,
                   row,
@@ -4542,6 +4801,14 @@ class _TeamDetailScreenState extends State<TeamDetailScreen> {
               child: _buildManagerIndicator(context, row),
             ),
           ),
+          if (_canManageRoster(context))
+            Expanded(
+              flex: 1,
+              child: _CompactIconCell(
+                width: 26,
+                child: _buildResendInvitationButton(context, row, compact: true),
+              ),
+            ),
           if (_canManageTeam(context))
             Expanded(
               flex: 1,
@@ -4741,6 +5008,12 @@ class _TeamDetailScreenState extends State<TeamDetailScreen> {
                             _onTogglePlayerManagerPressed(context, row),
                       ),
                       const SizedBox(width: 3),
+                    ],
+                    if (_canManageRoster(context)) ...[
+                      _buildResendInvitationButton(context, row, compact: false),
+                      if (_canManageTeam(context)) const SizedBox(width: 3),
+                    ],
+                    if (_canManageTeam(context)) ...[
                       _CircleGhostButton(
                         icon: Icons.event_busy_outlined,
                         size: _CircleGhostButton.webTableButtonSize,

@@ -185,14 +185,41 @@ class AppLocalizationsFr extends AppLocalizations {
       'Le numéro de téléphone est requis pour les invitations';
 
   @override
+  String get memberEmailRequired => 'L\'e-mail est requis pour les invitations';
+
+  @override
+  String invitationEmailSubject(String appName) {
+    return 'Ton coach t\'invite à rejoindre $appName';
+  }
+
+  @override
+  String invitationEmailIntro(String appName) {
+    return 'Ton coach t\'invite à rejoindre $appName';
+  }
+
+  @override
+  String get invitationEmailCodeLabel => 'Ton code d\'invitation';
+
+  @override
+  String get invitationEmailDownloadIos => 'Télécharger sur iPhone';
+
+  @override
+  String get invitationEmailDownloadAndroid => 'Télécharger sur Android';
+
+  @override
+  String invitationEmailFooter(String appName) {
+    return 'Tu as reçu cet e-mail parce qu\'un coach t\'a ajouté sur $appName. Si tu n\'attendais pas ce message, tu peux l\'ignorer.';
+  }
+
+  @override
   String invitationSmsMessage(
       String appName, String code, String appleStoreUrl, String googlePlayUrl) {
     return 'Ton coach t\'invite à rejoindre $appName. Ton code : $code.\niPhone : $appleStoreUrl\nAndroid : $googlePlayUrl';
   }
 
   @override
-  String get memberInvitationSmsFailed =>
-      'Membre ajouté, mais l\'envoi du SMS d\'invitation a échoué.';
+  String get memberInvitationEmailFailed =>
+      'Membre ajouté, mais l\'envoi de l\'e-mail d\'invitation a échoué.';
 
   @override
   String get memberAddedToTeamNotificationTitle => 'Mise à jour d\'équipe';
@@ -210,6 +237,20 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get memberAppAccountLinked => 'Compte application lié';
+
+  @override
+  String get resendInvitationTooltip => 'Renvoyer l\'e-mail d\'invitation';
+
+  @override
+  String get resendInvitationNoEmailTooltip =>
+      'Ajoutez une adresse e-mail pour envoyer une invitation';
+
+  @override
+  String get resendInvitationSuccess => 'E-mail d\'invitation envoyé';
+
+  @override
+  String get resendInvitationFailed =>
+      'Impossible d\'envoyer l\'e-mail d\'invitation';
 
   @override
   String get memberBirthDate => 'Date de naissance';
@@ -3169,6 +3210,431 @@ class AppLocalizationsFr extends AppLocalizations {
   @override
   String get calendarSyncForceFailed =>
       'La synchronisation a échoué. Réessayez.';
+
+  @override
+  String get settingsDevicesSection => 'Appareils/Applications';
+
+  @override
+  String get settingsDevicesClose => 'Fermer';
+
+  @override
+  String get settingsDevicesSync => 'Synchroniser';
+
+  @override
+  String get settingsDevicesConnectedTitle =>
+      'Appareils/applications connectés';
+
+  @override
+  String get settingsDevicesConnectedStatus => 'Connecté';
+
+  @override
+  String get settingsDevicesDisconnect => 'Déconnecter';
+
+  @override
+  String get settingsDevicesNoConnected =>
+      'Aucun appareil ou application connecté';
+
+  @override
+  String settingsDevicesBadgeLabel(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count appareils/applications connectés',
+      one: '1 appareil/application connecté',
+      zero: 'Aucun appareil/application connecté',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get wearableDeviceTypeLabel => 'Type d\'appareil/application';
+
+  @override
+  String get wearableDeviceWhoop => 'Whoop';
+
+  @override
+  String get wearableDeviceStrava => 'Strava';
+
+  @override
+  String get wearableDevicePolar => 'Polar';
+
+  @override
+  String get wearableDeviceFitbit => 'Fitbit';
+
+  @override
+  String get wearableDeviceAppleHealth => 'Apple Forme';
+
+  @override
+  String get wearableDeviceGoogleHealthConnect => 'Google Fit / Health Connect';
+
+  @override
+  String get whoopConnectToggleLabel => 'Sync. Whoop';
+
+  @override
+  String get whoopConnectToggleSubtitle =>
+      'Connecte ton compte Whoop pour importer récupération, sommeil et entraînements';
+
+  @override
+  String get whoopConnectToggleConnectedSubtitle =>
+      'Whoop connecté — synchronisation des données à venir (Phase 2)';
+
+  @override
+  String get whoopConnectSuccess => 'Compte Whoop connecté.';
+
+  @override
+  String get whoopConnectFailed => 'La connexion Whoop a échoué. Réessayez.';
+
+  @override
+  String get whoopConnectLaunchFailed =>
+      'Impossible d\'ouvrir la page de connexion Whoop.';
+
+  @override
+  String get whoopConnectAuthRequired =>
+      'Connecte-toi à Grinta pour lier Whoop.';
+
+  @override
+  String get whoopDisconnectFailed => 'La déconnexion Whoop a échoué.';
+
+  @override
+  String get whoopCoachVisibilityTitle => 'Visibilité coach';
+
+  @override
+  String get whoopCoachVisibilitySubtitle =>
+      'Autoriser ton coach à voir cette donnée';
+
+  @override
+  String get whoopCoachVisibilitySaveFailed =>
+      'Impossible d\'enregistrer les préférences Whoop.';
+
+  @override
+  String get whoopMetricRecovery => 'Récupération';
+
+  @override
+  String get whoopMetricCycles => 'Cycles';
+
+  @override
+  String get whoopMetricSleep => 'Sommeil';
+
+  @override
+  String get whoopMetricWorkout => 'Entraînements';
+
+  @override
+  String get whoopMetricProfile => 'Profil';
+
+  @override
+  String get whoopMetricBodyMeasurement => 'Mensurations';
+
+  @override
+  String get whoopCoachConnectTitle => 'Whoop';
+
+  @override
+  String whoopCoachConnectSubtitle(String playerName) {
+    return 'Connecter le compte Whoop de $playerName';
+  }
+
+  @override
+  String get whoopCoachConnectAction => 'Connecter';
+
+  @override
+  String whoopCoachConnectConnectedSubtitle(String playerName) {
+    return 'Whoop connecté pour $playerName';
+  }
+
+  @override
+  String get stravaConnectToggleSubtitle =>
+      'Connecte ton compte Strava pour importer activités et entraînements';
+
+  @override
+  String get stravaConnectToggleConnectedSubtitle =>
+      'Strava connecté — synchronisation des données à venir (Phase 2)';
+
+  @override
+  String get stravaConnectSuccess => 'Compte Strava connecté.';
+
+  @override
+  String get stravaConnectFailed => 'La connexion Strava a échoué. Réessayez.';
+
+  @override
+  String get stravaConnectLaunchFailed =>
+      'Impossible d\'ouvrir la page de connexion Strava.';
+
+  @override
+  String get stravaConnectAuthRequired =>
+      'Connecte-toi à Grinta pour lier Strava.';
+
+  @override
+  String get stravaDisconnectFailed => 'La déconnexion Strava a échoué.';
+
+  @override
+  String get stravaCoachVisibilitySaveFailed =>
+      'Impossible d\'enregistrer les préférences Strava.';
+
+  @override
+  String get stravaMetricActivities => 'Activités';
+
+  @override
+  String get stravaMetricProfile => 'Profil';
+
+  @override
+  String stravaCoachConnectSubtitle(String playerName) {
+    return 'Connecter le compte Strava de $playerName';
+  }
+
+  @override
+  String stravaCoachConnectConnectedSubtitle(String playerName) {
+    return 'Strava connecté pour $playerName';
+  }
+
+  @override
+  String get polarConnectToggleSubtitle =>
+      'Connecte ton compte Polar pour importer entraînements, sommeil et fréquence cardiaque depuis Loop ou Verity Sense via Polar Flow';
+
+  @override
+  String get polarConnectToggleConnectedSubtitle =>
+      'Polar connecté — synchronisation des données à venir (Phase 2)';
+
+  @override
+  String get polarConnectSuccess => 'Compte Polar connecté.';
+
+  @override
+  String get polarConnectFailed => 'La connexion Polar a échoué. Réessayez.';
+
+  @override
+  String get polarConnectLaunchFailed =>
+      'Impossible d\'ouvrir la page de connexion Polar.';
+
+  @override
+  String get polarConnectAuthRequired =>
+      'Connecte-toi à Grinta pour lier Polar.';
+
+  @override
+  String get polarDisconnectFailed => 'La déconnexion Polar a échoué.';
+
+  @override
+  String get polarCoachVisibilityTitle => 'Visibilité coach';
+
+  @override
+  String get polarCoachVisibilitySubtitle =>
+      'Autoriser ton coach à voir cette donnée';
+
+  @override
+  String get polarCoachVisibilitySaveFailed =>
+      'Impossible d\'enregistrer les préférences Polar.';
+
+  @override
+  String get polarMetricTraining => 'Entraînements';
+
+  @override
+  String get polarMetricSleep => 'Sommeil';
+
+  @override
+  String get polarMetricRecoveryHr => 'Récupération / fréquence cardiaque';
+
+  @override
+  String get polarMetricProfile => 'Profil';
+
+  @override
+  String get polarMetricBody => 'Mensurations';
+
+  @override
+  String polarCoachConnectSubtitle(String playerName) {
+    return 'Connecter le compte Polar de $playerName';
+  }
+
+  @override
+  String polarCoachConnectConnectedSubtitle(String playerName) {
+    return 'Polar connecté pour $playerName';
+  }
+
+  @override
+  String get fitbitConnectToggleSubtitle =>
+      'Connecte ton compte Fitbit pour importer activité, fréquence cardiaque, sommeil et poids depuis ton bracelet via le cloud Fitbit';
+
+  @override
+  String get fitbitConnectToggleConnectedSubtitle =>
+      'Fitbit connecté — synchronisation des données à venir (Phase 2)';
+
+  @override
+  String get fitbitConnectSuccess => 'Compte Fitbit connecté.';
+
+  @override
+  String get fitbitConnectFailed => 'La connexion Fitbit a échoué. Réessayez.';
+
+  @override
+  String get fitbitConnectLaunchFailed =>
+      'Impossible d\'ouvrir la page de connexion Fitbit.';
+
+  @override
+  String get fitbitConnectAuthRequired =>
+      'Connecte-toi à Grinta pour lier Fitbit.';
+
+  @override
+  String get fitbitDisconnectFailed => 'La déconnexion Fitbit a échoué.';
+
+  @override
+  String get fitbitCoachVisibilityTitle => 'Visibilité coach';
+
+  @override
+  String get fitbitCoachVisibilitySubtitle =>
+      'Autoriser ton coach à voir cette donnée';
+
+  @override
+  String get fitbitCoachVisibilitySaveFailed =>
+      'Impossible d\'enregistrer les préférences Fitbit.';
+
+  @override
+  String get fitbitMetricActivity => 'Activité / entraînements / pas';
+
+  @override
+  String get fitbitMetricHeartrate => 'Fréquence cardiaque';
+
+  @override
+  String get fitbitMetricSleep => 'Sommeil';
+
+  @override
+  String get fitbitMetricProfile => 'Profil';
+
+  @override
+  String get fitbitMetricBody => 'Poids / mensurations';
+
+  @override
+  String fitbitCoachConnectSubtitle(String playerName) {
+    return 'Connecter le compte Fitbit de $playerName';
+  }
+
+  @override
+  String fitbitCoachConnectConnectedSubtitle(String playerName) {
+    return 'Fitbit connecté pour $playerName';
+  }
+
+  @override
+  String get appleHealthConnectToggleSubtitle =>
+      'Connecte Apple Forme pour importer entraînements, fréquence cardiaque et énergie active depuis l\'app Santé (iOS uniquement)';
+
+  @override
+  String get appleHealthConnectToggleConnectedSubtitle =>
+      'Apple Forme connecté — synchronisation complète des entraînements à venir (Phase 2)';
+
+  @override
+  String get appleHealthConnectSuccess => 'Apple Forme connecté.';
+
+  @override
+  String get appleHealthConnectFailed =>
+      'La connexion Apple Forme a échoué. Réessayez.';
+
+  @override
+  String get appleHealthConnectDenied =>
+      'L\'accès Santé a été refusé. Active-le dans Réglages → Santé → Accès aux données et appareils → Grinta.';
+
+  @override
+  String get appleHealthConnectAuthRequired =>
+      'Connecte-toi à Grinta pour lier Apple Forme.';
+
+  @override
+  String get appleHealthIosOnlyMessage =>
+      'Apple Forme est disponible uniquement sur iPhone. Les données sont lues sur l\'appareil via Apple HealthKit.';
+
+  @override
+  String get appleHealthDisconnectFailed =>
+      'La déconnexion Apple Forme a échoué.';
+
+  @override
+  String get appleHealthCoachVisibilityTitle => 'Visibilité coach';
+
+  @override
+  String get appleHealthCoachVisibilitySubtitle =>
+      'Autoriser ton coach à voir cette donnée';
+
+  @override
+  String get appleHealthCoachVisibilitySaveFailed =>
+      'Impossible d\'enregistrer les préférences Apple Forme.';
+
+  @override
+  String get appleHealthMetricActivity => 'Entraînements / activité';
+
+  @override
+  String get appleHealthMetricHeartrate => 'Fréquence cardiaque';
+
+  @override
+  String get appleHealthMetricActiveEnergy => 'Énergie active';
+
+  @override
+  String get appleHealthMetricSleep => 'Sommeil';
+
+  @override
+  String appleHealthCoachConnectSubtitle(String playerName) {
+    return 'Connecter Apple Forme pour $playerName';
+  }
+
+  @override
+  String appleHealthCoachConnectConnectedSubtitle(String playerName) {
+    return 'Apple Forme connecté pour $playerName';
+  }
+
+  @override
+  String get googleHealthConnectToggleSubtitle =>
+      'Connecte Google Fit pour importer entraînements, fréquence cardiaque et énergie active depuis Health Connect (Android uniquement)';
+
+  @override
+  String get googleHealthConnectToggleConnectedSubtitle =>
+      'Google Fit / Health Connect connecté — synchronisation complète des entraînements à venir (Phase 2)';
+
+  @override
+  String get googleHealthConnectSuccess =>
+      'Google Fit / Health Connect connecté.';
+
+  @override
+  String get googleHealthConnectFailed =>
+      'La connexion Google Fit / Health Connect a échoué. Réessayez.';
+
+  @override
+  String get googleHealthConnectDenied =>
+      'L\'accès Health Connect a été refusé. Active-le dans Health Connect → Autorisations des applis → Grinta.';
+
+  @override
+  String get googleHealthConnectAuthRequired =>
+      'Connecte-toi à Grinta pour lier Google Fit / Health Connect.';
+
+  @override
+  String get googleHealthAndroidOnlyMessage =>
+      'Google Fit / Health Connect est disponible uniquement sur Android. Les données sont lues sur l\'appareil via Health Connect.';
+
+  @override
+  String get googleHealthDisconnectFailed =>
+      'La déconnexion Google Fit / Health Connect a échoué.';
+
+  @override
+  String get googleHealthCoachVisibilityTitle => 'Visibilité coach';
+
+  @override
+  String get googleHealthCoachVisibilitySubtitle =>
+      'Autoriser ton coach à voir cette donnée';
+
+  @override
+  String get googleHealthCoachVisibilitySaveFailed =>
+      'Impossible d\'enregistrer les préférences Google Fit / Health Connect.';
+
+  @override
+  String get googleHealthMetricActivity => 'Entraînements / activité';
+
+  @override
+  String get googleHealthMetricHeartrate => 'Fréquence cardiaque';
+
+  @override
+  String get googleHealthMetricActiveEnergy => 'Énergie active';
+
+  @override
+  String get googleHealthMetricSleep => 'Sommeil';
+
+  @override
+  String googleHealthCoachConnectSubtitle(String playerName) {
+    return 'Connecter Google Fit / Health Connect pour $playerName';
+  }
+
+  @override
+  String googleHealthCoachConnectConnectedSubtitle(String playerName) {
+    return 'Google Fit / Health Connect connecté pour $playerName';
+  }
 
   @override
   String get createTrainingTitle => 'Nouvelle session d\'entraînement';

@@ -61,6 +61,28 @@
   "memberEmailInvalid": "Please enter a valid email address",
   "memberPhoneInvalid": "Please enter a valid phone number",
   "memberPhoneRequired": "Phone number is required for player invitations",
+  "memberEmailRequired": "Email is required for member invitations",
+  "invitationEmailSubject": "Your coach invites you to join {appName}",
+  "@invitationEmailSubject": {
+    "placeholders": {
+      "appName": { "type": "String" }
+    }
+  },
+  "invitationEmailIntro": "Your coach invites you to join {appName}",
+  "@invitationEmailIntro": {
+    "placeholders": {
+      "appName": { "type": "String" }
+    }
+  },
+  "invitationEmailCodeLabel": "Your invitation code",
+  "invitationEmailDownloadIos": "Download on iPhone",
+  "invitationEmailDownloadAndroid": "Download on Android",
+  "invitationEmailFooter": "You received this email because a coach added you on {appName}. If you were not expecting this message, you can ignore it.",
+  "@invitationEmailFooter": {
+    "placeholders": {
+      "appName": { "type": "String" }
+    }
+  },
   "invitationSmsMessage": "Your coach invites you to join {appName}. Your code: {code}.\niPhone: {appleStoreUrl}\nAndroid: {googlePlayUrl}",
   "@invitationSmsMessage": {
     "placeholders": {
@@ -70,7 +92,7 @@
       "googlePlayUrl": { "type": "String" }
     }
   },
-  "memberInvitationSmsFailed": "Member added, but the invitation SMS could not be sent.",
+  "memberInvitationEmailFailed": "Member added, but the invitation email could not be sent.",
   "memberAddedToTeamNotificationTitle": "Team update",
   "memberAddedToTeamNotificationBody": "Your coach added you to {teamName}.",
   "@memberAddedToTeamNotificationBody": {
@@ -81,6 +103,10 @@
   "invitationAccepted": "Invitation accepted",
   "invitationPending": "Invitation pending",
   "memberAppAccountLinked": "App account linked",
+  "resendInvitationTooltip": "Resend invitation email",
+  "resendInvitationNoEmailTooltip": "Add an email address to send an invitation",
+  "resendInvitationSuccess": "Invitation email sent",
+  "resendInvitationFailed": "Could not send the invitation email",
   "memberBirthDate": "Date of birth",
   "memberBirthDateOptional": "Date of birth (optional)",
   "memberBirthPlace": "Place of birth",
@@ -1132,6 +1158,187 @@
   "calendarSyncForceNow": "Sync now",
   "calendarSyncForceSuccess": "Calendar synced.",
   "calendarSyncForceFailed": "Sync failed. Please try again.",
+  "settingsDevicesSection": "Devices/Applications",
+  "settingsDevicesClose": "Close",
+  "settingsDevicesSync": "Sync",
+  "settingsDevicesConnectedTitle": "Connected devices/applications",
+  "settingsDevicesConnectedStatus": "Connected",
+  "settingsDevicesDisconnect": "Disconnect",
+  "settingsDevicesNoConnected": "No devices or applications connected",
+  "settingsDevicesBadgeLabel": "{count, plural, =0{No connected devices/applications} =1{1 connected device/application} other{{count} connected devices/applications}}",
+  "@settingsDevicesBadgeLabel": {
+    "placeholders": {
+      "count": { "type": "int" }
+    }
+  },
+  "wearableDeviceTypeLabel": "Device/application type",
+  "wearableDeviceWhoop": "Whoop",
+  "wearableDeviceStrava": "Strava",
+  "wearableDevicePolar": "Polar",
+  "wearableDeviceFitbit": "Fitbit",
+  "wearableDeviceAppleHealth": "Apple Fitness",
+  "wearableDeviceGoogleHealthConnect": "Google Fit / Health Connect",
+  "whoopConnectToggleLabel": "Whoop sync",
+  "whoopConnectToggleSubtitle": "Connect your Whoop account to import recovery, sleep, and workouts",
+  "whoopConnectToggleConnectedSubtitle": "Whoop connected — data sync coming in Phase 2",
+  "whoopConnectSuccess": "Whoop account connected.",
+  "whoopConnectFailed": "Whoop connection failed. Please try again.",
+  "whoopConnectLaunchFailed": "Could not open the Whoop sign-in page.",
+  "whoopConnectAuthRequired": "Sign in to Grinta to connect Whoop.",
+  "whoopDisconnectFailed": "Whoop disconnect failed.",
+  "whoopCoachVisibilityTitle": "Coach visibility",
+  "whoopCoachVisibilitySubtitle": "Allow your coach to see this data type",
+  "whoopCoachVisibilitySaveFailed": "Could not save Whoop preferences.",
+  "whoopMetricRecovery": "Recovery",
+  "whoopMetricCycles": "Cycles",
+  "whoopMetricSleep": "Sleep",
+  "whoopMetricWorkout": "Workouts",
+  "whoopMetricProfile": "Profile",
+  "whoopMetricBodyMeasurement": "Body measurements",
+  "whoopCoachConnectTitle": "Whoop",
+  "whoopCoachConnectSubtitle": "Connect Whoop for {playerName}",
+  "@whoopCoachConnectSubtitle": {
+    "placeholders": {
+      "playerName": { "type": "String" }
+    }
+  },
+  "whoopCoachConnectAction": "Connect",
+  "whoopCoachConnectConnectedSubtitle": "Whoop connected for {playerName}",
+  "@whoopCoachConnectConnectedSubtitle": {
+    "placeholders": {
+      "playerName": { "type": "String" }
+    }
+  },
+  "stravaConnectToggleSubtitle": "Connect your Strava account to import activities and workouts",
+  "stravaConnectToggleConnectedSubtitle": "Strava connected — data sync coming in Phase 2",
+  "stravaConnectSuccess": "Strava account connected.",
+  "stravaConnectFailed": "Strava connection failed. Please try again.",
+  "stravaConnectLaunchFailed": "Could not open the Strava sign-in page.",
+  "stravaConnectAuthRequired": "Sign in to Grinta to connect Strava.",
+  "stravaDisconnectFailed": "Strava disconnect failed.",
+  "stravaCoachVisibilitySaveFailed": "Could not save Strava preferences.",
+  "stravaMetricActivities": "Activities",
+  "stravaMetricProfile": "Profile",
+  "stravaCoachConnectSubtitle": "Connect Strava for {playerName}",
+  "@stravaCoachConnectSubtitle": {
+    "placeholders": {
+      "playerName": { "type": "String" }
+    }
+  },
+  "stravaCoachConnectConnectedSubtitle": "Strava connected for {playerName}",
+  "@stravaCoachConnectConnectedSubtitle": {
+    "placeholders": {
+      "playerName": { "type": "String" }
+    }
+  },
+  "polarConnectToggleSubtitle": "Connect your Polar account to import training, sleep, and heart rate data from Loop or Verity Sense via Polar Flow",
+  "polarConnectToggleConnectedSubtitle": "Polar connected — data sync coming in Phase 2",
+  "polarConnectSuccess": "Polar account connected.",
+  "polarConnectFailed": "Polar connection failed. Please try again.",
+  "polarConnectLaunchFailed": "Could not open the Polar sign-in page.",
+  "polarConnectAuthRequired": "Sign in to Grinta to connect Polar.",
+  "polarDisconnectFailed": "Polar disconnect failed.",
+  "polarCoachVisibilityTitle": "Coach visibility",
+  "polarCoachVisibilitySubtitle": "Allow your coach to see this data type",
+  "polarCoachVisibilitySaveFailed": "Could not save Polar preferences.",
+  "polarMetricTraining": "Training / workouts",
+  "polarMetricSleep": "Sleep",
+  "polarMetricRecoveryHr": "Recovery / heart rate",
+  "polarMetricProfile": "Profile",
+  "polarMetricBody": "Body measurements",
+  "polarCoachConnectSubtitle": "Connect Polar for {playerName}",
+  "@polarCoachConnectSubtitle": {
+    "placeholders": {
+      "playerName": { "type": "String" }
+    }
+  },
+  "polarCoachConnectConnectedSubtitle": "Polar connected for {playerName}",
+  "@polarCoachConnectConnectedSubtitle": {
+    "placeholders": {
+      "playerName": { "type": "String" }
+    }
+  },
+  "fitbitConnectToggleSubtitle": "Connect your Fitbit account to import activity, heart rate, sleep, and weight data from your Fitbit bracelet via Fitbit cloud",
+  "fitbitConnectToggleConnectedSubtitle": "Fitbit connected — data sync coming in Phase 2",
+  "fitbitConnectSuccess": "Fitbit account connected.",
+  "fitbitConnectFailed": "Fitbit connection failed. Please try again.",
+  "fitbitConnectLaunchFailed": "Could not open the Fitbit sign-in page.",
+  "fitbitConnectAuthRequired": "Sign in to Grinta to connect Fitbit.",
+  "fitbitDisconnectFailed": "Fitbit disconnect failed.",
+  "fitbitCoachVisibilityTitle": "Coach visibility",
+  "fitbitCoachVisibilitySubtitle": "Allow your coach to see this data type",
+  "fitbitCoachVisibilitySaveFailed": "Could not save Fitbit preferences.",
+  "fitbitMetricActivity": "Activity / workouts / steps",
+  "fitbitMetricHeartrate": "Heart rate",
+  "fitbitMetricSleep": "Sleep",
+  "fitbitMetricProfile": "Profile",
+  "fitbitMetricBody": "Weight / body",
+  "fitbitCoachConnectSubtitle": "Connect Fitbit for {playerName}",
+  "@fitbitCoachConnectSubtitle": {
+    "placeholders": {
+      "playerName": { "type": "String" }
+    }
+  },
+  "fitbitCoachConnectConnectedSubtitle": "Fitbit connected for {playerName}",
+  "@fitbitCoachConnectConnectedSubtitle": {
+    "placeholders": {
+      "playerName": { "type": "String" }
+    }
+  },
+  "appleHealthConnectToggleSubtitle": "Connect Apple Fitness to import workouts, heart rate, and active energy from the Health app (iOS only)",
+  "appleHealthConnectToggleConnectedSubtitle": "Apple Fitness connected — full workout sync coming in Phase 2",
+  "appleHealthConnectSuccess": "Apple Fitness connected.",
+  "appleHealthConnectFailed": "Apple Fitness connection failed. Please try again.",
+  "appleHealthConnectDenied": "Health access was denied. Enable it in Settings → Health → Data Access & Devices → Grinta.",
+  "appleHealthConnectAuthRequired": "Sign in to Grinta to connect Apple Fitness.",
+  "appleHealthIosOnlyMessage": "Apple Fitness is available on iPhone only. Health data is read on-device via Apple HealthKit.",
+  "appleHealthDisconnectFailed": "Apple Fitness disconnect failed.",
+  "appleHealthCoachVisibilityTitle": "Coach visibility",
+  "appleHealthCoachVisibilitySubtitle": "Allow your coach to see this data type",
+  "appleHealthCoachVisibilitySaveFailed": "Could not save Apple Fitness preferences.",
+  "appleHealthMetricActivity": "Workouts / activity",
+  "appleHealthMetricHeartrate": "Heart rate",
+  "appleHealthMetricActiveEnergy": "Active energy",
+  "appleHealthMetricSleep": "Sleep",
+  "appleHealthCoachConnectSubtitle": "Connect Apple Fitness for {playerName}",
+  "@appleHealthCoachConnectSubtitle": {
+    "placeholders": {
+      "playerName": { "type": "String" }
+    }
+  },
+  "appleHealthCoachConnectConnectedSubtitle": "Apple Fitness connected for {playerName}",
+  "@appleHealthCoachConnectConnectedSubtitle": {
+    "placeholders": {
+      "playerName": { "type": "String" }
+    }
+  },
+  "googleHealthConnectToggleSubtitle": "Connect Google Fit to import workouts, heart rate, and active energy from Health Connect (Android only)",
+  "googleHealthConnectToggleConnectedSubtitle": "Google Fit / Health Connect connected — full workout sync coming in Phase 2",
+  "googleHealthConnectSuccess": "Google Fit / Health Connect connected.",
+  "googleHealthConnectFailed": "Google Fit / Health Connect connection failed. Please try again.",
+  "googleHealthConnectDenied": "Health Connect access was denied. Enable it in Health Connect → App permissions → Grinta.",
+  "googleHealthConnectAuthRequired": "Sign in to Grinta to connect Google Fit / Health Connect.",
+  "googleHealthAndroidOnlyMessage": "Google Fit / Health Connect is available on Android only. Health data is read on-device via Health Connect.",
+  "googleHealthDisconnectFailed": "Google Fit / Health Connect disconnect failed.",
+  "googleHealthCoachVisibilityTitle": "Coach visibility",
+  "googleHealthCoachVisibilitySubtitle": "Allow your coach to see this data type",
+  "googleHealthCoachVisibilitySaveFailed": "Could not save Google Fit / Health Connect preferences.",
+  "googleHealthMetricActivity": "Workouts / activity",
+  "googleHealthMetricHeartrate": "Heart rate",
+  "googleHealthMetricActiveEnergy": "Active energy",
+  "googleHealthMetricSleep": "Sleep",
+  "googleHealthCoachConnectSubtitle": "Connect Google Fit / Health Connect for {playerName}",
+  "@googleHealthCoachConnectSubtitle": {
+    "placeholders": {
+      "playerName": { "type": "String" }
+    }
+  },
+  "googleHealthCoachConnectConnectedSubtitle": "Google Fit / Health Connect connected for {playerName}",
+  "@googleHealthCoachConnectConnectedSubtitle": {
+    "placeholders": {
+      "playerName": { "type": "String" }
+    }
+  },
   "createTrainingTitle": "New training session",
   "createTrainingTeam": "Team",
   "createTrainingTeamRequired": "Select a team",

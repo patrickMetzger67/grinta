@@ -1,0 +1,20 @@
+rules_version = '2';
+service firebase.storage {
+  match /b/{bucket}/o {
+    // Club logos used in invitation HTML emails (email clients cannot authenticate).
+    match /logoClubs/{allPaths=**} {
+      allow read: if true;
+      allow write: if request.auth != null;
+    }
+
+    // Member photos and cached user avatars (app resolves via getDownloadURL).
+    match /thumbs/{fileName} {
+      allow read, write: if request.auth != null;
+    }
+
+    // Tracker heatmap exports.
+    match /tracker/{fileName} {
+      allow read, write: if request.auth != null;
+    }
+  }
+}

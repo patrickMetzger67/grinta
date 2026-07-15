@@ -7,8 +7,11 @@ import 'package:grinta/l10n/app_localizations.dart';
 import 'package:grinta/model/invitation.dart';
 import 'package:grinta/model/player.dart';
 import 'package:grinta/services/invitationService.dart';
+import 'package:grinta/services/invitation_email_builder.dart';
+import 'package:grinta/services/invitation_email_service.dart';
 import 'package:grinta/services/notification_fcm_service.dart';
 import 'package:grinta/util/player_photo_resolver.dart';
+import 'package:grinta/util/player_profile_validator.dart';
 import 'package:uuid/uuid.dart';
 
 /// Outcome of [MemberInvitationService.notifyOrInviteMember] /
@@ -21,7 +24,7 @@ class MemberInvitationResult {
     this.invitationCode,
     this.invitationId,
     this.invitationCreated = false,
-    this.smsSent = false,
+    this.emailSent = false,
     this.notificationSent = false,
     this.error,
   });
@@ -29,10 +32,10 @@ class MemberInvitationResult {
   /// `true` when the flow finished without error (including intentional skips).
   final bool success;
 
-  /// `true` when no invitation, SMS, or push was attempted.
+  /// `true` when no invitation, email, or push was attempted.
   final bool skipped;
 
-  /// Machine-readable skip reason, e.g. `noPhone`, `linkedAccount`.
+  /// Machine-readable skip reason, e.g. `noEmail`, `linkedAccount`.
   final String? skipReason;
 
   /// Full invitation code (`contactPrefixCode` + 4 digits) when created.
@@ -42,7 +45,7 @@ class MemberInvitationResult {
   final String? invitationId;
 
   final bool invitationCreated;
-  final bool smsSent;
+  final bool emailSent;
   final bool notificationSent;
   final String? error;
 
@@ -63,7 +66,7 @@ class MemberInvitationResult {
       invitationCode: invitationCode,
       invitationId: invitationId,
       invitationCreated: true,
-      smsSent: true,
+      emailSent: true,
     );
   }
 
@@ -85,7 +88,7 @@ class MemberInvitationResult {
       invitationCode: invitationCode,
       invitationId: invitationId,
       invitationCreated: invitationCreated,
-      smsSent: false,
+      emailSent: false,
       error: error,
     );
   }
@@ -95,11 +98,11 @@ class MemberInvitationResult {
     return 'MemberInvitationResult(success=$success skipped=$skipped '
         'skipReason=$skipReason invitationCode=$invitationCode '
         'invitationId=$invitationId invitationCreated=$invitationCreated '
-        'smsSent=$smsSent notificationSent=$notificationSent error=$error)';
+        'emailSent=$emailSent notificationSent=$notificationSent error=$error)';
   }
 }
 
-/// Creates Firestore member invitations, sends onboarding SMS, or notifies linked
+/// Creates Firestore member invitations, sends onboarding email, or notifies linked
 /// app users when they are added to a team.
 ///
 /// Usage after adding or updating a roster member:
@@ -108,23 +111,27 @@ class MemberInvitationResult {
 ///   l10n: context.l10n,
 ///   member: selected,
 ///   memberId: member.keyMember!,
-///   phoneE164: details.phoneE164,
+///   email: details.email ?? '',
 ///   teamId: team.keyTeam,
 ///   seasonId: seasonId,
 ///   teamName: team.name ?? '',
 /// );
-/// if (!result.success && result.invitationCreated && !result.smsSent) {
-///   AppSnackbar.show(context, l10n.memberInvitationSmsFailed, isError: true);
+/// if (!result.success && result.invitationCreated && !result.emailSent) {
+///   AppSnackbar.show(context, l10n.memberInvitationEmailFailed, isError: true);
 /// }
 /// ```
 class MemberInvitationService {
   MemberInvitationService._({
     InvitationService? invitationService,
-  }) : _invitationService = invitationService ?? InvitationService();
+    InvitationEmailService? invitationEmailService,
+  })  : _invitationService = invitationService ?? InvitationService(),
+        _invitationEmailService =
+            invitationEmailService ?? InvitationEmailService();
 
   static final MemberInvitationService instance = MemberInvitationService._();
 
   final InvitationService _invitationService;
+  final InvitationEmailService _invitationEmailService;
 
   static final Random _random = Random.secure();
   static const Uuid _uuid = Uuid();
@@ -140,15 +147,15 @@ class MemberInvitationService {
     return '${config.contactPrefixCode}${generate4DigitCode()}';
   }
 
-  /// Linked app account → push notification only; otherwise invitation + SMS.
+  /// Linked app account → push notification only; otherwise invitation + email.
   ///
   /// When [notifyIfLinked] is `false` and the member is linked, the flow is
-  /// skipped (e.g. phone update on an onboarded member).
+  /// skipped (e.g. email update on an onboarded member).
   Future<MemberInvitationResult> notifyOrInviteMember({
     required AppLocalizations l10n,
     required Player member,
     required String memberId,
-    required String phoneE164,
+    required String email,
     required String teamId,
     String? seasonId,
     required String teamName,
@@ -176,7 +183,7 @@ class MemberInvitationService {
     return inviteMember(
       l10n: l10n,
       memberId: memberId,
-      phoneE164: phoneE164,
+      email: email,
       type: type,
       teamId: teamId,
       seasonId: seasonId,
@@ -253,28 +260,36 @@ class MemberInvitationService {
     return MemberInvitationResult.notified();
   }
 
-  /// Creates a Firestore invitation and sends the onboarding SMS.
+  /// Creates a Firestore invitation and queues the onboarding email.
   ///
-  /// Skips when [phoneE164] is empty. Fails when the current user is not signed in.
+  /// Skips when [email] is empty or invalid. Fails when the current user is not signed in.
   Future<MemberInvitationResult> inviteMember({
     required AppLocalizations l10n,
     required String memberId,
-    required String phoneE164,
+    required String email,
     int type = invitationTypeMember,
     String? teamId,
     String? seasonId,
   }) async {
     debugPrint(
       'MemberInvitationService.inviteMember start memberId=$memberId '
-      'phoneE164=$phoneE164 teamId=$teamId seasonId=$seasonId',
+      'email=$email teamId=$teamId seasonId=$seasonId',
     );
 
-    final String phone = phoneE164.trim();
-    if (phone.isEmpty) {
+    final String normalizedEmail = email.trim();
+    if (normalizedEmail.isEmpty) {
       debugPrint(
-        'MemberInvitationService.inviteMember skipped: noPhone memberId=$memberId',
+        'MemberInvitationService.inviteMember skipped: noEmail memberId=$memberId',
       );
-      return MemberInvitationResult.skipped('noPhone');
+      return MemberInvitationResult.skipped('noEmail');
+    }
+
+    if (!isValidEmailFormat(normalizedEmail)) {
+      debugPrint(
+        'MemberInvitationService.inviteMember skipped: invalidEmail '
+        'memberId=$memberId email=$normalizedEmail',
+      );
+      return MemberInvitationResult.skipped('invalidEmail');
     }
 
     final String? uid = FirebaseAuth.instance.currentUser?.uid;
@@ -290,7 +305,6 @@ class MemberInvitationService {
     }
 
     final InvitationRuntimeConfig config = await InvitationConfig.resolve();
-    const String invitationClubId = InvitationConfig.grintaInvitationClubId;
     final String code =
         '${config.contactPrefixCode}${generate4DigitCode()}';
     final String invitationId = _uuid.v4();
@@ -324,47 +338,64 @@ class MemberInvitationService {
       );
     }
 
-    final String textMessage = l10n.invitationSmsMessage(
-      config.appDisplayName,
-      code,
-      config.appleStoreUrl,
-      config.googlePlayUrl,
+    final InvitationEmailContent emailContent = InvitationEmailBuilder.build(
+      l10n: l10n,
+      config: config,
+      invitationCode: code,
     );
 
     debugPrint(
-      'MemberInvitationService.inviteMember sending SMS memberId=$memberId '
+      'MemberInvitationService.inviteMember sending email memberId=$memberId '
       'invitationId=$invitationId',
     );
 
-    final String? smsError =
-        await NotificationFCMService.instance.sendSmsFromFlutter(
-      toNumber: phone,
-      textMessage: textMessage,
-      clubId: invitationClubId,
+    final String? emailError = await _invitationEmailService.send(
+      toEmail: normalizedEmail,
+      subject: emailContent.subject,
+      text: emailContent.text,
+      html: emailContent.html,
     );
 
-    if (smsError != null) {
+    if (emailError != null) {
       debugPrint(
-        'MemberInvitationService.inviteMember SMS failed memberId=$memberId '
-        'invitationId=$invitationId clubId=$invitationClubId phone=$phone '
-        'error=$smsError',
+        'MemberInvitationService.inviteMember email failed memberId=$memberId '
+        'invitationId=$invitationId email=$normalizedEmail error=$emailError',
       );
       return MemberInvitationResult.failed(
         invitationCode: code,
         invitationCreated: true,
         invitationId: invitationId,
-        error: smsError,
+        error: emailError,
       );
     }
 
     debugPrint(
       'MemberInvitationService.inviteMember complete memberId=$memberId '
-      'invitationId=$invitationId smsSent=true',
+      'invitationId=$invitationId emailSent=true',
     );
 
     return MemberInvitationResult.sent(
       invitationCode: code,
       invitationId: invitationId,
+    );
+  }
+
+  /// Re-sends the onboarding invitation email for an unlinked roster member.
+  Future<MemberInvitationResult> resendInvitation({
+    required AppLocalizations l10n,
+    required String memberId,
+    required String email,
+    required String teamId,
+    String? seasonId,
+    int type = invitationTypeMember,
+  }) {
+    return inviteMember(
+      l10n: l10n,
+      memberId: memberId,
+      email: email,
+      type: type,
+      teamId: teamId,
+      seasonId: seasonId,
     );
   }
 }
