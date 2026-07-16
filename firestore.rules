@@ -101,11 +101,14 @@ service cloud.firestore {
 
       allow create: if request.auth != null
         && request.auth.uid == userId
-        && !('isRoot' in request.resource.data);
+        && !('isRoot' in request.resource.data)
+        && !('subscriptionAccess' in request.resource.data);
 
+      // isRoot + subscriptionAccess are server/admin only (Cloud Functions).
       allow update: if request.auth != null
         && request.auth.uid == userId
-        && !request.resource.data.diff(resource.data).affectedKeys().hasAny(['isRoot']);
+        && !request.resource.data.diff(resource.data).affectedKeys()
+          .hasAny(['isRoot', 'subscriptionAccess']);
 
       allow delete: if request.auth != null && request.auth.uid == userId;
 

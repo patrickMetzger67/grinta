@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/scheduler.dart';
@@ -7,6 +8,9 @@ import 'package:flutter/services.dart';
 import 'package:flutter/widgets.dart' show AppLifecycleState, WidgetsBinding, WidgetsBindingObserver;
 import 'package:grinta/config/subscription_config.dart';
 import 'package:grinta/model/subscription_state.dart';
+import 'package:grinta/services/subscription_entitlement_cache.dart';
+import 'package:grinta/services/userService.dart' show UserDocumentFields, UserService;
+import 'package:grinta/services/user_root_service.dart';
 import 'package:purchases_flutter/purchases_flutter.dart';
 
 /// RevenueCat-backed subscription state, exposed app-wide via [ChangeNotifier].
@@ -64,11 +68,17 @@ class SubscriptionService extends ChangeNotifier {
   /// True when RevenueCat reports at least one non-expired paid entitlement.
   bool get isSubscribed => _state.isSubscribed;
 
-  /// Active RevenueCat entitlement (store, web, or promotional grant), not trial-only.
-  bool get hasActivePaidSubscription => _state.activeEntitlements.isNotEmpty;
+  /// Active paid entitlement (RevenueCat / durable cache), or platform admin.
+  ///
+  /// [UserRootService.isRoot] always grants full paid access so admins are never
+  /// locked out by a RevenueCat identity glitch.
+  bool get hasActivePaidSubscription =>
+      UserRootService.instance.isRoot || _state.activeEntitlements.isNotEmpty;
 
-  CoachTier? get coachTier => _state.coachTier;
-  bool get hasPlayerSubscription => _state.hasPlayerSubscription;
+  CoachTier? get coachTier =>
+      UserRootService.instance.isRoot ? CoachTier.pro : _state.coachTier;
+  bool get hasPlayerSubscription =>
+      UserRootService.instance.isRoot || _state.hasPlayerSubscription;
   String? get activeProductId => _state.activeProductId;
   SubscriptionBillingPeriod? get billingPeriod => _state.billingPeriod;
   DateTime? get subscriptionExpiresAt => _state.subscriptionExpiresAt;
@@ -134,8 +144,19 @@ class SubscriptionService extends ChangeNotifier {
   }
 
   Future<void> _initialize() async {
+    // Restore last-known access before talking to RevenueCat so paywalls do not
+    // flash (and so isRoot / promo / prior purchase still work if RC fails).
+    final uidBeforeSdk = FirebaseAuth.instance.currentUser?.uid;
+    if (uidBeforeSdk != null) {
+      await _hydrateFromDurableSources(uidBeforeSdk);
+    }
+
     if (!isPurchaseAvailable) {
-      _state = SubscriptionState.unavailable(error: _unavailableReason());
+      if (_state.activeEntitlements.isEmpty) {
+        _state = SubscriptionState.unavailable(error: _unavailableReason());
+      } else {
+        _state = _state.copyWith(isLoading: false, isInitialized: true);
+      }
       notifyListeners();
       return;
     }
@@ -183,11 +204,20 @@ class SubscriptionService extends ChangeNotifier {
         'SubscriptionService: Purchases.configure FAILED '
         '($platform, key=$prefix…): $e\n$st',
       );
-      _state = SubscriptionState.unavailable(
-        error: 'RevenueCat configure failed ($platform): $e. '
-            'Verify ${_apiKeyEnvHint()} in dart_defines.json and run with '
-            '--dart-define-from-file=dart_defines.json.',
-      );
+      // Keep durable entitlements when RC configure fails — never lock payers out.
+      if (_state.activeEntitlements.isEmpty) {
+        _state = SubscriptionState.unavailable(
+          error: 'RevenueCat configure failed ($platform): $e. '
+              'Verify ${_apiKeyEnvHint()} in dart_defines.json and run with '
+              '--dart-define-from-file=dart_defines.json.',
+        );
+      } else {
+        _state = _state.copyWith(
+          isLoading: false,
+          isInitialized: true,
+          lastError: 'RevenueCat configure failed ($platform): $e',
+        );
+      }
       notifyListeners();
     }
   }
@@ -246,6 +276,9 @@ class SubscriptionService extends ChangeNotifier {
       return;
     }
 
+    // Restore durable access for this Firebase user before RC round-trips.
+    await _hydrateFromDurableSources(uid);
+
     if (_sdkConfigured) {
       await _logInRevenueCat(uid);
     }
@@ -256,9 +289,20 @@ class SubscriptionService extends ChangeNotifier {
     if (!_sdkConfigured) return;
 
     final uid = FirebaseAuth.instance.currentUser?.uid;
-    if (uid == null || uid == _loggedInUid) return;
+    if (uid == null) return;
 
-    await _logInRevenueCat(uid);
+    if (uid != _loggedInUid) {
+      await _logInRevenueCat(uid);
+      return;
+    }
+
+    // Already linked but empty: recover (web Stripe / promo / prior glitch).
+    if (_state.activeEntitlements.isEmpty) {
+      await _fetchCustomerInfo();
+      if (_state.activeEntitlements.isEmpty) {
+        await _hydrateFromDurableSources(uid);
+      }
+    }
   }
 
   static bool _isAnonymousRevenueCatUser(String appUserId) =>
@@ -472,6 +516,22 @@ class SubscriptionService extends ChangeNotifier {
     }
 
     final active = _extractActiveEntitlements(info);
+
+    // Empty RC must not wipe a durable grant (promo / prior purchase cache).
+    if (active.isEmpty) {
+      if (firebaseUid != null) {
+        unawaited(_handleEmptyRevenueCatEntitlements(firebaseUid));
+        return;
+      }
+      _state = SubscriptionState(
+        isLoading: false,
+        isInitialized: true,
+        managementUrl: info.managementURL,
+      );
+      notifyListeners();
+      return;
+    }
+
     final coachTier = _resolveCoachTier(active);
     final hasPlayer = active.contains(SubscriptionEntitlementIds.player);
     final primaryEntitlement = _primaryEntitlement(info, active);
@@ -495,6 +555,17 @@ class SubscriptionService extends ChangeNotifier {
       managementUrl: info.managementURL,
     );
 
+    if (firebaseUid != null && active.isNotEmpty) {
+      unawaited(
+        SubscriptionEntitlementCache.saveForUid(
+          uid: firebaseUid,
+          entitlements: active,
+          productId: productId,
+          expiresAt: expiresAt,
+        ),
+      );
+    }
+
     if (kDebugMode) {
       final rcActive = info.entitlements.active.keys.toList();
       debugPrint(
@@ -507,6 +578,146 @@ class SubscriptionService extends ChangeNotifier {
     }
 
     notifyListeners();
+  }
+
+  /// Restores access from device cache then Firestore `subscriptionAccess`.
+  Future<void> _hydrateFromDurableSources(String uid) async {
+    if (_state.activeEntitlements.isNotEmpty) return;
+
+    final cached = await SubscriptionEntitlementCache.loadForUid(uid);
+    if (cached != null && !cached.isExpired) {
+      _applyDurableEntitlements(cached, source: 'local-cache');
+      return;
+    }
+
+    final fromFirestore = await _loadFirestoreSubscriptionAccess(uid);
+    if (fromFirestore != null && !fromFirestore.isExpired) {
+      _applyDurableEntitlements(fromFirestore, source: 'firestore');
+      await SubscriptionEntitlementCache.saveForUid(
+        uid: uid,
+        entitlements: fromFirestore.entitlements,
+        productId: fromFirestore.activeProductId,
+        expiresAt: fromFirestore.expiresAt,
+      );
+    }
+  }
+
+  Future<void> _handleEmptyRevenueCatEntitlements(String uid) async {
+    // A flaky empty RC response must never revoke a non-expired local grant.
+    final cached = await SubscriptionEntitlementCache.loadForUid(uid);
+    if (cached != null && !cached.isExpired) {
+      _applyDurableEntitlements(cached, source: 'local-cache-on-empty-rc');
+      return;
+    }
+
+    final expiresAt = _state.subscriptionExpiresAt;
+    if (_state.activeEntitlements.isNotEmpty &&
+        (expiresAt == null || expiresAt.isAfter(DateTime.now()))) {
+      _state = _state.copyWith(isLoading: false, isInitialized: true);
+      notifyListeners();
+      return;
+    }
+
+    final fromFirestore = await _loadFirestoreSubscriptionAccess(uid);
+    if (fromFirestore != null && !fromFirestore.isExpired) {
+      _applyDurableEntitlements(fromFirestore, source: 'firestore-after-empty-rc');
+      await SubscriptionEntitlementCache.saveForUid(
+        uid: uid,
+        entitlements: fromFirestore.entitlements,
+        productId: fromFirestore.activeProductId,
+        expiresAt: fromFirestore.expiresAt,
+      );
+      return;
+    }
+
+    await SubscriptionEntitlementCache.saveForUid(
+      uid: uid,
+      entitlements: const <String>{},
+    );
+    _state = const SubscriptionState(isLoading: false, isInitialized: true);
+    notifyListeners();
+  }
+
+  void _applyDurableEntitlements(
+    CachedSubscriptionEntitlements cached, {
+    required String source,
+  }) {
+    _state = SubscriptionState(
+      isLoading: false,
+      isInitialized: true,
+      activeEntitlements: cached.entitlements,
+      coachTier: cached.coachTier,
+      hasPlayerSubscription: cached.hasPlayerSubscription,
+      activeProductId: cached.activeProductId,
+      subscriptionExpiresAt: cached.expiresAt,
+    );
+    if (kDebugMode) {
+      debugPrint(
+        'SubscriptionService: hydrated entitlements from $source '
+        'uid=${cached.uid} '
+        'active=${cached.entitlements.join(', ')}',
+      );
+    }
+    notifyListeners();
+  }
+
+  Future<CachedSubscriptionEntitlements?> _loadFirestoreSubscriptionAccess(
+    String uid,
+  ) async {
+    try {
+      final doc = await FirebaseFirestore.instance
+          .collection(UserService.collectionName)
+          .doc(uid)
+          .get();
+      final raw = doc.data()?[UserDocumentFields.subscriptionAccess];
+      if (raw is! Map) return null;
+
+      final entitlements = <String>{};
+      final list = raw['entitlements'];
+      if (list is List) {
+        for (final entry in list) {
+          final id = entry?.toString().trim() ?? '';
+          if (id.isNotEmpty) entitlements.add(id);
+        }
+      }
+      if (entitlements.isEmpty) return null;
+
+      DateTime? expiresAt;
+      final expiresRaw = raw['expiresAt'];
+      if (expiresRaw is Timestamp) {
+        expiresAt = expiresRaw.toDate();
+      } else if (expiresRaw is DateTime) {
+        expiresAt = expiresRaw;
+      } else if (expiresRaw is String) {
+        expiresAt = DateTime.tryParse(expiresRaw);
+      }
+      if (expiresAt != null && !expiresAt.isAfter(DateTime.now())) {
+        return null;
+      }
+
+      CoachTier? coachTier;
+      for (final id in SubscriptionEntitlementIds.coachTiersOrdered) {
+        if (entitlements.contains(id)) {
+          coachTier = CoachTier.fromEntitlementId(id);
+          break;
+        }
+      }
+
+      return CachedSubscriptionEntitlements(
+        uid: uid,
+        entitlements: entitlements,
+        coachTier: coachTier,
+        hasPlayerSubscription:
+            entitlements.contains(SubscriptionEntitlementIds.player),
+        activeProductId: raw['productId']?.toString(),
+        expiresAt: expiresAt,
+      );
+    } catch (e, st) {
+      debugPrint(
+        'SubscriptionService: Firestore subscriptionAccess read failed: $e\n$st',
+      );
+      return null;
+    }
   }
 
   Set<String> _extractActiveEntitlements(CustomerInfo info) {

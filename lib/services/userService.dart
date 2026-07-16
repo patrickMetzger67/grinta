@@ -8,6 +8,8 @@ abstract final class UserDocumentFields {
   static const createdAt = 'createdAt';
   static const trialEndsAt = 'trialEndsAt';
   static const isRoot = 'isRoot';
+  /// Server-written paid access mirror (promo / future webhooks). Clients read only.
+  static const subscriptionAccess = 'subscriptionAccess';
 }
 
 /// Free trial length applied on first account creation.

@@ -13,6 +13,7 @@ import 'package:grinta/services/effectivesService.dart';
 import 'package:grinta/services/playerService.dart';
 import 'package:grinta/services/subscription_service.dart';
 import 'package:grinta/services/teamService.dart';
+import 'package:grinta/services/user_root_service.dart';
 import 'package:grinta/services/user_trial_service.dart';
 
 /// Loads tier caps from Firestore and resolves the active profile for the user.
@@ -387,6 +388,10 @@ class SubscriptionLimitsService {
     SubscriptionService? subscription,
   }) async {
     await ensureInitialized();
+    await UserRootService.instance.ensureInitialized();
+    if (UserRootService.instance.isRoot) {
+      return;
+    }
     await (subscription ?? SubscriptionService.instance).refreshForActiveSession();
 
     final sub = subscription ?? SubscriptionService.instance;
@@ -414,7 +419,13 @@ class SubscriptionLimitsService {
     }
   }
 
+  static const int _unlimitedForRoot = 1000000;
+
   int _maxProfilesForUserSync(SubscriptionService sub) {
+    if (UserRootService.instance.isRoot) {
+      return _unlimitedForRoot;
+    }
+
     final coachTier = sub.coachTier;
     if (coachTier != null) {
       return limitsForTier(
@@ -444,6 +455,10 @@ class SubscriptionLimitsService {
     SubscriptionService sub, {
     UserTrialService? trial,
   }) {
+    if (UserRootService.instance.isRoot) {
+      return _unlimitedForRoot;
+    }
+
     final coachTier = sub.coachTier;
     if (coachTier != null) {
       return limitsForTier(
@@ -476,6 +491,10 @@ class SubscriptionLimitsService {
     UserTrialService? trial,
   }) async {
     await ensureInitialized();
+    await UserRootService.instance.ensureInitialized();
+    if (UserRootService.instance.isRoot) {
+      return;
+    }
     await (subscription ?? SubscriptionService.instance).refreshForActiveSession();
     await (trial ?? UserTrialService.instance).ensureInitialized();
 
@@ -520,6 +539,10 @@ class SubscriptionLimitsService {
     UserTrialService? trial,
   }) async {
     await ensureInitialized();
+    await UserRootService.instance.ensureInitialized();
+    if (UserRootService.instance.isRoot) {
+      return;
+    }
     await (subscription ?? SubscriptionService.instance).refreshForActiveSession();
     await (trial ?? UserTrialService.instance).ensureInitialized();
 

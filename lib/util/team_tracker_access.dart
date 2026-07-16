@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:grinta/core/extensions/l10n_extension.dart';
 import 'package:grinta/model/subscription_state.dart';
 import 'package:grinta/services/subscription_service.dart';
+import 'package:grinta/services/user_root_service.dart';
 import 'package:grinta/util/app_theme.dart';
 import 'package:grinta/widget/subscription_paywall.dart';
 
@@ -11,6 +12,9 @@ class TeamTrackerAccess {
 
   /// Whether the signed-in user has an active Coach Pro (or higher) entitlement.
   static bool hasCoachProTrackerAccess() {
+    if (UserRootService.instance.isRoot) {
+      return true;
+    }
     final CoachTier? tier = SubscriptionService.instance.coachTier;
     return tier?.satisfies(CoachTier.pro) ?? false;
   }

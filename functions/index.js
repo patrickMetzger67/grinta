@@ -566,6 +566,21 @@ exports.redeemPromoCode = onCall(
         uid,
         redeemedAt: FieldValue.serverTimestamp(),
       });
+
+      // Durable app-side mirror so access survives RevenueCat client glitches.
+      const userRef = db.collection('users').doc(uid);
+      const access = {
+        entitlements: [entitlement],
+        productId: null,
+        source: 'promo',
+        updatedAt: FieldValue.serverTimestamp(),
+      };
+      if (grant.expiresAt) {
+        access.expiresAt = Timestamp.fromDate(new Date(grant.expiresAt));
+      } else {
+        access.expiresAt = null;
+      }
+      transaction.set(userRef, {subscriptionAccess: access}, {merge: true});
     });
 
     console.log('redeemPromoCode success', {

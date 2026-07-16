@@ -24,14 +24,24 @@ class UserRootService extends ChangeNotifier {
   void _onAuthChanged(User? user) {
     final uid = user?.uid;
     if (uid == _loadedUid) return;
+
+    // Sign-out: clear immediately.
+    if (uid == null) {
+      _isRoot = false;
+      _initialized = true;
+      _initFuture = null;
+      _loadedUid = null;
+      notifyListeners();
+      return;
+    }
+
+    // Drop previous user's privilege immediately (security) but do not notify
+    // yet — a premature notify(false) opens paywalls while Firestore loads.
     _isRoot = false;
     _initialized = false;
     _initFuture = null;
     _loadedUid = null;
-    notifyListeners();
-    if (uid != null) {
-      unawaited(ensureInitialized());
-    }
+    unawaited(ensureInitialized());
   }
 
   Future<void> ensureInitialized() async {
