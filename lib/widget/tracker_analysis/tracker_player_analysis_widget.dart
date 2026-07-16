@@ -376,7 +376,7 @@ class _TrackerPlayerAnalysisContentState
         physics: const NeverScrollableScrollPhysics(),
         crossAxisSpacing: 10,
         mainAxisSpacing: 10,
-        childAspectRatio: compact ? 1.35 : 1.55,
+        childAspectRatio: compact ? 1.15 : 1.25,
         children: [
           _MetricTile(
             icon: Icons.route_rounded,
