@@ -237,30 +237,55 @@ async function resolvePromoCodeRef(db, normalizedCode) {
   return null;
 }
 
+/** Client maps [errorCode] in details to localized UI strings. */
+function throwPromoError(status, errorCode, message) {
+  throw new HttpsError(status, message, { errorCode });
+}
+
 function validatePromoData(data) {
   if (data.active === false) {
-    throw new HttpsError('failed-precondition', 'Promo code is inactive.');
+    throwPromoError(
+      'failed-precondition',
+      'PROMO_INACTIVE',
+      'Promo code is inactive.',
+    );
   }
 
   const expiresAt = readTimestamp(data.expiresAt);
   if (expiresAt && expiresAt.getTime() < Date.now()) {
-    throw new HttpsError('failed-precondition', 'Promo code has expired.');
+    throwPromoError(
+      'failed-precondition',
+      'PROMO_EXPIRED',
+      'Promo code has expired.',
+    );
   }
 
   const maxUses = Number(data.maxUses ?? 0);
   const usedCount = Number(data.usedCount ?? 0);
   if (maxUses < 1 || usedCount >= maxUses) {
-    throw new HttpsError('resource-exhausted', 'Promo code is exhausted.');
+    throwPromoError(
+      'resource-exhausted',
+      'PROMO_EXHAUSTED',
+      'Promo code is exhausted.',
+    );
   }
 
   const entitlement = (data.entitlement ?? '').toString();
   if (!VALID_ENTITLEMENTS.has(entitlement)) {
-    throw new HttpsError('failed-precondition', 'Invalid promo entitlement.');
+    throwPromoError(
+      'failed-precondition',
+      'PROMO_INVALID',
+      'Invalid promo entitlement.',
+    );
   }
 
   const durationDays = Number(data.durationDays ?? 0);
   if (durationDays < 1) {
-    throw new HttpsError('failed-precondition', 'Invalid promo duration.');
+    throwPromoError(
+      'failed-precondition',
+      'PROMO_INVALID',
+      'Invalid promo duration.',
+    );
   }
 
   return { entitlement, durationDays, maxUses, usedCount };
@@ -457,12 +482,20 @@ exports.redeemPromoCode = onCall(
   },
   async (request) => {
     if (!request.auth) {
-      throw new HttpsError('unauthenticated', 'Authentication required.');
+      throwPromoError(
+        'unauthenticated',
+        'PROMO_UNAUTHENTICATED',
+        'Authentication required.',
+      );
     }
 
     const code = normalizePromoCode(request.data?.code);
     if (!code || code.length < 4) {
-      throw new HttpsError('invalid-argument', 'code is required.');
+      throwPromoError(
+        'invalid-argument',
+        'PROMO_EMPTY',
+        'code is required.',
+      );
     }
 
     const db = getFirestore();
@@ -470,7 +503,11 @@ exports.redeemPromoCode = onCall(
 
     const promoRef = await resolvePromoCodeRef(db, code);
     if (!promoRef) {
-      throw new HttpsError('not-found', `Promo code "${code}" not found.`);
+      throwPromoError(
+        'not-found',
+        'PROMO_NOT_FOUND',
+        `Promo code "${code}" not found.`,
+      );
     }
 
     const promoSnap = await promoRef.get();
@@ -481,8 +518,9 @@ exports.redeemPromoCode = onCall(
     if (teamId) {
       const belongsToTeam = await userBelongsToTeam(db, uid, teamId);
       if (!belongsToTeam) {
-        throw new HttpsError(
+        throwPromoError(
           'permission-denied',
+          'PROMO_TEAM_MISMATCH',
           'Promo code is restricted to a specific club.',
         );
       }
@@ -491,8 +529,9 @@ exports.redeemPromoCode = onCall(
     const redemptionRef = promoRef.collection('redemptions').doc(uid);
     const redemptionSnap = await redemptionRef.get();
     if (redemptionSnap.exists) {
-      throw new HttpsError(
+      throwPromoError(
         'failed-precondition',
+        'ALREADY_REDEEMED',
         'You have already redeemed this promo code.',
       );
     }
@@ -502,15 +541,20 @@ exports.redeemPromoCode = onCall(
     await db.runTransaction(async (transaction) => {
       const latestPromoSnap = await transaction.get(promoRef);
       if (!latestPromoSnap.exists) {
-        throw new HttpsError('not-found', `Promo code "${code}" not found.`);
+        throwPromoError(
+          'not-found',
+          'PROMO_NOT_FOUND',
+          `Promo code "${code}" not found.`,
+        );
       }
 
       validatePromoData(latestPromoSnap.data() ?? {});
 
       const latestRedemptionSnap = await transaction.get(redemptionRef);
       if (latestRedemptionSnap.exists) {
-        throw new HttpsError(
+        throwPromoError(
           'failed-precondition',
+          'ALREADY_REDEEMED',
           'You have already redeemed this promo code.',
         );
       }

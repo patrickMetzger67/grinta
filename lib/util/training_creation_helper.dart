@@ -100,15 +100,89 @@ bool canManageTraining(Training training, AppSession session) {
   );
 }
 
+/// True when [training] belongs to a recurring series.
+bool isTrainingRecurrent(Training training) {
+  if (training.isReccurent != true) return false;
+  final String code = training.reccurentCode?.trim() ?? '';
+  return code.isNotEmpty;
+}
+
+/// Weekdays stored on [training] ([DateTime.weekday] values).
+Set<int> recurrentWeekdaysFromTraining(Training training) {
+  final Set<int> days = <int>{};
+  for (final dynamic raw in training.reccurentDay ?? const <dynamic>[]) {
+    if (raw is int) {
+      days.add(raw);
+    } else if (raw is num) {
+      days.add(raw.toInt());
+    }
+  }
+  return days;
+}
+
+/// Scope chosen when deleting a training (possibly recurring).
+enum DeleteTrainingScope {
+  cancelled,
+  thisOccurrence,
+  allOccurrences,
+}
+
 /// Shows a confirmation dialog before deleting a manually managed training.
-Future<bool> confirmDeleteTraining(
+///
+/// For recurring trainings, offers deleting this occurrence only or the whole series.
+Future<DeleteTrainingScope> confirmDeleteTraining(
   BuildContext context, {
   required Training training,
 }) async {
   final colors = context.appColors;
   final l10n = context.l10n;
 
-  final confirmed = await showDialog<bool>(
+  if (isTrainingRecurrent(training)) {
+    final DeleteTrainingScope? scope = await showDialog<DeleteTrainingScope>(
+      context: context,
+      useRootNavigator: true,
+      builder: (dialogContext) {
+        final NavigatorState nav =
+            Navigator.of(dialogContext, rootNavigator: true);
+        return AlertDialog(
+          title: Text(l10n.trainingDeleteRecurrentTitle),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Text(l10n.trainingDeleteRecurrentMessage),
+              const SizedBox(height: 20),
+              FilledButton(
+                style: FilledButton.styleFrom(
+                  backgroundColor: colors.danger,
+                  foregroundColor: Colors.white,
+                ),
+                onPressed: () => nav.pop(DeleteTrainingScope.allOccurrences),
+                child: Text(l10n.trainingDeleteAllOccurrences),
+              ),
+              const SizedBox(height: 8),
+              OutlinedButton(
+                onPressed: () => nav.pop(DeleteTrainingScope.thisOccurrence),
+                child: Text(l10n.trainingDeleteThisOccurrence),
+              ),
+              const SizedBox(height: 8),
+              TextButton(
+                onPressed: () => nav.pop(DeleteTrainingScope.cancelled),
+                child: Text(l10n.actionCancel),
+              ),
+            ],
+          ),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+            side: BorderSide(color: colors.border),
+          ),
+        );
+      },
+    );
+    return scope ?? DeleteTrainingScope.cancelled;
+  }
+
+  final bool? confirmed = await showDialog<bool>(
     context: context,
     useRootNavigator: true,
     builder: (dialogContext) {
@@ -141,10 +215,15 @@ Future<bool> confirmDeleteTraining(
     },
   );
 
-  return confirmed == true;
+  return confirmed == true
+      ? DeleteTrainingScope.thisOccurrence
+      : DeleteTrainingScope.cancelled;
 }
 
 /// Deletes a training after confirmation and shows a snackbar on the root navigator.
+///
+/// When the training is recurring and the user chooses to delete all occurrences,
+/// every training sharing the same [Training.reccurentCode] is removed.
 Future<bool> deleteManagedTraining(
   BuildContext context, {
   required Training training,
@@ -155,8 +234,9 @@ Future<bool> deleteManagedTraining(
     return false;
   }
 
-  final confirmed = await confirmDeleteTraining(context, training: training);
-  if (!confirmed || !context.mounted) {
+  final DeleteTrainingScope scope =
+      await confirmDeleteTraining(context, training: training);
+  if (scope == DeleteTrainingScope.cancelled || !context.mounted) {
     return false;
   }
 
@@ -164,7 +244,22 @@ Future<bool> deleteManagedTraining(
   final String errorMessage = context.l10n.trainingDeleteError;
 
   try {
-    await TrainingService().deleteTraining(trainingId);
+    final TrainingService service = TrainingService();
+    if (scope == DeleteTrainingScope.allOccurrences) {
+      final String code = training.reccurentCode!.trim();
+      final List<Training> series =
+          await service.getTrainingsByReccurentCode(code);
+      final List<String> ids = series
+          .map((Training t) => t.docId?.trim() ?? '')
+          .where((String id) => id.isNotEmpty)
+          .toList(growable: true);
+      if (ids.isEmpty) {
+        ids.add(trainingId);
+      }
+      await service.deleteTrainings(ids);
+    } else {
+      await service.deleteTraining(trainingId);
+    }
     onDeleted?.call();
 
     final BuildContext? rootContext = appNavigatorKey.currentContext;
@@ -282,6 +377,8 @@ Set<String> managerIdsFromTeam(Team team) {
 /// All calendar dates between [start] and [end] (inclusive) whose weekday is in [weekdays].
 ///
 /// Weekdays follow [DateTime.weekday] (Monday = 1, Sunday = 7).
+/// Dates whose weekday is not selected are never included — including [start]
+/// itself when it falls on a non-selected day.
 List<DateTime> generateRecurrentTrainingDates({
   required DateTime start,
   required DateTime end,
@@ -396,6 +493,8 @@ List<Training> buildTrainingsForCreation({
       FirebaseFirestore.instance.collection(kTrainingCollectionName).doc().id;
   final DateTime rangeStart = DateUtils.dateOnly(recurrentFrom ?? startDate);
   final DateTime rangeEnd = DateUtils.dateOnly(recurrentTo ?? startDate);
+  // Only selected weekdays — do not force-include [startDate] when its weekday
+  // is outside [recurrentWeekdays] (first occurrence is the next match).
   final List<DateTime> dates = generateRecurrentTrainingDates(
     start: rangeStart,
     end: rangeEnd,
@@ -434,6 +533,11 @@ Training buildTrainingForUpdate({
   required Season season,
   required bool withTracker,
   String? ownerId,
+  bool? isRecurrent,
+  String? recurrentCode,
+  List<int>? recurrentWeekdays,
+  DateTime? recurrentStart,
+  DateTime? recurrentEnd,
 }) {
   final DateTime dateTime = DateTime(
     date.year,
@@ -444,6 +548,21 @@ Training buildTrainingForUpdate({
   );
   final DateTime endDateTime =
       dateTime.add(Duration(minutes: durationMinutes));
+
+  final bool recurrent = isRecurrent ?? (existing.isReccurent == true);
+  final String code = recurrent
+      ? (recurrentCode?.trim().isNotEmpty == true
+          ? recurrentCode!.trim()
+          : (existing.reccurentCode?.trim() ?? ''))
+      : '';
+  final List<int> weekdays;
+  if (recurrent) {
+    weekdays = List<int>.from(
+      recurrentWeekdays ?? recurrentWeekdaysFromTraining(existing),
+    )..sort();
+  } else {
+    weekdays = const <int>[];
+  }
 
   final Training updated = Training(
     docId: existing.docId,
@@ -474,11 +593,15 @@ Training buildTrainingForUpdate({
     athleticDominant: existing.athleticDominant,
     tacticalPrinciple: existing.tacticalPrinciple,
     version: existing.version ?? '2',
-    isReccurent: existing.isReccurent,
-    reccurentCode: existing.reccurentCode,
-    reccurentDay: existing.reccurentDay,
-    reccurentStart: existing.reccurentStart,
-    reccurentEnd: existing.reccurentEnd,
+    isReccurent: recurrent,
+    reccurentCode: code,
+    reccurentDay: weekdays,
+    reccurentStart: recurrent && recurrentStart != null
+        ? Timestamp.fromDate(DateUtils.dateOnly(recurrentStart))
+        : (recurrent ? existing.reccurentStart : null),
+    reccurentEnd: recurrent && recurrentEnd != null
+        ? Timestamp.fromDate(DateUtils.dateOnly(recurrentEnd))
+        : (recurrent ? existing.reccurentEnd : null),
     withTracker: withTracker,
     ownerId: withTracker ? (ownerId ?? '') : '',
     isTrackerDataUploaded: existing.isTrackerDataUploaded,
@@ -491,6 +614,162 @@ Training buildTrainingForUpdate({
   );
 
   return updated;
+}
+
+String _dateKey(DateTime date) {
+  final DateTime d = DateUtils.dateOnly(date);
+  return '${d.year}-${d.month}-${d.day}';
+}
+
+DateTime? _trainingDateOnly(Training training) {
+  return training.dateTime?.toDate() != null
+      ? DateUtils.dateOnly(training.dateTime!.toDate())
+      : parseTrainingDateTg(training.dateTg);
+}
+
+/// Saves an edited training; when recurrence is enabled, syncs the whole series.
+Future<void> saveTrainingEdit({
+  required TrainingService service,
+  required Training existing,
+  required DateTime date,
+  required TimeOfDay time,
+  required int durationMinutes,
+  required Team team,
+  required Season season,
+  required bool withTracker,
+  String? ownerId,
+  required bool isRecurrent,
+  required Set<int> recurrentWeekdays,
+  DateTime? recurrentFrom,
+  DateTime? recurrentTo,
+  List<PlayerTraining>? playerTrainingForNewOccurrences,
+}) async {
+  if (!isRecurrent) {
+    final Training updated = buildTrainingForUpdate(
+      existing: existing,
+      date: date,
+      time: time,
+      durationMinutes: durationMinutes,
+      team: team,
+      season: season,
+      withTracker: withTracker,
+      ownerId: ownerId,
+      isRecurrent: false,
+      recurrentCode: '',
+      recurrentWeekdays: const <int>[],
+    );
+    await service.updateTraining(updated);
+    return;
+  }
+
+  final List<int> weekdayList = recurrentWeekdays.toList()..sort();
+  final DateTime rangeStart = DateUtils.dateOnly(recurrentFrom ?? date);
+  final DateTime rangeEnd = DateUtils.dateOnly(recurrentTo ?? date);
+  final String recurrentCode =
+      (existing.reccurentCode?.trim().isNotEmpty == true)
+          ? existing.reccurentCode!.trim()
+          : FirebaseFirestore.instance.collection(kTrainingCollectionName).doc().id;
+
+  final List<DateTime> desiredDates = generateRecurrentTrainingDates(
+    start: rangeStart,
+    end: rangeEnd,
+    weekdays: recurrentWeekdays,
+  );
+  final Set<String> desiredKeys = desiredDates.map(_dateKey).toSet();
+
+  final List<Training> series =
+      await service.getTrainingsByReccurentCode(recurrentCode);
+  final Map<String, Training> byDate = <String, Training>{};
+  for (final Training sibling in series) {
+    final DateTime? siblingDate = _trainingDateOnly(sibling);
+    if (siblingDate == null) continue;
+    byDate[_dateKey(siblingDate)] = sibling;
+  }
+
+  // Keep the edited doc in the map even when it is not yet under the code
+  // (first time enabling recurrence). Use the form date as the key so a date
+  // change does not leave the same doc under two keys (old + new).
+  final DateTime editedDate = DateUtils.dateOnly(date);
+  final String editedKey = _dateKey(editedDate);
+  final String? currentId = existing.docId?.trim();
+  if (currentId != null && currentId.isNotEmpty) {
+    byDate.removeWhere(
+      (_, Training t) => t.docId?.trim() == currentId,
+    );
+    byDate[editedKey] = existing;
+  }
+
+  final List<PlayerTraining> templatePlayers =
+      playerTrainingForNewOccurrences ?? existing.playerTraining;
+
+  // Update / create only desired weekdays — never keep an edited date whose
+  // weekday is outside the selected set.
+  final List<Training> toCreate = <Training>[];
+  for (final DateTime desired in desiredDates) {
+    final String key = _dateKey(desired);
+    final Training? existingOnDate = byDate[key];
+    if (existingOnDate != null &&
+        (existingOnDate.docId?.trim().isNotEmpty ?? false)) {
+      await service.updateTraining(
+        buildTrainingForUpdate(
+          existing: existingOnDate,
+          date: desired,
+          time: time,
+          durationMinutes: durationMinutes,
+          team: team,
+          season: season,
+          withTracker: withTracker,
+          ownerId: ownerId,
+          isRecurrent: true,
+          recurrentCode: recurrentCode,
+          recurrentWeekdays: weekdayList,
+          recurrentStart: rangeStart,
+          recurrentEnd: rangeEnd,
+        ),
+      );
+      continue;
+    }
+    toCreate.add(
+      buildTrainingForCreation(
+        date: desired,
+        time: time,
+        durationMinutes: durationMinutes,
+        team: team,
+        season: season,
+        playerTraining: templatePlayers
+            .map((PlayerTraining p) {
+              return PlayerTraining(
+                playerId: p.playerId,
+                presenceType: PresenceType.present,
+              )
+                ..deviceId = p.deviceId
+                ..customName = p.customName;
+            })
+            .toList(),
+        isRecurrent: true,
+        recurrentCode: recurrentCode,
+        recurrentWeekdays: weekdayList,
+        recurrentStart: rangeStart,
+        recurrentEnd: rangeEnd,
+        withTracker: withTracker,
+        ownerId: ownerId,
+      ),
+    );
+  }
+  if (toCreate.isNotEmpty) {
+    await service.createTrainings(toCreate);
+  }
+
+  final List<String> idsToDelete = <String>[];
+  for (final MapEntry<String, Training> entry in byDate.entries) {
+    if (desiredKeys.contains(entry.key)) continue;
+    final String? siblingId = entry.value.docId?.trim();
+    if (siblingId == null || siblingId.isEmpty) continue;
+    idsToDelete.add(siblingId);
+  }
+  if (idsToDelete.isNotEmpty) {
+    await service.deleteTrainings(idsToDelete);
+  }
 }
 
 /// Firestore collection name for [Training] (avoids circular import with service).

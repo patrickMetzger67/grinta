@@ -6,6 +6,7 @@ import 'package:grinta/services/monetization_banner_rotation_service.dart';
 import 'package:grinta/services/shopify_storefront_service.dart';
 import 'package:grinta/services/subscription_prompt_service.dart';
 import 'package:grinta/services/subscription_service.dart';
+import 'package:grinta/services/user_root_service.dart';
 import 'package:grinta/widget/shop_promo_banner.dart';
 import 'package:grinta/widget/subscription_prompt_banner.dart';
 import 'package:grinta/widget/trial_status_banner.dart';
@@ -35,6 +36,7 @@ class _AlternatingMonetizationBannerState
     _resolveBanner();
     SubscriptionService.instance.addListener(_onSubscriptionChanged);
     UserTrialService.instance.addListener(_onSubscriptionChanged);
+    UserRootService.instance.addListener(_onSubscriptionChanged);
     EshopConfigService.instance.addListener(_onSubscriptionChanged);
   }
 
@@ -42,6 +44,7 @@ class _AlternatingMonetizationBannerState
   void dispose() {
     SubscriptionService.instance.removeListener(_onSubscriptionChanged);
     UserTrialService.instance.removeListener(_onSubscriptionChanged);
+    UserRootService.instance.removeListener(_onSubscriptionChanged);
     EshopConfigService.instance.removeListener(_onSubscriptionChanged);
     super.dispose();
   }
@@ -57,7 +60,10 @@ class _AlternatingMonetizationBannerState
     final trial = UserTrialService.instance;
     await trial.ensureInitialized();
 
-    if (subscription.hasActivePaidSubscription) {
+    // Super admin and paid subscribers skip monetization banners entirely.
+    // Active trial still shows [TrialStatusBanner] below (not a paywall block).
+    if (UserRootService.instance.isRoot ||
+        subscription.hasActivePaidSubscription) {
       if (!mounted) return;
       setState(() {
         _subscribed = true;

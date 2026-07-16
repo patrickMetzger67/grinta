@@ -3190,6 +3190,12 @@ class AppLocalizationsDe extends AppLocalizations {
   }
 
   @override
+  String get teamEditNameTitle => 'Modifier le nom de l\'équipe';
+
+  @override
+  String get teamEditNameSuccess => 'Nom de l\'équipe mis à jour.';
+
+  @override
   String get calendarSyncToggleLabel => 'Kalender-Sync';
 
   @override
@@ -3759,6 +3765,20 @@ class AppLocalizationsDe extends AppLocalizations {
   @override
   String get trainingDeleteConfirmMessage =>
       'Möchten Sie dieses Training wirklich löschen? Diese Aktion ist endgültig.';
+
+  @override
+  String get trainingDeleteRecurrentTitle =>
+      'Supprimer l\'entraînement récurrent ?';
+
+  @override
+  String get trainingDeleteRecurrentMessage =>
+      'Souhaitez-vous supprimer toutes les récurrences de cette série ?';
+
+  @override
+  String get trainingDeleteThisOccurrence => 'Cette occurrence uniquement';
+
+  @override
+  String get trainingDeleteAllOccurrences => 'Toutes les occurrences';
 
   @override
   String get trainingDeleted => 'Training gelöscht';
@@ -4970,6 +4990,113 @@ class AppLocalizationsDe extends AppLocalizations {
       'Für die Verwaltung der Chatgruppen ist Administratorzugriff erforderlich.';
 
   @override
+  String get adminSeasonsSection => 'Saisons';
+
+  @override
+  String get adminSeasonsSectionDesc =>
+      'Lister et gérer les saisons de la plateforme.';
+
+  @override
+  String get adminSeasonsTitle => 'Saisons';
+
+  @override
+  String get adminSeasonsEmpty => 'Aucune saison pour le moment.';
+
+  @override
+  String get adminSeasonsLoadError => 'Impossible de charger les saisons.';
+
+  @override
+  String get adminSeasonCreate => 'Ajouter une saison';
+
+  @override
+  String get adminSeasonEditTitle => 'Modifier la saison';
+
+  @override
+  String get adminSeasonCreated => 'Saison créée.';
+
+  @override
+  String get adminSeasonUpdated => 'Saison mise à jour.';
+
+  @override
+  String get adminSeasonCreateFailed => 'Impossible de créer la saison.';
+
+  @override
+  String get adminSeasonUpdateFailed =>
+      'Impossible de mettre à jour la saison.';
+
+  @override
+  String get adminSeasonUnnamed => 'Saison sans nom';
+
+  @override
+  String get adminSeasonCurrentBadge => 'Actuelle';
+
+  @override
+  String get adminSeasonNewVersionBadge => 'Nouvelle version';
+
+  @override
+  String adminSeasonDateRange(String start, String end) {
+    return '$start – $end';
+  }
+
+  @override
+  String adminSeasonClubLabel(String clubName) {
+    return 'Club : $clubName';
+  }
+
+  @override
+  String adminSeasonAffiliateLabel(String number) {
+    return 'N° affilié : $number';
+  }
+
+  @override
+  String get adminSeasonFieldName => 'Nom';
+
+  @override
+  String get adminSeasonFieldNameReadOnly =>
+      'Le nom de la saison ne peut pas être modifié après création.';
+
+  @override
+  String get adminSeasonFieldRequired => 'Ce champ est obligatoire.';
+
+  @override
+  String get adminSeasonFieldStartDate => 'Date de début';
+
+  @override
+  String get adminSeasonFieldEndDate => 'Date de fin';
+
+  @override
+  String adminSeasonDateSelected(String date) {
+    return 'Sélection : $date';
+  }
+
+  @override
+  String get adminSeasonFieldClubName => 'Nom du club';
+
+  @override
+  String get adminSeasonFieldAffiliateNumber => 'Numéro d\'affilié';
+
+  @override
+  String get adminSeasonFieldCurrent => 'Saison actuelle';
+
+  @override
+  String get adminSeasonFieldCurrentHint =>
+      'Une seule saison peut être actuelle à la fois.';
+
+  @override
+  String get adminSeasonFieldNewVersion => 'Nouvelle version';
+
+  @override
+  String get adminSeasonChangeDefaultTitle => 'Changer la saison actuelle ?';
+
+  @override
+  String adminSeasonChangeDefaultMessage(String seasonName) {
+    return '« $seasonName » est actuellement la saison par défaut. Voulez-vous la remplacer ?';
+  }
+
+  @override
+  String get adminSeasonChangeDefaultConfirm => 'Changer la saison par défaut';
+
+  @override
   String get promoCodeMenuLabel => 'Promo-Code';
 
   @override
@@ -5012,6 +5139,16 @@ class AppLocalizationsDe extends AppLocalizations {
   @override
   String get promoCodeRedeemInvalid =>
       'Dieser Promo-Code ist nicht mehr gültig.';
+
+  @override
+  String get promoCodeRedeemInactive => 'Dieser Promo-Code ist inaktiv.';
+
+  @override
+  String get promoCodeRedeemExpired => 'Dieser Promo-Code ist abgelaufen.';
+
+  @override
+  String get promoCodeRedeemAlreadyRedeemed =>
+      'Sie haben diesen Promo-Code bereits eingelöst.';
 
   @override
   String get promoCodeRedeemExhausted =>

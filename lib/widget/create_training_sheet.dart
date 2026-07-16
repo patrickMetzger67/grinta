@@ -144,6 +144,21 @@ class _CreateTrainingSheetState extends State<CreateTrainingSheet> {
     _selectedOwnerId =
         training.ownerId?.trim().isNotEmpty == true ? training.ownerId : null;
 
+    _isRecurrent = isTrainingRecurrent(training) || training.isReccurent == true;
+    final Set<int> existingWeekdays = recurrentWeekdaysFromTraining(training);
+    _selectedWeekdays = existingWeekdays.isNotEmpty
+        ? existingWeekdays
+        : <int>{_selectedDate.weekday};
+    _recurrentFromDate = training.reccurentStart != null
+        ? DateUtils.dateOnly(training.reccurentStart!.toDate())
+        : _selectedDate;
+    _recurrentToDate = training.reccurentEnd != null
+        ? DateUtils.dateOnly(training.reccurentEnd!.toDate())
+        : _addOneMonth(_selectedDate);
+    if (_recurrentToDate.isBefore(_recurrentFromDate)) {
+      _recurrentToDate = _addOneMonth(_recurrentFromDate);
+    }
+
     _initTeams();
     _selectedTeamId = managedTrainingTeamId(training) ?? _selectedTeamId;
     await _refreshOwnerOptions();
@@ -258,7 +273,10 @@ class _CreateTrainingSheetState extends State<CreateTrainingSheet> {
 
     setState(() {
       _selectedDate = DateUtils.dateOnly(picked);
-      if (_isRecurrent && _selectedWeekdays.length == 1) {
+      // Keep the single selected weekday in sync with the session date so opening
+      // the sheet on Wednesday then picking Thursday does not leave Wednesday
+      // selected when recurrence is enabled later.
+      if (!_isRecurrent || _selectedWeekdays.length <= 1) {
         _selectedWeekdays = <int>{_selectedDate.weekday};
       }
     });
@@ -414,7 +432,8 @@ class _CreateTrainingSheetState extends State<CreateTrainingSheet> {
     var didPop = false;
     try {
       if (_isEditMode && existingTraining != null) {
-        final Training training = buildTrainingForUpdate(
+        await saveTrainingEdit(
+          service: _trainingService,
           existing: existingTraining,
           date: _selectedDate,
           time: _selectedTime,
@@ -423,8 +442,11 @@ class _CreateTrainingSheetState extends State<CreateTrainingSheet> {
           season: season,
           withTracker: _withTracker,
           ownerId: _selectedOwnerId,
+          isRecurrent: _isRecurrent,
+          recurrentWeekdays: _selectedWeekdays,
+          recurrentFrom: _isRecurrent ? _recurrentFromDate : null,
+          recurrentTo: _isRecurrent ? _recurrentToDate : null,
         );
-        await _trainingService.updateTraining(training);
       } else {
         Map<String, DeviceOwner>? ownerDevicesByDocId;
         if (_withTracker) {
@@ -651,30 +673,38 @@ class _CreateTrainingSheetState extends State<CreateTrainingSheet> {
                   },
                 ),
                 const SizedBox(height: 8),
-                if (!_isEditMode)
-                  SwitchListTile(
-                    contentPadding: EdgeInsets.zero,
-                    title: Text(
-                      l10n.createTrainingRecurrent,
-                      style: theme.textTheme.bodyLarge?.copyWith(
-                        color: colors.textPrimary,
-                      ),
+                SwitchListTile(
+                  contentPadding: EdgeInsets.zero,
+                  title: Text(
+                    l10n.createTrainingRecurrent,
+                    style: theme.textTheme.bodyLarge?.copyWith(
+                      color: colors.textPrimary,
                     ),
-                    value: _isRecurrent,
-                    activeThumbColor: colors.primary,
-                    onChanged: (bool value) {
-                      setState(() {
-                        _isRecurrent = value;
-                        if (value) {
-                          _resetRecurrentRange();
-                          if (_selectedWeekdays.isEmpty) {
-                            _selectedWeekdays = <int>{_selectedDate.weekday};
-                          }
-                        }
-                      });
-                    },
                   ),
-                if (!_isEditMode && _isRecurrent) ...[
+                  value: _isRecurrent,
+                  activeThumbColor: colors.primary,
+                  onChanged: (bool value) {
+                    setState(() {
+                      _isRecurrent = value;
+                      if (value) {
+                        if (_isEditMode) {
+                          if (_recurrentToDate.isBefore(_recurrentFromDate)) {
+                            _resetRecurrentRange();
+                          }
+                        } else {
+                          _resetRecurrentRange();
+                          // Create mode: default weekdays to the session date's
+                          // weekday (replace stale init-from-today selection).
+                          _selectedWeekdays = <int>{_selectedDate.weekday};
+                        }
+                        if (_selectedWeekdays.isEmpty) {
+                          _selectedWeekdays = <int>{_selectedDate.weekday};
+                        }
+                      }
+                    });
+                  },
+                ),
+                if (_isRecurrent) ...[
                   const SizedBox(height: 4),
                   Row(
                     children: [

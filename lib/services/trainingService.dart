@@ -161,6 +161,41 @@ class TrainingService {
     }
   }
 
+  /// DELETE many trainings (batch) and related workload summaries.
+  Future<void> deleteTrainings(List<String> trainingIds) async {
+    final List<String> ids = trainingIds
+        .map((String id) => id.trim())
+        .where((String id) => id.isNotEmpty)
+        .toSet()
+        .toList();
+    if (ids.isEmpty) return;
+
+    const int batchLimit = 450;
+    for (var offset = 0; offset < ids.length; offset += batchLimit) {
+      final end = (offset + batchLimit < ids.length)
+          ? offset + batchLimit
+          : ids.length;
+      final chunk = ids.sublist(offset, end);
+      final WriteBatch batch = _firestore.batch();
+      for (final String id in chunk) {
+        batch.delete(_collection.doc(id));
+      }
+      await batch.commit();
+    }
+
+    for (final String id in ids) {
+      try {
+        await TeamWorkloadSummaryService().deleteByEventId(id);
+      } catch (e) {
+        if (kDebugMode) {
+          debugPrint(
+            'Failed to delete TRACKER_TeamAnalysis for training $id: $e',
+          );
+        }
+      }
+    }
+  }
+
   /// GET BY CLUB ID
   Future<List<Training>> getTrainingsByClubId(String clubId) async {
     try {

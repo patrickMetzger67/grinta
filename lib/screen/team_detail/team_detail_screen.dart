@@ -30,6 +30,7 @@ import '../../util/player_positions.dart';
 import '../../util/playerDisplayName.dart';
 import '../../util/subscription_limits_access.dart';
 import '../../util/team_deletion_access.dart';
+import '../../util/team_name_edit.dart';
 import '../../util/team_tracker_access.dart';
 import '../../util/player_photo_resolver.dart';
 import '../../util/player_profile_validator.dart';
@@ -426,6 +427,16 @@ class _TeamDetailScreenState extends State<TeamDetailScreen> {
       _headerStaffCount = counts.staff;
       _future = Future<List<_TeamMemberVm>>.value(members);
     });
+  }
+
+  Future<void> _onEditTeamName(BuildContext context) async {
+    if (!_canManageTeam(context)) {
+      return;
+    }
+    final bool updated = await editTeamName(context, team: _team);
+    if (updated && mounted) {
+      setState(() {});
+    }
   }
 
   void _mergeLocalGrintaPlayers(List<GrintaPlayer> localEntries) {
@@ -2104,7 +2115,7 @@ class _TeamDetailScreenState extends State<TeamDetailScreen> {
                     size: 40,
                     iconSize: 20,
                     icon: Icons.edit_outlined,
-                    onTap: () {},
+                    onTap: () => _onEditTeamName(context),
                   ),
                 if (_canManageTeam(context)) const SizedBox(width: 8),
                 _HeaderSquareIconButton(
@@ -2262,7 +2273,7 @@ class _TeamDetailScreenState extends State<TeamDetailScreen> {
                         if (_canManageTeam(context)) ...[
                           _HeaderSquareIconButton(
                             icon: Icons.edit_outlined,
-                            onTap: () {},
+                            onTap: () => _onEditTeamName(context),
                           ),
                         ],
                         _HeaderSquareIconButton(

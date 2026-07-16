@@ -287,6 +287,25 @@ class TeamService {
     }
   }
 
+  /// Updates only the team display name (avoids full-document overwrite).
+  Future<void> updateTeamName({
+    required String teamId,
+    required String name,
+  }) async {
+    final trimmedTeamId = teamId.trim();
+    final trimmedName = name.trim();
+    if (trimmedTeamId.isEmpty) {
+      throw Exception('keyTeam null ou vide');
+    }
+    if (trimmedName.isEmpty) {
+      throw Exception('name empty');
+    }
+
+    await _collection.doc(trimmedTeamId).update(<String, dynamic>{
+      keyTeamName: trimmedName,
+    });
+  }
+
   /// Appends a [GrintaPlayer] to [keyTeamGrintaPlayers] (read-modify-write).
   ///
   /// Uses a targeted Firestore update so roster writes are not lost when the

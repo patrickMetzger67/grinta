@@ -7,6 +7,11 @@ import 'package:uuid/uuid.dart';
 
 /// Enforces a single active app session per Firebase user (cross-device).
 ///
+/// Scope is **auth user only** (`users/{uid}/app_state/session`): independent of
+/// RevenueCat / subscription state and of the selected player/profile. Claiming
+/// a session on device B force-signs-out device A; it does not revoke
+/// entitlements — re-login on either device restores premium via Firebase UID.
+///
 /// ## Firestore schema
 /// Document: `users/{firebaseUid}/app_state/session`
 /// ```json

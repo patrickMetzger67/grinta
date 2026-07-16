@@ -5572,6 +5572,18 @@ abstract class AppLocalizations {
   /// **'L\'équipe « {teamName} » a été supprimée.'**
   String teamDeleteSuccess(String teamName);
 
+  /// No description provided for @teamEditNameTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Modifier le nom de l\'équipe'**
+  String get teamEditNameTitle;
+
+  /// No description provided for @teamEditNameSuccess.
+  ///
+  /// In fr, this message translates to:
+  /// **'Nom de l\'équipe mis à jour.'**
+  String get teamEditNameSuccess;
+
   /// No description provided for @calendarSyncToggleLabel.
   ///
   /// In fr, this message translates to:
@@ -6507,6 +6519,30 @@ abstract class AppLocalizations {
   /// In fr, this message translates to:
   /// **'Voulez-vous vraiment supprimer cet entraînement ? Cette action est définitive.'**
   String get trainingDeleteConfirmMessage;
+
+  /// No description provided for @trainingDeleteRecurrentTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Supprimer l\'entraînement récurrent ?'**
+  String get trainingDeleteRecurrentTitle;
+
+  /// No description provided for @trainingDeleteRecurrentMessage.
+  ///
+  /// In fr, this message translates to:
+  /// **'Souhaitez-vous supprimer toutes les récurrences de cette série ?'**
+  String get trainingDeleteRecurrentMessage;
+
+  /// No description provided for @trainingDeleteThisOccurrence.
+  ///
+  /// In fr, this message translates to:
+  /// **'Cette occurrence uniquement'**
+  String get trainingDeleteThisOccurrence;
+
+  /// No description provided for @trainingDeleteAllOccurrences.
+  ///
+  /// In fr, this message translates to:
+  /// **'Toutes les occurrences'**
+  String get trainingDeleteAllOccurrences;
 
   /// No description provided for @trainingDeleted.
   ///
@@ -8572,6 +8608,192 @@ abstract class AppLocalizations {
   /// **'Un accès administrateur est requis pour gérer les groupes.'**
   String get adminStreamGroupsPermissionDenied;
 
+  /// No description provided for @adminSeasonsSection.
+  ///
+  /// In fr, this message translates to:
+  /// **'Saisons'**
+  String get adminSeasonsSection;
+
+  /// No description provided for @adminSeasonsSectionDesc.
+  ///
+  /// In fr, this message translates to:
+  /// **'Lister et gérer les saisons de la plateforme.'**
+  String get adminSeasonsSectionDesc;
+
+  /// No description provided for @adminSeasonsTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Saisons'**
+  String get adminSeasonsTitle;
+
+  /// No description provided for @adminSeasonsEmpty.
+  ///
+  /// In fr, this message translates to:
+  /// **'Aucune saison pour le moment.'**
+  String get adminSeasonsEmpty;
+
+  /// No description provided for @adminSeasonsLoadError.
+  ///
+  /// In fr, this message translates to:
+  /// **'Impossible de charger les saisons.'**
+  String get adminSeasonsLoadError;
+
+  /// No description provided for @adminSeasonCreate.
+  ///
+  /// In fr, this message translates to:
+  /// **'Ajouter une saison'**
+  String get adminSeasonCreate;
+
+  /// No description provided for @adminSeasonEditTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Modifier la saison'**
+  String get adminSeasonEditTitle;
+
+  /// No description provided for @adminSeasonCreated.
+  ///
+  /// In fr, this message translates to:
+  /// **'Saison créée.'**
+  String get adminSeasonCreated;
+
+  /// No description provided for @adminSeasonUpdated.
+  ///
+  /// In fr, this message translates to:
+  /// **'Saison mise à jour.'**
+  String get adminSeasonUpdated;
+
+  /// No description provided for @adminSeasonCreateFailed.
+  ///
+  /// In fr, this message translates to:
+  /// **'Impossible de créer la saison.'**
+  String get adminSeasonCreateFailed;
+
+  /// No description provided for @adminSeasonUpdateFailed.
+  ///
+  /// In fr, this message translates to:
+  /// **'Impossible de mettre à jour la saison.'**
+  String get adminSeasonUpdateFailed;
+
+  /// No description provided for @adminSeasonUnnamed.
+  ///
+  /// In fr, this message translates to:
+  /// **'Saison sans nom'**
+  String get adminSeasonUnnamed;
+
+  /// No description provided for @adminSeasonCurrentBadge.
+  ///
+  /// In fr, this message translates to:
+  /// **'Actuelle'**
+  String get adminSeasonCurrentBadge;
+
+  /// No description provided for @adminSeasonNewVersionBadge.
+  ///
+  /// In fr, this message translates to:
+  /// **'Nouvelle version'**
+  String get adminSeasonNewVersionBadge;
+
+  /// No description provided for @adminSeasonDateRange.
+  ///
+  /// In fr, this message translates to:
+  /// **'{start} – {end}'**
+  String adminSeasonDateRange(String start, String end);
+
+  /// No description provided for @adminSeasonClubLabel.
+  ///
+  /// In fr, this message translates to:
+  /// **'Club : {clubName}'**
+  String adminSeasonClubLabel(String clubName);
+
+  /// No description provided for @adminSeasonAffiliateLabel.
+  ///
+  /// In fr, this message translates to:
+  /// **'N° affilié : {number}'**
+  String adminSeasonAffiliateLabel(String number);
+
+  /// No description provided for @adminSeasonFieldName.
+  ///
+  /// In fr, this message translates to:
+  /// **'Nom'**
+  String get adminSeasonFieldName;
+
+  /// No description provided for @adminSeasonFieldNameReadOnly.
+  ///
+  /// In fr, this message translates to:
+  /// **'Le nom de la saison ne peut pas être modifié après création.'**
+  String get adminSeasonFieldNameReadOnly;
+
+  /// No description provided for @adminSeasonFieldRequired.
+  ///
+  /// In fr, this message translates to:
+  /// **'Ce champ est obligatoire.'**
+  String get adminSeasonFieldRequired;
+
+  /// No description provided for @adminSeasonFieldStartDate.
+  ///
+  /// In fr, this message translates to:
+  /// **'Date de début'**
+  String get adminSeasonFieldStartDate;
+
+  /// No description provided for @adminSeasonFieldEndDate.
+  ///
+  /// In fr, this message translates to:
+  /// **'Date de fin'**
+  String get adminSeasonFieldEndDate;
+
+  /// No description provided for @adminSeasonDateSelected.
+  ///
+  /// In fr, this message translates to:
+  /// **'Sélection : {date}'**
+  String adminSeasonDateSelected(String date);
+
+  /// No description provided for @adminSeasonFieldClubName.
+  ///
+  /// In fr, this message translates to:
+  /// **'Nom du club'**
+  String get adminSeasonFieldClubName;
+
+  /// No description provided for @adminSeasonFieldAffiliateNumber.
+  ///
+  /// In fr, this message translates to:
+  /// **'Numéro d\'affilié'**
+  String get adminSeasonFieldAffiliateNumber;
+
+  /// No description provided for @adminSeasonFieldCurrent.
+  ///
+  /// In fr, this message translates to:
+  /// **'Saison actuelle'**
+  String get adminSeasonFieldCurrent;
+
+  /// No description provided for @adminSeasonFieldCurrentHint.
+  ///
+  /// In fr, this message translates to:
+  /// **'Une seule saison peut être actuelle à la fois.'**
+  String get adminSeasonFieldCurrentHint;
+
+  /// No description provided for @adminSeasonFieldNewVersion.
+  ///
+  /// In fr, this message translates to:
+  /// **'Nouvelle version'**
+  String get adminSeasonFieldNewVersion;
+
+  /// No description provided for @adminSeasonChangeDefaultTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Changer la saison actuelle ?'**
+  String get adminSeasonChangeDefaultTitle;
+
+  /// No description provided for @adminSeasonChangeDefaultMessage.
+  ///
+  /// In fr, this message translates to:
+  /// **'« {seasonName} » est actuellement la saison par défaut. Voulez-vous la remplacer ?'**
+  String adminSeasonChangeDefaultMessage(String seasonName);
+
+  /// No description provided for @adminSeasonChangeDefaultConfirm.
+  ///
+  /// In fr, this message translates to:
+  /// **'Changer la saison par défaut'**
+  String get adminSeasonChangeDefaultConfirm;
+
   /// No description provided for @promoCodeMenuLabel.
   ///
   /// In fr, this message translates to:
@@ -8644,6 +8866,24 @@ abstract class AppLocalizations {
   /// In fr, this message translates to:
   /// **'Ce code promo n\'est plus valide.'**
   String get promoCodeRedeemInvalid;
+
+  /// No description provided for @promoCodeRedeemInactive.
+  ///
+  /// In fr, this message translates to:
+  /// **'Ce code promo n\'est plus actif.'**
+  String get promoCodeRedeemInactive;
+
+  /// No description provided for @promoCodeRedeemExpired.
+  ///
+  /// In fr, this message translates to:
+  /// **'Ce code promo a expiré.'**
+  String get promoCodeRedeemExpired;
+
+  /// No description provided for @promoCodeRedeemAlreadyRedeemed.
+  ///
+  /// In fr, this message translates to:
+  /// **'Vous avez déjà utilisé ce code promo.'**
+  String get promoCodeRedeemAlreadyRedeemed;
 
   /// No description provided for @promoCodeRedeemExhausted.
   ///

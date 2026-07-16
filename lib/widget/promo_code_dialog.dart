@@ -3,6 +3,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:grinta/core/extensions/l10n_extension.dart';
+import 'package:grinta/l10n/app_localizations.dart';
 import 'package:grinta/services/promo_code_service.dart';
 import 'package:grinta/services/subscription_service.dart';
 import 'package:grinta/util/app_theme.dart';
@@ -130,7 +131,7 @@ class _PromoCodeDialogContentState extends State<PromoCodeDialogContent> {
       debugPrint('promo redeem failed: $e\n$st');
       if (!mounted) return;
       setState(() {
-        _feedbackMessage = PromoCodeService.redeemErrorMessage(e);
+        _feedbackMessage = context.l10n.promoCodeRedeemFailed;
         _feedbackIsError = true;
       });
     } finally {
@@ -156,13 +157,31 @@ class _PromoCodeDialogContentState extends State<PromoCodeDialogContent> {
 
   String _messageForError(BuildContext context, FirebaseFunctionsException e) {
     final l10n = context.l10n;
-    final serverMessage = PromoCodeService.extractFunctionsErrorMessage(e);
-    if (serverMessage != null) {
-      return serverMessage;
+    final promoCode = PromoCodeService.extractPromoErrorCode(e);
+    if (promoCode != null) {
+      return switch (promoCode) {
+        'ALREADY_REDEEMED' => l10n.promoCodeRedeemAlreadyRedeemed,
+        'PROMO_NOT_FOUND' => l10n.promoCodeRedeemNotFound,
+        'PROMO_INACTIVE' => l10n.promoCodeRedeemInactive,
+        'PROMO_EXPIRED' => l10n.promoCodeRedeemExpired,
+        'PROMO_EXHAUSTED' => l10n.promoCodeRedeemExhausted,
+        'PROMO_TEAM_MISMATCH' => l10n.promoCodeRedeemTeamMismatch,
+        'PROMO_UNAUTHENTICATED' => l10n.promoCodeRedeemUnauthenticated,
+        'PROMO_EMPTY' => l10n.promoCodeRedeemEmpty,
+        'PROMO_INVALID' => l10n.promoCodeRedeemInvalid,
+        _ => null,
+      } ??
+          _messageForHttpsCode(l10n, e);
     }
 
-    final code = PromoCodeService.formatFunctionsError(e);
-    return switch (code) {
+    return _messageForHttpsCode(l10n, e);
+  }
+
+  String _messageForHttpsCode(
+    AppLocalizations l10n,
+    FirebaseFunctionsException e,
+  ) {
+    return switch (PromoCodeService.formatFunctionsError(e)) {
       'not-found' => l10n.promoCodeRedeemNotFound,
       'failed-precondition' => l10n.promoCodeRedeemInvalid,
       'resource-exhausted' => l10n.promoCodeRedeemExhausted,

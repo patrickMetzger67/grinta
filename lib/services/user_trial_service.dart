@@ -5,8 +5,13 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/foundation.dart';
 import 'package:grinta/services/subscription_service.dart';
 import 'package:grinta/services/userService.dart' show UserService, kUserTrialDuration;
+import 'package:grinta/services/user_root_service.dart';
 
 /// Loads trial window from `users/{uid}` and exposes premium access helpers.
+///
+/// Premium access is always resolved for the **Firebase Auth user** (not device
+/// or selected player/profile): paid RevenueCat entitlements for that UID,
+/// an active Firestore trial on `users/{uid}`, or platform super admin (`isRoot`).
 ///
 /// Document fields (see [UserService.createAccountIfNeeded]):
 /// ```json
@@ -16,6 +21,7 @@ class UserTrialService extends ChangeNotifier {
   UserTrialService._() {
     FirebaseAuth.instance.authStateChanges().listen(_onAuthChanged);
     SubscriptionService.instance.addListener(notifyListeners);
+    UserRootService.instance.addListener(notifyListeners);
   }
 
   static final UserTrialService instance = UserTrialService._();
@@ -47,12 +53,15 @@ class UserTrialService extends ChangeNotifier {
     return remaining.inDays + (remaining.inHours.remainder(24) > 0 ? 1 : 0);
   }
 
-  /// Paid subscription always wins; trial only applies when not subscribed.
+  /// Paid subscription and trial are per Firebase user; super admins (`isRoot`)
+  /// always bypass paywalls / premium feature gates.
   bool get hasPremiumAccess =>
-      SubscriptionService.instance.hasActivePaidSubscription || shouldShowTrial;
+      UserRootService.instance.isRoot ||
+      SubscriptionService.instance.hasActivePaidSubscription ||
+      shouldShowTrial;
 
-  /// Réglages → Abonnement: show for store/web/promo entitlements or active trial.
-  bool get shouldShowSubscriptionMenu => hasPremiumAccess;
+  /// Réglages → Abonnement: always show so users can subscribe or manage a plan.
+  bool get shouldShowSubscriptionMenu => true;
 
   void _onAuthChanged(User? user) {
     final uid = user?.uid;
@@ -68,10 +77,15 @@ class UserTrialService extends ChangeNotifier {
     }
   }
 
+  /// Loads Firestore trial fields and waits for RevenueCat to identify the
+  /// current Firebase UID so [hasPremiumAccess] is accurate across devices.
   Future<void> ensureInitialized() async {
-    if (_initialized) return;
-    _initFuture ??= _load();
-    await _initFuture;
+    if (!_initialized) {
+      _initFuture ??= _load();
+      await _initFuture;
+    }
+    await UserRootService.instance.ensureInitialized();
+    await SubscriptionService.instance.ensureUserLinked();
   }
 
   Future<void> reload() async {

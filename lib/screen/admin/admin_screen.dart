@@ -3,6 +3,7 @@ import 'package:grinta/analytics/analytics_routes.dart';
 import 'package:grinta/analytics/analytics_screen_names.dart';
 import 'package:grinta/core/extensions/l10n_extension.dart';
 import 'package:grinta/screen/admin/admin_promo_codes_screen.dart';
+import 'package:grinta/screen/admin/admin_seasons_screen.dart';
 import 'package:grinta/screen/admin/admin_stream_groups_screen.dart';
 import 'package:grinta/screen/admin/admin_tracker_devices_screen.dart';
 import 'package:grinta/screen/admin/admin_tracker_owners_screen.dart';
@@ -82,6 +83,20 @@ class AdminScreen extends StatelessWidget {
                 analyticsMaterialRoute<void>(
                   screenName: AnalyticsScreenNames.adminTrackerDevices,
                   builder: (_) => const AdminTrackerDevicesScreen(),
+                ),
+              );
+            },
+          ),
+          const SizedBox(height: 12),
+          _AdminSectionCard(
+            icon: Icons.calendar_month_outlined,
+            title: l10n.adminSeasonsSection,
+            subtitle: l10n.adminSeasonsSectionDesc,
+            onTap: () {
+              Navigator.of(context).push(
+                analyticsMaterialRoute<void>(
+                  screenName: AnalyticsScreenNames.adminSeasons,
+                  builder: (_) => const AdminSeasonsScreen(),
                 ),
               );
             },

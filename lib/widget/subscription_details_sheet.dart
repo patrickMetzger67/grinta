@@ -147,6 +147,15 @@ class _SubscriptionDetailsBodyState extends State<_SubscriptionDetailsBody> {
     }
   }
 
+  Future<void> _openSubscribe(BuildContext context) async {
+    final subscription = SubscriptionService.instance;
+    final subscribed = await SubscriptionPaywall.show(context);
+    if (!context.mounted) return;
+    if (subscribed == true) {
+      await subscription.refreshForActiveSession();
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final colors = context.appColors;
@@ -239,17 +248,30 @@ class _SubscriptionDetailsBodyState extends State<_SubscriptionDetailsBody> {
                             ],
                           ],
                         )
-                      : isOnTrial && trialEndsAt != null
-                          ? _EmptyStateCard(
-                              icon: Icons.timer_outlined,
-                              message: l10n.subscriptionTrialEnds(
-                                _formatDate(context, trialEndsAt),
+                      : Column(
+                          crossAxisAlignment: CrossAxisAlignment.stretch,
+                          children: [
+                            if (isOnTrial && trialEndsAt != null)
+                              _EmptyStateCard(
+                                icon: Icons.timer_outlined,
+                                message: l10n.subscriptionTrialEnds(
+                                  _formatDate(context, trialEndsAt),
+                                ),
+                              )
+                            else
+                              _EmptyStateCard(
+                                icon: Icons.workspace_premium_outlined,
+                                message: l10n.subscriptionNone,
                               ),
-                            )
-                          : _EmptyStateCard(
-                              icon: Icons.workspace_premium_outlined,
-                              message: l10n.subscriptionNone,
-                            ),
+                            if (subscription.isPurchaseAvailable) ...[
+                              const SizedBox(height: 16),
+                              ElevatedButton(
+                                onPressed: () => _openSubscribe(context),
+                                child: Text(l10n.subscriptionSubscribe),
+                              ),
+                            ],
+                          ],
+                        ),
             ),
           ],
         );

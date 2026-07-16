@@ -300,6 +300,50 @@ class PromoCodeService {
     }
   }
 
+  /// Stable promo error code from callable [details.errorCode], or inferred
+  /// from known English server messages (covers undeployed CF fallbacks).
+  static String? extractPromoErrorCode(FirebaseFunctionsException e) {
+    final details = e.details;
+    if (details is Map) {
+      final raw = details['errorCode']?.toString().trim();
+      if (raw != null && raw.isNotEmpty) {
+        return raw.toUpperCase();
+      }
+    }
+
+    final message = (e.message ?? '').trim().toLowerCase();
+    if (message.contains('already redeemed')) {
+      return 'ALREADY_REDEEMED';
+    }
+    if (message.contains('not found')) {
+      return 'PROMO_NOT_FOUND';
+    }
+    if (message.contains('inactive')) {
+      return 'PROMO_INACTIVE';
+    }
+    if (message.contains('expired')) {
+      return 'PROMO_EXPIRED';
+    }
+    if (message.contains('exhausted')) {
+      return 'PROMO_EXHAUSTED';
+    }
+    if (message.contains('restricted to a specific club') ||
+        message.contains('reserved for another club')) {
+      return 'PROMO_TEAM_MISMATCH';
+    }
+    if (message.contains('authentication required') ||
+        message.contains('signed in')) {
+      return 'PROMO_UNAUTHENTICATED';
+    }
+    if (message.contains('code is required') || message.contains('empty')) {
+      return 'PROMO_EMPTY';
+    }
+    if (message.contains('invalid promo')) {
+      return 'PROMO_INVALID';
+    }
+    return null;
+  }
+
   /// Best available callable error text (message or details), ignoring values
   /// that only repeat the error code (e.g. message == "internal").
   static String? extractFunctionsErrorMessage(FirebaseFunctionsException e) {

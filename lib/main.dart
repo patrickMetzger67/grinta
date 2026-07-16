@@ -289,6 +289,16 @@ class _AuthGateState extends State<AuthGate> {
   Future<void> _prepareAuthenticatedSession(
     firebase_auth.User firebaseUser,
   ) async {
+    // Identify RevenueCat with Firebase UID before UI gates / paywall so
+    // entitlements follow the user onto this device (not anonymous RC ids).
+    await SubscriptionService.instance
+        .ensureUserLinked()
+        .timeout(_kSessionPrepTimeout, onTimeout: () {
+      debugPrint('ensureUserLinked timed out; continuing session prep');
+    });
+    await UserTrialService.instance.ensureInitialized();
+    await UserRootService.instance.ensureInitialized();
+
     await ActiveSessionService.instance
         .ensureSessionActive()
         .timeout(_kSessionPrepTimeout, onTimeout: () {

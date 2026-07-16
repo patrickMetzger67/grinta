@@ -11,9 +11,12 @@ import 'package:purchases_flutter/purchases_flutter.dart';
 
 /// RevenueCat-backed subscription state, exposed app-wide via [ChangeNotifier].
 ///
-/// Call [ensureInitialized] once at startup; listens to Firebase Auth and
-/// syncs CustomerInfo on login/logout. Mobile uses App Store / Play Billing;
-/// web uses RevenueCat Web Billing (Stripe checkout hosted by RevenueCat).
+/// Entitlements are always tied to the **Firebase Auth UID** (via
+/// [PurchasesConfiguration.appUserID] / [Purchases.logIn]), never to device
+/// or selected player/profile. Call [ensureInitialized] at startup; prefers
+/// configuring RC with the restored Firebase UID so a new device does not
+/// mint a throwaway anonymous ID. Mobile uses App Store / Play Billing; web
+/// uses RevenueCat Web Billing (Stripe checkout hosted by RevenueCat).
 class SubscriptionService extends ChangeNotifier {
   SubscriptionService._() {
     FirebaseAuth.instance.authStateChanges().listen(_onAuthStateChanged);
@@ -117,6 +120,19 @@ class SubscriptionService extends ChangeNotifier {
     await _initFuture;
   }
 
+  /// Ensures RevenueCat is identified as the current Firebase UID.
+  ///
+  /// Safe to call after auth changes; no-op when purchases are unavailable or
+  /// the user is signed out. Prefer this before reading entitlements / opening
+  /// the paywall so access follows the user across devices.
+  Future<void> ensureUserLinked() async {
+    await ensureInitialized();
+    if (!_sdkConfigured) return;
+    final uid = FirebaseAuth.instance.currentUser?.uid;
+    if (uid == null) return;
+    await _logInRevenueCat(uid);
+  }
+
   Future<void> _initialize() async {
     if (!isPurchaseAvailable) {
       _state = SubscriptionState.unavailable(error: _unavailableReason());
@@ -129,15 +145,21 @@ class SubscriptionService extends ChangeNotifier {
     try {
       await Purchases.setLogLevel(kDebugMode ? LogLevel.debug : LogLevel.warn);
 
+      // Prefer Firebase UID at configure time so a restored session on a new
+      // device loads that user's CustomerInfo instead of a fresh anonymous ID.
+      final uidAtConfigure = FirebaseAuth.instance.currentUser?.uid;
+
       if (kDebugMode) {
         final prefix = apiKey.length >= 7 ? apiKey.substring(0, 7) : apiKey;
         debugPrint(
           'SubscriptionService: configuring RevenueCat '
-          '(${kIsWeb ? 'web' : defaultTargetPlatform.name}, key=$prefix…)',
+          '(${kIsWeb ? 'web' : defaultTargetPlatform.name}, key=$prefix…, '
+          'appUserID=${uidAtConfigure ?? '(anonymous until login)'})',
         );
       }
 
-      final config = PurchasesConfiguration(apiKey);
+      final config = PurchasesConfiguration(apiKey)
+        ..appUserID = uidAtConfigure;
       await Purchases.configure(config);
       _sdkConfigured = true;
 
@@ -147,6 +169,8 @@ class SubscriptionService extends ChangeNotifier {
 
       final uid = FirebaseAuth.instance.currentUser?.uid;
       if (uid != null) {
+        // logIn is idempotent when already identified; also covers auth that
+        // arrived after configure started, and refreshes CustomerInfo.
         await _logInRevenueCat(uid);
       } else {
         _state = _state.copyWith(isLoading: false, isInitialized: true);
@@ -301,7 +325,7 @@ class SubscriptionService extends ChangeNotifier {
 
   void _markRevenueCatLoggedIn(String uid, CustomerInfo info) {
     // originalAppUserId can remain the first anonymous RC id even after
-    // Purchases.logIn(firebaseUid); linking is determined by logIn success.
+    // Purchases.logIn(firebaseUid); identity is Purchases.appUserID / logIn.
     _loggedInUid = uid;
     if (kDebugMode) {
       final activeKeys = info.entitlements.active.keys.toList();
@@ -319,17 +343,20 @@ class SubscriptionService extends ChangeNotifier {
 
       LogInResult? result;
 
-      final maxAttempts = kIsWeb ? 4 : 2;
+      const maxAttempts = kIsWeb ? 4 : 2;
       for (var attempt = 0; attempt < maxAttempts; attempt++) {
         try {
           result = await Purchases.logIn(uid);
-          if (kIsWeb &&
-              _isAnonymousRevenueCatUser(result.customerInfo.originalAppUserId) &&
+          // Prefer current appUserID (not originalAppUserId): RC keeps the
+          // first-seen anonymous id in originalAppUserId even after identify.
+          final currentAppUserId = await Purchases.appUserID;
+          if (_isAnonymousRevenueCatUser(currentAppUserId) &&
               attempt < maxAttempts - 1) {
             if (kDebugMode) {
               debugPrint(
-                'SubscriptionService: web logIn still anonymous '
-                '(firebaseUid=$uid), retrying (${attempt + 1}/$maxAttempts)',
+                'SubscriptionService: logIn still anonymous '
+                '(firebaseUid=$uid, appUserID=$currentAppUserId), '
+                'retrying (${attempt + 1}/$maxAttempts)',
               );
             }
             await Future<void>.delayed(
@@ -357,6 +384,14 @@ class SubscriptionService extends ChangeNotifier {
         throw StateError('Purchases.logIn returned no result');
       }
 
+      final linkedAppUserId = await Purchases.appUserID;
+      if (linkedAppUserId != uid && kDebugMode) {
+        debugPrint(
+          'SubscriptionService: WARNING appUserID=$linkedAppUserId '
+          'expected firebaseUid=$uid after Purchases.logIn',
+        );
+      }
+
       _markRevenueCatLoggedIn(uid, result.customerInfo);
       _applyCustomerInfo(result.customerInfo);
       await _fetchCustomerInfo();
@@ -368,8 +403,9 @@ class SubscriptionService extends ChangeNotifier {
         final activeKeys = info.entitlements.active.keys.toList();
         debugPrint(
           'SubscriptionService: logIn firebaseUid=$uid '
-          'rcAppUserId=${info.originalAppUserId} '
-          'activeEntitlements=${activeKeys.join(', ')}',
+          'rcAppUserID=$linkedAppUserId '
+          'rcOriginalAppUserId=${info.originalAppUserId} '
+          'activeEntitlements=${activeKeys.isEmpty ? '(none)' : activeKeys.join(', ')}',
         );
         if (!kIsWeb && activeKeys.isNotEmpty) {
           debugPrint(
@@ -988,6 +1024,8 @@ class SubscriptionService extends ChangeNotifier {
     if (!_sdkConfigured) return null;
     try {
       _setLoading(true);
+      // Purchases must land on the Firebase UID so other devices see them.
+      await _ensureRevenueCatUserLinked();
       final result = await Purchases.purchase(
         PurchaseParams.package(package),
       );
@@ -1011,6 +1049,7 @@ class SubscriptionService extends ChangeNotifier {
     if (!_sdkConfigured || kIsWeb) return null;
     try {
       _setLoading(true);
+      await _ensureRevenueCatUserLinked();
       final info = await Purchases.restorePurchases();
       _applyCustomerInfo(info);
       return info;

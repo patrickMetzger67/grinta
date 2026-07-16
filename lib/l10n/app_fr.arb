@@ -1454,6 +1454,8 @@
       "teamName": { "type": "String" }
     }
   },
+  "teamEditNameTitle": "Modifier le nom de l'équipe",
+  "teamEditNameSuccess": "Nom de l'équipe mis à jour.",
   "calendarSyncToggleLabel": "Sync. calendrier",
   "calendarSyncToggleSubtitle": "Mise à jour auto à l'ouverture de l'agenda (max 1×/15 min)",
   "calendarSyncWebSubtitle": "Télécharge un fichier ICS à importer dans ton calendrier",
@@ -1685,6 +1687,10 @@
   "editTrainingError": "Impossible de modifier l'entraînement. Réessayez.",
   "trainingDeleteConfirmTitle": "Supprimer l'entraînement ?",
   "trainingDeleteConfirmMessage": "Voulez-vous vraiment supprimer cet entraînement ? Cette action est définitive.",
+  "trainingDeleteRecurrentTitle": "Supprimer l'entraînement récurrent ?",
+  "trainingDeleteRecurrentMessage": "Souhaitez-vous supprimer toutes les récurrences de cette série ?",
+  "trainingDeleteThisOccurrence": "Cette occurrence uniquement",
+  "trainingDeleteAllOccurrences": "Toutes les occurrences",
   "trainingDeleted": "Entraînement supprimé",
   "trainingDeleteError": "Impossible de supprimer l'entraînement. Réessayez.",
   "finishTrainingTitle": "Terminer l'entraînement",
@@ -2234,6 +2240,63 @@
   "adminStreamGroupsDeleted": "Groupe supprimé.",
   "adminStreamGroupsDeleteFailed": "Impossible de supprimer le groupe.",
   "adminStreamGroupsPermissionDenied": "Un accès administrateur est requis pour gérer les groupes.",
+  "adminSeasonsSection": "Saisons",
+  "adminSeasonsSectionDesc": "Lister et gérer les saisons de la plateforme.",
+  "adminSeasonsTitle": "Saisons",
+  "adminSeasonsEmpty": "Aucune saison pour le moment.",
+  "adminSeasonsLoadError": "Impossible de charger les saisons.",
+  "adminSeasonCreate": "Ajouter une saison",
+  "adminSeasonEditTitle": "Modifier la saison",
+  "adminSeasonCreated": "Saison créée.",
+  "adminSeasonUpdated": "Saison mise à jour.",
+  "adminSeasonCreateFailed": "Impossible de créer la saison.",
+  "adminSeasonUpdateFailed": "Impossible de mettre à jour la saison.",
+  "adminSeasonUnnamed": "Saison sans nom",
+  "adminSeasonCurrentBadge": "Actuelle",
+  "adminSeasonNewVersionBadge": "Nouvelle version",
+  "adminSeasonDateRange": "{start} – {end}",
+  "@adminSeasonDateRange": {
+    "placeholders": {
+      "start": { "type": "String" },
+      "end": { "type": "String" }
+    }
+  },
+  "adminSeasonClubLabel": "Club : {clubName}",
+  "@adminSeasonClubLabel": {
+    "placeholders": {
+      "clubName": { "type": "String" }
+    }
+  },
+  "adminSeasonAffiliateLabel": "N° affilié : {number}",
+  "@adminSeasonAffiliateLabel": {
+    "placeholders": {
+      "number": { "type": "String" }
+    }
+  },
+  "adminSeasonFieldName": "Nom",
+  "adminSeasonFieldNameReadOnly": "Le nom de la saison ne peut pas être modifié après création.",
+  "adminSeasonFieldRequired": "Ce champ est obligatoire.",
+  "adminSeasonFieldStartDate": "Date de début",
+  "adminSeasonFieldEndDate": "Date de fin",
+  "adminSeasonDateSelected": "Sélection : {date}",
+  "@adminSeasonDateSelected": {
+    "placeholders": {
+      "date": { "type": "String" }
+    }
+  },
+  "adminSeasonFieldClubName": "Nom du club",
+  "adminSeasonFieldAffiliateNumber": "Numéro d'affilié",
+  "adminSeasonFieldCurrent": "Saison actuelle",
+  "adminSeasonFieldCurrentHint": "Une seule saison peut être actuelle à la fois.",
+  "adminSeasonFieldNewVersion": "Nouvelle version",
+  "adminSeasonChangeDefaultTitle": "Changer la saison actuelle ?",
+  "adminSeasonChangeDefaultMessage": "« {seasonName} » est actuellement la saison par défaut. Voulez-vous la remplacer ?",
+  "@adminSeasonChangeDefaultMessage": {
+    "placeholders": {
+      "seasonName": { "type": "String" }
+    }
+  },
+  "adminSeasonChangeDefaultConfirm": "Changer la saison par défaut",
   "promoCodeMenuLabel": "Code promo",
   "promoCodeDialogValidate": "Valider",
   "promoCodeRedeemTitle": "Vous avez un code promo ?",
@@ -2259,6 +2322,9 @@
   "promoCodeRedeemRcUnavailable": "Code enregistré côté serveur, mais RevenueCat n'est pas configuré sur cet appareil (vérifiez les clés API). Essayez sur iOS ou web, ou relancez avec dart_defines.json.",
   "promoCodeRedeemNotFound": "Code promo introuvable.",
   "promoCodeRedeemInvalid": "Ce code promo n'est plus valide.",
+  "promoCodeRedeemInactive": "Ce code promo n'est plus actif.",
+  "promoCodeRedeemExpired": "Ce code promo a expiré.",
+  "promoCodeRedeemAlreadyRedeemed": "Vous avez déjà utilisé ce code promo.",
   "promoCodeRedeemExhausted": "Ce code promo a atteint sa limite d'utilisation.",
   "promoCodeRedeemTeamMismatch": "Ce code promo est réservé à un autre club.",
   "promoCodeRedeemUnauthenticated": "Vous devez être connecté pour utiliser un code promo.",
