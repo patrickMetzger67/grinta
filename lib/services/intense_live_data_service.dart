@@ -1,6 +1,7 @@
 import 'dart:convert';
 
 import 'package:cloud_functions/cloud_functions.dart';
+import 'package:flutter/foundation.dart';
 import 'package:grinta/model/fieldGpsCorners.dart';
 import 'package:grinta/model/match.dart' as models;
 import 'package:grinta/model/matchCompo.dart';
@@ -21,7 +22,16 @@ import 'package:grinta/util/training_finish_helper.dart';
 import 'training_intense_sync_service.dart';
 
 /// Default polling interval for live Intense metrics refresh.
-const Duration kIntenseLivePollingInterval = Duration(seconds: 20);
+///
+/// Kept relatively long because each poll hits Insiders once per assigned
+/// tracker; shorter intervals amplify 429 throttling.
+const Duration kIntenseLivePollingInterval = Duration(seconds: 30);
+
+/// Max parallel Insiders fetches during a live refresh (API rate-limits hard).
+const int kIntenseLiveFetchConcurrency = 2;
+
+/// Retries when Insiders / Cloud Function returns HTTP 429.
+const int kIntenseLiveFetchMaxAttempts = 4;
 
 /// Rolling lookback for live metrics display (recent activity, not full session).
 ///
@@ -322,19 +332,20 @@ class IntenseLiveDataService {
   }) async {
     if (targets.isEmpty) return const [];
 
-    final results = await Future.wait(
-      targets.map(
-        (target) => fetchLiveMetrics(
-          target: target,
-          sessionStartUtc: sessionStartUtc,
-          sessionStopUtc: sessionStopUtc,
-          isMatch: isMatch,
-          eventId: eventId,
-          fieldGpsCorners: fieldGpsCorners,
-        ),
+    // Never fan out one CF/Insiders call per player at once — that triggers
+    // Insiders HTTP 429 ("Request was throttled") on squad-sized sessions.
+    return _mapWithConcurrency<IntenseLivePlayerTarget, IntenseLivePlayerMetrics>(
+      targets,
+      concurrency: kIntenseLiveFetchConcurrency,
+      (target) => fetchLiveMetrics(
+        target: target,
+        sessionStartUtc: sessionStartUtc,
+        sessionStopUtc: sessionStopUtc,
+        isMatch: isMatch,
+        eventId: eventId,
+        fieldGpsCorners: fieldGpsCorners,
       ),
     );
-    return results;
   }
 
   Future<List<TrackerRaw>> _fetchSamples({
@@ -348,36 +359,116 @@ class IntenseLiveDataService {
       ...window.toCloudPayload(),
     };
 
-    final fetchResult = await _functions
-        .httpsCallable('fetchIntensePreprocessedSamples')
-        .call(fetchPayload);
+    Object? lastError;
+    for (var attempt = 0; attempt < kIntenseLiveFetchMaxAttempts; attempt++) {
+      try {
+        final fetchResult = await _functions
+            .httpsCallable('fetchIntensePreprocessedSamples')
+            .call(fetchPayload);
 
-    final fetchData = Map<String, dynamic>.from(fetchResult.data as Map);
-    final rawSamples = (fetchData['samples'] as List?)
-            ?.whereType<Map>()
-            .map((e) => Map<String, dynamic>.from(e))
-            .toList() ??
-        <Map<String, dynamic>>[];
+        final fetchData = Map<String, dynamic>.from(fetchResult.data as Map);
+        final rawSamples = (fetchData['samples'] as List?)
+                ?.whereType<Map>()
+                .map((e) => Map<String, dynamic>.from(e))
+                .toList() ??
+            <Map<String, dynamic>>[];
 
-    var samples = rawSamples
-        .map(
-          (s) => TrackerRaw(
-            trackerId: trackerId,
-            timeMs: _asInt(s['timeMs']),
-            latitude: _asDouble(s['latitude']),
-            longitude: _asDouble(s['longitude']),
-            speedMps: _asDouble(s['speedMps']),
-          ),
-        )
-        .toList(growable: false);
+        var samples = rawSamples
+            .map(
+              (s) => TrackerRaw(
+                trackerId: trackerId,
+                timeMs: _asInt(s['timeMs']),
+                latitude: _asDouble(s['latitude']),
+                longitude: _asDouble(s['longitude']),
+                speedMps: _asDouble(s['speedMps']),
+              ),
+            )
+            .toList(growable: false);
 
-    final asiBase64 = fetchData['asiBase64']?.toString();
-    if (samples.isEmpty && asiBase64 != null && asiBase64.isNotEmpty) {
-      final csv = await _convertAsiBase64ToCsv(asiBase64);
-      samples = _samplesFromCsv(csv, trackerId: trackerId);
+        final asiBase64 = fetchData['asiBase64']?.toString();
+        if (samples.isEmpty && asiBase64 != null && asiBase64.isNotEmpty) {
+          final csv = await _convertAsiBase64ToCsv(asiBase64);
+          samples = _samplesFromCsv(csv, trackerId: trackerId);
+        }
+
+        return samples;
+      } on FirebaseFunctionsException catch (e) {
+        lastError = e;
+        if (!_isInsidersRateLimited(e) ||
+            attempt >= kIntenseLiveFetchMaxAttempts - 1) {
+          rethrow;
+        }
+        final delay = _retryDelayForRateLimit(e, attempt);
+        if (kDebugMode) {
+          debugPrint(
+            '[IntenseLive] Insiders 429 for device=$insidersDeviceId '
+            'attempt=${attempt + 1}/$kIntenseLiveFetchMaxAttempts '
+            'retryIn=${delay.inMilliseconds}ms',
+          );
+        }
+        await Future<void>.delayed(delay);
+      }
     }
 
-    return samples;
+    throw lastError ??
+        StateError('fetchIntensePreprocessedSamples failed without error');
+  }
+
+  static bool _isInsidersRateLimited(FirebaseFunctionsException e) {
+    final raw = '${e.code} ${e.message ?? ''} ${e.details ?? ''}'.toLowerCase();
+    return raw.contains('429') ||
+        raw.contains('too many requests') ||
+        raw.contains('throttl') ||
+        raw.contains('rate limit');
+  }
+
+  @visibleForTesting
+  static bool debugIsInsidersRateLimited(FirebaseFunctionsException e) =>
+      _isInsidersRateLimited(e);
+
+  static Duration _retryDelayForRateLimit(
+    FirebaseFunctionsException e,
+    int attempt,
+  ) {
+    final raw = '${e.message ?? ''} ${e.details ?? ''}'.toLowerCase();
+    final match = RegExp(r'retry-after:\s*(\d+)').firstMatch(raw);
+    if (match != null) {
+      final seconds = int.tryParse(match.group(1)!) ?? 1;
+      // Insiders often returns Retry-After: 1s; pad a bit under load.
+      return Duration(milliseconds: (seconds.clamp(1, 15) * 1000) + 250);
+    }
+    return Duration(milliseconds: 600 * (1 << attempt));
+  }
+
+  @visibleForTesting
+  static Duration debugRetryDelayForRateLimit(
+    FirebaseFunctionsException e,
+    int attempt,
+  ) =>
+      _retryDelayForRateLimit(e, attempt);
+
+  /// Runs [mapper] over [items] with at most [concurrency] in flight.
+  static Future<List<R>> _mapWithConcurrency<T, R>(
+    List<T> items,
+    Future<R> Function(T item) mapper, {
+    required int concurrency,
+  }) async {
+    if (items.isEmpty) return const [];
+    final results = List<R?>.filled(items.length, null);
+    var nextIndex = 0;
+
+    Future<void> worker() async {
+      while (true) {
+        final index = nextIndex;
+        nextIndex += 1;
+        if (index >= items.length) return;
+        results[index] = await mapper(items[index]);
+      }
+    }
+
+    final workerCount = concurrency.clamp(1, items.length);
+    await Future.wait(List.generate(workerCount, (_) => worker()));
+    return results.cast<R>();
   }
 
   Future<String> _convertAsiBase64ToCsv(String asiBase64) async {
