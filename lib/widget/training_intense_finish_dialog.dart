@@ -256,6 +256,13 @@ class _TrainingIntenseFinishDialogState extends State<TrainingIntenseFinishDialo
         );
         if (mounted) setState(() {});
       }
+
+      // Brief pause between devices so Insiders throttle from Live / prior
+      // fetches can cool down before the next tracker (first in list used to
+      // absorb every hard 429 without retry).
+      if (target != _targets.last) {
+        await Future<void>.delayed(const Duration(milliseconds: 400));
+      }
     }
 
     if (!mounted) return;

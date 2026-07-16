@@ -31,7 +31,7 @@ const Duration kIntenseLivePollingInterval = Duration(seconds: 30);
 const int kIntenseLiveFetchConcurrency = 2;
 
 /// Retries when Insiders / Cloud Function returns HTTP 429.
-const int kIntenseLiveFetchMaxAttempts = 4;
+const int kIntenseLiveFetchMaxAttempts = kIntenseInsidersFetchMaxAttempts;
 
 /// Rolling lookback for live metrics display (recent activity, not full session).
 ///
