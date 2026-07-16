@@ -6794,6 +6794,31 @@ abstract class AppLocalizations {
   /// **'Récupération des données des joueurs présents avec capteur assigné. Ne fermez pas cette fenêtre.'**
   String get trainingIntenseFinishMessage;
 
+  /// No description provided for @trainingIntenseResyncButton.
+  ///
+  /// In fr, this message translates to:
+  /// **'Re sync'**
+  String get trainingIntenseResyncButton;
+
+  /// No description provided for @trainingIntenseResyncTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Resynchroniser les données capteurs'**
+  String get trainingIntenseResyncTitle;
+
+  /// No description provided for @trainingIntenseResyncMessage.
+  ///
+  /// In fr, this message translates to:
+  /// **'Nouvelle récupération des données sur toute la durée de l\'entraînement (début → fin). Ne fermez pas cette fenêtre.'**
+  String get trainingIntenseResyncMessage;
+
+  /// No description provided for @trainingIntenseResyncSuccess.
+  ///
+  /// In fr, this message translates to:
+  /// **'Données capteurs resynchronisées.'**
+  String get trainingIntenseResyncSuccess;
+
+
   /// No description provided for @trainingIntenseFinishSyncing.
   ///
   /// In fr, this message translates to:

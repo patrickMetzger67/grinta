@@ -7,6 +7,7 @@ import 'package:grinta/services/playerService.dart';
 import 'package:grinta/services/teamWorkloadSummaryService.dart';
 import 'package:grinta/services/trackerDataAnalysisService.dart';
 import 'package:grinta/services/trainingService.dart';
+import 'package:grinta/services/training_intense_sync_service.dart';
 import 'package:grinta/util/app_snackbar.dart';
 import 'package:grinta/util/app_theme.dart';
 import 'package:grinta/widget/training_intense_finish_dialog.dart';
@@ -209,6 +210,41 @@ Future<bool> shouldUseIntenseFinishFlow(Training training) async {
 
   final owner = await OwnerService().getOwnerById(ownerId);
   return owner != null && !owner.withSyncing;
+}
+
+/// Re-syncs Intense tracker data for a finished training using
+/// [Training.dateTime] → [Training.trainingEndAt] (available 48h after end).
+Future<bool> resyncManagedTrainingIntense(
+  BuildContext context, {
+  required Training training,
+}) async {
+  if (!canResyncTrainingIntense(training)) {
+    return false;
+  }
+
+  final useIntenseFlow = await shouldUseIntenseFinishFlow(training);
+  if (!useIntenseFlow || !context.mounted) {
+    return false;
+  }
+
+  final synced = await TrainingIntenseFinishDialog.show(
+    context,
+    training: training,
+    resync: true,
+  );
+  if (synced != true || !context.mounted) {
+    return false;
+  }
+
+  final BuildContext? rootContext = appNavigatorKey.currentContext;
+  if (rootContext != null && rootContext.mounted) {
+    AppSnackbar.show(
+      rootContext,
+      context.l10n.trainingIntenseResyncSuccess,
+      isError: false,
+    );
+  }
+  return true;
 }
 
 /// Finishes a training after confirmation and shows a snackbar on the root

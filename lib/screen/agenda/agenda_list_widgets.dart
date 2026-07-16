@@ -1360,6 +1360,8 @@ class AgendaItemCard extends StatelessWidget {
                     item.training!.withTracker == true &&
                     item.startAt.isBefore(DateTime.now()) &&
                     !isTrainingFinished(item.training!),
+                showResync: canManageThisTraining &&
+                    canResyncTrainingIntense(item.training!),
               ),
             ],
             if (item.training != null && isManager == true) ...[
@@ -1579,6 +1581,7 @@ class _AgendaIntenseLiveButton extends StatefulWidget {
     required this.scheduledEnd,
     required this.title,
     required this.showFinish,
+    required this.showResync,
   });
 
   final Training training;
@@ -1586,6 +1589,7 @@ class _AgendaIntenseLiveButton extends StatefulWidget {
   final DateTime scheduledEnd;
   final String title;
   final bool showFinish;
+  final bool showResync;
 
   @override
   State<_AgendaIntenseLiveButton> createState() =>
@@ -1674,7 +1678,10 @@ class _AgendaIntenseLiveButtonState extends State<_AgendaIntenseLiveButton> {
           );
         }
 
-        if (!showLive && !widget.showFinish) {
+        // Resync only for Intense cloud owners (same eligibility as Live).
+        final showResync = widget.showResync && canStreamLive;
+
+        if (!showLive && !widget.showFinish && !showResync) {
           return const SizedBox.shrink();
         }
 
@@ -1722,6 +1729,27 @@ class _AgendaIntenseLiveButtonState extends State<_AgendaIntenseLiveButton> {
                     backgroundColor: colors.card.withValues(alpha: 0.55),
                     foregroundColor: colors.textPrimary,
                     side: BorderSide(color: colors.border),
+                    padding: const EdgeInsets.symmetric(vertical: 12),
+                  ),
+                ),
+              ),
+            ],
+            if (showResync) ...[
+              const SizedBox(height: 10),
+              SizedBox(
+                width: double.infinity,
+                child: FilledButton.icon(
+                  onPressed: () async {
+                    await resyncManagedTrainingIntense(
+                      context,
+                      training: widget.training,
+                    );
+                  },
+                  icon: const Icon(Icons.sync_rounded, size: 18),
+                  label: Text(context.l10n.trainingIntenseResyncButton),
+                  style: FilledButton.styleFrom(
+                    backgroundColor: colors.primary,
+                    foregroundColor: Colors.white,
                     padding: const EdgeInsets.symmetric(vertical: 12),
                   ),
                 ),

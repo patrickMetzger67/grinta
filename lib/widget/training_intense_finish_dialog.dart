@@ -11,24 +11,30 @@ import 'package:grinta/util/app_theme.dart';
 import 'package:grinta/util/insiders_device_resolver.dart';
 import 'package:grinta/util/training_finish_helper.dart';
 
-/// Dialog shown when finishing a training with Intense/SIM trackers
-/// ([Owner.withSyncing] == false): lists present players, syncs each assigned
-/// device via Insiders API, then marks the training finished on full success.
+/// Dialog shown when finishing (or re-syncing) a training with Intense/SIM
+/// trackers ([Owner.withSyncing] == false): lists present players, syncs each
+/// assigned device via Insiders API, then marks the training finished on full
+/// success (finish mode) or refreshes team workload (resync mode).
 class TrainingIntenseFinishDialog extends StatefulWidget {
   const TrainingIntenseFinishDialog({
     super.key,
     required this.training,
     required this.syncStopAt,
+    this.resync = false,
   });
 
   final Training training;
   final DateTime syncStopAt;
+  final bool resync;
 
   static Future<bool?> show(
     BuildContext context, {
     required Training training,
+    bool resync = false,
   }) {
-    final syncStopAt = DateTime.now();
+    final syncStopAt = resync
+        ? (training.trainingEndAt?.toDate() ?? DateTime.now())
+        : DateTime.now();
     return showDialog<bool>(
       context: context,
       useRootNavigator: true,
@@ -36,6 +42,7 @@ class TrainingIntenseFinishDialog extends StatefulWidget {
       builder: (_) => TrainingIntenseFinishDialog(
         training: training,
         syncStopAt: syncStopAt,
+        resync: resync,
       ),
     );
   }
@@ -153,13 +160,22 @@ class _TrainingIntenseFinishDialogState extends State<TrainingIntenseFinishDialo
         fieldGpsCorners = trackerField?.fieldGpsCorners;
       }
 
+      final window = widget.resync
+          ? resolveTrainingIntenseResyncWindow(widget.training)
+          : resolveTrainingIntenseTimeWindow(
+              widget.training,
+              syncStopAt: widget.syncStopAt,
+            );
+      if (window == null) {
+        throw StateError(
+          'Fenêtre de sync invalide (dateTime / trainingEndAt manquants).',
+        );
+      }
+
       if (!mounted) return;
       setState(() {
         _targets = targets;
-        _window = resolveTrainingIntenseTimeWindow(
-          widget.training,
-          syncStopAt: widget.syncStopAt,
-        );
+        _window = window;
         _fieldGpsCorners = fieldGpsCorners;
         _loading = false;
       });
@@ -246,11 +262,23 @@ class _TrainingIntenseFinishDialogState extends State<TrainingIntenseFinishDialo
 
     if (_allDone) {
       try {
-        await finishTrainingAfterConfirm(
-          training: widget.training,
-          markTrackerDataUploaded: true,
-          aggregateTeamWorkload: true,
-        );
+        if (widget.resync) {
+          final trainingId = widget.training.docId?.trim() ??
+              widget.training.trainingId?.trim() ??
+              '';
+          if (trainingId.isNotEmpty) {
+            await computeTeamWorkloadSummaryForEvent(
+              eventId: trainingId,
+              training: widget.training,
+            );
+          }
+        } else {
+          await finishTrainingAfterConfirm(
+            training: widget.training,
+            markTrackerDataUploaded: true,
+            aggregateTeamWorkload: true,
+          );
+        }
         setState(() {
           _finished = true;
           _syncing = false;
@@ -308,7 +336,11 @@ class _TrainingIntenseFinishDialogState extends State<TrainingIntenseFinishDialo
     final l10n = context.l10n;
 
     return AlertDialog(
-      title: Text(l10n.trainingIntenseFinishTitle),
+      title: Text(
+        widget.resync
+            ? l10n.trainingIntenseResyncTitle
+            : l10n.trainingIntenseFinishTitle,
+      ),
       content: SizedBox(
         width: 420,
         child: _buildContent(context, colors),
@@ -329,7 +361,7 @@ class _TrainingIntenseFinishDialogState extends State<TrainingIntenseFinishDialo
             onPressed: () => _runSync(retry: true),
             child: Text(l10n.actionRetry),
           ),
-        if (_targets.isEmpty && !_loading)
+        if (_targets.isEmpty && !_loading && !widget.resync)
           TextButton(
             onPressed: () async {
               try {
@@ -384,7 +416,9 @@ class _TrainingIntenseFinishDialogState extends State<TrainingIntenseFinishDialo
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         Text(
-          l10n.trainingIntenseFinishMessage,
+          widget.resync
+              ? l10n.trainingIntenseResyncMessage
+              : l10n.trainingIntenseFinishMessage,
           style: TextStyle(color: colors.textSecondary),
         ),
         const SizedBox(height: 16),
@@ -457,7 +491,9 @@ class _TrainingIntenseFinishDialogState extends State<TrainingIntenseFinishDialo
         if (_finished) ...[
           const SizedBox(height: 12),
           Text(
-            l10n.trainingFinished,
+            widget.resync
+                ? l10n.trainingIntenseResyncSuccess
+                : l10n.trainingFinished,
             style: TextStyle(color: colors.success, fontSize: 12),
           ),
         ],

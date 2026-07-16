@@ -109,6 +109,38 @@ TrainingIntenseTimeWindow resolveTrainingIntenseTimeWindow(
   );
 }
 
+/// Full créneau for a post-finish re-sync: [Training.dateTime] → [Training.trainingEndAt].
+///
+/// Unlike [resolveTrainingIntenseTimeWindow], this does **not** cap to "now".
+TrainingIntenseTimeWindow? resolveTrainingIntenseResyncWindow(Training training) {
+  final startLocal = training.dateTime?.toDate();
+  final endLocal = training.trainingEndAt?.toDate();
+  if (startLocal == null || endLocal == null) return null;
+
+  final startUtc = startLocal.toUtc();
+  final endUtc = endLocal.toUtc();
+  if (!endUtc.isAfter(startUtc)) {
+    return TrainingIntenseTimeWindow(start: startUtc, stop: startUtc);
+  }
+  return TrainingIntenseTimeWindow(start: startUtc, stop: endUtc);
+}
+
+/// How long managers may re-sync Intense data after [Training.trainingEndAt].
+const Duration kTrainingIntenseResyncEligibility = Duration(hours: 48);
+
+/// True when an Intense re-sync is allowed: [Training.dateTime] +
+/// [Training.trainingEndAt] set, and [now] is within 48h after end.
+bool canResyncTrainingIntense(Training training, {DateTime? now}) {
+  if (training.withTracker != true) return false;
+  if (training.dateTime == null) return false;
+  final end = training.trainingEndAt?.toDate();
+  if (end == null) return false;
+  final clock = now ?? DateTime.now();
+  if (clock.isBefore(end)) return false;
+  final deadline = end.add(kTrainingIntenseResyncEligibility);
+  return !clock.isAfter(deadline);
+}
+
 /// GNSS steps shorter than this are ignored for Intense analysis (desk/indoor drift).
 const double kIntenseMinMeaningfulStepDistanceMeters = 3.0;
 

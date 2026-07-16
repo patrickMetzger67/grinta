@@ -3954,6 +3954,20 @@ class AppLocalizationsEs extends AppLocalizations {
       'Recuperando datos de jugadores presentes con sensor asignado. No cierre esta ventana.';
 
   @override
+  String get trainingIntenseResyncButton => 'Re sync';
+
+  @override
+  String get trainingIntenseResyncTitle => 'Resincronizar datos de sensores';
+
+  @override
+  String get trainingIntenseResyncMessage => 'Volviendo a recuperar los datos del tracker en toda la ventana del entrenamiento (inicio → fin). No cierre esta ventana.';
+
+  @override
+  String get trainingIntenseResyncSuccess => 'Datos de sensores resincronizados.';
+
+
+
+  @override
   String get trainingIntenseFinishSyncing => 'Sincronización en curso…';
 
   @override
