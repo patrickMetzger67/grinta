@@ -103,26 +103,48 @@ class _TeamsListScreenState extends State<TeamsListScreen> {
     await openTeamCreationFlow(context);
   }
 
+  bool _canManageListedTeam(BuildContext context, Team team) {
+    final appSession = context.read<AppSession>();
+    final String? currentUserUid =
+        appSession.user?.uid ?? FirebaseAuth.instance.currentUser?.uid;
+    final bool listedAsManager = team.keyTeam != null &&
+        widget.managedTeamsIds.contains(team.keyTeam!);
+    return canManageTeam(
+      team,
+      currentUserUid,
+      isManager: listedAsManager,
+    );
+  }
+
   Future<void> _onTeamStatsPressed(BuildContext context, Team team) async {
-    await UserTrialService.instance.ensureInitialized();
-    await SubscriptionService.instance.refreshForActiveSession();
-    if (!UserTrialService.instance.hasPremiumAccess) {
-      if (!context.mounted) return;
-      final appSession = context.read<AppSession>();
-      await SubscriptionPaywall.show(
-        context,
-        allowSkip: true,
-        initialKind: prefersCoachSubscriptionOffering(appSession)
-            ? SubscriptionOfferingKind.coach
-            : SubscriptionOfferingKind.player,
-      );
-      return;
+    if (!context.mounted) return;
+
+    // Align with team detail / Ask Diego: managers & owners open team stats
+    // without a premium gate. Players still need premium (or a successful
+    // subscribe from the paywall).
+    final bool isManager = _canManageListedTeam(context, team);
+
+    if (!isManager) {
+      await UserTrialService.instance.ensureInitialized();
+      await SubscriptionService.instance.refreshForActiveSession();
+      if (!UserTrialService.instance.hasPremiumAccess) {
+        if (!context.mounted) return;
+        final appSession = context.read<AppSession>();
+        final subscribed = await SubscriptionPaywall.show(
+          context,
+          allowSkip: true,
+          initialKind: prefersCoachSubscriptionOffering(appSession)
+              ? SubscriptionOfferingKind.coach
+              : SubscriptionOfferingKind.player,
+        );
+        if (subscribed == true) {
+          await SubscriptionService.instance.refreshForActiveSession();
+        }
+        if (!UserTrialService.instance.hasPremiumAccess) return;
+      }
     }
 
     if (!context.mounted) return;
-
-    final isManager = team.keyTeam != null &&
-        widget.managedTeamsIds.contains(team.keyTeam!);
 
     await openTeamStatsScreen(
       context,
@@ -137,8 +159,11 @@ class _TeamsListScreenState extends State<TeamsListScreen> {
     final textTheme = Theme.of(context).textTheme;
     final l10n = context.l10n;
 
-    return Consumer<AppSession>(
-      builder: (context, appSession, _) {
+    return ListenableBuilder(
+      listenable: UserTrialService.instance,
+      builder: (context, _) {
+        return Consumer<AppSession>(
+          builder: (context, appSession, _) {
         final List<Team> allTeams = List<Team>.from(appSession.selectedTeams);
         final seasonId = appSession.selectedSeason?.ref?.id;
         _scheduleEquipeLookup(allTeams, seasonId);
@@ -310,15 +335,19 @@ class _TeamsListScreenState extends State<TeamsListScreen> {
                       final int competitionCount =
                           equipe?.competitions.length ?? 0;
                       final bool hasCompetitions = competitionCount > 0;
-                      final bool hasTeamStatsLink =
-                          (team.teamIdInTeamsPerClub?.trim().isNotEmpty ??
-                              false);
 
                       final bool isManager = team.keyTeam != null && widget.managedTeamsIds.contains(team.keyTeam!);
                       final String? currentUserUid =
                           appSession.user?.uid ??
                           FirebaseAuth.instance.currentUser?.uid;
                       final bool isOwner = isTeamOwner(team, currentUserUid);
+                      final bool canManage = canManageTeam(
+                        team,
+                        currentUserUid,
+                        isManager: isManager,
+                      );
+                      final bool showStatsPremiumBadge = !canManage &&
+                          !UserTrialService.instance.hasPremiumAccess;
 
                       return Card(
                         child: InkWell(
@@ -392,22 +421,20 @@ class _TeamsListScreenState extends State<TeamsListScreen> {
                                     ],
                                   ),
                                 ),
-                                if (hasTeamStatsLink) ...[
-                                  IconButton(
-                                    icon:
-                                        SubscriptionPremiumBadge.withIconOverlay(
-                                      context: context,
-                                      colors: colors,
-                                      showPremium: true,
-                                      icon: const Icon(
-                                        Icons.bar_chart_outlined,
-                                      ),
+                                IconButton(
+                                  icon:
+                                      SubscriptionPremiumBadge.withIconOverlay(
+                                    context: context,
+                                    colors: colors,
+                                    showPremium: showStatsPremiumBadge,
+                                    icon: const Icon(
+                                      Icons.bar_chart_outlined,
                                     ),
-                                    tooltip: l10n.tabStats,
-                                    onPressed: () =>
-                                        _onTeamStatsPressed(context, team),
                                   ),
-                                ],
+                                  tooltip: l10n.tabStats,
+                                  onPressed: () =>
+                                      _onTeamStatsPressed(context, team),
+                                ),
                                 if (hasCompetitions && equipe != null) ...[
                                   IconButton(
                                     icon: const Icon(
@@ -455,6 +482,8 @@ class _TeamsListScreenState extends State<TeamsListScreen> {
               ],
             ),
           ),
+        );
+          },
         );
       },
     );
