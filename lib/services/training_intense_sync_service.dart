@@ -323,6 +323,14 @@ class TrainingIntenseSyncService {
       }
     }
 
+    final lower = raw.toLowerCase();
+    if (lower.contains('429') ||
+        lower.contains('too many requests') ||
+        lower.contains('throttl')) {
+      return 'API Insiders saturée temporairement pour « ${target.trackerLabel} ». '
+          'Réessayez dans quelques secondes.';
+    }
+
     if (raw.contains('403') ||
         raw.contains('You do not have permission') ||
         raw.contains('permission-denied')) {

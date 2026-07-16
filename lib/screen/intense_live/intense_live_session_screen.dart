@@ -98,6 +98,7 @@ class _IntenseLiveSessionScreenState extends State<IntenseLiveSessionScreen> {
   String? _loadError;
   bool _loading = true;
   bool _refreshing = false;
+  bool _refreshInFlight = false;
   DateTime? _lastUpdatedAt;
   Timer? _pollTimer;
 
@@ -160,28 +161,37 @@ class _IntenseLiveSessionScreenState extends State<IntenseLiveSessionScreen> {
 
   Future<void> _refreshMetrics({bool showSpinner = false}) async {
     if (_targets.isEmpty || !mounted) return;
+    // Skip overlapping polls — stacking refreshes multiplies Insiders 429s.
+    if (_refreshInFlight) return;
+    _refreshInFlight = true;
 
     if (showSpinner) {
       setState(() => _refreshing = true);
     }
 
-    final fieldGps = await _service.loadFieldGpsCorners(widget.fieldId);
-    final stopUtc = DateTime.now().toUtc();
-    final results = await _service.fetchAllLiveMetrics(
-      targets: _targets,
-      sessionStartUtc: widget.sessionStartUtc,
-      sessionStopUtc: stopUtc,
-      isMatch: widget.isMatch,
-      eventId: widget.eventId,
-      fieldGpsCorners: fieldGps,
-    );
+    try {
+      final fieldGps = await _service.loadFieldGpsCorners(widget.fieldId);
+      final stopUtc = DateTime.now().toUtc();
+      final results = await _service.fetchAllLiveMetrics(
+        targets: _targets,
+        sessionStartUtc: widget.sessionStartUtc,
+        sessionStopUtc: stopUtc,
+        isMatch: widget.isMatch,
+        eventId: widget.eventId,
+        fieldGpsCorners: fieldGps,
+      );
 
-    if (!mounted) return;
-    setState(() {
-      _metrics = results;
-      _lastUpdatedAt = DateTime.now();
-      _refreshing = false;
-    });
+      if (!mounted) return;
+      setState(() {
+        _metrics = results;
+        _lastUpdatedAt = DateTime.now();
+      });
+    } finally {
+      _refreshInFlight = false;
+      if (mounted && showSpinner) {
+        setState(() => _refreshing = false);
+      }
+    }
   }
 
   @override
