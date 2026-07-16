@@ -613,14 +613,27 @@ class _CreateNonSportEventSheetState extends State<CreateNonSportEventSheet> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                Text(
-                  _isEditMode
-                      ? l10n.editNonSportEventTitle
-                      : l10n.createNonSportEventTitle,
-                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                        color: colors.textPrimary,
-                        fontWeight: FontWeight.w700,
+                Row(
+                  children: [
+                    Expanded(
+                      child: Text(
+                        _isEditMode
+                            ? l10n.editNonSportEventTitle
+                            : l10n.createNonSportEventTitle,
+                        style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                              color: colors.textPrimary,
+                              fontWeight: FontWeight.w700,
+                            ),
                       ),
+                    ),
+                    IconButton(
+                      tooltip: l10n.actionClose,
+                      onPressed: _isSubmitting
+                          ? null
+                          : () => Navigator.of(context).pop(),
+                      icon: const Icon(Icons.close_rounded),
+                    ),
+                  ],
                 ),
                 const SizedBox(height: 16),
                 TextFormField(
@@ -841,19 +854,34 @@ class _CreateNonSportEventSheetState extends State<CreateNonSportEventSheet> {
                     );
                   }),
                 const SizedBox(height: 20),
-                FilledButton(
-                  onPressed: _isSubmitting ? null : _submit,
-                  child: _isSubmitting
-                      ? const SizedBox(
-                          width: 20,
-                          height: 20,
-                          child: CircularProgressIndicator(strokeWidth: 2),
-                        )
-                      : Text(
-                          _isEditMode
-                              ? l10n.editNonSportEventSubmit
-                              : l10n.createNonSportEventSubmit,
-                        ),
+                Row(
+                  children: [
+                    Expanded(
+                      child: OutlinedButton(
+                        onPressed: _isSubmitting
+                            ? null
+                            : () => Navigator.of(context).pop(),
+                        child: Text(l10n.actionCancel),
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: FilledButton(
+                        onPressed: _isSubmitting ? null : _submit,
+                        child: _isSubmitting
+                            ? const SizedBox(
+                                width: 20,
+                                height: 20,
+                                child: CircularProgressIndicator(strokeWidth: 2),
+                              )
+                            : Text(
+                                _isEditMode
+                                    ? l10n.editNonSportEventSubmit
+                                    : l10n.createNonSportEventSubmit,
+                              ),
+                      ),
+                    ),
+                  ],
                 ),
               ],
             ),
