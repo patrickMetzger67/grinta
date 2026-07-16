@@ -38,6 +38,7 @@ class WebAppRoot extends StatefulWidget {
 
 class _WebAppRootState extends State<WebAppRoot> {
   bool _isLoading = true;
+  final AgendaService _agendaService = AgendaService();
 
   AppSession get appSession => context.read<AppSession>();
 
@@ -85,7 +86,7 @@ class _WebAppRootState extends State<WebAppRoot> {
     required DateTime start,
     required DateTime end,
   }) {
-    final stream = AgendaService().watchAgendaItems(
+    final stream = _agendaService.watchAgendaItems(
       teams: appSession.teamsForAgendaSelectedSeason,
       seasonId: appSession.selectedSeason?.ref?.id,
       start: start,
