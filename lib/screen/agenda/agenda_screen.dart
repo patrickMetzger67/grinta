@@ -69,6 +69,11 @@ class AgendaScreen extends StatefulWidget {
 class _AgendaScreenState extends State<AgendaScreen> {
   static const int _initialMonthPage = 1200;
 
+  /// Keep previous + current + next month loaded so day/week/month navigation
+  /// stays instant inside that window.
+  static const int _windowRadiusMonths = 1;
+  static const int _maxLoadedMonths = 4;
+
   final ScrollController _scrollController = ScrollController();
   final GlobalKey _weeksViewportKey = GlobalKey();
 
@@ -83,13 +88,13 @@ class _AgendaScreenState extends State<AgendaScreen> {
 
   late DateTime _displayedMonth;
   AgendaCalendarMode _calendarMode = AgendaCalendarMode.day;
-  bool _forceLoadItemsOnNextMonthPageChange = false;
   bool _suppressNextMonthPageChange = false;
 
   final Map<int, GlobalKey> _weekKeys = <int, GlobalKey>{};
 
   List<AgendaItem> _items = <AgendaItem>[];
   bool _isLoading = false;
+  bool _isRefreshing = false;
   String? _error;
   StreamSubscription<List<AgendaItem>>? _itemsSub;
   int _subscriptionGeneration = 0;
@@ -113,11 +118,12 @@ class _AgendaScreenState extends State<AgendaScreen> {
     _selectedDate = now;
     _selectedWeekStart = _startOfWeek(now);
     _selectedWeekEnd = _endOfWeek(now);
-    _rangeStart = _startOfMonth(now);
-    _rangeEnd = _endOfMonth(now);
+    final DateTime focusMonth = DateTime(now.year, now.month, 1);
+    _rangeStart = _startOfMonth(_addMonths(focusMonth, -_windowRadiusMonths));
+    _rangeEnd = _endOfMonth(_addMonths(focusMonth, _windowRadiusMonths));
 
-    _monthPagerAnchor = DateTime(now.year, now.month, 1);
-    _displayedMonth = DateTime(now.year, now.month, 1);
+    _monthPagerAnchor = focusMonth;
+    _displayedMonth = focusMonth;
     _monthPageController = PageController(initialPage: _initialMonthPage);
 
     _scrollController.addListener(_handleScroll);
@@ -223,35 +229,80 @@ class _AgendaScreenState extends State<AgendaScreen> {
     }
   }
 
-  bool _monthIsCoveredByRange(DateTime month) {
-    final monthStart = _startOfMonth(month);
-    final monthEnd = _endOfMonth(month);
-
-    return !_rangeStart.isAfter(monthStart) && !_rangeEnd.isBefore(monthEnd);
+  bool _rangeCovers(DateTime start, DateTime end) {
+    return !_rangeStart.isAfter(start) && !_rangeEnd.isBefore(end);
   }
 
-  Future<void> _ensureRangeCoversMonth(
+  bool _monthIsCoveredByRange(DateTime month) {
+    return _rangeCovers(_startOfMonth(month), _endOfMonth(month));
+  }
+
+  int _loadedMonthSpan() {
+    return _monthDiff(_startOfMonth(_rangeStart), _startOfMonth(_rangeEnd)) + 1;
+  }
+
+  /// Ensures [month] (and ideally M±1) is loaded. Avoids tearing down the stream
+  /// when the target is already in the cached window.
+  Future<void> _ensureWindowForMonth(
     DateTime month, {
     bool scrollToSelection = true,
   }) async {
-    if (_monthIsCoveredByRange(month)) {
+    final DateTime focus = DateTime(month.year, month.month, 1);
+    final DateTime desiredStart =
+        _startOfMonth(_addMonths(focus, -_windowRadiusMonths));
+    final DateTime desiredEnd =
+        _endOfMonth(_addMonths(focus, _windowRadiusMonths));
+
+    final bool monthCovered = _monthIsCoveredByRange(focus);
+    final bool windowCovered = _rangeCovers(desiredStart, desiredEnd);
+
+    if (monthCovered && windowCovered) {
       if (scrollToSelection && _calendarMode == AgendaCalendarMode.month) {
         await _scrollToSelectedWeek();
       }
       return;
     }
 
-    final monthStart = _startOfMonth(month);
-    final monthEnd = _endOfMonth(month);
+    var needsReload = false;
 
-    if (_rangeStart.isAfter(monthStart)) {
-      _rangeStart = monthStart;
+    if (monthCovered) {
+      if (_rangeStart.isAfter(desiredStart)) {
+        _rangeStart = desiredStart;
+        needsReload = true;
+      }
+      if (_rangeEnd.isBefore(desiredEnd)) {
+        _rangeEnd = desiredEnd;
+        needsReload = true;
+      }
+      if (_loadedMonthSpan() > _maxLoadedMonths) {
+        _rangeStart = desiredStart;
+        _rangeEnd = desiredEnd;
+        needsReload = true;
+      }
+    } else {
+      _rangeStart = desiredStart;
+      _rangeEnd = desiredEnd;
+      needsReload = true;
     }
-    if (_rangeEnd.isBefore(monthEnd)) {
-      _rangeEnd = monthEnd;
+
+    if (!needsReload) {
+      if (scrollToSelection && _calendarMode == AgendaCalendarMode.month) {
+        await _scrollToSelectedWeek();
+      }
+      return;
     }
 
     await _subscribeItems(scrollToSelection: scrollToSelection);
+  }
+
+  Future<void> _ensureRangeCoversMonth(
+    DateTime month, {
+    bool scrollToSelection = true,
+  }) {
+    return _ensureWindowForMonth(
+      month,
+      scrollToSelection: scrollToSelection,
+    );
   }
 
   void _jumpMonthPagerToDisplayedMonth() {
@@ -285,8 +336,6 @@ class _AgendaScreenState extends State<AgendaScreen> {
       DateTime(newMonth.year, newMonth.month, safeDay),
     );
     final newSelectedWeek = _startOfWeek(newSelectedDate);
-    final forceLoadItems = _forceLoadItemsOnNextMonthPageChange;
-    _forceLoadItemsOnNextMonthPageChange = false;
 
     setState(() {
       _displayedMonth = newMonth;
@@ -294,30 +343,10 @@ class _AgendaScreenState extends State<AgendaScreen> {
       _selectedWeekStart = newSelectedWeek;
     });
 
-    if (forceLoadItems || _calendarMode == AgendaCalendarMode.month) {
-      _rangeStart = _startOfMonth(newMonth);
-      _rangeEnd = _endOfMonth(newMonth);
-      await _subscribeItems(scrollToSelection: true);
-      return;
-    }
-
-    final isBeforeRange =
-        newSelectedWeek.millisecondsSinceEpoch < _rangeStart.millisecondsSinceEpoch;
-    final isAfterRange =
-        newSelectedWeek.millisecondsSinceEpoch > _rangeEnd.millisecondsSinceEpoch;
-
-    if (isBeforeRange || isAfterRange) {
-      if (isBeforeRange) {
-        _rangeStart = newSelectedWeek;
-      }
-      if (isAfterRange) {
-        _rangeEnd = _endOfWeek(newSelectedWeek);
-      }
-      await _subscribeItems(scrollToSelection: true);
-      return;
-    }
-
-    await _scrollToSelectedWeek();
+    await _ensureWindowForMonth(
+      newMonth,
+      scrollToSelection: _calendarMode == AgendaCalendarMode.month,
+    );
   }
 
   Future<void> _selectDate(DateTime date) async {
@@ -333,25 +362,10 @@ class _AgendaScreenState extends State<AgendaScreen> {
 
     _jumpMonthPagerToDisplayedMonth();
 
-    if (_calendarMode == AgendaCalendarMode.month) {
-      await _ensureRangeCoversMonth(targetMonth);
-      return;
-    }
-
-    final isBeforeRange =
-        targetWeek.millisecondsSinceEpoch < _rangeStart.millisecondsSinceEpoch;
-    final isAfterRange =
-        targetWeek.millisecondsSinceEpoch > _rangeEnd.millisecondsSinceEpoch;
-
-    if (isBeforeRange || isAfterRange) {
-      if (isBeforeRange) {
-        _rangeStart = targetWeek;
-      }
-      if (isAfterRange) {
-        _rangeEnd = _endOfWeek(targetWeek);
-      }
-      await _subscribeItems(scrollToSelection: true);
-    }
+    await _ensureWindowForMonth(
+      targetMonth,
+      scrollToSelection: _calendarMode == AgendaCalendarMode.month,
+    );
   }
 
   Future<void> _subscribeItems({bool scrollToSelection = true}) async {
@@ -361,7 +375,9 @@ class _AgendaScreenState extends State<AgendaScreen> {
 
     if (mounted) {
       setState(() {
+        // Keep previous items visible while the new window loads.
         _isLoading = _items.isEmpty;
+        _isRefreshing = _items.isNotEmpty;
         _error = null;
       });
     }
@@ -381,6 +397,7 @@ class _AgendaScreenState extends State<AgendaScreen> {
           _items = List<AgendaItem>.from(loadedItems)
             ..sort((AgendaItem a, AgendaItem b) => a.startAt.compareTo(b.startAt));
           _isLoading = false;
+          _isRefreshing = false;
           _error = null;
         });
 
@@ -403,6 +420,7 @@ class _AgendaScreenState extends State<AgendaScreen> {
 
         setState(() {
           _isLoading = false;
+          _isRefreshing = false;
           _error = error.toString();
         });
       },
@@ -411,7 +429,6 @@ class _AgendaScreenState extends State<AgendaScreen> {
 
   Future<void> _goToPreviousWeek() async {
     final previousWeek = _selectedWeekStart.subtract(const Duration(days: 7));
-    final previousWeekEnd = _endOfWeek(previousWeek);
 
     setState(() {
       _selectedWeekStart = previousWeek;
@@ -421,32 +438,14 @@ class _AgendaScreenState extends State<AgendaScreen> {
 
     _jumpMonthPagerToDisplayedMonth();
 
-    var needsReload = false;
-
-    if (previousWeek.millisecondsSinceEpoch < _rangeStart.millisecondsSinceEpoch) {
-      _rangeStart = previousWeek;
-      needsReload = true;
-    }
-    if (previousWeekEnd.millisecondsSinceEpoch > _rangeEnd.millisecondsSinceEpoch) {
-      _rangeEnd = previousWeekEnd;
-      needsReload = true;
-    }
-
-    if (needsReload) {
-      await _subscribeItems(
-        scrollToSelection: _calendarMode == AgendaCalendarMode.month,
-      );
-      return;
-    }
-
-    if (_calendarMode == AgendaCalendarMode.month) {
-      await _scrollToSelectedWeek();
-    }
+    await _ensureWindowForMonth(
+      _displayedMonth,
+      scrollToSelection: _calendarMode == AgendaCalendarMode.month,
+    );
   }
 
   Future<void> _goToNextWeek() async {
     final nextWeek = _selectedWeekStart.add(const Duration(days: 7));
-    final nextWeekEnd = _endOfWeek(nextWeek);
 
     setState(() {
       _selectedWeekStart = nextWeek;
@@ -456,33 +455,15 @@ class _AgendaScreenState extends State<AgendaScreen> {
 
     _jumpMonthPagerToDisplayedMonth();
 
-    var needsReload = false;
-
-    if (nextWeek.millisecondsSinceEpoch < _rangeStart.millisecondsSinceEpoch) {
-      _rangeStart = nextWeek;
-      needsReload = true;
-    }
-    if (nextWeekEnd.millisecondsSinceEpoch > _rangeEnd.millisecondsSinceEpoch) {
-      _rangeEnd = nextWeekEnd;
-      needsReload = true;
-    }
-
-    if (needsReload) {
-      await _subscribeItems(
-        scrollToSelection: _calendarMode == AgendaCalendarMode.month,
-      );
-      return;
-    }
-
-    if (_calendarMode == AgendaCalendarMode.month) {
-      await _scrollToSelectedWeek();
-    }
+    await _ensureWindowForMonth(
+      _displayedMonth,
+      scrollToSelection: _calendarMode == AgendaCalendarMode.month,
+    );
   }
 
   Future<void> _goToPreviousMonthFromHeader() async {
     if (!_monthPageController.hasClients) return;
 
-    _forceLoadItemsOnNextMonthPageChange = true;
     await _monthPageController.previousPage(
       duration: const Duration(milliseconds: 220),
       curve: Curves.easeOut,
@@ -492,7 +473,6 @@ class _AgendaScreenState extends State<AgendaScreen> {
   Future<void> _goToNextMonthFromHeader() async {
     if (!_monthPageController.hasClients) return;
 
-    _forceLoadItemsOnNextMonthPageChange = true;
     await _monthPageController.nextPage(
       duration: const Duration(milliseconds: 220),
       curve: Curves.easeOut,
@@ -502,31 +482,20 @@ class _AgendaScreenState extends State<AgendaScreen> {
   Future<void> _jumpToToday() async {
     final now = DateUtils.dateOnly(DateTime.now());
     final todayWeek = _startOfWeek(now);
-    final monthStart = _startOfMonth(now);
-    final monthEnd = _endOfMonth(now);
+    final todayMonth = DateTime(now.year, now.month, 1);
 
     setState(() {
       _selectedDate = now;
       _selectedWeekStart = todayWeek;
-      _displayedMonth = DateTime(now.year, now.month, 1);
+      _displayedMonth = todayMonth;
     });
 
     _jumpMonthPagerToDisplayedMonth();
 
-    final mustReload =
-        monthStart.millisecondsSinceEpoch != _rangeStart.millisecondsSinceEpoch ||
-            monthEnd.millisecondsSinceEpoch != _rangeEnd.millisecondsSinceEpoch;
-
-    if (mustReload) {
-      _rangeStart = monthStart;
-      _rangeEnd = monthEnd;
-      await _subscribeItems(scrollToSelection: true);
-      return;
-    }
-
-    if (_calendarMode == AgendaCalendarMode.month) {
-      await _scrollToSelectedWeek();
-    }
+    await _ensureWindowForMonth(
+      todayMonth,
+      scrollToSelection: _calendarMode == AgendaCalendarMode.month,
+    );
   }
 
   Future<void> _pickPeriod() async {
@@ -799,7 +768,19 @@ class _AgendaScreenState extends State<AgendaScreen> {
                   await _selectDate(date);
                 },
               ),
-              const SizedBox(height: 12),
+              if (_isRefreshing) ...[
+                const SizedBox(height: 8),
+                ClipRRect(
+                  borderRadius: BorderRadius.circular(999),
+                  child: LinearProgressIndicator(
+                    minHeight: 2.5,
+                    backgroundColor: colors.border.withValues(alpha: 0.35),
+                    color: colors.primary,
+                  ),
+                ),
+                const SizedBox(height: 8),
+              ] else
+                const SizedBox(height: 12),
               Expanded(
                 child: Container(
                   key: _weeksViewportKey,

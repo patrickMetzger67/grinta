@@ -18,6 +18,11 @@ class AgendaService {
   final MatchService _matchService;
   final TeamWorkloadSummaryService _teamWorkloadSummaryService;
 
+  /// In-memory cache so tracker enrichment does not re-hit Firestore on every
+  /// progressive stream emission (match phases, team merges, range refreshes).
+  final Map<String, TeamWorkloadSummary?> _workloadSummaryCache =
+      <String, TeamWorkloadSummary?>{};
+
   AgendaService({
     TrainingService? trainingService,
     MatchService? matchService,
@@ -38,14 +43,31 @@ class AgendaService {
     final Timestamp trainingStreamEnd =
         Timestamp.fromMillisecondsSinceEpoch(timestampEnd.millisecondsSinceEpoch + 1);
 
-    final Stream<List<AgendaItem>> rawStream = Stream<List<AgendaItem>>.multi((controller) {
+    return Stream<List<AgendaItem>>.multi((controller) {
       final Map<String, List<AgendaItem>> partialItems =
           <String, List<AgendaItem>>{};
       final List<StreamSubscription<dynamic>> subscriptions =
           <StreamSubscription<dynamic>>[];
+      int enrichmentGeneration = 0;
+      bool isCancelled = false;
 
       void emitMerged() {
-        controller.add(_dedupeAndSort(partialItems.values.expand((items) => items)));
+        final List<AgendaItem> merged =
+            _dedupeAndSort(partialItems.values.expand((items) => items));
+
+        // Paint immediately with cached summaries when available, then enrich
+        // any missing tracker docs without blocking later progressive emits.
+        controller.add(_applyCachedWorkloadSummaries(merged));
+
+        final int generation = ++enrichmentGeneration;
+        unawaited(() async {
+          final List<AgendaItem> enriched =
+              await _enrichWithTeamWorkloadSummaries(merged);
+          if (isCancelled || generation != enrichmentGeneration) {
+            return;
+          }
+          controller.add(enriched);
+        }());
       }
 
       if (kDebugMode) {
@@ -116,13 +138,13 @@ class AgendaService {
       }
 
       controller.onCancel = () {
+        isCancelled = true;
+        enrichmentGeneration++;
         for (final StreamSubscription<dynamic> subscription in subscriptions) {
           unawaited(subscription.cancel());
         }
       };
     });
-
-    return rawStream.asyncMap(_enrichWithTeamWorkloadSummaries);
   }
 
   /// Loads agenda items using the same Firestore sources as [watchAgendaItems].
@@ -183,6 +205,27 @@ class AgendaService {
     return _enrichWithTeamWorkloadSummaries(merged);
   }
 
+  List<AgendaItem> _applyCachedWorkloadSummaries(List<AgendaItem> items) {
+    if (items.isEmpty || _workloadSummaryCache.isEmpty) {
+      return items;
+    }
+
+    return items.map((AgendaItem item) {
+      if (item.withTracker != true ||
+          item.id.isEmpty ||
+          item.teamWorkloadSummary != null) {
+        return item;
+      }
+
+      final TeamWorkloadSummary? cached = _workloadSummaryCache[item.id];
+      if (cached == null) {
+        return item;
+      }
+
+      return _withTeamWorkloadSummary(item, cached);
+    }).toList();
+  }
+
   Future<List<AgendaItem>> _enrichWithTeamWorkloadSummaries(
     List<AgendaItem> items,
   ) async {
@@ -196,8 +239,22 @@ class AgendaService {
           return item;
         }
 
+        if (item.teamWorkloadSummary != null) {
+          _workloadSummaryCache[item.id] = item.teamWorkloadSummary;
+          return item;
+        }
+
+        if (_workloadSummaryCache.containsKey(item.id)) {
+          final TeamWorkloadSummary? cached = _workloadSummaryCache[item.id];
+          if (cached == null) {
+            return item;
+          }
+          return _withTeamWorkloadSummary(item, cached);
+        }
+
         final TeamWorkloadSummary? summary =
             await _teamWorkloadSummaryService.getByEventId(item.id);
+        _workloadSummaryCache[item.id] = summary;
         if (summary == null) {
           return item;
         }
