@@ -141,8 +141,12 @@ bool canResyncTrainingIntense(Training training, {DateTime? now}) {
   return !clock.isAfter(deadline);
 }
 
-/// GNSS steps shorter than this are ignored for Intense analysis (desk/indoor drift).
-const double kIntenseMinMeaningfulStepDistanceMeters = 3.0;
+/// GNSS step floor for Intense analysis.
+///
+/// Must stay **0** to match the Live pipeline ([IntenseLiveDataService]): a
+/// non-zero floor (e.g. 3 m) zeroes distance at typical Insiders sample rates
+/// (sub-second steps are often under 3 m even at running speed).
+const double kIntenseMinMeaningfulStepDistanceMeters = 0;
 
 /// Keeps only samples whose timestamps fall within [window] (inclusive).
 List<TrackerRaw> intenseSamplesWithinWindow(

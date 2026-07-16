@@ -279,6 +279,8 @@ class IntenseLiveDataService {
         fieldGps = FootballFieldGps.fromFieldGpsCorners(fieldGpsCorners);
       }
 
+      // Keep in lockstep with [TrainingIntenseSyncService._analyzeLocally]
+      // (same minMeaningfulStepDistanceMeters) so Live km ≈ recovered km.
       final analysis = SensorAnalysisService.analyzeSensorData(
         trackerId: target.trackerId,
         playerId: target.playerId,
@@ -286,6 +288,7 @@ class IntenseLiveDataService {
         allSamples: samples,
         isMatch: isMatch,
         fieldGps: fieldGps,
+        minMeaningfulStepDistanceMeters: kIntenseMinMeaningfulStepDistanceMeters,
       );
 
       return IntenseLivePlayerMetrics(
