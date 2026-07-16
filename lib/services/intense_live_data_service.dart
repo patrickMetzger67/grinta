@@ -31,7 +31,7 @@ const Duration kIntenseLivePollingInterval = Duration(seconds: 30);
 const int kIntenseLiveFetchConcurrency = 2;
 
 /// Retries when Insiders / Cloud Function returns HTTP 429.
-const int kIntenseLiveFetchMaxAttempts = 4;
+const int kIntenseLiveFetchMaxAttempts = kIntenseInsidersFetchMaxAttempts;
 
 /// Rolling lookback for live metrics display (recent activity, not full session).
 ///
@@ -279,6 +279,8 @@ class IntenseLiveDataService {
         fieldGps = FootballFieldGps.fromFieldGpsCorners(fieldGpsCorners);
       }
 
+      // Keep in lockstep with [TrainingIntenseSyncService._analyzeLocally]
+      // (same minMeaningfulStepDistanceMeters) so Live km ≈ recovered km.
       final analysis = SensorAnalysisService.analyzeSensorData(
         trackerId: target.trackerId,
         playerId: target.playerId,
@@ -286,6 +288,7 @@ class IntenseLiveDataService {
         allSamples: samples,
         isMatch: isMatch,
         fieldGps: fieldGps,
+        minMeaningfulStepDistanceMeters: kIntenseMinMeaningfulStepDistanceMeters,
       );
 
       return IntenseLivePlayerMetrics(

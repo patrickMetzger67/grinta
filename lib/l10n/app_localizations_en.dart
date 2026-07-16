@@ -3908,6 +3908,20 @@ class AppLocalizationsEn extends AppLocalizations {
       'Recovering data for present players with an assigned tracker. Do not close this window.';
 
   @override
+  String get trainingIntenseResyncButton => 'Re sync';
+
+  @override
+  String get trainingIntenseResyncTitle => 'Re-sync sensor data';
+
+  @override
+  String get trainingIntenseResyncMessage => 'Re-fetching tracker data for the full training window (start → end). Do not close this window.';
+
+  @override
+  String get trainingIntenseResyncSuccess => 'Sensor data re-synced.';
+
+
+
+  @override
   String get trainingIntenseFinishSyncing => 'Sync in progress…';
 
   @override

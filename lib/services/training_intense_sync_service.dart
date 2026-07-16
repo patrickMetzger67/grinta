@@ -8,6 +8,9 @@ import 'package:grinta/model/training.dart';
 import 'package:grinta/services/sensorAnalysisService.dart';
 import 'package:grinta/services/trackerDataAnalysisService.dart';
 
+/// Retries when Insiders / Cloud Function returns HTTP 429 (finish + live).
+const int kIntenseInsidersFetchMaxAttempts = 4;
+
 /// Pipeline step for one player's Intense tracker during training finish.
 enum IntenseDeviceSyncStage {
   pending,
@@ -109,8 +112,44 @@ TrainingIntenseTimeWindow resolveTrainingIntenseTimeWindow(
   );
 }
 
-/// GNSS steps shorter than this are ignored for Intense analysis (desk/indoor drift).
-const double kIntenseMinMeaningfulStepDistanceMeters = 3.0;
+/// Full créneau for a post-finish re-sync: [Training.dateTime] → [Training.trainingEndAt].
+///
+/// Unlike [resolveTrainingIntenseTimeWindow], this does **not** cap to "now".
+TrainingIntenseTimeWindow? resolveTrainingIntenseResyncWindow(Training training) {
+  final startLocal = training.dateTime?.toDate();
+  final endLocal = training.trainingEndAt?.toDate();
+  if (startLocal == null || endLocal == null) return null;
+
+  final startUtc = startLocal.toUtc();
+  final endUtc = endLocal.toUtc();
+  if (!endUtc.isAfter(startUtc)) {
+    return TrainingIntenseTimeWindow(start: startUtc, stop: startUtc);
+  }
+  return TrainingIntenseTimeWindow(start: startUtc, stop: endUtc);
+}
+
+/// How long managers may re-sync Intense data after [Training.trainingEndAt].
+const Duration kTrainingIntenseResyncEligibility = Duration(hours: 48);
+
+/// True when an Intense re-sync is allowed: [Training.dateTime] +
+/// [Training.trainingEndAt] set, and [now] is within 48h after end.
+bool canResyncTrainingIntense(Training training, {DateTime? now}) {
+  if (training.withTracker != true) return false;
+  if (training.dateTime == null) return false;
+  final end = training.trainingEndAt?.toDate();
+  if (end == null) return false;
+  final clock = now ?? DateTime.now();
+  if (clock.isBefore(end)) return false;
+  final deadline = end.add(kTrainingIntenseResyncEligibility);
+  return !clock.isAfter(deadline);
+}
+
+/// GNSS step floor for Intense analysis.
+///
+/// Must stay **0** to match the Live pipeline ([IntenseLiveDataService]): a
+/// non-zero floor (e.g. 3 m) zeroes distance at typical Insiders sample rates
+/// (sub-second steps are often under 3 m even at running speed).
+const double kIntenseMinMeaningfulStepDistanceMeters = 0;
 
 /// Keeps only samples whose timestamps fall within [window] (inclusive).
 List<TrackerRaw> intenseSamplesWithinWindow(
@@ -187,9 +226,11 @@ class TrainingIntenseSyncService {
 
       late final HttpsCallableResult<dynamic> fetchResult;
       try {
-        fetchResult = await _functions
-            .httpsCallable('fetchIntensePreprocessedSamples')
-            .call(fetchPayload);
+        fetchResult = await _fetchPreprocessedSamplesWithRetry(
+          fetchPayload: fetchPayload,
+          trackerLabel: target.trackerLabel,
+          insidersDeviceId: insidersDeviceId,
+        );
       } on FirebaseFunctionsException catch (e) {
         if (e.code == 'failed-precondition' &&
             _looksLikeEmptyGnssWindow(
@@ -294,6 +335,60 @@ class TrainingIntenseSyncService {
       emit(IntenseDeviceSyncStage.error, target.progress);
       rethrow;
     }
+  }
+
+  /// Same Insiders 429 backoff as [IntenseLiveDataService._fetchSamples].
+  Future<HttpsCallableResult<dynamic>> _fetchPreprocessedSamplesWithRetry({
+    required Map<String, dynamic> fetchPayload,
+    required String trackerLabel,
+    required String insidersDeviceId,
+  }) async {
+    Object? lastError;
+    for (var attempt = 0; attempt < kIntenseInsidersFetchMaxAttempts; attempt++) {
+      try {
+        return await _functions
+            .httpsCallable('fetchIntensePreprocessedSamples')
+            .call(fetchPayload);
+      } on FirebaseFunctionsException catch (e) {
+        lastError = e;
+        if (!_isInsidersRateLimited(e) ||
+            attempt >= kIntenseInsidersFetchMaxAttempts - 1) {
+          rethrow;
+        }
+        final delay = _retryDelayForRateLimit(e, attempt);
+        debugPrint(
+          '[IntenseSync] Insiders 429 for tracker=$trackerLabel '
+          'device=$insidersDeviceId '
+          'attempt=${attempt + 1}/$kIntenseInsidersFetchMaxAttempts '
+          'retryIn=${delay.inMilliseconds}ms',
+        );
+        await Future<void>.delayed(delay);
+      }
+    }
+
+    throw lastError ??
+        StateError('fetchIntensePreprocessedSamples failed without error');
+  }
+
+  static bool _isInsidersRateLimited(FirebaseFunctionsException e) {
+    final raw = '${e.code} ${e.message ?? ''} ${e.details ?? ''}'.toLowerCase();
+    return raw.contains('429') ||
+        raw.contains('too many requests') ||
+        raw.contains('throttl') ||
+        raw.contains('rate limit');
+  }
+
+  static Duration _retryDelayForRateLimit(
+    FirebaseFunctionsException e,
+    int attempt,
+  ) {
+    final raw = '${e.message ?? ''} ${e.details ?? ''}'.toLowerCase();
+    final match = RegExp(r'retry-after:\s*(\d+)').firstMatch(raw);
+    if (match != null) {
+      final seconds = int.tryParse(match.group(1)!) ?? 1;
+      return Duration(milliseconds: (seconds.clamp(1, 15) * 1000) + 250);
+    }
+    return Duration(milliseconds: 600 * (1 << attempt));
   }
 
   /// Maps cloud/local errors to user-facing French messages for the finish dialog.

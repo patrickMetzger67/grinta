@@ -3965,6 +3965,20 @@ class AppLocalizationsDe extends AppLocalizations {
       'Daten der anwesenden Spieler mit zugewiesenem Tracker werden abgerufen. Fenster nicht schließen.';
 
   @override
+  String get trainingIntenseResyncButton => 'Re sync';
+
+  @override
+  String get trainingIntenseResyncTitle => 'Sensordaten erneut synchronisieren';
+
+  @override
+  String get trainingIntenseResyncMessage => 'Sensordaten für das gesamte Trainingsfenster (Start → Ende) werden erneut abgerufen. Fenster nicht schließen.';
+
+  @override
+  String get trainingIntenseResyncSuccess => 'Sensordaten erneut synchronisiert.';
+
+
+
+  @override
   String get trainingIntenseFinishSyncing => 'Synchronisierung läuft…';
 
   @override

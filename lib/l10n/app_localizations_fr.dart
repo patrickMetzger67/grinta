@@ -3947,6 +3947,20 @@ class AppLocalizationsFr extends AppLocalizations {
       'Récupération des données des joueurs présents avec capteur assigné. Ne fermez pas cette fenêtre.';
 
   @override
+  String get trainingIntenseResyncButton => 'Re sync';
+
+  @override
+  String get trainingIntenseResyncTitle => 'Resynchroniser les données capteurs';
+
+  @override
+  String get trainingIntenseResyncMessage => 'Nouvelle récupération des données sur toute la durée de l\'entraînement (début → fin). Ne fermez pas cette fenêtre.';
+
+  @override
+  String get trainingIntenseResyncSuccess => 'Données capteurs resynchronisées.';
+
+
+
+  @override
   String get trainingIntenseFinishSyncing => 'Synchronisation en cours…';
 
   @override
