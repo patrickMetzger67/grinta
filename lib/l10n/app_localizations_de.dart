@@ -2466,6 +2466,159 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get agendaAddEventNonSport =>
+
+  @override
+  String get agendaAllDayLabel => 'All day';
+
+  @override
+  String agendaEventSummaryNonSport(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      one: '1 activity',
+      other: '$count activities',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get createNonSportEventTitle => 'New event / activity';
+
+  @override
+  String get createNonSportEventTitleField => 'Title';
+
+  @override
+  String get createNonSportEventTitleRequired => 'Enter a title';
+
+  @override
+  String get createNonSportEventDate => 'Date';
+
+  @override
+  String get createNonSportEventTime => 'Time';
+
+  @override
+  String get createNonSportEventAllDay => 'All day';
+
+  @override
+  String get createNonSportEventStartDate => 'Start date';
+
+  @override
+  String get createNonSportEventStartTime => 'Start time';
+
+  @override
+  String get createNonSportEventEndDate => 'End date';
+
+  @override
+  String get createNonSportEventEndTime => 'End time';
+
+  @override
+  String get createNonSportEventInvalidRange => 'End must be after start.';
+
+  @override
+  String get editNonSportEventTitle => 'Edit event';
+
+  @override
+  String get editNonSportEventSubmit => 'Save';
+
+  @override
+  String get editNonSportEventSaved => 'Event updated';
+
+  @override
+  String get editNonSportEventError => 'Could not update the event. Please try again.';
+
+  @override
+  String get deleteNonSportEventConfirmTitle => 'Delete event?';
+
+  @override
+  String deleteNonSportEventConfirmMessage(String title) {
+    return '“$title” will be permanently deleted, including related notifications.';
+  }
+
+  @override
+  String get deleteNonSportEventDeleted => 'Event deleted';
+
+  @override
+  String get deleteNonSportEventError => 'Could not delete the event. Please try again.';
+
+
+  @override
+  String get createNonSportEventLocation => 'Location';
+
+  @override
+  String get createNonSportEventLocationHint => 'Address or meeting place';
+
+  @override
+  String get createNonSportEventInviteTeams => 'Invite one or more teams';
+
+  @override
+  String get createNonSportEventSelectMembers => 'Select members';
+
+  @override
+  String createNonSportEventSelectedMembersCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      one: '1 member selected',
+      other: '$count members selected',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get createNonSportEventNoTeamMembers => 'No members in this team.';
+
+  @override
+  String get createNonSportEventInviteOthers => 'Invite other profiles';
+
+  @override
+  String get createNonSportEventAddProfile => 'Add a profile';
+
+  @override
+  String get createNonSportEventInvitees => 'Invitees';
+
+  @override
+  String get createNonSportEventNoInvitees => 'No invitees yet.';
+
+  @override
+  String get createNonSportEventNoTeams => 'No teams available for this season.';
+
+  @override
+  String get createNonSportEventSubmit => 'Create event';
+
+  @override
+  String get createNonSportEventSaved => 'Event created';
+
+  @override
+  String get createNonSportEventError => 'Could not create the event. Please try again.';
+
+  @override
+  String get createNonSportEventInviteStatusSent => 'Notification sent';
+
+  @override
+  String get createNonSportEventInviteStatusNoAccount => 'No linked user account';
+
+  @override
+  String get createNonSportEventInviteStatusPending => 'Pending';
+
+  @override
+  String get createNonSportEventInviteStatusError => 'Notification failed';
+
+  @override
+  String get createNonSportEventNotificationTitle => 'New event';
+
+  @override
+  String createNonSportEventNotificationBody(String title, String when) {
+    return '$title — $when';
+  }
+
+  @override
+  String createNonSportEventNotificationBodyWithLocation(String title, String when, String location) {
+    return '$title — $when — $location';
+  }
+
+  @override
+  String get nonSportEventInviteesTitle => 'Invitations';
+
       'Ein nicht-sportliches Ereignis / Aktivität';
 
   @override

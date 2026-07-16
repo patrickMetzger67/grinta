@@ -249,9 +249,12 @@ class CalendarDeepLinkService {
         await _openTraining(context, trainingId: id);
         break;
       case 'personalSport':
-      case 'nonSport':
         _navigateToAgenda(context);
         _showComingSoonSnackbar(context);
+        break;
+      case 'nonSport':
+      case 'event':
+        _navigateToAgenda(context);
         break;
       default:
         _log('unknown type=$type');

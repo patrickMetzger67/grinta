@@ -1,5 +1,6 @@
 import 'package:grinta/model/activityMetrics.dart';
 import 'package:grinta/model/match.dart' as grinta_match;
+import 'package:grinta/model/non_sport_event.dart';
 import 'package:grinta/model/tracker/team_workload_summary.dart';
 import 'package:grinta/model/training.dart';
 
@@ -7,6 +8,7 @@ enum AgendaItemType {
   match,
   entrainement,
   preparationPhysique,
+  nonSport,
 }
 
 class AgendaItem {
@@ -17,8 +19,10 @@ class AgendaItem {
   final String? subtitle;
   final AgendaItemType type;
   final bool isDone;
+  final bool allDay;
   final Training? training;
   final grinta_match.Match? match;
+  final NonSportEvent? nonSportEvent;
   final ActivityMetrics? activityMetrics;
   final bool? withTracker;
   final bool areTrackersSynchronized;
@@ -33,8 +37,10 @@ class AgendaItem {
     this.subtitle,
     required this.type,
     this.isDone = false,
+    this.allDay = false,
     this.match,
     this.training,
+    this.nonSportEvent,
     this.activityMetrics,
     this.withTracker,
     this.areTrackersSynchronized = false,

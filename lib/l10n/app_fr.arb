@@ -1095,6 +1095,77 @@
   "agendaAddEventPersonalSport": "Une activité sportive personnelle",
   "agendaAddEventPersonalSportHint": "Running, préparation, …",
   "agendaAddEventNonSport": "Un évènement / activité non sportive",
+  "agendaAllDayLabel": "Journée entière",
+  "agendaEventSummaryNonSport": "{count, plural, =1{1 activité} other{{count} activités}}",
+  "@agendaEventSummaryNonSport": {
+    "placeholders": {
+      "count": { "type": "int" }
+    }
+  },
+  "createNonSportEventTitle": "Nouvel évènement / activité",
+  "createNonSportEventTitleField": "Titre",
+  "createNonSportEventTitleRequired": "Indiquez un titre",
+  "createNonSportEventDate": "Date",
+  "createNonSportEventTime": "Heure",
+  "createNonSportEventAllDay": "Journée entière",
+  "createNonSportEventStartDate": "Date de début",
+  "createNonSportEventStartTime": "Heure de début",
+  "createNonSportEventEndDate": "Date de fin",
+  "createNonSportEventEndTime": "Heure de fin",
+  "createNonSportEventInvalidRange": "La fin doit être après le début.",
+  "editNonSportEventTitle": "Modifier l'évènement",
+  "editNonSportEventSubmit": "Enregistrer",
+  "editNonSportEventSaved": "Évènement mis à jour",
+  "editNonSportEventError": "Impossible de modifier l'évènement. Réessayez.",
+  "deleteNonSportEventConfirmTitle": "Supprimer l'évènement ?",
+  "deleteNonSportEventConfirmMessage": "« {title} » sera définitivement supprimé, ainsi que les notifications associées.",
+  "@deleteNonSportEventConfirmMessage": {
+    "placeholders": {
+      "title": { "type": "String" }
+    }
+  },
+  "deleteNonSportEventDeleted": "Évènement supprimé",
+  "deleteNonSportEventError": "Impossible de supprimer l'évènement. Réessayez.",
+  "createNonSportEventLocation": "Lieu",
+  "createNonSportEventLocationHint": "Adresse ou lieu de rendez-vous",
+  "createNonSportEventInviteTeams": "Inviter une ou plusieurs équipes",
+  "createNonSportEventSelectMembers": "Sélectionner les membres",
+  "createNonSportEventSelectedMembersCount": "{count, plural, =1{1 membre sélectionné} other{{count} membres sélectionnés}}",
+  "@createNonSportEventSelectedMembersCount": {
+    "placeholders": {
+      "count": { "type": "int" }
+    }
+  },
+  "createNonSportEventNoTeamMembers": "Aucun membre dans cette équipe.",
+  "createNonSportEventInviteOthers": "Inviter d'autres profils",
+  "createNonSportEventAddProfile": "Ajouter un profil",
+  "createNonSportEventInvitees": "Invités",
+  "createNonSportEventNoInvitees": "Aucun invité pour le moment.",
+  "createNonSportEventNoTeams": "Aucune équipe disponible pour cette saison.",
+  "createNonSportEventSubmit": "Créer l'évènement",
+  "createNonSportEventSaved": "Évènement créé",
+  "createNonSportEventError": "Impossible de créer l'évènement. Réessayez.",
+  "createNonSportEventInviteStatusSent": "Notification envoyée",
+  "createNonSportEventInviteStatusNoAccount": "Pas de compte utilisateur lié",
+  "createNonSportEventInviteStatusPending": "En attente",
+  "createNonSportEventInviteStatusError": "Échec de notification",
+  "createNonSportEventNotificationTitle": "Nouvel évènement",
+  "createNonSportEventNotificationBody": "{title} — {when}",
+  "@createNonSportEventNotificationBody": {
+    "placeholders": {
+      "title": { "type": "String" },
+      "when": { "type": "String" }
+    }
+  },
+  "createNonSportEventNotificationBodyWithLocation": "{title} — {when} — {location}",
+  "@createNonSportEventNotificationBodyWithLocation": {
+    "placeholders": {
+      "title": { "type": "String" },
+      "when": { "type": "String" },
+      "location": { "type": "String" }
+    }
+  },
+  "nonSportEventInviteesTitle": "Invitations",
   "agendaLegend": "Légende",
   "agendaOverviewEventsCount": "{count, plural, =1{1 événement} other{{count} événements}}",
   "@agendaOverviewEventsCount": {

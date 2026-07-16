@@ -86,13 +86,16 @@ class ChatContextService {
     final lastWeekEnd = _endOfLastWeek(today);
 
     List<AgendaItem> seasonItems = const <AgendaItem>[];
-    if (teams.isNotEmpty) {
+    final String? selectedMemberId = session.selectedPlayerId?.trim();
+    if (teams.isNotEmpty ||
+        (selectedMemberId != null && selectedMemberId.isNotEmpty)) {
       try {
         seasonItems = await _agendaService.loadAgendaItems(
           teams: teams,
           seasonId: seasonId,
           start: queryRange.start,
           end: queryRange.end,
+          memberId: selectedMemberId,
         );
       } catch (error, stackTrace) {
         if (kDebugMode) {
@@ -515,6 +518,8 @@ class ChatContextService {
       case AgendaItemType.entrainement:
       case AgendaItemType.preparationPhysique:
         return 'training';
+      case AgendaItemType.nonSport:
+        return 'event';
     }
   }
 

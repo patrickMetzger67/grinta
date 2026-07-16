@@ -4,6 +4,7 @@ import 'package:grinta/core/extensions/l10n_extension.dart';
 import 'package:grinta/util/app_snackbar.dart';
 import 'package:grinta/util/app_theme.dart';
 import 'package:grinta/widget/create_match_sheet.dart';
+import 'package:grinta/widget/create_non_sport_event_sheet.dart';
 import 'package:grinta/widget/create_training_sheet.dart';
 
 enum AgendaAddEventKind {
@@ -82,6 +83,15 @@ Future<void> _handleSelection(
 
   if (kind == AgendaAddEventKind.match) {
     await showCreateMatchSheet(
+      hostContext,
+      initialDate: initialDate,
+      onSaved: onTrainingCreated,
+    );
+    return;
+  }
+
+  if (kind == AgendaAddEventKind.nonSport) {
+    await showCreateNonSportEventSheet(
       hostContext,
       initialDate: initialDate,
       onSaved: onTrainingCreated,

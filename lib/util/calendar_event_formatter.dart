@@ -13,11 +13,16 @@ class CalendarEventFormatter {
         return matchEventTitle(teamName: item.title, match: match);
       case AgendaItemType.entrainement:
       case AgendaItemType.preparationPhysique:
+      case AgendaItemType.nonSport:
         return item.title;
     }
   }
 
   static String? eventLocation(AgendaItem item) {
+    if (item.type == AgendaItemType.nonSport) {
+      final String? location = item.subtitle?.trim();
+      return (location == null || location.isEmpty) ? null : location;
+    }
     if (item.type != AgendaItemType.match) return null;
     return matchLocation(item.match);
   }

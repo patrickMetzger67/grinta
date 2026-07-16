@@ -81,13 +81,32 @@ class _AgendaErrorView extends StatelessWidget {
   }
 }
 
+bool _agendaItemOccursOnDay(AgendaItem item, DateTime day) {
+  final DateTime d = DateUtils.dateOnly(day);
+  final DateTime start = DateUtils.dateOnly(item.startAt);
+  final DateTime end = DateUtils.dateOnly(item.endAt);
+  return !d.isBefore(start) && !d.isAfter(end);
+}
+
 Map<DateTime, List<AgendaItem>> _groupItemsByWeek(List<AgendaItem> items) {
   final grouped = <DateTime, List<AgendaItem>>{};
 
   for (final item in items) {
-    final weekStart = _startOfWeek(item.startAt);
-    grouped.putIfAbsent(weekStart, () => <AgendaItem>[]);
-    grouped[weekStart]!.add(item);
+    DateTime day = DateUtils.dateOnly(item.startAt);
+    final DateTime last = DateUtils.dateOnly(item.endAt);
+    while (!day.isAfter(last)) {
+      final DateTime weekStart = _startOfWeek(day);
+      final List<AgendaItem> bucket =
+          grouped.putIfAbsent(weekStart, () => <AgendaItem>[]);
+      final bool alreadyAdded = bucket.any(
+        (AgendaItem existing) =>
+            existing.id == item.id && existing.type == item.type,
+      );
+      if (!alreadyAdded) {
+        bucket.add(item);
+      }
+      day = day.add(const Duration(days: 1));
+    }
   }
 
   return grouped;
@@ -97,9 +116,17 @@ Map<int, List<AgendaItemType>> _headerEventTypesByDay(List<AgendaItem> items) {
   final result = <int, List<AgendaItemType>>{};
 
   for (final item in items) {
-    final dayKey = DateUtils.dateOnly(item.startAt).millisecondsSinceEpoch;
-    result.putIfAbsent(dayKey, () => <AgendaItemType>[]);
-    result[dayKey]!.add(item.type);
+    DateTime day = DateUtils.dateOnly(item.startAt);
+    final DateTime last = DateUtils.dateOnly(item.endAt);
+    while (!day.isAfter(last)) {
+      final int dayKey = day.millisecondsSinceEpoch;
+      final List<AgendaItemType> types =
+          result.putIfAbsent(dayKey, () => <AgendaItemType>[]);
+      if (!types.contains(item.type)) {
+        types.add(item.type);
+      }
+      day = day.add(const Duration(days: 1));
+    }
   }
 
   return result;
@@ -263,6 +290,8 @@ Color _typeColor(BuildContext context, AgendaItemType type) {
       return colors.primary;
     case AgendaItemType.preparationPhysique:
       return colors.success;
+    case AgendaItemType.nonSport:
+      return colors.warning;
   }
 }
 
@@ -274,6 +303,8 @@ IconData _typeIcon(AgendaItemType type) {
       return Icons.fitness_center_rounded;
     case AgendaItemType.preparationPhysique:
       return Icons.directions_run_rounded;
+    case AgendaItemType.nonSport:
+      return Icons.event_rounded;
   }
 }
 
@@ -289,6 +320,15 @@ String? _formatTimeHmForLocale(String? timeHm, String locale) {
 }
 
 String? _agendaEventTimeLabel(AgendaItem item, String locale) {
+  if (item.allDay) {
+    final DateTime startDay = DateUtils.dateOnly(item.startAt);
+    final DateTime endDay = DateUtils.dateOnly(item.endAt);
+    if (startDay != endDay) {
+      return '${DateFormat.MMMd(locale).format(item.startAt)} → ${DateFormat.MMMd(locale).format(item.endAt)}';
+    }
+    return null;
+  }
+
   String? timeHm;
   switch (item.type) {
     case AgendaItemType.match:
@@ -297,8 +337,22 @@ String? _agendaEventTimeLabel(AgendaItem item, String locale) {
       timeHm = item.training?.startTime;
     case AgendaItemType.preparationPhysique:
       return null;
+    case AgendaItemType.nonSport:
+      final DateTime startDay = DateUtils.dateOnly(item.startAt);
+      final DateTime endDay = DateUtils.dateOnly(item.endAt);
+      if (startDay != endDay) {
+        return '${DateFormat.MMMd(locale).format(item.startAt)} ${DateFormat.Hm(locale).format(item.startAt)} → ${DateFormat.MMMd(locale).format(item.endAt)} ${DateFormat.Hm(locale).format(item.endAt)}';
+      }
+      return '${DateFormat.Hm(locale).format(item.startAt)} – ${DateFormat.Hm(locale).format(item.endAt)}';
   }
 
   return _formatTimeHmForLocale(timeHm, locale) ??
       DateFormat.Hm(locale).format(item.startAt);
+}
+
+int _compareAgendaItems(AgendaItem a, AgendaItem b) {
+  if (a.allDay != b.allDay) {
+    return a.allDay ? -1 : 1;
+  }
+  return a.startAt.compareTo(b.startAt);
 }

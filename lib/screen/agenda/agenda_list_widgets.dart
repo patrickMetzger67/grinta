@@ -203,6 +203,13 @@ class _AgendaLegend extends StatelessWidget {
             icon: Icons.directions_run_rounded,
             fullWidth: true,
           ),
+          const SizedBox(height: 8),
+          _LegendItem(
+            label: l10n.agendaAddEventNonSport,
+            color: _typeColor(context, AgendaItemType.nonSport),
+            icon: Icons.event_rounded,
+            fullWidth: true,
+          ),
         ],
       ),
     );
@@ -292,7 +299,7 @@ class _AgendaWeeksList extends StatelessWidget {
               final weekStart = weeks[index];
               final weekItems = <AgendaItem>[
                 ...(groupedByWeek[weekStart] ?? <AgendaItem>[]),
-              ]..sort((a, b) => a.startAt.compareTo(b.startAt));
+              ]..sort(_compareAgendaItems);
 
               final isSelected =
                   weekStart.millisecondsSinceEpoch ==
@@ -362,8 +369,10 @@ class _WeekCard extends StatelessWidget {
             children: [
               ...List.generate(7, (index) {
                 final day = weekStart.add(Duration(days: index));
-                final dayItems =
-                items.where((e) => _isSameDay(e.startAt, day)).toList();
+                final dayItems = items
+                    .where((e) => _agendaItemOccursOnDay(e, day))
+                    .toList()
+                  ..sort(_compareAgendaItems);
 
                 return _DayRow(
                   date: day,
@@ -389,6 +398,8 @@ class _WeekCard extends StatelessWidget {
         items.where((e) => e.type == AgendaItemType.entrainement).length;
     final prepas =
         items.where((e) => e.type == AgendaItemType.preparationPhysique).length;
+    final nonSports =
+        items.where((e) => e.type == AgendaItemType.nonSport).length;
 
     final parts = <String>[];
     if (matchs > 0) parts.add(l10n.agendaEventSummaryMatches(matchs));
@@ -397,6 +408,9 @@ class _WeekCard extends StatelessWidget {
     }
     if (prepas > 0) {
       parts.add(l10n.agendaEventSummaryPrepas(prepas));
+    }
+    if (nonSports > 0) {
+      parts.add(l10n.agendaEventSummaryNonSport(nonSports));
     }
 
     return parts.isEmpty ? l10n.emptyNoEvent : parts.join(' • ');
@@ -556,15 +570,122 @@ class _DayContent extends StatelessWidget {
       return const _EmptyDayTile();
     }
 
+    final sortedItems = List<AgendaItem>.from(items)..sort(_compareAgendaItems);
+
     return Column(
-      children: items
+      children: sortedItems
           .map(
             (item) => Padding(
           padding: const EdgeInsets.only(bottom: 10),
-          child: AgendaItemCard(item: item),
+          child: item.allDay && item.type == AgendaItemType.nonSport
+              ? _AllDayNonSportRow(item: item)
+              : AgendaItemCard(item: item),
         ),
       )
           .toList(),
+    );
+  }
+}
+
+class _AllDayNonSportRow extends StatelessWidget {
+  const _AllDayNonSportRow({required this.item});
+
+  final AgendaItem item;
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = context.appColors;
+    final accent = _typeColor(context, AgendaItemType.nonSport);
+    final NonSportEvent? event = item.nonSportEvent;
+    final bool canManage = event != null &&
+        canManageNonSportEvent(event, context.read<AppSession>());
+
+    return Material(
+      color: accent.withValues(alpha: 0.92),
+      borderRadius: BorderRadius.circular(10),
+      child: InkWell(
+        borderRadius: BorderRadius.circular(10),
+        onTap: event == null
+            ? null
+            : () => showNonSportEventInviteesSheet(
+                  context,
+                  event: event,
+                ),
+        child: Container(
+          width: double.infinity,
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(10),
+            border: Border.all(color: colors.border),
+          ),
+          child: Row(
+            children: [
+              Icon(Icons.event_rounded, size: 16, color: colors.textPrimary),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  item.title,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: Theme.of(context).textTheme.labelLarge?.copyWith(
+                        color: colors.textPrimary,
+                        fontWeight: FontWeight.w700,
+                      ),
+                ),
+              ),
+              Text(
+                context.l10n.agendaAllDayLabel,
+                style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                      color: colors.textPrimary.withValues(alpha: 0.9),
+                      fontWeight: FontWeight.w600,
+                    ),
+              ),
+              if (canManage) ...[
+                IconButton(
+                  visualDensity: VisualDensity.compact,
+                  padding: EdgeInsets.zero,
+                  constraints: const BoxConstraints(
+                    minWidth: 28,
+                    minHeight: 28,
+                  ),
+                  tooltip: context.l10n.editNonSportEventTitle,
+                  icon: Icon(
+                    Icons.edit_outlined,
+                    size: 18,
+                    color: colors.textPrimary,
+                  ),
+                  onPressed: () {
+                    showCreateNonSportEventSheet(
+                      context,
+                      eventToEdit: event,
+                    );
+                  },
+                ),
+                IconButton(
+                  visualDensity: VisualDensity.compact,
+                  padding: EdgeInsets.zero,
+                  constraints: const BoxConstraints(
+                    minWidth: 28,
+                    minHeight: 28,
+                  ),
+                  tooltip: context.l10n.actionDelete,
+                  icon: Icon(
+                    Icons.delete_outline_rounded,
+                    size: 18,
+                    color: colors.textPrimary,
+                  ),
+                  onPressed: () async {
+                    await deleteManagedNonSportEvent(
+                      context,
+                      event: event,
+                    );
+                  },
+                ),
+              ],
+            ],
+          ),
+        ),
+      ),
     );
   }
 }
@@ -800,6 +921,74 @@ class AgendaItemCard extends StatelessWidget {
                     showForNonManagerWithTracker: true,
                   ),
                 ],
+                if (item.type == AgendaItemType.nonSport &&
+                    item.nonSportEvent != null) ...[
+                  if (canManageNonSportEvent(
+                    item.nonSportEvent!,
+                    context.read<AppSession>(),
+                  )) ...[
+                    IconButton(
+                      visualDensity: VisualDensity.compact,
+                      padding: EdgeInsets.zero,
+                      constraints: const BoxConstraints(
+                        minWidth: 32,
+                        minHeight: 32,
+                      ),
+                      tooltip: context.l10n.editNonSportEventTitle,
+                      icon: Icon(
+                        Icons.edit_outlined,
+                        size: 20,
+                        color: colors.textPrimary,
+                      ),
+                      onPressed: () {
+                        showCreateNonSportEventSheet(
+                          context,
+                          eventToEdit: item.nonSportEvent!,
+                        );
+                      },
+                    ),
+                    IconButton(
+                      visualDensity: VisualDensity.compact,
+                      padding: EdgeInsets.zero,
+                      constraints: const BoxConstraints(
+                        minWidth: 32,
+                        minHeight: 32,
+                      ),
+                      tooltip: context.l10n.actionDelete,
+                      icon: Icon(
+                        Icons.delete_outline_rounded,
+                        size: 20,
+                        color: colors.textPrimary,
+                      ),
+                      onPressed: () async {
+                        await deleteManagedNonSportEvent(
+                          context,
+                          event: item.nonSportEvent!,
+                        );
+                      },
+                    ),
+                  ],
+                  IconButton(
+                    visualDensity: VisualDensity.compact,
+                    padding: EdgeInsets.zero,
+                    constraints: const BoxConstraints(
+                      minWidth: 32,
+                      minHeight: 32,
+                    ),
+                    tooltip: context.l10n.nonSportEventInviteesTitle,
+                    icon: Icon(
+                      Icons.groups_outlined,
+                      size: 20,
+                      color: colors.textPrimary,
+                    ),
+                    onPressed: () {
+                      showNonSportEventInviteesSheet(
+                        context,
+                        event: item.nonSportEvent!,
+                      );
+                    },
+                  ),
+                ],
                 if (item.isDone) ...[
                   const SizedBox(width: 8),
                   Icon(
@@ -810,6 +999,28 @@ class AgendaItemCard extends StatelessWidget {
                 ],
               ],
             ),
+            if (item.allDay) ...[
+              const SizedBox(height: 8),
+              Text(
+                context.l10n.agendaAllDayLabel,
+                style: Theme.of(context).textTheme.labelLarge?.copyWith(
+                      color: Colors.white,
+                      fontWeight: FontWeight.w700,
+                    ),
+              ),
+            ],
+            if ((item.subtitle ?? '').trim().isNotEmpty &&
+                item.type == AgendaItemType.nonSport) ...[
+              const SizedBox(height: 6),
+              Text(
+                item.subtitle!,
+                maxLines: 3,
+                overflow: TextOverflow.ellipsis,
+                style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                      color: colors.textPrimary.withValues(alpha: 0.9),
+                    ),
+              ),
+            ],
             if (timeLabel != null) ...[
               const SizedBox(height: 8),
               Center(

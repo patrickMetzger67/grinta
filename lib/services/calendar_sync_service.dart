@@ -71,6 +71,8 @@ class CalendarSyncService {
         return 'training';
       case AgendaItemType.preparationPhysique:
         return 'training';
+      case AgendaItemType.nonSport:
+        return 'event';
     }
   }
 
