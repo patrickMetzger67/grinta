@@ -300,9 +300,51 @@ class PromoCodeService {
     }
   }
 
+  /// True when Firebase could not reach the callable (undeployed / wrong region).
+  ///
+  /// Must not be shown as "promo code not found" — that message is reserved for
+  /// [PROMO_NOT_FOUND] from [redeemPromoCode] itself.
+  static bool isCallableMissing(FirebaseFunctionsException e) {
+    final message = (e.message ?? '').trim().toLowerCase();
+    final detailsText = e.details?.toString().toLowerCase() ?? '';
+    final combined = '$message $detailsText';
+
+    if (combined.contains('promo code') && combined.contains('not found')) {
+      return false;
+    }
+
+    final looksLikeMissingFunction = combined.contains('function') ||
+        combined.contains('callable') ||
+        combined.contains('does not exist') ||
+        combined.contains('was not found') ||
+        combined.contains('not been deployed') ||
+        combined.contains('404');
+
+    if (e.code == 'not-found' && looksLikeMissingFunction) {
+      return true;
+    }
+    if (e.code == 'not-found' && !_hasExplicitPromoErrorCode(e)) {
+      // Generic Firebase "not-found" without our errorCode usually means the
+      // Cloud Function endpoint itself is missing — not the promo document.
+      return true;
+    }
+    return false;
+  }
+
+  static bool _hasExplicitPromoErrorCode(FirebaseFunctionsException e) {
+    final details = e.details;
+    if (details is! Map) return false;
+    final raw = details['errorCode']?.toString().trim() ?? '';
+    return raw.isNotEmpty;
+  }
+
   /// Stable promo error code from callable [details.errorCode], or inferred
   /// from known English server messages (covers undeployed CF fallbacks).
   static String? extractPromoErrorCode(FirebaseFunctionsException e) {
+    if (isCallableMissing(e)) {
+      return 'PROMO_CALLABLE_MISSING';
+    }
+
     final details = e.details;
     if (details is Map) {
       final raw = details['errorCode']?.toString().trim();
@@ -315,7 +357,8 @@ class PromoCodeService {
     if (message.contains('already redeemed')) {
       return 'ALREADY_REDEEMED';
     }
-    if (message.contains('not found')) {
+    // Only treat as missing promo when the server message mentions a promo code.
+    if (message.contains('promo code') && message.contains('not found')) {
       return 'PROMO_NOT_FOUND';
     }
     if (message.contains('inactive')) {

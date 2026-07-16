@@ -220,6 +220,18 @@ function normalizePromoCode(raw) {
   return (raw ?? '').toString().trim().toUpperCase().replace(/\s+/g, '');
 }
 
+/** Compact form for tolerant matching (DEMO2026 == DEMO-2026). */
+function compactPromoCode(normalized) {
+  return normalizePromoCode(normalized).replace(/[-_.]/g, '');
+}
+
+function promoCodeLookupCandidates(normalizedCode) {
+  const upper = normalizePromoCode(normalizedCode);
+  const lower = upper.toLowerCase();
+  const compact = compactPromoCode(upper);
+  return [...new Set([upper, lower, compact, compact.toLowerCase()].filter(Boolean))];
+}
+
 function readTimestamp(value) {
   if (!value) return null;
   if (value instanceof Timestamp) return value.toDate();
@@ -229,21 +241,48 @@ function readTimestamp(value) {
 }
 
 async function resolvePromoCodeRef(db, normalizedCode) {
-  const directRef = db.collection(PROMO_CODES_COLLECTION).doc(normalizedCode);
-  const directSnap = await directRef.get();
-  if (directSnap.exists) {
-    return directRef;
+  const candidates = promoCodeLookupCandidates(normalizedCode);
+  const compactTarget = compactPromoCode(normalizedCode);
+
+  for (const id of candidates) {
+    const directRef = db.collection(PROMO_CODES_COLLECTION).doc(id);
+    const directSnap = await directRef.get();
+    if (directSnap.exists) {
+      return directRef;
+    }
   }
 
-  const querySnap = await db
-    .collection(PROMO_CODES_COLLECTION)
-    .where('code', '==', normalizedCode)
-    .limit(1)
-    .get();
-  if (!querySnap.empty) {
-    return querySnap.docs[0].ref;
+  for (const code of candidates) {
+    const querySnap = await db
+      .collection(PROMO_CODES_COLLECTION)
+      .where('code', '==', code)
+      .limit(1)
+      .get();
+    if (!querySnap.empty) {
+      return querySnap.docs[0].ref;
+    }
   }
 
+  // Last resort: small admin collection — match by normalized/compact stored code
+  // (covers mixed-case doc ids or codes created outside the admin UI).
+  const scanSnap = await db.collection(PROMO_CODES_COLLECTION).limit(500).get();
+  for (const doc of scanSnap.docs) {
+    const storedRaw = (doc.data()?.code ?? doc.id ?? '').toString();
+    const stored = normalizePromoCode(storedRaw);
+    if (!stored) continue;
+    if (stored === normalizePromoCode(normalizedCode)) {
+      return doc.ref;
+    }
+    if (compactPromoCode(stored) === compactTarget) {
+      return doc.ref;
+    }
+  }
+
+  console.warn('resolvePromoCodeRef: no match', {
+    normalizedCode,
+    candidates,
+    scanned: scanSnap.size,
+  });
   return null;
 }
 
@@ -576,22 +615,31 @@ exports.redeemPromoCode = onCall(
         uid,
         redeemedAt: FieldValue.serverTimestamp(),
       });
+    });
 
-      // Durable app-side mirror so access survives RevenueCat client glitches.
-      const userRef = db.collection('users').doc(uid);
+    // Mirror access outside the promo transaction so a user-doc write failure
+    // never blocks / rolls back a successful redeem.
+    try {
       const access = {
         entitlements: [entitlement],
         productId: null,
         source: 'promo',
         updatedAt: FieldValue.serverTimestamp(),
+        expiresAt: grant.expiresAt
+          ? Timestamp.fromDate(new Date(grant.expiresAt))
+          : null,
       };
-      if (grant.expiresAt) {
-        access.expiresAt = Timestamp.fromDate(new Date(grant.expiresAt));
-      } else {
-        access.expiresAt = null;
-      }
-      transaction.set(userRef, {subscriptionAccess: access}, {merge: true});
-    });
+      await db.collection('users').doc(uid).set(
+        {subscriptionAccess: access},
+        {merge: true},
+      );
+    } catch (mirrorError) {
+      console.error('redeemPromoCode: subscriptionAccess mirror failed', {
+        uid,
+        code,
+        mirrorError,
+      });
+    }
 
     console.log('redeemPromoCode success', {
       uid,
