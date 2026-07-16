@@ -425,7 +425,7 @@ class NonSportEventService {
         final Player playerForSend =
             await _playerService.getPlayerById(memberId) ?? player;
         final List<String> linkedUids =
-            collectMemberLinkedUserIds(playerForSend);
+            collectMemberLinkedUserIds(playerForSend).toList();
 
         if (linkedUids.isEmpty) {
           skippedNoLinkedAccount++;
