@@ -118,6 +118,7 @@ class InternalReminderService with WidgetsBindingObserver {
         seasonId: session.selectedSeason?.ref?.id,
         start: start,
         end: end,
+        memberId: session.selectedPlayerId,
       );
 
       await LocalReminderScheduler.instance.cancelAll();

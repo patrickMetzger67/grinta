@@ -4372,6 +4372,187 @@ abstract class AppLocalizations {
   /// **'Un évènement / activité non sportive'**
   String get agendaAddEventNonSport;
 
+  /// No description provided for @agendaAllDayLabel.
+  ///
+  /// In fr, this message translates to:
+  /// **'Journée entière'**
+  String get agendaAllDayLabel;
+
+  /// No description provided for @agendaEventSummaryNonSport.
+  ///
+  /// In fr, this message translates to:
+  /// **'{count, plural, =1{1 activité} other{{count} activités}}'**
+  String agendaEventSummaryNonSport(int count);
+
+  /// No description provided for @createNonSportEventTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Nouvel évènement / activité'**
+  String get createNonSportEventTitle;
+
+  /// No description provided for @createNonSportEventTitleField.
+  ///
+  /// In fr, this message translates to:
+  /// **'Titre'**
+  String get createNonSportEventTitleField;
+
+  /// No description provided for @createNonSportEventTitleRequired.
+  ///
+  /// In fr, this message translates to:
+  /// **'Indiquez un titre'**
+  String get createNonSportEventTitleRequired;
+
+  /// No description provided for @createNonSportEventDate.
+  ///
+  /// In fr, this message translates to:
+  /// **'Date'**
+  String get createNonSportEventDate;
+
+  /// No description provided for @createNonSportEventTime.
+  ///
+  /// In fr, this message translates to:
+  /// **'Heure'**
+  String get createNonSportEventTime;
+
+  /// No description provided for @createNonSportEventAllDay.
+  ///
+  /// In fr, this message translates to:
+  /// **'Journée entière'**
+  String get createNonSportEventAllDay;
+
+  /// No description provided for @createNonSportEventLocation.
+  ///
+  /// In fr, this message translates to:
+  /// **'Lieu'**
+  String get createNonSportEventLocation;
+
+  /// No description provided for @createNonSportEventLocationHint.
+  ///
+  /// In fr, this message translates to:
+  /// **'Adresse ou lieu de rendez-vous'**
+  String get createNonSportEventLocationHint;
+
+  /// No description provided for @createNonSportEventInviteTeams.
+  ///
+  /// In fr, this message translates to:
+  /// **'Inviter une ou plusieurs équipes'**
+  String get createNonSportEventInviteTeams;
+
+  /// No description provided for @createNonSportEventSelectMembers.
+  ///
+  /// In fr, this message translates to:
+  /// **'Sélectionner les membres'**
+  String get createNonSportEventSelectMembers;
+
+  /// No description provided for @createNonSportEventSelectedMembersCount.
+  ///
+  /// In fr, this message translates to:
+  /// **'{count, plural, =1{1 membre sélectionné} other{{count} membres sélectionnés}}'**
+  String createNonSportEventSelectedMembersCount(int count);
+
+  /// No description provided for @createNonSportEventNoTeamMembers.
+  ///
+  /// In fr, this message translates to:
+  /// **'Aucun membre dans cette équipe.'**
+  String get createNonSportEventNoTeamMembers;
+
+  /// No description provided for @createNonSportEventInviteOthers.
+  ///
+  /// In fr, this message translates to:
+  /// **'Inviter d\'autres profils'**
+  String get createNonSportEventInviteOthers;
+
+  /// No description provided for @createNonSportEventAddProfile.
+  ///
+  /// In fr, this message translates to:
+  /// **'Ajouter un profil'**
+  String get createNonSportEventAddProfile;
+
+  /// No description provided for @createNonSportEventInvitees.
+  ///
+  /// In fr, this message translates to:
+  /// **'Invités'**
+  String get createNonSportEventInvitees;
+
+  /// No description provided for @createNonSportEventNoInvitees.
+  ///
+  /// In fr, this message translates to:
+  /// **'Aucun invité pour le moment.'**
+  String get createNonSportEventNoInvitees;
+
+  /// No description provided for @createNonSportEventNoTeams.
+  ///
+  /// In fr, this message translates to:
+  /// **'Aucune équipe disponible pour cette saison.'**
+  String get createNonSportEventNoTeams;
+
+  /// No description provided for @createNonSportEventSubmit.
+  ///
+  /// In fr, this message translates to:
+  /// **'Créer l\'évènement'**
+  String get createNonSportEventSubmit;
+
+  /// No description provided for @createNonSportEventSaved.
+  ///
+  /// In fr, this message translates to:
+  /// **'Évènement créé'**
+  String get createNonSportEventSaved;
+
+  /// No description provided for @createNonSportEventError.
+  ///
+  /// In fr, this message translates to:
+  /// **'Impossible de créer l\'évènement. Réessayez.'**
+  String get createNonSportEventError;
+
+  /// No description provided for @createNonSportEventInviteStatusSent.
+  ///
+  /// In fr, this message translates to:
+  /// **'Notification envoyée'**
+  String get createNonSportEventInviteStatusSent;
+
+  /// No description provided for @createNonSportEventInviteStatusNoAccount.
+  ///
+  /// In fr, this message translates to:
+  /// **'Pas de compte utilisateur lié'**
+  String get createNonSportEventInviteStatusNoAccount;
+
+  /// No description provided for @createNonSportEventInviteStatusPending.
+  ///
+  /// In fr, this message translates to:
+  /// **'En attente'**
+  String get createNonSportEventInviteStatusPending;
+
+  /// No description provided for @createNonSportEventInviteStatusError.
+  ///
+  /// In fr, this message translates to:
+  /// **'Échec de notification'**
+  String get createNonSportEventInviteStatusError;
+
+  /// No description provided for @createNonSportEventNotificationTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Nouvel évènement'**
+  String get createNonSportEventNotificationTitle;
+
+  /// No description provided for @createNonSportEventNotificationBody.
+  ///
+  /// In fr, this message translates to:
+  /// **'{title} — {when}'**
+  String createNonSportEventNotificationBody(String title, String when);
+
+  /// No description provided for @createNonSportEventNotificationBodyWithLocation.
+  ///
+  /// In fr, this message translates to:
+  /// **'{title} — {when} — {location}'**
+  String createNonSportEventNotificationBodyWithLocation(String title, String when, String location);
+
+  /// No description provided for @nonSportEventInviteesTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Invitations'**
+  String get nonSportEventInviteesTitle;
+
+
   /// No description provided for @agendaLegend.
   ///
   /// In fr, this message translates to:

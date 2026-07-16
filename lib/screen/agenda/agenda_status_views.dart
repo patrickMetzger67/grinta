@@ -263,6 +263,8 @@ Color _typeColor(BuildContext context, AgendaItemType type) {
       return colors.primary;
     case AgendaItemType.preparationPhysique:
       return colors.success;
+    case AgendaItemType.nonSport:
+      return colors.warning;
   }
 }
 
@@ -274,6 +276,8 @@ IconData _typeIcon(AgendaItemType type) {
       return Icons.fitness_center_rounded;
     case AgendaItemType.preparationPhysique:
       return Icons.directions_run_rounded;
+    case AgendaItemType.nonSport:
+      return Icons.event_rounded;
   }
 }
 
@@ -289,6 +293,10 @@ String? _formatTimeHmForLocale(String? timeHm, String locale) {
 }
 
 String? _agendaEventTimeLabel(AgendaItem item, String locale) {
+  if (item.allDay) {
+    return null;
+  }
+
   String? timeHm;
   switch (item.type) {
     case AgendaItemType.match:
@@ -297,8 +305,17 @@ String? _agendaEventTimeLabel(AgendaItem item, String locale) {
       timeHm = item.training?.startTime;
     case AgendaItemType.preparationPhysique:
       return null;
+    case AgendaItemType.nonSport:
+      return DateFormat.Hm(locale).format(item.startAt);
   }
 
   return _formatTimeHmForLocale(timeHm, locale) ??
       DateFormat.Hm(locale).format(item.startAt);
+}
+
+int _compareAgendaItems(AgendaItem a, AgendaItem b) {
+  if (a.allDay != b.allDay) {
+    return a.allDay ? -1 : 1;
+  }
+  return a.startAt.compareTo(b.startAt);
 }

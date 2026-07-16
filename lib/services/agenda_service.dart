@@ -4,10 +4,12 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/foundation.dart';
 import 'package:grinta/model/agendaItem.dart';
 import 'package:grinta/model/match.dart' as grinta_match;
+import 'package:grinta/model/non_sport_event.dart';
 import 'package:grinta/model/team.dart';
 import 'package:grinta/model/tracker/team_workload_summary.dart';
 import 'package:grinta/model/training.dart';
 import 'package:grinta/services/matchService.dart';
+import 'package:grinta/services/non_sport_event_service.dart';
 import 'package:grinta/services/teamWorkloadSummaryService.dart';
 import 'package:grinta/services/trainingService.dart';
 import 'package:grinta/util/buildTimestampFromDateAndTime.dart';
@@ -17,6 +19,7 @@ class AgendaService {
   final TrainingService _trainingService;
   final MatchService _matchService;
   final TeamWorkloadSummaryService _teamWorkloadSummaryService;
+  final NonSportEventService _nonSportEventService;
 
   /// In-memory cache so tracker enrichment does not re-hit Firestore on every
   /// progressive stream emission (match phases, team merges, range refreshes).
@@ -27,16 +30,20 @@ class AgendaService {
     TrainingService? trainingService,
     MatchService? matchService,
     TeamWorkloadSummaryService? teamWorkloadSummaryService,
+    NonSportEventService? nonSportEventService,
   })  : _trainingService = trainingService ?? TrainingService(),
         _matchService = matchService ?? MatchService(),
         _teamWorkloadSummaryService =
-            teamWorkloadSummaryService ?? TeamWorkloadSummaryService();
+            teamWorkloadSummaryService ?? TeamWorkloadSummaryService(),
+        _nonSportEventService =
+            nonSportEventService ?? NonSportEventService();
 
   Stream<List<AgendaItem>> watchAgendaItems({
     required List<Team> teams,
     required String? seasonId,
     required DateTime start,
     required DateTime end,
+    String? memberId,
   }) {
     final Timestamp timestampStart = Timestamp.fromDate(start);
     final Timestamp timestampEnd = Timestamp.fromDate(end);
@@ -73,7 +80,29 @@ class AgendaService {
       if (kDebugMode) {
         debugPrint(
           'Agenda stream: seasonId=$seasonId teams=${teams.length} '
-          'range=$start → $end',
+          'memberId=$memberId range=$start → $end',
+        );
+      }
+
+      final String? trimmedMemberId = memberId?.trim();
+      if (trimmedMemberId != null && trimmedMemberId.isNotEmpty) {
+        subscriptions.add(
+          _nonSportEventService
+              .watchEventsForMemberBetweenDates(
+                memberId: trimmedMemberId,
+                start: start,
+                end: end,
+              )
+              .listen(
+            (List<NonSportEvent> events) {
+              partialItems['non_sport'] = events
+                  .map(_nonSportEventToAgendaItem)
+                  .whereType<AgendaItem>()
+                  .toList();
+              emitMerged();
+            },
+            onError: controller.addError,
+          ),
         );
       }
 
@@ -159,6 +188,7 @@ class AgendaService {
     required String? seasonId,
     required DateTime start,
     required DateTime end,
+    String? memberId,
   }) async {
     final Timestamp timestampStart = Timestamp.fromDate(start);
     final Timestamp timestampEnd = Timestamp.fromDate(end);
@@ -183,14 +213,33 @@ class AgendaService {
       );
     }
 
+    final String? trimmedMemberId = memberId?.trim();
+    if (trimmedMemberId != null && trimmedMemberId.isNotEmpty) {
+      teamLoads.add(
+        _nonSportEventService
+            .watchEventsForMemberBetweenDates(
+              memberId: trimmedMemberId,
+              start: start,
+              end: end,
+            )
+            .first
+            .then(
+              (List<NonSportEvent> events) => events
+                  .map(_nonSportEventToAgendaItem)
+                  .whereType<AgendaItem>()
+                  .toList(),
+            ),
+      );
+    }
+
     if (teamLoads.isEmpty) {
       return const <AgendaItem>[];
     }
 
     if (kDebugMode) {
       debugPrint(
-        'Agenda load: seasonId=$seasonId teams=${teamLoads.length} '
-        'range=$start → $end',
+        'Agenda load: seasonId=$seasonId teams=${teams.length} '
+        'memberId=$memberId range=$start → $end',
       );
     }
 
@@ -278,8 +327,10 @@ class AgendaService {
       subtitle: item.subtitle,
       type: item.type,
       isDone: item.isDone,
+      allDay: item.allDay,
       match: item.match,
       training: item.training,
+      nonSportEvent: item.nonSportEvent,
       activityMetrics: item.activityMetrics,
       withTracker: item.withTracker,
       areTrackersSynchronized: item.areTrackersSynchronized,
@@ -344,7 +395,32 @@ class AgendaService {
     }
 
     return unique.values.toList()
-      ..sort((AgendaItem a, AgendaItem b) => a.startAt.compareTo(b.startAt));
+      ..sort((AgendaItem a, AgendaItem b) {
+        if (a.allDay != b.allDay) {
+          return a.allDay ? -1 : 1;
+        }
+        return a.startAt.compareTo(b.startAt);
+      });
+  }
+
+  static AgendaItem? _nonSportEventToAgendaItem(NonSportEvent event) {
+    final String? eventId = event.id?.trim();
+    if (eventId == null || eventId.isEmpty || event.title.trim().isEmpty) {
+      return null;
+    }
+
+    final String? location = event.location?.trim();
+    return AgendaItem(
+      id: eventId,
+      startAt: event.startAt,
+      endAt: event.endAt,
+      title: event.title,
+      subtitle: location,
+      type: AgendaItemType.nonSport,
+      allDay: event.allDay,
+      isDone: event.endAt.isBefore(DateTime.now()),
+      nonSportEvent: event,
+    );
   }
 
   static AgendaItem? matchToAgendaItem({

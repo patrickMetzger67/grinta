@@ -91,6 +91,7 @@ class _WebAppRootState extends State<WebAppRoot> {
       seasonId: appSession.selectedSeason?.ref?.id,
       start: start,
       end: end,
+      memberId: appSession.selectedPlayerId,
     );
 
     var didTriggerCalendarSync = false;

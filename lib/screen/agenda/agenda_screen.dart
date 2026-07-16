@@ -42,6 +42,7 @@ import '../team_players_screen.dart';
 import 'agenda_add_event_menu.dart';
 import '../../widget/ask_diego/ask_diego_speed_dial.dart';
 import '../../widget/agenda_training_presence_actions.dart';
+import '../../widget/non_sport_event_invitees_sheet.dart';
 part 'agenda_calendar_widgets.dart';
 part 'agenda_list_widgets.dart';
 part 'agenda_status_views.dart';
@@ -395,7 +396,7 @@ class _AgendaScreenState extends State<AgendaScreen> {
 
         setState(() {
           _items = List<AgendaItem>.from(loadedItems)
-            ..sort((AgendaItem a, AgendaItem b) => a.startAt.compareTo(b.startAt));
+            ..sort(_compareAgendaItems);
           _isLoading = false;
           _isRefreshing = false;
           _error = null;
@@ -894,7 +895,7 @@ class _AgendaScreenState extends State<AgendaScreen> {
 
     final weekItems = <AgendaItem>[
       ...(groupedByWeek[_selectedWeekStart] ?? <AgendaItem>[]),
-    ]..sort((a, b) => a.startAt.compareTo(b.startAt));
+    ]..sort(_compareAgendaItems);
 
     return RefreshIndicator(
       onRefresh: () => _subscribeItems(),
@@ -930,7 +931,7 @@ class _AgendaScreenState extends State<AgendaScreen> {
     final dayItems = _items
         .where((e) => _isSameDay(e.startAt, _selectedDate))
         .toList()
-      ..sort((a, b) => a.startAt.compareTo(b.startAt));
+      ..sort(_compareAgendaItems);
 
     return RefreshIndicator(
       onRefresh: () => _subscribeItems(),
@@ -946,7 +947,9 @@ class _AgendaScreenState extends State<AgendaScreen> {
             ...dayItems.map(
                   (item) => Padding(
                 padding: const EdgeInsets.only(bottom: 10),
-                child: AgendaItemCard(item: item),
+                child: item.allDay && item.type == AgendaItemType.nonSport
+                    ? _AllDayNonSportRow(item: item)
+                    : AgendaItemCard(item: item),
               ),
             ),
         ],

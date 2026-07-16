@@ -630,6 +630,7 @@ class _AgendaHeaderSummary extends StatelessWidget {
     final matchs = _countByType(AgendaItemType.match);
     final entrainements = _countByType(AgendaItemType.entrainement);
     final prepas = _countByType(AgendaItemType.preparationPhysique);
+    final nonSports = _countByType(AgendaItemType.nonSport);
 
     return Container(
       width: double.infinity,
@@ -687,6 +688,12 @@ class _AgendaHeaderSummary extends StatelessWidget {
                 value: prepas,
                 color: colors.success,
                 icon: Icons.directions_run_rounded,
+              ),
+              _SummaryChip(
+                label: l10n.agendaAddEventNonSport,
+                value: nonSports,
+                color: colors.warning,
+                icon: Icons.event_rounded,
               ),
             ],
           ),

@@ -2451,6 +2451,117 @@ class AppLocalizationsFr extends AppLocalizations {
   String get agendaAddEventNonSport => 'Un évènement / activité non sportive';
 
   @override
+  String get agendaAllDayLabel => 'Journée entière';
+
+  @override
+  String agendaEventSummaryNonSport(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      one: '1 activité',
+      other: '$count activités',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get createNonSportEventTitle => 'Nouvel évènement / activité';
+
+  @override
+  String get createNonSportEventTitleField => 'Titre';
+
+  @override
+  String get createNonSportEventTitleRequired => 'Indiquez un titre';
+
+  @override
+  String get createNonSportEventDate => 'Date';
+
+  @override
+  String get createNonSportEventTime => 'Heure';
+
+  @override
+  String get createNonSportEventAllDay => 'Journée entière';
+
+  @override
+  String get createNonSportEventLocation => 'Lieu';
+
+  @override
+  String get createNonSportEventLocationHint => 'Adresse ou lieu de rendez-vous';
+
+  @override
+  String get createNonSportEventInviteTeams => 'Inviter une ou plusieurs équipes';
+
+  @override
+  String get createNonSportEventSelectMembers => 'Sélectionner les membres';
+
+  @override
+  String createNonSportEventSelectedMembersCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      one: '1 membre sélectionné',
+      other: '$count membres sélectionnés',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get createNonSportEventNoTeamMembers => 'Aucun membre dans cette équipe.';
+
+  @override
+  String get createNonSportEventInviteOthers => 'Inviter d\'autres profils';
+
+  @override
+  String get createNonSportEventAddProfile => 'Ajouter un profil';
+
+  @override
+  String get createNonSportEventInvitees => 'Invités';
+
+  @override
+  String get createNonSportEventNoInvitees => 'Aucun invité pour le moment.';
+
+  @override
+  String get createNonSportEventNoTeams => 'Aucune équipe disponible pour cette saison.';
+
+  @override
+  String get createNonSportEventSubmit => 'Créer l\'évènement';
+
+  @override
+  String get createNonSportEventSaved => 'Évènement créé';
+
+  @override
+  String get createNonSportEventError => 'Impossible de créer l\'évènement. Réessayez.';
+
+  @override
+  String get createNonSportEventInviteStatusSent => 'Notification envoyée';
+
+  @override
+  String get createNonSportEventInviteStatusNoAccount => 'Pas de compte utilisateur lié';
+
+  @override
+  String get createNonSportEventInviteStatusPending => 'En attente';
+
+  @override
+  String get createNonSportEventInviteStatusError => 'Échec de notification';
+
+  @override
+  String get createNonSportEventNotificationTitle => 'Nouvel évènement';
+
+  @override
+  String createNonSportEventNotificationBody(String title, String when) {
+    return '$title — $when';
+  }
+
+  @override
+  String createNonSportEventNotificationBodyWithLocation(String title, String when, String location) {
+    return '$title — $when — $location';
+  }
+
+  @override
+  String get nonSportEventInviteesTitle => 'Invitations';
+
+
+  @override
   String get agendaLegend => 'Légende';
 
   @override

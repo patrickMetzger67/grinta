@@ -890,6 +890,59 @@
   "agendaAddEventPersonalSport": "A personal sports activity",
   "agendaAddEventPersonalSportHint": "Running, preparation, …",
   "agendaAddEventNonSport": "A non-sporting event / activity",
+  "agendaAllDayLabel": "All day",
+  "agendaEventSummaryNonSport": "{count, plural, =1{1 activity} other{{count} activities}}",
+  "@agendaEventSummaryNonSport": {
+    "placeholders": {
+      "count": { "type": "int" }
+    }
+  },
+  "createNonSportEventTitle": "New event / activity",
+  "createNonSportEventTitleField": "Title",
+  "createNonSportEventTitleRequired": "Enter a title",
+  "createNonSportEventDate": "Date",
+  "createNonSportEventTime": "Time",
+  "createNonSportEventAllDay": "All day",
+  "createNonSportEventLocation": "Location",
+  "createNonSportEventLocationHint": "Address or meeting place",
+  "createNonSportEventInviteTeams": "Invite one or more teams",
+  "createNonSportEventSelectMembers": "Select members",
+  "createNonSportEventSelectedMembersCount": "{count, plural, =1{1 member selected} other{{count} members selected}}",
+  "@createNonSportEventSelectedMembersCount": {
+    "placeholders": {
+      "count": { "type": "int" }
+    }
+  },
+  "createNonSportEventNoTeamMembers": "No members in this team.",
+  "createNonSportEventInviteOthers": "Invite other profiles",
+  "createNonSportEventAddProfile": "Add a profile",
+  "createNonSportEventInvitees": "Invitees",
+  "createNonSportEventNoInvitees": "No invitees yet.",
+  "createNonSportEventNoTeams": "No teams available for this season.",
+  "createNonSportEventSubmit": "Create event",
+  "createNonSportEventSaved": "Event created",
+  "createNonSportEventError": "Could not create the event. Please try again.",
+  "createNonSportEventInviteStatusSent": "Notification sent",
+  "createNonSportEventInviteStatusNoAccount": "No linked user account",
+  "createNonSportEventInviteStatusPending": "Pending",
+  "createNonSportEventInviteStatusError": "Notification failed",
+  "createNonSportEventNotificationTitle": "New event",
+  "createNonSportEventNotificationBody": "{title} — {when}",
+  "@createNonSportEventNotificationBody": {
+    "placeholders": {
+      "title": { "type": "String" },
+      "when": { "type": "String" }
+    }
+  },
+  "createNonSportEventNotificationBodyWithLocation": "{title} — {when} — {location}",
+  "@createNonSportEventNotificationBodyWithLocation": {
+    "placeholders": {
+      "title": { "type": "String" },
+      "when": { "type": "String" },
+      "location": { "type": "String" }
+    }
+  },
+  "nonSportEventInviteesTitle": "Invitations",
   "agendaLegend": "Legend",
   "agendaOverviewEventsCount": "{count, plural, =1{1 event} other{{count} events}}",
   "agendaEventSummaryMatches": "{count, plural, =1{1 match} other{{count} matches}}",
