@@ -2483,6 +2483,48 @@ class AppLocalizationsFr extends AppLocalizations {
   String get createNonSportEventAllDay => 'Journée entière';
 
   @override
+  String get createNonSportEventStartDate => 'Date de début';
+
+  @override
+  String get createNonSportEventStartTime => 'Heure de début';
+
+  @override
+  String get createNonSportEventEndDate => 'Date de fin';
+
+  @override
+  String get createNonSportEventEndTime => 'Heure de fin';
+
+  @override
+  String get createNonSportEventInvalidRange => 'La fin doit être après le début.';
+
+  @override
+  String get editNonSportEventTitle => 'Modifier l\'évènement';
+
+  @override
+  String get editNonSportEventSubmit => 'Enregistrer';
+
+  @override
+  String get editNonSportEventSaved => 'Évènement mis à jour';
+
+  @override
+  String get editNonSportEventError => 'Impossible de modifier l\'évènement. Réessayez.';
+
+  @override
+  String get deleteNonSportEventConfirmTitle => 'Supprimer l\'évènement ?';
+
+  @override
+  String deleteNonSportEventConfirmMessage(String title) {
+    return '« $title » sera définitivement supprimé, ainsi que les notifications associées.';
+  }
+
+  @override
+  String get deleteNonSportEventDeleted => 'Évènement supprimé';
+
+  @override
+  String get deleteNonSportEventError => 'Impossible de supprimer l\'évènement. Réessayez.';
+
+
+  @override
   String get createNonSportEventLocation => 'Lieu';
 
   @override

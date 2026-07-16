@@ -2500,6 +2500,48 @@ class AppLocalizationsDe extends AppLocalizations {
   String get createNonSportEventAllDay => 'All day';
 
   @override
+  String get createNonSportEventStartDate => 'Start date';
+
+  @override
+  String get createNonSportEventStartTime => 'Start time';
+
+  @override
+  String get createNonSportEventEndDate => 'End date';
+
+  @override
+  String get createNonSportEventEndTime => 'End time';
+
+  @override
+  String get createNonSportEventInvalidRange => 'End must be after start.';
+
+  @override
+  String get editNonSportEventTitle => 'Edit event';
+
+  @override
+  String get editNonSportEventSubmit => 'Save';
+
+  @override
+  String get editNonSportEventSaved => 'Event updated';
+
+  @override
+  String get editNonSportEventError => 'Could not update the event. Please try again.';
+
+  @override
+  String get deleteNonSportEventConfirmTitle => 'Delete event?';
+
+  @override
+  String deleteNonSportEventConfirmMessage(String title) {
+    return '“$title” will be permanently deleted, including related notifications.';
+  }
+
+  @override
+  String get deleteNonSportEventDeleted => 'Event deleted';
+
+  @override
+  String get deleteNonSportEventError => 'Could not delete the event. Please try again.';
+
+
+  @override
   String get createNonSportEventLocation => 'Location';
 
   @override

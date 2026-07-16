@@ -1,3 +1,5 @@
+import 'dart:async' show unawaited;
+
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
@@ -7,6 +9,7 @@ import 'package:grinta/model/player.dart';
 import 'package:grinta/model/team.dart';
 import 'package:grinta/provider/appSession.dart';
 import 'package:grinta/services/non_sport_event_service.dart';
+import 'package:grinta/services/playerService.dart';
 import 'package:grinta/util/app_snackbar.dart';
 import 'package:grinta/util/app_theme.dart';
 import 'package:grinta/util/playerDisplayName.dart';
@@ -16,14 +19,16 @@ import 'package:grinta/widget/non_sport_event_invitees_sheet.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 
-Future<bool?> showCreateNonSportEventSheet(
+Future<NonSportEvent?> showCreateNonSportEventSheet(
   BuildContext context, {
   DateTime? initialDate,
   TimeOfDay? initialTime,
+  NonSportEvent? eventToEdit,
   VoidCallback? onSaved,
-}) {
+}) async {
+  final NonSportEvent? saved;
   if (kIsWeb) {
-    return showDialog<bool>(
+    saved = await showDialog<NonSportEvent>(
       context: context,
       useRootNavigator: true,
       builder: (dialogContext) => Dialog(
@@ -39,25 +44,41 @@ Future<bool?> showCreateNonSportEventSheet(
           child: CreateNonSportEventSheet(
             initialDate: initialDate,
             initialTime: initialTime,
+            eventToEdit: eventToEdit,
             onSaved: onSaved,
           ),
         ),
       ),
     );
+  } else {
+    saved = await showModalBottomSheet<NonSportEvent>(
+      context: context,
+      isScrollControlled: true,
+      showDragHandle: true,
+      useRootNavigator: true,
+      backgroundColor: context.appColors.card,
+      builder: (_) => CreateNonSportEventSheet(
+        initialDate: initialDate,
+        initialTime: initialTime,
+        eventToEdit: eventToEdit,
+        onSaved: onSaved,
+      ),
+    );
   }
 
-  return showModalBottomSheet<bool>(
-    context: context,
-    isScrollControlled: true,
-    showDragHandle: true,
-    useRootNavigator: true,
-    backgroundColor: context.appColors.card,
-    builder: (_) => CreateNonSportEventSheet(
-      initialDate: initialDate,
-      initialTime: initialTime,
-      onSaved: onSaved,
-    ),
-  );
+  // Create/edit UI is already closed; show feedback + invite statuses on host.
+  if (saved != null && context.mounted) {
+    AppSnackbar.show(
+      context,
+      eventToEdit == null
+          ? context.l10n.createNonSportEventSaved
+          : context.l10n.editNonSportEventSaved,
+      isError: false,
+    );
+    await showNonSportEventInviteesSheet(context, event: saved);
+  }
+
+  return saved;
 }
 
 class CreateNonSportEventSheet extends StatefulWidget {
@@ -65,12 +86,16 @@ class CreateNonSportEventSheet extends StatefulWidget {
     super.key,
     this.initialDate,
     this.initialTime,
+    this.eventToEdit,
     this.onSaved,
   });
 
   final DateTime? initialDate;
   final TimeOfDay? initialTime;
+  final NonSportEvent? eventToEdit;
   final VoidCallback? onSaved;
+
+  bool get isEditMode => eventToEdit != null;
 
   @override
   State<CreateNonSportEventSheet> createState() =>
@@ -83,8 +108,10 @@ class _CreateNonSportEventSheetState extends State<CreateNonSportEventSheet> {
   final TextEditingController _titleController = TextEditingController();
   final TextEditingController _locationController = TextEditingController();
 
-  late DateTime _selectedDate;
-  late TimeOfDay _selectedTime;
+  late DateTime _startDate;
+  late DateTime _endDate;
+  late TimeOfDay _startTime;
+  late TimeOfDay _endTime;
   bool _allDay = false;
   bool _isSubmitting = false;
 
@@ -96,13 +123,66 @@ class _CreateNonSportEventSheetState extends State<CreateNonSportEventSheet> {
   final Set<String> _manualInviteeIds = <String>{};
   final Set<String> _loadingTeamIds = <String>{};
 
+  bool get _isEditMode => widget.isEditMode;
+
   @override
   void initState() {
     super.initState();
     final DateTime now = DateTime.now();
-    _selectedDate = DateUtils.dateOnly(widget.initialDate ?? now);
-    _selectedTime = widget.initialTime ?? TimeOfDay(hour: now.hour, minute: 0);
-    _initTeams();
+    final NonSportEvent? existing = widget.eventToEdit;
+    if (existing != null) {
+      _titleController.text = existing.title;
+      _locationController.text = existing.location ?? '';
+      _allDay = existing.allDay;
+      _startDate = DateUtils.dateOnly(existing.startAt);
+      _endDate = DateUtils.dateOnly(existing.endAt);
+      _startTime = TimeOfDay.fromDateTime(existing.startAt);
+      _endTime = TimeOfDay.fromDateTime(existing.endAt);
+      _selectedTeamIds.addAll(existing.teamIds);
+      _initTeams();
+      unawaited(_prefillInvitees(existing));
+    } else {
+      _startDate = DateUtils.dateOnly(widget.initialDate ?? now);
+      _endDate = _startDate;
+      _startTime = widget.initialTime ?? TimeOfDay(hour: now.hour, minute: 0);
+      final int endHour = (_startTime.hour + 1) % 24;
+      _endTime = TimeOfDay(
+        hour: endHour,
+        minute: _startTime.minute,
+      );
+      if (endHour < _startTime.hour) {
+        _endDate = _startDate.add(const Duration(days: 1));
+      }
+      _initTeams();
+    }
+  }
+
+  Future<void> _prefillInvitees(NonSportEvent existing) async {
+    final PlayerService playerService = PlayerService();
+    for (final NonSportInvitee invitee in existing.invitees) {
+      final Player? player =
+          await playerService.getPlayerById(invitee.memberId);
+      if (player == null) {
+        continue;
+      }
+      final String? memberId = effectiveMemberId(player);
+      if (memberId == null) {
+        continue;
+      }
+      _inviteesByMemberId[memberId] = player;
+      if (invitee.teamIds.isEmpty) {
+        _manualInviteeIds.add(memberId);
+      } else {
+        for (final String teamId in invitee.teamIds) {
+          _selectedMemberIdsByTeam
+              .putIfAbsent(teamId, () => <String>{})
+              .add(memberId);
+        }
+      }
+    }
+    if (mounted) {
+      setState(() {});
+    }
   }
 
   @override
@@ -122,26 +202,79 @@ class _CreateNonSportEventSheetState extends State<CreateNonSportEventSheet> {
     _teams = teams;
   }
 
-  Future<void> _pickDate() async {
+  Future<void> _pickStartDate() async {
     final DateTime? picked = await showDatePicker(
       context: context,
-      initialDate: _selectedDate,
+      initialDate: _startDate,
       firstDate: DateTime(2020),
       lastDate: DateTime(2100),
-      helpText: context.l10n.createNonSportEventDate,
+      helpText: context.l10n.createNonSportEventStartDate,
     );
     if (picked == null || !mounted) return;
-    setState(() => _selectedDate = DateUtils.dateOnly(picked));
+    setState(() {
+      _startDate = DateUtils.dateOnly(picked);
+      if (_endDate.isBefore(_startDate)) {
+        _endDate = _startDate;
+      }
+    });
   }
 
-  Future<void> _pickTime() async {
-    final TimeOfDay? picked = await showTimePicker(
+  Future<void> _pickEndDate() async {
+    final DateTime? picked = await showDatePicker(
       context: context,
-      initialTime: _selectedTime,
-      helpText: context.l10n.createNonSportEventTime,
+      initialDate: _endDate.isBefore(_startDate) ? _startDate : _endDate,
+      firstDate: _startDate,
+      lastDate: DateTime(2100),
+      helpText: context.l10n.createNonSportEventEndDate,
     );
     if (picked == null || !mounted) return;
-    setState(() => _selectedTime = picked);
+    setState(() => _endDate = DateUtils.dateOnly(picked));
+  }
+
+  Future<void> _pickStartTime() async {
+    final TimeOfDay? picked = await showTimePicker(
+      context: context,
+      initialTime: _startTime,
+      helpText: context.l10n.createNonSportEventStartTime,
+    );
+    if (picked == null || !mounted) return;
+    setState(() {
+      _startTime = picked;
+      _ensureEndAfterStart();
+    });
+  }
+
+  Future<void> _pickEndTime() async {
+    final TimeOfDay? picked = await showTimePicker(
+      context: context,
+      initialTime: _endTime,
+      helpText: context.l10n.createNonSportEventEndTime,
+    );
+    if (picked == null || !mounted) return;
+    setState(() {
+      _endTime = picked;
+      _ensureEndAfterStart();
+    });
+  }
+
+  DateTime _combine(DateTime date, TimeOfDay time) {
+    return DateTime(date.year, date.month, date.day, time.hour, time.minute);
+  }
+
+  void _ensureEndAfterStart() {
+    if (_allDay) {
+      if (_endDate.isBefore(_startDate)) {
+        _endDate = _startDate;
+      }
+      return;
+    }
+    final DateTime startAt = _combine(_startDate, _startTime);
+    DateTime endAt = _combine(_endDate, _endTime);
+    if (!endAt.isAfter(startAt)) {
+      endAt = startAt.add(const Duration(hours: 1));
+      _endDate = DateUtils.dateOnly(endAt);
+      _endTime = TimeOfDay(hour: endAt.hour, minute: endAt.minute);
+    }
   }
 
   Future<void> _toggleTeam(Team team, bool selected) async {
@@ -363,72 +496,82 @@ class _CreateNonSportEventSheetState extends State<CreateNonSportEventSheet> {
     }
 
     final AppSession session = context.read<AppSession>();
+    _ensureEndAfterStart();
+
+    final DateTime startAt = _allDay
+        ? DateTime(_startDate.year, _startDate.month, _startDate.day)
+        : _combine(_startDate, _startTime);
+    final DateTime endAt = _allDay
+        ? DateTime(_endDate.year, _endDate.month, _endDate.day, 23, 59, 59)
+        : _combine(_endDate, _endTime);
+
+    if (!endAt.isAfter(startAt) && !_allDay) {
+      AppSnackbar.show(
+        context,
+        context.l10n.createNonSportEventInvalidRange,
+        isError: true,
+      );
+      return;
+    }
+    if (_allDay && _endDate.isBefore(_startDate)) {
+      AppSnackbar.show(
+        context,
+        context.l10n.createNonSportEventInvalidRange,
+        isError: true,
+      );
+      return;
+    }
+
     setState(() => _isSubmitting = true);
 
     try {
-      final DateTime startAt = _allDay
-          ? DateTime(_selectedDate.year, _selectedDate.month, _selectedDate.day)
-          : DateTime(
-              _selectedDate.year,
-              _selectedDate.month,
-              _selectedDate.day,
-              _selectedTime.hour,
-              _selectedTime.minute,
-            );
-      final DateTime endAt = _allDay
-          ? DateTime(
-              _selectedDate.year,
-              _selectedDate.month,
-              _selectedDate.day,
-              23,
-              59,
-              59,
-            )
-          : startAt.add(const Duration(hours: 1));
+      final String clubId = _teams
+          .where(
+            (Team team) =>
+                team.keyTeam != null &&
+                _selectedTeamIds.contains(team.keyTeam),
+          )
+          .map((Team team) => team.clubId?.trim() ?? '')
+          .firstWhere((String id) => id.isNotEmpty, orElse: () => '');
 
-      final NonSportEventCreateResult result = await _eventService.createEvent(
-        l10n: context.l10n,
-        title: _titleController.text,
-        startAt: startAt,
-        endAt: endAt,
-        allDay: _allDay,
-        location: _locationController.text,
-        teamIds: _selectedTeamIds.toList(),
-        invitees: _inviteesByMemberId.values.toList(),
-        createdByUserId: user.uid,
-        createdByMemberId: session.selectedPlayerId,
-        seasonId: session.selectedSeason?.ref?.id,
-        clubId: _teams
-            .where(
-              (Team team) =>
-                  team.keyTeam != null &&
-                  _selectedTeamIds.contains(team.keyTeam),
-            )
-            .map((Team team) => team.clubId?.trim() ?? '')
-            .firstWhere((String id) => id.isNotEmpty, orElse: () => ''),
-      );
-
-      if (!mounted) {
-        return;
+      final NonSportEventCreateResult result;
+      if (_isEditMode) {
+        result = await _eventService.updateEvent(
+          l10n: context.l10n,
+          existing: widget.eventToEdit!,
+          title: _titleController.text,
+          startAt: startAt,
+          endAt: endAt,
+          allDay: _allDay,
+          location: _locationController.text,
+          teamIds: _selectedTeamIds.toList(),
+          invitees: _inviteesByMemberId.values.toList(),
+          editorUserId: user.uid,
+        );
+      } else {
+        result = await _eventService.createEvent(
+          l10n: context.l10n,
+          title: _titleController.text,
+          startAt: startAt,
+          endAt: endAt,
+          allDay: _allDay,
+          location: _locationController.text,
+          teamIds: _selectedTeamIds.toList(),
+          invitees: _inviteesByMemberId.values.toList(),
+          createdByUserId: user.uid,
+          createdByMemberId: session.selectedPlayerId,
+          seasonId: session.selectedSeason?.ref?.id,
+          clubId: clubId,
+        );
       }
-
-      AppSnackbar.show(
-        context,
-        context.l10n.createNonSportEventSaved,
-        isError: false,
-      );
-
-      await showNonSportEventInviteesSheet(
-        context,
-        event: result.event,
-      );
 
       if (!mounted) {
         return;
       }
 
       widget.onSaved?.call();
-      Navigator.of(context).pop(true);
+      // Close create/edit dialog immediately; invite statuses open afterwards.
+      Navigator.of(context).pop(result.event);
     } catch (error, stackTrace) {
       debugPrint('CreateNonSportEventSheet._submit failed: $error');
       debugPrintStack(stackTrace: stackTrace);
@@ -437,7 +580,9 @@ class _CreateNonSportEventSheetState extends State<CreateNonSportEventSheet> {
       }
       AppSnackbar.show(
         context,
-        context.l10n.createNonSportEventError,
+        _isEditMode
+            ? context.l10n.editNonSportEventError
+            : context.l10n.createNonSportEventError,
         isError: true,
       );
     } finally {
@@ -469,7 +614,9 @@ class _CreateNonSportEventSheetState extends State<CreateNonSportEventSheet> {
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
                 Text(
-                  l10n.createNonSportEventTitle,
+                  _isEditMode
+                      ? l10n.editNonSportEventTitle
+                      : l10n.createNonSportEventTitle,
                   style: Theme.of(context).textTheme.titleMedium?.copyWith(
                         color: colors.textPrimary,
                         fontWeight: FontWeight.w700,
@@ -493,18 +640,29 @@ class _CreateNonSportEventSheetState extends State<CreateNonSportEventSheet> {
                 SwitchListTile.adaptive(
                   contentPadding: EdgeInsets.zero,
                   value: _allDay,
-                  onChanged: (bool value) => setState(() => _allDay = value),
+                  onChanged: (bool value) => setState(() {
+                    _allDay = value;
+                    _ensureEndAfterStart();
+                  }),
                   title: Text(l10n.createNonSportEventAllDay),
                 ),
                 const SizedBox(height: 4),
+                Text(
+                  l10n.createNonSportEventStartDate,
+                  style: Theme.of(context).textTheme.labelLarge?.copyWith(
+                        color: colors.textSecondary,
+                        fontWeight: FontWeight.w600,
+                      ),
+                ),
+                const SizedBox(height: 6),
                 Row(
                   children: [
                     Expanded(
                       child: OutlinedButton.icon(
-                        onPressed: _isSubmitting ? null : _pickDate,
+                        onPressed: _isSubmitting ? null : _pickStartDate,
                         icon: const Icon(Icons.calendar_today_outlined),
                         label: Text(
-                          DateFormat.yMMMd(locale).format(_selectedDate),
+                          DateFormat.yMMMd(locale).format(_startDate),
                         ),
                       ),
                     ),
@@ -512,9 +670,41 @@ class _CreateNonSportEventSheetState extends State<CreateNonSportEventSheet> {
                       const SizedBox(width: 8),
                       Expanded(
                         child: OutlinedButton.icon(
-                          onPressed: _isSubmitting ? null : _pickTime,
+                          onPressed: _isSubmitting ? null : _pickStartTime,
                           icon: const Icon(Icons.schedule_outlined),
-                          label: Text(_selectedTime.format(context)),
+                          label: Text(_startTime.format(context)),
+                        ),
+                      ),
+                    ],
+                  ],
+                ),
+                const SizedBox(height: 12),
+                Text(
+                  l10n.createNonSportEventEndDate,
+                  style: Theme.of(context).textTheme.labelLarge?.copyWith(
+                        color: colors.textSecondary,
+                        fontWeight: FontWeight.w600,
+                      ),
+                ),
+                const SizedBox(height: 6),
+                Row(
+                  children: [
+                    Expanded(
+                      child: OutlinedButton.icon(
+                        onPressed: _isSubmitting ? null : _pickEndDate,
+                        icon: const Icon(Icons.event_outlined),
+                        label: Text(
+                          DateFormat.yMMMd(locale).format(_endDate),
+                        ),
+                      ),
+                    ),
+                    if (!_allDay) ...[
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: OutlinedButton.icon(
+                          onPressed: _isSubmitting ? null : _pickEndTime,
+                          icon: const Icon(Icons.schedule_outlined),
+                          label: Text(_endTime.format(context)),
                         ),
                       ),
                     ],
@@ -659,7 +849,11 @@ class _CreateNonSportEventSheetState extends State<CreateNonSportEventSheet> {
                           height: 20,
                           child: CircularProgressIndicator(strokeWidth: 2),
                         )
-                      : Text(l10n.createNonSportEventSubmit),
+                      : Text(
+                          _isEditMode
+                              ? l10n.editNonSportEventSubmit
+                              : l10n.createNonSportEventSubmit,
+                        ),
                 ),
               ],
             ),

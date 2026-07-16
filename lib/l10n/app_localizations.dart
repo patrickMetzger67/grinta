@@ -4420,6 +4420,21 @@ abstract class AppLocalizations {
   /// **'Journée entière'**
   String get createNonSportEventAllDay;
 
+  String get createNonSportEventStartDate;
+  String get createNonSportEventStartTime;
+  String get createNonSportEventEndDate;
+  String get createNonSportEventEndTime;
+  String get createNonSportEventInvalidRange;
+  String get editNonSportEventTitle;
+  String get editNonSportEventSubmit;
+  String get editNonSportEventSaved;
+  String get editNonSportEventError;
+  String get deleteNonSportEventConfirmTitle;
+  String deleteNonSportEventConfirmMessage(String title);
+  String get deleteNonSportEventDeleted;
+  String get deleteNonSportEventError;
+
+
   /// No description provided for @createNonSportEventLocation.
   ///
   /// In fr, this message translates to:

@@ -299,7 +299,7 @@ class _AgendaWeeksList extends StatelessWidget {
               final weekStart = weeks[index];
               final weekItems = <AgendaItem>[
                 ...(groupedByWeek[weekStart] ?? <AgendaItem>[]),
-              ]..sort((a, b) => a.startAt.compareTo(b.startAt));
+              ]..sort(_compareAgendaItems);
 
               final isSelected =
                   weekStart.millisecondsSinceEpoch ==
@@ -369,8 +369,10 @@ class _WeekCard extends StatelessWidget {
             children: [
               ...List.generate(7, (index) {
                 final day = weekStart.add(Duration(days: index));
-                final dayItems =
-                items.where((e) => _isSameDay(e.startAt, day)).toList();
+                final dayItems = items
+                    .where((e) => _agendaItemOccursOnDay(e, day))
+                    .toList()
+                  ..sort(_compareAgendaItems);
 
                 return _DayRow(
                   date: day,
@@ -594,17 +596,20 @@ class _AllDayNonSportRow extends StatelessWidget {
   Widget build(BuildContext context) {
     final colors = context.appColors;
     final accent = _typeColor(context, AgendaItemType.nonSport);
+    final NonSportEvent? event = item.nonSportEvent;
+    final bool canManage = event != null &&
+        canManageNonSportEvent(event, context.read<AppSession>());
 
     return Material(
       color: accent.withValues(alpha: 0.92),
       borderRadius: BorderRadius.circular(10),
       child: InkWell(
         borderRadius: BorderRadius.circular(10),
-        onTap: item.nonSportEvent == null
+        onTap: event == null
             ? null
             : () => showNonSportEventInviteesSheet(
                   context,
-                  event: item.nonSportEvent!,
+                  event: event,
                 ),
         child: Container(
           width: double.infinity,
@@ -635,6 +640,48 @@ class _AllDayNonSportRow extends StatelessWidget {
                       fontWeight: FontWeight.w600,
                     ),
               ),
+              if (canManage) ...[
+                IconButton(
+                  visualDensity: VisualDensity.compact,
+                  padding: EdgeInsets.zero,
+                  constraints: const BoxConstraints(
+                    minWidth: 28,
+                    minHeight: 28,
+                  ),
+                  tooltip: context.l10n.editNonSportEventTitle,
+                  icon: Icon(
+                    Icons.edit_outlined,
+                    size: 18,
+                    color: colors.textPrimary,
+                  ),
+                  onPressed: () {
+                    showCreateNonSportEventSheet(
+                      context,
+                      eventToEdit: event,
+                    );
+                  },
+                ),
+                IconButton(
+                  visualDensity: VisualDensity.compact,
+                  padding: EdgeInsets.zero,
+                  constraints: const BoxConstraints(
+                    minWidth: 28,
+                    minHeight: 28,
+                  ),
+                  tooltip: context.l10n.actionDelete,
+                  icon: Icon(
+                    Icons.delete_outline_rounded,
+                    size: 18,
+                    color: colors.textPrimary,
+                  ),
+                  onPressed: () async {
+                    await deleteManagedNonSportEvent(
+                      context,
+                      event: event,
+                    );
+                  },
+                ),
+              ],
             ],
           ),
         ),
@@ -876,6 +923,51 @@ class AgendaItemCard extends StatelessWidget {
                 ],
                 if (item.type == AgendaItemType.nonSport &&
                     item.nonSportEvent != null) ...[
+                  if (canManageNonSportEvent(
+                    item.nonSportEvent!,
+                    context.read<AppSession>(),
+                  )) ...[
+                    IconButton(
+                      visualDensity: VisualDensity.compact,
+                      padding: EdgeInsets.zero,
+                      constraints: const BoxConstraints(
+                        minWidth: 32,
+                        minHeight: 32,
+                      ),
+                      tooltip: context.l10n.editNonSportEventTitle,
+                      icon: Icon(
+                        Icons.edit_outlined,
+                        size: 20,
+                        color: colors.textPrimary,
+                      ),
+                      onPressed: () {
+                        showCreateNonSportEventSheet(
+                          context,
+                          eventToEdit: item.nonSportEvent!,
+                        );
+                      },
+                    ),
+                    IconButton(
+                      visualDensity: VisualDensity.compact,
+                      padding: EdgeInsets.zero,
+                      constraints: const BoxConstraints(
+                        minWidth: 32,
+                        minHeight: 32,
+                      ),
+                      tooltip: context.l10n.actionDelete,
+                      icon: Icon(
+                        Icons.delete_outline_rounded,
+                        size: 20,
+                        color: colors.textPrimary,
+                      ),
+                      onPressed: () async {
+                        await deleteManagedNonSportEvent(
+                          context,
+                          event: item.nonSportEvent!,
+                        );
+                      },
+                    ),
+                  ],
                   IconButton(
                     visualDensity: VisualDensity.compact,
                     padding: EdgeInsets.zero,

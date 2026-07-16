@@ -326,6 +326,44 @@ class NotificationService {
     }
   }
 
+  /// Deletes every notification linked to [objectId] (no composite index).
+  Future<int> deleteNotificationsByObjectId(String objectId) async {
+    final String trimmed = objectId.trim();
+    if (trimmed.isEmpty) {
+      return 0;
+    }
+
+    final QuerySnapshot<Map<String, dynamic>> query = await _collection
+        .where(keyNotifObjectId, isEqualTo: trimmed)
+        .get();
+
+    if (query.docs.isEmpty) {
+      return 0;
+    }
+
+    const int batchLimit = 400;
+    var deleted = 0;
+    WriteBatch batch = _firestore.batch();
+    var opsInBatch = 0;
+
+    for (final QueryDocumentSnapshot<Map<String, dynamic>> doc in query.docs) {
+      batch.delete(doc.reference);
+      opsInBatch++;
+      deleted++;
+      if (opsInBatch >= batchLimit) {
+        await batch.commit();
+        batch = _firestore.batch();
+        opsInBatch = 0;
+      }
+    }
+
+    if (opsInBatch > 0) {
+      await batch.commit();
+    }
+
+    return deleted;
+  }
+
   Stream<List<NotificationApp>> streamNotificationsByObjectId(String objectId) {
     return _collection
         .where(keyNotifObjectId, isEqualTo: objectId)

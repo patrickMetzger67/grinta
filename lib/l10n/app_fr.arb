@@ -1108,6 +1108,24 @@
   "createNonSportEventDate": "Date",
   "createNonSportEventTime": "Heure",
   "createNonSportEventAllDay": "Journée entière",
+  "createNonSportEventStartDate": "Date de début",
+  "createNonSportEventStartTime": "Heure de début",
+  "createNonSportEventEndDate": "Date de fin",
+  "createNonSportEventEndTime": "Heure de fin",
+  "createNonSportEventInvalidRange": "La fin doit être après le début.",
+  "editNonSportEventTitle": "Modifier l'évènement",
+  "editNonSportEventSubmit": "Enregistrer",
+  "editNonSportEventSaved": "Évènement mis à jour",
+  "editNonSportEventError": "Impossible de modifier l'évènement. Réessayez.",
+  "deleteNonSportEventConfirmTitle": "Supprimer l'évènement ?",
+  "deleteNonSportEventConfirmMessage": "« {title} » sera définitivement supprimé, ainsi que les notifications associées.",
+  "@deleteNonSportEventConfirmMessage": {
+    "placeholders": {
+      "title": { "type": "String" }
+    }
+  },
+  "deleteNonSportEventDeleted": "Évènement supprimé",
+  "deleteNonSportEventError": "Impossible de supprimer l'évènement. Réessayez.",
   "createNonSportEventLocation": "Lieu",
   "createNonSportEventLocationHint": "Adresse ou lieu de rendez-vous",
   "createNonSportEventInviteTeams": "Inviter une ou plusieurs équipes",

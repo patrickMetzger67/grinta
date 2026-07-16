@@ -2,6 +2,7 @@ import 'dart:async' show StreamSubscription, unawaited;
 
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/foundation.dart';
+import 'package:flutter/material.dart' show DateUtils;
 import 'package:grinta/config/invitation_config.dart';
 import 'package:grinta/l10n/app_localizations.dart';
 import 'package:grinta/model/non_sport_event.dart';
@@ -242,6 +243,170 @@ class NonSportEventService {
     );
   }
 
+  /// Updates an existing event, replaces invite notifications, and re-notifies.
+  Future<NonSportEventCreateResult> updateEvent({
+    required AppLocalizations l10n,
+    required NonSportEvent existing,
+    required String title,
+    required DateTime startAt,
+    required DateTime endAt,
+    required bool allDay,
+    required String? location,
+    required List<String> teamIds,
+    required List<Player> invitees,
+    required String editorUserId,
+  }) async {
+    final String eventId = existing.id?.trim() ?? '';
+    if (eventId.isEmpty) {
+      throw StateError('missingEventId');
+    }
+
+    final String trimmedTitle = title.trim();
+    if (trimmedTitle.isEmpty) {
+      throw StateError('missingTitle');
+    }
+
+    final String trimmedUserId = editorUserId.trim();
+    if (trimmedUserId.isEmpty) {
+      throw StateError('missingAuth');
+    }
+
+    final List<Player> uniqueInvitees = _dedupePlayers(invitees);
+    final List<NonSportInvitee> inviteesWithTeams =
+        await _buildInviteeRows(uniqueInvitees, teamIds);
+
+    final List<String> inviteeMemberIds = inviteesWithTeams
+        .map((NonSportInvitee e) => e.memberId)
+        .toList();
+
+    final Set<String> accessMemberIds = <String>{
+      ...inviteeMemberIds,
+      if ((existing.createdByMemberId ?? '').trim().isNotEmpty)
+        existing.createdByMemberId!.trim(),
+    };
+
+    NonSportEvent event = existing.copyWith(
+      title: trimmedTitle,
+      startAt: startAt,
+      endAt: endAt,
+      allDay: allDay,
+      location: location?.trim().isEmpty == true ? null : location?.trim(),
+      teamIds: teamIds
+          .map((String id) => id.trim())
+          .where((String id) => id.isNotEmpty)
+          .toList(),
+      inviteeMemberIds: inviteeMemberIds,
+      accessMemberIds: accessMemberIds.toList()..sort(),
+      invitees: inviteesWithTeams,
+      updatedAt: Timestamp.now(),
+    );
+
+    final DocumentReference<Map<String, dynamic>> docRef =
+        existing.ref as DocumentReference<Map<String, dynamic>>? ??
+            _collection.doc(eventId);
+
+    // Remove previous invite notifications before sending fresh ones.
+    await _notificationService.deleteNotificationsByObjectId(eventId);
+
+    await docRef.set(event.toMap(includeTimestamps: false), SetOptions(merge: true));
+    await docRef.set(
+      <String, dynamic>{
+        keyNonSportEventUpdatedAt: FieldValue.serverTimestamp(),
+      },
+      SetOptions(merge: true),
+    );
+
+    final _NotifyOutcome notifyOutcome = await _notifyInvitees(
+      l10n: l10n,
+      event: event,
+      invitees: uniqueInvitees,
+      managerUserId: trimmedUserId,
+    );
+
+    event = event.copyWith(invitees: notifyOutcome.invitees, ref: docRef);
+    await docRef.set(
+      <String, dynamic>{
+        keyNonSportEventInvitees:
+            event.invitees.map((NonSportInvitee e) => e.toMap()).toList(),
+        keyNonSportEventUpdatedAt: FieldValue.serverTimestamp(),
+      },
+      SetOptions(merge: true),
+    );
+
+    return NonSportEventCreateResult(
+      event: event,
+      notificationsCreated: notifyOutcome.notificationsCreated,
+      pushNotificationsSent: notifyOutcome.pushNotificationsSent,
+      skippedNoLinkedAccount: notifyOutcome.skippedNoLinkedAccount,
+    );
+  }
+
+  /// Deletes the event document and all related notifications.
+  Future<void> deleteEvent(NonSportEvent event) async {
+    final String eventId = event.id?.trim() ?? '';
+    if (eventId.isEmpty) {
+      throw StateError('missingEventId');
+    }
+
+    await _notificationService.deleteNotificationsByObjectId(eventId);
+
+    final DocumentReference<Map<String, dynamic>> docRef =
+        event.ref as DocumentReference<Map<String, dynamic>>? ??
+            _collection.doc(eventId);
+    await docRef.delete();
+  }
+
+  Future<List<NonSportInvitee>> _buildInviteeRows(
+    List<Player> invitees,
+    List<String> teamIds,
+  ) async {
+    final List<NonSportInvitee> inviteeRows = invitees
+        .map((Player player) {
+          final String? memberId = effectiveMemberId(player);
+          if (memberId == null) {
+            return null;
+          }
+          return NonSportInvitee(
+            memberId: memberId,
+            displayName: playerDisplayName(player),
+            teamIds: const <String>[],
+            status: NonSportInviteStatus.pending,
+          );
+        })
+        .whereType<NonSportInvitee>()
+        .toList();
+
+    final Map<String, Set<String>> memberTeamIds = <String, Set<String>>{};
+    for (final String teamId in teamIds) {
+      final String trimmedTeamId = teamId.trim();
+      if (trimmedTeamId.isEmpty) {
+        continue;
+      }
+      final Team? team = await _teamService.getTeamById(trimmedTeamId);
+      if (team == null) {
+        continue;
+      }
+      final List<Player> members = await loadAllTeamMembers(team);
+      for (final Player member in members) {
+        final String? memberId = effectiveMemberId(member);
+        if (memberId == null) {
+          continue;
+        }
+        memberTeamIds
+            .putIfAbsent(memberId, () => <String>{})
+            .add(trimmedTeamId);
+      }
+    }
+
+    return inviteeRows.map((NonSportInvitee row) {
+      final Set<String>? teams = memberTeamIds[row.memberId];
+      if (teams == null || teams.isEmpty) {
+        return row;
+      }
+      return row.copyWith(teamIds: teams.toList()..sort());
+    }).toList();
+  }
+
   Stream<List<NonSportEvent>> watchEventsForMemberBetweenDates({
     required String memberId,
     required DateTime start,
@@ -274,7 +439,8 @@ class NonSportEventService {
       final List<NonSportEvent> events = snapshot.docs
           .map(NonSportEvent.fromSnapshot)
           .where((NonSportEvent event) {
-            return !event.startAt.isBefore(rangeStart) &&
+            // Keep events that overlap the visible agenda window (multi-day).
+            return !event.endAt.isBefore(rangeStart) &&
                 !event.startAt.isAfter(rangeEnd);
           })
           .toList()
@@ -387,9 +553,19 @@ class NonSportEventService {
     }
 
     final String pushTitle = l10n.createNonSportEventNotificationTitle;
-    final String whenLabel = event.allDay
-        ? l10n.createNonSportEventAllDay
-        : DateFormat('dd/MM/yyyy HH:mm').format(event.startAt);
+    final bool multiDay = DateUtils.dateOnly(event.startAt) !=
+        DateUtils.dateOnly(event.endAt);
+    final String whenLabel;
+    if (event.allDay) {
+      whenLabel = multiDay
+          ? '${DateFormat('dd/MM/yyyy').format(event.startAt)} → ${DateFormat('dd/MM/yyyy').format(event.endAt)}'
+          : l10n.createNonSportEventAllDay;
+    } else if (multiDay) {
+      whenLabel =
+          '${DateFormat('dd/MM/yyyy HH:mm').format(event.startAt)} → ${DateFormat('dd/MM/yyyy HH:mm').format(event.endAt)}';
+    } else {
+      whenLabel = DateFormat('dd/MM/yyyy HH:mm').format(event.startAt);
+    }
     final String location = (event.location ?? '').trim();
     final String pushBody = location.isEmpty
         ? l10n.createNonSportEventNotificationBody(
