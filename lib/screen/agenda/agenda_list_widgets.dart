@@ -1594,10 +1594,13 @@ class _AgendaIntenseLiveButton extends StatefulWidget {
 
 class _AgendaIntenseLiveButtonState extends State<_AgendaIntenseLiveButton> {
   Timer? _slotTimer;
+  Future<bool>? _intenseOwnerFuture;
+  String? _ownerIdForFuture;
 
   @override
   void initState() {
     super.initState();
+    _ensureIntenseOwnerFuture();
     _slotTimer = Timer.periodic(const Duration(seconds: 30), (_) {
       if (mounted) {
         setState(() {});
@@ -1606,9 +1609,32 @@ class _AgendaIntenseLiveButtonState extends State<_AgendaIntenseLiveButton> {
   }
 
   @override
+  void didUpdateWidget(covariant _AgendaIntenseLiveButton oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.training.ownerId != widget.training.ownerId) {
+      _ensureIntenseOwnerFuture();
+    }
+  }
+
+  @override
   void dispose() {
     _slotTimer?.cancel();
     super.dispose();
+  }
+
+  void _ensureIntenseOwnerFuture() {
+    final ownerId = widget.training.ownerId?.trim() ?? '';
+    if (ownerId.isEmpty) {
+      _intenseOwnerFuture = null;
+      _ownerIdForFuture = null;
+      return;
+    }
+    if (_ownerIdForFuture == ownerId && _intenseOwnerFuture != null) {
+      return;
+    }
+    _ownerIdForFuture = ownerId;
+    // Live only for Intense cloud owners (withSyncing == false).
+    _intenseOwnerFuture = isIntenseTrackerOwner(ownerId);
   }
 
   @override
@@ -1622,77 +1648,88 @@ class _AgendaIntenseLiveButtonState extends State<_AgendaIntenseLiveButton> {
       return const SizedBox.shrink();
     }
 
-    final isLive = isTrainingSessionLive(
+    final isLiveSlot = isTrainingSessionLive(
       training: widget.training,
       scheduledStart: widget.scheduledStart,
       scheduledEnd: widget.scheduledEnd,
     );
 
-    if (kDebugMode) {
-      final end = trainingScheduledEndAt(widget.training, widget.scheduledStart) ??
-          widget.scheduledEnd;
-      debugPrint(
-        '[IntenseLive] agenda training=${widget.training.docId} '
-        'ownerId=$ownerId withTracker=${widget.training.withTracker} '
-        'duration=${widget.training.duration} live=$isLive '
-        'start=${widget.scheduledStart} end=$end now=${DateTime.now()}',
-      );
-    }
+    return FutureBuilder<bool>(
+      future: _intenseOwnerFuture,
+      builder: (context, intenseSnapshot) {
+        // USB-sync owners (withSyncing == true) cannot stream live.
+        final canStreamLive = intenseSnapshot.data == true;
+        final showLive = canStreamLive && isLiveSlot;
 
-    if (!isLive && !widget.showFinish) {
-      return const SizedBox.shrink();
-    }
+        if (kDebugMode) {
+          final end =
+              trainingScheduledEndAt(widget.training, widget.scheduledStart) ??
+                  widget.scheduledEnd;
+          debugPrint(
+            '[IntenseLive] agenda training=${widget.training.docId} '
+            'ownerId=$ownerId withTracker=${widget.training.withTracker} '
+            'duration=${widget.training.duration} liveSlot=$isLiveSlot '
+            'canStreamLive=$canStreamLive '
+            'start=${widget.scheduledStart} end=$end now=${DateTime.now()}',
+          );
+        }
 
-    final colors = context.appColors;
+        if (!showLive && !widget.showFinish) {
+          return const SizedBox.shrink();
+        }
 
-    return Column(
-      children: [
-        if (isLive) ...[
-          const SizedBox(height: 10),
-          SizedBox(
-            width: double.infinity,
-            child: FilledButton.icon(
-              onPressed: () {
-                IntenseLiveSessionScreen.openForTraining(
-                  context,
-                  training: widget.training,
-                  title: widget.title,
-                  scheduledStart: widget.scheduledStart,
-                );
-              },
-              icon: const Icon(Icons.sensors_rounded, size: 18),
-              label: Text(context.l10n.intenseLiveTitle),
-              style: FilledButton.styleFrom(
-                backgroundColor: colors.danger,
-                foregroundColor: Colors.white,
-                padding: const EdgeInsets.symmetric(vertical: 12),
+        final colors = context.appColors;
+
+        return Column(
+          children: [
+            if (showLive) ...[
+              const SizedBox(height: 10),
+              SizedBox(
+                width: double.infinity,
+                child: FilledButton.icon(
+                  onPressed: () {
+                    IntenseLiveSessionScreen.openForTraining(
+                      context,
+                      training: widget.training,
+                      title: widget.title,
+                      scheduledStart: widget.scheduledStart,
+                    );
+                  },
+                  icon: const Icon(Icons.sensors_rounded, size: 18),
+                  label: Text(context.l10n.intenseLiveTitle),
+                  style: FilledButton.styleFrom(
+                    backgroundColor: colors.danger,
+                    foregroundColor: Colors.white,
+                    padding: const EdgeInsets.symmetric(vertical: 12),
+                  ),
+                ),
               ),
-            ),
-          ),
-        ],
-        if (widget.showFinish) ...[
-          const SizedBox(height: 10),
-          SizedBox(
-            width: double.infinity,
-            child: FilledButton.icon(
-              onPressed: () async {
-                await finishManagedTraining(
-                  context,
-                  training: widget.training,
-                );
-              },
-              icon: const Icon(Icons.sports_score_rounded, size: 18),
-              label: Text(context.l10n.finishTrainingTitle),
-              style: FilledButton.styleFrom(
-                backgroundColor: colors.card.withValues(alpha: 0.55),
-                foregroundColor: colors.textPrimary,
-                side: BorderSide(color: colors.border),
-                padding: const EdgeInsets.symmetric(vertical: 12),
+            ],
+            if (widget.showFinish) ...[
+              const SizedBox(height: 10),
+              SizedBox(
+                width: double.infinity,
+                child: FilledButton.icon(
+                  onPressed: () async {
+                    await finishManagedTraining(
+                      context,
+                      training: widget.training,
+                    );
+                  },
+                  icon: const Icon(Icons.sports_score_rounded, size: 18),
+                  label: Text(context.l10n.finishTrainingTitle),
+                  style: FilledButton.styleFrom(
+                    backgroundColor: colors.card.withValues(alpha: 0.55),
+                    foregroundColor: colors.textPrimary,
+                    side: BorderSide(color: colors.border),
+                    padding: const EdgeInsets.symmetric(vertical: 12),
+                  ),
+                ),
               ),
-            ),
-          ),
-        ],
-      ],
+            ],
+          ],
+        );
+      },
     );
   }
 }
