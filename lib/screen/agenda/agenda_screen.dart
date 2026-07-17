@@ -62,14 +62,45 @@ class AgendaScreen extends StatefulWidget {
   final AgendaItemsWatcher watchItems;
   final DateTime? initialDate;
 
+  /// Invalidates cached team workload for an event and refreshes agenda cards
+  /// after Intense finish / re-sync.
+  final ValueChanged<String>? onTrackerWorkloadUpdated;
+
   const AgendaScreen({
     super.key,
     required this.watchItems,
     this.initialDate,
+    this.onTrackerWorkloadUpdated,
   });
 
   @override
   State<AgendaScreen> createState() => _AgendaScreenState();
+}
+
+/// Provides [onTrackerWorkloadUpdated] to agenda cards without threading it
+/// through every list/day widget.
+class _AgendaWorkloadRefreshScope extends InheritedWidget {
+  const _AgendaWorkloadRefreshScope({
+    required this.onTrackerWorkloadUpdated,
+    required super.child,
+  });
+
+  final ValueChanged<String> onTrackerWorkloadUpdated;
+
+  static void notify(BuildContext context, String eventId) {
+    final String trimmed = eventId.trim();
+    if (trimmed.isEmpty) {
+      return;
+    }
+    context
+        .getInheritedWidgetOfExactType<_AgendaWorkloadRefreshScope>()
+        ?.onTrackerWorkloadUpdated(trimmed);
+  }
+
+  @override
+  bool updateShouldNotify(_AgendaWorkloadRefreshScope oldWidget) {
+    return onTrackerWorkloadUpdated != oldWidget.onTrackerWorkloadUpdated;
+  }
 }
 
 class _AgendaScreenState extends State<AgendaScreen> {
@@ -711,7 +742,7 @@ class _AgendaScreenState extends State<AgendaScreen> {
     final l10n = context.l10n;
     final bool hideAppBar = AppShellScope.hidesChildAppBar(context);
 
-    return Scaffold(
+    final Widget scaffold = Scaffold(
       backgroundColor: colors.background,
       appBar: hideAppBar
           ? null
@@ -814,6 +845,17 @@ class _AgendaScreenState extends State<AgendaScreen> {
           ),
         ),
       ),
+    );
+
+    final ValueChanged<String>? onTrackerWorkloadUpdated =
+        widget.onTrackerWorkloadUpdated;
+    if (onTrackerWorkloadUpdated == null) {
+      return scaffold;
+    }
+
+    return _AgendaWorkloadRefreshScope(
+      onTrackerWorkloadUpdated: onTrackerWorkloadUpdated,
+      child: scaffold,
     );
   }
 

@@ -1257,7 +1257,9 @@ class AgendaItemCard extends StatelessWidget {
                                       children: [
                                         Center(
                                           child: Padding(
-                                            padding: const EdgeInsets.symmetric(horizontal: 110),
+                                            padding: const EdgeInsets.symmetric(
+                                              horizontal: 96,
+                                            ),
                                             child: Text(
                                               context.l10n.agendaTrackerStatsTitle,
                                               maxLines: 1,
@@ -1268,30 +1270,6 @@ class AgendaItemCard extends StatelessWidget {
                                                 fontSize: 18,
                                                 fontWeight: FontWeight.w900,
                                               ),
-                                            ),
-                                          ),
-                                        ),
-
-                                        Align(
-                                          alignment: Alignment.centerLeft,
-                                          child: FilledButton.tonalIcon(
-                                            onPressed: () {
-                                              showSessionReportEmailDialog(
-                                                context: dialogContext,
-                                                eventId: item.id,
-                                                isMatch: false,
-                                                summary: item.teamWorkloadSummary,
-                                                title: item.title,
-                                                subtitle: item.subtitle,
-                                                eventDate: item.startAt,
-                                              );
-                                            },
-                                            icon: const Icon(
-                                              Icons.picture_as_pdf_outlined,
-                                              size: 18,
-                                            ),
-                                            label: Text(
-                                              context.l10n.sessionReportEmailActionLabel,
                                             ),
                                           ),
                                         ),
@@ -1631,6 +1609,16 @@ class _AgendaTrainingPlayersRow extends StatelessWidget {
   }
 }
 
+void _notifyAgendaWorkloadUpdated(BuildContext context, {Training? training}) {
+  final String eventId = training?.docId?.trim() ??
+      training?.trainingId?.trim() ??
+      '';
+  if (eventId.isEmpty) {
+    return;
+  }
+  _AgendaWorkloadRefreshScope.notify(context, eventId);
+}
+
 class _AgendaIntenseLiveButton extends StatefulWidget {
   const _AgendaIntenseLiveButton({
     required this.training,
@@ -1775,7 +1763,14 @@ class _AgendaIntenseLiveButtonState extends State<_AgendaIntenseLiveButton> {
                 width: double.infinity,
                 child: FilledButton.icon(
                   onPressed: () async {
-                    await finishManagedTraining(
+                    final bool finished = await finishManagedTraining(
+                      context,
+                      training: widget.training,
+                    );
+                    if (!finished || !context.mounted) {
+                      return;
+                    }
+                    _notifyAgendaWorkloadUpdated(
                       context,
                       training: widget.training,
                     );
@@ -1797,7 +1792,14 @@ class _AgendaIntenseLiveButtonState extends State<_AgendaIntenseLiveButton> {
                 width: double.infinity,
                 child: FilledButton.icon(
                   onPressed: () async {
-                    await resyncManagedTrainingIntense(
+                    final bool synced = await resyncManagedTrainingIntense(
+                      context,
+                      training: widget.training,
+                    );
+                    if (!synced || !context.mounted) {
+                      return;
+                    }
+                    _notifyAgendaWorkloadUpdated(
                       context,
                       training: widget.training,
                     );

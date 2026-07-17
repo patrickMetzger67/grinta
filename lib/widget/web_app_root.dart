@@ -157,6 +157,9 @@ class _WebAppRootState extends State<WebAppRoot> {
       ),
       watchItems: _watchAgendaItems,
       initialDate: pendingAgendaDate,
+      onTrackerWorkloadUpdated: (String eventId) {
+        _agendaService.invalidateWorkloadSummaryCache(eventId);
+      },
     );
 
     final bool isMobileNative = !kIsWeb &&
