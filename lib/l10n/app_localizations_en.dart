@@ -274,6 +274,30 @@ class AppLocalizationsEn extends AppLocalizations {
       'The tracker statistics PDF report is attached to this email.';
 
   @override
+  String get sessionReportEmailDownloadHint =>
+      'Download the PDF report using the button below.';
+
+  @override
+  String get sessionReportEmailDownloadButton => 'Download PDF';
+
+  @override
+  String sessionReportEmailDownloadLine(String url) {
+    return 'Download the PDF: $url';
+  }
+
+  @override
+  String get sessionReportEmailAskAddress =>
+      'Tell me which email address should receive the PDF report.';
+
+  @override
+  String get sessionReportEmailNoSessionYesterday =>
+      'I could not find any session for that period.';
+
+  @override
+  String get sessionReportEmailPeriodUnclear =>
+      'Please specify the period (yesterday, today…) for the report.';
+
+  @override
   String sessionReportEmailFooter(String appName) {
     return 'You received this email because a session report was generated from $appName. If you were not expecting this message, you can ignore it.';
   }

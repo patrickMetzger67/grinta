@@ -4,6 +4,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_tts/flutter_tts.dart';
 import 'package:grinta/core/extensions/l10n_extension.dart';
+import 'package:grinta/l10n/app_localizations.dart';
 import 'package:grinta/model/chat_action.dart';
 import 'package:grinta/model/chat_message.dart';
 import 'package:grinta/provider/appSession.dart';
@@ -374,35 +375,33 @@ class _AskDiegoSheetState extends State<AskDiegoSheet> {
         ? answerText
         : context.l10n.askDiegoEmptyResponse;
 
-    // Fallback when Cloud Function prompt is outdated and Gemini refuses:
-    // still send the PDF if sessionReports context has a matching session.
-    final inferredSendReport = sendReportAction ??
-        SessionReportActionResolver.resolve(
-          appContext: appContext,
-          userMessage: text,
-        );
+    // Client-owned flow for PDF/email session reports: do not rely on the
+    // deployed Gemini prompt (it may still refuse until chatWithGemini is updated).
+    if (SessionReportChatContext.detectsSessionReportIntent(text)) {
+      final l10n = context.l10n;
+      final resolved = sendReportAction != null
+          ? SessionReportResolveResult(action: sendReportAction)
+          : SessionReportActionResolver.resolveDetailed(
+              appContext: appContext,
+              userMessage: text,
+            );
 
-    if (inferredSendReport != null) {
-      final reportFeedback = await _handleSendReportAction(
-        action: inferredSendReport,
-        appContext: appContext,
-        localeCode: localeCode,
-      );
-      if (reportFeedback != null && reportFeedback.isNotEmpty) {
-        final looksLikeRefusal = _looksLikePdfReportRefusal(displayText);
-        displayText = looksLikeRefusal
+      if (resolved.action != null) {
+        final reportFeedback = await _handleSendReportAction(
+          action: resolved.action!,
+          appContext: appContext,
+          localeCode: localeCode,
+        );
+        if (!mounted) return;
+        displayText = (reportFeedback != null && reportFeedback.isNotEmpty)
             ? reportFeedback
-            : '$displayText\n\n$reportFeedback';
-      } else if (_looksLikePdfReportRefusal(displayText)) {
-        final reports = appContext['sessionReports'];
-        final reason = reports is Map
-            ? reports['dataUnavailableReason']?.toString()
-            : null;
-        if (reason == 'no_sessions_in_period') {
-          displayText = context.l10n.sessionReportEmailNoStats;
-        } else if (reason == 'no_stats_for_sessions') {
-          displayText = context.l10n.sessionReportEmailNoStats;
-        }
+            : l10n.sessionReportEmailFailed;
+      } else {
+        displayText = _sessionReportFailureMessage(
+          l10n: l10n,
+          failureReason: resolved.failureReason,
+          appContext: appContext,
+        );
       }
     }
 
@@ -518,15 +517,29 @@ class _AskDiegoSheetState extends State<AskDiegoSheet> {
     return DateTime.tryParse(value);
   }
 
-  bool _looksLikePdfReportRefusal(String text) {
-    final normalized = text.toLowerCase();
-    return normalized.contains('ne peux pas') ||
-        normalized.contains('je ne peux pas') ||
-        normalized.contains("can't") ||
-        normalized.contains('cannot') ||
-        normalized.contains('pas capable') ||
-        (normalized.contains('désolé') &&
-            (normalized.contains('pdf') || normalized.contains('rapport')));
+  String _sessionReportFailureMessage({
+    required AppLocalizations l10n,
+    required String? failureReason,
+    required Map<String, dynamic> appContext,
+  }) {
+    switch (failureReason) {
+      case 'no_email':
+        return l10n.sessionReportEmailAskAddress;
+      case 'no_sessions':
+        return l10n.sessionReportEmailNoSessionYesterday;
+      case 'no_stats':
+      case 'no_event':
+      case 'missing_context':
+        return l10n.sessionReportEmailNoStats;
+      default:
+        final reports = appContext['sessionReports'];
+        final reason =
+            reports is Map ? reports['dataUnavailableReason']?.toString() : null;
+        if (reason == 'period_not_understood') {
+          return l10n.sessionReportEmailPeriodUnclear;
+        }
+        return l10n.sessionReportEmailNoStats;
+    }
   }
 
   String? _navigationLabelForRoute(BuildContext context, String? route) {

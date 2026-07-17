@@ -273,6 +273,30 @@ class AppLocalizationsIt extends AppLocalizations {
       'Il report PDF delle statistiche tracker è allegato a questa e-mail.';
 
   @override
+  String get sessionReportEmailDownloadHint =>
+      'Scarica il report PDF con il pulsante qui sotto.';
+
+  @override
+  String get sessionReportEmailDownloadButton => 'Scarica PDF';
+
+  @override
+  String sessionReportEmailDownloadLine(String url) {
+    return 'Scarica il PDF: $url';
+  }
+
+  @override
+  String get sessionReportEmailAskAddress =>
+      'Indicami l\'indirizzo e-mail a cui inviare il report PDF.';
+
+  @override
+  String get sessionReportEmailNoSessionYesterday =>
+      'Non ho trovato alcuna sessione per quel periodo.';
+
+  @override
+  String get sessionReportEmailPeriodUnclear =>
+      'Precisa il periodo (ieri, oggi…) per il report.';
+
+  @override
   String sessionReportEmailFooter(String appName) {
     return 'Hai ricevuto questa e-mail perché è stato generato un report di sessione da $appName. Se non ti aspettavi questo messaggio, puoi ignorarlo.';
   }

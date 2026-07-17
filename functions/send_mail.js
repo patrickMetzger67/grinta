@@ -59,9 +59,15 @@ function normalizeAttachments(rawAttachments) {
   const attachments = [];
   for (const entry of rawAttachments) {
     if (!entry || typeof entry !== 'object') continue;
-    const content = readNonEmptyString(entry.content);
+    // SendGrid expects raw base64 without whitespace / data-URI prefix.
+    const rawContent = readNonEmptyString(entry.content);
     const filename = readNonEmptyString(entry.filename);
-    if (!content || !filename) continue;
+    if (!rawContent || !filename) continue;
+
+    const content = rawContent
+      .replace(/^data:[^;]+;base64,/i, '')
+      .replace(/\s+/g, '');
+    if (!content) continue;
 
     const type = readNonEmptyString(entry.type) ?? 'application/pdf';
     const disposition =
@@ -201,6 +207,16 @@ function createSendMailOnCreate() {
       }
 
       const attachments = normalizeAttachments(mailData.attachments);
+      if (
+        Array.isArray(mailData.attachments) &&
+        mailData.attachments.length > 0 &&
+        attachments.length === 0
+      ) {
+        console.warn('sendMailOnCreate: attachments present but none valid', {
+          mailId: mailRef.id,
+          rawCount: mailData.attachments.length,
+        });
+      }
 
       try {
         const info = await sendViaSendGrid(apiKey, {
@@ -216,7 +232,10 @@ function createSendMailOnCreate() {
         await mailRef.update(
           buildDeliveryUpdate('SUCCESS', {
             startTime,
-            info,
+            info: {
+              ...info,
+              attachmentCount: attachments.length,
+            },
           }),
         );
 

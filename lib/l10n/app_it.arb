@@ -134,6 +134,17 @@
     }
   },
   "sessionReportEmailAttachmentHint": "Il report PDF delle statistiche tracker è allegato a questa e-mail.",
+  "sessionReportEmailDownloadHint": "Scarica il report PDF con il pulsante qui sotto.",
+  "sessionReportEmailDownloadButton": "Scarica PDF",
+  "sessionReportEmailDownloadLine": "Scarica il PDF: {url}",
+  "@sessionReportEmailDownloadLine": {
+    "placeholders": {
+      "url": { "type": "String" }
+    }
+  },
+  "sessionReportEmailAskAddress": "Indicami l'indirizzo e-mail a cui inviare il report PDF.",
+  "sessionReportEmailNoSessionYesterday": "Non ho trovato alcuna sessione per quel periodo.",
+  "sessionReportEmailPeriodUnclear": "Precisa il periodo (ieri, oggi…) per il report.",
   "sessionReportEmailFooter": "Hai ricevuto questa e-mail perché è stato generato un report di sessione da {appName}. Se non ti aspettavi questo messaggio, puoi ignorarlo.",
   "@sessionReportEmailFooter": {
     "placeholders": {

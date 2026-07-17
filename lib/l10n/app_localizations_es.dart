@@ -279,6 +279,30 @@ class AppLocalizationsEs extends AppLocalizations {
       'El informe PDF de estadísticas del tracker está adjunto a este correo.';
 
   @override
+  String get sessionReportEmailDownloadHint =>
+      'Descarga el informe PDF con el botón de abajo.';
+
+  @override
+  String get sessionReportEmailDownloadButton => 'Descargar PDF';
+
+  @override
+  String sessionReportEmailDownloadLine(String url) {
+    return 'Descargar el PDF: $url';
+  }
+
+  @override
+  String get sessionReportEmailAskAddress =>
+      'Indícame la dirección de correo a la que enviar el informe PDF.';
+
+  @override
+  String get sessionReportEmailNoSessionYesterday =>
+      'No encontré ninguna sesión para ese período.';
+
+  @override
+  String get sessionReportEmailPeriodUnclear =>
+      'Precisa el período (ayer, hoy…) para el informe.';
+
+  @override
   String sessionReportEmailFooter(String appName) {
     return 'Has recibido este correo porque se generó un informe de sesión desde $appName. Si no esperabas este mensaje, puedes ignorarlo.';
   }

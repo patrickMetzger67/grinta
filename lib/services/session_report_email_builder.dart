@@ -22,18 +22,23 @@ class SessionReportEmailContent {
 /// and sender-facing labels. HTML layout mirrors [InvitationEmailBuilder]:
 /// gradient header + logo, surface card, footer.
 ///
+/// Prefer providing [pdfDownloadUrl] so the PDF is reachable even when the mail
+/// processor does not yet forward SendGrid attachments.
+///
 /// See `docs/email-sending.md`.
 abstract final class SessionReportEmailBuilder {
   static SessionReportEmailContent build({
     required AppLocalizations l10n,
     required InvitationRuntimeConfig config,
     required SessionStatsReport report,
+    String? pdfDownloadUrl,
   }) {
     final String appName = config.appDisplayName.trim();
     final String logoUrl = config.logoUrl.trim();
     final String eventLabel = report.isMatch
         ? l10n.sessionReportEmailEventMatch
         : l10n.sessionReportEmailEventTraining;
+    final String? downloadUrl = pdfDownloadUrl?.trim();
 
     final String subject = l10n.sessionReportEmailSubject(
       appName,
@@ -45,6 +50,7 @@ abstract final class SessionReportEmailBuilder {
       appName: appName,
       eventLabel: eventLabel,
       report: report,
+      pdfDownloadUrl: downloadUrl,
     );
     final String html = _buildHtml(
       l10n: l10n,
@@ -52,6 +58,7 @@ abstract final class SessionReportEmailBuilder {
       logoUrl: logoUrl,
       eventLabel: eventLabel,
       report: report,
+      pdfDownloadUrl: downloadUrl,
     );
 
     return SessionReportEmailContent(
@@ -66,6 +73,7 @@ abstract final class SessionReportEmailBuilder {
     required String appName,
     required String eventLabel,
     required SessionStatsReport report,
+    String? pdfDownloadUrl,
   }) {
     final buffer = StringBuffer()
       ..writeln(l10n.sessionReportEmailIntro(appName))
@@ -79,12 +87,18 @@ abstract final class SessionReportEmailBuilder {
     if (teamName != null && teamName.isNotEmpty) {
       buffer.writeln(l10n.sessionReportEmailTeamLine(teamName));
     }
+    buffer.writeln(
+      l10n.sessionReportEmailPlayersLine(report.playersCount),
+    );
+    buffer.writeln();
+    if (pdfDownloadUrl != null && pdfDownloadUrl.isNotEmpty) {
+      buffer
+        ..writeln(l10n.sessionReportEmailDownloadHint)
+        ..writeln(l10n.sessionReportEmailDownloadLine(pdfDownloadUrl));
+    } else {
+      buffer.writeln(l10n.sessionReportEmailAttachmentHint);
+    }
     buffer
-      ..writeln(
-        l10n.sessionReportEmailPlayersLine(report.playersCount),
-      )
-      ..writeln()
-      ..writeln(l10n.sessionReportEmailAttachmentHint)
       ..writeln()
       ..writeln(l10n.sessionReportEmailFooter(appName));
     return buffer.toString().trim();
@@ -96,17 +110,27 @@ abstract final class SessionReportEmailBuilder {
     required String logoUrl,
     required String eventLabel,
     required SessionStatsReport report,
+    String? pdfDownloadUrl,
   }) {
     final String intro = _escapeHtml(l10n.sessionReportEmailIntro(appName));
     final String detailsLabel =
         _escapeHtml(l10n.sessionReportEmailDetailsLabel);
-    final String attachmentHint =
-        _escapeHtml(l10n.sessionReportEmailAttachmentHint);
     final String footer = _escapeHtml(l10n.sessionReportEmailFooter(appName));
     final String safeAppName = _escapeHtml(appName);
     final String safeLogoUrl = _escapeHtml(logoUrl);
     final String safeTitle = _escapeHtml(report.title);
     final String safeEventLabel = _escapeHtml(eventLabel);
+    final bool hasDownload =
+        pdfDownloadUrl != null && pdfDownloadUrl.trim().isNotEmpty;
+    final String pdfHint = _escapeHtml(
+      hasDownload
+          ? l10n.sessionReportEmailDownloadHint
+          : l10n.sessionReportEmailAttachmentHint,
+    );
+    final String downloadButtonLabel =
+        _escapeHtml(l10n.sessionReportEmailDownloadButton);
+    final String safeDownloadUrl =
+        hasDownload ? _escapeHtml(pdfDownloadUrl.trim()) : '';
 
     final detailsRows = StringBuffer()
       ..writeln(_detailRow(l10n.sessionReportEmailTypeLabel, safeEventLabel))
@@ -143,6 +167,15 @@ abstract final class SessionReportEmailBuilder {
       ),
     );
 
+    final downloadBlock = hasDownload
+        ? '''
+              <p style="margin:0 0 16px;color:${InvitationEmailBrand.textPrimary};font-size:15px;line-height:1.6;">$pdfHint</p>
+              <a href="$safeDownloadUrl" style="display:inline-block;background-color:${InvitationEmailBrand.primary};color:#FFFFFF;text-decoration:none;font-size:14px;font-weight:600;padding:12px 20px;border-radius:999px;">$downloadButtonLabel</a>
+'''
+        : '''
+              <p style="margin:0;color:${InvitationEmailBrand.textPrimary};font-size:15px;line-height:1.6;">$pdfHint</p>
+''';
+
     return '''
 <!DOCTYPE html>
 <html lang="en">
@@ -168,7 +201,7 @@ abstract final class SessionReportEmailBuilder {
               <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="margin:0 0 24px;">
                 ${detailsRows.toString()}
               </table>
-              <p style="margin:0;color:${InvitationEmailBrand.textPrimary};font-size:15px;line-height:1.6;">$attachmentHint</p>
+              $downloadBlock
             </td>
           </tr>
           <tr>

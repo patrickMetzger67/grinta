@@ -238,6 +238,18 @@ Same charter as invitations: branded HTML from shared colors/logo (`InvitationEm
 
 Ask Gio examples: « envoie-moi le rapport de la séance d'hier », « send today's match report to coach@club.fr ».
 
+**Important — pièce jointe absente dans la boîte mail :**
+
+1. Déploie la Cloud Function à jour (sinon l’ancien processor ignore `attachments`) :
+   ```bash
+   firebase deploy --only functions:sendMailOnCreate,firestore:rules,storage
+   ```
+2. Vérifie le doc Firestore `mail/{id}` :
+   - champ `attachments` présent (base64) ?
+   - `delivery.info.attachmentCount` > 0 après envoi ?
+3. L’app upload aussi le PDF dans Storage (`sessionReports/…`) et met un bouton **Télécharger le PDF** dans le HTML — ce lien fonctionne même sans pièce jointe SendGrid.
+4. Si l’extension Firebase **Trigger Email** est encore installée, désinstalle-la pour éviter qu’elle envoie le mail sans pièces jointes.
+
 ## 7. Multi-club / white-label
 
 For a club-specific product domain:

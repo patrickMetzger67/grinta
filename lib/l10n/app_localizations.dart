@@ -574,6 +574,42 @@ abstract class AppLocalizations {
   /// **'Le rapport PDF des statistiques tracker est joint à cet e-mail.'**
   String get sessionReportEmailAttachmentHint;
 
+  /// No description provided for @sessionReportEmailDownloadHint.
+  ///
+  /// In fr, this message translates to:
+  /// **'Télécharge le rapport PDF via le bouton ci-dessous.'**
+  String get sessionReportEmailDownloadHint;
+
+  /// No description provided for @sessionReportEmailDownloadButton.
+  ///
+  /// In fr, this message translates to:
+  /// **'Télécharger le PDF'**
+  String get sessionReportEmailDownloadButton;
+
+  /// No description provided for @sessionReportEmailDownloadLine.
+  ///
+  /// In fr, this message translates to:
+  /// **'Télécharger le PDF : {url}'**
+  String sessionReportEmailDownloadLine(String url);
+
+  /// No description provided for @sessionReportEmailAskAddress.
+  ///
+  /// In fr, this message translates to:
+  /// **'Indique-moi l\'adresse e-mail à laquelle envoyer le rapport PDF.'**
+  String get sessionReportEmailAskAddress;
+
+  /// No description provided for @sessionReportEmailNoSessionYesterday.
+  ///
+  /// In fr, this message translates to:
+  /// **'Je n\'ai trouvé aucune séance pour cette période.'**
+  String get sessionReportEmailNoSessionYesterday;
+
+  /// No description provided for @sessionReportEmailPeriodUnclear.
+  ///
+  /// In fr, this message translates to:
+  /// **'Précise la période (hier, aujourd\'hui…) pour le rapport.'**
+  String get sessionReportEmailPeriodUnclear;
+
   /// No description provided for @sessionReportEmailFooter.
   ///
   /// In fr, this message translates to:

@@ -26,8 +26,9 @@ class SessionReportChatContext {
   static final RegExp _reportIntentPattern = RegExp(
     r'(?:rapport|report|pdf).{0,80}(?:seance|séance|session|entrainement|entraînement|training|match)|'
     r'(?:envoie|envoyer|envoyerai|send|manda|envia|schicken).{0,80}(?:rapport|report|pdf)|'
-    r"(?:m[\s']?envoyer|me\s+envoyer).{0,80}(?:pdf|rapport|report)|"
-    r'(?:rapport|report).{0,80}(?:hier|yesterday|aujourd|today|avant[\s-]hier)',
+    r"(?:m[\s']?envoyer|me\s+envoyer).{0,80}(?:pdf|rapport|report|mail|e[\s-]?mail|email)|"
+    r'(?:par\s+mail|par\s+e[\s-]?mail|by\s+email|via\s+email).{0,80}(?:rapport|report|pdf)|'
+    r'(?:rapport|report).{0,80}(?:hier|yesterday|aujourd|today|avant[\s-]hier|mail|email)',
     caseSensitive: false,
   );
 

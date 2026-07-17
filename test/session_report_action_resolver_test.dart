@@ -4,9 +4,9 @@ import 'package:grinta/services/session_report_action_resolver.dart';
 
 void main() {
   test('resolves yesterday training PDF request for named team', () {
-    final action = SessionReportActionResolver.resolve(
+    final result = SessionReportActionResolver.resolveDetailed(
       userMessage:
-          "tu peux m'envoyer en PDF le rapport de la séance de hier de l'équipe Séniors 1 ?",
+          'tu peux m\'envoyer par mail le rapport de la séance de l\'équipe séniors 1 de hier soir',
       appContext: <String, dynamic>{
         'sessionReports': <String, dynamic>{
           'defaultEmail': 'coach@club.fr',
@@ -30,14 +30,15 @@ void main() {
       },
     );
 
-    expect(action, isA<ChatSendReportAction>());
-    expect(action!.eventId, 'evt-seniors');
-    expect(action.email, 'coach@club.fr');
-    expect(action.isMatch, isFalse);
+    expect(result.canSend, isTrue);
+    expect(result.action, isA<ChatSendReportAction>());
+    expect(result.action!.eventId, 'evt-seniors');
+    expect(result.action!.email, 'coach@club.fr');
+    expect(result.action!.isMatch, isFalse);
   });
 
-  test('returns null when no stats sessions', () {
-    final action = SessionReportActionResolver.resolve(
+  test('returns no_stats when no stats sessions', () {
+    final result = SessionReportActionResolver.resolveDetailed(
       userMessage: "envoie le rapport PDF d'hier",
       appContext: <String, dynamic>{
         'sessionReports': <String, dynamic>{
@@ -53,6 +54,7 @@ void main() {
       },
     );
 
-    expect(action, isNull);
+    expect(result.action, isNull);
+    expect(result.failureReason, 'no_stats');
   });
 }
