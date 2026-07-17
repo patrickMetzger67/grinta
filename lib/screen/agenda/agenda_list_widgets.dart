@@ -1378,25 +1378,6 @@ class AgendaItemCard extends StatelessWidget {
                   teamWorkloadSummary: item.teamWorkloadSummary!,
                 ),
               ),
-              const SizedBox(height: 10),
-              Align(
-                alignment: Alignment.centerLeft,
-                child: FilledButton.tonalIcon(
-                  onPressed: () {
-                    showSessionReportEmailDialog(
-                      context: context,
-                      eventId: item.id,
-                      isMatch: item.match != null,
-                      summary: item.teamWorkloadSummary,
-                      title: item.title,
-                      subtitle: item.subtitle,
-                      eventDate: item.startAt,
-                    );
-                  },
-                  icon: const Icon(Icons.picture_as_pdf_outlined, size: 18),
-                  label: Text(context.l10n.sessionReportEmailActionLabel),
-                ),
-              ),
             ],
             if (item.training != null) ...[
               _AgendaIntenseLiveButton(
@@ -1410,6 +1391,34 @@ class AgendaItemCard extends StatelessWidget {
                     !isTrainingFinished(item.training!),
                 showResync: canManageThisTraining &&
                     canResyncTrainingIntense(item.training!),
+              ),
+            ],
+            if (item.teamWorkloadSummary != null &&
+                (isManager || canManageThisTraining || canManageThisMatch)) ...[
+              const SizedBox(height: 10),
+              SizedBox(
+                width: double.infinity,
+                child: FilledButton.icon(
+                  onPressed: () {
+                    showSessionReportEmailDialog(
+                      context: context,
+                      eventId: item.id,
+                      isMatch: item.match != null,
+                      summary: item.teamWorkloadSummary,
+                      title: item.title,
+                      subtitle: item.subtitle,
+                      eventDate: item.startAt,
+                    );
+                  },
+                  icon: const Icon(Icons.picture_as_pdf_outlined, size: 18),
+                  label: Text(context.l10n.sessionReportEmailActionLabel),
+                  style: FilledButton.styleFrom(
+                    backgroundColor: colors.card.withValues(alpha: 0.92),
+                    foregroundColor: colors.textPrimary,
+                    side: BorderSide(color: colors.border),
+                    padding: const EdgeInsets.symmetric(vertical: 12),
+                  ),
+                ),
               ),
             ],
             if (item.training != null && isManager == true) ...[
