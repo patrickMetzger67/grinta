@@ -658,8 +658,8 @@
   "infoParameters": "Paramètres",
   "infoUserNotConnected": "Utilisateur non connecté.",
 
-  "dialogCloseSyncTitle": "Clôturer la synchronisation",
-  "dialogCloseSyncMessage": "Souhaitez-vous clôturer la synchronisation ?",
+  "dialogCloseSyncTitle": "Clôturer définitivement la synchronisation",
+  "dialogCloseSyncMessage": "Souhaitez-vous clôturer définitivement la synchronisation ? Oui : plus d’accès à cet écran. Non : quitter sans clôturer.",
   "dialogDeleteCustomizationTitle": "Supprimer la personnalisation ?",
   "dialogDeleteAssignmentTitle": "Supprimer l’affectation",
   "dialogNewConversation": "Nouvelle conversation",
@@ -1008,6 +1008,16 @@
   "@trackerCount": {
     "placeholders": {
       "count": { "type": "int" }
+    }
+  },
+  "trackerAllSensorsSynced": "Tous les capteurs ont été synchronisés",
+  "trackerSensorsRemaining": "À synchroniser",
+  "trackerSensorsAlreadySynced": "Déjà synchronisés",
+  "trackerSyncedProgress": "{synced}/{total} synchronisés",
+  "@trackerSyncedProgress": {
+    "placeholders": {
+      "synced": { "type": "int" },
+      "total": { "type": "int" }
     }
   },
   "trackerAlreadySyncedTitle": "Synchronisation déjà effectuée",

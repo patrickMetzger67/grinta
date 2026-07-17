@@ -1494,11 +1494,11 @@ class AppLocalizationsEn extends AppLocalizations {
   String get infoUserNotConnected => 'User not logged in.';
 
   @override
-  String get dialogCloseSyncTitle => 'Close synchronization';
+  String get dialogCloseSyncTitle => 'Permanently close synchronization';
 
   @override
   String get dialogCloseSyncMessage =>
-      'Do you want to close the synchronization?';
+      'Do you want to permanently close synchronization? Yes: this screen will no longer be available. No: leave without closing.';
 
   @override
   String get dialogDeleteCustomizationTitle => 'Remove personalization?';
@@ -2220,6 +2220,21 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String trackerCount(int count) {
     return '$count tracker(s)';
+  }
+
+
+  @override
+  String get trackerAllSensorsSynced => 'All sensors have been synchronized';
+
+  @override
+  String get trackerSensorsRemaining => 'To synchronize';
+
+  @override
+  String get trackerSensorsAlreadySynced => 'Already synchronized';
+
+  @override
+  String trackerSyncedProgress(int synced, int total) {
+    return '$synced/$total synchronized';
   }
 
   @override

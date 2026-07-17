@@ -55,6 +55,9 @@ class DeviceSync {
     };
   }
 
+  /// Device is considered synced when USB download+erase completed, or ASI path done.
+  bool get isSynced => (dataDownloaded && erased) || withAsiFile;
+
   DeviceSync copyWith({
     String? deviceId,
     bool? dataDownloaded,

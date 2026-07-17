@@ -1522,11 +1522,11 @@ class AppLocalizationsDe extends AppLocalizations {
   String get infoUserNotConnected => 'Benutzer nicht angemeldet.';
 
   @override
-  String get dialogCloseSyncTitle => 'Enge Synchronisierung';
+  String get dialogCloseSyncTitle => 'Synchronisierung endgültig schließen';
 
   @override
   String get dialogCloseSyncMessage =>
-      'Möchten Sie die Synchronisierung schließen?';
+      'Möchten Sie die Synchronisierung endgültig schließen? Ja: dieser Bildschirm ist nicht mehr verfügbar. Nein: ohne Schließen verlassen.';
 
   @override
   String get dialogDeleteCustomizationTitle => 'Personalisierung entfernen?';
@@ -2269,6 +2269,21 @@ class AppLocalizationsDe extends AppLocalizations {
   @override
   String trackerCount(int count) {
     return '$count Tracker';
+  }
+
+
+  @override
+  String get trackerAllSensorsSynced => 'Alle Sensoren wurden synchronisiert';
+
+  @override
+  String get trackerSensorsRemaining => 'Noch zu synchronisieren';
+
+  @override
+  String get trackerSensorsAlreadySynced => 'Bereits synchronisiert';
+
+  @override
+  String trackerSyncedProgress(int synced, int total) {
+    return '$synced/$total synchronisiert';
   }
 
   @override
