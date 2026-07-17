@@ -11,6 +11,9 @@ import 'package:grinta/services/chat_context_service.dart';
 import 'package:grinta/services/chat_navigation_service.dart';
 import 'package:grinta/services/gemini_chat_service.dart';
 import 'package:grinta/services/opponent_typical_team_chat_context.dart';
+import 'package:grinta/services/player_activity_report_chat_context.dart';
+import 'package:grinta/services/session_report_chat_context.dart';
+import 'package:grinta/services/session_report_sender_service.dart';
 import 'package:grinta/util/app_theme.dart';
 import 'package:grinta/widget/ask_diego/ask_diego_avatar.dart';
 import 'package:grinta/widget/chat_bot/chat_input_bar.dart';
@@ -240,11 +243,15 @@ class _AskDiegoSheetState extends State<AskDiegoSheet> {
     required String localeCode,
     required String userMessage,
   }) async {
-    final needsOpponentTypicalTeam =
-        OpponentTypicalTeamChatContext.detectsTypicalTeamIntent(userMessage);
+    final needsFreshContext =
+        OpponentTypicalTeamChatContext.detectsTypicalTeamIntent(userMessage) ||
+            PlayerActivityReportChatContext.detectsActivityReportIntent(
+              userMessage,
+            ) ||
+            SessionReportChatContext.detectsSessionReportIntent(userMessage);
 
     final preloaded = _preloadedContextFuture;
-    if (!needsOpponentTypicalTeam && preloaded != null) {
+    if (!needsFreshContext && preloaded != null) {
       try {
         final cached = await preloaded;
         final teams = session.teamsForAgendaSelectedSeason;
@@ -352,12 +359,32 @@ class _AskDiegoSheetState extends State<AskDiegoSheet> {
 
     final answerText = joinAnswerTexts(actions);
     ChatNavigateAction? navigateAction;
+    ChatSendReportAction? sendReportAction;
     for (final action in actions) {
-      if (action is ChatNavigateAction) {
+      if (action is ChatNavigateAction && navigateAction == null) {
         navigateAction = action;
-        break;
+      }
+      if (action is ChatSendReportAction && sendReportAction == null) {
+        sendReportAction = action;
       }
     }
+
+    var displayText = answerText.isNotEmpty
+        ? answerText
+        : context.l10n.askDiegoEmptyResponse;
+
+    if (sendReportAction != null) {
+      final reportFeedback = await _handleSendReportAction(
+        action: sendReportAction,
+        appContext: appContext,
+        localeCode: localeCode,
+      );
+      if (reportFeedback != null && reportFeedback.isNotEmpty) {
+        displayText = '$displayText\n\n$reportFeedback';
+      }
+    }
+
+    if (!mounted) return;
 
     setState(() {
       _isSending = false;
@@ -366,9 +393,7 @@ class _AskDiegoSheetState extends State<AskDiegoSheet> {
         ChatMessage(
           id: _uuid.v4(),
           role: ChatMessageRole.assistant,
-          text: answerText.isNotEmpty
-              ? answerText
-              : context.l10n.askDiegoEmptyResponse,
+          text: displayText,
           navigationRoute: navigateAction?.route,
           navigationParams: navigateAction?.params ?? const <String, dynamic>{},
           navigationLabel: _navigationLabelForRoute(
@@ -389,6 +414,86 @@ class _AskDiegoSheetState extends State<AskDiegoSheet> {
         userMessage: text,
       );
     }
+  }
+
+  Future<String?> _handleSendReportAction({
+    required ChatSendReportAction action,
+    required Map<String, dynamic> appContext,
+    required String localeCode,
+  }) async {
+    final l10n = context.l10n;
+    final eventId = action.eventId;
+    final email = action.email ??
+        SessionReportChatContext.extractEmailFromMessage(
+          (appContext['sessionReports'] is Map)
+              ? (appContext['sessionReports'] as Map)['requestedEmail']
+                  ?.toString()
+              : null,
+        ) ??
+        ((appContext['sessionReports'] is Map)
+            ? (appContext['sessionReports'] as Map)['defaultEmail']?.toString()
+            : null);
+
+    if (eventId == null || eventId.isEmpty) {
+      return l10n.sessionReportEmailNoStats;
+    }
+    if (email == null || email.trim().isEmpty) {
+      return l10n.sessionReportEmailInvalid;
+    }
+
+    final sessionMeta = _findSessionReportMeta(
+      appContext: appContext,
+      eventId: eventId,
+    );
+    final isMatch = action.isMatch ??
+        (sessionMeta?['type']?.toString() == 'match');
+
+    final result = await SessionReportSenderService.instance.sendReport(
+      l10n: l10n,
+      toEmail: email.trim(),
+      eventId: eventId,
+      isMatch: isMatch,
+      title: sessionMeta?['title']?.toString(),
+      subtitle: sessionMeta?['subtitle']?.toString(),
+      localeCode: localeCode,
+      eventDate: _parseIsoDate(sessionMeta?['date']?.toString()),
+    );
+
+    if (result.success) {
+      return l10n.sessionReportEmailSuccess(email.trim());
+    }
+
+    final error = result.error ?? '';
+    if (error == 'noStats') {
+      return l10n.sessionReportEmailNoStats;
+    }
+    if (error == 'invalidEmail' || error == 'emptyEmail') {
+      return l10n.sessionReportEmailInvalid;
+    }
+    return l10n.sessionReportEmailFailed;
+  }
+
+  Map<String, dynamic>? _findSessionReportMeta({
+    required Map<String, dynamic> appContext,
+    required String eventId,
+  }) {
+    final reports = appContext['sessionReports'];
+    if (reports is! Map) return null;
+    final sessions = reports['sessions'];
+    if (sessions is! List) return null;
+    for (final entry in sessions) {
+      if (entry is! Map) continue;
+      if ((entry['eventId'] ?? '').toString() == eventId) {
+        return Map<String, dynamic>.from(entry);
+      }
+    }
+    return null;
+  }
+
+  DateTime? _parseIsoDate(String? raw) {
+    final value = raw?.trim() ?? '';
+    if (value.isEmpty) return null;
+    return DateTime.tryParse(value);
   }
 
   String? _navigationLabelForRoute(BuildContext context, String? route) {

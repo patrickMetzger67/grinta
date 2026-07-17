@@ -92,6 +92,69 @@
       "googlePlayUrl": { "type": "String" }
     }
   },
+  "sessionReportEmailSubject": "{appName} — Bericht {eventLabel}: {title}",
+  "@sessionReportEmailSubject": {
+    "placeholders": {
+      "appName": { "type": "String" },
+      "eventLabel": { "type": "String" },
+      "title": { "type": "String" }
+    }
+  },
+  "sessionReportEmailIntro": "Hier ist dein Statistikbericht von {appName}",
+  "@sessionReportEmailIntro": {
+    "placeholders": {
+      "appName": { "type": "String" }
+    }
+  },
+  "sessionReportEmailEventMatch": "Spiel",
+  "sessionReportEmailEventTraining": "Training",
+  "sessionReportEmailDetailsLabel": "Berichtsdetails",
+  "sessionReportEmailTypeLabel": "Typ",
+  "sessionReportEmailTitleLabel": "Einheit",
+  "sessionReportEmailDateLabel": "Datum",
+  "sessionReportEmailTeamLabel": "Team",
+  "sessionReportEmailPlayersLabel": "Spieler",
+  "sessionReportEmailAvgWorkloadLabel": "Durchschn. Workload",
+  "sessionReportEmailDateLine": "Datum: {date}",
+  "@sessionReportEmailDateLine": {
+    "placeholders": {
+      "date": { "type": "String" }
+    }
+  },
+  "sessionReportEmailTeamLine": "Team: {team}",
+  "@sessionReportEmailTeamLine": {
+    "placeholders": {
+      "team": { "type": "String" }
+    }
+  },
+  "sessionReportEmailPlayersLine": "Spieler mit Daten: {count}",
+  "@sessionReportEmailPlayersLine": {
+    "placeholders": {
+      "count": { "type": "int" }
+    }
+  },
+  "sessionReportEmailAttachmentHint": "Der Tracker-Statistikbericht als PDF ist dieser E-Mail angehängt.",
+  "sessionReportEmailFooter": "Du hast diese E-Mail erhalten, weil ein Sitzungsbericht aus {appName} erstellt wurde. Wenn du diese Nachricht nicht erwartet hast, kannst du sie ignorieren.",
+  "@sessionReportEmailFooter": {
+    "placeholders": {
+      "appName": { "type": "String" }
+    }
+  },
+  "sessionReportEmailDialogTitle": "PDF-Bericht senden",
+  "sessionReportEmailDialogMessage": "Gib die E-Mail-Adresse ein, die den Statistikbericht (PDF) erhalten soll.",
+  "sessionReportEmailDialogHint": "du@beispiel.com",
+  "sessionReportEmailDialogSend": "Senden",
+  "sessionReportEmailDialogCancel": "Abbrechen",
+  "sessionReportEmailActionTooltip": "PDF-Bericht per E-Mail senden",
+  "sessionReportEmailSuccess": "Bericht an {email} gesendet",
+  "@sessionReportEmailSuccess": {
+    "placeholders": {
+      "email": { "type": "String" }
+    }
+  },
+  "sessionReportEmailFailed": "Der PDF-Bericht konnte nicht gesendet werden.",
+  "sessionReportEmailNoStats": "Keine Tracker-Statistiken verfügbar, um diesen Bericht zu erstellen.",
+  "sessionReportEmailInvalid": "Ungültige E-Mail-Adresse.",
   "memberInvitationEmailFailed": "Mitglied hinzugefügt, aber die Einladungs-E-Mail konnte nicht gesendet werden.",
   "memberAddedToTeamNotificationTitle": "Team-Update",
   "memberAddedToTeamNotificationBody": "Dein Coach hat dich zu {teamName} hinzugefügt.",

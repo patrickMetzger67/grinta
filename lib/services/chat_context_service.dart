@@ -12,6 +12,7 @@ import 'package:grinta/services/match_location_service.dart';
 import 'package:grinta/services/opponent_typical_team_chat_context.dart';
 import 'package:grinta/services/player_activity_report_chat_context.dart';
 import 'package:grinta/services/player_chat_stats_service.dart';
+import 'package:grinta/services/session_report_chat_context.dart';
 import 'package:grinta/services/teams_per_club_service.dart';
 import 'package:grinta/services/weather_service.dart';
 import 'package:grinta/util/calendar_event_formatter.dart';
@@ -34,6 +35,7 @@ class ChatContextService {
     WeatherService? weatherService,
     OpponentTypicalTeamChatContext? opponentTypicalTeamChatContext,
     PlayerActivityReportChatContext? playerActivityReportChatContext,
+    SessionReportChatContext? sessionReportChatContext,
   })  : _agendaService = agendaService ?? AgendaService(),
         _teamsPerClubService = teamsPerClubService ?? TeamsPerClubService(),
         _playerChatStatsService =
@@ -43,7 +45,9 @@ class ChatContextService {
         _opponentTypicalTeamChatContext =
             opponentTypicalTeamChatContext ?? OpponentTypicalTeamChatContext(),
         _playerActivityReportChatContext =
-            playerActivityReportChatContext ?? PlayerActivityReportChatContext();
+            playerActivityReportChatContext ?? PlayerActivityReportChatContext(),
+        _sessionReportChatContext =
+            sessionReportChatContext ?? SessionReportChatContext();
 
   final AgendaService _agendaService;
   final TeamsPerClubService _teamsPerClubService;
@@ -52,6 +56,7 @@ class ChatContextService {
   final WeatherService _weatherService;
   final OpponentTypicalTeamChatContext _opponentTypicalTeamChatContext;
   final PlayerActivityReportChatContext _playerActivityReportChatContext;
+  final SessionReportChatContext _sessionReportChatContext;
 
   Future<Map<String, dynamic>> buildContext({
     required AppSession session,
@@ -250,6 +255,20 @@ class ChatContextService {
       }
     }
 
+    Map<String, dynamic>? sessionReports;
+    try {
+      sessionReports = await _sessionReportChatContext.buildContext(
+        session: session,
+        localeCode: localeCode,
+        userMessage: userMessage,
+        referenceDate: today,
+      );
+    } catch (error, stackTrace) {
+      if (kDebugMode) {
+        debugPrint('ChatContext sessionReports failed: $error\n$stackTrace');
+      }
+    }
+
     final managedTeamIds = session.managedTeamsIdsForSelectedSeason.toSet();
     final managerTeams = session.managerTeamsForSelectedSeason;
 
@@ -300,6 +319,7 @@ class ChatContextService {
         'playerActivityReport': playerActivityReport,
       if (opponentTypicalTeam != null)
         'opponentTypicalTeam': opponentTypicalTeam,
+      if (sessionReports != null) 'sessionReports': sessionReports,
     };
   }
 

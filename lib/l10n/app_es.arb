@@ -92,6 +92,69 @@
       "googlePlayUrl": { "type": "String" }
     }
   },
+  "sessionReportEmailSubject": "{appName} — Informe de {eventLabel}: {title}",
+  "@sessionReportEmailSubject": {
+    "placeholders": {
+      "appName": { "type": "String" },
+      "eventLabel": { "type": "String" },
+      "title": { "type": "String" }
+    }
+  },
+  "sessionReportEmailIntro": "Aquí tienes tu informe de estadísticas de {appName}",
+  "@sessionReportEmailIntro": {
+    "placeholders": {
+      "appName": { "type": "String" }
+    }
+  },
+  "sessionReportEmailEventMatch": "partido",
+  "sessionReportEmailEventTraining": "entrenamiento",
+  "sessionReportEmailDetailsLabel": "Detalles del informe",
+  "sessionReportEmailTypeLabel": "Tipo",
+  "sessionReportEmailTitleLabel": "Sesión",
+  "sessionReportEmailDateLabel": "Fecha",
+  "sessionReportEmailTeamLabel": "Equipo",
+  "sessionReportEmailPlayersLabel": "Jugadores",
+  "sessionReportEmailAvgWorkloadLabel": "Workload medio",
+  "sessionReportEmailDateLine": "Fecha: {date}",
+  "@sessionReportEmailDateLine": {
+    "placeholders": {
+      "date": { "type": "String" }
+    }
+  },
+  "sessionReportEmailTeamLine": "Equipo: {team}",
+  "@sessionReportEmailTeamLine": {
+    "placeholders": {
+      "team": { "type": "String" }
+    }
+  },
+  "sessionReportEmailPlayersLine": "Jugadores con datos: {count}",
+  "@sessionReportEmailPlayersLine": {
+    "placeholders": {
+      "count": { "type": "int" }
+    }
+  },
+  "sessionReportEmailAttachmentHint": "El informe PDF de estadísticas del tracker está adjunto a este correo.",
+  "sessionReportEmailFooter": "Has recibido este correo porque se generó un informe de sesión desde {appName}. Si no esperabas este mensaje, puedes ignorarlo.",
+  "@sessionReportEmailFooter": {
+    "placeholders": {
+      "appName": { "type": "String" }
+    }
+  },
+  "sessionReportEmailDialogTitle": "Enviar informe PDF",
+  "sessionReportEmailDialogMessage": "Indica la dirección de correo que recibirá el informe de estadísticas (PDF).",
+  "sessionReportEmailDialogHint": "tu@ejemplo.com",
+  "sessionReportEmailDialogSend": "Enviar",
+  "sessionReportEmailDialogCancel": "Cancelar",
+  "sessionReportEmailActionTooltip": "Enviar informe PDF por correo",
+  "sessionReportEmailSuccess": "Informe enviado a {email}",
+  "@sessionReportEmailSuccess": {
+    "placeholders": {
+      "email": { "type": "String" }
+    }
+  },
+  "sessionReportEmailFailed": "No se pudo enviar el informe PDF.",
+  "sessionReportEmailNoStats": "No hay estadísticas del tracker disponibles para generar este informe.",
+  "sessionReportEmailInvalid": "Dirección de correo no válida.",
   "memberInvitationEmailFailed": "Miembro añadido, pero no se pudo enviar el correo de invitación.",
   "memberAddedToTeamNotificationTitle": "Actualización del equipo",
   "memberAddedToTeamNotificationBody": "Tu entrenador te ha añadido a {teamName}.",

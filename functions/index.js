@@ -193,6 +193,15 @@ function normalizeActions(actions) {
           ? action.params
           : {};
       normalized.push({ type: 'navigate', route, params });
+      continue;
+    }
+
+    if (type === 'send_report') {
+      const params =
+        action.params && typeof action.params === 'object'
+          ? action.params
+          : {};
+      normalized.push({ type: 'send_report', params });
     }
   }
 

@@ -92,6 +92,69 @@
       "googlePlayUrl": { "type": "String" }
     }
   },
+  "sessionReportEmailSubject": "{appName} — {eventLabel} report: {title}",
+  "@sessionReportEmailSubject": {
+    "placeholders": {
+      "appName": { "type": "String" },
+      "eventLabel": { "type": "String" },
+      "title": { "type": "String" }
+    }
+  },
+  "sessionReportEmailIntro": "Here is your {appName} statistics report",
+  "@sessionReportEmailIntro": {
+    "placeholders": {
+      "appName": { "type": "String" }
+    }
+  },
+  "sessionReportEmailEventMatch": "match",
+  "sessionReportEmailEventTraining": "training",
+  "sessionReportEmailDetailsLabel": "Report details",
+  "sessionReportEmailTypeLabel": "Type",
+  "sessionReportEmailTitleLabel": "Session",
+  "sessionReportEmailDateLabel": "Date",
+  "sessionReportEmailTeamLabel": "Team",
+  "sessionReportEmailPlayersLabel": "Players",
+  "sessionReportEmailAvgWorkloadLabel": "Average workload",
+  "sessionReportEmailDateLine": "Date: {date}",
+  "@sessionReportEmailDateLine": {
+    "placeholders": {
+      "date": { "type": "String" }
+    }
+  },
+  "sessionReportEmailTeamLine": "Team: {team}",
+  "@sessionReportEmailTeamLine": {
+    "placeholders": {
+      "team": { "type": "String" }
+    }
+  },
+  "sessionReportEmailPlayersLine": "Players with data: {count}",
+  "@sessionReportEmailPlayersLine": {
+    "placeholders": {
+      "count": { "type": "int" }
+    }
+  },
+  "sessionReportEmailAttachmentHint": "The tracker statistics PDF report is attached to this email.",
+  "sessionReportEmailFooter": "You received this email because a session report was generated from {appName}. If you were not expecting this message, you can ignore it.",
+  "@sessionReportEmailFooter": {
+    "placeholders": {
+      "appName": { "type": "String" }
+    }
+  },
+  "sessionReportEmailDialogTitle": "Send PDF report",
+  "sessionReportEmailDialogMessage": "Enter the email address that should receive the statistics report (PDF).",
+  "sessionReportEmailDialogHint": "you@example.com",
+  "sessionReportEmailDialogSend": "Send",
+  "sessionReportEmailDialogCancel": "Cancel",
+  "sessionReportEmailActionTooltip": "Email PDF report",
+  "sessionReportEmailSuccess": "Report sent to {email}",
+  "@sessionReportEmailSuccess": {
+    "placeholders": {
+      "email": { "type": "String" }
+    }
+  },
+  "sessionReportEmailFailed": "Could not send the PDF report.",
+  "sessionReportEmailNoStats": "No tracker statistics are available to generate this report.",
+  "sessionReportEmailInvalid": "Invalid email address.",
   "memberInvitationEmailFailed": "Member added, but the invitation email could not be sent.",
   "memberAddedToTeamNotificationTitle": "Team update",
   "memberAddedToTeamNotificationBody": "Your coach added you to {teamName}.",

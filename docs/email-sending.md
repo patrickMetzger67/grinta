@@ -136,11 +136,21 @@ Authenticated users may **create** only. They must **not** set `delivery` (serve
     "subject": "Your Grinta invitation",
     "text": "Plain-text body…",
     "html": "<p>HTML body…</p>"
-  }
+  },
+  "attachments": [
+    {
+      "content": "<base64>",
+      "filename": "report.pdf",
+      "type": "application/pdf",
+      "disposition": "attachment"
+    }
+  ]
 }
 ```
 
 `from`, `replyTo`, and `clubId` are optional on create; the app fills them from `config/invitation` for invitations.
+
+`attachments` is optional (max 3). Each entry requires `content` (base64), `filename`, `type`, and `disposition`. Used for session/match PDF reports.
 
 ### Delivery update (Cloud Function)
 
@@ -189,6 +199,44 @@ This mirrors the Trigger Email extension `delivery` shape so existing monitoring
 
 - [`InvitationEmailService`](../lib/services/invitation_email_service.dart) writes to `mail` with `from`, `replyTo`, and `clubId` from [`InvitationConfig.resolve()`](../lib/config/invitation_config.dart).
 - [`MemberInvitationService`](../lib/services/member_invitation_service.dart) uses `InvitationEmailService` unchanged (sender fields are resolved inside `send()`).
+
+### Session / match PDF stats reports
+
+Same charter as invitations: branded HTML from shared colors/logo (`InvitationEmailBrand` + `config/invitation`), queued via `mail`, delivered by `sendMailOnCreate`.
+
+| Piece | Role |
+|-------|------|
+| [`SessionStatsReportService`](../lib/services/session_stats_report_service.dart) | Builds report data from `TRACKER_TeamAnalysis` (Stats tab metrics) |
+| [`SessionStatsReportPdfService`](../lib/services/session_stats_report_pdf_service.dart) | Renders PDF bytes |
+| [`SessionReportEmailBuilder`](../lib/services/session_report_email_builder.dart) | Subject / text / HTML (same layout as invitations) |
+| [`SessionReportSenderService`](../lib/services/session_report_sender_service.dart) | Orchestrates PDF + queue mail with attachment |
+| UI | Stats table PDF icon → email dialog; Ask Gio `send_report` action |
+
+**Mail document with PDF attachment:**
+
+```json
+{
+  "to": "coach@example.com",
+  "from": "noreply@grinta.io",
+  "replyTo": "contact@grinta.io",
+  "clubId": "0",
+  "message": {
+    "subject": "Grinta Performance — Rapport entraînement : …",
+    "text": "…",
+    "html": "<!DOCTYPE html>…"
+  },
+  "attachments": [
+    {
+      "content": "<base64 PDF>",
+      "filename": "grinta_training_….pdf",
+      "type": "application/pdf",
+      "disposition": "attachment"
+    }
+  ]
+}
+```
+
+Ask Gio examples: « envoie-moi le rapport de la séance d'hier », « send today's match report to coach@club.fr ».
 
 ## 7. Multi-club / white-label
 

@@ -222,6 +222,103 @@ class AppLocalizationsDe extends AppLocalizations {
   }
 
   @override
+  String sessionReportEmailSubject(
+      String appName, String eventLabel, String title) {
+    return '$appName — Bericht $eventLabel: $title';
+  }
+
+  @override
+  String sessionReportEmailIntro(String appName) {
+    return 'Hier ist dein Statistikbericht von $appName';
+  }
+
+  @override
+  String get sessionReportEmailEventMatch => 'Spiel';
+
+  @override
+  String get sessionReportEmailEventTraining => 'Training';
+
+  @override
+  String get sessionReportEmailDetailsLabel => 'Berichtsdetails';
+
+  @override
+  String get sessionReportEmailTypeLabel => 'Typ';
+
+  @override
+  String get sessionReportEmailTitleLabel => 'Einheit';
+
+  @override
+  String get sessionReportEmailDateLabel => 'Datum';
+
+  @override
+  String get sessionReportEmailTeamLabel => 'Team';
+
+  @override
+  String get sessionReportEmailPlayersLabel => 'Spieler';
+
+  @override
+  String get sessionReportEmailAvgWorkloadLabel => 'Durchschn. Workload';
+
+  @override
+  String sessionReportEmailDateLine(String date) {
+    return 'Datum: $date';
+  }
+
+  @override
+  String sessionReportEmailTeamLine(String team) {
+    return 'Team: $team';
+  }
+
+  @override
+  String sessionReportEmailPlayersLine(int count) {
+    return 'Spieler mit Daten: $count';
+  }
+
+  @override
+  String get sessionReportEmailAttachmentHint =>
+      'Der Tracker-Statistikbericht als PDF ist dieser E-Mail angehängt.';
+
+  @override
+  String sessionReportEmailFooter(String appName) {
+    return 'Du hast diese E-Mail erhalten, weil ein Sitzungsbericht aus $appName erstellt wurde. Wenn du diese Nachricht nicht erwartet hast, kannst du sie ignorieren.';
+  }
+
+  @override
+  String get sessionReportEmailDialogTitle => 'PDF-Bericht senden';
+
+  @override
+  String get sessionReportEmailDialogMessage =>
+      'Gib die E-Mail-Adresse ein, die den Statistikbericht (PDF) erhalten soll.';
+
+  @override
+  String get sessionReportEmailDialogHint => 'du@beispiel.com';
+
+  @override
+  String get sessionReportEmailDialogSend => 'Senden';
+
+  @override
+  String get sessionReportEmailDialogCancel => 'Abbrechen';
+
+  @override
+  String get sessionReportEmailActionTooltip => 'PDF-Bericht per E-Mail senden';
+
+  @override
+  String sessionReportEmailSuccess(String email) {
+    return 'Bericht an $email gesendet';
+  }
+
+  @override
+  String get sessionReportEmailFailed =>
+      'Der PDF-Bericht konnte nicht gesendet werden.';
+
+  @override
+  String get sessionReportEmailNoStats =>
+      'Keine Tracker-Statistiken verfügbar, um diesen Bericht zu erstellen.';
+
+  @override
+  String get sessionReportEmailInvalid => 'Ungültige E-Mail-Adresse.';
+
+  @override
   String get memberInvitationEmailFailed =>
       'Mitglied hinzugefügt, aber die Einladungs-E-Mail konnte nicht gesendet werden.';
 
@@ -2271,7 +2368,6 @@ class AppLocalizationsDe extends AppLocalizations {
     return '$count Tracker';
   }
 
-
   @override
   String get trackerAllSensorsSynced => 'Alle Sensoren wurden synchronisiert';
 
@@ -2481,6 +2577,7 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get agendaAddEventNonSport =>
+      'Ein nicht-sportliches Ereignis / Aktivität';
 
   @override
   String get agendaAllDayLabel => 'All day';
@@ -2490,8 +2587,8 @@ class AppLocalizationsDe extends AppLocalizations {
     String _temp0 = intl.Intl.pluralLogic(
       count,
       locale: localeName,
-      one: '1 activity',
       other: '$count activities',
+      one: '1 activity',
     );
     return '$_temp0';
   }
@@ -2539,7 +2636,8 @@ class AppLocalizationsDe extends AppLocalizations {
   String get editNonSportEventSaved => 'Event updated';
 
   @override
-  String get editNonSportEventError => 'Could not update the event. Please try again.';
+  String get editNonSportEventError =>
+      'Could not update the event. Please try again.';
 
   @override
   String get deleteNonSportEventConfirmTitle => 'Delete event?';
@@ -2553,8 +2651,8 @@ class AppLocalizationsDe extends AppLocalizations {
   String get deleteNonSportEventDeleted => 'Event deleted';
 
   @override
-  String get deleteNonSportEventError => 'Could not delete the event. Please try again.';
-
+  String get deleteNonSportEventError =>
+      'Could not delete the event. Please try again.';
 
   @override
   String get createNonSportEventLocation => 'Location';
@@ -2573,8 +2671,8 @@ class AppLocalizationsDe extends AppLocalizations {
     String _temp0 = intl.Intl.pluralLogic(
       count,
       locale: localeName,
-      one: '1 member selected',
       other: '$count members selected',
+      one: '1 member selected',
     );
     return '$_temp0';
   }
@@ -2595,7 +2693,8 @@ class AppLocalizationsDe extends AppLocalizations {
   String get createNonSportEventNoInvitees => 'No invitees yet.';
 
   @override
-  String get createNonSportEventNoTeams => 'No teams available for this season.';
+  String get createNonSportEventNoTeams =>
+      'No teams available for this season.';
 
   @override
   String get createNonSportEventSubmit => 'Create event';
@@ -2604,13 +2703,15 @@ class AppLocalizationsDe extends AppLocalizations {
   String get createNonSportEventSaved => 'Event created';
 
   @override
-  String get createNonSportEventError => 'Could not create the event. Please try again.';
+  String get createNonSportEventError =>
+      'Could not create the event. Please try again.';
 
   @override
   String get createNonSportEventInviteStatusSent => 'Notification sent';
 
   @override
-  String get createNonSportEventInviteStatusNoAccount => 'No linked user account';
+  String get createNonSportEventInviteStatusNoAccount =>
+      'No linked user account';
 
   @override
   String get createNonSportEventInviteStatusPending => 'Pending';
@@ -2627,14 +2728,13 @@ class AppLocalizationsDe extends AppLocalizations {
   }
 
   @override
-  String createNonSportEventNotificationBodyWithLocation(String title, String when, String location) {
+  String createNonSportEventNotificationBodyWithLocation(
+      String title, String when, String location) {
     return '$title — $when — $location';
   }
 
   @override
   String get nonSportEventInviteesTitle => 'Invitations';
-
-      'Ein nicht-sportliches Ereignis / Aktivität';
 
   @override
   String get agendaLegend => 'Legende';
@@ -3986,12 +4086,12 @@ class AppLocalizationsDe extends AppLocalizations {
   String get trainingIntenseResyncTitle => 'Sensordaten erneut synchronisieren';
 
   @override
-  String get trainingIntenseResyncMessage => 'Sensordaten für das gesamte Trainingsfenster (Start → Ende) werden erneut abgerufen. Fenster nicht schließen.';
+  String get trainingIntenseResyncMessage =>
+      'Sensordaten für das gesamte Trainingsfenster (Start → Ende) werden erneut abgerufen. Fenster nicht schließen.';
 
   @override
-  String get trainingIntenseResyncSuccess => 'Sensordaten erneut synchronisiert.';
-
-
+  String get trainingIntenseResyncSuccess =>
+      'Sensordaten erneut synchronisiert.';
 
   @override
   String get trainingIntenseFinishSyncing => 'Synchronisierung läuft…';

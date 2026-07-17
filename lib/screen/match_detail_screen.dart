@@ -17,6 +17,7 @@ import '../services/matchService.dart';
 import '../services/playerService.dart';
 import '../services/teamWorkloadSummaryService.dart';
 import 'package:grinta/util/app_theme.dart';
+import '../util/highlight_minute_helper.dart';
 import '../util/intense_live_eligibility.dart';
 import '../util/match_creation_helper.dart';
 import 'package:grinta/widget/create_match_sheet.dart';
@@ -1495,6 +1496,11 @@ class _StatsTabState extends State<_StatsTab> {
             eventId: eventId,
             teamId: widget.match.teamID,
             realtime: true,
+            isMatch: true,
+            reportTitle: _matchReportTitle(widget.match),
+            reportSubtitle: widget.match.chType,
+            reportTeamName: widget.match.team1 ?? widget.match.team2,
+            reportEventDate: matchKickoffDateTime(widget.match),
           ),
         ],
       );
@@ -1578,7 +1584,7 @@ class _StatsTabState extends State<_StatsTab> {
                 }
 
                 final TeamPlayerMetricScores? playerScore =
-                _findPlayerScore(
+                    _findPlayerScore(
                   summary: summary,
                   playerId: safePlayerId,
                 );
@@ -1621,6 +1627,17 @@ class _StatsTabState extends State<_StatsTab> {
     );
   }
 
+  static String _matchReportTitle(models.Match match) {
+    final team1 = (match.team1 ?? '').trim();
+    final team2 = (match.team2 ?? '').trim();
+    if (team1.isNotEmpty && team2.isNotEmpty) {
+      return '$team1 - $team2';
+    }
+    if (team1.isNotEmpty) return team1;
+    if (team2.isNotEmpty) return team2;
+    return 'Match';
+  }
+
   TeamPlayerMetricScores? _findPlayerScore({
     required TeamWorkloadSummary summary,
     required String playerId,
@@ -1633,7 +1650,6 @@ class _StatsTabState extends State<_StatsTab> {
 
     return null;
   }
-
 }
 
 class _TrackerStatus extends StatelessWidget {

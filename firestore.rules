@@ -53,6 +53,37 @@ service cloud.firestore {
         );
     }
 
+    function isValidMailAttachment(entry) {
+      return entry is map
+        && entry.keys().hasAll(['content', 'filename', 'type', 'disposition'])
+        && entry.content is string
+        && entry.content.size() > 0
+        && entry.filename is string
+        && entry.filename.size() > 0
+        && entry.type is string
+        && entry.disposition is string;
+    }
+
+    function isValidMailAttachments() {
+      return !('attachments' in request.resource.data)
+        || (
+          request.resource.data.attachments is list
+          && request.resource.data.attachments.size() <= 3
+          && (
+            request.resource.data.attachments.size() == 0
+            || isValidMailAttachment(request.resource.data.attachments[0])
+          )
+          && (
+            request.resource.data.attachments.size() < 2
+            || isValidMailAttachment(request.resource.data.attachments[1])
+          )
+          && (
+            request.resource.data.attachments.size() < 3
+            || isValidMailAttachment(request.resource.data.attachments[2])
+          )
+        );
+    }
+
     function isValidMailCreate() {
       return request.resource.data.keys().hasAll(['to', 'message'])
         && request.resource.data.to is string
@@ -68,6 +99,7 @@ service cloud.firestore {
           || request.resource.data.replyTo is string)
         && (!('clubId' in request.resource.data)
           || request.resource.data.clubId is string)
+        && isValidMailAttachments()
         && !('delivery' in request.resource.data);
     }
 

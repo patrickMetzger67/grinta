@@ -51,23 +51,58 @@ async function loadClubEmailParam(db, clubId) {
   };
 }
 
-async function sendViaSendGrid(apiKey, { to, from, replyTo, subject, text, html }) {
+function normalizeAttachments(rawAttachments) {
+  if (!Array.isArray(rawAttachments) || rawAttachments.length === 0) {
+    return [];
+  }
+
+  const attachments = [];
+  for (const entry of rawAttachments) {
+    if (!entry || typeof entry !== 'object') continue;
+    const content = readNonEmptyString(entry.content);
+    const filename = readNonEmptyString(entry.filename);
+    if (!content || !filename) continue;
+
+    const type = readNonEmptyString(entry.type) ?? 'application/pdf';
+    const disposition =
+      readNonEmptyString(entry.disposition) ?? 'attachment';
+
+    attachments.push({
+      content,
+      filename,
+      type,
+      disposition,
+    });
+  }
+  return attachments;
+}
+
+async function sendViaSendGrid(
+  apiKey,
+  { to, from, replyTo, subject, text, html, attachments = [] },
+) {
+  const payload = {
+    personalizations: [{ to: [{ email: to }] }],
+    from: { email: from },
+    reply_to: { email: replyTo },
+    subject,
+    content: [
+      { type: 'text/plain', value: text },
+      { type: 'text/html', value: html },
+    ],
+  };
+
+  if (attachments.length > 0) {
+    payload.attachments = attachments;
+  }
+
   const response = await fetch(SENDGRID_API_URL, {
     method: 'POST',
     headers: {
       Authorization: `Bearer ${apiKey}`,
       'Content-Type': 'application/json',
     },
-    body: JSON.stringify({
-      personalizations: [{ to: [{ email: to }] }],
-      from: { email: from },
-      reply_to: { email: replyTo },
-      subject,
-      content: [
-        { type: 'text/plain', value: text },
-        { type: 'text/html', value: html },
-      ],
-    }),
+    body: JSON.stringify(payload),
   });
 
   const body = await response.text();
@@ -165,6 +200,8 @@ function createSendMailOnCreate() {
         return;
       }
 
+      const attachments = normalizeAttachments(mailData.attachments);
+
       try {
         const info = await sendViaSendGrid(apiKey, {
           to,
@@ -173,6 +210,7 @@ function createSendMailOnCreate() {
           subject,
           text,
           html,
+          attachments,
         });
 
         await mailRef.update(
@@ -187,6 +225,7 @@ function createSendMailOnCreate() {
           to,
           clubId,
           from: fromEmail,
+          attachmentCount: attachments.length,
         });
       } catch (error) {
         console.error('sendMailOnCreate SendGrid error', error);

@@ -199,6 +199,20 @@ const List<AskDiegoCapability> kAskDiegoCapabilities = <AskDiegoCapability>[
     contextFields: <String>['playerActivityReport', 'playerStats', 'today'],
   ),
   AskDiegoCapability(
+    id: 'send_session_report',
+    name: 'Envoi rapport PDF séance / match',
+    description:
+        "Quand l'utilisateur demande d'envoyer / générer un rapport PDF des stats d'une séance (entraînement) ou d'un match (hier, aujourd'hui, etc.), utiliser context.sessionReports. sessions[] contient eventId, type (match|training), title, date, time, hasStats, playersCount, averageWorkloadScore. Choisir la séance demandée (ou la seule avec hasStats=true). Ajouter une action send_report avec params { eventId, eventType, email }. email = requestedEmail si présent, sinon defaultEmail. Si plusieurs séances avec stats, demander de préciser ou choisir la plus pertinente et le dire dans answer. Si dataUnavailableReason (period_not_understood, no_sessions_in_period, no_stats_for_sessions…), expliquer sans inventer. Ne jamais inventer d'eventId.",
+    examples: <String>[
+      "Ask Gio, envoie-moi le rapport de la séance d'hier",
+      "Envoie le rapport PDF du match d'aujourd'hui à coach@club.fr",
+      "Peux-tu m'envoyer le rapport de mon entraînement d'hier ?",
+      "Send me yesterday's training session report",
+      "Génère le rapport stats de la séance d'avant-hier",
+    ],
+    contextFields: <String>['sessionReports', 'today', 'agenda'],
+  ),
+  AskDiegoCapability(
     id: 'tracker_indicators',
     name: 'Indicateurs synthèse joueur (tracker)',
     description:
@@ -410,6 +424,14 @@ ${_formatCapabilitiesSection()}
   - \`report_load_failed\` / raisons techniques : réponse honnête sans inventer.
 - Ne jamais inventer de chiffres : utilise uniquement les données injectées. Réponse texte uniquement (pas de navigation obligatoire).
 
+## Envoi rapport PDF séance / match (send_session_report)
+- Utilise \`context.sessionReports\` quand l'utilisateur demande d'**envoyer**, **générer** ou **recevoir** un **rapport PDF** des stats d'une séance / d'un match (ex. « envoie le rapport de la séance d'hier »).
+- \`sessionReports.sessions[]\` : \`eventId\`, \`type\` (\`match\`|\`training\`), \`title\`, \`date\`, \`time\`, \`hasStats\`, \`playersCount\`, \`averageWorkloadScore\`.
+- Destinataire : \`requestedEmail\` si l'utilisateur a donné une adresse, sinon \`defaultEmail\` (compte connecté). Si aucun email disponible, demande l'adresse dans "answer" **sans** action \`send_report\`.
+- Quand tu peux envoyer : inclus une action \`{ "type": "send_report", "params": { "eventId": "<id>", "eventType": "training"|"match", "email": "<email>" } }\` en plus de "answer".
+- Ne jamais inventer d'\`eventId\`. Si aucune séance avec \`hasStats=true\`, explique-le.
+- Si plusieurs séances avec stats le même jour, choisis la plus pertinente (type demandé, ou la seule match/training) et précise ton choix dans "answer" ; sinon demande de préciser.
+
 ## Indicateurs tracker — Synthèse joueur (connaissances statiques)
 - L'écran **Synthèse joueur** (détail d'une séance tracker GPS) affiche des indicateurs de performance calculés à partir des données GPS du capteur.
 - Les seuils (sprint, accélération haute, vitesse validée, etc.) viennent des paramètres d'analyse de l'équipe (**Param défaut** ou paramètres personnalisés). Ne cite pas de valeurs numériques de seuils sauf si l'utilisateur les mentionne.
@@ -470,13 +492,15 @@ Réponds UNIQUEMENT avec un objet JSON valide (pas de markdown, pas de texte hor
 {
   "actions": [
     { "type": "answer", "text": "Ta réponse en texte naturel, concise et utile." },
-    { "type": "navigate", "route": "agenda", "params": {} }
+    { "type": "navigate", "route": "agenda", "params": {} },
+    { "type": "send_report", "params": { "eventId": "…", "eventType": "training", "email": "…" } }
   ]
 }
 
 Règles :
 - Inclus toujours au moins une action "answer".
 - Ajoute une action "navigate" seulement si l'utilisateur demande explicitement d'ouvrir un écran ou si la navigation apporte une valeur claire.
-- Utilise les IDs du contexte (matchId, teamId) — ne les invente pas.
+- Ajoute une action "send_report" seulement pour l'envoi d'un rapport PDF de stats séance/match, avec eventId + email issus du contexte.
+- Utilise les IDs du contexte (matchId, teamId, eventId) — ne les invente pas.
 - Si tu ne peux pas répondre faute de données, dis-le clairement dans "answer".''';
 }
