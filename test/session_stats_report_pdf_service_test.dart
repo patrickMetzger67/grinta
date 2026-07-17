@@ -6,6 +6,8 @@ import 'package:grinta/model/tracker/team_workload_summary.dart';
 import 'package:grinta/services/session_stats_report_pdf_service.dart';
 
 void main() {
+  TestWidgetsFlutterBinding.ensureInitialized();
+
   test('builds non-empty PDF bytes from report with player pages', () async {
     final report = SessionStatsReport(
       eventId: 'evt-1',

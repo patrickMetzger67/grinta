@@ -92,9 +92,7 @@ abstract final class SessionReportEmailBuilder {
     );
     buffer.writeln();
     if (pdfDownloadUrl != null && pdfDownloadUrl.isNotEmpty) {
-      buffer
-        ..writeln(l10n.sessionReportEmailDownloadHint)
-        ..writeln(l10n.sessionReportEmailDownloadLine(pdfDownloadUrl));
+      buffer.writeln(l10n.sessionReportEmailDownloadHint);
     } else {
       buffer.writeln(l10n.sessionReportEmailAttachmentHint);
     }
@@ -171,7 +169,6 @@ abstract final class SessionReportEmailBuilder {
         ? '''
               <p style="margin:0 0 16px;color:${InvitationEmailBrand.textPrimary};font-size:15px;line-height:1.6;">$pdfHint</p>
               <a href="$safeDownloadUrl" target="_blank" rel="noopener noreferrer" style="display:inline-block;background-color:${InvitationEmailBrand.primary};color:#FFFFFF;text-decoration:none;font-size:14px;font-weight:600;padding:12px 20px;border-radius:999px;">$downloadButtonLabel</a>
-              <p style="margin:14px 0 0;color:${InvitationEmailBrand.textSecondary};font-size:12px;line-height:1.5;word-break:break-all;">$safeDownloadUrl</p>
 '''
         : '''
               <p style="margin:0;color:${InvitationEmailBrand.textPrimary};font-size:15px;line-height:1.6;">$pdfHint</p>

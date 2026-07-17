@@ -1,6 +1,7 @@
 import 'dart:math' as math;
 import 'dart:typed_data';
 
+import 'package:flutter/services.dart' show rootBundle;
 import 'package:grinta/model/session_stats_report.dart';
 import 'package:grinta/model/tracker/team_workload_summary.dart';
 import 'package:intl/intl.dart';
@@ -8,23 +9,31 @@ import 'package:pdf/pdf.dart';
 import 'package:pdf/widgets.dart' as pw;
 
 /// Renders a [SessionStatsReport] to PDF bytes (recap table + player pages).
+///
+/// All pages are A4 landscape. Each player detail fits on a single page.
 class SessionStatsReportPdfService {
-  /// Brand colors aligned with invitation emails / AppColors.
   static const PdfColor _primary = PdfColor.fromInt(0xFFF95C1B);
   static const PdfColor _textPrimary = PdfColor.fromInt(0xFF111214);
   static const PdfColor _textSecondary = PdfColor.fromInt(0xFF6B7280);
   static const PdfColor _border = PdfColor.fromInt(0xFFE5E7EB);
-  static const PdfColor _surface = PdfColor.fromInt(0xFFF9FAFB);
+  static const PdfColor _surface = PdfColor.fromInt(0xFFF3F4F6);
   static const PdfColor _success = PdfColor.fromInt(0xFF1FA971);
   static const PdfColor _danger = PdfColor.fromInt(0xFFE53935);
   static const PdfColor _warning = PdfColor.fromInt(0xFFF5A524);
   static const PdfColor _secondary = PdfColor.fromInt(0xFF3B82F6);
+  static const PdfColor _white = PdfColors.white;
 
   Future<Uint8List> buildPdf(
     SessionStatsReport report, {
     String localeCode = 'fr',
   }) async {
-    final doc = pw.Document();
+    final fonts = await _loadFonts();
+    final doc = pw.Document(
+      theme: pw.ThemeData.withFont(
+        base: fonts.regular,
+        bold: fonts.bold,
+      ),
+    );
     final generatedLabel = DateFormat('yyyy-MM-dd HH:mm').format(
       report.generatedAt,
     );
@@ -32,39 +41,38 @@ class SessionStatsReportPdfService {
     doc.addPage(
       pw.MultiPage(
         pageFormat: PdfPageFormat.a4.landscape,
-        margin: const pw.EdgeInsets.all(28),
-        header: (context) => _buildRecapHeader(report, generatedLabel),
+        margin: const pw.EdgeInsets.fromLTRB(18, 16, 18, 14),
         footer: (context) => _buildFooter(context),
         build: (context) => <pw.Widget>[
-          pw.SizedBox(height: 12),
+          _buildRecapHeader(report, generatedLabel),
+          pw.SizedBox(height: 10),
           _buildSummaryRow(report),
-          pw.SizedBox(height: 16),
+          pw.SizedBox(height: 10),
           _buildPlayersTable(report),
         ],
       ),
     );
 
-    if (report.playerDetails.isNotEmpty) {
+    for (final player in report.playerDetails) {
       doc.addPage(
-        pw.MultiPage(
-          pageFormat: PdfPageFormat.a4,
-          margin: const pw.EdgeInsets.all(24),
-          footer: (context) => _buildFooter(context),
+        pw.Page(
+          pageFormat: PdfPageFormat.a4.landscape,
+          margin: const pw.EdgeInsets.fromLTRB(14, 12, 14, 10),
           build: (context) {
-            final widgets = <pw.Widget>[];
-            for (var i = 0; i < report.playerDetails.length; i++) {
-              if (i > 0) {
-                widgets.add(pw.NewPage());
-              }
-              widgets.addAll(
-                _buildPlayerPageContent(
-                  report,
-                  report.playerDetails[i],
-                  generatedLabel,
+            return pw.Column(
+              crossAxisAlignment: pw.CrossAxisAlignment.stretch,
+              children: [
+                _buildPlayerPageHeader(report, player, generatedLabel),
+                pw.SizedBox(height: 8),
+                pw.Expanded(
+                  child: report.isMatch
+                      ? _buildMatchPlayerBody(player)
+                      : _buildTrainingPlayerBody(player),
                 ),
-              );
-            }
-            return widgets;
+                pw.SizedBox(height: 4),
+                _buildFooter(context),
+              ],
+            );
           },
         ),
       );
@@ -73,48 +81,102 @@ class SessionStatsReportPdfService {
     return doc.save();
   }
 
-  List<pw.Widget> _buildPlayerPageContent(
-    SessionStatsReport report,
-    SessionStatsReportPlayerDetail player,
-    String generatedLabel,
-  ) {
-    return <pw.Widget>[
-      _buildPlayerPageHeader(report, player, generatedLabel),
-      pw.SizedBox(height: 14),
-      _sectionTitle('Synthese'),
-      pw.SizedBox(height: 8),
-      _buildSynthesisGrid(player),
-      pw.SizedBox(height: 14),
-      _sectionTitle('Zones de vitesse'),
-      pw.SizedBox(height: 8),
-      if (player.speedZones.isEmpty)
-        _emptyHint('Aucune zone de vitesse')
-      else
-        ...player.speedZones.map(_buildSpeedZoneRow),
-      pw.SizedBox(height: 14),
-      _sectionTitle('Timeline distance'),
-      pw.SizedBox(height: 8),
-      if (player.distanceTimeline.isEmpty)
-        _emptyHint('Aucune timeline distance')
-      else
-        _buildTimelineChart(player.distanceTimeline),
-      if (report.isMatch) ...[
-        pw.SizedBox(height: 14),
-        _sectionTitle('Zones de terrain'),
-        pw.SizedBox(height: 8),
-        if (player.fieldZones.isEmpty)
-          _emptyHint('Aucune zone de terrain')
-        else
-          _buildFieldZonesGrid(player.fieldZones),
-        pw.SizedBox(height: 14),
-        _sectionTitle('Heatmaps'),
-        pw.SizedBox(height: 8),
-        if (player.heatmaps.isEmpty)
-          _emptyHint('Aucune heatmap disponible')
-        else
-          _buildHeatmaps(player.heatmaps),
+  Future<({pw.Font regular, pw.Font bold})> _loadFonts() async {
+    try {
+      final regularData = await rootBundle.load(
+        'assets/fonts/SF-Pro-Display-Regular.otf',
+      );
+      final boldData = await rootBundle.load(
+        'assets/fonts/SF-Pro-Display-Bold.otf',
+      );
+      return (
+        regular: pw.Font.ttf(regularData),
+        bold: pw.Font.ttf(boldData),
+      );
+    } catch (_) {
+      return (
+        regular: pw.Font.helvetica(),
+        bold: pw.Font.helveticaBold(),
+      );
+    }
+  }
+
+  pw.Widget _buildMatchPlayerBody(SessionStatsReportPlayerDetail player) {
+    return pw.Row(
+      crossAxisAlignment: pw.CrossAxisAlignment.stretch,
+      children: [
+        pw.Expanded(
+          flex: 11,
+          child: pw.Column(
+            crossAxisAlignment: pw.CrossAxisAlignment.stretch,
+            children: [
+              _sectionTitle('Synthese'),
+              pw.SizedBox(height: 4),
+              _buildSynthesisGrid(player, compact: true),
+              pw.SizedBox(height: 8),
+              _sectionTitle('Zones de vitesse'),
+              pw.SizedBox(height: 4),
+              pw.Expanded(child: _buildSpeedZonesBlock(player)),
+            ],
+          ),
+        ),
+        pw.SizedBox(width: 10),
+        pw.Expanded(
+          flex: 14,
+          child: pw.Column(
+            crossAxisAlignment: pw.CrossAxisAlignment.stretch,
+            children: [
+              _sectionTitle('Timeline distance'),
+              pw.SizedBox(height: 4),
+              pw.Expanded(flex: 5, child: _buildTimelineChart(player.distanceTimeline)),
+              pw.SizedBox(height: 6),
+              _sectionTitle('Zones de terrain'),
+              pw.SizedBox(height: 4),
+              _buildFieldZonesGrid(player.fieldZones),
+              pw.SizedBox(height: 6),
+              _sectionTitle('Heatmaps'),
+              pw.SizedBox(height: 4),
+              pw.Expanded(flex: 6, child: _buildHeatmapsRow(player.heatmaps)),
+            ],
+          ),
+        ),
       ],
-    ];
+    );
+  }
+
+  pw.Widget _buildTrainingPlayerBody(SessionStatsReportPlayerDetail player) {
+    return pw.Row(
+      crossAxisAlignment: pw.CrossAxisAlignment.stretch,
+      children: [
+        pw.Expanded(
+          flex: 5,
+          child: pw.Column(
+            crossAxisAlignment: pw.CrossAxisAlignment.stretch,
+            children: [
+              _sectionTitle('Synthese'),
+              pw.SizedBox(height: 4),
+              _buildSynthesisGrid(player, compact: false),
+              pw.SizedBox(height: 8),
+              _sectionTitle('Zones de vitesse'),
+              pw.SizedBox(height: 4),
+              pw.Expanded(child: _buildSpeedZonesBlock(player)),
+            ],
+          ),
+        ),
+        pw.SizedBox(width: 12),
+        pw.Expanded(
+          flex: 6,
+          child: pw.Column(
+            crossAxisAlignment: pw.CrossAxisAlignment.stretch,
+            children: [
+              _sectionTitle('Timeline distance'),
+              pw.SizedBox(height: 4),
+              pw.Expanded(child: _buildTimelineChart(player.distanceTimeline)),
+            ],
+          ),
+        ),
+      ],
+    );
   }
 
   pw.Widget _buildPlayerPageHeader(
@@ -123,157 +185,124 @@ class SessionStatsReportPdfService {
     String generatedLabel,
   ) {
     final match = report.matchHeader;
-    final sessionLine = <String>[
-      if (report.isMatch) ...[
-        if ((match?.opponentName ?? '').trim().isNotEmpty)
-          'vs ${match!.opponentName!.trim()}'
-        else
-          report.title,
-        if ((match?.scoreLabel ?? '').trim().isNotEmpty) match!.scoreLabel,
-      ] else
-        report.title,
-    ].join('  ·  ');
+    final sessionLine = report.isMatch
+        ? [
+            if ((match?.opponentName ?? '').trim().isNotEmpty)
+              'vs ${match!.opponentName!.trim()}'
+            else
+              report.title,
+            if ((match?.scoreLabel ?? '').trim().isNotEmpty) match!.scoreLabel,
+          ].join('  ·  ')
+        : report.title;
 
-    final dateTimeLine = <String>[
+    final dateTimeLine = [
       if ((report.dateLabel ?? '').trim().isNotEmpty) report.dateLabel!.trim(),
       if ((report.timeLabel ?? '').trim().isNotEmpty) report.timeLabel!.trim(),
+      if ((report.teamName ?? '').trim().isNotEmpty) report.teamName!.trim(),
     ].join(' · ');
 
-    return pw.Column(
-      crossAxisAlignment: pw.CrossAxisAlignment.start,
-      children: [
-        pw.Container(
-          width: double.infinity,
-          padding: const pw.EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-          decoration: pw.BoxDecoration(
-            color: _primary,
-            borderRadius: pw.BorderRadius.circular(10),
-          ),
-          child: pw.Row(
-            mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
-            children: [
-              pw.Text(
-                'GRINTA',
-                style: pw.TextStyle(
-                  color: PdfColors.white,
-                  fontSize: 14,
-                  fontWeight: pw.FontWeight.bold,
-                  letterSpacing: 1.1,
-                ),
-              ),
-              pw.Text(
-                generatedLabel,
-                style: const pw.TextStyle(color: PdfColors.white, fontSize: 9),
-              ),
-            ],
-          ),
-        ),
-        pw.SizedBox(height: 10),
-        pw.Row(
-          crossAxisAlignment: pw.CrossAxisAlignment.center,
-          children: [
-            if (match?.opponentLogoBytes != null) ...[
-              pw.Container(
-                width: 28,
-                height: 28,
-                decoration: pw.BoxDecoration(
-                  borderRadius: pw.BorderRadius.circular(6),
-                  border: pw.Border.all(color: _border),
-                ),
-                child: pw.ClipRRect(
-                  horizontalRadius: 6,
-                  verticalRadius: 6,
-                  child: pw.Image(
-                    pw.MemoryImage(match!.opponentLogoBytes!),
-                    fit: pw.BoxFit.contain,
-                  ),
-                ),
-              ),
-              pw.SizedBox(width: 8),
-            ],
-            pw.Expanded(
-              child: pw.Column(
-                crossAxisAlignment: pw.CrossAxisAlignment.start,
-                children: [
-                  pw.Text(
-                    sessionLine,
-                    style: pw.TextStyle(
-                      color: _textPrimary,
-                      fontSize: 13,
-                      fontWeight: pw.FontWeight.bold,
-                    ),
-                  ),
-                  if (dateTimeLine.isNotEmpty)
-                    pw.Text(
-                      dateTimeLine,
-                      style: const pw.TextStyle(
-                        color: _textSecondary,
-                        fontSize: 10,
-                      ),
-                    ),
-                  if ((report.teamName ?? '').trim().isNotEmpty)
-                    pw.Text(
-                      report.teamName!.trim(),
-                      style: const pw.TextStyle(
-                        color: _textSecondary,
-                        fontSize: 10,
-                      ),
-                    ),
-                ],
+    return pw.Container(
+      padding: const pw.EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+      decoration: pw.BoxDecoration(
+        color: _surface,
+        borderRadius: pw.BorderRadius.circular(8),
+        border: pw.Border.all(color: _border),
+      ),
+      child: pw.Row(
+        children: [
+          pw.Container(
+            padding: const pw.EdgeInsets.symmetric(horizontal: 8, vertical: 5),
+            decoration: pw.BoxDecoration(
+              color: _primary,
+              borderRadius: pw.BorderRadius.circular(6),
+            ),
+            child: pw.Text(
+              'GRINTA',
+              style: pw.TextStyle(
+                color: _white,
+                fontSize: 11,
+                fontWeight: pw.FontWeight.bold,
+                letterSpacing: 0.8,
               ),
             ),
-          ],
-        ),
-        pw.SizedBox(height: 12),
-        pw.Container(
-          width: double.infinity,
-          padding: const pw.EdgeInsets.all(10),
-          decoration: pw.BoxDecoration(
-            color: _surface,
-            borderRadius: pw.BorderRadius.circular(10),
-            border: pw.Border.all(color: _border),
           ),
-          child: pw.Row(
+          pw.SizedBox(width: 10),
+          if (match?.opponentLogoBytes != null) ...[
+            pw.Container(
+              width: 22,
+              height: 22,
+              child: pw.Image(
+                pw.MemoryImage(match!.opponentLogoBytes!),
+                fit: pw.BoxFit.contain,
+              ),
+            ),
+            pw.SizedBox(width: 6),
+          ],
+          pw.Expanded(
+            child: pw.Column(
+              crossAxisAlignment: pw.CrossAxisAlignment.start,
+              children: [
+                pw.Text(
+                  sessionLine,
+                  maxLines: 1,
+                  style: pw.TextStyle(
+                    color: _textPrimary,
+                    fontSize: 11,
+                    fontWeight: pw.FontWeight.bold,
+                  ),
+                ),
+                if (dateTimeLine.isNotEmpty)
+                  pw.Text(
+                    dateTimeLine,
+                    maxLines: 1,
+                    style: const pw.TextStyle(
+                      color: _textSecondary,
+                      fontSize: 8.5,
+                    ),
+                  ),
+              ],
+            ),
+          ),
+          pw.SizedBox(width: 10),
+          _playerAvatar(player.photoBytes, size: 28),
+          pw.SizedBox(width: 8),
+          pw.Column(
+            crossAxisAlignment: pw.CrossAxisAlignment.start,
             children: [
-              _playerAvatar(player.photoBytes),
-              pw.SizedBox(width: 10),
-              pw.Expanded(
-                child: pw.Column(
-                  crossAxisAlignment: pw.CrossAxisAlignment.start,
-                  children: [
-                    pw.Text(
-                      player.displayName,
-                      style: pw.TextStyle(
-                        color: _textPrimary,
-                        fontSize: 14,
-                        fontWeight: pw.FontWeight.bold,
-                      ),
-                    ),
-                    pw.SizedBox(height: 2),
-                    pw.Text(
-                      player.trackerId.trim().isEmpty
-                          ? 'Tracker -'
-                          : 'Tracker ${player.trackerId.trim()}',
-                      style: const pw.TextStyle(
-                        color: _textSecondary,
-                        fontSize: 10,
-                      ),
-                    ),
-                  ],
+              pw.Text(
+                player.displayName,
+                style: pw.TextStyle(
+                  color: _textPrimary,
+                  fontSize: 12,
+                  fontWeight: pw.FontWeight.bold,
+                ),
+              ),
+              pw.Text(
+                player.trackerId.trim().isEmpty
+                    ? 'Tracker -'
+                    : 'Tracker ${player.trackerId.trim()}',
+                style: const pw.TextStyle(
+                  color: _textSecondary,
+                  fontSize: 8.5,
                 ),
               ),
             ],
           ),
-        ),
-      ],
+          pw.SizedBox(width: 10),
+          pw.Text(
+            generatedLabel,
+            style: const pw.TextStyle(color: _textSecondary, fontSize: 8),
+          ),
+        ],
+      ),
     );
   }
 
-  pw.Widget _playerAvatar(Uint8List? bytes) {
+  pw.Widget _playerAvatar(Uint8List? bytes, {double size = 28}) {
     if (bytes != null && bytes.isNotEmpty) {
       return pw.Container(
-        width: 42,
-        height: 42,
+        width: size,
+        height: size,
         decoration: pw.BoxDecoration(
           shape: pw.BoxShape.circle,
           border: pw.Border.all(color: _border),
@@ -288,9 +317,9 @@ class SessionStatsReportPdfService {
     }
 
     return pw.Container(
-      width: 42,
-      height: 42,
-      decoration: pw.BoxDecoration(
+      width: size,
+      height: size,
+      decoration: const pw.BoxDecoration(
         shape: pw.BoxShape.circle,
         color: _border,
       ),
@@ -300,20 +329,20 @@ class SessionStatsReportPdfService {
         style: pw.TextStyle(
           color: _textSecondary,
           fontWeight: pw.FontWeight.bold,
-          fontSize: 14,
+          fontSize: size * 0.4,
         ),
       ),
     );
   }
 
-  pw.Widget _buildSynthesisGrid(SessionStatsReportPlayerDetail player) {
+  pw.Widget _buildSynthesisGrid(
+    SessionStatsReportPlayerDetail player, {
+    required bool compact,
+  }) {
     final tiles = <(String, String)>[
       ('Distance', '${player.distanceKm.toStringAsFixed(2)} km'),
       ('Vitesse moy.', '${player.averageSpeedKmh.toStringAsFixed(1)} km/h'),
-      (
-        'Vitesse max',
-        '${player.maxValidatedSpeedKmh.toStringAsFixed(1)} km/h',
-      ),
+      ('Vitesse max', '${player.maxValidatedSpeedKmh.toStringAsFixed(1)} km/h'),
       ('Acc. max', '${player.maxAccelerationMps2.toStringAsFixed(2)} m/s2'),
       ('Sprints', '${player.sprintCount}'),
       ('Acc. hautes', '${player.highAccelerationCount}'),
@@ -323,95 +352,131 @@ class SessionStatsReportPdfService {
       ('Duree', _formatDurationLong(player.duration)),
     ];
 
-    return pw.Wrap(
-      spacing: 8,
-      runSpacing: 8,
-      children: tiles
-          .map(
-            (tile) => pw.Container(
-              width: 118,
-              padding: const pw.EdgeInsets.symmetric(
-                horizontal: 8,
-                vertical: 8,
+    final rows = <pw.Widget>[];
+    for (var i = 0; i < tiles.length; i += 2) {
+      final left = tiles[i];
+      final right = i + 1 < tiles.length ? tiles[i + 1] : null;
+      rows.add(
+        pw.Padding(
+          padding: const pw.EdgeInsets.only(bottom: 4),
+          child: pw.Row(
+            children: [
+              pw.Expanded(child: _metricChip(left.$1, left.$2, compact: compact)),
+              pw.SizedBox(width: 4),
+              pw.Expanded(
+                child: right == null
+                    ? pw.SizedBox()
+                    : _metricChip(right.$1, right.$2, compact: compact),
               ),
-              decoration: pw.BoxDecoration(
-                color: _surface,
-                borderRadius: pw.BorderRadius.circular(8),
-                border: pw.Border.all(color: _border),
-              ),
-              child: pw.Column(
-                crossAxisAlignment: pw.CrossAxisAlignment.start,
-                children: [
-                  pw.Text(
-                    tile.$1,
-                    style: const pw.TextStyle(
-                      color: _textSecondary,
-                      fontSize: 8,
-                    ),
-                  ),
-                  pw.SizedBox(height: 3),
-                  pw.Text(
-                    tile.$2,
-                    style: pw.TextStyle(
-                      color: _textPrimary,
-                      fontSize: 10,
-                      fontWeight: pw.FontWeight.bold,
-                    ),
-                  ),
-                ],
+            ],
+          ),
+        ),
+      );
+    }
+    return pw.Column(children: rows);
+  }
+
+  pw.Widget _metricChip(
+    String label,
+    String value, {
+    required bool compact,
+  }) {
+    return pw.Container(
+      padding: pw.EdgeInsets.symmetric(
+        horizontal: compact ? 6 : 8,
+        vertical: compact ? 4 : 6,
+      ),
+      decoration: pw.BoxDecoration(
+        color: _white,
+        borderRadius: pw.BorderRadius.circular(6),
+        border: pw.Border.all(color: _border),
+      ),
+      child: pw.Row(
+        children: [
+          pw.Expanded(
+            child: pw.Text(
+              label,
+              style: pw.TextStyle(
+                color: _textSecondary,
+                fontSize: compact ? 7.5 : 8,
               ),
             ),
-          )
-          .toList(),
+          ),
+          pw.Text(
+            value,
+            style: pw.TextStyle(
+              color: _textPrimary,
+              fontSize: compact ? 8.5 : 9.5,
+              fontWeight: pw.FontWeight.bold,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  pw.Widget _buildSpeedZonesBlock(SessionStatsReportPlayerDetail player) {
+    if (player.speedZones.isEmpty) {
+      return _emptyHint('Aucune zone de vitesse');
+    }
+    return pw.Column(
+      children: [
+        for (final zone in player.speedZones)
+          pw.Expanded(child: _buildSpeedZoneRow(zone)),
+      ],
     );
   }
 
   pw.Widget _buildSpeedZoneRow(SessionStatsReportSpeedZoneRow zone) {
     final double percent = zone.percent.clamp(0, 100);
+    final int filled = math.max(0, (percent * 10).round());
+    final int empty = math.max(0, ((100 - percent) * 10).round());
+
     return pw.Padding(
-      padding: const pw.EdgeInsets.only(bottom: 8),
+      padding: const pw.EdgeInsets.only(bottom: 3),
       child: pw.Column(
         crossAxisAlignment: pw.CrossAxisAlignment.start,
+        mainAxisAlignment: pw.MainAxisAlignment.center,
         children: [
           pw.Row(
             mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
             children: [
               pw.Expanded(
                 child: pw.Text(
-                  '${zone.label}  (${zone.rangeLabel})',
+                  '${zone.label} (${zone.rangeLabel})',
+                  maxLines: 1,
                   style: const pw.TextStyle(
                     color: _textPrimary,
-                    fontSize: 9,
+                    fontSize: 7.5,
                   ),
                 ),
               ),
               pw.Text(
-                '${_formatDurationShort(zone.duration)}  ·  ${percent.toStringAsFixed(1)} %',
+                '${_formatDurationShort(zone.duration)} · ${percent.toStringAsFixed(1)}%',
                 style: pw.TextStyle(
                   color: _textSecondary,
-                  fontSize: 8,
+                  fontSize: 7,
                   fontWeight: pw.FontWeight.bold,
                 ),
               ),
             ],
           ),
-          pw.SizedBox(height: 3),
+          pw.SizedBox(height: 2),
           pw.ClipRRect(
-            horizontalRadius: 4,
-            verticalRadius: 4,
+            horizontalRadius: 3,
+            verticalRadius: 3,
             child: pw.Container(
-              height: 7,
+              height: 6,
               color: _border,
               child: pw.Row(
                 children: [
-                  pw.Expanded(
-                    flex: math.max(1, (percent * 10).round()),
-                    child: pw.Container(color: _zoneColor(zone.zoneId)),
-                  ),
-                  pw.Expanded(
-                    flex: math.max(1, ((100 - percent) * 10).round()),
-                    child: pw.SizedBox(),
-                  ),
+                  if (filled > 0)
+                    pw.Expanded(
+                      flex: filled,
+                      child: pw.Container(color: _zoneColor(zone.zoneId)),
+                    ),
+                  if (empty > 0)
+                    pw.Expanded(flex: empty, child: pw.SizedBox()),
                 ],
               ),
             ),
@@ -441,74 +506,84 @@ class SessionStatsReportPdfService {
   pw.Widget _buildTimelineChart(
     List<SessionStatsReportTimelineBucket> timeline,
   ) {
+    if (timeline.isEmpty) {
+      return _emptyHint('Aucune timeline distance');
+    }
+
     final double maxMeters = timeline
         .map((e) => e.totalMeters)
         .fold<double>(0, (prev, value) => math.max(prev, value));
     final double safeMax = maxMeters <= 0 ? 1 : maxMeters;
 
-    return pw.Column(
-      crossAxisAlignment: pw.CrossAxisAlignment.start,
-      children: [
-        pw.Wrap(
-          spacing: 10,
-          runSpacing: 4,
-          children: <pw.Widget>[
-            _buildLegendDot(label: 'Marche', color: _textSecondary),
-            _buildLegendDot(label: 'Jogging', color: _primary),
-            _buildLegendDot(label: 'Course', color: _secondary),
-            _buildLegendDot(label: 'Haute intensite', color: _warning),
-          ],
-        ),
-        pw.SizedBox(height: 8),
-        pw.Container(
-          width: double.infinity,
-          padding: const pw.EdgeInsets.all(10),
-          decoration: pw.BoxDecoration(
-            color: _surface,
-            borderRadius: pw.BorderRadius.circular(8),
-            border: pw.Border.all(color: _border),
+    return pw.Container(
+      width: double.infinity,
+      padding: const pw.EdgeInsets.all(8),
+      decoration: pw.BoxDecoration(
+        color: _white,
+        borderRadius: pw.BorderRadius.circular(8),
+        border: pw.Border.all(color: _border),
+      ),
+      child: pw.Column(
+        crossAxisAlignment: pw.CrossAxisAlignment.stretch,
+        children: [
+          pw.Wrap(
+            spacing: 8,
+            runSpacing: 2,
+            children: [
+              _buildLegendDot(label: 'Marche', color: _textSecondary),
+              _buildLegendDot(label: 'Jogging', color: _primary),
+              _buildLegendDot(label: 'Course', color: _secondary),
+              _buildLegendDot(label: 'Haute intensite', color: _warning),
+            ],
           ),
-          child: pw.Column(
-            children: timeline.map((bucket) {
-              return pw.Padding(
-                padding: const pw.EdgeInsets.only(bottom: 6),
-                child: pw.Row(
-                  children: [
-                    pw.SizedBox(
-                      width: 48,
-                      child: pw.Text(
-                        bucket.label,
-                        style: const pw.TextStyle(
-                          color: _textSecondary,
-                          fontSize: 7.5,
-                        ),
+          pw.SizedBox(height: 4),
+          pw.Expanded(
+            child: pw.Column(
+              children: [
+                for (final bucket in timeline)
+                  pw.Expanded(
+                    child: pw.Padding(
+                      padding: const pw.EdgeInsets.only(bottom: 2),
+                      child: pw.Row(
+                        children: [
+                          pw.SizedBox(
+                            width: 36,
+                            child: pw.Text(
+                              bucket.label,
+                              maxLines: 1,
+                              style: const pw.TextStyle(
+                                color: _textSecondary,
+                                fontSize: 6.5,
+                              ),
+                            ),
+                          ),
+                          pw.Expanded(
+                            child: _stackedBar(
+                              bucket: bucket,
+                              maxMeters: safeMax,
+                            ),
+                          ),
+                          pw.SizedBox(width: 4),
+                          pw.SizedBox(
+                            width: 34,
+                            child: pw.Text(
+                              '${bucket.totalMeters.toStringAsFixed(0)}m',
+                              textAlign: pw.TextAlign.right,
+                              style: const pw.TextStyle(
+                                color: _textPrimary,
+                                fontSize: 6.5,
+                              ),
+                            ),
+                          ),
+                        ],
                       ),
                     ),
-                    pw.Expanded(
-                      child: _stackedBar(
-                        bucket: bucket,
-                        maxMeters: safeMax,
-                      ),
-                    ),
-                    pw.SizedBox(width: 6),
-                    pw.SizedBox(
-                      width: 40,
-                      child: pw.Text(
-                        '${bucket.totalMeters.toStringAsFixed(0)} m',
-                        textAlign: pw.TextAlign.right,
-                        style: const pw.TextStyle(
-                          color: _textPrimary,
-                          fontSize: 7.5,
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              );
-            }).toList(),
+                  ),
+              ],
+            ),
           ),
-        ),
-      ],
+        ],
+      ),
     );
   }
 
@@ -524,16 +599,15 @@ class SessionStatsReportPdfService {
     ];
     final double widthFactor =
         (bucket.totalMeters / maxMeters).clamp(0.0, 1.0);
-
     final int filledFlex = math.max(1, (widthFactor * 1000).round());
     final int emptyFlex = math.max(1, ((1 - widthFactor) * 1000).round());
     final positiveSegments = segments.where((s) => s.$2 > 0).toList();
 
     return pw.ClipRRect(
-      horizontalRadius: 3,
-      verticalRadius: 3,
+      horizontalRadius: 2,
+      verticalRadius: 2,
       child: pw.Container(
-        height: 10,
+        height: 8,
         color: _border,
         child: pw.Row(
           children: [
@@ -543,8 +617,9 @@ class SessionStatsReportPdfService {
                 children: positiveSegments.isEmpty
                     ? <pw.Widget>[pw.Expanded(child: pw.SizedBox())]
                     : positiveSegments.map((s) {
-                        final double flex =
-                            (s.$2 / bucket.totalMeters).clamp(0.001, 1.0);
+                        final double flex = bucket.totalMeters <= 0
+                            ? 1.0
+                            : (s.$2 / bucket.totalMeters).clamp(0.001, 1.0);
                         return pw.Expanded(
                           flex: math.max(1, (flex * 1000).round()),
                           child: pw.Container(color: s.$1),
@@ -560,6 +635,10 @@ class SessionStatsReportPdfService {
   }
 
   pw.Widget _buildFieldZonesGrid(List<SessionStatsReportFieldZoneCell> zones) {
+    if (zones.isEmpty) {
+      return _emptyHint('Aucune zone de terrain');
+    }
+
     SessionStatsReportFieldZoneCell? byId(String id) {
       for (final z in zones) {
         if (z.zoneId == id) return z;
@@ -571,37 +650,31 @@ class SessionStatsReportPdfService {
       final z = byId(id);
       return pw.Expanded(
         child: pw.Container(
-          margin: const pw.EdgeInsets.all(3),
-          padding: const pw.EdgeInsets.all(8),
+          margin: const pw.EdgeInsets.all(2),
+          padding: const pw.EdgeInsets.symmetric(horizontal: 5, vertical: 4),
           decoration: pw.BoxDecoration(
-            color: _surface,
-            borderRadius: pw.BorderRadius.circular(8),
+            color: _white,
+            borderRadius: pw.BorderRadius.circular(5),
             border: pw.Border.all(color: _border),
           ),
           child: pw.Column(
             crossAxisAlignment: pw.CrossAxisAlignment.start,
+            mainAxisAlignment: pw.MainAxisAlignment.center,
             children: [
               pw.Text(
                 z?.label ?? id,
+                maxLines: 1,
                 style: const pw.TextStyle(
                   color: _textSecondary,
-                  fontSize: 8,
+                  fontSize: 6.5,
                 ),
               ),
-              pw.SizedBox(height: 3),
               pw.Text(
-                '${(z?.distanceKm ?? 0).toStringAsFixed(2)} km',
+                '${(z?.distanceKm ?? 0).toStringAsFixed(2)} km · ${(z?.occupancyPercent ?? 0).toStringAsFixed(0)}%',
                 style: pw.TextStyle(
                   color: _textPrimary,
-                  fontSize: 10,
+                  fontSize: 7.5,
                   fontWeight: pw.FontWeight.bold,
-                ),
-              ),
-              pw.Text(
-                '${(z?.occupancyPercent ?? 0).toStringAsFixed(1)} %',
-                style: const pw.TextStyle(
-                  color: _textSecondary,
-                  fontSize: 8,
                 ),
               ),
             ],
@@ -619,43 +692,47 @@ class SessionStatsReportPdfService {
     );
   }
 
-  pw.Widget _buildHeatmaps(List<SessionStatsReportHeatmapImage> heatmaps) {
-    return pw.Column(
-      children: heatmaps.map((heatmap) {
-        return pw.Padding(
-          padding: const pw.EdgeInsets.only(bottom: 10),
-          child: pw.Column(
-            crossAxisAlignment: pw.CrossAxisAlignment.start,
-            children: [
-              pw.Text(
-                heatmap.periodLabel,
-                style: pw.TextStyle(
-                  color: _textPrimary,
-                  fontSize: 10,
-                  fontWeight: pw.FontWeight.bold,
-                ),
+  pw.Widget _buildHeatmapsRow(List<SessionStatsReportHeatmapImage> heatmaps) {
+    if (heatmaps.isEmpty) {
+      return _emptyHint('Aucune heatmap disponible');
+    }
+
+    return pw.Row(
+      crossAxisAlignment: pw.CrossAxisAlignment.stretch,
+      children: [
+        for (var i = 0; i < heatmaps.length; i++) ...[
+          if (i > 0) pw.SizedBox(width: 6),
+          pw.Expanded(
+            child: pw.Container(
+              padding: const pw.EdgeInsets.all(4),
+              decoration: pw.BoxDecoration(
+                color: _white,
+                borderRadius: pw.BorderRadius.circular(6),
+                border: pw.Border.all(color: _border),
               ),
-              pw.SizedBox(height: 4),
-              pw.Container(
-                width: double.infinity,
-                height: 180,
-                decoration: pw.BoxDecoration(
-                  border: pw.Border.all(color: _border),
-                  borderRadius: pw.BorderRadius.circular(8),
-                  color: PdfColors.white,
-                ),
-                child: pw.Padding(
-                  padding: const pw.EdgeInsets.all(6),
-                  child: pw.Image(
-                    pw.MemoryImage(heatmap.pngBytes),
-                    fit: pw.BoxFit.contain,
+              child: pw.Column(
+                children: [
+                  pw.Text(
+                    heatmaps[i].periodLabel,
+                    style: pw.TextStyle(
+                      color: _textPrimary,
+                      fontSize: 7.5,
+                      fontWeight: pw.FontWeight.bold,
+                    ),
                   ),
-                ),
+                  pw.SizedBox(height: 2),
+                  pw.Expanded(
+                    child: pw.Image(
+                      pw.MemoryImage(heatmaps[i].pngBytes),
+                      fit: pw.BoxFit.contain,
+                    ),
+                  ),
+                ],
               ),
-            ],
+            ),
           ),
-        );
-      }).toList(),
+        ],
+      ],
     );
   }
 
@@ -664,16 +741,19 @@ class SessionStatsReportPdfService {
       title,
       style: pw.TextStyle(
         color: _textPrimary,
-        fontSize: 12,
+        fontSize: 9.5,
         fontWeight: pw.FontWeight.bold,
       ),
     );
   }
 
   pw.Widget _emptyHint(String text) {
-    return pw.Text(
-      text,
-      style: const pw.TextStyle(color: _textSecondary, fontSize: 9),
+    return pw.Container(
+      alignment: pw.Alignment.centerLeft,
+      child: pw.Text(
+        text,
+        style: const pw.TextStyle(color: _textSecondary, fontSize: 8),
+      ),
     );
   }
 
@@ -684,10 +764,10 @@ class SessionStatsReportPdfService {
       children: [
         pw.Container(
           width: double.infinity,
-          padding: const pw.EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+          padding: const pw.EdgeInsets.symmetric(horizontal: 12, vertical: 10),
           decoration: pw.BoxDecoration(
             color: _primary,
-            borderRadius: pw.BorderRadius.circular(10),
+            borderRadius: pw.BorderRadius.circular(8),
           ),
           child: pw.Row(
             mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
@@ -698,65 +778,47 @@ class SessionStatsReportPdfService {
                   pw.Text(
                     'GRINTA',
                     style: pw.TextStyle(
-                      color: PdfColors.white,
-                      fontSize: 18,
+                      color: _white,
+                      fontSize: 16,
                       fontWeight: pw.FontWeight.bold,
-                      letterSpacing: 1.2,
+                      letterSpacing: 1.1,
                     ),
                   ),
-                  pw.SizedBox(height: 4),
                   pw.Text(
                     'Rapport $eventKind - statistiques tracker',
-                    style: const pw.TextStyle(
-                      color: PdfColors.white,
-                      fontSize: 11,
-                    ),
+                    style: const pw.TextStyle(color: _white, fontSize: 10),
                   ),
                 ],
               ),
               pw.Text(
                 generatedLabel,
-                style: const pw.TextStyle(
-                  color: PdfColors.white,
-                  fontSize: 10,
-                ),
+                style: const pw.TextStyle(color: _white, fontSize: 9),
               ),
             ],
           ),
         ),
-        pw.SizedBox(height: 12),
+        pw.SizedBox(height: 8),
         pw.Text(
           report.title,
           style: pw.TextStyle(
             color: _textPrimary,
-            fontSize: 16,
+            fontSize: 13,
             fontWeight: pw.FontWeight.bold,
           ),
         ),
-        if ((report.subtitle ?? '').trim().isNotEmpty)
-          pw.Padding(
-            padding: const pw.EdgeInsets.only(top: 2),
-            child: pw.Text(
-              report.subtitle!.trim(),
-              style: const pw.TextStyle(color: _textSecondary, fontSize: 11),
-            ),
-          ),
         if ((report.dateLabel ?? '').trim().isNotEmpty ||
             (report.timeLabel ?? '').trim().isNotEmpty ||
             (report.teamName ?? '').trim().isNotEmpty)
-          pw.Padding(
-            padding: const pw.EdgeInsets.only(top: 4),
-            child: pw.Text(
-              [
-                if ((report.dateLabel ?? '').trim().isNotEmpty)
-                  report.dateLabel!.trim(),
-                if ((report.timeLabel ?? '').trim().isNotEmpty)
-                  report.timeLabel!.trim(),
-                if ((report.teamName ?? '').trim().isNotEmpty)
-                  report.teamName!.trim(),
-              ].join(' · '),
-              style: const pw.TextStyle(color: _textSecondary, fontSize: 10),
-            ),
+          pw.Text(
+            [
+              if ((report.dateLabel ?? '').trim().isNotEmpty)
+                report.dateLabel!.trim(),
+              if ((report.timeLabel ?? '').trim().isNotEmpty)
+                report.timeLabel!.trim(),
+              if ((report.teamName ?? '').trim().isNotEmpty)
+                report.teamName!.trim(),
+            ].join(' · '),
+            style: const pw.TextStyle(color: _textSecondary, fontSize: 9),
           ),
       ],
     );
@@ -775,45 +837,45 @@ class SessionStatsReportPdfService {
       ('Duree', '$durationMinutes min'),
     ];
 
-    return pw.Wrap(
-      spacing: 8,
-      runSpacing: 8,
-      children: chips
-          .map(
-            (chip) => pw.Container(
+    return pw.Row(
+      children: [
+        for (var i = 0; i < chips.length; i++) ...[
+          if (i > 0) pw.SizedBox(width: 8),
+          pw.Expanded(
+            child: pw.Container(
               padding: const pw.EdgeInsets.symmetric(
-                horizontal: 10,
-                vertical: 8,
+                horizontal: 8,
+                vertical: 6,
               ),
               decoration: pw.BoxDecoration(
                 color: _surface,
                 border: pw.Border.all(color: _border),
-                borderRadius: pw.BorderRadius.circular(8),
+                borderRadius: pw.BorderRadius.circular(6),
               ),
-              child: pw.Column(
-                crossAxisAlignment: pw.CrossAxisAlignment.start,
+              child: pw.Row(
+                mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
                 children: [
                   pw.Text(
-                    chip.$1,
+                    chips[i].$1,
                     style: const pw.TextStyle(
                       color: _textSecondary,
                       fontSize: 8,
                     ),
                   ),
-                  pw.SizedBox(height: 2),
                   pw.Text(
-                    chip.$2,
+                    chips[i].$2,
                     style: pw.TextStyle(
                       color: _textPrimary,
-                      fontSize: 11,
+                      fontSize: 10,
                       fontWeight: pw.FontWeight.bold,
                     ),
                   ),
                 ],
               ),
             ),
-          )
-          .toList(),
+          ),
+        ],
+      ],
     );
   }
 
@@ -821,35 +883,35 @@ class SessionStatsReportPdfService {
     final metrics = kSessionStatsReportMetrics;
 
     return pw.Table(
-      border: pw.TableBorder.all(color: _border, width: 0.5),
+      border: pw.TableBorder.all(color: _border, width: 0.6),
+      defaultVerticalAlignment: pw.TableCellVerticalAlignment.middle,
       columnWidths: <int, pw.TableColumnWidth>{
-        0: const pw.FlexColumnWidth(2.2),
-        1: const pw.FlexColumnWidth(0.9),
+        0: const pw.FlexColumnWidth(2.4),
+        1: const pw.FixedColumnWidth(42),
         for (var i = 0; i < metrics.length; i++)
-          i + 2: const pw.FlexColumnWidth(1.25),
+          i + 2: const pw.FlexColumnWidth(1.0),
       },
       children: <pw.TableRow>[
         pw.TableRow(
           decoration: const pw.BoxDecoration(color: _primary),
           children: <pw.Widget>[
             _headerCell('Joueur'),
-            _headerCell('Tracker'),
-            ...metrics.map(
-              (m) => _headerCell('${m.title}\n(${m.unit})', alignRight: true),
-            ),
+            _headerCell('Tr.'),
+            ...metrics.map((m) => _headerCell(m.title, alignCenter: true)),
           ],
         ),
         for (var rowIndex = 0; rowIndex < report.playerRows.length; rowIndex++)
           pw.TableRow(
-            decoration: rowIndex.isOdd
-                ? const pw.BoxDecoration(color: _surface)
-                : null,
+            decoration: pw.BoxDecoration(
+              color: rowIndex.isOdd ? _surface : _white,
+            ),
             children: <pw.Widget>[
               _textCell(report.playerRows[rowIndex].displayName),
               _textCell(
                 report.playerRows[rowIndex].trackerId.isEmpty
                     ? '-'
                     : report.playerRows[rowIndex].trackerId,
+                alignCenter: true,
               ),
               ...metrics.map(
                 (metric) => _metricCell(
@@ -865,50 +927,58 @@ class SessionStatsReportPdfService {
     );
   }
 
-  pw.Widget _headerCell(String text, {bool alignRight = false}) {
+  pw.Widget _headerCell(String text, {bool alignCenter = false}) {
     return pw.Padding(
-      padding: const pw.EdgeInsets.symmetric(horizontal: 6, vertical: 8),
+      padding: const pw.EdgeInsets.symmetric(horizontal: 4, vertical: 6),
       child: pw.Text(
         text,
-        textAlign: alignRight ? pw.TextAlign.right : pw.TextAlign.left,
+        textAlign: alignCenter ? pw.TextAlign.center : pw.TextAlign.left,
         style: pw.TextStyle(
-          color: PdfColors.white,
+          color: _white,
           fontWeight: pw.FontWeight.bold,
-          fontSize: 7.5,
+          fontSize: 8,
         ),
       ),
     );
   }
 
-  pw.Widget _textCell(String text) {
+  pw.Widget _textCell(String text, {bool alignCenter = false}) {
     return pw.Padding(
-      padding: const pw.EdgeInsets.symmetric(horizontal: 6, vertical: 7),
+      padding: const pw.EdgeInsets.symmetric(horizontal: 4, vertical: 5),
       child: pw.Text(
         text,
-        style: const pw.TextStyle(fontSize: 8, color: _textPrimary),
+        maxLines: 1,
+        textAlign: alignCenter ? pw.TextAlign.center : pw.TextAlign.left,
+        style: pw.TextStyle(
+          fontSize: 8.5,
+          color: _textPrimary,
+          fontWeight: pw.FontWeight.bold,
+        ),
       ),
     );
   }
 
+  /// Value on top, z-score below — avoids horizontal overflow that hid numbers.
   pw.Widget _metricCell({
     required String valueLabel,
     required double? zScore,
   }) {
     return pw.Padding(
-      padding: const pw.EdgeInsets.symmetric(horizontal: 4, vertical: 5),
-      child: pw.Row(
-        mainAxisAlignment: pw.MainAxisAlignment.end,
+      padding: const pw.EdgeInsets.symmetric(horizontal: 3, vertical: 4),
+      child: pw.Column(
+        mainAxisSize: pw.MainAxisSize.min,
         children: [
           pw.Text(
             valueLabel,
+            textAlign: pw.TextAlign.center,
             style: pw.TextStyle(
-              fontSize: 8,
+              fontSize: 9,
               color: _textPrimary,
               fontWeight: pw.FontWeight.bold,
             ),
           ),
           if (zScore != null) ...[
-            pw.SizedBox(width: 3),
+            pw.SizedBox(height: 2),
             _zScoreBadge(zScore),
           ],
         ],
@@ -922,17 +992,19 @@ class SessionStatsReportPdfService {
     final label = '$sign${zScore.toStringAsFixed(2)}';
 
     return pw.Container(
-      padding: const pw.EdgeInsets.symmetric(horizontal: 4, vertical: 2),
+      padding: const pw.EdgeInsets.symmetric(horizontal: 4, vertical: 1),
       decoration: pw.BoxDecoration(
-        color: PdfColor(color.red, color.green, color.blue, 0.12),
+        color: color == _success
+            ? const PdfColor.fromInt(0xFFE8F8F0)
+            : color == _danger
+                ? const PdfColor.fromInt(0xFFFDECEA)
+                : _surface,
         borderRadius: pw.BorderRadius.circular(999),
-        border: pw.Border.all(
-          color: PdfColor(color.red, color.green, color.blue, 0.35),
-          width: 0.6,
-        ),
+        border: pw.Border.all(color: color, width: 0.7),
       ),
       child: pw.Text(
         label,
+        textAlign: pw.TextAlign.center,
         style: pw.TextStyle(
           color: color,
           fontSize: 6.5,
@@ -951,11 +1023,37 @@ class SessionStatsReportPdfService {
   pw.Widget _buildFooter(pw.Context context) {
     return pw.Container(
       alignment: pw.Alignment.centerRight,
-      margin: const pw.EdgeInsets.only(top: 8),
       child: pw.Text(
         'Grinta Performance - page ${context.pageNumber}/${context.pagesCount}',
-        style: const pw.TextStyle(color: _textSecondary, fontSize: 8),
+        style: const pw.TextStyle(color: _textSecondary, fontSize: 7.5),
       ),
+    );
+  }
+
+  static pw.Widget _buildLegendDot({
+    required String label,
+    required PdfColor color,
+  }) {
+    return pw.Row(
+      mainAxisSize: pw.MainAxisSize.min,
+      children: [
+        pw.Container(
+          width: 7,
+          height: 7,
+          decoration: pw.BoxDecoration(
+            color: color,
+            borderRadius: pw.BorderRadius.circular(999),
+          ),
+        ),
+        pw.SizedBox(width: 3),
+        pw.Text(
+          label,
+          style: const pw.TextStyle(
+            color: _textSecondary,
+            fontSize: 7,
+          ),
+        ),
+      ],
     );
   }
 
@@ -983,32 +1081,5 @@ class SessionStatsReportPdfService {
       return '${minutes}min ${seconds.toString().padLeft(2, '0')}s';
     }
     return '${seconds}s';
-  }
-
-  static pw.Widget _buildLegendDot({
-    required String label,
-    required PdfColor color,
-  }) {
-    return pw.Row(
-      mainAxisSize: pw.MainAxisSize.min,
-      children: [
-        pw.Container(
-          width: 8,
-          height: 8,
-          decoration: pw.BoxDecoration(
-            color: color,
-            borderRadius: pw.BorderRadius.circular(999),
-          ),
-        ),
-        pw.SizedBox(width: 4),
-        pw.Text(
-          label,
-          style: const pw.TextStyle(
-            color: _textSecondary,
-            fontSize: 8,
-          ),
-        ),
-      ],
-    );
   }
 }
