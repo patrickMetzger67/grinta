@@ -1,6 +1,7 @@
 const { onDocumentCreated } = require('firebase-functions/v2/firestore');
 const { defineSecret } = require('firebase-functions/params');
 const { getFirestore, FieldValue } = require('firebase-admin/firestore');
+const { getStorage } = require('firebase-admin/storage');
 
 const sendgridApiKey = defineSecret('SENDGRID_API_KEY');
 
@@ -11,6 +12,7 @@ const DEFAULT_CLUB_ID = '0';
 const DEFAULT_FROM_EMAIL = 'noreply@grinta.io';
 const DEFAULT_REPLY_TO_EMAIL = 'contact@grinta.io';
 const SENDGRID_API_URL = 'https://api.sendgrid.com/v3/mail/send';
+const MAX_STORAGE_ATTACHMENT_BYTES = 20 * 1024 * 1024;
 
 function readNonEmptyString(value) {
   const trimmed = (value ?? '').toString().trim();
@@ -83,6 +85,55 @@ function normalizeAttachments(rawAttachments) {
   return attachments;
 }
 
+/**
+ * Loads a PDF (or other file) from Firebase Storage using the Admin SDK
+ * so large session reports never need base64 in the Firestore mail doc.
+ */
+async function loadStorageAttachment(storagePath, filename) {
+  const safePath = readNonEmptyString(storagePath);
+  if (!safePath) {
+    return null;
+  }
+
+  const bucket = getStorage().bucket();
+  const file = bucket.file(safePath);
+  const [exists] = await file.exists();
+  if (!exists) {
+    console.warn('sendMailOnCreate: pdfStoragePath missing in Storage', {
+      storagePath: safePath,
+      bucket: bucket.name,
+    });
+    return null;
+  }
+
+  const [metadata] = await file.getMetadata();
+  const size = Number(metadata?.size ?? 0);
+  if (size > MAX_STORAGE_ATTACHMENT_BYTES) {
+    console.warn('sendMailOnCreate: pdfStoragePath too large', {
+      storagePath: safePath,
+      size,
+    });
+    return null;
+  }
+
+  const [buffer] = await file.download();
+  if (!buffer || buffer.length === 0) {
+    return null;
+  }
+
+  const resolvedName =
+    readNonEmptyString(filename) ||
+    safePath.split('/').pop() ||
+    'rapport.pdf';
+
+  return {
+    content: buffer.toString('base64'),
+    filename: resolvedName,
+    type: readNonEmptyString(metadata?.contentType) || 'application/pdf',
+    disposition: 'attachment',
+  };
+}
+
 async function sendViaSendGrid(
   apiKey,
   { to, from, replyTo, subject, text, html, attachments = [] },
@@ -96,6 +147,12 @@ async function sendViaSendGrid(
       { type: 'text/plain', value: text },
       { type: 'text/html', value: html },
     ],
+    // Firebase Storage download URLs contain query tokens; SendGrid click
+    // tracking rewrites them and often yields "Not Found" in the mailbox.
+    tracking_settings: {
+      click_tracking: { enable: false, enable_text: false },
+      open_tracking: { enable: false },
+    },
   };
 
   if (attachments.length > 0) {
@@ -145,7 +202,9 @@ function createSendMailOnCreate() {
       document: `${MAIL_COLLECTION}/{mailId}`,
       region: REGION,
       secrets: [sendgridApiKey],
-      timeoutSeconds: 60,
+      // Storage download + large SendGrid attachment needs headroom.
+      timeoutSeconds: 120,
+      memory: '512MiB',
     },
     async (event) => {
       const mailRef = event.data?.ref;
@@ -218,6 +277,32 @@ function createSendMailOnCreate() {
         });
       }
 
+      let storageAttachmentLoaded = false;
+      const pdfStoragePath = readNonEmptyString(mailData.pdfStoragePath);
+      if (pdfStoragePath && attachments.length === 0) {
+        try {
+          const storageAttachment = await loadStorageAttachment(
+            pdfStoragePath,
+            mailData.pdfFilename,
+          );
+          if (storageAttachment) {
+            attachments.push(storageAttachment);
+            storageAttachmentLoaded = true;
+          } else {
+            console.warn('sendMailOnCreate: could not load pdfStoragePath', {
+              mailId: mailRef.id,
+              pdfStoragePath,
+            });
+          }
+        } catch (error) {
+          console.error('sendMailOnCreate: pdfStoragePath load failed', {
+            mailId: mailRef.id,
+            pdfStoragePath,
+            error: error?.message ?? String(error),
+          });
+        }
+      }
+
       try {
         const info = await sendViaSendGrid(apiKey, {
           to,
@@ -235,6 +320,8 @@ function createSendMailOnCreate() {
             info: {
               ...info,
               attachmentCount: attachments.length,
+              storageAttachmentLoaded,
+              pdfStoragePath: pdfStoragePath ?? null,
             },
           }),
         );
@@ -245,6 +332,7 @@ function createSendMailOnCreate() {
           clubId,
           from: fromEmail,
           attachmentCount: attachments.length,
+          storageAttachmentLoaded,
         });
       } catch (error) {
         console.error('sendMailOnCreate SendGrid error', error);
@@ -262,4 +350,6 @@ function createSendMailOnCreate() {
 module.exports = {
   createSendMailOnCreate,
   sendgridApiKey,
+  loadStorageAttachment,
+  normalizeAttachments,
 };

@@ -212,7 +212,7 @@ Same charter as invitations: branded HTML from shared colors/logo (`InvitationEm
 | [`SessionReportSenderService`](../lib/services/session_report_sender_service.dart) | Orchestrates PDF + queue mail with attachment |
 | UI | Stats table PDF icon → email dialog; Ask Gio `send_report` action |
 
-**Mail document with PDF attachment:**
+**Mail document for a session PDF report:**
 
 ```json
 {
@@ -220,39 +220,32 @@ Same charter as invitations: branded HTML from shared colors/logo (`InvitationEm
   "from": "noreply@grinta.io",
   "replyTo": "contact@grinta.io",
   "clubId": "0",
+  "pdfStoragePath": "sessionReports/{uid}/….pdf",
+  "pdfFilename": "grinta_training_….pdf",
+  "pdfDownloadUrl": "https://firebasestorage.googleapis.com/…",
   "message": {
     "subject": "Grinta Performance — Rapport entraînement : …",
     "text": "…",
     "html": "<!DOCTYPE html>…"
-  },
-  "attachments": [
-    {
-      "content": "<base64 PDF>",
-      "filename": "grinta_training_….pdf",
-      "type": "application/pdf",
-      "disposition": "attachment"
-    }
-  ]
+  }
 }
 ```
 
+`sendMailOnCreate` downloads `pdfStoragePath` with the Admin SDK and attaches it to SendGrid (no large base64 in Firestore). Click tracking is disabled so Storage download URLs are not rewritten to a broken “Not Found” link.
+
 Ask Gio examples: « envoie-moi le rapport de la séance d'hier », « send today's match report to coach@club.fr ».
 
-**Important — pièce jointe absente dans la boîte mail :**
+**Important — pièce jointe / lien cassé :**
 
-1. Déploie la Cloud Function à jour (sinon l’ancien processor ignore `attachments`) :
+1. Déploie **fonction + rules** (obligatoire pour l’attachement Storage) :
    ```bash
    firebase deploy --only functions:sendMailOnCreate,firestore:rules,storage
    ```
 2. Vérifie le doc Firestore `mail/{id}` :
-   - champ `attachments` présent (base64) ?
-   - `delivery.info.attachmentCount` > 0 après envoi ?
-3. L’app upload aussi le PDF dans Storage (`sessionReports/{uid}/…`) et met un bouton **Télécharger le PDF** dans le HTML — ce lien fonctionne même sans pièce jointe SendGrid. Les rapports multi-joueurs (heatmaps) dépassent souvent la limite Firestore (~700 Ko) : dans ce cas seul le lien Storage est envoyé (pas de base64 dans `mail`).
-4. Déploie les règles Storage si l’upload échoue avec `unauthorized` :
-   ```bash
-   firebase deploy --only storage
-   ```
-5. Si l’extension Firebase **Trigger Email** est encore installée, désinstalle-la pour éviter qu’elle envoie le mail sans pièces jointes.
+   - `pdfStoragePath` présent ?
+   - `delivery.info.attachmentCount` > 0 et `storageAttachmentLoaded: true` ?
+3. Si le lien du mail renvoie « Not Found », c’était souvent le click-tracking SendGrid : la CF le désactive désormais.
+4. Si l’extension Firebase **Trigger Email** est encore installée, désinstalle-la pour éviter qu’elle envoie le mail sans pièces jointes.
 
 ## 7. Multi-club / white-label
 

@@ -7,6 +7,8 @@ import 'package:grinta/model/mail_attachment.dart';
 ///
 /// Used for member invitations and session/match PDF reports. Optional
 /// [attachments] are base64 payloads consumed by `sendMailOnCreate`.
+/// Large PDFs should use [pdfStoragePath] instead so the Cloud Function
+/// loads the file from Storage and attaches it server-side.
 class InvitationEmailService {
   InvitationEmailService({FirebaseFirestore? firestore})
       : _firestore = firestore ?? FirebaseFirestore.instance;
@@ -28,6 +30,9 @@ class InvitationEmailService {
     String? replyToEmail,
     String? clubId,
     List<MailAttachment> attachments = const <MailAttachment>[],
+    String? pdfStoragePath,
+    String? pdfFilename,
+    String? pdfDownloadUrl,
   }) async {
     final String to = toEmail.trim();
     if (to.isEmpty) {
@@ -54,6 +59,10 @@ class InvitationEmailService {
         ? clubId!.trim()
         : InvitationConfig.grintaInvitationClubId;
 
+    final String? storagePath = pdfStoragePath?.trim();
+    final String? storageFilename = pdfFilename?.trim();
+    final String? downloadUrl = pdfDownloadUrl?.trim();
+
     final Map<String, dynamic> payload = {
       'to': to,
       'from': resolvedFrom,
@@ -66,13 +75,21 @@ class InvitationEmailService {
       },
       if (attachments.isNotEmpty)
         'attachments': attachments.map((a) => a.toMap()).toList(),
+      if (storagePath != null && storagePath.isNotEmpty)
+        'pdfStoragePath': storagePath,
+      if (storageFilename != null && storageFilename.isNotEmpty)
+        'pdfFilename': storageFilename,
+      if (downloadUrl != null && downloadUrl.isNotEmpty)
+        'pdfDownloadUrl': downloadUrl,
     };
 
     try {
       debugPrint(
         'InvitationEmailService.send to=$to subject=$subject '
         'from=$resolvedFrom replyTo=$resolvedReplyTo clubId=$resolvedClubId '
-        'attachments=${attachments.length} collection=$collectionName',
+        'attachments=${attachments.length} '
+        'pdfStoragePath=${storagePath ?? '-'} '
+        'collection=$collectionName',
       );
       await _firestore.collection(collectionName).add(payload);
       return null;

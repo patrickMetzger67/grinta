@@ -81,7 +81,9 @@ Future<void> showSessionReportEmailDialog({
                 ? l10n.sessionReportEmailNoStats
                 : error == 'invalidEmail' || error == 'emptyEmail'
                     ? l10n.sessionReportEmailInvalid
-                    : l10n.sessionReportEmailFailed;
+                    : error == 'uploadFailed'
+                        ? l10n.sessionReportEmailFailed
+                        : l10n.sessionReportEmailFailed;
 
             setState(() {
               sending = false;

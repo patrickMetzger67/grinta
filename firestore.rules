@@ -99,6 +99,18 @@ service cloud.firestore {
           || request.resource.data.replyTo is string)
         && (!('clubId' in request.resource.data)
           || request.resource.data.clubId is string)
+        && (!('pdfStoragePath' in request.resource.data)
+          || (request.resource.data.pdfStoragePath is string
+            && request.resource.data.pdfStoragePath.size() > 0
+            && request.resource.data.pdfStoragePath.size() < 500))
+        && (!('pdfFilename' in request.resource.data)
+          || (request.resource.data.pdfFilename is string
+            && request.resource.data.pdfFilename.size() > 0
+            && request.resource.data.pdfFilename.size() < 200))
+        && (!('pdfDownloadUrl' in request.resource.data)
+          || (request.resource.data.pdfDownloadUrl is string
+            && request.resource.data.pdfDownloadUrl.size() > 0
+            && request.resource.data.pdfDownloadUrl.size() < 2000))
         && isValidMailAttachments()
         && !('delivery' in request.resource.data);
     }

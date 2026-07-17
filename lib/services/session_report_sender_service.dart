@@ -1,9 +1,10 @@
+import 'dart:typed_data';
+
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter/foundation.dart';
 import 'package:grinta/config/invitation_config.dart';
 import 'package:grinta/l10n/app_localizations.dart';
-import 'package:grinta/model/mail_attachment.dart';
 import 'package:grinta/model/match.dart' as grinta_match;
 import 'package:grinta/model/session_stats_report.dart';
 import 'package:grinta/model/tracker/team_workload_summary.dart';
@@ -43,12 +44,24 @@ class SessionReportSendResult {
   }
 }
 
+class _UploadedPdf {
+  const _UploadedPdf({
+    required this.storagePath,
+    required this.downloadUrl,
+    required this.filename,
+  });
+
+  final String storagePath;
+  final String downloadUrl;
+  final String filename;
+}
+
 /// Builds a stats PDF and queues a branded report email (invitation charter).
 ///
 /// Flow:
 /// 1. Build report + PDF
-/// 2. Upload PDF to Storage (`sessionReports/…`) for a public download link
-/// 3. Queue mail via [InvitationEmailService] with attachment + link in HTML
+/// 2. Upload PDF to Storage (`sessionReports/{uid}/…`)
+/// 3. Queue mail with `pdfStoragePath` (Cloud Function attaches from Storage)
 /// 4. Cloud Function `sendMailOnCreate` delivers via SendGrid
 class SessionReportSenderService {
   SessionReportSenderService({
@@ -122,39 +135,14 @@ class SessionReportSenderService {
         localeCode: localeCode,
       );
 
-      final String? pdfDownloadUrl = await _uploadPdf(
+      final _UploadedPdf? uploaded = await _uploadPdf(
         bytes: pdfBytes,
         filename: report.suggestedFileName,
         eventId: report.eventId,
       );
 
-      // Firestore mail docs must stay under ~1 MiB; large multi-player PDFs
-      // (heatmaps) are delivered via Storage download link only.
-      final bool canAttachInline =
-          pdfBytes.lengthInBytes <= InvitationEmailService.maxAttachmentBytes;
-      final List<MailAttachment> attachments = canAttachInline
-          ? <MailAttachment>[
-              MailAttachment.fromBytes(
-                filename: report.suggestedFileName,
-                bytes: pdfBytes,
-              ),
-            ]
-          : const <MailAttachment>[];
-
-      if (!canAttachInline &&
-          (pdfDownloadUrl == null || pdfDownloadUrl.trim().isEmpty)) {
-        debugPrint(
-          'SessionReportSenderService: PDF too large for mail attachment '
-          '(${pdfBytes.lengthInBytes} bytes) and Storage upload unavailable',
-        );
-        return SessionReportSendResult.failed('attachmentTooLarge');
-      }
-
-      if (!canAttachInline) {
-        debugPrint(
-          'SessionReportSenderService: skipping inline PDF attachment '
-          '(${pdfBytes.lengthInBytes} bytes); using Storage link',
-        );
+      if (uploaded == null) {
+        return SessionReportSendResult.failed('uploadFailed');
       }
 
       final config = await InvitationConfig.resolve();
@@ -162,16 +150,20 @@ class SessionReportSenderService {
         l10n: l10n,
         config: config,
         report: report,
-        pdfDownloadUrl: pdfDownloadUrl,
+        pdfDownloadUrl: uploaded.downloadUrl,
       );
 
+      // Never put large base64 PDFs in Firestore. The Cloud Function loads
+      // [pdfStoragePath] from Storage and attaches it for SendGrid.
       final String? sendError = await _emailService.send(
         toEmail: to,
         subject: emailContent.subject,
         text: emailContent.text,
         html: emailContent.html,
         clubId: clubId,
-        attachments: attachments,
+        pdfStoragePath: uploaded.storagePath,
+        pdfFilename: uploaded.filename,
+        pdfDownloadUrl: uploaded.downloadUrl,
       );
 
       if (sendError != null) {
@@ -180,7 +172,7 @@ class SessionReportSenderService {
 
       return SessionReportSendResult.ok(
         report,
-        pdfDownloadUrl: pdfDownloadUrl,
+        pdfDownloadUrl: uploaded.downloadUrl,
       );
     } catch (error, stackTrace) {
       debugPrint('SessionReportSenderService.sendReport failed: $error\n$stackTrace');
@@ -188,7 +180,7 @@ class SessionReportSenderService {
     }
   }
 
-  Future<String?> _uploadPdf({
+  Future<_UploadedPdf?> _uploadPdf({
     required Uint8List bytes,
     required String filename,
     required String eventId,
@@ -218,8 +210,15 @@ class SessionReportSenderService {
         ),
       );
       final url = await ref.getDownloadURL();
-      debugPrint('SessionReportSenderService: uploaded PDF $path');
-      return url;
+      debugPrint(
+        'SessionReportSenderService: uploaded PDF path=$path '
+        'bytes=${bytes.lengthInBytes} url=$url',
+      );
+      return _UploadedPdf(
+        storagePath: path,
+        downloadUrl: url,
+        filename: safeFilename,
+      );
     } catch (error, stackTrace) {
       debugPrint(
         'SessionReportSenderService: PDF upload failed: $error\n$stackTrace',
