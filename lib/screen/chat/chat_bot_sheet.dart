@@ -12,6 +12,7 @@ import 'package:grinta/services/chat_navigation_service.dart';
 import 'package:grinta/services/gemini_chat_service.dart';
 import 'package:grinta/services/opponent_typical_team_chat_context.dart';
 import 'package:grinta/services/player_activity_report_chat_context.dart';
+import 'package:grinta/services/session_report_action_resolver.dart';
 import 'package:grinta/services/session_report_chat_context.dart';
 import 'package:grinta/services/session_report_sender_service.dart';
 import 'package:grinta/util/app_theme.dart';
@@ -373,14 +374,35 @@ class _AskDiegoSheetState extends State<AskDiegoSheet> {
         ? answerText
         : context.l10n.askDiegoEmptyResponse;
 
-    if (sendReportAction != null) {
+    // Fallback when Cloud Function prompt is outdated and Gemini refuses:
+    // still send the PDF if sessionReports context has a matching session.
+    final inferredSendReport = sendReportAction ??
+        SessionReportActionResolver.resolve(
+          appContext: appContext,
+          userMessage: text,
+        );
+
+    if (inferredSendReport != null) {
       final reportFeedback = await _handleSendReportAction(
-        action: sendReportAction,
+        action: inferredSendReport,
         appContext: appContext,
         localeCode: localeCode,
       );
       if (reportFeedback != null && reportFeedback.isNotEmpty) {
-        displayText = '$displayText\n\n$reportFeedback';
+        final looksLikeRefusal = _looksLikePdfReportRefusal(displayText);
+        displayText = looksLikeRefusal
+            ? reportFeedback
+            : '$displayText\n\n$reportFeedback';
+      } else if (_looksLikePdfReportRefusal(displayText)) {
+        final reports = appContext['sessionReports'];
+        final reason = reports is Map
+            ? reports['dataUnavailableReason']?.toString()
+            : null;
+        if (reason == 'no_sessions_in_period') {
+          displayText = context.l10n.sessionReportEmailNoStats;
+        } else if (reason == 'no_stats_for_sessions') {
+          displayText = context.l10n.sessionReportEmailNoStats;
+        }
       }
     }
 
@@ -494,6 +516,17 @@ class _AskDiegoSheetState extends State<AskDiegoSheet> {
     final value = raw?.trim() ?? '';
     if (value.isEmpty) return null;
     return DateTime.tryParse(value);
+  }
+
+  bool _looksLikePdfReportRefusal(String text) {
+    final normalized = text.toLowerCase();
+    return normalized.contains('ne peux pas') ||
+        normalized.contains('je ne peux pas') ||
+        normalized.contains("can't") ||
+        normalized.contains('cannot') ||
+        normalized.contains('pas capable') ||
+        (normalized.contains('désolé') &&
+            (normalized.contains('pdf') || normalized.contains('rapport')));
   }
 
   String? _navigationLabelForRoute(BuildContext context, String? route) {

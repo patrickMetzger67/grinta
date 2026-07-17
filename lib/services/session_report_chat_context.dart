@@ -24,9 +24,10 @@ class SessionReportChatContext {
   static const Duration _computeTimeout = Duration(seconds: 25);
 
   static final RegExp _reportIntentPattern = RegExp(
-    r'(?:rapport|report|pdf).{0,40}(?:seance|séance|session|entrainement|entraînement|training|match)|'
-    r'(?:envoie|envoyer|send|manda|envia|schicken).{0,40}(?:rapport|report|pdf)|'
-    r'(?:rapport|report).{0,40}(?:hier|yesterday|aujourd|today|avant[\s-]hier)',
+    r'(?:rapport|report|pdf).{0,80}(?:seance|séance|session|entrainement|entraînement|training|match)|'
+    r'(?:envoie|envoyer|envoyerai|send|manda|envia|schicken).{0,80}(?:rapport|report|pdf)|'
+    r"(?:m[\s']?envoyer|me\s+envoyer).{0,80}(?:pdf|rapport|report)|"
+    r'(?:rapport|report).{0,80}(?:hier|yesterday|aujourd|today|avant[\s-]hier)',
     caseSensitive: false,
   );
 
@@ -149,6 +150,11 @@ class SessionReportChatContext {
 
     final dateFormat = DateFormat('yyyy-MM-dd', localeCode);
     final timeFormat = DateFormat('HH:mm', localeCode);
+    final teamNames = <String, String>{
+      for (final team in teams)
+        if ((team.keyTeam ?? '').trim().isNotEmpty)
+          team.keyTeam!.trim(): (team.name ?? '').trim(),
+    };
     final sessions = <Map<String, dynamic>>[];
 
     for (final item in items) {
@@ -166,11 +172,17 @@ class SessionReportChatContext {
       final hasStats =
           summary != null && summary.playerScores.isNotEmpty;
 
+      final teamId = (item.match?.teamID ?? item.training?.teamId ?? '')
+          .trim();
+      final teamName = teamId.isNotEmpty ? teamNames[teamId] : null;
+
       sessions.add(<String, dynamic>{
         'eventId': eventId,
         'type': isMatch ? 'match' : 'training',
         'title': item.title,
         if ((item.subtitle ?? '').trim().isNotEmpty) 'subtitle': item.subtitle,
+        if (teamId.isNotEmpty) 'teamId': teamId,
+        if (teamName != null && teamName.isNotEmpty) 'teamName': teamName,
         'date': dateFormat.format(item.startAt),
         'time': timeFormat.format(item.startAt),
         'hasStats': hasStats,

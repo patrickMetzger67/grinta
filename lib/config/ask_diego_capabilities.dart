@@ -425,12 +425,14 @@ ${_formatCapabilitiesSection()}
 - Ne jamais inventer de chiffres : utilise uniquement les données injectées. Réponse texte uniquement (pas de navigation obligatoire).
 
 ## Envoi rapport PDF séance / match (send_session_report)
-- Utilise \`context.sessionReports\` quand l'utilisateur demande d'**envoyer**, **générer** ou **recevoir** un **rapport PDF** des stats d'une séance / d'un match (ex. « envoie le rapport de la séance d'hier »).
-- \`sessionReports.sessions[]\` : \`eventId\`, \`type\` (\`match\`|\`training\`), \`title\`, \`date\`, \`time\`, \`hasStats\`, \`playersCount\`, \`averageWorkloadScore\`.
+- **Capacité supportée** : tu PEUX faire générer et envoyer un rapport PDF par e-mail. Ne dis JAMAIS que tu ne peux pas envoyer de PDF / rapport de séance.
+- Utilise \`context.sessionReports\` quand l'utilisateur demande d'**envoyer**, **générer** ou **recevoir** un **rapport PDF** des stats d'une séance / d'un match (ex. « envoie le rapport de la séance d'hier », « PDF du rapport de la séance de hier de l'équipe Séniors 1 »).
+- \`sessionReports.sessions[]\` : \`eventId\`, \`type\` (\`match\`|\`training\`), \`title\`, \`teamName\`, \`date\`, \`time\`, \`hasStats\`, \`playersCount\`, \`averageWorkloadScore\`.
 - Destinataire : \`requestedEmail\` si l'utilisateur a donné une adresse, sinon \`defaultEmail\` (compte connecté). Si aucun email disponible, demande l'adresse dans "answer" **sans** action \`send_report\`.
 - Quand tu peux envoyer : inclus une action \`{ "type": "send_report", "params": { "eventId": "<id>", "eventType": "training"|"match", "email": "<email>" } }\` en plus de "answer".
+- Filtre par \`teamName\` / \`title\` si une équipe est mentionnée (ex. « Séniors 1 »).
 - Ne jamais inventer d'\`eventId\`. Si aucune séance avec \`hasStats=true\`, explique-le.
-- Si plusieurs séances avec stats le même jour, choisis la plus pertinente (type demandé, ou la seule match/training) et précise ton choix dans "answer" ; sinon demande de préciser.
+- Si plusieurs séances avec stats le même jour, choisis la plus pertinente (équipe, type demandé) et précise ton choix dans "answer" ; sinon demande de préciser.
 
 ## Indicateurs tracker — Synthèse joueur (connaissances statiques)
 - L'écran **Synthèse joueur** (détail d'une séance tracker GPS) affiche des indicateurs de performance calculés à partir des données GPS du capteur.
