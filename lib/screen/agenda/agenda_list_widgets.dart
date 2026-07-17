@@ -1389,7 +1389,6 @@ class AgendaItemCard extends StatelessWidget {
                       title: item.title,
                       subtitle: item.subtitle,
                       teamId: teamId.isEmpty ? null : teamId,
-                      teamName: null,
                       eventDate: item.startAt,
                       match: item.match,
                     );
