@@ -247,8 +247,12 @@ Ask Gio examples: « envoie-moi le rapport de la séance d'hier », « send toda
 2. Vérifie le doc Firestore `mail/{id}` :
    - champ `attachments` présent (base64) ?
    - `delivery.info.attachmentCount` > 0 après envoi ?
-3. L’app upload aussi le PDF dans Storage (`sessionReports/…`) et met un bouton **Télécharger le PDF** dans le HTML — ce lien fonctionne même sans pièce jointe SendGrid.
-4. Si l’extension Firebase **Trigger Email** est encore installée, désinstalle-la pour éviter qu’elle envoie le mail sans pièces jointes.
+3. L’app upload aussi le PDF dans Storage (`sessionReports/{uid}/…`) et met un bouton **Télécharger le PDF** dans le HTML — ce lien fonctionne même sans pièce jointe SendGrid. Les rapports multi-joueurs (heatmaps) dépassent souvent la limite Firestore (~700 Ko) : dans ce cas seul le lien Storage est envoyé (pas de base64 dans `mail`).
+4. Déploie les règles Storage si l’upload échoue avec `unauthorized` :
+   ```bash
+   firebase deploy --only storage
+   ```
+5. Si l’extension Firebase **Trigger Email** est encore installée, désinstalle-la pour éviter qu’elle envoie le mail sans pièces jointes.
 
 ## 7. Multi-club / white-label
 

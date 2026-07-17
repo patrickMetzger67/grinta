@@ -1375,7 +1375,12 @@ class AgendaItemCard extends StatelessWidget {
               ),
             ],
             if (item.teamWorkloadSummary != null &&
-                (isManager || canManageThisTraining || canManageThisMatch)) ...[
+                canSendSessionPdfReport(
+                  session: context.read<AppSession>(),
+                  teamId: teamId,
+                  canManageEvent:
+                      canManageThisTraining || canManageThisMatch,
+                )) ...[
               const SizedBox(height: 10),
               SizedBox(
                 width: double.infinity,

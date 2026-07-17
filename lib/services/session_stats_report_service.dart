@@ -331,7 +331,10 @@ class SessionStatsReportService {
             if (svg == null || svg.trim().isEmpty) {
               continue;
             }
-            final Uint8List? png = await svgStringToPngBytes(svg);
+            final Uint8List? png = await svgStringToPngBytes(
+              svg,
+              targetWidth: 520,
+            );
             if (png == null || png.isEmpty) {
               continue;
             }

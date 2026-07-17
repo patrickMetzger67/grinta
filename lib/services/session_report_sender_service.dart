@@ -128,6 +128,35 @@ class SessionReportSenderService {
         eventId: report.eventId,
       );
 
+      // Firestore mail docs must stay under ~1 MiB; large multi-player PDFs
+      // (heatmaps) are delivered via Storage download link only.
+      final bool canAttachInline =
+          pdfBytes.lengthInBytes <= InvitationEmailService.maxAttachmentBytes;
+      final List<MailAttachment> attachments = canAttachInline
+          ? <MailAttachment>[
+              MailAttachment.fromBytes(
+                filename: report.suggestedFileName,
+                bytes: pdfBytes,
+              ),
+            ]
+          : const <MailAttachment>[];
+
+      if (!canAttachInline &&
+          (pdfDownloadUrl == null || pdfDownloadUrl.trim().isEmpty)) {
+        debugPrint(
+          'SessionReportSenderService: PDF too large for mail attachment '
+          '(${pdfBytes.lengthInBytes} bytes) and Storage upload unavailable',
+        );
+        return SessionReportSendResult.failed('attachmentTooLarge');
+      }
+
+      if (!canAttachInline) {
+        debugPrint(
+          'SessionReportSenderService: skipping inline PDF attachment '
+          '(${pdfBytes.lengthInBytes} bytes); using Storage link',
+        );
+      }
+
       final config = await InvitationConfig.resolve();
       final emailContent = SessionReportEmailBuilder.build(
         l10n: l10n,
@@ -136,18 +165,13 @@ class SessionReportSenderService {
         pdfDownloadUrl: pdfDownloadUrl,
       );
 
-      final attachment = MailAttachment.fromBytes(
-        filename: report.suggestedFileName,
-        bytes: pdfBytes,
-      );
-
       final String? sendError = await _emailService.send(
         toEmail: to,
         subject: emailContent.subject,
         text: emailContent.text,
         html: emailContent.html,
         clubId: clubId,
-        attachments: <MailAttachment>[attachment],
+        attachments: attachments,
       );
 
       if (sendError != null) {

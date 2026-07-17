@@ -4,9 +4,12 @@ import 'package:grinta/analytics/analytics_screen_names.dart';
 import 'package:grinta/core/extensions/l10n_extension.dart';
 import 'package:grinta/l10n/app_localizations.dart';
 import 'package:grinta/model/match.dart' as grinta_match;
+import 'package:grinta/provider/appSession.dart';
+import 'package:grinta/util/session_report_access.dart';
 import 'package:grinta/widget/playerPhoto.dart';
 import 'package:grinta/widget/session_report_email_dialog.dart';
 import 'package:grinta/widget/tracker_player_analysis_widget.dart';
+import 'package:provider/provider.dart';
 
 import '../model/player.dart';
 import '../model/tracker/team_workload_summary.dart';
@@ -28,6 +31,9 @@ class MatchTrackerStatsTable extends StatefulWidget {
   final DateTime? reportEventDate;
   final grinta_match.Match? reportMatch;
 
+  /// When null, visibility is derived from manager / isRoot access.
+  final bool? showEmailReport;
+
   const MatchTrackerStatsTable({
     super.key,
     required this.eventId,
@@ -42,6 +48,7 @@ class MatchTrackerStatsTable extends StatefulWidget {
     this.reportTeamName,
     this.reportEventDate,
     this.reportMatch,
+    this.showEmailReport,
   });
 
   @override
@@ -223,6 +230,13 @@ class _MatchTrackerStatsTableState extends State<MatchTrackerStatsTable> {
 
         _sortRows(rows, metrics);
 
+        final AppSession session = context.read<AppSession>();
+        final bool showEmailReport = widget.showEmailReport ??
+            canSendSessionPdfReport(
+              session: session,
+              teamId: widget.teamId,
+            );
+
         return _TrackerStatsTableContent(
           summary: summary,
           rows: rows,
@@ -238,6 +252,7 @@ class _MatchTrackerStatsTableState extends State<MatchTrackerStatsTable> {
           reportTeamName: widget.reportTeamName,
           reportEventDate: widget.reportEventDate,
           reportMatch: widget.reportMatch,
+          showEmailReport: showEmailReport,
         );
       },
     );
@@ -332,6 +347,7 @@ class _TrackerStatsTableContent extends StatelessWidget {
   final String? reportTeamName;
   final DateTime? reportEventDate;
   final grinta_match.Match? reportMatch;
+  final bool showEmailReport;
 
   const _TrackerStatsTableContent({
     required this.summary,
@@ -348,6 +364,7 @@ class _TrackerStatsTableContent extends StatelessWidget {
     this.reportTeamName,
     this.reportEventDate,
     this.reportMatch,
+    this.showEmailReport = false,
   });
 
   @override
@@ -480,20 +497,22 @@ class _TrackerStatsTableContent extends StatelessWidget {
               children: [
                 _StatsHeader(
                   summary: summary,
-                  onEmailReport: () {
-                    showSessionReportEmailDialog(
-                      context: context,
-                      eventId: summary.eventId,
-                      isMatch: isMatch,
-                      summary: summary,
-                      title: reportTitle,
-                      subtitle: reportSubtitle,
-                      teamName: reportTeamName,
-                      teamId: teamId,
-                      eventDate: reportEventDate,
-                      match: reportMatch,
-                    );
-                  },
+                  onEmailReport: showEmailReport
+                      ? () {
+                          showSessionReportEmailDialog(
+                            context: context,
+                            eventId: summary.eventId,
+                            isMatch: isMatch,
+                            summary: summary,
+                            title: reportTitle,
+                            subtitle: reportSubtitle,
+                            teamName: reportTeamName,
+                            teamId: teamId,
+                            eventDate: reportEventDate,
+                            match: reportMatch,
+                          );
+                        }
+                      : null,
                 ),
 
                 Divider(
