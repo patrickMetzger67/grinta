@@ -49,6 +49,7 @@ class SessionStatsReportPlayerRow {
     required this.displayName,
     required this.trackerId,
     required this.metrics,
+    this.zScores = const <String, double>{},
   });
 
   final String playerId;
@@ -56,7 +57,12 @@ class SessionStatsReportPlayerRow {
   final String trackerId;
   final Map<String, double> metrics;
 
+  /// Per-metric z-score (same values as the Stats table badges).
+  final Map<String, double> zScores;
+
   double metricValue(String key) => metrics[key] ?? 0;
+
+  double? zScoreValue(String key) => zScores[key];
 }
 
 /// Metric columns included in the PDF (aligned with the Stats table).

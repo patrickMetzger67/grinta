@@ -53,8 +53,13 @@ class SessionStatsReportService {
               : score.playerId.trim());
 
       final metrics = <String, double>{};
+      final zScores = <String, double>{};
       for (final metric in kSessionStatsReportMetrics) {
-        metrics[metric.key] = score.getMetric(metric.key)?.value ?? 0;
+        final playerMetric = score.getMetric(metric.key);
+        metrics[metric.key] = playerMetric?.value ?? 0;
+        if (playerMetric != null) {
+          zScores[metric.key] = playerMetric.zScore;
+        }
       }
 
       playerRows.add(
@@ -63,6 +68,7 @@ class SessionStatsReportService {
           displayName: displayName,
           trackerId: score.trackerId,
           metrics: metrics,
+          zScores: zScores,
         ),
       );
     }

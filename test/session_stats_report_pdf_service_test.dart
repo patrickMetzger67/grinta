@@ -39,6 +39,15 @@ void main() {
             TeamWorkloadMetricKeys.maxAccelerationMps2: 4.1,
             TeamWorkloadMetricKeys.sprintCount: 8,
           },
+          zScores: <String, double>{
+            TeamWorkloadMetricKeys.workloadScore: -0.60,
+            TeamWorkloadMetricKeys.distanceKm: -0.36,
+            TeamWorkloadMetricKeys.maxValidatedSpeedKmh: 0.53,
+            TeamWorkloadMetricKeys.highAccelerationCount: -0.41,
+            TeamWorkloadMetricKeys.highSpeedDuration: -0.91,
+            TeamWorkloadMetricKeys.maxAccelerationMps2: -1.66,
+            TeamWorkloadMetricKeys.sprintCount: 0.12,
+          },
         ),
       ],
     );
