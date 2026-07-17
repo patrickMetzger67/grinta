@@ -188,10 +188,12 @@ const CAPABILITIES = [
     id: 'tracker_indicators',
     name: 'Indicateurs synthèse joueur (tracker)',
     description:
-      "Expliquer la signification des indicateurs affichés sur l'écran Synthèse joueur (détail tracker GPS) : distance, vitesses, accélérations, sprints, workload, etc. Réponse texte uniquement — pas de navigation ni de chiffres de séance (connaissances statiques, pas de contexte JSON).",
+      "Expliquer la signification des indicateurs affichés sur l'écran Synthèse joueur (détail tracker GPS) : distance, vitesses, accélérations, sprints, workload, etc. Réponse texte uniquement — pas de navigation ni de chiffres de séance (connaissances statiques, pas de contexte JSON). Pour le workload / comment il est calculé : utiliser EXACTEMENT la formule documentée dans la section Workload (ne pas inventer une autre formule).",
     examples: [
       "Peux-tu m'expliquer la signification des indicateurs de la synthèse joueur ?",
       "C'est quoi le workload ?",
+      'Comment tu calcules le workload ?',
+      'Comment est calculé le workload dans Grinta ?',
       'Que signifie acc. hautes ?',
       'À quoi correspond la vitesse max ?',
       'Explique-moi les stats du tracker',
@@ -398,8 +400,26 @@ ${formatCapabilitiesSection()}
   - **Sprints** (\`sprintCount\`) : nombre de phases de sprint au-dessus du seuil sprint pendant une durée minimale.
   - **Acc. hautes** (\`highAccelerationCount\`) : nombre d'accélérations de haute intensité au-dessus du seuil, maintenues durant le temps minimum requis.
   - **Haute vitesse** (\`highSpeedDuration\`) : temps cumulé au-dessus du seuil de haute vitesse / sprint.
-  - **Workload** (\`workloadScore\`) : score composite combinant distance parcourue, temps en haute vitesse, nombre de sprints et accélération max (formule interne Grinta).
+  - **Workload** (\`workloadScore\`) : voir la section dédiée ci-dessous — réponse OBLIGATOIRE avec la formule exacte.
 - Si l'utilisateur demande un indicateur précis, concentre-toi dessus ; s'il demande une vue d'ensemble, résume les principaux indicateurs de façon concise.
+
+## Workload — formule exacte Grinta (OBLIGATOIRE)
+Quand l'utilisateur demande ce qu'est le workload, comment il est calculé, ou la formule :
+- Réponds **exactement** avec cette explication (tu peux adapter légèrement le ton, mais la formule et les unités doivent rester identiques).
+- Ne dis PAS seulement « score composite » sans la formule.
+- Formule utilisée dans Grinta (\`SensorAnalysisService\`) :
+
+workload = (distance_m / 100) + (temps_haute_vitesse_s / 10) + (sprints × 5) + (acc_max_mps2 × 10)
+
+avec :
+- distance_m = distance totale en **mètres**
+- temps_haute_vitesse_s = temps en haute vitesse en **secondes** (vitesse ≥ seuil sprint du TeamParam, **20 km/h** par défaut)
+- sprints = nombre de sprints détectés
+- acc_max_mps2 = accélération max en **m/s²**
+
+Puis : workloadScorePerMinute = workload / durée_en_minutes.
+
+Exemple à citer si utile : 8440 m, 7,6 s HV, 2 sprints, 7,9 m/s² → 84,4 + 0,76 + 10 + 79 ≈ **174**.
 
 ## Surface de jeu (match_surface)
 - Utilise \`surfaceDeJeu\` sur \`nextMatch\` ou sur l'entrée match filtrée dans \`agenda.items\` / \`weeklyAgenda.items\` (par date, heure, adversaire).
