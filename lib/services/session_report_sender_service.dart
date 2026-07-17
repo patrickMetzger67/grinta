@@ -1,5 +1,3 @@
-import 'dart:typed_data';
-
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter/foundation.dart';
@@ -166,7 +164,7 @@ class SessionReportSenderService {
     required String filename,
     required String eventId,
   }) async {
-    final uid = _auth.currentUser?.uid?.trim();
+    final uid = _auth.currentUser?.uid.trim();
     if (uid == null || uid.isEmpty) {
       debugPrint('SessionReportSenderService: no auth uid for PDF upload');
       return null;
