@@ -1,5 +1,121 @@
 part of 'tracker_hub_page.dart';
 
+class _TrackerSectionHeader extends StatelessWidget {
+  final String title;
+  final int count;
+  final Color accent;
+
+  const _TrackerSectionHeader({
+    required this.title,
+    required this.count,
+    required this.accent,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = context.appColors;
+    return Row(
+      children: [
+        Container(
+          width: 8,
+          height: 8,
+          decoration: BoxDecoration(
+            color: accent,
+            shape: BoxShape.circle,
+          ),
+        ),
+        const SizedBox(width: 8),
+        Expanded(
+          child: Text(
+            title,
+            style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                  color: colors.textPrimary,
+                  fontWeight: FontWeight.w700,
+                ),
+          ),
+        ),
+        Text(
+          '$count',
+          style: Theme.of(context).textTheme.labelLarge?.copyWith(
+                color: accent,
+                fontWeight: FontWeight.w700,
+              ),
+        ),
+      ],
+    );
+  }
+}
+
+class _TrackerSectionGrid extends StatelessWidget {
+  final List<String> trackerIds;
+  final double maxWidth;
+  final String? selectedTrackerId;
+  final Map<String, String> devicePlayerMap;
+  final EventSync? eventSync;
+  final List<TimeRange> periods;
+  final ValueChanged<String> onSelect;
+  final Future<void> Function() onAlreadySynced;
+
+  const _TrackerSectionGrid({
+    required this.trackerIds,
+    required this.maxWidth,
+    required this.selectedTrackerId,
+    required this.devicePlayerMap,
+    required this.eventSync,
+    required this.periods,
+    required this.onSelect,
+    required this.onAlreadySynced,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final crossAxisCount = _getCrossAxisCount(maxWidth);
+    final childAspectRatio = _getChildAspectRatio(maxWidth);
+    final rows = (trackerIds.length / crossAxisCount).ceil();
+    // Approximate grid height so nested GridView can size inside ListView.
+    final spacing = 16.0;
+    final itemWidth =
+        (maxWidth - 32 - spacing * (crossAxisCount - 1)) / crossAxisCount;
+    final itemHeight = itemWidth / childAspectRatio;
+    final height = rows * itemHeight + (rows > 0 ? (rows - 1) * spacing : 0);
+
+    return SizedBox(
+      height: height.clamp(0, double.infinity),
+      child: GridView.builder(
+        physics: const NeverScrollableScrollPhysics(),
+        itemCount: trackerIds.length,
+        gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+          crossAxisCount: crossAxisCount,
+          crossAxisSpacing: spacing,
+          mainAxisSpacing: spacing,
+          childAspectRatio: childAspectRatio,
+        ),
+        itemBuilder: (context, index) {
+          final trackerId = trackerIds[index];
+          final isSelected = trackerId == selectedTrackerId;
+          final deviceSync = eventSync?.devices[trackerId];
+          final isDone = deviceSync?.isSynced == true;
+
+          return _TrackerCard(
+            trackerId: trackerId,
+            isSelected: isSelected,
+            isDone: isDone,
+            periods: periods,
+            playerId: devicePlayerMap[trackerId] ?? '',
+            onTap: () async {
+              if (isDone) {
+                await onAlreadySynced();
+                return;
+              }
+              onSelect(trackerId);
+            },
+          );
+        },
+      ),
+    );
+  }
+}
+
 class _TrackerCard extends StatelessWidget {
   final String trackerId;
   final bool isSelected;
@@ -50,20 +166,29 @@ class _TrackerCard extends StatelessWidget {
         final Player? player = playerSnapshot.data;
         final String playerName = _formatPlayerName(player);
 
-        return Material(
+        final borderColor = isDone
+            ? colors.success
+            : (isSelected ? colors.warning : colors.border);
+        final fillColor = isDone
+            ? colors.success.withValues(alpha: 0.08)
+            : (isSelected
+                ? colors.primary.withValues(alpha: 0.10)
+                : colors.card);
+
+        return Opacity(
+          opacity: isDone ? 0.72 : 1,
+          child: Material(
           color: Colors.transparent,
           child: InkWell(
             onTap: onTap,
             borderRadius: BorderRadius.circular(18),
             child: Ink(
               decoration: BoxDecoration(
-                color: isSelected
-                    ? colors.primary.withValues(alpha: 0.10)
-                    : colors.card,
+                color: fillColor,
                 borderRadius: BorderRadius.circular(18),
                 border: Border.all(
-                  color: isSelected ? colors.success : colors.border,
-                  width: isSelected ? 1.5 : 1,
+                  color: borderColor,
+                  width: (isSelected || isDone) ? 1.5 : 1,
                 ),
               ),
               child: Padding(
@@ -82,7 +207,9 @@ class _TrackerCard extends StatelessWidget {
                             overflow: TextOverflow.ellipsis,
                             style: Theme.of(context).textTheme.titleMedium
                                 ?.copyWith(
-                              color: colors.textPrimary,
+                              color: isDone
+                                  ? colors.success
+                                  : colors.textPrimary,
                               fontWeight: FontWeight.w700,
                             ),
                           ),
@@ -163,25 +290,32 @@ class _TrackerCard extends StatelessWidget {
                               vertical: 8,
                             ),
                             decoration: BoxDecoration(
-                              color: isSelected
+                              color: isDone
                                   ? colors.success.withValues(alpha: 0.18)
-                                  : colors.surface,
+                                  : (isSelected
+                                      ? colors.warning.withValues(alpha: 0.18)
+                                      : colors.surface),
                               borderRadius: BorderRadius.circular(999),
                               border: Border.all(
-                                color:
-                                isSelected ? colors.success : colors.border,
+                                color: isDone
+                                    ? colors.success
+                                    : (isSelected
+                                        ? colors.warning
+                                        : colors.border),
                               ),
                             ),
                             child: Text(
-                              isSelected
-                                  ? context.l10n.trackerStatusSelected
-                                  : (isDone
-                                      ? context.l10n.trackerStatusSynced
+                              isDone
+                                  ? context.l10n.trackerStatusSynced
+                                  : (isSelected
+                                      ? context.l10n.trackerStatusSelected
                                       : context.l10n.trackerStatusOpen),
                               style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                                color: (isSelected || isDone)
+                                color: isDone
                                     ? colors.success
-                                    : colors.textSecondary,
+                                    : (isSelected
+                                        ? colors.warning
+                                        : colors.textSecondary),
                                 fontWeight: FontWeight.w600,
                               ),
                             ),
@@ -194,6 +328,7 @@ class _TrackerCard extends StatelessWidget {
               ),
             ),
           ),
+        ),
         );
       },
     );

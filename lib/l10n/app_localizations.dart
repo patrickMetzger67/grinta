@@ -2731,13 +2731,13 @@ abstract class AppLocalizations {
   /// No description provided for @dialogCloseSyncTitle.
   ///
   /// In fr, this message translates to:
-  /// **'Clôturer la synchronisation'**
+  /// **'Clôturer définitivement la synchronisation'**
   String get dialogCloseSyncTitle;
 
   /// No description provided for @dialogCloseSyncMessage.
   ///
   /// In fr, this message translates to:
-  /// **'Souhaitez-vous clôturer la synchronisation ?'**
+  /// **'Souhaitez-vous clôturer définitivement la synchronisation ? Oui : plus d’accès à cet écran. Non : quitter sans clôturer.'**
   String get dialogCloseSyncMessage;
 
   /// No description provided for @dialogDeleteCustomizationTitle.
@@ -4023,6 +4023,30 @@ abstract class AppLocalizations {
   /// In fr, this message translates to:
   /// **'{count} tracker(s)'**
   String trackerCount(int count);
+
+  /// No description provided for @trackerAllSensorsSynced.
+  ///
+  /// In fr, this message translates to:
+  /// **'Tous les capteurs ont été synchronisés'**
+  String get trackerAllSensorsSynced;
+
+  /// No description provided for @trackerSensorsRemaining.
+  ///
+  /// In fr, this message translates to:
+  /// **'À synchroniser'**
+  String get trackerSensorsRemaining;
+
+  /// No description provided for @trackerSensorsAlreadySynced.
+  ///
+  /// In fr, this message translates to:
+  /// **'Déjà synchronisés'**
+  String get trackerSensorsAlreadySynced;
+
+  /// No description provided for @trackerSyncedProgress.
+  ///
+  /// In fr, this message translates to:
+  /// **'{synced}/{total} synchronisés'**
+  String trackerSyncedProgress(int synced, int total);
 
   /// No description provided for @trackerAlreadySyncedTitle.
   ///

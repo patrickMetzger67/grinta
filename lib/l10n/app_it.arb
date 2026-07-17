@@ -576,8 +576,8 @@
   "themeDisableDarkModeTooltip": "Disattiva modalità scura",
   "infoParameters": "Impostazioni",
   "infoUserNotConnected": "Utente non loggato.",
-  "dialogCloseSyncTitle": "Chiudi la sincronizzazione",
-  "dialogCloseSyncMessage": "Vuoi chiudere la sincronizzazione?",
+  "dialogCloseSyncTitle": "Chiudi definitivamente la sincronizzazione",
+  "dialogCloseSyncMessage": "Vuoi chiudere definitivamente la sincronizzazione? Sì: questa schermata non sarà più disponibile. No: esci senza chiudere.",
   "dialogDeleteCustomizationTitle": "Rimuovere la personalizzazione?",
   "dialogDeleteAssignmentTitle": "Elimina compito",
   "dialogNewConversation": "Nuova conversazione",
@@ -832,6 +832,16 @@
   "trackerSyncTitle": "Sincronizzazione del sensore",
   "trackerAvailableSensors": "Sensori disponibili",
   "trackerCount": "{count} tracker",
+  "trackerAllSensorsSynced": "Tutti i sensori sono stati sincronizzati",
+  "trackerSensorsRemaining": "Da sincronizzare",
+  "trackerSensorsAlreadySynced": "Già sincronizzati",
+  "trackerSyncedProgress": "{synced}/{total} sincronizzati",
+  "@trackerSyncedProgress": {
+    "placeholders": {
+      "synced": { "type": "int" },
+      "total": { "type": "int" }
+    }
+  },
   "trackerAlreadySyncedTitle": "Sincronizzazione già eseguita",
   "trackerAlreadySyncedMessage": "Il sensore è già stato sincronizzato per questa sessione.",
   "trackerStatusSelected": "Selezionato",

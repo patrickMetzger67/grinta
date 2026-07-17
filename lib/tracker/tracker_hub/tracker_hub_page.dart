@@ -226,6 +226,17 @@ class _TrackerHubPageState extends State<TrackerHubPage> {
             builder: (context, constraints) {
               final isMobile = constraints.maxWidth < 900;
 
+              final remainingIds = <String>[];
+              final syncedIds = <String>[];
+              for (final trackerId in _validTrackerIds) {
+                final deviceSync = eventSync?.devices[trackerId];
+                if (deviceSync?.isSynced == true) {
+                  syncedIds.add(trackerId);
+                } else {
+                  remainingIds.add(trackerId);
+                }
+              }
+
               final trackerGrid = Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
@@ -242,7 +253,10 @@ class _TrackerHubPageState extends State<TrackerHubPage> {
                   Padding(
                     padding: const EdgeInsets.symmetric(horizontal: 16),
                     child: Text(
-                      context.l10n.trackerCount(_validTrackerIds.length),
+                      context.l10n.trackerSyncedProgress(
+                        syncedIds.length,
+                        _validTrackerIds.length,
+                      ),
                       style: textTheme.bodyMedium?.copyWith(
                         color: colors.textSecondary,
                       ),
@@ -252,45 +266,59 @@ class _TrackerHubPageState extends State<TrackerHubPage> {
                   Expanded(
                     child: _validTrackerIds.isEmpty
                         ? const _TrackerEmptyState()
-                        : GridView.builder(
+                        : ListView(
                       padding:
                       const EdgeInsets.fromLTRB(16, 0, 16, 16),
-                      itemCount: _validTrackerIds.length,
-                      gridDelegate:
-                      SliverGridDelegateWithFixedCrossAxisCount(
-                        crossAxisCount:
-                        _getCrossAxisCount(constraints.maxWidth),
-                        crossAxisSpacing: 16,
-                        mainAxisSpacing: 16,
-                        childAspectRatio:
-                        _getChildAspectRatio(constraints.maxWidth),
-                      ),
-                      itemBuilder: (context, index) {
-                        final trackerId = _validTrackerIds[index];
-                        final isSelected = trackerId == selectedTrackerId;
-                        final deviceSync = eventSync?.devices[trackerId];
-                        final isDone = deviceSync != null &&
-                            ((deviceSync.dataDownloaded && deviceSync.erased) ||
-                                deviceSync.withAsiFile);
-
-                        return _TrackerCard(
-                          trackerId: trackerId,
-                          isSelected: isSelected,
-                          isDone: isDone,
-                          periods: matchPeriods,
-                          playerId:
-                          _validDevicePlayerMap[trackerId] ?? '',
-                          onTap: () async {
-                            if (isDone) {
-                              await showAlreadySyncedAlert(context);
-                              return;
-                            }
-                            setState(() {
-                              selectedTrackerId = trackerId;
-                            });
-                          },
-                        );
-                      },
+                      children: [
+                        if (remainingIds.isNotEmpty) ...[
+                          _TrackerSectionHeader(
+                            title: context.l10n.trackerSensorsRemaining,
+                            count: remainingIds.length,
+                            accent: colors.warning,
+                          ),
+                          const SizedBox(height: 12),
+                          _TrackerSectionGrid(
+                            trackerIds: remainingIds,
+                            maxWidth: constraints.maxWidth,
+                            selectedTrackerId: selectedTrackerId,
+                            devicePlayerMap: _validDevicePlayerMap,
+                            eventSync: eventSync,
+                            periods: matchPeriods,
+                            onSelect: (trackerId) {
+                              setState(() {
+                                selectedTrackerId = trackerId;
+                              });
+                            },
+                            onAlreadySynced: () =>
+                                showAlreadySyncedAlert(context),
+                          ),
+                          const SizedBox(height: 24),
+                        ],
+                        if (syncedIds.isNotEmpty) ...[
+                          _TrackerSectionHeader(
+                            title:
+                                context.l10n.trackerSensorsAlreadySynced,
+                            count: syncedIds.length,
+                            accent: colors.success,
+                          ),
+                          const SizedBox(height: 12),
+                          _TrackerSectionGrid(
+                            trackerIds: syncedIds,
+                            maxWidth: constraints.maxWidth,
+                            selectedTrackerId: selectedTrackerId,
+                            devicePlayerMap: _validDevicePlayerMap,
+                            eventSync: eventSync,
+                            periods: matchPeriods,
+                            onSelect: (trackerId) {
+                              setState(() {
+                                selectedTrackerId = trackerId;
+                              });
+                            },
+                            onAlreadySynced: () =>
+                                showAlreadySyncedAlert(context),
+                          ),
+                        ],
+                      ],
                     ),
                   ),
                 ],
@@ -334,14 +362,14 @@ class _TrackerHubPageState extends State<TrackerHubPage> {
   }
 
   Future<void> _confirmCloseSync() async {
-    final shouldLeave = await showDialog<bool>(
+    final shouldClosePermanently = await showDialog<bool>(
       context: context,
       builder: (dialogContext) => AlertDialog(
         title: Text(dialogContext.l10n.dialogCloseSyncTitle),
         content: Text(dialogContext.l10n.dialogCloseSyncMessage),
         actions: [
           TextButton(
-            onPressed: () => Navigator.of(dialogContext).pop(true),
+            onPressed: () => Navigator.of(dialogContext).pop(false),
             child: Text(dialogContext.l10n.actionNo),
           ),
           TextButton(
@@ -351,34 +379,56 @@ class _TrackerHubPageState extends State<TrackerHubPage> {
         ],
       ),
     );
-    if (shouldLeave != true) return;
-    
-    List<TrackerAnalysisResult> trackerAnalysis = await TrackerAnalysisService.getAnalysesByEvent(widget.eventId);
-    final service = TeamWorkloadSummaryService();
 
-    final summary = await service.computeAndSave(
-      eventId: widget.eventId, // id du match ou de l'entraînement
-      playerResults: trackerAnalysis,
-      sessionDuration: const Duration(minutes: 90), // optionnel
-    );
+    // Dismissing the dialog cancels leave; Non leaves without permanent close.
+    if (shouldClosePermanently == null) return;
 
-    await service.save(summary);
+    if (shouldClosePermanently) {
+      final trackerAnalysis =
+          await TrackerAnalysisService.getAnalysesByEvent(widget.eventId);
+      final service = TeamWorkloadSummaryService();
 
-    if (widget.isMatch == true) {
-      final match = await MatchService().getMatchById(widget.eventId);
-      if (match != null) {
-        match.isTrackerDataUploaded = true;
-        await MatchService().updateMatch(match);
+      final summary = await service.computeAndSave(
+        eventId: widget.eventId,
+        playerResults: trackerAnalysis,
+        sessionDuration: const Duration(minutes: 90),
+      );
+
+      await service.save(summary);
+
+      final uid = user?.uid;
+      final current = eventSync ??
+          await EventSyncService().getEventSync(widget.eventId) ??
+          EventSync(eventId: widget.eventId);
+      final closed = current.copyWith(
+        docId: current.docId ?? widget.eventId,
+        isFullySynced: true,
+        syncEndAt: Timestamp.now(),
+        syncEndUid: uid,
+      );
+      await EventSyncService().createOrUpdateEventSync(closed);
+      if (uid != null && uid.isNotEmpty) {
+        await EventSyncService().endSync(eventId: widget.eventId, uid: uid);
       }
-    } else {
-      final training = await TrainingService().getTrainingById(widget.eventId);
-      if (training != null) {
-        training.isTrackerDataUploaded = true;
-        await TrainingService().updateTraining(training);
+
+      if (widget.isMatch == true) {
+        final match = await MatchService().getMatchById(widget.eventId);
+        if (match != null) {
+          match.isTrackerDataUploaded = true;
+          await MatchService().updateMatch(match);
+        }
+      } else {
+        final training =
+            await TrainingService().getTrainingById(widget.eventId);
+        if (training != null) {
+          training.isTrackerDataUploaded = true;
+          await TrainingService().updateTraining(training);
+        }
       }
     }
 
     if (!mounted) return;
+    _allowPop = true;
     Navigator.of(context).pop();
   }
 
@@ -448,19 +498,20 @@ class _TrackerHubPageState extends State<TrackerHubPage> {
     );
   }
 
-  int _getCrossAxisCount(double width) {
-    if (width < 430) return 1;
-    if (width < 700) return 2;
-    if (width < 1000) return 3;
-    if (width < 1400) return 4;
-    return 5;
-  }
+}
 
-  double _getChildAspectRatio(double width) {
-    if (width < 430) return 0.72;
-    if (width < 700) return 0.78;
-    if (width < 1000) return 0.86;
-    if (width < 1400) return 0.92;
-    return 0.96;
-  }
+int _getCrossAxisCount(double width) {
+  if (width < 430) return 1;
+  if (width < 700) return 2;
+  if (width < 1000) return 3;
+  if (width < 1400) return 4;
+  return 5;
+}
+
+double _getChildAspectRatio(double width) {
+  if (width < 430) return 0.72;
+  if (width < 700) return 0.78;
+  if (width < 1000) return 0.86;
+  if (width < 1400) return 0.92;
+  return 0.96;
 }

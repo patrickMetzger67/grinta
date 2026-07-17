@@ -13,6 +13,7 @@ import 'package:grinta/services/matchCompoService.dart';
 import 'package:grinta/services/matchService.dart';
 import 'package:grinta/services/ownerService.dart';
 import 'package:grinta/services/tracker_field_service.dart';
+import 'package:grinta/services/event_sync_service.dart';
 import 'package:grinta/services/trainingService.dart';
 import 'package:grinta/screen/field_localization_screen.dart';
 import 'package:grinta/tracker/tracker_hub_page.dart';
@@ -355,6 +356,30 @@ class _SyncScreenState extends State<SyncScreen> {
     return _localizeMatchField(match);
   }
 
+  Future<bool> _ensureEventSyncNotFullyClosed(String eventId) async {
+    final existing = await EventSyncService().getEventSync(eventId);
+    if (existing?.isFullySynced != true) return true;
+    if (!mounted) return false;
+
+    final colors = context.appColors;
+    await showDialog<void>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        backgroundColor: colors.surface,
+        surfaceTintColor: Colors.transparent,
+        title: Text(dialogContext.l10n.trackerAlreadySyncedTitle),
+        content: Text(dialogContext.l10n.trackerAllSensorsSynced),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(dialogContext).pop(),
+            child: Text(dialogContext.l10n.actionOk),
+          ),
+        ],
+      ),
+    );
+    return false;
+  }
+
   Future<void> _openMatchTrackerHub({
     required match_model.Match match,
     required List<String> trackerIdsToSend,
@@ -362,6 +387,11 @@ class _SyncScreenState extends State<SyncScreen> {
     required FieldGpsCorners fieldGpsCorners,
   }) async {
     if (!mounted || trackerIdsToSend.isEmpty) return;
+
+    final eventId = match.id;
+    if (eventId == null || eventId.isEmpty) return;
+    if (!await _ensureEventSyncNotFullyClosed(eventId)) return;
+    if (!mounted) return;
 
     AnalyticsInteractions.logFeature(
       AnalyticsFeatures.syncTrackerHub,
@@ -375,7 +405,7 @@ class _SyncScreenState extends State<SyncScreen> {
         screenName: AnalyticsScreenNames.trackerHub,
         builder: (_) => TrackerHubPage(
           trackerIds: trackerIdsToSend,
-          eventId: match.id!,
+          eventId: eventId,
           isMatch: true,
           fieldGpsCorners: fieldGpsCorners,
           devicePlayerMap: devicePlayerMap,
@@ -392,6 +422,11 @@ class _SyncScreenState extends State<SyncScreen> {
   }) async {
     if (!mounted || trackerIdsToSend.isEmpty) return;
 
+    final eventId = training.docId;
+    if (eventId == null || eventId.isEmpty) return;
+    if (!await _ensureEventSyncNotFullyClosed(eventId)) return;
+    if (!mounted) return;
+
     AnalyticsInteractions.logFeature(
       AnalyticsFeatures.syncTrackerHub,
       parameters: const <String, Object>{
@@ -404,7 +439,7 @@ class _SyncScreenState extends State<SyncScreen> {
         screenName: AnalyticsScreenNames.trackerHub,
         builder: (_) => TrackerHubPage(
           trackerIds: trackerIdsToSend,
-          eventId: training.docId!,
+          eventId: eventId,
           isMatch: false,
           fieldGpsCorners: null,
           devicePlayerMap: devicePlayerMap,

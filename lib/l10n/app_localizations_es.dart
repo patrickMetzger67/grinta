@@ -1520,10 +1520,10 @@ class AppLocalizationsEs extends AppLocalizations {
   String get infoUserNotConnected => 'Usuario no iniciado sesión.';
 
   @override
-  String get dialogCloseSyncTitle => 'Cerrar sincronización';
+  String get dialogCloseSyncTitle => 'Cerrar definitivamente la sincronización';
 
   @override
-  String get dialogCloseSyncMessage => '¿Quieres cerrar la sincronización?';
+  String get dialogCloseSyncMessage => '¿Quieres cerrar definitivamente la sincronización? Sí: esta pantalla ya no estará disponible. No: salir sin cerrar.';
 
   @override
   String get dialogDeleteCustomizationTitle => '¿Eliminar personalización?';
@@ -2260,6 +2260,21 @@ class AppLocalizationsEs extends AppLocalizations {
   @override
   String trackerCount(int count) {
     return '$count tracker(s)';
+  }
+
+
+  @override
+  String get trackerAllSensorsSynced => 'Todos los sensores han sido sincronizados';
+
+  @override
+  String get trackerSensorsRemaining => 'Por sincronizar';
+
+  @override
+  String get trackerSensorsAlreadySynced => 'Ya sincronizados';
+
+  @override
+  String trackerSyncedProgress(int synced, int total) {
+    return '$synced/$total sincronizados';
   }
 
   @override
