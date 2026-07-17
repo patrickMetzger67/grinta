@@ -1,3 +1,4 @@
+import 'dart:io';
 import 'dart:typed_data';
 
 import 'package:flutter_test/flutter_test.dart';
@@ -109,6 +110,12 @@ void main() {
     final bytes = await SessionStatsReportPdfService().buildPdf(report);
     expect(bytes.length, greaterThan(500));
     expect(String.fromCharCodes(bytes.take(4)), '%PDF');
+
+    // Optional preview dump for local visual checks.
+    final previewPath = Platform.environment['PDF_PREVIEW_OUT'];
+    if (previewPath != null && previewPath.isNotEmpty) {
+      await File(previewPath).writeAsBytes(bytes);
+    }
   });
 
   test('builds match PDF with field zones and heatmaps placeholders', () async {

@@ -1,7 +1,6 @@
 import 'dart:math' as math;
 import 'dart:typed_data';
 
-import 'package:flutter/services.dart' show rootBundle;
 import 'package:grinta/model/session_stats_report.dart';
 import 'package:grinta/model/tracker/team_workload_summary.dart';
 import 'package:intl/intl.dart';
@@ -10,14 +9,14 @@ import 'package:pdf/widgets.dart' as pw;
 
 /// Renders a [SessionStatsReport] to PDF bytes (recap table + player pages).
 ///
-/// All pages are A4 landscape. Each player detail fits on a single page.
+/// All pages are A4 landscape. Uses built-in Helvetica (ASCII-safe) because
+/// SF Pro OTF embedding produced corrupted / unreadable glyphs.
 class SessionStatsReportPdfService {
   static const PdfColor _primary = PdfColor.fromInt(0xFFF95C1B);
   static const PdfColor _textPrimary = PdfColor.fromInt(0xFF111214);
   static const PdfColor _textSecondary = PdfColor.fromInt(0xFF6B7280);
-  static const PdfColor _border = PdfColor.fromInt(0xFFE5E7EB);
+  static const PdfColor _border = PdfColor.fromInt(0xFFD1D5DB);
   static const PdfColor _surface = PdfColor.fromInt(0xFFF3F4F6);
-  static const PdfColor _success = PdfColor.fromInt(0xFF1FA971);
   static const PdfColor _danger = PdfColor.fromInt(0xFFE53935);
   static const PdfColor _warning = PdfColor.fromInt(0xFFF5A524);
   static const PdfColor _secondary = PdfColor.fromInt(0xFF3B82F6);
@@ -27,29 +26,29 @@ class SessionStatsReportPdfService {
     SessionStatsReport report, {
     String localeCode = 'fr',
   }) async {
-    final fonts = await _loadFonts();
-    final doc = pw.Document(
-      theme: pw.ThemeData.withFont(
-        base: fonts.regular,
-        bold: fonts.bold,
-      ),
-    );
+    final doc = pw.Document();
     final generatedLabel = DateFormat('yyyy-MM-dd HH:mm').format(
       report.generatedAt,
     );
 
     doc.addPage(
-      pw.MultiPage(
+      pw.Page(
         pageFormat: PdfPageFormat.a4.landscape,
-        margin: const pw.EdgeInsets.fromLTRB(18, 16, 18, 14),
-        footer: (context) => _buildFooter(context),
-        build: (context) => <pw.Widget>[
-          _buildRecapHeader(report, generatedLabel),
-          pw.SizedBox(height: 10),
-          _buildSummaryRow(report),
-          pw.SizedBox(height: 10),
-          _buildPlayersTable(report),
-        ],
+        margin: const pw.EdgeInsets.fromLTRB(20, 16, 20, 14),
+        build: (context) {
+          return pw.Column(
+            crossAxisAlignment: pw.CrossAxisAlignment.stretch,
+            children: [
+              _buildRecapHeader(report, generatedLabel),
+              pw.SizedBox(height: 10),
+              _buildSummaryRow(report),
+              pw.SizedBox(height: 10),
+              pw.Expanded(child: _buildPlayersTable(report)),
+              pw.SizedBox(height: 6),
+              _buildFooter(context),
+            ],
+          );
+        },
       ),
     );
 
@@ -57,7 +56,7 @@ class SessionStatsReportPdfService {
       doc.addPage(
         pw.Page(
           pageFormat: PdfPageFormat.a4.landscape,
-          margin: const pw.EdgeInsets.fromLTRB(14, 12, 14, 10),
+          margin: const pw.EdgeInsets.fromLTRB(16, 12, 16, 10),
           build: (context) {
             return pw.Column(
               crossAxisAlignment: pw.CrossAxisAlignment.stretch,
@@ -81,42 +80,98 @@ class SessionStatsReportPdfService {
     return doc.save();
   }
 
-  Future<({pw.Font regular, pw.Font bold})> _loadFonts() async {
-    try {
-      final regularData = await rootBundle.load(
-        'assets/fonts/SF-Pro-Display-Regular.otf',
-      );
-      final boldData = await rootBundle.load(
-        'assets/fonts/SF-Pro-Display-Bold.otf',
-      );
-      return (
-        regular: pw.Font.ttf(regularData),
-        bold: pw.Font.ttf(boldData),
-      );
-    } catch (_) {
-      return (
-        regular: pw.Font.helvetica(),
-        bold: pw.Font.helveticaBold(),
-      );
+  /// Helvetica has no Unicode — strip accents / replace unsupported chars.
+  static String _t(String? value) {
+    if (value == null || value.isEmpty) return '';
+    const Map<String, String> map = <String, String>{
+      'À': 'A',
+      'Á': 'A',
+      'Â': 'A',
+      'Ä': 'A',
+      'Å': 'A',
+      'à': 'a',
+      'á': 'a',
+      'â': 'a',
+      'ä': 'a',
+      'å': 'a',
+      'È': 'E',
+      'É': 'E',
+      'Ê': 'E',
+      'Ë': 'E',
+      'è': 'e',
+      'é': 'e',
+      'ê': 'e',
+      'ë': 'e',
+      'Ì': 'I',
+      'Í': 'I',
+      'Î': 'I',
+      'Ï': 'I',
+      'ì': 'i',
+      'í': 'i',
+      'î': 'i',
+      'ï': 'i',
+      'Ò': 'O',
+      'Ó': 'O',
+      'Ô': 'O',
+      'Ö': 'O',
+      'ò': 'o',
+      'ó': 'o',
+      'ô': 'o',
+      'ö': 'o',
+      'Ù': 'U',
+      'Ú': 'U',
+      'Û': 'U',
+      'Ü': 'U',
+      'ù': 'u',
+      'ú': 'u',
+      'û': 'u',
+      'ü': 'u',
+      'Ç': 'C',
+      'ç': 'c',
+      'Ñ': 'N',
+      'ñ': 'n',
+      'Œ': 'OE',
+      'œ': 'oe',
+      'Æ': 'AE',
+      'æ': 'ae',
+      '°': 'o',
+      '²': '2',
+      '³': '3',
+      '×': 'x',
+      '–': '-',
+      '—': '-',
+      '’': "'",
+      '‘': "'",
+      '“': '"',
+      '”': '"',
+      '…': '...',
+      '·': '-',
+      '€': 'EUR',
+    };
+    final buffer = StringBuffer();
+    for (final int code in value.runes) {
+      final String ch = String.fromCharCode(code);
+      buffer.write(map[ch] ?? (code < 32 || code > 126 ? '?' : ch));
     }
+    return buffer.toString();
   }
 
   pw.Widget _buildMatchPlayerBody(SessionStatsReportPlayerDetail player) {
     return pw.Row(
-      crossAxisAlignment: pw.CrossAxisAlignment.stretch,
+      crossAxisAlignment: pw.CrossAxisAlignment.start,
       children: [
         pw.Expanded(
-          flex: 11,
+          flex: 10,
           child: pw.Column(
             crossAxisAlignment: pw.CrossAxisAlignment.stretch,
             children: [
               _sectionTitle('Synthese'),
               pw.SizedBox(height: 4),
-              _buildSynthesisGrid(player, compact: true),
+              _buildSynthesisGrid(player),
               pw.SizedBox(height: 8),
               _sectionTitle('Zones de vitesse'),
               pw.SizedBox(height: 4),
-              pw.Expanded(child: _buildSpeedZonesBlock(player)),
+              _buildSpeedZonesBlock(player),
             ],
           ),
         ),
@@ -128,7 +183,7 @@ class SessionStatsReportPdfService {
             children: [
               _sectionTitle('Timeline distance'),
               pw.SizedBox(height: 4),
-              pw.Expanded(flex: 5, child: _buildTimelineChart(player.distanceTimeline)),
+              _buildTimelineChart(player.distanceTimeline),
               pw.SizedBox(height: 6),
               _sectionTitle('Zones de terrain'),
               pw.SizedBox(height: 4),
@@ -136,7 +191,7 @@ class SessionStatsReportPdfService {
               pw.SizedBox(height: 6),
               _sectionTitle('Heatmaps'),
               pw.SizedBox(height: 4),
-              pw.Expanded(flex: 6, child: _buildHeatmapsRow(player.heatmaps)),
+              _buildHeatmapsRow(player.heatmaps),
             ],
           ),
         ),
@@ -146,7 +201,7 @@ class SessionStatsReportPdfService {
 
   pw.Widget _buildTrainingPlayerBody(SessionStatsReportPlayerDetail player) {
     return pw.Row(
-      crossAxisAlignment: pw.CrossAxisAlignment.stretch,
+      crossAxisAlignment: pw.CrossAxisAlignment.start,
       children: [
         pw.Expanded(
           flex: 5,
@@ -155,11 +210,11 @@ class SessionStatsReportPdfService {
             children: [
               _sectionTitle('Synthese'),
               pw.SizedBox(height: 4),
-              _buildSynthesisGrid(player, compact: false),
+              _buildSynthesisGrid(player),
               pw.SizedBox(height: 8),
               _sectionTitle('Zones de vitesse'),
               pw.SizedBox(height: 4),
-              pw.Expanded(child: _buildSpeedZonesBlock(player)),
+              _buildSpeedZonesBlock(player),
             ],
           ),
         ),
@@ -171,7 +226,7 @@ class SessionStatsReportPdfService {
             children: [
               _sectionTitle('Timeline distance'),
               pw.SizedBox(height: 4),
-              pw.Expanded(child: _buildTimelineChart(player.distanceTimeline)),
+              _buildTimelineChart(player.distanceTimeline),
             ],
           ),
         ),
@@ -185,21 +240,26 @@ class SessionStatsReportPdfService {
     String generatedLabel,
   ) {
     final match = report.matchHeader;
-    final sessionLine = report.isMatch
-        ? [
-            if ((match?.opponentName ?? '').trim().isNotEmpty)
-              'vs ${match!.opponentName!.trim()}'
-            else
-              report.title,
-            if ((match?.scoreLabel ?? '').trim().isNotEmpty) match!.scoreLabel,
-          ].join('  ·  ')
-        : report.title;
+    final sessionLine = _t(
+      report.isMatch
+          ? [
+              if ((match?.opponentName ?? '').trim().isNotEmpty)
+                'vs ${match!.opponentName!.trim()}'
+              else
+                report.title,
+              if ((match?.scoreLabel ?? '').trim().isNotEmpty)
+                match!.scoreLabel,
+            ].join('  -  ')
+          : report.title,
+    );
 
-    final dateTimeLine = [
-      if ((report.dateLabel ?? '').trim().isNotEmpty) report.dateLabel!.trim(),
-      if ((report.timeLabel ?? '').trim().isNotEmpty) report.timeLabel!.trim(),
-      if ((report.teamName ?? '').trim().isNotEmpty) report.teamName!.trim(),
-    ].join(' · ');
+    final dateTimeLine = _t(
+      [
+        if ((report.dateLabel ?? '').trim().isNotEmpty) report.dateLabel!.trim(),
+        if ((report.timeLabel ?? '').trim().isNotEmpty) report.timeLabel!.trim(),
+        if ((report.teamName ?? '').trim().isNotEmpty) report.teamName!.trim(),
+      ].join(' - '),
+    );
 
     return pw.Container(
       padding: const pw.EdgeInsets.symmetric(horizontal: 10, vertical: 8),
@@ -270,7 +330,7 @@ class SessionStatsReportPdfService {
             crossAxisAlignment: pw.CrossAxisAlignment.start,
             children: [
               pw.Text(
-                player.displayName,
+                _t(player.displayName),
                 style: pw.TextStyle(
                   color: _textPrimary,
                   fontSize: 12,
@@ -280,7 +340,7 @@ class SessionStatsReportPdfService {
               pw.Text(
                 player.trackerId.trim().isEmpty
                     ? 'Tracker -'
-                    : 'Tracker ${player.trackerId.trim()}',
+                    : 'Tracker ${_t(player.trackerId.trim())}',
                 style: const pw.TextStyle(
                   color: _textSecondary,
                   fontSize: 8.5,
@@ -304,14 +364,11 @@ class SessionStatsReportPdfService {
         width: size,
         height: size,
         decoration: pw.BoxDecoration(
-          shape: pw.BoxShape.circle,
           border: pw.Border.all(color: _border),
         ),
-        child: pw.ClipOval(
-          child: pw.Image(
-            pw.MemoryImage(bytes),
-            fit: pw.BoxFit.cover,
-          ),
+        child: pw.Image(
+          pw.MemoryImage(bytes),
+          fit: pw.BoxFit.cover,
         ),
       );
     }
@@ -319,11 +376,8 @@ class SessionStatsReportPdfService {
     return pw.Container(
       width: size,
       height: size,
-      decoration: const pw.BoxDecoration(
-        shape: pw.BoxShape.circle,
-        color: _border,
-      ),
       alignment: pw.Alignment.center,
+      color: _border,
       child: pw.Text(
         'J',
         style: pw.TextStyle(
@@ -335,10 +389,7 @@ class SessionStatsReportPdfService {
     );
   }
 
-  pw.Widget _buildSynthesisGrid(
-    SessionStatsReportPlayerDetail player, {
-    required bool compact,
-  }) {
+  pw.Widget _buildSynthesisGrid(SessionStatsReportPlayerDetail player) {
     final tiles = <(String, String)>[
       ('Distance', '${player.distanceKm.toStringAsFixed(2)} km'),
       ('Vitesse moy.', '${player.averageSpeedKmh.toStringAsFixed(1)} km/h'),
@@ -361,12 +412,12 @@ class SessionStatsReportPdfService {
           padding: const pw.EdgeInsets.only(bottom: 4),
           child: pw.Row(
             children: [
-              pw.Expanded(child: _metricChip(left.$1, left.$2, compact: compact)),
+              pw.Expanded(child: _metricChip(left.$1, left.$2)),
               pw.SizedBox(width: 4),
               pw.Expanded(
                 child: right == null
                     ? pw.SizedBox()
-                    : _metricChip(right.$1, right.$2, compact: compact),
+                    : _metricChip(right.$1, right.$2),
               ),
             ],
           ),
@@ -376,16 +427,9 @@ class SessionStatsReportPdfService {
     return pw.Column(children: rows);
   }
 
-  pw.Widget _metricChip(
-    String label,
-    String value, {
-    required bool compact,
-  }) {
+  pw.Widget _metricChip(String label, String value) {
     return pw.Container(
-      padding: pw.EdgeInsets.symmetric(
-        horizontal: compact ? 6 : 8,
-        vertical: compact ? 4 : 6,
-      ),
+      padding: const pw.EdgeInsets.symmetric(horizontal: 7, vertical: 5),
       decoration: pw.BoxDecoration(
         color: _white,
         borderRadius: pw.BorderRadius.circular(6),
@@ -395,18 +439,18 @@ class SessionStatsReportPdfService {
         children: [
           pw.Expanded(
             child: pw.Text(
-              label,
-              style: pw.TextStyle(
+              _t(label),
+              style: const pw.TextStyle(
                 color: _textSecondary,
-                fontSize: compact ? 7.5 : 8,
+                fontSize: 8,
               ),
             ),
           ),
           pw.Text(
-            value,
+            _t(value),
             style: pw.TextStyle(
               color: _textPrimary,
-              fontSize: compact ? 8.5 : 9.5,
+              fontSize: 9.5,
               fontWeight: pw.FontWeight.bold,
             ),
           ),
@@ -419,66 +463,66 @@ class SessionStatsReportPdfService {
     if (player.speedZones.isEmpty) {
       return _emptyHint('Aucune zone de vitesse');
     }
+    // Fixed-height rows only — nested Expanded + ClipRRect overflowed the page.
     return pw.Column(
+      crossAxisAlignment: pw.CrossAxisAlignment.stretch,
       children: [
-        for (final zone in player.speedZones)
-          pw.Expanded(child: _buildSpeedZoneRow(zone)),
+        for (final zone in player.speedZones) _buildSpeedZoneRow(zone),
       ],
     );
   }
 
   pw.Widget _buildSpeedZoneRow(SessionStatsReportSpeedZoneRow zone) {
     final double percent = zone.percent.clamp(0, 100);
-    final int filled = math.max(0, (percent * 10).round());
-    final int empty = math.max(0, ((100 - percent) * 10).round());
+    final int filled = percent.round().clamp(0, 100);
+    final int empty = 100 - filled;
 
     return pw.Padding(
-      padding: const pw.EdgeInsets.only(bottom: 3),
+      padding: const pw.EdgeInsets.only(bottom: 5),
       child: pw.Column(
         crossAxisAlignment: pw.CrossAxisAlignment.start,
-        mainAxisAlignment: pw.MainAxisAlignment.center,
         children: [
           pw.Row(
             mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
             children: [
               pw.Expanded(
                 child: pw.Text(
-                  '${zone.label} (${zone.rangeLabel})',
+                  _t('${zone.label} (${zone.rangeLabel})'),
                   maxLines: 1,
                   style: const pw.TextStyle(
                     color: _textPrimary,
-                    fontSize: 7.5,
+                    fontSize: 8,
                   ),
                 ),
               ),
               pw.Text(
-                '${_formatDurationShort(zone.duration)} · ${percent.toStringAsFixed(1)}%',
+                _t(
+                  '${_formatDurationShort(zone.duration)} - ${percent.toStringAsFixed(1)}%',
+                ),
                 style: pw.TextStyle(
                   color: _textSecondary,
-                  fontSize: 7,
+                  fontSize: 7.5,
                   fontWeight: pw.FontWeight.bold,
                 ),
               ),
             ],
           ),
           pw.SizedBox(height: 2),
-          pw.ClipRRect(
-            horizontalRadius: 3,
-            verticalRadius: 3,
-            child: pw.Container(
-              height: 6,
-              color: _border,
-              child: pw.Row(
-                children: [
-                  if (filled > 0)
-                    pw.Expanded(
-                      flex: filled,
-                      child: pw.Container(color: _zoneColor(zone.zoneId)),
-                    ),
-                  if (empty > 0)
-                    pw.Expanded(flex: empty, child: pw.SizedBox()),
-                ],
-              ),
+          pw.SizedBox(
+            height: 7,
+            child: pw.Row(
+              children: [
+                if (filled > 0)
+                  pw.Expanded(
+                    flex: filled,
+                    child: pw.Container(color: _zoneColor(zone.zoneId)),
+                  ),
+                if (empty > 0)
+                  pw.Expanded(
+                    flex: empty,
+                    child: pw.Container(color: _border),
+                  ),
+              ],
             ),
           ),
         ],
@@ -510,13 +554,21 @@ class SessionStatsReportPdfService {
       return _emptyHint('Aucune timeline distance');
     }
 
-    final double maxMeters = timeline
+    // Keep the chart readable: show at most ~16 buckets on one landscape page.
+    final List<SessionStatsReportTimelineBucket> buckets =
+        timeline.length <= 16
+            ? timeline
+            : [
+                for (var i = 0; i < 16; i++)
+                  timeline[((i * timeline.length) / 16).floor()],
+              ];
+
+    final double maxMeters = buckets
         .map((e) => e.totalMeters)
         .fold<double>(0, (prev, value) => math.max(prev, value));
     final double safeMax = maxMeters <= 0 ? 1 : maxMeters;
 
     return pw.Container(
-      width: double.infinity,
       padding: const pw.EdgeInsets.all(8),
       decoration: pw.BoxDecoration(
         color: _white,
@@ -536,52 +588,44 @@ class SessionStatsReportPdfService {
               _buildLegendDot(label: 'Haute intensite', color: _warning),
             ],
           ),
-          pw.SizedBox(height: 4),
-          pw.Expanded(
-            child: pw.Column(
-              children: [
-                for (final bucket in timeline)
-                  pw.Expanded(
-                    child: pw.Padding(
-                      padding: const pw.EdgeInsets.only(bottom: 2),
-                      child: pw.Row(
-                        children: [
-                          pw.SizedBox(
-                            width: 36,
-                            child: pw.Text(
-                              bucket.label,
-                              maxLines: 1,
-                              style: const pw.TextStyle(
-                                color: _textSecondary,
-                                fontSize: 6.5,
-                              ),
-                            ),
-                          ),
-                          pw.Expanded(
-                            child: _stackedBar(
-                              bucket: bucket,
-                              maxMeters: safeMax,
-                            ),
-                          ),
-                          pw.SizedBox(width: 4),
-                          pw.SizedBox(
-                            width: 34,
-                            child: pw.Text(
-                              '${bucket.totalMeters.toStringAsFixed(0)}m',
-                              textAlign: pw.TextAlign.right,
-                              style: const pw.TextStyle(
-                                color: _textPrimary,
-                                fontSize: 6.5,
-                              ),
-                            ),
-                          ),
-                        ],
+          pw.SizedBox(height: 8),
+          for (final bucket in buckets)
+            pw.Padding(
+              padding: const pw.EdgeInsets.only(bottom: 5),
+              child: pw.Row(
+                children: [
+                  pw.SizedBox(
+                    width: 40,
+                    child: pw.Text(
+                      _t(bucket.label),
+                      maxLines: 1,
+                      style: const pw.TextStyle(
+                        color: _textSecondary,
+                        fontSize: 7,
                       ),
                     ),
                   ),
-              ],
+                  pw.Expanded(
+                    child: _stackedBar(
+                      bucket: bucket,
+                      maxMeters: safeMax,
+                    ),
+                  ),
+                  pw.SizedBox(width: 4),
+                  pw.SizedBox(
+                    width: 36,
+                    child: pw.Text(
+                      '${bucket.totalMeters.toStringAsFixed(0)}m',
+                      textAlign: pw.TextAlign.right,
+                      style: const pw.TextStyle(
+                        color: _textPrimary,
+                        fontSize: 7,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
             ),
-          ),
         ],
       ),
     );
@@ -599,37 +643,44 @@ class SessionStatsReportPdfService {
     ];
     final double widthFactor =
         (bucket.totalMeters / maxMeters).clamp(0.0, 1.0);
-    final int filledFlex = math.max(1, (widthFactor * 1000).round());
-    final int emptyFlex = math.max(1, ((1 - widthFactor) * 1000).round());
+    // Keep flex in 1..100 to avoid layout blow-ups in package:pdf.
+    final int filledFlex = math.max(1, (widthFactor * 100).round());
+    final int emptyFlex = math.max(0, 100 - filledFlex);
     final positiveSegments = segments.where((s) => s.$2 > 0).toList();
+    final double totalPositive = positiveSegments.fold<double>(
+      0,
+      (sum, s) => sum + s.$2,
+    );
 
-    return pw.ClipRRect(
-      horizontalRadius: 2,
-      verticalRadius: 2,
-      child: pw.Container(
-        height: 8,
-        color: _border,
-        child: pw.Row(
-          children: [
-            pw.Expanded(
-              flex: filledFlex,
-              child: pw.Row(
-                children: positiveSegments.isEmpty
-                    ? <pw.Widget>[pw.Expanded(child: pw.SizedBox())]
-                    : positiveSegments.map((s) {
-                        final double flex = bucket.totalMeters <= 0
-                            ? 1.0
-                            : (s.$2 / bucket.totalMeters).clamp(0.001, 1.0);
-                        return pw.Expanded(
-                          flex: math.max(1, (flex * 1000).round()),
-                          child: pw.Container(color: s.$1),
-                        );
-                      }).toList(),
-              ),
+    return pw.SizedBox(
+      height: 9,
+      child: pw.Row(
+        children: [
+          pw.Expanded(
+            flex: filledFlex,
+            child: pw.Row(
+              children: positiveSegments.isEmpty || totalPositive <= 0
+                  ? <pw.Widget>[
+                      pw.Expanded(child: pw.Container(color: _border)),
+                    ]
+                  : positiveSegments.map((s) {
+                      final int flex = math.max(
+                        1,
+                        ((s.$2 / totalPositive) * 100).round(),
+                      );
+                      return pw.Expanded(
+                        flex: flex,
+                        child: pw.Container(color: s.$1),
+                      );
+                    }).toList(),
             ),
-            pw.Expanded(flex: emptyFlex, child: pw.SizedBox()),
-          ],
-        ),
+          ),
+          if (emptyFlex > 0)
+            pw.Expanded(
+              flex: emptyFlex,
+              child: pw.Container(color: _border),
+            ),
+        ],
       ),
     );
   }
@@ -662,18 +713,18 @@ class SessionStatsReportPdfService {
             mainAxisAlignment: pw.MainAxisAlignment.center,
             children: [
               pw.Text(
-                z?.label ?? id,
+                _t(z?.label ?? id),
                 maxLines: 1,
                 style: const pw.TextStyle(
                   color: _textSecondary,
-                  fontSize: 6.5,
+                  fontSize: 7,
                 ),
               ),
               pw.Text(
-                '${(z?.distanceKm ?? 0).toStringAsFixed(2)} km · ${(z?.occupancyPercent ?? 0).toStringAsFixed(0)}%',
+                '${(z?.distanceKm ?? 0).toStringAsFixed(2)} km - ${(z?.occupancyPercent ?? 0).toStringAsFixed(0)}%',
                 style: pw.TextStyle(
                   color: _textPrimary,
-                  fontSize: 7.5,
+                  fontSize: 8,
                   fontWeight: pw.FontWeight.bold,
                 ),
               ),
@@ -698,7 +749,7 @@ class SessionStatsReportPdfService {
     }
 
     return pw.Row(
-      crossAxisAlignment: pw.CrossAxisAlignment.stretch,
+      crossAxisAlignment: pw.CrossAxisAlignment.start,
       children: [
         for (var i = 0; i < heatmaps.length; i++) ...[
           if (i > 0) pw.SizedBox(width: 6),
@@ -713,15 +764,16 @@ class SessionStatsReportPdfService {
               child: pw.Column(
                 children: [
                   pw.Text(
-                    heatmaps[i].periodLabel,
+                    _t(heatmaps[i].periodLabel),
                     style: pw.TextStyle(
                       color: _textPrimary,
-                      fontSize: 7.5,
+                      fontSize: 8,
                       fontWeight: pw.FontWeight.bold,
                     ),
                   ),
                   pw.SizedBox(height: 2),
-                  pw.Expanded(
+                  pw.SizedBox(
+                    height: 110,
                     child: pw.Image(
                       pw.MemoryImage(heatmaps[i].pngBytes),
                       fit: pw.BoxFit.contain,
@@ -738,10 +790,10 @@ class SessionStatsReportPdfService {
 
   pw.Widget _sectionTitle(String title) {
     return pw.Text(
-      title,
+      _t(title),
       style: pw.TextStyle(
         color: _textPrimary,
-        fontSize: 9.5,
+        fontSize: 10,
         fontWeight: pw.FontWeight.bold,
       ),
     );
@@ -751,7 +803,7 @@ class SessionStatsReportPdfService {
     return pw.Container(
       alignment: pw.Alignment.centerLeft,
       child: pw.Text(
-        text,
+        _t(text),
         style: const pw.TextStyle(color: _textSecondary, fontSize: 8),
       ),
     );
@@ -785,7 +837,7 @@ class SessionStatsReportPdfService {
                     ),
                   ),
                   pw.Text(
-                    'Rapport $eventKind - statistiques tracker',
+                    _t('Rapport $eventKind - statistiques tracker'),
                     style: const pw.TextStyle(color: _white, fontSize: 10),
                   ),
                 ],
@@ -799,7 +851,7 @@ class SessionStatsReportPdfService {
         ),
         pw.SizedBox(height: 8),
         pw.Text(
-          report.title,
+          _t(report.title),
           style: pw.TextStyle(
             color: _textPrimary,
             fontSize: 13,
@@ -810,14 +862,16 @@ class SessionStatsReportPdfService {
             (report.timeLabel ?? '').trim().isNotEmpty ||
             (report.teamName ?? '').trim().isNotEmpty)
           pw.Text(
-            [
-              if ((report.dateLabel ?? '').trim().isNotEmpty)
-                report.dateLabel!.trim(),
-              if ((report.timeLabel ?? '').trim().isNotEmpty)
-                report.timeLabel!.trim(),
-              if ((report.teamName ?? '').trim().isNotEmpty)
-                report.teamName!.trim(),
-            ].join(' · '),
+            _t(
+              [
+                if ((report.dateLabel ?? '').trim().isNotEmpty)
+                  report.dateLabel!.trim(),
+                if ((report.timeLabel ?? '').trim().isNotEmpty)
+                  report.timeLabel!.trim(),
+                if ((report.teamName ?? '').trim().isNotEmpty)
+                  report.teamName!.trim(),
+              ].join(' - '),
+            ),
             style: const pw.TextStyle(color: _textSecondary, fontSize: 9),
           ),
       ],
@@ -845,7 +899,7 @@ class SessionStatsReportPdfService {
             child: pw.Container(
               padding: const pw.EdgeInsets.symmetric(
                 horizontal: 8,
-                vertical: 6,
+                vertical: 7,
               ),
               decoration: pw.BoxDecoration(
                 color: _surface,
@@ -856,17 +910,17 @@ class SessionStatsReportPdfService {
                 mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
                 children: [
                   pw.Text(
-                    chips[i].$1,
+                    _t(chips[i].$1),
                     style: const pw.TextStyle(
                       color: _textSecondary,
-                      fontSize: 8,
+                      fontSize: 8.5,
                     ),
                   ),
                   pw.Text(
-                    chips[i].$2,
+                    _t(chips[i].$2),
                     style: pw.TextStyle(
                       color: _textPrimary,
-                      fontSize: 10,
+                      fontSize: 11,
                       fontWeight: pw.FontWeight.bold,
                     ),
                   ),
@@ -880,144 +934,61 @@ class SessionStatsReportPdfService {
   }
 
   pw.Widget _buildPlayersTable(SessionStatsReport report) {
-    final metrics = kSessionStatsReportMetrics;
+    const metrics = kSessionStatsReportMetrics;
+    final rows = report.playerRows;
 
-    return pw.Table(
-      border: pw.TableBorder.all(color: _border, width: 0.6),
-      defaultVerticalAlignment: pw.TableCellVerticalAlignment.middle,
-      columnWidths: <int, pw.TableColumnWidth>{
-        0: const pw.FlexColumnWidth(2.4),
-        1: const pw.FixedColumnWidth(42),
+    return pw.TableHelper.fromTextArray(
+      border: pw.TableBorder.all(color: _border, width: 0.7),
+      headerDecoration: const pw.BoxDecoration(color: _primary),
+      headerStyle: pw.TextStyle(
+        color: _white,
+        fontWeight: pw.FontWeight.bold,
+        fontSize: 8.5,
+      ),
+      cellStyle: const pw.TextStyle(
+        color: _textPrimary,
+        fontSize: 9,
+      ),
+      headerAlignments: <int, pw.Alignment>{
+        0: pw.Alignment.centerLeft,
+        1: pw.Alignment.center,
         for (var i = 0; i < metrics.length; i++)
-          i + 2: const pw.FlexColumnWidth(1.0),
+          i + 2: pw.Alignment.center,
       },
-      children: <pw.TableRow>[
-        pw.TableRow(
-          decoration: const pw.BoxDecoration(color: _primary),
-          children: <pw.Widget>[
-            _headerCell('Joueur'),
-            _headerCell('Tr.'),
-            ...metrics.map((m) => _headerCell(m.title, alignCenter: true)),
+      cellAlignments: <int, pw.Alignment>{
+        0: pw.Alignment.centerLeft,
+        1: pw.Alignment.center,
+        for (var i = 0; i < metrics.length; i++)
+          i + 2: pw.Alignment.center,
+      },
+      columnWidths: <int, pw.TableColumnWidth>{
+        0: const pw.FlexColumnWidth(2.6),
+        1: const pw.FixedColumnWidth(36),
+        for (var i = 0; i < metrics.length; i++)
+          i + 2: const pw.FlexColumnWidth(1.05),
+      },
+      cellPadding: const pw.EdgeInsets.symmetric(horizontal: 4, vertical: 5),
+      oddRowDecoration: const pw.BoxDecoration(color: _surface),
+      headers: <String>[
+        'Joueur',
+        'Tr.',
+        ...metrics.map((m) => _t(m.title)),
+      ],
+      data: <List<String>>[
+        for (final row in rows)
+          <String>[
+            _t(row.displayName),
+            row.trackerId.isEmpty ? '-' : _t(row.trackerId),
+            ...metrics.map((metric) {
+              final value = metric.format(row.metricValue(metric.key));
+              final z = row.zScoreValue(metric.key);
+              if (z == null) return value;
+              final sign = z > 0 ? '+' : '';
+              return '$value\n$sign${z.toStringAsFixed(2)}';
+            }),
           ],
-        ),
-        for (var rowIndex = 0; rowIndex < report.playerRows.length; rowIndex++)
-          pw.TableRow(
-            decoration: pw.BoxDecoration(
-              color: rowIndex.isOdd ? _surface : _white,
-            ),
-            children: <pw.Widget>[
-              _textCell(report.playerRows[rowIndex].displayName),
-              _textCell(
-                report.playerRows[rowIndex].trackerId.isEmpty
-                    ? '-'
-                    : report.playerRows[rowIndex].trackerId,
-                alignCenter: true,
-              ),
-              ...metrics.map(
-                (metric) => _metricCell(
-                  valueLabel: metric.format(
-                    report.playerRows[rowIndex].metricValue(metric.key),
-                  ),
-                  zScore: report.playerRows[rowIndex].zScoreValue(metric.key),
-                ),
-              ),
-            ],
-          ),
       ],
     );
-  }
-
-  pw.Widget _headerCell(String text, {bool alignCenter = false}) {
-    return pw.Padding(
-      padding: const pw.EdgeInsets.symmetric(horizontal: 4, vertical: 6),
-      child: pw.Text(
-        text,
-        textAlign: alignCenter ? pw.TextAlign.center : pw.TextAlign.left,
-        style: pw.TextStyle(
-          color: _white,
-          fontWeight: pw.FontWeight.bold,
-          fontSize: 8,
-        ),
-      ),
-    );
-  }
-
-  pw.Widget _textCell(String text, {bool alignCenter = false}) {
-    return pw.Padding(
-      padding: const pw.EdgeInsets.symmetric(horizontal: 4, vertical: 5),
-      child: pw.Text(
-        text,
-        maxLines: 1,
-        textAlign: alignCenter ? pw.TextAlign.center : pw.TextAlign.left,
-        style: pw.TextStyle(
-          fontSize: 8.5,
-          color: _textPrimary,
-          fontWeight: pw.FontWeight.bold,
-        ),
-      ),
-    );
-  }
-
-  /// Value on top, z-score below — avoids horizontal overflow that hid numbers.
-  pw.Widget _metricCell({
-    required String valueLabel,
-    required double? zScore,
-  }) {
-    return pw.Padding(
-      padding: const pw.EdgeInsets.symmetric(horizontal: 3, vertical: 4),
-      child: pw.Column(
-        mainAxisSize: pw.MainAxisSize.min,
-        children: [
-          pw.Text(
-            valueLabel,
-            textAlign: pw.TextAlign.center,
-            style: pw.TextStyle(
-              fontSize: 9,
-              color: _textPrimary,
-              fontWeight: pw.FontWeight.bold,
-            ),
-          ),
-          if (zScore != null) ...[
-            pw.SizedBox(height: 2),
-            _zScoreBadge(zScore),
-          ],
-        ],
-      ),
-    );
-  }
-
-  pw.Widget _zScoreBadge(double zScore) {
-    final color = _colorForZScore(zScore);
-    final sign = zScore > 0 ? '+' : '';
-    final label = '$sign${zScore.toStringAsFixed(2)}';
-
-    return pw.Container(
-      padding: const pw.EdgeInsets.symmetric(horizontal: 4, vertical: 1),
-      decoration: pw.BoxDecoration(
-        color: color == _success
-            ? const PdfColor.fromInt(0xFFE8F8F0)
-            : color == _danger
-                ? const PdfColor.fromInt(0xFFFDECEA)
-                : _surface,
-        borderRadius: pw.BorderRadius.circular(999),
-        border: pw.Border.all(color: color, width: 0.7),
-      ),
-      child: pw.Text(
-        label,
-        textAlign: pw.TextAlign.center,
-        style: pw.TextStyle(
-          color: color,
-          fontSize: 6.5,
-          fontWeight: pw.FontWeight.bold,
-        ),
-      ),
-    );
-  }
-
-  PdfColor _colorForZScore(double value) {
-    if (value > 0) return _success;
-    if (value < 0) return _danger;
-    return _textSecondary;
   }
 
   pw.Widget _buildFooter(pw.Context context) {
@@ -1025,7 +996,7 @@ class SessionStatsReportPdfService {
       alignment: pw.Alignment.centerRight,
       child: pw.Text(
         'Grinta Performance - page ${context.pageNumber}/${context.pagesCount}',
-        style: const pw.TextStyle(color: _textSecondary, fontSize: 7.5),
+        style: const pw.TextStyle(color: _textSecondary, fontSize: 8),
       ),
     );
   }
@@ -1037,13 +1008,12 @@ class SessionStatsReportPdfService {
     return pw.Row(
       mainAxisSize: pw.MainAxisSize.min,
       children: [
+        // Avoid large borderRadius values: package:pdf treats them as circle
+        // radius and draws huge discs that cover the page.
         pw.Container(
           width: 7,
           height: 7,
-          decoration: pw.BoxDecoration(
-            color: color,
-            borderRadius: pw.BorderRadius.circular(999),
-          ),
+          color: color,
         ),
         pw.SizedBox(width: 3),
         pw.Text(

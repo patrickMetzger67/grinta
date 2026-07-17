@@ -333,7 +333,7 @@ class SessionStatsReportService {
             }
             final Uint8List? png = await svgStringToPngBytes(
               svg,
-              targetWidth: 520,
+              targetWidth: 240,
             );
             if (png == null || png.isEmpty) {
               continue;
