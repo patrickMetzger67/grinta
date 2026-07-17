@@ -476,6 +476,8 @@ class _AskDiegoSheetState extends State<AskDiegoSheet> {
       isMatch: isMatch,
       title: sessionMeta?['title']?.toString(),
       subtitle: sessionMeta?['subtitle']?.toString(),
+      teamId: sessionMeta?['teamId']?.toString(),
+      teamName: sessionMeta?['teamName']?.toString(),
       localeCode: localeCode,
       eventDate: _parseIsoDate(sessionMeta?['date']?.toString()),
     );

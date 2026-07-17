@@ -4,6 +4,7 @@ import 'package:flutter/foundation.dart';
 import 'package:grinta/config/invitation_config.dart';
 import 'package:grinta/l10n/app_localizations.dart';
 import 'package:grinta/model/mail_attachment.dart';
+import 'package:grinta/model/match.dart' as grinta_match;
 import 'package:grinta/model/session_stats_report.dart';
 import 'package:grinta/model/tracker/team_workload_summary.dart';
 import 'package:grinta/services/invitation_email_service.dart';
@@ -79,10 +80,12 @@ class SessionReportSenderService {
     String? title,
     String? subtitle,
     String? teamName,
+    String? teamId,
     DateTime? eventDate,
     String localeCode = 'fr',
     TeamWorkloadSummary? summary,
     String? clubId,
+    grinta_match.Match? match,
   }) async {
     final String to = toEmail.trim();
     if (to.isEmpty) {
@@ -102,10 +105,12 @@ class SessionReportSenderService {
         title: title,
         subtitle: subtitle,
         teamName: teamName,
+        teamId: teamId,
         eventDate: eventDate,
         localeCode: localeCode,
         unknownPlayerLabel: l10n.entityPlayer,
         summary: summary,
+        match: match,
       );
 
       if (report == null) {

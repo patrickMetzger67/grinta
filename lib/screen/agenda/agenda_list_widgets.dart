@@ -1332,12 +1332,15 @@ class AgendaItemCard extends StatelessWidget {
                                       padding: const EdgeInsets.all(12),
                                       child: MatchTrackerStatsTable(
                                         eventId: item.id,
-                                        teamId: (item.training != null)?item.training!.teamId!:teamId,
+                                        teamId: (item.training != null)
+                                            ? item.training!.teamId!
+                                            : teamId,
                                         realtime: true,
-                                        isMatch: (item.match == null)?false:true,
+                                        isMatch: item.match != null,
                                         reportTitle: item.title,
                                         reportSubtitle: item.subtitle,
                                         reportEventDate: item.startAt,
+                                        reportMatch: item.match,
                                       ),
                                     ),
                                   ),
@@ -1385,7 +1388,10 @@ class AgendaItemCard extends StatelessWidget {
                       summary: item.teamWorkloadSummary,
                       title: item.title,
                       subtitle: item.subtitle,
+                      teamId: teamId.isEmpty ? null : teamId,
+                      teamName: null,
                       eventDate: item.startAt,
+                      match: item.match,
                     );
                   },
                   icon: const Icon(Icons.picture_as_pdf_outlined, size: 18),

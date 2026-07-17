@@ -1501,6 +1501,7 @@ class _StatsTabState extends State<_StatsTab> {
             reportSubtitle: widget.match.chType,
             reportTeamName: widget.match.team1 ?? widget.match.team2,
             reportEventDate: matchKickoffDateTime(widget.match),
+            reportMatch: widget.match,
           ),
         ],
       );

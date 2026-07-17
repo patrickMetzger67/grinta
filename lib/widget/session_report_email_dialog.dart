@@ -1,6 +1,7 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:grinta/core/extensions/l10n_extension.dart';
+import 'package:grinta/model/match.dart' as grinta_match;
 import 'package:grinta/model/tracker/team_workload_summary.dart';
 import 'package:grinta/services/session_report_sender_service.dart';
 import 'package:grinta/util/app_theme.dart';
@@ -15,7 +16,9 @@ Future<void> showSessionReportEmailDialog({
   String? title,
   String? subtitle,
   String? teamName,
+  String? teamId,
   DateTime? eventDate,
+  grinta_match.Match? match,
 }) async {
   final l10n = context.l10n;
   final colors = context.appColors;
@@ -56,9 +59,11 @@ Future<void> showSessionReportEmailDialog({
               title: title,
               subtitle: subtitle,
               teamName: teamName,
+              teamId: teamId,
               eventDate: eventDate,
               localeCode: localeCode,
               summary: summary,
+              match: match,
             );
 
             if (!dialogContext.mounted) return;

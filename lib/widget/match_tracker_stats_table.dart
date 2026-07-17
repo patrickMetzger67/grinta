@@ -3,6 +3,7 @@ import 'package:grinta/analytics/analytics_routes.dart';
 import 'package:grinta/analytics/analytics_screen_names.dart';
 import 'package:grinta/core/extensions/l10n_extension.dart';
 import 'package:grinta/l10n/app_localizations.dart';
+import 'package:grinta/model/match.dart' as grinta_match;
 import 'package:grinta/widget/playerPhoto.dart';
 import 'package:grinta/widget/session_report_email_dialog.dart';
 import 'package:grinta/widget/tracker_player_analysis_widget.dart';
@@ -25,6 +26,7 @@ class MatchTrackerStatsTable extends StatefulWidget {
   final String? reportSubtitle;
   final String? reportTeamName;
   final DateTime? reportEventDate;
+  final grinta_match.Match? reportMatch;
 
   const MatchTrackerStatsTable({
     super.key,
@@ -39,6 +41,7 @@ class MatchTrackerStatsTable extends StatefulWidget {
     this.reportSubtitle,
     this.reportTeamName,
     this.reportEventDate,
+    this.reportMatch,
   });
 
   @override
@@ -234,6 +237,7 @@ class _MatchTrackerStatsTableState extends State<MatchTrackerStatsTable> {
           reportSubtitle: widget.reportSubtitle,
           reportTeamName: widget.reportTeamName,
           reportEventDate: widget.reportEventDate,
+          reportMatch: widget.reportMatch,
         );
       },
     );
@@ -327,6 +331,7 @@ class _TrackerStatsTableContent extends StatelessWidget {
   final String? reportSubtitle;
   final String? reportTeamName;
   final DateTime? reportEventDate;
+  final grinta_match.Match? reportMatch;
 
   const _TrackerStatsTableContent({
     required this.summary,
@@ -342,6 +347,7 @@ class _TrackerStatsTableContent extends StatelessWidget {
     this.reportSubtitle,
     this.reportTeamName,
     this.reportEventDate,
+    this.reportMatch,
   });
 
   @override
@@ -483,7 +489,9 @@ class _TrackerStatsTableContent extends StatelessWidget {
                       title: reportTitle,
                       subtitle: reportSubtitle,
                       teamName: reportTeamName,
+                      teamId: teamId,
                       eventDate: reportEventDate,
+                      match: reportMatch,
                     );
                   },
                 ),
