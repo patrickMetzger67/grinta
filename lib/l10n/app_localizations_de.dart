@@ -303,6 +303,9 @@ class AppLocalizationsDe extends AppLocalizations {
   String get sessionReportEmailActionTooltip => 'PDF-Bericht per E-Mail senden';
 
   @override
+  String get sessionReportEmailActionLabel => 'PDF-Bericht';
+
+  @override
   String sessionReportEmailSuccess(String email) {
     return 'Bericht an $email gesendet';
   }

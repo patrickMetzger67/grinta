@@ -300,6 +300,9 @@ class AppLocalizationsFr extends AppLocalizations {
       'Envoyer le rapport PDF par e-mail';
 
   @override
+  String get sessionReportEmailActionLabel => 'Rapport PDF';
+
+  @override
   String sessionReportEmailSuccess(String email) {
     return 'Rapport envoyé à $email';
   }

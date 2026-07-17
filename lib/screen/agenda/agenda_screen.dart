@@ -25,6 +25,7 @@ import '../../util/playerDisplayName.dart';
 import '../../widget/activity_rings_card.dart';
 import '../../widget/agendaMatchRow.dart';
 import '../../widget/match_tracker_stats_table.dart';
+import '../../widget/session_report_email_dialog.dart';
 import '../../model/feature_discovery_ids.dart';
 import '../../widget/app_shell_scope.dart';
 import '../../widget/feature_discovery_random_banner.dart';

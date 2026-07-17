@@ -297,6 +297,9 @@ class AppLocalizationsIt extends AppLocalizations {
   String get sessionReportEmailActionTooltip => 'Invia report PDF via e-mail';
 
   @override
+  String get sessionReportEmailActionLabel => 'Report PDF';
+
+  @override
   String sessionReportEmailSuccess(String email) {
     return 'Report inviato a $email';
   }

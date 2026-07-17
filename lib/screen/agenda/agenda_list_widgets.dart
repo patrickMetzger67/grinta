@@ -1216,6 +1216,9 @@ class AgendaItemCard extends StatelessWidget {
                           match: match,
                           isManager: isManager,
                           playerId: currentPlayerId,
+                          initialTabIndex: MatchDetailScreen.statsTabIndexFor(
+                            match,
+                          ),
                         ),
                       ),
                     );
@@ -1269,6 +1272,29 @@ class AgendaItemCard extends StatelessWidget {
                                           ),
                                         ),
 
+                                        Align(
+                                          alignment: Alignment.centerLeft,
+                                          child: FilledButton.tonalIcon(
+                                            onPressed: () {
+                                              showSessionReportEmailDialog(
+                                                context: dialogContext,
+                                                eventId: item.id,
+                                                isMatch: false,
+                                                summary: item.teamWorkloadSummary,
+                                                title: item.title,
+                                                subtitle: item.subtitle,
+                                                eventDate: item.startAt,
+                                              );
+                                            },
+                                            icon: const Icon(
+                                              Icons.picture_as_pdf_outlined,
+                                              size: 18,
+                                            ),
+                                            label: Text(
+                                              context.l10n.sessionReportEmailActionLabel,
+                                            ),
+                                          ),
+                                        ),
                                         Align(
                                           alignment: Alignment.centerRight,
                                           child: InkWell(
@@ -1350,6 +1376,25 @@ class AgendaItemCard extends StatelessWidget {
                   context: context,
                   teamPlayerMetricScores: teamPlayerMetricScores,
                   teamWorkloadSummary: item.teamWorkloadSummary!,
+                ),
+              ),
+              const SizedBox(height: 10),
+              Align(
+                alignment: Alignment.centerLeft,
+                child: FilledButton.tonalIcon(
+                  onPressed: () {
+                    showSessionReportEmailDialog(
+                      context: context,
+                      eventId: item.id,
+                      isMatch: item.match != null,
+                      summary: item.teamWorkloadSummary,
+                      title: item.title,
+                      subtitle: item.subtitle,
+                      eventDate: item.startAt,
+                    );
+                  },
+                  icon: const Icon(Icons.picture_as_pdf_outlined, size: 18),
+                  label: Text(context.l10n.sessionReportEmailActionLabel),
                 ),
               ),
             ],

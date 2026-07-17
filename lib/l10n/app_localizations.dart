@@ -616,6 +616,12 @@ abstract class AppLocalizations {
   /// **'Envoyer le rapport PDF par e-mail'**
   String get sessionReportEmailActionTooltip;
 
+  /// No description provided for @sessionReportEmailActionLabel.
+  ///
+  /// In fr, this message translates to:
+  /// **'Rapport PDF'**
+  String get sessionReportEmailActionLabel;
+
   /// No description provided for @sessionReportEmailSuccess.
   ///
   /// In fr, this message translates to:

@@ -146,6 +146,7 @@
   "sessionReportEmailDialogSend": "Senden",
   "sessionReportEmailDialogCancel": "Abbrechen",
   "sessionReportEmailActionTooltip": "PDF-Bericht per E-Mail senden",
+  "sessionReportEmailActionLabel": "PDF-Bericht",
   "sessionReportEmailSuccess": "Bericht an {email} gesendet",
   "@sessionReportEmailSuccess": {
     "placeholders": {

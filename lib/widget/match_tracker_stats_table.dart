@@ -666,12 +666,12 @@ class _StatsHeader extends StatelessWidget {
             icon: Icons.directions_run_rounded,
           ),
           if (onEmailReport != null)
-            IconButton(
-              tooltip: context.l10n.sessionReportEmailActionTooltip,
-              onPressed: onEmailReport,
-              icon: Icon(
-                Icons.picture_as_pdf_outlined,
-                color: colors.primary,
+            Tooltip(
+              message: context.l10n.sessionReportEmailActionTooltip,
+              child: FilledButton.tonalIcon(
+                onPressed: onEmailReport,
+                icon: const Icon(Icons.picture_as_pdf_outlined, size: 18),
+                label: Text(context.l10n.sessionReportEmailActionLabel),
               ),
             ),
         ],
