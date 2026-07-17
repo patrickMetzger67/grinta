@@ -14,7 +14,10 @@ class EventSyncService {
       _firestore.collection(collectionName);
 
   Future<void> createOrUpdateEventSync(EventSync trackerSync) async {
-    await _collection.doc(trackerSync.eventId).set(
+    final docId = (trackerSync.docId?.trim().isNotEmpty == true)
+        ? trackerSync.docId!.trim()
+        : trackerSync.eventId;
+    await _collection.doc(docId).set(
       trackerSync.toMap(),
       SetOptions(merge: true),
     );
@@ -24,8 +27,11 @@ class EventSyncService {
     required String eventId,
     required String uid,
     Timestamp? syncStartAt,
+    bool isFullySynced = false,
   }) async {
     await _collection.doc(eventId).set({
+      'eventId': eventId,
+      'isFullySynced': isFullySynced,
       'syncStartAt': syncStartAt ?? FieldValue.serverTimestamp(),
       'syncStartUid': uid,
       'syncEndAt': null,

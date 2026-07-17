@@ -22,7 +22,7 @@ class DeviceSync {
     this.erasedUid,
     this.withAsiFile = false,
     this.withAsiFileAt,
-    this.withAsiFileUid
+    this.withAsiFileUid,
   });
 
   factory DeviceSync.fromMap(Map<String, dynamic> map) {
@@ -51,7 +51,7 @@ class DeviceSync {
       'erasedUid': erasedUid,
       'withAsiFile': withAsiFile,
       'withAsiFileAt': withAsiFileAt,
-      'withAsiFileUid': withAsiFileUid
+      'withAsiFileUid': withAsiFileUid,
     };
   }
 
@@ -83,7 +83,15 @@ class DeviceSync {
 }
 
 class EventSync {
+  /// Firestore document id (`TRACKER_Sync/{docId}`).
+  final String? docId;
+
+  /// Business event id (training / match). Often equals [docId].
   final String eventId;
+
+  /// `true` when every expected device for this event is fully synced.
+  bool isFullySynced;
+
   Timestamp? syncStartAt;
   String? syncStartUid;
   Timestamp? syncEndAt;
@@ -91,7 +99,9 @@ class EventSync {
   Map<String, DeviceSync> devices;
 
   EventSync({
+    this.docId,
     required this.eventId,
+    this.isFullySynced = false,
     this.syncStartAt,
     this.syncStartUid,
     this.syncEndAt,
@@ -104,14 +114,20 @@ class EventSync {
 
     final rawDevices = data['devices'] as Map<String, dynamic>? ?? {};
     final parsedDevices = rawDevices.map(
-          (key, value) => MapEntry(
+      (key, value) => MapEntry(
         key,
         DeviceSync.fromMap(Map<String, dynamic>.from(value)),
       ),
     );
 
+    final storedEventId = data['eventId']?.toString().trim();
+
     return EventSync(
-      eventId: doc.id,
+      docId: doc.id,
+      eventId: (storedEventId != null && storedEventId.isNotEmpty)
+          ? storedEventId
+          : doc.id,
+      isFullySynced: data['isFullySynced'] ?? false,
       syncStartAt: data['syncStartAt'],
       syncStartUid: data['syncStartUid'],
       syncEndAt: data['syncEndAt'],
@@ -120,17 +136,27 @@ class EventSync {
     );
   }
 
-  factory EventSync.fromMap(Map<String, dynamic> map, {required String eventId}) {
+  factory EventSync.fromMap(
+    Map<String, dynamic> map, {
+    required String eventId,
+    String? docId,
+  }) {
     final rawDevices = map['devices'] as Map<String, dynamic>? ?? {};
     final parsedDevices = rawDevices.map(
-          (key, value) => MapEntry(
+      (key, value) => MapEntry(
         key,
         DeviceSync.fromMap(Map<String, dynamic>.from(value)),
       ),
     );
 
+    final storedEventId = map['eventId']?.toString().trim();
+
     return EventSync(
-      eventId: eventId,
+      docId: docId,
+      eventId: (storedEventId != null && storedEventId.isNotEmpty)
+          ? storedEventId
+          : eventId,
+      isFullySynced: map['isFullySynced'] ?? false,
       syncStartAt: map['syncStartAt'],
       syncStartUid: map['syncStartUid'],
       syncEndAt: map['syncEndAt'],
@@ -141,6 +167,8 @@ class EventSync {
 
   Map<String, dynamic> toMap() {
     return {
+      'eventId': eventId,
+      'isFullySynced': isFullySynced,
       'syncStartAt': syncStartAt,
       'syncStartUid': syncStartUid,
       'syncEndAt': syncEndAt,
@@ -150,7 +178,9 @@ class EventSync {
   }
 
   EventSync copyWith({
+    String? docId,
     String? eventId,
+    bool? isFullySynced,
     Timestamp? syncStartAt,
     String? syncStartUid,
     Timestamp? syncEndAt,
@@ -158,7 +188,9 @@ class EventSync {
     Map<String, DeviceSync>? devices,
   }) {
     return EventSync(
+      docId: docId ?? this.docId,
       eventId: eventId ?? this.eventId,
+      isFullySynced: isFullySynced ?? this.isFullySynced,
       syncStartAt: syncStartAt ?? this.syncStartAt,
       syncStartUid: syncStartUid ?? this.syncStartUid,
       syncEndAt: syncEndAt ?? this.syncEndAt,
