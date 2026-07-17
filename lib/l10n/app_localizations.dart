@@ -483,6 +483,205 @@ abstract class AppLocalizations {
   String invitationSmsMessage(
       String appName, String code, String appleStoreUrl, String googlePlayUrl);
 
+  /// No description provided for @sessionReportEmailSubject.
+  ///
+  /// In fr, this message translates to:
+  /// **'{appName} — Rapport {eventLabel} : {title}'**
+  String sessionReportEmailSubject(
+      String appName, String eventLabel, String title);
+
+  /// No description provided for @sessionReportEmailIntro.
+  ///
+  /// In fr, this message translates to:
+  /// **'Voici ton rapport de statistiques {appName}'**
+  String sessionReportEmailIntro(String appName);
+
+  /// No description provided for @sessionReportEmailEventMatch.
+  ///
+  /// In fr, this message translates to:
+  /// **'match'**
+  String get sessionReportEmailEventMatch;
+
+  /// No description provided for @sessionReportEmailEventTraining.
+  ///
+  /// In fr, this message translates to:
+  /// **'entraînement'**
+  String get sessionReportEmailEventTraining;
+
+  /// No description provided for @sessionReportEmailDetailsLabel.
+  ///
+  /// In fr, this message translates to:
+  /// **'Détails du rapport'**
+  String get sessionReportEmailDetailsLabel;
+
+  /// No description provided for @sessionReportEmailTypeLabel.
+  ///
+  /// In fr, this message translates to:
+  /// **'Type'**
+  String get sessionReportEmailTypeLabel;
+
+  /// No description provided for @sessionReportEmailTitleLabel.
+  ///
+  /// In fr, this message translates to:
+  /// **'Séance'**
+  String get sessionReportEmailTitleLabel;
+
+  /// No description provided for @sessionReportEmailDateLabel.
+  ///
+  /// In fr, this message translates to:
+  /// **'Date'**
+  String get sessionReportEmailDateLabel;
+
+  /// No description provided for @sessionReportEmailTeamLabel.
+  ///
+  /// In fr, this message translates to:
+  /// **'Équipe'**
+  String get sessionReportEmailTeamLabel;
+
+  /// No description provided for @sessionReportEmailPlayersLabel.
+  ///
+  /// In fr, this message translates to:
+  /// **'Joueurs'**
+  String get sessionReportEmailPlayersLabel;
+
+  /// No description provided for @sessionReportEmailAvgWorkloadLabel.
+  ///
+  /// In fr, this message translates to:
+  /// **'Workload moyen'**
+  String get sessionReportEmailAvgWorkloadLabel;
+
+  /// No description provided for @sessionReportEmailDateLine.
+  ///
+  /// In fr, this message translates to:
+  /// **'Date : {date}'**
+  String sessionReportEmailDateLine(String date);
+
+  /// No description provided for @sessionReportEmailTeamLine.
+  ///
+  /// In fr, this message translates to:
+  /// **'Équipe : {team}'**
+  String sessionReportEmailTeamLine(String team);
+
+  /// No description provided for @sessionReportEmailPlayersLine.
+  ///
+  /// In fr, this message translates to:
+  /// **'Joueurs avec données : {count}'**
+  String sessionReportEmailPlayersLine(int count);
+
+  /// No description provided for @sessionReportEmailAttachmentHint.
+  ///
+  /// In fr, this message translates to:
+  /// **'Le rapport PDF des statistiques tracker est joint à cet e-mail.'**
+  String get sessionReportEmailAttachmentHint;
+
+  /// No description provided for @sessionReportEmailDownloadHint.
+  ///
+  /// In fr, this message translates to:
+  /// **'Télécharge le rapport PDF via le bouton ci-dessous.'**
+  String get sessionReportEmailDownloadHint;
+
+  /// No description provided for @sessionReportEmailDownloadButton.
+  ///
+  /// In fr, this message translates to:
+  /// **'Télécharger le PDF'**
+  String get sessionReportEmailDownloadButton;
+
+  /// No description provided for @sessionReportEmailDownloadLine.
+  ///
+  /// In fr, this message translates to:
+  /// **'Télécharger le PDF : {url}'**
+  String sessionReportEmailDownloadLine(String url);
+
+  /// No description provided for @sessionReportEmailAskAddress.
+  ///
+  /// In fr, this message translates to:
+  /// **'Indique-moi l\'adresse e-mail à laquelle envoyer le rapport PDF.'**
+  String get sessionReportEmailAskAddress;
+
+  /// No description provided for @sessionReportEmailNoSessionYesterday.
+  ///
+  /// In fr, this message translates to:
+  /// **'Je n\'ai trouvé aucune séance pour cette période.'**
+  String get sessionReportEmailNoSessionYesterday;
+
+  /// No description provided for @sessionReportEmailPeriodUnclear.
+  ///
+  /// In fr, this message translates to:
+  /// **'Précise la période (hier, aujourd\'hui…) pour le rapport.'**
+  String get sessionReportEmailPeriodUnclear;
+
+  /// No description provided for @sessionReportEmailFooter.
+  ///
+  /// In fr, this message translates to:
+  /// **'Tu as reçu cet e-mail parce qu\'un rapport de séance a été généré depuis {appName}. Si tu n\'attendais pas ce message, tu peux l\'ignorer.'**
+  String sessionReportEmailFooter(String appName);
+
+  /// No description provided for @sessionReportEmailDialogTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Envoyer le rapport PDF'**
+  String get sessionReportEmailDialogTitle;
+
+  /// No description provided for @sessionReportEmailDialogMessage.
+  ///
+  /// In fr, this message translates to:
+  /// **'Indique l\'adresse e-mail qui recevra le rapport de statistiques (PDF).'**
+  String get sessionReportEmailDialogMessage;
+
+  /// No description provided for @sessionReportEmailDialogHint.
+  ///
+  /// In fr, this message translates to:
+  /// **'vous@exemple.com'**
+  String get sessionReportEmailDialogHint;
+
+  /// No description provided for @sessionReportEmailDialogSend.
+  ///
+  /// In fr, this message translates to:
+  /// **'Envoyer'**
+  String get sessionReportEmailDialogSend;
+
+  /// No description provided for @sessionReportEmailDialogCancel.
+  ///
+  /// In fr, this message translates to:
+  /// **'Annuler'**
+  String get sessionReportEmailDialogCancel;
+
+  /// No description provided for @sessionReportEmailActionTooltip.
+  ///
+  /// In fr, this message translates to:
+  /// **'Envoyer le rapport PDF par e-mail'**
+  String get sessionReportEmailActionTooltip;
+
+  /// No description provided for @sessionReportEmailActionLabel.
+  ///
+  /// In fr, this message translates to:
+  /// **'Rapport PDF'**
+  String get sessionReportEmailActionLabel;
+
+  /// No description provided for @sessionReportEmailSuccess.
+  ///
+  /// In fr, this message translates to:
+  /// **'Rapport envoyé à {email}'**
+  String sessionReportEmailSuccess(String email);
+
+  /// No description provided for @sessionReportEmailFailed.
+  ///
+  /// In fr, this message translates to:
+  /// **'Impossible d\'envoyer le rapport PDF.'**
+  String get sessionReportEmailFailed;
+
+  /// No description provided for @sessionReportEmailNoStats.
+  ///
+  /// In fr, this message translates to:
+  /// **'Aucune statistique tracker disponible pour générer ce rapport.'**
+  String get sessionReportEmailNoStats;
+
+  /// No description provided for @sessionReportEmailInvalid.
+  ///
+  /// In fr, this message translates to:
+  /// **'Adresse e-mail invalide.'**
+  String get sessionReportEmailInvalid;
+
   /// No description provided for @memberInvitationEmailFailed.
   ///
   /// In fr, this message translates to:
@@ -4444,20 +4643,83 @@ abstract class AppLocalizations {
   /// **'Journée entière'**
   String get createNonSportEventAllDay;
 
+  /// No description provided for @createNonSportEventStartDate.
+  ///
+  /// In fr, this message translates to:
+  /// **'Date de début'**
   String get createNonSportEventStartDate;
-  String get createNonSportEventStartTime;
-  String get createNonSportEventEndDate;
-  String get createNonSportEventEndTime;
-  String get createNonSportEventInvalidRange;
-  String get editNonSportEventTitle;
-  String get editNonSportEventSubmit;
-  String get editNonSportEventSaved;
-  String get editNonSportEventError;
-  String get deleteNonSportEventConfirmTitle;
-  String deleteNonSportEventConfirmMessage(String title);
-  String get deleteNonSportEventDeleted;
-  String get deleteNonSportEventError;
 
+  /// No description provided for @createNonSportEventStartTime.
+  ///
+  /// In fr, this message translates to:
+  /// **'Heure de début'**
+  String get createNonSportEventStartTime;
+
+  /// No description provided for @createNonSportEventEndDate.
+  ///
+  /// In fr, this message translates to:
+  /// **'Date de fin'**
+  String get createNonSportEventEndDate;
+
+  /// No description provided for @createNonSportEventEndTime.
+  ///
+  /// In fr, this message translates to:
+  /// **'Heure de fin'**
+  String get createNonSportEventEndTime;
+
+  /// No description provided for @createNonSportEventInvalidRange.
+  ///
+  /// In fr, this message translates to:
+  /// **'La fin doit être après le début.'**
+  String get createNonSportEventInvalidRange;
+
+  /// No description provided for @editNonSportEventTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Modifier l\'évènement'**
+  String get editNonSportEventTitle;
+
+  /// No description provided for @editNonSportEventSubmit.
+  ///
+  /// In fr, this message translates to:
+  /// **'Enregistrer'**
+  String get editNonSportEventSubmit;
+
+  /// No description provided for @editNonSportEventSaved.
+  ///
+  /// In fr, this message translates to:
+  /// **'Évènement mis à jour'**
+  String get editNonSportEventSaved;
+
+  /// No description provided for @editNonSportEventError.
+  ///
+  /// In fr, this message translates to:
+  /// **'Impossible de modifier l\'évènement. Réessayez.'**
+  String get editNonSportEventError;
+
+  /// No description provided for @deleteNonSportEventConfirmTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Supprimer l\'évènement ?'**
+  String get deleteNonSportEventConfirmTitle;
+
+  /// No description provided for @deleteNonSportEventConfirmMessage.
+  ///
+  /// In fr, this message translates to:
+  /// **'« {title} » sera définitivement supprimé, ainsi que les notifications associées.'**
+  String deleteNonSportEventConfirmMessage(String title);
+
+  /// No description provided for @deleteNonSportEventDeleted.
+  ///
+  /// In fr, this message translates to:
+  /// **'Évènement supprimé'**
+  String get deleteNonSportEventDeleted;
+
+  /// No description provided for @deleteNonSportEventError.
+  ///
+  /// In fr, this message translates to:
+  /// **'Impossible de supprimer l\'évènement. Réessayez.'**
+  String get deleteNonSportEventError;
 
   /// No description provided for @createNonSportEventLocation.
   ///
@@ -4583,14 +4845,14 @@ abstract class AppLocalizations {
   ///
   /// In fr, this message translates to:
   /// **'{title} — {when} — {location}'**
-  String createNonSportEventNotificationBodyWithLocation(String title, String when, String location);
+  String createNonSportEventNotificationBodyWithLocation(
+      String title, String when, String location);
 
   /// No description provided for @nonSportEventInviteesTitle.
   ///
   /// In fr, this message translates to:
   /// **'Invitations'**
   String get nonSportEventInviteesTitle;
-
 
   /// No description provided for @agendaLegend.
   ///
@@ -6841,7 +7103,6 @@ abstract class AppLocalizations {
   /// In fr, this message translates to:
   /// **'Données capteurs resynchronisées.'**
   String get trainingIntenseResyncSuccess;
-
 
   /// No description provided for @trainingIntenseFinishSyncing.
   ///

@@ -77,6 +77,11 @@ AskDiegoActivityPeriod? parseActivityPeriodFromMessage({
 
   final today = DateUtils.dateOnly(referenceDate);
 
+  final singleDay = _parseSingleDay(normalized, today, localeCode);
+  if (singleDay != null) {
+    return singleDay;
+  }
+
   final lastWeek = _parseLastWeek(normalized, today, localeCode);
   if (lastWeek != null) {
     return lastWeek;
@@ -100,6 +105,62 @@ AskDiegoActivityPeriod? parseActivityPeriodFromMessage({
   final lastNDays = _parseLastNDays(normalized, today, localeCode);
   if (lastNDays != null) {
     return lastNDays;
+  }
+
+  return null;
+}
+
+AskDiegoActivityPeriod? _parseSingleDay(
+  String normalized,
+  DateTime today,
+  String localeCode,
+) {
+  const yesterdayPatterns = <String>[
+    r'\bhier\b',
+    r'\byesterday\b',
+    r'\bieri\b',
+    r'\bgestern\b',
+    r'\bayer\b',
+  ];
+  if (_matchesAny(normalized, yesterdayPatterns)) {
+    final day = today.subtract(const Duration(days: 1));
+    return AskDiegoActivityPeriod(
+      start: day,
+      end: day,
+      label: _formatRangeLabel(day, day, localeCode),
+    );
+  }
+
+  const todayPatterns = <String>[
+    r"\baujourd[\s']?hui\b",
+    r'\baujourd\s*hui\b',
+    r'\btoday\b',
+    r'\boggi\b',
+    r'\bheute\b',
+    r'\bhoy\b',
+  ];
+  if (_matchesAny(normalized, todayPatterns)) {
+    return AskDiegoActivityPeriod(
+      start: today,
+      end: today,
+      label: _formatRangeLabel(today, today, localeCode),
+    );
+  }
+
+  const dayBeforeYesterdayPatterns = <String>[
+    r'\bavant[\s-]hier\b',
+    r'\bday\s+before\s+yesterday\b',
+    r'\bavantieri\b',
+    r'\bvorgestern\b',
+    r'\banteayer\b',
+  ];
+  if (_matchesAny(normalized, dayBeforeYesterdayPatterns)) {
+    final day = today.subtract(const Duration(days: 2));
+    return AskDiegoActivityPeriod(
+      start: day,
+      end: day,
+      label: _formatRangeLabel(day, day, localeCode),
+    );
   }
 
   return null;

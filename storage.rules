@@ -16,5 +16,25 @@ service firebase.storage {
     match /tracker/{fileName} {
       allow read, write: if request.auth != null;
     }
+
+    // Session/match PDF reports linked from outbound emails (no auth in mail clients).
+    // Path: sessionReports/{uid}/{filename}.pdf — multi-player reports with heatmaps
+    // can exceed a few MB; keep a generous authenticated write limit.
+    // Public read so mailbox download links work without Firebase Auth.
+    match /sessionReports/{userId}/{fileName} {
+      allow read: if true;
+      allow write: if request.auth != null
+        && request.auth.uid == userId
+        && request.resource.size < 20 * 1024 * 1024
+        && request.resource.contentType.matches('application/pdf.*');
+    }
+
+    // Backward-compatible catch-all under sessionReports/ (legacy paths).
+    match /sessionReports/{allPaths=**} {
+      allow read: if true;
+      allow write: if request.auth != null
+        && request.resource.size < 20 * 1024 * 1024
+        && request.resource.contentType.matches('application/pdf.*');
+    }
   }
 }

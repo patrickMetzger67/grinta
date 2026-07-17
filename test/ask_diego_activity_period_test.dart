@@ -88,6 +88,31 @@ void main() {
       expect(period.dayCount, 30);
     });
 
+    test('parses hier as single day', () {
+      final AskDiegoActivityPeriod? period = parseActivityPeriodFromMessage(
+        message: "rapport de la séance d'hier",
+        referenceDate: ref,
+        localeCode: 'fr',
+      );
+
+      expect(period, isNotNull);
+      expect(period!.start, DateTime(2026, 7, 7));
+      expect(period.end, DateTime(2026, 7, 7));
+      expect(period.dayCount, 1);
+    });
+
+    test('parses today as single day', () {
+      final AskDiegoActivityPeriod? period = parseActivityPeriodFromMessage(
+        message: "send today's match report",
+        referenceDate: ref,
+        localeCode: 'en',
+      );
+
+      expect(period, isNotNull);
+      expect(period!.start, DateTime(2026, 7, 8));
+      expect(period.end, DateTime(2026, 7, 8));
+    });
+
     test('returns null when no period expression', () {
       expect(
         parseActivityPeriodFromMessage(

@@ -1,4 +1,4 @@
-import 'dart:async' show StreamSubscription, unawaited;
+import 'dart:async' show StreamController, StreamSubscription, unawaited;
 
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/foundation.dart';
@@ -26,6 +26,16 @@ class AgendaService {
   final Map<String, TeamWorkloadSummary?> _workloadSummaryCache =
       <String, TeamWorkloadSummary?>{};
 
+  /// Event ids that must re-hit Firestore even if a cache entry already exists
+  /// (e.g. after Intense re-sync). Keeps the previous summary painted until the
+  /// fresh doc arrives.
+  final Set<String> _workloadSummaryForceRefetchIds = <String>{};
+
+  /// Broadcast when [invalidateWorkloadSummaryCache] runs so active
+  /// [watchAgendaItems] listeners re-enrich without a full resubscribe.
+  final StreamController<String?> _workloadCacheInvalidations =
+      StreamController<String?>.broadcast();
+
   AgendaService({
     TrainingService? trainingService,
     MatchService? matchService,
@@ -37,6 +47,21 @@ class AgendaService {
             teamWorkloadSummaryService ?? TeamWorkloadSummaryService(),
         _nonSportEventService =
             nonSportEventService ?? NonSportEventService();
+
+  /// Marks team workload for [eventId] (or all events) stale and notifies
+  /// active agenda streams to re-fetch [TRACKER_TeamAnalysis].
+  void invalidateWorkloadSummaryCache([String? eventId]) {
+    final String? trimmed = eventId?.trim();
+    if (trimmed == null || trimmed.isEmpty) {
+      _workloadSummaryForceRefetchIds
+        ..addAll(_workloadSummaryCache.keys);
+    } else {
+      _workloadSummaryForceRefetchIds.add(trimmed);
+    }
+    if (!_workloadCacheInvalidations.isClosed) {
+      _workloadCacheInvalidations.add(trimmed);
+    }
+  }
 
   Stream<List<AgendaItem>> watchAgendaItems({
     required List<Team> teams,
@@ -162,7 +187,20 @@ class AgendaService {
         );
       }
 
-      if (subscriptions.isEmpty) {
+      subscriptions.add(
+        _workloadCacheInvalidations.stream.listen((_) {
+          if (!isCancelled) {
+            emitMerged();
+          }
+        }),
+      );
+
+      final bool hasAgendaSources = teams.any((Team team) {
+            final String? teamId = team.keyTeam?.trim();
+            return teamId != null && teamId.isNotEmpty;
+          }) ||
+          (trimmedMemberId != null && trimmedMemberId.isNotEmpty);
+      if (!hasAgendaSources) {
         controller.add(const <AgendaItem>[]);
       }
 
@@ -293,17 +331,30 @@ class AgendaService {
           return item;
         }
 
-        if (_workloadSummaryCache.containsKey(item.id)) {
+        final bool forceRefetch =
+            _workloadSummaryForceRefetchIds.contains(item.id);
+
+        if (!forceRefetch && _workloadSummaryCache.containsKey(item.id)) {
           final TeamWorkloadSummary? cached = _workloadSummaryCache[item.id];
-          if (cached == null) {
+          if (cached != null) {
+            return _withTeamWorkloadSummary(item, cached);
+          }
+          // Cached miss: retry once trackers are synced / session is done so
+          // finish+upload is not stuck on a pre-sync null entry.
+          final bool shouldRetryNullCache = item.areTrackersSynchronized ||
+              item.isDone ||
+              item.training?.isFinish == true ||
+              item.training?.isTrackerDataUploaded == true ||
+              item.match?.isTrackerDataUploaded == true;
+          if (!shouldRetryNullCache) {
             return item;
           }
-          return _withTeamWorkloadSummary(item, cached);
         }
 
         final TeamWorkloadSummary? summary =
             await _teamWorkloadSummaryService.getByEventId(item.id);
         _workloadSummaryCache[item.id] = summary;
+        _workloadSummaryForceRefetchIds.remove(item.id);
         if (summary == null) {
           return item;
         }

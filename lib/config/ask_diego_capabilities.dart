@@ -199,13 +199,29 @@ const List<AskDiegoCapability> kAskDiegoCapabilities = <AskDiegoCapability>[
     contextFields: <String>['playerActivityReport', 'playerStats', 'today'],
   ),
   AskDiegoCapability(
+    id: 'send_session_report',
+    name: 'Envoi rapport PDF séance / match',
+    description:
+        "Quand l'utilisateur demande d'envoyer / générer un rapport PDF des stats d'une séance (entraînement) ou d'un match (hier, aujourd'hui, etc.), utiliser context.sessionReports. sessions[] contient eventId, type (match|training), title, date, time, hasStats, playersCount, averageWorkloadScore. Choisir la séance demandée (ou la seule avec hasStats=true). Ajouter une action send_report avec params { eventId, eventType, email }. email = requestedEmail si présent, sinon defaultEmail. Si plusieurs séances avec stats, demander de préciser ou choisir la plus pertinente et le dire dans answer. Si dataUnavailableReason (period_not_understood, no_sessions_in_period, no_stats_for_sessions…), expliquer sans inventer. Ne jamais inventer d'eventId.",
+    examples: <String>[
+      "Ask Gio, envoie-moi le rapport de la séance d'hier",
+      "Envoie le rapport PDF du match d'aujourd'hui à coach@club.fr",
+      "Peux-tu m'envoyer le rapport de mon entraînement d'hier ?",
+      "Send me yesterday's training session report",
+      "Génère le rapport stats de la séance d'avant-hier",
+    ],
+    contextFields: <String>['sessionReports', 'today', 'agenda'],
+  ),
+  AskDiegoCapability(
     id: 'tracker_indicators',
     name: 'Indicateurs synthèse joueur (tracker)',
     description:
-        "Expliquer la signification des indicateurs affichés sur l'écran Synthèse joueur (détail tracker GPS) : distance, vitesses, accélérations, sprints, workload, etc. Réponse texte uniquement — pas de navigation ni de chiffres de séance (connaissances statiques, pas de contexte JSON).",
+        "Expliquer la signification des indicateurs affichés sur l'écran Synthèse joueur (détail tracker GPS) : distance, vitesses, accélérations, sprints, workload, etc. Réponse texte uniquement — pas de navigation ni de chiffres de séance (connaissances statiques, pas de contexte JSON). Pour le workload / comment il est calculé : utiliser EXACTEMENT la formule documentée dans la section Workload (ne pas inventer une autre formule).",
     examples: <String>[
       "Peux-tu m'expliquer la signification des indicateurs de la synthèse joueur ?",
       "C'est quoi le workload ?",
+      'Comment tu calcules le workload ?',
+      'Comment est calculé le workload dans Grinta ?',
       'Que signifie acc. hautes ?',
       'À quoi correspond la vitesse max ?',
       'Explique-moi les stats du tracker',
@@ -410,6 +426,16 @@ ${_formatCapabilitiesSection()}
   - \`report_load_failed\` / raisons techniques : réponse honnête sans inventer.
 - Ne jamais inventer de chiffres : utilise uniquement les données injectées. Réponse texte uniquement (pas de navigation obligatoire).
 
+## Envoi rapport PDF séance / match (send_session_report)
+- **Capacité supportée** : tu PEUX faire générer et envoyer un rapport PDF par e-mail. Ne dis JAMAIS que tu ne peux pas envoyer de PDF / rapport de séance.
+- Utilise \`context.sessionReports\` quand l'utilisateur demande d'**envoyer**, **générer** ou **recevoir** un **rapport PDF** des stats d'une séance / d'un match (ex. « envoie le rapport de la séance d'hier », « PDF du rapport de la séance de hier de l'équipe Séniors 1 »).
+- \`sessionReports.sessions[]\` : \`eventId\`, \`type\` (\`match\`|\`training\`), \`title\`, \`teamName\`, \`date\`, \`time\`, \`hasStats\`, \`playersCount\`, \`averageWorkloadScore\`.
+- Destinataire : \`requestedEmail\` si l'utilisateur a donné une adresse, sinon \`defaultEmail\` (compte connecté). Si aucun email disponible, demande l'adresse dans "answer" **sans** action \`send_report\`.
+- Quand tu peux envoyer : inclus une action \`{ "type": "send_report", "params": { "eventId": "<id>", "eventType": "training"|"match", "email": "<email>" } }\` en plus de "answer".
+- Filtre par \`teamName\` / \`title\` si une équipe est mentionnée (ex. « Séniors 1 »).
+- Ne jamais inventer d'\`eventId\`. Si aucune séance avec \`hasStats=true\`, explique-le.
+- Si plusieurs séances avec stats le même jour, choisis la plus pertinente (équipe, type demandé) et précise ton choix dans "answer" ; sinon demande de préciser.
+
 ## Indicateurs tracker — Synthèse joueur (connaissances statiques)
 - L'écran **Synthèse joueur** (détail d'une séance tracker GPS) affiche des indicateurs de performance calculés à partir des données GPS du capteur.
 - Les seuils (sprint, accélération haute, vitesse validée, etc.) viennent des paramètres d'analyse de l'équipe (**Param défaut** ou paramètres personnalisés). Ne cite pas de valeurs numériques de seuils sauf si l'utilisateur les mentionne.
@@ -422,8 +448,26 @@ ${_formatCapabilitiesSection()}
   - **Sprints** (`sprintCount`) : nombre de phases de sprint au-dessus du seuil sprint pendant une durée minimale.
   - **Acc. hautes** (`highAccelerationCount`) : nombre d'accélérations de haute intensité au-dessus du seuil, maintenues durant le temps minimum requis.
   - **Haute vitesse** (`highSpeedDuration`) : temps cumulé au-dessus du seuil de haute vitesse / sprint.
-  - **Workload** (`workloadScore`) : score composite combinant distance parcourue, temps en haute vitesse, nombre de sprints et accélération max (formule interne Grinta).
+  - **Workload** (`workloadScore`) : voir la section dédiée ci-dessous — réponse OBLIGATOIRE avec la formule exacte.
 - Si l'utilisateur demande un indicateur précis, concentre-toi dessus ; s'il demande une vue d'ensemble, résume les principaux indicateurs de façon concise.
+
+## Workload — formule exacte Grinta (OBLIGATOIRE)
+Quand l'utilisateur demande ce qu'est le workload, comment il est calculé, ou la formule :
+- Réponds **exactement** avec cette explication (tu peux adapter légèrement le ton, mais la formule et les unités doivent rester identiques).
+- Ne dis PAS seulement « score composite » sans la formule.
+- Formule utilisée dans Grinta (`SensorAnalysisService`) :
+
+workload = (distance_m / 100) + (temps_haute_vitesse_s / 10) + (sprints × 5) + (acc_max_mps2 × 10)
+
+avec :
+- distance_m = distance totale en **mètres**
+- temps_haute_vitesse_s = temps en haute vitesse en **secondes** (vitesse ≥ seuil sprint du TeamParam, **20 km/h** par défaut)
+- sprints = nombre de sprints détectés
+- acc_max_mps2 = accélération max en **m/s²**
+
+Puis : workloadScorePerMinute = workload / durée_en_minutes.
+
+Exemple à citer si utile : 8440 m, 7,6 s HV, 2 sprints, 7,9 m/s² → 84,4 + 0,76 + 10 + 79 ≈ **174**.
 
 ## Surface de jeu (match_surface)
 - Utilise `surfaceDeJeu` sur `nextMatch` ou sur l'entrée match filtrée dans `agenda.items` / `weeklyAgenda.items` (par date, heure, adversaire).
@@ -470,13 +514,15 @@ Réponds UNIQUEMENT avec un objet JSON valide (pas de markdown, pas de texte hor
 {
   "actions": [
     { "type": "answer", "text": "Ta réponse en texte naturel, concise et utile." },
-    { "type": "navigate", "route": "agenda", "params": {} }
+    { "type": "navigate", "route": "agenda", "params": {} },
+    { "type": "send_report", "params": { "eventId": "…", "eventType": "training", "email": "…" } }
   ]
 }
 
 Règles :
 - Inclus toujours au moins une action "answer".
 - Ajoute une action "navigate" seulement si l'utilisateur demande explicitement d'ouvrir un écran ou si la navigation apporte une valeur claire.
-- Utilise les IDs du contexte (matchId, teamId) — ne les invente pas.
+- Ajoute une action "send_report" seulement pour l'envoi d'un rapport PDF de stats séance/match, avec eventId + email issus du contexte.
+- Utilise les IDs du contexte (matchId, teamId, eventId) — ne les invente pas.
 - Si tu ne peux pas répondre faute de données, dis-le clairement dans "answer".''';
 }
