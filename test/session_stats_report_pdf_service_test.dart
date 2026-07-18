@@ -242,20 +242,22 @@ void main() {
     );
   });
 
-  test('production SVG doc ids use sensor + TeamAnalysis period doc id', () {
+  test('production SVG doc ids are sensor-matchId_period', () {
     expect(
-      TrackerSvgService.svgDocumentIdCandidates(
-        trackerId: '14',
-        teamAnalysisDocId: 'abcTeamAnalysisFull',
+      TrackerSvgService.buildSvgDocumentIds(
+        trackerId: '9',
+        eventId: '53514382',
+        period: 'firstHalf',
       ),
-      contains('14-abcTeamAnalysisFull'),
+      contains('09-53514382_firstHalf'),
     );
     expect(
-      TrackerSvgService.svgDocumentIdCandidates(
-        trackerId: '01',
-        teamAnalysisDocId: 'periodDoc123',
+      TrackerSvgService.buildSvgDocumentIds(
+        trackerId: '09',
+        eventId: '53514382',
+        period: 'fullMatch',
       ),
-      containsAll(<String>['01-periodDoc123', '1-periodDoc123']),
+      contains('09-53514382_fullMatch'),
     );
   });
 }
