@@ -241,4 +241,21 @@ void main() {
       containsAll(<String>['1', '01']),
     );
   });
+
+  test('production SVG doc ids use sensor + TeamAnalysis period doc id', () {
+    expect(
+      TrackerSvgService.svgDocumentIdCandidates(
+        trackerId: '14',
+        teamAnalysisDocId: 'abcTeamAnalysisFull',
+      ),
+      contains('14-abcTeamAnalysisFull'),
+    );
+    expect(
+      TrackerSvgService.svgDocumentIdCandidates(
+        trackerId: '01',
+        teamAnalysisDocId: 'periodDoc123',
+      ),
+      containsAll(<String>['01-periodDoc123', '1-periodDoc123']),
+    );
+  });
 }

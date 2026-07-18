@@ -123,6 +123,17 @@ class SessionStatsReportService {
           )
         : null;
 
+    // Heatmap SVG keys are `{sensor}-{TRACKER_TeamAnalysis_{period} docId}`.
+    final Map<String, String> periodTeamAnalysisDocIds = isMatch
+        ? await _svgService.resolvePeriodTeamAnalysisDocIds(safeEventId)
+        : const <String, String>{};
+    if (isMatch && kDebugMode) {
+      debugPrint(
+        'SessionStatsReportService: period TeamAnalysis doc ids for '
+        '$safeEventId => $periodTeamAnalysisDocIds',
+      );
+    }
+
     final playerRows = <SessionStatsReportPlayerRow>[];
     final playerDetails = <SessionStatsReportPlayerDetail>[];
 
@@ -172,6 +183,7 @@ class SessionStatsReportService {
           teamParam: teamParam,
           isMatch: isMatch,
           eventId: safeEventId,
+          periodTeamAnalysisDocIds: periodTeamAnalysisDocIds,
         ),
       );
     }
@@ -261,6 +273,7 @@ class SessionStatsReportService {
     required TeamParam teamParam,
     required bool isMatch,
     required String eventId,
+    Map<String, String> periodTeamAnalysisDocIds = const <String, String>{},
   }) async {
     final List<SessionStatsReportSpeedZoneRow> speedZones =
         <SessionStatsReportSpeedZoneRow>[];
@@ -332,8 +345,16 @@ class SessionStatsReportService {
             trackerCandidates: trackerCandidates,
             eventId: eventId,
             periodKey: period.key,
+            periodTeamAnalysisDocId: periodTeamAnalysisDocIds[period.key],
           );
           if (svg == null || svg.trim().isEmpty) {
+            if (kDebugMode) {
+              debugPrint(
+                'SessionStatsReportService: no heatmap SVG for '
+                'tracker=${trackerCandidates.join("|")} period=${period.key} '
+                'teamAnalysisDocId=${periodTeamAnalysisDocIds[period.key]}',
+              );
+            }
             continue;
           }
           final Uint8List? png = await svgStringToPngBytes(
@@ -453,27 +474,35 @@ class SessionStatsReportService {
     );
   }
 
-  /// Prefer WithSprints (same as in-app heatmap UI), then the base period.
+  /// Production key: `{sensor}-{TRACKER_TeamAnalysis_{period} docId}`.
+  /// Falls back to legacy `{sensor}-{eventId}_{period}` via TrackerSvgService.
   Future<String?> _loadHeatmapSvg({
     required List<String> trackerCandidates,
     required String eventId,
     required String periodKey,
+    String? periodTeamAnalysisDocId,
   }) async {
-    final List<String> periodSuffixes = <String>[
-      '${periodKey}WithSprints',
-      periodKey,
-    ];
-
-    for (final String trackerId in trackerCandidates) {
-      for (final String suffix in periodSuffixes) {
-        final String? svg = await _svgService.getSvgForTrackerPeriod(
+    final String? analysisDocId = periodTeamAnalysisDocId?.trim();
+    if (analysisDocId != null && analysisDocId.isNotEmpty) {
+      for (final String trackerId in trackerCandidates) {
+        final String? svg = await _svgService.getSvgForSensorAndAnalysisDoc(
           trackerId: trackerId,
-          eventId: eventId,
-          periodSuffix: suffix,
+          teamAnalysisDocId: analysisDocId,
         );
         if (svg != null && svg.trim().isNotEmpty) {
           return svg;
         }
+      }
+    }
+
+    for (final String trackerId in trackerCandidates) {
+      final String? svg = await _svgService.getSvgForTrackerPeriod(
+        trackerId: trackerId,
+        eventId: eventId,
+        periodSuffix: periodKey,
+      );
+      if (svg != null && svg.trim().isNotEmpty) {
+        return svg;
       }
     }
     return null;
