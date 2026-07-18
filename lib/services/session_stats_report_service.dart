@@ -508,10 +508,9 @@ class SessionStatsReportService {
               await _playerService.getPlayerById(id).catchError((_) => null);
           if (player != null) {
             playersById[id] = player;
-            final Uint8List? raw = await _loadPlayerPhotoBytes(player);
-            photosById[id] = raw == null
-                ? null
-                : (circularCropPngBytes(raw, size: 96) ?? raw);
+            // Keep original photo bytes; PDF clips to a circle via ClipOval
+            // (no white/black square plate behind the avatar).
+            photosById[id] = await _loadPlayerPhotoBytes(player);
           }
         }),
       );

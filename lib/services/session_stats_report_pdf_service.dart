@@ -206,43 +206,61 @@ class SessionStatsReportPdfService {
   }
 
   pw.Widget _buildMatchPlayerBody(SessionStatsReportPlayerDetail player) {
-    return pw.Row(
-      crossAxisAlignment: pw.CrossAxisAlignment.start,
+    // Heatmaps are reserved at a fixed height at the bottom. A tall timeline
+    // used to push them off the single landscape page (only short sessions
+    // like tracker 14 still showed them).
+    return pw.Column(
+      crossAxisAlignment: pw.CrossAxisAlignment.stretch,
       children: [
         pw.Expanded(
-          flex: 10,
-          child: pw.Column(
-            crossAxisAlignment: pw.CrossAxisAlignment.stretch,
+          child: pw.Row(
+            crossAxisAlignment: pw.CrossAxisAlignment.start,
             children: [
-              _sectionTitle('Synthese'),
-              pw.SizedBox(height: 4),
-              _buildSynthesisGrid(player),
-              pw.SizedBox(height: 8),
-              _sectionTitle('Zones de vitesse'),
-              pw.SizedBox(height: 4),
-              _buildSpeedZonesBlock(player),
+              pw.Expanded(
+                flex: 10,
+                child: pw.Column(
+                  crossAxisAlignment: pw.CrossAxisAlignment.stretch,
+                  children: [
+                    _sectionTitle('Synthese'),
+                    pw.SizedBox(height: 4),
+                    _buildSynthesisGrid(player),
+                    pw.SizedBox(height: 8),
+                    _sectionTitle('Zones de vitesse'),
+                    pw.SizedBox(height: 4),
+                    _buildSpeedZonesBlock(player),
+                  ],
+                ),
+              ),
+              pw.SizedBox(width: 10),
+              pw.Expanded(
+                flex: 14,
+                child: pw.Column(
+                  crossAxisAlignment: pw.CrossAxisAlignment.stretch,
+                  children: [
+                    _sectionTitle('Zones de terrain'),
+                    pw.SizedBox(height: 4),
+                    _buildFieldZonesGrid(player.fieldZones),
+                    pw.SizedBox(height: 6),
+                    _sectionTitle('Timeline distance'),
+                    pw.SizedBox(height: 4),
+                    pw.Expanded(
+                      child: _buildTimelineChart(
+                        player.distanceTimeline,
+                        compact: true,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
             ],
           ),
         ),
-        pw.SizedBox(width: 10),
-        pw.Expanded(
-          flex: 14,
-          child: pw.Column(
-            crossAxisAlignment: pw.CrossAxisAlignment.stretch,
-            children: [
-              _sectionTitle('Timeline distance'),
-              pw.SizedBox(height: 4),
-              _buildTimelineChart(player.distanceTimeline),
-              pw.SizedBox(height: 6),
-              _sectionTitle('Zones de terrain'),
-              pw.SizedBox(height: 4),
-              _buildFieldZonesGrid(player.fieldZones),
-              pw.SizedBox(height: 6),
-              _sectionTitle('Heatmaps'),
-              pw.SizedBox(height: 4),
-              _buildHeatmapsRow(player.heatmaps),
-            ],
-          ),
+        pw.SizedBox(height: 6),
+        _sectionTitle('Heatmaps'),
+        pw.SizedBox(height: 4),
+        pw.SizedBox(
+          height: 158,
+          child: _buildHeatmapsRow(player.heatmaps),
         ),
       ],
     );
@@ -463,15 +481,16 @@ class SessionStatsReportPdfService {
 
   pw.Widget _playerAvatar(Uint8List? bytes, {double size = 28}) {
     if (bytes != null && bytes.isNotEmpty) {
-      return pw.Container(
+      return pw.SizedBox(
         width: size,
         height: size,
-        decoration: pw.BoxDecoration(
-          border: pw.Border.all(color: _border),
-        ),
-        child: pw.Image(
-          pw.MemoryImage(bytes),
-          fit: pw.BoxFit.cover,
+        child: pw.ClipOval(
+          child: pw.Image(
+            pw.MemoryImage(bytes),
+            fit: pw.BoxFit.cover,
+            width: size,
+            height: size,
+          ),
         ),
       );
     }
@@ -480,7 +499,11 @@ class SessionStatsReportPdfService {
       width: size,
       height: size,
       alignment: pw.Alignment.center,
-      color: _border,
+      decoration: pw.BoxDecoration(
+        shape: pw.BoxShape.circle,
+        color: _surface,
+        border: pw.Border.all(color: _border),
+      ),
       child: pw.Text(
         'J',
         style: pw.TextStyle(
@@ -651,28 +674,32 @@ class SessionStatsReportPdfService {
   }
 
   pw.Widget _buildTimelineChart(
-    List<SessionStatsReportTimelineBucket> timeline,
-  ) {
+    List<SessionStatsReportTimelineBucket> timeline, {
+    bool compact = false,
+  }) {
     if (timeline.isEmpty) {
       return _emptyHint('Aucune timeline distance');
     }
 
-    // Keep the chart readable: show at most ~16 buckets on one landscape page.
+    // Compact mode leaves room for reserved heatmaps on match player pages.
+    final int maxBuckets = compact ? 12 : 16;
     final List<SessionStatsReportTimelineBucket> buckets =
-        timeline.length <= 16
+        timeline.length <= maxBuckets
             ? timeline
             : [
-                for (var i = 0; i < 16; i++)
-                  timeline[((i * timeline.length) / 16).floor()],
+                for (var i = 0; i < maxBuckets; i++)
+                  timeline[((i * timeline.length) / maxBuckets).floor()],
               ];
 
     final double maxMeters = buckets
         .map((e) => e.totalMeters)
         .fold<double>(0, (prev, value) => math.max(prev, value));
     final double safeMax = maxMeters <= 0 ? 1 : maxMeters;
+    final double rowGap = compact ? 2.5 : 5;
+    final double barHeight = compact ? 7 : 9;
 
     return pw.Container(
-      padding: const pw.EdgeInsets.all(8),
+      padding: pw.EdgeInsets.all(compact ? 6 : 8),
       decoration: pw.BoxDecoration(
         color: _white,
         borderRadius: pw.BorderRadius.circular(8),
@@ -691,44 +718,77 @@ class SessionStatsReportPdfService {
               _buildLegendDot(label: 'Haute intensite', color: _warning),
             ],
           ),
-          pw.SizedBox(height: 8),
-          for (final bucket in buckets)
-            pw.Padding(
-              padding: const pw.EdgeInsets.only(bottom: 5),
-              child: pw.Row(
+          pw.SizedBox(height: compact ? 4 : 8),
+          if (compact)
+            pw.Expanded(
+              child: pw.Column(
+                crossAxisAlignment: pw.CrossAxisAlignment.stretch,
                 children: [
-                  pw.SizedBox(
-                    width: 40,
-                    child: pw.Text(
-                      _t(bucket.label),
-                      maxLines: 1,
-                      style: const pw.TextStyle(
-                        color: _textSecondary,
-                        fontSize: 7,
+                  for (final bucket in buckets)
+                    pw.Expanded(
+                      child: _buildTimelineBucketRow(
+                        bucket: bucket,
+                        maxMeters: safeMax,
+                        rowGap: rowGap,
+                        barHeight: barHeight,
                       ),
                     ),
-                  ),
-                  pw.Expanded(
-                    child: _stackedBar(
-                      bucket: bucket,
-                      maxMeters: safeMax,
-                    ),
-                  ),
-                  pw.SizedBox(width: 4),
-                  pw.SizedBox(
-                    width: 36,
-                    child: pw.Text(
-                      '${bucket.totalMeters.toStringAsFixed(0)}m',
-                      textAlign: pw.TextAlign.right,
-                      style: const pw.TextStyle(
-                        color: _textPrimary,
-                        fontSize: 7,
-                      ),
-                    ),
-                  ),
                 ],
               ),
+            )
+          else
+            for (final bucket in buckets)
+              _buildTimelineBucketRow(
+                bucket: bucket,
+                maxMeters: safeMax,
+                rowGap: rowGap,
+                barHeight: barHeight,
+              ),
+        ],
+      ),
+    );
+  }
+
+  pw.Widget _buildTimelineBucketRow({
+    required SessionStatsReportTimelineBucket bucket,
+    required double maxMeters,
+    required double rowGap,
+    required double barHeight,
+  }) {
+    return pw.Padding(
+      padding: pw.EdgeInsets.only(bottom: rowGap),
+      child: pw.Row(
+        children: [
+          pw.SizedBox(
+            width: 40,
+            child: pw.Text(
+              _t(bucket.label),
+              maxLines: 1,
+              style: const pw.TextStyle(
+                color: _textSecondary,
+                fontSize: 7,
+              ),
             ),
+          ),
+          pw.Expanded(
+            child: _stackedBar(
+              bucket: bucket,
+              maxMeters: maxMeters,
+              height: barHeight,
+            ),
+          ),
+          pw.SizedBox(width: 4),
+          pw.SizedBox(
+            width: 36,
+            child: pw.Text(
+              '${bucket.totalMeters.toStringAsFixed(0)}m',
+              textAlign: pw.TextAlign.right,
+              style: const pw.TextStyle(
+                color: _textPrimary,
+                fontSize: 7,
+              ),
+            ),
+          ),
         ],
       ),
     );
@@ -737,6 +797,7 @@ class SessionStatsReportPdfService {
   pw.Widget _stackedBar({
     required SessionStatsReportTimelineBucket bucket,
     required double maxMeters,
+    double height = 9,
   }) {
     final segments = <(PdfColor, double)>[
       (_textSecondary, bucket.walkingMeters),
@@ -756,7 +817,7 @@ class SessionStatsReportPdfService {
     );
 
     return pw.SizedBox(
-      height: 9,
+      height: height,
       child: pw.Row(
         children: [
           pw.Expanded(
@@ -875,8 +936,7 @@ class SessionStatsReportPdfService {
                     ),
                   ),
                   pw.SizedBox(height: 2),
-                  pw.SizedBox(
-                    height: 140,
+                  pw.Expanded(
                     child: _buildHeatmapVisual(heatmaps[i]),
                   ),
                 ],
@@ -1208,31 +1268,37 @@ class SessionStatsReportPdfService {
                 ),
               ),
             ),
-          pw.Container(
-            width: avatarSize,
-            height: avatarSize,
-            alignment: pw.Alignment.center,
-            decoration: pw.BoxDecoration(
-              shape: pw.BoxShape.circle,
-              color: _white,
-              border: pw.Border.all(color: _white, width: 2.2),
-            ),
-            child: photo != null && photo.isNotEmpty
-                ? pw.Image(
-                    pw.MemoryImage(photo),
-                    fit: pw.BoxFit.cover,
-                    width: avatarSize,
-                    height: avatarSize,
-                  )
-                : pw.Text(
+          photo != null && photo.isNotEmpty
+              ? pw.SizedBox(
+                  width: avatarSize,
+                  height: avatarSize,
+                  child: pw.ClipOval(
+                    child: pw.Image(
+                      pw.MemoryImage(photo),
+                      fit: pw.BoxFit.cover,
+                      width: avatarSize,
+                      height: avatarSize,
+                    ),
+                  ),
+                )
+              : pw.Container(
+                  width: avatarSize,
+                  height: avatarSize,
+                  alignment: pw.Alignment.center,
+                  decoration: pw.BoxDecoration(
+                    shape: pw.BoxShape.circle,
+                    color: PdfColor.fromInt(0xFF1B5E20),
+                    border: pw.Border.all(color: _white, width: 1.5),
+                  ),
+                  child: pw.Text(
                     number.isNotEmpty ? number : '?',
                     style: pw.TextStyle(
-                      color: _textPrimary,
+                      color: _white,
                       fontSize: 13,
                       fontWeight: pw.FontWeight.bold,
                     ),
                   ),
-          ),
+                ),
           pw.SizedBox(height: 2),
           pw.Container(
             width: 70,
