@@ -913,7 +913,7 @@ class SessionStatsReportPdfService {
     }
 
     return pw.Row(
-      crossAxisAlignment: pw.CrossAxisAlignment.start,
+      crossAxisAlignment: pw.CrossAxisAlignment.stretch,
       children: [
         for (var i = 0; i < heatmaps.length; i++) ...[
           if (i > 0) pw.SizedBox(width: 6),
@@ -926,6 +926,7 @@ class SessionStatsReportPdfService {
                 border: pw.Border.all(color: _border),
               ),
               child: pw.Column(
+                crossAxisAlignment: pw.CrossAxisAlignment.stretch,
                 children: [
                   pw.Text(
                     _t(heatmaps[i].periodLabel),
@@ -1287,7 +1288,7 @@ class SessionStatsReportPdfService {
                   alignment: pw.Alignment.center,
                   decoration: pw.BoxDecoration(
                     shape: pw.BoxShape.circle,
-                    color: PdfColor.fromInt(0xFF1B5E20),
+                    color: const PdfColor.fromInt(0xFF1B5E20),
                     border: pw.Border.all(color: _white, width: 1.5),
                   ),
                   child: pw.Text(
@@ -1303,7 +1304,7 @@ class SessionStatsReportPdfService {
           pw.Container(
             width: 70,
             padding: const pw.EdgeInsets.symmetric(horizontal: 3, vertical: 2),
-            color: PdfColor.fromInt(0xDD111214),
+            color: const PdfColor.fromInt(0xDD111214),
             child: pw.Text(
               shortName.isEmpty ? '-' : shortName,
               maxLines: 1,
