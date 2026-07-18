@@ -213,6 +213,8 @@ void main() {
             SessionStatsReportHeatmapImage(
               periodKey: 'fullMatch',
               periodLabel: 'Match complet',
+              svg:
+                  '<svg xmlns="http://www.w3.org/2000/svg" width="10" height="10"><rect width="10" height="10" fill="#0f0"/></svg>',
               pngBytes: png,
             ),
           ],

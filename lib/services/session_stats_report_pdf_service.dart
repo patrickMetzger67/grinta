@@ -828,10 +828,7 @@ class SessionStatsReportPdfService {
                   pw.SizedBox(height: 2),
                   pw.SizedBox(
                     height: 110,
-                    child: pw.Image(
-                      pw.MemoryImage(heatmaps[i].pngBytes),
-                      fit: pw.BoxFit.contain,
-                    ),
+                    child: _buildHeatmapVisual(heatmaps[i]),
                   ),
                 ],
               ),
@@ -840,6 +837,29 @@ class SessionStatsReportPdfService {
         ],
       ],
     );
+  }
+
+  /// Same SVG source as the player_analysis Heatmap tab (`pw.SvgImage`).
+  pw.Widget _buildHeatmapVisual(SessionStatsReportHeatmapImage heatmap) {
+    final String? svg = heatmap.svg?.trim();
+    if (svg != null && svg.isNotEmpty) {
+      try {
+        return pw.SvgImage(
+          svg: svg,
+          fit: pw.BoxFit.contain,
+        );
+      } catch (_) {
+        // Fall through to PNG if SVG parsing fails in package:pdf.
+      }
+    }
+    final Uint8List? png = heatmap.pngBytes;
+    if (png != null && png.isNotEmpty) {
+      return pw.Image(
+        pw.MemoryImage(png),
+        fit: pw.BoxFit.contain,
+      );
+    }
+    return _emptyHint('Heatmap indisponible');
   }
 
   pw.Widget _sectionTitle(String title) {

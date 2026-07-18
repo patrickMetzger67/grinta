@@ -22,7 +22,6 @@ import 'package:grinta/util/match_goal_helper.dart';
 import 'package:grinta/util/match_outcome_helper.dart';
 import 'package:grinta/util/playerDisplayName.dart';
 import 'package:grinta/util/player_photo_resolver.dart';
-import 'package:grinta/util/svg_rasterizer.dart';
 import 'package:grinta/util/team_stats_opponent_helper.dart';
 import 'package:http/http.dart' as http;
 import 'package:intl/intl.dart';
@@ -426,65 +425,18 @@ class SessionStatsReportService {
       }
     }
 
-    final List<SessionStatsReportHeatmapImage> heatmaps =
-        <SessionStatsReportHeatmapImage>[];
-    if (isMatch) {
-      // Sensor number from matchCompo → DeviceOwner.customeName first.
-      final List<String> trackerCandidates = <String>{
-        (sensorIdOverride ?? '').trim(),
-        (analysis?.trackerId ?? '').trim(),
-        score.trackerId.trim(),
-      }.where((id) => id.isNotEmpty).toList(growable: false);
-
-      for (final period in _heatmapPeriods) {
-        try {
-          final String? svg = await _loadHeatmapSvg(
-            trackerCandidates: trackerCandidates,
+    // Identical source as player_analysis Heatmap tab:
+    // TRACKER_Analysis/{eventId}_{trackerId} → analysis.trackerId/eventId
+    // → TRACKER_Svg/{trackerId}-{eventId}_{period}
+    final List<SessionStatsReportHeatmapImage> heatmaps = isMatch
+        ? await _loadHeatmapsLikePlayerAnalysisTab(
             eventId: eventId,
-            periodKey: period.key,
-          );
-          if (svg == null || svg.trim().isEmpty) {
-            if (kDebugMode) {
-              debugPrint(
-                'SessionStatsReportService: no heatmap SVG for '
-                'tracker=${trackerCandidates.join("|")} '
-                'eventId=$eventId period=${period.key} '
-                'tried=${[
-                  for (final t in trackerCandidates)
-                    ...TrackerSvgService.buildSvgDocumentIds(
-                      trackerId: t,
-                      eventId: eventId,
-                      period: period.key,
-                    ),
-                ].join(", ")}',
-              );
-            }
-            continue;
-          }
-          final Uint8List? png = await svgStringToPngBytes(
-            svg,
-            targetWidth: 240,
-          );
-          if (png == null || png.isEmpty) {
-            continue;
-          }
-          heatmaps.add(
-            SessionStatsReportHeatmapImage(
-              periodKey: period.key,
-              periodLabel: period.label,
-              pngBytes: png,
-            ),
-          );
-        } catch (e) {
-          if (kDebugMode) {
-            debugPrint(
-              'SessionStatsReportService: heatmap '
-              '${trackerCandidates.join("|")}/${period.key} failed: $e',
-            );
-          }
-        }
-      }
-    }
+            trackerId: (sensorIdOverride ?? '').trim().isNotEmpty
+                ? sensorIdOverride!.trim()
+                : score.trackerId.trim(),
+            analysis: analysis,
+          )
+        : const <SessionStatsReportHeatmapImage>[];
 
     final String resolvedTrackerId =
         (sensorIdOverride ?? '').trim().isNotEmpty
@@ -694,24 +646,91 @@ class SessionStatsReportService {
     );
   }
 
-  /// Production key example: `09-53514382_firstHalf`
-  /// = `{sensor}-{matchId}_{period}`.
-  Future<String?> _loadHeatmapSvg({
-    required List<String> trackerCandidates,
+  /// Mirrors `_TrackerHeatmapView._loadSvg` in tracker_analysis_heatmap.dart.
+  Future<List<SessionStatsReportHeatmapImage>> _loadHeatmapsLikePlayerAnalysisTab({
     required String eventId,
-    required String periodKey,
+    required String trackerId,
+    required TrackerAnalysisResult? analysis,
   }) async {
-    for (final String trackerId in trackerCandidates) {
-      final String? svg = await _svgService.getSvgForTrackerPeriod(
-        trackerId: trackerId,
-        eventId: eventId,
-        periodSuffix: periodKey,
-      );
-      if (svg != null && svg.trim().isNotEmpty) {
-        return svg;
+    final String safeEventId = eventId.trim();
+    final String safeTrackerId = trackerId.trim();
+    if (safeEventId.isEmpty || safeTrackerId.isEmpty) {
+      return const <SessionStatsReportHeatmapImage>[];
+    }
+
+    // Same doc id as match_tracker_stats_table / player_analysis route.
+    TrackerAnalysisResult? resolved = analysis;
+    if (resolved == null ||
+        resolved.trackerId.trim().isEmpty ||
+        resolved.eventId.trim().isEmpty) {
+      for (final String tid
+          in TrackerSvgService.trackerIdCandidates(safeTrackerId)) {
+        final TrackerAnalysisResult? byId =
+            await TrackerAnalysisService.getAnalysisById(
+          '${safeEventId}_$tid',
+        );
+        if (byId != null) {
+          resolved = byId;
+          break;
+        }
       }
     }
-    return null;
+
+    final String svgTrackerId = (resolved?.trackerId.trim().isNotEmpty == true)
+        ? resolved!.trackerId.trim()
+        : safeTrackerId;
+    final String svgEventId = (resolved?.eventId.trim().isNotEmpty == true)
+        ? resolved!.eventId.trim()
+        : safeEventId;
+
+    if (kDebugMode) {
+      debugPrint(
+        'SessionStatsReportService: heatmaps like player_analysis '
+        'trackerId=$svgTrackerId eventId=$svgEventId '
+        '(from analysisDoc=${safeEventId}_$svgTrackerId)',
+      );
+    }
+
+    final List<SessionStatsReportHeatmapImage> heatmaps =
+        <SessionStatsReportHeatmapImage>[];
+    for (final period in _heatmapPeriods) {
+      try {
+        // Exact same call as _TrackerHeatmapView._loadSvg.
+        final String? svg = await _svgService.getSvgForTrackerPeriod(
+          trackerId: svgTrackerId,
+          eventId: svgEventId,
+          periodSuffix: period.key,
+        );
+        if (svg == null || svg.trim().isEmpty) {
+          if (kDebugMode) {
+            debugPrint(
+              'SessionStatsReportService: missing SVG '
+              '${TrackerSvgService.buildSvgDocumentIds(
+                trackerId: svgTrackerId,
+                eventId: svgEventId,
+                period: period.key,
+              ).join(" | ")}',
+            );
+          }
+          continue;
+        }
+        heatmaps.add(
+          SessionStatsReportHeatmapImage(
+            periodKey: period.key,
+            periodLabel: period.label,
+            svg: svg,
+          ),
+        );
+      } catch (e) {
+        if (kDebugMode) {
+          debugPrint(
+            'SessionStatsReportService: heatmap $svgTrackerId/'
+            '${period.key} failed: $e',
+          );
+        }
+      }
+    }
+    return heatmaps;
   }
 
   Future<Uint8List?> _loadPlayerPhotoBytes(Player player) async {

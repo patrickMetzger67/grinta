@@ -150,12 +150,22 @@ class SessionStatsReportHeatmapImage {
   const SessionStatsReportHeatmapImage({
     required this.periodKey,
     required this.periodLabel,
-    required this.pngBytes,
+    this.svg,
+    this.pngBytes,
   });
 
   final String periodKey;
   final String periodLabel;
-  final Uint8List pngBytes;
+
+  /// Raw SVG from TRACKER_Svg (same source as player_analysis Heatmap tab).
+  final String? svg;
+
+  /// Optional raster fallback.
+  final Uint8List? pngBytes;
+
+  bool get hasVisual =>
+      (svg != null && svg!.trim().isNotEmpty) ||
+      (pngBytes != null && pngBytes!.isNotEmpty);
 }
 
 /// Full per-player content for dedicated PDF pages.
