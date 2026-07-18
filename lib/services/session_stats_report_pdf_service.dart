@@ -3,6 +3,7 @@ import 'dart:typed_data';
 
 import 'package:grinta/model/session_stats_report.dart';
 import 'package:grinta/model/tracker/team_workload_summary.dart';
+import 'package:image/image.dart' as img;
 import 'package:intl/intl.dart';
 import 'package:pdf/pdf.dart';
 import 'package:pdf/widgets.dart' as pw;
@@ -1074,6 +1075,12 @@ class SessionStatsReportPdfService {
         final double pitchH = pitchW * (52.5 / 68);
         final double left = (width - pitchW) / 2;
         final double top = math.max(0, (height - pitchH) / 2);
+        final double centerR = pitchW * 0.13;
+        const double markerW = 72;
+        const double markerH = 70;
+        final Uint8List semicirclePng = _halfPitchCenterArcPng(
+          diameter: (centerR * 2).round().clamp(40, 160),
+        );
 
         return pw.SizedBox(
           width: width,
@@ -1093,24 +1100,22 @@ class SessionStatsReportPdfService {
                   ),
                   child: pw.Stack(
                     children: [
-                      // Halfway / top edge of half-pitch.
+                      // Halfway line (top of half-pitch).
                       pw.Positioned(
                         left: 0,
                         right: 0,
                         top: 0,
                         child: pw.Container(height: 1.5, color: line),
                       ),
-                      // Center circle (top of half pitch).
+                      // Bottom semicircle of the center circle.
                       pw.Positioned(
-                        left: pitchW / 2 - pitchW * 0.12,
-                        top: -pitchW * 0.02,
-                        child: pw.Container(
-                          width: pitchW * 0.24,
-                          height: pitchW * 0.24,
-                          decoration: pw.BoxDecoration(
-                            shape: pw.BoxShape.circle,
-                            border: pw.Border.all(color: line, width: 1.5),
-                          ),
+                        left: pitchW / 2 - centerR,
+                        top: 0,
+                        child: pw.Image(
+                          pw.MemoryImage(semicirclePng),
+                          width: centerR * 2,
+                          height: centerR,
+                          fit: pw.BoxFit.fill,
                         ),
                       ),
                       // Penalty area (bottom / GK side).
@@ -1140,8 +1145,10 @@ class SessionStatsReportPdfService {
                       for (final SessionStatsReportPitchPlayer player
                           in starters)
                         pw.Positioned(
-                          left: (player.x.clamp(0.0, 1.0) * pitchW) - 22,
-                          top: (player.y.clamp(0.0, 1.0) * pitchH) - 18,
+                          left: (player.x.clamp(0.0, 1.0) * pitchW) -
+                              (markerW / 2),
+                          top: (player.y.clamp(0.0, 1.0) * pitchH) -
+                              (markerH / 2),
                           child: _buildPitchPlayerMarker(player),
                         ),
                     ],
@@ -1155,42 +1162,96 @@ class SessionStatsReportPdfService {
     );
   }
 
+  /// White stroke of the lower half of a circle (for half-pitch diagrams).
+  /// Background is pitch green (PDF does not composite PNG alpha reliably).
+  static Uint8List _halfPitchCenterArcPng({required int diameter}) {
+    final int w = diameter;
+    final int h = (diameter / 2).round().clamp(20, 120);
+    final img.Image image = img.Image(width: w, height: h);
+    img.fill(image, color: img.ColorRgba8(46, 125, 50, 255));
+
+    final double cx = w / 2.0;
+    final double cy = 0.0;
+    final double r = w / 2.0 - 1.5;
+    const int thickness = 3;
+    for (int y = 0; y < h; y++) {
+      for (int x = 0; x < w; x++) {
+        final double dx = x + 0.5 - cx;
+        final double dy = y + 0.5 - cy;
+        final double dist = math.sqrt(dx * dx + dy * dy);
+        if ((dist - r).abs() <= thickness / 2.0 && dy >= 0) {
+          image.setPixelRgba(x, y, 255, 255, 255, 255);
+        }
+      }
+    }
+    return Uint8List.fromList(img.encodePng(image));
+  }
+
   pw.Widget _buildPitchPlayerMarker(SessionStatsReportPitchPlayer player) {
     final String number = player.shirtNumber?.toString() ?? '';
-    final String shortName = _shortPlayerName(player.displayName);
+    final String shortName = _t(_shortPlayerName(player.displayName));
+    final Uint8List? photo = player.photoBytes;
+    const double avatarSize = 40;
 
     return pw.SizedBox(
-      width: 44,
+      width: 72,
       child: pw.Column(
         mainAxisSize: pw.MainAxisSize.min,
+        crossAxisAlignment: pw.CrossAxisAlignment.center,
         children: [
+          if (number.isNotEmpty)
+            pw.Container(
+              margin: const pw.EdgeInsets.only(bottom: 2),
+              padding: const pw.EdgeInsets.symmetric(horizontal: 6, vertical: 1),
+              decoration: pw.BoxDecoration(
+                color: _white,
+                borderRadius: pw.BorderRadius.circular(8),
+                border: pw.Border.all(color: _primary, width: 1),
+              ),
+              child: pw.Text(
+                number,
+                style: pw.TextStyle(
+                  color: _primary,
+                  fontSize: 9,
+                  fontWeight: pw.FontWeight.bold,
+                ),
+              ),
+            ),
           pw.Container(
-            width: 28,
-            height: 28,
+            width: avatarSize,
+            height: avatarSize,
             alignment: pw.Alignment.center,
             decoration: pw.BoxDecoration(
               shape: pw.BoxShape.circle,
               color: _white,
-              border: pw.Border.all(color: _primary, width: 1.5),
+              border: pw.Border.all(color: _white, width: 2.2),
             ),
-            child: pw.Text(
-              number.isNotEmpty ? number : '?',
-              style: pw.TextStyle(
-                color: _textPrimary,
-                fontSize: 9,
-                fontWeight: pw.FontWeight.bold,
-              ),
-            ),
+            child: photo != null && photo.isNotEmpty
+                ? pw.Image(
+                    pw.MemoryImage(photo),
+                    fit: pw.BoxFit.cover,
+                    width: avatarSize,
+                    height: avatarSize,
+                  )
+                : pw.Text(
+                    number.isNotEmpty ? number : '?',
+                    style: pw.TextStyle(
+                      color: _textPrimary,
+                      fontSize: 13,
+                      fontWeight: pw.FontWeight.bold,
+                    ),
+                  ),
           ),
-          pw.SizedBox(height: 1),
+          pw.SizedBox(height: 2),
           pw.Container(
-            padding: const pw.EdgeInsets.symmetric(horizontal: 3, vertical: 1),
-            color: PdfColor.fromInt(0xCC111214),
+            width: 70,
+            padding: const pw.EdgeInsets.symmetric(horizontal: 3, vertical: 2),
+            color: PdfColor.fromInt(0xDD111214),
             child: pw.Text(
-              number.isNotEmpty ? '$number ${_t(shortName)}' : _t(shortName),
+              shortName.isEmpty ? '-' : shortName,
               maxLines: 1,
               textAlign: pw.TextAlign.center,
-              style: const pw.TextStyle(color: _white, fontSize: 6.5),
+              style: const pw.TextStyle(color: _white, fontSize: 8),
             ),
           ),
         ],
@@ -1235,18 +1296,22 @@ class SessionStatsReportPdfService {
   String _shortPlayerName(String name) {
     final String trimmed = name.trim();
     if (trimmed.isEmpty) return '-';
+    // Already compact (A.DELEAU) — keep as-is.
+    if (RegExp(r'^[A-Za-z]\.[A-Za-z]').hasMatch(trimmed)) {
+      return trimmed.length > 14 ? '${trimmed.substring(0, 14)}.' : trimmed;
+    }
     final parts =
         trimmed.split(RegExp(r'\s+')).where((p) => p.isNotEmpty).toList();
     if (parts.length == 1) {
-      return parts.first.length > 12
-          ? '${parts.first.substring(0, 12)}.'
-          : parts.first;
+      final String only = parts.first;
+      return only.length > 12 ? '${only.substring(0, 12)}.' : only;
     }
     final String first = parts.first;
-    final String last = parts.last;
+    final String last = parts.last.toUpperCase();
     final String initial =
         first.isNotEmpty ? '${first.substring(0, 1).toUpperCase()}.' : '';
-    return '$initial $last'.trim();
+    final String compact = '$initial$last';
+    return compact.length > 14 ? '${compact.substring(0, 14)}.' : compact;
   }
 
   pw.Widget _buildHighlightsTimelinePage(SessionStatsReport report) {

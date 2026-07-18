@@ -508,7 +508,10 @@ class SessionStatsReportService {
               await _playerService.getPlayerById(id).catchError((_) => null);
           if (player != null) {
             playersById[id] = player;
-            photosById[id] = await _loadPlayerPhotoBytes(player);
+            final Uint8List? raw = await _loadPlayerPhotoBytes(player);
+            photosById[id] = raw == null
+                ? null
+                : (circularCropPngBytes(raw, size: 96) ?? raw);
           }
         }),
       );
@@ -525,12 +528,11 @@ class SessionStatsReportService {
           continue;
         }
         final Player? player = playersById[playerId];
-        final String custom = (slotPlayer.playerNameDisplayed ?? '').trim();
-        final String displayName = custom.isNotEmpty
-            ? custom
-            : (player != null
-                ? playerDisplayName(player, unknownLabel: unknownPlayerLabel)
-                : unknownPlayerLabel);
+        final String displayName = _pitchDisplayName(
+          compo: slotPlayer,
+          player: player,
+          unknownPlayerLabel: unknownPlayerLabel,
+        );
 
         starters.add(
           SessionStatsReportPitchPlayer(
@@ -554,12 +556,11 @@ class SessionStatsReportService {
           continue;
         }
         final Player? player = playersById[playerId];
-        final String custom = (sub.playerNameDisplayed ?? '').trim();
-        final String displayName = custom.isNotEmpty
-            ? custom
-            : (player != null
-                ? playerDisplayName(player, unknownLabel: unknownPlayerLabel)
-                : unknownPlayerLabel);
+        final String displayName = _pitchDisplayName(
+          compo: sub,
+          player: player,
+          unknownPlayerLabel: unknownPlayerLabel,
+        );
         substitutes.add(
           SessionStatsReportBenchPlayer(
             playerId: playerId,
@@ -806,6 +807,45 @@ class SessionStatsReportService {
     return true;
   }
 
+  /// Prefer Player short name (A.DELEAU); fall back to compo label.
+  String _pitchDisplayName({
+    required PlayerCompo compo,
+    required Player? player,
+    required String unknownPlayerLabel,
+  }) {
+    if (player != null) {
+      final String fromPlayer = formatPlayerShortName(
+        player,
+        unknownLabel: '',
+      ).trim();
+      if (fromPlayer.isNotEmpty) {
+        return fromPlayer;
+      }
+    }
+
+    final String custom = (compo.playerNameDisplayed ?? '').trim();
+    if (custom.isNotEmpty) {
+      return _compactDisplayedName(custom);
+    }
+
+    return unknownPlayerLabel;
+  }
+
+  String _compactDisplayedName(String raw) {
+    final String trimmed = raw.trim();
+    if (trimmed.isEmpty) return trimmed;
+    final parts =
+        trimmed.split(RegExp(r'\s+')).where((p) => p.isNotEmpty).toList();
+    if (parts.length >= 2) {
+      final String first = parts.first;
+      final String last = parts.last.toUpperCase();
+      final String initial =
+          first.isNotEmpty ? '${first[0].toUpperCase()}.' : '';
+      return '$initial$last';
+    }
+    return trimmed.toUpperCase();
+  }
+
   Future<SessionStatsReportMatchHeader?> _buildMatchHeader({
     required grinta_match.Match? match,
     required String? teamId,
@@ -921,22 +961,20 @@ class SessionStatsReportService {
           continue;
         }
 
-        // package:pdf cannot render these heatmaps; UI uses flutter_svg.
-        final Uint8List? png = await svgStringToPngBytes(svg, targetWidth: 720);
-        if (png == null || png.isEmpty) {
-          if (kDebugMode) {
-            debugPrint(
-              'SessionStatsReportService: rasterize failed for '
-              '$svgTrackerId/${period.key} (svgChars=${svg.length})',
-            );
-          }
-          continue;
+        // Pure-Dart rect rasterizer (web-safe) + flutter_svg fallback.
+        final Uint8List? png = await svgStringToPngBytes(svg, targetWidth: 640);
+        if (kDebugMode) {
+          debugPrint(
+            'SessionStatsReportService: heatmap $svgTrackerId/${period.key} '
+            'svgChars=${svg.length} pngBytes=${png?.length ?? 0}',
+          );
         }
 
         heatmaps.add(
           SessionStatsReportHeatmapImage(
             periodKey: period.key,
             periodLabel: period.label,
+            svg: svg,
             pngBytes: png,
           ),
         );
