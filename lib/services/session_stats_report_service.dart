@@ -220,7 +220,10 @@ class SessionStatsReportService {
           photoBytes: photoBytes,
           teamParam: teamParam,
           isMatch: isMatch,
-          eventId: safeEventId,
+          // TRACKER_Svg key uses TeamWorkloadSummary.eventId + score.trackerId.
+          eventId: resolvedSummary.eventId.trim().isNotEmpty
+              ? resolvedSummary.eventId.trim()
+              : safeEventId,
         ),
       );
     }
@@ -374,15 +377,12 @@ class SessionStatsReportService {
       }
     }
 
-    // Identical source as player_analysis Heatmap tab:
-    // analysisDocId = `${eventId}_${score.trackerId}` (stats table)
-    // → getSvgForTrackerPeriod(analysis.trackerId, analysis.eventId, period)
-    // → rasterize with flutter_svg (same renderer as SvgPicture.string).
+    // Heatmap key from TeamWorkloadSummary only:
+    // TRACKER_Svg/{playerScores.trackerId}-{summary.eventId}_{period}
     final List<SessionStatsReportHeatmapImage> heatmaps = isMatch
-        ? await _loadHeatmapsLikePlayerAnalysisTab(
+        ? await _loadHeatmapsFromPlayerScoreTrackerId(
             eventId: eventId,
             trackerId: score.trackerId.trim(),
-            analysis: analysis,
           )
         : const <SessionStatsReportHeatmapImage>[];
 
@@ -601,14 +601,23 @@ class SessionStatsReportService {
     required String? teamId,
   }) async {
     try {
+      // 1) FMI (matchStats) when present.
       final MatchStats? matchStats =
           await _matchStatsService.getMatchStatsByMatchId(matchId);
       final List<MatchStatHighLight> fmi =
-          List<MatchStatHighLight>.from(matchStats?.highlights ?? const []);
+          List<MatchStatHighLight>.from(matchStats?.highlights ?? const [])
+              .where(_isUsableFmiHighlight)
+              .toList();
       if (fmi.isNotEmpty) {
         final String home = (match?.team1 ?? '').trim();
         final String away = (match?.team2 ?? '').trim();
         fmi.sort((a, b) => (a.time ?? 0).compareTo(b.time ?? 0));
+        if (kDebugMode) {
+          debugPrint(
+            'SessionStatsReportService: using FMI highlights '
+            'count=${fmi.length} matchId=$matchId',
+          );
+        }
         return fmi
             .map(
               (MatchStatHighLight h) => _mapFmiHighlight(
@@ -620,38 +629,79 @@ class SessionStatsReportService {
             .toList();
       }
 
-      final List<Highlights> grinta =
-          await _highlightsService.getHighlightsByMatchCalendarId(
-        matchId,
-        teamId: teamId,
-      );
-      if (grinta.isEmpty || match == null) {
-        return const <SessionStatsReportHighlightEvent>[];
+      // 2) Fallback: temps forts créés dans l'app (collection highLights).
+      if (kDebugMode) {
+        debugPrint(
+          'SessionStatsReportService: no FMI highlights, '
+          'fallback to Grinta app highlights matchId=$matchId',
+        );
       }
-
-      final List<SessionStatsReportHighlightEvent> out =
-          <SessionStatsReportHighlightEvent>[];
-      for (final Highlights h in grinta) {
-        final SessionStatsReportHighlightEvent? mapped =
-            _mapGrintaHighlight(highlight: h, match: match);
-        if (mapped != null) {
-          out.add(mapped);
-        }
-      }
-      out.sort((a, b) {
-        final int byMin = a.minute.compareTo(b.minute);
-        if (byMin != 0) return byMin;
-        return a.extraTime.compareTo(b.extraTime);
-      });
-      return out;
+      return _loadGrintaHighlightEvents(matchId: matchId, match: match, teamId: teamId);
     } catch (e) {
       if (kDebugMode) {
         debugPrint(
           'SessionStatsReportService: highlights failed for matchId=$matchId: $e',
         );
       }
+      // Last resort: still try Grinta if FMI path threw.
+      try {
+        return await _loadGrintaHighlightEvents(
+          matchId: matchId,
+          match: match,
+          teamId: teamId,
+        );
+      } catch (_) {
+        return const <SessionStatsReportHighlightEvent>[];
+      }
+    }
+  }
+
+  bool _isUsableFmiHighlight(MatchStatHighLight h) {
+    final String type = (h.type ?? '').trim();
+    final String player = (h.player ?? '').trim();
+    final String team = (h.team ?? '').trim();
+    return type.isNotEmpty || player.isNotEmpty || team.isNotEmpty;
+  }
+
+  Future<List<SessionStatsReportHighlightEvent>> _loadGrintaHighlightEvents({
+    required String matchId,
+    required grinta_match.Match? match,
+    required String? teamId,
+  }) async {
+    List<Highlights> grinta =
+        await _highlightsService.getHighlightsByMatchCalendarId(
+      matchId,
+      teamId: teamId,
+    );
+    // Retry without team filter — some docs omit teamId.
+    if (grinta.isEmpty && (teamId ?? '').trim().isNotEmpty) {
+      grinta = await _highlightsService.getHighlightsByMatchCalendarId(matchId);
+    }
+    if (grinta.isEmpty) {
       return const <SessionStatsReportHighlightEvent>[];
     }
+
+    final List<SessionStatsReportHighlightEvent> out =
+        <SessionStatsReportHighlightEvent>[];
+    for (final Highlights h in grinta) {
+      final SessionStatsReportHighlightEvent? mapped =
+          await _mapGrintaHighlight(highlight: h, match: match);
+      if (mapped != null) {
+        out.add(mapped);
+      }
+    }
+    out.sort((a, b) {
+      final int byMin = a.minute.compareTo(b.minute);
+      if (byMin != 0) return byMin;
+      return a.extraTime.compareTo(b.extraTime);
+    });
+    if (kDebugMode) {
+      debugPrint(
+        'SessionStatsReportService: Grinta highlights count=${out.length} '
+        'matchId=$matchId',
+      );
+    }
+    return out;
   }
 
   SessionStatsReportHighlightEvent _mapFmiHighlight({
@@ -678,61 +728,78 @@ class SessionStatsReportService {
     );
   }
 
-  SessionStatsReportHighlightEvent? _mapGrintaHighlight({
+  Future<SessionStatsReportHighlightEvent?> _mapGrintaHighlight({
     required Highlights highlight,
-    required grinta_match.Match match,
-  }) {
+    required grinta_match.Match? match,
+  }) async {
     final ActionType? action = highlight.actionType;
     if (action == null || action == ActionType.timeEvent) {
       return null;
     }
 
     String type;
-    String playerName = '-';
+    String playerName = '';
     String? secondary;
+    String? primaryPlayerId;
+    String? secondaryPlayerId;
 
     switch (action) {
       case ActionType.goal:
         type = 'goal';
         final Goal? goal = highlight.value is Goal ? highlight.value as Goal : null;
         playerName = (goal?.playerName ?? '').trim();
+        primaryPlayerId = goal?.playerId?.trim();
         final String passer = (goal?.playerDecisivePasser ?? '').trim();
         secondary = passer.isEmpty ? null : passer;
+        secondaryPlayerId = goal?.decisivePasserPlayerId?.trim();
         break;
       case ActionType.yellowCard:
         type = 'yellowCard';
         final YellowRedCard? card =
             highlight.value is YellowRedCard ? highlight.value as YellowRedCard : null;
         playerName = (card?.playerName ?? '').trim();
+        primaryPlayerId = card?.playerId?.trim();
         break;
       case ActionType.redCard:
         type = 'redCard';
         final YellowRedCard? card =
             highlight.value is YellowRedCard ? highlight.value as YellowRedCard : null;
         playerName = (card?.playerName ?? '').trim();
+        primaryPlayerId = card?.playerId?.trim();
         break;
       case ActionType.substitution:
         type = 'substitution';
         final Substitution? sub =
             highlight.value is Substitution ? highlight.value as Substitution : null;
         playerName = (sub?.outgoingPlayerName ?? '').trim();
+        primaryPlayerId = sub?.outgoingPlayerId?.trim();
         final String incoming = (sub?.enteringPlayerName ?? '').trim();
         secondary = incoming.isEmpty ? null : incoming;
+        secondaryPlayerId = sub?.enteringPlayerId?.trim();
         break;
       case ActionType.timeEvent:
         return null;
     }
 
+    if (playerName.isEmpty && (primaryPlayerId ?? '').isNotEmpty) {
+      playerName = await _resolvePlayerLabel(primaryPlayerId!);
+    }
+    if ((secondary == null || secondary.isEmpty) &&
+        (secondaryPlayerId ?? '').isNotEmpty) {
+      secondary = await _resolvePlayerLabel(secondaryPlayerId!);
+    }
     if (playerName.isEmpty) {
       playerName = '-';
     }
 
-    final MatchSide? side = sideForAffiliationTeam(
-      match,
-      affiliationTeamForHighlight(highlight),
-    );
+    final MatchSide? side = match == null
+        ? null
+        : sideForAffiliationTeam(
+            match,
+            affiliationTeamForHighlight(highlight),
+          );
     final bool isHome = side != MatchSide.team2;
-    final String teamName = side == null
+    final String teamName = (match == null || side == null)
         ? ''
         : teamDisplayNameForSide(match, side);
 
@@ -746,6 +813,17 @@ class SessionStatsReportService {
       teamName: teamName,
       isHomeSide: isHome,
     );
+  }
+
+  Future<String> _resolvePlayerLabel(String playerId) async {
+    try {
+      final Player? player =
+          await _playerService.getPlayerById(playerId).catchError((_) => null);
+      if (player == null) return '';
+      return formatPlayerShortName(player, unknownLabel: '');
+    } catch (_) {
+      return '';
+    }
   }
 
   String _normalizeHighlightType(String? raw) {
@@ -889,12 +967,13 @@ class SessionStatsReportService {
     );
   }
 
-  /// Mirrors `_TrackerHeatmapView._loadSvg` in tracker_analysis_heatmap.dart,
-  /// then rasterizes with flutter_svg (same engine as [SvgPicture.string]).
-  Future<List<SessionStatsReportHeatmapImage>> _loadHeatmapsLikePlayerAnalysisTab({
+  /// Loads heatmaps using only [TeamPlayerMetricScores.trackerId] + eventId.
+  ///
+  /// Document id: `{trackerId}-{eventId}_{firstHalf|secondHalf|fullMatch}`.
+  Future<List<SessionStatsReportHeatmapImage>>
+      _loadHeatmapsFromPlayerScoreTrackerId({
     required String eventId,
     required String trackerId,
-    required TrackerAnalysisResult? analysis,
   }) async {
     final String safeEventId = eventId.trim();
     final String safeTrackerId = trackerId.trim();
@@ -902,38 +981,15 @@ class SessionStatsReportService {
       return const <SessionStatsReportHeatmapImage>[];
     }
 
-    // Same doc id as match_tracker_stats_table → player_analysis:
-    // `${eventId}_${trackerId}` e.g. `53514382_02`.
-    TrackerAnalysisResult? resolved = analysis;
-    if (resolved == null ||
-        resolved.trackerId.trim().isEmpty ||
-        resolved.eventId.trim().isEmpty) {
-      for (final String tid
-          in TrackerSvgService.trackerIdCandidates(safeTrackerId)) {
-        final TrackerAnalysisResult? byId =
-            await TrackerAnalysisService.getAnalysisById(
-          '${safeEventId}_$tid',
-        );
-        if (byId != null) {
-          resolved = byId;
-          break;
-        }
-      }
-    }
-
-    // Exact fields used by _TrackerHeatmapView._loadSvg.
-    final String svgTrackerId = (resolved?.trackerId.trim().isNotEmpty == true)
-        ? resolved!.trackerId.trim()
-        : safeTrackerId;
-    final String svgEventId = (resolved?.eventId.trim().isNotEmpty == true)
-        ? resolved!.eventId.trim()
-        : safeEventId;
-
     if (kDebugMode) {
       debugPrint(
-        'SessionStatsReportService: heatmaps like player_analysis '
-        'trackerId=$svgTrackerId eventId=$svgEventId '
-        'analysisDoc=${svgEventId}_$svgTrackerId',
+        'SessionStatsReportService: heatmaps from playerScores.trackerId '
+        'trackerId=$safeTrackerId eventId=$safeEventId '
+        'keys=${TrackerSvgService.buildSvgDocumentIds(
+          trackerId: safeTrackerId,
+          eventId: safeEventId,
+          period: 'firstHalf',
+        ).join(" | ")}',
       );
     }
 
@@ -941,10 +997,9 @@ class SessionStatsReportService {
         <SessionStatsReportHeatmapImage>[];
     for (final period in _heatmapPeriods) {
       try {
-        // Exact same call as _TrackerHeatmapView._loadSvg.
         final String? svg = await _svgService.getSvgForTrackerPeriod(
-          trackerId: svgTrackerId,
-          eventId: svgEventId,
+          trackerId: safeTrackerId,
+          eventId: safeEventId,
           periodSuffix: period.key,
         );
         if (svg == null || svg.trim().isEmpty) {
@@ -952,8 +1007,8 @@ class SessionStatsReportService {
             debugPrint(
               'SessionStatsReportService: missing SVG '
               '${TrackerSvgService.buildSvgDocumentIds(
-                trackerId: svgTrackerId,
-                eventId: svgEventId,
+                trackerId: safeTrackerId,
+                eventId: safeEventId,
                 period: period.key,
               ).join(" | ")}',
             );
@@ -961,11 +1016,10 @@ class SessionStatsReportService {
           continue;
         }
 
-        // Pure-Dart rect rasterizer (web-safe) + flutter_svg fallback.
-        final Uint8List? png = await svgStringToPngBytes(svg, targetWidth: 640);
+        final Uint8List? png = await svgStringToPngBytes(svg, targetWidth: 720);
         if (kDebugMode) {
           debugPrint(
-            'SessionStatsReportService: heatmap $svgTrackerId/${period.key} '
+            'SessionStatsReportService: heatmap $safeTrackerId/${period.key} '
             'svgChars=${svg.length} pngBytes=${png?.length ?? 0}',
           );
         }
@@ -981,7 +1035,7 @@ class SessionStatsReportService {
       } catch (e) {
         if (kDebugMode) {
           debugPrint(
-            'SessionStatsReportService: heatmap $svgTrackerId/'
+            'SessionStatsReportService: heatmap $safeTrackerId/'
             '${period.key} failed: $e',
           );
         }

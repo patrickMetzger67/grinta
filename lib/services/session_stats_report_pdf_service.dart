@@ -3,7 +3,6 @@ import 'dart:typed_data';
 
 import 'package:grinta/model/session_stats_report.dart';
 import 'package:grinta/model/tracker/team_workload_summary.dart';
-import 'package:image/image.dart' as img;
 import 'package:intl/intl.dart';
 import 'package:pdf/pdf.dart';
 import 'package:pdf/widgets.dart' as pw;
@@ -877,7 +876,7 @@ class SessionStatsReportPdfService {
                   ),
                   pw.SizedBox(height: 2),
                   pw.SizedBox(
-                    height: 110,
+                    height: 140,
                     child: _buildHeatmapVisual(heatmaps[i]),
                   ),
                 ],
@@ -1075,12 +1074,9 @@ class SessionStatsReportPdfService {
         final double pitchH = pitchW * (52.5 / 68);
         final double left = (width - pitchW) / 2;
         final double top = math.max(0, (height - pitchH) / 2);
-        final double centerR = pitchW * 0.13;
-        const double markerW = 72;
-        const double markerH = 70;
-        final Uint8List semicirclePng = _halfPitchCenterArcPng(
-          diameter: (centerR * 2).round().clamp(40, 160),
-        );
+        final double centerR = pitchW * 0.12;
+        const double markerW = 78;
+        const double markerH = 74;
 
         return pw.SizedBox(
           width: width,
@@ -1107,15 +1103,15 @@ class SessionStatsReportPdfService {
                         top: 0,
                         child: pw.Container(height: 1.5, color: line),
                       ),
-                      // Bottom semicircle of the center circle.
+                      // Vector semicircle (smooth, not a raster PNG).
                       pw.Positioned(
                         left: pitchW / 2 - centerR,
                         top: 0,
-                        child: pw.Image(
-                          pw.MemoryImage(semicirclePng),
-                          width: centerR * 2,
-                          height: centerR,
-                          fit: pw.BoxFit.fill,
+                        child: pw.CustomPaint(
+                          size: PdfPoint(centerR * 2, centerR),
+                          painter: (PdfGraphics canvas, PdfPoint size) {
+                            _paintHalfPitchCenterArc(canvas, size);
+                          },
                         ),
                       ),
                       // Penalty area (bottom / GK side).
@@ -1162,39 +1158,34 @@ class SessionStatsReportPdfService {
     );
   }
 
-  /// White stroke of the lower half of a circle (for half-pitch diagrams).
-  /// Background is pitch green (PDF does not composite PNG alpha reliably).
-  static Uint8List _halfPitchCenterArcPng({required int diameter}) {
-    final int w = diameter;
-    final int h = (diameter / 2).round().clamp(20, 120);
-    final img.Image image = img.Image(width: w, height: h);
-    img.fill(image, color: img.ColorRgba8(46, 125, 50, 255));
+  /// Draws the lower half of the midfield circle with cubic Beziers.
+  static void _paintHalfPitchCenterArc(PdfGraphics canvas, PdfPoint size) {
+    final double w = size.x;
+    final double h = size.y;
+    final double r = w / 2;
+    // Magic number for circle ≈ cubic bezier.
+    const double k = 0.5522847498;
 
-    final double cx = w / 2.0;
-    final double cy = 0.0;
-    final double r = w / 2.0 - 1.5;
-    const int thickness = 3;
-    for (int y = 0; y < h; y++) {
-      for (int x = 0; x < w; x++) {
-        final double dx = x + 0.5 - cx;
-        final double dy = y + 0.5 - cy;
-        final double dist = math.sqrt(dx * dx + dy * dy);
-        if ((dist - r).abs() <= thickness / 2.0 && dy >= 0) {
-          image.setPixelRgba(x, y, 255, 255, 255, 255);
-        }
-      }
-    }
-    return Uint8List.fromList(img.encodePng(image));
+    canvas
+      ..setStrokeColor(PdfColors.white)
+      ..setLineWidth(1.8)
+      ..setLineCap(PdfLineCap.round)
+      ..setLineJoin(PdfLineJoin.round)
+      // Diameter on top edge; arc hangs into the half-pitch.
+      ..moveTo(0, 0)
+      ..curveTo(0, h * k, r * (1 - k), h, r, h)
+      ..curveTo(r * (1 + k), h, w, h * k, w, 0)
+      ..strokePath();
   }
 
   pw.Widget _buildPitchPlayerMarker(SessionStatsReportPitchPlayer player) {
     final String number = player.shirtNumber?.toString() ?? '';
     final String shortName = _t(_shortPlayerName(player.displayName));
     final Uint8List? photo = player.photoBytes;
-    const double avatarSize = 40;
+    const double avatarSize = 46;
 
     return pw.SizedBox(
-      width: 72,
+      width: 78,
       child: pw.Column(
         mainAxisSize: pw.MainAxisSize.min,
         crossAxisAlignment: pw.CrossAxisAlignment.center,

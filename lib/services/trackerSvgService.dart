@@ -89,7 +89,9 @@ class TrackerSvgService {
     return null;
   }
 
-  /// Prefer padded sensor ids first (`09` before `9`) to match production keys.
+  /// Candidates for TRACKER_Svg sensor prefix.
+  ///
+  /// Exact [TeamPlayerMetricScores.trackerId] first, then padded/raw variants.
   static List<String> trackerIdCandidates(String value) {
     final String raw = value.trim();
     if (raw.isEmpty) return const <String>[];
@@ -101,13 +103,14 @@ class TrackerSvgService {
       }
     }
 
+    // Exact value from TeamWorkloadSummary.playerScores[].trackerId.
+    add(raw);
+
     final int? asInt = int.tryParse(raw);
     if (asInt != null) {
       add(asInt.toString().padLeft(2, '0'));
       add(asInt.toString());
-      add(raw);
     } else {
-      add(raw);
       add(raw.padLeft(2, '0'));
       final String stripped = raw.replaceFirst(RegExp(r'^0+'), '');
       if (stripped.isNotEmpty) {

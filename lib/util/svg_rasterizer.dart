@@ -433,6 +433,9 @@ void _strokeRect(
 }
 
 /// Crops [bytes] to a circular PNG avatar for PDF markers.
+///
+/// Outside the circle is filled white (PDF does not composite PNG alpha —
+/// transparent pixels become black).
 Uint8List? circularCropPngBytes(Uint8List bytes, {int size = 96}) {
   try {
     final img.Image? decoded = img.decodeImage(bytes);
@@ -440,7 +443,8 @@ Uint8List? circularCropPngBytes(Uint8List bytes, {int size = 96}) {
 
     final img.Image squared = img.copyResizeCropSquare(decoded, size: size);
     final img.Image out = img.Image(width: size, height: size);
-    img.fill(out, color: img.ColorRgba8(0, 0, 0, 0));
+    // White, not transparent — avoids black halo in package:pdf.
+    img.fill(out, color: img.ColorRgba8(255, 255, 255, 255));
 
     final double r = size / 2.0;
     final double r2 = r * r;
