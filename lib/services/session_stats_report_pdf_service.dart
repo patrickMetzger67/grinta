@@ -839,8 +839,16 @@ class SessionStatsReportPdfService {
     );
   }
 
-  /// Same SVG source as the player_analysis Heatmap tab (`pw.SvgImage`).
+  /// Prefers PNG rasterized with flutter_svg (same as player_analysis UI).
+  /// package:pdf's SvgImage cannot render these heatmap SVGs reliably.
   pw.Widget _buildHeatmapVisual(SessionStatsReportHeatmapImage heatmap) {
+    final Uint8List? png = heatmap.pngBytes;
+    if (png != null && png.isNotEmpty) {
+      return pw.Image(
+        pw.MemoryImage(png),
+        fit: pw.BoxFit.contain,
+      );
+    }
     final String? svg = heatmap.svg?.trim();
     if (svg != null && svg.isNotEmpty) {
       try {
@@ -849,15 +857,8 @@ class SessionStatsReportPdfService {
           fit: pw.BoxFit.contain,
         );
       } catch (_) {
-        // Fall through to PNG if SVG parsing fails in package:pdf.
+        // Ignore — complex heatmaps are not supported by package:pdf.
       }
-    }
-    final Uint8List? png = heatmap.pngBytes;
-    if (png != null && png.isNotEmpty) {
-      return pw.Image(
-        pw.MemoryImage(png),
-        fit: pw.BoxFit.contain,
-      );
     }
     return _emptyHint('Heatmap indisponible');
   }

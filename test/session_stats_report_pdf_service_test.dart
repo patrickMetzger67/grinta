@@ -261,5 +261,14 @@ void main() {
       ),
       contains('09-53514382_fullMatch'),
     );
+    // Same trackerId form as player_analysis "Tracker 02".
+    expect(
+      TrackerSvgService.buildSvgDocumentIds(
+        trackerId: '02',
+        eventId: '53514382',
+        period: 'firstHalf',
+      ),
+      contains('02-53514382_firstHalf'),
+    );
   });
 }

@@ -157,10 +157,10 @@ class SessionStatsReportHeatmapImage {
   final String periodKey;
   final String periodLabel;
 
-  /// Raw SVG from TRACKER_Svg (same source as player_analysis Heatmap tab).
+  /// Optional raw SVG (debug / simple shapes). Prefer [pngBytes] in PDF.
   final String? svg;
 
-  /// Optional raster fallback.
+  /// Rasterized heatmap (flutter_svg — same renderer as player_analysis UI).
   final Uint8List? pngBytes;
 
   bool get hasVisual =>

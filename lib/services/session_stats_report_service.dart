@@ -1,15 +1,10 @@
-import 'dart:typed_data';
-
 import 'package:flutter/foundation.dart';
 import 'package:grinta/model/match.dart' as grinta_match;
-import 'package:grinta/model/matchCompo.dart';
 import 'package:grinta/model/player.dart';
 import 'package:grinta/model/session_stats_report.dart';
 import 'package:grinta/model/teamParam.dart';
-import 'package:grinta/model/tracker/deviceOwner.dart';
 import 'package:grinta/model/tracker/team_workload_summary.dart';
 import 'package:grinta/model/tracker/trackerData.dart';
-import 'package:grinta/services/matchCompoService.dart';
 import 'package:grinta/services/matchService.dart';
 import 'package:grinta/services/playerService.dart';
 import 'package:grinta/services/teamParamService.dart';
@@ -17,52 +12,37 @@ import 'package:grinta/services/teamWorkloadSummaryService.dart';
 import 'package:grinta/services/trackerDataAnalysisService.dart';
 import 'package:grinta/services/trackerSvgService.dart';
 import 'package:grinta/util/highlight_minute_helper.dart';
-import 'package:grinta/util/insiders_device_resolver.dart';
 import 'package:grinta/util/match_goal_helper.dart';
 import 'package:grinta/util/match_outcome_helper.dart';
 import 'package:grinta/util/playerDisplayName.dart';
 import 'package:grinta/util/player_photo_resolver.dart';
+import 'package:grinta/util/svg_rasterizer.dart';
 import 'package:grinta/util/team_stats_opponent_helper.dart';
 import 'package:http/http.dart' as http;
 import 'package:intl/intl.dart';
 
-/// One match-composition player with its resolved sensor number (customeName).
-class _MatchCompoSensorPlayer {
-  const _MatchCompoSensorPlayer({
-    required this.playerId,
-    required this.sensorId,
-    this.compoDisplayName,
-  });
-
-  final String playerId;
-  /// TRACKER_Svg prefix = DeviceOwner.customeName (sensor number).
-  final String sensorId;
-  final String? compoDisplayName;
-}
-
 /// Builds [SessionStatsReport] from tracker team analysis (Stats tab data).
+///
+/// Match heatmaps use the **same** inputs as `#player_analysis` Heatmap:
+/// `TeamWorkloadSummary.playerScores[].trackerId` →
+/// `TRACKER_Analysis/{eventId}_{trackerId}` →
+/// `TrackerSvgService.getSvgForTrackerPeriod(...)`.
 class SessionStatsReportService {
   SessionStatsReportService({
     TeamWorkloadSummaryService? summaryService,
     PlayerService? playerService,
     MatchService? matchService,
-    MatchCompoService? matchCompoService,
-    DeviceOwnerService? deviceOwnerService,
     TrackerSvgService? svgService,
     http.Client? httpClient,
   })  : _summaryService = summaryService ?? TeamWorkloadSummaryService(),
         _playerService = playerService ?? PlayerService(),
         _matchService = matchService ?? MatchService(),
-        _matchCompoService = matchCompoService ?? MatchCompoService(),
-        _deviceOwnerService = deviceOwnerService ?? DeviceOwnerService(),
         _svgService = svgService ?? TrackerSvgService(),
         _httpClient = httpClient ?? http.Client();
 
   final TeamWorkloadSummaryService _summaryService;
   final PlayerService _playerService;
   final MatchService _matchService;
-  final MatchCompoService _matchCompoService;
-  final DeviceOwnerService _deviceOwnerService;
   final TrackerSvgService _svgService;
   final http.Client _httpClient;
 
@@ -129,8 +109,9 @@ class SessionStatsReportService {
       if (pid.isNotEmpty) {
         analysisByPlayerId[pid] = analysis;
       }
-      if (tid.isNotEmpty) {
-        analysisByTrackerId[tid] = analysis;
+      for (final String candidate
+          in TrackerSvgService.trackerIdCandidates(tid)) {
+        analysisByTrackerId[candidate] = analysis;
       }
     }
 
@@ -146,140 +127,61 @@ class SessionStatsReportService {
           )
         : null;
 
-    // Match reports: players come from matchCompo (+ deviceOwner → customeName).
-    final List<_MatchCompoSensorPlayer> compoPlayers = isMatch
-        ? await _loadMatchCompoSensorPlayers(
-            matchId: safeEventId,
-            teamId: safeTeamId,
-          )
-        : const <_MatchCompoSensorPlayer>[];
-    if (isMatch && kDebugMode) {
-      debugPrint(
-        'SessionStatsReportService: matchCompo sensors '
-        '${compoPlayers.map((p) => '${p.playerId}->${p.sensorId}').join(', ')}',
-      );
-    }
-
-    final Map<String, TeamPlayerMetricScores> scoresByPlayerId =
-        <String, TeamPlayerMetricScores>{
-      for (final TeamPlayerMetricScores score in resolvedSummary.playerScores)
-        if (score.playerId.trim().isNotEmpty)
-          score.playerId.trim(): score,
-    };
-
+    // Same player list / trackerIds as match_tracker_stats_table → player_analysis.
     final playerRows = <SessionStatsReportPlayerRow>[];
     final playerDetails = <SessionStatsReportPlayerDetail>[];
 
-    if (isMatch && compoPlayers.isNotEmpty) {
-      for (final _MatchCompoSensorPlayer slot in compoPlayers) {
-        final TeamPlayerMetricScores score = scoresByPlayerId[slot.playerId] ??
-            TeamPlayerMetricScores(
-              playerId: slot.playerId,
-              trackerId: slot.sensorId,
-              metrics: const <String, PlayerMetricScore>{},
-            );
+    for (final score in resolvedSummary.playerScores) {
+      final Player? player = await _playerService
+          .getPlayerById(score.playerId)
+          .catchError((_) => null);
+      final displayName = player != null
+          ? playerDisplayName(player, unknownLabel: unknownPlayerLabel)
+          : (score.playerId.trim().isEmpty
+              ? unknownPlayerLabel
+              : score.playerId.trim());
 
-        final Player? player = await _playerService
-            .getPlayerById(slot.playerId)
-            .catchError((_) => null);
-        final String displayName = player != null
-            ? playerDisplayName(player, unknownLabel: unknownPlayerLabel)
-            : ((slot.compoDisplayName ?? '').trim().isNotEmpty
-                ? slot.compoDisplayName!.trim()
-                : slot.playerId);
-
-        final metrics = <String, double>{};
-        final zScores = <String, double>{};
-        for (final metric in kSessionStatsReportMetrics) {
-          final playerMetric = score.getMetric(metric.key);
-          metrics[metric.key] = playerMetric?.value ?? 0;
-          if (playerMetric != null) {
-            zScores[metric.key] = playerMetric.zScore;
-          }
+      final metrics = <String, double>{};
+      final zScores = <String, double>{};
+      for (final metric in kSessionStatsReportMetrics) {
+        final playerMetric = score.getMetric(metric.key);
+        metrics[metric.key] = playerMetric?.value ?? 0;
+        if (playerMetric != null) {
+          zScores[metric.key] = playerMetric.zScore;
         }
-
-        playerRows.add(
-          SessionStatsReportPlayerRow(
-            playerId: slot.playerId,
-            displayName: displayName,
-            trackerId: slot.sensorId,
-            metrics: metrics,
-            zScores: zScores,
-          ),
-        );
-
-        final TrackerAnalysisResult? analysis =
-            analysisByPlayerId[slot.playerId] ??
-                analysisByTrackerId[slot.sensorId] ??
-                analysisByTrackerId[score.trackerId.trim()];
-
-        final Uint8List? photoBytes =
-            player == null ? null : await _loadPlayerPhotoBytes(player);
-
-        playerDetails.add(
-          await _buildPlayerDetail(
-            score: score,
-            displayName: displayName,
-            analysis: analysis,
-            photoBytes: photoBytes,
-            teamParam: teamParam,
-            isMatch: isMatch,
-            eventId: safeEventId,
-            sensorIdOverride: slot.sensorId,
-          ),
-        );
       }
-    } else {
-      // Training (or match without usable compo): keep TeamAnalysis order.
-      for (final score in resolvedSummary.playerScores) {
-        final Player? player = await _playerService
-            .getPlayerById(score.playerId)
-            .catchError((_) => null);
-        final displayName = player != null
-            ? playerDisplayName(player, unknownLabel: unknownPlayerLabel)
-            : (score.playerId.trim().isEmpty
-                ? unknownPlayerLabel
-                : score.playerId.trim());
 
-        final metrics = <String, double>{};
-        final zScores = <String, double>{};
-        for (final metric in kSessionStatsReportMetrics) {
-          final playerMetric = score.getMetric(metric.key);
-          metrics[metric.key] = playerMetric?.value ?? 0;
-          if (playerMetric != null) {
-            zScores[metric.key] = playerMetric.zScore;
-          }
-        }
+      playerRows.add(
+        SessionStatsReportPlayerRow(
+          playerId: score.playerId,
+          displayName: displayName,
+          trackerId: score.trackerId,
+          metrics: metrics,
+          zScores: zScores,
+        ),
+      );
 
-        playerRows.add(
-          SessionStatsReportPlayerRow(
-            playerId: score.playerId,
-            displayName: displayName,
-            trackerId: score.trackerId,
-            metrics: metrics,
-            zScores: zScores,
-          ),
-        );
+      final TrackerAnalysisResult? analysis = _resolveAnalysisForScore(
+        score: score,
+        eventId: safeEventId,
+        analysisByPlayerId: analysisByPlayerId,
+        analysisByTrackerId: analysisByTrackerId,
+      );
 
-        final TrackerAnalysisResult? analysis =
-            analysisByPlayerId[score.playerId.trim()] ??
-                analysisByTrackerId[score.trackerId.trim()];
+      final Uint8List? photoBytes =
+          player == null ? null : await _loadPlayerPhotoBytes(player);
 
-        final Uint8List? photoBytes =
-            player == null ? null : await _loadPlayerPhotoBytes(player);
-
-        playerDetails.add(
-          await _buildPlayerDetail(
-            score: score,
-            displayName: displayName,
-            analysis: analysis,
-            photoBytes: photoBytes,
-            teamParam: teamParam,
-            isMatch: isMatch,
-            eventId: safeEventId,
-          ),
-        );
-      }
+      playerDetails.add(
+        await _buildPlayerDetail(
+          score: score,
+          displayName: displayName,
+          analysis: analysis,
+          photoBytes: photoBytes,
+          teamParam: teamParam,
+          isMatch: isMatch,
+          eventId: safeEventId,
+        ),
+      );
     }
 
     playerRows.sort(
@@ -369,7 +271,6 @@ class SessionStatsReportService {
     required TeamParam teamParam,
     required bool isMatch,
     required String eventId,
-    String? sensorIdOverride,
   }) async {
     final List<SessionStatsReportSpeedZoneRow> speedZones =
         <SessionStatsReportSpeedZoneRow>[];
@@ -426,27 +327,21 @@ class SessionStatsReportService {
     }
 
     // Identical source as player_analysis Heatmap tab:
-    // TRACKER_Analysis/{eventId}_{trackerId} → analysis.trackerId/eventId
-    // → TRACKER_Svg/{trackerId}-{eventId}_{period}
+    // analysisDocId = `${eventId}_${score.trackerId}` (stats table)
+    // → getSvgForTrackerPeriod(analysis.trackerId, analysis.eventId, period)
+    // → rasterize with flutter_svg (same renderer as SvgPicture.string).
     final List<SessionStatsReportHeatmapImage> heatmaps = isMatch
         ? await _loadHeatmapsLikePlayerAnalysisTab(
             eventId: eventId,
-            trackerId: (sensorIdOverride ?? '').trim().isNotEmpty
-                ? sensorIdOverride!.trim()
-                : score.trackerId.trim(),
+            trackerId: score.trackerId.trim(),
             analysis: analysis,
           )
         : const <SessionStatsReportHeatmapImage>[];
 
-    final String resolvedTrackerId =
-        (sensorIdOverride ?? '').trim().isNotEmpty
-            ? sensorIdOverride!.trim()
-            : score.trackerId;
-
     return SessionStatsReportPlayerDetail(
       playerId: score.playerId,
       displayName: displayName,
-      trackerId: resolvedTrackerId,
+      trackerId: score.trackerId,
       photoBytes: photoBytes,
       distanceKm: analysis?.distanceKm ??
           score.getMetric(TeamWorkloadMetricKeys.distanceKm)?.value ??
@@ -492,115 +387,30 @@ class SessionStatsReportService {
     );
   }
 
-  /// Loads lineup players that have a tracker assignment and resolves the
-  /// sensor number via TRACKER_DeviceOwner.customeName.
-  Future<List<_MatchCompoSensorPlayer>> _loadMatchCompoSensorPlayers({
-    required String matchId,
-    required String? teamId,
-  }) async {
-    final MatchCompo? compo = await _loadMatchCompo(
-      matchId: matchId,
-      teamId: teamId,
-    );
-    if (compo == null) {
-      return const <_MatchCompoSensorPlayer>[];
+  /// Same resolution as opening `#player_analysis` from the stats table.
+  TrackerAnalysisResult? _resolveAnalysisForScore({
+    required TeamPlayerMetricScores score,
+    required String eventId,
+    required Map<String, TrackerAnalysisResult> analysisByPlayerId,
+    required Map<String, TrackerAnalysisResult> analysisByTrackerId,
+  }) {
+    final String playerId = score.playerId.trim();
+    if (playerId.isNotEmpty) {
+      final TrackerAnalysisResult? byPlayer = analysisByPlayerId[playerId];
+      if (byPlayer != null) {
+        return byPlayer;
+      }
     }
 
-    final List<PlayerCompo> lineup = allPlayersFromCompo(compo);
-    if (lineup.isEmpty) {
-      return const <_MatchCompoSensorPlayer>[];
+    for (final String tid
+        in TrackerSvgService.trackerIdCandidates(score.trackerId)) {
+      final TrackerAnalysisResult? byTracker = analysisByTrackerId[tid];
+      if (byTracker != null) {
+        return byTracker;
+      }
     }
 
-    final Set<String> deviceOwnerIds = <String>{
-      for (final PlayerCompo p in lineup)
-        if ((p.deviceOwnerId ?? '').trim().isNotEmpty) p.deviceOwnerId!.trim(),
-    };
-
-    final Map<String, DeviceOwner> ownersById = <String, DeviceOwner>{};
-    await Future.wait(
-      deviceOwnerIds.map((String id) async {
-        try {
-          final DeviceOwner? owner = await _deviceOwnerService.getById(id);
-          if (owner != null) {
-            ownersById[id] = owner;
-          }
-        } catch (e) {
-          if (kDebugMode) {
-            debugPrint(
-              'SessionStatsReportService: DeviceOwner $id failed: $e',
-            );
-          }
-        }
-      }),
-    );
-
-    final List<_MatchCompoSensorPlayer> out = <_MatchCompoSensorPlayer>[];
-    final Set<String> seenPlayers = <String>{};
-
-    for (final PlayerCompo slot in lineup) {
-      final String playerId = (slot.playerID ?? '').trim();
-      final String deviceOwnerId = (slot.deviceOwnerId ?? '').trim();
-      if (playerId.isEmpty || deviceOwnerId.isEmpty) {
-        continue;
-      }
-      if (!seenPlayers.add(playerId)) {
-        continue;
-      }
-
-      // Prefer customeName written on the compo, else DeviceOwner.customeName.
-      final String fromCompo = (slot.customName ?? '').trim();
-      final DeviceOwner? owner = ownersById[deviceOwnerId];
-      final String fromOwner =
-          owner == null ? '' : trackerIdForAnalysis(owner).trim();
-      final String sensorId =
-          fromCompo.isNotEmpty ? fromCompo : fromOwner;
-      if (sensorId.isEmpty) {
-        if (kDebugMode) {
-          debugPrint(
-            'SessionStatsReportService: no sensor for player=$playerId '
-            'deviceOwnerId=$deviceOwnerId',
-          );
-        }
-        continue;
-      }
-
-      out.add(
-        _MatchCompoSensorPlayer(
-          playerId: playerId,
-          sensorId: sensorId,
-          compoDisplayName: slot.playerNameDisplayed,
-        ),
-      );
-    }
-
-    return out;
-  }
-
-  Future<MatchCompo?> _loadMatchCompo({
-    required String matchId,
-    required String? teamId,
-  }) async {
-    try {
-      if (teamId != null && teamId.trim().isNotEmpty) {
-        final MatchCompo? byTeam =
-            await _matchCompoService.getMatchCompoByMatchAndTeamId(
-          matchId,
-          teamId.trim(),
-        );
-        if (byTeam != null) {
-          return byTeam;
-        }
-      }
-      return await _matchCompoService.getFirstMatchCompoByMatchId(matchId);
-    } catch (e) {
-      if (kDebugMode) {
-        debugPrint(
-          'SessionStatsReportService: load matchCompo failed for '
-          'matchId=$matchId teamId=$teamId: $e',
-        );
-      }
-      return null;
-    }
+    return null;
   }
 
   Future<SessionStatsReportMatchHeader?> _buildMatchHeader({
@@ -646,7 +456,8 @@ class SessionStatsReportService {
     );
   }
 
-  /// Mirrors `_TrackerHeatmapView._loadSvg` in tracker_analysis_heatmap.dart.
+  /// Mirrors `_TrackerHeatmapView._loadSvg` in tracker_analysis_heatmap.dart,
+  /// then rasterizes with flutter_svg (same engine as [SvgPicture.string]).
   Future<List<SessionStatsReportHeatmapImage>> _loadHeatmapsLikePlayerAnalysisTab({
     required String eventId,
     required String trackerId,
@@ -658,7 +469,8 @@ class SessionStatsReportService {
       return const <SessionStatsReportHeatmapImage>[];
     }
 
-    // Same doc id as match_tracker_stats_table / player_analysis route.
+    // Same doc id as match_tracker_stats_table → player_analysis:
+    // `${eventId}_${trackerId}` e.g. `53514382_02`.
     TrackerAnalysisResult? resolved = analysis;
     if (resolved == null ||
         resolved.trackerId.trim().isEmpty ||
@@ -676,6 +488,7 @@ class SessionStatsReportService {
       }
     }
 
+    // Exact fields used by _TrackerHeatmapView._loadSvg.
     final String svgTrackerId = (resolved?.trackerId.trim().isNotEmpty == true)
         ? resolved!.trackerId.trim()
         : safeTrackerId;
@@ -687,7 +500,7 @@ class SessionStatsReportService {
       debugPrint(
         'SessionStatsReportService: heatmaps like player_analysis '
         'trackerId=$svgTrackerId eventId=$svgEventId '
-        '(from analysisDoc=${safeEventId}_$svgTrackerId)',
+        'analysisDoc=${svgEventId}_$svgTrackerId',
       );
     }
 
@@ -714,11 +527,24 @@ class SessionStatsReportService {
           }
           continue;
         }
+
+        // package:pdf cannot render these heatmaps; UI uses flutter_svg.
+        final Uint8List? png = await svgStringToPngBytes(svg, targetWidth: 720);
+        if (png == null || png.isEmpty) {
+          if (kDebugMode) {
+            debugPrint(
+              'SessionStatsReportService: rasterize failed for '
+              '$svgTrackerId/${period.key} (svgChars=${svg.length})',
+            );
+          }
+          continue;
+        }
+
         heatmaps.add(
           SessionStatsReportHeatmapImage(
             periodKey: period.key,
             periodLabel: period.label,
-            svg: svg,
+            pngBytes: png,
           ),
         );
       } catch (e) {
