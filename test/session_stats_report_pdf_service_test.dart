@@ -5,6 +5,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:grinta/model/session_stats_report.dart';
 import 'package:grinta/model/tracker/team_workload_summary.dart';
 import 'package:grinta/services/session_stats_report_pdf_service.dart';
+import 'package:grinta/services/trackerSvgService.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
@@ -222,5 +223,22 @@ void main() {
     final bytes = await SessionStatsReportPdfService().buildPdf(report);
     expect(bytes.length, greaterThan(500));
     expect(String.fromCharCodes(bytes.take(4)), '%PDF');
+
+    // Header must include both clubs + score (not only "vs opponent").
+    expect(
+      SessionStatsReportPdfService.matchScorelineLabel(report.matchHeader!),
+      'Grinta FC  2 - 1  Rival FC',
+    );
+  });
+
+  test('tracker id candidates cover padded and raw forms', () {
+    expect(
+      TrackerSvgService.trackerIdCandidates('01'),
+      containsAll(<String>['01', '1']),
+    );
+    expect(
+      TrackerSvgService.trackerIdCandidates('1'),
+      containsAll(<String>['1', '01']),
+    );
   });
 }

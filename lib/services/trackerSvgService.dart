@@ -14,24 +14,51 @@ class TrackerSvgService {
     required String eventId,
     required String periodSuffix,
   }) async {
-    final safeTrackerId = _formatTrackerId(trackerId);
     final safeEventId = eventId.trim();
     final safePeriodSuffix = periodSuffix.trim();
-
-    if (safeTrackerId.isEmpty ||
-        safeEventId.isEmpty ||
-        safePeriodSuffix.isEmpty) {
+    if (safeEventId.isEmpty || safePeriodSuffix.isEmpty) {
       return null;
     }
-    
-    // Donne exactement : 01-53514382_fullMatch
-    final normalizedDocumentId =
-        '$safeTrackerId-$safeEventId\_${safePeriodSuffix}';
 
-    final doc = await _firestore
-        .collection(collectionName)
-        .doc(normalizedDocumentId)
-        .get();
+    // Writers use raw device/tracker ids; readers historically pad to 2 digits.
+    // Try every plausible doc id so existing heatmaps are not missed.
+    for (final String candidateTracker in trackerIdCandidates(trackerId)) {
+      final String documentId =
+          '$candidateTracker-${safeEventId}_$safePeriodSuffix';
+      final String? svg = await _readSvgFromDocument(documentId);
+      if (svg != null && svg.trim().isNotEmpty) {
+        return svg;
+      }
+    }
+
+    return null;
+  }
+
+  /// Distinct tracker-id forms used as Firestore document prefixes.
+  static List<String> trackerIdCandidates(String value) {
+    final String raw = value.trim();
+    if (raw.isEmpty) return const <String>[];
+
+    final Set<String> out = <String>{raw};
+
+    final int? asInt = int.tryParse(raw);
+    if (asInt != null) {
+      out.add(asInt.toString());
+      out.add(asInt.toString().padLeft(2, '0'));
+    } else {
+      out.add(raw.padLeft(2, '0'));
+      final String stripped = raw.replaceFirst(RegExp(r'^0+'), '');
+      if (stripped.isNotEmpty) {
+        out.add(stripped);
+      }
+    }
+
+    return out.toList(growable: false);
+  }
+
+  Future<String?> _readSvgFromDocument(String documentId) async {
+    final doc =
+        await _firestore.collection(collectionName).doc(documentId).get();
 
     if (!doc.exists || doc.data() == null) {
       return null;
@@ -40,10 +67,9 @@ class TrackerSvgService {
     final data = doc.data()!;
     final svgFiles = data['svgFiles'];
 
-    if (svgFiles is Map<String, dynamic>) {
-      final directEntry = svgFiles[normalizedDocumentId];
-
-      if (directEntry is Map<String, dynamic>) {
+    if (svgFiles is Map) {
+      final directEntry = svgFiles[documentId];
+      if (directEntry is Map) {
         final svg = directEntry['svg'];
         if (svg is String && svg.trim().isNotEmpty) {
           return svg;
@@ -51,7 +77,7 @@ class TrackerSvgService {
       }
 
       for (final entry in svgFiles.values) {
-        if (entry is Map<String, dynamic>) {
+        if (entry is Map) {
           final svg = entry['svg'];
           if (svg is String && svg.trim().isNotEmpty) {
             return svg;
@@ -66,19 +92,5 @@ class TrackerSvgService {
     }
 
     return null;
-  }
-
-  String _formatTrackerId(String value) {
-    final safe = value.trim();
-
-    if (safe.isEmpty) return '';
-
-    final asInt = int.tryParse(safe);
-
-    if (asInt != null) {
-      return asInt.toString().padLeft(2, '0');
-    }
-
-    return safe.padLeft(2, '0');
   }
 }

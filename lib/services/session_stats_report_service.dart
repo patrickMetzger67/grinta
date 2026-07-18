@@ -319,39 +319,43 @@ class SessionStatsReportService {
     final List<SessionStatsReportHeatmapImage> heatmaps =
         <SessionStatsReportHeatmapImage>[];
     if (isMatch) {
-      final String trackerId = (analysis?.trackerId ?? score.trackerId).trim();
-      if (trackerId.isNotEmpty) {
-        for (final period in _heatmapPeriods) {
-          try {
-            final String? svg = await _svgService.getSvgForTrackerPeriod(
-              trackerId: trackerId,
-              eventId: eventId,
-              periodSuffix: period.key,
+      // Prefer analysis tracker id, then score; also try both if they differ
+      // (padding / formatting mismatches are common).
+      final List<String> trackerCandidates = <String>{
+        (analysis?.trackerId ?? '').trim(),
+        score.trackerId.trim(),
+      }.where((id) => id.isNotEmpty).toList(growable: false);
+
+      for (final period in _heatmapPeriods) {
+        try {
+          final String? svg = await _loadHeatmapSvg(
+            trackerCandidates: trackerCandidates,
+            eventId: eventId,
+            periodKey: period.key,
+          );
+          if (svg == null || svg.trim().isEmpty) {
+            continue;
+          }
+          final Uint8List? png = await svgStringToPngBytes(
+            svg,
+            targetWidth: 240,
+          );
+          if (png == null || png.isEmpty) {
+            continue;
+          }
+          heatmaps.add(
+            SessionStatsReportHeatmapImage(
+              periodKey: period.key,
+              periodLabel: period.label,
+              pngBytes: png,
+            ),
+          );
+        } catch (e) {
+          if (kDebugMode) {
+            debugPrint(
+              'SessionStatsReportService: heatmap '
+              '${trackerCandidates.join("|")}/${period.key} failed: $e',
             );
-            if (svg == null || svg.trim().isEmpty) {
-              continue;
-            }
-            final Uint8List? png = await svgStringToPngBytes(
-              svg,
-              targetWidth: 240,
-            );
-            if (png == null || png.isEmpty) {
-              continue;
-            }
-            heatmaps.add(
-              SessionStatsReportHeatmapImage(
-                periodKey: period.key,
-                periodLabel: period.label,
-                pngBytes: png,
-              ),
-            );
-          } catch (e) {
-            if (kDebugMode) {
-              debugPrint(
-                'SessionStatsReportService: heatmap $trackerId/${period.key} '
-                'failed: $e',
-              );
-            }
           }
         }
       }
@@ -447,6 +451,32 @@ class SessionStatsReportService {
       awayLogoBytes: awayLogo,
       opponentLogoBytes: opponentLogo,
     );
+  }
+
+  /// Prefer WithSprints (same as in-app heatmap UI), then the base period.
+  Future<String?> _loadHeatmapSvg({
+    required List<String> trackerCandidates,
+    required String eventId,
+    required String periodKey,
+  }) async {
+    final List<String> periodSuffixes = <String>[
+      '${periodKey}WithSprints',
+      periodKey,
+    ];
+
+    for (final String trackerId in trackerCandidates) {
+      for (final String suffix in periodSuffixes) {
+        final String? svg = await _svgService.getSvgForTrackerPeriod(
+          trackerId: trackerId,
+          eventId: eventId,
+          periodSuffix: suffix,
+        );
+        if (svg != null && svg.trim().isNotEmpty) {
+          return svg;
+        }
+      }
+    }
+    return null;
   }
 
   Future<Uint8List?> _loadPlayerPhotoBytes(Player player) async {

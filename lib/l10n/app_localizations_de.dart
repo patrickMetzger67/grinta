@@ -335,6 +335,30 @@ class AppLocalizationsDe extends AppLocalizations {
   }
 
   @override
+  String sessionReportEmailSuccessCount(int count) {
+    return 'Rapport envoyé à $count destinataires';
+  }
+
+  @override
+  String sessionReportEmailSelectedCount(int count) {
+    return '$count sélectionné(s)';
+  }
+
+  @override
+  String get sessionReportEmailSelectAll => 'Tout sélectionner';
+
+  @override
+  String get sessionReportEmailDeselectAll => 'Tout désélectionner';
+
+  @override
+  String get sessionReportEmailNoManagers =>
+      'Aucun manager avec adresse e-mail trouvé pour cette équipe.';
+
+  @override
+  String get sessionReportEmailNoSelection =>
+      'Sélectionne au moins un destinataire.';
+
+  @override
   String get sessionReportEmailFailed =>
       'Der PDF-Bericht konnte nicht gesendet werden.';
 

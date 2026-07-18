@@ -152,7 +152,7 @@
     }
   },
   "sessionReportEmailDialogTitle": "Send PDF report",
-  "sessionReportEmailDialogMessage": "Enter the email address that should receive the statistics report (PDF).",
+  "sessionReportEmailDialogMessage": "Select one or more managers who should receive the statistics report (PDF).",
   "sessionReportEmailDialogHint": "you@example.com",
   "sessionReportEmailDialogSend": "Send",
   "sessionReportEmailDialogCancel": "Cancel",
@@ -164,6 +164,22 @@
       "email": { "type": "String" }
     }
   },
+  "sessionReportEmailSuccessCount": "Report sent to {count} recipients",
+  "@sessionReportEmailSuccessCount": {
+    "placeholders": {
+      "count": { "type": "int" }
+    }
+  },
+  "sessionReportEmailSelectedCount": "{count} selected",
+  "@sessionReportEmailSelectedCount": {
+    "placeholders": {
+      "count": { "type": "int" }
+    }
+  },
+  "sessionReportEmailSelectAll": "Select all",
+  "sessionReportEmailDeselectAll": "Deselect all",
+  "sessionReportEmailNoManagers": "No managers with an email address found for this team.",
+  "sessionReportEmailNoSelection": "Select at least one recipient.",
   "sessionReportEmailFailed": "Could not send the PDF report.",
   "sessionReportEmailNoStats": "No tracker statistics are available to generate this report.",
   "sessionReportEmailInvalid": "Invalid email address.",

@@ -152,7 +152,7 @@
     }
   },
   "sessionReportEmailDialogTitle": "Enviar informe PDF",
-  "sessionReportEmailDialogMessage": "Indica la dirección de correo que recibirá el informe de estadísticas (PDF).",
+  "sessionReportEmailDialogMessage": "Selecciona uno o varios managers que recibirán el informe de estadísticas (PDF).",
   "sessionReportEmailDialogHint": "tu@ejemplo.com",
   "sessionReportEmailDialogSend": "Enviar",
   "sessionReportEmailDialogCancel": "Cancelar",
@@ -164,6 +164,22 @@
       "email": { "type": "String" }
     }
   },
+  "sessionReportEmailSuccessCount": "Informe enviado a {count} destinatarios",
+  "@sessionReportEmailSuccessCount": {
+    "placeholders": {
+      "count": { "type": "int" }
+    }
+  },
+  "sessionReportEmailSelectedCount": "{count} seleccionado(s)",
+  "@sessionReportEmailSelectedCount": {
+    "placeholders": {
+      "count": { "type": "int" }
+    }
+  },
+  "sessionReportEmailSelectAll": "Seleccionar todo",
+  "sessionReportEmailDeselectAll": "Deseleccionar todo",
+  "sessionReportEmailNoManagers": "No se encontraron managers con correo para este equipo.",
+  "sessionReportEmailNoSelection": "Selecciona al menos un destinatario.",
   "sessionReportEmailFailed": "No se pudo enviar el informe PDF.",
   "sessionReportEmailNoStats": "No hay estadísticas del tracker disponibles para generar este informe.",
   "sessionReportEmailInvalid": "Dirección de correo no válida.",

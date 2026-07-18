@@ -240,19 +240,6 @@ class SessionStatsReportPdfService {
     String generatedLabel,
   ) {
     final match = report.matchHeader;
-    final sessionLine = _t(
-      report.isMatch
-          ? [
-              if ((match?.opponentName ?? '').trim().isNotEmpty)
-                'vs ${match!.opponentName!.trim()}'
-              else
-                report.title,
-              if ((match?.scoreLabel ?? '').trim().isNotEmpty)
-                match!.scoreLabel,
-            ].join('  -  ')
-          : report.title,
-    );
-
     final dateTimeLine = _t(
       [
         if ((report.dateLabel ?? '').trim().isNotEmpty) report.dateLabel!.trim(),
@@ -287,30 +274,22 @@ class SessionStatsReportPdfService {
             ),
           ),
           pw.SizedBox(width: 10),
-          if (match?.opponentLogoBytes != null) ...[
-            pw.Container(
-              width: 22,
-              height: 22,
-              child: pw.Image(
-                pw.MemoryImage(match!.opponentLogoBytes!),
-                fit: pw.BoxFit.contain,
-              ),
-            ),
-            pw.SizedBox(width: 6),
-          ],
           pw.Expanded(
             child: pw.Column(
               crossAxisAlignment: pw.CrossAxisAlignment.start,
               children: [
-                pw.Text(
-                  sessionLine,
-                  maxLines: 1,
-                  style: pw.TextStyle(
-                    color: _textPrimary,
-                    fontSize: 11,
-                    fontWeight: pw.FontWeight.bold,
+                if (report.isMatch && match != null)
+                  _buildMatchScoreline(match)
+                else
+                  pw.Text(
+                    _t(report.title),
+                    maxLines: 1,
+                    style: pw.TextStyle(
+                      color: _textPrimary,
+                      fontSize: 11,
+                      fontWeight: pw.FontWeight.bold,
+                    ),
                   ),
-                ),
                 if (dateTimeLine.isNotEmpty)
                   pw.Text(
                     dateTimeLine,
@@ -355,6 +334,81 @@ class SessionStatsReportPdfService {
           ),
         ],
       ),
+    );
+  }
+
+  /// Plain-text scoreline used by tests and as a compact fallback label.
+  static String matchScorelineLabel(SessionStatsReportMatchHeader match) {
+    final home = match.homeTeamName.trim();
+    final away = match.awayTeamName.trim();
+    final score = match.scoreLabel.trim();
+    return [home, score, away].where((p) => p.isNotEmpty).join('  ');
+  }
+
+  /// Home logo + name · score · away name + logo (next to the GRINTA badge).
+  pw.Widget _buildMatchScoreline(SessionStatsReportMatchHeader match) {
+    final home = _t(match.homeTeamName);
+    final away = _t(match.awayTeamName);
+    final score = _t(match.scoreLabel);
+
+    return pw.Row(
+      children: [
+        if (match.homeLogoBytes != null && match.homeLogoBytes!.isNotEmpty) ...[
+          pw.Container(
+            width: 20,
+            height: 20,
+            child: pw.Image(
+              pw.MemoryImage(match.homeLogoBytes!),
+              fit: pw.BoxFit.contain,
+            ),
+          ),
+          pw.SizedBox(width: 5),
+        ],
+        pw.Flexible(
+          child: pw.Text(
+            home,
+            maxLines: 1,
+            style: pw.TextStyle(
+              color: _textPrimary,
+              fontSize: 11,
+              fontWeight: pw.FontWeight.bold,
+            ),
+          ),
+        ),
+        pw.SizedBox(width: 6),
+        pw.Text(
+          score,
+          style: pw.TextStyle(
+            color: _primary,
+            fontSize: 12,
+            fontWeight: pw.FontWeight.bold,
+          ),
+        ),
+        pw.SizedBox(width: 6),
+        pw.Flexible(
+          child: pw.Text(
+            away,
+            maxLines: 1,
+            textAlign: pw.TextAlign.right,
+            style: pw.TextStyle(
+              color: _textPrimary,
+              fontSize: 11,
+              fontWeight: pw.FontWeight.bold,
+            ),
+          ),
+        ),
+        if (match.awayLogoBytes != null && match.awayLogoBytes!.isNotEmpty) ...[
+          pw.SizedBox(width: 5),
+          pw.Container(
+            width: 20,
+            height: 20,
+            child: pw.Image(
+              pw.MemoryImage(match.awayLogoBytes!),
+              fit: pw.BoxFit.contain,
+            ),
+          ),
+        ],
+      ],
     );
   }
 
@@ -850,14 +904,17 @@ class SessionStatsReportPdfService {
           ),
         ),
         pw.SizedBox(height: 8),
-        pw.Text(
-          _t(report.title),
-          style: pw.TextStyle(
-            color: _textPrimary,
-            fontSize: 13,
-            fontWeight: pw.FontWeight.bold,
+        if (report.isMatch && report.matchHeader != null)
+          _buildMatchScoreline(report.matchHeader!)
+        else
+          pw.Text(
+            _t(report.title),
+            style: pw.TextStyle(
+              color: _textPrimary,
+              fontSize: 13,
+              fontWeight: pw.FontWeight.bold,
+            ),
           ),
-        ),
         if ((report.dateLabel ?? '').trim().isNotEmpty ||
             (report.timeLabel ?? '').trim().isNotEmpty ||
             (report.teamName ?? '').trim().isNotEmpty)
