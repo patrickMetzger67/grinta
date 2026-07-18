@@ -1,23 +1,33 @@
 import 'package:flutter/foundation.dart';
+import 'package:grinta/model/compoType.dart';
+import 'package:grinta/model/highlights.dart';
 import 'package:grinta/model/match.dart' as grinta_match;
+import 'package:grinta/model/matchCompo.dart';
+import 'package:grinta/model/matchStats.dart';
 import 'package:grinta/model/player.dart';
 import 'package:grinta/model/session_stats_report.dart';
 import 'package:grinta/model/teamParam.dart';
 import 'package:grinta/model/tracker/team_workload_summary.dart';
 import 'package:grinta/model/tracker/trackerData.dart';
+import 'package:grinta/services/compoTypeService.dart';
+import 'package:grinta/services/highlightsService.dart';
+import 'package:grinta/services/matchCompoService.dart';
 import 'package:grinta/services/matchService.dart';
+import 'package:grinta/services/matchStatsService.dart';
 import 'package:grinta/services/playerService.dart';
 import 'package:grinta/services/teamParamService.dart';
 import 'package:grinta/services/teamWorkloadSummaryService.dart';
 import 'package:grinta/services/trackerDataAnalysisService.dart';
 import 'package:grinta/services/trackerSvgService.dart';
 import 'package:grinta/util/highlight_minute_helper.dart';
+import 'package:grinta/util/match_compo_pitch_mapper.dart';
 import 'package:grinta/util/match_goal_helper.dart';
 import 'package:grinta/util/match_outcome_helper.dart';
 import 'package:grinta/util/playerDisplayName.dart';
 import 'package:grinta/util/player_photo_resolver.dart';
 import 'package:grinta/util/svg_rasterizer.dart';
 import 'package:grinta/util/team_stats_opponent_helper.dart';
+import 'package:grinta/widget/half_pitch_compo_widget.dart';
 import 'package:http/http.dart' as http;
 import 'package:intl/intl.dart';
 
@@ -32,17 +42,29 @@ class SessionStatsReportService {
     TeamWorkloadSummaryService? summaryService,
     PlayerService? playerService,
     MatchService? matchService,
+    MatchCompoService? matchCompoService,
+    CompoTypeService? compoTypeService,
+    MatchStatsService? matchStatsService,
+    HighlightsService? highlightsService,
     TrackerSvgService? svgService,
     http.Client? httpClient,
   })  : _summaryService = summaryService ?? TeamWorkloadSummaryService(),
         _playerService = playerService ?? PlayerService(),
         _matchService = matchService ?? MatchService(),
+        _matchCompoService = matchCompoService ?? MatchCompoService(),
+        _compoTypeService = compoTypeService ?? CompoTypeService(),
+        _matchStatsService = matchStatsService ?? MatchStatsService(),
+        _highlightsService = highlightsService ?? HighlightsService(),
         _svgService = svgService ?? TrackerSvgService(),
         _httpClient = httpClient ?? http.Client();
 
   final TeamWorkloadSummaryService _summaryService;
   final PlayerService _playerService;
   final MatchService _matchService;
+  final MatchCompoService _matchCompoService;
+  final CompoTypeService _compoTypeService;
+  final MatchStatsService _matchStatsService;
+  final HighlightsService _highlightsService;
   final TrackerSvgService _svgService;
   final http.Client _httpClient;
 
@@ -126,6 +148,25 @@ class SessionStatsReportService {
             teamId: safeTeamId,
           )
         : null;
+
+    final Future<SessionStatsReportTacticalSchema?> tacticalFuture = isMatch
+        ? _loadTacticalSchema(
+            matchId: safeEventId,
+            teamId: safeTeamId,
+            unknownPlayerLabel: unknownPlayerLabel,
+          )
+        : Future<SessionStatsReportTacticalSchema?>.value(null);
+
+    final Future<List<SessionStatsReportHighlightEvent>> highlightsFuture =
+        isMatch
+            ? _loadHighlightEvents(
+                matchId: safeEventId,
+                match: resolvedMatch,
+                teamId: safeTeamId,
+              )
+            : Future<List<SessionStatsReportHighlightEvent>>.value(
+                const <SessionStatsReportHighlightEvent>[],
+              );
 
     // Same player list / trackerIds as match_tracker_stats_table → player_analysis.
     final playerRows = <SessionStatsReportPlayerRow>[];
@@ -242,6 +283,11 @@ class SessionStatsReportService {
       }
     }
 
+    final SessionStatsReportTacticalSchema? tacticalSchema =
+        await tacticalFuture;
+    final List<SessionStatsReportHighlightEvent> highlightEvents =
+        await highlightsFuture;
+
     return SessionStatsReport(
       eventId: safeEventId,
       title: resolvedTitle,
@@ -259,6 +305,8 @@ class SessionStatsReportService {
       teamAverages: teamAverages,
       playerRows: playerRows,
       matchHeader: matchHeader,
+      tacticalSchema: tacticalSchema,
+      highlightEvents: highlightEvents,
       playerDetails: playerDetails,
     );
   }
@@ -411,6 +459,351 @@ class SessionStatsReportService {
     }
 
     return null;
+  }
+
+  Future<SessionStatsReportTacticalSchema?> _loadTacticalSchema({
+    required String matchId,
+    required String? teamId,
+    required String unknownPlayerLabel,
+  }) async {
+    try {
+      MatchCompo? compo;
+      if (teamId != null && teamId.trim().isNotEmpty) {
+        compo = await _matchCompoService.getMatchCompoByMatchAndTeamId(
+          matchId,
+          teamId.trim(),
+        );
+      }
+      compo ??= await _matchCompoService.getFirstMatchCompoByMatchId(matchId);
+      if (compo == null) {
+        return null;
+      }
+
+      final String? compoTypeId = compo.compoTypeID?.trim();
+      CompoType? compoType;
+      if (compoTypeId != null && compoTypeId.isNotEmpty) {
+        compoType = await _compoTypeService.getCompoTypeById(compoTypeId);
+      }
+      if (compoType == null) {
+        return null;
+      }
+
+      final Map<String, PlayerCompo> startersBySlot =
+          startersFromMatchCompo(compo);
+      final List<CompoSlot> slots = buildCompoSlots(compoType);
+      final List<PlayerCompo> bench = substitutesFromMatchCompo(compo);
+
+      final Set<String> playerIds = <String>{
+        for (final PlayerCompo p in startersBySlot.values)
+          if ((p.playerID ?? '').trim().isNotEmpty) p.playerID!.trim(),
+        for (final PlayerCompo p in bench)
+          if ((p.playerID ?? '').trim().isNotEmpty) p.playerID!.trim(),
+      };
+
+      final Map<String, Player> playersById = <String, Player>{};
+      final Map<String, Uint8List?> photosById = <String, Uint8List?>{};
+      await Future.wait(
+        playerIds.map((String id) async {
+          final Player? player =
+              await _playerService.getPlayerById(id).catchError((_) => null);
+          if (player != null) {
+            playersById[id] = player;
+            photosById[id] = await _loadPlayerPhotoBytes(player);
+          }
+        }),
+      );
+
+      final List<SessionStatsReportPitchPlayer> starters =
+          <SessionStatsReportPitchPlayer>[];
+      for (final CompoSlot slot in slots) {
+        final PlayerCompo? slotPlayer = startersBySlot[slot.id];
+        if (slotPlayer == null) {
+          continue;
+        }
+        final String playerId = (slotPlayer.playerID ?? '').trim();
+        if (playerId.isEmpty) {
+          continue;
+        }
+        final Player? player = playersById[playerId];
+        final String custom = (slotPlayer.playerNameDisplayed ?? '').trim();
+        final String displayName = custom.isNotEmpty
+            ? custom
+            : (player != null
+                ? playerDisplayName(player, unknownLabel: unknownPlayerLabel)
+                : unknownPlayerLabel);
+
+        starters.add(
+          SessionStatsReportPitchPlayer(
+            playerId: playerId,
+            displayName: displayName,
+            slotId: slot.id,
+            role: slot.role,
+            x: slot.x,
+            y: slot.y,
+            shirtNumber: slotPlayer.number,
+            photoBytes: photosById[playerId],
+          ),
+        );
+      }
+
+      final List<SessionStatsReportBenchPlayer> substitutes =
+          <SessionStatsReportBenchPlayer>[];
+      for (final PlayerCompo sub in bench) {
+        final String playerId = (sub.playerID ?? '').trim();
+        if (playerId.isEmpty) {
+          continue;
+        }
+        final Player? player = playersById[playerId];
+        final String custom = (sub.playerNameDisplayed ?? '').trim();
+        final String displayName = custom.isNotEmpty
+            ? custom
+            : (player != null
+                ? playerDisplayName(player, unknownLabel: unknownPlayerLabel)
+                : unknownPlayerLabel);
+        substitutes.add(
+          SessionStatsReportBenchPlayer(
+            playerId: playerId,
+            displayName: displayName,
+            shirtNumber: sub.number,
+            photoBytes: photosById[playerId],
+          ),
+        );
+      }
+
+      final String formationName = (compoType.name ?? '').trim().isNotEmpty
+          ? compoType.name!.trim()
+          : 'Compo';
+
+      if (starters.isEmpty && substitutes.isEmpty) {
+        return null;
+      }
+
+      return SessionStatsReportTacticalSchema(
+        formationName: formationName,
+        starters: starters,
+        substitutes: substitutes,
+      );
+    } catch (e) {
+      if (kDebugMode) {
+        debugPrint(
+          'SessionStatsReportService: tactical schema failed for '
+          'matchId=$matchId: $e',
+        );
+      }
+      return null;
+    }
+  }
+
+  Future<List<SessionStatsReportHighlightEvent>> _loadHighlightEvents({
+    required String matchId,
+    required grinta_match.Match? match,
+    required String? teamId,
+  }) async {
+    try {
+      final MatchStats? matchStats =
+          await _matchStatsService.getMatchStatsByMatchId(matchId);
+      final List<MatchStatHighLight> fmi =
+          List<MatchStatHighLight>.from(matchStats?.highlights ?? const []);
+      if (fmi.isNotEmpty) {
+        final String home = (match?.team1 ?? '').trim();
+        final String away = (match?.team2 ?? '').trim();
+        fmi.sort((a, b) => (a.time ?? 0).compareTo(b.time ?? 0));
+        return fmi
+            .map(
+              (MatchStatHighLight h) => _mapFmiHighlight(
+                highlight: h,
+                homeTeamName: home,
+                awayTeamName: away,
+              ),
+            )
+            .toList();
+      }
+
+      final List<Highlights> grinta =
+          await _highlightsService.getHighlightsByMatchCalendarId(
+        matchId,
+        teamId: teamId,
+      );
+      if (grinta.isEmpty || match == null) {
+        return const <SessionStatsReportHighlightEvent>[];
+      }
+
+      final List<SessionStatsReportHighlightEvent> out =
+          <SessionStatsReportHighlightEvent>[];
+      for (final Highlights h in grinta) {
+        final SessionStatsReportHighlightEvent? mapped =
+            _mapGrintaHighlight(highlight: h, match: match);
+        if (mapped != null) {
+          out.add(mapped);
+        }
+      }
+      out.sort((a, b) {
+        final int byMin = a.minute.compareTo(b.minute);
+        if (byMin != 0) return byMin;
+        return a.extraTime.compareTo(b.extraTime);
+      });
+      return out;
+    } catch (e) {
+      if (kDebugMode) {
+        debugPrint(
+          'SessionStatsReportService: highlights failed for matchId=$matchId: $e',
+        );
+      }
+      return const <SessionStatsReportHighlightEvent>[];
+    }
+  }
+
+  SessionStatsReportHighlightEvent _mapFmiHighlight({
+    required MatchStatHighLight highlight,
+    required String homeTeamName,
+    required String awayTeamName,
+  }) {
+    final String type = _normalizeHighlightType(highlight.type);
+    final String team = (highlight.team ?? '').trim();
+    final bool isHome = _isHomeTeamName(team, homeTeamName, awayTeamName);
+    final String player = (highlight.player ?? '').trim();
+    final String incoming = (highlight.incomingPlayer ?? '').trim();
+
+    return SessionStatsReportHighlightEvent(
+      minute: highlight.time ?? 0,
+      type: type,
+      typeLabel: _highlightTypeLabel(type),
+      playerName: player.isNotEmpty ? player : '-',
+      secondaryPlayerName: incoming.isNotEmpty ? incoming : null,
+      teamName: team.isNotEmpty
+          ? team
+          : (isHome ? homeTeamName : awayTeamName),
+      isHomeSide: isHome,
+    );
+  }
+
+  SessionStatsReportHighlightEvent? _mapGrintaHighlight({
+    required Highlights highlight,
+    required grinta_match.Match match,
+  }) {
+    final ActionType? action = highlight.actionType;
+    if (action == null || action == ActionType.timeEvent) {
+      return null;
+    }
+
+    String type;
+    String playerName = '-';
+    String? secondary;
+
+    switch (action) {
+      case ActionType.goal:
+        type = 'goal';
+        final Goal? goal = highlight.value is Goal ? highlight.value as Goal : null;
+        playerName = (goal?.playerName ?? '').trim();
+        final String passer = (goal?.playerDecisivePasser ?? '').trim();
+        secondary = passer.isEmpty ? null : passer;
+        break;
+      case ActionType.yellowCard:
+        type = 'yellowCard';
+        final YellowRedCard? card =
+            highlight.value is YellowRedCard ? highlight.value as YellowRedCard : null;
+        playerName = (card?.playerName ?? '').trim();
+        break;
+      case ActionType.redCard:
+        type = 'redCard';
+        final YellowRedCard? card =
+            highlight.value is YellowRedCard ? highlight.value as YellowRedCard : null;
+        playerName = (card?.playerName ?? '').trim();
+        break;
+      case ActionType.substitution:
+        type = 'substitution';
+        final Substitution? sub =
+            highlight.value is Substitution ? highlight.value as Substitution : null;
+        playerName = (sub?.outgoingPlayerName ?? '').trim();
+        final String incoming = (sub?.enteringPlayerName ?? '').trim();
+        secondary = incoming.isEmpty ? null : incoming;
+        break;
+      case ActionType.timeEvent:
+        return null;
+    }
+
+    if (playerName.isEmpty) {
+      playerName = '-';
+    }
+
+    final MatchSide? side = sideForAffiliationTeam(
+      match,
+      affiliationTeamForHighlight(highlight),
+    );
+    final bool isHome = side != MatchSide.team2;
+    final String teamName = side == null
+        ? ''
+        : teamDisplayNameForSide(match, side);
+
+    return SessionStatsReportHighlightEvent(
+      minute: highlight.minute ?? 0,
+      extraTime: highlight.extraTime ?? 0,
+      type: type,
+      typeLabel: _highlightTypeLabel(type),
+      playerName: playerName,
+      secondaryPlayerName: secondary,
+      teamName: teamName,
+      isHomeSide: isHome,
+    );
+  }
+
+  String _normalizeHighlightType(String? raw) {
+    final String n = (raw ?? '')
+        .trim()
+        .toLowerCase()
+        .replaceAll(' ', '')
+        .replaceAll('-', '_');
+    switch (n) {
+      case 'goal':
+      case 'but':
+      case 'penalty':
+        return 'goal';
+      case 'own_goal':
+      case 'owngoal':
+        return 'ownGoal';
+      case 'yellowcard':
+      case 'yellow_card':
+      case 'carton_jaune':
+        return 'yellowCard';
+      case 'redcard':
+      case 'red_card':
+      case 'carton_rouge':
+        return 'redCard';
+      case 'replacement':
+      case 'substitution':
+      case 'change':
+      case 'changement':
+        return 'substitution';
+      default:
+        return n.isEmpty ? 'other' : n;
+    }
+  }
+
+  String _highlightTypeLabel(String type) {
+    switch (type) {
+      case 'goal':
+        return 'But';
+      case 'ownGoal':
+        return 'CSC';
+      case 'yellowCard':
+        return 'Carton jaune';
+      case 'redCard':
+        return 'Carton rouge';
+      case 'substitution':
+        return 'Changement';
+      default:
+        return 'Evenement';
+    }
+  }
+
+  bool _isHomeTeamName(String eventTeam, String home, String away) {
+    final String event = eventTeam.trim().toLowerCase();
+    final String left = home.trim().toLowerCase();
+    final String right = away.trim().toLowerCase();
+    if (event.isEmpty) return true;
+    if (left.isNotEmpty && event == left) return true;
+    if (right.isNotEmpty && event == right) return false;
+    return true;
   }
 
   Future<SessionStatsReportMatchHeader?> _buildMatchHeader({

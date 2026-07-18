@@ -31,6 +31,55 @@ class SessionStatsReportPdfService {
       report.generatedAt,
     );
 
+    // Match reports: page 1 = schéma tactique, page 2 = temps forts.
+    if (report.isMatch) {
+      doc.addPage(
+        pw.Page(
+          pageFormat: PdfPageFormat.a4.landscape,
+          margin: const pw.EdgeInsets.fromLTRB(16, 12, 16, 10),
+          build: (context) {
+            return pw.Column(
+              crossAxisAlignment: pw.CrossAxisAlignment.stretch,
+              children: [
+                _buildMatchSectionHeader(
+                  report,
+                  generatedLabel,
+                  sectionTitle: 'Schema tactique',
+                ),
+                pw.SizedBox(height: 8),
+                pw.Expanded(child: _buildTacticalSchemaPage(report)),
+                pw.SizedBox(height: 4),
+                _buildFooter(context),
+              ],
+            );
+          },
+        ),
+      );
+
+      doc.addPage(
+        pw.Page(
+          pageFormat: PdfPageFormat.a4.landscape,
+          margin: const pw.EdgeInsets.fromLTRB(16, 12, 16, 10),
+          build: (context) {
+            return pw.Column(
+              crossAxisAlignment: pw.CrossAxisAlignment.stretch,
+              children: [
+                _buildMatchSectionHeader(
+                  report,
+                  generatedLabel,
+                  sectionTitle: 'Temps forts',
+                ),
+                pw.SizedBox(height: 8),
+                pw.Expanded(child: _buildHighlightsTimelinePage(report)),
+                pw.SizedBox(height: 4),
+                _buildFooter(context),
+              ],
+            );
+          },
+        ),
+      );
+    }
+
     doc.addPage(
       pw.Page(
         pageFormat: PdfPageFormat.a4.landscape,
@@ -882,6 +931,532 @@ class SessionStatsReportPdfService {
         style: const pw.TextStyle(color: _textSecondary, fontSize: 8),
       ),
     );
+  }
+
+  pw.Widget _buildMatchSectionHeader(
+    SessionStatsReport report,
+    String generatedLabel, {
+    required String sectionTitle,
+  }) {
+    return pw.Container(
+      width: double.infinity,
+      padding: const pw.EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+      decoration: pw.BoxDecoration(
+        color: _surface,
+        borderRadius: pw.BorderRadius.circular(8),
+        border: pw.Border.all(color: _border),
+      ),
+      child: pw.Row(
+        children: [
+          pw.Container(
+            padding: const pw.EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+            decoration: pw.BoxDecoration(
+              color: _primary,
+              borderRadius: pw.BorderRadius.circular(5),
+            ),
+            child: pw.Text(
+              'GRINTA',
+              style: pw.TextStyle(
+                color: _white,
+                fontSize: 10,
+                fontWeight: pw.FontWeight.bold,
+              ),
+            ),
+          ),
+          pw.SizedBox(width: 10),
+          pw.Expanded(
+            child: pw.Column(
+              crossAxisAlignment: pw.CrossAxisAlignment.start,
+              children: [
+                pw.Text(
+                  _t(sectionTitle),
+                  style: pw.TextStyle(
+                    color: _textPrimary,
+                    fontSize: 12,
+                    fontWeight: pw.FontWeight.bold,
+                  ),
+                ),
+                if (report.matchHeader != null)
+                  pw.Text(
+                    _t(matchScorelineLabel(report.matchHeader!)),
+                    style: const pw.TextStyle(
+                      color: _textSecondary,
+                      fontSize: 8.5,
+                    ),
+                  ),
+              ],
+            ),
+          ),
+          pw.Text(
+            generatedLabel,
+            style: const pw.TextStyle(color: _textSecondary, fontSize: 8),
+          ),
+        ],
+      ),
+    );
+  }
+
+  pw.Widget _buildTacticalSchemaPage(SessionStatsReport report) {
+    final SessionStatsReportTacticalSchema? schema = report.tacticalSchema;
+    if (schema == null ||
+        (schema.starters.isEmpty && schema.substitutes.isEmpty)) {
+      return _emptyHint('Aucune composition disponible');
+    }
+
+    return pw.Column(
+      crossAxisAlignment: pw.CrossAxisAlignment.stretch,
+      children: [
+        pw.Row(
+          children: [
+            pw.Container(
+              padding:
+                  const pw.EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+              decoration: pw.BoxDecoration(
+                color: _primary,
+                borderRadius: pw.BorderRadius.circular(6),
+              ),
+              child: pw.Text(
+                _t(schema.formationName),
+                style: pw.TextStyle(
+                  color: _white,
+                  fontSize: 11,
+                  fontWeight: pw.FontWeight.bold,
+                ),
+              ),
+            ),
+            pw.Spacer(),
+            pw.Text(
+              '${schema.starters.length} titulaires'
+              '${schema.substitutes.isEmpty ? '' : '  ·  ${schema.substitutes.length} remplacants'}',
+              style: const pw.TextStyle(color: _textSecondary, fontSize: 8.5),
+            ),
+          ],
+        ),
+        pw.SizedBox(height: 6),
+        pw.Expanded(child: _buildPitchWithPlayers(schema.starters)),
+        if (schema.substitutes.isNotEmpty) ...[
+          pw.SizedBox(height: 6),
+          pw.Text(
+            'Remplacants',
+            style: pw.TextStyle(
+              color: _textPrimary,
+              fontSize: 9,
+              fontWeight: pw.FontWeight.bold,
+            ),
+          ),
+          pw.SizedBox(height: 4),
+          pw.Wrap(
+            spacing: 8,
+            runSpacing: 4,
+            children: [
+              for (final SessionStatsReportBenchPlayer sub
+                  in schema.substitutes)
+                _buildBenchChip(sub),
+            ],
+          ),
+        ],
+      ],
+    );
+  }
+
+  pw.Widget _buildPitchWithPlayers(
+    List<SessionStatsReportPitchPlayer> starters,
+  ) {
+    const PdfColor grass = PdfColor.fromInt(0xFF2E7D32);
+    const PdfColor line = PdfColors.white;
+
+    return pw.LayoutBuilder(
+      builder: (context, constraints) {
+        final double width = constraints?.maxWidth ?? 700;
+        final double height = constraints?.maxHeight ?? 360;
+        // Half-pitch aspect close to UI (width/height ≈ 68/52.5).
+        final double pitchW = math.min(width, height * (68 / 52.5));
+        final double pitchH = pitchW * (52.5 / 68);
+        final double left = (width - pitchW) / 2;
+        final double top = math.max(0, (height - pitchH) / 2);
+
+        return pw.SizedBox(
+          width: width,
+          height: height,
+          child: pw.Stack(
+            children: [
+              pw.Positioned(
+                left: left,
+                top: top,
+                child: pw.Container(
+                  width: pitchW,
+                  height: pitchH,
+                  decoration: pw.BoxDecoration(
+                    color: grass,
+                    borderRadius: pw.BorderRadius.circular(8),
+                    border: pw.Border.all(color: line, width: 2),
+                  ),
+                  child: pw.Stack(
+                    children: [
+                      // Halfway / top edge of half-pitch.
+                      pw.Positioned(
+                        left: 0,
+                        right: 0,
+                        top: 0,
+                        child: pw.Container(height: 1.5, color: line),
+                      ),
+                      // Center circle (top of half pitch).
+                      pw.Positioned(
+                        left: pitchW / 2 - pitchW * 0.12,
+                        top: -pitchW * 0.02,
+                        child: pw.Container(
+                          width: pitchW * 0.24,
+                          height: pitchW * 0.24,
+                          decoration: pw.BoxDecoration(
+                            shape: pw.BoxShape.circle,
+                            border: pw.Border.all(color: line, width: 1.5),
+                          ),
+                        ),
+                      ),
+                      // Penalty area (bottom / GK side).
+                      pw.Positioned(
+                        left: pitchW * 0.22,
+                        bottom: 0,
+                        child: pw.Container(
+                          width: pitchW * 0.56,
+                          height: pitchH * 0.28,
+                          decoration: pw.BoxDecoration(
+                            border: pw.Border.all(color: line, width: 1.5),
+                          ),
+                        ),
+                      ),
+                      // Goal area.
+                      pw.Positioned(
+                        left: pitchW * 0.35,
+                        bottom: 0,
+                        child: pw.Container(
+                          width: pitchW * 0.30,
+                          height: pitchH * 0.10,
+                          decoration: pw.BoxDecoration(
+                            border: pw.Border.all(color: line, width: 1.2),
+                          ),
+                        ),
+                      ),
+                      for (final SessionStatsReportPitchPlayer player
+                          in starters)
+                        pw.Positioned(
+                          left: (player.x.clamp(0.0, 1.0) * pitchW) - 22,
+                          top: (player.y.clamp(0.0, 1.0) * pitchH) - 18,
+                          child: _buildPitchPlayerMarker(player),
+                        ),
+                    ],
+                  ),
+                ),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  pw.Widget _buildPitchPlayerMarker(SessionStatsReportPitchPlayer player) {
+    final String number = player.shirtNumber?.toString() ?? '';
+    final String shortName = _shortPlayerName(player.displayName);
+
+    return pw.SizedBox(
+      width: 44,
+      child: pw.Column(
+        mainAxisSize: pw.MainAxisSize.min,
+        children: [
+          pw.Container(
+            width: 28,
+            height: 28,
+            alignment: pw.Alignment.center,
+            decoration: pw.BoxDecoration(
+              shape: pw.BoxShape.circle,
+              color: _white,
+              border: pw.Border.all(color: _primary, width: 1.5),
+            ),
+            child: pw.Text(
+              number.isNotEmpty ? number : '?',
+              style: pw.TextStyle(
+                color: _textPrimary,
+                fontSize: 9,
+                fontWeight: pw.FontWeight.bold,
+              ),
+            ),
+          ),
+          pw.SizedBox(height: 1),
+          pw.Container(
+            padding: const pw.EdgeInsets.symmetric(horizontal: 3, vertical: 1),
+            color: PdfColor.fromInt(0xCC111214),
+            child: pw.Text(
+              number.isNotEmpty ? '$number ${_t(shortName)}' : _t(shortName),
+              maxLines: 1,
+              textAlign: pw.TextAlign.center,
+              style: const pw.TextStyle(color: _white, fontSize: 6.5),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  pw.Widget _buildBenchChip(SessionStatsReportBenchPlayer player) {
+    final String number = player.shirtNumber?.toString() ?? '';
+    return pw.Container(
+      padding: const pw.EdgeInsets.symmetric(horizontal: 6, vertical: 3),
+      decoration: pw.BoxDecoration(
+        color: _surface,
+        borderRadius: pw.BorderRadius.circular(6),
+        border: pw.Border.all(color: _border),
+      ),
+      child: pw.Row(
+        mainAxisSize: pw.MainAxisSize.min,
+        children: [
+          _playerAvatar(player.photoBytes, size: 16),
+          pw.SizedBox(width: 4),
+          if (number.isNotEmpty) ...[
+            pw.Text(
+              number,
+              style: pw.TextStyle(
+                color: _primary,
+                fontSize: 8,
+                fontWeight: pw.FontWeight.bold,
+              ),
+            ),
+            pw.SizedBox(width: 3),
+          ],
+          pw.Text(
+            _t(_shortPlayerName(player.displayName)),
+            style: const pw.TextStyle(color: _textPrimary, fontSize: 8),
+          ),
+        ],
+      ),
+    );
+  }
+
+  String _shortPlayerName(String name) {
+    final String trimmed = name.trim();
+    if (trimmed.isEmpty) return '-';
+    final parts =
+        trimmed.split(RegExp(r'\s+')).where((p) => p.isNotEmpty).toList();
+    if (parts.length == 1) {
+      return parts.first.length > 12
+          ? '${parts.first.substring(0, 12)}.'
+          : parts.first;
+    }
+    final String first = parts.first;
+    final String last = parts.last;
+    final String initial =
+        first.isNotEmpty ? '${first.substring(0, 1).toUpperCase()}.' : '';
+    return '$initial $last'.trim();
+  }
+
+  pw.Widget _buildHighlightsTimelinePage(SessionStatsReport report) {
+    final List<SessionStatsReportHighlightEvent> events =
+        report.highlightEvents;
+    if (events.isEmpty) {
+      return _emptyHint('Aucun temps fort disponible');
+    }
+
+    final String home = report.matchHeader?.homeTeamName.trim() ?? 'Equipe 1';
+    final String away = report.matchHeader?.awayTeamName.trim() ?? 'Equipe 2';
+
+    return pw.Column(
+      crossAxisAlignment: pw.CrossAxisAlignment.stretch,
+      children: [
+        pw.Row(
+          children: [
+            pw.Expanded(
+              child: pw.Text(
+                _t(home),
+                textAlign: pw.TextAlign.left,
+                style: pw.TextStyle(
+                  color: _textPrimary,
+                  fontSize: 9,
+                  fontWeight: pw.FontWeight.bold,
+                ),
+              ),
+            ),
+            pw.Container(
+              padding:
+                  const pw.EdgeInsets.symmetric(horizontal: 10, vertical: 3),
+              decoration: pw.BoxDecoration(
+                color: _primary,
+                borderRadius: pw.BorderRadius.circular(10),
+              ),
+              child: pw.Text(
+                "Coup d'envoi",
+                style: pw.TextStyle(
+                  color: _white,
+                  fontSize: 8,
+                  fontWeight: pw.FontWeight.bold,
+                ),
+              ),
+            ),
+            pw.Expanded(
+              child: pw.Text(
+                _t(away),
+                textAlign: pw.TextAlign.right,
+                style: pw.TextStyle(
+                  color: _textPrimary,
+                  fontSize: 9,
+                  fontWeight: pw.FontWeight.bold,
+                ),
+              ),
+            ),
+          ],
+        ),
+        pw.SizedBox(height: 6),
+        pw.Expanded(
+          child: pw.ListView(
+            children: [
+              for (final SessionStatsReportHighlightEvent event in events)
+                _buildHighlightTimelineRow(event),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
+  pw.Widget _buildHighlightTimelineRow(SessionStatsReportHighlightEvent event) {
+    final PdfColor accent = _highlightAccent(event.type);
+    final String minuteLabel = event.extraTime > 0
+        ? "${event.minute}+${event.extraTime}'"
+        : "${event.minute}'";
+
+    final pw.Widget card = pw.Container(
+      padding: const pw.EdgeInsets.all(6),
+      decoration: pw.BoxDecoration(
+        color: _white,
+        borderRadius: pw.BorderRadius.circular(6),
+        border: pw.Border.all(color: accent),
+      ),
+      child: pw.Column(
+        crossAxisAlignment: pw.CrossAxisAlignment.start,
+        children: [
+          pw.Text(
+            _t(event.typeLabel),
+            style: pw.TextStyle(
+              color: accent,
+              fontSize: 8,
+              fontWeight: pw.FontWeight.bold,
+            ),
+          ),
+          pw.SizedBox(height: 2),
+          pw.Text(
+            _t(event.playerName),
+            maxLines: 1,
+            style: pw.TextStyle(
+              color: _textPrimary,
+              fontSize: 9,
+              fontWeight: pw.FontWeight.bold,
+            ),
+          ),
+          if ((event.secondaryPlayerName ?? '').trim().isNotEmpty)
+            pw.Text(
+              _t(event.secondaryPlayerName!),
+              maxLines: 1,
+              style: const pw.TextStyle(color: _textSecondary, fontSize: 7.5),
+            ),
+          pw.SizedBox(height: 2),
+          pw.Container(
+            padding: const pw.EdgeInsets.symmetric(horizontal: 4, vertical: 1),
+            color: accent,
+            child: pw.Text(
+              _t(event.teamName),
+              maxLines: 1,
+              style: const pw.TextStyle(color: _white, fontSize: 6.5),
+            ),
+          ),
+        ],
+      ),
+    );
+
+    final pw.Widget axis = pw.Column(
+      mainAxisSize: pw.MainAxisSize.min,
+      children: [
+        pw.Container(
+          width: 22,
+          height: 22,
+          alignment: pw.Alignment.center,
+          decoration: pw.BoxDecoration(
+            shape: pw.BoxShape.circle,
+            color: accent,
+          ),
+          child: pw.Text(
+            _highlightGlyph(event.type),
+            style: pw.TextStyle(
+              color: _white,
+              fontSize: 8,
+              fontWeight: pw.FontWeight.bold,
+            ),
+          ),
+        ),
+        pw.SizedBox(height: 2),
+        pw.Text(
+          minuteLabel,
+          style: pw.TextStyle(
+            color: _textPrimary,
+            fontSize: 8,
+            fontWeight: pw.FontWeight.bold,
+          ),
+        ),
+      ],
+    );
+
+    return pw.Padding(
+      padding: const pw.EdgeInsets.only(bottom: 6),
+      child: pw.Row(
+        crossAxisAlignment: pw.CrossAxisAlignment.start,
+        children: [
+          pw.Expanded(
+            child: event.isHomeSide
+                ? pw.Align(alignment: pw.Alignment.centerRight, child: card)
+                : pw.SizedBox(),
+          ),
+          pw.SizedBox(width: 8),
+          axis,
+          pw.SizedBox(width: 8),
+          pw.Expanded(
+            child: event.isHomeSide
+                ? pw.SizedBox()
+                : pw.Align(alignment: pw.Alignment.centerLeft, child: card),
+          ),
+        ],
+      ),
+    );
+  }
+
+  PdfColor _highlightAccent(String type) {
+    switch (type) {
+      case 'goal':
+        return const PdfColor.fromInt(0xFF22C55E);
+      case 'ownGoal':
+        return _danger;
+      case 'yellowCard':
+        return _warning;
+      case 'redCard':
+        return _danger;
+      case 'substitution':
+        return _primary;
+      default:
+        return _secondary;
+    }
+  }
+
+  String _highlightGlyph(String type) {
+    switch (type) {
+      case 'goal':
+      case 'ownGoal':
+        return 'B';
+      case 'yellowCard':
+        return 'J';
+      case 'redCard':
+        return 'R';
+      case 'substitution':
+        return 'C';
+      default:
+        return '!';
+    }
   }
 
   pw.Widget _buildRecapHeader(SessionStatsReport report, String generatedLabel) {

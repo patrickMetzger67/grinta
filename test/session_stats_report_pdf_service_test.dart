@@ -119,7 +119,7 @@ void main() {
     }
   });
 
-  test('builds match PDF with field zones and heatmaps placeholders', () async {
+  test('builds match PDF with compo, highlights, zones and heatmaps', () async {
     // Minimal 1x1 PNG
     final png = Uint8List.fromList(<int>[
       0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A, 0x00, 0x00, 0x00, 0x0D,
@@ -156,6 +156,62 @@ void main() {
         scoreLabel: '2 - 1',
         opponentName: 'Rival FC',
       ),
+      tacticalSchema: const SessionStatsReportTacticalSchema(
+        formationName: '4-3-3',
+        starters: <SessionStatsReportPitchPlayer>[
+          SessionStatsReportPitchPlayer(
+            playerId: 'gk',
+            displayName: 'Gardien Test',
+            slotId: 'goalkeeper_1',
+            role: 'goalkeeper',
+            x: 0.5,
+            y: 0.88,
+            shirtNumber: 1,
+          ),
+          SessionStatsReportPitchPlayer(
+            playerId: 'st',
+            displayName: 'Attaquant Test',
+            slotId: 'striker_1',
+            role: 'striker',
+            x: 0.5,
+            y: 0.15,
+            shirtNumber: 9,
+          ),
+        ],
+        substitutes: <SessionStatsReportBenchPlayer>[
+          SessionStatsReportBenchPlayer(
+            playerId: 'sub1',
+            displayName: 'Remplacant Un',
+            shirtNumber: 12,
+          ),
+        ],
+      ),
+      highlightEvents: const <SessionStatsReportHighlightEvent>[
+        SessionStatsReportHighlightEvent(
+          minute: 2,
+          type: 'goal',
+          typeLabel: 'But',
+          playerName: 'NASH S',
+          teamName: 'Grinta FC',
+          isHomeSide: true,
+        ),
+        SessionStatsReportHighlightEvent(
+          minute: 6,
+          type: 'goal',
+          typeLabel: 'But',
+          playerName: 'JULIEN H',
+          teamName: 'Rival FC',
+          isHomeSide: false,
+        ),
+        SessionStatsReportHighlightEvent(
+          minute: 26,
+          type: 'yellowCard',
+          typeLabel: 'Carton jaune',
+          playerName: 'BENJAMIN O',
+          teamName: 'Grinta FC',
+          isHomeSide: true,
+        ),
+      ],
       playerDetails: <SessionStatsReportPlayerDetail>[
         SessionStatsReportPlayerDetail(
           playerId: 'p1',
@@ -226,11 +282,19 @@ void main() {
     expect(bytes.length, greaterThan(500));
     expect(String.fromCharCodes(bytes.take(4)), '%PDF');
 
+    // Match PDF is larger than a single-page recap (compo + highlights + …).
+    expect(bytes.length, greaterThan(2000));
+
     // Header must include both clubs + score (not only "vs opponent").
     expect(
       SessionStatsReportPdfService.matchScorelineLabel(report.matchHeader!),
       'Grinta FC  2 - 1  Rival FC',
     );
+
+    final previewPath = Platform.environment['PDF_PREVIEW_OUT'];
+    if (previewPath != null && previewPath.isNotEmpty) {
+      await File(previewPath).writeAsBytes(bytes);
+    }
   });
 
   test('tracker id candidates cover padded and raw forms', () {
