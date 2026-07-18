@@ -2,11 +2,14 @@ import 'dart:typed_data';
 
 import 'package:flutter/foundation.dart';
 import 'package:grinta/model/match.dart' as grinta_match;
+import 'package:grinta/model/matchCompo.dart';
 import 'package:grinta/model/player.dart';
 import 'package:grinta/model/session_stats_report.dart';
 import 'package:grinta/model/teamParam.dart';
+import 'package:grinta/model/tracker/deviceOwner.dart';
 import 'package:grinta/model/tracker/team_workload_summary.dart';
 import 'package:grinta/model/tracker/trackerData.dart';
+import 'package:grinta/services/matchCompoService.dart';
 import 'package:grinta/services/matchService.dart';
 import 'package:grinta/services/playerService.dart';
 import 'package:grinta/services/teamParamService.dart';
@@ -14,6 +17,7 @@ import 'package:grinta/services/teamWorkloadSummaryService.dart';
 import 'package:grinta/services/trackerDataAnalysisService.dart';
 import 'package:grinta/services/trackerSvgService.dart';
 import 'package:grinta/util/highlight_minute_helper.dart';
+import 'package:grinta/util/insiders_device_resolver.dart';
 import 'package:grinta/util/match_goal_helper.dart';
 import 'package:grinta/util/match_outcome_helper.dart';
 import 'package:grinta/util/playerDisplayName.dart';
@@ -23,23 +27,43 @@ import 'package:grinta/util/team_stats_opponent_helper.dart';
 import 'package:http/http.dart' as http;
 import 'package:intl/intl.dart';
 
+/// One match-composition player with its resolved sensor number (customeName).
+class _MatchCompoSensorPlayer {
+  const _MatchCompoSensorPlayer({
+    required this.playerId,
+    required this.sensorId,
+    this.compoDisplayName,
+  });
+
+  final String playerId;
+  /// TRACKER_Svg prefix = DeviceOwner.customeName (sensor number).
+  final String sensorId;
+  final String? compoDisplayName;
+}
+
 /// Builds [SessionStatsReport] from tracker team analysis (Stats tab data).
 class SessionStatsReportService {
   SessionStatsReportService({
     TeamWorkloadSummaryService? summaryService,
     PlayerService? playerService,
     MatchService? matchService,
+    MatchCompoService? matchCompoService,
+    DeviceOwnerService? deviceOwnerService,
     TrackerSvgService? svgService,
     http.Client? httpClient,
   })  : _summaryService = summaryService ?? TeamWorkloadSummaryService(),
         _playerService = playerService ?? PlayerService(),
         _matchService = matchService ?? MatchService(),
+        _matchCompoService = matchCompoService ?? MatchCompoService(),
+        _deviceOwnerService = deviceOwnerService ?? DeviceOwnerService(),
         _svgService = svgService ?? TrackerSvgService(),
         _httpClient = httpClient ?? http.Client();
 
   final TeamWorkloadSummaryService _summaryService;
   final PlayerService _playerService;
   final MatchService _matchService;
+  final MatchCompoService _matchCompoService;
+  final DeviceOwnerService _deviceOwnerService;
   final TrackerSvgService _svgService;
   final http.Client _httpClient;
 
@@ -134,58 +158,142 @@ class SessionStatsReportService {
       );
     }
 
+    // Match reports: players come from matchCompo (+ deviceOwner → customeName).
+    final List<_MatchCompoSensorPlayer> compoPlayers = isMatch
+        ? await _loadMatchCompoSensorPlayers(
+            matchId: safeEventId,
+            teamId: safeTeamId,
+          )
+        : const <_MatchCompoSensorPlayer>[];
+    if (isMatch && kDebugMode) {
+      debugPrint(
+        'SessionStatsReportService: matchCompo sensors '
+        '${compoPlayers.map((p) => '${p.playerId}->${p.sensorId}').join(', ')}',
+      );
+    }
+
+    final Map<String, TeamPlayerMetricScores> scoresByPlayerId =
+        <String, TeamPlayerMetricScores>{
+      for (final TeamPlayerMetricScores score in resolvedSummary.playerScores)
+        if (score.playerId.trim().isNotEmpty)
+          score.playerId.trim(): score,
+    };
+
     final playerRows = <SessionStatsReportPlayerRow>[];
     final playerDetails = <SessionStatsReportPlayerDetail>[];
 
-    for (final score in resolvedSummary.playerScores) {
-      final Player? player = await _playerService
-          .getPlayerById(score.playerId)
-          .catchError((_) => null);
-      final displayName = player != null
-          ? playerDisplayName(player, unknownLabel: unknownPlayerLabel)
-          : (score.playerId.trim().isEmpty
-              ? unknownPlayerLabel
-              : score.playerId.trim());
+    if (isMatch && compoPlayers.isNotEmpty) {
+      for (final _MatchCompoSensorPlayer slot in compoPlayers) {
+        final TeamPlayerMetricScores score = scoresByPlayerId[slot.playerId] ??
+            TeamPlayerMetricScores(
+              playerId: slot.playerId,
+              trackerId: slot.sensorId,
+              metrics: const <String, PlayerMetricScore>{},
+            );
 
-      final metrics = <String, double>{};
-      final zScores = <String, double>{};
-      for (final metric in kSessionStatsReportMetrics) {
-        final playerMetric = score.getMetric(metric.key);
-        metrics[metric.key] = playerMetric?.value ?? 0;
-        if (playerMetric != null) {
-          zScores[metric.key] = playerMetric.zScore;
+        final Player? player = await _playerService
+            .getPlayerById(slot.playerId)
+            .catchError((_) => null);
+        final String displayName = player != null
+            ? playerDisplayName(player, unknownLabel: unknownPlayerLabel)
+            : ((slot.compoDisplayName ?? '').trim().isNotEmpty
+                ? slot.compoDisplayName!.trim()
+                : slot.playerId);
+
+        final metrics = <String, double>{};
+        final zScores = <String, double>{};
+        for (final metric in kSessionStatsReportMetrics) {
+          final playerMetric = score.getMetric(metric.key);
+          metrics[metric.key] = playerMetric?.value ?? 0;
+          if (playerMetric != null) {
+            zScores[metric.key] = playerMetric.zScore;
+          }
         }
+
+        playerRows.add(
+          SessionStatsReportPlayerRow(
+            playerId: slot.playerId,
+            displayName: displayName,
+            trackerId: slot.sensorId,
+            metrics: metrics,
+            zScores: zScores,
+          ),
+        );
+
+        final TrackerAnalysisResult? analysis =
+            analysisByPlayerId[slot.playerId] ??
+                analysisByTrackerId[slot.sensorId] ??
+                analysisByTrackerId[score.trackerId.trim()];
+
+        final Uint8List? photoBytes =
+            player == null ? null : await _loadPlayerPhotoBytes(player);
+
+        playerDetails.add(
+          await _buildPlayerDetail(
+            score: score,
+            displayName: displayName,
+            analysis: analysis,
+            photoBytes: photoBytes,
+            teamParam: teamParam,
+            isMatch: isMatch,
+            eventId: safeEventId,
+            periodTeamAnalysisDocIds: periodTeamAnalysisDocIds,
+            sensorIdOverride: slot.sensorId,
+          ),
+        );
       }
+    } else {
+      // Training (or match without usable compo): keep TeamAnalysis order.
+      for (final score in resolvedSummary.playerScores) {
+        final Player? player = await _playerService
+            .getPlayerById(score.playerId)
+            .catchError((_) => null);
+        final displayName = player != null
+            ? playerDisplayName(player, unknownLabel: unknownPlayerLabel)
+            : (score.playerId.trim().isEmpty
+                ? unknownPlayerLabel
+                : score.playerId.trim());
 
-      playerRows.add(
-        SessionStatsReportPlayerRow(
-          playerId: score.playerId,
-          displayName: displayName,
-          trackerId: score.trackerId,
-          metrics: metrics,
-          zScores: zScores,
-        ),
-      );
+        final metrics = <String, double>{};
+        final zScores = <String, double>{};
+        for (final metric in kSessionStatsReportMetrics) {
+          final playerMetric = score.getMetric(metric.key);
+          metrics[metric.key] = playerMetric?.value ?? 0;
+          if (playerMetric != null) {
+            zScores[metric.key] = playerMetric.zScore;
+          }
+        }
 
-      final TrackerAnalysisResult? analysis =
-          analysisByPlayerId[score.playerId.trim()] ??
-              analysisByTrackerId[score.trackerId.trim()];
+        playerRows.add(
+          SessionStatsReportPlayerRow(
+            playerId: score.playerId,
+            displayName: displayName,
+            trackerId: score.trackerId,
+            metrics: metrics,
+            zScores: zScores,
+          ),
+        );
 
-      final Uint8List? photoBytes =
-          player == null ? null : await _loadPlayerPhotoBytes(player);
+        final TrackerAnalysisResult? analysis =
+            analysisByPlayerId[score.playerId.trim()] ??
+                analysisByTrackerId[score.trackerId.trim()];
 
-      playerDetails.add(
-        await _buildPlayerDetail(
-          score: score,
-          displayName: displayName,
-          analysis: analysis,
-          photoBytes: photoBytes,
-          teamParam: teamParam,
-          isMatch: isMatch,
-          eventId: safeEventId,
-          periodTeamAnalysisDocIds: periodTeamAnalysisDocIds,
-        ),
-      );
+        final Uint8List? photoBytes =
+            player == null ? null : await _loadPlayerPhotoBytes(player);
+
+        playerDetails.add(
+          await _buildPlayerDetail(
+            score: score,
+            displayName: displayName,
+            analysis: analysis,
+            photoBytes: photoBytes,
+            teamParam: teamParam,
+            isMatch: isMatch,
+            eventId: safeEventId,
+            periodTeamAnalysisDocIds: periodTeamAnalysisDocIds,
+          ),
+        );
+      }
     }
 
     playerRows.sort(
@@ -255,7 +363,9 @@ class SessionStatsReportService {
       teamName: resolvedTeamName,
       isMatch: isMatch,
       generatedAt: generatedAt ?? DateTime.now(),
-      playersCount: resolvedSummary.playersCount,
+      playersCount: playerRows.isNotEmpty
+          ? playerRows.length
+          : resolvedSummary.playersCount,
       averageWorkloadScore: resolvedSummary.averageWorkloadScore,
       sessionDuration: resolvedSummary.sessionDuration,
       teamAverages: teamAverages,
@@ -274,6 +384,7 @@ class SessionStatsReportService {
     required bool isMatch,
     required String eventId,
     Map<String, String> periodTeamAnalysisDocIds = const <String, String>{},
+    String? sensorIdOverride,
   }) async {
     final List<SessionStatsReportSpeedZoneRow> speedZones =
         <SessionStatsReportSpeedZoneRow>[];
@@ -332,9 +443,9 @@ class SessionStatsReportService {
     final List<SessionStatsReportHeatmapImage> heatmaps =
         <SessionStatsReportHeatmapImage>[];
     if (isMatch) {
-      // Prefer analysis tracker id, then score; also try both if they differ
-      // (padding / formatting mismatches are common).
+      // Sensor number from matchCompo → DeviceOwner.customeName first.
       final List<String> trackerCandidates = <String>{
+        (sensorIdOverride ?? '').trim(),
         (analysis?.trackerId ?? '').trim(),
         score.trackerId.trim(),
       }.where((id) => id.isNotEmpty).toList(growable: false);
@@ -382,10 +493,15 @@ class SessionStatsReportService {
       }
     }
 
+    final String resolvedTrackerId =
+        (sensorIdOverride ?? '').trim().isNotEmpty
+            ? sensorIdOverride!.trim()
+            : score.trackerId;
+
     return SessionStatsReportPlayerDetail(
       playerId: score.playerId,
       displayName: displayName,
-      trackerId: score.trackerId,
+      trackerId: resolvedTrackerId,
       photoBytes: photoBytes,
       distanceKm: analysis?.distanceKm ??
           score.getMetric(TeamWorkloadMetricKeys.distanceKm)?.value ??
@@ -429,6 +545,117 @@ class SessionStatsReportService {
       fieldZones: fieldZones,
       heatmaps: heatmaps,
     );
+  }
+
+  /// Loads lineup players that have a tracker assignment and resolves the
+  /// sensor number via TRACKER_DeviceOwner.customeName.
+  Future<List<_MatchCompoSensorPlayer>> _loadMatchCompoSensorPlayers({
+    required String matchId,
+    required String? teamId,
+  }) async {
+    final MatchCompo? compo = await _loadMatchCompo(
+      matchId: matchId,
+      teamId: teamId,
+    );
+    if (compo == null) {
+      return const <_MatchCompoSensorPlayer>[];
+    }
+
+    final List<PlayerCompo> lineup = allPlayersFromCompo(compo);
+    if (lineup.isEmpty) {
+      return const <_MatchCompoSensorPlayer>[];
+    }
+
+    final Set<String> deviceOwnerIds = <String>{
+      for (final PlayerCompo p in lineup)
+        if ((p.deviceOwnerId ?? '').trim().isNotEmpty) p.deviceOwnerId!.trim(),
+    };
+
+    final Map<String, DeviceOwner> ownersById = <String, DeviceOwner>{};
+    await Future.wait(
+      deviceOwnerIds.map((String id) async {
+        try {
+          final DeviceOwner? owner = await _deviceOwnerService.getById(id);
+          if (owner != null) {
+            ownersById[id] = owner;
+          }
+        } catch (e) {
+          if (kDebugMode) {
+            debugPrint(
+              'SessionStatsReportService: DeviceOwner $id failed: $e',
+            );
+          }
+        }
+      }),
+    );
+
+    final List<_MatchCompoSensorPlayer> out = <_MatchCompoSensorPlayer>[];
+    final Set<String> seenPlayers = <String>{};
+
+    for (final PlayerCompo slot in lineup) {
+      final String playerId = (slot.playerID ?? '').trim();
+      final String deviceOwnerId = (slot.deviceOwnerId ?? '').trim();
+      if (playerId.isEmpty || deviceOwnerId.isEmpty) {
+        continue;
+      }
+      if (!seenPlayers.add(playerId)) {
+        continue;
+      }
+
+      // Prefer customeName written on the compo, else DeviceOwner.customeName.
+      final String fromCompo = (slot.customName ?? '').trim();
+      final DeviceOwner? owner = ownersById[deviceOwnerId];
+      final String fromOwner =
+          owner == null ? '' : trackerIdForAnalysis(owner).trim();
+      final String sensorId =
+          fromCompo.isNotEmpty ? fromCompo : fromOwner;
+      if (sensorId.isEmpty) {
+        if (kDebugMode) {
+          debugPrint(
+            'SessionStatsReportService: no sensor for player=$playerId '
+            'deviceOwnerId=$deviceOwnerId',
+          );
+        }
+        continue;
+      }
+
+      out.add(
+        _MatchCompoSensorPlayer(
+          playerId: playerId,
+          sensorId: sensorId,
+          compoDisplayName: slot.playerNameDisplayed,
+        ),
+      );
+    }
+
+    return out;
+  }
+
+  Future<MatchCompo?> _loadMatchCompo({
+    required String matchId,
+    required String? teamId,
+  }) async {
+    try {
+      if (teamId != null && teamId.trim().isNotEmpty) {
+        final MatchCompo? byTeam =
+            await _matchCompoService.getMatchCompoByMatchAndTeamId(
+          matchId,
+          teamId.trim(),
+        );
+        if (byTeam != null) {
+          return byTeam;
+        }
+      }
+      return await _matchCompoService.getFirstMatchCompoByMatchId(matchId);
+    } catch (e) {
+      if (kDebugMode) {
+        debugPrint(
+          'SessionStatsReportService: load matchCompo failed for '
+          'matchId=$matchId teamId=$teamId: $e',
+        );
+      }
+      return null;
+    }
   }
 
   Future<SessionStatsReportMatchHeader?> _buildMatchHeader({
