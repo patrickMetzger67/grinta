@@ -152,7 +152,7 @@
     }
   },
   "sessionReportEmailDialogTitle": "PDF-Bericht senden",
-  "sessionReportEmailDialogMessage": "Gib die E-Mail-Adresse ein, die den Statistikbericht (PDF) erhalten soll.",
+  "sessionReportEmailDialogMessage": "Wähle einen oder mehrere Manager aus, die den Statistikbericht (PDF) erhalten sollen.",
   "sessionReportEmailDialogHint": "du@beispiel.com",
   "sessionReportEmailDialogSend": "Senden",
   "sessionReportEmailDialogCancel": "Abbrechen",
@@ -164,6 +164,26 @@
       "email": { "type": "String" }
     }
   },
+  "sessionReportEmailSuccessCount": "Bericht an {count} Empfänger gesendet",
+  "@sessionReportEmailSuccessCount": {
+    "placeholders": {
+      "count": { "type": "int" }
+    }
+  },
+  "sessionReportEmailSelectedCount": "{count} ausgewählt",
+  "@sessionReportEmailSelectedCount": {
+    "placeholders": {
+      "count": { "type": "int" }
+    }
+  },
+  "sessionReportEmailSelectAll": "Alle auswählen",
+  "sessionReportEmailDeselectAll": "Auswahl aufheben",
+  "sessionReportEmailNoManagers": "Keine Manager mit E-Mail-Adresse für dieses Team gefunden.",
+  "sessionReportEmailManualOnlyMessage": "Gib eine oder mehrere E-Mail-Adressen ein, die den Bericht erhalten sollen (getrennt durch ;).",
+  "sessionReportEmailAdditionalLabel": "Weitere Adressen",
+  "sessionReportEmailManualHint": "du@beispiel.com; andere@beispiel.com",
+  "sessionReportEmailManualHelper": "Mehrere Adressen: mit Semikolon (;) trennen.",
+  "sessionReportEmailNoSelection": "Wähle einen Manager oder gib mindestens eine E-Mail-Adresse ein.",
   "sessionReportEmailFailed": "Der PDF-Bericht konnte nicht gesendet werden.",
   "sessionReportEmailNoStats": "Keine Tracker-Statistiken verfügbar, um diesen Bericht zu erstellen.",
   "sessionReportEmailInvalid": "Ungültige E-Mail-Adresse.",

@@ -152,7 +152,7 @@
     }
   },
   "sessionReportEmailDialogTitle": "Invia report PDF",
-  "sessionReportEmailDialogMessage": "Indica l'indirizzo e-mail che riceverà il report statistico (PDF).",
+  "sessionReportEmailDialogMessage": "Seleziona uno o più manager che riceveranno il report statistico (PDF).",
   "sessionReportEmailDialogHint": "tu@esempio.com",
   "sessionReportEmailDialogSend": "Invia",
   "sessionReportEmailDialogCancel": "Annulla",
@@ -164,6 +164,26 @@
       "email": { "type": "String" }
     }
   },
+  "sessionReportEmailSuccessCount": "Report inviato a {count} destinatari",
+  "@sessionReportEmailSuccessCount": {
+    "placeholders": {
+      "count": { "type": "int" }
+    }
+  },
+  "sessionReportEmailSelectedCount": "{count} selezionato/i",
+  "@sessionReportEmailSelectedCount": {
+    "placeholders": {
+      "count": { "type": "int" }
+    }
+  },
+  "sessionReportEmailSelectAll": "Seleziona tutto",
+  "sessionReportEmailDeselectAll": "Deseleziona tutto",
+  "sessionReportEmailNoManagers": "Nessun manager con e-mail trovato per questa squadra.",
+  "sessionReportEmailManualOnlyMessage": "Inserisci uno o più indirizzi e-mail che riceveranno il report (separati da ;).",
+  "sessionReportEmailAdditionalLabel": "Indirizzi aggiuntivi",
+  "sessionReportEmailManualHint": "tu@esempio.com; altro@esempio.com",
+  "sessionReportEmailManualHelper": "Più indirizzi: separali con un punto e virgola (;).",
+  "sessionReportEmailNoSelection": "Seleziona un manager o inserisci almeno un indirizzo e-mail.",
   "sessionReportEmailFailed": "Impossibile inviare il report PDF.",
   "sessionReportEmailNoStats": "Nessuna statistica tracker disponibile per generare questo report.",
   "sessionReportEmailInvalid": "Indirizzo e-mail non valido.",

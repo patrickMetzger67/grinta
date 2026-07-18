@@ -307,7 +307,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get sessionReportEmailDialogMessage =>
-      'Enter the email address that should receive the statistics report (PDF).';
+      'Select one or more managers who should receive the statistics report (PDF).';
 
   @override
   String get sessionReportEmailDialogHint => 'you@example.com';
@@ -328,6 +328,45 @@ class AppLocalizationsEn extends AppLocalizations {
   String sessionReportEmailSuccess(String email) {
     return 'Report sent to $email';
   }
+
+  @override
+  String sessionReportEmailSuccessCount(int count) {
+    return 'Report sent to $count recipients';
+  }
+
+  @override
+  String sessionReportEmailSelectedCount(int count) {
+    return '$count selected';
+  }
+
+  @override
+  String get sessionReportEmailSelectAll => 'Select all';
+
+  @override
+  String get sessionReportEmailDeselectAll => 'Deselect all';
+
+  @override
+  String get sessionReportEmailNoManagers =>
+      'No managers with an email address found for this team.';
+
+  @override
+  String get sessionReportEmailManualOnlyMessage =>
+      'Enter one or more email addresses that should receive the report (separated by ;).';
+
+  @override
+  String get sessionReportEmailAdditionalLabel => 'Additional addresses';
+
+  @override
+  String get sessionReportEmailManualHint =>
+      'you@example.com; other@example.com';
+
+  @override
+  String get sessionReportEmailManualHelper =>
+      'Multiple addresses: separate them with a semicolon (;).';
+
+  @override
+  String get sessionReportEmailNoSelection =>
+      'Select a manager or enter at least one email address.';
 
   @override
   String get sessionReportEmailFailed => 'Could not send the PDF report.';

@@ -87,7 +87,8 @@ class SessionReportSenderService {
 
   Future<SessionReportSendResult> sendReport({
     required AppLocalizations l10n,
-    required String toEmail,
+    String? toEmail,
+    List<String>? toEmails,
     required String eventId,
     required bool isMatch,
     String? title,
@@ -100,15 +101,17 @@ class SessionReportSenderService {
     String? clubId,
     grinta_match.Match? match,
   }) async {
-    final String to = toEmail.trim();
-    if (to.isEmpty) {
+    final List<String> recipients = _normalizeRecipients(
+      toEmail: toEmail,
+      toEmails: toEmails,
+    );
+    if (recipients.isEmpty) {
       return SessionReportSendResult.failed('emptyEmail');
     }
-    if (!isValidEmailFormat(to) || to.length < 3) {
-      return SessionReportSendResult.failed('invalidEmail');
-    }
-    if (!_looksLikeEmail(to)) {
-      return SessionReportSendResult.failed('invalidEmail');
+    for (final String to in recipients) {
+      if (!isValidEmailFormat(to) || to.length < 3 || !_looksLikeEmail(to)) {
+        return SessionReportSendResult.failed('invalidEmail');
+      }
     }
 
     try {
@@ -155,19 +158,22 @@ class SessionReportSenderService {
 
       // Never put large base64 PDFs in Firestore. The Cloud Function loads
       // [pdfStoragePath] from Storage and attaches it for SendGrid.
-      final String? sendError = await _emailService.send(
-        toEmail: to,
-        subject: emailContent.subject,
-        text: emailContent.text,
-        html: emailContent.html,
-        clubId: clubId,
-        pdfStoragePath: uploaded.storagePath,
-        pdfFilename: uploaded.filename,
-        pdfDownloadUrl: uploaded.downloadUrl,
-      );
+      // Build/upload once, then queue one mail doc per recipient.
+      for (final String to in recipients) {
+        final String? sendError = await _emailService.send(
+          toEmail: to,
+          subject: emailContent.subject,
+          text: emailContent.text,
+          html: emailContent.html,
+          clubId: clubId,
+          pdfStoragePath: uploaded.storagePath,
+          pdfFilename: uploaded.filename,
+          pdfDownloadUrl: uploaded.downloadUrl,
+        );
 
-      if (sendError != null) {
-        return SessionReportSendResult.failed(sendError);
+        if (sendError != null) {
+          return SessionReportSendResult.failed(sendError);
+        }
       }
 
       return SessionReportSendResult.ok(
@@ -178,6 +184,25 @@ class SessionReportSenderService {
       debugPrint('SessionReportSenderService.sendReport failed: $error\n$stackTrace');
       return SessionReportSendResult.failed(error.toString());
     }
+  }
+
+  static List<String> _normalizeRecipients({
+    String? toEmail,
+    List<String>? toEmails,
+  }) {
+    final Set<String> out = <String>{};
+    void add(String? raw) {
+      final String email = raw?.trim() ?? '';
+      if (email.isNotEmpty) {
+        out.add(email);
+      }
+    }
+
+    add(toEmail);
+    for (final String email in toEmails ?? const <String>[]) {
+      add(email);
+    }
+    return out.toList(growable: false);
   }
 
   Future<_UploadedPdf?> _uploadPdf({

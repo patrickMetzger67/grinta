@@ -625,7 +625,7 @@ abstract class AppLocalizations {
   /// No description provided for @sessionReportEmailDialogMessage.
   ///
   /// In fr, this message translates to:
-  /// **'Indique l\'adresse e-mail qui recevra le rapport de statistiques (PDF).'**
+  /// **'Sélectionne un ou plusieurs managers qui recevront le rapport de statistiques (PDF).'**
   String get sessionReportEmailDialogMessage;
 
   /// No description provided for @sessionReportEmailDialogHint.
@@ -663,6 +663,66 @@ abstract class AppLocalizations {
   /// In fr, this message translates to:
   /// **'Rapport envoyé à {email}'**
   String sessionReportEmailSuccess(String email);
+
+  /// No description provided for @sessionReportEmailSuccessCount.
+  ///
+  /// In fr, this message translates to:
+  /// **'Rapport envoyé à {count} destinataires'**
+  String sessionReportEmailSuccessCount(int count);
+
+  /// No description provided for @sessionReportEmailSelectedCount.
+  ///
+  /// In fr, this message translates to:
+  /// **'{count} sélectionné(s)'**
+  String sessionReportEmailSelectedCount(int count);
+
+  /// No description provided for @sessionReportEmailSelectAll.
+  ///
+  /// In fr, this message translates to:
+  /// **'Tout sélectionner'**
+  String get sessionReportEmailSelectAll;
+
+  /// No description provided for @sessionReportEmailDeselectAll.
+  ///
+  /// In fr, this message translates to:
+  /// **'Tout désélectionner'**
+  String get sessionReportEmailDeselectAll;
+
+  /// No description provided for @sessionReportEmailNoManagers.
+  ///
+  /// In fr, this message translates to:
+  /// **'Aucun manager avec adresse e-mail trouvé pour cette équipe.'**
+  String get sessionReportEmailNoManagers;
+
+  /// No description provided for @sessionReportEmailManualOnlyMessage.
+  ///
+  /// In fr, this message translates to:
+  /// **'Saisis une ou plusieurs adresses e-mail qui recevront le rapport (séparées par ;).'**
+  String get sessionReportEmailManualOnlyMessage;
+
+  /// No description provided for @sessionReportEmailAdditionalLabel.
+  ///
+  /// In fr, this message translates to:
+  /// **'Adresses supplémentaires'**
+  String get sessionReportEmailAdditionalLabel;
+
+  /// No description provided for @sessionReportEmailManualHint.
+  ///
+  /// In fr, this message translates to:
+  /// **'vous@exemple.com; autre@exemple.com'**
+  String get sessionReportEmailManualHint;
+
+  /// No description provided for @sessionReportEmailManualHelper.
+  ///
+  /// In fr, this message translates to:
+  /// **'Plusieurs adresses : sépare-les par un point-virgule (;).'**
+  String get sessionReportEmailManualHelper;
+
+  /// No description provided for @sessionReportEmailNoSelection.
+  ///
+  /// In fr, this message translates to:
+  /// **'Sélectionne un manager ou saisis au moins une adresse e-mail.'**
+  String get sessionReportEmailNoSelection;
 
   /// No description provided for @sessionReportEmailFailed.
   ///

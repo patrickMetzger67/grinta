@@ -312,7 +312,7 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get sessionReportEmailDialogMessage =>
-      'Indica la dirección de correo que recibirá el informe de estadísticas (PDF).';
+      'Selecciona uno o varios managers que recibirán el informe de estadísticas (PDF).';
 
   @override
   String get sessionReportEmailDialogHint => 'tu@ejemplo.com';
@@ -333,6 +333,44 @@ class AppLocalizationsEs extends AppLocalizations {
   String sessionReportEmailSuccess(String email) {
     return 'Informe enviado a $email';
   }
+
+  @override
+  String sessionReportEmailSuccessCount(int count) {
+    return 'Informe enviado a $count destinatarios';
+  }
+
+  @override
+  String sessionReportEmailSelectedCount(int count) {
+    return '$count seleccionado(s)';
+  }
+
+  @override
+  String get sessionReportEmailSelectAll => 'Seleccionar todo';
+
+  @override
+  String get sessionReportEmailDeselectAll => 'Deseleccionar todo';
+
+  @override
+  String get sessionReportEmailNoManagers =>
+      'No se encontraron managers con correo para este equipo.';
+
+  @override
+  String get sessionReportEmailManualOnlyMessage =>
+      'Introduce una o varias direcciones de correo que recibirán el informe (separadas por ;).';
+
+  @override
+  String get sessionReportEmailAdditionalLabel => 'Direcciones adicionales';
+
+  @override
+  String get sessionReportEmailManualHint => 'tu@ejemplo.com; otro@ejemplo.com';
+
+  @override
+  String get sessionReportEmailManualHelper =>
+      'Varias direcciones: sepáralas con punto y coma (;).';
+
+  @override
+  String get sessionReportEmailNoSelection =>
+      'Selecciona un manager o introduce al menos una dirección de correo.';
 
   @override
   String get sessionReportEmailFailed => 'No se pudo enviar el informe PDF.';

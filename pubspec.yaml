@@ -59,6 +59,7 @@ dependencies:
   timezone: ^0.10.1
   health: ^13.1.4
   pdf: ^3.12.0
+  image: ^4.8.0
 
 
 dev_dependencies:

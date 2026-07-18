@@ -19,6 +19,8 @@ class SessionStatsReport {
     this.timeLabel,
     this.teamName,
     this.matchHeader,
+    this.tacticalSchema,
+    this.highlightEvents = const <SessionStatsReportHighlightEvent>[],
     this.playerDetails = const <SessionStatsReportPlayerDetail>[],
   });
 
@@ -38,6 +40,12 @@ class SessionStatsReport {
 
   /// Match-only header extras (opponent, logos, score).
   final SessionStatsReportMatchHeader? matchHeader;
+
+  /// Match page 1: schéma tactique (compo terrain + remplaçants).
+  final SessionStatsReportTacticalSchema? tacticalSchema;
+
+  /// Match page 2: temps forts (timeline buts / cartons / changements).
+  final List<SessionStatsReportHighlightEvent> highlightEvents;
 
   /// One detailed section per player (Synthèse, zones, timeline, heatmaps…).
   final List<SessionStatsReportPlayerDetail> playerDetails;
@@ -73,6 +81,81 @@ class SessionStatsReportMatchHeader {
   final Uint8List? homeLogoBytes;
   final Uint8List? awayLogoBytes;
   final Uint8List? opponentLogoBytes;
+}
+
+/// Pitch lineup for the match PDF (mirrors Schéma tactique).
+class SessionStatsReportTacticalSchema {
+  const SessionStatsReportTacticalSchema({
+    required this.formationName,
+    required this.starters,
+    this.substitutes = const <SessionStatsReportBenchPlayer>[],
+  });
+
+  final String formationName;
+  final List<SessionStatsReportPitchPlayer> starters;
+  final List<SessionStatsReportBenchPlayer> substitutes;
+}
+
+class SessionStatsReportPitchPlayer {
+  const SessionStatsReportPitchPlayer({
+    required this.playerId,
+    required this.displayName,
+    required this.slotId,
+    required this.role,
+    required this.x,
+    required this.y,
+    this.shirtNumber,
+    this.photoBytes,
+  });
+
+  final String playerId;
+  final String displayName;
+  final String slotId;
+  final String role;
+  /// Relative pitch coords from [buildCompoSlots] (0–1).
+  final double x;
+  final double y;
+  final int? shirtNumber;
+  final Uint8List? photoBytes;
+}
+
+class SessionStatsReportBenchPlayer {
+  const SessionStatsReportBenchPlayer({
+    required this.playerId,
+    required this.displayName,
+    this.shirtNumber,
+    this.photoBytes,
+  });
+
+  final String playerId;
+  final String displayName;
+  final int? shirtNumber;
+  final Uint8List? photoBytes;
+}
+
+/// One event on the match highlights timeline PDF page.
+class SessionStatsReportHighlightEvent {
+  const SessionStatsReportHighlightEvent({
+    required this.minute,
+    required this.type,
+    required this.typeLabel,
+    required this.playerName,
+    required this.teamName,
+    required this.isHomeSide,
+    this.extraTime = 0,
+    this.secondaryPlayerName,
+  });
+
+  final int minute;
+  final int extraTime;
+  /// Normalized: goal | yellowCard | redCard | substitution | ownGoal | other
+  final String type;
+  final String typeLabel;
+  final String playerName;
+  final String? secondaryPlayerName;
+  final String teamName;
+  /// true = left (team1 / home), false = right (team2 / away).
+  final bool isHomeSide;
 }
 
 class SessionStatsReportPlayerRow {
@@ -150,12 +233,22 @@ class SessionStatsReportHeatmapImage {
   const SessionStatsReportHeatmapImage({
     required this.periodKey,
     required this.periodLabel,
-    required this.pngBytes,
+    this.svg,
+    this.pngBytes,
   });
 
   final String periodKey;
   final String periodLabel;
-  final Uint8List pngBytes;
+
+  /// Optional raw SVG (debug / simple shapes). Prefer [pngBytes] in PDF.
+  final String? svg;
+
+  /// Rasterized heatmap (flutter_svg — same renderer as player_analysis UI).
+  final Uint8List? pngBytes;
+
+  bool get hasVisual =>
+      (svg != null && svg!.trim().isNotEmpty) ||
+      (pngBytes != null && pngBytes!.isNotEmpty);
 }
 
 /// Full per-player content for dedicated PDF pages.
