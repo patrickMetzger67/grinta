@@ -312,7 +312,7 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get sessionReportEmailDialogMessage =>
-      'Indica la dirección de correo que recibirá el informe de estadísticas (PDF).';
+      'Selecciona uno o varios managers que recibirán el informe de estadísticas (PDF).';
 
   @override
   String get sessionReportEmailDialogHint => 'tu@ejemplo.com';
@@ -336,27 +336,41 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String sessionReportEmailSuccessCount(int count) {
-    return 'Rapport envoyé à $count destinataires';
+    return 'Informe enviado a $count destinatarios';
   }
 
   @override
   String sessionReportEmailSelectedCount(int count) {
-    return '$count sélectionné(s)';
+    return '$count seleccionado(s)';
   }
 
   @override
-  String get sessionReportEmailSelectAll => 'Tout sélectionner';
+  String get sessionReportEmailSelectAll => 'Seleccionar todo';
 
   @override
-  String get sessionReportEmailDeselectAll => 'Tout désélectionner';
+  String get sessionReportEmailDeselectAll => 'Deseleccionar todo';
 
   @override
   String get sessionReportEmailNoManagers =>
-      'Aucun manager avec adresse e-mail trouvé pour cette équipe.';
+      'No se encontraron managers con correo para este equipo.';
+
+  @override
+  String get sessionReportEmailManualOnlyMessage =>
+      'Introduce una o varias direcciones de correo que recibirán el informe (separadas por ;).';
+
+  @override
+  String get sessionReportEmailAdditionalLabel => 'Direcciones adicionales';
+
+  @override
+  String get sessionReportEmailManualHint => 'tu@ejemplo.com; otro@ejemplo.com';
+
+  @override
+  String get sessionReportEmailManualHelper =>
+      'Varias direcciones: sepáralas con punto y coma (;).';
 
   @override
   String get sessionReportEmailNoSelection =>
-      'Sélectionne au moins un destinataire.';
+      'Selecciona un manager o introduce al menos una dirección de correo.';
 
   @override
   String get sessionReportEmailFailed => 'No se pudo enviar el informe PDF.';

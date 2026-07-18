@@ -352,8 +352,23 @@ class AppLocalizationsFr extends AppLocalizations {
       'Aucun manager avec adresse e-mail trouvé pour cette équipe.';
 
   @override
+  String get sessionReportEmailManualOnlyMessage =>
+      'Saisis une ou plusieurs adresses e-mail qui recevront le rapport (séparées par ;).';
+
+  @override
+  String get sessionReportEmailAdditionalLabel => 'Adresses supplémentaires';
+
+  @override
+  String get sessionReportEmailManualHint =>
+      'vous@exemple.com; autre@exemple.com';
+
+  @override
+  String get sessionReportEmailManualHelper =>
+      'Plusieurs adresses : sépare-les par un point-virgule (;).';
+
+  @override
   String get sessionReportEmailNoSelection =>
-      'Sélectionne au moins un destinataire.';
+      'Sélectionne un manager ou saisis au moins une adresse e-mail.';
 
   @override
   String get sessionReportEmailFailed =>

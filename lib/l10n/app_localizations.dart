@@ -694,10 +694,34 @@ abstract class AppLocalizations {
   /// **'Aucun manager avec adresse e-mail trouvé pour cette équipe.'**
   String get sessionReportEmailNoManagers;
 
+  /// No description provided for @sessionReportEmailManualOnlyMessage.
+  ///
+  /// In fr, this message translates to:
+  /// **'Saisis une ou plusieurs adresses e-mail qui recevront le rapport (séparées par ;).'**
+  String get sessionReportEmailManualOnlyMessage;
+
+  /// No description provided for @sessionReportEmailAdditionalLabel.
+  ///
+  /// In fr, this message translates to:
+  /// **'Adresses supplémentaires'**
+  String get sessionReportEmailAdditionalLabel;
+
+  /// No description provided for @sessionReportEmailManualHint.
+  ///
+  /// In fr, this message translates to:
+  /// **'vous@exemple.com; autre@exemple.com'**
+  String get sessionReportEmailManualHint;
+
+  /// No description provided for @sessionReportEmailManualHelper.
+  ///
+  /// In fr, this message translates to:
+  /// **'Plusieurs adresses : sépare-les par un point-virgule (;).'**
+  String get sessionReportEmailManualHelper;
+
   /// No description provided for @sessionReportEmailNoSelection.
   ///
   /// In fr, this message translates to:
-  /// **'Sélectionne au moins un destinataire.'**
+  /// **'Sélectionne un manager ou saisis au moins une adresse e-mail.'**
   String get sessionReportEmailNoSelection;
 
   /// No description provided for @sessionReportEmailFailed.

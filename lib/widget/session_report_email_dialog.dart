@@ -7,6 +7,7 @@ import 'package:grinta/services/session_report_manager_recipients_service.dart';
 import 'package:grinta/services/session_report_sender_service.dart';
 import 'package:grinta/util/app_theme.dart';
 import 'package:grinta/util/player_photo_resolver.dart';
+import 'package:grinta/util/player_profile_validator.dart';
 import 'package:grinta/widget/playerPhoto.dart';
 
 /// Shows managers of the team; selected ones receive the branded PDF report.
@@ -95,6 +96,7 @@ class _SessionReportEmailDialog extends StatefulWidget {
 class _SessionReportEmailDialogState extends State<_SessionReportEmailDialog> {
   final SessionReportManagerRecipientsService _recipientsService =
       SessionReportManagerRecipientsService();
+  late final TextEditingController _manualEmailsController;
 
   List<SessionReportManagerRecipient> _managers =
       const <SessionReportManagerRecipient>[];
@@ -103,10 +105,23 @@ class _SessionReportEmailDialogState extends State<_SessionReportEmailDialog> {
   var _sending = false;
   String? _errorText;
 
+  static final RegExp _emailRegex = RegExp(
+    r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$',
+  );
+
   @override
   void initState() {
     super.initState();
+    final initialEmail =
+        (FirebaseAuth.instance.currentUser?.email ?? '').trim();
+    _manualEmailsController = TextEditingController(text: initialEmail);
     _loadManagers();
+  }
+
+  @override
+  void dispose() {
+    _manualEmailsController.dispose();
+    super.dispose();
   }
 
   Future<void> _loadManagers() async {
@@ -135,20 +150,65 @@ class _SessionReportEmailDialogState extends State<_SessionReportEmailDialog> {
       _selectedKeys
         ..clear()
         ..addAll(initial);
+      // If the connected user is already a selected manager, clear the manual
+      // field to avoid sending the same address twice by default.
+      if (initial.isNotEmpty && currentEmail.isNotEmpty) {
+        final alreadySelected = managers.any(
+          (m) =>
+              initial.contains(m.selectionKey) &&
+              m.email.toLowerCase() == currentEmail,
+        );
+        if (alreadySelected) {
+          _manualEmailsController.clear();
+        }
+      }
       _loading = false;
     });
   }
 
+  /// Splits `a@x.com; b@y.com` (also accepts commas).
+  static List<String> parseManualEmails(String raw) {
+    final Set<String> out = <String>{};
+    for (final part in raw.split(RegExp(r'[;,\n]+'))) {
+      final email = part.trim();
+      if (email.isNotEmpty) {
+        out.add(email);
+      }
+    }
+    return out.toList(growable: false);
+  }
+
+  List<String>? _collectRecipients() {
+    final l10n = context.l10n;
+    final selectedManagerEmails = _managers
+        .where((m) => _selectedKeys.contains(m.selectionKey))
+        .map((m) => m.email.trim())
+        .where((e) => e.isNotEmpty);
+
+    final manual = parseManualEmails(_manualEmailsController.text);
+    for (final email in manual) {
+      if (!isValidEmailFormat(email) || !_emailRegex.hasMatch(email)) {
+        setState(() => _errorText = l10n.sessionReportEmailInvalid);
+        return null;
+      }
+    }
+
+    final emails = <String>{
+      ...selectedManagerEmails,
+      ...manual,
+    }.toList(growable: false);
+
+    if (emails.isEmpty) {
+      setState(() => _errorText = l10n.sessionReportEmailNoSelection);
+      return null;
+    }
+    return emails;
+  }
+
   Future<void> _submit() async {
     final l10n = context.l10n;
-    final selected = _managers
-        .where((m) => _selectedKeys.contains(m.selectionKey))
-        .toList(growable: false);
-
-    if (selected.isEmpty) {
-      setState(() => _errorText = l10n.sessionReportEmailNoSelection);
-      return;
-    }
+    final emails = _collectRecipients();
+    if (emails == null) return;
 
     setState(() {
       _sending = true;
@@ -156,7 +216,6 @@ class _SessionReportEmailDialogState extends State<_SessionReportEmailDialog> {
     });
 
     final localeCode = Localizations.localeOf(context).languageCode;
-    final emails = selected.map((m) => m.email).toList(growable: false);
     final result = await SessionReportSenderService.instance.sendReport(
       l10n: l10n,
       toEmails: emails,
@@ -222,7 +281,9 @@ class _SessionReportEmailDialogState extends State<_SessionReportEmailDialog> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              l10n.sessionReportEmailDialogMessage,
+              _managers.isEmpty && !_loading
+                  ? l10n.sessionReportEmailManualOnlyMessage
+                  : l10n.sessionReportEmailDialogMessage,
               style: TextStyle(color: colors.textSecondary),
             ),
             const SizedBox(height: 12),
@@ -231,100 +292,129 @@ class _SessionReportEmailDialogState extends State<_SessionReportEmailDialog> {
                 padding: EdgeInsets.symmetric(vertical: 32),
                 child: Center(child: CircularProgressIndicator()),
               )
-            else if (_managers.isEmpty)
-              Padding(
-                padding: const EdgeInsets.symmetric(vertical: 24),
-                child: Text(
-                  l10n.sessionReportEmailNoManagers,
-                  style: TextStyle(color: colors.textSecondary),
-                ),
-              )
             else ...[
-              Row(
-                children: [
-                  TextButton(
-                    onPressed: _sending
-                        ? null
-                        : () => _toggleAll(!allSelected),
-                    child: Text(
-                      allSelected
-                          ? l10n.sessionReportEmailDeselectAll
-                          : l10n.sessionReportEmailSelectAll,
-                    ),
+              if (_managers.isEmpty)
+                Padding(
+                  padding: const EdgeInsets.only(bottom: 12),
+                  child: Text(
+                    l10n.sessionReportEmailNoManagers,
+                    style: TextStyle(color: colors.textSecondary),
                   ),
-                  const Spacer(),
-                  Text(
-                    l10n.sessionReportEmailSelectedCount(_selectedKeys.length),
-                    style: TextStyle(
-                      color: colors.textSecondary,
-                      fontSize: 13,
-                    ),
-                  ),
-                ],
-              ),
-              ConstrainedBox(
-                constraints: const BoxConstraints(maxHeight: 360),
-                child: ListView.separated(
-                  shrinkWrap: true,
-                  itemCount: _managers.length,
-                  separatorBuilder: (_, __) => Divider(
-                    height: 1,
-                    color: colors.border.withValues(alpha: 0.5),
-                  ),
-                  itemBuilder: (context, index) {
-                    final manager = _managers[index];
-                    final selected =
-                        _selectedKeys.contains(manager.selectionKey);
-                    return CheckboxListTile(
-                      value: selected,
-                      contentPadding: EdgeInsets.zero,
-                      controlAffinity: ListTileControlAffinity.leading,
-                      onChanged: _sending
+                )
+              else ...[
+                Row(
+                  children: [
+                    TextButton(
+                      onPressed: _sending
                           ? null
-                          : (bool? value) {
-                              setState(() {
-                                if (value == true) {
-                                  _selectedKeys.add(manager.selectionKey);
-                                } else {
-                                  _selectedKeys.remove(manager.selectionKey);
-                                }
-                                _errorText = null;
-                              });
-                            },
-                      title: Row(
-                        children: [
-                          PlayerPhoto(
-                            player: manager.player,
-                            radius: 20,
-                          ),
-                          const SizedBox(width: 12),
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  manager.displayName,
-                                  style: TextStyle(
-                                    color: colors.textPrimary,
-                                    fontWeight: FontWeight.w600,
-                                  ),
-                                ),
-                                const SizedBox(height: 2),
-                                Text(
-                                  manager.email,
-                                  style: TextStyle(
-                                    color: colors.textSecondary,
-                                    fontSize: 13,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                        ],
+                          : () => _toggleAll(!allSelected),
+                      child: Text(
+                        allSelected
+                            ? l10n.sessionReportEmailDeselectAll
+                            : l10n.sessionReportEmailSelectAll,
                       ),
-                    );
-                  },
+                    ),
+                    const Spacer(),
+                    Text(
+                      l10n.sessionReportEmailSelectedCount(_selectedKeys.length),
+                      style: TextStyle(
+                        color: colors.textSecondary,
+                        fontSize: 13,
+                      ),
+                    ),
+                  ],
                 ),
+                ConstrainedBox(
+                  constraints: const BoxConstraints(maxHeight: 280),
+                  child: ListView.separated(
+                    shrinkWrap: true,
+                    itemCount: _managers.length,
+                    separatorBuilder: (_, __) => Divider(
+                      height: 1,
+                      color: colors.border.withValues(alpha: 0.5),
+                    ),
+                    itemBuilder: (context, index) {
+                      final manager = _managers[index];
+                      final selected =
+                          _selectedKeys.contains(manager.selectionKey);
+                      return CheckboxListTile(
+                        value: selected,
+                        contentPadding: EdgeInsets.zero,
+                        controlAffinity: ListTileControlAffinity.leading,
+                        onChanged: _sending
+                            ? null
+                            : (bool? value) {
+                                setState(() {
+                                  if (value == true) {
+                                    _selectedKeys.add(manager.selectionKey);
+                                  } else {
+                                    _selectedKeys.remove(manager.selectionKey);
+                                  }
+                                  _errorText = null;
+                                });
+                              },
+                        title: Row(
+                          children: [
+                            PlayerPhoto(
+                              player: manager.player,
+                              radius: 20,
+                            ),
+                            const SizedBox(width: 12),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    manager.displayName,
+                                    style: TextStyle(
+                                      color: colors.textPrimary,
+                                      fontWeight: FontWeight.w600,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 2),
+                                  Text(
+                                    manager.email,
+                                    style: TextStyle(
+                                      color: colors.textSecondary,
+                                      fontSize: 13,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ],
+                        ),
+                      );
+                    },
+                  ),
+                ),
+                const SizedBox(height: 12),
+              ],
+              TextField(
+                controller: _manualEmailsController,
+                enabled: !_sending,
+                keyboardType: TextInputType.emailAddress,
+                autofillHints: const [AutofillHints.email],
+                minLines: 1,
+                maxLines: 3,
+                decoration: InputDecoration(
+                  labelText: _managers.isEmpty
+                      ? l10n.email
+                      : l10n.sessionReportEmailAdditionalLabel,
+                  hintText: l10n.sessionReportEmailManualHint,
+                  prefixIcon: const Icon(Icons.email_outlined),
+                  helperText: l10n.sessionReportEmailManualHelper,
+                ),
+                onChanged: (_) {
+                  if (_errorText != null) {
+                    setState(() => _errorText = null);
+                  }
+                },
+                onSubmitted: (_) {
+                  if (!_sending) {
+                    _submit();
+                  }
+                },
               ),
             ],
             if (_errorText != null) ...[
@@ -343,7 +433,7 @@ class _SessionReportEmailDialogState extends State<_SessionReportEmailDialog> {
           child: Text(l10n.sessionReportEmailDialogCancel),
         ),
         FilledButton(
-          onPressed: (_sending || _loading || _managers.isEmpty) ? null : _submit,
+          onPressed: (_sending || _loading) ? null : _submit,
           child: _sending
               ? const SizedBox(
                   width: 18,
