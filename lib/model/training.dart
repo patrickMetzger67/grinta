@@ -165,6 +165,8 @@ String keyPtRpeBefore = 'rpeBefore';
 String keyPtMessageBefore = 'messageBefore';
 String keyPtRpeAfter = 'rpeAfter';
 String keyPtMessageAfter = 'messageAfter';
+String keyPtFeelingBefore = 'feelingBefore';
+String keyPtFeelingAfter = 'feelingAfter';
 String keyPtVolume = 'volume';
 String keyPtIntensity = 'intensity';
 String keyPtMentalLoad = 'mentalLoad';
@@ -174,6 +176,26 @@ String keyPltCustomName = 'customName';
 
 enum PresenceType { present, blesse, excuse, absent, late }
 
+/// Échelle "Comment te sens-tu ?" — 1 (très mal) → 5 (très bien).
+enum PlayerFeeling {
+  veryBad(1),
+  bad(2),
+  neutral(3),
+  good(4),
+  veryGood(5);
+
+  const PlayerFeeling(this.value);
+  final int value;
+
+  static PlayerFeeling? fromValue(int? value) {
+    if (value == null) return null;
+    for (final feeling in PlayerFeeling.values) {
+      if (feeling.value == value) return feeling;
+    }
+    return null;
+  }
+}
+
 class PlayerTraining {
   String? playerId;
   PresenceType? presenceType;
@@ -181,6 +203,12 @@ class PlayerTraining {
   String? messageBefore;
   int? rpeAfter;
   String? messageAfter;
+
+  /// Feeling scale 1–5 ("Comment te sens-tu ?"), before session.
+  int? feelingBefore;
+
+  /// Feeling scale 1–5 ("Comment te sens-tu ?"), after session.
+  int? feelingAfter;
 
   // VICP
   int? volume;
@@ -192,6 +220,9 @@ class PlayerTraining {
   String? customName;
 
   PlayerTraining({this.playerId, this.presenceType});
+
+  PlayerFeeling? get feelingBeforeEnum => PlayerFeeling.fromValue(feelingBefore);
+  PlayerFeeling? get feelingAfterEnum => PlayerFeeling.fromValue(feelingAfter);
 
   PlayerTraining.fromMap(Map<String, dynamic> map) {
     switch (map[keyPtPresenceType]) {
@@ -236,6 +267,17 @@ class PlayerTraining {
       messageAfter = '';
     }
 
+    if(map[keyPtFeelingBefore] != null) {
+      feelingBefore = map[keyPtFeelingBefore];
+    } else {
+      feelingBefore = 0;
+    }
+    if(map[keyPtFeelingAfter] != null) {
+      feelingAfter = map[keyPtFeelingAfter];
+    } else {
+      feelingAfter = 0;
+    }
+
     if(map[keyPtVolume] != null) {
       volume = map[keyPtVolume];
     } else {
@@ -271,6 +313,8 @@ class PlayerTraining {
       keyPtRpeAfter: rpeAfter,
       keyPtMessageBefore: messageBefore,
       keyPtMessageAfter: messageAfter,
+      keyPtFeelingBefore: feelingBefore,
+      keyPtFeelingAfter: feelingAfter,
       keyPtVolume:volume,
       keyPtIntensity:intensity,
       keyPtMentalLoad:mentalLoad,
@@ -291,6 +335,8 @@ class PlayerTraining {
         'messageBefore=$messageBefore ' +
         'rpeAfter:${rpeAfter.toString()} ' +
         'messageAfter=$messageAfter ' +
+        'feelingBefore:${feelingBefore.toString()} ' +
+        'feelingAfter:${feelingAfter.toString()} ' +
         'volume=$volume ' +
         'intensity=$intensity ' +
         'mentalLoad=$mentalLoad ' +
