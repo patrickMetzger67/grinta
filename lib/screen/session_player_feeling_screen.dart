@@ -4,6 +4,7 @@ import 'package:grinta/analytics/analytics_screen_names.dart';
 import 'package:grinta/core/extensions/l10n_extension.dart';
 import 'package:grinta/model/player_feeling.dart';
 import 'package:grinta/model/tracker/team_workload_summary.dart';
+import 'package:grinta/navigation/app_navigator.dart';
 import 'package:grinta/services/matchCompoService.dart';
 import 'package:grinta/services/matchService.dart';
 import 'package:grinta/services/teamWorkloadSummaryService.dart';
@@ -158,7 +159,9 @@ class _SessionPlayerFeelingScreenState
       return;
     }
 
+    final l10n = context.l10n;
     setState(() => _saving = true);
+    var saved = false;
     try {
       if (eventType == SessionFeelingScreenEventType.training) {
         await TrainingService().updatePlayerFeeling(
@@ -178,22 +181,32 @@ class _SessionPlayerFeelingScreenState
           feelingAfter: selected.value,
         );
       }
-
-      if (!mounted) return;
-      AppSnackbar.show(
-        context,
-        context.l10n.playerFeelingSaved,
-        isError: false,
-      );
-      Navigator.of(context).pop(true);
+      saved = true;
     } catch (e, st) {
       debugPrint('SessionPlayerFeelingScreen save failed: $e\n$st');
       if (!mounted) return;
-      AppSnackbar.show(context, context.l10n.playerFeelingSaveError);
-    } finally {
-      if (mounted) {
-        setState(() => _saving = false);
-      }
+      setState(() => _saving = false);
+      AppSnackbar.show(context, l10n.playerFeelingSaveError);
+      return;
+    }
+
+    // Close first (root navigator — screen is pushed as fullscreenDialog),
+    // then show confirmation on the underlying context.
+    final navigator =
+        appNavigatorKey.currentState ?? Navigator.of(context, rootNavigator: true);
+    if (navigator.canPop()) {
+      navigator.pop(true);
+    } else if (mounted) {
+      Navigator.of(context, rootNavigator: true).pop(true);
+    }
+
+    final rootContext = appNavigatorKey.currentContext;
+    if (rootContext != null && rootContext.mounted && saved) {
+      AppSnackbar.show(
+        rootContext,
+        l10n.playerFeelingSaved,
+        isError: false,
+      );
     }
   }
 
