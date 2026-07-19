@@ -26,7 +26,6 @@ import 'package:grinta/screen/session_player_feeling_screen.dart';
 import 'package:grinta/screen/teamDetailScreen.dart';
 import 'package:grinta/services/matchService.dart';
 import 'package:grinta/services/teamService.dart';
-import 'package:grinta/services/trainingService.dart';
 import 'package:grinta/services/internal_notification_navigation.dart';
 import 'package:grinta/services/notification_fcm_platform.dart';
 import 'package:grinta/services/notification_fcm_web_notify.dart';
