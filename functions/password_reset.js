@@ -163,61 +163,77 @@ function createSendPasswordResetMail() {
       timeoutSeconds: 30,
     },
     async (request) => {
-      const email = readNonEmptyString(request.data?.email)?.toLowerCase();
-      if (!email || !isValidEmail(email)) {
-        throw new HttpsError('invalid-argument', 'invalid-email');
-      }
-
-      const locale = readNonEmptyString(request.data?.locale) ?? 'fr';
-      const auth = getAuth();
-      const db = getFirestore();
-
       try {
-        await auth.getUserByEmail(email);
-      } catch (error) {
-        if (error?.code === 'auth/user-not-found') {
-          throw new HttpsError('not-found', 'user-not-found');
+        const email = readNonEmptyString(request.data?.email)?.toLowerCase();
+        if (!email || !isValidEmail(email)) {
+          throw new HttpsError('invalid-argument', 'invalid-email');
         }
-        console.error('password_reset: getUserByEmail failed', error);
-        throw new HttpsError('internal', 'lookup-failed');
-      }
 
-      let resetLink;
-      try {
-        resetLink = await auth.generatePasswordResetLink(email, {
-          url: DEFAULT_CONTINUE_URL,
-          handleCodeInApp: false,
+        const locale = readNonEmptyString(request.data?.locale) ?? 'fr';
+        const auth = getAuth();
+        const db = getFirestore();
+
+        try {
+          await auth.getUserByEmail(email);
+        } catch (error) {
+          if (error?.code === 'auth/user-not-found') {
+            throw new HttpsError('not-found', 'user-not-found');
+          }
+          console.error('password_reset: getUserByEmail failed', error);
+          throw new HttpsError('internal', 'lookup-failed');
+        }
+
+        let resetLink;
+        try {
+          resetLink = await auth.generatePasswordResetLink(email, {
+            url: DEFAULT_CONTINUE_URL,
+            handleCodeInApp: false,
+          });
+        } catch (error) {
+          console.error(
+            'password_reset: generatePasswordResetLink failed',
+            error,
+          );
+          throw new HttpsError('internal', 'link-failed');
+        }
+
+        const config = await loadInvitationConfig(db);
+        const copy = localize(locale);
+        const subject = copy.subject(config.appDisplayName);
+        const text = copy.text(config.appDisplayName, resetLink);
+        const html = buildHtml({
+          appName: config.appDisplayName,
+          logoUrl: config.logoUrl,
+          resetLink,
+          copy,
         });
+
+        try {
+          await db.collection(MAIL_COLLECTION).add({
+            to: email,
+            from: config.fromEmail,
+            replyTo: config.replyToEmail,
+            clubId: DEFAULT_CLUB_ID,
+            message: {
+              subject,
+              text,
+              html,
+            },
+          });
+        } catch (error) {
+          console.error('password_reset: mail queue failed', error);
+          throw new HttpsError('internal', 'mail-queue-failed');
+        }
+
+        console.log('password_reset: mail queued', { email });
+        return { ok: true };
       } catch (error) {
-        console.error('password_reset: generatePasswordResetLink failed', error);
-        throw new HttpsError('internal', 'link-failed');
+        if (error instanceof HttpsError) {
+          throw error;
+        }
+        console.error('password_reset: unhandled error', error);
+        throw new HttpsError('internal', 'unexpected-error');
       }
-
-      const config = await loadInvitationConfig(db);
-      const copy = localize(locale);
-      const subject = copy.subject(config.appDisplayName);
-      const text = copy.text(config.appDisplayName, resetLink);
-      const html = buildHtml({
-        appName: config.appDisplayName,
-        logoUrl: config.logoUrl,
-        resetLink,
-        copy,
-      });
-
-      await db.collection(MAIL_COLLECTION).add({
-        to: email,
-        from: config.fromEmail,
-        replyTo: config.replyToEmail,
-        clubId: DEFAULT_CLUB_ID,
-        message: {
-          subject,
-          text,
-          html,
-        },
-      });
-
-      console.log('password_reset: mail queued', { email });
-      return { ok: true };
     },
   );
 }
