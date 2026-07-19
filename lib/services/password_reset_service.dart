@@ -11,12 +11,9 @@ enum PasswordResetResult {
 
 /// Sends a password-reset email.
 ///
-/// Preferred path: Cloud Function `sendPasswordResetMail` (europe-west1), which
-/// verifies the Auth user, generates a reset link, and queues a Grinta-branded
-/// email via the `mail` collection.
-///
-/// Fallback: Firebase Auth `sendPasswordResetEmail` when the callable fails
-/// with a transport/internal error (missing deploy, unauthorized continue URL, …).
+/// 1) Cloud Function `sendPasswordResetMail` → Grinta-branded mail via `mail`
+/// 2) On any CF failure (except invalid email / user-not-found) → Firebase Auth
+///    `sendPasswordResetEmail` so the login flow is never blocked.
 class PasswordResetService {
   PasswordResetService({
     FirebaseFunctions? functions,
@@ -37,20 +34,36 @@ class PasswordResetService {
       return PasswordResetResult.invalidEmail;
     }
 
+    final branded = await _tryBrandedCloudFunction(
+      email: trimmed,
+      locale: locale,
+    );
+    if (branded != null) {
+      return branded;
+    }
+
+    return _sendViaFirebaseAuth(trimmed);
+  }
+
+  /// Returns a result when CF handled the request, or null to fall back to Auth.
+  Future<PasswordResetResult?> _tryBrandedCloudFunction({
+    required String email,
+    required String locale,
+  }) async {
     try {
       final callable = _functions.httpsCallable('sendPasswordResetMail');
       await callable.call(<String, dynamic>{
-        'email': trimmed,
+        'email': email,
         'locale': locale,
       });
+      debugPrint('PasswordResetService: branded CF mail queued');
       return PasswordResetResult.sent;
     } on FirebaseFunctionsException catch (e, st) {
       debugPrint(
-        'PasswordResetService.sendResetEmail CF failed: '
+        'PasswordResetService: branded CF failed '
         'code=${e.code} message=${e.message} details=${e.details}\n$st',
       );
 
-      // Business errors from our CF — do not fall back.
       if (e.message == 'invalid-email' || e.code == 'invalid-argument') {
         return PasswordResetResult.invalidEmail;
       }
@@ -58,30 +71,24 @@ class PasswordResetService {
         return PasswordResetResult.userNotFound;
       }
 
-      // link-failed / missing deploy / IAM / transport → Auth fallback.
-      if (_shouldFallbackToAuth(e)) {
-        return _sendViaFirebaseAuth(trimmed);
-      }
-
-      return PasswordResetResult.failed;
+      // link-failed, deploy/IAM/transport, etc. → Auth fallback.
+      return null;
     } catch (e, st) {
-      debugPrint('PasswordResetService.sendResetEmail unexpected: $e\n$st');
-      return _sendViaFirebaseAuth(trimmed);
+      debugPrint('PasswordResetService: branded CF unexpected: $e\n$st');
+      return null;
     }
   }
 
   Future<PasswordResetResult> _sendViaFirebaseAuth(String email) async {
     try {
       debugPrint(
-        'PasswordResetService: falling back to FirebaseAuth.sendPasswordResetEmail',
+        'PasswordResetService: Auth fallback sendPasswordResetEmail',
       );
-      // No ActionCodeSettings: avoids unauthorized-continue-uri when
-      // https://grinta.io is not in Auth authorized domains.
       await _auth.sendPasswordResetEmail(email: email);
       return PasswordResetResult.sent;
     } on FirebaseAuthException catch (e, st) {
       debugPrint(
-        'PasswordResetService Auth fallback failed: '
+        'PasswordResetService: Auth fallback failed '
         'code=${e.code} message=${e.message}\n$st',
       );
       if (e.code == 'invalid-email') {
@@ -92,23 +99,9 @@ class PasswordResetService {
       }
       return PasswordResetResult.failed;
     } catch (e, st) {
-      debugPrint('PasswordResetService Auth fallback unexpected: $e\n$st');
+      debugPrint('PasswordResetService: Auth fallback unexpected: $e\n$st');
       return PasswordResetResult.failed;
     }
-  }
-
-  static bool _shouldFallbackToAuth(FirebaseFunctionsException e) {
-    if (e.message == 'link-failed' || e.message == 'mail-queue-failed') {
-      return true;
-    }
-    const fallbackCodes = <String>{
-      'internal',
-      'not-found',
-      'unavailable',
-      'deadline-exceeded',
-      'unknown',
-    };
-    return fallbackCodes.contains(e.code);
   }
 
   static bool _looksLikeEmail(String value) {

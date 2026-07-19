@@ -10,33 +10,26 @@ const DEFAULT_APP_NAME = 'Grinta Performance';
 const DEFAULT_LOGO_URL =
   'https://firebasestorage.googleapis.com/v0/b/aserstein-2453e.appspot.com/o/logoClubs%2Fthumbs%2FGrinta_1920x1920.png?alt=media';
 // Continue URLs tried in order. Must be in Auth → Authorized domains.
-// Prefer no ActionCodeSettings first (Firebase hosted reset handler).
+// IMPORTANT: do NOT call generatePasswordResetLink(email) without settings
+// first — Auth email-template "action URL" may point at an unauthorized
+// domain (e.g. grinta.io) and makes the bare call fail with link-failed.
 const CONTINUE_URL_CANDIDATES = [
-  'https://auth.grinta.io',
   'https://aserstein-2453e.firebaseapp.com',
   'https://aserstein-2453e.web.app',
-  'https://grinta.io',
+  'https://auth.grinta.io',
 ];
 
 async function generateResetLink(auth, email) {
-  // 1) No continue URL — most reliable; lands on Firebase Auth action handler.
-  try {
-    return await auth.generatePasswordResetLink(email);
-  } catch (error) {
-    console.warn(
-      'password_reset: generatePasswordResetLink(no settings) failed',
-      { code: error?.code, message: error?.message },
-    );
-  }
-
-  // 2) Try authorized continue URLs.
   let lastError = null;
+
   for (const url of CONTINUE_URL_CANDIDATES) {
     try {
-      return await auth.generatePasswordResetLink(email, {
+      const link = await auth.generatePasswordResetLink(email, {
         url,
         handleCodeInApp: false,
       });
+      console.log('password_reset: reset link generated', { continueUrl: url });
+      return link;
     } catch (error) {
       lastError = error;
       console.warn('password_reset: generatePasswordResetLink failed for url', {
@@ -45,6 +38,19 @@ async function generateResetLink(auth, email) {
         message: error?.message,
       });
     }
+  }
+
+  // Last resort: bare call (uses template action URL).
+  try {
+    const link = await auth.generatePasswordResetLink(email);
+    console.log('password_reset: reset link generated', { continueUrl: null });
+    return link;
+  } catch (error) {
+    lastError = error;
+    console.warn(
+      'password_reset: generatePasswordResetLink(no settings) failed',
+      { code: error?.code, message: error?.message },
+    );
   }
 
   const err = lastError || new Error('link-failed');
@@ -228,14 +234,18 @@ function createSendPasswordResetMail() {
         try {
           resetLink = await generateResetLink(auth, email);
         } catch (error) {
+          const authCode = (error?.code || 'unknown').toString();
+          const authMessage = (error?.message || '').toString().slice(0, 180);
           console.error('password_reset: generatePasswordResetLink failed', {
-            code: error?.code,
-            message: error?.message,
+            code: authCode,
+            message: authMessage,
           });
-          throw new HttpsError('internal', 'link-failed', {
-            authCode: error?.code ?? null,
-            authMessage: error?.message ?? null,
-          });
+          // Put Auth code in message so clients/logs show the real cause.
+          throw new HttpsError(
+            'internal',
+            `link-failed:${authCode}:${authMessage}`,
+            { authCode, authMessage },
+          );
         }
 
         const config = await loadInvitationConfig(db);
