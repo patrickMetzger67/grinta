@@ -578,6 +578,55 @@ class TrainingService {
     }
   }
 
+  /// Updates one player's feeling scores atomically (safe under concurrent edits).
+  Future<void> updatePlayerFeeling({
+    required String trainingId,
+    required String playerId,
+    int? feelingBefore,
+    int? feelingAfter,
+  }) async {
+    final trimmedTrainingId = trainingId.trim();
+    final trimmedPlayerId = playerId.trim();
+    if (trimmedTrainingId.isEmpty || trimmedPlayerId.isEmpty) {
+      throw ArgumentError('trainingId and playerId are required');
+    }
+    if (feelingBefore == null && feelingAfter == null) {
+      throw ArgumentError('feelingBefore or feelingAfter is required');
+    }
+
+    final docRef = _collection.doc(trimmedTrainingId);
+    await _firestore.runTransaction((transaction) async {
+      final snap = await transaction.get(docRef);
+      if (!snap.exists) {
+        throw StateError('Training introuvable: $trimmedTrainingId');
+      }
+
+      final training = Training.fromDocumentSnapshot(snap);
+      final players = List<PlayerTraining>.from(training.playerTraining);
+      final index = players.indexWhere(
+        (e) => (e.playerId?.trim() ?? '') == trimmedPlayerId,
+      );
+      if (index < 0) {
+        throw StateError(
+          'Joueur $trimmedPlayerId introuvable dans training $trimmedTrainingId',
+        );
+      }
+
+      final player = players[index];
+      if (feelingBefore != null) {
+        player.feelingBefore = feelingBefore;
+      }
+      if (feelingAfter != null) {
+        player.feelingAfter = feelingAfter;
+      }
+      players[index] = player;
+
+      transaction.update(docRef, {
+        keyTgPlayerTraining: players.map((e) => e.toMap()).toList(),
+      });
+    });
+  }
+
   /// REMOVE ONE PLAYER TRAINING
   Future<void> removeOnePlayerTraining({
     required String trainingId,

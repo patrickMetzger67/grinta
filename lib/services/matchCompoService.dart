@@ -294,6 +294,92 @@ class MatchCompoService {
     return ids.first;
   }
 
+  /// Updates one player's feeling scores atomically (safe under concurrent edits).
+  ///
+  /// Finds [playerId] across starters and substitutes, then merges only the
+  /// affected role lists so concurrent edits to other players are preserved.
+  Future<void> updatePlayerFeeling({
+    required String matchId,
+    required String teamId,
+    required String playerId,
+    int? feelingBefore,
+    int? feelingAfter,
+  }) async {
+    final trimmedMatchId = matchId.trim();
+    final trimmedTeamId = teamId.trim();
+    final trimmedPlayerId = playerId.trim();
+    if (trimmedMatchId.isEmpty ||
+        trimmedTeamId.isEmpty ||
+        trimmedPlayerId.isEmpty) {
+      throw ArgumentError('matchId, teamId and playerId are required');
+    }
+    if (feelingBefore == null && feelingAfter == null) {
+      throw ArgumentError('feelingBefore or feelingAfter is required');
+    }
+
+    final existing = await getMatchCompoByMatchAndTeamId(
+      trimmedMatchId,
+      trimmedTeamId,
+    );
+    final docRef =
+        existing?.ref ?? docRefFor(matchId: trimmedMatchId, teamId: trimmedTeamId);
+
+    await _firestore.runTransaction((transaction) async {
+      final snap = await transaction.get(docRef);
+      if (!snap.exists) {
+        throw StateError(
+          'MatchCompo introuvable pour match=$trimmedMatchId team=$trimmedTeamId',
+        );
+      }
+
+      final compo = MatchCompo.fromSnapshot(snap);
+      final roleKeys = <String, List<PlayerCompo>>{
+        keyMatchCompoGoalkeeper: List<PlayerCompo>.from(compo.goalkeeper ?? const []),
+        keyMatchCompoDefender: List<PlayerCompo>.from(compo.defender ?? const []),
+        keyMatchCompoMidfielder: List<PlayerCompo>.from(compo.midfielder ?? const []),
+        keyMatchCompoMidfielderAttacking:
+            List<PlayerCompo>.from(compo.midfielderAttaking ?? const []),
+        keyMatchCompoMidfielderDefensive:
+            List<PlayerCompo>.from(compo.midfielderDefensive ?? const []),
+        keyMatchCompoStrikcer: List<PlayerCompo>.from(compo.stricker ?? const []),
+        keyMatchCompoSubstitute: List<PlayerCompo>.from(compo.substitute ?? const []),
+      };
+
+      var updated = false;
+      final payload = <String, dynamic>{
+        keyMatchCompoMatchId: trimmedMatchId,
+        keyMatchCompoTeamID: trimmedTeamId,
+      };
+
+      for (final entry in roleKeys.entries) {
+        var listChanged = false;
+        for (final player in entry.value) {
+          if (player.playerID?.trim() != trimmedPlayerId) continue;
+          if (feelingBefore != null) {
+            player.feelingBefore = feelingBefore;
+          }
+          if (feelingAfter != null) {
+            player.feelingAfter = feelingAfter;
+          }
+          listChanged = true;
+          updated = true;
+        }
+        if (listChanged) {
+          payload[entry.key] = entry.value.map((p) => p.toMap()).toList();
+        }
+      }
+
+      if (!updated) {
+        throw StateError(
+          'Joueur $trimmedPlayerId introuvable dans MatchCompo '
+          'match=$trimmedMatchId team=$trimmedTeamId',
+        );
+      }
+
+      transaction.set(docRef, payload, SetOptions(merge: true));
+    });
+  }
+
   /// Updates one player's convocation answer atomically (safe under concurrent edits).
   Future<void> updatePlayerConvocationAnswer({
     required String matchId,

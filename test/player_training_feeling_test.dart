@@ -1,4 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
+import 'package:grinta/model/matchCompo.dart';
+import 'package:grinta/model/player_feeling.dart';
 import 'package:grinta/model/training.dart';
 
 void main() {
@@ -43,6 +45,39 @@ void main() {
       final restored = PlayerTraining.fromMap({
         keyPtPlayerId: 'p1',
         keyPtPresenceType: 'PresenceType.present',
+      });
+      expect(restored.feelingBefore, 0);
+      expect(restored.feelingAfter, 0);
+      expect(restored.feelingBeforeEnum, isNull);
+      expect(restored.feelingAfterEnum, isNull);
+    });
+  });
+
+  group('PlayerCompo feeling fields', () {
+    test('serializes feelingBefore and feelingAfter', () {
+      final player = PlayerCompo(
+        playerID: 'p1',
+        number: 10,
+        playerNameDisplayed: 'Joueur',
+      )
+        ..feelingBefore = PlayerFeeling.bad.value
+        ..feelingAfter = PlayerFeeling.good.value;
+
+      final map = player.toMap();
+      expect(map[keyPlayerCompoFeelingBefore], 2);
+      expect(map[keyPlayerCompoFeelingAfter], 4);
+
+      final restored = PlayerCompo.fromMap(map);
+      expect(restored.feelingBefore, 2);
+      expect(restored.feelingAfter, 4);
+      expect(restored.feelingBeforeEnum, PlayerFeeling.bad);
+      expect(restored.feelingAfterEnum, PlayerFeeling.good);
+    });
+
+    test('defaults missing feeling fields to 0', () {
+      final restored = PlayerCompo.fromMap({
+        keyPlayerCompoPlayerId: 'p1',
+        keyPlayerCompoPlayerNumber: 7,
       });
       expect(restored.feelingBefore, 0);
       expect(restored.feelingAfter, 0);

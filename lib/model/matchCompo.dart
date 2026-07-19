@@ -1,10 +1,15 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 
+import 'player_feeling.dart';
+export 'player_feeling.dart';
+
 String keyPlayerCompoPlayerId =  "playerID";
 String keyPlayerCompoPlayerNumber = "number";
 String keyPlayerCompoPlayerNameDisplayed = "playerNameDisplayed";
 String keyPlayerCompoPlayerTrackerId = "deviceOwnerId";
 String keyPlayerCompoPlayerCustomName = "customeName";
+String keyPlayerCompoFeelingBefore = "feelingBefore";
+String keyPlayerCompoFeelingAfter = "feelingAfter";
 
 String keyPlayerConvoPlayerId = "playerID";
 String keyPlayerConvoIsPresent = "isPresent";
@@ -33,7 +38,17 @@ class PlayerCompo {
   String? deviceOwnerId;
   String? customName;
 
+  /// Feeling scale 1–5 ("Comment te sens-tu ?"), before match.
+  int? feelingBefore;
+
+  /// Feeling scale 1–5 ("Comment te sens-tu ?"), after match.
+  int? feelingAfter;
+
   PlayerCompo({this.playerID, this.number, this.playerNameDisplayed});
+
+  PlayerFeeling? get feelingBeforeEnum => PlayerFeeling.fromValue(feelingBefore);
+  PlayerFeeling? get feelingAfterEnum => PlayerFeeling.fromValue(feelingAfter);
+
   PlayerCompo.fromMap(Map<String,dynamic> map) {
     playerID = map[keyPlayerCompoPlayerId];
     number = map[keyPlayerCompoPlayerNumber];
@@ -46,6 +61,16 @@ class PlayerCompo {
     final rawCustomName = map[keyPlayerCompoPlayerCustomName]?.toString().trim();
     customName =
         (rawCustomName != null && rawCustomName.isNotEmpty) ? rawCustomName : null;
+    if (map[keyPlayerCompoFeelingBefore] != null) {
+      feelingBefore = map[keyPlayerCompoFeelingBefore];
+    } else {
+      feelingBefore = 0;
+    }
+    if (map[keyPlayerCompoFeelingAfter] != null) {
+      feelingAfter = map[keyPlayerCompoFeelingAfter];
+    } else {
+      feelingAfter = 0;
+    }
   }
 
 
@@ -57,6 +82,8 @@ class PlayerCompo {
       keyPlayerCompoPlayerNameDisplayed: playerNameDisplayed,
       keyPlayerCompoPlayerTrackerId:deviceOwnerId,
       keyPlayerCompoPlayerCustomName:customName,
+      keyPlayerCompoFeelingBefore: feelingBefore,
+      keyPlayerCompoFeelingAfter: feelingAfter,
     };
     return map;
   }
@@ -68,7 +95,9 @@ class PlayerCompo {
             'number=$number ' +
             'playerNameDisplayed=$playerNameDisplayed ' +
             'deviceOwnerId=$deviceOwnerId ' +
-            'customeName=$customName';
+            'customeName=$customName ' +
+            'feelingBefore=$feelingBefore ' +
+            'feelingAfter=$feelingAfter';
   }
 
 }
