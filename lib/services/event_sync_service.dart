@@ -155,6 +155,42 @@ class EventSyncService {
     });
   }
 
+  /// Atomically claims the right to send feeling notifications for [eventId].
+  ///
+  /// Returns `true` only for the first successful claim; later callers get
+  /// `false` so notifications are not sent twice.
+  Future<bool> claimFeelingNotifSent(String eventId) async {
+    final trimmed = eventId.trim();
+    if (trimmed.isEmpty) return false;
+
+    final docRef = _collection.doc(trimmed);
+    return _firestore.runTransaction((transaction) async {
+      final snap = await transaction.get(docRef);
+      if (snap.exists) {
+        final already = snap.data()?['feelingNotifSent'] == true;
+        if (already) return false;
+        transaction.set(
+          docRef,
+          {'feelingNotifSent': true, 'eventId': trimmed},
+          SetOptions(merge: true),
+        );
+        return true;
+      }
+
+      transaction.set(
+        docRef,
+        {
+          'eventId': trimmed,
+          'feelingNotifSent': true,
+          'isFullySynced': false,
+          'devices': <String, dynamic>{},
+        },
+        SetOptions(merge: true),
+      );
+      return true;
+    });
+  }
+
   Future<List<EventSync>> getAllEventSyncs() async {
     final querySnapshot = await _collection.get();
     return querySnapshot.docs

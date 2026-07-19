@@ -2508,5 +2508,15 @@
   "promoCodeRedeemExhausted": "Ce code promo a atteint sa limite d'utilisation.",
   "promoCodeRedeemTeamMismatch": "Ce code promo est réservé à un autre club.",
   "promoCodeRedeemUnauthenticated": "Vous devez être connecté pour utiliser un code promo.",
-  "promoCodeRedeemFailed": "Impossible d'utiliser le code promo."
+  "promoCodeRedeemFailed": "Impossible d'utiliser le code promo.",
+  "playerFeelingPrompt": "Comment te sens-tu ?",
+  "playerFeelingNotifTitle": "Bilan de séance",
+  "playerFeelingNotifBody": "Découvre tes stats et dis-nous comment tu te sens.",
+  "playerFeelingRecapTitle": "Ton bilan",
+  "playerFeelingRecapSubtitle": "Tes données de séance",
+  "playerFeelingSubmitAction": "Envoyer",
+  "playerFeelingUpdateAction": "Mettre à jour",
+  "playerFeelingSaved": "Merci, ton ressenti a été enregistré.",
+  "playerFeelingSaveError": "Impossible d'enregistrer ton ressenti.",
+  "playerFeelingLoadError": "Impossible de charger le bilan."
 }

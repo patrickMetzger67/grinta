@@ -9474,6 +9474,39 @@ abstract class AppLocalizations {
   /// In fr, this message translates to:
   /// **'Impossible d\'utiliser le code promo.'**
   String get promoCodeRedeemFailed;
+
+  /// No description provided for @playerFeelingPrompt.
+  ///
+  /// In fr, this message translates to:
+  /// **'Comment te sens-tu ?'**
+  String get playerFeelingPrompt;
+
+  /// No description provided for @playerFeelingNotifTitle.
+  String get playerFeelingNotifTitle;
+
+  /// No description provided for @playerFeelingNotifBody.
+  String get playerFeelingNotifBody;
+
+  /// No description provided for @playerFeelingRecapTitle.
+  String get playerFeelingRecapTitle;
+
+  /// No description provided for @playerFeelingRecapSubtitle.
+  String get playerFeelingRecapSubtitle;
+
+  /// No description provided for @playerFeelingSubmitAction.
+  String get playerFeelingSubmitAction;
+
+  /// No description provided for @playerFeelingUpdateAction.
+  String get playerFeelingUpdateAction;
+
+  /// No description provided for @playerFeelingSaved.
+  String get playerFeelingSaved;
+
+  /// No description provided for @playerFeelingSaveError.
+  String get playerFeelingSaveError;
+
+  /// No description provided for @playerFeelingLoadError.
+  String get playerFeelingLoadError;
 }
 
 class _AppLocalizationsDelegate

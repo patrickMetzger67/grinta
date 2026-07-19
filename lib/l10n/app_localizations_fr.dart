@@ -5499,4 +5499,34 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get promoCodeRedeemFailed => 'Impossible d\'utiliser le code promo.';
+
+  @override
+  String get playerFeelingPrompt => 'Comment te sens-tu ?';
+
+  @override
+  String get playerFeelingNotifTitle => 'Bilan de séance';
+
+  @override
+  String get playerFeelingNotifBody => 'Découvre tes stats et dis-nous comment tu te sens.';
+
+  @override
+  String get playerFeelingRecapTitle => 'Ton bilan';
+
+  @override
+  String get playerFeelingRecapSubtitle => 'Tes données de séance';
+
+  @override
+  String get playerFeelingSubmitAction => 'Envoyer';
+
+  @override
+  String get playerFeelingUpdateAction => 'Mettre à jour';
+
+  @override
+  String get playerFeelingSaved => 'Merci, ton ressenti a été enregistré.';
+
+  @override
+  String get playerFeelingSaveError => 'Impossible d\'enregistrer ton ressenti.';
+
+  @override
+  String get playerFeelingLoadError => 'Impossible de charger le bilan.';
 }

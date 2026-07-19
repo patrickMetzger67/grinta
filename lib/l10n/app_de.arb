@@ -1931,5 +1931,15 @@
   "promoCodeRedeemExhausted": "Dieser Promo-Code hat sein Nutzungslimit erreicht.",
   "promoCodeRedeemTeamMismatch": "Dieser Promo-Code ist einem anderen Verein vorbehalten.",
   "promoCodeRedeemUnauthenticated": "Sie müssen angemeldet sein, um einen Promo-Code einzulösen.",
-  "promoCodeRedeemFailed": "Promo-Code konnte nicht eingelöst werden."
+  "promoCodeRedeemFailed": "Promo-Code konnte nicht eingelöst werden.",
+  "playerFeelingPrompt": "Wie fühlst du dich?",
+  "playerFeelingNotifTitle": "Session-Zusammenfassung",
+  "playerFeelingNotifBody": "Sieh dir deine Stats an und sag uns, wie du dich fühlst.",
+  "playerFeelingRecapTitle": "Dein Recap",
+  "playerFeelingRecapSubtitle": "Deine Session-Daten",
+  "playerFeelingSubmitAction": "Senden",
+  "playerFeelingUpdateAction": "Aktualisieren",
+  "playerFeelingSaved": "Danke, dein Gefühl wurde gespeichert.",
+  "playerFeelingSaveError": "Gefühl konnte nicht gespeichert werden.",
+  "playerFeelingLoadError": "Recap konnte nicht geladen werden."
 }

@@ -5429,4 +5429,34 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get promoCodeRedeemFailed => 'Unable to redeem promo code.';
+
+  @override
+  String get playerFeelingPrompt => 'How do you feel?';
+
+  @override
+  String get playerFeelingNotifTitle => 'Session recap';
+
+  @override
+  String get playerFeelingNotifBody => 'Check your stats and tell us how you feel.';
+
+  @override
+  String get playerFeelingRecapTitle => 'Your recap';
+
+  @override
+  String get playerFeelingRecapSubtitle => 'Your session data';
+
+  @override
+  String get playerFeelingSubmitAction => 'Submit';
+
+  @override
+  String get playerFeelingUpdateAction => 'Update';
+
+  @override
+  String get playerFeelingSaved => 'Thanks, your feeling was saved.';
+
+  @override
+  String get playerFeelingSaveError => 'Unable to save your feeling.';
+
+  @override
+  String get playerFeelingLoadError => 'Unable to load the recap.';
 }

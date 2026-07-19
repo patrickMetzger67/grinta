@@ -5513,4 +5513,34 @@ class AppLocalizationsDe extends AppLocalizations {
   @override
   String get promoCodeRedeemFailed =>
       'Promo-Code konnte nicht eingelöst werden.';
+
+  @override
+  String get playerFeelingPrompt => 'Wie fühlst du dich?';
+
+  @override
+  String get playerFeelingNotifTitle => 'Session-Zusammenfassung';
+
+  @override
+  String get playerFeelingNotifBody => 'Sieh dir deine Stats an und sag uns, wie du dich fühlst.';
+
+  @override
+  String get playerFeelingRecapTitle => 'Dein Recap';
+
+  @override
+  String get playerFeelingRecapSubtitle => 'Deine Session-Daten';
+
+  @override
+  String get playerFeelingSubmitAction => 'Senden';
+
+  @override
+  String get playerFeelingUpdateAction => 'Aktualisieren';
+
+  @override
+  String get playerFeelingSaved => 'Danke, dein Gefühl wurde gespeichert.';
+
+  @override
+  String get playerFeelingSaveError => 'Gefühl konnte nicht gespeichert werden.';
+
+  @override
+  String get playerFeelingLoadError => 'Recap konnte nicht geladen werden.';
 }
