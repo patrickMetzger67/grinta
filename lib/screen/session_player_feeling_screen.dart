@@ -1,9 +1,11 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:grinta/analytics/analytics_screen_names.dart';
 import 'package:grinta/core/extensions/l10n_extension.dart';
 import 'package:grinta/model/player_feeling.dart';
 import 'package:grinta/model/tracker/team_workload_summary.dart';
 import 'package:grinta/services/matchCompoService.dart';
+import 'package:grinta/services/matchService.dart';
 import 'package:grinta/services/teamWorkloadSummaryService.dart';
 import 'package:grinta/services/trainingService.dart';
 import 'package:grinta/util/app_snackbar.dart';
@@ -20,13 +22,15 @@ class SessionPlayerFeelingScreen extends StatefulWidget {
     super.key,
     required this.eventId,
     required this.playerId,
-    required this.eventType,
+    this.eventType,
     this.teamId,
   });
 
   final String eventId;
   final String playerId;
-  final SessionFeelingScreenEventType eventType;
+
+  /// When null, resolved during load (training doc first, then match).
+  final SessionFeelingScreenEventType? eventType;
   final String? teamId;
 
   static const String analyticsName = AnalyticsScreenNames.sessionPlayerFeeling;
@@ -45,10 +49,14 @@ class _SessionPlayerFeelingScreenState
   TeamPlayerMetricScores? _playerScore;
   PlayerFeeling? _selected;
   int? _existingFeelingAfter;
+  SessionFeelingScreenEventType? _eventType;
+  String? _teamId;
 
   @override
   void initState() {
     super.initState();
+    _eventType = widget.eventType;
+    _teamId = widget.teamId;
     _load();
   }
 
@@ -59,50 +67,37 @@ class _SessionPlayerFeelingScreenState
     });
 
     try {
-      final summary =
-          await TeamWorkloadSummaryService().getByEventId(widget.eventId);
+      // Show rings as soon as summary is ready — don't wait on training/match.
+      final summaryFuture =
+          TeamWorkloadSummaryService().getByEventId(widget.eventId);
+      final typeFuture = _resolveEventType();
+
+      final summary = await summaryFuture;
       final playerScore = findPlayerScoreInSummary(
         summary: summary,
         playerId: widget.playerId,
       );
 
-      int? existing;
-      if (widget.eventType == SessionFeelingScreenEventType.training) {
-        final training =
-            await TrainingService().getTrainingById(widget.eventId);
-        for (final pt in training?.playerTraining ?? const []) {
-          if ((pt.playerId?.trim() ?? '') == widget.playerId.trim()) {
-            existing = pt.feelingAfter;
-            break;
-          }
-        }
-      } else {
-        final teamId = widget.teamId?.trim() ?? '';
-        if (teamId.isNotEmpty) {
-          final compo = await MatchCompoService()
-              .getMatchCompoByMatchAndTeamId(widget.eventId, teamId);
-          if (compo != null) {
-            for (final p in allPlayersFromCompo(compo)) {
-              if ((p.playerID?.trim() ?? '') == widget.playerId.trim()) {
-                existing = p.feelingAfter;
-                break;
-              }
-            }
-          }
-        }
-      }
-
       if (!mounted) return;
       setState(() {
         _summary = summary;
         _playerScore = playerScore;
-        _existingFeelingAfter = existing;
-        _selected = PlayerFeeling.fromValue(
-          (existing != null && existing > 0) ? existing : null,
-        );
         _loading = false;
       });
-    } catch (e) {
+
+      final resolvedType = await typeFuture;
+      final existing = await _loadExistingFeeling(resolvedType);
+
+      if (!mounted) return;
+      setState(() {
+        _eventType = resolvedType;
+        _existingFeelingAfter = existing;
+        _selected ??= PlayerFeeling.fromValue(
+          (existing != null && existing > 0) ? existing : null,
+        );
+      });
+    } catch (e, st) {
+      debugPrint('SessionPlayerFeelingScreen load failed: $e\n$st');
       if (!mounted) return;
       setState(() {
         _error = e.toString();
@@ -111,20 +106,68 @@ class _SessionPlayerFeelingScreenState
     }
   }
 
+  Future<SessionFeelingScreenEventType> _resolveEventType() async {
+    if (_eventType != null) return _eventType!;
+
+    final training = await TrainingService().getTrainingById(widget.eventId);
+    if (training != null) {
+      return SessionFeelingScreenEventType.training;
+    }
+    return SessionFeelingScreenEventType.match;
+  }
+
+  Future<int?> _loadExistingFeeling(
+    SessionFeelingScreenEventType eventType,
+  ) async {
+    final playerId = widget.playerId.trim();
+    if (eventType == SessionFeelingScreenEventType.training) {
+      final training = await TrainingService().getTrainingById(widget.eventId);
+      for (final pt in training?.playerTraining ?? const []) {
+        final id = pt.playerId?.trim() ?? '';
+        if (id == playerId) return pt.feelingAfter;
+      }
+      return null;
+    }
+
+    var teamId = _teamId?.trim() ?? '';
+    if (teamId.isEmpty) {
+      final match = await MatchService().getMatchById(widget.eventId);
+      teamId = match?.teamID?.trim() ?? '';
+      _teamId = teamId;
+    }
+    if (teamId.isEmpty) return null;
+
+    final compo = await MatchCompoService()
+        .getMatchCompoByMatchAndTeamId(widget.eventId, teamId);
+    if (compo == null) return null;
+    for (final p in allPlayersFromCompo(compo)) {
+      if ((p.playerID?.trim() ?? '') == playerId) {
+        return p.feelingAfter;
+      }
+    }
+    return null;
+  }
+
   Future<void> _submit() async {
     final selected = _selected;
     if (selected == null || _saving) return;
 
+    final eventType = _eventType;
+    if (eventType == null) {
+      AppSnackbar.show(context, context.l10n.playerFeelingSaveError);
+      return;
+    }
+
     setState(() => _saving = true);
     try {
-      if (widget.eventType == SessionFeelingScreenEventType.training) {
+      if (eventType == SessionFeelingScreenEventType.training) {
         await TrainingService().updatePlayerFeeling(
           trainingId: widget.eventId,
           playerId: widget.playerId,
           feelingAfter: selected.value,
         );
       } else {
-        final teamId = widget.teamId?.trim() ?? '';
+        final teamId = _teamId?.trim() ?? '';
         if (teamId.isEmpty) {
           throw StateError('teamId required for match feeling');
         }
@@ -143,10 +186,14 @@ class _SessionPlayerFeelingScreenState
         isError: false,
       );
       Navigator.of(context).pop(true);
-    } catch (e) {
+    } catch (e, st) {
+      debugPrint('SessionPlayerFeelingScreen save failed: $e\n$st');
       if (!mounted) return;
       AppSnackbar.show(context, context.l10n.playerFeelingSaveError);
-      setState(() => _saving = false);
+    } finally {
+      if (mounted) {
+        setState(() => _saving = false);
+      }
     }
   }
 
@@ -215,6 +262,8 @@ class _SessionPlayerFeelingScreenState
                             backgroundColor: Colors.black,
                             padding: const EdgeInsets.all(12),
                             withgoal: false,
+                            animationDuration:
+                                const Duration(milliseconds: 350),
                             rings: rings,
                           ),
                         ),
@@ -245,8 +294,11 @@ class _SessionPlayerFeelingScreenState
                         ),
                         const SizedBox(height: 28),
                         FilledButton(
-                          onPressed:
-                              _selected == null || _saving ? null : _submit,
+                          onPressed: _selected == null ||
+                                  _saving ||
+                                  _eventType == null
+                              ? null
+                              : _submit,
                           style: FilledButton.styleFrom(
                             backgroundColor: colors.primary,
                             foregroundColor: Colors.white,
@@ -290,7 +342,8 @@ class _FeelingFaceButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final color = selected ? const Color(0xFFE53935) : context.appColors.textPrimary;
+    final color =
+        selected ? const Color(0xFFE53935) : context.appColors.textPrimary;
 
     return InkWell(
       onTap: enabled ? onTap : null,
@@ -336,7 +389,8 @@ class _FeelingFacePainter extends CustomPainter {
     canvas.drawCircle(center, radius, stroke);
 
     final leftEye = Offset(center.dx - radius * 0.32, center.dy - radius * 0.18);
-    final rightEye = Offset(center.dx + radius * 0.32, center.dy - radius * 0.18);
+    final rightEye =
+        Offset(center.dx + radius * 0.32, center.dy - radius * 0.18);
 
     switch (feeling) {
       case PlayerFeeling.veryBad:

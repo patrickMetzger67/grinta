@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:cloud_firestore/cloud_firestore.dart';
 
 import '../model/matchCompo.dart';
@@ -317,14 +319,25 @@ class MatchCompoService {
       throw ArgumentError('feelingBefore or feelingAfter is required');
     }
 
-    final existing = await getMatchCompoByMatchAndTeamId(
-      trimmedMatchId,
-      trimmedTeamId,
-    );
-    final docRef =
-        existing?.ref ?? docRefFor(matchId: trimmedMatchId, teamId: trimmedTeamId);
+    final lookupIds = <String>{trimmedPlayerId};
+    DocumentReference docRef =
+        docRefFor(matchId: trimmedMatchId, teamId: trimmedTeamId);
+    final canonical = await docRef.get();
+    if (!canonical.exists) {
+      final legacy = await _loadLegacyMatchCompo(
+        matchId: trimmedMatchId,
+        teamId: trimmedTeamId,
+      );
+      if (legacy?.ref == null) {
+        throw StateError(
+          'MatchCompo introuvable pour match=$trimmedMatchId team=$trimmedTeamId',
+        );
+      }
+      docRef = legacy!.ref!;
+    }
 
-    await _firestore.runTransaction((transaction) async {
+    await _firestore
+        .runTransaction((transaction) async {
       final snap = await transaction.get(docRef);
       if (!snap.exists) {
         throw StateError(
@@ -332,18 +345,23 @@ class MatchCompoService {
         );
       }
 
-      final compo = MatchCompo.fromSnapshot(snap);
-      final roleKeys = <String, List<PlayerCompo>>{
-        keyMatchCompoGoalkeeper: List<PlayerCompo>.from(compo.goalkeeper ?? const []),
-        keyMatchCompoDefender: List<PlayerCompo>.from(compo.defender ?? const []),
-        keyMatchCompoMidfielder: List<PlayerCompo>.from(compo.midfielder ?? const []),
-        keyMatchCompoMidfielderAttacking:
-            List<PlayerCompo>.from(compo.midfielderAttaking ?? const []),
-        keyMatchCompoMidfielderDefensive:
-            List<PlayerCompo>.from(compo.midfielderDefensive ?? const []),
-        keyMatchCompoStrikcer: List<PlayerCompo>.from(compo.stricker ?? const []),
-        keyMatchCompoSubstitute: List<PlayerCompo>.from(compo.substitute ?? const []),
-      };
+      final data = snap.data();
+      if (data is! Map) {
+        throw StateError(
+          'MatchCompo vide pour match=$trimmedMatchId team=$trimmedTeamId',
+        );
+      }
+      final map = Map<String, dynamic>.from(data);
+
+      final roleKeys = <String>[
+        keyMatchCompoGoalkeeper,
+        keyMatchCompoDefender,
+        keyMatchCompoMidfielder,
+        keyMatchCompoMidfielderAttacking,
+        keyMatchCompoMidfielderDefensive,
+        keyMatchCompoStrikcer,
+        keyMatchCompoSubstitute,
+      ];
 
       var updated = false;
       final payload = <String, dynamic>{
@@ -351,21 +369,27 @@ class MatchCompoService {
         keyMatchCompoTeamID: trimmedTeamId,
       };
 
-      for (final entry in roleKeys.entries) {
+      for (final roleKey in roleKeys) {
+        final raw = map[roleKey];
+        if (raw is! List) continue;
+        final list = raw
+            .map((e) => Map<String, dynamic>.from(e as Map))
+            .toList();
         var listChanged = false;
-        for (final player in entry.value) {
-          if (player.playerID?.trim() != trimmedPlayerId) continue;
+        for (final player in list) {
+          final id = (player[keyPlayerCompoPlayerId] ?? '').toString().trim();
+          if (!lookupIds.contains(id)) continue;
           if (feelingBefore != null) {
-            player.feelingBefore = feelingBefore;
+            player[keyPlayerCompoFeelingBefore] = feelingBefore;
           }
           if (feelingAfter != null) {
-            player.feelingAfter = feelingAfter;
+            player[keyPlayerCompoFeelingAfter] = feelingAfter;
           }
           listChanged = true;
           updated = true;
         }
         if (listChanged) {
-          payload[entry.key] = entry.value.map((p) => p.toMap()).toList();
+          payload[roleKey] = list;
         }
       }
 
@@ -377,7 +401,8 @@ class MatchCompoService {
       }
 
       transaction.set(docRef, payload, SetOptions(merge: true));
-    });
+    })
+        .timeout(const Duration(seconds: 10));
   }
 
   /// Updates one player's convocation answer atomically (safe under concurrent edits).

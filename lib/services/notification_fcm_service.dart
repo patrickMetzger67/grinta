@@ -517,29 +517,13 @@ class NotificationFCMService {
       return;
     }
 
+    // Open immediately — type/team resolution happens inside the screen.
     final typeKey = (eventType ?? '').trim().toLowerCase();
-    SessionFeelingScreenEventType screenType;
-    if (typeKey == 'match') {
-      screenType = SessionFeelingScreenEventType.match;
-    } else if (typeKey == 'training') {
-      screenType = SessionFeelingScreenEventType.training;
-    } else {
-      // Infer from which document exists.
-      final training =
-          await TrainingService().getTrainingById(trimmedEventId);
-      screenType = training != null
-          ? SessionFeelingScreenEventType.training
-          : SessionFeelingScreenEventType.match;
-    }
-
-    String? resolvedTeamId = teamId?.trim();
-    if (screenType == SessionFeelingScreenEventType.match &&
-        (resolvedTeamId == null || resolvedTeamId.isEmpty)) {
-      final match = await MatchService().getMatchById(trimmedEventId);
-      resolvedTeamId = match?.teamID?.trim();
-    }
-
-    if (!context.mounted) return;
+    final SessionFeelingScreenEventType? screenType = switch (typeKey) {
+      'match' => SessionFeelingScreenEventType.match,
+      'training' => SessionFeelingScreenEventType.training,
+      _ => null,
+    };
 
     appNavigatorKey.currentState?.push(
       analyticsMaterialRoute<void>(
@@ -549,7 +533,7 @@ class NotificationFCMService {
           eventId: trimmedEventId,
           playerId: resolvedPlayerId,
           eventType: screenType,
-          teamId: resolvedTeamId,
+          teamId: teamId?.trim(),
         ),
       ),
     );
