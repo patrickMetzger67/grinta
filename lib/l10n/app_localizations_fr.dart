@@ -5529,4 +5529,19 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get playerFeelingLoadError => 'Impossible de charger le bilan.';
+
+  @override
+  String get forgotPasswordTitle => 'Mot de passe oublié';
+
+  @override
+  String get forgotPasswordMessage => 'Saisissez l\'adresse email de votre compte. Nous vous enverrons un lien pour réinitialiser votre mot de passe.';
+
+  @override
+  String get forgotPasswordSendAction => 'Envoyer le lien';
+
+  @override
+  String get forgotPasswordSent => 'Un e-mail de réinitialisation a été envoyé.';
+
+  @override
+  String get forgotPasswordFailed => 'Impossible d\'envoyer l\'e-mail de réinitialisation.';
 }

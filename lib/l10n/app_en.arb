@@ -2211,5 +2211,10 @@
   "playerFeelingUpdateAction": "Update",
   "playerFeelingSaved": "Thanks, your feeling was saved.",
   "playerFeelingSaveError": "Unable to save your feeling.",
-  "playerFeelingLoadError": "Unable to load the recap."
+  "playerFeelingLoadError": "Unable to load the recap.",
+  "forgotPasswordTitle": "Forgotten password",
+  "forgotPasswordMessage": "Enter the email address for your account. We will send you a link to reset your password.",
+  "forgotPasswordSendAction": "Send link",
+  "forgotPasswordSent": "A password reset email has been sent.",
+  "forgotPasswordFailed": "Unable to send the password reset email."
 }

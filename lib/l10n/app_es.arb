@@ -1941,5 +1941,10 @@
   "playerFeelingUpdateAction": "Actualizar",
   "playerFeelingSaved": "Gracias, tu sensación se ha guardado.",
   "playerFeelingSaveError": "No se pudo guardar tu sensación.",
-  "playerFeelingLoadError": "No se pudo cargar el resumen."
+  "playerFeelingLoadError": "No se pudo cargar el resumen.",
+  "forgotPasswordTitle": "Contraseña olvidada",
+  "forgotPasswordMessage": "Introduce el correo de tu cuenta. Te enviaremos un enlace para restablecer tu contraseña.",
+  "forgotPasswordSendAction": "Enviar enlace",
+  "forgotPasswordSent": "Se ha enviado un correo para restablecer la contraseña.",
+  "forgotPasswordFailed": "No se pudo enviar el correo de restablecimiento."
 }

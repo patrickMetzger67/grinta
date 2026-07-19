@@ -1941,5 +1941,10 @@
   "playerFeelingUpdateAction": "Aggiorna",
   "playerFeelingSaved": "Grazie, la tua sensazione è stata salvata.",
   "playerFeelingSaveError": "Impossibile salvare la sensazione.",
-  "playerFeelingLoadError": "Impossibile caricare il riepilogo."
+  "playerFeelingLoadError": "Impossibile caricare il riepilogo.",
+  "forgotPasswordTitle": "Password dimenticata",
+  "forgotPasswordMessage": "Inserisci l'email del tuo account. Ti invieremo un link per reimpostare la password.",
+  "forgotPasswordSendAction": "Invia link",
+  "forgotPasswordSent": "È stata inviata un'email per reimpostare la password.",
+  "forgotPasswordFailed": "Impossibile inviare l'email di reimpostazione."
 }

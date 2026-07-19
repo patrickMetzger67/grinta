@@ -5459,4 +5459,19 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get playerFeelingLoadError => 'Unable to load the recap.';
+
+  @override
+  String get forgotPasswordTitle => 'Forgotten password';
+
+  @override
+  String get forgotPasswordMessage => 'Enter the email address for your account. We will send you a link to reset your password.';
+
+  @override
+  String get forgotPasswordSendAction => 'Send link';
+
+  @override
+  String get forgotPasswordSent => 'A password reset email has been sent.';
+
+  @override
+  String get forgotPasswordFailed => 'Unable to send the password reset email.';
 }

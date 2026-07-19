@@ -9507,6 +9507,21 @@ abstract class AppLocalizations {
 
   /// No description provided for @playerFeelingLoadError.
   String get playerFeelingLoadError;
+
+  /// No description provided for @forgotPasswordTitle.
+  String get forgotPasswordTitle;
+
+  /// No description provided for @forgotPasswordMessage.
+  String get forgotPasswordMessage;
+
+  /// No description provided for @forgotPasswordSendAction.
+  String get forgotPasswordSendAction;
+
+  /// No description provided for @forgotPasswordSent.
+  String get forgotPasswordSent;
+
+  /// No description provided for @forgotPasswordFailed.
+  String get forgotPasswordFailed;
 }
 
 class _AppLocalizationsDelegate

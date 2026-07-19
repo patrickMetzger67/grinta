@@ -5520,4 +5520,19 @@ class AppLocalizationsIt extends AppLocalizations {
 
   @override
   String get playerFeelingLoadError => 'Impossibile caricare il riepilogo.';
+
+  @override
+  String get forgotPasswordTitle => 'Password dimenticata';
+
+  @override
+  String get forgotPasswordMessage => 'Inserisci l\'email del tuo account. Ti invieremo un link per reimpostare la password.';
+
+  @override
+  String get forgotPasswordSendAction => 'Invia link';
+
+  @override
+  String get forgotPasswordSent => 'È stata inviata un\'email per reimpostare la password.';
+
+  @override
+  String get forgotPasswordFailed => 'Impossibile inviare l\'email di reimpostazione.';
 }

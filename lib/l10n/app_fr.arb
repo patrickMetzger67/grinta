@@ -2518,5 +2518,10 @@
   "playerFeelingUpdateAction": "Mettre à jour",
   "playerFeelingSaved": "Merci, ton ressenti a été enregistré.",
   "playerFeelingSaveError": "Impossible d'enregistrer ton ressenti.",
-  "playerFeelingLoadError": "Impossible de charger le bilan."
+  "playerFeelingLoadError": "Impossible de charger le bilan.",
+  "forgotPasswordTitle": "Mot de passe oublié",
+  "forgotPasswordMessage": "Saisissez l'adresse email de votre compte. Nous vous enverrons un lien pour réinitialiser votre mot de passe.",
+  "forgotPasswordSendAction": "Envoyer le lien",
+  "forgotPasswordSent": "Un e-mail de réinitialisation a été envoyé.",
+  "forgotPasswordFailed": "Impossible d'envoyer l'e-mail de réinitialisation."
 }

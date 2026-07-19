@@ -5532,4 +5532,19 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get playerFeelingLoadError => 'No se pudo cargar el resumen.';
+
+  @override
+  String get forgotPasswordTitle => 'Contraseña olvidada';
+
+  @override
+  String get forgotPasswordMessage => 'Introduce el correo de tu cuenta. Te enviaremos un enlace para restablecer tu contraseña.';
+
+  @override
+  String get forgotPasswordSendAction => 'Enviar enlace';
+
+  @override
+  String get forgotPasswordSent => 'Se ha enviado un correo para restablecer la contraseña.';
+
+  @override
+  String get forgotPasswordFailed => 'No se pudo enviar el correo de restablecimiento.';
 }

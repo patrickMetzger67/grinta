@@ -5543,4 +5543,19 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get playerFeelingLoadError => 'Recap konnte nicht geladen werden.';
+
+  @override
+  String get forgotPasswordTitle => 'Passwort vergessen';
+
+  @override
+  String get forgotPasswordMessage => 'Geben Sie die E-Mail-Adresse Ihres Kontos ein. Wir senden Ihnen einen Link zum Zurücksetzen Ihres Passworts.';
+
+  @override
+  String get forgotPasswordSendAction => 'Link senden';
+
+  @override
+  String get forgotPasswordSent => 'Eine E-Mail zum Zurücksetzen des Passworts wurde gesendet.';
+
+  @override
+  String get forgotPasswordFailed => 'Die E-Mail zum Zurücksetzen konnte nicht gesendet werden.';
 }
