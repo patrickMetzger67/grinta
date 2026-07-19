@@ -15,8 +15,8 @@ enum PasswordResetResult {
 /// verifies the Auth user, generates a reset link, and queues a Grinta-branded
 /// email via the `mail` collection.
 ///
-/// Fallback: Firebase Auth `sendPasswordResetEmail` when the callable is missing
-/// or returns a transport/internal error (common before the CF is deployed).
+/// Fallback: Firebase Auth `sendPasswordResetEmail` when the callable fails
+/// with a transport/internal error (missing deploy, unauthorized continue URL, …).
 class PasswordResetService {
   PasswordResetService({
     FirebaseFunctions? functions,
@@ -27,8 +27,6 @@ class PasswordResetService {
 
   final FirebaseFunctions _functions;
   final FirebaseAuth _auth;
-
-  static const String _continueUrl = 'https://grinta.io';
 
   Future<PasswordResetResult> sendResetEmail({
     required String email,
@@ -49,7 +47,7 @@ class PasswordResetService {
     } on FirebaseFunctionsException catch (e, st) {
       debugPrint(
         'PasswordResetService.sendResetEmail CF failed: '
-        'code=${e.code} message=${e.message}\n$st',
+        'code=${e.code} message=${e.message} details=${e.details}\n$st',
       );
 
       // Business errors from our CF — do not fall back.
@@ -60,7 +58,7 @@ class PasswordResetService {
         return PasswordResetResult.userNotFound;
       }
 
-      // Missing deploy / IAM / transport → Auth fallback so login is not blocked.
+      // link-failed / missing deploy / IAM / transport → Auth fallback.
       if (_shouldFallbackToAuth(e)) {
         return _sendViaFirebaseAuth(trimmed);
       }
@@ -77,13 +75,9 @@ class PasswordResetService {
       debugPrint(
         'PasswordResetService: falling back to FirebaseAuth.sendPasswordResetEmail',
       );
-      await _auth.sendPasswordResetEmail(
-        email: email,
-        actionCodeSettings: ActionCodeSettings(
-          url: _continueUrl,
-          handleCodeInApp: false,
-        ),
-      );
+      // No ActionCodeSettings: avoids unauthorized-continue-uri when
+      // https://grinta.io is not in Auth authorized domains.
+      await _auth.sendPasswordResetEmail(email: email);
       return PasswordResetResult.sent;
     } on FirebaseAuthException catch (e, st) {
       debugPrint(
@@ -104,6 +98,9 @@ class PasswordResetService {
   }
 
   static bool _shouldFallbackToAuth(FirebaseFunctionsException e) {
+    if (e.message == 'link-failed' || e.message == 'mail-queue-failed') {
+      return true;
+    }
     const fallbackCodes = <String>{
       'internal',
       'not-found',
