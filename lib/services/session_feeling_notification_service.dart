@@ -194,28 +194,59 @@ class SessionFeelingNotificationService {
       final Player playerForSend =
           await _playerService.getPlayerById(memberId) ?? player;
       final linkedUids = collectMemberLinkedUserIds(playerForSend);
-      if (linkedUids.isEmpty) continue;
+
+      // Always create an in-app notification (cloche), even without FCM tokens
+      // or linked accounts — the inbox queries by playerId.
+      if (linkedUids.isEmpty) {
+        await _notificationService.createNotification(
+          NotificationApp(
+            userId: '',
+            type: NotifType.RPEAfter,
+            sendBy: SendBy.notification,
+            title: pushTitle,
+            body: notificationBody,
+            objectId: eventId,
+            createdUserId: createdUserId,
+            clubId: clubId,
+            playerId: memberId,
+            dateTimeCreated: Timestamp.now(),
+          ),
+        );
+        notificationsCreated++;
+        debugPrint(
+          'SessionFeelingNotificationService: in-app only for '
+          'memberId=$memberId (no linked account / no FCM)',
+        );
+        continue;
+      }
 
       for (final uid in linkedUids) {
-        final notification = NotificationApp(
-          userId: uid,
-          type: NotifType.RPEAfter,
-          sendBy: SendBy.notification,
-          title: pushTitle,
-          body: notificationBody,
-          objectId: eventId,
-          createdUserId: createdUserId,
-          clubId: clubId,
-          playerId: memberId,
-          dateTimeCreated: Timestamp.now(),
+        await _notificationService.createNotification(
+          NotificationApp(
+            userId: uid,
+            type: NotifType.RPEAfter,
+            sendBy: SendBy.notification,
+            title: pushTitle,
+            body: notificationBody,
+            objectId: eventId,
+            createdUserId: createdUserId,
+            clubId: clubId,
+            playerId: memberId,
+            dateTimeCreated: Timestamp.now(),
+          ),
         );
-        await _notificationService.createNotification(notification);
         notificationsCreated++;
       }
 
       final tokens =
           await NotificationFCMService.fetchFcmTokensForUsers(linkedUids);
-      if (tokens.isEmpty) continue;
+      if (tokens.isEmpty) {
+        debugPrint(
+          'SessionFeelingNotificationService: in-app created, push skipped '
+          'memberId=$memberId (no fcmTokens)',
+        );
+        continue;
+      }
 
       final pushSent = await NotificationFCMService.instance.postNotification(
         tokens: tokens,
@@ -232,7 +263,14 @@ class SessionFeelingNotificationService {
         },
         clubId: clubId,
       );
-      if (pushSent) pushNotificationsSent++;
+      if (pushSent) {
+        pushNotificationsSent++;
+      } else {
+        debugPrint(
+          'SessionFeelingNotificationService: in-app created, push failed '
+          'memberId=$memberId',
+        );
+      }
     }
 
     debugPrint(
