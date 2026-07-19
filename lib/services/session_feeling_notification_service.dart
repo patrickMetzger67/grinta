@@ -12,6 +12,7 @@ import 'package:grinta/services/matchService.dart';
 import 'package:grinta/services/notificationService.dart';
 import 'package:grinta/services/notification_fcm_service.dart';
 import 'package:grinta/services/playerService.dart';
+import 'package:grinta/services/teamWorkloadSummaryService.dart';
 import 'package:grinta/services/trainingService.dart';
 import 'package:grinta/util/match_convocation_helper.dart';
 import 'package:grinta/util/match_goal_helper.dart';
@@ -27,7 +28,8 @@ bool _isTrainingFinished(Training training) {
   return training.isFinish == true || training.trainingEndAt != null;
 }
 
-/// Sends post-sync "Comment te sens-tu ?" notifications to present players.
+/// Sends post-sync "Comment te sens-tu ?" notifications to present players
+/// who have tracker data in [TeamWorkloadSummary.playerScores].
 class SessionFeelingNotificationService {
   SessionFeelingNotificationService({
     TrainingService? trainingService,
@@ -36,12 +38,15 @@ class SessionFeelingNotificationService {
     PlayerService? playerService,
     NotificationService? notificationService,
     EventSyncService? eventSyncService,
+    TeamWorkloadSummaryService? teamWorkloadSummaryService,
   })  : _trainingService = trainingService ?? TrainingService(),
         _matchService = matchService ?? MatchService(),
         _matchCompoService = matchCompoService ?? MatchCompoService(),
         _playerService = playerService ?? PlayerService(),
         _notificationService = notificationService ?? NotificationService(),
-        _eventSyncService = eventSyncService ?? EventSyncService();
+        _eventSyncService = eventSyncService ?? EventSyncService(),
+        _teamWorkloadSummaryService =
+            teamWorkloadSummaryService ?? TeamWorkloadSummaryService();
 
   final TrainingService _trainingService;
   final MatchService _matchService;
@@ -49,6 +54,7 @@ class SessionFeelingNotificationService {
   final PlayerService _playerService;
   final NotificationService _notificationService;
   final EventSyncService _eventSyncService;
+  final TeamWorkloadSummaryService _teamWorkloadSummaryService;
 
   /// Entry point after training finish and/or tracker sync.
   Future<void> maybeNotifyAfterTrainingSynced({
@@ -64,6 +70,24 @@ class SessionFeelingNotificationService {
         training.docId?.trim() ?? training.trainingId?.trim() ?? '';
     if (eventId.isEmpty) return;
 
+    final candidates = training.playerTraining
+        .where((pt) => _isPresentOrDefaultPresence(pt.presenceType))
+        .map((pt) => pt.playerId?.trim() ?? '')
+        .where((id) => id.isNotEmpty)
+        .toSet();
+
+    final playerIds = await _filterPlayerIdsWithTrackerData(
+      eventId: eventId,
+      candidates: candidates,
+    );
+    if (playerIds.isEmpty) {
+      debugPrint(
+        'SessionFeelingNotificationService: no tracker data for training '
+        '$eventId — skip (not claimed, can retry later)',
+      );
+      return;
+    }
+
     final claimed = await _eventSyncService.claimFeelingNotifSent(eventId);
     if (!claimed) {
       debugPrint(
@@ -71,13 +95,6 @@ class SessionFeelingNotificationService {
       );
       return;
     }
-
-    final playerIds = training.playerTraining
-        .where((pt) => _isPresentOrDefaultPresence(pt.presenceType))
-        .map((pt) => pt.playerId?.trim() ?? '')
-        .where((id) => id.isNotEmpty)
-        .toSet()
-        .toList();
 
     await _notifyPlayers(
       eventId: eventId,
@@ -102,14 +119,6 @@ class SessionFeelingNotificationService {
     final eventId = match.id?.trim() ?? match.ref?.id.trim() ?? '';
     if (eventId.isEmpty) return;
 
-    final claimed = await _eventSyncService.claimFeelingNotifSent(eventId);
-    if (!claimed) {
-      debugPrint(
-        'SessionFeelingNotificationService: already sent for match $eventId',
-      );
-      return;
-    }
-
     final teamId = match.teamID?.trim() ?? '';
     MatchCompo? compo;
     if (teamId.isNotEmpty) {
@@ -123,23 +132,65 @@ class SessionFeelingNotificationService {
       if (compos.isNotEmpty) compo = compos.first;
     }
 
-    final playerIds = <String>{};
+    final candidates = <String>{};
     if (compo != null) {
       for (final player in allPlayersFromCompo(compo)) {
         final id = player.playerID?.trim() ?? '';
-        if (id.isNotEmpty) playerIds.add(id);
+        if (id.isNotEmpty) candidates.add(id);
       }
+    }
+
+    final playerIds = await _filterPlayerIdsWithTrackerData(
+      eventId: eventId,
+      candidates: candidates,
+    );
+    if (playerIds.isEmpty) {
+      debugPrint(
+        'SessionFeelingNotificationService: no tracker data for match '
+        '$eventId — skip (not claimed, can retry later)',
+      );
+      return;
+    }
+
+    final claimed = await _eventSyncService.claimFeelingNotifSent(eventId);
+    if (!claimed) {
+      debugPrint(
+        'SessionFeelingNotificationService: already sent for match $eventId',
+      );
+      return;
     }
 
     await _notifyPlayers(
       eventId: eventId,
       eventType: SessionFeelingEventType.match,
-      playerIds: playerIds.toList(),
+      playerIds: playerIds,
       clubId: resolveMatchClubId(match),
       teamId: compo?.teamID ?? teamId,
       createdUserId: match.highLightsManagerUid,
       l10n: l10n,
     );
+  }
+
+  /// Keeps only candidates that appear in [TeamWorkloadSummary.playerScores].
+  Future<List<String>> _filterPlayerIdsWithTrackerData({
+    required String eventId,
+    required Set<String> candidates,
+  }) async {
+    if (candidates.isEmpty) return const [];
+
+    final summary =
+        await _teamWorkloadSummaryService.getByEventId(eventId);
+    if (summary == null || summary.playerScores.isEmpty) {
+      return const [];
+    }
+
+    final scoredIds = summary.playerScores
+        .map((score) => score.playerId.trim())
+        .where((id) => id.isNotEmpty)
+        .toSet();
+    if (scoredIds.isEmpty) return const [];
+
+    return candidates.where(scoredIds.contains).toList();
   }
 
   /// Convenience: reload training by id then notify if finished+synced.
