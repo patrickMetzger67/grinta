@@ -119,7 +119,8 @@ class MyAppState extends State<MyApp> {
   );
 
   ThemeMode _themeMode = ThemeMode.dark;
-  Locale? _locale;
+  /// French is the product default; users can still override via the language picker.
+  Locale _locale = const Locale('fr');
 
   void changeLocale(Locale locale) {
     setState(() {
@@ -135,29 +136,21 @@ class MyAppState extends State<MyApp> {
 
   bool get isDarkMode => _themeMode == ThemeMode.dark;
 
-  Locale? get _effectiveLocale => _locale;
-
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
       navigatorKey: appNavigatorKey,
-      key: ValueKey(_effectiveLocale?.languageCode ?? 'system'),
+      key: ValueKey(_locale.languageCode),
       debugShowCheckedModeBanner: false,
       onGenerateTitle: (context) => context.l10n.appName,
       theme: AppTheme.lightTheme,
       darkTheme: AppTheme.darkTheme,
       themeMode: _themeMode,
       navigatorObservers: [_analyticsObserver, appRouteObserver],
-      locale: _effectiveLocale,
+      locale: _locale,
       localeResolutionCallback: (deviceLocale, supportedLocales) {
-        if (_locale != null) {
-          return _locale!;
-        }
-        if (deviceLocale == null) {
-          return supportedLocales.first;
-        }
         for (final supported in supportedLocales) {
-          if (supported.languageCode == deviceLocale.languageCode) {
+          if (supported.languageCode == _locale.languageCode) {
             return supported;
           }
         }
@@ -167,13 +160,7 @@ class MyAppState extends State<MyApp> {
         AppLocalizations.delegate,
         ...GlobalStreamChatLocalizations.delegates,
       ],
-      supportedLocales: const [
-        Locale('fr'),
-        Locale('en'),
-        Locale('de'),
-        Locale('es'),
-        Locale('it'),
-      ],
+      supportedLocales: AppLocalizations.supportedLocales,
       builder: (context, child) {
         final brightness = Theme.of(context).brightness;
         final appColors = Theme.of(context).extension<AppColors>()!;
