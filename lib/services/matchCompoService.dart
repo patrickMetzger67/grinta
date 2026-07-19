@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:cloud_firestore/cloud_firestore.dart';
 
 import '../model/matchCompo.dart';
@@ -292,6 +294,115 @@ class MatchCompoService {
     final ids = normalizeTeamIdList(profileTeamIds);
     if (ids.isEmpty) return null;
     return ids.first;
+  }
+
+  /// Updates one player's feeling scores atomically (safe under concurrent edits).
+  ///
+  /// Finds [playerId] across starters and substitutes, then merges only the
+  /// affected role lists so concurrent edits to other players are preserved.
+  Future<void> updatePlayerFeeling({
+    required String matchId,
+    required String teamId,
+    required String playerId,
+    int? feelingBefore,
+    int? feelingAfter,
+  }) async {
+    final trimmedMatchId = matchId.trim();
+    final trimmedTeamId = teamId.trim();
+    final trimmedPlayerId = playerId.trim();
+    if (trimmedMatchId.isEmpty ||
+        trimmedTeamId.isEmpty ||
+        trimmedPlayerId.isEmpty) {
+      throw ArgumentError('matchId, teamId and playerId are required');
+    }
+    if (feelingBefore == null && feelingAfter == null) {
+      throw ArgumentError('feelingBefore or feelingAfter is required');
+    }
+
+    final lookupIds = <String>{trimmedPlayerId};
+    DocumentReference docRef =
+        docRefFor(matchId: trimmedMatchId, teamId: trimmedTeamId);
+    final canonical = await docRef.get();
+    if (!canonical.exists) {
+      final legacy = await _loadLegacyMatchCompo(
+        matchId: trimmedMatchId,
+        teamId: trimmedTeamId,
+      );
+      if (legacy?.ref == null) {
+        throw StateError(
+          'MatchCompo introuvable pour match=$trimmedMatchId team=$trimmedTeamId',
+        );
+      }
+      docRef = legacy!.ref!;
+    }
+
+    await _firestore
+        .runTransaction((transaction) async {
+      final snap = await transaction.get(docRef);
+      if (!snap.exists) {
+        throw StateError(
+          'MatchCompo introuvable pour match=$trimmedMatchId team=$trimmedTeamId',
+        );
+      }
+
+      final data = snap.data();
+      if (data is! Map) {
+        throw StateError(
+          'MatchCompo vide pour match=$trimmedMatchId team=$trimmedTeamId',
+        );
+      }
+      final map = Map<String, dynamic>.from(data);
+
+      final roleKeys = <String>[
+        keyMatchCompoGoalkeeper,
+        keyMatchCompoDefender,
+        keyMatchCompoMidfielder,
+        keyMatchCompoMidfielderAttacking,
+        keyMatchCompoMidfielderDefensive,
+        keyMatchCompoStrikcer,
+        keyMatchCompoSubstitute,
+      ];
+
+      var updated = false;
+      final payload = <String, dynamic>{
+        keyMatchCompoMatchId: trimmedMatchId,
+        keyMatchCompoTeamID: trimmedTeamId,
+      };
+
+      for (final roleKey in roleKeys) {
+        final raw = map[roleKey];
+        if (raw is! List) continue;
+        final list = raw
+            .map((e) => Map<String, dynamic>.from(e as Map))
+            .toList();
+        var listChanged = false;
+        for (final player in list) {
+          final id = (player[keyPlayerCompoPlayerId] ?? '').toString().trim();
+          if (!lookupIds.contains(id)) continue;
+          if (feelingBefore != null) {
+            player[keyPlayerCompoFeelingBefore] = feelingBefore;
+          }
+          if (feelingAfter != null) {
+            player[keyPlayerCompoFeelingAfter] = feelingAfter;
+          }
+          listChanged = true;
+          updated = true;
+        }
+        if (listChanged) {
+          payload[roleKey] = list;
+        }
+      }
+
+      if (!updated) {
+        throw StateError(
+          'Joueur $trimmedPlayerId introuvable dans MatchCompo '
+          'match=$trimmedMatchId team=$trimmedTeamId',
+        );
+      }
+
+      transaction.set(docRef, payload, SetOptions(merge: true));
+    })
+        .timeout(const Duration(seconds: 10));
   }
 
   /// Updates one player's convocation answer atomically (safe under concurrent edits).

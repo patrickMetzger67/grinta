@@ -95,6 +95,9 @@ class EventSync {
   /// `true` when every expected device for this event is fully synced.
   bool isFullySynced;
 
+  /// `true` after post-sync feeling notifications were sent for this event.
+  bool feelingNotifSent;
+
   Timestamp? syncStartAt;
   String? syncStartUid;
   Timestamp? syncEndAt;
@@ -105,6 +108,7 @@ class EventSync {
     this.docId,
     required this.eventId,
     this.isFullySynced = false,
+    this.feelingNotifSent = false,
     this.syncStartAt,
     this.syncStartUid,
     this.syncEndAt,
@@ -131,6 +135,7 @@ class EventSync {
           ? storedEventId
           : doc.id,
       isFullySynced: data['isFullySynced'] ?? false,
+      feelingNotifSent: data['feelingNotifSent'] ?? false,
       syncStartAt: data['syncStartAt'],
       syncStartUid: data['syncStartUid'],
       syncEndAt: data['syncEndAt'],
@@ -160,6 +165,7 @@ class EventSync {
           ? storedEventId
           : eventId,
       isFullySynced: map['isFullySynced'] ?? false,
+      feelingNotifSent: map['feelingNotifSent'] ?? false,
       syncStartAt: map['syncStartAt'],
       syncStartUid: map['syncStartUid'],
       syncEndAt: map['syncEndAt'],
@@ -172,6 +178,7 @@ class EventSync {
     return {
       'eventId': eventId,
       'isFullySynced': isFullySynced,
+      'feelingNotifSent': feelingNotifSent,
       'syncStartAt': syncStartAt,
       'syncStartUid': syncStartUid,
       'syncEndAt': syncEndAt,
@@ -184,6 +191,7 @@ class EventSync {
     String? docId,
     String? eventId,
     bool? isFullySynced,
+    bool? feelingNotifSent,
     Timestamp? syncStartAt,
     String? syncStartUid,
     Timestamp? syncEndAt,
@@ -194,6 +202,7 @@ class EventSync {
       docId: docId ?? this.docId,
       eventId: eventId ?? this.eventId,
       isFullySynced: isFullySynced ?? this.isFullySynced,
+      feelingNotifSent: feelingNotifSent ?? this.feelingNotifSent,
       syncStartAt: syncStartAt ?? this.syncStartAt,
       syncStartUid: syncStartUid ?? this.syncStartUid,
       syncEndAt: syncEndAt ?? this.syncEndAt,

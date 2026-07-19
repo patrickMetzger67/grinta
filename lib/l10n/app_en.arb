@@ -2201,5 +2201,20 @@
   "promoCodeRedeemExhausted": "This promo code has reached its usage limit.",
   "promoCodeRedeemTeamMismatch": "This promo code is reserved for another club.",
   "promoCodeRedeemUnauthenticated": "You must be signed in to redeem a promo code.",
-  "promoCodeRedeemFailed": "Unable to redeem promo code."
+  "promoCodeRedeemFailed": "Unable to redeem promo code.",
+  "playerFeelingPrompt": "How do you feel?",
+  "playerFeelingNotifTitle": "Session recap",
+  "playerFeelingNotifBody": "Check your stats and tell us how you feel.",
+  "playerFeelingRecapTitle": "Your recap",
+  "playerFeelingRecapSubtitle": "Your session data",
+  "playerFeelingSubmitAction": "Submit",
+  "playerFeelingUpdateAction": "Update",
+  "playerFeelingSaved": "Thanks, your feeling was saved.",
+  "playerFeelingSaveError": "Unable to save your feeling.",
+  "playerFeelingLoadError": "Unable to load the recap.",
+  "forgotPasswordTitle": "Forgotten password",
+  "forgotPasswordMessage": "Enter the email address for your account. We will send you a link to reset your password.",
+  "forgotPasswordSendAction": "Send link",
+  "forgotPasswordSent": "A password reset email has been sent.",
+  "forgotPasswordFailed": "Unable to send the password reset email."
 }

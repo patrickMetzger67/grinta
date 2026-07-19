@@ -1931,5 +1931,20 @@
   "promoCodeRedeemExhausted": "Este código promo ha alcanzado su límite de uso.",
   "promoCodeRedeemTeamMismatch": "Este código promo está reservado a otro club.",
   "promoCodeRedeemUnauthenticated": "Debes iniciar sesión para canjear un código promo.",
-  "promoCodeRedeemFailed": "No se pudo canjear el código promo."
+  "promoCodeRedeemFailed": "No se pudo canjear el código promo.",
+  "playerFeelingPrompt": "¿Cómo te sientes?",
+  "playerFeelingNotifTitle": "Resumen de sesión",
+  "playerFeelingNotifBody": "Mira tus estadísticas y dinos cómo te sientes.",
+  "playerFeelingRecapTitle": "Tu resumen",
+  "playerFeelingRecapSubtitle": "Tus datos de sesión",
+  "playerFeelingSubmitAction": "Enviar",
+  "playerFeelingUpdateAction": "Actualizar",
+  "playerFeelingSaved": "Gracias, tu sensación se ha guardado.",
+  "playerFeelingSaveError": "No se pudo guardar tu sensación.",
+  "playerFeelingLoadError": "No se pudo cargar el resumen.",
+  "forgotPasswordTitle": "Contraseña olvidada",
+  "forgotPasswordMessage": "Introduce el correo de tu cuenta. Te enviaremos un enlace para restablecer tu contraseña.",
+  "forgotPasswordSendAction": "Enviar enlace",
+  "forgotPasswordSent": "Se ha enviado un correo para restablecer la contraseña.",
+  "forgotPasswordFailed": "No se pudo enviar el correo de restablecimiento."
 }

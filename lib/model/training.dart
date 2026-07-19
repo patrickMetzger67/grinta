@@ -1,5 +1,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 
+import 'player_feeling.dart';
+export 'player_feeling.dart';
 
 class TrainingGroup {
   final String id;
@@ -165,6 +167,8 @@ String keyPtRpeBefore = 'rpeBefore';
 String keyPtMessageBefore = 'messageBefore';
 String keyPtRpeAfter = 'rpeAfter';
 String keyPtMessageAfter = 'messageAfter';
+String keyPtFeelingBefore = 'feelingBefore';
+String keyPtFeelingAfter = 'feelingAfter';
 String keyPtVolume = 'volume';
 String keyPtIntensity = 'intensity';
 String keyPtMentalLoad = 'mentalLoad';
@@ -182,6 +186,12 @@ class PlayerTraining {
   int? rpeAfter;
   String? messageAfter;
 
+  /// Feeling scale 1–5 ("Comment te sens-tu ?"), before session.
+  int? feelingBefore;
+
+  /// Feeling scale 1–5 ("Comment te sens-tu ?"), after session.
+  int? feelingAfter;
+
   // VICP
   int? volume;
   int? intensity;
@@ -192,6 +202,9 @@ class PlayerTraining {
   String? customName;
 
   PlayerTraining({this.playerId, this.presenceType});
+
+  PlayerFeeling? get feelingBeforeEnum => PlayerFeeling.fromValue(feelingBefore);
+  PlayerFeeling? get feelingAfterEnum => PlayerFeeling.fromValue(feelingAfter);
 
   PlayerTraining.fromMap(Map<String, dynamic> map) {
     switch (map[keyPtPresenceType]) {
@@ -236,6 +249,17 @@ class PlayerTraining {
       messageAfter = '';
     }
 
+    if(map[keyPtFeelingBefore] != null) {
+      feelingBefore = map[keyPtFeelingBefore];
+    } else {
+      feelingBefore = 0;
+    }
+    if(map[keyPtFeelingAfter] != null) {
+      feelingAfter = map[keyPtFeelingAfter];
+    } else {
+      feelingAfter = 0;
+    }
+
     if(map[keyPtVolume] != null) {
       volume = map[keyPtVolume];
     } else {
@@ -271,6 +295,8 @@ class PlayerTraining {
       keyPtRpeAfter: rpeAfter,
       keyPtMessageBefore: messageBefore,
       keyPtMessageAfter: messageAfter,
+      keyPtFeelingBefore: feelingBefore,
+      keyPtFeelingAfter: feelingAfter,
       keyPtVolume:volume,
       keyPtIntensity:intensity,
       keyPtMentalLoad:mentalLoad,
@@ -291,6 +317,8 @@ class PlayerTraining {
         'messageBefore=$messageBefore ' +
         'rpeAfter:${rpeAfter.toString()} ' +
         'messageAfter=$messageAfter ' +
+        'feelingBefore:${feelingBefore.toString()} ' +
+        'feelingAfter:${feelingAfter.toString()} ' +
         'volume=$volume ' +
         'intensity=$intensity ' +
         'mentalLoad=$mentalLoad ' +

@@ -16,6 +16,7 @@ import 'package:grinta/services/deviceService.dart';
 import 'package:grinta/services/event_sync_service.dart';
 import 'package:grinta/services/highlightsService.dart';
 import 'package:grinta/services/matchService.dart';
+import 'package:grinta/services/session_feeling_notification_service.dart';
 import 'package:grinta/services/trainingService.dart';
 
 import '../../model/player.dart';
@@ -416,6 +417,14 @@ class _TrackerHubPageState extends State<TrackerHubPage> {
         if (match != null) {
           match.isTrackerDataUploaded = true;
           await MatchService().updateMatch(match);
+          if (mounted) {
+            unawaited(
+              SessionFeelingNotificationService().maybeNotifyAfterMatchSynced(
+                match: match,
+                l10n: context.l10n,
+              ),
+            );
+          }
         }
       } else {
         final training =
@@ -423,6 +432,15 @@ class _TrackerHubPageState extends State<TrackerHubPage> {
         if (training != null) {
           training.isTrackerDataUploaded = true;
           await TrainingService().updateTraining(training);
+          if (mounted) {
+            unawaited(
+              SessionFeelingNotificationService()
+                  .maybeNotifyAfterTrainingSynced(
+                training: training,
+                l10n: context.l10n,
+              ),
+            );
+          }
         }
       }
     }

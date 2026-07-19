@@ -26,6 +26,7 @@ const {
   createFitbitDisconnect,
 } = require('./fitbit_oauth');
 const { createSendMailOnCreate } = require('./send_mail');
+const { createSendPasswordResetMail } = require('./password_reset');
 
 initializeApp();
 
@@ -664,3 +665,4 @@ exports.fitbitDisconnect = createFitbitDisconnect();
  *   firebase deploy --only functions:sendMailOnCreate
  */
 exports.sendMailOnCreate = createSendMailOnCreate();
+exports.sendPasswordResetMail = createSendPasswordResetMail();

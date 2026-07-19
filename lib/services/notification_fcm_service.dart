@@ -22,6 +22,7 @@ import 'package:grinta/model/match.dart' as models;
 import 'package:grinta/navigation/app_navigator.dart';
 import 'package:grinta/provider/appSession.dart';
 import 'package:grinta/screen/match_detail_screen.dart';
+import 'package:grinta/screen/session_player_feeling_screen.dart';
 import 'package:grinta/screen/teamDetailScreen.dart';
 import 'package:grinta/services/matchService.dart';
 import 'package:grinta/services/teamService.dart';
@@ -394,12 +395,20 @@ class NotificationFCMService {
           break;
 
         case 'RPEBefore':
-        case 'RPEAfter':
-          // TODO: RPE survey screen when available in Grinta.
           debugPrint(
-            '[FCM navigation] RPE notification stub (trainingId=$id, type=$type)',
+            '[FCM navigation] RPEBefore stub (eventId=$id)',
           );
           _navigateToShellTab(context, FeatureDiscoveryIds.tabAgenda);
+          break;
+
+        case 'RPEAfter':
+          await _openSessionFeelingRecap(
+            context,
+            eventId: id,
+            eventType: data['eventType']?.toString(),
+            playerId: data['playerId']?.toString(),
+            teamId: data['teamId']?.toString(),
+          );
           break;
 
         case 'event':
@@ -463,6 +472,70 @@ class NotificationFCMService {
       return;
     }
     debugPrint('[FCM navigation] shell tab $featureId unavailable');
+  }
+
+  /// Opens the session feeling recap from an in-app notification tap.
+  static Future<void> openSessionFeelingFromNotification({
+    required String eventId,
+    String? playerId,
+    String? eventType,
+    String? teamId,
+  }) async {
+    final context = appNavigatorKey.currentContext;
+    if (context == null) return;
+    await _openSessionFeelingRecap(
+      context,
+      eventId: eventId,
+      eventType: eventType,
+      playerId: playerId,
+      teamId: teamId,
+    );
+  }
+
+  static Future<void> _openSessionFeelingRecap(
+    BuildContext context, {
+    required String? eventId,
+    String? eventType,
+    String? playerId,
+    String? teamId,
+  }) async {
+    final trimmedEventId = eventId?.trim() ?? '';
+    if (trimmedEventId.isEmpty) {
+      debugPrint('[FCM navigation] missing feeling event id');
+      return;
+    }
+
+    final appSession = context.read<AppSession>();
+    final resolvedPlayerId =
+        (playerId?.trim().isNotEmpty == true)
+            ? playerId!.trim()
+            : (appSession.selectedPlayerId?.trim() ?? '');
+    if (resolvedPlayerId.isEmpty) {
+      debugPrint('[FCM navigation] missing feeling player id');
+      _navigateToShellTab(context, FeatureDiscoveryIds.tabAgenda);
+      return;
+    }
+
+    // Open immediately — type/team resolution happens inside the screen.
+    final typeKey = (eventType ?? '').trim().toLowerCase();
+    final SessionFeelingScreenEventType? screenType = switch (typeKey) {
+      'match' => SessionFeelingScreenEventType.match,
+      'training' => SessionFeelingScreenEventType.training,
+      _ => null,
+    };
+
+    appNavigatorKey.currentState?.push(
+      analyticsMaterialRoute<void>(
+        screenName: AnalyticsScreenNames.sessionPlayerFeeling,
+        fullscreenDialog: true,
+        builder: (_) => SessionPlayerFeelingScreen(
+          eventId: trimmedEventId,
+          playerId: resolvedPlayerId,
+          eventType: screenType,
+          teamId: teamId?.trim(),
+        ),
+      ),
+    );
   }
 
   static Future<void> _openMatchDetail(

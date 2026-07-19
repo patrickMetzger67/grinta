@@ -5490,4 +5490,49 @@ class AppLocalizationsIt extends AppLocalizations {
 
   @override
   String get promoCodeRedeemFailed => 'Impossibile riscattare il codice promo.';
+
+  @override
+  String get playerFeelingPrompt => 'Come ti senti?';
+
+  @override
+  String get playerFeelingNotifTitle => 'Riepilogo sessione';
+
+  @override
+  String get playerFeelingNotifBody => 'Guarda le tue stats e dicci come ti senti.';
+
+  @override
+  String get playerFeelingRecapTitle => 'Il tuo riepilogo';
+
+  @override
+  String get playerFeelingRecapSubtitle => 'I tuoi dati di sessione';
+
+  @override
+  String get playerFeelingSubmitAction => 'Invia';
+
+  @override
+  String get playerFeelingUpdateAction => 'Aggiorna';
+
+  @override
+  String get playerFeelingSaved => 'Grazie, la tua sensazione è stata salvata.';
+
+  @override
+  String get playerFeelingSaveError => 'Impossibile salvare la sensazione.';
+
+  @override
+  String get playerFeelingLoadError => 'Impossibile caricare il riepilogo.';
+
+  @override
+  String get forgotPasswordTitle => 'Password dimenticata';
+
+  @override
+  String get forgotPasswordMessage => 'Inserisci l\'email del tuo account. Ti invieremo un link per reimpostare la password.';
+
+  @override
+  String get forgotPasswordSendAction => 'Invia link';
+
+  @override
+  String get forgotPasswordSent => 'È stata inviata un\'email per reimpostare la password.';
+
+  @override
+  String get forgotPasswordFailed => 'Impossibile inviare l\'email di reimpostazione.';
 }

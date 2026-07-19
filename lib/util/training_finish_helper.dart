@@ -1,9 +1,12 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:grinta/core/extensions/l10n_extension.dart';
+import 'package:grinta/l10n/app_localizations.dart';
 import 'package:grinta/navigation/app_navigator.dart';
 import 'package:grinta/services/ownerService.dart';
 import 'package:grinta/services/playerService.dart';
+import 'package:grinta/services/session_feeling_notification_service.dart';
 import 'package:grinta/services/teamWorkloadSummaryService.dart';
 import 'package:grinta/services/trackerDataAnalysisService.dart';
 import 'package:grinta/services/trainingService.dart';
@@ -54,11 +57,30 @@ Future<void> computeTeamWorkloadSummaryForEvent({
   );
 }
 
-/// Placeholder for post-finish processing (notifications, stats, etc.).
+/// Post-finish processing (feeling notifications when sync is already done).
 Future<void> onTrainingFinishedProcessing({
   required Training training,
+  AppLocalizations? l10n,
 }) async {
-  // Reserved for future post-finish hooks (notifications, etc.).
+  final resolvedL10n = l10n ??
+      (appNavigatorKey.currentContext != null
+          ? AppLocalizations.of(appNavigatorKey.currentContext!)
+          : null);
+  if (resolvedL10n == null) {
+    debugPrint(
+      'onTrainingFinishedProcessing: missing l10n, skip feeling notifications',
+    );
+    return;
+  }
+
+  try {
+    await SessionFeelingNotificationService().maybeNotifyAfterTrainingSynced(
+      training: training,
+      l10n: resolvedL10n,
+    );
+  } catch (e, st) {
+    debugPrint('onTrainingFinishedProcessing feeling notif failed: $e\n$st');
+  }
 }
 
 /// Marks players still listed as present (or unset) as absent when they are
@@ -154,6 +176,9 @@ Future<void> finishTrainingAfterConfirm({
   fresh.isFinish = true;
   fresh.trainingEndAt = Timestamp.now();
   fresh.playerTraining = updatedPlayerTraining;
+  if (trackerDataUploaded == true) {
+    fresh.isTrackerDataUploaded = true;
+  }
   await onTrainingFinishedProcessing(training: fresh);
 }
 

@@ -1,6 +1,10 @@
+import 'dart:async';
+
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/foundation.dart';
+import '../model/player.dart';
 import '../model/training.dart';
+import 'playerService.dart';
 import 'teamWorkloadSummaryService.dart';
 
 class TrainingService {
@@ -576,6 +580,81 @@ class TrainingService {
     } catch (e) {
       rethrow;
     }
+  }
+
+  /// Updates one player's feeling scores atomically (safe under concurrent edits).
+  Future<void> updatePlayerFeeling({
+    required String trainingId,
+    required String playerId,
+    int? feelingBefore,
+    int? feelingAfter,
+  }) async {
+    final trimmedTrainingId = trainingId.trim();
+    final trimmedPlayerId = playerId.trim();
+    if (trimmedTrainingId.isEmpty || trimmedPlayerId.isEmpty) {
+      throw ArgumentError('trainingId and playerId are required');
+    }
+    if (feelingBefore == null && feelingAfter == null) {
+      throw ArgumentError('feelingBefore or feelingAfter is required');
+    }
+
+    // Resolve aliases (keyMember / doc id) once, outside the transaction.
+    final Player? linkedPlayer = await PlayerService().getPlayerById(
+      trimmedPlayerId,
+    );
+    final lookupIds = <String>{trimmedPlayerId};
+    if (linkedPlayer != null) {
+      final memberId = linkedPlayer.keyMember?.trim();
+      if (memberId != null && memberId.isNotEmpty) lookupIds.add(memberId);
+      final docId = linkedPlayer.ref?.id.trim();
+      if (docId != null && docId.isNotEmpty) lookupIds.add(docId);
+    }
+
+    final docRef = _collection.doc(trimmedTrainingId);
+    await _firestore
+        .runTransaction((transaction) async {
+      final snap = await transaction.get(docRef);
+      if (!snap.exists) {
+        throw StateError('Training introuvable: $trimmedTrainingId');
+      }
+
+      final data = snap.data();
+      if (data == null) {
+        throw StateError('Training vide: $trimmedTrainingId');
+      }
+
+      final rawList = data[keyTgPlayerTraining];
+      if (rawList is! List) {
+        throw StateError(
+          'playerTraining invalide pour training $trimmedTrainingId',
+        );
+      }
+
+      final players = rawList
+          .map((e) => Map<String, dynamic>.from(e as Map))
+          .toList();
+      final index = players.indexWhere((map) {
+        final id = (map[keyPtPlayerId] ?? '').toString().trim();
+        return id.isNotEmpty && lookupIds.contains(id);
+      });
+      if (index < 0) {
+        throw StateError(
+          'Joueur $trimmedPlayerId introuvable dans training $trimmedTrainingId',
+        );
+      }
+
+      if (feelingBefore != null) {
+        players[index][keyPtFeelingBefore] = feelingBefore;
+      }
+      if (feelingAfter != null) {
+        players[index][keyPtFeelingAfter] = feelingAfter;
+      }
+
+      transaction.update(docRef, {
+        keyTgPlayerTraining: players,
+      });
+    })
+        .timeout(const Duration(seconds: 10));
   }
 
   /// REMOVE ONE PLAYER TRAINING

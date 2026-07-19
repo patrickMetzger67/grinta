@@ -26,6 +26,7 @@ import 'services/social_onboarding_coordinator.dart';
 import 'services/social_auth_service.dart';
 import 'widget/app_language_dropdown.dart';
 import 'widget/app_logo.dart';
+import 'widget/forgot_password_dialog.dart';
 import 'widget/signup_invitation_onboarding.dart';
 import 'widget/legal_links_footer.dart';
 import 'widget/social_auth_button.dart';
@@ -872,12 +873,19 @@ class _LoginScreenState extends State<LoginScreen> {
           onSignIn: _submitWithCredentials,
           onSignUp: _signUpWithCredentials,
           onSocialSignIn: _signInWithSocial,
-          onForgotPassword: () {
-            // TODO: forgot password
-          },
+          onForgotPassword: () => _onForgotPassword(sheetContext),
         );
       },
     ).whenComplete(coordinator.unregisterLoginSheetCloser);
+  }
+
+  Future<void> _onForgotPassword([BuildContext? dialogContext]) async {
+    final ctx = dialogContext ?? context;
+    if (!ctx.mounted) return;
+    await showForgotPasswordDialog(
+      ctx,
+      initialEmail: _emailCtrl.text,
+    );
   }
 
   @override
@@ -904,7 +912,7 @@ class _LoginScreenState extends State<LoginScreen> {
           password,
         ),
         onSocialSignIn: _signInWithSocial,
-        onForgotPassword: () {},
+        onForgotPassword: () => _onForgotPassword(),
         onPreviousPage: () => _goPreviousPage(items.length),
         onNextPage: () => _goNextPage(items.length),
       );

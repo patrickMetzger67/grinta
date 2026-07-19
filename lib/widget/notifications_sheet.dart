@@ -14,6 +14,7 @@ import 'package:grinta/services/matchService.dart';
 import 'package:grinta/services/match_convocation_service.dart';
 import 'package:grinta/services/internal_notification_navigation.dart';
 import 'package:grinta/services/notificationService.dart';
+import 'package:grinta/services/notification_fcm_service.dart';
 import 'package:grinta/util/app_theme.dart';
 import 'package:grinta/widget/settings_menu_style.dart';
 import 'package:grinta/util/match_compo_pitch_mapper.dart';
@@ -450,6 +451,9 @@ class _NotificationListTileState extends State<_NotificationListTile> {
       widget.notification.type == NotifType.trainingReminder ||
       widget.notification.type == NotifType.matchOpponentStatsReminder;
 
+  bool get _isTappableFeeling =>
+      widget.notification.type == NotifType.RPEAfter;
+
   Future<void> _openReminderTarget() async {
     if (_isConvocationActionInProgress) return;
 
@@ -472,6 +476,26 @@ class _NotificationListTileState extends State<_NotificationListTile> {
         if (widget.notification.playerId != null)
           'playerId': widget.notification.playerId,
       });
+      await _markAsRead();
+    } finally {
+      if (mounted) {
+        setState(() => _isConvocationActionInProgress = false);
+      }
+    }
+  }
+
+  Future<void> _openFeelingRecap() async {
+    if (_isConvocationActionInProgress) return;
+
+    final objectId = widget.notification.objectId?.trim() ?? '';
+    if (objectId.isEmpty) return;
+
+    setState(() => _isConvocationActionInProgress = true);
+    try {
+      await NotificationFCMService.openSessionFeelingFromNotification(
+        eventId: objectId,
+        playerId: widget.notification.playerId,
+      );
       await _markAsRead();
     } finally {
       if (mounted) {
@@ -700,7 +724,9 @@ class _NotificationListTileState extends State<_NotificationListTile> {
       borderRadius: BorderRadius.circular(16),
       child: InkWell(
         borderRadius: BorderRadius.circular(16),
-        onTap: _isTappableReminder ? _openReminderTarget : null,
+        onTap: _isTappableFeeling
+            ? _openFeelingRecap
+            : (_isTappableReminder ? _openReminderTarget : null),
         child: Container(
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
