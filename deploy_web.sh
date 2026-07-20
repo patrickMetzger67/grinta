@@ -23,8 +23,17 @@ flutter clean
 echo "Récupération des dépendances..."
 flutter pub get
 
+DEFINE_ARGS=()
+if [ -f "dart_defines.json" ]; then
+  echo "Build avec dart_defines.json (clés RevenueCat Web Billing / Stripe)..."
+  DEFINE_ARGS=(--dart-define-from-file=dart_defines.json)
+else
+  echo "Attention : dart_defines.json absent — Web Billing (rcb_*) et autres secrets seront vides."
+  echo "Copiez dart_defines.example.json → dart_defines.json avant un deploy prod avec abonnements."
+fi
+
 echo "Build Flutter Web sans service worker..."
-flutter build web --release --pwa-strategy=none
+flutter build web --release --pwa-strategy=none "${DEFINE_ARGS[@]}"
 
 if [ ! -f "$INDEX_FILE" ]; then
   echo "Erreur : fichier $INDEX_FILE introuvable."
