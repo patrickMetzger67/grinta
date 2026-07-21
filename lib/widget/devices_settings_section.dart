@@ -116,8 +116,6 @@ class _DevicesSettingsSectionState extends State<DevicesSettingsSection> {
                             style: settingsMenuTitleStyle(context),
                           ),
                         ),
-                        CountBadgeLabel(count: connectedCount),
-                        const SizedBox(width: 8),
                         Icon(
                           Icons.chevron_right_rounded,
                           color: colors.textSecondary,

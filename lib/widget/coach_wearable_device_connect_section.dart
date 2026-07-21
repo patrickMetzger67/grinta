@@ -106,7 +106,6 @@ class _CoachWearableDeviceConnectSectionState
                                 ),
                           ),
                         ),
-                        CountBadgeLabel(count: connectedCount),
                         Icon(
                           Icons.chevron_right_rounded,
                           color: colors.textSecondary,
