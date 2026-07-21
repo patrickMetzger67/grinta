@@ -43,9 +43,18 @@ https://europe-west1-aserstein-2453e.cloudfunctions.net/whoopWebhook
 
 (Not deployed in Phase 1.)
 
-## 4. Firebase secrets
+## 4. Firebase secrets (required — not `dart_defines.json`)
 
-From the project root:
+Whoop OAuth runs in **Cloud Functions**. Credentials must be stored as
+Firebase secrets, **not** in `dart_defines.json`.
+
+From the project root, either:
+
+```bash
+./scripts/set_whoop_firebase_secrets.sh
+```
+
+or manually:
 
 ```bash
 firebase functions:secrets:set WHOOP_CLIENT_ID
