@@ -66,14 +66,15 @@ Use the Client ID and Client Secret from the Whoop developer dashboard.
 
 ```bash
 cd functions && npm install && cd ..
-firebase deploy --only functions:whoopOAuthStart,functions:whoopOAuthCallback,functions:whoopDisconnect
+firebase deploy --only functions:whoopOAuthStart,functions:whoopOAuthCallback,functions:whoopDisconnect,functions:whoopRepairPlayerSync
 firebase deploy --only firestore:rules
 ```
 
 > **Web:** OAuth opens in the **same browser tab** and returns to the app origin.
-> Sync docs are stored under the member owner uid (`userID` / `users[]` /
-> `creatorUserId`). Family accounts linked on the member can read/write those
-> docs via Firestore rules — redeploy rules after pulling.
+> **Player profiles:** Whoop sync metadata is stored under the **signed-in**
+> Firebase uid (`users/{authUid}/whoopSync/{playerId}`) so the settings badge
+> updates immediately. Opening Appareils/Applications also runs
+> `whoopRepairPlayerSync` to migrate any legacy doc left under `member.userID`.
 
 ## 6. Test connect / disconnect
 

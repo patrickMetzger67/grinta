@@ -4,16 +4,16 @@ import 'package:grinta/core/extensions/l10n_extension.dart';
 import 'package:grinta/model/player.dart';
 import 'package:grinta/provider/appSession.dart';
 import 'package:grinta/services/wearable_devices_repository.dart';
+import 'package:grinta/services/whoop_sync_service.dart';
 import 'package:grinta/util/app_theme.dart';
 import 'package:grinta/util/player_photo_resolver.dart';
-import 'package:grinta/util/wearable_sync_owner.dart';
 import 'package:grinta/widget/nav_icon_count_badge.dart';
 import 'package:grinta/widget/settings_menu_style.dart';
 import 'package:grinta/widget/wearable_devices_dialog.dart';
 import 'package:provider/provider.dart';
 
 /// Settings row that opens the wearable devices dialog.
-class DevicesSettingsSection extends StatelessWidget {
+class DevicesSettingsSection extends StatefulWidget {
   const DevicesSettingsSection({
     super.key,
     this.contentPadding = const EdgeInsets.symmetric(horizontal: 16),
@@ -22,6 +22,22 @@ class DevicesSettingsSection extends StatelessWidget {
 
   final EdgeInsetsGeometry contentPadding;
   final bool webCardStyle;
+
+  @override
+  State<DevicesSettingsSection> createState() => _DevicesSettingsSectionState();
+}
+
+class _DevicesSettingsSectionState extends State<DevicesSettingsSection> {
+  final WearableDevicesRepository _repository = WearableDevicesRepository();
+  String? _repairedPlayerId;
+
+  Future<void> _repairIfNeeded(String playerId) async {
+    if (_repairedPlayerId == playerId) return;
+    _repairedPlayerId = playerId;
+    // Legacy Whoop docs may live under member.userID; move onto auth uid.
+    await WhoopSyncService.instance.repairPlayerSync(playerId: playerId);
+    if (mounted) setState(() {});
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -40,11 +56,12 @@ class DevicesSettingsSection extends StatelessWidget {
       return const SizedBox.shrink();
     }
 
-    final syncOwnerUid = resolveWearableSyncOwnerUid(
-      callerUid: uid,
-      player: player,
-    );
-    final repository = WearableDevicesRepository();
+    // Player settings always watch the signed-in account (OAuth stores here).
+    if (_repairedPlayerId != playerId) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        _repairIfNeeded(playerId);
+      });
+    }
 
     void openDialog() {
       showWearableDevicesDialog(
@@ -56,12 +73,12 @@ class DevicesSettingsSection extends StatelessWidget {
     }
 
     return StreamBuilder<int>(
-      stream: repository.watchConnectedCount(syncOwnerUid, playerId),
+      stream: _repository.watchConnectedCount(uid, playerId),
       builder: (context, snapshot) {
         final connectedCount = snapshot.data ?? 0;
         final badgeLabel = l10n.settingsDevicesBadgeLabel(connectedCount);
 
-        if (webCardStyle) {
+        if (widget.webCardStyle) {
           return Padding(
             padding: const EdgeInsets.fromLTRB(12, 0, 12, 12),
             child: Semantics(
@@ -119,7 +136,7 @@ class DevicesSettingsSection extends StatelessWidget {
           button: true,
           label: badgeLabel,
           child: ListTile(
-            contentPadding: contentPadding,
+            contentPadding: widget.contentPadding,
             leading: NavIconCountBadge(
               icon: Icons.watch_outlined,
               count: connectedCount,

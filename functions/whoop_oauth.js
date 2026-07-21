@@ -132,6 +132,92 @@ async function coachCanManagePlayer(db, coachUid, playerId) {
   return false;
 }
 
+/**
+ * Player-initiated connects are stored under the signed-in Firebase uid so the
+ * Appareils/Applications badge (users/{authUid}/whoopSync/{playerId}) can read
+ * them. Legacy docs may live under member.userID — migrate those to callerUid.
+ */
+async function migrateWhoopDocsToCaller(db, legacyOwnerUid, callerUid, playerId) {
+  if (!legacyOwnerUid || legacyOwnerUid === callerUid || !playerId) {
+    return false;
+  }
+
+  const legacyIntegrationRef = db
+    .collection(INTEGRATIONS_COLLECTION)
+    .doc(integrationDocId(legacyOwnerUid, playerId));
+  const callerIntegrationRef = db
+    .collection(INTEGRATIONS_COLLECTION)
+    .doc(integrationDocId(callerUid, playerId));
+  const legacySyncRef = db
+    .collection('users')
+    .doc(legacyOwnerUid)
+    .collection('whoopSync')
+    .doc(playerId);
+  const callerSyncRef = db
+    .collection('users')
+    .doc(callerUid)
+    .collection('whoopSync')
+    .doc(playerId);
+
+  const [legacyIntegration, callerIntegration, legacySync, callerSync] =
+    await Promise.all([
+      legacyIntegrationRef.get(),
+      callerIntegrationRef.get(),
+      legacySyncRef.get(),
+      callerSyncRef.get(),
+    ]);
+
+  let migrated = false;
+  const legacyConnected =
+    legacyIntegration.exists &&
+    (legacyIntegration.data()?.status ?? '') === 'connected';
+  const callerConnected =
+    callerIntegration.exists &&
+    (callerIntegration.data()?.status ?? '') === 'connected';
+
+  if (legacyConnected && !callerConnected) {
+    const data = legacyIntegration.data() ?? {};
+    await callerIntegrationRef.set(
+      {
+        ...data,
+        uid: callerUid,
+        playerId,
+        migratedFrom: legacyOwnerUid,
+        updatedAt: FieldValue.serverTimestamp(),
+      },
+      { merge: true },
+    );
+    migrated = true;
+  }
+
+  const legacySyncConnected =
+    legacySync.exists && legacySync.data()?.connected === true;
+  const callerSyncConnected =
+    callerSync.exists && callerSync.data()?.connected === true;
+
+  if (legacySyncConnected && !callerSyncConnected) {
+    const data = legacySync.data() ?? {};
+    await callerSyncRef.set(
+      {
+        ...data,
+        migratedFrom: legacyOwnerUid,
+      },
+      { merge: true },
+    );
+    migrated = true;
+  }
+
+  if (migrated) {
+    console.log('whoop migrate to caller', {
+      playerId,
+      legacyOwnerUid,
+      callerUid,
+    });
+  }
+
+  return migrated;
+}
+
 async function resolveSyncOwnerUid(db, playerId, callerUid, initiatedBy) {
   const memberSnap = await db.collection(MEMBER_COLLECTION).doc(playerId).get();
   if (!memberSnap.exists) {
@@ -139,7 +225,7 @@ async function resolveSyncOwnerUid(db, playerId, callerUid, initiatedBy) {
   }
 
   const memberData = memberSnap.data() ?? {};
-  const ownerUid = readMemberOwnerUid(memberData);
+  const memberOwnerUid = readMemberOwnerUid(memberData);
 
   if (initiatedBy === 'player') {
     if (!userHasMemberAccess(memberData, callerUid)) {
@@ -148,7 +234,9 @@ async function resolveSyncOwnerUid(db, playerId, callerUid, initiatedBy) {
         'You cannot connect Whoop for this player profile.',
       );
     }
-    return ownerUid ?? callerUid;
+    // Settings badge watches the signed-in user path.
+    await migrateWhoopDocsToCaller(db, memberOwnerUid, callerUid, playerId);
+    return callerUid;
   }
 
   const canManage = await coachCanManagePlayer(db, callerUid, playerId);
@@ -159,7 +247,7 @@ async function resolveSyncOwnerUid(db, playerId, callerUid, initiatedBy) {
     );
   }
 
-  return ownerUid ?? callerUid;
+  return memberOwnerUid ?? callerUid;
 }
 
 async function fetchWhoopProfile(accessToken) {
@@ -583,7 +671,7 @@ function createWhoopDisconnect() {
       }
 
       const memberData = memberSnap.data() ?? {};
-      const ownerUid = readMemberOwnerUid(memberData) ?? callerUid;
+      const memberOwnerUid = readMemberOwnerUid(memberData);
 
       const canDisconnect =
         userHasMemberAccess(memberData, callerUid) ||
@@ -596,24 +684,30 @@ function createWhoopDisconnect() {
         );
       }
 
-      const integrationId = integrationDocId(ownerUid, playerId);
-      const integrationRef = db.collection(INTEGRATIONS_COLLECTION).doc(integrationId);
-      const syncRef = db
-        .collection('users')
-        .doc(ownerUid)
-        .collection('whoopSync')
-        .doc(playerId);
+      // Clear caller path (current) and legacy member-owner path if different.
+      const ownerUids = new Set([callerUid]);
+      if (memberOwnerUid) ownerUids.add(memberOwnerUid);
 
       await db.runTransaction(async (transaction) => {
-        transaction.delete(integrationRef);
-        transaction.set(
-          syncRef,
-          {
-            connected: false,
-            disconnectedAt: FieldValue.serverTimestamp(),
-          },
-          { merge: true },
-        );
+        for (const ownerUid of ownerUids) {
+          const integrationRef = db
+            .collection(INTEGRATIONS_COLLECTION)
+            .doc(integrationDocId(ownerUid, playerId));
+          const syncRef = db
+            .collection('users')
+            .doc(ownerUid)
+            .collection('whoopSync')
+            .doc(playerId);
+          transaction.delete(integrationRef);
+          transaction.set(
+            syncRef,
+            {
+              connected: false,
+              disconnectedAt: FieldValue.serverTimestamp(),
+            },
+            { merge: true },
+          );
+        }
       });
 
       // TODO(Phase 2): revoke refresh token at Whoop if/when supported.
@@ -623,10 +717,72 @@ function createWhoopDisconnect() {
   );
 }
 
+/**
+ * Callable: whoopRepairPlayerSync
+ *
+ * Migrates a legacy whoopSync / whoop_integrations doc from member.userID onto
+ * the signed-in uid so the settings badge can see the connection.
+ */
+function createWhoopRepairPlayerSync() {
+  return onCall(
+    {
+      region: REGION,
+      timeoutSeconds: 30,
+    },
+    async (request) => {
+      if (!request.auth) {
+        throw new HttpsError('unauthenticated', 'Authentication required.');
+      }
+
+      const playerId = (request.data?.playerId ?? '').toString().trim();
+      if (!playerId) {
+        throw new HttpsError('invalid-argument', 'playerId is required.');
+      }
+
+      const db = getFirestore();
+      const callerUid = request.auth.uid;
+      const memberSnap = await db.collection(MEMBER_COLLECTION).doc(playerId).get();
+      if (!memberSnap.exists) {
+        throw new HttpsError('not-found', 'Player profile not found.');
+      }
+
+      const memberData = memberSnap.data() ?? {};
+      if (!userHasMemberAccess(memberData, callerUid)) {
+        throw new HttpsError(
+          'permission-denied',
+          'You cannot repair Whoop sync for this player profile.',
+        );
+      }
+
+      const memberOwnerUid = readMemberOwnerUid(memberData);
+      const migrated = await migrateWhoopDocsToCaller(
+        db,
+        memberOwnerUid,
+        callerUid,
+        playerId,
+      );
+
+      const syncSnap = await db
+        .collection('users')
+        .doc(callerUid)
+        .collection('whoopSync')
+        .doc(playerId)
+        .get();
+
+      return {
+        migrated,
+        connected: syncSnap.exists && syncSnap.data()?.connected === true,
+        syncOwnerUid: callerUid,
+      };
+    },
+  );
+}
+
 module.exports = {
   createWhoopOAuthStart,
   createWhoopOAuthCallback,
   createWhoopDisconnect,
+  createWhoopRepairPlayerSync,
   // Exported for Phase 2 token refresh / webhooks.
   WHOOP_TOKEN_URL,
   WHOOP_SCOPES,

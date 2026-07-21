@@ -100,6 +100,34 @@ class WhoopSyncService {
     }
   }
 
+  /// Moves a legacy whoopSync doc onto the signed-in uid (family profiles).
+  ///
+  /// Safe to call repeatedly; returns whether Whoop is connected for [playerId]
+  /// under the current user after repair.
+  Future<bool> repairPlayerSync({required String playerId}) async {
+    final uid = FirebaseAuth.instance.currentUser?.uid;
+    if (uid == null || playerId.trim().isEmpty) return false;
+
+    try {
+      final callable =
+          _functions.httpsCallable(kWhoopRepairPlayerSyncFunctionName);
+      final result = await callable.call(<String, dynamic>{
+        'playerId': playerId.trim(),
+      });
+      final data = result.data;
+      if (data is Map && data['connected'] == true) {
+        return true;
+      }
+      return false;
+    } on FirebaseFunctionsException catch (e, st) {
+      debugPrint('whoopRepairPlayerSync failed: ${e.code} ${e.message}\n$st');
+      return false;
+    } catch (e, st) {
+      debugPrint('whoopRepairPlayerSync error: $e\n$st');
+      return false;
+    }
+  }
+
   Future<bool> updateCoachVisibility({
     required String uid,
     required String playerId,

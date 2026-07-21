@@ -102,7 +102,8 @@ async function resolveSyncOwnerUid(db, playerId, callerUid, initiatedBy) {
         'You cannot connect Strava for this player profile.',
       );
     }
-    return ownerUid ?? callerUid;
+    // Settings badge watches the signed-in user path.
+    return callerUid;
   }
 
   const canManage = await coachCanManagePlayer(db, callerUid, playerId);

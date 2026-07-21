@@ -120,6 +120,7 @@ class _WearableDevicesDialogContentState
   Player? _player;
   bool _playerLoadStarted = false;
   bool _playerLoaded = false;
+  bool _whoopRepairStarted = false;
   final TextEditingController _stravaAccountController =
       TextEditingController();
   final TextEditingController _whoopAccountController =
@@ -136,6 +137,7 @@ class _WearableDevicesDialogContentState
     if (fromSession != null) {
       _player = fromSession;
       _playerLoaded = true;
+      _repairWhoopIfNeeded();
       return;
     }
 
@@ -145,7 +147,15 @@ class _WearableDevicesDialogContentState
         _player = player;
         _playerLoaded = true;
       });
+      _repairWhoopIfNeeded();
     });
+  }
+
+  Future<void> _repairWhoopIfNeeded() async {
+    if (_whoopRepairStarted || widget.initiatedBy != 'player') return;
+    _whoopRepairStarted = true;
+    await WhoopSyncService.instance.repairPlayerSync(playerId: widget.playerId);
+    if (mounted) setState(() {});
   }
 
   @override
@@ -759,10 +769,11 @@ class _WearableDevicesDialogContentState
       );
     }
 
-    final syncOwnerUid = resolveWearableSyncOwnerUid(
-      callerUid: uid,
-      player: _player,
-    );
+    // Player flow: sync docs live under the signed-in uid.
+    // Coach flow: sync docs live under the member owner uid.
+    final syncOwnerUid = widget.initiatedBy == 'coach'
+        ? resolveWearableSyncOwnerUid(callerUid: uid, player: _player)
+        : uid;
 
     return StreamBuilder<_WearableDialogState>(
       stream: _watchDialogState(syncOwnerUid),

@@ -6,6 +6,7 @@ const String kWhoopFunctionsRegion = 'europe-west1';
 
 const String kWhoopOAuthStartFunctionName = 'whoopOAuthStart';
 const String kWhoopDisconnectFunctionName = 'whoopDisconnect';
+const String kWhoopRepairPlayerSyncFunctionName = 'whoopRepairPlayerSync';
 
 /// Deep link opened after OAuth completes (via Cloud Function redirect).
 const String kWhoopOAuthDeepLinkHost = 'whoop';
