@@ -13,6 +13,7 @@ import 'package:grinta/services/matchService.dart';
 import 'package:grinta/services/user_trial_service.dart';
 import 'package:grinta/util/app_snackbar.dart';
 import 'package:grinta/util/ask_diego_datetime_params.dart';
+import 'package:grinta/util/staff_session_access.dart';
 import 'package:grinta/widget/create_match_sheet.dart';
 import 'package:grinta/widget/create_training_sheet.dart';
 import 'package:grinta/widget/subscription_paywall.dart';
@@ -170,9 +171,7 @@ class ChatNavigationService {
     }
 
     final session = context.read<AppSession>();
-    final teamId = match.teamID?.trim();
-    final isManager = teamId != null &&
-        session.managedTeamsIdsForSelectedSeason.contains(teamId);
+    final isManager = canAccessMatchSessionDetails(match, session);
 
     await Navigator.of(context).push<void>(
       analyticsMaterialRoute<void>(

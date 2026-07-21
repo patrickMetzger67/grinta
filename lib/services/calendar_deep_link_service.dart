@@ -13,9 +13,12 @@ import 'package:grinta/model/match.dart' as models;
 import 'package:grinta/navigation/app_navigator.dart';
 import 'package:grinta/provider/appSession.dart';
 import 'package:grinta/screen/match_detail_screen.dart';
+import 'package:grinta/screen/team_players/team_players_screen.dart';
 import 'package:grinta/services/matchService.dart';
 import 'package:grinta/services/trainingService.dart';
 import 'package:grinta/util/app_snackbar.dart';
+import 'package:grinta/util/staff_session_access.dart';
+import 'package:grinta/util/training_creation_helper.dart';
 import 'package:provider/provider.dart';
 
 /// Handles `grinta://event?type=match&id=...&playerId=...` deep links.
@@ -267,19 +270,36 @@ class CalendarDeepLinkService {
     BuildContext context, {
     required String? trainingId,
   }) async {
-    DateTime? trainingDate;
-    if (trainingId != null && trainingId.isNotEmpty) {
-      final training = await TrainingService().getTrainingById(trainingId);
-      trainingDate = training?.dateTime?.toDate();
+    if (trainingId == null || trainingId.isEmpty) {
+      _navigateToAgenda(context);
+      return;
     }
 
+    final training = await TrainingService().getTrainingById(trainingId);
+    if (!context.mounted) return;
+
+    if (training == null) {
+      _navigateToAgenda(context);
+      return;
+    }
+
+    final trainingDate = training.dateTime?.toDate();
     if (trainingDate != null) {
       pendingAgendaDate.value = DateUtils.dateOnly(trainingDate);
     }
 
-    if (!context.mounted) return;
-    _navigateToAgenda(context);
-    _showComingSoonSnackbar(context);
+    final session = context.read<AppSession>();
+    if (!canAccessTrainingSessionDetails(training, session)) {
+      _navigateToAgenda(context);
+      return;
+    }
+
+    final canEdit = canManageTraining(training, session);
+    await TeamPlayersScreen.open(
+      context,
+      training: training,
+      readOnly: !canEdit,
+    );
   }
 
   Future<void> _openMatchDetail(
@@ -307,7 +327,7 @@ class CalendarDeepLinkService {
 
     final appSession = context.read<AppSession>();
     final playerId = appSession.selectedPlayerId;
-    final isManager = _isManagerForMatch(appSession, match);
+    final isManager = canAccessMatchSessionDetails(match, appSession);
 
     _pushMatchDetailAfterFrames(
       match: match,
@@ -368,12 +388,6 @@ class CalendarDeepLinkService {
       context.l10n.matchDetailTrackerKitComingSoon,
       isError: false,
     );
-  }
-
-  bool _isManagerForMatch(AppSession session, models.Match match) {
-    final managedIds = session.managedTeamsIdsForSelectedSeason;
-    final matchTeams = match.teams ?? const <String>[];
-    return matchTeams.any(managedIds.contains);
   }
 
   void _log(String message) {
