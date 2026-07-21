@@ -40,16 +40,29 @@ https://europe-west1-aserstein-2453e.cloudfunctions.net/stravaWebhook
 
 (Not deployed in Phase 1.)
 
-## 4. Firebase secrets
+## 4. Firebase secrets (required — not `dart_defines.json`)
 
-From the project root:
+Strava OAuth runs in **Cloud Functions**. Credentials must be stored as
+Firebase secrets, **not** in `dart_defines.json` (that file is compiled into
+the Flutter client — never put `STRAVA_CLIENT_SECRET` there).
+
+From the project root, either:
+
+```bash
+./scripts/set_strava_firebase_secrets.sh
+```
+
+or manually:
 
 ```bash
 firebase functions:secrets:set STRAVA_CLIENT_ID
 firebase functions:secrets:set STRAVA_CLIENT_SECRET
 ```
 
-Use the Client ID and Client Secret from the Strava API application page.
+Use the Client ID and Client Secret from the [Strava API settings](https://www.strava.com/settings/api).
+
+If you previously added Strava keys to `dart_defines.json`, remove at least
+`STRAVA_CLIENT_SECRET` from that file.
 
 ## 5. Deploy Cloud Functions & Firestore rules
 
