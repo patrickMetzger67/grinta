@@ -27,6 +27,12 @@ const {
 } = require('./fitbit_oauth');
 const { createSendMailOnCreate } = require('./send_mail');
 const { createSendPasswordResetMail } = require('./password_reset');
+const {
+  normalizePromoCode,
+  compactPromoCode,
+  promoCodeLookupCandidates,
+  promoCodesMatch,
+} = require('./promo_code_helpers');
 
 initializeApp();
 
@@ -216,10 +222,6 @@ function normalizeActions(actions) {
   return normalized;
 }
 
-function normalizePromoCode(raw) {
-  return (raw ?? '').toString().trim().toUpperCase().replace(/\s+/g, '');
-}
-
 function readTimestamp(value) {
   if (!value) return null;
   if (value instanceof Timestamp) return value.toDate();
@@ -229,21 +231,60 @@ function readTimestamp(value) {
 }
 
 async function resolvePromoCodeRef(db, normalizedCode) {
-  const directRef = db.collection(PROMO_CODES_COLLECTION).doc(normalizedCode);
-  const directSnap = await directRef.get();
-  if (directSnap.exists) {
-    return directRef;
+  const candidates = promoCodeLookupCandidates(normalizedCode);
+  const compactTarget = compactPromoCode(normalizedCode);
+
+  for (const id of candidates) {
+    const directRef = db.collection(PROMO_CODES_COLLECTION).doc(id);
+    const directSnap = await directRef.get();
+    if (directSnap.exists) {
+      return directRef;
+    }
   }
 
-  const querySnap = await db
-    .collection(PROMO_CODES_COLLECTION)
-    .where('code', '==', normalizedCode)
-    .limit(1)
-    .get();
-  if (!querySnap.empty) {
-    return querySnap.docs[0].ref;
+  for (const code of candidates) {
+    const querySnap = await db
+      .collection(PROMO_CODES_COLLECTION)
+      .where('code', '==', code)
+      .limit(1)
+      .get();
+    if (!querySnap.empty) {
+      return querySnap.docs[0].ref;
+    }
   }
 
+  // Indexed compact field (written by admin UI) — DEMO-2026 ↔ DEMO2026.
+  if (compactTarget) {
+    const compactSnap = await db
+      .collection(PROMO_CODES_COLLECTION)
+      .where('codeCompact', '==', compactTarget)
+      .limit(1)
+      .get();
+    if (!compactSnap.empty) {
+      return compactSnap.docs[0].ref;
+    }
+  }
+
+  // Last resort: small admin collection — match by normalized/compact stored code
+  // (covers mixed-case doc ids or codes created outside the admin UI).
+  const scanSnap = await db.collection(PROMO_CODES_COLLECTION).limit(500).get();
+  for (const doc of scanSnap.docs) {
+    const data = doc.data() ?? {};
+    const storedRaw = (data.code ?? doc.id ?? '').toString();
+    if (promoCodesMatch(storedRaw, normalizedCode)) {
+      return doc.ref;
+    }
+    const storedCompact = (data.codeCompact ?? '').toString();
+    if (storedCompact && compactPromoCode(storedCompact) === compactTarget) {
+      return doc.ref;
+    }
+  }
+
+  console.warn('resolvePromoCodeRef: no match', {
+    normalizedCode,
+    candidates,
+    scanned: scanSnap.size,
+  });
   return null;
 }
 
@@ -576,22 +617,31 @@ exports.redeemPromoCode = onCall(
         uid,
         redeemedAt: FieldValue.serverTimestamp(),
       });
+    });
 
-      // Durable app-side mirror so access survives RevenueCat client glitches.
-      const userRef = db.collection('users').doc(uid);
+    // Mirror access outside the promo transaction so a user-doc write failure
+    // never blocks / rolls back a successful redeem.
+    try {
       const access = {
         entitlements: [entitlement],
         productId: null,
         source: 'promo',
         updatedAt: FieldValue.serverTimestamp(),
+        expiresAt: grant.expiresAt
+          ? Timestamp.fromDate(new Date(grant.expiresAt))
+          : null,
       };
-      if (grant.expiresAt) {
-        access.expiresAt = Timestamp.fromDate(new Date(grant.expiresAt));
-      } else {
-        access.expiresAt = null;
-      }
-      transaction.set(userRef, {subscriptionAccess: access}, {merge: true});
-    });
+      await db.collection('users').doc(uid).set(
+        {subscriptionAccess: access},
+        {merge: true},
+      );
+    } catch (mirrorError) {
+      console.error('redeemPromoCode: subscriptionAccess mirror failed', {
+        uid,
+        code,
+        mirrorError,
+      });
+    }
 
     console.log('redeemPromoCode success', {
       uid,

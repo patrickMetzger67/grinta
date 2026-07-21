@@ -388,7 +388,6 @@ class _MobileNavigationShellState extends State<MobileNavigationShell> {
                     );
                   },
                 ),
-                const PromoCodeRedeemSection(),
                 ListenableBuilder(
                   listenable: Listenable.merge([
                     SubscriptionService.instance,

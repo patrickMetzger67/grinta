@@ -3,6 +3,8 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 /// Firestore field names on `admin_promo_codes/{code}`.
 abstract final class PromoCodeDocumentFields {
   static const code = 'code';
+  /// Separator-free form for tolerant server lookup (DEMO-2026 → DEMO2026).
+  static const codeCompact = 'codeCompact';
   static const maxUses = 'maxUses';
   static const usedCount = 'usedCount';
   static const entitlement = 'entitlement';
@@ -74,6 +76,7 @@ class PromoCode {
   Map<String, dynamic> toFirestore() {
     return <String, dynamic>{
       PromoCodeDocumentFields.code: code,
+      PromoCodeDocumentFields.codeCompact: compactCode(code),
       PromoCodeDocumentFields.maxUses: maxUses,
       PromoCodeDocumentFields.usedCount: usedCount,
       PromoCodeDocumentFields.entitlement: entitlement,
@@ -91,6 +94,11 @@ class PromoCode {
 
   static String normalizeCode(String raw) {
     return raw.trim().toUpperCase().replaceAll(RegExp(r'\s+'), '');
+  }
+
+  /// Separator-free form used by Cloud Function lookup (DEMO-2026 → DEMO2026).
+  static String compactCode(String raw) {
+    return normalizeCode(raw).replaceAll(RegExp(r'[-_.]'), '');
   }
 
   /// Firestore document IDs cannot contain `/` or match reserved patterns.

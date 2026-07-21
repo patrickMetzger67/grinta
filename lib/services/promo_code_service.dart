@@ -5,6 +5,7 @@ import 'package:flutter/foundation.dart';
 import 'package:grinta/config/subscription_config.dart';
 import 'package:grinta/model/promo_code.dart';
 import 'package:grinta/services/user_root_service.dart';
+import 'package:grinta/util/promo_redeem_errors.dart';
 
 class PromoCodeRedeemResult {
   const PromoCodeRedeemResult({
@@ -145,11 +146,16 @@ class PromoCodeService {
       throw StateError('max-uses-below-used');
     }
 
+    final existingCode = existing.data()?[PromoCodeDocumentFields.code]
+            ?.toString() ??
+        codeId;
     final updates = <String, dynamic>{
       PromoCodeDocumentFields.maxUses: maxUses,
       PromoCodeDocumentFields.entitlement: entitlement,
       PromoCodeDocumentFields.durationDays: durationDays,
       PromoCodeDocumentFields.active: active,
+      // Backfill compact key so redeem lookup stays indexable for older docs.
+      PromoCodeDocumentFields.codeCompact: PromoCode.compactCode(existingCode),
     };
 
     if (clearExpiresAt) {
@@ -300,48 +306,26 @@ class PromoCodeService {
     }
   }
 
+  /// True when Firebase could not reach the callable (undeployed / wrong region).
+  ///
+  /// Must not be shown as "promo code not found" — that message is reserved for
+  /// [PROMO_NOT_FOUND] from [redeemPromoCode] itself.
+  static bool isCallableMissing(FirebaseFunctionsException e) {
+    return PromoRedeemErrors.isCallableMissing(
+      httpsCode: e.code,
+      message: e.message,
+      details: e.details,
+    );
+  }
+
   /// Stable promo error code from callable [details.errorCode], or inferred
   /// from known English server messages (covers undeployed CF fallbacks).
   static String? extractPromoErrorCode(FirebaseFunctionsException e) {
-    final details = e.details;
-    if (details is Map) {
-      final raw = details['errorCode']?.toString().trim();
-      if (raw != null && raw.isNotEmpty) {
-        return raw.toUpperCase();
-      }
-    }
-
-    final message = (e.message ?? '').trim().toLowerCase();
-    if (message.contains('already redeemed')) {
-      return 'ALREADY_REDEEMED';
-    }
-    if (message.contains('not found')) {
-      return 'PROMO_NOT_FOUND';
-    }
-    if (message.contains('inactive')) {
-      return 'PROMO_INACTIVE';
-    }
-    if (message.contains('expired')) {
-      return 'PROMO_EXPIRED';
-    }
-    if (message.contains('exhausted')) {
-      return 'PROMO_EXHAUSTED';
-    }
-    if (message.contains('restricted to a specific club') ||
-        message.contains('reserved for another club')) {
-      return 'PROMO_TEAM_MISMATCH';
-    }
-    if (message.contains('authentication required') ||
-        message.contains('signed in')) {
-      return 'PROMO_UNAUTHENTICATED';
-    }
-    if (message.contains('code is required') || message.contains('empty')) {
-      return 'PROMO_EMPTY';
-    }
-    if (message.contains('invalid promo')) {
-      return 'PROMO_INVALID';
-    }
-    return null;
+    return PromoRedeemErrors.extractErrorCode(
+      httpsCode: e.code,
+      message: e.message,
+      details: e.details,
+    );
   }
 
   /// Best available callable error text (message or details), ignoring values

@@ -7,6 +7,7 @@ import 'package:grinta/l10n/app_localizations.dart';
 import 'package:grinta/services/promo_code_service.dart';
 import 'package:grinta/services/subscription_service.dart';
 import 'package:grinta/util/app_theme.dart';
+import 'package:grinta/util/promo_redeem_errors.dart';
 import 'package:intl/intl.dart';
 
 /// Opens promo code redemption in a dialog (web) or bottom sheet (mobile).
@@ -122,6 +123,11 @@ class _PromoCodeDialogContentState extends State<PromoCodeDialogContent> {
         _feedbackIsError = true;
       });
     } on FirebaseFunctionsException catch (e) {
+      debugPrint(
+        'promo redeem CF error: code=${e.code} message=${e.message} '
+        'details=${e.details} promoError=${PromoCodeService.extractPromoErrorCode(e)} '
+        'callableMissing=${PromoCodeService.isCallableMissing(e)}',
+      );
       if (!mounted) return;
       setState(() {
         _feedbackMessage = _messageForError(context, e);
@@ -162,6 +168,8 @@ class _PromoCodeDialogContentState extends State<PromoCodeDialogContent> {
       return switch (promoCode) {
         'ALREADY_REDEEMED' => l10n.promoCodeRedeemAlreadyRedeemed,
         'PROMO_NOT_FOUND' => l10n.promoCodeRedeemNotFound,
+        // Function undeployed / wrong region — never show "code introuvable".
+        'PROMO_CALLABLE_MISSING' => l10n.promoCodeRedeemFailed,
         'PROMO_INACTIVE' => l10n.promoCodeRedeemInactive,
         'PROMO_EXPIRED' => l10n.promoCodeRedeemExpired,
         'PROMO_EXHAUSTED' => l10n.promoCodeRedeemExhausted,
@@ -181,8 +189,18 @@ class _PromoCodeDialogContentState extends State<PromoCodeDialogContent> {
     AppLocalizations l10n,
     FirebaseFunctionsException e,
   ) {
+    if (PromoCodeService.isCallableMissing(e)) {
+      return l10n.promoCodeRedeemFailed;
+    }
     return switch (PromoCodeService.formatFunctionsError(e)) {
-      'not-found' => l10n.promoCodeRedeemNotFound,
+      // Only map not-found → "introuvable" when the CF confirmed PROMO_NOT_FOUND.
+      'not-found' => PromoRedeemErrors.shouldShowNotFoundMessage(
+          httpsCode: e.code,
+          message: e.message,
+          details: e.details,
+        )
+          ? l10n.promoCodeRedeemNotFound
+          : l10n.promoCodeRedeemFailed,
       'failed-precondition' => l10n.promoCodeRedeemInvalid,
       'resource-exhausted' => l10n.promoCodeRedeemExhausted,
       'permission-denied' => l10n.promoCodeRedeemTeamMismatch,
