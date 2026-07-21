@@ -114,10 +114,13 @@ class _WearableDevicesDialogContentState
   String? _disconnectingType;
   final TextEditingController _stravaAccountController =
       TextEditingController();
+  final TextEditingController _whoopAccountController =
+      TextEditingController();
 
   @override
   void dispose() {
     _stravaAccountController.dispose();
+    _whoopAccountController.dispose();
     super.dispose();
   }
 
@@ -185,6 +188,11 @@ class _WearableDevicesDialogContentState
       _showConnectError(context.l10n.stravaAccountHintRequired);
       return;
     }
+    if (_selectedType == WearableDeviceType.whoop &&
+        _whoopAccountController.text.trim().isEmpty) {
+      _showConnectError(context.l10n.whoopAccountHintRequired);
+      return;
+    }
 
     setState(() => _syncBusy = true);
 
@@ -194,6 +202,7 @@ class _WearableDevicesDialogContentState
           final result = await WhoopSyncService.instance.startOAuth(
             playerId: widget.playerId,
             initiatedBy: widget.initiatedBy,
+            whoopAccountHint: _whoopAccountController.text.trim(),
           );
           if (!mounted) return;
           if (result != WhoopConnectResult.success) {
@@ -452,10 +461,83 @@ class _WearableDevicesDialogContentState
     required _WearableDialogState state,
   }) {
     final base = _statusSubtitle(type: type, connected: true);
-    if (type != WearableDeviceType.strava) return base;
-    final hint = state.stravaConfig?.stravaAccountHint?.trim();
+    final hint = switch (type) {
+      WearableDeviceType.strava =>
+        state.stravaConfig?.stravaAccountHint?.trim(),
+      WearableDeviceType.whoop => state.whoopConfig?.whoopAccountHint?.trim(),
+      _ => null,
+    };
     if (hint == null || hint.isEmpty) return base;
     return '$base · $hint';
+  }
+
+  Widget _buildAccountHintField({
+    required AppColors colors,
+    required AppLocalizations l10n,
+    required TextEditingController controller,
+    required String guidance,
+    required String label,
+    required String placeholder,
+    required bool syncDisabled,
+  }) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        const SizedBox(height: 12),
+        Text(
+          guidance,
+          style: TextStyle(
+            color: colors.textSecondary,
+            fontSize: 13,
+          ),
+        ),
+        const SizedBox(height: 12),
+        TextField(
+          controller: controller,
+          keyboardType: TextInputType.emailAddress,
+          textInputAction: TextInputAction.done,
+          autocorrect: false,
+          enableSuggestions: false,
+          decoration: InputDecoration(
+            labelText: label,
+            hintText: placeholder,
+            labelStyle: TextStyle(
+              color: colors.textSecondary,
+              fontWeight: FontWeight.w500,
+              fontSize: 13,
+            ),
+            hintStyle: TextStyle(
+              color: colors.textSecondary.withValues(alpha: 0.7),
+              fontSize: 13,
+            ),
+            filled: true,
+            fillColor: colors.surface,
+            contentPadding: const EdgeInsets.symmetric(
+              horizontal: 14,
+              vertical: 12,
+            ),
+            enabledBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(14),
+              borderSide: BorderSide(color: colors.border),
+            ),
+            focusedBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(14),
+              borderSide: BorderSide(color: colors.primary, width: 1.5),
+            ),
+          ),
+          style: TextStyle(
+            color: colors.textPrimary,
+            fontWeight: FontWeight.w600,
+            fontSize: 14,
+          ),
+          onSubmitted: (_) {
+            if (!_syncBusy && !syncDisabled) {
+              _syncSelectedType();
+            }
+          },
+        ),
+      ],
+    );
   }
 
   Stream<_WearableDialogState> _watchDialogState(String syncOwnerUid) {
@@ -883,61 +965,26 @@ class _WearableDevicesDialogContentState
               fontSize: 13,
             ),
           ),
-          if (selectedType == WearableDeviceType.strava) ...[
-            const SizedBox(height: 12),
-            Text(
-              l10n.stravaAccountHintGuidance,
-              style: TextStyle(
-                color: colors.textSecondary,
-                fontSize: 13,
-              ),
-            ),
-            const SizedBox(height: 12),
-            TextField(
+          if (selectedType == WearableDeviceType.strava)
+            _buildAccountHintField(
+              colors: colors,
+              l10n: l10n,
               controller: _stravaAccountController,
-              keyboardType: TextInputType.emailAddress,
-              textInputAction: TextInputAction.done,
-              autocorrect: false,
-              enableSuggestions: false,
-              decoration: InputDecoration(
-                labelText: l10n.stravaAccountHintLabel,
-                hintText: l10n.stravaAccountHintPlaceholder,
-                labelStyle: TextStyle(
-                  color: colors.textSecondary,
-                  fontWeight: FontWeight.w500,
-                  fontSize: 13,
-                ),
-                hintStyle: TextStyle(
-                  color: colors.textSecondary.withValues(alpha: 0.7),
-                  fontSize: 13,
-                ),
-                filled: true,
-                fillColor: colors.surface,
-                contentPadding: const EdgeInsets.symmetric(
-                  horizontal: 14,
-                  vertical: 12,
-                ),
-                enabledBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(14),
-                  borderSide: BorderSide(color: colors.border),
-                ),
-                focusedBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(14),
-                  borderSide: BorderSide(color: colors.primary, width: 1.5),
-                ),
-              ),
-              style: TextStyle(
-                color: colors.textPrimary,
-                fontWeight: FontWeight.w600,
-                fontSize: 14,
-              ),
-              onSubmitted: (_) {
-                if (!_syncBusy && !syncDisabled) {
-                  _syncSelectedType();
-                }
-              },
+              guidance: l10n.stravaAccountHintGuidance,
+              label: l10n.stravaAccountHintLabel,
+              placeholder: l10n.stravaAccountHintPlaceholder,
+              syncDisabled: syncDisabled,
             ),
-          ],
+          if (selectedType == WearableDeviceType.whoop)
+            _buildAccountHintField(
+              colors: colors,
+              l10n: l10n,
+              controller: _whoopAccountController,
+              guidance: l10n.whoopAccountHintGuidance,
+              label: l10n.whoopAccountHintLabel,
+              placeholder: l10n.whoopAccountHintPlaceholder,
+              syncDisabled: syncDisabled,
+            ),
           if (platformOnlyMessage != null) ...[
             const SizedBox(height: 10),
             Text(
@@ -962,9 +1009,11 @@ class _WearableDevicesDialogContentState
                   )
                 : const Icon(Icons.link_rounded, size: 20),
             label: Text(
-              selectedType == WearableDeviceType.strava
-                  ? l10n.stravaConnectContinue
-                  : l10n.settingsDevicesSync,
+              switch (selectedType) {
+                WearableDeviceType.strava => l10n.stravaConnectContinue,
+                WearableDeviceType.whoop => l10n.whoopConnectContinue,
+                _ => l10n.settingsDevicesSync,
+              },
             ),
           ),
         ],

@@ -7,6 +7,7 @@ class WhoopSyncConfig {
     this.connectedAt,
     this.lastSyncedAt,
     this.whoopUserId,
+    this.whoopAccountHint,
     this.initiatedBy,
     this.coachUid,
     this.coachVisibility = const WhoopCoachVisibility(),
@@ -16,6 +17,8 @@ class WhoopSyncConfig {
   final DateTime? connectedAt;
   final DateTime? lastSyncedAt;
   final String? whoopUserId;
+  /// User-entered Whoop email before OAuth (guidance only).
+  final String? whoopAccountHint;
   final String? initiatedBy;
   final String? coachUid;
   final WhoopCoachVisibility coachVisibility;
@@ -29,6 +32,7 @@ class WhoopSyncConfig {
       connectedAt: _readTimestamp(data['connectedAt']),
       lastSyncedAt: _readTimestamp(data['lastSyncedAt']),
       whoopUserId: data['whoopUserId'] as String?,
+      whoopAccountHint: data['whoopAccountHint'] as String?,
       initiatedBy: data['initiatedBy'] as String?,
       coachUid: data['coachUid'] as String?,
       coachVisibility: WhoopCoachVisibility.fromMap(
@@ -45,6 +49,7 @@ class WhoopSyncConfig {
       if (lastSyncedAt != null)
         'lastSyncedAt': Timestamp.fromDate(lastSyncedAt!),
       if (whoopUserId != null) 'whoopUserId': whoopUserId,
+      if (whoopAccountHint != null) 'whoopAccountHint': whoopAccountHint,
       if (initiatedBy != null) 'initiatedBy': initiatedBy,
       if (coachUid != null) 'coachUid': coachUid,
       'coachVisibility': coachVisibility.toMap(),

@@ -3639,7 +3639,25 @@ class AppLocalizationsFr extends AppLocalizations {
   String get whoopConnectSuccess => 'Compte Whoop connecté.';
 
   @override
-  String get whoopConnectFailed => 'La connexion Whoop a échoué. Réessayez.';
+  String get whoopAccountHintGuidance =>
+      'L\'email Whoop peut être différent de ton compte Grinta. Indique le compte Whoop à utiliser, puis connecte-toi avec ce compte sur la page Whoop.';
+
+  @override
+  String get whoopAccountHintLabel => 'Compte Whoop';
+
+  @override
+  String get whoopAccountHintPlaceholder => 'email Whoop';
+
+  @override
+  String get whoopAccountHintRequired =>
+      'Indique ton compte Whoop (email) avant de continuer.';
+
+  @override
+  String get whoopConnectContinue => 'Continuer vers Whoop';
+
+  @override
+  String get whoopConnectFailed =>
+      'La connexion Whoop a échoué. Vérifie que les Cloud Functions Whoop sont déployées et que les secrets WHOOP_CLIENT_ID / WHOOP_CLIENT_SECRET sont configurés.';
 
   @override
   String get whoopConnectLaunchFailed =>

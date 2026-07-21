@@ -6324,10 +6324,40 @@ abstract class AppLocalizations {
   /// **'Compte Whoop connecté.'**
   String get whoopConnectSuccess;
 
+  /// No description provided for @whoopAccountHintGuidance.
+  ///
+  /// In fr, this message translates to:
+  /// **'L\'email Whoop peut être différent de ton compte Grinta. Indique le compte Whoop à utiliser, puis connecte-toi avec ce compte sur la page Whoop.'**
+  String get whoopAccountHintGuidance;
+
+  /// No description provided for @whoopAccountHintLabel.
+  ///
+  /// In fr, this message translates to:
+  /// **'Compte Whoop'**
+  String get whoopAccountHintLabel;
+
+  /// No description provided for @whoopAccountHintPlaceholder.
+  ///
+  /// In fr, this message translates to:
+  /// **'email Whoop'**
+  String get whoopAccountHintPlaceholder;
+
+  /// No description provided for @whoopAccountHintRequired.
+  ///
+  /// In fr, this message translates to:
+  /// **'Indique ton compte Whoop (email) avant de continuer.'**
+  String get whoopAccountHintRequired;
+
+  /// No description provided for @whoopConnectContinue.
+  ///
+  /// In fr, this message translates to:
+  /// **'Continuer vers Whoop'**
+  String get whoopConnectContinue;
+
   /// No description provided for @whoopConnectFailed.
   ///
   /// In fr, this message translates to:
-  /// **'La connexion Whoop a échoué. Réessayez.'**
+  /// **'La connexion Whoop a échoué. Vérifie que les Cloud Functions Whoop sont déployées et que les secrets WHOOP_CLIENT_ID / WHOOP_CLIENT_SECRET sont configurés.'**
   String get whoopConnectFailed;
 
   /// No description provided for @whoopConnectLaunchFailed.

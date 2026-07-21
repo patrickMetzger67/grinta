@@ -77,18 +77,19 @@ firebase deploy --only firestore:rules
 
 1. Sign in to Grinta and select a player profile.
 2. Open **Settings** → **Appareils/Applications** (Devices/Applications) — badge shows the connected count.
-3. Tap **+**, select **Whoop** in the type dropdown, then tap **Sync**.
-4. Complete Whoop OAuth in the browser.
-5. App returns via `grinta://whoop/callback` — you should see a success snackbar.
-6. Toggle **Coach visibility** per data type (recovery, cycles, sleep, workout, profile, body measurements).
-7. Tap **Disconnect** on the Whoop row to disconnect.
+3. Tap **+**, select **Whoop** in the type dropdown.
+4. Enter the **Whoop account** (email) — it may differ from the Grinta email — then tap **Continue to Whoop**.
+5. Complete Whoop OAuth in the browser with that Whoop account.
+6. App returns via `grinta://whoop/callback` — you should see a success snackbar; the dialog returns to the connections list.
+7. Toggle **Coach visibility** per data type (recovery, cycles, sleep, workout, profile, body measurements).
+8. Tap **Disconnect** on the Whoop row to disconnect.
 
 ### Coach flow
 
 1. Sign in as a coach with roster management rights.
 2. Open a team → player **Trackers** sheet.
 3. Tap **Appareils/Applications** for a player.
-4. Select **Whoop** and complete OAuth with the player’s Whoop account.
+4. Tap **+**, select **Whoop**, enter the player's Whoop account, then complete OAuth with that account.
 
 ## Firestore layout
 
@@ -96,14 +97,14 @@ firebase deploy --only firestore:rules
 
 ```
 whoop_integrations/{uid}_{playerId}
-  uid, playerId, whoopUserId, status, scopes, tokens, initiatedBy, coachUid?
+  uid, playerId, whoopUserId, whoopAccountHint?, status, scopes, tokens, initiatedBy, coachUid?
 ```
 
 **Client-readable connection**
 
 ```
 users/{uid}/whoopSync/{playerId}
-  connected, connectedAt, lastSyncedAt?, whoopUserId?, initiatedBy, coachVisibility
+  connected, connectedAt, lastSyncedAt?, whoopUserId?, whoopAccountHint?, initiatedBy, coachVisibility
 ```
 
 Tokens are never written to client-readable documents.

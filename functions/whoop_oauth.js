@@ -271,6 +271,7 @@ async function persistWhoopConnection(db, pending, tokenResponse) {
         uid: ownerUid,
         playerId,
         whoopUserId,
+        whoopAccountHint: pending.whoopAccountHint ?? null,
         status: 'connected',
         scopes: WHOOP_SCOPES.split(' '),
         initiatedBy: pending.initiatedBy,
@@ -293,6 +294,7 @@ async function persistWhoopConnection(db, pending, tokenResponse) {
         connected: true,
         connectedAt: FieldValue.serverTimestamp(),
         whoopUserId,
+        whoopAccountHint: pending.whoopAccountHint ?? null,
         initiatedBy: pending.initiatedBy,
         coachUid: pending.coachUid ?? null,
         coachVisibility: existingVisibility,
@@ -336,7 +338,7 @@ function redirectToApp(res, params) {
 /**
  * Callable: whoopOAuthStart
  *
- * Request: { playerId, initiatedBy: "coach"|"player" }
+ * Request: { playerId, initiatedBy: "coach"|"player", whoopAccountHint }
  * Response: { authUrl, state }
  */
 function createWhoopOAuthStart() {
@@ -356,6 +358,9 @@ function createWhoopOAuthStart() {
         .toString()
         .trim()
         .toLowerCase();
+      const whoopAccountHint = (request.data?.whoopAccountHint ?? '')
+        .toString()
+        .trim();
 
       if (!playerId) {
         throw new HttpsError('invalid-argument', 'playerId is required.');
@@ -364,6 +369,12 @@ function createWhoopOAuthStart() {
         throw new HttpsError(
           'invalid-argument',
           'initiatedBy must be "coach" or "player".',
+        );
+      }
+      if (!whoopAccountHint) {
+        throw new HttpsError(
+          'invalid-argument',
+          'whoopAccountHint is required.',
         );
       }
 
@@ -392,6 +403,7 @@ function createWhoopOAuthStart() {
         ownerUid,
         playerId,
         initiatedBy,
+        whoopAccountHint,
         coachUid: initiatedBy === 'coach' ? callerUid : null,
         codeVerifier,
         createdAt: FieldValue.serverTimestamp(),

@@ -29,10 +29,16 @@ class WhoopSyncService {
   Future<WhoopConnectResult> startOAuth({
     required String playerId,
     required String initiatedBy,
+    String? whoopAccountHint,
   }) async {
     final uid = FirebaseAuth.instance.currentUser?.uid;
     if (uid == null) {
       return WhoopConnectResult.unauthenticated;
+    }
+
+    final hint = whoopAccountHint?.trim() ?? '';
+    if (hint.isEmpty) {
+      return WhoopConnectResult.failed;
     }
 
     try {
@@ -40,6 +46,7 @@ class WhoopSyncService {
       final result = await callable.call(<String, dynamic>{
         'playerId': playerId,
         'initiatedBy': initiatedBy,
+        'whoopAccountHint': hint,
       });
 
       final data = result.data;
