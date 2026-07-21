@@ -49,6 +49,7 @@ import '../../widget/create_non_sport_event_sheet.dart';
 import '../../widget/non_sport_event_invitees_sheet.dart';
 import '../../util/non_sport_event_helper.dart';
 import '../../util/session_report_access.dart';
+import '../../util/staff_session_access.dart';
 part 'agenda_calendar_widgets.dart';
 part 'agenda_list_widgets.dart';
 part 'agenda_status_views.dart';

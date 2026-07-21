@@ -754,6 +754,8 @@ class AgendaItemCard extends StatelessWidget {
     String? userId = context.watch<AppSession>().user!.uid;
 
     bool isManager = false;
+    /// Manager/owner or roster staff — unlocks training/match detail views.
+    bool canAccessSessionDetails = false;
     String teamId='';
     bool canManageThisMatch = false;
     bool canManageThisTraining = false;
@@ -761,6 +763,8 @@ class AgendaItemCard extends StatelessWidget {
     if(item.match != null) {
       final AppSession session = context.watch<AppSession>();
       canManageThisMatch = canManageMatch(item.match!, session);
+      canAccessSessionDetails =
+          canAccessMatchSessionDetails(item.match!, session);
       final String? managedTeamId = singleManagedMatchTeamId(item.match!);
       if (managedTeamId != null) {
         isManager = session.managedTeamsIdsForSelectedSeason.contains(managedTeamId);
@@ -773,14 +777,24 @@ class AgendaItemCard extends StatelessWidget {
             break;
           }
         }
+        if (teamId.isEmpty) {
+          teamId = item.match!.teamID?.trim() ?? '';
+        }
+      }
+      // Staff without managers still get the team detail view.
+      if (!isManager && canAccessSessionDetails) {
+        isManager = true;
       }
     }
     if (item.training != null) {
       final AppSession session = context.watch<AppSession>();
       canManageThisTraining = canManageTraining(item.training!, session);
+      canAccessSessionDetails =
+          canAccessTrainingSessionDetails(item.training!, session);
       final String? managedTeamId = managedTrainingTeamId(item.training!);
       if (managedTeamId != null) {
-        isManager = session.managedTeamsIdsForSelectedSeason.contains(managedTeamId);
+        isManager =
+            session.managedTeamsIdsForSelectedSeason.contains(managedTeamId);
         teamId = managedTeamId;
       } else {
         isManager = managedTeamsIds.contains(item.training!.teamId!);
@@ -1409,7 +1423,7 @@ class AgendaItemCard extends StatelessWidget {
                 ),
               ),
             ],
-            if (item.training != null && isManager == true) ...[
+            if (item.training != null && canAccessSessionDetails) ...[
               const SizedBox(height: 10),
               InkWell(
                 borderRadius: BorderRadius.circular(12),
@@ -1428,6 +1442,8 @@ class AgendaItemCard extends StatelessWidget {
                     training: training,
                     title: context.l10n.entityPlayers,
                     subtitle: item.title,
+                    // Staff can open details; only managers edit présences.
+                    readOnly: !canManageThisTraining,
                   );
                 },
                 child: _AgendaTrainingPlayersRow(
@@ -1436,7 +1452,7 @@ class AgendaItemCard extends StatelessWidget {
               ),
             ],
             if (item.training != null &&
-                isManager == false &&
+                !canAccessSessionDetails &&
                 !item.isDone &&
                 !item.startAt.isBefore(DateUtils.dateOnly(DateTime.now()))) ...[
               const SizedBox(height: 10),

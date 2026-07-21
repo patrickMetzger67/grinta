@@ -174,7 +174,14 @@ class _StatCompactCardState extends State<_StatCompactCard> {
   }) {
 
 
-    bool isManager = (userId != null)?managedTeamsIds.contains(teamId):false;
+    final AppSession session = context.read<AppSession>();
+    bool isManager = (userId != null)
+        ? managedTeamsIds.contains(teamId)
+        : false;
+    // Roster staff get the team match-detail view even without managers[].
+    if (!isManager && isStaffOnTeamId(session, teamId)) {
+      isManager = true;
+    }
 
     final l10n = context.l10n;
     if (widget.matches.isEmpty) {

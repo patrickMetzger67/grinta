@@ -26,6 +26,7 @@ import '../../services/teamService.dart';
 import '../../services/trainingService.dart';
 import '../../model/feature_discovery_ids.dart';
 import '../../util/app_theme.dart';
+import '../../util/staff_session_access.dart';
 import '../../widget/activity_rings_card.dart';
 import '../../widget/feature_discovery_random_banner.dart';
 import '../../widget/alternating_monetization_banner.dart';

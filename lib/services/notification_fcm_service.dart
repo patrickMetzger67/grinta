@@ -33,6 +33,7 @@ import 'package:permission_handler/permission_handler.dart';
 import 'package:provider/provider.dart';
 import 'package:grinta/screen/chat/stream_channel_ui_helpers.dart';
 import 'package:grinta/util/app_theme.dart';
+import 'package:grinta/util/staff_session_access.dart';
 import 'package:grinta/widget/grinta_stream_message_input.dart';
 import 'package:stream_chat_flutter/stream_chat_flutter.dart';
 
@@ -563,7 +564,7 @@ class NotificationFCMService {
 
     final appSession = context.read<AppSession>();
     final playerId = appSession.selectedPlayerId;
-    final isManager = _isManagerForMatch(appSession, match);
+    final isManager = canAccessMatchSessionDetails(match, appSession);
 
     appNavigatorKey.currentState?.push(
       analyticsMaterialRoute<void>(
@@ -577,12 +578,6 @@ class NotificationFCMService {
         ),
       ),
     );
-  }
-
-  static bool _isManagerForMatch(AppSession session, models.Match match) {
-    final managedIds = session.managedTeamsIdsForSelectedSeason;
-    final matchTeams = match.teams ?? const <String>[];
-    return matchTeams.any(managedIds.contains);
   }
 
   static Future<void> _openTeamDetail(

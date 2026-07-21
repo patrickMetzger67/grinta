@@ -19,6 +19,7 @@ import 'package:grinta/util/app_theme.dart';
 import 'package:grinta/widget/settings_menu_style.dart';
 import 'package:grinta/util/match_compo_pitch_mapper.dart';
 import 'package:grinta/util/player_photo_resolver.dart';
+import 'package:grinta/util/staff_session_access.dart';
 import 'package:grinta/widget/nav_icon_count_badge.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
@@ -560,11 +561,7 @@ class _NotificationListTileState extends State<_NotificationListTile> {
 
       final session = context.read<AppSession>();
       final playerId = _selectedPlayerMemberId(session);
-      final managedIds = session.managedTeamsIdsForSelectedSeason;
-      final matchTeams = match.teams ?? const <dynamic>[];
-      final isManager = matchTeams.any(
-        (teamId) => managedIds.contains(teamId?.toString()),
-      );
+      final isManager = canAccessMatchSessionDetails(match, session);
 
       await Navigator.of(context, rootNavigator: true).push(
         analyticsMaterialRoute<void>(
