@@ -3662,11 +3662,28 @@ class AppLocalizationsEn extends AppLocalizations {
       'Strava connected — data sync coming in Phase 2';
 
   @override
+  String get stravaAccountHintGuidance =>
+      'Your Strava email can differ from your Grinta account. Enter the Strava account to use, then sign in with that account on the Strava page.';
+
+  @override
+  String get stravaAccountHintLabel => 'Strava account';
+
+  @override
+  String get stravaAccountHintPlaceholder => 'Strava email or username';
+
+  @override
+  String get stravaAccountHintRequired =>
+      'Enter your Strava account (email or username) before continuing.';
+
+  @override
+  String get stravaConnectContinue => 'Continue to Strava';
+
+  @override
   String get stravaConnectSuccess => 'Strava account connected.';
 
   @override
   String get stravaConnectFailed =>
-      'Strava connection failed. Please try again.';
+      'Strava connection failed. Check that Strava Cloud Functions are deployed and STRAVA_CLIENT_ID / STRAVA_CLIENT_SECRET secrets are configured.';
 
   @override
   String get stravaConnectLaunchFailed =>

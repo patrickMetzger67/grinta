@@ -112,6 +112,14 @@ class _WearableDevicesDialogContentState
   WearableDeviceType _selectedType = WearableDeviceType.strava;
   bool _syncBusy = false;
   String? _disconnectingType;
+  final TextEditingController _stravaAccountController =
+      TextEditingController();
+
+  @override
+  void dispose() {
+    _stravaAccountController.dispose();
+    super.dispose();
+  }
 
   List<WearableDeviceType> _availableTypes(_WearableDialogState state) {
     final l10n = context.l10n;
@@ -172,6 +180,12 @@ class _WearableDevicesDialogContentState
     final uid = FirebaseAuth.instance.currentUser?.uid;
     if (uid == null || widget.playerId.isEmpty) return;
 
+    if (_selectedType == WearableDeviceType.strava &&
+        _stravaAccountController.text.trim().isEmpty) {
+      _showConnectError(context.l10n.stravaAccountHintRequired);
+      return;
+    }
+
     setState(() => _syncBusy = true);
 
     try {
@@ -189,6 +203,7 @@ class _WearableDevicesDialogContentState
           final result = await StravaSyncService.instance.startOAuth(
             playerId: widget.playerId,
             initiatedBy: widget.initiatedBy,
+            stravaAccountHint: _stravaAccountController.text.trim(),
           );
           if (!mounted) return;
           if (result != StravaConnectResult.success) {
@@ -755,9 +770,9 @@ class _WearableDevicesDialogContentState
           _ConnectedWearableTile(
             icon: connectedTypes[i].icon,
             title: connectedTypes[i].label(l10n),
-            subtitle: _statusSubtitle(
+            subtitle: _connectedTileSubtitle(
               type: connectedTypes[i],
-              connected: true,
+              state: state,
             ),
             disconnectLabel: l10n.settingsDevicesDisconnect,
             disconnectBusy: _disconnectingType == connectedTypes[i].name,
@@ -857,6 +872,61 @@ class _WearableDevicesDialogContentState
               fontSize: 13,
             ),
           ),
+          if (selectedType == WearableDeviceType.strava) ...[
+            const SizedBox(height: 12),
+            Text(
+              l10n.stravaAccountHintGuidance,
+              style: TextStyle(
+                color: colors.textSecondary,
+                fontSize: 13,
+              ),
+            ),
+            const SizedBox(height: 12),
+            TextField(
+              controller: _stravaAccountController,
+              keyboardType: TextInputType.emailAddress,
+              textInputAction: TextInputAction.done,
+              autocorrect: false,
+              enableSuggestions: false,
+              decoration: InputDecoration(
+                labelText: l10n.stravaAccountHintLabel,
+                hintText: l10n.stravaAccountHintPlaceholder,
+                labelStyle: TextStyle(
+                  color: colors.textSecondary,
+                  fontWeight: FontWeight.w500,
+                  fontSize: 13,
+                ),
+                hintStyle: TextStyle(
+                  color: colors.textSecondary.withValues(alpha: 0.7),
+                  fontSize: 13,
+                ),
+                filled: true,
+                fillColor: colors.surface,
+                contentPadding: const EdgeInsets.symmetric(
+                  horizontal: 14,
+                  vertical: 12,
+                ),
+                enabledBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(14),
+                  borderSide: BorderSide(color: colors.border),
+                ),
+                focusedBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(14),
+                  borderSide: BorderSide(color: colors.primary, width: 1.5),
+                ),
+              ),
+              style: TextStyle(
+                color: colors.textPrimary,
+                fontWeight: FontWeight.w600,
+                fontSize: 14,
+              ),
+              onSubmitted: (_) {
+                if (!_syncBusy && !syncDisabled) {
+                  _syncSelectedType();
+                }
+              },
+            ),
+          ],
           if (platformOnlyMessage != null) ...[
             const SizedBox(height: 10),
             Text(
@@ -880,7 +950,11 @@ class _WearableDevicesDialogContentState
                     ),
                   )
                 : const Icon(Icons.link_rounded, size: 20),
-            label: Text(l10n.settingsDevicesSync),
+            label: Text(
+              selectedType == WearableDeviceType.strava
+                  ? l10n.stravaConnectContinue
+                  : l10n.settingsDevicesSync,
+            ),
           ),
         ],
       ),

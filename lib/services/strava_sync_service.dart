@@ -29,10 +29,16 @@ class StravaSyncService {
   Future<StravaConnectResult> startOAuth({
     required String playerId,
     required String initiatedBy,
+    String? stravaAccountHint,
   }) async {
     final uid = FirebaseAuth.instance.currentUser?.uid;
     if (uid == null) {
       return StravaConnectResult.unauthenticated;
+    }
+
+    final hint = stravaAccountHint?.trim() ?? '';
+    if (hint.isEmpty) {
+      return StravaConnectResult.failed;
     }
 
     try {
@@ -40,6 +46,7 @@ class StravaSyncService {
       final result = await callable.call(<String, dynamic>{
         'playerId': playerId,
         'initiatedBy': initiatedBy,
+        'stravaAccountHint': hint,
       });
 
       final data = result.data;

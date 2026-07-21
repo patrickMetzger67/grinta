@@ -72,18 +72,19 @@ firebase deploy --only functions:whoopOAuthStart,functions:whoopOAuthCallback,fu
 1. Sign in to Grinta and select a player profile.
 2. Open **Settings** → **Devices/Applications** (badge shows the connected count).
 3. The dialog lists existing connections. Tap the **+** FAB to add one.
-4. Select **Strava** in the **Device/application type** dropdown and tap **Sync**.
-5. Complete Strava OAuth in the browser.
-6. App returns via `grinta://strava/callback` — you should see a success snackbar; the dialog returns to the connections list.
-7. Toggle **Coach visibility** for activities and profile under the Strava row.
-8. Tap **Disconnect** on the Strava row to disconnect.
+4. Select **Strava** in the **Device/application type** dropdown.
+5. Enter the **Strava account** (email or username) — it may differ from the Grinta email — then tap **Continue to Strava**.
+6. Complete Strava OAuth in the browser with that Strava account.
+7. App returns via `grinta://strava/callback` — you should see a success snackbar; the dialog returns to the connections list.
+8. Toggle **Coach visibility** for activities and profile under the Strava row.
+9. Tap **Disconnect** on the Strava row to disconnect.
 
 ### Coach flow
 
 1. Sign in as a coach with roster management rights.
 2. Open a team → player **Trackers** sheet.
 3. Tap **Devices/Applications** for a player.
-4. Tap **+**, select **Strava**, and complete OAuth with the player's Strava account.
+4. Tap **+**, select **Strava**, enter the player's Strava account, then complete OAuth with that account.
 
 ## Firestore layout
 

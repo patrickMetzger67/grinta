@@ -6438,6 +6438,36 @@ abstract class AppLocalizations {
   /// **'Strava connecté — synchronisation des données à venir (Phase 2)'**
   String get stravaConnectToggleConnectedSubtitle;
 
+  /// No description provided for @stravaAccountHintGuidance.
+  ///
+  /// In fr, this message translates to:
+  /// **'L\'email Strava peut être différent de ton compte Grinta. Indique le compte Strava à utiliser, puis connecte-toi avec ce compte sur la page Strava.'**
+  String get stravaAccountHintGuidance;
+
+  /// No description provided for @stravaAccountHintLabel.
+  ///
+  /// In fr, this message translates to:
+  /// **'Compte Strava'**
+  String get stravaAccountHintLabel;
+
+  /// No description provided for @stravaAccountHintPlaceholder.
+  ///
+  /// In fr, this message translates to:
+  /// **'email ou nom d\'utilisateur Strava'**
+  String get stravaAccountHintPlaceholder;
+
+  /// No description provided for @stravaAccountHintRequired.
+  ///
+  /// In fr, this message translates to:
+  /// **'Indique ton compte Strava (email ou nom d\'utilisateur) avant de continuer.'**
+  String get stravaAccountHintRequired;
+
+  /// No description provided for @stravaConnectContinue.
+  ///
+  /// In fr, this message translates to:
+  /// **'Continuer vers Strava'**
+  String get stravaConnectContinue;
+
   /// No description provided for @stravaConnectSuccess.
   ///
   /// In fr, this message translates to:
@@ -6447,7 +6477,7 @@ abstract class AppLocalizations {
   /// No description provided for @stravaConnectFailed.
   ///
   /// In fr, this message translates to:
-  /// **'La connexion Strava a échoué. Réessayez.'**
+  /// **'La connexion Strava a échoué. Vérifie que les Cloud Functions Strava sont déployées et que les secrets STRAVA_CLIENT_ID / STRAVA_CLIENT_SECRET sont configurés.'**
   String get stravaConnectFailed;
 
   /// No description provided for @stravaConnectLaunchFailed.

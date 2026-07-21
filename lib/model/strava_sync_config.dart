@@ -7,6 +7,7 @@ class StravaSyncConfig {
     this.connectedAt,
     this.lastSyncedAt,
     this.stravaAthleteId,
+    this.stravaAccountHint,
     this.initiatedBy,
     this.coachUid,
     this.coachVisibility = const StravaCoachVisibility(),
@@ -16,6 +17,8 @@ class StravaSyncConfig {
   final DateTime? connectedAt;
   final DateTime? lastSyncedAt;
   final String? stravaAthleteId;
+  /// User-entered Strava email or username before OAuth (guidance only).
+  final String? stravaAccountHint;
   final String? initiatedBy;
   final String? coachUid;
   final StravaCoachVisibility coachVisibility;
@@ -29,6 +32,7 @@ class StravaSyncConfig {
       connectedAt: _readTimestamp(data['connectedAt']),
       lastSyncedAt: _readTimestamp(data['lastSyncedAt']),
       stravaAthleteId: data['stravaAthleteId'] as String?,
+      stravaAccountHint: data['stravaAccountHint'] as String?,
       initiatedBy: data['initiatedBy'] as String?,
       coachUid: data['coachUid'] as String?,
       coachVisibility: StravaCoachVisibility.fromMap(
@@ -45,6 +49,7 @@ class StravaSyncConfig {
       if (lastSyncedAt != null)
         'lastSyncedAt': Timestamp.fromDate(lastSyncedAt!),
       if (stravaAthleteId != null) 'stravaAthleteId': stravaAthleteId,
+      if (stravaAccountHint != null) 'stravaAccountHint': stravaAccountHint,
       if (initiatedBy != null) 'initiatedBy': initiatedBy,
       if (coachUid != null) 'coachUid': coachUid,
       'coachVisibility': coachVisibility.toMap(),

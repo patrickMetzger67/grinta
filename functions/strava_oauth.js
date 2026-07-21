@@ -208,6 +208,7 @@ async function persistStravaConnection(db, pending, tokenResponse) {
         uid: ownerUid,
         playerId,
         stravaAthleteId,
+        stravaAccountHint: pending.stravaAccountHint ?? null,
         status: 'connected',
         scopes: STRAVA_SCOPES.split(','),
         initiatedBy: pending.initiatedBy,
@@ -230,6 +231,7 @@ async function persistStravaConnection(db, pending, tokenResponse) {
         connected: true,
         connectedAt: FieldValue.serverTimestamp(),
         stravaAthleteId,
+        stravaAccountHint: pending.stravaAccountHint ?? null,
         initiatedBy: pending.initiatedBy,
         coachUid: pending.coachUid ?? null,
         coachVisibility: existingVisibility,
@@ -269,7 +271,7 @@ function redirectToApp(res, params) {
 /**
  * Callable: stravaOAuthStart
  *
- * Request: { playerId, initiatedBy: "coach"|"player" }
+ * Request: { playerId, initiatedBy: "coach"|"player", stravaAccountHint }
  * Response: { authUrl, state }
  */
 function createStravaOAuthStart() {
@@ -289,6 +291,9 @@ function createStravaOAuthStart() {
         .toString()
         .trim()
         .toLowerCase();
+      const stravaAccountHint = (request.data?.stravaAccountHint ?? '')
+        .toString()
+        .trim();
 
       if (!playerId) {
         throw new HttpsError('invalid-argument', 'playerId is required.');
@@ -297,6 +302,12 @@ function createStravaOAuthStart() {
         throw new HttpsError(
           'invalid-argument',
           'initiatedBy must be "coach" or "player".',
+        );
+      }
+      if (!stravaAccountHint) {
+        throw new HttpsError(
+          'invalid-argument',
+          'stravaAccountHint is required.',
         );
       }
 
@@ -324,16 +335,18 @@ function createStravaOAuthStart() {
         ownerUid,
         playerId,
         initiatedBy,
+        stravaAccountHint,
         coachUid: initiatedBy === 'coach' ? callerUid : null,
         createdAt: FieldValue.serverTimestamp(),
         expiresAt,
       });
 
+      // Force the consent screen so the user can switch Strava account if needed.
       const authParams = new URLSearchParams({
         client_id: clientId,
         redirect_uri: stravaCallbackRedirectUri(),
         response_type: 'code',
-        approval_prompt: 'auto',
+        approval_prompt: 'force',
         scope: STRAVA_SCOPES,
         state,
       });
