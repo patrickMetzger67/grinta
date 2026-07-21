@@ -327,12 +327,47 @@ async function completeOAuthFromPending(db, state, code) {
 
   const result = await persistWhoopConnection(db, pending, tokenResponse);
   await pendingRef.delete();
-  return result;
+  return { ...result, returnTo: pending.returnTo ?? null };
 }
 
-function redirectToApp(res, params) {
+function isAllowedWebReturnTo(returnTo) {
+  if (!returnTo || typeof returnTo !== 'string') return false;
+  let parsed;
+  try {
+    parsed = new URL(returnTo);
+  } catch (_) {
+    return false;
+  }
+  if (parsed.protocol === 'http:' || parsed.protocol === 'https:') {
+    const host = parsed.hostname.toLowerCase();
+    if (host === 'localhost' || host === '127.0.0.1') return true;
+    if (host === 'grinta.web.app' || host === 'grinta.firebaseapp.com') {
+      return true;
+    }
+    if (host.endsWith('.web.app') || host.endsWith('.firebaseapp.com')) {
+      return true;
+    }
+  }
+  return false;
+}
+
+function redirectToApp(res, params, returnTo) {
   const query = new URLSearchParams(params).toString();
-  res.redirect(302, `grinta://whoop/callback?${query}`);
+  if (isAllowedWebReturnTo(returnTo)) {
+    const target = new URL(returnTo);
+    target.searchParams.set('whoopOAuth', '1');
+    for (const [key, value] of Object.entries(params)) {
+      if (value != null && value !== '') {
+        target.searchParams.set(key, String(value));
+      }
+    }
+    console.log('whoopOAuthCallback redirect web', target.toString());
+    res.redirect(302, target.toString());
+    return;
+  }
+  const deepLink = `grinta://whoop/callback?${query}`;
+  console.log('whoopOAuthCallback redirect deepLink', deepLink);
+  res.redirect(302, deepLink);
 }
 
 /**
@@ -361,6 +396,8 @@ function createWhoopOAuthStart() {
       const whoopAccountHint = (request.data?.whoopAccountHint ?? '')
         .toString()
         .trim();
+      const returnToRaw = (request.data?.returnTo ?? '').toString().trim();
+      const returnTo = isAllowedWebReturnTo(returnToRaw) ? returnToRaw : null;
 
       if (!playerId) {
         throw new HttpsError('invalid-argument', 'playerId is required.');
@@ -404,6 +441,7 @@ function createWhoopOAuthStart() {
         playerId,
         initiatedBy,
         whoopAccountHint,
+        returnTo,
         coachUid: initiatedBy === 'coach' ? callerUid : null,
         codeVerifier,
         createdAt: FieldValue.serverTimestamp(),
@@ -442,8 +480,14 @@ function createWhoopOAuthCallback() {
       timeoutSeconds: 30,
     },
     async (req, res) => {
+      console.log('whoopOAuthCallback hit', {
+        method: req.method,
+        query: req.query,
+      });
+
       const error = (req.query.error ?? '').toString();
       if (error) {
+        console.warn('whoopOAuthCallback provider error', error);
         redirectToApp(res, {
           success: '0',
           error,
@@ -455,6 +499,7 @@ function createWhoopOAuthCallback() {
       const state = (req.query.state ?? '').toString();
 
       if (!code || !state) {
+        console.warn('whoopOAuthCallback missing code/state');
         redirectToApp(res, {
           success: '0',
           error: 'missing_code_or_state',
@@ -465,16 +510,43 @@ function createWhoopOAuthCallback() {
       try {
         const db = getFirestore();
         const result = await completeOAuthFromPending(db, state, code);
-        redirectToApp(res, {
-          success: '1',
+        console.log('whoopOAuthCallback success', {
           playerId: result.playerId,
+          whoopUserId: result.whoopUserId,
+          returnTo: result.returnTo ?? null,
         });
+        redirectToApp(
+          res,
+          {
+            success: '1',
+            playerId: result.playerId,
+          },
+          result.returnTo,
+        );
       } catch (callbackError) {
-        console.error('whoopOAuthCallback error', callbackError);
-        redirectToApp(res, {
-          success: '0',
-          error: callbackError?.message ?? 'oauth_failed',
+        console.error('whoopOAuthCallback error', {
+          code: callbackError?.code,
+          message: callbackError?.message,
         });
+        // Best-effort: recover returnTo from pending if still present.
+        let returnTo = null;
+        try {
+          const pendingSnap = await getFirestore()
+            .collection(PENDING_COLLECTION)
+            .doc(state)
+            .get();
+          returnTo = pendingSnap.data()?.returnTo ?? null;
+        } catch (_) {
+          // ignore
+        }
+        redirectToApp(
+          res,
+          {
+            success: '0',
+            error: callbackError?.message ?? 'oauth_failed',
+          },
+          returnTo,
+        );
       }
     },
   );

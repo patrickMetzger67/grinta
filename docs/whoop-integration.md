@@ -25,11 +25,10 @@ Register this **HTTPS** redirect URI in the Whoop app settings:
 https://europe-west1-aserstein-2453e.cloudfunctions.net/whoopOAuthCallback
 ```
 
-After OAuth, the Cloud Function stores tokens server-side and redirects the user back to the mobile app:
+After OAuth, the Cloud Function stores tokens server-side and redirects:
 
-```
-grinta://whoop/callback
-```
+- **Mobile:** `grinta://whoop/callback`
+- **Web:** back to the app origin with `?whoopOAuth=1&success=1&playerId=...`
 
 Ensure Android (`AndroidManifest.xml`) and iOS (`Info.plist`) already declare the `grinta` URL scheme (added in Phase 1).
 

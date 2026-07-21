@@ -2,12 +2,16 @@ import 'dart:async';
 
 import 'package:app_links/app_links.dart';
 import 'package:flutter/foundation.dart';
+import 'package:flutter/material.dart';
 import 'package:grinta/config/whoop_config.dart';
 import 'package:grinta/core/extensions/l10n_extension.dart';
 import 'package:grinta/navigation/app_navigator.dart';
+import 'package:grinta/services/whoop_web_return_cleanup.dart';
 import 'package:grinta/util/app_snackbar.dart';
 
-/// Handles `grinta://whoop/callback?success=1&playerId=...` after OAuth.
+/// Handles Whoop OAuth return:
+/// - mobile: `grinta://whoop/callback?success=1&playerId=...`
+/// - web: `https://.../?whoopOAuth=1&success=1&playerId=...`
 class WhoopDeepLinkService {
   WhoopDeepLinkService._();
 
@@ -21,8 +25,13 @@ class WhoopDeepLinkService {
       ValueNotifier(null);
 
   Future<void> init() async {
-    if (_initialized || kIsWeb) return;
+    if (_initialized) return;
     _initialized = true;
+
+    if (kIsWeb) {
+      _handleWebReturn();
+      return;
+    }
 
     try {
       await _capturePlatformLinks(source: 'init');
@@ -44,6 +53,19 @@ class WhoopDeepLinkService {
     _initialized = false;
   }
 
+  void _handleWebReturn() {
+    try {
+      final uri = Uri.base;
+      if (uri.queryParameters['whoopOAuth'] != '1') return;
+
+      _log('web return: $uri');
+      _handleUri(uri, source: 'web');
+      cleanWhoopOAuthQueryParams();
+    } catch (e, st) {
+      _log('_handleWebReturn error: $e\n$st');
+    }
+  }
+
   Future<void> _capturePlatformLinks({required String source}) async {
     try {
       final initialUri = await _appLinks.getInitialLink();
@@ -60,7 +82,8 @@ class WhoopDeepLinkService {
   }
 
   void _handleUri(Uri uri, {required String source}) {
-    if (!_isWhoopCallback(uri)) {
+    final isWebReturn = kIsWeb && uri.queryParameters['whoopOAuth'] == '1';
+    if (!isWebReturn && !_isWhoopCallback(uri)) {
       return;
     }
 
@@ -77,10 +100,28 @@ class WhoopDeepLinkService {
     );
     lastCallbackResult.value = result;
 
-    final context = appNavigatorKey.currentContext;
-    if (context == null || !context.mounted) return;
+    // Defer snackbar until navigator context is available.
+    scheduleMicrotask(() => _showResultSnackbar(result));
+  }
 
-    if (success) {
+  void _showResultSnackbar(WhoopOAuthCallbackResult result) {
+    final context = appNavigatorKey.currentContext;
+    if (context == null || !context.mounted) {
+      Future<void>.delayed(const Duration(milliseconds: 800), () {
+        final delayedContext = appNavigatorKey.currentContext;
+        if (delayedContext == null || !delayedContext.mounted) return;
+        _presentSnackbar(delayedContext, result);
+      });
+      return;
+    }
+    _presentSnackbar(context, result);
+  }
+
+  void _presentSnackbar(
+    BuildContext context,
+    WhoopOAuthCallbackResult result,
+  ) {
+    if (result.success) {
       AppSnackbar.show(
         context,
         context.l10n.whoopConnectSuccess,

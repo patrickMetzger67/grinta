@@ -43,11 +43,16 @@ class WhoopSyncService {
 
     try {
       final callable = _functions.httpsCallable(kWhoopOAuthStartFunctionName);
-      final result = await callable.call(<String, dynamic>{
+      final payload = <String, dynamic>{
         'playerId': playerId,
         'initiatedBy': initiatedBy,
         'whoopAccountHint': hint,
-      });
+      };
+      if (kIsWeb) {
+        // Cloud Function redirects back here after OAuth (grinta:// is mobile-only).
+        payload['returnTo'] = Uri.base.origin;
+      }
+      final result = await callable.call(payload);
 
       final data = result.data;
       if (data is! Map) {
