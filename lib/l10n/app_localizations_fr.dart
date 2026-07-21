@@ -3582,6 +3582,16 @@ class AppLocalizationsFr extends AppLocalizations {
       'Aucun appareil ou application connecté';
 
   @override
+  String get settingsDevicesAddTitle => 'Ajouter une connexion';
+
+  @override
+  String get settingsDevicesAddFabTooltip => 'Ajouter une connexion';
+
+  @override
+  String get settingsDevicesAllConnected =>
+      'Tous les appareils/applications disponibles sont déjà connectés';
+
+  @override
   String settingsDevicesBadgeLabel(int count) {
     String _temp0 = intl.Intl.pluralLogic(
       count,

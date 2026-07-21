@@ -6234,6 +6234,24 @@ abstract class AppLocalizations {
   /// **'Aucun appareil ou application connecté'**
   String get settingsDevicesNoConnected;
 
+  /// No description provided for @settingsDevicesAddTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Ajouter une connexion'**
+  String get settingsDevicesAddTitle;
+
+  /// No description provided for @settingsDevicesAddFabTooltip.
+  ///
+  /// In fr, this message translates to:
+  /// **'Ajouter une connexion'**
+  String get settingsDevicesAddFabTooltip;
+
+  /// No description provided for @settingsDevicesAllConnected.
+  ///
+  /// In fr, this message translates to:
+  /// **'Tous les appareils/applications disponibles sont déjà connectés'**
+  String get settingsDevicesAllConnected;
+
   /// No description provided for @settingsDevicesBadgeLabel.
   ///
   /// In fr, this message translates to:

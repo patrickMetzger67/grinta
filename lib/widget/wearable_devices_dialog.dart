@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:grinta/core/extensions/l10n_extension.dart';
+import 'package:grinta/l10n/app_localizations.dart';
 import 'package:grinta/model/apple_health_sync_config.dart';
 import 'package:grinta/model/fitbit_sync_config.dart';
 import 'package:grinta/model/google_health_sync_config.dart';
@@ -33,7 +34,12 @@ import 'package:grinta/widget/strava_coach_visibility_section.dart';
 import 'package:grinta/widget/wearable_device_type_dropdown.dart';
 import 'package:grinta/widget/whoop_coach_visibility_section.dart';
 
+enum _WearableDialogPage { list, add }
+
 /// Opens the wearable devices management dialog.
+///
+/// First screen lists existing connections. FAB "+" opens the add flow
+/// (device/application type dropdown, then provider connect steps).
 Future<void> showWearableDevicesDialog(
   BuildContext context, {
   required String playerId,
@@ -47,35 +53,26 @@ Future<void> showWearableDevicesDialog(
     context: context,
     barrierDismissible: true,
     builder: (dialogContext) {
-      return AlertDialog(
+      return Dialog(
         backgroundColor: colors.card,
         surfaceTintColor: Colors.transparent,
+        insetPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 24),
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(18),
           side: BorderSide(color: colors.border),
         ),
-        title: Text(
-          dialogContext.l10n.settingsDevicesSection,
-          style: TextStyle(
-            color: colors.textPrimary,
-            fontWeight: FontWeight.w700,
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 420, maxHeight: 560),
+          child: ClipRRect(
+            borderRadius: BorderRadius.circular(18),
+            child: WearableDevicesDialogContent(
+              playerId: playerId,
+              initiatedBy: initiatedBy,
+              playerName: playerName,
+              showCoachVisibility: showCoachVisibility,
+            ),
           ),
         ),
-        content: SizedBox(
-          width: 420,
-          child: WearableDevicesDialogContent(
-            playerId: playerId,
-            initiatedBy: initiatedBy,
-            playerName: playerName,
-            showCoachVisibility: showCoachVisibility,
-          ),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(dialogContext).pop(),
-            child: Text(dialogContext.l10n.settingsDevicesClose),
-          ),
-        ],
       );
     },
   );
@@ -110,27 +107,55 @@ class _WearableDevicesDialogContentState
       AppleHealthSyncRepository();
   final GoogleHealthSyncRepository _googleHealthRepository =
       GoogleHealthSyncRepository();
-  WearableDeviceType _selectedType = WearableDeviceType.whoop;
+
+  _WearableDialogPage _page = _WearableDialogPage.list;
+  WearableDeviceType _selectedType = WearableDeviceType.strava;
   bool _syncBusy = false;
   String? _disconnectingType;
 
-  Future<void> _syncSelectedType({
-    required bool whoopConnected,
-    required bool stravaConnected,
-    required bool polarConnected,
-    required bool fitbitConnected,
-    required bool appleHealthConnected,
-    required bool googleHealthConnected,
-  }) async {
-    final selectedConnected = switch (_selectedType) {
-      WearableDeviceType.whoop => whoopConnected,
-      WearableDeviceType.strava => stravaConnected,
-      WearableDeviceType.polar => polarConnected,
-      WearableDeviceType.fitbit => fitbitConnected,
-      WearableDeviceType.appleHealth => appleHealthConnected,
-      WearableDeviceType.googleHealthConnect => googleHealthConnected,
+  List<WearableDeviceType> _availableTypes(_WearableDialogState state) {
+    final l10n = context.l10n;
+    return [
+      for (final type in WearableDeviceType.selectableSorted(l10n))
+        if (!_isConnected(type, state)) type,
+    ];
+  }
+
+  WearableDeviceType _defaultAddType(List<WearableDeviceType> available) {
+    if (available.contains(WearableDeviceType.strava)) {
+      return WearableDeviceType.strava;
+    }
+    return available.isNotEmpty ? available.first : WearableDeviceType.strava;
+  }
+
+  void _openAddPage(_WearableDialogState state) {
+    final available = _availableTypes(state);
+    if (available.isEmpty) return;
+    setState(() {
+      _page = _WearableDialogPage.add;
+      _selectedType = _defaultAddType(available);
+    });
+  }
+
+  void _backToList() {
+    setState(() => _page = _WearableDialogPage.list);
+  }
+
+  bool _isConnected(WearableDeviceType type, _WearableDialogState state) {
+    return switch (type) {
+      WearableDeviceType.whoop => state.whoopConfig?.connected == true,
+      WearableDeviceType.strava => state.stravaConfig?.connected == true,
+      WearableDeviceType.polar => state.polarConfig?.connected == true,
+      WearableDeviceType.fitbit => state.fitbitConfig?.connected == true,
+      WearableDeviceType.appleHealth =>
+        state.appleHealthConfig?.connected == true,
+      WearableDeviceType.googleHealthConnect =>
+        state.googleHealthConfig?.connected == true,
     };
-    if (_syncBusy || selectedConnected) return;
+  }
+
+  Future<void> _syncSelectedType() async {
+    if (_syncBusy) return;
 
     if (_selectedType == WearableDeviceType.appleHealth &&
         !isAppleHealthSupported) {
@@ -193,7 +218,9 @@ class _WearableDevicesDialogContentState
             initiatedBy: widget.initiatedBy,
           );
           if (!mounted) return;
-          if (result != AppleHealthConnectResult.success) {
+          if (result == AppleHealthConnectResult.success) {
+            _backToList();
+          } else {
             _showConnectError(_appleHealthConnectMessage(result));
           }
         case WearableDeviceType.googleHealthConnect:
@@ -202,7 +229,9 @@ class _WearableDevicesDialogContentState
             initiatedBy: widget.initiatedBy,
           );
           if (!mounted) return;
-          if (result != GoogleHealthConnectResult.success) {
+          if (result == GoogleHealthConnectResult.success) {
+            _backToList();
+          } else {
             _showConnectError(_googleHealthConnectMessage(result));
           }
       }
@@ -214,7 +243,8 @@ class _WearableDevicesDialogContentState
           WearableDeviceType.strava => context.l10n.stravaConnectFailed,
           WearableDeviceType.polar => context.l10n.polarConnectFailed,
           WearableDeviceType.fitbit => context.l10n.fitbitConnectFailed,
-          WearableDeviceType.appleHealth => context.l10n.appleHealthConnectFailed,
+          WearableDeviceType.appleHealth =>
+            context.l10n.appleHealthConnectFailed,
           WearableDeviceType.googleHealthConnect =>
             context.l10n.googleHealthConnectFailed,
         },
@@ -282,7 +312,8 @@ class _WearableDevicesDialogContentState
   String _googleHealthConnectMessage(GoogleHealthConnectResult result) {
     final l10n = context.l10n;
     return switch (result) {
-      GoogleHealthConnectResult.androidOnly => l10n.googleHealthAndroidOnlyMessage,
+      GoogleHealthConnectResult.androidOnly =>
+        l10n.googleHealthAndroidOnlyMessage,
       GoogleHealthConnectResult.denied => l10n.googleHealthConnectDenied,
       GoogleHealthConnectResult.unauthenticated =>
         l10n.googleHealthConnectAuthRequired,
@@ -290,129 +321,41 @@ class _WearableDevicesDialogContentState
     };
   }
 
-  Future<void> _disconnectWhoop() async {
+  Future<void> _disconnect(WearableDeviceType type) async {
     if (_disconnectingType != null) return;
 
-    setState(() => _disconnectingType = 'whoop');
+    setState(() => _disconnectingType = type.name);
 
     try {
-      final ok = await WhoopSyncService.instance.disconnect(
-        playerId: widget.playerId,
-      );
+      final ok = switch (type) {
+        WearableDeviceType.whoop =>
+          await WhoopSyncService.instance.disconnect(playerId: widget.playerId),
+        WearableDeviceType.strava => await StravaSyncService.instance
+            .disconnect(playerId: widget.playerId),
+        WearableDeviceType.polar =>
+          await PolarSyncService.instance.disconnect(playerId: widget.playerId),
+        WearableDeviceType.fitbit => await FitbitSyncService.instance
+            .disconnect(playerId: widget.playerId),
+        WearableDeviceType.appleHealth => await AppleHealthSyncService.instance
+            .disconnect(playerId: widget.playerId),
+        WearableDeviceType.googleHealthConnect =>
+          await GoogleHealthSyncService.instance
+              .disconnect(playerId: widget.playerId),
+      };
       if (!mounted) return;
       if (!ok) {
+        final message = switch (type) {
+          WearableDeviceType.whoop => context.l10n.whoopDisconnectFailed,
+          WearableDeviceType.strava => context.l10n.stravaDisconnectFailed,
+          WearableDeviceType.polar => context.l10n.polarDisconnectFailed,
+          WearableDeviceType.fitbit => context.l10n.fitbitDisconnectFailed,
+          WearableDeviceType.appleHealth =>
+            context.l10n.appleHealthDisconnectFailed,
+          WearableDeviceType.googleHealthConnect =>
+            context.l10n.googleHealthDisconnectFailed,
+        };
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(context.l10n.whoopDisconnectFailed)),
-        );
-      }
-    } finally {
-      if (mounted) {
-        setState(() => _disconnectingType = null);
-      }
-    }
-  }
-
-  Future<void> _disconnectStrava() async {
-    if (_disconnectingType != null) return;
-
-    setState(() => _disconnectingType = 'strava');
-
-    try {
-      final ok = await StravaSyncService.instance.disconnect(
-        playerId: widget.playerId,
-      );
-      if (!mounted) return;
-      if (!ok) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(context.l10n.stravaDisconnectFailed)),
-        );
-      }
-    } finally {
-      if (mounted) {
-        setState(() => _disconnectingType = null);
-      }
-    }
-  }
-
-  Future<void> _disconnectPolar() async {
-    if (_disconnectingType != null) return;
-
-    setState(() => _disconnectingType = 'polar');
-
-    try {
-      final ok = await PolarSyncService.instance.disconnect(
-        playerId: widget.playerId,
-      );
-      if (!mounted) return;
-      if (!ok) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(context.l10n.polarDisconnectFailed)),
-        );
-      }
-    } finally {
-      if (mounted) {
-        setState(() => _disconnectingType = null);
-      }
-    }
-  }
-
-  Future<void> _disconnectFitbit() async {
-    if (_disconnectingType != null) return;
-
-    setState(() => _disconnectingType = 'fitbit');
-
-    try {
-      final ok = await FitbitSyncService.instance.disconnect(
-        playerId: widget.playerId,
-      );
-      if (!mounted) return;
-      if (!ok) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(context.l10n.fitbitDisconnectFailed)),
-        );
-      }
-    } finally {
-      if (mounted) {
-        setState(() => _disconnectingType = null);
-      }
-    }
-  }
-
-  Future<void> _disconnectAppleHealth() async {
-    if (_disconnectingType != null) return;
-
-    setState(() => _disconnectingType = 'appleHealth');
-
-    try {
-      final ok = await AppleHealthSyncService.instance.disconnect(
-        playerId: widget.playerId,
-      );
-      if (!mounted) return;
-      if (!ok) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(context.l10n.appleHealthDisconnectFailed)),
-        );
-      }
-    } finally {
-      if (mounted) {
-        setState(() => _disconnectingType = null);
-      }
-    }
-  }
-
-  Future<void> _disconnectGoogleHealth() async {
-    if (_disconnectingType != null) return;
-
-    setState(() => _disconnectingType = 'googleHealth');
-
-    try {
-      final ok = await GoogleHealthSyncService.instance.disconnect(
-        playerId: widget.playerId,
-      );
-      if (!mounted) return;
-      if (!ok) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(context.l10n.googleHealthDisconnectFailed)),
+          SnackBar(content: Text(message)),
         );
       }
     } finally {
@@ -471,6 +414,22 @@ class _WearableDevicesDialogContentState
             WearableDeviceType.googleHealthConnect =>
               l10n.googleHealthConnectToggleSubtitle,
           };
+  }
+
+  String _connectSubtitle(WearableDeviceType type) {
+    final l10n = context.l10n;
+    if (widget.initiatedBy == 'coach' && widget.playerName != null) {
+      return _statusSubtitle(type: type, connected: false);
+    }
+    return switch (type) {
+      WearableDeviceType.whoop => l10n.whoopConnectToggleSubtitle,
+      WearableDeviceType.strava => l10n.stravaConnectToggleSubtitle,
+      WearableDeviceType.polar => l10n.polarConnectToggleSubtitle,
+      WearableDeviceType.fitbit => l10n.fitbitConnectToggleSubtitle,
+      WearableDeviceType.appleHealth => l10n.appleHealthConnectToggleSubtitle,
+      WearableDeviceType.googleHealthConnect =>
+        l10n.googleHealthConnectToggleSubtitle,
+    };
   }
 
   Stream<_WearableDialogState> _watchDialogState(String syncOwnerUid) {
@@ -545,6 +504,105 @@ class _WearableDevicesDialogContentState
     return controller.stream;
   }
 
+  Widget? _coachVisibilityFor(
+    WearableDeviceType type,
+    _WearableDialogState state,
+    String syncOwnerUid,
+  ) {
+    if (!widget.showCoachVisibility) return null;
+
+    switch (type) {
+      case WearableDeviceType.whoop:
+        final config = state.whoopConfig;
+        if (config?.connected != true) return null;
+        if (config?.initiatedBy != 'player' && config?.initiatedBy != null) {
+          return null;
+        }
+        return WhoopCoachVisibilitySection(
+          uid: syncOwnerUid,
+          playerId: widget.playerId,
+          visibility: config?.coachVisibility ?? const WhoopCoachVisibility(),
+          contentPadding: EdgeInsets.zero,
+          dense: true,
+        );
+      case WearableDeviceType.strava:
+        final config = state.stravaConfig;
+        if (config?.connected != true) return null;
+        if (config?.initiatedBy != 'player' && config?.initiatedBy != null) {
+          return null;
+        }
+        return StravaCoachVisibilitySection(
+          uid: syncOwnerUid,
+          playerId: widget.playerId,
+          visibility: config?.coachVisibility ?? const StravaCoachVisibility(),
+          contentPadding: EdgeInsets.zero,
+          dense: true,
+        );
+      case WearableDeviceType.polar:
+        final config = state.polarConfig;
+        if (config?.connected != true) return null;
+        if (config?.initiatedBy != 'player' && config?.initiatedBy != null) {
+          return null;
+        }
+        return PolarCoachVisibilitySection(
+          uid: syncOwnerUid,
+          playerId: widget.playerId,
+          visibility: config?.coachVisibility ?? const PolarCoachVisibility(),
+          contentPadding: EdgeInsets.zero,
+          dense: true,
+        );
+      case WearableDeviceType.fitbit:
+        final config = state.fitbitConfig;
+        if (config?.connected != true) return null;
+        if (config?.initiatedBy != 'player' && config?.initiatedBy != null) {
+          return null;
+        }
+        return FitbitCoachVisibilitySection(
+          uid: syncOwnerUid,
+          playerId: widget.playerId,
+          visibility: config?.coachVisibility ?? const FitbitCoachVisibility(),
+          contentPadding: EdgeInsets.zero,
+          dense: true,
+        );
+      case WearableDeviceType.appleHealth:
+        final config = state.appleHealthConfig;
+        if (config?.connected != true) return null;
+        if (config?.initiatedBy != 'player' && config?.initiatedBy != null) {
+          return null;
+        }
+        return AppleHealthCoachVisibilitySection(
+          uid: syncOwnerUid,
+          playerId: widget.playerId,
+          visibility:
+              config?.coachVisibility ?? const AppleHealthCoachVisibility(),
+          contentPadding: EdgeInsets.zero,
+          dense: true,
+        );
+      case WearableDeviceType.googleHealthConnect:
+        final config = state.googleHealthConfig;
+        if (config?.connected != true) return null;
+        if (config?.initiatedBy != 'player' && config?.initiatedBy != null) {
+          return null;
+        }
+        return GoogleHealthCoachVisibilitySection(
+          uid: syncOwnerUid,
+          playerId: widget.playerId,
+          visibility:
+              config?.coachVisibility ?? const GoogleHealthCoachVisibility(),
+          contentPadding: EdgeInsets.zero,
+          dense: true,
+        );
+    }
+  }
+
+  List<WearableDeviceType> _connectedTypes(_WearableDialogState state) {
+    final l10n = context.l10n;
+    return [
+      for (final type in WearableDeviceType.selectableSorted(l10n))
+        if (_isConnected(type, state)) type,
+    ];
+  }
+
   @override
   Widget build(BuildContext context) {
     final colors = context.appColors;
@@ -563,299 +621,269 @@ class _WearableDevicesDialogContentState
     return StreamBuilder<_WearableDialogState>(
       stream: _watchDialogState(syncOwnerUid),
       builder: (context, snapshot) {
-        final state = snapshot.data;
-        final whoopConfig = state?.whoopConfig;
-        final stravaConfig = state?.stravaConfig;
-        final polarConfig = state?.polarConfig;
-        final fitbitConfig = state?.fitbitConfig;
-        final appleHealthConfig = state?.appleHealthConfig;
-        final googleHealthConfig = state?.googleHealthConfig;
-        final whoopConnected = whoopConfig?.connected == true;
-        final stravaConnected = stravaConfig?.connected == true;
-        final polarConnected = polarConfig?.connected == true;
-        final fitbitConnected = fitbitConfig?.connected == true;
-        final appleHealthConnected = appleHealthConfig?.connected == true;
-        final googleHealthConnected = googleHealthConfig?.connected == true;
-        final selectedConnected = switch (_selectedType) {
-          WearableDeviceType.whoop => whoopConnected,
-          WearableDeviceType.strava => stravaConnected,
-          WearableDeviceType.polar => polarConnected,
-          WearableDeviceType.fitbit => fitbitConnected,
-          WearableDeviceType.appleHealth => appleHealthConnected,
-          WearableDeviceType.googleHealthConnect => googleHealthConnected,
-        };
-        final showWhoopCoachVisibility = widget.showCoachVisibility &&
-            whoopConnected &&
-            (whoopConfig?.initiatedBy == 'player' ||
-                whoopConfig?.initiatedBy == null);
-        final showStravaCoachVisibility = widget.showCoachVisibility &&
-            stravaConnected &&
-            (stravaConfig?.initiatedBy == 'player' ||
-                stravaConfig?.initiatedBy == null);
-        final showPolarCoachVisibility = widget.showCoachVisibility &&
-            polarConnected &&
-            (polarConfig?.initiatedBy == 'player' ||
-                polarConfig?.initiatedBy == null);
-        final showFitbitCoachVisibility = widget.showCoachVisibility &&
-            fitbitConnected &&
-            (fitbitConfig?.initiatedBy == 'player' ||
-                fitbitConfig?.initiatedBy == null);
-        final showAppleHealthCoachVisibility = widget.showCoachVisibility &&
-            appleHealthConnected &&
-            (appleHealthConfig?.initiatedBy == 'player' ||
-                appleHealthConfig?.initiatedBy == null);
-        final showGoogleHealthCoachVisibility = widget.showCoachVisibility &&
-            googleHealthConnected &&
-            (googleHealthConfig?.initiatedBy == 'player' ||
-                googleHealthConfig?.initiatedBy == null);
-        final hasConnected = whoopConnected ||
-            stravaConnected ||
-            polarConnected ||
-            fitbitConnected ||
-            appleHealthConnected ||
-            googleHealthConnected;
-        final appleHealthIosOnly = _selectedType == WearableDeviceType.appleHealth &&
-            !isAppleHealthSupported;
-        final googleHealthAndroidOnly =
-            _selectedType == WearableDeviceType.googleHealthConnect &&
-                !isGoogleHealthConnectSupported;
-        final platformOnlyMessage = appleHealthIosOnly
-            ? l10n.appleHealthIosOnlyMessage
-            : googleHealthAndroidOnly
-                ? l10n.googleHealthAndroidOnlyMessage
-                : null;
-        final syncDisabled = appleHealthIosOnly || googleHealthAndroidOnly;
+        final state = snapshot.data ?? const _WearableDialogState();
+        final connectedTypes = _connectedTypes(state);
+        final availableTypes = _availableTypes(state);
 
-        return SingleChildScrollView(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              WearableDeviceTypeDropdown(
-                value: _selectedType,
-                dense: true,
-                onChanged: (value) {
-                  if (value == null) return;
-                  setState(() => _selectedType = value);
-                },
+        // After OAuth completes in the browser, return to the list.
+        if (_page == _WearableDialogPage.add &&
+            _isConnected(_selectedType, state)) {
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            if (mounted && _page == _WearableDialogPage.add) {
+              _backToList();
+            }
+          });
+        }
+
+        final title = _page == _WearableDialogPage.add
+            ? l10n.settingsDevicesAddTitle
+            : l10n.settingsDevicesSection;
+
+        return Scaffold(
+          backgroundColor: colors.card,
+          appBar: AppBar(
+            backgroundColor: colors.card,
+            surfaceTintColor: Colors.transparent,
+            elevation: 0,
+            automaticallyImplyLeading: false,
+            leading: _page == _WearableDialogPage.add
+                ? IconButton(
+                    tooltip: MaterialLocalizations.of(context).backButtonTooltip,
+                    onPressed: _backToList,
+                    icon: Icon(
+                      Icons.arrow_back_rounded,
+                      color: colors.textPrimary,
+                    ),
+                  )
+                : null,
+            title: Text(
+              title,
+              style: TextStyle(
+                color: colors.textPrimary,
+                fontWeight: FontWeight.w700,
+                fontSize: 18,
               ),
-              if (platformOnlyMessage != null) ...[
-                const SizedBox(height: 10),
-                Text(
-                  platformOnlyMessage,
-                  style: TextStyle(
-                    color: colors.textSecondary,
-                    fontSize: 13,
-                  ),
-                ),
-              ],
-              const SizedBox(height: 12),
-              ElevatedButton.icon(
-                onPressed: _syncBusy || selectedConnected || syncDisabled
-                    ? null
-                    : () => _syncSelectedType(
-                          whoopConnected: whoopConnected,
-                          stravaConnected: stravaConnected,
-                          polarConnected: polarConnected,
-                          fitbitConnected: fitbitConnected,
-                          appleHealthConnected: appleHealthConnected,
-                          googleHealthConnected: googleHealthConnected,
-                        ),
-                icon: _syncBusy
-                    ? const SizedBox(
-                        width: 18,
-                        height: 18,
-                        child: CircularProgressIndicator(
-                          strokeWidth: 2,
-                          color: Colors.white,
-                        ),
-                      )
-                    : const Icon(Icons.sync_rounded, size: 20),
-                label: Text(l10n.settingsDevicesSync),
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.of(context).pop(),
+                child: Text(l10n.settingsDevicesClose),
               ),
-              const SizedBox(height: 20),
-              Text(
-                l10n.settingsDevicesConnectedTitle,
-                style: TextStyle(
-                  color: colors.textSecondary,
-                  fontWeight: FontWeight.w600,
-                  fontSize: 13,
-                ),
-              ),
-              const SizedBox(height: 8),
-              if (whoopConnected)
-                _ConnectedWearableTile(
-                  icon: WearableDeviceType.whoop.icon,
-                  title: WearableDeviceType.whoop.label(l10n),
-                  subtitle: _statusSubtitle(
-                    type: WearableDeviceType.whoop,
-                    connected: true,
-                  ),
-                  disconnectLabel: l10n.settingsDevicesDisconnect,
-                  disconnectBusy: _disconnectingType == 'whoop',
-                  onDisconnect: _disconnectWhoop,
-                ),
-              if (whoopConnected &&
-                  (stravaConnected ||
-                      polarConnected ||
-                      fitbitConnected ||
-                      appleHealthConnected ||
-                      googleHealthConnected))
-                const SizedBox(height: 8),
-              if (stravaConnected)
-                _ConnectedWearableTile(
-                  icon: WearableDeviceType.strava.icon,
-                  title: WearableDeviceType.strava.label(l10n),
-                  subtitle: _statusSubtitle(
-                    type: WearableDeviceType.strava,
-                    connected: true,
-                  ),
-                  disconnectLabel: l10n.settingsDevicesDisconnect,
-                  disconnectBusy: _disconnectingType == 'strava',
-                  onDisconnect: _disconnectStrava,
-                ),
-              if (stravaConnected &&
-                  (polarConnected ||
-                      fitbitConnected ||
-                      appleHealthConnected ||
-                      googleHealthConnected))
-                const SizedBox(height: 8),
-              if (polarConnected)
-                _ConnectedWearableTile(
-                  icon: WearableDeviceType.polar.icon,
-                  title: WearableDeviceType.polar.label(l10n),
-                  subtitle: _statusSubtitle(
-                    type: WearableDeviceType.polar,
-                    connected: true,
-                  ),
-                  disconnectLabel: l10n.settingsDevicesDisconnect,
-                  disconnectBusy: _disconnectingType == 'polar',
-                  onDisconnect: _disconnectPolar,
-                ),
-              if (polarConnected &&
-                  (fitbitConnected ||
-                      appleHealthConnected ||
-                      googleHealthConnected))
-                const SizedBox(height: 8),
-              if (fitbitConnected)
-                _ConnectedWearableTile(
-                  icon: WearableDeviceType.fitbit.icon,
-                  title: WearableDeviceType.fitbit.label(l10n),
-                  subtitle: _statusSubtitle(
-                    type: WearableDeviceType.fitbit,
-                    connected: true,
-                  ),
-                  disconnectLabel: l10n.settingsDevicesDisconnect,
-                  disconnectBusy: _disconnectingType == 'fitbit',
-                  onDisconnect: _disconnectFitbit,
-                ),
-              if (fitbitConnected &&
-                  (appleHealthConnected || googleHealthConnected))
-                const SizedBox(height: 8),
-              if (appleHealthConnected)
-                _ConnectedWearableTile(
-                  icon: WearableDeviceType.appleHealth.icon,
-                  title: WearableDeviceType.appleHealth.label(l10n),
-                  subtitle: _statusSubtitle(
-                    type: WearableDeviceType.appleHealth,
-                    connected: true,
-                  ),
-                  disconnectLabel: l10n.settingsDevicesDisconnect,
-                  disconnectBusy: _disconnectingType == 'appleHealth',
-                  onDisconnect: _disconnectAppleHealth,
-                ),
-              if (appleHealthConnected && googleHealthConnected)
-                const SizedBox(height: 8),
-              if (googleHealthConnected)
-                _ConnectedWearableTile(
-                  icon: WearableDeviceType.googleHealthConnect.icon,
-                  title: WearableDeviceType.googleHealthConnect.label(l10n),
-                  subtitle: _statusSubtitle(
-                    type: WearableDeviceType.googleHealthConnect,
-                    connected: true,
-                  ),
-                  disconnectLabel: l10n.settingsDevicesDisconnect,
-                  disconnectBusy: _disconnectingType == 'googleHealth',
-                  onDisconnect: _disconnectGoogleHealth,
-                ),
-              if (!hasConnected)
-                Text(
-                  l10n.settingsDevicesNoConnected,
-                  style: TextStyle(
-                    color: colors.textSecondary,
-                    fontSize: 13,
-                  ),
-                ),
-              if (showWhoopCoachVisibility) ...[
-                const SizedBox(height: 8),
-                WhoopCoachVisibilitySection(
-                  uid: syncOwnerUid,
-                  playerId: widget.playerId,
-                  visibility:
-                      whoopConfig?.coachVisibility ?? const WhoopCoachVisibility(),
-                  contentPadding: EdgeInsets.zero,
-                  dense: true,
-                ),
-              ],
-              if (showStravaCoachVisibility) ...[
-                const SizedBox(height: 8),
-                StravaCoachVisibilitySection(
-                  uid: syncOwnerUid,
-                  playerId: widget.playerId,
-                  visibility: stravaConfig?.coachVisibility ??
-                      const StravaCoachVisibility(),
-                  contentPadding: EdgeInsets.zero,
-                  dense: true,
-                ),
-              ],
-              if (showPolarCoachVisibility) ...[
-                const SizedBox(height: 8),
-                PolarCoachVisibilitySection(
-                  uid: syncOwnerUid,
-                  playerId: widget.playerId,
-                  visibility: polarConfig?.coachVisibility ??
-                      const PolarCoachVisibility(),
-                  contentPadding: EdgeInsets.zero,
-                  dense: true,
-                ),
-              ],
-              if (showFitbitCoachVisibility) ...[
-                const SizedBox(height: 8),
-                FitbitCoachVisibilitySection(
-                  uid: syncOwnerUid,
-                  playerId: widget.playerId,
-                  visibility: fitbitConfig?.coachVisibility ??
-                      const FitbitCoachVisibility(),
-                  contentPadding: EdgeInsets.zero,
-                  dense: true,
-                ),
-              ],
-              if (showAppleHealthCoachVisibility) ...[
-                const SizedBox(height: 8),
-                AppleHealthCoachVisibilitySection(
-                  uid: syncOwnerUid,
-                  playerId: widget.playerId,
-                  visibility: appleHealthConfig?.coachVisibility ??
-                      const AppleHealthCoachVisibility(),
-                  contentPadding: EdgeInsets.zero,
-                  dense: true,
-                ),
-              ],
-              if (showGoogleHealthCoachVisibility) ...[
-                const SizedBox(height: 8),
-                GoogleHealthCoachVisibilitySection(
-                  uid: syncOwnerUid,
-                  playerId: widget.playerId,
-                  visibility: googleHealthConfig?.coachVisibility ??
-                      const GoogleHealthCoachVisibility(),
-                  contentPadding: EdgeInsets.zero,
-                  dense: true,
-                ),
-              ],
             ],
           ),
+          floatingActionButton: _page == _WearableDialogPage.list &&
+                  availableTypes.isNotEmpty
+              ? FloatingActionButton(
+                  tooltip: l10n.settingsDevicesAddFabTooltip,
+                  onPressed: () => _openAddPage(state),
+                  child: const Icon(Icons.add_rounded),
+                )
+              : null,
+          body: _page == _WearableDialogPage.add
+              ? _buildAddPage(
+                  colors: colors,
+                  l10n: l10n,
+                  availableTypes: availableTypes,
+                )
+              : _buildListPage(
+                  colors: colors,
+                  l10n: l10n,
+                  state: state,
+                  syncOwnerUid: syncOwnerUid,
+                  connectedTypes: connectedTypes,
+                  availableTypes: availableTypes,
+                ),
         );
       },
+    );
+  }
+
+  Widget _buildListPage({
+    required AppColors colors,
+    required AppLocalizations l10n,
+    required _WearableDialogState state,
+    required String syncOwnerUid,
+    required List<WearableDeviceType> connectedTypes,
+    required List<WearableDeviceType> availableTypes,
+  }) {
+    if (connectedTypes.isEmpty) {
+      return Padding(
+        padding: const EdgeInsets.fromLTRB(20, 8, 20, 88),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Text(
+              l10n.settingsDevicesConnectedTitle,
+              style: TextStyle(
+                color: colors.textSecondary,
+                fontWeight: FontWeight.w600,
+                fontSize: 13,
+              ),
+            ),
+            const SizedBox(height: 16),
+            Expanded(
+              child: Center(
+                child: Text(
+                  l10n.settingsDevicesNoConnected,
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    color: colors.textSecondary,
+                    fontSize: 14,
+                  ),
+                ),
+              ),
+            ),
+          ],
+        ),
+      );
+    }
+
+    return ListView(
+      padding: const EdgeInsets.fromLTRB(16, 4, 16, 88),
+      children: [
+        Text(
+          l10n.settingsDevicesConnectedTitle,
+          style: TextStyle(
+            color: colors.textSecondary,
+            fontWeight: FontWeight.w600,
+            fontSize: 13,
+          ),
+        ),
+        const SizedBox(height: 10),
+        for (var i = 0; i < connectedTypes.length; i++) ...[
+          if (i > 0) const SizedBox(height: 8),
+          _ConnectedWearableTile(
+            icon: connectedTypes[i].icon,
+            title: connectedTypes[i].label(l10n),
+            subtitle: _statusSubtitle(
+              type: connectedTypes[i],
+              connected: true,
+            ),
+            disconnectLabel: l10n.settingsDevicesDisconnect,
+            disconnectBusy: _disconnectingType == connectedTypes[i].name,
+            onDisconnect: () => _disconnect(connectedTypes[i]),
+          ),
+          Builder(
+            builder: (context) {
+              final coachVisibility = _coachVisibilityFor(
+                connectedTypes[i],
+                state,
+                syncOwnerUid,
+              );
+              if (coachVisibility == null) {
+                return const SizedBox.shrink();
+              }
+              return Padding(
+                padding: const EdgeInsets.only(top: 4),
+                child: coachVisibility,
+              );
+            },
+          ),
+        ],
+        if (availableTypes.isEmpty) ...[
+          const SizedBox(height: 16),
+          Text(
+            l10n.settingsDevicesAllConnected,
+            style: TextStyle(
+              color: colors.textSecondary,
+              fontSize: 13,
+            ),
+          ),
+        ],
+      ],
+    );
+  }
+
+  Widget _buildAddPage({
+    required AppColors colors,
+    required AppLocalizations l10n,
+    required List<WearableDeviceType> availableTypes,
+  }) {
+    if (availableTypes.isEmpty) {
+      return Padding(
+        padding: const EdgeInsets.all(20),
+        child: Text(
+          l10n.settingsDevicesAllConnected,
+          style: TextStyle(
+            color: colors.textSecondary,
+            fontSize: 14,
+          ),
+        ),
+      );
+    }
+
+    final selectedType = availableTypes.contains(_selectedType)
+        ? _selectedType
+        : _defaultAddType(availableTypes);
+    if (selectedType != _selectedType) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted && _selectedType != selectedType) {
+          setState(() => _selectedType = selectedType);
+        }
+      });
+    }
+
+    final appleHealthIosOnly = selectedType == WearableDeviceType.appleHealth &&
+        !isAppleHealthSupported;
+    final googleHealthAndroidOnly =
+        selectedType == WearableDeviceType.googleHealthConnect &&
+            !isGoogleHealthConnectSupported;
+    final platformOnlyMessage = appleHealthIosOnly
+        ? l10n.appleHealthIosOnlyMessage
+        : googleHealthAndroidOnly
+            ? l10n.googleHealthAndroidOnlyMessage
+            : null;
+    final syncDisabled = appleHealthIosOnly || googleHealthAndroidOnly;
+
+    return SingleChildScrollView(
+      padding: const EdgeInsets.fromLTRB(20, 8, 20, 24),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          WearableDeviceTypeDropdown(
+            value: selectedType,
+            types: availableTypes,
+            dense: true,
+            onChanged: (value) {
+              if (value == null) return;
+              setState(() => _selectedType = value);
+            },
+          ),
+          const SizedBox(height: 12),
+          Text(
+            _connectSubtitle(selectedType),
+            style: TextStyle(
+              color: colors.textSecondary,
+              fontSize: 13,
+            ),
+          ),
+          if (platformOnlyMessage != null) ...[
+            const SizedBox(height: 10),
+            Text(
+              platformOnlyMessage,
+              style: TextStyle(
+                color: colors.textSecondary,
+                fontSize: 13,
+              ),
+            ),
+          ],
+          const SizedBox(height: 16),
+          ElevatedButton.icon(
+            onPressed: _syncBusy || syncDisabled ? null : _syncSelectedType,
+            icon: _syncBusy
+                ? const SizedBox(
+                    width: 18,
+                    height: 18,
+                    child: CircularProgressIndicator(
+                      strokeWidth: 2,
+                      color: Colors.white,
+                    ),
+                  )
+                : const Icon(Icons.link_rounded, size: 20),
+            label: Text(l10n.settingsDevicesSync),
+          ),
+        ],
+      ),
     );
   }
 }

@@ -64,8 +64,8 @@ firebase deploy --only firestore:rules
 ### Player flow
 
 1. Sign in to Grinta and select a player profile.
-2. Open **Settings** → **Appareils/Applications** (Devices/Applications).
-3. Select **Polar** in the dropdown and tap **Sync**.
+2. Open **Settings** → **Appareils/Applications** (Devices/Applications) — badge shows the connected count.
+3. Tap **+**, select **Polar** in the type dropdown, then tap **Sync**.
 4. Complete Polar OAuth in the browser (Polar Flow account).
 5. App returns via `grinta://polar/callback` — you should see a success snackbar.
 6. Toggle **Coach visibility** per data type (training, sleep, recovery/HR, profile, body).

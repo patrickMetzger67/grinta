@@ -9,11 +9,14 @@ class WearableDeviceTypeDropdown extends StatelessWidget {
     super.key,
     required this.value,
     required this.onChanged,
+    this.types,
     this.dense = false,
   });
 
   final WearableDeviceType value;
   final ValueChanged<WearableDeviceType?> onChanged;
+  /// When set, only these types appear in the menu (already sorted by caller).
+  final List<WearableDeviceType>? types;
   final bool dense;
 
   @override
@@ -21,9 +24,14 @@ class WearableDeviceTypeDropdown extends StatelessWidget {
     final colors = context.appColors;
     final l10n = context.l10n;
     final textTheme = Theme.of(context).textTheme;
+    final items = types ?? WearableDeviceType.selectableSorted(l10n);
+    if (items.isEmpty) {
+      return const SizedBox.shrink();
+    }
+    final effectiveValue = items.contains(value) ? value : items.first;
 
     return DropdownButtonFormField<WearableDeviceType>(
-      value: value,
+      value: effectiveValue,
       isExpanded: true,
       dropdownColor: colors.surface,
       icon: Icon(
@@ -57,7 +65,7 @@ class WearableDeviceTypeDropdown extends StatelessWidget {
         fontWeight: FontWeight.w600,
         fontSize: dense ? 14 : null,
       ),
-      items: WearableDeviceType.selectableSorted(l10n).map((type) {
+      items: items.map((type) {
         return DropdownMenuItem<WearableDeviceType>(
           value: type,
           child: Row(

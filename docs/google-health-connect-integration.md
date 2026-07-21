@@ -83,10 +83,10 @@ flutter pub get
 ### Player flow
 
 1. Sign in to Grinta and select a player profile.
-2. Open **Settings** → **Appareils/Applications**.
-3. Select **Google Fit / Health Connect** in the dropdown.
+2. Open **Settings** → **Appareils/Applications** (badge shows the connected count).
+3. Tap **+**, select **Google Fit / Health Connect** in the type dropdown.
 4. Tap **Sync** → accept the Health Connect permission sheet (enable **Exercise**, heart rate, etc.).
-5. Confirm **Google Fit / Health Connect** appears under connected devices; badge count increases.
+5. Confirm **Google Fit / Health Connect** appears in the connections list; badge count increases.
 6. Toggle **Coach visibility** (workouts, heart rate, active energy, sleep).
 7. Tap **Disconnect** — clears Grinta state only. To fully revoke access: **Health Connect → App permissions → Grinta**.
 
@@ -98,7 +98,7 @@ flutter pub get
 
 ### iOS / web
 
-1. Open Appareils/Applications.
+1. Open Appareils/Applications → **+**.
 2. Select Google Fit / Health Connect → info text explains **Android only**; Sync button is disabled.
 
 ## 5. Disconnect vs revoke

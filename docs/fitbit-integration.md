@@ -68,8 +68,8 @@ firebase deploy --only firestore:rules
 ### Player flow
 
 1. Sign in to Grinta and select a player profile.
-2. Open **Settings** → **Appareils/Applications** (Devices/Applications).
-3. Select **Fitbit** in the dropdown and tap **Sync**.
+2. Open **Settings** → **Appareils/Applications** (Devices/Applications) — badge shows the connected count.
+3. Tap **+**, select **Fitbit** in the type dropdown, then tap **Sync**.
 4. Complete Fitbit OAuth in the browser (Fitbit account).
 5. App returns via `grinta://fitbit/callback` — you should see a success snackbar.
 6. Toggle **Coach visibility** per data type (activity, heart rate, sleep, profile, body/weight).

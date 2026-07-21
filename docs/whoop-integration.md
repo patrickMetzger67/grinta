@@ -67,8 +67,8 @@ firebase deploy --only firestore:rules
 ### Player flow
 
 1. Sign in to Grinta and select a player profile.
-2. Open **Settings** → **Appareils/Applications** (Devices/Applications).
-3. Select **Whoop** in the dropdown and tap **Sync**.
+2. Open **Settings** → **Appareils/Applications** (Devices/Applications) — badge shows the connected count.
+3. Tap **+**, select **Whoop** in the type dropdown, then tap **Sync**.
 4. Complete Whoop OAuth in the browser.
 5. App returns via `grinta://whoop/callback` — you should see a success snackbar.
 6. Toggle **Coach visibility** per data type (recovery, cycles, sleep, workout, profile, body measurements).

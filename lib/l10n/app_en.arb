@@ -1343,6 +1343,9 @@
   "settingsDevicesConnectedStatus": "Connected",
   "settingsDevicesDisconnect": "Disconnect",
   "settingsDevicesNoConnected": "No devices or applications connected",
+  "settingsDevicesAddTitle": "Add a connection",
+  "settingsDevicesAddFabTooltip": "Add a connection",
+  "settingsDevicesAllConnected": "All available devices/applications are already connected",
   "settingsDevicesBadgeLabel": "{count, plural, =0{No connected devices/applications} =1{1 connected device/application} other{{count} connected devices/applications}}",
   "@settingsDevicesBadgeLabel": {
     "placeholders": {
