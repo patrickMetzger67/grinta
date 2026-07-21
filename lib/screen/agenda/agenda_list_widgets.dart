@@ -800,6 +800,10 @@ class AgendaItemCard extends StatelessWidget {
         isManager = managedTeamsIds.contains(item.training!.teamId!);
         teamId = item.training!.teamId ?? '';
       }
+      // Staff without managers still get team rings + detail view.
+      if (!isManager && canAccessSessionDetails) {
+        isManager = true;
+      }
     }
 
     TeamPlayerMetricScores? teamPlayerMetricScores;
@@ -1058,7 +1062,8 @@ class AgendaItemCard extends StatelessWidget {
                 ),
               ),
             ],
-            if(isManager == false && item.withTracker == true && teamPlayerMetricScores != null) ... [
+            // Player rings: personal scores only (not managers/staff).
+            if(!canAccessSessionDetails && item.withTracker == true && teamPlayerMetricScores != null) ... [
               const SizedBox(height: 10),
               InkWell(
                 borderRadius: BorderRadius.circular(12),
@@ -1205,7 +1210,8 @@ class AgendaItemCard extends StatelessWidget {
                 ),
               ),
             ],
-            if(isManager && item.withTracker == true && item.teamWorkloadSummary != null) ... [
+            // Team rings: managers and roster staff (team averages).
+            if(canAccessSessionDetails && item.withTracker == true && item.teamWorkloadSummary != null) ... [
               const SizedBox(height: 10),
               InkWell(
                 borderRadius: BorderRadius.circular(16),
