@@ -518,7 +518,6 @@ class _WebNavigationShellState extends State<WebNavigationShell> {
             return _buildAdminButton(context);
           },
         ),
-        const PromoCodeRedeemSection(webCardStyle: true),
         ListenableBuilder(
           listenable: Listenable.merge([
             SubscriptionService.instance,

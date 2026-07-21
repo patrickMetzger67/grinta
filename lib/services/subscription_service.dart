@@ -911,70 +911,110 @@ class SubscriptionService extends ChangeNotifier {
     }
   }
 
-  /// Refreshes RevenueCat after a promotional grant.
+  /// Refreshes access after a promotional grant.
   ///
-  /// Returns true when [expectedEntitlement] is active locally. The Cloud
-  /// Function only succeeds after RevenueCat confirms the grant server-side.
+  /// Returns true when [expectedEntitlement] is active locally. Prefers
+  /// RevenueCat when configured; on web/desktop without store keys, falls back
+  /// to the Firestore `subscriptionAccess` mirror written by `redeemPromoCode`
+  /// (demo-critical: IAP unavailable must not block a successful promo).
   Future<bool> refreshAfterPromoRedeem({
     required String expectedEntitlement,
   }) async {
-    if (!isPurchaseAvailable) {
-      if (kDebugMode) {
-        debugPrint(
-          'SubscriptionService: refreshAfterPromoRedeem skipped — '
-          'RevenueCat SDK not configured on this platform/build.',
-        );
-      }
-      return false;
-    }
-
-    await ensureInitialized();
-    if (!_sdkConfigured) return false;
-
     final uid = FirebaseAuth.instance.currentUser?.uid;
     if (uid == null) return false;
 
-    // Promo grants target the Firebase UID; re-alias from any anonymous RC user.
-    _loggedInUid = null;
-    _lastOfferingsRefreshAt = null;
+    if (isPurchaseAvailable) {
+      await ensureInitialized();
+      if (_sdkConfigured) {
+        // Promo grants target the Firebase UID; re-alias from any anonymous RC user.
+        _loggedInUid = null;
+        _lastOfferingsRefreshAt = null;
 
-    const maxAttempts = 6;
-    const retryDelay = Duration(milliseconds: 800);
-    for (var attempt = 0; attempt < maxAttempts; attempt++) {
-      if (attempt == 0) {
-        try {
-          await Purchases.invalidateCustomerInfoCache();
-        } catch (e, st) {
-          debugPrint(
-            'SubscriptionService: invalidateCustomerInfoCache failed: $e\n$st',
-          );
+        const maxAttempts = 6;
+        const retryDelay = Duration(milliseconds: 800);
+        for (var attempt = 0; attempt < maxAttempts; attempt++) {
+          if (attempt == 0) {
+            try {
+              await Purchases.invalidateCustomerInfoCache();
+            } catch (e, st) {
+              debugPrint(
+                'SubscriptionService: invalidateCustomerInfoCache failed: $e\n$st',
+              );
+            }
+          }
+
+          await _logInRevenueCat(uid);
+          await _fetchCustomerInfo();
+
+          if (hasEntitlement(expectedEntitlement)) {
+            if (kDebugMode) {
+              debugPrint(
+                'SubscriptionService: promo entitlement verified via RC '
+                '($expectedEntitlement, attempt=${attempt + 1})',
+              );
+            }
+            return true;
+          }
+
+          if (attempt < maxAttempts - 1) {
+            await Future<void>.delayed(retryDelay);
+          }
         }
       }
+    } else if (kDebugMode) {
+      debugPrint(
+        'SubscriptionService: refreshAfterPromoRedeem — RevenueCat not '
+        'configured; verifying via Firestore subscriptionAccess mirror.',
+      );
+    }
 
-      await _logInRevenueCat(uid);
-      await _fetchCustomerInfo();
+    final mirrored = await _verifyPromoViaDurableMirror(expectedEntitlement);
+    if (!mirrored && kDebugMode) {
+      debugPrint(
+        'SubscriptionService: promo entitlement NOT visible after refresh '
+        '(expected=$expectedEntitlement firebaseUid=$uid '
+        'active=${_state.activeEntitlements.join(', ')} '
+        'purchaseAvailable=$isPurchaseAvailable)',
+      );
+    }
+    return mirrored;
+  }
+
+  /// Polls Firestore `users/{uid}.subscriptionAccess` written by redeemPromoCode.
+  Future<bool> _verifyPromoViaDurableMirror(String expectedEntitlement) async {
+    final uid = FirebaseAuth.instance.currentUser?.uid;
+    if (uid == null) return false;
+
+    const maxAttempts = 6;
+    const retryDelay = Duration(milliseconds: 500);
+    for (var attempt = 0; attempt < maxAttempts; attempt++) {
+      if (attempt > 0) {
+        await Future<void>.delayed(retryDelay);
+      }
+
+      final fromFirestore = await _loadFirestoreSubscriptionAccess(uid);
+      if (fromFirestore == null || fromFirestore.isExpired) continue;
+
+      _applyDurableEntitlements(
+        fromFirestore,
+        source: 'firestore-after-promo',
+      );
+      await SubscriptionEntitlementCache.saveForUid(
+        uid: uid,
+        entitlements: fromFirestore.entitlements,
+        productId: fromFirestore.activeProductId,
+        expiresAt: fromFirestore.expiresAt,
+      );
 
       if (hasEntitlement(expectedEntitlement)) {
         if (kDebugMode) {
           debugPrint(
-            'SubscriptionService: promo entitlement verified '
+            'SubscriptionService: promo entitlement verified via mirror '
             '($expectedEntitlement, attempt=${attempt + 1})',
           );
         }
         return true;
       }
-
-      if (attempt < maxAttempts - 1) {
-        await Future<void>.delayed(retryDelay);
-      }
-    }
-
-    if (kDebugMode) {
-      debugPrint(
-        'SubscriptionService: promo entitlement NOT visible after refresh '
-        '(expected=$expectedEntitlement firebaseUid=$uid '
-        'active=${_state.activeEntitlements.join(', ')})',
-      );
     }
     return false;
   }
