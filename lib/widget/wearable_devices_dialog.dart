@@ -447,6 +447,17 @@ class _WearableDevicesDialogContentState
     };
   }
 
+  String _connectedTileSubtitle({
+    required WearableDeviceType type,
+    required _WearableDialogState state,
+  }) {
+    final base = _statusSubtitle(type: type, connected: true);
+    if (type != WearableDeviceType.strava) return base;
+    final hint = state.stravaConfig?.stravaAccountHint?.trim();
+    if (hint == null || hint.isEmpty) return base;
+    return '$base · $hint';
+  }
+
   Stream<_WearableDialogState> _watchDialogState(String syncOwnerUid) {
     final controller = StreamController<_WearableDialogState>();
     WhoopSyncConfig? whoopConfig;
