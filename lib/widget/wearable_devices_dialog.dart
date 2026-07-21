@@ -11,6 +11,8 @@ import 'package:grinta/model/polar_sync_config.dart';
 import 'package:grinta/model/strava_sync_config.dart';
 import 'package:grinta/model/wearable_device_type.dart';
 import 'package:grinta/model/whoop_sync_config.dart';
+import 'package:grinta/model/player.dart';
+import 'package:grinta/provider/appSession.dart';
 import 'package:grinta/services/apple_health_platform.dart';
 import 'package:grinta/services/apple_health_sync_repository.dart';
 import 'package:grinta/services/apple_health_sync_service.dart';
@@ -19,6 +21,7 @@ import 'package:grinta/services/fitbit_sync_service.dart';
 import 'package:grinta/services/google_health_platform.dart';
 import 'package:grinta/services/google_health_sync_repository.dart';
 import 'package:grinta/services/google_health_sync_service.dart';
+import 'package:grinta/services/playerService.dart';
 import 'package:grinta/services/polar_sync_repository.dart';
 import 'package:grinta/services/polar_sync_service.dart';
 import 'package:grinta/services/strava_sync_repository.dart';
@@ -26,6 +29,7 @@ import 'package:grinta/services/strava_sync_service.dart';
 import 'package:grinta/services/whoop_sync_repository.dart';
 import 'package:grinta/services/whoop_sync_service.dart';
 import 'package:grinta/util/app_theme.dart';
+import 'package:grinta/util/wearable_sync_owner.dart';
 import 'package:grinta/widget/apple_health_coach_visibility_section.dart';
 import 'package:grinta/widget/fitbit_coach_visibility_section.dart';
 import 'package:grinta/widget/google_health_coach_visibility_section.dart';
@@ -33,6 +37,7 @@ import 'package:grinta/widget/polar_coach_visibility_section.dart';
 import 'package:grinta/widget/strava_coach_visibility_section.dart';
 import 'package:grinta/widget/wearable_device_type_dropdown.dart';
 import 'package:grinta/widget/whoop_coach_visibility_section.dart';
+import 'package:provider/provider.dart';
 
 enum _WearableDialogPage { list, add }
 
@@ -112,10 +117,36 @@ class _WearableDevicesDialogContentState
   WearableDeviceType _selectedType = WearableDeviceType.strava;
   bool _syncBusy = false;
   String? _disconnectingType;
+  Player? _player;
+  bool _playerLoadStarted = false;
+  bool _playerLoaded = false;
   final TextEditingController _stravaAccountController =
       TextEditingController();
   final TextEditingController _whoopAccountController =
       TextEditingController();
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (_playerLoadStarted) return;
+    _playerLoadStarted = true;
+
+    final fromSession =
+        context.read<AppSession>().currentUserPlayers[widget.playerId];
+    if (fromSession != null) {
+      _player = fromSession;
+      _playerLoaded = true;
+      return;
+    }
+
+    PlayerService().getPlayerById(widget.playerId).then((player) {
+      if (!mounted) return;
+      setState(() {
+        _player = player;
+        _playerLoaded = true;
+      });
+    });
+  }
 
   @override
   void dispose() {
@@ -721,9 +752,16 @@ class _WearableDevicesDialogContentState
       return const SizedBox.shrink();
     }
 
-    final syncOwnerUid = WhoopSyncService.instance.syncOwnerUidForPlayer(
-      uid: uid,
-      playerId: widget.playerId,
+    if (!_playerLoaded) {
+      return ColoredBox(
+        color: colors.card,
+        child: const Center(child: CircularProgressIndicator()),
+      );
+    }
+
+    final syncOwnerUid = resolveWearableSyncOwnerUid(
+      callerUid: uid,
+      player: _player,
     );
 
     return StreamBuilder<_WearableDialogState>(
@@ -732,16 +770,6 @@ class _WearableDevicesDialogContentState
         final state = snapshot.data ?? const _WearableDialogState();
         final connectedTypes = _connectedTypes(state);
         final availableTypes = _availableTypes(state);
-
-        // After OAuth completes in the browser, return to the list.
-        if (_page == _WearableDialogPage.add &&
-            _isConnected(_selectedType, state)) {
-          WidgetsBinding.instance.addPostFrameCallback((_) {
-            if (mounted && _page == _WearableDialogPage.add) {
-              _backToList();
-            }
-          });
-        }
 
         final title = _page == _WearableDialogPage.add
             ? l10n.settingsDevicesAddTitle
@@ -791,7 +819,8 @@ class _WearableDevicesDialogContentState
               ? _buildAddPage(
                   colors: colors,
                   l10n: l10n,
-                  availableTypes: availableTypes,
+                  state: state,
+                  connectedTypes: connectedTypes,
                 )
               : _buildListPage(
                   colors: colors,
@@ -905,24 +934,17 @@ class _WearableDevicesDialogContentState
   Widget _buildAddPage({
     required AppColors colors,
     required AppLocalizations l10n,
-    required List<WearableDeviceType> availableTypes,
+    required _WearableDialogState state,
+    required List<WearableDeviceType> connectedTypes,
   }) {
-    if (availableTypes.isEmpty) {
-      return Padding(
-        padding: const EdgeInsets.all(20),
-        child: Text(
-          l10n.settingsDevicesAllConnected,
-          style: TextStyle(
-            color: colors.textSecondary,
-            fontSize: 14,
-          ),
-        ),
-      );
+    final allTypes = WearableDeviceType.selectableSorted(l10n);
+    if (allTypes.isEmpty) {
+      return const SizedBox.shrink();
     }
 
-    final selectedType = availableTypes.contains(_selectedType)
+    final selectedType = allTypes.contains(_selectedType)
         ? _selectedType
-        : _defaultAddType(availableTypes);
+        : _defaultAddType(allTypes);
     if (selectedType != _selectedType) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (mounted && _selectedType != selectedType) {
@@ -931,6 +953,7 @@ class _WearableDevicesDialogContentState
       });
     }
 
+    final selectedConnected = _isConnected(selectedType, state);
     final appleHealthIosOnly = selectedType == WearableDeviceType.appleHealth &&
         !isAppleHealthSupported;
     final googleHealthAndroidOnly =
@@ -942,6 +965,7 @@ class _WearableDevicesDialogContentState
             ? l10n.googleHealthAndroidOnlyMessage
             : null;
     final syncDisabled = appleHealthIosOnly || googleHealthAndroidOnly;
+    final disconnectBusy = _disconnectingType == selectedType.name;
 
     return SingleChildScrollView(
       padding: const EdgeInsets.fromLTRB(20, 8, 20, 24),
@@ -950,7 +974,8 @@ class _WearableDevicesDialogContentState
         children: [
           WearableDeviceTypeDropdown(
             value: selectedType,
-            types: availableTypes,
+            types: allTypes,
+            connectedTypes: connectedTypes.toSet(),
             dense: true,
             onChanged: (value) {
               if (value == null) return;
@@ -959,13 +984,16 @@ class _WearableDevicesDialogContentState
           ),
           const SizedBox(height: 12),
           Text(
-            _connectSubtitle(selectedType),
+            selectedConnected
+                ? _statusSubtitle(type: selectedType, connected: true)
+                : _connectSubtitle(selectedType),
             style: TextStyle(
-              color: colors.textSecondary,
+              color: selectedConnected ? colors.success : colors.textSecondary,
               fontSize: 13,
+              fontWeight: selectedConnected ? FontWeight.w600 : FontWeight.w400,
             ),
           ),
-          if (selectedType == WearableDeviceType.strava)
+          if (!selectedConnected && selectedType == WearableDeviceType.strava)
             _buildAccountHintField(
               colors: colors,
               l10n: l10n,
@@ -975,7 +1003,7 @@ class _WearableDevicesDialogContentState
               placeholder: l10n.stravaAccountHintPlaceholder,
               syncDisabled: syncDisabled,
             ),
-          if (selectedType == WearableDeviceType.whoop)
+          if (!selectedConnected && selectedType == WearableDeviceType.whoop)
             _buildAccountHintField(
               colors: colors,
               l10n: l10n,
@@ -985,7 +1013,7 @@ class _WearableDevicesDialogContentState
               placeholder: l10n.whoopAccountHintPlaceholder,
               syncDisabled: syncDisabled,
             ),
-          if (platformOnlyMessage != null) ...[
+          if (!selectedConnected && platformOnlyMessage != null) ...[
             const SizedBox(height: 10),
             Text(
               platformOnlyMessage,
@@ -996,26 +1024,44 @@ class _WearableDevicesDialogContentState
             ),
           ],
           const SizedBox(height: 16),
-          ElevatedButton.icon(
-            onPressed: _syncBusy || syncDisabled ? null : _syncSelectedType,
-            icon: _syncBusy
-                ? const SizedBox(
-                    width: 18,
-                    height: 18,
-                    child: CircularProgressIndicator(
-                      strokeWidth: 2,
-                      color: Colors.white,
-                    ),
-                  )
-                : const Icon(Icons.link_rounded, size: 20),
-            label: Text(
-              switch (selectedType) {
-                WearableDeviceType.strava => l10n.stravaConnectContinue,
-                WearableDeviceType.whoop => l10n.whoopConnectContinue,
-                _ => l10n.settingsDevicesSync,
-              },
+          if (selectedConnected)
+            OutlinedButton.icon(
+              onPressed: disconnectBusy
+                  ? null
+                  : () => _disconnect(selectedType),
+              icon: disconnectBusy
+                  ? SizedBox(
+                      width: 18,
+                      height: 18,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                        color: colors.primary,
+                      ),
+                    )
+                  : Icon(Icons.link_off_rounded, size: 20, color: colors.primary),
+              label: Text(l10n.settingsDevicesDisconnect),
+            )
+          else
+            ElevatedButton.icon(
+              onPressed: _syncBusy || syncDisabled ? null : _syncSelectedType,
+              icon: _syncBusy
+                  ? const SizedBox(
+                      width: 18,
+                      height: 18,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                        color: Colors.white,
+                      ),
+                    )
+                  : const Icon(Icons.link_rounded, size: 20),
+              label: Text(
+                switch (selectedType) {
+                  WearableDeviceType.strava => l10n.stravaConnectContinue,
+                  WearableDeviceType.whoop => l10n.whoopConnectContinue,
+                  _ => l10n.settingsDevicesSync,
+                },
+              ),
             ),
-          ),
         ],
       ),
     );

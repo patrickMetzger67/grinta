@@ -10,6 +10,7 @@ class WearableDeviceTypeDropdown extends StatelessWidget {
     required this.value,
     required this.onChanged,
     this.types,
+    this.connectedTypes = const <WearableDeviceType>{},
     this.dense = false,
   });
 
@@ -17,6 +18,8 @@ class WearableDeviceTypeDropdown extends StatelessWidget {
   final ValueChanged<WearableDeviceType?> onChanged;
   /// When set, only these types appear in the menu (already sorted by caller).
   final List<WearableDeviceType>? types;
+  /// Types already connected — shown with a status hint in the menu.
+  final Set<WearableDeviceType> connectedTypes;
   final bool dense;
 
   @override
@@ -66,6 +69,7 @@ class WearableDeviceTypeDropdown extends StatelessWidget {
         fontSize: dense ? 14 : null,
       ),
       items: items.map((type) {
+        final connected = connectedTypes.contains(type);
         return DropdownMenuItem<WearableDeviceType>(
           value: type,
           child: Row(
@@ -82,6 +86,17 @@ class WearableDeviceTypeDropdown extends StatelessWidget {
                   overflow: TextOverflow.ellipsis,
                 ),
               ),
+              if (connected) ...[
+                const SizedBox(width: 8),
+                Text(
+                  l10n.settingsDevicesConnectedStatus,
+                  style: TextStyle(
+                    color: colors.success,
+                    fontSize: dense ? 11 : 12,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ],
             ],
           ),
         );

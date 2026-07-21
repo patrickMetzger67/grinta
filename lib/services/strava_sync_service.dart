@@ -61,7 +61,10 @@ class StravaSyncService {
 
       final launched = await launchUrl(
         Uri.parse(authUrl),
-        mode: LaunchMode.externalApplication,
+        mode: kIsWeb
+            ? LaunchMode.platformDefault
+            : LaunchMode.externalApplication,
+        webOnlyWindowName: kIsWeb ? '_self' : null,
       );
       return launched
           ? StravaConnectResult.success
@@ -110,11 +113,4 @@ class StravaSyncService {
     }
   }
 
-  /// Resolves the Firestore owner uid for a stravaSync document.
-  String syncOwnerUidForPlayer({
-    required String uid,
-    required String playerId,
-  }) {
-    return uid;
-  }
 }

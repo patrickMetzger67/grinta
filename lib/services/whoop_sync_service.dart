@@ -64,9 +64,14 @@ class WhoopSyncService {
         return WhoopConnectResult.failed;
       }
 
+      // Web: stay in the same tab so OAuth returns to this Flutter session.
+      // Mobile: open the system browser, then return via grinta:// deep link.
       final launched = await launchUrl(
         Uri.parse(authUrl),
-        mode: LaunchMode.externalApplication,
+        mode: kIsWeb
+            ? LaunchMode.platformDefault
+            : LaunchMode.externalApplication,
+        webOnlyWindowName: kIsWeb ? '_self' : null,
       );
       return launched ? WhoopConnectResult.success : WhoopConnectResult.launchFailed;
     } on FirebaseFunctionsException catch (e, st) {
@@ -113,14 +118,4 @@ class WhoopSyncService {
     }
   }
 
-  /// Resolves the Firestore owner uid for a whoopSync document.
-  ///
-  /// Phase 1 stores whoopSync under the member owner uid returned by Cloud
-  /// Functions. For the current user's own profiles this matches [uid].
-  String syncOwnerUidForPlayer({
-    required String uid,
-    required String playerId,
-  }) {
-    return uid;
-  }
 }

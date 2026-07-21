@@ -7,6 +7,26 @@ service cloud.firestore {
         && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.get('isRoot', false) == true;
     }
 
+    // Family/shared profiles: caller linked via member.userID or member.users.
+    function memberLinkedToAuth(memberId) {
+      return request.auth != null
+        && exists(/databases/$(database)/documents/member/$(memberId))
+        && (
+          get(/databases/$(database)/documents/member/$(memberId)).data.get('userID', '') == request.auth.uid
+          || (
+            get(/databases/$(database)/documents/member/$(memberId)).data.users is list
+            && request.auth.uid in get(/databases/$(database)/documents/member/$(memberId)).data.users
+          )
+        );
+    }
+
+    // Wearable sync docs are stored under the member owner uid, which may differ
+    // from the signed-in family account that manages the profile.
+    function canAccessWearableSync(userId, playerId) {
+      return request.auth != null
+        && (request.auth.uid == userId || memberLinkedToAuth(playerId));
+    }
+
     function isValidEntitlement(value) {
       return value in ['player', 'coach_basic', 'coach_elite', 'coach_pro'];
     }
@@ -168,32 +188,32 @@ service cloud.firestore {
 
       // Whoop connection metadata (no tokens — server stores tokens separately).
       match /whoopSync/{playerId} {
-        allow read, write: if request.auth != null && request.auth.uid == userId;
+        allow read, write: if canAccessWearableSync(userId, playerId);
       }
 
       // Strava connection metadata (no tokens — server stores tokens separately).
       match /stravaSync/{playerId} {
-        allow read, write: if request.auth != null && request.auth.uid == userId;
+        allow read, write: if canAccessWearableSync(userId, playerId);
       }
 
       // Polar connection metadata (no tokens — server stores tokens separately).
       match /polarSync/{playerId} {
-        allow read, write: if request.auth != null && request.auth.uid == userId;
+        allow read, write: if canAccessWearableSync(userId, playerId);
       }
 
       // Fitbit connection metadata (no tokens — server stores tokens separately).
       match /fitbitSync/{playerId} {
-        allow read, write: if request.auth != null && request.auth.uid == userId;
+        allow read, write: if canAccessWearableSync(userId, playerId);
       }
 
       // Apple Health connection metadata (on-device HealthKit — no OAuth tokens).
       match /appleHealthSync/{playerId} {
-        allow read, write: if request.auth != null && request.auth.uid == userId;
+        allow read, write: if canAccessWearableSync(userId, playerId);
       }
 
       // Google Health Connect metadata (on-device — no OAuth tokens).
       match /googleHealthSync/{playerId} {
-        allow read, write: if request.auth != null && request.auth.uid == userId;
+        allow read, write: if canAccessWearableSync(userId, playerId);
       }
     }
 

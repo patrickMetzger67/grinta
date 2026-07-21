@@ -70,6 +70,11 @@ firebase deploy --only functions:whoopOAuthStart,functions:whoopOAuthCallback,fu
 firebase deploy --only firestore:rules
 ```
 
+> **Web:** OAuth opens in the **same browser tab** and returns to the app origin.
+> Sync docs are stored under the member owner uid (`userID` / `users[]` /
+> `creatorUserId`). Family accounts linked on the member can read/write those
+> docs via Firestore rules — redeploy rules after pulling.
+
 ## 6. Test connect / disconnect
 
 ### Player flow

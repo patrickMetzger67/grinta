@@ -1,9 +1,12 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:grinta/core/extensions/l10n_extension.dart';
+import 'package:grinta/model/player.dart';
 import 'package:grinta/provider/appSession.dart';
 import 'package:grinta/services/wearable_devices_repository.dart';
 import 'package:grinta/util/app_theme.dart';
+import 'package:grinta/util/player_photo_resolver.dart';
+import 'package:grinta/util/wearable_sync_owner.dart';
 import 'package:grinta/widget/nav_icon_count_badge.dart';
 import 'package:grinta/widget/settings_menu_style.dart';
 import 'package:grinta/widget/wearable_devices_dialog.dart';
@@ -25,14 +28,22 @@ class DevicesSettingsSection extends StatelessWidget {
     final l10n = context.l10n;
     final colors = context.appColors;
     final uid = FirebaseAuth.instance.currentUser?.uid;
-    final playerId = context.select<AppSession, String?>(
-      (session) => session.selectedPlayerId,
+    final player = context.select<AppSession, Player?>(
+      (session) => session.selectedPlayer,
     );
+    final playerId = (player != null ? effectiveMemberId(player) : null) ??
+        context.select<AppSession, String?>(
+          (session) => session.selectedPlayerId,
+        );
 
-    if (uid == null || playerId == null) {
+    if (uid == null || playerId == null || playerId.isEmpty) {
       return const SizedBox.shrink();
     }
 
+    final syncOwnerUid = resolveWearableSyncOwnerUid(
+      callerUid: uid,
+      player: player,
+    );
     final repository = WearableDevicesRepository();
 
     void openDialog() {
@@ -45,7 +56,7 @@ class DevicesSettingsSection extends StatelessWidget {
     }
 
     return StreamBuilder<int>(
-      stream: repository.watchConnectedCount(uid, playerId),
+      stream: repository.watchConnectedCount(syncOwnerUid, playerId),
       builder: (context, snapshot) {
         final connectedCount = snapshot.data ?? 0;
         final badgeLabel = l10n.settingsDevicesBadgeLabel(connectedCount);
