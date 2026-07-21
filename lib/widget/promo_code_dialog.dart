@@ -7,6 +7,7 @@ import 'package:grinta/l10n/app_localizations.dart';
 import 'package:grinta/services/promo_code_service.dart';
 import 'package:grinta/services/subscription_service.dart';
 import 'package:grinta/util/app_theme.dart';
+import 'package:grinta/util/promo_redeem_errors.dart';
 import 'package:intl/intl.dart';
 
 /// Opens promo code redemption in a dialog (web) or bottom sheet (mobile).
@@ -191,10 +192,13 @@ class _PromoCodeDialogContentState extends State<PromoCodeDialogContent> {
     if (PromoCodeService.isCallableMissing(e)) {
       return l10n.promoCodeRedeemFailed;
     }
-    final explicit = PromoCodeService.extractPromoErrorCode(e);
     return switch (PromoCodeService.formatFunctionsError(e)) {
       // Only map not-found → "introuvable" when the CF confirmed PROMO_NOT_FOUND.
-      'not-found' => explicit == 'PROMO_NOT_FOUND'
+      'not-found' => PromoRedeemErrors.shouldShowNotFoundMessage(
+          httpsCode: e.code,
+          message: e.message,
+          details: e.details,
+        )
           ? l10n.promoCodeRedeemNotFound
           : l10n.promoCodeRedeemFailed,
       'failed-precondition' => l10n.promoCodeRedeemInvalid,

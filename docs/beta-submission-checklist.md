@@ -10,6 +10,7 @@
 - **Bundle ID iOS / package Android :** `io.grinta.app`
 - **Fichier de secrets local :** copier `dart_defines.example.json` → `dart_defines.json` (jamais commité)
 - **Script de lancement :** `./scripts/run_with_defines.sh`
+- **Codes promo (anti-régression démo) :** [`docs/promo-codes.md`](./promo-codes.md) — déployer `redeemPromoCode` avant toute démo
 
 ---
 

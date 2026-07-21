@@ -27,6 +27,12 @@ const {
 } = require('./fitbit_oauth');
 const { createSendMailOnCreate } = require('./send_mail');
 const { createSendPasswordResetMail } = require('./password_reset');
+const {
+  normalizePromoCode,
+  compactPromoCode,
+  promoCodeLookupCandidates,
+  promoCodesMatch,
+} = require('./promo_code_helpers');
 
 initializeApp();
 
@@ -216,22 +222,6 @@ function normalizeActions(actions) {
   return normalized;
 }
 
-function normalizePromoCode(raw) {
-  return (raw ?? '').toString().trim().toUpperCase().replace(/\s+/g, '');
-}
-
-/** Compact form for tolerant matching (DEMO2026 == DEMO-2026). */
-function compactPromoCode(normalized) {
-  return normalizePromoCode(normalized).replace(/[-_.]/g, '');
-}
-
-function promoCodeLookupCandidates(normalizedCode) {
-  const upper = normalizePromoCode(normalizedCode);
-  const lower = upper.toLowerCase();
-  const compact = compactPromoCode(upper);
-  return [...new Set([upper, lower, compact, compact.toLowerCase()].filter(Boolean))];
-}
-
 function readTimestamp(value) {
   if (!value) return null;
   if (value instanceof Timestamp) return value.toDate();
@@ -263,17 +253,29 @@ async function resolvePromoCodeRef(db, normalizedCode) {
     }
   }
 
+  // Indexed compact field (written by admin UI) — DEMO-2026 ↔ DEMO2026.
+  if (compactTarget) {
+    const compactSnap = await db
+      .collection(PROMO_CODES_COLLECTION)
+      .where('codeCompact', '==', compactTarget)
+      .limit(1)
+      .get();
+    if (!compactSnap.empty) {
+      return compactSnap.docs[0].ref;
+    }
+  }
+
   // Last resort: small admin collection — match by normalized/compact stored code
   // (covers mixed-case doc ids or codes created outside the admin UI).
   const scanSnap = await db.collection(PROMO_CODES_COLLECTION).limit(500).get();
   for (const doc of scanSnap.docs) {
-    const storedRaw = (doc.data()?.code ?? doc.id ?? '').toString();
-    const stored = normalizePromoCode(storedRaw);
-    if (!stored) continue;
-    if (stored === normalizePromoCode(normalizedCode)) {
+    const data = doc.data() ?? {};
+    const storedRaw = (data.code ?? doc.id ?? '').toString();
+    if (promoCodesMatch(storedRaw, normalizedCode)) {
       return doc.ref;
     }
-    if (compactPromoCode(stored) === compactTarget) {
+    const storedCompact = (data.codeCompact ?? '').toString();
+    if (storedCompact && compactPromoCode(storedCompact) === compactTarget) {
       return doc.ref;
     }
   }
