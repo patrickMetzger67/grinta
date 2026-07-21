@@ -15,6 +15,7 @@ import '../services/trackerDataAnalysisService.dart';
 import '../core/extensions/l10n_extension.dart';
 import '../util/app_theme.dart';
 import '../util/playerDisplayName.dart';
+import '../util/staff_session_access.dart';
 import 'match_tracker_stats_table.dart';
 
 class MetricsPanel extends StatefulWidget {
@@ -646,14 +647,11 @@ class TrainingMetricRow extends StatelessWidget {
     final DateTime date = item.timestamp.toDate();
 
 
-    final List<String> managedTeamsIds =
-    context.select<AppSession, List<String>>(
-          (session) => session.managedTeamsIdsForSelectedSeason,
-    );
+    final AppSession session = context.watch<AppSession>();
+    // Managers and roster staff open the team tracker table (not player analysis).
+    final bool isManager = canAccessTeamSessionDetails(session, teamId);
 
-    bool isManager = managedTeamsIds.contains(teamId);
-
-    String? currentPlayerId = context.watch<AppSession>().selectedPlayerId;
+    String? currentPlayerId = session.selectedPlayerId;
 
     return SizedBox(
       height: 45,

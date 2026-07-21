@@ -402,15 +402,19 @@ class _DashboardScreenState extends State<DashboardScreen> {
     required List<String>? currentPlayerTeamsIds,
     required String? userId,
   }) {
+    final AppSession session = context.watch<AppSession>();
+    final bool isManager =
+        userId != null && (managedTeamsIds?.contains(teamId) ?? false);
+    final bool isStaff = isStaffOnTeamId(session, teamId);
+    // Managers and roster staff use the team dashboard (graph + list + details).
+    final bool hasTeamDashboardAccess = isManager || isStaff;
+    final bool isPlayer = playerId != null &&
+        (currentPlayerTeamsIds?.contains(teamId) ?? false) &&
+        !isStaff;
 
-
-    bool isManager = (userId != null)?managedTeamsIds!.contains(teamId):false;
-    bool isPlayer = (playerId != null)?currentPlayerTeamsIds!.contains(teamId):false;
-
-    if(isManager == true && isPlayer == false) {
-        _selectedStatsWhere = DashboardWhereType.team;
+    if (hasTeamDashboardAccess && !isPlayer) {
+      _selectedStatsWhere = DashboardWhereType.team;
     }
-
 
     return Container(
       width: double.infinity,
@@ -439,8 +443,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
           SizedBox(height: isPhone ? 12 : 14),
 
-
-
           _buildStatsTypeSelector(
             context: context,
             colors: colors,
@@ -450,15 +452,13 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
           SizedBox(height: isPhone ? 14 : 18),
 
-          if(isPlayer == true) ... [
-
+          if (isPlayer) ...[
             _buildStatsWhereSelector(
               context: context,
               colors: colors,
               textTheme: textTheme,
               isPhone: isPhone,
             ),
-
             SizedBox(height: isPhone ? 14 : 18),
           ],
 
@@ -470,8 +470,11 @@ class _DashboardScreenState extends State<DashboardScreen> {
             playerId: playerId,
             managedTeamsIds: managedTeamsIds,
             statsType: _selectedStatsType,
-            whereType: _selectedStatsWhere,
+            whereType: hasTeamDashboardAccess
+                ? DashboardWhereType.team
+                : _selectedStatsWhere,
             userId: userId,
+            useTeamTrainingAverages: hasTeamDashboardAccess,
           ),
         ],
       ),
@@ -613,6 +616,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
     required DashboardStatsType statsType,
     required DashboardWhereType whereType,
     required String? userId,
+    bool useTeamTrainingAverages = false,
   }) {
     final l10n = context.l10n;
     if (teamId == null || teamId.isEmpty) {
@@ -795,7 +799,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
           trainings: trainings,
           playerId: playerId,
           managedTeamsIds: managedTeamsIds,
-          presentPercent: presentPresent
+          presentPercent: presentPresent,
+          useTeamAverages: useTeamTrainingAverages,
         );
 
         return FutureBuilder<_ActivityStats>(
@@ -1088,7 +1093,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
     required String playerId,
     required List<String>? managedTeamsIds,
     required double presentPercent,
-    }) async {
+    bool useTeamAverages = false,
+  }) async {
     final DateTime now = DateTime.now();
 
     int done = 0;
@@ -1126,9 +1132,10 @@ class _DashboardScreenState extends State<DashboardScreen> {
               trainingMetrics.add(activityMetrics);
               break;
             }
-            // si joueur non trouvé dans la liste et si l'équipe est managé par le user courrant alors on prend la moyenne de chaqye metrics
-            if (!isPlayerFounded &&
-                (managedTeamsIds?.contains(training.teamId) ?? false)) {
+            // Managers / roster staff: team averages when the user is not a tracked player.
+            final bool canUseTeamAverages = useTeamAverages ||
+                (managedTeamsIds?.contains(training.teamId) ?? false);
+            if (!isPlayerFounded && canUseTeamAverages) {
               final ActivityMetrics activityMetrics = buildActivityMetricsFromSummary(
                 eventId:  training.docId ?? '',
                 timestamp: training.dateTime!,
