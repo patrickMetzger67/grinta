@@ -8,6 +8,8 @@ import 'package:grinta/model/wearable_device_type.dart';
 import 'package:grinta/provider/appSession.dart';
 import 'package:grinta/services/activity_types_service.dart';
 import 'package:grinta/services/personal_sport_activity_service.dart';
+import 'package:grinta/model/apple_health_importable_activity.dart';
+import 'package:grinta/services/apple_health_sync_service.dart';
 import 'package:grinta/services/polar_sync_service.dart';
 import 'package:grinta/services/strava_sync_service.dart';
 import 'package:grinta/services/whoop_sync_service.dart';
@@ -139,6 +141,9 @@ class _CreatePersonalSportActivitySheetState
   List<WhoopImportableActivity> _whoopActivities = const [];
   WhoopImportableActivity? _selectedWhoop;
   String? _whoopListError;
+  List<AppleHealthImportableActivity> _appleActivities = const [];
+  AppleHealthImportableActivity? _selectedApple;
+  String? _appleListError;
 
   bool get _readOnly => widget.readOnly;
   bool get _isEditMode => widget.isEditMode;
@@ -235,6 +240,9 @@ class _CreatePersonalSportActivitySheetState
     _whoopActivities = const [];
     _selectedWhoop = null;
     _whoopListError = null;
+    _appleActivities = const [];
+    _selectedApple = null;
+    _appleListError = null;
   }
 
   Future<void> _loadConnectedAppsAndActivities() async {
@@ -262,9 +270,12 @@ class _CreatePersonalSportActivitySheetState
         PolarSyncService.instance.repository.getConfig(uid, playerId);
     final whoopFuture =
         WhoopSyncService.instance.repository.getConfig(uid, playerId);
+    final appleFuture =
+        AppleHealthSyncService.instance.repository.getConfig(uid, playerId);
     final stravaConfig = await stravaFuture;
     final polarConfig = await polarFuture;
     final whoopConfig = await whoopFuture;
+    final appleConfig = await appleFuture;
     if (!mounted) return;
 
     final connected = <WearableDeviceType>[];
@@ -276,6 +287,9 @@ class _CreatePersonalSportActivitySheetState
     }
     if (whoopConfig?.connected == true) {
       connected.add(WearableDeviceType.whoop);
+    }
+    if (appleConfig?.connected == true) {
+      connected.add(WearableDeviceType.appleHealth);
     }
 
     setState(() {
@@ -304,6 +318,10 @@ class _CreatePersonalSportActivitySheetState
     }
     if (source == WearableDeviceType.whoop) {
       await _loadWhoopActivities();
+      return;
+    }
+    if (source == WearableDeviceType.appleHealth) {
+      await _loadAppleHealthActivities();
       return;
     }
     if (mounted) {
@@ -419,6 +437,46 @@ class _CreatePersonalSportActivitySheetState
     }
   }
 
+  Future<void> _loadAppleHealthActivities() async {
+    final session = context.read<AppSession>();
+    final playerId = session.selectedPlayerId?.trim() ?? '';
+    if (playerId.isEmpty) {
+      if (mounted) setState(() => _loadingImportActivities = false);
+      return;
+    }
+
+    setState(() {
+      _loadingImportActivities = true;
+      _clearImportSelections();
+    });
+
+    final result =
+        await AppleHealthSyncService.instance.listImportableActivities(
+      playerId: playerId,
+    );
+    if (!mounted) return;
+    setState(() {
+      _appleActivities = result.activities;
+      _loadingImportActivities = false;
+      if (result.hasError) {
+        _appleListError = result.errorCode == 'ios-only'
+            ? context.l10n.createPersonalSportAppleIosOnly
+            : (result.errorMessage?.trim().isNotEmpty == true
+                ? result.errorMessage
+                : context.l10n.createPersonalSportAppleLoadError);
+      } else if (result.activities.isNotEmpty) {
+        _selectedApple = result.activities.first;
+        _typeId = result.activities.first.typeId;
+      }
+    });
+    if (result.hasError && mounted) {
+      AppSnackbar.show(
+        context,
+        _appleListError ?? context.l10n.createPersonalSportAppleLoadError,
+      );
+    }
+  }
+
   String _labelForImportSource(WearableDeviceType source) {
     final l10n = context.l10n;
     switch (source) {
@@ -428,6 +486,8 @@ class _CreatePersonalSportActivitySheetState
         return l10n.wearableDevicePolar;
       case WearableDeviceType.whoop:
         return l10n.wearableDeviceWhoop;
+      case WearableDeviceType.appleHealth:
+        return l10n.wearableDeviceAppleHealth;
       default:
         return source.name;
     }
@@ -476,6 +536,16 @@ class _CreatePersonalSportActivitySheetState
           imported = await WhoopSyncService.instance.importActivity(
             playerId: playerId,
             externalId: _selectedWhoop!.externalId,
+            visibility: _visibility.firestoreValue,
+            feeling: _feeling?.value,
+            notes: _notesController.text.trim(),
+            typeId: _typeId,
+          );
+        } else if (_importSource == WearableDeviceType.appleHealth &&
+            _selectedApple != null) {
+          imported = await AppleHealthSyncService.instance.importActivity(
+            playerId: playerId,
+            workout: _selectedApple!,
             visibility: _visibility.firestoreValue,
             feeling: _feeling?.value,
             notes: _notesController.text.trim(),
@@ -777,6 +847,13 @@ class _CreatePersonalSportActivitySheetState
                           l10n.createPersonalSportWhoopNoImportable,
                       style: TextStyle(color: colors.textSecondary),
                     )
+                  else if (_importSource == WearableDeviceType.appleHealth &&
+                      _appleActivities.isEmpty)
+                    Text(
+                      _appleListError ??
+                          l10n.createPersonalSportAppleNoImportable,
+                      style: TextStyle(color: colors.textSecondary),
+                    )
                   else if (_importSource == WearableDeviceType.strava)
                     DropdownButtonFormField<String>(
                       value: _selectedStrava?.externalId,
@@ -863,6 +940,36 @@ class _CreatePersonalSportActivitySheetState
                         }
                         setState(() {
                           _selectedWhoop = match;
+                          if (match != null) _typeId = match.typeId;
+                        });
+                      },
+                    )
+                  else if (_importSource == WearableDeviceType.appleHealth)
+                    DropdownButtonFormField<String>(
+                      value: _selectedApple?.externalId,
+                      decoration: InputDecoration(
+                        labelText: l10n.createPersonalSportAppleActivity,
+                      ),
+                      items: [
+                        for (final activity in _appleActivities)
+                          DropdownMenuItem(
+                            value: activity.externalId,
+                            child: Text(
+                              activity.displayLabel,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ),
+                      ],
+                      onChanged: (id) {
+                        AppleHealthImportableActivity? match;
+                        for (final activity in _appleActivities) {
+                          if (activity.externalId == id) {
+                            match = activity;
+                            break;
+                          }
+                        }
+                        setState(() {
+                          _selectedApple = match;
                           if (match != null) _typeId = match.typeId;
                         });
                       },

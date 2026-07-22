@@ -1,3 +1,5 @@
+import 'package:grinta/model/apple_health_importable_activity.dart';
+
 /// Result of a local HealthKit authorization attempt (non-iOS platforms).
 class AppleHealthPlatformConnectResult {
   const AppleHealthPlatformConnectResult._({
@@ -34,4 +36,19 @@ bool get isAppleHealthSupported => false;
 /// Requests HealthKit read access and optionally probes recent workouts.
 Future<AppleHealthPlatformConnectResult> authorizeAndProbeWorkouts() async {
   return AppleHealthPlatformConnectResult.iosOnly;
+}
+
+/// Lists recent workouts from HealthKit (empty on non-iOS).
+Future<List<AppleHealthImportableActivity>> listAppleHealthWorkouts({
+  int lookbackDays = 90,
+}) async {
+  return const [];
+}
+
+/// Average heart rate (bpm) for a workout window — unsupported off iOS.
+Future<int?> averageHeartRateForWorkout({
+  required DateTime start,
+  required DateTime end,
+}) async {
+  return null;
 }

@@ -4775,6 +4775,30 @@ abstract class AppLocalizations {
   /// **'No Whoop workouts to import.'**
   String get createPersonalSportWhoopNoImportable;
 
+  /// No description provided for @createPersonalSportAppleActivity.
+  ///
+  /// In en, this message translates to:
+  /// **'Apple Fitness activity'**
+  String get createPersonalSportAppleActivity;
+
+  /// No description provided for @createPersonalSportAppleIosOnly.
+  ///
+  /// In en, this message translates to:
+  /// **'Apple Fitness import is available on iPhone only.'**
+  String get createPersonalSportAppleIosOnly;
+
+  /// No description provided for @createPersonalSportAppleLoadError.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not load Apple Fitness workouts.'**
+  String get createPersonalSportAppleLoadError;
+
+  /// No description provided for @createPersonalSportAppleNoImportable.
+  ///
+  /// In en, this message translates to:
+  /// **'No Apple Fitness workouts to import.'**
+  String get createPersonalSportAppleNoImportable;
+
   /// No description provided for @createPersonalSportPolarActivity.
   ///
   /// In en, this message translates to:

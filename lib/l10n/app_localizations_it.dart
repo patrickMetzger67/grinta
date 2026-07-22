@@ -2681,6 +2681,20 @@ class AppLocalizationsIt extends AppLocalizations {
   @override
   String get createPersonalSportWhoopNoImportable => 'No Whoop workouts to import.';
 
+  @override
+  String get createPersonalSportAppleActivity => 'Apple Fitness activity';
+
+  @override
+  String get createPersonalSportAppleIosOnly =>
+      'Apple Fitness import is available on iPhone only.';
+
+  @override
+  String get createPersonalSportAppleLoadError =>
+      'Could not load Apple Fitness workouts. Check Health permissions and try again.';
+
+  @override
+  String get createPersonalSportAppleNoImportable =>
+      'No Apple Fitness workouts to import. Record a session in Fitness / Health, allow Grinta access, then retry.';
 
   @override
   String get createPersonalSportPolarDeployRequired => 'Polar import is not deployed yet. Run firebase deploy for polarListActivities and polarImportActivity.';
@@ -2700,7 +2714,7 @@ class AppLocalizationsIt extends AppLocalizations {
 
   @override
   String get createPersonalSportNoConnectedApps =>
-      'No connected app. Connect Strava, Polar or Whoop in Devices / Apps.';
+      'No connected app. Connect Strava, Polar, Whoop or Apple Fitness in Devices / Apps.';
 
   @override
   String get createPersonalSportImportRequired => 'Select an activity to import';
