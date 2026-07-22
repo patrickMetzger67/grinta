@@ -114,9 +114,29 @@ users/{uid}/whoopSync/{playerId}
 
 Tokens are never written to client-readable documents.
 
+## Workout import (personal sport activities)
+
+After Whoop is connected, **Créer → Une activité sportive personnelle → import** lists Whoop workouts not yet imported (`externalSource: whoop`).
+
+Unlike Polar, Whoop can return **historical workouts** (paginated `GET /developer/v2/activity/workout`).
+
+Cloud Functions:
+
+- `whoopListActivities` — list workouts; refresh token if needed (Whoop refresh tokens rotate)
+- `whoopImportActivity` — fetch workout detail and write `personalSportActivities`
+
+**Required deploy:**
+
+```bash
+firebase deploy --only \
+  functions:whoopListActivities,functions:whoopImportActivity
+```
+
+Mapped fields: duration (`start`/`end`), sport → Grinta `typeId`, average HR, calories from `score.kilojoule` (÷ 4.184), distance when present.
+
 ## Phase 2 TODO
 
 - Whoop webhooks (`whoopWebhook` HTTP function)
-- Scheduled token refresh (rotating refresh tokens)
-- Workout / recovery / sleep data sync into Grinta
+- Scheduled background sync (beyond on-demand import)
+- Recovery / sleep / cycle sync into Grinta
 - Coach roster badges when a player shares metrics
