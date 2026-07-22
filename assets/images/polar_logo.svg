@@ -1,5 +1,0 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 30 30" role="img" aria-label="Polar">
-  <!-- Polar Flow app icon: red disc with stylized P (official Polar red #E51D34) -->
-  <circle cx="15" cy="15" r="15" fill="#E51D34"/>
-  <path fill="#FFFFFF" d="M0 11.9h15.2c2.05 0 3.7 1.5 3.7 3.35 0 1.85-1.65 3.35-3.7 3.35H0V11.9z"/>
-</svg>
