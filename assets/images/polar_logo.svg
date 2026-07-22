@@ -1,8 +1,5 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" role="img" aria-label="Polar">
-  <!-- Official Polar mark: red circle with horizontal cutout bar -->
-  <path
-    fill="#E30613"
-    fill-rule="evenodd"
-    d="M12 2c5.523 0 10 4.477 10 10s-4.477 10-10 10S2 17.523 2 12 6.477 2 12 2zm-10 7.6h20v1.8H2v-1.8z"
-  />
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="24.5 -1.2 22.5 22.5" role="img" aria-label="Polar">
+  <!-- Official Polar brand mark extracted from https://www.polar.com/img/polar-logo.svg -->
+  <path fill="#E51D34" fill-rule="evenodd" clip-rule="evenodd" d="M46.2037 8.61572C46.6717 14.5653 41.7636 19.8109 35.818 19.9947C29.5343 20.1879 24.9865 14.7307 26.2286 8.61572H46.2037Z"/>
+  <path fill="#E51D34" fill-rule="evenodd" clip-rule="evenodd" d="M45.5819 5.89684C44.1151 2.14499 40.4798 -0.100663 36.4964 0.00347032C32.5634 0.104738 28.9753 2.44229 27.1914 5.89684H45.5819Z"/>
 </svg>
