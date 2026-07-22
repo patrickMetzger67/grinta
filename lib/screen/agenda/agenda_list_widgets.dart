@@ -1027,11 +1027,13 @@ class AgendaItemCard extends StatelessWidget {
                     const SizedBox(width: 6),
                     Tooltip(
                       message: context.l10n.wearableDevicePolar,
-                      child: SvgPicture.asset(
-                        'assets/images/polar_logo.svg',
-                        width: 20,
-                        height: 20,
-                        fit: BoxFit.contain,
+                      child: ClipOval(
+                        child: Image.asset(
+                          'assets/images/polar_logo.png',
+                          width: 20,
+                          height: 20,
+                          fit: BoxFit.cover,
+                        ),
                       ),
                     ),
                   ],

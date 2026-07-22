@@ -96,7 +96,7 @@ flutter:
     - assets/images/google_logo.svg
     - assets/images/apple_logo.svg
     - assets/images/strava_logo.svg
-    - assets/images/polar_logo.svg
+    - assets/images/polar_logo.png
     - assets/images/whoop_logo.svg
     - assets/images/ask_gio_avatar.png
 
