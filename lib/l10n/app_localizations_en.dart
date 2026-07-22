@@ -3743,6 +3743,23 @@ class AppLocalizationsEn extends AppLocalizations {
       'Polar connected — data sync coming in Phase 2';
 
   @override
+  String get polarAccountHintGuidance =>
+      'Your Polar Flow email can differ from your Grinta account. Enter the Polar account to use, then sign in with that account on the Polar page.';
+
+  @override
+  String get polarAccountHintLabel => 'Polar account';
+
+  @override
+  String get polarAccountHintPlaceholder => 'Polar Flow email';
+
+  @override
+  String get polarAccountHintRequired =>
+      'Enter your Polar account (email) before continuing.';
+
+  @override
+  String get polarConnectContinue => 'Continue to Polar';
+
+  @override
   String get polarConnectSuccess => 'Polar account connected.';
 
   @override

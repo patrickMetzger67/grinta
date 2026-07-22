@@ -22,11 +22,10 @@ Register this **HTTPS** redirect URI in the Polar app settings:
 https://europe-west1-aserstein-2453e.cloudfunctions.net/polarOAuthCallback
 ```
 
-After OAuth, the Cloud Function stores tokens server-side, registers the user with AccessLink, and redirects back to the mobile app:
+After OAuth, the Cloud Function stores tokens server-side, registers the user with AccessLink, and redirects:
 
-```
-grinta://polar/callback
-```
+- **Mobile:** `grinta://polar/callback`
+- **Web:** back to the app origin with `?polarOAuth=1&success=1&playerId=...`
 
 Ensure Android (`AndroidManifest.xml`) and iOS (`Info.plist`) declare the `grinta` URL scheme with host `polar` (added in Phase 1).
 
@@ -40,9 +39,18 @@ https://europe-west1-aserstein-2453e.cloudfunctions.net/polarWebhook
 
 (Not deployed in Phase 1.)
 
-## 4. Firebase secrets
+## 4. Firebase secrets (required — not `dart_defines.json`)
 
-From the project root:
+Polar OAuth runs in **Cloud Functions**. Credentials must be stored as
+Firebase secrets, **not** in `dart_defines.json`.
+
+From the project root, either:
+
+```bash
+./scripts/set_polar_firebase_secrets.sh
+```
+
+or manually:
 
 ```bash
 firebase functions:secrets:set POLAR_CLIENT_ID
@@ -65,18 +73,24 @@ firebase deploy --only firestore:rules
 
 1. Sign in to Grinta and select a player profile.
 2. Open **Settings** → **Appareils/Applications** (Devices/Applications) — badge shows the connected count.
-3. Tap **+**, select **Polar** in the type dropdown, then tap **Sync**.
-4. Complete Polar OAuth in the browser (Polar Flow account).
-5. App returns via `grinta://polar/callback` — you should see a success snackbar.
-6. Toggle **Coach visibility** per data type (training, sleep, recovery/HR, profile, body).
-7. Tap **Disconnect** on the Polar row to disconnect.
+3. Tap **+**, select **Polar** in the type dropdown.
+4. Enter the **Polar Flow account** (email) — it may differ from the Grinta email — then tap **Continue to Polar**.
+5. Complete Polar OAuth in the browser with that Polar Flow account.
+6. App returns via `grinta://polar/callback` (mobile) or the same web tab — you should see a success snackbar; the dialog returns to the connections list.
+7. Toggle **Coach visibility** per data type (training, sleep, recovery/HR, profile, body).
+8. Tap **Disconnect** on the Polar row (or via the type dropdown) to disconnect.
 
 ### Coach flow
 
 1. Sign in as a coach with roster management rights.
 2. Open a team → player **Trackers** sheet.
 3. Tap **Appareils/Applications** for a player.
-4. Select **Polar** and complete OAuth with the player’s Polar Flow account.
+4. Tap **+**, select **Polar**, enter the player's Polar Flow account, then complete OAuth with that account.
+
+> **Web:** OAuth opens in the **same browser tab** and returns to the app origin.
+> **Player profiles:** Polar sync metadata is stored under the **signed-in**
+> Firebase uid (`users/{authUid}/polarSync/{playerId}`) so the settings badge
+> updates immediately.
 
 ## Firestore layout
 
@@ -84,14 +98,14 @@ firebase deploy --only firestore:rules
 
 ```
 polar_integrations/{uid}_{playerId}
-  uid, playerId, polarUserId, memberId, status, scopes, tokens, initiatedBy, coachUid?
+  uid, playerId, polarUserId, memberId, polarAccountHint?, status, scopes, tokens, initiatedBy, coachUid?
 ```
 
 **Client-readable connection**
 
 ```
 users/{uid}/polarSync/{playerId}
-  connected, connectedAt, lastSyncedAt?, polarUserId?, memberId?, initiatedBy, coachVisibility
+  connected, connectedAt, lastSyncedAt?, polarUserId?, memberId?, polarAccountHint?, initiatedBy, coachVisibility
 ```
 
 **Coach visibility fields** (`coachVisibility` map):

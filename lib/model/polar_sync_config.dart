@@ -8,6 +8,7 @@ class PolarSyncConfig {
     this.lastSyncedAt,
     this.polarUserId,
     this.memberId,
+    this.polarAccountHint,
     this.initiatedBy,
     this.coachUid,
     this.coachVisibility = const PolarCoachVisibility(),
@@ -18,6 +19,8 @@ class PolarSyncConfig {
   final DateTime? lastSyncedAt;
   final String? polarUserId;
   final String? memberId;
+  /// User-entered Polar Flow account before OAuth (guidance only).
+  final String? polarAccountHint;
   final String? initiatedBy;
   final String? coachUid;
   final PolarCoachVisibility coachVisibility;
@@ -32,6 +35,7 @@ class PolarSyncConfig {
       lastSyncedAt: _readTimestamp(data['lastSyncedAt']),
       polarUserId: data['polarUserId'] as String?,
       memberId: data['memberId'] as String?,
+      polarAccountHint: data['polarAccountHint'] as String?,
       initiatedBy: data['initiatedBy'] as String?,
       coachUid: data['coachUid'] as String?,
       coachVisibility: PolarCoachVisibility.fromMap(
@@ -49,6 +53,7 @@ class PolarSyncConfig {
         'lastSyncedAt': Timestamp.fromDate(lastSyncedAt!),
       if (polarUserId != null) 'polarUserId': polarUserId,
       if (memberId != null) 'memberId': memberId,
+      if (polarAccountHint != null) 'polarAccountHint': polarAccountHint,
       if (initiatedBy != null) 'initiatedBy': initiatedBy,
       if (coachUid != null) 'coachUid': coachUid,
       'coachVisibility': coachVisibility.toMap(),

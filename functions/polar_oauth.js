@@ -254,6 +254,7 @@ async function persistPolarConnection(db, pending, tokenResponse) {
         playerId,
         polarUserId,
         memberId,
+        polarAccountHint: pending.polarAccountHint ?? null,
         status: 'connected',
         scopes: POLAR_SCOPES.split(' '),
         initiatedBy: pending.initiatedBy,
@@ -276,6 +277,7 @@ async function persistPolarConnection(db, pending, tokenResponse) {
         connectedAt: FieldValue.serverTimestamp(),
         polarUserId,
         memberId,
+        polarAccountHint: pending.polarAccountHint ?? null,
         initiatedBy: pending.initiatedBy,
         coachUid: pending.coachUid ?? null,
         coachVisibility: existingVisibility,
@@ -284,7 +286,12 @@ async function persistPolarConnection(db, pending, tokenResponse) {
     );
   });
 
-  return { ownerUid, playerId, polarUserId };
+  return {
+    ownerUid,
+    playerId,
+    polarUserId,
+    returnTo: pending.returnTo ?? null,
+  };
 }
 
 async function completeOAuthFromPending(db, state, code) {
@@ -307,15 +314,50 @@ async function completeOAuthFromPending(db, state, code) {
   return result;
 }
 
-function redirectToApp(res, params) {
+function isAllowedWebReturnTo(returnTo) {
+  if (!returnTo || typeof returnTo !== 'string') return false;
+  let parsed;
+  try {
+    parsed = new URL(returnTo);
+  } catch (_) {
+    return false;
+  }
+  if (parsed.protocol === 'http:' || parsed.protocol === 'https:') {
+    const host = parsed.hostname.toLowerCase();
+    if (host === 'localhost' || host === '127.0.0.1') return true;
+    if (host === 'grinta.web.app' || host === 'grinta.firebaseapp.com') {
+      return true;
+    }
+    if (host.endsWith('.web.app') || host.endsWith('.firebaseapp.com')) {
+      return true;
+    }
+  }
+  return false;
+}
+
+function redirectToApp(res, params, returnTo) {
   const query = new URLSearchParams(params).toString();
-  res.redirect(302, `grinta://polar/callback?${query}`);
+  if (isAllowedWebReturnTo(returnTo)) {
+    const target = new URL(returnTo);
+    target.searchParams.set('polarOAuth', '1');
+    for (const [key, value] of Object.entries(params)) {
+      if (value != null && value !== '') {
+        target.searchParams.set(key, String(value));
+      }
+    }
+    console.log('polarOAuthCallback redirect web', target.toString());
+    res.redirect(302, target.toString());
+    return;
+  }
+  const deepLink = `grinta://polar/callback?${query}`;
+  console.log('polarOAuthCallback redirect deepLink', deepLink);
+  res.redirect(302, deepLink);
 }
 
 /**
  * Callable: polarOAuthStart
  *
- * Request: { playerId, initiatedBy: "coach"|"player" }
+ * Request: { playerId, initiatedBy: "coach"|"player", polarAccountHint, returnTo? }
  * Response: { authUrl, state }
  */
 function createPolarOAuthStart() {
@@ -335,6 +377,11 @@ function createPolarOAuthStart() {
         .toString()
         .trim()
         .toLowerCase();
+      const polarAccountHint = (request.data?.polarAccountHint ?? '')
+        .toString()
+        .trim();
+      const returnToRaw = (request.data?.returnTo ?? '').toString().trim();
+      const returnTo = isAllowedWebReturnTo(returnToRaw) ? returnToRaw : null;
 
       if (!playerId) {
         throw new HttpsError('invalid-argument', 'playerId is required.');
@@ -343,6 +390,12 @@ function createPolarOAuthStart() {
         throw new HttpsError(
           'invalid-argument',
           'initiatedBy must be "coach" or "player".',
+        );
+      }
+      if (!polarAccountHint) {
+        throw new HttpsError(
+          'invalid-argument',
+          'polarAccountHint is required.',
         );
       }
 
@@ -370,6 +423,8 @@ function createPolarOAuthStart() {
         ownerUid,
         playerId,
         initiatedBy,
+        polarAccountHint,
+        returnTo,
         coachUid: initiatedBy === 'coach' ? callerUid : null,
         createdAt: FieldValue.serverTimestamp(),
         expiresAt,
@@ -395,7 +450,7 @@ function createPolarOAuthStart() {
  * HTTP: polarOAuthCallback
  *
  * Polar redirects here after user consent. Tokens are stored server-side,
- * then the user is sent back to the app via grinta://polar/callback.
+ * then the user is sent back to the app (web origin or grinta:// deep link).
  */
 function createPolarOAuthCallback() {
   return onRequest(
@@ -405,8 +460,14 @@ function createPolarOAuthCallback() {
       timeoutSeconds: 30,
     },
     async (req, res) => {
+      console.log('polarOAuthCallback hit', {
+        method: req.method,
+        query: req.query,
+      });
+
       const error = (req.query.error ?? '').toString();
       if (error) {
+        console.warn('polarOAuthCallback provider error', error);
         redirectToApp(res, {
           success: '0',
           error,
@@ -418,6 +479,7 @@ function createPolarOAuthCallback() {
       const state = (req.query.state ?? '').toString();
 
       if (!code || !state) {
+        console.warn('polarOAuthCallback missing code/state');
         redirectToApp(res, {
           success: '0',
           error: 'missing_code_or_state',
@@ -428,16 +490,42 @@ function createPolarOAuthCallback() {
       try {
         const db = getFirestore();
         const result = await completeOAuthFromPending(db, state, code);
-        redirectToApp(res, {
-          success: '1',
+        console.log('polarOAuthCallback success', {
           playerId: result.playerId,
+          polarUserId: result.polarUserId,
+          returnTo: result.returnTo ?? null,
         });
+        redirectToApp(
+          res,
+          {
+            success: '1',
+            playerId: result.playerId,
+          },
+          result.returnTo,
+        );
       } catch (callbackError) {
-        console.error('polarOAuthCallback error', callbackError);
-        redirectToApp(res, {
-          success: '0',
-          error: callbackError?.message ?? 'oauth_failed',
+        console.error('polarOAuthCallback error', {
+          message: callbackError?.message,
+          code: callbackError?.code,
         });
+        let returnTo = null;
+        try {
+          const pendingSnap = await getFirestore()
+            .collection(PENDING_COLLECTION)
+            .doc(state)
+            .get();
+          returnTo = pendingSnap.data()?.returnTo ?? null;
+        } catch (_) {
+          // ignore
+        }
+        redirectToApp(
+          res,
+          {
+            success: '0',
+            error: callbackError?.message ?? 'oauth_failed',
+          },
+          returnTo,
+        );
       }
     },
   );
@@ -474,7 +562,7 @@ function createPolarDisconnect() {
       }
 
       const memberData = memberSnap.data() ?? {};
-      const ownerUid = readMemberOwnerUid(memberData) ?? callerUid;
+      const memberOwnerUid = readMemberOwnerUid(memberData);
 
       const canDisconnect =
         userHasMemberAccess(memberData, callerUid) ||
@@ -487,24 +575,30 @@ function createPolarDisconnect() {
         );
       }
 
-      const integrationId = integrationDocId(ownerUid, playerId);
-      const integrationRef = db.collection(INTEGRATIONS_COLLECTION).doc(integrationId);
-      const syncRef = db
-        .collection('users')
-        .doc(ownerUid)
-        .collection('polarSync')
-        .doc(playerId);
+      // Clear caller path (current) and legacy member-owner path if different.
+      const ownerUids = new Set([callerUid]);
+      if (memberOwnerUid) ownerUids.add(memberOwnerUid);
 
       await db.runTransaction(async (transaction) => {
-        transaction.delete(integrationRef);
-        transaction.set(
-          syncRef,
-          {
-            connected: false,
-            disconnectedAt: FieldValue.serverTimestamp(),
-          },
-          { merge: true },
-        );
+        for (const ownerUid of ownerUids) {
+          const integrationRef = db
+            .collection(INTEGRATIONS_COLLECTION)
+            .doc(integrationDocId(ownerUid, playerId));
+          const syncRef = db
+            .collection('users')
+            .doc(ownerUid)
+            .collection('polarSync')
+            .doc(playerId);
+          transaction.delete(integrationRef);
+          transaction.set(
+            syncRef,
+            {
+              connected: false,
+              disconnectedAt: FieldValue.serverTimestamp(),
+            },
+            { merge: true },
+          );
+        }
       });
 
       // TODO(Phase 2): DELETE /v3/users/{polar-user-id} at Polar AccessLink.

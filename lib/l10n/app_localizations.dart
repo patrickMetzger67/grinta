@@ -6570,6 +6570,36 @@ abstract class AppLocalizations {
   /// **'Polar connecté — synchronisation des données à venir (Phase 2)'**
   String get polarConnectToggleConnectedSubtitle;
 
+  /// No description provided for @polarAccountHintGuidance.
+  ///
+  /// In fr, this message translates to:
+  /// **'L\'email Polar Flow peut être différent de ton compte Grinta. Indique le compte Polar à utiliser, puis connecte-toi avec ce compte sur la page Polar.'**
+  String get polarAccountHintGuidance;
+
+  /// No description provided for @polarAccountHintLabel.
+  ///
+  /// In fr, this message translates to:
+  /// **'Compte Polar'**
+  String get polarAccountHintLabel;
+
+  /// No description provided for @polarAccountHintPlaceholder.
+  ///
+  /// In fr, this message translates to:
+  /// **'email Polar Flow'**
+  String get polarAccountHintPlaceholder;
+
+  /// No description provided for @polarAccountHintRequired.
+  ///
+  /// In fr, this message translates to:
+  /// **'Indique ton compte Polar (email) avant de continuer.'**
+  String get polarAccountHintRequired;
+
+  /// No description provided for @polarConnectContinue.
+  ///
+  /// In fr, this message translates to:
+  /// **'Continuer vers Polar'**
+  String get polarConnectContinue;
+
   /// No description provided for @polarConnectSuccess.
   ///
   /// In fr, this message translates to:

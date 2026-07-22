@@ -144,15 +144,9 @@ class _DevicesSettingsSectionState extends State<DevicesSettingsSection> {
               l10n.settingsDevicesSection,
               style: settingsMenuTitleStyle(context),
             ),
-            trailing: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                CountBadgeLabel(count: connectedCount),
-                Icon(
-                  Icons.chevron_right_rounded,
-                  color: colors.textSecondary,
-                ),
-              ],
+            trailing: Icon(
+              Icons.chevron_right_rounded,
+              color: colors.textSecondary,
             ),
             onTap: openDialog,
           ),

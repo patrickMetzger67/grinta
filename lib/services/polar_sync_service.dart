@@ -29,18 +29,30 @@ class PolarSyncService {
   Future<PolarConnectResult> startOAuth({
     required String playerId,
     required String initiatedBy,
+    String? polarAccountHint,
   }) async {
     final uid = FirebaseAuth.instance.currentUser?.uid;
     if (uid == null) {
       return PolarConnectResult.unauthenticated;
     }
 
+    final hint = polarAccountHint?.trim() ?? '';
+    if (hint.isEmpty) {
+      return PolarConnectResult.failed;
+    }
+
     try {
       final callable = _functions.httpsCallable(kPolarOAuthStartFunctionName);
-      final result = await callable.call(<String, dynamic>{
+      final payload = <String, dynamic>{
         'playerId': playerId,
         'initiatedBy': initiatedBy,
-      });
+        'polarAccountHint': hint,
+      };
+      if (kIsWeb) {
+        // Cloud Function redirects back here after OAuth (grinta:// is mobile-only).
+        payload['returnTo'] = Uri.base.origin;
+      }
+      final result = await callable.call(payload);
 
       final data = result.data;
       if (data is! Map) {
@@ -52,9 +64,14 @@ class PolarSyncService {
         return PolarConnectResult.failed;
       }
 
+      // Web: stay in the same tab so OAuth returns to this Flutter session.
+      // Mobile: open the system browser, then return via grinta:// deep link.
       final launched = await launchUrl(
         Uri.parse(authUrl),
-        mode: LaunchMode.externalApplication,
+        mode: kIsWeb
+            ? LaunchMode.platformDefault
+            : LaunchMode.externalApplication,
+        webOnlyWindowName: kIsWeb ? '_self' : null,
       );
       return launched
           ? PolarConnectResult.success
@@ -101,13 +118,5 @@ class PolarSyncService {
       debugPrint('updateCoachVisibility error: $e\n$st');
       return false;
     }
-  }
-
-  /// Resolves the Firestore owner uid for a polarSync document.
-  String syncOwnerUidForPlayer({
-    required String uid,
-    required String playerId,
-  }) {
-    return uid;
   }
 }

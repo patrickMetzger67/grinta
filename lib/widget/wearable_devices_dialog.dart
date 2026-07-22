@@ -125,6 +125,8 @@ class _WearableDevicesDialogContentState
       TextEditingController();
   final TextEditingController _whoopAccountController =
       TextEditingController();
+  final TextEditingController _polarAccountController =
+      TextEditingController();
 
   @override
   void didChangeDependencies() {
@@ -162,6 +164,7 @@ class _WearableDevicesDialogContentState
   void dispose() {
     _stravaAccountController.dispose();
     _whoopAccountController.dispose();
+    _polarAccountController.dispose();
     super.dispose();
   }
 
@@ -234,6 +237,11 @@ class _WearableDevicesDialogContentState
       _showConnectError(context.l10n.whoopAccountHintRequired);
       return;
     }
+    if (_selectedType == WearableDeviceType.polar &&
+        _polarAccountController.text.trim().isEmpty) {
+      _showConnectError(context.l10n.polarAccountHintRequired);
+      return;
+    }
 
     setState(() => _syncBusy = true);
 
@@ -263,6 +271,7 @@ class _WearableDevicesDialogContentState
           final result = await PolarSyncService.instance.startOAuth(
             playerId: widget.playerId,
             initiatedBy: widget.initiatedBy,
+            polarAccountHint: _polarAccountController.text.trim(),
           );
           if (!mounted) return;
           if (result != PolarConnectResult.success) {
@@ -506,6 +515,7 @@ class _WearableDevicesDialogContentState
       WearableDeviceType.strava =>
         state.stravaConfig?.stravaAccountHint?.trim(),
       WearableDeviceType.whoop => state.whoopConfig?.whoopAccountHint?.trim(),
+      WearableDeviceType.polar => state.polarConfig?.polarAccountHint?.trim(),
       _ => null,
     };
     if (hint == null || hint.isEmpty) return base;
@@ -1024,6 +1034,16 @@ class _WearableDevicesDialogContentState
               placeholder: l10n.whoopAccountHintPlaceholder,
               syncDisabled: syncDisabled,
             ),
+          if (!selectedConnected && selectedType == WearableDeviceType.polar)
+            _buildAccountHintField(
+              colors: colors,
+              l10n: l10n,
+              controller: _polarAccountController,
+              guidance: l10n.polarAccountHintGuidance,
+              label: l10n.polarAccountHintLabel,
+              placeholder: l10n.polarAccountHintPlaceholder,
+              syncDisabled: syncDisabled,
+            ),
           if (!selectedConnected && platformOnlyMessage != null) ...[
             const SizedBox(height: 10),
             Text(
@@ -1069,6 +1089,7 @@ class _WearableDevicesDialogContentState
                 switch (selectedType) {
                   WearableDeviceType.strava => l10n.stravaConnectContinue,
                   WearableDeviceType.whoop => l10n.whoopConnectContinue,
+                  WearableDeviceType.polar => l10n.polarConnectContinue,
                   _ => l10n.settingsDevicesSync,
                 },
               ),
