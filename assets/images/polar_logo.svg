@@ -1,5 +1,6 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" role="img" aria-label="Polar">
-  <!-- Compact Polar-style monogram for agenda badges -->
-  <rect width="24" height="24" rx="5" fill="#111111"/>
-  <path fill="#FFFFFF" d="M7.8 5.8h5.4c2.85 0 4.7 1.55 4.7 3.95 0 2.45-1.85 4-4.7 4H10.4V18.2H7.8V5.8zm2.6 2.25v3.45h2.55c1.35 0 2.15-.7 2.15-1.75s-.8-1.7-2.15-1.7H10.4z"/>
+  <!-- Official Polar brand mark: red circle with horizontal bar -->
+  <circle cx="12" cy="12" r="10" fill="#E30613"/>
+  <!-- Thin bar slightly above center (matches Polar wordmark icon) -->
+  <rect x="2" y="9.6" width="20" height="1.8" fill="#111111"/>
 </svg>
