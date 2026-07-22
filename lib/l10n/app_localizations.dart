@@ -4811,6 +4811,60 @@ abstract class AppLocalizations {
   /// **'Connecte-toi pour créer une activité.'**
   String get createPersonalSportAuthRequired;
 
+  /// No description provided for @editPersonalSportTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Modifier l\'activité'**
+  String get editPersonalSportTitle;
+
+  /// No description provided for @editPersonalSportSubmit.
+  ///
+  /// In fr, this message translates to:
+  /// **'Enregistrer'**
+  String get editPersonalSportSubmit;
+
+  /// No description provided for @editPersonalSportSaved.
+  ///
+  /// In fr, this message translates to:
+  /// **'Activité mise à jour'**
+  String get editPersonalSportSaved;
+
+  /// No description provided for @editPersonalSportError.
+  ///
+  /// In fr, this message translates to:
+  /// **'Impossible de modifier l\'activité. Réessayez.'**
+  String get editPersonalSportError;
+
+  /// No description provided for @viewPersonalSportTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Activité sportive'**
+  String get viewPersonalSportTitle;
+
+  /// No description provided for @deletePersonalSportConfirmTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Supprimer l\'activité ?'**
+  String get deletePersonalSportConfirmTitle;
+
+  /// No description provided for @deletePersonalSportConfirmMessage.
+  ///
+  /// In fr, this message translates to:
+  /// **'« {title} » sera définitivement supprimée.'**
+  String deletePersonalSportConfirmMessage(String title);
+
+  /// No description provided for @deletePersonalSportDeleted.
+  ///
+  /// In fr, this message translates to:
+  /// **'Activité supprimée'**
+  String get deletePersonalSportDeleted;
+
+  /// No description provided for @deletePersonalSportError.
+  ///
+  /// In fr, this message translates to:
+  /// **'Impossible de supprimer l\'activité. Réessayez.'**
+  String get deletePersonalSportError;
+
   /// No description provided for @agendaAllDayLabel.
   ///
   /// In fr, this message translates to:

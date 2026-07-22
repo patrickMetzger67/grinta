@@ -336,7 +336,8 @@ String? _agendaEventTimeLabel(AgendaItem item, String locale) {
     case AgendaItemType.entrainement:
       timeHm = item.training?.startTime;
     case AgendaItemType.preparationPhysique:
-      return null;
+      return '${DateFormat.Hm(locale).format(item.startAt)}'
+          '${item.endAt.isAfter(item.startAt) ? ' – ${DateFormat.Hm(locale).format(item.endAt)}' : ''}';
     case AgendaItemType.nonSport:
       final DateTime startDay = DateUtils.dateOnly(item.startAt);
       final DateTime endDay = DateUtils.dateOnly(item.endAt);

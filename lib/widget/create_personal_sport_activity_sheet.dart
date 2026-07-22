@@ -21,8 +21,11 @@ Future<PersonalSportActivity?> showCreatePersonalSportActivitySheet(
   BuildContext context, {
   DateTime? initialDate,
   TimeOfDay? initialTime,
+  PersonalSportActivity? activityToEdit,
+  bool readOnly = false,
   VoidCallback? onSaved,
 }) async {
+  final bool isEdit = activityToEdit != null;
   final PersonalSportActivity? saved;
   if (kIsWeb) {
     saved = await showDialog<PersonalSportActivity>(
@@ -41,6 +44,8 @@ Future<PersonalSportActivity?> showCreatePersonalSportActivitySheet(
           child: CreatePersonalSportActivitySheet(
             initialDate: initialDate,
             initialTime: initialTime,
+            activityToEdit: activityToEdit,
+            readOnly: readOnly,
             onSaved: onSaved,
           ),
         ),
@@ -56,15 +61,19 @@ Future<PersonalSportActivity?> showCreatePersonalSportActivitySheet(
       builder: (_) => CreatePersonalSportActivitySheet(
         initialDate: initialDate,
         initialTime: initialTime,
+        activityToEdit: activityToEdit,
+        readOnly: readOnly,
         onSaved: onSaved,
       ),
     );
   }
 
-  if (saved != null && context.mounted) {
+  if (saved != null && context.mounted && !readOnly) {
     AppSnackbar.show(
       context,
-      context.l10n.createPersonalSportSaved,
+      isEdit
+          ? context.l10n.editPersonalSportSaved
+          : context.l10n.createPersonalSportSaved,
       isError: false,
     );
   }
@@ -76,12 +85,18 @@ class CreatePersonalSportActivitySheet extends StatefulWidget {
     super.key,
     this.initialDate,
     this.initialTime,
+    this.activityToEdit,
+    this.readOnly = false,
     this.onSaved,
   });
 
   final DateTime? initialDate;
   final TimeOfDay? initialTime;
+  final PersonalSportActivity? activityToEdit;
+  final bool readOnly;
   final VoidCallback? onSaved;
+
+  bool get isEditMode => activityToEdit != null;
 
   @override
   State<CreatePersonalSportActivitySheet> createState() =>
@@ -116,12 +131,45 @@ class _CreatePersonalSportActivitySheetState
   List<StravaImportableActivity> _stravaActivities = const [];
   StravaImportableActivity? _selectedStrava;
 
+  bool get _readOnly => widget.readOnly;
+  bool get _isEditMode => widget.isEditMode;
+
   @override
   void initState() {
     super.initState();
-    final now = DateTime.now();
-    _date = DateUtils.dateOnly(widget.initialDate ?? now);
-    _time = widget.initialTime ?? TimeOfDay(hour: now.hour, minute: 0);
+    final existing = widget.activityToEdit;
+    if (existing != null) {
+      _date = DateUtils.dateOnly(existing.startAt);
+      _time = TimeOfDay(
+        hour: existing.startAt.hour,
+        minute: existing.startAt.minute,
+      );
+      _manualEntry = existing.entryMode == PersonalSportEntryMode.manual;
+      _typeId = existing.typeId;
+      _feeling = PlayerFeeling.fromValue(existing.feeling);
+      _visibility = existing.visibility;
+      _notesController.text = existing.notes ?? '';
+      if (existing.durationSeconds != null && existing.durationSeconds! > 0) {
+        _duration = Duration(seconds: existing.durationSeconds!);
+      }
+      if (existing.distanceMeters != null && existing.distanceMeters! > 0) {
+        _distance = SportDistanceValue(
+          kilometers: existing.distanceMeters! / 1000,
+          unit: existing.distanceUnit,
+        );
+      }
+      if (existing.paceSecondsPerKm != null &&
+          existing.paceSecondsPerKm! > 0) {
+        _pace = SportPaceValue(
+          secondsPerKm: existing.paceSecondsPerKm!,
+          unit: existing.paceUnit,
+        );
+      }
+    } else {
+      final now = DateTime.now();
+      _date = DateUtils.dateOnly(widget.initialDate ?? now);
+      _time = widget.initialTime ?? TimeOfDay(hour: now.hour, minute: 0);
+    }
     _loadTypes();
   }
 
@@ -137,12 +185,15 @@ class _CreatePersonalSportActivitySheetState
     final types = ActivityTypesService.instance.types;
     setState(() {
       _types = types;
-      _typeId = types.isNotEmpty ? types.first.id : null;
+      if (_typeId == null || _typeId!.isEmpty) {
+        _typeId = types.isNotEmpty ? types.first.id : null;
+      }
       _loadingTypes = false;
     });
   }
 
   Future<void> _pickDate() async {
+    if (_readOnly) return;
     final picked = await showDatePicker(
       context: context,
       initialDate: _date,
@@ -155,6 +206,7 @@ class _CreatePersonalSportActivitySheetState
   }
 
   Future<void> _pickTime() async {
+    if (_readOnly) return;
     final picked = await showTimePicker(
       context: context,
       initialTime: _time,
@@ -238,7 +290,7 @@ class _CreatePersonalSportActivitySheetState
   }
 
   Future<void> _submit() async {
-    if (_submitting) return;
+    if (_submitting || _readOnly) return;
     final uid = FirebaseAuth.instance.currentUser?.uid;
     final session = context.read<AppSession>();
     final player = session.selectedPlayer;
@@ -252,7 +304,8 @@ class _CreatePersonalSportActivitySheetState
 
     setState(() => _submitting = true);
     try {
-      if (!_manualEntry) {
+      final existing = widget.activityToEdit;
+      if (!_isEditMode && !_manualEntry) {
         if (_importSource != WearableDeviceType.strava ||
             _selectedStrava == null) {
           AppSnackbar.show(
@@ -301,14 +354,18 @@ class _CreatePersonalSportActivitySheetState
           _typeId!;
 
       final activity = PersonalSportActivity(
-        memberId: playerId,
-        createdByUserId: uid,
+        id: existing?.id,
+        memberId: existing?.memberId ?? playerId,
+        createdByUserId: existing?.createdByUserId ?? uid,
         startAt: startAt,
         endAt: endAt,
         typeId: _typeId!,
-        title: typeLabel,
+        title: existing?.title?.trim().isNotEmpty == true &&
+                existing!.entryMode == PersonalSportEntryMode.import
+            ? existing.title
+            : typeLabel,
         visibility: _visibility,
-        entryMode: PersonalSportEntryMode.manual,
+        entryMode: existing?.entryMode ?? PersonalSportEntryMode.manual,
         notes: _notesController.text.trim().isEmpty
             ? null
             : _notesController.text.trim(),
@@ -318,20 +375,32 @@ class _CreatePersonalSportActivitySheetState
             ? null
             : _distance!.kilometers * 1000,
         paceSecondsPerKm: _pace?.secondsPerKm,
-        distanceUnit: _distance?.unit ?? 'km',
-        paceUnit: _pace?.unit ?? '/km',
-        seasonId: session.selectedSeason?.ref?.id,
-        accessMemberIds: [playerId],
+        distanceUnit: _distance?.unit ?? existing?.distanceUnit ?? 'km',
+        paceUnit: _pace?.unit ?? existing?.paceUnit ?? '/km',
+        externalSource: existing?.externalSource,
+        externalId: existing?.externalId,
+        seasonId: existing?.seasonId ?? session.selectedSeason?.ref?.id,
+        teamIds: existing?.teamIds ?? const <String>[],
+        accessMemberIds: existing?.accessMemberIds.isNotEmpty == true
+            ? existing!.accessMemberIds
+            : [playerId],
       );
 
-      final saved = await _service.create(activity);
+      final saved = _isEditMode
+          ? await _service.update(activity)
+          : await _service.create(activity);
       if (!mounted) return;
       widget.onSaved?.call();
       Navigator.of(context).pop(saved);
     } catch (e, st) {
-      debugPrint('create personal sport failed: $e\n$st');
+      debugPrint('save personal sport failed: $e\n$st');
       if (!mounted) return;
-      AppSnackbar.show(context, context.l10n.createPersonalSportError);
+      AppSnackbar.show(
+        context,
+        _isEditMode
+            ? context.l10n.editPersonalSportError
+            : context.l10n.createPersonalSportError,
+      );
     } finally {
       if (mounted) setState(() => _submitting = false);
     }
@@ -360,7 +429,11 @@ class _CreatePersonalSportActivitySheetState
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
               Text(
-                l10n.createPersonalSportTitle,
+                _readOnly
+                    ? l10n.viewPersonalSportTitle
+                    : _isEditMode
+                        ? l10n.editPersonalSportTitle
+                        : l10n.createPersonalSportTitle,
                 style: Theme.of(context).textTheme.titleMedium?.copyWith(
                       color: colors.textPrimary,
                       fontWeight: FontWeight.w700,
@@ -371,53 +444,59 @@ class _CreatePersonalSportActivitySheetState
                 contentPadding: EdgeInsets.zero,
                 title: Text(l10n.createPersonalSportDate),
                 subtitle: Text(dateLabel),
-                trailing: const Icon(Icons.calendar_today_rounded),
-                onTap: _pickDate,
+                trailing: _readOnly
+                    ? null
+                    : const Icon(Icons.calendar_today_rounded),
+                onTap: _readOnly ? null : _pickDate,
               ),
               ListTile(
                 contentPadding: EdgeInsets.zero,
                 title: Text(l10n.createPersonalSportTime),
                 subtitle: Text(timeLabel),
-                trailing: const Icon(Icons.schedule_rounded),
-                onTap: _pickTime,
+                trailing:
+                    _readOnly ? null : const Icon(Icons.schedule_rounded),
+                onTap: _readOnly ? null : _pickTime,
               ),
-              SwitchListTile.adaptive(
-                contentPadding: EdgeInsets.zero,
-                title: Text(l10n.createPersonalSportManualEntry),
-                subtitle: Text(
-                  _manualEntry
-                      ? l10n.createPersonalSportManualEntryHint
-                      : l10n.createPersonalSportImportHint,
-                  style: TextStyle(
-                    color: colors.textSecondary,
-                    fontSize: 13,
+              if (!_isEditMode)
+                SwitchListTile.adaptive(
+                  contentPadding: EdgeInsets.zero,
+                  title: Text(l10n.createPersonalSportManualEntry),
+                  subtitle: Text(
+                    _manualEntry
+                        ? l10n.createPersonalSportManualEntryHint
+                        : l10n.createPersonalSportImportHint,
+                    style: TextStyle(
+                      color: colors.textSecondary,
+                      fontSize: 13,
+                    ),
                   ),
+                  value: _manualEntry,
+                  activeColor: colors.primary,
+                  onChanged: (value) {
+                    setState(() => _manualEntry = value);
+                    if (!value) {
+                      _loadConnectedAppsAndActivities();
+                    }
+                  },
                 ),
-                value: _manualEntry,
-                activeColor: colors.primary,
-                onChanged: (value) {
-                  setState(() => _manualEntry = value);
-                  if (!value) {
-                    _loadConnectedAppsAndActivities();
-                  }
-                },
-              ),
               const SizedBox(height: 8),
-              if (_manualEntry) ...[
+              if (_manualEntry || _isEditMode) ...[
                 _MetricTile(
                   label: l10n.createPersonalSportDuration,
                   value: _duration.inSeconds > 0
                       ? formatSportDuration(_duration)
                       : l10n.createPersonalSportTapToSet,
-                  onTap: () async {
-                    final picked = await showSportDurationPicker(
-                      context,
-                      initial: _duration,
-                    );
-                    if (picked != null && mounted) {
-                      setState(() => _duration = picked);
-                    }
-                  },
+                  onTap: _readOnly
+                      ? null
+                      : () async {
+                          final picked = await showSportDurationPicker(
+                            context,
+                            initial: _duration,
+                          );
+                          if (picked != null && mounted) {
+                            setState(() => _duration = picked);
+                          }
+                        },
                 ),
                 _MetricTile(
                   label: l10n.createPersonalSportDistance,
@@ -427,30 +506,34 @@ class _CreatePersonalSportActivitySheetState
                           _distance!.kilometers,
                           _distance!.unit,
                         ),
-                  onTap: () async {
-                    final picked = await showSportDistancePicker(
-                      context,
-                      initial: _distance,
-                    );
-                    if (picked != null && mounted) {
-                      setState(() => _distance = picked);
-                    }
-                  },
+                  onTap: _readOnly
+                      ? null
+                      : () async {
+                          final picked = await showSportDistancePicker(
+                            context,
+                            initial: _distance,
+                          );
+                          if (picked != null && mounted) {
+                            setState(() => _distance = picked);
+                          }
+                        },
                 ),
                 _MetricTile(
                   label: l10n.createPersonalSportPace,
                   value: _pace == null
                       ? l10n.createPersonalSportTapToSet
                       : formatSportPace(_pace!.secondsPerKm, _pace!.unit),
-                  onTap: () async {
-                    final picked = await showSportPacePicker(
-                      context,
-                      initial: _pace,
-                    );
-                    if (picked != null && mounted) {
-                      setState(() => _pace = picked);
-                    }
-                  },
+                  onTap: _readOnly
+                      ? null
+                      : () async {
+                          final picked = await showSportPacePicker(
+                            context,
+                            initial: _pace,
+                          );
+                          if (picked != null && mounted) {
+                            setState(() => _pace = picked);
+                          }
+                        },
                 ),
                 const SizedBox(height: 8),
                 if (_loadingTypes)
@@ -468,9 +551,13 @@ class _CreatePersonalSportActivitySheetState
                           child: Text(type.labelForLocale(locale)),
                         ),
                     ],
-                    onChanged: (value) {
-                      if (value != null) setState(() => _typeId = value);
-                    },
+                    onChanged: _readOnly
+                        ? null
+                        : (value) {
+                            if (value != null) {
+                              setState(() => _typeId = value);
+                            }
+                          },
                   ),
               ] else ...[
                 if (_loadingConnectedApps)
@@ -556,12 +643,14 @@ class _CreatePersonalSportActivitySheetState
               const SizedBox(height: 10),
               PlayerFeelingFacesRow(
                 selected: _feeling,
+                enabled: !_readOnly,
                 onChanged: (feeling) => setState(() => _feeling = feeling),
               ),
               const SizedBox(height: 16),
               TextFormField(
                 controller: _notesController,
                 maxLines: 4,
+                readOnly: _readOnly,
                 decoration: InputDecoration(
                   labelText: l10n.createPersonalSportNotes,
                   alignLabelWithHint: true,
@@ -587,29 +676,39 @@ class _CreatePersonalSportActivitySheetState
                     child: Text(l10n.createPersonalSportVisibilityTeam),
                   ),
                 ],
-                onChanged: (value) {
-                  if (value != null) setState(() => _visibility = value);
-                },
+                onChanged: _readOnly
+                    ? null
+                    : (value) {
+                        if (value != null) {
+                          setState(() => _visibility = value);
+                        }
+                      },
               ),
-              const SizedBox(height: 20),
-              FilledButton(
-                onPressed: _submitting ? null : _submit,
-                style: FilledButton.styleFrom(
-                  backgroundColor: colors.primary,
-                  foregroundColor: Colors.white,
-                  minimumSize: const Size.fromHeight(48),
-                ),
-                child: _submitting
-                    ? const SizedBox(
-                        width: 22,
-                        height: 22,
-                        child: CircularProgressIndicator(
-                          strokeWidth: 2,
-                          color: Colors.white,
+              if (!_readOnly) ...[
+                const SizedBox(height: 20),
+                FilledButton(
+                  onPressed: _submitting ? null : _submit,
+                  style: FilledButton.styleFrom(
+                    backgroundColor: colors.primary,
+                    foregroundColor: Colors.white,
+                    minimumSize: const Size.fromHeight(48),
+                  ),
+                  child: _submitting
+                      ? const SizedBox(
+                          width: 22,
+                          height: 22,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2,
+                            color: Colors.white,
+                          ),
+                        )
+                      : Text(
+                          _isEditMode
+                              ? l10n.editPersonalSportSubmit
+                              : l10n.createPersonalSportSubmit,
                         ),
-                      )
-                    : Text(l10n.createPersonalSportSubmit),
-              ),
+                ),
+              ],
             ],
           ),
         ),
@@ -622,12 +721,12 @@ class _MetricTile extends StatelessWidget {
   const _MetricTile({
     required this.label,
     required this.value,
-    required this.onTap,
+    this.onTap,
   });
 
   final String label;
   final String value;
-  final VoidCallback onTap;
+  final VoidCallback? onTap;
 
   @override
   Widget build(BuildContext context) {
@@ -672,7 +771,11 @@ class _MetricTile extends StatelessWidget {
                     ],
                   ),
                 ),
-                Icon(Icons.chevron_right_rounded, color: colors.textSecondary),
+                if (onTap != null)
+                  Icon(
+                    Icons.chevron_right_rounded,
+                    color: colors.textSecondary,
+                  ),
               ],
             ),
           ),

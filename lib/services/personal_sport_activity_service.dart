@@ -20,6 +20,25 @@ class PersonalSportActivityService {
     return PersonalSportActivity.fromFirestore(snap);
   }
 
+  Future<PersonalSportActivity> update(PersonalSportActivity activity) async {
+    final id = activity.id?.trim() ?? '';
+    if (id.isEmpty) {
+      throw ArgumentError('PersonalSportActivity.id is required for update');
+    }
+    final ref = _collection.doc(id);
+    await ref.set(activity.toFirestore(forCreate: false), SetOptions(merge: true));
+    final snap = await ref.get();
+    return PersonalSportActivity.fromFirestore(snap);
+  }
+
+  Future<void> delete(PersonalSportActivity activity) async {
+    final id = activity.id?.trim() ?? '';
+    if (id.isEmpty) {
+      throw ArgumentError('PersonalSportActivity.id is required for delete');
+    }
+    await _collection.doc(id).delete();
+  }
+
   Future<PersonalSportActivity?> getById(String id) async {
     final trimmed = id.trim();
     if (trimmed.isEmpty) return null;

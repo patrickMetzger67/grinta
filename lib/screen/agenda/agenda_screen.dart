@@ -1,4 +1,5 @@
 import 'dart:async' show StreamSubscription, Timer, unawaited;
+import 'dart:math' as math;
 
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/foundation.dart';
@@ -46,8 +47,14 @@ import 'agenda_add_event_menu.dart';
 import '../../widget/ask_diego/ask_diego_speed_dial.dart';
 import '../../widget/agenda_training_presence_actions.dart';
 import '../../widget/create_non_sport_event_sheet.dart';
+import '../../widget/create_personal_sport_activity_sheet.dart';
 import '../../widget/non_sport_event_invitees_sheet.dart';
+import '../../widget/player_feeling_faces.dart';
+import '../../widget/sport_metric_pickers.dart';
+import '../../model/personal_sport_activity.dart';
+import '../../model/player_feeling.dart';
 import '../../util/non_sport_event_helper.dart';
+import '../../util/personal_sport_activity_helper.dart';
 import '../../util/session_report_access.dart';
 import '../../util/staff_session_access.dart';
 part 'agenda_calendar_widgets.dart';

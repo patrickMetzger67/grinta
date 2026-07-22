@@ -1233,6 +1233,20 @@
   "createPersonalSportSaved": "Activité créée",
   "createPersonalSportError": "Impossible de créer l'activité. Réessayez.",
   "createPersonalSportAuthRequired": "Connecte-toi pour créer une activité.",
+  "editPersonalSportTitle": "Modifier l'activité",
+  "editPersonalSportSubmit": "Enregistrer",
+  "editPersonalSportSaved": "Activité mise à jour",
+  "editPersonalSportError": "Impossible de modifier l'activité. Réessayez.",
+  "viewPersonalSportTitle": "Activité sportive",
+  "deletePersonalSportConfirmTitle": "Supprimer l'activité ?",
+  "deletePersonalSportConfirmMessage": "« {title} » sera définitivement supprimée.",
+  "@deletePersonalSportConfirmMessage": {
+    "placeholders": {
+      "title": { "type": "String" }
+    }
+  },
+  "deletePersonalSportDeleted": "Activité supprimée",
+  "deletePersonalSportError": "Impossible de supprimer l'activité. Réessayez.",
   "createNonSportEventTitle": "Nouvel évènement / activité",
   "createNonSportEventTitleField": "Titre",
   "createNonSportEventTitleRequired": "Indiquez un titre",

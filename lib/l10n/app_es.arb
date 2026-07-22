@@ -1279,6 +1279,20 @@
   "createPersonalSportSaved": "Activity created",
   "createPersonalSportError": "Could not create the activity. Please try again.",
   "createPersonalSportAuthRequired": "Sign in to create an activity.",
+  "editPersonalSportTitle": "Edit activity",
+  "editPersonalSportSubmit": "Save",
+  "editPersonalSportSaved": "Activity updated",
+  "editPersonalSportError": "Could not update the activity. Please try again.",
+  "viewPersonalSportTitle": "Sports activity",
+  "deletePersonalSportConfirmTitle": "Delete activity?",
+  "deletePersonalSportConfirmMessage": "“{title}” will be permanently deleted.",
+  "@deletePersonalSportConfirmMessage": {
+    "placeholders": {
+      "title": { "type": "String" }
+    }
+  },
+  "deletePersonalSportDeleted": "Activity deleted",
+  "deletePersonalSportError": "Could not delete the activity. Please try again.",
   "agendaAllDayLabel": "All day",
   "agendaEventSummaryNonSport": "{count, plural, =1{1 activity} other{{count} activities}}",
   "createNonSportEventTitle": "New event / activity",

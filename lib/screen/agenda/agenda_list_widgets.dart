@@ -1007,6 +1007,67 @@ class AgendaItemCard extends StatelessWidget {
                     },
                   ),
                 ],
+                if (item.type == AgendaItemType.preparationPhysique &&
+                    item.personalSportActivity != null) ...[
+                  if (item.personalSportActivity!.visibility ==
+                      PersonalSportVisibility.private) ...[
+                    const SizedBox(width: 4),
+                    Tooltip(
+                      message:
+                          context.l10n.createPersonalSportVisibilityPrivate,
+                      child: Icon(
+                        Icons.lock_outline_rounded,
+                        size: 18,
+                        color: colors.textPrimary,
+                      ),
+                    ),
+                  ],
+                  if (canManagePersonalSportActivity(
+                    item.personalSportActivity!,
+                    context.read<AppSession>(),
+                  )) ...[
+                    IconButton(
+                      visualDensity: VisualDensity.compact,
+                      padding: EdgeInsets.zero,
+                      constraints: const BoxConstraints(
+                        minWidth: 32,
+                        minHeight: 32,
+                      ),
+                      tooltip: context.l10n.editPersonalSportTitle,
+                      icon: Icon(
+                        Icons.edit_outlined,
+                        size: 20,
+                        color: colors.textPrimary,
+                      ),
+                      onPressed: () {
+                        showCreatePersonalSportActivitySheet(
+                          context,
+                          activityToEdit: item.personalSportActivity!,
+                        );
+                      },
+                    ),
+                    IconButton(
+                      visualDensity: VisualDensity.compact,
+                      padding: EdgeInsets.zero,
+                      constraints: const BoxConstraints(
+                        minWidth: 32,
+                        minHeight: 32,
+                      ),
+                      tooltip: context.l10n.actionDelete,
+                      icon: Icon(
+                        Icons.delete_outline_rounded,
+                        size: 20,
+                        color: colors.textPrimary,
+                      ),
+                      onPressed: () async {
+                        await deleteManagedPersonalSportActivity(
+                          context,
+                          activity: item.personalSportActivity!,
+                        );
+                      },
+                    ),
+                  ],
+                ],
                 if (item.isDone) ...[
                   const SizedBox(width: 8),
                   Icon(
@@ -1061,6 +1122,56 @@ class AgendaItemCard extends StatelessWidget {
                   ],
                 ),
               ),
+            ],
+            if (item.type == AgendaItemType.preparationPhysique &&
+                item.personalSportActivity != null) ...[
+              const SizedBox(height: 10),
+              InkWell(
+                borderRadius: BorderRadius.circular(12),
+                onTap: () {
+                  final activity = item.personalSportActivity!;
+                  final canManage = canManagePersonalSportActivity(
+                    activity,
+                    context.read<AppSession>(),
+                  );
+                  showCreatePersonalSportActivitySheet(
+                    context,
+                    activityToEdit: activity,
+                    readOnly: !canManage,
+                  );
+                },
+                child: personalSportRings(
+                  context: context,
+                  activity: item.personalSportActivity!,
+                ),
+              ),
+              if (PlayerFeeling.fromValue(
+                    item.personalSportActivity!.feeling,
+                  ) !=
+                  null) ...[
+                const SizedBox(height: 10),
+                Row(
+                  children: [
+                    Text(
+                      context.l10n.playerFeelingPrompt,
+                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                            color: colors.textPrimary.withValues(alpha: 0.9),
+                            fontWeight: FontWeight.w600,
+                          ),
+                    ),
+                    const SizedBox(width: 10),
+                    CustomPaint(
+                      size: const Size(28, 28),
+                      painter: FeelingFacePainter(
+                        feeling: PlayerFeeling.fromValue(
+                          item.personalSportActivity!.feeling,
+                        )!,
+                        color: colors.textPrimary,
+                      ),
+                    ),
+                  ],
+                ),
+              ],
             ],
             // Player rings: personal scores only (not managers/staff).
             if(!canAccessSessionDetails && item.withTracker == true && teamPlayerMetricScores != null) ... [
@@ -1505,6 +1616,80 @@ class AgendaItemCard extends StatelessWidget {
     );
   }
 
+
+  Widget personalSportRings({
+    required BuildContext context,
+    required PersonalSportActivity activity,
+  }) {
+    final l10n = context.l10n;
+    final colors = context.appColors;
+
+    final durationMinutes =
+        (activity.durationSeconds ?? 0).clamp(0, 24 * 60 * 60) / 60.0;
+    final distanceKm = activity.distanceUnit == 'mi'
+        ? (activity.distanceMeters ?? 0) / 1609.344
+        : (activity.distanceMeters ?? 0) / 1000.0;
+    final paceSeconds = activity.paceSecondsPerKm ?? 0;
+    final paceDisplaySeconds = activity.paceUnit == '/mi'
+        ? (paceSeconds * 1.609344).round()
+        : paceSeconds;
+    final paceMinutes =
+        paceDisplaySeconds > 0 ? paceDisplaySeconds / 60.0 : 0.0;
+
+    // Reference goals so rings fill meaningfully without a team max.
+    final durationGoal = durationMinutes > 0
+        ? math.max(durationMinutes, 60.0)
+        : 60.0;
+    final distanceGoal =
+        distanceKm > 0 ? math.max(distanceKm, 5.0) : 5.0;
+    final paceGoal =
+        paceMinutes > 0 ? math.max(paceMinutes, 8.0) : 8.0;
+
+    final paceUnitLabel = activity.paceUnit == '/mi' ? 'min/mi' : 'min/km';
+    final distanceUnitLabel = activity.distanceUnit == 'mi' ? 'mi' : 'km';
+
+    return SizedBox(
+      width: double.infinity,
+      height: 80,
+      child: ActivityRingsCard.detailed(
+        showWorkload: false,
+        showLegend: true,
+        embedded: true,
+        backgroundColor: Colors.black,
+        padding: const EdgeInsets.all(4),
+        withgoal: false,
+        rings: [
+          ActivityRingItem(
+            label: l10n.createPersonalSportDuration,
+            value: durationMinutes,
+            goal: durationGoal,
+            unit: 'min',
+            color: colors.primary,
+            trackColor: Colors.blueAccent.withValues(alpha: 0.18),
+            icon: Icons.timer_outlined,
+          ),
+          ActivityRingItem(
+            label: l10n.createPersonalSportDistance,
+            value: distanceKm,
+            goal: distanceGoal,
+            unit: distanceUnitLabel,
+            color: colors.success,
+            trackColor: Colors.greenAccent.withValues(alpha: 0.18),
+            icon: Icons.directions_run,
+          ),
+          ActivityRingItem(
+            label: l10n.createPersonalSportPace,
+            value: paceMinutes,
+            goal: paceGoal,
+            unit: paceUnitLabel,
+            color: colors.warning,
+            trackColor: Colors.orangeAccent.withValues(alpha: 0.18),
+            icon: Icons.speed,
+          ),
+        ],
+      ),
+    );
+  }
 
   Widget activityRing({required BuildContext context,
     required TeamPlayerMetricScores? teamPlayerMetricScores,

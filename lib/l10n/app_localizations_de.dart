@@ -2723,6 +2723,35 @@ class AppLocalizationsDe extends AppLocalizations {
   @override
   String get createPersonalSportAuthRequired => 'Sign in to create an activity.';
 
+  @override
+  String get editPersonalSportTitle => 'Edit activity';
+
+  @override
+  String get editPersonalSportSubmit => 'Save';
+
+  @override
+  String get editPersonalSportSaved => 'Activity updated';
+
+  @override
+  String get editPersonalSportError => 'Could not update the activity. Please try again.';
+
+  @override
+  String get viewPersonalSportTitle => 'Sports activity';
+
+  @override
+  String get deletePersonalSportConfirmTitle => 'Delete activity?';
+
+  @override
+  String deletePersonalSportConfirmMessage(String title) {
+    return '“{title}” will be permanently deleted.'.replaceAll('{title}', title);
+  }
+
+  @override
+  String get deletePersonalSportDeleted => 'Activity deleted';
+
+  @override
+  String get deletePersonalSportError => 'Could not delete the activity. Please try again.';
+
 
   @override
   String get agendaAllDayLabel => 'All day';

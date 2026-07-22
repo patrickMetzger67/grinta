@@ -2708,6 +2708,35 @@ class AppLocalizationsFr extends AppLocalizations {
   @override
   String get createPersonalSportAuthRequired => 'Connecte-toi pour créer une activité.';
 
+  @override
+  String get editPersonalSportTitle => 'Modifier l\'activité';
+
+  @override
+  String get editPersonalSportSubmit => 'Enregistrer';
+
+  @override
+  String get editPersonalSportSaved => 'Activité mise à jour';
+
+  @override
+  String get editPersonalSportError => 'Impossible de modifier l\'activité. Réessayez.';
+
+  @override
+  String get viewPersonalSportTitle => 'Activité sportive';
+
+  @override
+  String get deletePersonalSportConfirmTitle => 'Supprimer l\'activité ?';
+
+  @override
+  String deletePersonalSportConfirmMessage(String title) {
+    return '« {title} » sera définitivement supprimée.'.replaceAll('{title}', title);
+  }
+
+  @override
+  String get deletePersonalSportDeleted => 'Activité supprimée';
+
+  @override
+  String get deletePersonalSportError => 'Impossible de supprimer l\'activité. Réessayez.';
+
 
   @override
   String get agendaAllDayLabel => 'Journée entière';
