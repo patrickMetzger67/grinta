@@ -1016,8 +1016,9 @@ class AgendaItemCard extends StatelessWidget {
                       message: context.l10n.wearableDeviceStrava,
                       child: SvgPicture.asset(
                         'assets/images/strava_logo.svg',
-                        width: 18,
-                        height: 18,
+                        width: 20,
+                        height: 20,
+                        fit: BoxFit.contain,
                       ),
                     ),
                   ],

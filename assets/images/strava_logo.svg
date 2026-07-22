@@ -1,5 +1,4 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-label="Strava">
-  <!-- Strava-style orange mark (simplified brand chevron) -->
-  <path fill="#FC4C02" d="M39.2 8.5 22.5 42.8h11.8L51 8.5H39.2z"/>
-  <path fill="#FC4C02" d="M28.8 34.2 21.6 48.8h9.4l3.8-7.7-5.9-6.9z" opacity="0.55"/>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" role="img" aria-label="Strava">
+  <!-- Official Strava brand mark (dual chevron) -->
+  <path fill="#FC4C02" d="M15.387 17.944l-2.089-4.116h-3.065L15.387 24l5.15-10.172h-3.066m-7.008-5.599l2.836 5.598h4.172L10.463 0l-7 13.828h4.169"/>
 </svg>
