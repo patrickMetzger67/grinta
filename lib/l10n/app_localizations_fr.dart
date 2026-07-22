@@ -2669,14 +2669,17 @@ class AppLocalizationsFr extends AppLocalizations {
   String get createPersonalSportImportSource => 'App / appareil';
 
   @override
+  String get createPersonalSportPolarActivity => 'Activité Polar';
+
+  @override
   String get createPersonalSportStravaActivity => 'Activité Strava';
 
   @override
-  String get createPersonalSportNoImportable => 'Aucune activité Strava à importer';
+  String get createPersonalSportNoImportable => 'Aucune activité à importer';
 
   @override
   String get createPersonalSportNoConnectedApps =>
-      'Aucune app connectée. Connecte Strava dans Appareils / Applications.';
+      'Aucune app connectée. Connecte Strava ou Polar dans Appareils / Applications.';
 
   @override
   String get createPersonalSportImportRequired => 'Sélectionne une activité à importer';

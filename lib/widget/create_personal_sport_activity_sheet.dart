@@ -8,6 +8,7 @@ import 'package:grinta/model/wearable_device_type.dart';
 import 'package:grinta/provider/appSession.dart';
 import 'package:grinta/services/activity_types_service.dart';
 import 'package:grinta/services/personal_sport_activity_service.dart';
+import 'package:grinta/services/polar_sync_service.dart';
 import 'package:grinta/services/strava_sync_service.dart';
 import 'package:grinta/util/app_snackbar.dart';
 import 'package:grinta/util/app_theme.dart';
@@ -114,7 +115,7 @@ class _CreatePersonalSportActivitySheetState
   bool _manualEntry = true;
   bool _submitting = false;
   bool _loadingTypes = true;
-  bool _loadingStrava = false;
+  bool _loadingImportActivities = false;
   bool _loadingConnectedApps = false;
 
   List<ActivityTypeDefinition> _types = const [];
@@ -130,6 +131,8 @@ class _CreatePersonalSportActivitySheetState
   WearableDeviceType? _importSource;
   List<StravaImportableActivity> _stravaActivities = const [];
   StravaImportableActivity? _selectedStrava;
+  List<PolarImportableActivity> _polarActivities = const [];
+  PolarImportableActivity? _selectedPolar;
 
   bool get _readOnly => widget.readOnly;
   bool get _isEditMode => widget.isEditMode;
@@ -226,24 +229,35 @@ class _CreatePersonalSportActivitySheetState
         _importSource = null;
         _stravaActivities = const [];
         _selectedStrava = null;
+        _polarActivities = const [];
+        _selectedPolar = null;
       });
       return;
     }
 
     setState(() {
       _loadingConnectedApps = true;
-      _loadingStrava = true;
+      _loadingImportActivities = true;
       _stravaActivities = const [];
       _selectedStrava = null;
+      _polarActivities = const [];
+      _selectedPolar = null;
     });
 
-    final stravaConfig =
-        await StravaSyncService.instance.repository.getConfig(uid, playerId);
+    final stravaFuture =
+        StravaSyncService.instance.repository.getConfig(uid, playerId);
+    final polarFuture =
+        PolarSyncService.instance.repository.getConfig(uid, playerId);
+    final stravaConfig = await stravaFuture;
+    final polarConfig = await polarFuture;
     if (!mounted) return;
 
     final connected = <WearableDeviceType>[];
     if (stravaConfig?.connected == true) {
       connected.add(WearableDeviceType.strava);
+    }
+    if (polarConfig?.connected == true) {
+      connected.add(WearableDeviceType.polar);
     }
 
     setState(() {
@@ -254,10 +268,24 @@ class _CreatePersonalSportActivitySheetState
       _loadingConnectedApps = false;
     });
 
-    if (_importSource == WearableDeviceType.strava) {
-      await _loadStravaActivities();
+    if (_importSource != null) {
+      await _loadImportActivitiesForSource(_importSource!);
     } else if (mounted) {
-      setState(() => _loadingStrava = false);
+      setState(() => _loadingImportActivities = false);
+    }
+  }
+
+  Future<void> _loadImportActivitiesForSource(WearableDeviceType source) async {
+    if (source == WearableDeviceType.strava) {
+      await _loadStravaActivities();
+      return;
+    }
+    if (source == WearableDeviceType.polar) {
+      await _loadPolarActivities();
+      return;
+    }
+    if (mounted) {
+      setState(() => _loadingImportActivities = false);
     }
   }
 
@@ -265,14 +293,16 @@ class _CreatePersonalSportActivitySheetState
     final session = context.read<AppSession>();
     final playerId = session.selectedPlayerId?.trim() ?? '';
     if (playerId.isEmpty) {
-      if (mounted) setState(() => _loadingStrava = false);
+      if (mounted) setState(() => _loadingImportActivities = false);
       return;
     }
 
     setState(() {
-      _loadingStrava = true;
+      _loadingImportActivities = true;
       _stravaActivities = const [];
       _selectedStrava = null;
+      _polarActivities = const [];
+      _selectedPolar = null;
     });
 
     final list = await StravaSyncService.instance.listImportableActivities(
@@ -281,12 +311,54 @@ class _CreatePersonalSportActivitySheetState
     if (!mounted) return;
     setState(() {
       _stravaActivities = list;
-      _loadingStrava = false;
+      _loadingImportActivities = false;
       if (list.isNotEmpty) {
         _selectedStrava = list.first;
         _typeId = list.first.typeId;
       }
     });
+  }
+
+  Future<void> _loadPolarActivities() async {
+    final session = context.read<AppSession>();
+    final playerId = session.selectedPlayerId?.trim() ?? '';
+    if (playerId.isEmpty) {
+      if (mounted) setState(() => _loadingImportActivities = false);
+      return;
+    }
+
+    setState(() {
+      _loadingImportActivities = true;
+      _polarActivities = const [];
+      _selectedPolar = null;
+      _stravaActivities = const [];
+      _selectedStrava = null;
+    });
+
+    final list = await PolarSyncService.instance.listImportableActivities(
+      playerId: playerId,
+    );
+    if (!mounted) return;
+    setState(() {
+      _polarActivities = list;
+      _loadingImportActivities = false;
+      if (list.isNotEmpty) {
+        _selectedPolar = list.first;
+        _typeId = list.first.typeId;
+      }
+    });
+  }
+
+  String _labelForImportSource(WearableDeviceType source) {
+    final l10n = context.l10n;
+    switch (source) {
+      case WearableDeviceType.strava:
+        return l10n.wearableDeviceStrava;
+      case WearableDeviceType.polar:
+        return l10n.wearableDevicePolar;
+      default:
+        return source.name;
+    }
   }
 
   Future<void> _submit() async {
@@ -306,22 +378,34 @@ class _CreatePersonalSportActivitySheetState
     try {
       final existing = widget.activityToEdit;
       if (!_isEditMode && !_manualEntry) {
-        if (_importSource != WearableDeviceType.strava ||
-            _selectedStrava == null) {
+        PersonalSportActivity? imported;
+        if (_importSource == WearableDeviceType.strava &&
+            _selectedStrava != null) {
+          imported = await StravaSyncService.instance.importActivity(
+            playerId: playerId,
+            externalId: _selectedStrava!.externalId,
+            visibility: _visibility.firestoreValue,
+            feeling: _feeling?.value,
+            notes: _notesController.text.trim(),
+            typeId: _typeId,
+          );
+        } else if (_importSource == WearableDeviceType.polar &&
+            _selectedPolar != null) {
+          imported = await PolarSyncService.instance.importActivity(
+            playerId: playerId,
+            externalId: _selectedPolar!.externalId,
+            visibility: _visibility.firestoreValue,
+            feeling: _feeling?.value,
+            notes: _notesController.text.trim(),
+            typeId: _typeId,
+          );
+        } else {
           AppSnackbar.show(
             context,
             context.l10n.createPersonalSportImportRequired,
           );
           return;
         }
-        final imported = await StravaSyncService.instance.importActivity(
-          playerId: playerId,
-          externalId: _selectedStrava!.externalId,
-          visibility: _visibility.firestoreValue,
-          feeling: _feeling?.value,
-          notes: _notesController.text.trim(),
-          typeId: _typeId,
-        );
         if (!mounted) return;
         if (imported == null) {
           AppSnackbar.show(context, context.l10n.createPersonalSportError);
@@ -579,25 +663,26 @@ class _CreatePersonalSportActivitySheetState
                       for (final source in _connectedSources)
                         DropdownMenuItem(
                           value: source,
-                          child: Text(
-                            source == WearableDeviceType.strava
-                                ? l10n.wearableDeviceStrava
-                                : source.name,
-                          ),
+                          child: Text(_labelForImportSource(source)),
                         ),
                     ],
                     onChanged: (value) {
+                      if (value == null) return;
                       setState(() => _importSource = value);
-                      if (value == WearableDeviceType.strava) {
-                        _loadStravaActivities();
-                      }
+                      _loadImportActivitiesForSource(value);
                     },
                   ),
                   const SizedBox(height: 12),
-                  if (_loadingStrava)
+                  if (_loadingImportActivities)
                     const Center(child: CircularProgressIndicator())
                   else if (_importSource == WearableDeviceType.strava &&
                       _stravaActivities.isEmpty)
+                    Text(
+                      l10n.createPersonalSportNoImportable,
+                      style: TextStyle(color: colors.textSecondary),
+                    )
+                  else if (_importSource == WearableDeviceType.polar &&
+                      _polarActivities.isEmpty)
                     Text(
                       l10n.createPersonalSportNoImportable,
                       style: TextStyle(color: colors.textSecondary),
@@ -628,6 +713,36 @@ class _CreatePersonalSportActivitySheetState
                         }
                         setState(() {
                           _selectedStrava = match;
+                          if (match != null) _typeId = match.typeId;
+                        });
+                      },
+                    )
+                  else if (_importSource == WearableDeviceType.polar)
+                    DropdownButtonFormField<String>(
+                      value: _selectedPolar?.externalId,
+                      decoration: InputDecoration(
+                        labelText: l10n.createPersonalSportPolarActivity,
+                      ),
+                      items: [
+                        for (final activity in _polarActivities)
+                          DropdownMenuItem(
+                            value: activity.externalId,
+                            child: Text(
+                              activity.displayLabel,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ),
+                      ],
+                      onChanged: (id) {
+                        PolarImportableActivity? match;
+                        for (final activity in _polarActivities) {
+                          if (activity.externalId == id) {
+                            match = activity;
+                            break;
+                          }
+                        }
+                        setState(() {
+                          _selectedPolar = match;
                           if (match != null) _typeId = match.typeId;
                         });
                       },

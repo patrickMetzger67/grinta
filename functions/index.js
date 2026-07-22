@@ -26,6 +26,10 @@ const {
   createPolarDisconnect,
 } = require('./polar_oauth');
 const {
+  createPolarListActivities,
+  createPolarImportActivity,
+} = require('./polar_activities');
+const {
   createFitbitOAuthStart,
   createFitbitOAuthCallback,
   createFitbitDisconnect,
@@ -692,16 +696,18 @@ exports.stravaListActivities = createStravaListActivities();
 exports.stravaImportActivity = createStravaImportActivity();
 
 /**
- * Polar AccessLink OAuth (Phase 1 scaffolding).
+ * Polar AccessLink OAuth + exercise import (Verity Sense, Loop, watches via Flow).
  *
  * Deploy:
  *   firebase functions:secrets:set POLAR_CLIENT_ID
  *   firebase functions:secrets:set POLAR_CLIENT_SECRET
- *   firebase deploy --only functions:polarOAuthStart,functions:polarOAuthCallback,functions:polarDisconnect
+ *   firebase deploy --only functions:polarOAuthStart,functions:polarOAuthCallback,functions:polarDisconnect,functions:polarListActivities,functions:polarImportActivity
  */
 exports.polarOAuthStart = createPolarOAuthStart();
 exports.polarOAuthCallback = createPolarOAuthCallback();
 exports.polarDisconnect = createPolarDisconnect();
+exports.polarListActivities = createPolarListActivities();
+exports.polarImportActivity = createPolarImportActivity();
 
 /**
  * Fitbit Web API OAuth (Phase 1 scaffolding).

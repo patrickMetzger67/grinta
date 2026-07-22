@@ -4733,6 +4733,12 @@ abstract class AppLocalizations {
   /// **'App / appareil'**
   String get createPersonalSportImportSource;
 
+  /// No description provided for @createPersonalSportPolarActivity.
+  ///
+  /// In en, this message translates to:
+  /// **'Polar activity'**
+  String get createPersonalSportPolarActivity;
+
   /// No description provided for @createPersonalSportStravaActivity.
   ///
   /// In fr, this message translates to:

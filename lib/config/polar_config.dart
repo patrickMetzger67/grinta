@@ -6,6 +6,8 @@ const String kPolarFunctionsRegion = 'europe-west1';
 
 const String kPolarOAuthStartFunctionName = 'polarOAuthStart';
 const String kPolarDisconnectFunctionName = 'polarDisconnect';
+const String kPolarListActivitiesFunctionName = 'polarListActivities';
+const String kPolarImportActivityFunctionName = 'polarImportActivity';
 
 /// Deep link opened after OAuth completes (via Cloud Function redirect).
 const String kPolarOAuthDeepLinkHost = 'polar';

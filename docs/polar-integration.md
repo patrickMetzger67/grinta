@@ -1,6 +1,6 @@
 # Polar integration (Phase 1)
 
-Phase 1 delivers OAuth connect/disconnect scaffolding for Polar Loop and Verity Sense via Polar AccessLink (Polar Flow cloud sync). Data sync, webhooks, and coach roster badges are planned for Phase 2.
+Phase 1 delivers OAuth connect/disconnect for Polar Loop and Verity Sense via Polar AccessLink (Polar Flow cloud sync), plus **manual import of Polar Flow exercises** into personal sport activities (same UX as Strava). Webhooks, continuous HR/sleep sync, and coach roster badges remain Phase 2.
 
 > **Related:** Whoop, Strava, and Fitbit use the same **Appareils/Applications** settings UI. See [Whoop integration](./whoop-integration.md), [Strava integration](./strava-integration.md), and [Fitbit integration](./fitbit-integration.md).
 
@@ -120,9 +120,37 @@ users/{uid}/polarSync/{playerId}
 
 Tokens are never written to client-readable documents.
 
+## Exercise import (personal sport activities)
+
+After Polar is connected, **Créer → Une activité sportive personnelle → import** lists Polar Flow exercises not yet imported (`externalSource: polar`).
+
+Cloud Functions:
+
+- `polarListActivities` → `GET /v3/exercises` (last ~30 days in Flow after AccessLink registration)
+- `polarImportActivity` → `GET /v3/exercises/{id}` then write `personalSportActivities`
+
+Deploy:
+
+```bash
+firebase deploy --only \
+  functions:polarListActivities,functions:polarImportActivity
+```
+
+### Device field differences
+
+| Device | Typical imported fields |
+|--------|-------------------------|
+| **Polar Verity Sense** | Duration, average HR, calories; distance/pace often absent (no GPS) |
+| **Polar Loop** | Workout sessions started in Flow: duration, HR when available, sometimes distance |
+| GPS watches (via Flow) | Duration, distance, pace, HR, calories when recorded |
+
+Missing metrics are stored as `null` and hidden on the agenda card. `externalDevice` keeps the Polar device name (e.g. `Polar Verity Sense`).
+
+Timezone: Polar `start_time` is local wall-clock; import converts with `start_time_utc_offset` (minutes) to true UTC.
+
 ## Phase 2 TODO
 
 - Polar AccessLink webhooks (`polarWebhook` HTTP function)
-- Token refresh and user deregistration at disconnect
-- Exercise, sleep, and HR data sync into Grinta
+- User deregistration at disconnect (`DELETE /v3/users/{polar-user-id}`)
+- Continuous HR / sleep / nightly recharge sync (beyond exercise import)
 - Coach roster badges when a player shares metrics

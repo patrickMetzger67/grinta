@@ -2,9 +2,91 @@ import 'package:cloud_functions/cloud_functions.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/foundation.dart';
 import 'package:grinta/config/polar_config.dart';
+import 'package:grinta/model/personal_sport_activity.dart';
 import 'package:grinta/model/polar_sync_config.dart';
+import 'package:grinta/services/personal_sport_activity_service.dart';
 import 'package:grinta/services/polar_sync_repository.dart';
 import 'package:url_launcher/url_launcher.dart';
+
+class PolarImportableActivity {
+  const PolarImportableActivity({
+    required this.externalId,
+    required this.name,
+    required this.typeId,
+    this.device,
+    this.startDate,
+    this.durationSeconds,
+    this.distanceMeters,
+    this.paceSecondsPerKm,
+    this.caloriesKcal,
+    this.averageHeartRateBpm,
+  });
+
+  final String externalId;
+  final String name;
+  final String typeId;
+  final String? device;
+  final DateTime? startDate;
+  final int? durationSeconds;
+  final double? distanceMeters;
+  final int? paceSecondsPerKm;
+  final double? caloriesKcal;
+  final int? averageHeartRateBpm;
+
+  String get displayLabel {
+    final parts = <String>[name];
+    if (device != null && device!.trim().isNotEmpty) {
+      parts.add(device!.trim());
+    }
+    if (startDate != null) {
+      parts.add(
+        '${startDate!.day.toString().padLeft(2, '0')}/'
+        '${startDate!.month.toString().padLeft(2, '0')}',
+      );
+    }
+    if (distanceMeters != null && distanceMeters! > 0) {
+      parts.add('${(distanceMeters! / 1000).toStringAsFixed(1)} km');
+    } else if (averageHeartRateBpm != null && averageHeartRateBpm! > 0) {
+      parts.add('${averageHeartRateBpm!} bpm');
+    }
+    return parts.join(' · ');
+  }
+
+  factory PolarImportableActivity.fromMap(Map<dynamic, dynamic> map) {
+    DateTime? start;
+    final rawStart = map['startDate']?.toString();
+    if (rawStart != null && rawStart.isNotEmpty) {
+      start = DateTime.tryParse(rawStart);
+    }
+    return PolarImportableActivity(
+      externalId: (map['externalId'] ?? '').toString().trim(),
+      name: (map['name'] ?? '').toString().trim(),
+      typeId: (map['typeId'] ?? 'entrainement').toString().trim(),
+      device: () {
+        final value = (map['device'] ?? '').toString().trim();
+        return value.isEmpty ? null : value;
+      }(),
+      startDate: start,
+      durationSeconds: _asInt(map['durationSeconds']),
+      distanceMeters: _asDouble(map['distanceMeters']),
+      paceSecondsPerKm: _asInt(map['paceSecondsPerKm']),
+      caloriesKcal: _asDouble(map['caloriesKcal']),
+      averageHeartRateBpm: _asInt(map['averageHeartRateBpm']),
+    );
+  }
+
+  static int? _asInt(Object? value) {
+    if (value is int) return value;
+    if (value is num) return value.toInt();
+    return null;
+  }
+
+  static double? _asDouble(Object? value) {
+    if (value is double) return value;
+    if (value is num) return value.toDouble();
+    return null;
+  }
+}
 
 enum PolarConnectResult {
   success,
@@ -117,6 +199,69 @@ class PolarSyncService {
     } catch (e, st) {
       debugPrint('updateCoachVisibility error: $e\n$st');
       return false;
+    }
+  }
+
+  Future<List<PolarImportableActivity>> listImportableActivities({
+    required String playerId,
+  }) async {
+    try {
+      final callable =
+          _functions.httpsCallable(kPolarListActivitiesFunctionName);
+      final result = await callable.call(<String, dynamic>{
+        'playerId': playerId,
+      });
+      final data = result.data;
+      if (data is! Map) return const [];
+      final raw = data['activities'];
+      if (raw is! List) return const [];
+      final activities = <PolarImportableActivity>[];
+      for (final entry in raw) {
+        if (entry is! Map) continue;
+        final activity = PolarImportableActivity.fromMap(entry);
+        if (activity.externalId.isEmpty) continue;
+        activities.add(activity);
+      }
+      return activities;
+    } on FirebaseFunctionsException catch (e, st) {
+      debugPrint('polarListActivities failed: ${e.code} ${e.message}\n$st');
+      return const [];
+    } catch (e, st) {
+      debugPrint('polarListActivities error: $e\n$st');
+      return const [];
+    }
+  }
+
+  Future<PersonalSportActivity?> importActivity({
+    required String playerId,
+    required String externalId,
+    String visibility = 'private',
+    int? feeling,
+    String? notes,
+    String? typeId,
+  }) async {
+    try {
+      final callable =
+          _functions.httpsCallable(kPolarImportActivityFunctionName);
+      final result = await callable.call(<String, dynamic>{
+        'playerId': playerId,
+        'externalId': externalId,
+        'visibility': visibility,
+        if (feeling != null) 'feeling': feeling,
+        if (notes != null && notes.trim().isNotEmpty) 'notes': notes.trim(),
+        if (typeId != null && typeId.trim().isNotEmpty) 'typeId': typeId.trim(),
+      });
+      final data = result.data;
+      if (data is! Map) return null;
+      final id = data['id']?.toString().trim();
+      if (id == null || id.isEmpty) return null;
+      return PersonalSportActivityService().getById(id);
+    } on FirebaseFunctionsException catch (e, st) {
+      debugPrint('polarImportActivity failed: ${e.code} ${e.message}\n$st');
+      return null;
+    } catch (e, st) {
+      debugPrint('polarImportActivity error: $e\n$st');
+      return null;
     }
   }
 }

@@ -1022,6 +1022,19 @@ class AgendaItemCard extends StatelessWidget {
                       ),
                     ),
                   ],
+                  if (item.personalSportActivity!.externalSource ==
+                      'polar') ...[
+                    const SizedBox(width: 6),
+                    Tooltip(
+                      message: context.l10n.wearableDevicePolar,
+                      child: SvgPicture.asset(
+                        'assets/images/polar_logo.svg',
+                        width: 20,
+                        height: 20,
+                        fit: BoxFit.contain,
+                      ),
+                    ),
+                  ],
                   if (item.personalSportActivity!.visibility ==
                       PersonalSportVisibility.private) ...[
                     const SizedBox(width: 4),
