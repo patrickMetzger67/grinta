@@ -1,6 +1,8 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" role="img" aria-label="Polar">
-  <!-- Official Polar brand mark: red circle with horizontal bar -->
-  <circle cx="12" cy="12" r="10" fill="#E30613"/>
-  <!-- Thin bar slightly above center (matches Polar wordmark icon) -->
-  <rect x="2" y="9.6" width="20" height="1.8" fill="#111111"/>
+  <!-- Official Polar mark: red circle with horizontal cutout bar -->
+  <path
+    fill="#E30613"
+    fill-rule="evenodd"
+    d="M12 2c5.523 0 10 4.477 10 10s-4.477 10-10 10S2 17.523 2 12 6.477 2 12 2zm-10 7.6h20v1.8H2v-1.8z"
+  />
 </svg>
