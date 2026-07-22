@@ -2700,6 +2700,27 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get deletePersonalSportError => 'Could not delete the activity. Please try again.';
 
+  @override
+  String get personalSportMetricDistance => 'Distance';
+
+  @override
+  String get personalSportMetricAvgPace => 'Average pace';
+
+  @override
+  String get personalSportMetricDuration => 'Duration';
+
+  @override
+  String get personalSportMetricCalories => 'Calories';
+
+  @override
+  String get personalSportMetricAvgHeartRate => 'Average heart rate';
+
+  @override
+  String get personalSportUnitKcal => 'kcal';
+
+  @override
+  String get personalSportUnitBpm => 'bpm';
+
 
   @override
   String get agendaAllDayLabel => 'All day';

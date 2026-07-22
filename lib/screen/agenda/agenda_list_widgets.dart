@@ -1009,6 +1009,18 @@ class AgendaItemCard extends StatelessWidget {
                 ],
                 if (item.type == AgendaItemType.preparationPhysique &&
                     item.personalSportActivity != null) ...[
+                  if (item.personalSportActivity!.externalSource ==
+                      'strava') ...[
+                    const SizedBox(width: 6),
+                    Tooltip(
+                      message: context.l10n.wearableDeviceStrava,
+                      child: SvgPicture.asset(
+                        'assets/images/strava_logo.svg',
+                        width: 18,
+                        height: 18,
+                      ),
+                    ),
+                  ],
                   if (item.personalSportActivity!.visibility ==
                       PersonalSportVisibility.private) ...[
                     const SizedBox(width: 4),
@@ -1140,7 +1152,7 @@ class AgendaItemCard extends StatelessWidget {
                     readOnly: !canManage,
                   );
                 },
-                child: personalSportRings(
+                child: personalSportMetrics(
                   context: context,
                   activity: item.personalSportActivity!,
                 ),
@@ -1617,75 +1629,100 @@ class AgendaItemCard extends StatelessWidget {
   }
 
 
-  Widget personalSportRings({
+  Widget personalSportMetrics({
     required BuildContext context,
     required PersonalSportActivity activity,
   }) {
     final l10n = context.l10n;
     final colors = context.appColors;
+    final textStyle = Theme.of(context).textTheme.bodyMedium?.copyWith(
+          color: colors.textPrimary,
+          fontWeight: FontWeight.w600,
+        );
+    final labelStyle = Theme.of(context).textTheme.bodySmall?.copyWith(
+          color: colors.textPrimary.withValues(alpha: 0.85),
+          fontWeight: FontWeight.w500,
+        );
 
-    final durationMinutes =
-        (activity.durationSeconds ?? 0).clamp(0, 24 * 60 * 60) / 60.0;
-    final distanceKm = activity.distanceUnit == 'mi'
-        ? (activity.distanceMeters ?? 0) / 1609.344
-        : (activity.distanceMeters ?? 0) / 1000.0;
-    final paceSeconds = activity.paceSecondsPerKm ?? 0;
-    final paceDisplaySeconds = activity.paceUnit == '/mi'
-        ? (paceSeconds * 1.609344).round()
-        : paceSeconds;
-    final paceMinutes =
-        paceDisplaySeconds > 0 ? paceDisplaySeconds / 60.0 : 0.0;
+    final rows = <Widget>[];
 
-    // Reference goals so rings fill meaningfully without a team max.
-    final durationGoal = durationMinutes > 0
-        ? math.max(durationMinutes, 60.0)
-        : 60.0;
-    final distanceGoal =
-        distanceKm > 0 ? math.max(distanceKm, 5.0) : 5.0;
-    final paceGoal =
-        paceMinutes > 0 ? math.max(paceMinutes, 8.0) : 8.0;
+    if (activity.distanceMeters != null && activity.distanceMeters! > 0) {
+      final distanceLabel = formatSportDistanceKm(
+        activity.distanceMeters! / 1000,
+        activity.distanceUnit,
+      );
+      rows.add(
+        Text(
+          '${l10n.personalSportMetricDistance} $distanceLabel',
+          style: textStyle,
+        ),
+      );
+    }
 
-    final paceUnitLabel = activity.paceUnit == '/mi' ? 'min/mi' : 'min/km';
-    final distanceUnitLabel = activity.distanceUnit == 'mi' ? 'mi' : 'km';
+    if (activity.paceSecondsPerKm != null &&
+        activity.paceSecondsPerKm! > 0) {
+      rows.add(
+        Text(
+          '${l10n.personalSportMetricAvgPace}: '
+          '${formatSportPace(activity.paceSecondsPerKm!, activity.paceUnit)}',
+          style: textStyle,
+        ),
+      );
+    }
 
-    return SizedBox(
+    if (activity.durationSeconds != null && activity.durationSeconds! > 0) {
+      rows.add(
+        Text(
+          '${l10n.personalSportMetricDuration}: '
+          '${formatSportDurationClock(Duration(seconds: activity.durationSeconds!))}',
+          style: textStyle,
+        ),
+      );
+    }
+
+    if (activity.caloriesKcal != null && activity.caloriesKcal! > 0) {
+      final calories = activity.caloriesKcal!.round();
+      rows.add(
+        Text(
+          '${l10n.personalSportMetricCalories} $calories ${l10n.personalSportUnitKcal}',
+          style: textStyle,
+        ),
+      );
+    }
+
+    if (activity.averageHeartRateBpm != null &&
+        activity.averageHeartRateBpm! > 0) {
+      rows.add(
+        Text(
+          '${l10n.personalSportMetricAvgHeartRate}: '
+          '${activity.averageHeartRateBpm} ${l10n.personalSportUnitBpm}',
+          style: textStyle,
+        ),
+      );
+    }
+
+    if (rows.isEmpty) {
+      return const SizedBox.shrink();
+    }
+
+    return Container(
       width: double.infinity,
-      height: 80,
-      child: ActivityRingsCard.detailed(
-        showWorkload: false,
-        showLegend: true,
-        embedded: true,
-        backgroundColor: Colors.black,
-        padding: const EdgeInsets.all(4),
-        withgoal: false,
-        rings: [
-          ActivityRingItem(
-            label: l10n.createPersonalSportDuration,
-            value: durationMinutes,
-            goal: durationGoal,
-            unit: 'min',
-            color: colors.primary,
-            trackColor: Colors.blueAccent.withValues(alpha: 0.18),
-            icon: Icons.timer_outlined,
-          ),
-          ActivityRingItem(
-            label: l10n.createPersonalSportDistance,
-            value: distanceKm,
-            goal: distanceGoal,
-            unit: distanceUnitLabel,
-            color: colors.success,
-            trackColor: Colors.greenAccent.withValues(alpha: 0.18),
-            icon: Icons.directions_run,
-          ),
-          ActivityRingItem(
-            label: l10n.createPersonalSportPace,
-            value: paceMinutes,
-            goal: paceGoal,
-            unit: paceUnitLabel,
-            color: colors.warning,
-            trackColor: Colors.orangeAccent.withValues(alpha: 0.18),
-            icon: Icons.speed,
-          ),
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+      decoration: BoxDecoration(
+        color: Colors.black.withValues(alpha: 0.18),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: colors.border.withValues(alpha: 0.35)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          for (var i = 0; i < rows.length; i++) ...[
+            if (i > 0) const SizedBox(height: 4),
+            DefaultTextStyle.merge(
+              style: labelStyle,
+              child: rows[i],
+            ),
+          ],
         ],
       ),
     );

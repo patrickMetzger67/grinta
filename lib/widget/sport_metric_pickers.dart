@@ -374,12 +374,23 @@ String formatSportDuration(Duration value) {
   return '${m}min ${s.toString().padLeft(2, '0')}s';
 }
 
+/// Compact clock style used on agenda cards: `hh:mm:ss`.
+String formatSportDurationClock(Duration value) {
+  final total = value.inSeconds < 0 ? 0 : value.inSeconds;
+  final h = total ~/ 3600;
+  final m = (total % 3600) ~/ 60;
+  final s = total % 60;
+  return '${h.toString().padLeft(2, '0')}:'
+      '${m.toString().padLeft(2, '0')}:'
+      '${s.toString().padLeft(2, '0')}';
+}
+
 String formatSportDistanceKm(double kilometers, String unit) {
   if (unit == 'mi') {
     final miles = kilometers / 1.609344;
-    return '${miles.toStringAsFixed(1).replaceAll('.', ',')} mi';
+    return '${miles.toStringAsFixed(2).replaceAll('.', ',')} mi';
   }
-  return '${kilometers.toStringAsFixed(1).replaceAll('.', ',')} km';
+  return '${kilometers.toStringAsFixed(2).replaceAll('.', ',')} km';
 }
 
 String formatSportPace(int secondsPerKm, String unit) {

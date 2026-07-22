@@ -95,6 +95,7 @@ flutter:
     - assets/images/splash_logo_dark.png
     - assets/images/google_logo.svg
     - assets/images/apple_logo.svg
+    - assets/images/strava_logo.svg
     - assets/images/ask_gio_avatar.png
 
   fonts:

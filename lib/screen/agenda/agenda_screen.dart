@@ -1,9 +1,9 @@
 import 'dart:async' show StreamSubscription, Timer, unawaited;
-import 'dart:math' as math;
 
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 import 'package:grinta/analytics/analytics_features.dart';
 import 'package:grinta/analytics/analytics_interactions.dart';
 import 'package:grinta/analytics/analytics_routes.dart';

@@ -4865,6 +4865,48 @@ abstract class AppLocalizations {
   /// **'Impossible de supprimer l\'activité. Réessayez.'**
   String get deletePersonalSportError;
 
+  /// No description provided for @personalSportMetricDistance.
+  ///
+  /// In fr, this message translates to:
+  /// **'Distance'**
+  String get personalSportMetricDistance;
+
+  /// No description provided for @personalSportMetricAvgPace.
+  ///
+  /// In fr, this message translates to:
+  /// **'Allure moyenne'**
+  String get personalSportMetricAvgPace;
+
+  /// No description provided for @personalSportMetricDuration.
+  ///
+  /// In fr, this message translates to:
+  /// **'Durée'**
+  String get personalSportMetricDuration;
+
+  /// No description provided for @personalSportMetricCalories.
+  ///
+  /// In fr, this message translates to:
+  /// **'Calories'**
+  String get personalSportMetricCalories;
+
+  /// No description provided for @personalSportMetricAvgHeartRate.
+  ///
+  /// In fr, this message translates to:
+  /// **'Fréquence cardiaque moyenne'**
+  String get personalSportMetricAvgHeartRate;
+
+  /// No description provided for @personalSportUnitKcal.
+  ///
+  /// In fr, this message translates to:
+  /// **'kcal'**
+  String get personalSportUnitKcal;
+
+  /// No description provided for @personalSportUnitBpm.
+  ///
+  /// In fr, this message translates to:
+  /// **'bpm'**
+  String get personalSportUnitBpm;
+
   /// No description provided for @agendaAllDayLabel.
   ///
   /// In fr, this message translates to:

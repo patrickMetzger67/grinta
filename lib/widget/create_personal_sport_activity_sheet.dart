@@ -375,6 +375,8 @@ class _CreatePersonalSportActivitySheetState
             ? null
             : _distance!.kilometers * 1000,
         paceSecondsPerKm: _pace?.secondsPerKm,
+        caloriesKcal: existing?.caloriesKcal,
+        averageHeartRateBpm: existing?.averageHeartRateBpm,
         distanceUnit: _distance?.unit ?? existing?.distanceUnit ?? 'km',
         paceUnit: _pace?.unit ?? existing?.paceUnit ?? '/km',
         externalSource: existing?.externalSource,

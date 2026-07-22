@@ -223,7 +223,9 @@ function createStravaListActivities() {
           name: (entry.name ?? '').toString(),
           type: (entry.sport_type ?? entry.type ?? '').toString(),
           typeId: mapStravaActivityType(entry.sport_type, entry.type),
-          startDate: entry.start_date_local || entry.start_date || null,
+          // Prefer true UTC start_date. start_date_local is wall-clock with a
+          // misleading trailing Z and shifts when interpreted as UTC.
+          startDate: entry.start_date || entry.start_date_local || null,
           durationSeconds: Number.isFinite(movingTime) ? movingTime : null,
           distanceMeters: Number.isFinite(distance) ? distance : null,
           paceSecondsPerKm: pace,
@@ -327,8 +329,9 @@ function createStravaImportActivity() {
       const movingTime = Number(
         activity.moving_time ?? activity.elapsed_time ?? 0,
       );
-      const startRaw =
-        activity.start_date_local || activity.start_date || null;
+      // Prefer true UTC start_date. start_date_local carries a fake "Z" and
+      // must not be parsed as UTC (shifts local display by the TZ offset).
+      const startRaw = activity.start_date || null;
       const startAt = startRaw ? new Date(startRaw) : new Date();
       const endAt = new Date(
         startAt.getTime() +
@@ -338,6 +341,8 @@ function createStravaImportActivity() {
         distance > 0 && movingTime > 0
           ? Math.round(movingTime / (distance / 1000))
           : null;
+      const caloriesRaw = Number(activity.calories ?? NaN);
+      const avgHrRaw = Number(activity.average_heartrate ?? NaN);
       const typeId =
         typeIdOverride ||
         mapStravaActivityType(activity.sport_type, activity.type);
@@ -363,6 +368,10 @@ function createStravaImportActivity() {
         durationSeconds: Number.isFinite(movingTime) ? movingTime : null,
         distanceMeters: Number.isFinite(distance) ? distance : null,
         paceSecondsPerKm: pace,
+        caloriesKcal: Number.isFinite(caloriesRaw) ? caloriesRaw : null,
+        averageHeartRateBpm: Number.isFinite(avgHrRaw)
+          ? Math.round(avgHrRaw)
+          : null,
         distanceUnit: 'km',
         paceUnit: '/km',
         externalSource: 'strava',

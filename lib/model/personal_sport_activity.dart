@@ -52,6 +52,8 @@ class PersonalSportActivity {
     this.durationSeconds,
     this.distanceMeters,
     this.paceSecondsPerKm,
+    this.caloriesKcal,
+    this.averageHeartRateBpm,
     this.distanceUnit = 'km',
     this.paceUnit = '/km',
     this.externalSource,
@@ -77,6 +79,8 @@ class PersonalSportActivity {
   final int? durationSeconds;
   final double? distanceMeters;
   final int? paceSecondsPerKm;
+  final double? caloriesKcal;
+  final int? averageHeartRateBpm;
   final String distanceUnit;
   final String paceUnit;
   final String? externalSource;
@@ -106,6 +110,8 @@ class PersonalSportActivity {
       durationSeconds: _readInt(data['durationSeconds']),
       distanceMeters: _readDouble(data['distanceMeters']),
       paceSecondsPerKm: _readInt(data['paceSecondsPerKm']),
+      caloriesKcal: _readDouble(data['caloriesKcal']),
+      averageHeartRateBpm: _readInt(data['averageHeartRateBpm']),
       distanceUnit: _optionalString(data['distanceUnit']) ?? 'km',
       paceUnit: _optionalString(data['paceUnit']) ?? '/km',
       externalSource: _optionalString(data['externalSource']),
@@ -134,6 +140,8 @@ class PersonalSportActivity {
       'durationSeconds': durationSeconds,
       'distanceMeters': distanceMeters,
       'paceSecondsPerKm': paceSecondsPerKm,
+      'caloriesKcal': caloriesKcal,
+      'averageHeartRateBpm': averageHeartRateBpm,
       'distanceUnit': distanceUnit,
       'paceUnit': paceUnit,
       'externalSource': externalSource,

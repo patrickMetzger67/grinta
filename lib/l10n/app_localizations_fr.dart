@@ -2737,6 +2737,27 @@ class AppLocalizationsFr extends AppLocalizations {
   @override
   String get deletePersonalSportError => 'Impossible de supprimer l\'activité. Réessayez.';
 
+  @override
+  String get personalSportMetricDistance => 'Distance';
+
+  @override
+  String get personalSportMetricAvgPace => 'Allure moyenne';
+
+  @override
+  String get personalSportMetricDuration => 'Durée';
+
+  @override
+  String get personalSportMetricCalories => 'Calories';
+
+  @override
+  String get personalSportMetricAvgHeartRate => 'Fréquence cardiaque moyenne';
+
+  @override
+  String get personalSportUnitKcal => 'kcal';
+
+  @override
+  String get personalSportUnitBpm => 'bpm';
+
 
   @override
   String get agendaAllDayLabel => 'Journée entière';
