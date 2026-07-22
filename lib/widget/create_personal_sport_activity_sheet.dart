@@ -242,7 +242,7 @@ class _CreatePersonalSportActivitySheetState
     final uid = FirebaseAuth.instance.currentUser?.uid;
     final session = context.read<AppSession>();
     final player = session.selectedPlayer;
-    final playerId = effectiveMemberId(player) ??
+    final playerId = (player == null ? null : effectiveMemberId(player)) ??
         session.selectedPlayerId?.trim() ??
         '';
     if (uid == null || playerId.isEmpty) {
