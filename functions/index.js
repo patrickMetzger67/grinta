@@ -12,6 +12,10 @@ const {
   createWhoopRepairPlayerSync,
 } = require('./whoop_oauth');
 const {
+  createWhoopListActivities,
+  createWhoopImportActivity,
+} = require('./whoop_activities');
+const {
   createStravaOAuthStart,
   createStravaOAuthCallback,
   createStravaDisconnect,
@@ -669,17 +673,19 @@ exports.redeemPromoCode = onCall(
 );
 
 /**
- * Whoop OAuth (Phase 1 scaffolding).
+ * Whoop OAuth + workout import.
  *
  * Deploy:
  *   firebase functions:secrets:set WHOOP_CLIENT_ID
  *   firebase functions:secrets:set WHOOP_CLIENT_SECRET
- *   firebase deploy --only functions:whoopOAuthStart,functions:whoopOAuthCallback,functions:whoopDisconnect,functions:whoopRepairPlayerSync
+ *   firebase deploy --only functions:whoopOAuthStart,functions:whoopOAuthCallback,functions:whoopDisconnect,functions:whoopRepairPlayerSync,functions:whoopListActivities,functions:whoopImportActivity
  */
 exports.whoopOAuthStart = createWhoopOAuthStart();
 exports.whoopOAuthCallback = createWhoopOAuthCallback();
 exports.whoopDisconnect = createWhoopDisconnect();
 exports.whoopRepairPlayerSync = createWhoopRepairPlayerSync();
+exports.whoopListActivities = createWhoopListActivities();
+exports.whoopImportActivity = createWhoopImportActivity();
 
 /**
  * Strava OAuth (Phase 1 scaffolding).

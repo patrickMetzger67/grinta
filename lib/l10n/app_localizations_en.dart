@@ -2635,6 +2635,19 @@ class AppLocalizationsEn extends AppLocalizations {
   String get createPersonalSportPolarActivity => 'Polar activity';
 
   @override
+  String get createPersonalSportWhoopActivity => 'Whoop activity';
+
+  @override
+  String get createPersonalSportWhoopDeployRequired => 'Whoop import is not deployed yet. Run firebase deploy for whoopListActivities and whoopImportActivity.';
+
+  @override
+  String get createPersonalSportWhoopLoadError => 'Could not load Whoop activities. Check the connection and try again.';
+
+  @override
+  String get createPersonalSportWhoopNoImportable => 'No Whoop workouts to import.';
+
+
+  @override
   String get createPersonalSportPolarDeployRequired => 'Polar import is not deployed yet. Run firebase deploy for polarListActivities and polarImportActivity.';
 
   @override
@@ -2652,7 +2665,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get createPersonalSportNoConnectedApps =>
-      'No connected app. Connect Strava or Polar in Devices / Apps.';
+      'No connected app. Connect Strava, Polar or Whoop in Devices / Apps.';
 
   @override
   String get createPersonalSportImportRequired => 'Select an activity to import';

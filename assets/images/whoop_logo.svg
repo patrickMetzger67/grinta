@@ -1,0 +1,5 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" role="img" aria-label="Whoop">
+  <!-- Compact Whoop-style mark for agenda badges -->
+  <rect width="24" height="24" rx="5" fill="#111111"/>
+  <path fill="#FFFFFF" d="M6.2 7.2h2.1l1.55 5.35L11.4 7.2h1.2l1.55 5.35L15.7 7.2h2.1l-2.55 9.6h-2.05L11.7 11.1l-1.5 5.7H8.15L6.2 7.2z"/>
+</svg>

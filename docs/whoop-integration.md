@@ -1,6 +1,6 @@
 # Whoop integration (Phase 1)
 
-Phase 1 delivers OAuth connect/disconnect scaffolding. Data sync, webhooks, and coach roster badges are planned for Phase 2.
+Phase 1 delivers OAuth connect/disconnect plus **manual import of Whoop workouts** into personal sport activities (same UX as Strava / Polar). Continuous recovery/sleep sync, webhooks, and coach roster badges remain Phase 2.
 
 > **Related:** Strava, Polar, and Fitbit use the same **Appareils/Applications** settings UI. See [Strava integration](./strava-integration.md), [Polar integration](./polar-integration.md), and [Fitbit integration](./fitbit-integration.md).
 

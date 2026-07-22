@@ -10,6 +10,7 @@ import 'package:grinta/services/activity_types_service.dart';
 import 'package:grinta/services/personal_sport_activity_service.dart';
 import 'package:grinta/services/polar_sync_service.dart';
 import 'package:grinta/services/strava_sync_service.dart';
+import 'package:grinta/services/whoop_sync_service.dart';
 import 'package:grinta/util/app_snackbar.dart';
 import 'package:grinta/util/app_theme.dart';
 import 'package:grinta/util/player_photo_resolver.dart';
@@ -135,6 +136,9 @@ class _CreatePersonalSportActivitySheetState
   PolarImportableActivity? _selectedPolar;
   String? _polarListError;
   String? _polarEmptyReason;
+  List<WhoopImportableActivity> _whoopActivities = const [];
+  WhoopImportableActivity? _selectedWhoop;
+  String? _whoopListError;
 
   bool get _readOnly => widget.readOnly;
   bool get _isEditMode => widget.isEditMode;
@@ -221,6 +225,18 @@ class _CreatePersonalSportActivitySheetState
     }
   }
 
+  void _clearImportSelections() {
+    _stravaActivities = const [];
+    _selectedStrava = null;
+    _polarActivities = const [];
+    _selectedPolar = null;
+    _polarListError = null;
+    _polarEmptyReason = null;
+    _whoopActivities = const [];
+    _selectedWhoop = null;
+    _whoopListError = null;
+  }
+
   Future<void> _loadConnectedAppsAndActivities() async {
     final session = context.read<AppSession>();
     final uid = FirebaseAuth.instance.currentUser?.uid;
@@ -229,10 +245,7 @@ class _CreatePersonalSportActivitySheetState
       setState(() {
         _connectedSources.clear();
         _importSource = null;
-        _stravaActivities = const [];
-        _selectedStrava = null;
-        _polarActivities = const [];
-        _selectedPolar = null;
+        _clearImportSelections();
       });
       return;
     }
@@ -240,18 +253,18 @@ class _CreatePersonalSportActivitySheetState
     setState(() {
       _loadingConnectedApps = true;
       _loadingImportActivities = true;
-      _stravaActivities = const [];
-      _selectedStrava = null;
-      _polarActivities = const [];
-      _selectedPolar = null;
+      _clearImportSelections();
     });
 
     final stravaFuture =
         StravaSyncService.instance.repository.getConfig(uid, playerId);
     final polarFuture =
         PolarSyncService.instance.repository.getConfig(uid, playerId);
+    final whoopFuture =
+        WhoopSyncService.instance.repository.getConfig(uid, playerId);
     final stravaConfig = await stravaFuture;
     final polarConfig = await polarFuture;
+    final whoopConfig = await whoopFuture;
     if (!mounted) return;
 
     final connected = <WearableDeviceType>[];
@@ -260,6 +273,9 @@ class _CreatePersonalSportActivitySheetState
     }
     if (polarConfig?.connected == true) {
       connected.add(WearableDeviceType.polar);
+    }
+    if (whoopConfig?.connected == true) {
+      connected.add(WearableDeviceType.whoop);
     }
 
     setState(() {
@@ -286,6 +302,10 @@ class _CreatePersonalSportActivitySheetState
       await _loadPolarActivities();
       return;
     }
+    if (source == WearableDeviceType.whoop) {
+      await _loadWhoopActivities();
+      return;
+    }
     if (mounted) {
       setState(() => _loadingImportActivities = false);
     }
@@ -301,10 +321,7 @@ class _CreatePersonalSportActivitySheetState
 
     setState(() {
       _loadingImportActivities = true;
-      _stravaActivities = const [];
-      _selectedStrava = null;
-      _polarActivities = const [];
-      _selectedPolar = null;
+      _clearImportSelections();
     });
 
     final list = await StravaSyncService.instance.listImportableActivities(
@@ -331,12 +348,7 @@ class _CreatePersonalSportActivitySheetState
 
     setState(() {
       _loadingImportActivities = true;
-      _polarActivities = const [];
-      _selectedPolar = null;
-      _polarListError = null;
-      _polarEmptyReason = null;
-      _stravaActivities = const [];
-      _selectedStrava = null;
+      _clearImportSelections();
     });
 
     final result = await PolarSyncService.instance.listImportableActivities(
@@ -367,6 +379,46 @@ class _CreatePersonalSportActivitySheetState
     }
   }
 
+  Future<void> _loadWhoopActivities() async {
+    final session = context.read<AppSession>();
+    final playerId = session.selectedPlayerId?.trim() ?? '';
+    if (playerId.isEmpty) {
+      if (mounted) setState(() => _loadingImportActivities = false);
+      return;
+    }
+
+    setState(() {
+      _loadingImportActivities = true;
+      _clearImportSelections();
+    });
+
+    final result = await WhoopSyncService.instance.listImportableActivities(
+      playerId: playerId,
+    );
+    if (!mounted) return;
+    setState(() {
+      _whoopActivities = result.activities;
+      _loadingImportActivities = false;
+      if (result.hasError) {
+        _whoopListError = result.errorCode == 'not-found' ||
+                result.errorCode == 'unimplemented'
+            ? context.l10n.createPersonalSportWhoopDeployRequired
+            : (result.errorMessage?.trim().isNotEmpty == true
+                ? result.errorMessage
+                : context.l10n.createPersonalSportWhoopLoadError);
+      } else if (result.activities.isNotEmpty) {
+        _selectedWhoop = result.activities.first;
+        _typeId = result.activities.first.typeId;
+      }
+    });
+    if (result.hasError && mounted) {
+      AppSnackbar.show(
+        context,
+        _whoopListError ?? context.l10n.createPersonalSportWhoopLoadError,
+      );
+    }
+  }
+
   String _labelForImportSource(WearableDeviceType source) {
     final l10n = context.l10n;
     switch (source) {
@@ -374,6 +426,8 @@ class _CreatePersonalSportActivitySheetState
         return l10n.wearableDeviceStrava;
       case WearableDeviceType.polar:
         return l10n.wearableDevicePolar;
+      case WearableDeviceType.whoop:
+        return l10n.wearableDeviceWhoop;
       default:
         return source.name;
     }
@@ -412,6 +466,16 @@ class _CreatePersonalSportActivitySheetState
           imported = await PolarSyncService.instance.importActivity(
             playerId: playerId,
             externalId: _selectedPolar!.externalId,
+            visibility: _visibility.firestoreValue,
+            feeling: _feeling?.value,
+            notes: _notesController.text.trim(),
+            typeId: _typeId,
+          );
+        } else if (_importSource == WearableDeviceType.whoop &&
+            _selectedWhoop != null) {
+          imported = await WhoopSyncService.instance.importActivity(
+            playerId: playerId,
+            externalId: _selectedWhoop!.externalId,
             visibility: _visibility.firestoreValue,
             feeling: _feeling?.value,
             notes: _notesController.text.trim(),
@@ -706,6 +770,13 @@ class _CreatePersonalSportActivitySheetState
                           l10n.createPersonalSportPolarNoImportable,
                       style: TextStyle(color: colors.textSecondary),
                     )
+                  else if (_importSource == WearableDeviceType.whoop &&
+                      _whoopActivities.isEmpty)
+                    Text(
+                      _whoopListError ??
+                          l10n.createPersonalSportWhoopNoImportable,
+                      style: TextStyle(color: colors.textSecondary),
+                    )
                   else if (_importSource == WearableDeviceType.strava)
                     DropdownButtonFormField<String>(
                       value: _selectedStrava?.externalId,
@@ -762,6 +833,36 @@ class _CreatePersonalSportActivitySheetState
                         }
                         setState(() {
                           _selectedPolar = match;
+                          if (match != null) _typeId = match.typeId;
+                        });
+                      },
+                    )
+                  else if (_importSource == WearableDeviceType.whoop)
+                    DropdownButtonFormField<String>(
+                      value: _selectedWhoop?.externalId,
+                      decoration: InputDecoration(
+                        labelText: l10n.createPersonalSportWhoopActivity,
+                      ),
+                      items: [
+                        for (final activity in _whoopActivities)
+                          DropdownMenuItem(
+                            value: activity.externalId,
+                            child: Text(
+                              activity.displayLabel,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ),
+                      ],
+                      onChanged: (id) {
+                        WhoopImportableActivity? match;
+                        for (final activity in _whoopActivities) {
+                          if (activity.externalId == id) {
+                            match = activity;
+                            break;
+                          }
+                        }
+                        setState(() {
+                          _selectedWhoop = match;
                           if (match != null) _typeId = match.typeId;
                         });
                       },

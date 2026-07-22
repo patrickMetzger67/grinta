@@ -1035,6 +1035,19 @@ class AgendaItemCard extends StatelessWidget {
                       ),
                     ),
                   ],
+                  if (item.personalSportActivity!.externalSource ==
+                      'whoop') ...[
+                    const SizedBox(width: 6),
+                    Tooltip(
+                      message: context.l10n.wearableDeviceWhoop,
+                      child: SvgPicture.asset(
+                        'assets/images/whoop_logo.svg',
+                        width: 20,
+                        height: 20,
+                        fit: BoxFit.contain,
+                      ),
+                    ),
+                  ],
                   if (item.personalSportActivity!.visibility ==
                       PersonalSportVisibility.private) ...[
                     const SizedBox(width: 4),

@@ -4751,6 +4751,30 @@ abstract class AppLocalizations {
   /// **'No Polar Flow training session to import.'**
   String get createPersonalSportPolarNoImportable;
 
+  /// No description provided for @createPersonalSportWhoopActivity.
+  ///
+  /// In en, this message translates to:
+  /// **'Whoop activity'**
+  String get createPersonalSportWhoopActivity;
+
+  /// No description provided for @createPersonalSportWhoopDeployRequired.
+  ///
+  /// In en, this message translates to:
+  /// **'Whoop import is not deployed yet.'**
+  String get createPersonalSportWhoopDeployRequired;
+
+  /// No description provided for @createPersonalSportWhoopLoadError.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not load Whoop activities.'**
+  String get createPersonalSportWhoopLoadError;
+
+  /// No description provided for @createPersonalSportWhoopNoImportable.
+  ///
+  /// In en, this message translates to:
+  /// **'No Whoop workouts to import.'**
+  String get createPersonalSportWhoopNoImportable;
+
   /// No description provided for @createPersonalSportPolarActivity.
   ///
   /// In en, this message translates to:
