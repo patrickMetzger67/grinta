@@ -4799,6 +4799,30 @@ abstract class AppLocalizations {
   /// **'No Apple Fitness workouts to import.'**
   String get createPersonalSportAppleNoImportable;
 
+  /// No description provided for @createPersonalSportGoogleActivity.
+  ///
+  /// In en, this message translates to:
+  /// **'Google Fit activity'**
+  String get createPersonalSportGoogleActivity;
+
+  /// No description provided for @createPersonalSportGoogleAndroidOnly.
+  ///
+  /// In en, this message translates to:
+  /// **'Google Fit / Health Connect import is available on Android only.'**
+  String get createPersonalSportGoogleAndroidOnly;
+
+  /// No description provided for @createPersonalSportGoogleLoadError.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not load Google Fit workouts.'**
+  String get createPersonalSportGoogleLoadError;
+
+  /// No description provided for @createPersonalSportGoogleNoImportable.
+  ///
+  /// In en, this message translates to:
+  /// **'No Google Fit workouts to import.'**
+  String get createPersonalSportGoogleNoImportable;
+
   /// No description provided for @createPersonalSportPolarActivity.
   ///
   /// In en, this message translates to:

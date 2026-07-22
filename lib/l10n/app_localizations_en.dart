@@ -2662,6 +2662,21 @@ class AppLocalizationsEn extends AppLocalizations {
       'No Apple Fitness workouts to import. Record a session in Fitness / Health, allow Grinta access, then retry.';
 
   @override
+  String get createPersonalSportGoogleActivity => 'Google Fit activity';
+
+  @override
+  String get createPersonalSportGoogleAndroidOnly =>
+      'Google Fit / Health Connect import is available on Android only.';
+
+  @override
+  String get createPersonalSportGoogleLoadError =>
+      'Could not load Google Fit workouts. Check Health Connect permissions and try again.';
+
+  @override
+  String get createPersonalSportGoogleNoImportable =>
+      'No Google Fit workouts to import. Record a session in Google Fit, allow Grinta in Health Connect, then retry.';
+
+  @override
   String get createPersonalSportPolarDeployRequired => 'Polar import is not deployed yet. Run firebase deploy for polarListActivities and polarImportActivity.';
 
   @override
@@ -2679,7 +2694,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get createPersonalSportNoConnectedApps =>
-      'No connected app. Connect Strava, Polar, Whoop or Apple Fitness in Devices / Apps.';
+      'No connected app. Connect Strava, Polar, Whoop, Apple Fitness or Google Fit in Devices / Apps.';
 
   @override
   String get createPersonalSportImportRequired => 'Select an activity to import';
