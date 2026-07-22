@@ -55,7 +55,7 @@ Agenda cards show the Apple Forme badge (`assets/images/apple_forme_logo.svg`) w
 
 ## 1. Xcode: enable HealthKit capability
 
-`Info.plist` already includes `NSHealthShareUsageDescription`. You must still enable the capability in Xcode (one-time per developer machine / CI signing setup):
+`Info.plist` includes `NSHealthShareUsageDescription` and `NSHealthUpdateUsageDescription` (required by HealthKit / App Store even though Grinta is read-only). You must still enable the capability in Xcode (one-time per developer machine / CI signing setup):
 
 1. Open `ios/Runner.xcworkspace` in Xcode.
 2. Select the **Runner** target → **Signing & Capabilities**.

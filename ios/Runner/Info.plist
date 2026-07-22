@@ -87,7 +87,9 @@
 		<key>NSCalendarsFullAccessUsageDescription</key>
 		<string>Grinta synchronise vos matchs et entraînements avec le calendrier de votre téléphone. / Grinta syncs your matches and training sessions with your phone calendar.</string>
 		<key>NSHealthShareUsageDescription</key>
-		<string>Grinta lit vos entraînements Apple Forme et données associées (fréquence cardiaque, énergie active) pour les partager avec votre coach si vous l'autorisez. / Grinta reads your Apple Fitness workouts and related data (heart rate, active energy) to share with your coach when you allow it.</string>
+		<string>Grinta lit vos entraînements Apple Forme / Santé (durée, distance, calories, fréquence cardiaque) pour les importer dans votre agenda et, si vous l'autorisez, les partager avec votre coach. / Grinta reads your Apple Fitness / Health workouts (duration, distance, calories, heart rate) to import them into your agenda and, when you allow it, share them with your coach.</string>
+		<key>NSHealthUpdateUsageDescription</key>
+		<string>Grinta n'écrit pas dans Apple Santé : l'accès en écriture n'est pas utilisé. Cette mention est requise par iOS pour HealthKit. / Grinta does not write to Apple Health; write access is not used. This string is required by iOS for HealthKit.</string>
 		<key>FlutterDeepLinkingEnabled</key>
 		<false/>
 		<key>CFBundleURLTypes</key>
