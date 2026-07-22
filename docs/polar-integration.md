@@ -129,12 +129,14 @@ Cloud Functions:
 - `polarListActivities` → `GET /v3/exercises` (last ~30 days in Flow after AccessLink registration)
 - `polarImportActivity` → `GET /v3/exercises/{id}` then write `personalSportActivities`
 
-Deploy:
+**Required deploy** (without this, the app shows an empty import list):
 
 ```bash
 firebase deploy --only \
   functions:polarListActivities,functions:polarImportActivity
 ```
+
+If the list stays empty after deploy: in Polar Flow the session must be a **Training** (training session), not only continuous heart-rate. Verity Sense / Loop workouts started as a sport profile sync as exercises; continuous HR alone does not.
 
 ### Device field differences
 

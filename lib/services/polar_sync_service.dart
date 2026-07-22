@@ -88,6 +88,24 @@ class PolarImportableActivity {
   }
 }
 
+class PolarListActivitiesResult {
+  const PolarListActivitiesResult({
+    required this.activities,
+    this.fetchedFromPolar,
+    this.emptyReason,
+    this.errorCode,
+    this.errorMessage,
+  });
+
+  final List<PolarImportableActivity> activities;
+  final int? fetchedFromPolar;
+  final String? emptyReason;
+  final String? errorCode;
+  final String? errorMessage;
+
+  bool get hasError => errorCode != null && errorCode!.isNotEmpty;
+}
+
 enum PolarConnectResult {
   success,
   cancelled,
@@ -202,7 +220,7 @@ class PolarSyncService {
     }
   }
 
-  Future<List<PolarImportableActivity>> listImportableActivities({
+  Future<PolarListActivitiesResult> listImportableActivities({
     required String playerId,
   }) async {
     try {
@@ -212,9 +230,19 @@ class PolarSyncService {
         'playerId': playerId,
       });
       final data = result.data;
-      if (data is! Map) return const [];
+      if (data is! Map) {
+        return const PolarListActivitiesResult(
+          activities: [],
+          errorCode: 'invalid-response',
+        );
+      }
       final raw = data['activities'];
-      if (raw is! List) return const [];
+      if (raw is! List) {
+        return const PolarListActivitiesResult(
+          activities: [],
+          errorCode: 'invalid-response',
+        );
+      }
       final activities = <PolarImportableActivity>[];
       for (final entry in raw) {
         if (entry is! Map) continue;
@@ -222,14 +250,37 @@ class PolarSyncService {
         if (activity.externalId.isEmpty) continue;
         activities.add(activity);
       }
-      return activities;
+      final diagnostics = data['diagnostics'];
+      return PolarListActivitiesResult(
+        activities: activities,
+        fetchedFromPolar: diagnostics is Map
+            ? _asInt(diagnostics['fetchedFromPolar'])
+            : null,
+        emptyReason: diagnostics is Map
+            ? diagnostics['emptyReason']?.toString()
+            : null,
+      );
     } on FirebaseFunctionsException catch (e, st) {
       debugPrint('polarListActivities failed: ${e.code} ${e.message}\n$st');
-      return const [];
+      return PolarListActivitiesResult(
+        activities: const [],
+        errorCode: e.code,
+        errorMessage: e.message,
+      );
     } catch (e, st) {
       debugPrint('polarListActivities error: $e\n$st');
-      return const [];
+      return PolarListActivitiesResult(
+        activities: const [],
+        errorCode: 'unknown',
+        errorMessage: e.toString(),
+      );
     }
+  }
+
+  static int? _asInt(Object? value) {
+    if (value is int) return value;
+    if (value is num) return value.toInt();
+    return null;
   }
 
   Future<PersonalSportActivity?> importActivity({

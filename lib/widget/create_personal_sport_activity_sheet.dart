@@ -133,6 +133,8 @@ class _CreatePersonalSportActivitySheetState
   StravaImportableActivity? _selectedStrava;
   List<PolarImportableActivity> _polarActivities = const [];
   PolarImportableActivity? _selectedPolar;
+  String? _polarListError;
+  String? _polarEmptyReason;
 
   bool get _readOnly => widget.readOnly;
   bool get _isEditMode => widget.isEditMode;
@@ -331,22 +333,38 @@ class _CreatePersonalSportActivitySheetState
       _loadingImportActivities = true;
       _polarActivities = const [];
       _selectedPolar = null;
+      _polarListError = null;
+      _polarEmptyReason = null;
       _stravaActivities = const [];
       _selectedStrava = null;
     });
 
-    final list = await PolarSyncService.instance.listImportableActivities(
+    final result = await PolarSyncService.instance.listImportableActivities(
       playerId: playerId,
     );
     if (!mounted) return;
     setState(() {
-      _polarActivities = list;
+      _polarActivities = result.activities;
+      _polarEmptyReason = result.emptyReason;
       _loadingImportActivities = false;
-      if (list.isNotEmpty) {
-        _selectedPolar = list.first;
-        _typeId = list.first.typeId;
+      if (result.hasError) {
+        _polarListError = result.errorCode == 'not-found' ||
+                result.errorCode == 'unimplemented'
+            ? context.l10n.createPersonalSportPolarDeployRequired
+            : (result.errorMessage?.trim().isNotEmpty == true
+                ? result.errorMessage
+                : context.l10n.createPersonalSportPolarLoadError);
+      } else if (result.activities.isNotEmpty) {
+        _selectedPolar = result.activities.first;
+        _typeId = result.activities.first.typeId;
       }
     });
+    if (result.hasError && mounted) {
+      AppSnackbar.show(
+        context,
+        _polarListError ?? context.l10n.createPersonalSportPolarLoadError,
+      );
+    }
   }
 
   String _labelForImportSource(WearableDeviceType source) {
@@ -684,7 +702,8 @@ class _CreatePersonalSportActivitySheetState
                   else if (_importSource == WearableDeviceType.polar &&
                       _polarActivities.isEmpty)
                     Text(
-                      l10n.createPersonalSportNoImportable,
+                      _polarListError ??
+                          l10n.createPersonalSportPolarNoImportable,
                       style: TextStyle(color: colors.textSecondary),
                     )
                   else if (_importSource == WearableDeviceType.strava)

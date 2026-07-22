@@ -156,7 +156,13 @@ function humanizeSportLabel(sport, detailedSportInfo) {
 }
 
 function mapExerciseSummary(entry) {
-  const id = entry?.id != null ? String(entry.id) : '';
+  const idRaw =
+    entry?.id ??
+    entry?.exercise_id ??
+    entry?.['exercise-id'] ??
+    entry?.exerciseId ??
+    null;
+  const id = idRaw != null ? String(idRaw) : '';
   const distanceRaw = Number(entry?.distance ?? NaN);
   const distance =
     Number.isFinite(distanceRaw) && distanceRaw > 0 ? distanceRaw : null;
@@ -192,15 +198,130 @@ function mapExerciseSummary(entry) {
   };
 }
 
-async function fetchPolarJson(url, accessToken) {
+async function fetchPolarJson(url, accessToken, { method = 'GET' } = {}) {
   const response = await fetch(url, {
+    method,
     headers: {
       Authorization: `Bearer ${accessToken}`,
       Accept: 'application/json',
+      ...(method !== 'GET' && method !== 'DELETE'
+        ? { 'Content-Type': 'application/json' }
+        : {}),
     },
   });
   const raw = await response.text();
   return { response, raw };
+}
+
+/**
+ * Re-register is safe: 409 means already linked. Helps when OAuth connected
+ * but AccessLink registration was incomplete.
+ */
+async function ensurePolarUserRegistered(accessToken, integration) {
+  const memberId =
+    (integration.data?.memberId ?? integration.id ?? '').toString().trim();
+  if (!memberId) return;
+
+  const response = await fetch(`${POLAR_ACCESSLINK_BASE}/users`, {
+    method: 'POST',
+    headers: {
+      Authorization: `Bearer ${accessToken}`,
+      'Content-Type': 'application/json',
+      Accept: 'application/json',
+    },
+    body: JSON.stringify({ 'member-id': memberId }),
+  });
+  const raw = await response.text();
+  if (response.ok || response.status === 409) {
+    return;
+  }
+  console.warn('Polar ensure register failed', response.status, raw?.slice?.(0, 300));
+}
+
+/**
+ * Deprecated transactional pull — used only when GET /v3/exercises is empty.
+ * Commits the transaction after reading so it does not stay open.
+ */
+async function listExercisesViaTransaction(accessToken, polarUserId) {
+  const createUrl = `${POLAR_ACCESSLINK_BASE}/users/${encodeURIComponent(
+    polarUserId,
+  )}/exercise-transactions`;
+  const { response: createRes, raw: createRaw } = await fetchPolarJson(
+    createUrl,
+    accessToken,
+    { method: 'POST' },
+  );
+
+  if (createRes.status === 204) {
+    return [];
+  }
+  if (!createRes.ok) {
+    console.warn(
+      'Polar exercise-transactions create failed',
+      createRes.status,
+      createRaw?.slice?.(0, 300),
+    );
+    return [];
+  }
+
+  let created;
+  try {
+    created = createRaw ? JSON.parse(createRaw) : null;
+  } catch (_) {
+    return [];
+  }
+  const transactionId =
+    created?.['transaction-id'] ?? created?.transaction_id ?? null;
+  if (transactionId == null) return [];
+
+  const listUrl = `${POLAR_ACCESSLINK_BASE}/users/${encodeURIComponent(
+    polarUserId,
+  )}/exercise-transactions/${encodeURIComponent(String(transactionId))}`;
+  const { response: listRes, raw: listRaw } = await fetchPolarJson(
+    listUrl,
+    accessToken,
+  );
+
+  const exercises = [];
+  try {
+    const parsed = listRaw ? JSON.parse(listRaw) : null;
+    const urls = Array.isArray(parsed?.exercises)
+      ? parsed.exercises
+      : Array.isArray(parsed)
+        ? parsed
+        : [];
+    for (const item of urls) {
+      const href =
+        typeof item === 'string'
+          ? item
+          : (item?.url ?? item?.href ?? item?.['resource-uri'] ?? '').toString();
+      if (!href) {
+        if (item && typeof item === 'object' && item.id != null) {
+          exercises.push(item);
+        }
+        continue;
+      }
+      const detail = await fetchPolarJson(href, accessToken);
+      if (!detail.response.ok) continue;
+      try {
+        const body = detail.raw ? JSON.parse(detail.raw) : null;
+        if (body) exercises.push(body);
+      } catch (_) {
+        // ignore single exercise parse errors
+      }
+    }
+  } catch (error) {
+    console.warn('Polar exercise-transactions list parse failed', error);
+  }
+
+  // Commit so the transaction does not linger.
+  try {
+    await fetchPolarJson(listUrl, accessToken, { method: 'PUT' });
+  } catch (error) {
+    console.warn('Polar exercise-transactions commit failed', error);
+  }
+
+  return exercises;
 }
 
 /**
@@ -250,12 +371,22 @@ function createPolarListActivities() {
       }
 
       const accessToken = getValidAccessToken(integration);
+      const polarUserId = (integration.data?.polarUserId ?? '').toString().trim();
+
+      // Ensure AccessLink registration is in place (no-op / 409 if already done).
+      await ensurePolarUserRegistered(accessToken, integration);
+
       const { response, raw } = await fetchPolarJson(
         POLAR_EXERCISES_URL,
         accessToken,
       );
       if (!response.ok) {
-        console.error('Polar list exercises failed', response.status, raw);
+        console.error('Polar list exercises failed', {
+          status: response.status,
+          body: raw?.slice?.(0, 500),
+          playerId,
+          polarUserId: polarUserId || null,
+        });
         throw new HttpsError(
           'internal',
           `Polar list exercises failed (${response.status}).`,
@@ -269,9 +400,28 @@ function createPolarListActivities() {
           list = parsed;
         } else if (Array.isArray(parsed?.exercises)) {
           list = parsed.exercises;
+        } else if (raw && raw.trim() && raw.trim() !== '[]') {
+          console.warn(
+            'Polar list exercises unexpected shape',
+            typeof parsed,
+            raw.slice(0, 300),
+          );
         }
       } catch (error) {
         throw new HttpsError('internal', 'Unexpected Polar exercises payload.');
+      }
+
+      // Fallback: deprecated exercise-transactions (same post-connect window).
+      let transactionFetched = 0;
+      if (list.length === 0 && polarUserId) {
+        const fromTx = await listExercisesViaTransaction(
+          accessToken,
+          polarUserId,
+        );
+        transactionFetched = fromTx.length;
+        if (fromTx.length > 0) {
+          list = fromTx;
+        }
       }
 
       const importedSnap = await db
@@ -286,9 +436,14 @@ function createPolarListActivities() {
       );
 
       const activities = [];
+      let skippedImported = 0;
       for (const entry of list) {
         const summary = mapExerciseSummary(entry);
-        if (!summary.externalId || imported.has(summary.externalId)) continue;
+        if (!summary.externalId) continue;
+        if (imported.has(summary.externalId)) {
+          skippedImported += 1;
+          continue;
+        }
         activities.push(summary);
       }
 
@@ -299,7 +454,32 @@ function createPolarListActivities() {
         return tb - ta;
       });
 
-      return { activities };
+      console.log('polarListActivities result', {
+        playerId,
+        polarUserId: polarUserId || null,
+        fetchedFromPolar: list.length,
+        transactionFetched,
+        skippedImported,
+        importable: activities.length,
+      });
+
+      return {
+        activities,
+        diagnostics: {
+          fetchedFromPolar: list.length,
+          transactionFetched,
+          skippedImported,
+          importable: activities.length,
+          // Polar only exposes exercises synced to Flow AFTER AccessLink
+          // registration, within roughly the last 30 days.
+          emptyReason:
+            list.length === 0
+              ? 'polar_no_exercises_after_connect'
+              : activities.length === 0
+                ? 'all_already_imported'
+                : null,
+        },
+      };
     },
   );
 }

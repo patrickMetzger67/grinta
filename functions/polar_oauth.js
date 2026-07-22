@@ -230,9 +230,14 @@ async function persistPolarConnection(db, pending, tokenResponse) {
   const integrationId = integrationDocId(ownerUid, playerId);
   const memberId = integrationId;
   const registration = await registerPolarUser(accessToken, memberId);
-  const polarUserId = readPolarUserId(registration);
+  // Prefer registration polar-user-id; on 409 (already registered) fall back to
+  // x_user_id from the token response so exercise-transactions still work.
+  const polarUserId =
+    readPolarUserId(registration) ??
+    (tokenResponse?.x_user_id != null
+      ? String(tokenResponse.x_user_id)
+      : null);
   const expiresAt = tokenExpiryFromResponse(tokenResponse);
-
   const integrationRef = db.collection(INTEGRATIONS_COLLECTION).doc(integrationId);
   const syncRef = db
     .collection('users')

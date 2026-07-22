@@ -4733,6 +4733,24 @@ abstract class AppLocalizations {
   /// **'App / appareil'**
   String get createPersonalSportImportSource;
 
+  /// No description provided for @createPersonalSportPolarDeployRequired.
+  ///
+  /// In en, this message translates to:
+  /// **'Polar import is not deployed yet.'**
+  String get createPersonalSportPolarDeployRequired;
+
+  /// No description provided for @createPersonalSportPolarLoadError.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not load Polar activities.'**
+  String get createPersonalSportPolarLoadError;
+
+  /// No description provided for @createPersonalSportPolarNoImportable.
+  ///
+  /// In en, this message translates to:
+  /// **'No Polar Flow training session to import.'**
+  String get createPersonalSportPolarNoImportable;
+
   /// No description provided for @createPersonalSportPolarActivity.
   ///
   /// In en, this message translates to:

@@ -2676,6 +2676,16 @@ class AppLocalizationsEs extends AppLocalizations {
   String get createPersonalSportPolarActivity => 'Polar activity';
 
   @override
+  String get createPersonalSportPolarDeployRequired => 'Polar import is not deployed yet. Run firebase deploy for polarListActivities and polarImportActivity.';
+
+  @override
+  String get createPersonalSportPolarLoadError => 'Could not load Polar activities. Check the connection and try again.';
+
+  @override
+  String get createPersonalSportPolarNoImportable => 'No Polar Flow training session to import. In Polar Flow, confirm the session is a Training (not only continuous HR), synced after connecting Grinta, then retry.';
+
+
+  @override
   String get createPersonalSportStravaActivity => 'Strava activity';
 
   @override
