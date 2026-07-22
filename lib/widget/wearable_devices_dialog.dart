@@ -115,6 +115,8 @@ class _WearableDevicesDialogContentState
 
   _WearableDialogPage _page = _WearableDialogPage.list;
   WearableDeviceType _selectedType = WearableDeviceType.strava;
+  /// Connected type whose coach-visibility details are expanded (null = none).
+  WearableDeviceType? _detailType;
   bool _syncBusy = false;
   String? _disconnectingType;
   Player? _player;
@@ -910,30 +912,45 @@ class _WearableDevicesDialogContentState
         const SizedBox(height: 10),
         for (var i = 0; i < connectedTypes.length; i++) ...[
           if (i > 0) const SizedBox(height: 8),
-          _ConnectedWearableTile(
-            icon: connectedTypes[i].icon,
-            title: connectedTypes[i].label(l10n),
-            subtitle: _connectedTileSubtitle(
-              type: connectedTypes[i],
-              state: state,
-            ),
-            disconnectLabel: l10n.settingsDevicesDisconnect,
-            disconnectBusy: _disconnectingType == connectedTypes[i].name,
-            onDisconnect: () => _disconnect(connectedTypes[i]),
-          ),
           Builder(
             builder: (context) {
+              final type = connectedTypes[i];
               final coachVisibility = _coachVisibilityFor(
-                connectedTypes[i],
+                type,
                 state,
                 syncOwnerUid,
               );
-              if (coachVisibility == null) {
-                return const SizedBox.shrink();
-              }
-              return Padding(
-                padding: const EdgeInsets.only(top: 4),
-                child: coachVisibility,
+              final detailsExpanded = _detailType == type;
+
+              return Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  _ConnectedWearableTile(
+                    icon: type.icon,
+                    title: type.label(l10n),
+                    subtitle: _connectedTileSubtitle(
+                      type: type,
+                      state: state,
+                    ),
+                    disconnectLabel: l10n.settingsDevicesDisconnect,
+                    disconnectBusy: _disconnectingType == type.name,
+                    onDisconnect: () => _disconnect(type),
+                    showDetailsButton: coachVisibility != null,
+                    detailsExpanded: detailsExpanded,
+                    onToggleDetails: coachVisibility == null
+                        ? null
+                        : () {
+                            setState(() {
+                              _detailType = detailsExpanded ? null : type;
+                            });
+                          },
+                  ),
+                  if (detailsExpanded && coachVisibility != null)
+                    Padding(
+                      padding: const EdgeInsets.only(top: 4),
+                      child: coachVisibility,
+                    ),
+                ],
               );
             },
           ),
@@ -1126,6 +1143,9 @@ class _ConnectedWearableTile extends StatelessWidget {
     required this.disconnectLabel,
     required this.disconnectBusy,
     required this.onDisconnect,
+    this.showDetailsButton = false,
+    this.detailsExpanded = false,
+    this.onToggleDetails,
   });
 
   final IconData icon;
@@ -1134,6 +1154,9 @@ class _ConnectedWearableTile extends StatelessWidget {
   final String disconnectLabel;
   final bool disconnectBusy;
   final VoidCallback onDisconnect;
+  final bool showDetailsButton;
+  final bool detailsExpanded;
+  final VoidCallback? onToggleDetails;
 
   @override
   Widget build(BuildContext context) {
@@ -1174,6 +1197,21 @@ class _ConnectedWearableTile extends StatelessWidget {
               ],
             ),
           ),
+          if (showDetailsButton && onToggleDetails != null)
+            IconButton(
+              tooltip: detailsExpanded
+                  ? MaterialLocalizations.of(context).closeButtonTooltip
+                  : MaterialLocalizations.of(context).moreButtonTooltip,
+              onPressed: onToggleDetails,
+              visualDensity: VisualDensity.compact,
+              icon: Icon(
+                detailsExpanded
+                    ? Icons.expand_less_rounded
+                    : Icons.tune_rounded,
+                color: colors.primary,
+                size: 22,
+              ),
+            ),
           if (disconnectBusy)
             SizedBox(
               width: 24,
