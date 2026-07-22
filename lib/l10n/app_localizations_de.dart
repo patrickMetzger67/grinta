@@ -2644,6 +2644,85 @@ class AppLocalizationsDe extends AppLocalizations {
   @override
   String get agendaAddEventNonSport =>
       'Ein nicht-sportliches Ereignis / Aktivität';
+  @override
+  String get createPersonalSportTitle => 'New sports activity';
+
+  @override
+  String get createPersonalSportDate => 'Date';
+
+  @override
+  String get createPersonalSportTime => 'Time';
+
+  @override
+  String get createPersonalSportManualEntry => 'Manual entry';
+
+  @override
+  String get createPersonalSportManualEntryHint => 'Enter duration, distance and pace manually';
+
+  @override
+  String get createPersonalSportImportHint => 'Import an activity from a connected app';
+
+  @override
+  String get createPersonalSportDuration => 'Time';
+
+  @override
+  String get createPersonalSportDistance => 'Distance';
+
+  @override
+  String get createPersonalSportPace => 'Pace';
+
+  @override
+  String get createPersonalSportTapToSet => 'Tap to set';
+
+  @override
+  String get createPersonalSportType => 'Activity type';
+
+  @override
+  String get createPersonalSportTypeRequired => 'Choose an activity type';
+
+  @override
+  String get createPersonalSportImportSource => 'App / device';
+
+  @override
+  String get createPersonalSportStravaActivity => 'Strava activity';
+
+  @override
+  String get createPersonalSportNoImportable => 'No Strava activities to import';
+
+  @override
+  String get createPersonalSportNoConnectedApps =>
+      'No connected app. Connect Strava in Devices / Apps.';
+
+  @override
+  String get createPersonalSportImportRequired => 'Select an activity to import';
+
+  @override
+  String get createPersonalSportNotes => 'Note';
+
+  @override
+  String get createPersonalSportVisibility => 'Visibility';
+
+  @override
+  String get createPersonalSportVisibilityPrivate => 'Private';
+
+  @override
+  String get createPersonalSportVisibilityCoach => 'Coach';
+
+  @override
+  String get createPersonalSportVisibilityTeam => 'Team';
+
+  @override
+  String get createPersonalSportSubmit => 'Create activity';
+
+  @override
+  String get createPersonalSportSaved => 'Activity created';
+
+  @override
+  String get createPersonalSportError => 'Could not create the activity. Please try again.';
+
+  @override
+  String get createPersonalSportAuthRequired => 'Sign in to create an activity.';
+
 
   @override
   String get agendaAllDayLabel => 'All day';

@@ -436,7 +436,12 @@ class _WearableDevicesDialogContentState
       }
     } finally {
       if (mounted) {
-        setState(() => _disconnectingType = null);
+        setState(() {
+          _disconnectingType = null;
+          if (_detailType == type) {
+            _detailType = null;
+          }
+        });
       }
     }
   }

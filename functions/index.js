@@ -17,6 +17,10 @@ const {
   createStravaDisconnect,
 } = require('./strava_oauth');
 const {
+  createStravaListActivities,
+  createStravaImportActivity,
+} = require('./strava_activities');
+const {
   createPolarOAuthStart,
   createPolarOAuthCallback,
   createPolarDisconnect,
@@ -684,6 +688,8 @@ exports.whoopRepairPlayerSync = createWhoopRepairPlayerSync();
 exports.stravaOAuthStart = createStravaOAuthStart();
 exports.stravaOAuthCallback = createStravaOAuthCallback();
 exports.stravaDisconnect = createStravaDisconnect();
+exports.stravaListActivities = createStravaListActivities();
+exports.stravaImportActivity = createStravaImportActivity();
 
 /**
  * Polar AccessLink OAuth (Phase 1 scaffolding).

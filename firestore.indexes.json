@@ -1,0 +1,30 @@
+{
+  "indexes": [
+    {
+      "collectionGroup": "personalSportActivities",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "accessMemberIds", "arrayConfig": "CONTAINS" },
+        { "fieldPath": "startAt", "order": "ASCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "personalSportActivities",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "memberId", "order": "ASCENDING" },
+        { "fieldPath": "externalSource", "order": "ASCENDING" },
+        { "fieldPath": "externalId", "order": "ASCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "personalSportActivities",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "memberId", "order": "ASCENDING" },
+        { "fieldPath": "externalSource", "order": "ASCENDING" }
+      ]
+    }
+  ],
+  "fieldOverrides": []
+}

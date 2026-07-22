@@ -1,0 +1,76 @@
+{
+  "types": [
+    {
+      "id": "course",
+      "order": 1,
+      "icon": "directions_run",
+      "labels": {
+        "fr": "Course",
+        "en": "Run",
+        "de": "Lauf",
+        "es": "Carrera",
+        "it": "Corsa"
+      }
+    },
+    {
+      "id": "sortie_longue",
+      "order": 2,
+      "icon": "hiking",
+      "labels": {
+        "fr": "Sortie longue",
+        "en": "Long run",
+        "de": "Langer Lauf",
+        "es": "Salida larga",
+        "it": "Uscita lunga"
+      }
+    },
+    {
+      "id": "entrainement",
+      "order": 3,
+      "icon": "fitness_center",
+      "labels": {
+        "fr": "Entraînement",
+        "en": "Workout",
+        "de": "Training",
+        "es": "Entrenamiento",
+        "it": "Allenamento"
+      }
+    },
+    {
+      "id": "natation",
+      "order": 4,
+      "icon": "pool",
+      "labels": {
+        "fr": "Natation",
+        "en": "Swimming",
+        "de": "Schwimmen",
+        "es": "Natación",
+        "it": "Nuoto"
+      }
+    },
+    {
+      "id": "velo",
+      "order": 5,
+      "icon": "directions_bike",
+      "labels": {
+        "fr": "Vélo",
+        "en": "Cycling",
+        "de": "Radfahren",
+        "es": "Ciclismo",
+        "it": "Ciclismo"
+      }
+    },
+    {
+      "id": "recuperation",
+      "order": 6,
+      "icon": "self_improvement",
+      "labels": {
+        "fr": "Récupération",
+        "en": "Recovery",
+        "de": "Regeneration",
+        "es": "Recuperación",
+        "it": "Recupero"
+      }
+    }
+  ]
+}

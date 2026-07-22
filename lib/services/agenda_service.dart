@@ -5,11 +5,13 @@ import 'package:flutter/foundation.dart';
 import 'package:grinta/model/agendaItem.dart';
 import 'package:grinta/model/match.dart' as grinta_match;
 import 'package:grinta/model/non_sport_event.dart';
+import 'package:grinta/model/personal_sport_activity.dart';
 import 'package:grinta/model/team.dart';
 import 'package:grinta/model/tracker/team_workload_summary.dart';
 import 'package:grinta/model/training.dart';
 import 'package:grinta/services/matchService.dart';
 import 'package:grinta/services/non_sport_event_service.dart';
+import 'package:grinta/services/personal_sport_activity_service.dart';
 import 'package:grinta/services/teamWorkloadSummaryService.dart';
 import 'package:grinta/services/trainingService.dart';
 import 'package:grinta/util/buildTimestampFromDateAndTime.dart';
@@ -20,6 +22,7 @@ class AgendaService {
   final MatchService _matchService;
   final TeamWorkloadSummaryService _teamWorkloadSummaryService;
   final NonSportEventService _nonSportEventService;
+  final PersonalSportActivityService _personalSportActivityService;
 
   /// In-memory cache so tracker enrichment does not re-hit Firestore on every
   /// progressive stream emission (match phases, team merges, range refreshes).
@@ -41,12 +44,15 @@ class AgendaService {
     MatchService? matchService,
     TeamWorkloadSummaryService? teamWorkloadSummaryService,
     NonSportEventService? nonSportEventService,
+    PersonalSportActivityService? personalSportActivityService,
   })  : _trainingService = trainingService ?? TrainingService(),
         _matchService = matchService ?? MatchService(),
         _teamWorkloadSummaryService =
             teamWorkloadSummaryService ?? TeamWorkloadSummaryService(),
         _nonSportEventService =
-            nonSportEventService ?? NonSportEventService();
+            nonSportEventService ?? NonSportEventService(),
+        _personalSportActivityService =
+            personalSportActivityService ?? PersonalSportActivityService();
 
   /// Marks team workload for [eventId] (or all events) stale and notifies
   /// active agenda streams to re-fetch [TRACKER_TeamAnalysis].
@@ -122,6 +128,24 @@ class AgendaService {
             (List<NonSportEvent> events) {
               partialItems['non_sport'] = events
                   .map(_nonSportEventToAgendaItem)
+                  .whereType<AgendaItem>()
+                  .toList();
+              emitMerged();
+            },
+            onError: controller.addError,
+          ),
+        );
+        subscriptions.add(
+          _personalSportActivityService
+              .watchForMemberBetweenDates(
+                memberId: trimmedMemberId,
+                start: start,
+                end: end,
+              )
+              .listen(
+            (List<PersonalSportActivity> activities) {
+              partialItems['personal_sport'] = activities
+                  .map(_personalSportToAgendaItem)
                   .whereType<AgendaItem>()
                   .toList();
               emitMerged();
@@ -471,6 +495,31 @@ class AgendaService {
       allDay: event.allDay,
       isDone: event.endAt.isBefore(DateTime.now()),
       nonSportEvent: event,
+    );
+  }
+
+  static AgendaItem? _personalSportToAgendaItem(PersonalSportActivity activity) {
+    final String? eventId = activity.id?.trim();
+    if (eventId == null || eventId.isEmpty) {
+      return null;
+    }
+
+    final String title = (activity.title?.trim().isNotEmpty == true)
+        ? activity.title!.trim()
+        : activity.typeId;
+    final String? subtitle = activity.externalSource == 'strava'
+        ? 'Strava'
+        : null;
+
+    return AgendaItem(
+      id: eventId,
+      startAt: activity.startAt,
+      endAt: activity.endAt,
+      title: title,
+      subtitle: subtitle,
+      type: AgendaItemType.preparationPhysique,
+      isDone: activity.endAt.isBefore(DateTime.now()),
+      personalSportActivity: activity,
     );
   }
 

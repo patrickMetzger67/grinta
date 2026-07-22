@@ -1,6 +1,7 @@
 import 'package:grinta/model/activityMetrics.dart';
 import 'package:grinta/model/match.dart' as grinta_match;
 import 'package:grinta/model/non_sport_event.dart';
+import 'package:grinta/model/personal_sport_activity.dart';
 import 'package:grinta/model/tracker/team_workload_summary.dart';
 import 'package:grinta/model/training.dart';
 
@@ -23,6 +24,7 @@ class AgendaItem {
   final Training? training;
   final grinta_match.Match? match;
   final NonSportEvent? nonSportEvent;
+  final PersonalSportActivity? personalSportActivity;
   final ActivityMetrics? activityMetrics;
   final bool? withTracker;
   final bool areTrackersSynchronized;
@@ -41,6 +43,7 @@ class AgendaItem {
     this.match,
     this.training,
     this.nonSportEvent,
+    this.personalSportActivity,
     this.activityMetrics,
     this.withTracker,
     this.areTrackersSynchronized = false,

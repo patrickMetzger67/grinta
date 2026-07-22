@@ -280,9 +280,21 @@ service cloud.firestore {
     // Remote app config (subscription limits, e-shop flags, invitation emails).
     match /config/{docId} {
       allow read: if request.auth != null
-        && docId in ['subscription_limits', 'eshop', 'invitation'];
+        && docId in [
+          'subscription_limits',
+          'eshop',
+          'invitation',
+          'activity',
+          'playerPositions'
+        ];
       allow write: if isRootUser()
-        && docId in ['subscription_limits', 'eshop', 'invitation'];
+        && docId in [
+          'subscription_limits',
+          'eshop',
+          'invitation',
+          'activity',
+          'playerPositions'
+        ];
     }
 
     // Member self-registration without invitation code.

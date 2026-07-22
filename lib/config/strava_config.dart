@@ -6,6 +6,8 @@ const String kStravaFunctionsRegion = 'europe-west1';
 
 const String kStravaOAuthStartFunctionName = 'stravaOAuthStart';
 const String kStravaDisconnectFunctionName = 'stravaDisconnect';
+const String kStravaListActivitiesFunctionName = 'stravaListActivities';
+const String kStravaImportActivityFunctionName = 'stravaImportActivity';
 
 /// Deep link opened after OAuth completes (via Cloud Function redirect).
 const String kStravaOAuthDeepLinkHost = 'strava';

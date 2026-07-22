@@ -1,10 +1,10 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:grinta/core/extensions/l10n_extension.dart';
-import 'package:grinta/util/app_snackbar.dart';
 import 'package:grinta/util/app_theme.dart';
 import 'package:grinta/widget/create_match_sheet.dart';
 import 'package:grinta/widget/create_non_sport_event_sheet.dart';
+import 'package:grinta/widget/create_personal_sport_activity_sheet.dart';
 import 'package:grinta/widget/create_training_sheet.dart';
 
 enum AgendaAddEventKind {
@@ -99,11 +99,14 @@ Future<void> _handleSelection(
     return;
   }
 
-  AppSnackbar.show(
-    hostContext,
-    hostContext.l10n.matchDetailTrackerKitComingSoon,
-    isError: false,
-  );
+  if (kind == AgendaAddEventKind.personalSport) {
+    await showCreatePersonalSportActivitySheet(
+      hostContext,
+      initialDate: initialDate,
+      onSaved: onTrainingCreated,
+    );
+    return;
+  }
 }
 
 class _AgendaAddEventDialog extends StatelessWidget {

@@ -4655,6 +4655,162 @@ abstract class AppLocalizations {
   /// **'Un évènement / activité non sportive'**
   String get agendaAddEventNonSport;
 
+  /// No description provided for @createPersonalSportTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Nouvelle activité sportive'**
+  String get createPersonalSportTitle;
+
+  /// No description provided for @createPersonalSportDate.
+  ///
+  /// In fr, this message translates to:
+  /// **'Date'**
+  String get createPersonalSportDate;
+
+  /// No description provided for @createPersonalSportTime.
+  ///
+  /// In fr, this message translates to:
+  /// **'Heure'**
+  String get createPersonalSportTime;
+
+  /// No description provided for @createPersonalSportManualEntry.
+  ///
+  /// In fr, this message translates to:
+  /// **'Saisie manuelle'**
+  String get createPersonalSportManualEntry;
+
+  /// No description provided for @createPersonalSportManualEntryHint.
+  ///
+  /// In fr, this message translates to:
+  /// **'Renseigne durée, distance et allure à la main'**
+  String get createPersonalSportManualEntryHint;
+
+  /// No description provided for @createPersonalSportImportHint.
+  ///
+  /// In fr, this message translates to:
+  /// **'Importe une activité depuis une app connectée'**
+  String get createPersonalSportImportHint;
+
+  /// No description provided for @createPersonalSportDuration.
+  ///
+  /// In fr, this message translates to:
+  /// **'Temps'**
+  String get createPersonalSportDuration;
+
+  /// No description provided for @createPersonalSportDistance.
+  ///
+  /// In fr, this message translates to:
+  /// **'Distance'**
+  String get createPersonalSportDistance;
+
+  /// No description provided for @createPersonalSportPace.
+  ///
+  /// In fr, this message translates to:
+  /// **'Allure'**
+  String get createPersonalSportPace;
+
+  /// No description provided for @createPersonalSportTapToSet.
+  ///
+  /// In fr, this message translates to:
+  /// **'Appuyer pour renseigner'**
+  String get createPersonalSportTapToSet;
+
+  /// No description provided for @createPersonalSportType.
+  ///
+  /// In fr, this message translates to:
+  /// **'Type d\'activité'**
+  String get createPersonalSportType;
+
+  /// No description provided for @createPersonalSportTypeRequired.
+  ///
+  /// In fr, this message translates to:
+  /// **'Choisis un type d\'activité'**
+  String get createPersonalSportTypeRequired;
+
+  /// No description provided for @createPersonalSportImportSource.
+  ///
+  /// In fr, this message translates to:
+  /// **'App / appareil'**
+  String get createPersonalSportImportSource;
+
+  /// No description provided for @createPersonalSportStravaActivity.
+  ///
+  /// In fr, this message translates to:
+  /// **'Activité Strava'**
+  String get createPersonalSportStravaActivity;
+
+  /// No description provided for @createPersonalSportNoImportable.
+  ///
+  /// In fr, this message translates to:
+  /// **'Aucune activité Strava à importer'**
+  String get createPersonalSportNoImportable;
+
+  /// No description provided for @createPersonalSportNoConnectedApps.
+  ///
+  /// In fr, this message translates to:
+  /// **'Aucune app connectée. Connecte Strava dans Appareils / Applications.'**
+  String get createPersonalSportNoConnectedApps;
+
+  /// No description provided for @createPersonalSportImportRequired.
+  ///
+  /// In fr, this message translates to:
+  /// **'Sélectionne une activité à importer'**
+  String get createPersonalSportImportRequired;
+
+  /// No description provided for @createPersonalSportNotes.
+  ///
+  /// In fr, this message translates to:
+  /// **'Note'**
+  String get createPersonalSportNotes;
+
+  /// No description provided for @createPersonalSportVisibility.
+  ///
+  /// In fr, this message translates to:
+  /// **'Visibilité'**
+  String get createPersonalSportVisibility;
+
+  /// No description provided for @createPersonalSportVisibilityPrivate.
+  ///
+  /// In fr, this message translates to:
+  /// **'Privé'**
+  String get createPersonalSportVisibilityPrivate;
+
+  /// No description provided for @createPersonalSportVisibilityCoach.
+  ///
+  /// In fr, this message translates to:
+  /// **'Coach'**
+  String get createPersonalSportVisibilityCoach;
+
+  /// No description provided for @createPersonalSportVisibilityTeam.
+  ///
+  /// In fr, this message translates to:
+  /// **'Équipe'**
+  String get createPersonalSportVisibilityTeam;
+
+  /// No description provided for @createPersonalSportSubmit.
+  ///
+  /// In fr, this message translates to:
+  /// **'Créer l\'activité'**
+  String get createPersonalSportSubmit;
+
+  /// No description provided for @createPersonalSportSaved.
+  ///
+  /// In fr, this message translates to:
+  /// **'Activité créée'**
+  String get createPersonalSportSaved;
+
+  /// No description provided for @createPersonalSportError.
+  ///
+  /// In fr, this message translates to:
+  /// **'Impossible de créer l\'activité. Réessayez.'**
+  String get createPersonalSportError;
+
+  /// No description provided for @createPersonalSportAuthRequired.
+  ///
+  /// In fr, this message translates to:
+  /// **'Connecte-toi pour créer une activité.'**
+  String get createPersonalSportAuthRequired;
+
   /// No description provided for @agendaAllDayLabel.
   ///
   /// In fr, this message translates to:
