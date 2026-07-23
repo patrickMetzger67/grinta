@@ -104,24 +104,31 @@ class _SessionPersonalDataAgendaButtonState
   Widget build(BuildContext context) {
     if (_loading || !_visible) return const SizedBox.shrink();
 
+    final colors = context.appColors;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    // High-contrast control from app theme: near-black fill, near-white icon.
+    final Color backgroundColor =
+        isDark ? colors.background : colors.textPrimary;
+    final Color iconColor = isDark ? colors.textPrimary : colors.surface;
+
     return Padding(
       padding: const EdgeInsets.only(left: 6),
       child: Tooltip(
         message: context.l10n.sessionPersonalDataTitle,
         child: Material(
-          color: Colors.white.withValues(alpha: 0.22),
+          color: backgroundColor,
           shape: const CircleBorder(),
           child: InkWell(
             customBorder: const CircleBorder(),
             onTap: () {
               showSessionPersonalDataDialog(context, item: widget.item);
             },
-            child: const Padding(
-              padding: EdgeInsets.all(6),
+            child: Padding(
+              padding: const EdgeInsets.all(6),
               child: Icon(
                 Icons.sensors_rounded,
                 size: 18,
-                color: Colors.white,
+                color: iconColor,
               ),
             ),
           ),
