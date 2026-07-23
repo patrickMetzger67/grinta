@@ -820,13 +820,13 @@ class _CreatePersonalSportActivitySheetState
       );
       if (!mounted) return;
       if (analysis == null) {
-        AppSnackbar.show(context, context.l10n.createPersonalSportGpsNoData);
+        await _promptGpsNoDataManualEntry();
         return;
       }
 
       final metrics = PersonalGpsSyncService.metricsFromAnalysis(analysis);
       if (metrics.durationSeconds <= 0 && metrics.distanceMeters <= 0) {
-        AppSnackbar.show(context, context.l10n.createPersonalSportGpsNoData);
+        await _promptGpsNoDataManualEntry();
         return;
       }
 
@@ -870,16 +870,55 @@ class _CreatePersonalSportActivitySheetState
     } catch (e, st) {
       debugPrint('personal GPS sync failed: $e\n$st');
       if (!mounted) return;
-      final message = e is StateError
-          ? e.message.trim()
-          : context.l10n.createPersonalSportGpsSyncError;
-      AppSnackbar.show(
-        context,
-        message.isEmpty
-            ? context.l10n.createPersonalSportGpsSyncError
-            : message,
-      );
+      if (_isGpsNoDataError(e)) {
+        await _promptGpsNoDataManualEntry();
+        return;
+      }
+      AppSnackbar.show(context, context.l10n.createPersonalSportGpsSyncError);
     }
+  }
+
+  bool _isGpsNoDataError(Object error) {
+    final raw = error is StateError
+        ? error.message
+        : error.toString();
+    final lower = raw.toLowerCase();
+    return lower.contains('aucune donnée gnss') ||
+        lower.contains('no gnss data') ||
+        lower.contains('no sensor samples') ||
+        lower.contains('count=0');
+  }
+
+  Future<void> _promptGpsNoDataManualEntry() async {
+    final l10n = context.l10n;
+    final useManual = await showDialog<bool>(
+      context: context,
+      useRootNavigator: true,
+      builder: (dialogContext) {
+        return AlertDialog(
+          title: Text(l10n.createPersonalSportUseMyGps),
+          content: Text(
+            '${l10n.createPersonalSportGpsNoData}\n\n'
+            '${l10n.createPersonalSportGpsManualEntryQuestion}',
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(dialogContext).pop(false),
+              child: Text(l10n.actionNo),
+            ),
+            FilledButton(
+              onPressed: () => Navigator.of(dialogContext).pop(true),
+              child: Text(l10n.actionYes),
+            ),
+          ],
+        );
+      },
+    );
+    if (!mounted || useManual != true) return;
+    setState(() {
+      _useMyGps = false;
+      _manualEntry = true;
+    });
   }
 
   @override
