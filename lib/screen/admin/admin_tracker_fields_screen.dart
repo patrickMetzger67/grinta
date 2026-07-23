@@ -46,7 +46,9 @@ class _AdminTrackerFieldsScreenState extends State<AdminTrackerFieldsScreen> {
   void _reload() {
     final clubId = _selectedClubId;
     if (clubId == null) return;
-    setState(() => _fieldsFuture = _service.listByClubId(clubId));
+    setState(() {
+      _fieldsFuture = _service.listByClubId(clubId);
+    });
   }
 
   Future<void> _openLocalization({FieldClub? existing}) async {
