@@ -868,12 +868,13 @@ class _CreatePersonalSportActivitySheetState
       widget.onSaved?.call();
       Navigator.of(context).pop(saved);
     } catch (e, st) {
-      debugPrint('personal GPS sync failed: $e\n$st');
       if (!mounted) return;
       if (_isGpsNoDataError(e)) {
+        debugPrint('[PersonalGps] no data to sync for selected window');
         await _promptGpsNoDataManualEntry();
         return;
       }
+      debugPrint('personal GPS sync failed: $e\n$st');
       AppSnackbar.show(context, context.l10n.createPersonalSportGpsSyncError);
     }
   }

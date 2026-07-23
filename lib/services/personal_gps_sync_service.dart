@@ -140,11 +140,13 @@ class PersonalGpsSyncService {
       'stop=${window.toCloudPayload()['stop']}',
     );
 
+    // Empty GNSS windows return null (no exception) so the UI can prompt
+    // for manual entry without flooding the console with stack traces.
     return _intenseSyncService.analyzeDeviceWindow(
       target: target,
       window: window,
       eventId: eventId,
-      treatEmptyAsSuccess: false,
+      treatEmptyAsSuccess: true,
       onProgress: (t) => onStage?.call(t.stage),
     );
   }

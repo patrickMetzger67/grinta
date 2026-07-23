@@ -335,7 +335,8 @@ class TrainingIntenseSyncService {
       if (samples.length < _minRequiredSamples) {
         debugPrint(
           '[IntenseSync] no GNSS samples for ${target.trackerLabel} '
-          'on requested window — treating as success',
+          'on requested window'
+          '${treatEmptyAsSuccess ? ' — empty result' : ''}',
         );
         emit(IntenseDeviceSyncStage.done, 1);
         if (treatEmptyAsSuccess) return null;
