@@ -203,7 +203,10 @@ class _AskDiegoImageButton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final colors = context.appColors;
-    final avatar = AskDiegoAvatar(size: size);
+    final avatar = AskDiegoAvatar(
+      size: size,
+      backgroundColor: mini ? Colors.white : null,
+    );
     final splashColor = colors.primary.withValues(alpha: 0.15);
 
     const transparentFabShape = CircleBorder();

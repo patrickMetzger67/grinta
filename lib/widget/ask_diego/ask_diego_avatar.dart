@@ -7,9 +7,13 @@ class AskDiegoAvatar extends StatelessWidget {
   const AskDiegoAvatar({
     super.key,
     this.size = 40,
+    this.backgroundColor,
   });
 
   final double size;
+
+  /// Defaults to brand orange. Pass [Colors.white] for speed-dial mini FABs.
+  final Color? backgroundColor;
 
   @override
   Widget build(BuildContext context) {
@@ -18,7 +22,7 @@ class AskDiegoAvatar extends StatelessWidget {
       height: size,
       child: DecoratedBox(
         decoration: BoxDecoration(
-          color: AppColors.light.primary,
+          color: backgroundColor ?? AppColors.light.primary,
           shape: BoxShape.circle,
         ),
         child: ClipOval(
