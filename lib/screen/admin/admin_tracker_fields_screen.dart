@@ -51,6 +51,11 @@ class _AdminTrackerFieldsScreenState extends State<AdminTrackerFieldsScreen> {
     });
   }
 
+  /// Always leave the fields screen and return to the admin menu.
+  void _handleBack() {
+    Navigator.of(context).maybePop();
+  }
+
   Future<void> _openLocalization({FieldClub? existing}) async {
     final clubId = _selectedClubId;
     if (clubId == null) {
@@ -162,6 +167,11 @@ class _AdminTrackerFieldsScreenState extends State<AdminTrackerFieldsScreen> {
     return Scaffold(
       backgroundColor: colors.background,
       appBar: AppBar(
+        leading: IconButton(
+          tooltip: l10n.actionBack,
+          icon: const Icon(Icons.arrow_back_rounded),
+          onPressed: _handleBack,
+        ),
         title: Text(
           l10n.adminTrackerFieldsTitle,
           style: textTheme.titleLarge?.copyWith(
