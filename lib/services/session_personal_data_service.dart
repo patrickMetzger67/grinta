@@ -33,10 +33,18 @@ class SessionPersonalDataService {
   final TrainingIntenseSyncService _intenseSyncService;
   final TrackerFieldService _trackerFieldService;
 
-  /// True when the agenda event is a training/match without a kit owner.
+  /// True when the agenda event is a training/match without a usable team kit.
+  ///
+  /// Shown when tracker mode is off, or when no owner is assigned on the event
+  /// (team has no kit attributed to this session).
   static bool isEligibleAgendaItem(AgendaItem item) {
     if (item.training == null && item.match == null) return false;
-    return item.withTracker != true;
+    final ownerId =
+        (item.training?.ownerId ?? item.match?.ownerId)?.trim() ?? '';
+    if (item.withTracker == true && ownerId.isNotEmpty) {
+      return false;
+    }
+    return true;
   }
 
   SessionPersonalDataWindow resolveWindow({

@@ -1227,25 +1227,31 @@ class AgendaItemCard extends StatelessWidget {
                       ),
                     ),
                     if (SessionPersonalDataService.isEligibleAgendaItem(item) &&
-                        currentPlayerId != null &&
-                        currentPlayerId!.trim().isNotEmpty) ...[
-                      const SizedBox(width: 4),
-                      IconButton(
-                        visualDensity: VisualDensity.compact,
-                        padding: EdgeInsets.zero,
-                        constraints: const BoxConstraints(
-                          minWidth: 32,
-                          minHeight: 32,
+                        (currentPlayerId?.trim().isNotEmpty ?? false)) ...[
+                      const SizedBox(width: 6),
+                      Tooltip(
+                        message: context.l10n.sessionPersonalDataTitle,
+                        child: Material(
+                          color: Colors.white.withValues(alpha: 0.22),
+                          shape: const CircleBorder(),
+                          child: InkWell(
+                            customBorder: const CircleBorder(),
+                            onTap: () {
+                              showSessionPersonalDataDialog(
+                                context,
+                                item: item,
+                              );
+                            },
+                            child: const Padding(
+                              padding: EdgeInsets.all(6),
+                              child: Icon(
+                                Icons.sensors_rounded,
+                                size: 18,
+                                color: Colors.white,
+                              ),
+                            ),
+                          ),
                         ),
-                        tooltip: context.l10n.sessionPersonalDataTitle,
-                        icon: const Icon(
-                          Icons.sensors_rounded,
-                          size: 20,
-                          color: Colors.white,
-                        ),
-                        onPressed: () {
-                          showSessionPersonalDataDialog(context, item: item);
-                        },
                       ),
                     ],
                   ],
