@@ -15,7 +15,6 @@ import 'package:grinta/services/ownerService.dart';
 import 'package:grinta/services/tracker_field_service.dart';
 import 'package:grinta/services/event_sync_service.dart';
 import 'package:grinta/services/trainingService.dart';
-import 'package:grinta/screen/field_localization_screen.dart';
 import 'package:grinta/tracker/tracker_hub_page.dart';
 import 'package:grinta/provider/appSession.dart';
 import 'package:grinta/widget/uploadTrackerButton.dart';
@@ -30,7 +29,7 @@ import '../model/team.dart';
 import '../model/training.dart';
 import '../model/feature_discovery_ids.dart';
 import '../util/app_theme.dart';
-import '../util/french_address_parser.dart';
+import '../util/field_gps_localization_helper.dart';
 import '../widget/feature_discovery_random_banner.dart';
 import '../widget/nav_icon_count_badge.dart';
 
@@ -262,98 +261,15 @@ class _SyncScreenState extends State<SyncScreen> {
     return sorted;
   }
 
-  Future<FieldGpsCorners?> _loadFieldGpsCornersFromTrackerFields(
-    match_model.Match match,
-  ) async {
-    final terrainNom = match.nomDuTerrain?.trim() ?? '';
-    final parsed = FrenchAddressParser.parseTerrainAdresse1(match.terrainAdresse1);
-    final fieldId = FrenchAddressParser.computeFieldId(
-      terrainNom: terrainNom.isNotEmpty
-          ? terrainNom
-          : (match.terrainAdresse1?.trim() ?? ''),
-      ville: parsed.ville,
-    );
-    if (fieldId.isEmpty) return null;
-
-    final trackerField = await _trackerFieldService.getById(fieldId);
-    return trackerField?.fieldGpsCorners;
-  }
-
-  Future<bool?> _confirmFieldGeolocation(BuildContext context) {
-    return showDialog<bool>(
-      context: context,
-      builder: (dialogContext) => AlertDialog(
-        title: Text(dialogContext.l10n.syncFieldGeolocationPromptTitle),
-        content: Text(dialogContext.l10n.syncFieldGeolocationPromptMessage),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(dialogContext).pop(false),
-            child: Text(dialogContext.l10n.actionNo),
-          ),
-          TextButton(
-            onPressed: () => Navigator.of(dialogContext).pop(true),
-            child: Text(dialogContext.l10n.actionYes),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Future<FieldGpsCorners?> _localizeMatchField(match_model.Match match) async {
-    final result = await Navigator.push<FieldLocalizationResult>(
-      context,
-      analyticsMaterialRoute(
-        screenName: AnalyticsScreenNames.fields,
-        builder: (_) => FootballFieldLocalizationScreen(
-          initialName: match.nomDuTerrain?.trim() ?? '',
-          initialAddress: match.terrainAdresse1?.trim() ?? '',
-        ),
-      ),
-    );
-
-    if (result == null || !mounted) return null;
-
-    match.fieldGpsCorners = result.fieldGpsCorners;
-    await _matchService.updateMatch(match);
-
-    final uid = FirebaseAuth.instance.currentUser?.uid;
-    if (uid != null) {
-      final terrainNom = result.fieldName.trim().isNotEmpty
-          ? result.fieldName.trim()
-          : (match.nomDuTerrain?.trim() ?? '');
-      try {
-        await _trackerFieldService.saveFromMatchLocalization(
-          terrainNom: terrainNom,
-          terrainAdresse1: match.terrainAdresse1 ?? '',
-          fieldGpsCorners: result.fieldGpsCorners,
-          uid: uid,
-        );
-      } catch (e) {
-        debugPrint('TrackerFieldService save failed: $e');
-      }
-    }
-
-    return result.fieldGpsCorners;
-  }
-
   Future<FieldGpsCorners?> _ensureMatchFieldGpsCorners(
     match_model.Match match,
-  ) async {
-    if (match.fieldGpsCorners != null) {
-      return match.fieldGpsCorners;
-    }
-
-    final storedField = await _loadFieldGpsCornersFromTrackerFields(match);
-    if (storedField != null) {
-      match.fieldGpsCorners = storedField;
-      await _matchService.updateMatch(match);
-      return storedField;
-    }
-
-    final shouldLocalize = await _confirmFieldGeolocation(context);
-    if (shouldLocalize != true || !mounted) return null;
-
-    return _localizeMatchField(match);
+  ) {
+    return FieldGpsLocalizationHelper.ensureMatchFieldGpsCorners(
+      context,
+      match: match,
+      matchService: _matchService,
+      trackerFieldService: _trackerFieldService,
+    );
   }
 
   Future<bool> _ensureEventSyncNotFullyClosed(String eventId) async {

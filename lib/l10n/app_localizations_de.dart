@@ -5515,6 +5515,38 @@ class AppLocalizationsDe extends AppLocalizations {
       'Tracker-Geräte synchronisieren, zuweisen und verwalten.';
 
   @override
+  String get adminTrackerFieldsSection => 'Platz-Verwaltung';
+
+  @override
+  String get adminTrackerFieldsSectionDesc =>
+      'GPS-Ecken der Plätze für Heatmaps erfassen und speichern.';
+
+  @override
+  String get adminTrackerFieldsTitle => 'Plätze';
+
+  @override
+  String get adminTrackerFieldsEmpty =>
+      'Noch keine Plätze gespeichert. Erstelle eine GPS-Skizze zum Start.';
+
+  @override
+  String get adminTrackerFieldsLoadError =>
+      'Plätze konnten nicht geladen werden.';
+
+  @override
+  String get adminTrackerFieldsCreate => 'Neuer Platz';
+
+  @override
+  String get adminTrackerFieldsSaved => 'Platz gespeichert.';
+
+  @override
+  String get adminTrackerFieldsSaveFailed =>
+      'Platz konnte nicht gespeichert werden.';
+
+  @override
+  String get adminTrackerFieldsAuthRequired =>
+      'Melde dich an, um einen Platz zu speichern.';
+
+  @override
   String get adminTrackerDevicesTitle => 'Tracker-Verwaltung';
 
   @override

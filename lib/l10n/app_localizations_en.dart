@@ -5436,6 +5436,35 @@ class AppLocalizationsEn extends AppLocalizations {
       'Sync, assign and manage tracker devices.';
 
   @override
+  String get adminTrackerFieldsSection => 'Field management';
+
+  @override
+  String get adminTrackerFieldsSectionDesc =>
+      'Trace and save pitch GPS corners for heatmaps.';
+
+  @override
+  String get adminTrackerFieldsTitle => 'Fields';
+
+  @override
+  String get adminTrackerFieldsEmpty =>
+      'No fields saved yet. Create a GPS outline to get started.';
+
+  @override
+  String get adminTrackerFieldsLoadError => 'Unable to load fields.';
+
+  @override
+  String get adminTrackerFieldsCreate => 'New field';
+
+  @override
+  String get adminTrackerFieldsSaved => 'Field saved.';
+
+  @override
+  String get adminTrackerFieldsSaveFailed => 'Unable to save the field.';
+
+  @override
+  String get adminTrackerFieldsAuthRequired => 'Sign in to save a field.';
+
+  @override
   String get adminTrackerDevicesTitle => 'Tracker management';
 
   @override

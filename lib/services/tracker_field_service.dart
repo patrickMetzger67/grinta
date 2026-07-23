@@ -55,4 +55,19 @@ class TrackerFieldService {
 
     return TrackerField.fromDocument(doc);
   }
+
+  /// Lists tracker fields (admin tooling). Newest docs first when possible.
+  Future<List<TrackerField>> listAll({int limit = 200}) async {
+    final snapshot = await _collection.limit(limit).get();
+    final fields = <TrackerField>[];
+    for (final doc in snapshot.docs) {
+      try {
+        fields.add(TrackerField.fromDocument(doc));
+      } catch (_) {}
+    }
+    fields.sort(
+      (a, b) => a.terrainNom.toLowerCase().compareTo(b.terrainNom.toLowerCase()),
+    );
+    return fields;
+  }
 }

@@ -5503,6 +5503,38 @@ class AppLocalizationsFr extends AppLocalizations {
       'Synchroniser, affecter et gérer les devices trackers.';
 
   @override
+  String get adminTrackerFieldsSection => 'Gestion des terrains';
+
+  @override
+  String get adminTrackerFieldsSectionDesc =>
+      'Tracer et enregistrer les positions GPS des terrains pour les heatmaps.';
+
+  @override
+  String get adminTrackerFieldsTitle => 'Terrains';
+
+  @override
+  String get adminTrackerFieldsEmpty =>
+      'Aucun terrain enregistré. Crée un tracé GPS pour commencer.';
+
+  @override
+  String get adminTrackerFieldsLoadError =>
+      'Impossible de charger les terrains.';
+
+  @override
+  String get adminTrackerFieldsCreate => 'Nouveau terrain';
+
+  @override
+  String get adminTrackerFieldsSaved => 'Terrain enregistré.';
+
+  @override
+  String get adminTrackerFieldsSaveFailed =>
+      'Impossible d\'enregistrer le terrain.';
+
+  @override
+  String get adminTrackerFieldsAuthRequired =>
+      'Connecte-toi pour enregistrer un terrain.';
+
+  @override
   String get adminTrackerDevicesTitle => 'Gestion des trackers';
 
   @override

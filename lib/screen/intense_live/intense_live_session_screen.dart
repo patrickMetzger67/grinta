@@ -6,10 +6,12 @@ import 'package:grinta/analytics/analytics_interactions.dart';
 import 'package:grinta/analytics/analytics_routes.dart';
 import 'package:grinta/analytics/analytics_screen_names.dart';
 import 'package:grinta/core/extensions/l10n_extension.dart';
+import 'package:grinta/model/fieldGpsCorners.dart';
 import 'package:grinta/model/match.dart' as models;
 import 'package:grinta/model/training.dart';
 import 'package:grinta/services/intense_live_data_service.dart';
 import 'package:grinta/util/app_theme.dart';
+import 'package:grinta/util/field_gps_localization_helper.dart';
 import 'package:grinta/util/intense_live_eligibility.dart';
 import 'package:grinta/util/playerDisplayName.dart';
 import 'package:grinta/widget/activity_rings_card.dart';
@@ -101,6 +103,8 @@ class _IntenseLiveSessionScreenState extends State<IntenseLiveSessionScreen> {
   bool _refreshInFlight = false;
   DateTime? _lastUpdatedAt;
   Timer? _pollTimer;
+  FieldGpsCorners? _fieldGpsCorners;
+  bool _fieldGpsResolved = false;
 
   @override
   void initState() {
@@ -116,6 +120,9 @@ class _IntenseLiveSessionScreenState extends State<IntenseLiveSessionScreen> {
 
   Future<void> _bootstrap() async {
     try {
+      await _ensureFieldGpsForMatch();
+      if (!mounted) return;
+
       final targets = await _loadTargets();
       if (!mounted) return;
 
@@ -137,6 +144,36 @@ class _IntenseLiveSessionScreenState extends State<IntenseLiveSessionScreen> {
         _loading = false;
       });
     }
+  }
+
+  /// Intense matches (`withSyncing=false`) need pitch GPS for heatmaps —
+  /// same localization flow as USB match sync when corners are missing.
+  Future<void> _ensureFieldGpsForMatch() async {
+    if (_fieldGpsResolved) return;
+    _fieldGpsResolved = true;
+
+    if (!widget.isMatch) {
+      _fieldGpsCorners =
+          await _service.loadFieldGpsCorners(widget.fieldId);
+      return;
+    }
+
+    final match = widget.match;
+    if (match == null) {
+      _fieldGpsCorners =
+          await _service.loadFieldGpsCorners(widget.fieldId);
+      return;
+    }
+
+    if (!mounted) return;
+    final corners =
+        await FieldGpsLocalizationHelper.ensureMatchFieldGpsCorners(
+      context,
+      match: match,
+    );
+    if (!mounted) return;
+    _fieldGpsCorners =
+        corners ?? await _service.loadFieldGpsCorners(widget.fieldId);
   }
 
   Future<List<IntenseLivePlayerTarget>> _loadTargets() async {
@@ -170,7 +207,9 @@ class _IntenseLiveSessionScreenState extends State<IntenseLiveSessionScreen> {
     }
 
     try {
-      final fieldGps = await _service.loadFieldGpsCorners(widget.fieldId);
+      final fieldGps = _fieldGpsCorners ??
+          await _service.loadFieldGpsCorners(widget.fieldId);
+      _fieldGpsCorners ??= fieldGps;
       final stopUtc = DateTime.now().toUtc();
       final results = await _service.fetchAllLiveMetrics(
         targets: _targets,

@@ -5507,6 +5507,38 @@ class AppLocalizationsEs extends AppLocalizations {
       'Sincronizar, asignar y gestionar dispositivos tracker.';
 
   @override
+  String get adminTrackerFieldsSection => 'Gestión de terrenos';
+
+  @override
+  String get adminTrackerFieldsSectionDesc =>
+      'Trazar y guardar las posiciones GPS de los terrenos para los mapas de calor.';
+
+  @override
+  String get adminTrackerFieldsTitle => 'Terrenos';
+
+  @override
+  String get adminTrackerFieldsEmpty =>
+      'Aún no hay terrenos guardados. Crea un trazado GPS para empezar.';
+
+  @override
+  String get adminTrackerFieldsLoadError =>
+      'No se pudieron cargar los terrenos.';
+
+  @override
+  String get adminTrackerFieldsCreate => 'Nuevo terreno';
+
+  @override
+  String get adminTrackerFieldsSaved => 'Terreno guardado.';
+
+  @override
+  String get adminTrackerFieldsSaveFailed =>
+      'No se pudo guardar el terreno.';
+
+  @override
+  String get adminTrackerFieldsAuthRequired =>
+      'Inicia sesión para guardar un terreno.';
+
+  @override
   String get adminTrackerDevicesTitle => 'Gestión de trackers';
 
   @override

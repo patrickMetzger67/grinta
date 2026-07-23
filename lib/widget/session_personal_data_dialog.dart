@@ -15,6 +15,7 @@ import 'package:grinta/services/strava_sync_service.dart';
 import 'package:grinta/services/whoop_sync_service.dart';
 import 'package:grinta/util/app_snackbar.dart';
 import 'package:grinta/util/app_theme.dart';
+import 'package:grinta/util/field_gps_localization_helper.dart';
 import 'package:grinta/util/player_photo_resolver.dart';
 import 'package:provider/provider.dart';
 
@@ -411,6 +412,16 @@ class _SessionPersonalDataDialogState extends State<SessionPersonalDataDialog> {
     if (device == null) {
       AppSnackbar.show(context, context.l10n.createPersonalSportGpsDeviceRequired);
       return;
+    }
+
+    // Match + Intense GPS: ensure pitch corners so heatmap can be generated.
+    final match = widget.item.match;
+    if (match != null) {
+      await FieldGpsLocalizationHelper.ensureMatchFieldGpsCorners(
+        context,
+        match: match,
+      );
+      if (!mounted) return;
     }
 
     final result = await _sessionDataService.attachGps(

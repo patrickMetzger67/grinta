@@ -9522,6 +9522,60 @@ abstract class AppLocalizations {
   /// **'Synchroniser, affecter et gérer les devices trackers.'**
   String get adminTrackerDevicesSectionDesc;
 
+  /// No description provided for @adminTrackerFieldsSection.
+  ///
+  /// In fr, this message translates to:
+  /// **'Gestion des terrains'**
+  String get adminTrackerFieldsSection;
+
+  /// No description provided for @adminTrackerFieldsSectionDesc.
+  ///
+  /// In fr, this message translates to:
+  /// **'Tracer et enregistrer les positions GPS des terrains pour les heatmaps.'**
+  String get adminTrackerFieldsSectionDesc;
+
+  /// No description provided for @adminTrackerFieldsTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Terrains'**
+  String get adminTrackerFieldsTitle;
+
+  /// No description provided for @adminTrackerFieldsEmpty.
+  ///
+  /// In fr, this message translates to:
+  /// **'Aucun terrain enregistré. Crée un tracé GPS pour commencer.'**
+  String get adminTrackerFieldsEmpty;
+
+  /// No description provided for @adminTrackerFieldsLoadError.
+  ///
+  /// In fr, this message translates to:
+  /// **'Impossible de charger les terrains.'**
+  String get adminTrackerFieldsLoadError;
+
+  /// No description provided for @adminTrackerFieldsCreate.
+  ///
+  /// In fr, this message translates to:
+  /// **'Nouveau terrain'**
+  String get adminTrackerFieldsCreate;
+
+  /// No description provided for @adminTrackerFieldsSaved.
+  ///
+  /// In fr, this message translates to:
+  /// **'Terrain enregistré.'**
+  String get adminTrackerFieldsSaved;
+
+  /// No description provided for @adminTrackerFieldsSaveFailed.
+  ///
+  /// In fr, this message translates to:
+  /// **'Impossible d\'enregistrer le terrain.'**
+  String get adminTrackerFieldsSaveFailed;
+
+  /// No description provided for @adminTrackerFieldsAuthRequired.
+  ///
+  /// In fr, this message translates to:
+  /// **'Connecte-toi pour enregistrer un terrain.'**
+  String get adminTrackerFieldsAuthRequired;
+
   /// No description provided for @adminTrackerDevicesTitle.
   ///
   /// In fr, this message translates to:

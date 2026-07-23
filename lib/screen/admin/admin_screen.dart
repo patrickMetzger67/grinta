@@ -6,6 +6,7 @@ import 'package:grinta/screen/admin/admin_promo_codes_screen.dart';
 import 'package:grinta/screen/admin/admin_seasons_screen.dart';
 import 'package:grinta/screen/admin/admin_stream_groups_screen.dart';
 import 'package:grinta/screen/admin/admin_tracker_devices_screen.dart';
+import 'package:grinta/screen/admin/admin_tracker_fields_screen.dart';
 import 'package:grinta/screen/admin/admin_tracker_owners_screen.dart';
 import 'package:grinta/util/app_theme.dart';
 
@@ -83,6 +84,20 @@ class AdminScreen extends StatelessWidget {
                 analyticsMaterialRoute<void>(
                   screenName: AnalyticsScreenNames.adminTrackerDevices,
                   builder: (_) => const AdminTrackerDevicesScreen(),
+                ),
+              );
+            },
+          ),
+          const SizedBox(height: 12),
+          _AdminSectionCard(
+            icon: Icons.map_outlined,
+            title: l10n.adminTrackerFieldsSection,
+            subtitle: l10n.adminTrackerFieldsSectionDesc,
+            onTap: () {
+              Navigator.of(context).push(
+                analyticsMaterialRoute<void>(
+                  screenName: AnalyticsScreenNames.adminTrackerFields,
+                  builder: (_) => const AdminTrackerFieldsScreen(),
                 ),
               );
             },

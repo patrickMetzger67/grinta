@@ -5494,6 +5494,35 @@ class AppLocalizationsIt extends AppLocalizations {
       'Sincronizza, assegna e gestisci i dispositivi tracker.';
 
   @override
+  String get adminTrackerFieldsSection => 'Gestione campi';
+
+  @override
+  String get adminTrackerFieldsSectionDesc =>
+      'Traccia e salva le posizioni GPS dei campi per le heatmap.';
+
+  @override
+  String get adminTrackerFieldsTitle => 'Campi';
+
+  @override
+  String get adminTrackerFieldsEmpty =>
+      'Nessun campo salvato. Crea un tracciato GPS per iniziare.';
+
+  @override
+  String get adminTrackerFieldsLoadError => 'Impossibile caricare i campi.';
+
+  @override
+  String get adminTrackerFieldsCreate => 'Nuovo campo';
+
+  @override
+  String get adminTrackerFieldsSaved => 'Campo salvato.';
+
+  @override
+  String get adminTrackerFieldsSaveFailed => 'Impossibile salvare il campo.';
+
+  @override
+  String get adminTrackerFieldsAuthRequired => 'Accedi per salvare un campo.';
+
+  @override
   String get adminTrackerDevicesTitle => 'Gestione tracker';
 
   @override
