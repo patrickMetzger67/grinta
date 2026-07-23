@@ -141,8 +141,8 @@ class _AskDiegoSpeedDialState extends State<AskDiegoSpeedDial>
                       _close();
                       action.onPressed();
                     },
-                    backgroundColor: colors.surface,
-                    foregroundColor: colors.textPrimary,
+                    backgroundColor: Colors.white,
+                    foregroundColor: colors.primary,
                     child: Icon(action.icon),
                   ),
                   const SizedBox(height: 12),
@@ -151,8 +151,8 @@ class _AskDiegoSpeedDialState extends State<AskDiegoSpeedDial>
                   heroTag: primary.heroTag,
                   tooltip: primary.tooltip,
                   onPressed: _onPrimaryPressed,
-                  backgroundColor: colors.primary,
-                  foregroundColor: Colors.white,
+                  backgroundColor: Colors.white,
+                  foregroundColor: colors.primary,
                   child: Icon(primary.icon),
                 ),
                 const SizedBox(height: _miniFabSpacing),
@@ -163,6 +163,13 @@ class _AskDiegoSpeedDialState extends State<AskDiegoSpeedDial>
         FloatingActionButton(
           heroTag: '${widget.heroTagPrefix}-main',
           tooltip: _isOpen ? l10n.askDiegoCloseSpeedDial : primary.tooltip,
+          backgroundColor: colors.primary,
+          foregroundColor: Colors.white,
+          elevation: 6,
+          highlightElevation: 8,
+          shape: const CircleBorder(
+            side: BorderSide(color: Colors.white, width: 2),
+          ),
           onPressed: _toggle,
           child: AnimatedSwitcher(
             duration: const Duration(milliseconds: 180),
