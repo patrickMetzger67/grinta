@@ -1849,6 +1849,8 @@
   "adminTrackerOwnerFieldFirstname": "Nombre",
   "adminTrackerOwnerFieldLastname": "Apellido",
   "adminTrackerOwnerFieldActive": "Activo",
+  "adminTrackerOwnerFieldIndividual": "Propietario individual",
+  "adminTrackerOwnerFieldIndividualHint": "Activa si este propietario es una persona (no un club / equipo).",
   "adminTrackerOwnerFieldTypeTracker": "Tipo de tracker",
   "adminTrackerOwnerTypeInspirit": "Inspirit",
   "adminTrackerOwnerTypeFootbar": "Footbar",

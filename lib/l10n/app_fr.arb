@@ -2387,6 +2387,8 @@
   "adminTrackerOwnerFieldFirstname": "Prénom",
   "adminTrackerOwnerFieldLastname": "Nom de famille",
   "adminTrackerOwnerFieldActive": "Actif",
+  "adminTrackerOwnerFieldIndividual": "Propriétaire individuel",
+  "adminTrackerOwnerFieldIndividualHint": "Activez si ce propriétaire est une personne (hors club / équipe).",
   "adminTrackerOwnerFieldTypeTracker": "Type de tracker",
   "adminTrackerOwnerTypeInspirit": "Inspirit",
   "adminTrackerOwnerTypeFootbar": "Footbar",

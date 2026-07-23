@@ -2080,6 +2080,8 @@
   "adminTrackerOwnerFieldFirstname": "First name",
   "adminTrackerOwnerFieldLastname": "Last name",
   "adminTrackerOwnerFieldActive": "Active",
+  "adminTrackerOwnerFieldIndividual": "Individual owner",
+  "adminTrackerOwnerFieldIndividualHint": "Enable if this owner is a person (not a club / team).",
   "adminTrackerOwnerFieldTypeTracker": "Tracker type",
   "adminTrackerOwnerTypeInspirit": "Inspirit",
   "adminTrackerOwnerTypeFootbar": "Footbar",

@@ -20,6 +20,7 @@ abstract final class TrackerOwnerDocumentFields {
   static const uidUpdate = 'uidUpdate';
   static const clubs = 'clubs';
   static const withSyncing = 'withSyncing';
+  static const isIndividual = 'isIndividual';
 }
 
 /// A tracker owner ("responsable") as stored in the shared `TRACKER_Owner`
@@ -31,6 +32,7 @@ class TrackerOwner {
     required this.typeTracker,
     required this.isActive,
     this.withSyncing = true,
+    this.isIndividual = false,
     required this.email,
     required this.firstname,
     required this.lastname,
@@ -46,6 +48,7 @@ class TrackerOwner {
   final String typeTracker; // "inspirit", "footbar", "intense", ...
   final bool isActive;
   final bool withSyncing;
+  final bool isIndividual;
   final String email;
   final String firstname;
   final String lastname;
@@ -74,6 +77,7 @@ class TrackerOwner {
     String? typeTracker,
     bool? isActive,
     bool? withSyncing,
+    bool? isIndividual,
     String? email,
     String? firstname,
     String? lastname,
@@ -89,6 +93,7 @@ class TrackerOwner {
       typeTracker: typeTracker ?? this.typeTracker,
       isActive: isActive ?? this.isActive,
       withSyncing: withSyncing ?? this.withSyncing,
+      isIndividual: isIndividual ?? this.isIndividual,
       email: email ?? this.email,
       firstname: firstname ?? this.firstname,
       lastname: lastname ?? this.lastname,
@@ -107,6 +112,7 @@ class TrackerOwner {
       TrackerOwnerDocumentFields.typeTracker: typeTracker,
       TrackerOwnerDocumentFields.isActive: isActive,
       TrackerOwnerDocumentFields.withSyncing: withSyncing,
+      TrackerOwnerDocumentFields.isIndividual: isIndividual,
       TrackerOwnerDocumentFields.email: email,
       TrackerOwnerDocumentFields.firstname: firstname,
       TrackerOwnerDocumentFields.lastname: lastname,
@@ -126,6 +132,8 @@ class TrackerOwner {
       isActive: (map[TrackerOwnerDocumentFields.isActive] ?? false) == true,
       withSyncing:
           (map[TrackerOwnerDocumentFields.withSyncing] ?? true) == true,
+      isIndividual:
+          (map[TrackerOwnerDocumentFields.isIndividual] ?? false) == true,
       email: (map[TrackerOwnerDocumentFields.email] ?? '').toString(),
       firstname: (map[TrackerOwnerDocumentFields.firstname] ?? '').toString(),
       lastname: (map[TrackerOwnerDocumentFields.lastname] ?? '').toString(),

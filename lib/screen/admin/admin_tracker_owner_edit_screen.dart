@@ -29,6 +29,7 @@ class _AdminTrackerOwnerEditScreenState
 
   late String _typeTracker;
   late bool _isActive;
+  late bool _isIndividual;
   bool _saving = false;
 
   bool get _isEdit => widget.owner != null;
@@ -42,6 +43,7 @@ class _AdminTrackerOwnerEditScreenState
     _firstnameCtrl.text = owner?.firstname ?? '';
     _lastnameCtrl.text = owner?.lastname ?? '';
     _isActive = owner?.isActive ?? true;
+    _isIndividual = owner?.isIndividual ?? false;
 
     final currentType = (owner?.typeTracker ?? '').trim();
     _typeTracker = TrackerOwner.typeTrackers.contains(currentType)
@@ -172,6 +174,27 @@ class _AdminTrackerOwnerEditScreenState
                   activeThumbColor: Colors.white,
                   activeTrackColor: colors.primary,
                 ),
+                SwitchListTile(
+                  contentPadding: EdgeInsets.zero,
+                  title: Text(
+                    l10n.adminTrackerOwnerFieldIndividual,
+                    style: textTheme.bodyLarge?.copyWith(
+                      color: colors.textPrimary,
+                    ),
+                  ),
+                  subtitle: Text(
+                    l10n.adminTrackerOwnerFieldIndividualHint,
+                    style: textTheme.bodySmall?.copyWith(
+                      color: colors.textSecondary,
+                    ),
+                  ),
+                  value: _isIndividual,
+                  onChanged: _saving
+                      ? null
+                      : (value) => setState(() => _isIndividual = value),
+                  activeThumbColor: Colors.white,
+                  activeTrackColor: colors.primary,
+                ),
                 const SizedBox(height: 20),
                 ElevatedButton(
                   onPressed: _saving ? null : _save,
@@ -239,6 +262,7 @@ class _AdminTrackerOwnerEditScreenState
               firstname: _firstnameCtrl.text.trim(),
               lastname: _lastnameCtrl.text.trim(),
               isActive: _isActive,
+              isIndividual: _isIndividual,
               typeTracker: _typeTracker,
               withSyncing: withSyncing,
               updatedAt: now,
@@ -248,6 +272,7 @@ class _AdminTrackerOwnerEditScreenState
               name: _nameCtrl.text.trim(),
               typeTracker: _typeTracker,
               isActive: _isActive,
+              isIndividual: _isIndividual,
               withSyncing: withSyncing,
               email: _emailCtrl.text.trim(),
               firstname: _firstnameCtrl.text.trim(),

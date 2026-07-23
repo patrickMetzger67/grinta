@@ -5297,6 +5297,13 @@ class AppLocalizationsEn extends AppLocalizations {
   String get adminTrackerOwnerFieldActive => 'Active';
 
   @override
+  String get adminTrackerOwnerFieldIndividual => 'Individual owner';
+
+  @override
+  String get adminTrackerOwnerFieldIndividualHint =>
+      'Enable if this owner is a person (not a club / team).';
+
+  @override
   String get adminTrackerOwnerFieldTypeTracker => 'Tracker type';
 
   @override

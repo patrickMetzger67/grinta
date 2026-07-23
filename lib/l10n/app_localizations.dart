@@ -9276,6 +9276,18 @@ abstract class AppLocalizations {
   /// **'Actif'**
   String get adminTrackerOwnerFieldActive;
 
+  /// No description provided for @adminTrackerOwnerFieldIndividual.
+  ///
+  /// In fr, this message translates to:
+  /// **'Propriétaire individuel'**
+  String get adminTrackerOwnerFieldIndividual;
+
+  /// No description provided for @adminTrackerOwnerFieldIndividualHint.
+  ///
+  /// In fr, this message translates to:
+  /// **'Activez si ce propriétaire est une personne (hors club / équipe).'**
+  String get adminTrackerOwnerFieldIndividualHint;
+
   /// No description provided for @adminTrackerOwnerFieldTypeTracker.
   ///
   /// In fr, this message translates to:
