@@ -50,7 +50,7 @@ class SessionHealthExportService {
     if (status == 'exported' || status == 'declined') return;
 
     final analysis =
-        await TrackerDataAnalysisService.getAnalysisByEventAndPlayerId(
+        await TrackerAnalysisService.getAnalysisByEventAndPlayerId(
       event,
       player,
     );

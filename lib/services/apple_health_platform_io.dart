@@ -148,8 +148,8 @@ double? _caloriesFromWorkout(WorkoutHealthValue value) {
   final energy = value.totalEnergyBurned;
   if (energy == null || energy <= 0) return null;
   final unit = value.totalEnergyBurnedUnit;
-  if (unit == HealthDataUnit.KILOJOULE) {
-    return energy / 4.184;
+  if (unit == HealthDataUnit.JOULE) {
+    return energy / 4184.0;
   }
   // Default: kilocalories.
   return energy.toDouble();
