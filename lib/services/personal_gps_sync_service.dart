@@ -52,28 +52,41 @@ class PersonalGpsSyncService {
 
   static const String externalSource = 'intenseGps';
 
-  /// Owners whose email matches [email], are active, use cloud GPS
-  /// (`withSyncing == false`), and have at least one resolvable Insiders device.
-  Future<PersonalGpsOwnerAvailability?> resolveForEmail(String email) async {
+  /// Active individual owners (`isIndividual`) whose email matches [email].
+  Future<List<Owner>> resolveIndividualOwnersForEmail(String email) async {
     final normalized = email.trim();
-    if (normalized.isEmpty) return null;
+    if (normalized.isEmpty) return const [];
 
     final owners = await _ownerService.getOwnersByEmail(normalized);
-    if (owners.isEmpty) return null;
-
-    final candidates = owners
-        .where((o) => o.isActive && !o.withSyncing)
+    final individuals = owners
+        .where((o) => o.isActive && o.isIndividual)
         .toList(growable: false);
+    individuals.sort(
+      (a, b) => a.name.toLowerCase().compareTo(b.name.toLowerCase()),
+    );
+    return individuals;
+  }
+
+  /// True when any of [emails] matches an active individual owner.
+  Future<bool> hasIndividualOwnerForEmails(Iterable<String> emails) async {
+    for (final email in emails) {
+      final owners = await resolveIndividualOwnersForEmail(email);
+      if (owners.isNotEmpty) return true;
+    }
+    return false;
+  }
+
+  /// Individual owners whose email matches [email], use cloud GPS
+  /// (`withSyncing == false`), and have at least one resolvable Insiders device.
+  Future<PersonalGpsOwnerAvailability?> resolveForEmail(String email) async {
+    final candidates = await resolveIndividualOwnersForEmail(email);
     if (candidates.isEmpty) return null;
 
-    candidates.sort((a, b) {
-      if (a.isIndividual != b.isIndividual) {
-        return a.isIndividual ? -1 : 1;
-      }
-      return a.name.toLowerCase().compareTo(b.name.toLowerCase());
-    });
+    final gpsCandidates =
+        candidates.where((o) => !o.withSyncing).toList(growable: false);
+    if (gpsCandidates.isEmpty) return null;
 
-    for (final owner in candidates) {
+    for (final owner in gpsCandidates) {
       final devices = await _loadResolvableDevices(owner);
       if (devices.isEmpty) continue;
       return PersonalGpsOwnerAvailability(owner: owner, devices: devices);

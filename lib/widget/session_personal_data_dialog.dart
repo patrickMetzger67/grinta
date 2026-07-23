@@ -31,6 +31,106 @@ Future<bool?> showSessionPersonalDataDialog(
   );
 }
 
+/// Agenda control next to session time. Visible only when:
+/// - the event has no usable team kit, and
+/// - the profile email matches an active [Owner.isIndividual] owner.
+class SessionPersonalDataAgendaButton extends StatefulWidget {
+  const SessionPersonalDataAgendaButton({
+    super.key,
+    required this.item,
+    required this.playerId,
+  });
+
+  final AgendaItem item;
+  final String playerId;
+
+  @override
+  State<SessionPersonalDataAgendaButton> createState() =>
+      _SessionPersonalDataAgendaButtonState();
+}
+
+class _SessionPersonalDataAgendaButtonState
+    extends State<SessionPersonalDataAgendaButton> {
+  final _gpsSyncService = PersonalGpsSyncService();
+  bool _visible = false;
+  bool _loading = true;
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) => _resolveVisibility());
+  }
+
+  @override
+  void didUpdateWidget(covariant SessionPersonalDataAgendaButton oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.item.id != widget.item.id ||
+        oldWidget.playerId != widget.playerId) {
+      _resolveVisibility();
+    }
+  }
+
+  Future<void> _resolveVisibility() async {
+    if (!SessionPersonalDataService.isEligibleAgendaItem(widget.item)) {
+      if (mounted) {
+        setState(() {
+          _visible = false;
+          _loading = false;
+        });
+      }
+      return;
+    }
+
+    final session = context.read<AppSession>();
+    final playerEmail = session.selectedPlayer?.email?.trim() ?? '';
+    final authEmail = FirebaseAuth.instance.currentUser?.email?.trim() ?? '';
+    final emails = <String>[
+      if (playerEmail.isNotEmpty) playerEmail,
+      if (authEmail.isNotEmpty &&
+          authEmail.toLowerCase() != playerEmail.toLowerCase())
+        authEmail,
+    ];
+
+    final hasIndividual =
+        await _gpsSyncService.hasIndividualOwnerForEmails(emails);
+    if (!mounted) return;
+    setState(() {
+      _visible = hasIndividual;
+      _loading = false;
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    if (_loading || !_visible) return const SizedBox.shrink();
+
+    return Padding(
+      padding: const EdgeInsets.only(left: 6),
+      child: Tooltip(
+        message: context.l10n.sessionPersonalDataTitle,
+        child: Material(
+          color: Colors.white.withValues(alpha: 0.22),
+          shape: const CircleBorder(),
+          child: InkWell(
+            customBorder: const CircleBorder(),
+            onTap: () {
+              showSessionPersonalDataDialog(context, item: widget.item);
+            },
+            child: const Padding(
+              padding: EdgeInsets.all(6),
+              child: Icon(
+                Icons.sensors_rounded,
+                size: 18,
+                color: Colors.white,
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
 class SessionPersonalDataDialog extends StatefulWidget {
   const SessionPersonalDataDialog({super.key, required this.item});
 
@@ -97,6 +197,23 @@ class _SessionPersonalDataDialogState extends State<SessionPersonalDataDialog> {
     }
 
     if (!mounted) return;
+    // Feature requires an individual owner matching the profile email.
+    // Without it, close the dialog (agenda button should already hide).
+    var hasIndividual = false;
+    for (final email in emails) {
+      final individuals =
+          await _gpsSyncService.resolveIndividualOwnersForEmail(email);
+      if (individuals.isNotEmpty) {
+        hasIndividual = true;
+        break;
+      }
+    }
+    if (!mounted) return;
+    if (!hasIndividual) {
+      Navigator.of(context).pop();
+      return;
+    }
+
     setState(() {
       _gpsAvailability = gps;
       _selectedGpsDevice =

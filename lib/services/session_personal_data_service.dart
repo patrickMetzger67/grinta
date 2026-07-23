@@ -37,6 +37,9 @@ class SessionPersonalDataService {
   ///
   /// Shown when tracker mode is off, or when no owner is assigned on the event
   /// (team has no kit attributed to this session).
+  ///
+  /// The agenda control also requires an active individual owner whose email
+  /// matches the profile (see [PersonalGpsSyncService.hasIndividualOwnerForEmails]).
   static bool isEligibleAgendaItem(AgendaItem item) {
     if (item.training == null && item.match == null) return false;
     final ownerId =
