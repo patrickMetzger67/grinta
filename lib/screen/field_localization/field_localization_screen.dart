@@ -896,6 +896,7 @@ class _FootballFieldLocalizationScreenState
 
     return FieldLocalizationResult(
       fieldName: _nameController.text.trim(),
+      fieldAddress: _addressController.text.trim(),
       playersPerTeam: _playersPerTeam,
       fieldGpsCorners: corners,
       geometry: geometry,
