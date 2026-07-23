@@ -265,6 +265,14 @@ class _SpeedDialMiniFab extends StatelessWidget {
       onPressed: onPressed,
       backgroundColor: backgroundColor,
       foregroundColor: foregroundColor,
+      elevation: 4,
+      highlightElevation: 6,
+      shape: CircleBorder(
+        side: BorderSide(
+          color: (foregroundColor ?? Colors.black).withValues(alpha: 0.2),
+          width: 1,
+        ),
+      ),
       child: child,
     );
   }
