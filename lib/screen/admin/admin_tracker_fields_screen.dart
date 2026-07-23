@@ -51,8 +51,19 @@ class _AdminTrackerFieldsScreenState extends State<AdminTrackerFieldsScreen> {
     });
   }
 
-  /// Always leave the fields screen and return to the admin menu.
+  void _clearSelectedClub() {
+    setState(() {
+      _selectedClub = null;
+      _fieldsFuture = null;
+    });
+  }
+
+  /// Field list → club selection. Club selection → admin menu.
   void _handleBack() {
+    if (_selectedClubId != null) {
+      _clearSelectedClub();
+      return;
+    }
     Navigator.of(context).maybePop();
   }
 
@@ -164,39 +175,47 @@ class _AdminTrackerFieldsScreenState extends State<AdminTrackerFieldsScreen> {
     final textTheme = Theme.of(context).textTheme;
     final clubSelected = _selectedClubId != null;
 
-    return Scaffold(
-      backgroundColor: colors.background,
-      appBar: AppBar(
-        leading: IconButton(
-          tooltip: l10n.actionBack,
-          icon: const Icon(Icons.arrow_back_rounded),
-          onPressed: _handleBack,
-        ),
-        title: Text(
-          l10n.adminTrackerFieldsTitle,
-          style: textTheme.titleLarge?.copyWith(
-            color: colors.textPrimary,
-            fontWeight: FontWeight.w700,
+    return PopScope(
+      canPop: !clubSelected,
+      onPopInvokedWithResult: (didPop, _) {
+        if (didPop) return;
+        if (_selectedClubId != null) {
+          _clearSelectedClub();
+        }
+      },
+      child: Scaffold(
+        backgroundColor: colors.background,
+        appBar: AppBar(
+          leading: IconButton(
+            tooltip: l10n.actionBack,
+            icon: const Icon(Icons.arrow_back_rounded),
+            onPressed: _handleBack,
           ),
-        ),
-        actions: [
-          if (clubSelected)
-            TextButton(
-              onPressed: _pickClub,
-              child: Text(l10n.adminTrackerFieldsChangeClub),
+          title: Text(
+            l10n.adminTrackerFieldsTitle,
+            style: textTheme.titleLarge?.copyWith(
+              color: colors.textPrimary,
+              fontWeight: FontWeight.w700,
             ),
-        ],
-      ),
-      floatingActionButton: clubSelected
-          ? FloatingActionButton.extended(
-              onPressed: () => _openLocalization(),
-              icon: const Icon(Icons.map_outlined),
-              label: Text(l10n.adminTrackerFieldsCreate),
-            )
-          : null,
-      body: !clubSelected
-          ? _ClubSelectionPrompt(onSelectClub: _pickClub)
-          : Column(
+          ),
+          actions: [
+            if (clubSelected)
+              TextButton(
+                onPressed: _pickClub,
+                child: Text(l10n.adminTrackerFieldsChangeClub),
+              ),
+          ],
+        ),
+        floatingActionButton: clubSelected
+            ? FloatingActionButton.extended(
+                onPressed: () => _openLocalization(),
+                icon: const Icon(Icons.map_outlined),
+                label: Text(l10n.adminTrackerFieldsCreate),
+              )
+            : null,
+        body: !clubSelected
+            ? _ClubSelectionPrompt(onSelectClub: _pickClub)
+            : Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
                 Padding(
@@ -347,6 +366,7 @@ class _AdminTrackerFieldsScreenState extends State<AdminTrackerFieldsScreen> {
                 ),
               ],
             ),
+      ),
     );
   }
 }
