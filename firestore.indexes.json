@@ -24,6 +24,14 @@
         { "fieldPath": "memberId", "order": "ASCENDING" },
         { "fieldPath": "externalSource", "order": "ASCENDING" }
       ]
+    },
+    {
+      "collectionGroup": "personalSportActivities",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "memberId", "order": "ASCENDING" },
+        { "fieldPath": "startAt", "order": "ASCENDING" }
+      ]
     }
   ],
   "fieldOverrides": []

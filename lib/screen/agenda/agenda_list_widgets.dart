@@ -833,6 +833,22 @@ class AgendaItemCard extends StatelessWidget {
               children: [
                 Icon(icon, size: 18, color: colors.textPrimary),
                 const SizedBox(width: 8),
+                if (item.type == AgendaItemType.preparationPhysique &&
+                    item.personalSportActivity != null) ...[
+                  Builder(
+                    builder: (context) {
+                      final owner = _AgendaCoachPlayersScope.playerFor(
+                        context,
+                        item.personalSportActivity!.memberId,
+                      );
+                      if (owner == null) return const SizedBox.shrink();
+                      return Padding(
+                        padding: const EdgeInsets.only(right: 8),
+                        child: PlayerPhoto(player: owner, radius: 14),
+                      );
+                    },
+                  ),
+                ],
                 Expanded(
                   child: Row(
                     children: [

@@ -85,6 +85,7 @@ class _WebAppRootState extends State<WebAppRoot> {
   Stream<List<AgendaItem>> _watchAgendaItems({
     required DateTime start,
     required DateTime end,
+    List<String> coachVisibleMemberIds = const [],
   }) {
     final stream = _agendaService.watchAgendaItems(
       teams: appSession.teamsForAgendaSelectedSeason,
@@ -92,6 +93,7 @@ class _WebAppRootState extends State<WebAppRoot> {
       start: start,
       end: end,
       memberId: appSession.selectedPlayerId,
+      coachVisibleMemberIds: coachVisibleMemberIds,
     );
 
     var didTriggerCalendarSync = false;

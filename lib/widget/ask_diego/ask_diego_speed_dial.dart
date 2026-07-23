@@ -21,17 +21,23 @@ class AskDiegoPrimaryAction {
   final String heroTag;
 }
 
-/// Speed dial FAB: primary screen action + premium-gated Ask Diego entry.
+/// Speed dial FAB: primary screen action(s) + premium-gated Ask Diego entry.
 ///
 /// When [primaryAction] is null, shows a single Ask Diego avatar FAB.
 class AskDiegoSpeedDial extends StatefulWidget {
   const AskDiegoSpeedDial({
     super.key,
     this.primaryAction,
+    this.secondaryActions = const [],
     required this.heroTagPrefix,
   });
 
   final AskDiegoPrimaryAction? primaryAction;
+
+  /// Extra mini FABs shown above [primaryAction] when the dial is open
+  /// (e.g. coach player filter on the agenda).
+  final List<AskDiegoPrimaryAction> secondaryActions;
+
   final String heroTagPrefix;
 
   @override
@@ -104,6 +110,7 @@ class _AskDiegoSpeedDialState extends State<AskDiegoSpeedDial>
 
     final colors = context.appColors;
     final l10n = context.l10n;
+    final secondary = widget.secondaryActions;
 
     return Stack(
       alignment: Alignment.bottomRight,
@@ -126,6 +133,20 @@ class _AskDiegoSpeedDialState extends State<AskDiegoSpeedDial>
                   mini: true,
                 ),
                 const SizedBox(height: 12),
+                for (final action in secondary) ...[
+                  _SpeedDialMiniFab(
+                    heroTag: action.heroTag,
+                    tooltip: action.tooltip,
+                    onPressed: () {
+                      _close();
+                      action.onPressed();
+                    },
+                    backgroundColor: colors.surface,
+                    foregroundColor: colors.textPrimary,
+                    child: Icon(action.icon),
+                  ),
+                  const SizedBox(height: 12),
+                ],
                 _SpeedDialMiniFab(
                   heroTag: primary.heroTag,
                   tooltip: primary.tooltip,

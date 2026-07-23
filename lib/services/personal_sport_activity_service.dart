@@ -105,4 +105,38 @@ class PersonalSportActivityService {
       debugPrint('watch personalSportActivities failed: $e\n$st');
     });
   }
+
+  /// Owner-scoped stream for coaches: activities owned by [memberId] in range,
+  /// filtered to [PersonalSportVisibility.coach] client-side.
+  Stream<List<PersonalSportActivity>> watchCoachVisibleOwnedBetweenDates({
+    required String memberId,
+    required DateTime start,
+    required DateTime end,
+  }) {
+    final trimmed = memberId.trim();
+    if (trimmed.isEmpty) {
+      return Stream<List<PersonalSportActivity>>.value(const []);
+    }
+
+    return _collection
+        .where('memberId', isEqualTo: trimmed)
+        .where(
+          'startAt',
+          isGreaterThanOrEqualTo: Timestamp.fromDate(start),
+        )
+        .where('startAt', isLessThan: Timestamp.fromDate(end))
+        .snapshots()
+        .map((snap) {
+      final items = snap.docs
+          .map(PersonalSportActivity.fromFirestore)
+          .where(
+            (activity) => activity.visibility == PersonalSportVisibility.coach,
+          )
+          .toList()
+        ..sort((a, b) => a.startAt.compareTo(b.startAt));
+      return items;
+    }).handleError((Object e, StackTrace st) {
+      debugPrint('watch coach-visible personalSportActivities failed: $e\n$st');
+    });
+  }
 }

@@ -5009,6 +5009,60 @@ abstract class AppLocalizations {
   /// **'Journée entière'**
   String get agendaAllDayLabel;
 
+  /// No description provided for @agendaCoachPlayersFabTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'Players — personal activities'**
+  String get agendaCoachPlayersFabTooltip;
+
+  /// No description provided for @agendaCoachPlayersTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Players\' sports activities'**
+  String get agendaCoachPlayersTitle;
+
+  /// No description provided for @agendaCoachPlayersSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Show personal sport activities with coach visibility in the agenda.'**
+  String get agendaCoachPlayersSubtitle;
+
+  /// No description provided for @agendaCoachPlayersTeam.
+  ///
+  /// In en, this message translates to:
+  /// **'Team'**
+  String get agendaCoachPlayersTeam;
+
+  /// No description provided for @agendaCoachPlayersPlayers.
+  ///
+  /// In en, this message translates to:
+  /// **'Players'**
+  String get agendaCoachPlayersPlayers;
+
+  /// No description provided for @agendaCoachPlayersNoTeams.
+  ///
+  /// In en, this message translates to:
+  /// **'No managed team for this season.'**
+  String get agendaCoachPlayersNoTeams;
+
+  /// No description provided for @agendaCoachPlayersLoadError.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not load players.'**
+  String get agendaCoachPlayersLoadError;
+
+  /// No description provided for @agendaCoachPlayersEmptyRoster.
+  ///
+  /// In en, this message translates to:
+  /// **'No players in this team.'**
+  String get agendaCoachPlayersEmptyRoster;
+
+  /// No description provided for @agendaCoachPlayersClear.
+  ///
+  /// In en, this message translates to:
+  /// **'Clear selection'**
+  String get agendaCoachPlayersClear;
+
   /// No description provided for @agendaEventSummaryNonSport.
   ///
   /// In fr, this message translates to:

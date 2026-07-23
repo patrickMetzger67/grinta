@@ -59,4 +59,5 @@ typedef AgendaItemsLoader = Future<List<AgendaItem>> Function({
 typedef AgendaItemsWatcher = Stream<List<AgendaItem>> Function({
   required DateTime start,
   required DateTime end,
+  List<String> coachVisibleMemberIds,
 });

@@ -45,13 +45,16 @@ import '../match_detail_screen.dart';
 import '../team_players_screen.dart';
 import 'agenda_add_event_menu.dart';
 import '../../widget/ask_diego/ask_diego_speed_dial.dart';
+import '../../widget/agenda_coach_players_dialog.dart';
 import '../../widget/agenda_training_presence_actions.dart';
 import '../../widget/create_non_sport_event_sheet.dart';
 import '../../widget/create_personal_sport_activity_sheet.dart';
 import '../../widget/non_sport_event_invitees_sheet.dart';
 import '../../widget/player_feeling_faces.dart';
+import '../../widget/playerPhoto.dart';
 import '../../widget/sport_metric_pickers.dart';
 import '../../model/personal_sport_activity.dart';
+import '../../model/player.dart';
 import '../../model/player_feeling.dart';
 import '../../util/non_sport_event_helper.dart';
 import '../../util/personal_sport_activity_helper.dart';
@@ -112,6 +115,29 @@ class _AgendaWorkloadRefreshScope extends InheritedWidget {
   }
 }
 
+/// Provides coach-selected player avatars to agenda cards.
+class _AgendaCoachPlayersScope extends InheritedWidget {
+  const _AgendaCoachPlayersScope({
+    required this.playersByMemberId,
+    required super.child,
+  });
+
+  final Map<String, Player> playersByMemberId;
+
+  static Player? playerFor(BuildContext context, String? memberId) {
+    final trimmed = memberId?.trim() ?? '';
+    if (trimmed.isEmpty) return null;
+    return context
+        .dependOnInheritedWidgetOfExactType<_AgendaCoachPlayersScope>()
+        ?.playersByMemberId[trimmed];
+  }
+
+  @override
+  bool updateShouldNotify(_AgendaCoachPlayersScope oldWidget) {
+    return !mapEquals(playersByMemberId, oldWidget.playersByMemberId);
+  }
+}
+
 class _AgendaScreenState extends State<AgendaScreen> {
   static const int _initialMonthPage = 1200;
 
@@ -144,6 +170,9 @@ class _AgendaScreenState extends State<AgendaScreen> {
   String? _error;
   StreamSubscription<List<AgendaItem>>? _itemsSub;
   int _subscriptionGeneration = 0;
+
+  String? _coachViewTeamId;
+  Map<String, Player> _coachViewPlayersByMemberId = <String, Player>{};
 
   @override
   void initState() {
@@ -432,6 +461,8 @@ class _AgendaScreenState extends State<AgendaScreen> {
         .watchItems(
           start: DateUtils.dateOnly(_rangeStart),
           end: _endOfDay(_rangeEnd),
+          coachVisibleMemberIds:
+              _coachViewPlayersByMemberId.keys.toList(growable: false),
         )
         .listen(
       (List<AgendaItem> loadedItems) {
@@ -740,6 +771,24 @@ class _AgendaScreenState extends State<AgendaScreen> {
     );
   }
 
+  Future<void> _openCoachPlayersDialog() async {
+    final selection = await showAgendaCoachPlayersDialog(
+      context,
+      initialTeamId: _coachViewTeamId,
+      initiallySelectedMemberIds: _coachViewPlayersByMemberId.keys.toSet(),
+    );
+    if (!mounted || selection == null) return;
+
+    setState(() {
+      _coachViewTeamId = selection.teamId.trim().isEmpty
+          ? _coachViewTeamId
+          : selection.teamId.trim();
+      _coachViewPlayersByMemberId =
+          Map<String, Player>.from(selection.playersByMemberId);
+    });
+    await _subscribeItems(scrollToSelection: false);
+  }
+
   @override
   Widget build(BuildContext context) {
     final colors = context.appColors;
@@ -853,18 +902,34 @@ class _AgendaScreenState extends State<AgendaScreen> {
             onTrainingCreated: () => _subscribeItems(),
           ),
         ),
+        secondaryActions: [
+          if (context.watch<AppSession>().hasManagedTeamsInSelectedSeason)
+            AskDiegoPrimaryAction(
+              heroTag: 'grinta-fab-agenda-coach-players',
+              icon: Icons.groups_outlined,
+              tooltip: context.l10n.agendaCoachPlayersFabTooltip,
+              onPressed: () {
+                unawaited(_openCoachPlayersDialog());
+              },
+            ),
+        ],
       ),
+    );
+
+    Widget wrapped = _AgendaCoachPlayersScope(
+      playersByMemberId: _coachViewPlayersByMemberId,
+      child: scaffold,
     );
 
     final ValueChanged<String>? onTrackerWorkloadUpdated =
         widget.onTrackerWorkloadUpdated;
     if (onTrackerWorkloadUpdated == null) {
-      return scaffold;
+      return wrapped;
     }
 
     return _AgendaWorkloadRefreshScope(
       onTrackerWorkloadUpdated: onTrackerWorkloadUpdated,
-      child: scaffold,
+      child: wrapped,
     );
   }
 

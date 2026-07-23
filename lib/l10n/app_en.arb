@@ -996,6 +996,16 @@
   "agendaAddEventPersonalSportHint": "Running, preparation, …",
   "agendaAddEventNonSport": "A non-sporting event / activity",
   "agendaAllDayLabel": "All day",
+
+  "agendaCoachPlayersFabTooltip": "Players — personal activities",
+  "agendaCoachPlayersTitle": "Players’ sports activities",
+  "agendaCoachPlayersSubtitle": "Show personal sport activities with coach visibility in the agenda.",
+  "agendaCoachPlayersTeam": "Team",
+  "agendaCoachPlayersPlayers": "Players",
+  "agendaCoachPlayersNoTeams": "No managed team for this season.",
+  "agendaCoachPlayersLoadError": "Could not load players.",
+  "agendaCoachPlayersEmptyRoster": "No players in this team.",
+  "agendaCoachPlayersClear": "Clear selection",
   "agendaEventSummaryNonSport": "{count, plural, =1{1 activity} other{{count} activities}}",
   "@agendaEventSummaryNonSport": {
     "placeholders": {

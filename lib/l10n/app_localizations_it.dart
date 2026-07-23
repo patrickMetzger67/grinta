@@ -2816,6 +2816,35 @@ class AppLocalizationsIt extends AppLocalizations {
   String get agendaAllDayLabel => 'All day';
 
   @override
+  String get agendaCoachPlayersFabTooltip => 'Players — personal activities';
+
+  @override
+  String get agendaCoachPlayersTitle => 'Players’ sports activities';
+
+  @override
+  String get agendaCoachPlayersSubtitle =>
+      'Show personal sport activities with coach visibility in the agenda.';
+
+  @override
+  String get agendaCoachPlayersTeam => 'Team';
+
+  @override
+  String get agendaCoachPlayersPlayers => 'Players';
+
+  @override
+  String get agendaCoachPlayersNoTeams => 'No managed team for this season.';
+
+  @override
+  String get agendaCoachPlayersLoadError => 'Could not load players.';
+
+  @override
+  String get agendaCoachPlayersEmptyRoster => 'No players in this team.';
+
+  @override
+  String get agendaCoachPlayersClear => 'Clear selection';
+
+
+  @override
   String agendaEventSummaryNonSport(int count) {
     String _temp0 = intl.Intl.pluralLogic(
       count,

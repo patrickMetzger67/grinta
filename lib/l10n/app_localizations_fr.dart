@@ -2818,6 +2818,35 @@ class AppLocalizationsFr extends AppLocalizations {
   String get agendaAllDayLabel => 'Journée entière';
 
   @override
+  String get agendaCoachPlayersFabTooltip => 'Joueurs — activités personnelles';
+
+  @override
+  String get agendaCoachPlayersTitle => 'Activités sportives des joueurs';
+
+  @override
+  String get agendaCoachPlayersSubtitle =>
+      'Affiche dans l’agenda les activités personnelles en visibilité coach.';
+
+  @override
+  String get agendaCoachPlayersTeam => 'Équipe';
+
+  @override
+  String get agendaCoachPlayersPlayers => 'Joueurs';
+
+  @override
+  String get agendaCoachPlayersNoTeams => 'Aucune équipe managée sur cette saison.';
+
+  @override
+  String get agendaCoachPlayersLoadError => 'Impossible de charger les joueurs.';
+
+  @override
+  String get agendaCoachPlayersEmptyRoster => 'Aucun joueur dans cette équipe.';
+
+  @override
+  String get agendaCoachPlayersClear => 'Effacer la sélection';
+
+
+  @override
   String agendaEventSummaryNonSport(int count) {
     String _temp0 = intl.Intl.pluralLogic(
       count,

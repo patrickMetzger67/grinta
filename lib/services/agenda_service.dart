@@ -75,6 +75,7 @@ class AgendaService {
     required DateTime start,
     required DateTime end,
     String? memberId,
+    List<String> coachVisibleMemberIds = const [],
   }) {
     final Timestamp timestampStart = Timestamp.fromDate(start);
     final Timestamp timestampEnd = Timestamp.fromDate(end);
@@ -111,7 +112,8 @@ class AgendaService {
       if (kDebugMode) {
         debugPrint(
           'Agenda stream: seasonId=$seasonId teams=${teams.length} '
-          'memberId=$memberId range=$start → $end',
+          'memberId=$memberId coachVisible=${coachVisibleMemberIds.length} '
+          'range=$start → $end',
         );
       }
 
@@ -145,6 +147,36 @@ class AgendaService {
               .listen(
             (List<PersonalSportActivity> activities) {
               partialItems['personal_sport'] = activities
+                  .map(_personalSportToAgendaItem)
+                  .whereType<AgendaItem>()
+                  .toList();
+              emitMerged();
+            },
+            onError: controller.addError,
+          ),
+        );
+      }
+
+      final Set<String> coachMemberIds = <String>{
+        for (final raw in coachVisibleMemberIds)
+          if (raw.trim().isNotEmpty) raw.trim(),
+      };
+      // Avoid duplicating the signed-in player's own accessMemberIds stream.
+      if (trimmedMemberId != null) {
+        coachMemberIds.remove(trimmedMemberId);
+      }
+      for (final String coachMemberId in coachMemberIds) {
+        final String key = 'personal_sport_coach_$coachMemberId';
+        subscriptions.add(
+          _personalSportActivityService
+              .watchCoachVisibleOwnedBetweenDates(
+                memberId: coachMemberId,
+                start: start,
+                end: end,
+              )
+              .listen(
+            (List<PersonalSportActivity> activities) {
+              partialItems[key] = activities
                   .map(_personalSportToAgendaItem)
                   .whereType<AgendaItem>()
                   .toList();
