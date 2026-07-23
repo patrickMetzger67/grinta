@@ -78,6 +78,7 @@ class _AdminTrackerFieldsScreenState extends State<AdminTrackerFieldsScreen> {
       context,
       initialName: existing?.name ?? '',
       initialAddress: existing?.address ?? '',
+      initialFieldGpsCorners: existing?.fieldGpsCorners,
     );
     if (result == null || !mounted) return;
 

@@ -158,6 +158,7 @@ class FieldGpsLocalizationHelper {
     BuildContext context, {
     String initialName = '',
     String initialAddress = '',
+    FieldGpsCorners? initialFieldGpsCorners,
   }) {
     return Navigator.push<FieldLocalizationResult>(
       context,
@@ -166,6 +167,7 @@ class FieldGpsLocalizationHelper {
         builder: (_) => FootballFieldLocalizationScreen(
           initialName: initialName,
           initialAddress: initialAddress,
+          initialFieldGpsCorners: initialFieldGpsCorners,
         ),
       ),
     );
