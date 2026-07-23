@@ -9600,6 +9600,30 @@ abstract class AppLocalizations {
   /// **'GPS manquant'**
   String get adminTrackerFieldsGpsMissing;
 
+  /// No description provided for @adminTrackerFieldsDeleteConfirmTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Supprimer le terrain ?'**
+  String get adminTrackerFieldsDeleteConfirmTitle;
+
+  /// No description provided for @adminTrackerFieldsDeleteConfirmMessage.
+  ///
+  /// In fr, this message translates to:
+  /// **'Voulez-vous vraiment supprimer « {fieldName} » ? Cette action est définitive.'**
+  String adminTrackerFieldsDeleteConfirmMessage(String fieldName);
+
+  /// No description provided for @adminTrackerFieldsDeleted.
+  ///
+  /// In fr, this message translates to:
+  /// **'Terrain supprimé.'**
+  String get adminTrackerFieldsDeleted;
+
+  /// No description provided for @adminTrackerFieldsDeleteFailed.
+  ///
+  /// In fr, this message translates to:
+  /// **'Impossible de supprimer le terrain.'**
+  String get adminTrackerFieldsDeleteFailed;
+
   /// No description provided for @adminTrackerDevicesTitle.
   ///
   /// In fr, this message translates to:

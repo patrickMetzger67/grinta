@@ -2446,6 +2446,15 @@
   "adminTrackerFieldsChangeClub": "Changer de club",
   "adminTrackerFieldsGpsReady": "GPS OK",
   "adminTrackerFieldsGpsMissing": "GPS manquant",
+  "adminTrackerFieldsDeleteConfirmTitle": "Supprimer le terrain ?",
+  "adminTrackerFieldsDeleteConfirmMessage": "Voulez-vous vraiment supprimer « {fieldName} » ? Cette action est définitive.",
+  "@adminTrackerFieldsDeleteConfirmMessage": {
+    "placeholders": {
+      "fieldName": { "type": "String" }
+    }
+  },
+  "adminTrackerFieldsDeleted": "Terrain supprimé.",
+  "adminTrackerFieldsDeleteFailed": "Impossible de supprimer le terrain.",
   "adminTrackerDevicesTitle": "Gestion des trackers",
   "adminTrackerDevicesManageAction": "Gestion des trackers",
   "adminTrackerDevicesShowUnassigned": "Afficher les devices sans affectation",

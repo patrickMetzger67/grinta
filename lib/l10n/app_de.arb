@@ -1908,6 +1908,15 @@
   "adminTrackerFieldsChangeClub": "Verein wechseln",
   "adminTrackerFieldsGpsReady": "GPS OK",
   "adminTrackerFieldsGpsMissing": "GPS fehlt",
+  "adminTrackerFieldsDeleteConfirmTitle": "Platz löschen?",
+  "adminTrackerFieldsDeleteConfirmMessage": "Möchtest du „{fieldName}“ wirklich löschen? Diese Aktion ist endgültig.",
+  "@adminTrackerFieldsDeleteConfirmMessage": {
+    "placeholders": {
+      "fieldName": { "type": "String" }
+    }
+  },
+  "adminTrackerFieldsDeleted": "Platz gelöscht.",
+  "adminTrackerFieldsDeleteFailed": "Platz konnte nicht gelöscht werden.",
   "adminTrackerDevicesTitle": "Tracker-Verwaltung",
   "adminTrackerDevicesManageAction": "Tracker-Verwaltung",
   "adminTrackerDevicesShowUnassigned": "Nicht zugewiesene Geräte anzeigen",

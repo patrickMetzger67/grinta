@@ -5559,6 +5559,21 @@ class AppLocalizationsDe extends AppLocalizations {
   String get adminTrackerFieldsGpsMissing => 'GPS fehlt';
 
   @override
+  String get adminTrackerFieldsDeleteConfirmTitle => 'Platz löschen?';
+
+  @override
+  String adminTrackerFieldsDeleteConfirmMessage(String fieldName) {
+    return 'Möchtest du „$fieldName“ wirklich löschen? Diese Aktion ist endgültig.';
+  }
+
+  @override
+  String get adminTrackerFieldsDeleted => 'Platz gelöscht.';
+
+  @override
+  String get adminTrackerFieldsDeleteFailed =>
+      'Platz konnte nicht gelöscht werden.';
+
+  @override
   String get adminTrackerDevicesTitle => 'Tracker-Verwaltung';
 
   @override

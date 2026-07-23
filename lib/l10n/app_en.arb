@@ -2139,6 +2139,15 @@
   "adminTrackerFieldsChangeClub": "Change club",
   "adminTrackerFieldsGpsReady": "GPS ready",
   "adminTrackerFieldsGpsMissing": "GPS missing",
+  "adminTrackerFieldsDeleteConfirmTitle": "Delete field?",
+  "adminTrackerFieldsDeleteConfirmMessage": "Are you sure you want to delete \"{fieldName}\"? This action is permanent.",
+  "@adminTrackerFieldsDeleteConfirmMessage": {
+    "placeholders": {
+      "fieldName": { "type": "String" }
+    }
+  },
+  "adminTrackerFieldsDeleted": "Field deleted.",
+  "adminTrackerFieldsDeleteFailed": "Unable to delete the field.",
   "adminTrackerDevicesTitle": "Tracker management",
   "adminTrackerDevicesManageAction": "Tracker management",
   "adminTrackerDevicesShowUnassigned": "Show unassigned devices",

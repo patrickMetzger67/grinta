@@ -1908,6 +1908,15 @@
   "adminTrackerFieldsChangeClub": "Cambia club",
   "adminTrackerFieldsGpsReady": "GPS OK",
   "adminTrackerFieldsGpsMissing": "GPS mancante",
+  "adminTrackerFieldsDeleteConfirmTitle": "Eliminare il campo?",
+  "adminTrackerFieldsDeleteConfirmMessage": "Vuoi davvero eliminare « {fieldName} »? Questa azione è definitiva.",
+  "@adminTrackerFieldsDeleteConfirmMessage": {
+    "placeholders": {
+      "fieldName": { "type": "String" }
+    }
+  },
+  "adminTrackerFieldsDeleted": "Campo eliminato.",
+  "adminTrackerFieldsDeleteFailed": "Impossibile eliminare il campo.",
   "adminTrackerDevicesTitle": "Gestione tracker",
   "adminTrackerDevicesManageAction": "Gestione tracker",
   "adminTrackerDevicesShowUnassigned": "Mostra dispositivi non assegnati",

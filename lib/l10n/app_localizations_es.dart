@@ -5551,6 +5551,21 @@ class AppLocalizationsEs extends AppLocalizations {
   String get adminTrackerFieldsGpsMissing => 'GPS faltante';
 
   @override
+  String get adminTrackerFieldsDeleteConfirmTitle => '¿Eliminar terreno?';
+
+  @override
+  String adminTrackerFieldsDeleteConfirmMessage(String fieldName) {
+    return '¿Seguro que quieres eliminar « $fieldName »? Esta acción es definitiva.';
+  }
+
+  @override
+  String get adminTrackerFieldsDeleted => 'Terreno eliminado.';
+
+  @override
+  String get adminTrackerFieldsDeleteFailed =>
+      'No se pudo eliminar el terreno.';
+
+  @override
   String get adminTrackerDevicesTitle => 'Gestión de trackers';
 
   @override

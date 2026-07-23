@@ -100,6 +100,56 @@ class _AdminTrackerFieldsScreenState extends State<AdminTrackerFieldsScreen> {
     }
   }
 
+  Future<void> _confirmAndDelete(FieldClub field) async {
+    final l10n = context.l10n;
+    final colors = context.appColors;
+    final fieldName = field.name.trim().isNotEmpty ? field.name.trim() : field.id;
+
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: Text(l10n.adminTrackerFieldsDeleteConfirmTitle),
+        content: Text(l10n.adminTrackerFieldsDeleteConfirmMessage(fieldName)),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(16),
+          side: BorderSide(color: colors.border),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(dialogContext).pop(false),
+            child: Text(l10n.actionCancel),
+          ),
+          TextButton(
+            onPressed: () => Navigator.of(dialogContext).pop(true),
+            child: Text(
+              l10n.actionDelete,
+              style: TextStyle(
+                color: colors.danger,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true || !mounted) return;
+
+    try {
+      await _service.delete(field.id);
+      if (!mounted) return;
+      AppSnackbar.show(
+        context,
+        l10n.adminTrackerFieldsDeleted,
+        isError: false,
+      );
+      _reload();
+    } catch (e, st) {
+      debugPrint('admin fieldClub delete failed: $e\n$st');
+      if (!mounted) return;
+      AppSnackbar.show(context, l10n.adminTrackerFieldsDeleteFailed);
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final l10n = context.l10n;
@@ -258,9 +308,22 @@ class _AdminTrackerFieldsScreenState extends State<AdminTrackerFieldsScreen> {
                                   color: colors.textSecondary,
                                 ),
                               ),
-                              trailing: Icon(
-                                Icons.chevron_right_rounded,
-                                color: colors.textSecondary,
+                              trailing: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  IconButton(
+                                    tooltip: l10n.actionDelete,
+                                    onPressed: () => _confirmAndDelete(field),
+                                    icon: Icon(
+                                      Icons.delete_outline_rounded,
+                                      color: colors.danger,
+                                    ),
+                                  ),
+                                  Icon(
+                                    Icons.chevron_right_rounded,
+                                    color: colors.textSecondary,
+                                  ),
+                                ],
                               ),
                               onTap: () => _openLocalization(existing: field),
                             ),
