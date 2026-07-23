@@ -199,8 +199,8 @@ class TrainingIntenseSyncService {
     if (result == null) return;
 
     await TrackerAnalysisService.saveAnalysis(
-      docId: '${trainingId}_${target.trackerId}',
       result,
+      docId: '${trainingId}_${target.trackerId}',
       eventId: trainingId,
     );
   }
@@ -214,6 +214,7 @@ class TrainingIntenseSyncService {
     FieldGpsCorners? fieldGpsCorners,
     void Function(IntenseTrainingDeviceTarget target)? onProgress,
     bool treatEmptyAsSuccess = true,
+    bool isMatch = false,
   }) async {
     void emit(IntenseDeviceSyncStage stage, double progress) {
       target.stage = stage;
@@ -358,7 +359,7 @@ class TrainingIntenseSyncService {
         playerId: target.playerId,
         eventId: eventId,
         allSamples: samples,
-        isMatch: false,
+        isMatch: isMatch,
         fieldGps: fieldGps,
         minMeaningfulStepDistanceMeters: kIntenseMinMeaningfulStepDistanceMeters,
       );

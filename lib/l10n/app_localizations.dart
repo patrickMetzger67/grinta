@@ -4949,6 +4949,60 @@ abstract class AppLocalizations {
   /// **'Impossible de synchroniser le GPS. Réessaie.'**
   String get createPersonalSportGpsSyncError;
 
+  /// No description provided for @sessionPersonalDataTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Mes données'**
+  String get sessionPersonalDataTitle;
+
+  /// No description provided for @sessionPersonalDataSubtitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Associe ton GPS ou une app connectée à cette séance (aucun tracker d’équipe attribué).'**
+  String get sessionPersonalDataSubtitle;
+
+  /// No description provided for @sessionPersonalDataGpsHint.
+  ///
+  /// In fr, this message translates to:
+  /// **'Synchronise ton capteur GPS Intense et génère une heatmap si le terrain est positionné.'**
+  String get sessionPersonalDataGpsHint;
+
+  /// No description provided for @sessionPersonalDataGpsSubmit.
+  ///
+  /// In fr, this message translates to:
+  /// **'Synchroniser mes données'**
+  String get sessionPersonalDataGpsSubmit;
+
+  /// No description provided for @sessionPersonalDataAppSubmit.
+  ///
+  /// In fr, this message translates to:
+  /// **'Associer l’activité'**
+  String get sessionPersonalDataAppSubmit;
+
+  /// No description provided for @sessionPersonalDataSaved.
+  ///
+  /// In fr, this message translates to:
+  /// **'Données associées à la séance.'**
+  String get sessionPersonalDataSaved;
+
+  /// No description provided for @sessionPersonalDataError.
+  ///
+  /// In fr, this message translates to:
+  /// **'Impossible d’associer les données. Réessaie.'**
+  String get sessionPersonalDataError;
+
+  /// No description provided for @sessionPersonalDataAuthRequired.
+  ///
+  /// In fr, this message translates to:
+  /// **'Connecte-toi avec un profil joueur pour associer des données.'**
+  String get sessionPersonalDataAuthRequired;
+
+  /// No description provided for @sessionPersonalDataSwitchToAppsQuestion.
+  ///
+  /// In fr, this message translates to:
+  /// **'Souhaites-tu choisir une app / un appareil connecté ?'**
+  String get sessionPersonalDataSwitchToAppsQuestion;
+
   /// No description provided for @createPersonalSportSaved.
   ///
   /// In fr, this message translates to:

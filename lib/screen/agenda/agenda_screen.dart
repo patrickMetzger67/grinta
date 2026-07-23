@@ -49,6 +49,8 @@ import '../../widget/agenda_coach_players_dialog.dart';
 import '../../widget/agenda_training_presence_actions.dart';
 import '../../widget/create_non_sport_event_sheet.dart';
 import '../../widget/create_personal_sport_activity_sheet.dart';
+import '../../widget/session_personal_data_dialog.dart';
+import '../../services/session_personal_data_service.dart';
 import '../../widget/non_sport_event_invitees_sheet.dart';
 import '../../widget/player_feeling_faces.dart';
 import '../../widget/playerPhoto.dart';

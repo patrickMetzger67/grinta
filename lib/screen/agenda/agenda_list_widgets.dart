@@ -1226,6 +1226,28 @@ class AgendaItemCard extends StatelessWidget {
                         fontWeight: FontWeight.w600,
                       ),
                     ),
+                    if (SessionPersonalDataService.isEligibleAgendaItem(item) &&
+                        currentPlayerId != null &&
+                        currentPlayerId!.trim().isNotEmpty) ...[
+                      const SizedBox(width: 4),
+                      IconButton(
+                        visualDensity: VisualDensity.compact,
+                        padding: EdgeInsets.zero,
+                        constraints: const BoxConstraints(
+                          minWidth: 32,
+                          minHeight: 32,
+                        ),
+                        tooltip: context.l10n.sessionPersonalDataTitle,
+                        icon: const Icon(
+                          Icons.sensors_rounded,
+                          size: 20,
+                          color: Colors.white,
+                        ),
+                        onPressed: () {
+                          showSessionPersonalDataDialog(context, item: item);
+                        },
+                      ),
+                    ],
                   ],
                 ),
               ),

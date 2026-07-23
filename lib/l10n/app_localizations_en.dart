@@ -2754,6 +2754,38 @@ class AppLocalizationsEn extends AppLocalizations {
       'Unable to sync GPS. Please try again.';
 
   @override
+  String get sessionPersonalDataTitle => 'My data';
+
+  @override
+  String get sessionPersonalDataSubtitle =>
+      'Attach your GPS or a connected app to this session (no team tracker assigned).';
+
+  @override
+  String get sessionPersonalDataGpsHint =>
+      'Sync your Intense GPS sensor and generate a heatmap when the pitch is positioned.';
+
+  @override
+  String get sessionPersonalDataGpsSubmit => 'Sync my data';
+
+  @override
+  String get sessionPersonalDataAppSubmit => 'Attach activity';
+
+  @override
+  String get sessionPersonalDataSaved => 'Data attached to the session.';
+
+  @override
+  String get sessionPersonalDataError =>
+      'Unable to attach data. Please try again.';
+
+  @override
+  String get sessionPersonalDataAuthRequired =>
+      'Sign in with a player profile to attach data.';
+
+  @override
+  String get sessionPersonalDataSwitchToAppsQuestion =>
+      'Would you like to choose a connected app / device?';
+
+  @override
   String get createPersonalSportSaved => 'Activity created';
 
   @override

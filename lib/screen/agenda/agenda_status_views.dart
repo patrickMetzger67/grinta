@@ -333,8 +333,20 @@ String? _agendaEventTimeLabel(AgendaItem item, String locale) {
   switch (item.type) {
     case AgendaItemType.match:
       timeHm = item.match?.timeCh;
+      final startLabel = _formatTimeHmForLocale(timeHm, locale) ??
+          DateFormat.Hm(locale).format(item.startAt);
+      if (item.endAt.isAfter(item.startAt)) {
+        return '$startLabel – ${DateFormat.Hm(locale).format(item.endAt)}';
+      }
+      return startLabel;
     case AgendaItemType.entrainement:
       timeHm = item.training?.startTime;
+      final startLabel = _formatTimeHmForLocale(timeHm, locale) ??
+          DateFormat.Hm(locale).format(item.startAt);
+      if (item.endAt.isAfter(item.startAt)) {
+        return '$startLabel – ${DateFormat.Hm(locale).format(item.endAt)}';
+      }
+      return startLabel;
     case AgendaItemType.preparationPhysique:
       return '${DateFormat.Hm(locale).format(item.startAt)}'
           '${item.endAt.isAfter(item.startAt) ? ' – ${DateFormat.Hm(locale).format(item.endAt)}' : ''}';
@@ -346,9 +358,6 @@ String? _agendaEventTimeLabel(AgendaItem item, String locale) {
       }
       return '${DateFormat.Hm(locale).format(item.startAt)} – ${DateFormat.Hm(locale).format(item.endAt)}';
   }
-
-  return _formatTimeHmForLocale(timeHm, locale) ??
-      DateFormat.Hm(locale).format(item.startAt);
 }
 
 int _compareAgendaItems(AgendaItem a, AgendaItem b) {

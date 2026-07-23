@@ -79,7 +79,9 @@ class SensorAnalysisService {
     final totalDurationMs = max(0, endMs - startMs);
     final midTimeMs = startMs + (totalDurationMs ~/ 2);
 
-    final bool canBuildRealFieldHeatmap = isMatch && fieldGps != null;
+    // Real pitch heatmap whenever field GPS corners are available (match or
+    // training). [isMatch] remains available for callers that specialize logic.
+    final bool canBuildRealFieldHeatmap = fieldGps != null;
     final bool shouldBuildRelativeHeatmap = fieldGps == null;
 
     final double sprintThresholdMps = params.sprintThresholdMps;

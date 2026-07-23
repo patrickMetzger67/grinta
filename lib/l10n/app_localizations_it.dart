@@ -2790,6 +2790,38 @@ class AppLocalizationsIt extends AppLocalizations {
       'Impossibile sincronizzare il GPS. Riprova.';
 
   @override
+  String get sessionPersonalDataTitle => 'I miei dati';
+
+  @override
+  String get sessionPersonalDataSubtitle =>
+      'Associa il tuo GPS o un’app connessa a questa sessione (nessun tracker di squadra assegnato).';
+
+  @override
+  String get sessionPersonalDataGpsHint =>
+      'Sincronizza il sensore GPS Intense e genera una heatmap se il campo è posizionato.';
+
+  @override
+  String get sessionPersonalDataGpsSubmit => 'Sincronizza i miei dati';
+
+  @override
+  String get sessionPersonalDataAppSubmit => 'Associa l’attività';
+
+  @override
+  String get sessionPersonalDataSaved => 'Dati associati alla sessione.';
+
+  @override
+  String get sessionPersonalDataError =>
+      'Impossibile associare i dati. Riprova.';
+
+  @override
+  String get sessionPersonalDataAuthRequired =>
+      'Accedi con un profilo giocatore per associare i dati.';
+
+  @override
+  String get sessionPersonalDataSwitchToAppsQuestion =>
+      'Vuoi scegliere un’app / un dispositivo connesso?';
+
+  @override
   String get createPersonalSportSaved => 'Activity created';
 
   @override
