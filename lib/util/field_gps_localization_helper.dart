@@ -5,8 +5,10 @@ import 'package:grinta/analytics/analytics_routes.dart';
 import 'package:grinta/analytics/analytics_screen_names.dart';
 import 'package:grinta/core/extensions/l10n_extension.dart';
 import 'package:grinta/model/fieldGpsCorners.dart';
+import 'package:grinta/model/field_club.dart';
 import 'package:grinta/model/match.dart' as models;
 import 'package:grinta/screen/field_localization_screen.dart';
+import 'package:grinta/services/field_club_service.dart';
 import 'package:grinta/services/matchService.dart';
 import 'package:grinta/services/tracker_field_service.dart';
 import 'package:grinta/util/french_address_parser.dart';
@@ -169,7 +171,7 @@ class FieldGpsLocalizationHelper {
     );
   }
 
-  /// Saves a localization result to `TRACKER_Fields` (admin tooling).
+  /// Saves a localization result to `TRACKER_Fields` (legacy match tooling).
   static Future<void> saveLocalizationResult({
     required FieldLocalizationResult result,
     required String uid,
@@ -184,5 +186,33 @@ class FieldGpsLocalizationHelper {
       fieldGpsCorners: result.fieldGpsCorners,
       uid: uid,
     );
+  }
+
+  /// Saves a localization result on a `fieldClub` document (admin tooling).
+  static Future<FieldClub> saveLocalizationResultToFieldClub({
+    required FieldLocalizationResult result,
+    required String clubId,
+    required String name,
+    required String address,
+    FieldClub? existing,
+    FieldClubService? fieldClubService,
+  }) async {
+    final normalizedClubId = clubId.trim();
+    if (normalizedClubId.isEmpty) {
+      throw ArgumentError('clubId must not be empty.');
+    }
+
+    final field = FieldClub(
+      id: existing?.id ?? '',
+      address: address.trim(),
+      clubId: normalizedClubId,
+      name: name.trim(),
+      location: existing?.location,
+      surface: existing?.surface,
+      updateDate: existing?.updateDate,
+      fieldGpsCorners: result.fieldGpsCorners,
+    );
+
+    return (fieldClubService ?? FieldClubService()).upsert(field);
   }
 }

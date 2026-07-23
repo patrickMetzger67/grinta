@@ -5504,8 +5504,7 @@ class AppLocalizationsIt extends AppLocalizations {
   String get adminTrackerFieldsTitle => 'Campi';
 
   @override
-  String get adminTrackerFieldsEmpty =>
-      'Nessun campo salvato. Crea un tracciato GPS per iniziare.';
+  String get adminTrackerFieldsEmpty => 'Nessun campo per questo club.';
 
   @override
   String get adminTrackerFieldsLoadError => 'Impossibile caricare i campi.';
@@ -5521,6 +5520,19 @@ class AppLocalizationsIt extends AppLocalizations {
 
   @override
   String get adminTrackerFieldsAuthRequired => 'Accedi per salvare un campo.';
+
+  @override
+  String get adminTrackerFieldsSelectClubFirst =>
+      'Seleziona un club per mostrarne i campi.';
+
+  @override
+  String get adminTrackerFieldsChangeClub => 'Cambia club';
+
+  @override
+  String get adminTrackerFieldsGpsReady => 'GPS OK';
+
+  @override
+  String get adminTrackerFieldsGpsMissing => 'GPS mancante';
 
   @override
   String get adminTrackerDevicesTitle => 'Gestione tracker';

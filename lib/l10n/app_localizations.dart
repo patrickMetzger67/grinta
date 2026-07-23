@@ -9576,6 +9576,30 @@ abstract class AppLocalizations {
   /// **'Connecte-toi pour enregistrer un terrain.'**
   String get adminTrackerFieldsAuthRequired;
 
+  /// No description provided for @adminTrackerFieldsSelectClubFirst.
+  ///
+  /// In fr, this message translates to:
+  /// **'Sélectionne un club pour afficher ses terrains.'**
+  String get adminTrackerFieldsSelectClubFirst;
+
+  /// No description provided for @adminTrackerFieldsChangeClub.
+  ///
+  /// In fr, this message translates to:
+  /// **'Changer de club'**
+  String get adminTrackerFieldsChangeClub;
+
+  /// No description provided for @adminTrackerFieldsGpsReady.
+  ///
+  /// In fr, this message translates to:
+  /// **'GPS OK'**
+  String get adminTrackerFieldsGpsReady;
+
+  /// No description provided for @adminTrackerFieldsGpsMissing.
+  ///
+  /// In fr, this message translates to:
+  /// **'GPS manquant'**
+  String get adminTrackerFieldsGpsMissing;
+
   /// No description provided for @adminTrackerDevicesTitle.
   ///
   /// In fr, this message translates to:

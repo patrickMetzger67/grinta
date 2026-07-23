@@ -5446,8 +5446,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get adminTrackerFieldsTitle => 'Fields';
 
   @override
-  String get adminTrackerFieldsEmpty =>
-      'No fields saved yet. Create a GPS outline to get started.';
+  String get adminTrackerFieldsEmpty => 'No fields for this club.';
 
   @override
   String get adminTrackerFieldsLoadError => 'Unable to load fields.';
@@ -5463,6 +5462,19 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get adminTrackerFieldsAuthRequired => 'Sign in to save a field.';
+
+  @override
+  String get adminTrackerFieldsSelectClubFirst =>
+      'Select a club to show its fields.';
+
+  @override
+  String get adminTrackerFieldsChangeClub => 'Change club';
+
+  @override
+  String get adminTrackerFieldsGpsReady => 'GPS ready';
+
+  @override
+  String get adminTrackerFieldsGpsMissing => 'GPS missing';
 
   @override
   String get adminTrackerDevicesTitle => 'Tracker management';

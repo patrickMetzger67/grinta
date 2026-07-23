@@ -5513,8 +5513,7 @@ class AppLocalizationsFr extends AppLocalizations {
   String get adminTrackerFieldsTitle => 'Terrains';
 
   @override
-  String get adminTrackerFieldsEmpty =>
-      'Aucun terrain enregistré. Crée un tracé GPS pour commencer.';
+  String get adminTrackerFieldsEmpty => 'Aucun terrain pour ce club.';
 
   @override
   String get adminTrackerFieldsLoadError =>
@@ -5533,6 +5532,19 @@ class AppLocalizationsFr extends AppLocalizations {
   @override
   String get adminTrackerFieldsAuthRequired =>
       'Connecte-toi pour enregistrer un terrain.';
+
+  @override
+  String get adminTrackerFieldsSelectClubFirst =>
+      'Sélectionne un club pour afficher ses terrains.';
+
+  @override
+  String get adminTrackerFieldsChangeClub => 'Changer de club';
+
+  @override
+  String get adminTrackerFieldsGpsReady => 'GPS OK';
+
+  @override
+  String get adminTrackerFieldsGpsMissing => 'GPS manquant';
 
   @override
   String get adminTrackerDevicesTitle => 'Gestion des trackers';

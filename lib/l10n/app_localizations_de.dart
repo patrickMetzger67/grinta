@@ -5525,8 +5525,7 @@ class AppLocalizationsDe extends AppLocalizations {
   String get adminTrackerFieldsTitle => 'Plätze';
 
   @override
-  String get adminTrackerFieldsEmpty =>
-      'Noch keine Plätze gespeichert. Erstelle eine GPS-Skizze zum Start.';
+  String get adminTrackerFieldsEmpty => 'Keine Plätze für diesen Verein.';
 
   @override
   String get adminTrackerFieldsLoadError =>
@@ -5545,6 +5544,19 @@ class AppLocalizationsDe extends AppLocalizations {
   @override
   String get adminTrackerFieldsAuthRequired =>
       'Melde dich an, um einen Platz zu speichern.';
+
+  @override
+  String get adminTrackerFieldsSelectClubFirst =>
+      'Wähle einen Verein, um dessen Plätze anzuzeigen.';
+
+  @override
+  String get adminTrackerFieldsChangeClub => 'Verein wechseln';
+
+  @override
+  String get adminTrackerFieldsGpsReady => 'GPS OK';
+
+  @override
+  String get adminTrackerFieldsGpsMissing => 'GPS fehlt';
 
   @override
   String get adminTrackerDevicesTitle => 'Tracker-Verwaltung';

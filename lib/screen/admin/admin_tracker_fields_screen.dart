@@ -1,13 +1,15 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:grinta/core/extensions/l10n_extension.dart';
-import 'package:grinta/model/tracker_field.dart';
-import 'package:grinta/services/tracker_field_service.dart';
+import 'package:grinta/model/club.dart';
+import 'package:grinta/model/field_club.dart';
+import 'package:grinta/services/field_club_service.dart';
 import 'package:grinta/util/app_snackbar.dart';
 import 'package:grinta/util/app_theme.dart';
 import 'package:grinta/util/field_gps_localization_helper.dart';
+import 'package:grinta/widget/club_picker_sheet.dart';
 
-/// Admin entry point to map / edit pitch GPS corners (`TRACKER_Fields`).
+/// Admin entry point to map / edit pitch GPS corners (`fieldClub`).
 class AdminTrackerFieldsScreen extends StatefulWidget {
   const AdminTrackerFieldsScreen({super.key});
 
@@ -17,45 +19,72 @@ class AdminTrackerFieldsScreen extends StatefulWidget {
 }
 
 class _AdminTrackerFieldsScreenState extends State<AdminTrackerFieldsScreen> {
-  final _service = TrackerFieldService();
-  late Future<List<TrackerField>> _future;
+  final _service = FieldClubService();
 
-  @override
-  void initState() {
-    super.initState();
-    _future = _service.listAll();
+  Club? _selectedClub;
+  Future<List<FieldClub>>? _fieldsFuture;
+
+  String? get _selectedClubId {
+    final id = _selectedClub?.affiliation?.trim();
+    if (id == null || id.isEmpty) return null;
+    return id;
+  }
+
+  Future<void> _pickClub() async {
+    final club = await showClubPickerSheet(context);
+    if (club == null || !mounted) return;
+
+    final clubId = club.affiliation?.trim();
+    if (clubId == null || clubId.isEmpty) return;
+
+    setState(() {
+      _selectedClub = club;
+      _fieldsFuture = _service.listByClubId(clubId);
+    });
   }
 
   void _reload() {
-    setState(() => _future = _service.listAll());
+    final clubId = _selectedClubId;
+    if (clubId == null) return;
+    setState(() => _fieldsFuture = _service.listByClubId(clubId));
   }
 
-  Future<void> _openLocalization({
-    TrackerField? existing,
-  }) async {
+  Future<void> _openLocalization({FieldClub? existing}) async {
+    final clubId = _selectedClubId;
+    if (clubId == null) {
+      await _pickClub();
+      return;
+    }
+
     final result = await FieldGpsLocalizationHelper.openLocalizationScreen(
       context,
-      initialName: existing?.terrainNom ?? '',
-      initialAddress: existing == null
-          ? ''
-          : [
-              if (existing.adresse.trim().isNotEmpty) existing.adresse.trim(),
-              if (existing.ville.trim().isNotEmpty) existing.ville.trim(),
-            ].join(', '),
+      initialName: existing?.name ?? '',
+      initialAddress: existing?.address ?? '',
     );
     if (result == null || !mounted) return;
 
-    final uid = FirebaseAuth.instance.currentUser?.uid;
-    if (uid == null) {
+    if (FirebaseAuth.instance.currentUser == null) {
       AppSnackbar.show(context, context.l10n.adminTrackerFieldsAuthRequired);
       return;
     }
 
+    final name = result.fieldName.trim().isNotEmpty
+        ? result.fieldName.trim()
+        : (existing?.name.trim().isNotEmpty == true
+            ? existing!.name.trim()
+            : result.fieldAddress.trim());
+    final address = result.fieldAddress.trim().isNotEmpty
+        ? result.fieldAddress.trim()
+        : (existing?.address ?? '');
+
     try {
-      await FieldGpsLocalizationHelper.saveLocalizationResult(
+      await FieldGpsLocalizationHelper.saveLocalizationResultToFieldClub(
         result: result,
-        uid: uid,
-        trackerFieldService: _service,
+        clubId: clubId,
+        existing: existing,
+        name: name,
+        address: address,
+        fieldClubService: _service,
       );
       if (!mounted) return;
       AppSnackbar.show(
@@ -65,7 +94,7 @@ class _AdminTrackerFieldsScreenState extends State<AdminTrackerFieldsScreen> {
       );
       _reload();
     } catch (e, st) {
-      debugPrint('admin tracker field save failed: $e\n$st');
+      debugPrint('admin fieldClub save failed: $e\n$st');
       if (!mounted) return;
       AppSnackbar.show(context, context.l10n.adminTrackerFieldsSaveFailed);
     }
@@ -76,6 +105,7 @@ class _AdminTrackerFieldsScreenState extends State<AdminTrackerFieldsScreen> {
     final l10n = context.l10n;
     final colors = context.appColors;
     final textTheme = Theme.of(context).textTheme;
+    final clubSelected = _selectedClubId != null;
 
     return Scaffold(
       backgroundColor: colors.background,
@@ -87,100 +117,199 @@ class _AdminTrackerFieldsScreenState extends State<AdminTrackerFieldsScreen> {
             fontWeight: FontWeight.w700,
           ),
         ),
+        actions: [
+          if (clubSelected)
+            TextButton(
+              onPressed: _pickClub,
+              child: Text(l10n.adminTrackerFieldsChangeClub),
+            ),
+        ],
       ),
-      floatingActionButton: FloatingActionButton.extended(
-        onPressed: () => _openLocalization(),
-        icon: const Icon(Icons.map_outlined),
-        label: Text(l10n.adminTrackerFieldsCreate),
-      ),
-      body: FutureBuilder<List<TrackerField>>(
-        future: _future,
-        builder: (context, snapshot) {
-          if (snapshot.connectionState == ConnectionState.waiting) {
-            return const Center(child: CircularProgressIndicator());
-          }
-          if (snapshot.hasError) {
-            return Center(
-              child: Padding(
-                padding: const EdgeInsets.all(24),
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Text(
-                      l10n.adminTrackerFieldsLoadError,
-                      textAlign: TextAlign.center,
-                      style: TextStyle(color: colors.textSecondary),
+      floatingActionButton: clubSelected
+          ? FloatingActionButton.extended(
+              onPressed: () => _openLocalization(),
+              icon: const Icon(Icons.map_outlined),
+              label: Text(l10n.adminTrackerFieldsCreate),
+            )
+          : null,
+      body: !clubSelected
+          ? _ClubSelectionPrompt(onSelectClub: _pickClub)
+          : Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
+                  child: InkWell(
+                    onTap: _pickClub,
+                    borderRadius: BorderRadius.circular(12),
+                    child: InputDecorator(
+                      decoration: InputDecoration(
+                        labelText: l10n.teamCreationSelectClub,
+                        suffixIcon: const Icon(Icons.arrow_drop_down_rounded),
+                      ),
+                      child: Row(
+                        children: [
+                          ClubLogo(url: _selectedClub?.logo ?? ''),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: Text(
+                              _selectedClub?.name?.trim().isNotEmpty == true
+                                  ? _selectedClub!.name!.trim()
+                                  : _selectedClubId!,
+                              style: textTheme.bodyLarge?.copyWith(
+                                color: colors.textPrimary,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
                     ),
-                    const SizedBox(height: 12),
-                    FilledButton(
-                      onPressed: _reload,
-                      child: Text(l10n.actionRetry),
-                    ),
-                  ],
+                  ),
                 ),
-              ),
-            );
-          }
+                Expanded(
+                  child: FutureBuilder<List<FieldClub>>(
+                    future: _fieldsFuture,
+                    builder: (context, snapshot) {
+                      if (snapshot.connectionState == ConnectionState.waiting) {
+                        return const Center(child: CircularProgressIndicator());
+                      }
+                      if (snapshot.hasError) {
+                        return Center(
+                          child: Padding(
+                            padding: const EdgeInsets.all(24),
+                            child: Column(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Text(
+                                  l10n.adminTrackerFieldsLoadError,
+                                  textAlign: TextAlign.center,
+                                  style: TextStyle(color: colors.textSecondary),
+                                ),
+                                const SizedBox(height: 12),
+                                FilledButton(
+                                  onPressed: _reload,
+                                  child: Text(l10n.actionRetry),
+                                ),
+                              ],
+                            ),
+                          ),
+                        );
+                      }
 
-          final fields = snapshot.data ?? const <TrackerField>[];
-          if (fields.isEmpty) {
-            return Center(
-              child: Padding(
-                padding: const EdgeInsets.all(24),
-                child: Text(
-                  l10n.adminTrackerFieldsEmpty,
-                  textAlign: TextAlign.center,
-                  style: TextStyle(color: colors.textSecondary),
-                ),
-              ),
-            );
-          }
+                      final fields = snapshot.data ?? const <FieldClub>[];
+                      if (fields.isEmpty) {
+                        return Center(
+                          child: Padding(
+                            padding: const EdgeInsets.all(24),
+                            child: Text(
+                              l10n.adminTrackerFieldsEmpty,
+                              textAlign: TextAlign.center,
+                              style: TextStyle(color: colors.textSecondary),
+                            ),
+                          ),
+                        );
+                      }
 
-          return ListView.separated(
-            padding: const EdgeInsets.fromLTRB(16, 16, 16, 96),
-            itemCount: fields.length,
-            separatorBuilder: (_, __) => const SizedBox(height: 8),
-            itemBuilder: (context, index) {
-              final field = fields[index];
-              final subtitle = [
-                if (field.adresse.trim().isNotEmpty) field.adresse.trim(),
-                if (field.ville.trim().isNotEmpty) field.ville.trim(),
-                field.id,
-              ].join(' · ');
-              return Material(
-                color: colors.card,
-                borderRadius: BorderRadius.circular(14),
-                child: ListTile(
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(14),
-                    side: BorderSide(color: colors.border),
+                      return ListView.separated(
+                        padding: const EdgeInsets.fromLTRB(16, 8, 16, 96),
+                        itemCount: fields.length,
+                        separatorBuilder: (_, __) => const SizedBox(height: 8),
+                        itemBuilder: (context, index) {
+                          final field = fields[index];
+                          final subtitle = [
+                            if (field.address.trim().isNotEmpty)
+                              field.address.trim(),
+                            if (field.surface?.trim().isNotEmpty == true)
+                              field.surface!.trim(),
+                            if (field.hasFieldGpsCorners)
+                              l10n.adminTrackerFieldsGpsReady
+                            else
+                              l10n.adminTrackerFieldsGpsMissing,
+                          ].join(' · ');
+                          return Material(
+                            color: colors.card,
+                            borderRadius: BorderRadius.circular(14),
+                            child: ListTile(
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(14),
+                                side: BorderSide(color: colors.border),
+                              ),
+                              leading: Icon(
+                                field.hasFieldGpsCorners
+                                    ? Icons.gps_fixed
+                                    : Icons.gps_not_fixed,
+                                color: field.hasFieldGpsCorners
+                                    ? colors.primary
+                                    : colors.textSecondary,
+                              ),
+                              title: Text(
+                                field.name.trim().isNotEmpty
+                                    ? field.name
+                                    : field.id,
+                                style: textTheme.titleSmall?.copyWith(
+                                  color: colors.textPrimary,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                              subtitle: Text(
+                                subtitle,
+                                style: textTheme.bodySmall?.copyWith(
+                                  color: colors.textSecondary,
+                                ),
+                              ),
+                              trailing: Icon(
+                                Icons.chevron_right_rounded,
+                                color: colors.textSecondary,
+                              ),
+                              onTap: () => _openLocalization(existing: field),
+                            ),
+                          );
+                        },
+                      );
+                    },
                   ),
-                  leading: Icon(Icons.stadium_outlined, color: colors.primary),
-                  title: Text(
-                    field.terrainNom.trim().isNotEmpty
-                        ? field.terrainNom
-                        : field.id,
-                    style: textTheme.titleSmall?.copyWith(
-                      color: colors.textPrimary,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                  subtitle: Text(
-                    subtitle,
-                    style: textTheme.bodySmall?.copyWith(
-                      color: colors.textSecondary,
-                    ),
-                  ),
-                  trailing: Icon(
-                    Icons.chevron_right_rounded,
-                    color: colors.textSecondary,
-                  ),
-                  onTap: () => _openLocalization(existing: field),
                 ),
-              );
-            },
-          );
-        },
+              ],
+            ),
+    );
+  }
+}
+
+class _ClubSelectionPrompt extends StatelessWidget {
+  const _ClubSelectionPrompt({required this.onSelectClub});
+
+  final VoidCallback onSelectClub;
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = context.l10n;
+    final colors = context.appColors;
+    final textTheme = Theme.of(context).textTheme;
+
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(24),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(Icons.shield_outlined, size: 48, color: colors.textSecondary),
+            const SizedBox(height: 16),
+            Text(
+              l10n.adminTrackerFieldsSelectClubFirst,
+              textAlign: TextAlign.center,
+              style: textTheme.bodyLarge?.copyWith(
+                color: colors.textSecondary,
+              ),
+            ),
+            const SizedBox(height: 20),
+            FilledButton.icon(
+              onPressed: onSelectClub,
+              icon: const Icon(Icons.search),
+              label: Text(l10n.teamCreationSelectClub),
+            ),
+          ],
+        ),
       ),
     );
   }
