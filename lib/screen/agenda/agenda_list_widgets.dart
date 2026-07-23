@@ -834,14 +834,38 @@ class AgendaItemCard extends StatelessWidget {
                 Icon(icon, size: 18, color: colors.textPrimary),
                 const SizedBox(width: 8),
                 Expanded(
-                  child: Text(
-                    item.title,
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
-                    style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                      color: colors.textPrimary,
-                      fontWeight: FontWeight.w700,
-                    ),
+                  child: Row(
+                    children: [
+                      Flexible(
+                        child: Text(
+                          item.title,
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                          style:
+                              Theme.of(context).textTheme.titleSmall?.copyWith(
+                                    color: colors.textPrimary,
+                                    fontWeight: FontWeight.w700,
+                                  ),
+                        ),
+                      ),
+                      if (item.type == AgendaItemType.preparationPhysique &&
+                          item.personalSportActivity != null &&
+                          PlayerFeeling.fromValue(
+                                item.personalSportActivity!.feeling,
+                              ) !=
+                              null) ...[
+                        const SizedBox(width: 8),
+                        CustomPaint(
+                          size: const Size(22, 22),
+                          painter: FeelingFacePainter(
+                            feeling: PlayerFeeling.fromValue(
+                              item.personalSportActivity!.feeling,
+                            )!,
+                            color: colors.textPrimary,
+                          ),
+                        ),
+                      ],
+                    ],
                   ),
                 ),
                 if (canManageThisMatch) ...[
@@ -1212,33 +1236,6 @@ class AgendaItemCard extends StatelessWidget {
                   activity: item.personalSportActivity!,
                 ),
               ),
-              if (PlayerFeeling.fromValue(
-                    item.personalSportActivity!.feeling,
-                  ) !=
-                  null) ...[
-                const SizedBox(height: 10),
-                Row(
-                  children: [
-                    Text(
-                      context.l10n.playerFeelingPrompt,
-                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                            color: colors.textPrimary.withValues(alpha: 0.9),
-                            fontWeight: FontWeight.w600,
-                          ),
-                    ),
-                    const SizedBox(width: 10),
-                    CustomPaint(
-                      size: const Size(28, 28),
-                      painter: FeelingFacePainter(
-                        feeling: PlayerFeeling.fromValue(
-                          item.personalSportActivity!.feeling,
-                        )!,
-                        color: colors.textPrimary,
-                      ),
-                    ),
-                  ],
-                ),
-              ],
             ],
             // Player rings: personal scores only (not managers/staff).
             if(!canAccessSessionDetails && item.withTracker == true && teamPlayerMetricScores != null) ... [
@@ -1690,94 +1687,112 @@ class AgendaItemCard extends StatelessWidget {
   }) {
     final l10n = context.l10n;
     final colors = context.appColors;
-    final textStyle = Theme.of(context).textTheme.bodyMedium?.copyWith(
+    final valueStyle = Theme.of(context).textTheme.bodySmall?.copyWith(
           color: colors.textPrimary,
-          fontWeight: FontWeight.w600,
+          fontWeight: FontWeight.w700,
         );
-    final labelStyle = Theme.of(context).textTheme.bodySmall?.copyWith(
-          color: colors.textPrimary.withValues(alpha: 0.85),
+    final labelStyle = Theme.of(context).textTheme.labelSmall?.copyWith(
+          color: colors.textPrimary.withValues(alpha: 0.8),
           fontWeight: FontWeight.w500,
         );
 
-    final rows = <Widget>[];
-
+    String? distanceValue;
     if (activity.distanceMeters != null && activity.distanceMeters! > 0) {
-      final distanceLabel = formatSportDistanceKm(
+      distanceValue = formatSportDistanceKm(
         activity.distanceMeters! / 1000,
         activity.distanceUnit,
       );
-      rows.add(
-        Text(
-          '${l10n.personalSportMetricDistance} $distanceLabel',
-          style: textStyle,
-        ),
-      );
     }
 
+    String? paceValue;
     if (activity.paceSecondsPerKm != null &&
         activity.paceSecondsPerKm! > 0) {
-      rows.add(
-        Text(
-          '${l10n.personalSportMetricAvgPace}: '
-          '${formatSportPace(activity.paceSecondsPerKm!, activity.paceUnit)}',
-          style: textStyle,
-        ),
+      paceValue = formatSportPace(
+        activity.paceSecondsPerKm!,
+        activity.paceUnit,
       );
     }
 
+    String? durationValue;
     if (activity.durationSeconds != null && activity.durationSeconds! > 0) {
-      rows.add(
-        Text(
-          '${l10n.personalSportMetricDuration}: '
-          '${formatSportDurationClock(Duration(seconds: activity.durationSeconds!))}',
-          style: textStyle,
-        ),
+      durationValue = formatSportDurationClock(
+        Duration(seconds: activity.durationSeconds!),
       );
     }
 
+    String? caloriesValue;
     if (activity.caloriesKcal != null && activity.caloriesKcal! > 0) {
-      final calories = activity.caloriesKcal!.round();
-      rows.add(
-        Text(
-          '${l10n.personalSportMetricCalories} $calories ${l10n.personalSportUnitKcal}',
-          style: textStyle,
-        ),
-      );
+      caloriesValue =
+          '${activity.caloriesKcal!.round()} ${l10n.personalSportUnitKcal}';
     }
 
+    String? hrValue;
     if (activity.averageHeartRateBpm != null &&
         activity.averageHeartRateBpm! > 0) {
-      rows.add(
-        Text(
-          '${l10n.personalSportMetricAvgHeartRate}: '
-          '${activity.averageHeartRateBpm} ${l10n.personalSportUnitBpm}',
-          style: textStyle,
-        ),
-      );
+      hrValue =
+          '${activity.averageHeartRateBpm} ${l10n.personalSportUnitBpm}';
     }
 
-    if (rows.isEmpty) {
+    if (distanceValue == null &&
+        paceValue == null &&
+        durationValue == null &&
+        caloriesValue == null &&
+        hrValue == null) {
       return const SizedBox.shrink();
+    }
+
+    Widget cell(String label, String? value) {
+      if (value == null) return const SizedBox.shrink();
+      return Padding(
+        padding: const EdgeInsets.symmetric(vertical: 2),
+        child: RichText(
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+          text: TextSpan(
+            children: [
+              TextSpan(text: '$label ', style: labelStyle),
+              TextSpan(text: value, style: valueStyle),
+            ],
+          ),
+        ),
+      );
     }
 
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
       decoration: BoxDecoration(
         color: Colors.black.withValues(alpha: 0.18),
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(10),
         border: Border.all(color: colors.border.withValues(alpha: 0.35)),
       ),
       child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          for (var i = 0; i < rows.length; i++) ...[
-            if (i > 0) const SizedBox(height: 4),
-            DefaultTextStyle.merge(
-              style: labelStyle,
-              child: rows[i],
-            ),
-          ],
+          Row(
+            children: [
+              Expanded(
+                child: cell(l10n.personalSportMetricDistance, distanceValue),
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: cell(l10n.personalSportMetricAvgPace, paceValue),
+              ),
+            ],
+          ),
+          Row(
+            children: [
+              Expanded(
+                child: cell(l10n.personalSportMetricDuration, durationValue),
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: cell(l10n.personalSportMetricCalories, caloriesValue),
+              ),
+            ],
+          ),
+          if (hrValue != null)
+            cell(l10n.personalSportMetricAvgHeartRate, hrValue),
         ],
       ),
     );

@@ -2796,7 +2796,7 @@ class AppLocalizationsFr extends AppLocalizations {
   String get personalSportMetricDistance => 'Distance';
 
   @override
-  String get personalSportMetricAvgPace => 'Allure moyenne';
+  String get personalSportMetricAvgPace => 'Allure moy.';
 
   @override
   String get personalSportMetricDuration => 'Durée';
@@ -2805,7 +2805,7 @@ class AppLocalizationsFr extends AppLocalizations {
   String get personalSportMetricCalories => 'Calories';
 
   @override
-  String get personalSportMetricAvgHeartRate => 'Fréquence cardiaque moyenne';
+  String get personalSportMetricAvgHeartRate => 'FCM';
 
   @override
   String get personalSportUnitKcal => 'kcal';
