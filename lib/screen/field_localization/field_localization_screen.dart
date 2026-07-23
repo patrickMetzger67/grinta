@@ -78,10 +78,22 @@ class _FootballFieldLocalizationScreenState
   bool get _hasInitialCorners =>
       widget.initialFieldGpsCorners?.isComplete == true;
 
-  /// Google Maps `ScreenCoordinate` uses physical pixels on iOS/Android,
-  /// while Flutter layout uses logical pixels. Web uses CSS pixels.
-  double get _mapPixelRatio =>
-      kIsWeb ? 1.0 : MediaQuery.devicePixelRatioOf(context);
+  /// Ignore previously saved corners when they are geometrically broken.
+  bool get _hasUsableInitialCorners {
+    final corners = widget.initialFieldGpsCorners;
+    if (corners == null || !corners.isComplete) return false;
+    return _cornersLookRectangular(corners);
+  }
+
+  /// Android `getLatLng` / `getScreenCoordinate` use physical pixels.
+  /// iOS and web use logical pixels (Flutter layout space).
+  double get _mapPixelRatio {
+    if (kIsWeb) return 1.0;
+    if (defaultTargetPlatform == TargetPlatform.android) {
+      return MediaQuery.devicePixelRatioOf(context);
+    }
+    return 1.0;
+  }
 
   ScreenCoordinate _toScreenCoordinate(Offset point) {
     final ratio = _mapPixelRatio;
@@ -107,7 +119,7 @@ class _FootballFieldLocalizationScreenState
   /// ajuster séparément la longueur et la largeur.
   double _fieldLength = 293.0;
 
-  double _rotationRadians = -18.0 * math.pi / 180.0;
+  double _rotationRadians = 0.0;
 
   Offset _gestureStartCenter = Offset.zero;
   Offset _gestureStartFocal = Offset.zero;
@@ -133,15 +145,22 @@ class _FootballFieldLocalizationScreenState
     _fieldLengthMeters = widget.referenceFieldLengthMeters;
     // Affiche la carte tout de suite (évite blocage géoloc sur simulateur).
     final initialCorners = widget.initialFieldGpsCorners;
-    final cornersCenter = initialCorners != null && initialCorners.isComplete
-        ? _fieldCenterLatLngFromCorners(initialCorners)
+    final cornersCenter = _hasUsableInitialCorners
+        ? _fieldCenterLatLngFromCorners(initialCorners!)
         : null;
     _initialMapTarget = cornersCenter ?? widget.initialTarget;
     _currentMapTarget = cornersCenter ?? widget.initialTarget;
     _currentMapZoom = widget.initialZoom;
-    if (!_hasInitialCorners && !_hasInitialAddress) {
+    if (!_hasUsableInitialCorners &&
+        !_hasInitialAddress &&
+        _isDefaultFranceTarget(widget.initialTarget)) {
       unawaited(_tryRefineLocationFromGps());
     }
+  }
+
+  bool _isDefaultFranceTarget(LatLng target) {
+    return (target.latitude - 46.227638).abs() < 0.0001 &&
+        (target.longitude - 2.213749).abs() < 0.0001;
   }
 
   @override
@@ -169,20 +188,50 @@ class _FootballFieldLocalizationScreenState
       // La carte native peut ne pas être prête immédiatement sur iOS/Android.
     }
 
-    if (_hasInitialCorners) {
+    if (_hasUsableInitialCorners) {
       unawaited(_restoreOverlayFromInitialCorners());
+    } else if (!_isDefaultFranceTarget(widget.initialTarget)) {
+      // Prefer fieldClub.location over address geocoding for map center.
+      unawaited(_focusInitialTargetAndPlaceOverlay());
     } else if (_hasInitialAddress) {
       unawaited(_searchAddress());
     } else {
-      // Re-measure scale once the native map has a real visible region.
+      // Re-measure scale once the native map projection is ready.
       unawaited(() async {
-        await Future<void>.delayed(const Duration(milliseconds: 200));
+        await Future<void>.delayed(const Duration(milliseconds: 220));
         if (!mounted || !_overlayInitialized || !_metersDrivePixelSize) {
           return;
         }
         await _applyPixelSizeFromMeters();
+        if (mounted) {
+          setState(() {
+            _fieldCenter = Offset(_mapSize.width / 2.0, _mapSize.height / 2.0);
+          });
+        }
       }());
     }
+  }
+
+  Future<void> _focusInitialTargetAndPlaceOverlay() async {
+    final controller = _mapController;
+    if (controller == null) return;
+
+    const zoom = 18.8;
+    final target = widget.initialTarget;
+    _currentMapTarget = target;
+    _currentMapZoom = zoom;
+
+    try {
+      await controller.animateCamera(
+        CameraUpdate.newCameraPosition(
+          CameraPosition(target: target, zoom: zoom),
+        ),
+      );
+    } catch (_) {
+      // Map may not be ready yet.
+    }
+
+    await _centerOverlayInMap(resizeFromCurrentZoom: true);
   }
 
   /// Ne demande pas la permission à l'ouverture (bloquant sur simulateur).
@@ -440,62 +489,59 @@ class _FootballFieldLocalizationScreenState
         math.pow(2.0, zoom);
   }
 
-  /// Ground-truth scale from the visible map region (logical px).
-  Future<double?> _metersPerLogicalPixelFromMap() async {
+  /// Ground-truth scale using the same projection as overlay save/restore.
+  Future<double?> _metersPerLogicalPixelFromProjection() async {
     final controller = _mapController;
     if (controller == null || _mapSize.width <= 0 || _mapSize.height <= 0) {
       return null;
     }
 
     try {
-      final region = await controller.getVisibleRegion();
-      final sw = region.southwest;
-      final ne = region.northeast;
+      final center = Offset(_mapSize.width / 2.0, _mapSize.height / 2.0);
+      const sampleLogicalPx = 100.0;
 
-      // Invalid / unset region (map not ready).
-      if (sw.latitude == 0 &&
-          sw.longitude == 0 &&
-          ne.latitude == 0 &&
-          ne.longitude == 0) {
-        return null;
-      }
-      if ((ne.latitude - sw.latitude).abs() < 1e-9 ||
-          (ne.longitude - sw.longitude).abs() < 1e-9) {
-        return null;
-      }
-
-      final midLat = (sw.latitude + ne.latitude) / 2.0;
-      final midLng = (sw.longitude + ne.longitude) / 2.0;
+      final left = await controller.getLatLng(
+        _toScreenCoordinate(center.translate(-sampleLogicalPx / 2.0, 0)),
+      );
+      final right = await controller.getLatLng(
+        _toScreenCoordinate(center.translate(sampleLogicalPx / 2.0, 0)),
+      );
+      final top = await controller.getLatLng(
+        _toScreenCoordinate(center.translate(0, -sampleLogicalPx / 2.0)),
+      );
+      final bottom = await controller.getLatLng(
+        _toScreenCoordinate(center.translate(0, sampleLogicalPx / 2.0)),
+      );
 
       final widthMeters = Geolocator.distanceBetween(
-        midLat,
-        sw.longitude,
-        midLat,
-        ne.longitude,
+        left.latitude,
+        left.longitude,
+        right.latitude,
+        right.longitude,
       );
       final heightMeters = Geolocator.distanceBetween(
-        sw.latitude,
-        midLng,
-        ne.latitude,
-        midLng,
+        top.latitude,
+        top.longitude,
+        bottom.latitude,
+        bottom.longitude,
       );
 
-      final mppX = widthMeters / _mapSize.width;
-      final mppY = heightMeters / _mapSize.height;
+      final mppX = widthMeters / sampleLogicalPx;
+      final mppY = heightMeters / sampleLogicalPx;
       if (mppX <= 0 || mppY <= 0 || !mppX.isFinite || !mppY.isFinite) {
         return null;
       }
 
       return (mppX + mppY) / 2.0;
     } catch (e) {
-      debugPrint('metersPerLogicalPixelFromMap failed: $e');
+      debugPrint('metersPerLogicalPixelFromProjection failed: $e');
       return null;
     }
   }
 
   Future<double> _resolveMetersPerLogicalPixel() async {
-    final fromMap = await _metersPerLogicalPixelFromMap();
-    if (fromMap != null) return fromMap;
+    final fromProjection = await _metersPerLogicalPixelFromProjection();
+    if (fromProjection != null) return fromProjection;
 
     final target =
         _currentMapTarget ?? _initialMapTarget ?? widget.initialTarget;
@@ -557,7 +603,7 @@ class _FootballFieldLocalizationScreenState
     _mapSize = size;
     if (_overlayInitialized || _isRestoringInitialCorners) return;
 
-    if (_hasInitialCorners) {
+    if (_hasUsableInitialCorners) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (!mounted || _overlayInitialized || _isRestoringInitialCorners) {
           return;
@@ -568,10 +614,10 @@ class _FootballFieldLocalizationScreenState
     }
 
     WidgetsBinding.instance.addPostFrameCallback((_) async {
-      if (!mounted || _overlayInitialized || _hasInitialCorners) return;
+      if (!mounted || _overlayInitialized || _hasUsableInitialCorners) return;
 
       final metersPerPixel = await _resolveMetersPerLogicalPixel();
-      if (!mounted || _overlayInitialized || _hasInitialCorners) return;
+      if (!mounted || _overlayInitialized || _hasUsableInitialCorners) return;
 
       final fieldSize = _fieldPixelSizeForMetersPerPixel(size, metersPerPixel);
 
@@ -579,7 +625,7 @@ class _FootballFieldLocalizationScreenState
         _mapSize = size;
         _fieldWidth = fieldSize.width;
         _fieldLength = fieldSize.height;
-        _fieldCenter = Offset(size.width / 2.0, size.height / 2.0 + 20.0);
+        _fieldCenter = Offset(size.width / 2.0, size.height / 2.0);
         _overlayInitialized = true;
       });
     });
@@ -590,6 +636,7 @@ class _FootballFieldLocalizationScreenState
     final controller = _mapController;
     if (corners == null ||
         !corners.isComplete ||
+        !_cornersLookRectangular(corners) ||
         controller == null ||
         _isRestoringInitialCorners ||
         (_overlayInitialized && !force)) {
@@ -637,7 +684,7 @@ class _FootballFieldLocalizationScreenState
       }
 
       // Let the camera + layout settle before reading screen coordinates.
-      await Future<void>.delayed(const Duration(milliseconds: 120));
+      await Future<void>.delayed(const Duration(milliseconds: 220));
       if (!mounted || _mapController == null) return;
 
       if (_mapSize == Size.zero) {
@@ -688,22 +735,37 @@ class _FootballFieldLocalizationScreenState
         corners.bottomRight!,
       );
 
+      // Prefer projection-based size from measured meters (more stable than
+      // noisy screen-edge lengths when DPR conversion is slightly off).
+      _fieldWidthMeters = (topM + bottomM) / 2.0;
+      _fieldLengthMeters = (leftM + rightM) / 2.0;
+      final metersPerPixel = await _resolveMetersPerLogicalPixel();
+      final sized = _fieldPixelSizeForMetersPerPixel(
+        _mapSize,
+        metersPerPixel,
+      );
+
       if (!mounted) return;
       setState(() {
         _fieldCenter = fieldCenter;
-        _fieldWidth = width.clamp(40.0, _mapSize.width * 0.98).toDouble();
-        _fieldLength = length.clamp(40.0, _mapSize.height * 0.98).toDouble();
-        _fieldWidthMeters = (topM + bottomM) / 2.0;
-        _fieldLengthMeters = (leftM + rightM) / 2.0;
+        // Use screen-projected size when it is close to meter-based size;
+        // otherwise trust the projection meter scale (avoids tiny overlays).
+        final screenSize = Size(
+          width.clamp(40.0, _mapSize.width * 0.98).toDouble(),
+          length.clamp(40.0, _mapSize.height * 0.98).toDouble(),
+        );
+        final screenDiag = screenSize.longestSide;
+        final meterDiag = sized.longestSide;
+        final useScreen = screenDiag > 0 &&
+            meterDiag > 0 &&
+            (screenDiag / meterDiag - 1.0).abs() < 0.35;
+        _fieldWidth = useScreen ? screenSize.width : sized.width;
+        _fieldLength = useScreen ? screenSize.height : sized.height;
         _rotationRadians = rotation;
         _currentMapTarget = center;
         _overlayInitialized = true;
-        _metersDrivePixelSize = false;
+        _metersDrivePixelSize = true;
       });
-
-      if (!force && !_cornersLookRectangular(corners)) {
-        _showSnackBar(context.l10n.fieldSnackbarGpsConvertFailed);
-      }
     } catch (e, st) {
       debugPrint('restore overlay from corners failed: $e\n$st');
       if (!mounted || (_overlayInitialized && !force)) return;
@@ -746,13 +808,13 @@ class _FootballFieldLocalizationScreenState
       setState(() {
         _fieldWidth = fieldSize.width;
         _fieldLength = fieldSize.height;
-        _fieldCenter = Offset(_mapSize.width / 2.0, _mapSize.height / 2.0 + 20.0);
+        _fieldCenter = Offset(_mapSize.width / 2.0, _mapSize.height / 2.0);
       });
       return;
     }
 
     setState(() {
-      _fieldCenter = Offset(_mapSize.width / 2.0, _mapSize.height / 2.0 + 20.0);
+      _fieldCenter = Offset(_mapSize.width / 2.0, _mapSize.height / 2.0);
     });
   }
 
@@ -839,20 +901,16 @@ class _FootballFieldLocalizationScreenState
                                     _fieldEditMode) {
                                   return;
                                 }
-                                if (_hasInitialCorners &&
-                                    !_metersDrivePixelSize) {
-                                  // Re-project saved GPS corners after zoom/pan.
+                                // Keep overlay geographic size aligned after
+                                // map zoom/pan in map mode.
+                                if (_metersDrivePixelSize) {
+                                  unawaited(_applyPixelSizeFromMeters());
+                                } else if (_hasUsableInitialCorners) {
                                   unawaited(
                                     _restoreOverlayFromInitialCorners(
                                       force: true,
                                     ),
                                   );
-                                  return;
-                                }
-                                // Keep overlay geographic size aligned after
-                                // map zoom/pan in map mode.
-                                if (_metersDrivePixelSize) {
-                                  unawaited(_applyPixelSizeFromMeters());
                                 }
                               },
                             ),
@@ -1097,13 +1155,13 @@ class _FootballFieldLocalizationScreenState
     _metersDrivePixelSize = true;
     _fieldWidthMeters = widget.referenceFieldWidthMeters;
     _fieldLengthMeters = widget.referenceFieldLengthMeters;
-    _rotationRadians = -18.0 * math.pi / 180.0;
+    _rotationRadians = 0.0;
     unawaited(_applyPixelSizeFromMeters().then((_) {
       if (!mounted) return;
       setState(() {
         _fieldCenter = Offset(
           _mapSize.width / 2.0,
-          _mapSize.height / 2.0 + 20.0,
+          _mapSize.height / 2.0,
         );
       });
     }));
@@ -1220,7 +1278,7 @@ class _FootballFieldLocalizationScreenState
         bottomRight: bottomRight,
       );
 
-      // Reject clearly broken projections (e.g. missing devicePixelRatio).
+      // Reject clearly broken projections before persisting.
       if (!_cornersLookRectangular(corners)) {
         _showSnackBar(context.l10n.fieldSnackbarGpsConvertFailed);
         return null;

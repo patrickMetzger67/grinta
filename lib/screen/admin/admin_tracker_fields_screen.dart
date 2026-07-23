@@ -1,5 +1,6 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:grinta/core/extensions/l10n_extension.dart';
 import 'package:grinta/model/club.dart';
 import 'package:grinta/model/field_club.dart';
@@ -74,11 +75,15 @@ class _AdminTrackerFieldsScreenState extends State<AdminTrackerFieldsScreen> {
       return;
     }
 
+    final geo = existing?.location?.geopoint;
     final result = await FieldGpsLocalizationHelper.openLocalizationScreen(
       context,
       initialName: existing?.name ?? '',
       initialAddress: existing?.address ?? '',
       initialFieldGpsCorners: existing?.fieldGpsCorners,
+      initialTarget: geo == null
+          ? null
+          : LatLng(geo.latitude, geo.longitude),
     );
     if (result == null || !mounted) return;
 

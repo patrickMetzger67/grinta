@@ -1,6 +1,7 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:grinta/analytics/analytics_routes.dart';
 import 'package:grinta/analytics/analytics_screen_names.dart';
 import 'package:grinta/core/extensions/l10n_extension.dart';
@@ -159,6 +160,7 @@ class FieldGpsLocalizationHelper {
     String initialName = '',
     String initialAddress = '',
     FieldGpsCorners? initialFieldGpsCorners,
+    LatLng? initialTarget,
   }) {
     return Navigator.push<FieldLocalizationResult>(
       context,
@@ -168,6 +170,7 @@ class FieldGpsLocalizationHelper {
           initialName: initialName,
           initialAddress: initialAddress,
           initialFieldGpsCorners: initialFieldGpsCorners,
+          initialTarget: initialTarget ?? const LatLng(46.227638, 2.213749),
         ),
       ),
     );
