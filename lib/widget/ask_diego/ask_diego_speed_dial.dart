@@ -213,12 +213,15 @@ class _AskDiegoImageButton extends StatelessWidget {
         heroTag: heroTag,
         tooltip: tooltip,
         onPressed: onPressed,
-        backgroundColor: Colors.transparent,
-        shape: transparentFabShape,
-        elevation: 0,
-        focusElevation: 0,
-        hoverElevation: 0,
-        highlightElevation: 0,
+        backgroundColor: Colors.white,
+        elevation: 4,
+        highlightElevation: 6,
+        shape: CircleBorder(
+          side: BorderSide(
+            color: colors.primary.withValues(alpha: 0.2),
+            width: 1,
+          ),
+        ),
         splashColor: splashColor,
         child: avatar,
       );
