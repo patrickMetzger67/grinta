@@ -173,6 +173,15 @@ class _FootballFieldLocalizationScreenState
       unawaited(_restoreOverlayFromInitialCorners());
     } else if (_hasInitialAddress) {
       unawaited(_searchAddress());
+    } else {
+      // Re-measure scale once the native map has a real visible region.
+      unawaited(() async {
+        await Future<void>.delayed(const Duration(milliseconds: 200));
+        if (!mounted || !_overlayInitialized || !_metersDrivePixelSize) {
+          return;
+        }
+        await _applyPixelSizeFromMeters();
+      }());
     }
   }
 
