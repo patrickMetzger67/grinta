@@ -12,6 +12,7 @@ import 'package:grinta/util/team_deletion_access.dart';
 import 'package:http/http.dart' as http;
 
 import '../model/club.dart';
+import '../model/fieldGpsCorners.dart';
 import '../model/match.dart';
 import '../model/season.dart';
 import '../model/team.dart';
@@ -33,6 +34,21 @@ const List<String> kMatchSurfaceOptions = <String>[
   kMatchSurfaceSynthetic,
   kMatchSurfaceNatural,
 ];
+
+/// Maps a `fieldClub.surface` value onto [kMatchSurfaceOptions] when possible.
+String? mapFieldClubSurfaceToMatchSurface(String? raw) {
+  final String normalized = raw?.trim().toLowerCase() ?? '';
+  if (normalized.isEmpty) return null;
+
+  for (final String option in kMatchSurfaceOptions) {
+    if (option.toLowerCase() == normalized) return option;
+  }
+  if (normalized.contains('synth')) return kMatchSurfaceSynthetic;
+  if (normalized.contains('pelouse') || normalized.contains('naturel')) {
+    return kMatchSurfaceNatural;
+  }
+  return null;
+}
 
 /// Formats a date as `dd/MM/yyyy` for [Match.dateCh].
 String formatMatchDateCh(DateTime date) {
@@ -326,6 +342,9 @@ Match buildMatchForCreation({
   required bool withTracker,
   String? ownerId,
   Club? ownClub,
+  String? nomDuTerrain,
+  String? fieldId,
+  FieldGpsCorners? fieldGpsCorners,
 }) {
   final String? teamId = team.keyTeam?.trim();
   final String? clubId = team.clubId?.trim();
@@ -403,6 +422,7 @@ Match buildMatchForCreation({
     team1UrlLogo: team1UrlLogo,
     team2UrlLogo: team2UrlLogo,
     terrainAdresse1: trimmedVenue,
+    nomDuTerrain: nomDuTerrain?.trim() ?? '',
     isReport: false,
     isOwnClub: isHome,
     isMatchPlayed: false,
@@ -421,6 +441,8 @@ Match buildMatchForCreation({
     isTrackerDataUploaded: false,
     soccerType: team.soccerType ?? 11,
     surfaceDeJeu: surfaceDeJeu?.trim() ?? '',
+    fieldId: fieldId?.trim().isNotEmpty == true ? fieldId!.trim() : null,
+    fieldGpsCorners: fieldGpsCorners,
     isStatApplied: false,
     isScrapping: false,
   );
@@ -444,6 +466,9 @@ Match buildMatchForUpdate({
   required bool withTracker,
   String? ownerId,
   Club? ownClub,
+  String? nomDuTerrain,
+  String? fieldId,
+  FieldGpsCorners? fieldGpsCorners,
 }) {
   final Match updated = buildMatchForCreation(
     date: date,
@@ -461,6 +486,9 @@ Match buildMatchForUpdate({
     withTracker: withTracker,
     ownerId: ownerId,
     ownClub: ownClub,
+    nomDuTerrain: nomDuTerrain ?? existing.nomDuTerrain,
+    fieldId: fieldId ?? existing.fieldId,
+    fieldGpsCorners: fieldGpsCorners ?? existing.fieldGpsCorners,
   );
 
   updated.id = existing.id;
@@ -489,8 +517,6 @@ Match buildMatchForUpdate({
   updated.dateTimeConvo = existing.dateTimeConvo;
   updated.messageConvo = existing.messageConvo;
   updated.addressConvo = existing.addressConvo;
-  updated.fieldId = existing.fieldId;
-  updated.fieldGpsCorners = existing.fieldGpsCorners;
   updated.url = existing.url;
   updated.urlMatchDetails = existing.urlMatchDetails;
   updated.description = existing.description;
@@ -501,7 +527,6 @@ Match buildMatchForUpdate({
   updated.assistantObserver = existing.assistantObserver;
   updated.accompanyingDelegate = existing.accompanyingDelegate;
   updated.terrainAddress2 = existing.terrainAddress2;
-  updated.nomDuTerrain = existing.nomDuTerrain;
   updated.isScrapping = existing.isScrapping;
 
   return updated;

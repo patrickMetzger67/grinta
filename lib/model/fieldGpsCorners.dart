@@ -135,6 +135,38 @@ class FieldGpsCorners {
           bottomLeft != null &&
           bottomRight != null;
 
+  /// Soft rectangle check (opposite sides / diagonals within 25%).
+  bool get isReasonableRectangle {
+    if (!isComplete) return false;
+
+    final tl = topLeft!;
+    final tr = topRight!;
+    final bl = bottomLeft!;
+    final br = bottomRight!;
+
+    final top = FieldCornerGps.distanceMeters(tl, tr);
+    final bottom = FieldCornerGps.distanceMeters(bl, br);
+    final left = FieldCornerGps.distanceMeters(tl, bl);
+    final right = FieldCornerGps.distanceMeters(tr, br);
+    final diagonal1 = FieldCornerGps.distanceMeters(tl, br);
+    final diagonal2 = FieldCornerGps.distanceMeters(tr, bl);
+
+    bool closeEnough(double a, double b) {
+      final maxValue = math.max(a, b);
+      if (maxValue <= 0) return false;
+      return (a - b).abs() / maxValue <= 0.25;
+    }
+
+    final minSide = [top, bottom, left, right].reduce(math.min);
+    final maxSide = [top, bottom, left, right].reduce(math.max);
+
+    return minSide >= 15 &&
+        maxSide <= 160 &&
+        closeEnough(top, bottom) &&
+        closeEnough(left, right) &&
+        closeEnough(diagonal1, diagonal2);
+  }
+
   factory FieldGpsCorners.fromMap(Map<String, dynamic> map) {
     return FieldGpsCorners(
       topLeft: map['topLeft'] != null

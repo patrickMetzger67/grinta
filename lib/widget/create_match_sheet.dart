@@ -1,18 +1,24 @@
+import 'dart:async';
+
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:grinta/core/extensions/l10n_extension.dart';
 import 'package:grinta/l10n/app_localizations.dart';
 import 'package:grinta/model/club.dart';
+import 'package:grinta/model/field_club.dart';
 import 'package:grinta/model/match.dart';
 import 'package:grinta/model/season.dart';
 import 'package:grinta/model/team.dart';
 import 'package:grinta/navigation/app_navigator.dart';
 import 'package:grinta/provider/appSession.dart';
 import 'package:grinta/services/clubService.dart';
+import 'package:grinta/services/field_club_service.dart';
 import 'package:grinta/services/matchService.dart';
 import 'package:grinta/services/ownerService.dart';
 import 'package:grinta/util/app_snackbar.dart';
 import 'package:grinta/util/app_theme.dart';
+import 'package:grinta/util/field_gps_localization_helper.dart';
 import 'package:grinta/util/match_creation_helper.dart';
 import 'package:grinta/widget/club_picker_sheet.dart';
 import 'package:intl/intl.dart';
@@ -89,6 +95,7 @@ class CreateMatchSheet extends StatefulWidget {
 class _CreateMatchSheetState extends State<CreateMatchSheet> {
   final MatchService _matchService = MatchService();
   final ClubService _clubService = ClubService();
+  final FieldClubService _fieldClubService = FieldClubService();
   final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
   final TextEditingController _manualOpponentController =
       TextEditingController();
@@ -113,7 +120,22 @@ class _CreateMatchSheetState extends State<CreateMatchSheet> {
   bool _isSubmitting = false;
   bool _isPrefilling = false;
 
+  List<FieldClub> _venueFields = const <FieldClub>[];
+  FieldClub? _selectedFieldClub;
+  bool _venueFieldsLoading = false;
+  String? _pendingFieldId;
+  String? _pendingFieldName;
+
   bool get _isEditMode => widget.isEditMode;
+
+  String? get _venueClubId {
+    if (_isHome) {
+      final own = _ownClub?.affiliation?.trim();
+      if (own != null && own.isNotEmpty) return own;
+      return _selectedTeam?.clubId?.trim();
+    }
+    return _selectedOpponentClub?.affiliation?.trim();
+  }
 
   @override
   void initState() {
@@ -148,6 +170,8 @@ class _CreateMatchSheetState extends State<CreateMatchSheet> {
     final String surface = match.surfaceDeJeu?.trim() ?? '';
     _selectedSurface =
         kMatchSurfaceOptions.contains(surface) ? surface : null;
+    _pendingFieldId = match.fieldId?.trim();
+    _pendingFieldName = match.nomDuTerrain?.trim();
 
     _initTeams();
     _selectedTeamId = singleManagedMatchTeamId(match) ?? _selectedTeamId;
@@ -180,6 +204,7 @@ class _CreateMatchSheetState extends State<CreateMatchSheet> {
       await _loadOwnClubForTeam(team);
     }
     await _refreshOwnerOptions();
+    await _loadVenueFields();
 
     if (!mounted) return;
     setState(() => _isPrefilling = false);
@@ -228,6 +253,7 @@ class _CreateMatchSheetState extends State<CreateMatchSheet> {
         _ownClubLoading = false;
       });
       _refreshDefaultVenueAddress();
+      await _loadVenueFields();
       return;
     }
 
@@ -241,6 +267,7 @@ class _CreateMatchSheetState extends State<CreateMatchSheet> {
         _ownClubLoading = false;
       });
       _refreshDefaultVenueAddress();
+      await _loadVenueFields();
     } catch (_) {
       if (!mounted) return;
       setState(() => _ownClubLoading = false);
@@ -248,6 +275,8 @@ class _CreateMatchSheetState extends State<CreateMatchSheet> {
   }
 
   void _refreshDefaultVenueAddress() {
+    if (_selectedFieldClub != null) return;
+
     final Club? venueClub = _isHome ? _ownClub : _selectedOpponentClub;
     if (venueClub == null) {
       return;
@@ -256,6 +285,160 @@ class _CreateMatchSheetState extends State<CreateMatchSheet> {
     final String address = buildClubMultilineAddress(venueClub);
     if (address.isEmpty) return;
     _venueController.text = address;
+  }
+
+  Future<void> _loadVenueFields() async {
+    final clubId = _venueClubId;
+    if (clubId == null || clubId.isEmpty) {
+      if (!mounted) return;
+      setState(() {
+        _venueFields = const <FieldClub>[];
+        _selectedFieldClub = null;
+        _venueFieldsLoading = false;
+      });
+      return;
+    }
+
+    setState(() => _venueFieldsLoading = true);
+
+    try {
+      final fields = await _fieldClubService.listByClubId(clubId);
+      if (!mounted) return;
+
+      FieldClub? selected;
+      final pendingId = _pendingFieldId?.trim() ?? '';
+      final pendingName = _pendingFieldName?.trim() ?? '';
+      if (pendingId.isNotEmpty) {
+        for (final field in fields) {
+          if (field.id == pendingId) {
+            selected = field;
+            break;
+          }
+        }
+      }
+      if (selected == null && pendingName.isNotEmpty) {
+        for (final field in fields) {
+          if (field.name.trim().toLowerCase() == pendingName.toLowerCase()) {
+            selected = field;
+            break;
+          }
+        }
+      }
+      if (selected == null &&
+          _selectedFieldClub != null &&
+          fields.any((f) => f.id == _selectedFieldClub!.id)) {
+        selected = fields.firstWhere((f) => f.id == _selectedFieldClub!.id);
+      }
+
+      setState(() {
+        _venueFields = fields;
+        _selectedFieldClub = selected;
+        _venueFieldsLoading = false;
+        _pendingFieldId = null;
+        _pendingFieldName = null;
+      });
+
+      if (selected != null) {
+        _applySelectedField(selected, updateState: false);
+        if (mounted) setState(() {});
+      }
+    } catch (_) {
+      if (!mounted) return;
+      setState(() {
+        _venueFields = const <FieldClub>[];
+        _venueFieldsLoading = false;
+      });
+    }
+  }
+
+  void _applySelectedField(FieldClub field, {bool updateState = true}) {
+    void apply() {
+      _selectedFieldClub = field;
+      if (field.address.trim().isNotEmpty) {
+        _venueController.text = field.address.trim();
+      }
+      final mapped = mapFieldClubSurfaceToMatchSurface(field.surface);
+      if (mapped != null) {
+        _selectedSurface = mapped;
+      } else if (field.surface?.trim().isNotEmpty == true &&
+          kMatchSurfaceOptions.contains(field.surface!.trim())) {
+        _selectedSurface = field.surface!.trim();
+      }
+    }
+
+    if (updateState) {
+      setState(apply);
+    } else {
+      apply();
+    }
+  }
+
+  Future<bool> _ensureSelectedFieldGeolocatedIfNeeded() async {
+    if (!_withTracker) return true;
+
+    final field = _selectedFieldClub;
+    if (field == null) return true;
+    if (field.hasUsableFieldGpsCorners) return true;
+
+    final l10n = context.l10n;
+    final colors = context.appColors;
+    final shouldLocalize = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: Text(l10n.createMatchFieldNotGeolocatedTitle),
+        content: Text(l10n.createMatchFieldNotGeolocatedMessage),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(16),
+          side: BorderSide(color: colors.border),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(dialogContext).pop(false),
+            child: Text(l10n.actionNo),
+          ),
+          TextButton(
+            onPressed: () => Navigator.of(dialogContext).pop(true),
+            child: Text(l10n.actionYes),
+          ),
+        ],
+      ),
+    );
+
+    if (shouldLocalize != true || !mounted) return true;
+
+    final geo = field.location?.geopoint;
+    final result = await FieldGpsLocalizationHelper.openLocalizationScreen(
+      context,
+      initialName: field.name,
+      initialAddress: field.address,
+      initialFieldGpsCorners: field.fieldGpsCorners,
+      initialTarget: geo == null ? null : LatLng(geo.latitude, geo.longitude),
+    );
+    if (result == null || !mounted) return true;
+
+    try {
+      final saved = await FieldGpsLocalizationHelper.saveLocalizationResultToFieldClub(
+        result: result,
+        clubId: field.clubId,
+        existing: field,
+        name: result.fieldName.trim().isNotEmpty
+            ? result.fieldName.trim()
+            : field.name,
+        address: result.fieldAddress.trim().isNotEmpty
+            ? result.fieldAddress.trim()
+            : field.address,
+        fieldClubService: _fieldClubService,
+      );
+      if (!mounted) return true;
+      _applySelectedField(saved);
+      return true;
+    } catch (e, st) {
+      debugPrint('match field geoloc save failed: $e\n$st');
+      if (mounted) {
+        AppSnackbar.show(context, l10n.adminTrackerFieldsSaveFailed);
+      }
+      return true;
+    }
   }
 
   Future<void> _refreshOwnerOptions() async {
@@ -335,9 +518,13 @@ class _CreateMatchSheetState extends State<CreateMatchSheet> {
       _selectedOpponentClub = club;
       _manualOpponentEntry = false;
       _manualOpponentController.clear();
+      if (!_isHome) {
+        _selectedFieldClub = null;
+      }
     });
     if (!_isHome) {
       _refreshDefaultVenueAddress();
+      unawaited(_loadVenueFields());
     }
   }
 
@@ -345,6 +532,10 @@ class _CreateMatchSheetState extends State<CreateMatchSheet> {
     setState(() {
       _manualOpponentEntry = true;
       _selectedOpponentClub = null;
+      if (!_isHome) {
+        _selectedFieldClub = null;
+        _venueFields = const <FieldClub>[];
+      }
     });
     if (!_isHome) {
       _venueController.clear();
@@ -356,6 +547,9 @@ class _CreateMatchSheetState extends State<CreateMatchSheet> {
       _selectedTeamId = teamId;
       _selectedOwnerId = null;
       _ownClub = null;
+      if (_isHome) {
+        _selectedFieldClub = null;
+      }
     });
 
     final Team? team = _selectedTeam;
@@ -400,6 +594,9 @@ class _CreateMatchSheetState extends State<CreateMatchSheet> {
       return;
     }
 
+    await _ensureSelectedFieldGeolocatedIfNeeded();
+    if (!mounted) return;
+
     final String venueAddress = _venueController.text.trim();
     final String successMessage =
         _isEditMode ? context.l10n.editMatchSaved : context.l10n.createMatchSaved;
@@ -408,6 +605,7 @@ class _CreateMatchSheetState extends State<CreateMatchSheet> {
     final NavigatorState navigator = Navigator.of(context, rootNavigator: true);
     final VoidCallback? onSaved = widget.onSaved;
     final Match? existingMatch = widget.matchToEdit;
+    final FieldClub? selectedField = _selectedFieldClub;
 
     if (venueAddress.isNotEmpty) {
       await geocodeAddressForNavigation(venueAddress);
@@ -437,6 +635,9 @@ class _CreateMatchSheetState extends State<CreateMatchSheet> {
               withTracker: _withTracker,
               ownerId: _selectedOwnerId,
               ownClub: _ownClub,
+              nomDuTerrain: selectedField?.name,
+              fieldId: selectedField?.id,
+              fieldGpsCorners: selectedField?.fieldGpsCorners,
             )
           : buildMatchForCreation(
               date: _selectedDate,
@@ -454,6 +655,9 @@ class _CreateMatchSheetState extends State<CreateMatchSheet> {
               withTracker: _withTracker,
               ownerId: _selectedOwnerId,
               ownClub: _ownClub,
+              nomDuTerrain: selectedField?.name,
+              fieldId: selectedField?.id,
+              fieldGpsCorners: selectedField?.fieldGpsCorners,
             );
 
       if (_isEditMode) {
@@ -603,8 +807,12 @@ class _CreateMatchSheetState extends State<CreateMatchSheet> {
                   value: _isHome,
                   activeThumbColor: colors.primary,
                   onChanged: (bool value) {
-                    setState(() => _isHome = value);
+                    setState(() {
+                      _isHome = value;
+                      _selectedFieldClub = null;
+                    });
                     _refreshDefaultVenueAddress();
+                    unawaited(_loadVenueFields());
                   },
                 ),
                 SwitchListTile(
@@ -738,6 +946,59 @@ class _CreateMatchSheetState extends State<CreateMatchSheet> {
                     ),
                   ),
                 const SizedBox(height: 16),
+                if (_venueFieldsLoading)
+                  const Padding(
+                    padding: EdgeInsets.only(bottom: 12),
+                    child: Center(
+                      child: SizedBox(
+                        width: 20,
+                        height: 20,
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      ),
+                    ),
+                  )
+                else if (_venueFields.isNotEmpty) ...[
+                  DropdownButtonFormField<String>(
+                    value: _venueFields.any((f) => f.id == _selectedFieldClub?.id)
+                        ? _selectedFieldClub!.id
+                        : null,
+                    isExpanded: true,
+                    dropdownColor: colors.surface,
+                    decoration: _fieldDecoration(
+                      context,
+                      l10n.createMatchSelectField,
+                    ),
+                    items: _venueFields
+                        .map(
+                          (FieldClub field) => DropdownMenuItem<String>(
+                            value: field.id,
+                            child: Text(
+                              field.name.trim().isNotEmpty
+                                  ? field.name.trim()
+                                  : field.id,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ),
+                        )
+                        .toList(),
+                    onChanged: (String? fieldId) {
+                      if (fieldId == null) return;
+                      FieldClub? field;
+                      for (final candidate in _venueFields) {
+                        if (candidate.id == fieldId) {
+                          field = candidate;
+                          break;
+                        }
+                      }
+                      if (field == null) return;
+                      _applySelectedField(field);
+                      if (_withTracker && !field.hasUsableFieldGpsCorners) {
+                        unawaited(_ensureSelectedFieldGeolocatedIfNeeded());
+                      }
+                    },
+                  ),
+                  const SizedBox(height: 12),
+                ],
                 TextFormField(
                   controller: _venueController,
                   minLines: 2,
@@ -792,6 +1053,11 @@ class _CreateMatchSheetState extends State<CreateMatchSheet> {
                       }
                     });
                     _refreshOwnerOptions();
+                    if (value &&
+                        _selectedFieldClub != null &&
+                        !_selectedFieldClub!.hasUsableFieldGpsCorners) {
+                      unawaited(_ensureSelectedFieldGeolocatedIfNeeded());
+                    }
                   },
                 ),
                 if (_withTracker) ...[

@@ -7980,6 +7980,24 @@ abstract class AppLocalizations {
   /// **'Lieu / adresse du terrain'**
   String get createMatchVenue;
 
+  /// No description provided for @createMatchSelectField.
+  ///
+  /// In fr, this message translates to:
+  /// **'Terrain du club'**
+  String get createMatchSelectField;
+
+  /// No description provided for @createMatchFieldNotGeolocatedTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Terrain non géolocalisé'**
+  String get createMatchFieldNotGeolocatedTitle;
+
+  /// No description provided for @createMatchFieldNotGeolocatedMessage.
+  ///
+  /// In fr, this message translates to:
+  /// **'Le terrain n'est pas géolocalisé. Souhaites-tu le faire maintenant ? C'est nécessaire pour la génération des heatmaps.'**
+  String get createMatchFieldNotGeolocatedMessage;
+
   /// No description provided for @createMatchSurface.
   ///
   /// In fr, this message translates to:

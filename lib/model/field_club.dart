@@ -44,6 +44,10 @@ class FieldClub {
 
   bool get hasFieldGpsCorners => fieldGpsCorners?.isComplete == true;
 
+  /// True when corners exist and form a plausible pitch rectangle.
+  bool get hasUsableFieldGpsCorners =>
+      fieldGpsCorners?.isReasonableRectangle == true;
+
   FieldClub copyWith({
     String? id,
     String? address,

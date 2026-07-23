@@ -4547,6 +4547,16 @@ class AppLocalizationsEn extends AppLocalizations {
   String get createMatchVenue => 'Venue / field address';
 
   @override
+  String get createMatchSelectField => 'Club field';
+
+  @override
+  String get createMatchFieldNotGeolocatedTitle => 'Field not geolocated';
+
+  @override
+  String get createMatchFieldNotGeolocatedMessage =>
+      'This field is not geolocated. Would you like to do it now? This is required to generate heatmaps.';
+
+  @override
   String get createMatchSurface => 'Playing surface';
 
   @override
