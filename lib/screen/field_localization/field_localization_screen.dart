@@ -587,6 +587,10 @@ class _FootballFieldLocalizationScreenState
         _currentMapTarget = center;
         _overlayInitialized = true;
       });
+
+      if (!_cornersLookRectangular(corners)) {
+        _showSnackBar(context.l10n.fieldSnackbarGpsConvertFailed);
+      }
     } catch (e, st) {
       debugPrint('restore overlay from corners failed: $e\n$st');
       if (!mounted || _overlayInitialized) return;
