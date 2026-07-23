@@ -187,6 +187,34 @@ class TrainingIntenseSyncService {
       throw StateError('Training id missing');
     }
 
+    final result = await analyzeDeviceWindow(
+      target: target,
+      window: window,
+      eventId: trainingId,
+      fieldGpsCorners: fieldGpsCorners,
+      onProgress: onProgress,
+      treatEmptyAsSuccess: true,
+    );
+
+    if (result == null) return;
+
+    await TrackerAnalysisService.saveAnalysis(
+      docId: '${trainingId}_${target.trackerId}',
+      result,
+      eventId: trainingId,
+    );
+  }
+
+  /// Same Insiders fetch + local analysis as [syncDevice], without writing
+  /// `TRACKER_Analysis`. Returns `null` when the GNSS window is empty.
+  Future<TrackerAnalysisResult?> analyzeDeviceWindow({
+    required IntenseTrainingDeviceTarget target,
+    required TrainingIntenseTimeWindow window,
+    required String eventId,
+    FieldGpsCorners? fieldGpsCorners,
+    void Function(IntenseTrainingDeviceTarget target)? onProgress,
+    bool treatEmptyAsSuccess = true,
+  }) async {
     void emit(IntenseDeviceSyncStage stage, double progress) {
       target.stage = stage;
       target.progress = progress;
@@ -241,7 +269,11 @@ class TrainingIntenseSyncService {
             'for ${target.trackerLabel} — treating as success',
           );
           emit(IntenseDeviceSyncStage.done, 1);
-          return;
+          if (treatEmptyAsSuccess) return null;
+          throw StateError(
+            'Aucune donnée GNSS pour « ${target.trackerLabel} » '
+            'sur la période demandée.',
+          );
         }
         _logInsidersRequestUrlFromDetails(e.details, label: 'error');
         debugPrint(
@@ -306,7 +338,11 @@ class TrainingIntenseSyncService {
           'on requested window — treating as success',
         );
         emit(IntenseDeviceSyncStage.done, 1);
-        return;
+        if (treatEmptyAsSuccess) return null;
+        throw StateError(
+          'Aucune donnée GNSS pour « ${target.trackerLabel} » '
+          'sur la période demandée.',
+        );
       }
 
       emit(IntenseDeviceSyncStage.analyzing, 0.7);
@@ -316,19 +352,22 @@ class TrainingIntenseSyncService {
         fieldGps = FootballFieldGps.fromFieldGpsCorners(fieldGpsCorners);
       }
 
-      // Same local analysis path as live Intense metrics (not cloud USB pipeline).
-      await _analyzeLocally(
-        target: target,
-        trainingId: trainingId,
-        samples: samples,
+      final result = SensorAnalysisService.analyzeSensorData(
+        trackerId: target.trackerId,
+        playerId: target.playerId,
+        eventId: eventId,
+        allSamples: samples,
+        isMatch: false,
         fieldGps: fieldGps,
+        minMeaningfulStepDistanceMeters: kIntenseMinMeaningfulStepDistanceMeters,
       );
 
       emit(IntenseDeviceSyncStage.done, 1);
+      return result;
     } catch (e) {
       target.errorMessage = formatIntenseSyncError(e, target: target);
       debugPrint(
-        '[IntenseSync] syncDevice FAILED trackerId=${target.trackerId} '
+        '[IntenseSync] analyzeDeviceWindow FAILED trackerId=${target.trackerId} '
         'insidersDeviceId=${target.insidersDeviceId} '
         'errorMessage=${target.errorMessage}',
       );
@@ -473,29 +512,6 @@ class TrainingIntenseSyncService {
     return 'Aucune donnée GNSS pour « ${target.trackerLabel} » sur la période '
         'demandée : le capteur doit être utilisé en extérieur. '
         '(Une réponse Insiders vide n\'est pas une erreur d\'accès.)';
-  }
-
-  Future<void> _analyzeLocally({
-    required IntenseTrainingDeviceTarget target,
-    required String trainingId,
-    required List<TrackerRaw> samples,
-    required FootballFieldGps? fieldGps,
-  }) async {
-    final result = SensorAnalysisService.analyzeSensorData(
-      trackerId: target.trackerId,
-      playerId: target.playerId,
-      eventId: trainingId,
-      allSamples: samples,
-      isMatch: false,
-      fieldGps: fieldGps,
-      minMeaningfulStepDistanceMeters: kIntenseMinMeaningfulStepDistanceMeters,
-    );
-
-    await TrackerAnalysisService.saveAnalysis(
-      docId: '${trainingId}_${target.trackerId}',
-      result,
-      eventId: trainingId,
-    );
   }
 
   Future<String> _convertAsiBase64ToCsv(String asiBase64) async {

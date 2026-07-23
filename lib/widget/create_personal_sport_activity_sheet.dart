@@ -7,6 +7,7 @@ import 'package:grinta/model/player_feeling.dart';
 import 'package:grinta/model/wearable_device_type.dart';
 import 'package:grinta/provider/appSession.dart';
 import 'package:grinta/services/activity_types_service.dart';
+import 'package:grinta/services/personal_gps_sync_service.dart';
 import 'package:grinta/services/personal_sport_activity_service.dart';
 import 'package:grinta/model/apple_health_importable_activity.dart';
 import 'package:grinta/model/google_health_importable_activity.dart';
@@ -112,16 +113,22 @@ class CreatePersonalSportActivitySheet extends StatefulWidget {
 class _CreatePersonalSportActivitySheetState
     extends State<CreatePersonalSportActivitySheet> {
   final _service = PersonalSportActivityService();
+  final _gpsSyncService = PersonalGpsSyncService();
   final _notesController = TextEditingController();
   final _formKey = GlobalKey<FormState>();
 
   late DateTime _date;
   late TimeOfDay _time;
   bool _manualEntry = true;
+  bool _useMyGps = false;
   bool _submitting = false;
   bool _loadingTypes = true;
   bool _loadingImportActivities = false;
   bool _loadingConnectedApps = false;
+  bool _loadingGpsOwner = false;
+
+  PersonalGpsOwnerAvailability? _gpsAvailability;
+  PersonalGpsDeviceOption? _selectedGpsDevice;
 
   List<ActivityTypeDefinition> _types = const [];
   String? _typeId;
@@ -190,6 +197,60 @@ class _CreatePersonalSportActivitySheetState
       _time = widget.initialTime ?? TimeOfDay(hour: now.hour, minute: 0);
     }
     _loadTypes();
+    if (!_isEditMode && !_readOnly) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) _loadGpsOwnerAvailability();
+      });
+    }
+  }
+
+  Future<void> _loadGpsOwnerAvailability() async {
+    final session = context.read<AppSession>();
+    final playerEmail = session.selectedPlayer?.email?.trim() ?? '';
+    final authEmail = FirebaseAuth.instance.currentUser?.email?.trim() ?? '';
+    final emails = <String>[
+      if (playerEmail.isNotEmpty) playerEmail,
+      if (authEmail.isNotEmpty &&
+          authEmail.toLowerCase() != playerEmail.toLowerCase())
+        authEmail,
+    ];
+    if (emails.isEmpty) return;
+
+    setState(() => _loadingGpsOwner = true);
+    try {
+      PersonalGpsOwnerAvailability? availability;
+      for (final email in emails) {
+        availability = await _gpsSyncService.resolveForEmail(email);
+        if (availability != null) break;
+      }
+      if (!mounted) return;
+      setState(() {
+        _gpsAvailability = availability;
+        _selectedGpsDevice = availability?.devices.isNotEmpty == true
+            ? availability!.devices.first
+            : null;
+        _loadingGpsOwner = false;
+      });
+    } catch (e, st) {
+      debugPrint('load personal GPS owner failed: $e\n$st');
+      if (!mounted) return;
+      setState(() {
+        _gpsAvailability = null;
+        _selectedGpsDevice = null;
+        _loadingGpsOwner = false;
+      });
+    }
+  }
+
+  bool get _canUseMyGps =>
+      !_isEditMode &&
+      !_readOnly &&
+      _gpsAvailability != null &&
+      _gpsAvailability!.devices.isNotEmpty;
+
+  void _closeWithoutSaving() {
+    if (_submitting) return;
+    Navigator.of(context).pop();
   }
 
   @override
@@ -569,6 +630,14 @@ class _CreatePersonalSportActivitySheetState
     setState(() => _submitting = true);
     try {
       final existing = widget.activityToEdit;
+      if (!_isEditMode && _useMyGps) {
+        await _submitFromGps(
+          uid: uid,
+          playerId: playerId,
+          session: session,
+        );
+        return;
+      }
       if (!_isEditMode && !_manualEntry) {
         PersonalSportActivity? imported;
         if (_importSource == WearableDeviceType.strava &&
@@ -714,6 +783,105 @@ class _CreatePersonalSportActivitySheetState
     }
   }
 
+  Future<void> _submitFromGps({
+    required String uid,
+    required String playerId,
+    required AppSession session,
+  }) async {
+    final device = _selectedGpsDevice;
+    if (device == null) {
+      AppSnackbar.show(context, context.l10n.createPersonalSportGpsDeviceRequired);
+      return;
+    }
+    if (_typeId == null || _typeId!.isEmpty) {
+      AppSnackbar.show(context, context.l10n.createPersonalSportTypeRequired);
+      return;
+    }
+
+    final startAt = DateTime(
+      _date.year,
+      _date.month,
+      _date.day,
+      _time.hour,
+      _time.minute,
+    );
+    final stopAt = DateTime.now();
+    if (!stopAt.isAfter(startAt)) {
+      AppSnackbar.show(context, context.l10n.createPersonalSportGpsStartInFuture);
+      return;
+    }
+
+    try {
+      final analysis = await _gpsSyncService.syncWindow(
+        device: device,
+        playerId: playerId,
+        startAt: startAt,
+        stopAt: stopAt,
+      );
+      if (!mounted) return;
+      if (analysis == null) {
+        AppSnackbar.show(context, context.l10n.createPersonalSportGpsNoData);
+        return;
+      }
+
+      final metrics = PersonalGpsSyncService.metricsFromAnalysis(analysis);
+      if (metrics.durationSeconds <= 0 && metrics.distanceMeters <= 0) {
+        AppSnackbar.show(context, context.l10n.createPersonalSportGpsNoData);
+        return;
+      }
+
+      final endAt = startAt.add(Duration(seconds: metrics.durationSeconds));
+      final typeLabel = ActivityTypesService.instance
+              .byId(_typeId!)
+              ?.labelForLocale(Localizations.localeOf(context)) ??
+          _typeId!;
+
+      final activity = PersonalSportActivity(
+        memberId: playerId,
+        createdByUserId: uid,
+        startAt: startAt,
+        endAt: endAt,
+        typeId: _typeId!,
+        title: typeLabel,
+        visibility: _visibility,
+        entryMode: PersonalSportEntryMode.import,
+        notes: _notesController.text.trim().isEmpty
+            ? null
+            : _notesController.text.trim(),
+        feeling: _feeling?.value,
+        durationSeconds:
+            metrics.durationSeconds > 0 ? metrics.durationSeconds : null,
+        distanceMeters:
+            metrics.distanceMeters > 0 ? metrics.distanceMeters : null,
+        paceSecondsPerKm: metrics.paceSecondsPerKm,
+        distanceUnit: 'km',
+        paceUnit: '/km',
+        externalSource: PersonalGpsSyncService.externalSource,
+        externalId: device.insidersDeviceId,
+        seasonId: session.selectedSeason?.ref?.id,
+        teamIds: const <String>[],
+        accessMemberIds: [playerId],
+      );
+
+      final saved = await _service.create(activity);
+      if (!mounted) return;
+      widget.onSaved?.call();
+      Navigator.of(context).pop(saved);
+    } catch (e, st) {
+      debugPrint('personal GPS sync failed: $e\n$st');
+      if (!mounted) return;
+      final message = e is StateError
+          ? e.message.trim()
+          : context.l10n.createPersonalSportGpsSyncError;
+      AppSnackbar.show(
+        context,
+        message.isEmpty
+            ? context.l10n.createPersonalSportGpsSyncError
+            : message,
+      );
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final colors = context.appColors;
@@ -780,15 +948,110 @@ class _CreatePersonalSportActivitySheetState
                   ),
                   value: _manualEntry,
                   activeColor: colors.primary,
+                  onChanged: _useMyGps
+                      ? null
+                      : (value) {
+                          setState(() {
+                            _manualEntry = value;
+                            if (!value) _useMyGps = false;
+                          });
+                          if (!value) {
+                            _loadConnectedAppsAndActivities();
+                          }
+                        },
+                ),
+              if (_loadingGpsOwner && !_isEditMode)
+                const Padding(
+                  padding: EdgeInsets.symmetric(vertical: 8),
+                  child: Center(child: CircularProgressIndicator()),
+                )
+              else if (_canUseMyGps)
+                SwitchListTile.adaptive(
+                  contentPadding: EdgeInsets.zero,
+                  title: Text(l10n.createPersonalSportUseMyGps),
+                  subtitle: Text(
+                    l10n.createPersonalSportUseMyGpsHint,
+                    style: TextStyle(
+                      color: colors.textSecondary,
+                      fontSize: 13,
+                    ),
+                  ),
+                  value: _useMyGps,
+                  activeColor: colors.primary,
                   onChanged: (value) {
-                    setState(() => _manualEntry = value);
-                    if (!value) {
-                      _loadConnectedAppsAndActivities();
-                    }
+                    setState(() {
+                      _useMyGps = value;
+                      if (value) {
+                        _manualEntry = true;
+                        _clearImportSelections();
+                        _importSource = null;
+                      }
+                    });
                   },
                 ),
+              if (_useMyGps && _canUseMyGps) ...[
+                if (_gpsAvailability!.devices.length > 1) ...[
+                  const SizedBox(height: 8),
+                  DropdownButtonFormField<String>(
+                    value: _selectedGpsDevice?.deviceOwner.id,
+                    decoration: InputDecoration(
+                      labelText: l10n.createPersonalSportGpsDevice,
+                    ),
+                    items: [
+                      for (final device in _gpsAvailability!.devices)
+                        DropdownMenuItem(
+                          value: device.deviceOwner.id,
+                          child: Text(device.label),
+                        ),
+                    ],
+                    onChanged: (id) {
+                      if (id == null) return;
+                      PersonalGpsDeviceOption? match;
+                      for (final device in _gpsAvailability!.devices) {
+                        if (device.deviceOwner.id == id) {
+                          match = device;
+                          break;
+                        }
+                      }
+                      setState(() => _selectedGpsDevice = match);
+                    },
+                  ),
+                ],
+                const SizedBox(height: 8),
+                Text(
+                  l10n.createPersonalSportGpsMetricsHint,
+                  style: TextStyle(
+                    color: colors.textSecondary,
+                    fontSize: 13,
+                  ),
+                ),
+              ],
               const SizedBox(height: 8),
-              if (_manualEntry || _isEditMode) ...[
+              if (_useMyGps) ...[
+                if (_loadingTypes)
+                  const Center(child: CircularProgressIndicator())
+                else
+                  DropdownButtonFormField<String>(
+                    value: _typeId,
+                    decoration: InputDecoration(
+                      labelText: l10n.createPersonalSportType,
+                    ),
+                    items: [
+                      for (final type in _types)
+                        DropdownMenuItem(
+                          value: type.id,
+                          child: Text(type.labelForLocale(locale)),
+                        ),
+                    ],
+                    onChanged: _readOnly
+                        ? null
+                        : (value) {
+                            if (value != null) {
+                              setState(() => _typeId = value);
+                            }
+                          },
+                  ),
+              ] else if (_manualEntry || _isEditMode) ...[
                 _MetricTile(
                   label: l10n.createPersonalSportDuration,
                   value: _duration.inSeconds > 0
@@ -1139,27 +1402,42 @@ class _CreatePersonalSportActivitySheetState
               ),
               if (!_readOnly) ...[
                 const SizedBox(height: 20),
-                FilledButton(
-                  onPressed: _submitting ? null : _submit,
-                  style: FilledButton.styleFrom(
-                    backgroundColor: colors.primary,
-                    foregroundColor: Colors.white,
-                    minimumSize: const Size.fromHeight(48),
-                  ),
-                  child: _submitting
-                      ? const SizedBox(
-                          width: 22,
-                          height: 22,
-                          child: CircularProgressIndicator(
-                            strokeWidth: 2,
-                            color: Colors.white,
-                          ),
-                        )
-                      : Text(
-                          _isEditMode
-                              ? l10n.editPersonalSportSubmit
-                              : l10n.createPersonalSportSubmit,
+                Row(
+                  children: [
+                    Expanded(
+                      child: OutlinedButton(
+                        onPressed: _submitting ? null : _closeWithoutSaving,
+                        child: Text(l10n.actionCancel),
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: FilledButton(
+                        onPressed: _submitting ? null : _submit,
+                        style: FilledButton.styleFrom(
+                          backgroundColor: colors.primary,
+                          foregroundColor: Colors.white,
+                          minimumSize: const Size.fromHeight(48),
                         ),
+                        child: _submitting
+                            ? const SizedBox(
+                                width: 22,
+                                height: 22,
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2,
+                                  color: Colors.white,
+                                ),
+                              )
+                            : Text(
+                                _useMyGps
+                                    ? l10n.createPersonalSportGpsSubmit
+                                    : _isEditMode
+                                        ? l10n.editPersonalSportSubmit
+                                        : l10n.createPersonalSportSubmit,
+                              ),
+                      ),
+                    ),
+                  ],
                 ),
               ],
             ],

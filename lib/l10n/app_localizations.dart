@@ -4889,6 +4889,60 @@ abstract class AppLocalizations {
   /// **'Créer l\'activité'**
   String get createPersonalSportSubmit;
 
+  /// No description provided for @createPersonalSportUseMyGps.
+  ///
+  /// In fr, this message translates to:
+  /// **'Utilisation de mon GPS'**
+  String get createPersonalSportUseMyGps;
+
+  /// No description provided for @createPersonalSportUseMyGpsHint.
+  ///
+  /// In fr, this message translates to:
+  /// **'Récupère temps, distance et allure depuis ton capteur GPS (Intense)'**
+  String get createPersonalSportUseMyGpsHint;
+
+  /// No description provided for @createPersonalSportGpsDevice.
+  ///
+  /// In fr, this message translates to:
+  /// **'Capteur GPS'**
+  String get createPersonalSportGpsDevice;
+
+  /// No description provided for @createPersonalSportGpsMetricsHint.
+  ///
+  /// In fr, this message translates to:
+  /// **'Temps, distance et allure seront calculés à partir de la synchronisation du capteur (de l’heure de début jusqu’à maintenant).'**
+  String get createPersonalSportGpsMetricsHint;
+
+  /// No description provided for @createPersonalSportGpsSubmit.
+  ///
+  /// In fr, this message translates to:
+  /// **'Synchroniser et créer'**
+  String get createPersonalSportGpsSubmit;
+
+  /// No description provided for @createPersonalSportGpsDeviceRequired.
+  ///
+  /// In fr, this message translates to:
+  /// **'Sélectionne un capteur GPS.'**
+  String get createPersonalSportGpsDeviceRequired;
+
+  /// No description provided for @createPersonalSportGpsStartInFuture.
+  ///
+  /// In fr, this message translates to:
+  /// **'L’heure de début doit être antérieure à maintenant.'**
+  String get createPersonalSportGpsStartInFuture;
+
+  /// No description provided for @createPersonalSportGpsNoData.
+  ///
+  /// In fr, this message translates to:
+  /// **'Aucune donnée GPS sur cette période. Vérifie que le capteur a bien enregistré en extérieur.'**
+  String get createPersonalSportGpsNoData;
+
+  /// No description provided for @createPersonalSportGpsSyncError.
+  ///
+  /// In fr, this message translates to:
+  /// **'Impossible de synchroniser le GPS. Réessaie.'**
+  String get createPersonalSportGpsSyncError;
+
   /// No description provided for @createPersonalSportSaved.
   ///
   /// In fr, this message translates to:

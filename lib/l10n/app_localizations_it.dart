@@ -2753,6 +2753,39 @@ class AppLocalizationsIt extends AppLocalizations {
   String get createPersonalSportSubmit => 'Create activity';
 
   @override
+  String get createPersonalSportUseMyGps => 'Usa il mio GPS';
+
+  @override
+  String get createPersonalSportUseMyGpsHint =>
+      'Recupera tempo, distanza e andatura dal sensore GPS (Intense)';
+
+  @override
+  String get createPersonalSportGpsDevice => 'Sensore GPS';
+
+  @override
+  String get createPersonalSportGpsMetricsHint =>
+      'Tempo, distanza e andatura saranno calcolati dalla sincronizzazione del sensore (dall’ora di inizio a ora).';
+
+  @override
+  String get createPersonalSportGpsSubmit => 'Sincronizza e crea';
+
+  @override
+  String get createPersonalSportGpsDeviceRequired =>
+      'Seleziona un sensore GPS.';
+
+  @override
+  String get createPersonalSportGpsStartInFuture =>
+      'L’ora di inizio deve essere precedente a ora.';
+
+  @override
+  String get createPersonalSportGpsNoData =>
+      'Nessun dato GPS in questo periodo. Verifica che il sensore abbia registrato all’aperto.';
+
+  @override
+  String get createPersonalSportGpsSyncError =>
+      'Impossibile sincronizzare il GPS. Riprova.';
+
+  @override
   String get createPersonalSportSaved => 'Activity created';
 
   @override
