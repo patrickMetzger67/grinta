@@ -1,5 +1,5 @@
 import 'package:flutter/foundation.dart';
-import 'package:grinta/model/tracker/deviceOwner.dart';
+import 'package:grinta/model/tracker/deviceOwner.dart' show DeviceOwner;
 import 'package:grinta/model/tracker/owner.dart';
 import 'package:grinta/model/tracker/trackerData.dart';
 import 'package:grinta/services/deviceOwnerService.dart';
