@@ -4934,8 +4934,14 @@ abstract class AppLocalizations {
   /// No description provided for @createPersonalSportGpsNoData.
   ///
   /// In fr, this message translates to:
-  /// **'Aucune donnée GPS sur cette période. Vérifie que le capteur a bien enregistré en extérieur.'**
+  /// **'Il n\'y a aucune donnée à synchroniser, vérifie la date et l\'heure du début de ta session.'**
   String get createPersonalSportGpsNoData;
+
+  /// No description provided for @createPersonalSportGpsManualEntryQuestion.
+  ///
+  /// In fr, this message translates to:
+  /// **'Souhaites-tu saisir les données manuellement ?'**
+  String get createPersonalSportGpsManualEntryQuestion;
 
   /// No description provided for @createPersonalSportGpsSyncError.
   ///

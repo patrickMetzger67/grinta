@@ -2779,7 +2779,11 @@ class AppLocalizationsIt extends AppLocalizations {
 
   @override
   String get createPersonalSportGpsNoData =>
-      'Nessun dato GPS in questo periodo. Verifica che il sensore abbia registrato all’aperto.';
+      'Non ci sono dati da sincronizzare. Verifica la data e l’ora di inizio della sessione.';
+
+  @override
+  String get createPersonalSportGpsManualEntryQuestion =>
+      'Vuoi inserire i dati manualmente?';
 
   @override
   String get createPersonalSportGpsSyncError =>

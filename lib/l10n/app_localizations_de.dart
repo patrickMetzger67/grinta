@@ -2796,7 +2796,11 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get createPersonalSportGpsNoData =>
-      'Keine GPS-Daten für diesen Zeitraum. Prüfe, ob der Sensor im Freien aufgezeichnet hat.';
+      'Es gibt keine Daten zum Synchronisieren. Prüfe Datum und Startzeit deiner Session.';
+
+  @override
+  String get createPersonalSportGpsManualEntryQuestion =>
+      'Möchtest du die Daten manuell eingeben?';
 
   @override
   String get createPersonalSportGpsSyncError =>
