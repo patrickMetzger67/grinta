@@ -53,6 +53,17 @@ Agenda cards show the Apple Forme badge (`assets/images/apple_forme_logo.svg`) w
 
 **No `firebase deploy` of Cloud Functions is required** for Apple import (unlike Strava / Polar / Whoop).
 
+## Session export (V1) — training / match → Apple Forme
+
+After sensor sync, the **Bilan de séance** screen (`SessionPlayerFeelingScreen`) can write the player's tracker distance + duration into Apple Health:
+
+1. If Apple Forme is **already connected** → export automatically (snackbar confirmation).
+2. If **not connected** → dialog *« Souhaites-tu retrouver ces données dans Apple Forme ? »* → Yes connects HealthKit (with write) then exports; No declines for that event.
+
+Feeling is optional and independent. Dedup is stored on `TRACKER_Sync/{eventId}.healthExportPlayers.{playerId}` (`exported` | `declined`).
+
+Requires `NSHealthUpdateUsageDescription` and workout **write** authorization.
+
 ## 1. Xcode: enable HealthKit capability
 
 `Info.plist` includes `NSHealthShareUsageDescription` and `NSHealthUpdateUsageDescription` (required by HealthKit / App Store even though Grinta is read-only). You must still enable the capability in Xcode (one-time per developer machine / CI signing setup):

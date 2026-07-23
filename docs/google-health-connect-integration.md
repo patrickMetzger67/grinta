@@ -63,11 +63,21 @@ Agenda cards show the Google Fit badge (`assets/images/google_fit_logo.svg`) whe
 
 **No `firebase deploy` of Cloud Functions is required** for Google Fit import (unlike Strava / Polar / Whoop).
 
+## Session export (V1) — training / match → Google Fit
+
+After sensor sync, the **Bilan de séance** screen can write the player's tracker distance + duration into Health Connect:
+
+1. If Google Fit / Health Connect is **already connected** → export automatically.
+2. If **not connected** → dialog *« Souhaites-tu retrouver ces données dans Google Fit ? »* → Yes connects then exports.
+
+Manifest needs `WRITE_EXERCISE` / `WRITE_DISTANCE` (and calories write if requested by the plugin). Dedup uses `TRACKER_Sync/{eventId}.healthExportPlayers.{playerId}`.
+
 ## 1. Android: manifest and MainActivity
 
 The repo includes Health Connect setup in `android/app/src/main/AndroidManifest.xml`:
 
 - Read permissions: `READ_EXERCISE`, `READ_HEART_RATE`, `READ_ACTIVE_CALORIES_BURNED`, `READ_SLEEP`
+- Write permissions (session export V1): `WRITE_EXERCISE`, `WRITE_DISTANCE`, `WRITE_TOTAL_CALORIES_BURNED`
 - `ACTIVITY_RECOGNITION` (required for fitness data)
 - `<queries>` for `com.google.android.apps.healthdata`
 - Permissions rationale intent-filter and `ViewPermissionUsageActivity` activity-alias

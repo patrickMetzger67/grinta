@@ -191,6 +191,37 @@ class EventSyncService {
     });
   }
 
+  /// Per-player Health export status on the event sync doc:
+  /// `healthExportPlayers.{playerId}` = `exported` | `declined`.
+  Future<String?> getHealthExportStatus({
+    required String eventId,
+    required String playerId,
+  }) async {
+    final event = eventId.trim();
+    final player = playerId.trim();
+    if (event.isEmpty || player.isEmpty) return null;
+    final snap = await _collection.doc(event).get();
+    if (!snap.exists) return null;
+    final raw = snap.data()?['healthExportPlayers'];
+    if (raw is! Map) return null;
+    final value = raw[player];
+    return value is String ? value : null;
+  }
+
+  Future<void> setHealthExportStatus({
+    required String eventId,
+    required String playerId,
+    required String status,
+  }) async {
+    final event = eventId.trim();
+    final player = playerId.trim();
+    if (event.isEmpty || player.isEmpty) return;
+    await _collection.doc(event).set({
+      'eventId': event,
+      'healthExportPlayers': {player: status},
+    }, SetOptions(merge: true));
+  }
+
   Future<List<EventSync>> getAllEventSyncs() async {
     final querySnapshot = await _collection.get();
     return querySnapshot.docs

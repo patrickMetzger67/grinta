@@ -5770,6 +5770,37 @@ class AppLocalizationsIt extends AppLocalizations {
   String get playerFeelingLoadError => 'Impossibile caricare il riepilogo.';
 
   @override
+  String get sessionHealthExportPromptTitle => 'Export session';
+
+  @override
+  String get sessionHealthExportPromptApple =>
+      'Would you like to see this data in Apple Fitness?';
+
+  @override
+  String get sessionHealthExportPromptGoogle =>
+      'Would you like to see this data in Google Fit?';
+
+  @override
+  String get sessionHealthExportSuccessApple => 'Session added to Apple Fitness.';
+
+  @override
+  String get sessionHealthExportSuccessGoogle => 'Session added to Google Fit.';
+
+  @override
+  String get sessionHealthExportFailed =>
+      'Could not export the session. Please try again.';
+
+  @override
+  String get sessionHealthExportConnectFailed =>
+      'Could not connect Health. Check permissions and try again.';
+
+  @override
+  String get sessionHealthExportTitleMatch => 'Grinta match';
+
+  @override
+  String get sessionHealthExportTitleTraining => 'Grinta training';
+
+  @override
   String get forgotPasswordTitle => 'Password dimenticata';
 
   @override

@@ -260,3 +260,77 @@ Future<int?> averageHeartRateForWorkout({
     return null;
   }
 }
+
+/// Requests Health Connect write access for workouts.
+Future<bool> ensureGoogleWorkoutWriteAuthorized() async {
+  if (!Platform.isAndroid) return false;
+
+  final health = Health();
+  await health.configure();
+  final types = <HealthDataType>[
+    ..._kGoogleHealthReadTypes,
+    HealthDataType.WORKOUT,
+  ];
+  final permissions = <HealthDataAccess>[
+    for (final type in types)
+      type == HealthDataType.WORKOUT
+          ? HealthDataAccess.READ_WRITE
+          : HealthDataAccess.READ,
+  ];
+
+  try {
+    final granted = await health.requestAuthorization(
+      types,
+      permissions: permissions,
+    );
+    return granted;
+  } catch (e, st) {
+    debugPrint('Google Health Connect write authorization failed: $e\n$st');
+    return false;
+  }
+}
+
+HealthWorkoutActivityType _activityTypeFromName(String name) {
+  for (final value in HealthWorkoutActivityType.values) {
+    if (value.name == name) return value;
+  }
+  return HealthWorkoutActivityType.OTHER;
+}
+
+/// Writes a session workout (distance + time window) into Health Connect.
+Future<bool> writeGoogleHealthWorkout({
+  required String activityTypeName,
+  required DateTime start,
+  required DateTime end,
+  int? distanceMeters,
+  String? title,
+}) async {
+  if (!Platform.isAndroid) return false;
+  if (!end.isAfter(start)) return false;
+
+  final authorized = await ensureGoogleWorkoutWriteAuthorized();
+  if (!authorized) return false;
+
+  // SOCCER is iOS-only in the health package; force OTHER on Android.
+  final rawName =
+      activityTypeName == 'SOCCER' ? 'OTHER' : activityTypeName;
+  final activityType = _activityTypeFromName(rawName);
+  final health = Health();
+  await health.configure();
+  try {
+    return await health.writeWorkoutData(
+      activityType: activityType,
+      start: start,
+      end: end,
+      totalDistance: distanceMeters != null && distanceMeters > 0
+          ? distanceMeters
+          : null,
+      totalDistanceUnit: HealthDataUnit.METER,
+      title: title,
+      recordingMethod: RecordingMethod.manual,
+    );
+  } catch (e, st) {
+    debugPrint('Google Health Connect writeWorkout failed: $e\n$st');
+    return false;
+  }
+}

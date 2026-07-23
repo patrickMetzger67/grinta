@@ -5779,6 +5779,37 @@ class AppLocalizationsFr extends AppLocalizations {
   String get playerFeelingLoadError => 'Impossible de charger le bilan.';
 
   @override
+  String get sessionHealthExportPromptTitle => 'Exporter la séance';
+
+  @override
+  String get sessionHealthExportPromptApple =>
+      'Souhaites-tu retrouver ces données dans Apple Forme ?';
+
+  @override
+  String get sessionHealthExportPromptGoogle =>
+      'Souhaites-tu retrouver ces données dans Google Fit ?';
+
+  @override
+  String get sessionHealthExportSuccessApple => 'Séance ajoutée à Apple Forme.';
+
+  @override
+  String get sessionHealthExportSuccessGoogle => 'Séance ajoutée à Google Fit.';
+
+  @override
+  String get sessionHealthExportFailed =>
+      'Impossible d\'exporter la séance. Réessaie.';
+
+  @override
+  String get sessionHealthExportConnectFailed =>
+      'Impossible de connecter l\'app Santé. Vérifie les autorisations et réessaie.';
+
+  @override
+  String get sessionHealthExportTitleMatch => 'Match Grinta';
+
+  @override
+  String get sessionHealthExportTitleTraining => 'Entraînement Grinta';
+
+  @override
   String get forgotPasswordTitle => 'Mot de passe oublié';
 
   @override

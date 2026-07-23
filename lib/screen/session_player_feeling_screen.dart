@@ -7,6 +7,7 @@ import 'package:grinta/model/tracker/team_workload_summary.dart';
 import 'package:grinta/navigation/app_navigator.dart';
 import 'package:grinta/services/matchCompoService.dart';
 import 'package:grinta/services/matchService.dart';
+import 'package:grinta/services/session_health_export_service.dart';
 import 'package:grinta/services/teamWorkloadSummaryService.dart';
 import 'package:grinta/services/trainingService.dart';
 import 'package:grinta/util/app_snackbar.dart';
@@ -95,6 +96,17 @@ class _SessionPlayerFeelingScreenState
         _existingFeelingAfter = existing;
         _selected ??= PlayerFeeling.fromValue(
           (existing != null && existing > 0) ? existing : null,
+        );
+      });
+
+      // Health export is independent from feeling — offer once data is ready.
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!mounted) return;
+        SessionHealthExportService.instance.maybeOfferExport(
+          context: context,
+          eventId: widget.eventId,
+          playerId: widget.playerId,
+          eventType: resolvedType,
         );
       });
     } catch (e, st) {

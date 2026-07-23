@@ -9961,8 +9961,61 @@ abstract class AppLocalizations {
   /// No description provided for @playerFeelingSaveError.
   String get playerFeelingSaveError;
 
-  /// No description provided for @playerFeelingLoadError.
   String get playerFeelingLoadError;
+
+  /// No description provided for @sessionHealthExportPromptTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Export session'**
+  String get sessionHealthExportPromptTitle;
+
+  /// No description provided for @sessionHealthExportPromptApple.
+  ///
+  /// In en, this message translates to:
+  /// **'Would you like to see this data in Apple Fitness?'**
+  String get sessionHealthExportPromptApple;
+
+  /// No description provided for @sessionHealthExportPromptGoogle.
+  ///
+  /// In en, this message translates to:
+  /// **'Would you like to see this data in Google Fit?'**
+  String get sessionHealthExportPromptGoogle;
+
+  /// No description provided for @sessionHealthExportSuccessApple.
+  ///
+  /// In en, this message translates to:
+  /// **'Session added to Apple Fitness.'**
+  String get sessionHealthExportSuccessApple;
+
+  /// No description provided for @sessionHealthExportSuccessGoogle.
+  ///
+  /// In en, this message translates to:
+  /// **'Session added to Google Fit.'**
+  String get sessionHealthExportSuccessGoogle;
+
+  /// No description provided for @sessionHealthExportFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not export the session. Please try again.'**
+  String get sessionHealthExportFailed;
+
+  /// No description provided for @sessionHealthExportConnectFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not connect Health. Check permissions and try again.'**
+  String get sessionHealthExportConnectFailed;
+
+  /// No description provided for @sessionHealthExportTitleMatch.
+  ///
+  /// In en, this message translates to:
+  /// **'Grinta match'**
+  String get sessionHealthExportTitleMatch;
+
+  /// No description provided for @sessionHealthExportTitleTraining.
+  ///
+  /// In en, this message translates to:
+  /// **'Grinta training'**
+  String get sessionHealthExportTitleTraining;
 
   /// No description provided for @forgotPasswordTitle.
   String get forgotPasswordTitle;

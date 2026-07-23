@@ -52,3 +52,15 @@ Future<int?> averageHeartRateForWorkout({
 }) async {
   return null;
 }
+
+Future<bool> ensureAppleWorkoutWriteAuthorized() async => false;
+
+Future<bool> writeAppleHealthWorkout({
+  required String activityTypeName,
+  required DateTime start,
+  required DateTime end,
+  int? distanceMeters,
+  String? title,
+}) async {
+  return false;
+}

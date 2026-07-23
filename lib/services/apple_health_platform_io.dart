@@ -265,3 +265,74 @@ Future<int?> averageHeartRateForWorkout({
     return null;
   }
 }
+
+/// Requests HealthKit write access for workouts (keeps existing read types).
+Future<bool> ensureAppleWorkoutWriteAuthorized() async {
+  if (!Platform.isIOS) return false;
+
+  final health = Health();
+  await health.configure();
+  final types = <HealthDataType>[
+    ..._kAppleHealthReadTypes,
+    HealthDataType.WORKOUT,
+  ];
+  final permissions = <HealthDataAccess>[
+    for (final type in types)
+      type == HealthDataType.WORKOUT
+          ? HealthDataAccess.READ_WRITE
+          : HealthDataAccess.READ,
+  ];
+
+  try {
+    final granted = await health.requestAuthorization(
+      types,
+      permissions: permissions,
+    );
+    return granted;
+  } catch (e, st) {
+    debugPrint('Apple Health write authorization failed: $e\n$st');
+    return false;
+  }
+}
+
+/// Writes a session workout (distance + time window) into Apple Health.
+Future<bool> writeAppleHealthWorkout({
+  required String activityTypeName,
+  required DateTime start,
+  required DateTime end,
+  int? distanceMeters,
+  String? title,
+}) async {
+  if (!Platform.isIOS) return false;
+  if (!end.isAfter(start)) return false;
+
+  final authorized = await ensureAppleWorkoutWriteAuthorized();
+  if (!authorized) return false;
+
+  final activityType = _activityTypeFromName(activityTypeName);
+  final health = Health();
+  await health.configure();
+  try {
+    return await health.writeWorkoutData(
+      activityType: activityType,
+      start: start,
+      end: end,
+      totalDistance: distanceMeters != null && distanceMeters > 0
+          ? distanceMeters
+          : null,
+      totalDistanceUnit: HealthDataUnit.METER,
+      title: title,
+      recordingMethod: RecordingMethod.manual,
+    );
+  } catch (e, st) {
+    debugPrint('Apple Health writeWorkout failed: $e\n$st');
+    return false;
+  }
+}
+
+HealthWorkoutActivityType _activityTypeFromName(String name) {
+  for (final value in HealthWorkoutActivityType.values) {
+    if (value.name == name) return value;
+  }
+  return HealthWorkoutActivityType.OTHER;
+}
