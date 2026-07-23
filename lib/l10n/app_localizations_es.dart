@@ -4598,6 +4598,16 @@ class AppLocalizationsEs extends AppLocalizations {
   String get createMatchVenue => 'Lugar / dirección del campo';
 
   @override
+  String get createMatchSelectField => 'Terreno del club';
+
+  @override
+  String get createMatchFieldNotGeolocatedTitle => 'Terreno no geolocalizado';
+
+  @override
+  String get createMatchFieldNotGeolocatedMessage =>
+      'Este terreno no está geolocalizado. ¿Quieres hacerlo ahora? Es necesario para generar los mapas de calor.';
+
+  @override
   String get createMatchSurface => 'Superficie de juego';
 
   @override
