@@ -58,7 +58,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
   String? currentPlayerId;
   String? currentUserId;
 
-  DashboardPeriod _selectedPeriod = DashboardPeriod.week;
+  DashboardPeriod _selectedPeriod = DashboardPeriod.month;
   DashboardStatsType _selectedStatsType = DashboardStatsType.trainings;
   DashboardWhereType _selectedStatsWhere = DashboardWhereType.player;
   DateTimeRange? _customRange;
