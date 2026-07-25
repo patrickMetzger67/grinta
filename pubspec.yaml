@@ -101,6 +101,7 @@ flutter:
     - assets/images/apple_forme_logo.svg
     - assets/images/google_fit_logo.svg
     - assets/images/ask_gio_avatar.png
+    - assets/images/login_slide1_mobile.png
 
   fonts:
     - family: SFPro

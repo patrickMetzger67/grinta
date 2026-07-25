@@ -62,6 +62,7 @@ class _LoginScreenState extends State<LoginScreen> {
         title: context.l10n.slide1Title,
         subtitle: context.l10n.slide1Subtitle,
         icon: Icons.groups_rounded,
+        mobileImageAsset: 'assets/images/login_slide1_mobile.png',
       ),
       _OnboardingItem(
         title: context.l10n.slide2Title,
@@ -1894,6 +1895,7 @@ class _FeatureShowcaseCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final colors = context.appColors;
+    final imageAsset = item.imageAssetFor(mobileMode: mobileMode);
 
     return Card(
       clipBehavior: Clip.antiAlias,
@@ -1922,130 +1924,13 @@ class _FeatureShowcaseCard extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Expanded(
-                    child: Center(
-                      child: FittedBox(
-                        fit: BoxFit.scaleDown,
-                        alignment: Alignment.topCenter,
-                        child: SizedBox(
-                          width: ultraCompact ? 220 : 320,
-                          child: Container(
-                            padding: EdgeInsets.all(ultraCompact ? 12 : 20),
-                            decoration: BoxDecoration(
-                              color: colors.surface,
-                              borderRadius: BorderRadius.circular(
-                                ultraCompact ? 20 : 28,
-                              ),
-                              border: Border.all(color: colors.border),
-                              boxShadow: [
-                                BoxShadow(
-                                  color: Colors.black.withValues(alpha: 0.04),
-                                  blurRadius: 18,
-                                  offset: const Offset(0, 10),
-                                ),
-                              ],
-                            ),
-                            child: Column(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                Align(
-                                  alignment: Alignment.centerLeft,
-                                  child: Container(
-                                    width: ultraCompact ? 40 : 52,
-                                    height: ultraCompact ? 40 : 52,
-                                    decoration: BoxDecoration(
-                                      color: colors.primary.withValues(alpha: 0.12),
-                                      shape: BoxShape.circle,
-                                    ),
-                                    child: Icon(
-                                      item.icon,
-                                      color: colors.primary,
-                                      size: ultraCompact ? 22 : 28,
-                                    ),
-                                  ),
-                                ),
-                                SizedBox(
-                                  height: ultraCompact
-                                      ? 10
-                                      : (compact ? 12 : 20),
-                                ),
-                                Container(
-                                  width: double.infinity,
-                                  padding: EdgeInsets.all(ultraCompact ? 10 : 16),
-                                  decoration: BoxDecoration(
-                                    color: colors.background,
-                                    borderRadius: BorderRadius.circular(
-                                      ultraCompact ? 14 : 18,
-                                    ),
-                                    border: Border.all(color: colors.border),
-                                  ),
-                                  child: Column(
-                                    crossAxisAlignment: CrossAxisAlignment.start,
-                                    mainAxisSize: MainAxisSize.min,
-                                    children: [
-                                      Container(
-                                        height: ultraCompact ? 10 : 12,
-                                        width: ultraCompact ? 90 : 110,
-                                        decoration: BoxDecoration(
-                                          color: colors.primary.withValues(alpha: 0.18),
-                                          borderRadius: BorderRadius.circular(99),
-                                        ),
-                                      ),
-                                      SizedBox(height: ultraCompact ? 8 : 12),
-                                      Container(
-                                        height: 10,
-                                        width: double.infinity,
-                                        decoration: BoxDecoration(
-                                          color: colors.border.withValues(alpha: 0.8),
-                                          borderRadius: BorderRadius.circular(99),
-                                        ),
-                                      ),
-                                      const SizedBox(height: 8),
-                                      Container(
-                                        height: 10,
-                                        width: ultraCompact ? 120 : 160,
-                                        decoration: BoxDecoration(
-                                          color: colors.border.withValues(alpha: 0.8),
-                                          borderRadius: BorderRadius.circular(99),
-                                        ),
-                                      ),
-                                      SizedBox(
-                                        height: ultraCompact
-                                            ? 10
-                                            : (compact ? 12 : 16),
-                                      ),
-                                      Row(
-                                        children: [
-                                          Expanded(
-                                            child: Container(
-                                              height: ultraCompact ? 32 : 44,
-                                              decoration: BoxDecoration(
-                                                color: colors.primary.withValues(alpha: 0.12),
-                                                borderRadius: BorderRadius.circular(14),
-                                              ),
-                                            ),
-                                          ),
-                                          const SizedBox(width: 12),
-                                          Expanded(
-                                            child: Container(
-                                              height: ultraCompact ? 32 : 44,
-                                              decoration: BoxDecoration(
-                                                color: colors.surface,
-                                                borderRadius: BorderRadius.circular(14),
-                                                border: Border.all(color: colors.border),
-                                              ),
-                                            ),
-                                          ),
-                                        ],
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                              ],
-                            ),
+                    child: imageAsset != null
+                        ? _ShowcaseImage(assetPath: imageAsset)
+                        : _ShowcasePlaceholder(
+                            item: item,
+                            compact: compact,
+                            ultraCompact: ultraCompact,
                           ),
-                        ),
-                      ),
-                    ),
                   ),
                   SizedBox(height: ultraCompact ? 8 : (compact ? 12 : 20)),
                   Text(
@@ -2078,14 +1963,177 @@ class _FeatureShowcaseCard extends StatelessWidget {
   }
 }
 
+class _ShowcaseImage extends StatelessWidget {
+  const _ShowcaseImage({required this.assetPath});
+
+  final String assetPath;
+
+  @override
+  Widget build(BuildContext context) {
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(20),
+      child: ColoredBox(
+        color: Colors.black,
+        child: Image.asset(
+          assetPath,
+          fit: BoxFit.contain,
+          width: double.infinity,
+          height: double.infinity,
+          filterQuality: FilterQuality.medium,
+        ),
+      ),
+    );
+  }
+}
+
+class _ShowcasePlaceholder extends StatelessWidget {
+  const _ShowcasePlaceholder({
+    required this.item,
+    required this.compact,
+    required this.ultraCompact,
+  });
+
+  final _OnboardingItem item;
+  final bool compact;
+  final bool ultraCompact;
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = context.appColors;
+
+    return Center(
+      child: FittedBox(
+        fit: BoxFit.scaleDown,
+        alignment: Alignment.topCenter,
+        child: SizedBox(
+          width: ultraCompact ? 220 : 320,
+          child: Container(
+            padding: EdgeInsets.all(ultraCompact ? 12 : 20),
+            decoration: BoxDecoration(
+              color: colors.surface,
+              borderRadius: BorderRadius.circular(ultraCompact ? 20 : 28),
+              border: Border.all(color: colors.border),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withValues(alpha: 0.04),
+                  blurRadius: 18,
+                  offset: const Offset(0, 10),
+                ),
+              ],
+            ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Align(
+                  alignment: Alignment.centerLeft,
+                  child: Container(
+                    width: ultraCompact ? 40 : 52,
+                    height: ultraCompact ? 40 : 52,
+                    decoration: BoxDecoration(
+                      color: colors.primary.withValues(alpha: 0.12),
+                      shape: BoxShape.circle,
+                    ),
+                    child: Icon(
+                      item.icon,
+                      color: colors.primary,
+                      size: ultraCompact ? 22 : 28,
+                    ),
+                  ),
+                ),
+                SizedBox(height: ultraCompact ? 10 : (compact ? 12 : 20)),
+                Container(
+                  width: double.infinity,
+                  padding: EdgeInsets.all(ultraCompact ? 10 : 16),
+                  decoration: BoxDecoration(
+                    color: colors.background,
+                    borderRadius: BorderRadius.circular(ultraCompact ? 14 : 18),
+                    border: Border.all(color: colors.border),
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Container(
+                        height: ultraCompact ? 10 : 12,
+                        width: ultraCompact ? 90 : 110,
+                        decoration: BoxDecoration(
+                          color: colors.primary.withValues(alpha: 0.18),
+                          borderRadius: BorderRadius.circular(99),
+                        ),
+                      ),
+                      SizedBox(height: ultraCompact ? 8 : 12),
+                      Container(
+                        height: 10,
+                        width: double.infinity,
+                        decoration: BoxDecoration(
+                          color: colors.border.withValues(alpha: 0.8),
+                          borderRadius: BorderRadius.circular(99),
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      Container(
+                        height: 10,
+                        width: ultraCompact ? 120 : 160,
+                        decoration: BoxDecoration(
+                          color: colors.border.withValues(alpha: 0.8),
+                          borderRadius: BorderRadius.circular(99),
+                        ),
+                      ),
+                      SizedBox(
+                        height: ultraCompact ? 10 : (compact ? 12 : 16),
+                      ),
+                      Row(
+                        children: [
+                          Expanded(
+                            child: Container(
+                              height: ultraCompact ? 32 : 44,
+                              decoration: BoxDecoration(
+                                color: colors.primary.withValues(alpha: 0.12),
+                                borderRadius: BorderRadius.circular(14),
+                              ),
+                            ),
+                          ),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: Container(
+                              height: ultraCompact ? 32 : 44,
+                              decoration: BoxDecoration(
+                                color: colors.surface,
+                                borderRadius: BorderRadius.circular(14),
+                                border: Border.all(color: colors.border),
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
 class _OnboardingItem {
   final String title;
   final String subtitle;
   final IconData icon;
+  final String? mobileImageAsset;
+  final String? webImageAsset;
 
   const _OnboardingItem({
     required this.title,
     required this.subtitle,
     required this.icon,
+    this.mobileImageAsset,
+    this.webImageAsset,
   });
+
+  String? imageAssetFor({required bool mobileMode}) {
+    return mobileMode ? mobileImageAsset : webImageAsset;
+  }
 }
