@@ -103,6 +103,7 @@ flutter:
     - assets/images/ask_gio_avatar.png
     - assets/images/login_slide1_mobile.png
     - assets/images/login_slide2_mobile.png
+    - assets/images/login_slide3_mobile.png
 
   fonts:
     - family: SFPro

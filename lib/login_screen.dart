@@ -74,6 +74,7 @@ class _LoginScreenState extends State<LoginScreen> {
         title: context.l10n.slide3Title,
         subtitle: context.l10n.slide3Subtitle,
         icon: Icons.insights_rounded,
+        mobileImageAsset: 'assets/images/login_slide3_mobile.png',
       ),
     ];
   }
