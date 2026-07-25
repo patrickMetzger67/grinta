@@ -63,18 +63,21 @@ class _LoginScreenState extends State<LoginScreen> {
         subtitle: context.l10n.slide1Subtitle,
         icon: Icons.groups_rounded,
         mobileImageAsset: 'assets/images/login_slide1_mobile.png',
+        webImageAsset: 'assets/images/login_slide1_web.png',
       ),
       _OnboardingItem(
         title: context.l10n.slide2Title,
         subtitle: context.l10n.slide2Subtitle,
         icon: Icons.calendar_month_rounded,
         mobileImageAsset: 'assets/images/login_slide2_mobile.png',
+        webImageAsset: 'assets/images/login_slide2_web.png',
       ),
       _OnboardingItem(
         title: context.l10n.slide3Title,
         subtitle: context.l10n.slide3Subtitle,
         icon: Icons.insights_rounded,
         mobileImageAsset: 'assets/images/login_slide3_mobile.png',
+        webImageAsset: 'assets/images/login_slide3_web.png',
       ),
     ];
   }
