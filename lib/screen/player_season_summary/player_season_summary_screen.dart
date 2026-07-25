@@ -3,17 +3,25 @@ import 'package:grinta/analytics/analytics_routes.dart';
 import 'package:grinta/analytics/analytics_screen_names.dart';
 import 'package:grinta/core/extensions/l10n_extension.dart';
 import 'package:grinta/l10n/app_localizations.dart';
+import 'package:grinta/model/effectives.dart';
+import 'package:grinta/model/grinta_player.dart';
+import 'package:grinta/model/grinta_player_hw.dart';
 import 'package:grinta/model/player.dart';
 import 'package:grinta/model/season.dart';
 import 'package:grinta/model/team.dart';
 import 'package:grinta/model/tracker/team_workload_summary.dart';
 import 'package:grinta/provider/appSession.dart';
+import 'package:grinta/services/effectivesService.dart';
 import 'package:grinta/services/player_positions_service.dart';
 import 'package:grinta/services/player_season_summary_service.dart';
+import 'package:grinta/services/teamService.dart';
+import 'package:grinta/util/app_snackbar.dart';
 import 'package:grinta/util/app_theme.dart';
 import 'package:grinta/util/playerDisplayName.dart';
 import 'package:grinta/util/player_activity_report_aggregator.dart';
 import 'package:grinta/util/player_age.dart';
+import 'package:grinta/util/player_photo_resolver.dart';
+import 'package:grinta/util/player_positions.dart';
 import 'package:grinta/util/preferred_foot.dart';
 import 'package:grinta/widget/manage_unavailabilities_sheet.dart';
 import 'package:grinta/widget/playerPhoto.dart';
@@ -21,6 +29,11 @@ import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 
 enum _PlayerSeasonSummaryTab { matches, trainings, unavailabilities }
+
+class _PreferredFootPick {
+  const _PreferredFootPick(this.value);
+  final String? value;
+}
 
 /// Identity + anthropometrics passed from the team roster into the summary.
 class PlayerSeasonSummaryIdentity {
@@ -33,6 +46,8 @@ class PlayerSeasonSummaryIdentity {
     this.weightKg,
     this.hwMeasuredAt,
     this.preferredFoot,
+    this.isGrintaRoster = false,
+    this.effectivesDocId,
   });
 
   final Player player;
@@ -43,6 +58,8 @@ class PlayerSeasonSummaryIdentity {
   final double? weightKg;
   final DateTime? hwMeasuredAt;
   final String? preferredFoot;
+  final bool isGrintaRoster;
+  final String? effectivesDocId;
 }
 
 Future<void> openPlayerSeasonSummaryScreen(
@@ -50,6 +67,7 @@ Future<void> openPlayerSeasonSummaryScreen(
   required Team team,
   required PlayerSeasonSummaryIdentity identity,
   required String initialSeasonId,
+  bool isManager = false,
 }) {
   return Navigator.of(context).push<void>(
     analyticsMaterialRoute<void>(
@@ -58,6 +76,7 @@ Future<void> openPlayerSeasonSummaryScreen(
         team: team,
         identity: identity,
         initialSeasonId: initialSeasonId,
+        isManager: isManager,
       ),
     ),
   );
@@ -69,12 +88,14 @@ class PlayerSeasonSummaryScreen extends StatefulWidget {
     required this.team,
     required this.identity,
     required this.initialSeasonId,
+    this.isManager = false,
     PlayerSeasonSummaryService? summaryService,
   }) : _summaryService = summaryService;
 
   final Team team;
   final PlayerSeasonSummaryIdentity identity;
   final String initialSeasonId;
+  final bool isManager;
   final PlayerSeasonSummaryService? _summaryService;
 
   @override
@@ -84,9 +105,11 @@ class PlayerSeasonSummaryScreen extends StatefulWidget {
 
 class _PlayerSeasonSummaryScreenState extends State<PlayerSeasonSummaryScreen> {
   late String _selectedSeasonId;
+  late String? _preferredFoot;
   _PlayerSeasonSummaryTab _selectedTab = _PlayerSeasonSummaryTab.matches;
   bool _loading = true;
   bool _didInit = false;
+  bool _savingPreferredFoot = false;
   PlayerSeasonSummary? _summary;
   String? _error;
 
@@ -94,6 +117,7 @@ class _PlayerSeasonSummaryScreenState extends State<PlayerSeasonSummaryScreen> {
   void initState() {
     super.initState();
     _selectedSeasonId = widget.initialSeasonId.trim();
+    _preferredFoot = normalizePreferredFoot(widget.identity.preferredFoot);
   }
 
   @override
@@ -213,6 +237,10 @@ class _PlayerSeasonSummaryScreenState extends State<PlayerSeasonSummaryScreen> {
       unknownLabel: l10n.entityPlayerUnknown,
     );
 
+    final bool manageUnavailabilities =
+        widget.isManager &&
+        _selectedTab == _PlayerSeasonSummaryTab.unavailabilities;
+
     return Scaffold(
       backgroundColor: colors.background,
       appBar: AppBar(
@@ -224,34 +252,62 @@ class _PlayerSeasonSummaryScreenState extends State<PlayerSeasonSummaryScreen> {
           ),
         ),
       ),
-      body: RefreshIndicator(
-        onRefresh: _loadSummary,
-        child: ListView(
-          padding: const EdgeInsets.fromLTRB(16, 12, 16, 24),
-          children: [
-            _buildHeader(context, playerName),
-            const SizedBox(height: 16),
-            _buildSeasonSelector(context),
-            const SizedBox(height: 16),
-            _buildTabSelector(context),
-            const SizedBox(height: 16),
-            if (_loading)
-              const Padding(
-                padding: EdgeInsets.symmetric(vertical: 48),
-                child: Center(child: CircularProgressIndicator()),
-              )
-            else if (_error != null)
-              Padding(
-                padding: const EdgeInsets.symmetric(vertical: 24),
-                child: Text(
-                  l10n.errorGeneric(_error!),
-                  style: textTheme.bodyMedium?.copyWith(color: colors.danger),
-                ),
-              )
-            else
-              _buildSelectedTabContent(context),
-          ],
-        ),
+      body: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                _buildHeader(context, playerName),
+                const SizedBox(height: 16),
+                _buildSeasonSelector(context),
+                const SizedBox(height: 16),
+                _buildTabSelector(context),
+                const SizedBox(height: 12),
+              ],
+            ),
+          ),
+          Expanded(
+            child: _loading
+                ? const Center(child: CircularProgressIndicator())
+                : _error != null
+                    ? Center(
+                        child: Padding(
+                          padding: const EdgeInsets.all(24),
+                          child: Text(
+                            l10n.errorGeneric(_error!),
+                            style: textTheme.bodyMedium?.copyWith(
+                              color: colors.danger,
+                            ),
+                          ),
+                        ),
+                      )
+                    : manageUnavailabilities
+                        ? ManageUnavailabilitiesSheet(
+                            key: ValueKey(
+                              'player-summary-unavail-$_selectedSeasonId-'
+                              '${effectiveMemberId(widget.identity.player)}',
+                            ),
+                            player: widget.identity.player,
+                            seasonId: _selectedSeasonId,
+                            isManager: true,
+                            embeddedInScreen: true,
+                            showCloseButton: false,
+                            showPlayerName: false,
+                            onChanged: _loadSummary,
+                          )
+                        : RefreshIndicator(
+                            onRefresh: _loadSummary,
+                            child: SingleChildScrollView(
+                              physics: const AlwaysScrollableScrollPhysics(),
+                              padding: const EdgeInsets.fromLTRB(16, 0, 16, 24),
+                              child: _buildSelectedTabContent(context),
+                            ),
+                          ),
+          ),
+        ],
       ),
     );
   }
@@ -331,17 +387,212 @@ class _PlayerSeasonSummaryScreenState extends State<PlayerSeasonSummaryScreen> {
             ),
           ],
           const SizedBox(height: 12),
-          Text(
-            '${l10n.preferredFootLabel}: '
-            '${preferredFootLabel(l10n, widget.identity.preferredFoot)}',
-            style: textTheme.bodyMedium?.copyWith(
-              color: colors.textPrimary,
-              fontWeight: FontWeight.w600,
-            ),
+          Row(
+            children: [
+              Expanded(
+                child: Text(
+                  '${l10n.preferredFootLabel}: '
+                  '${preferredFootLabel(l10n, _preferredFoot)}',
+                  style: textTheme.bodyMedium?.copyWith(
+                    color: colors.textPrimary,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ),
+              if (widget.isManager)
+                IconButton(
+                  tooltip: l10n.actionEditPlayer,
+                  onPressed:
+                      _savingPreferredFoot ? null : _editPreferredFoot,
+                  icon: _savingPreferredFoot
+                      ? const SizedBox(
+                          width: 18,
+                          height: 18,
+                          child: CircularProgressIndicator(strokeWidth: 2),
+                        )
+                      : Icon(
+                          Icons.edit_outlined,
+                          color: colors.primary,
+                        ),
+                ),
+            ],
           ),
         ],
       ),
     );
+  }
+
+  Future<void> _editPreferredFoot() async {
+    if (!widget.isManager || _savingPreferredFoot) return;
+
+    final l10n = context.l10n;
+    String? draft = _preferredFoot;
+
+    final _PreferredFootPick? picked = await showDialog<_PreferredFootPick>(
+      context: context,
+      builder: (dialogContext) {
+        return StatefulBuilder(
+          builder: (context, setDialogState) {
+            return AlertDialog(
+              title: Text(l10n.preferredFootLabel),
+              content: DropdownButtonFormField<String?>(
+                value: draft,
+                decoration: InputDecoration(
+                  labelText: l10n.preferredFootLabel,
+                  hintText: l10n.preferredFootHint,
+                ),
+                items: <DropdownMenuItem<String?>>[
+                  DropdownMenuItem<String?>(
+                    value: null,
+                    child: Text(l10n.preferredFootUnspecified),
+                  ),
+                  for (final String code in PreferredFootCodes.selectable)
+                    DropdownMenuItem<String?>(
+                      value: code,
+                      child: Text(preferredFootLabel(l10n, code)),
+                    ),
+                ],
+                onChanged: (value) {
+                  setDialogState(() => draft = value);
+                },
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.of(dialogContext).pop(),
+                  child: Text(l10n.actionCancel),
+                ),
+                FilledButton(
+                  onPressed: () => Navigator.of(dialogContext).pop(
+                    _PreferredFootPick(draft),
+                  ),
+                  child: Text(l10n.actionSave),
+                ),
+              ],
+            );
+          },
+        );
+      },
+    );
+
+    if (!mounted || picked == null) {
+      return;
+    }
+    await _editPreferredFootConfirmed(picked.value);
+  }
+
+  Future<void> _editPreferredFootConfirmed(String? selected) async {
+    if (!mounted) return;
+    if (normalizePreferredFoot(selected) ==
+        normalizePreferredFoot(_preferredFoot)) {
+      return;
+    }
+
+    setState(() => _savingPreferredFoot = true);
+    try {
+      await _persistPreferredFoot(selected);
+      if (!mounted) return;
+      setState(() {
+        _preferredFoot = normalizePreferredFoot(selected);
+        _savingPreferredFoot = false;
+      });
+      AppSnackbar.show(
+        context,
+        context.l10n.playerSeasonSummaryPreferredFootSaved,
+      );
+    } catch (e) {
+      if (!mounted) return;
+      setState(() => _savingPreferredFoot = false);
+      AppSnackbar.show(
+        context,
+        context.l10n.errorGeneric(e.toString()),
+        isError: true,
+      );
+    }
+  }
+
+  Future<void> _persistPreferredFoot(String? preferredFoot) async {
+    final teamId = widget.team.keyTeam?.trim() ?? '';
+    if (teamId.isEmpty) {
+      throw StateError('Missing team id');
+    }
+
+    final memberId = effectiveMemberId(widget.identity.player)?.trim() ?? '';
+    if (memberId.isEmpty) {
+      throw StateError('Missing player id');
+    }
+
+    final normalized = normalizePreferredFoot(preferredFoot);
+
+    if (widget.identity.isGrintaRoster ||
+        (widget.team.grintaPlayers?.isNotEmpty ?? false)) {
+      final GrintaPlayer? existing = _resolveGrintaPlayer(memberId);
+      if (existing != null) {
+        final updated = GrintaPlayer(
+          playerId: existing.playerId,
+          positions: List<int>.from(existing.positions),
+          fonction: existing.fonction,
+          trackers: List<String>.from(existing.trackers),
+          email: existing.email,
+          phoneE164: existing.phoneE164,
+          birthday: existing.birthday,
+          hwHistory: List<GrintaPlayerHW>.from(existing.hwHistory),
+          invitationId: existing.invitationId,
+          preferredFoot: normalized,
+        );
+        await TeamService().updateGrintaPlayer(
+          teamId: teamId,
+          playerId: existing.playerId,
+          player: updated,
+          staffEntry: isGrintaRosterStaff(
+            positions: existing.positions,
+            fonction: existing.fonction,
+            listedInManagers: false,
+          ),
+        );
+
+        final list = List<GrintaPlayer>.from(
+          widget.team.grintaPlayers ?? const <GrintaPlayer>[],
+        );
+        final index = list.indexWhere(
+          (entry) => entry.playerId.trim() == existing.playerId.trim(),
+        );
+        if (index >= 0) {
+          list[index] = updated;
+          widget.team.grintaPlayers = list;
+        }
+        return;
+      }
+    }
+
+    final effectivesId = widget.identity.effectivesDocId?.trim() ?? '';
+    final EffectivesService effectivesService = EffectivesService();
+    Effectives? effectives;
+    if (effectivesId.isNotEmpty) {
+      effectives = await effectivesService.getEffectivesById(effectivesId);
+    }
+    effectives ??= await effectivesService.getEffectivesByMemberIdAndTeamId(
+      memberId,
+      teamId,
+    );
+    if (effectives == null) {
+      throw StateError('Unable to update preferred foot for this player');
+    }
+
+    effectives.piedFort = normalized ?? '';
+    await effectivesService.updateEffectives(effectives);
+  }
+
+  GrintaPlayer? _resolveGrintaPlayer(String memberId) {
+    final lookupIds = playerMemberLookupIds(widget.identity.player);
+    for (final GrintaPlayer entry
+        in widget.team.grintaPlayers ?? const <GrintaPlayer>[]) {
+      final id = entry.playerId.trim();
+      if (id.isEmpty) continue;
+      if (id == memberId || lookupIds.contains(id)) {
+        return entry;
+      }
+    }
+    return null;
   }
 
   Widget _buildSeasonSelector(BuildContext context) {
@@ -677,11 +928,12 @@ class _TrackerAveragesGrid extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final l10n = context.l10n;
+    final colors = context.appColors;
     if (averages.sessionsWithData <= 0 || averages.averages.isEmpty) {
       return Text(
         l10n.playerSeasonSummaryNoTrackerData,
         style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-              color: context.appColors.textSecondary,
+              color: colors.textSecondary,
             ),
       );
     }
@@ -689,63 +941,103 @@ class _TrackerAveragesGrid extends StatelessWidget {
     final metrics = <_TrackerMetricDisplay>[
       for (final key in kPlayerActivityTrackerMetricKeys)
         if (averages.averages[key] != null)
-          _TrackerMetricDisplay(
-            label: _metricLabel(l10n, key),
-            value: _metricValue(l10n, key, averages.averages[key]!),
-          ),
+          _metricDisplay(l10n, colors, key, averages.averages[key]!),
     ];
 
-    return Wrap(
-      spacing: 12,
-      runSpacing: 12,
+    final width = MediaQuery.sizeOf(context).width;
+    final crossAxisCount = width >= 720 ? 4 : (width >= 420 ? 3 : 2);
+
+    return GridView.count(
+      crossAxisCount: crossAxisCount,
+      shrinkWrap: true,
+      physics: const NeverScrollableScrollPhysics(),
+      crossAxisSpacing: 10,
+      mainAxisSpacing: 10,
+      childAspectRatio: width >= 720 ? 1.25 : 1.15,
       children: [
         for (final metric in metrics)
-          _SummaryMetricCard(
+          _PerformanceMetricTile(
+            icon: metric.icon,
             label: metric.label,
             value: metric.value,
+            unit: metric.unit,
+            color: metric.color,
           ),
       ],
     );
   }
 
-  String _metricLabel(AppLocalizations l10n, String key) {
+  _TrackerMetricDisplay _metricDisplay(
+    AppLocalizations l10n,
+    AppColors colors,
+    String key,
+    double value,
+  ) {
     switch (key) {
       case TeamWorkloadMetricKeys.distanceKm:
-        return l10n.statsDistance;
+        return _TrackerMetricDisplay(
+          icon: Icons.route_rounded,
+          label: l10n.statsDistance,
+          value: value.toStringAsFixed(2),
+          unit: l10n.statsUnitKm,
+          color: colors.primary,
+        );
       case TeamWorkloadMetricKeys.maxValidatedSpeedKmh:
-        return l10n.statsMaxSpeed;
+        return _TrackerMetricDisplay(
+          icon: Icons.bolt_rounded,
+          label: l10n.statsMaxSpeed,
+          value: value.toStringAsFixed(1),
+          unit: l10n.statsUnitKmh,
+          color: colors.success,
+        );
       case TeamWorkloadMetricKeys.sprintCount:
-        return l10n.statsSprints;
+        return _TrackerMetricDisplay(
+          icon: Icons.directions_run_rounded,
+          label: l10n.statsSprints,
+          value: value.toStringAsFixed(0),
+          unit: l10n.statsUnitCount,
+          color: colors.primary,
+        );
       case TeamWorkloadMetricKeys.highAccelerationCount:
-        return l10n.statsHighAccel;
+        return _TrackerMetricDisplay(
+          icon: Icons.flash_on_rounded,
+          label: l10n.statsHighAccel,
+          value: value.toStringAsFixed(0),
+          unit: l10n.statsUnitCount,
+          color: colors.warning,
+        );
       case TeamWorkloadMetricKeys.highSpeedDuration:
-        return l10n.statsHighSpeedTime;
+        return _TrackerMetricDisplay(
+          icon: Icons.timer_rounded,
+          label: l10n.statsHighSpeedTime,
+          value: _formatSeconds(value),
+          unit: '',
+          color: colors.secondary,
+        );
       case TeamWorkloadMetricKeys.maxAccelerationMps2:
-        return l10n.statsMaxAccel;
+        return _TrackerMetricDisplay(
+          icon: Icons.trending_up_rounded,
+          label: l10n.statsMaxAccel,
+          value: value.toStringAsFixed(2),
+          unit: l10n.statsUnitMps2,
+          color: colors.warning,
+        );
       case TeamWorkloadMetricKeys.workloadScore:
-        return l10n.statsWorkload;
+        return _TrackerMetricDisplay(
+          icon: Icons.fitness_center_rounded,
+          label: l10n.statsWorkload,
+          value: value.toStringAsFixed(0),
+          unit: 'pts',
+          color: colors.success,
+        );
       default:
-        return key;
-    }
-  }
-
-  String _metricValue(AppLocalizations l10n, String key, double value) {
-    switch (key) {
-      case TeamWorkloadMetricKeys.distanceKm:
-        return '${value.toStringAsFixed(2)} ${l10n.statsUnitKm}';
-      case TeamWorkloadMetricKeys.maxValidatedSpeedKmh:
-        return '${value.toStringAsFixed(1)} ${l10n.statsUnitKmh}';
-      case TeamWorkloadMetricKeys.sprintCount:
-      case TeamWorkloadMetricKeys.highAccelerationCount:
-        return value.toStringAsFixed(0);
-      case TeamWorkloadMetricKeys.highSpeedDuration:
-        return _formatSeconds(value);
-      case TeamWorkloadMetricKeys.maxAccelerationMps2:
-        return '${value.toStringAsFixed(2)} ${l10n.statsUnitMps2}';
-      case TeamWorkloadMetricKeys.workloadScore:
-        return value.toStringAsFixed(0);
-      default:
-        return value.toStringAsFixed(1);
+        return _TrackerMetricDisplay(
+          icon: Icons.query_stats_rounded,
+          label: key,
+          value: value.toStringAsFixed(1),
+          unit: '',
+          color: colors.textSecondary,
+        );
     }
   }
 
@@ -762,12 +1054,108 @@ class _TrackerAveragesGrid extends StatelessWidget {
 
 class _TrackerMetricDisplay {
   const _TrackerMetricDisplay({
+    required this.icon,
     required this.label,
     required this.value,
+    required this.unit,
+    required this.color,
   });
 
+  final IconData icon;
   final String label;
   final String value;
+  final String unit;
+  final Color color;
+}
+
+/// Same visual language as tracker analysis `_MetricTile`.
+class _PerformanceMetricTile extends StatelessWidget {
+  const _PerformanceMetricTile({
+    required this.icon,
+    required this.label,
+    required this.value,
+    required this.unit,
+    required this.color,
+  });
+
+  final IconData icon;
+  final String label;
+  final String value;
+  final String unit;
+  final Color color;
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = context.appColors;
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 12),
+      decoration: BoxDecoration(
+        color: colors.surface,
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(color: colors.border),
+      ),
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        crossAxisAlignment: CrossAxisAlignment.center,
+        children: [
+          Icon(
+            icon,
+            color: color,
+            size: 32,
+          ),
+          const SizedBox(height: 10),
+          FittedBox(
+            alignment: Alignment.center,
+            fit: BoxFit.scaleDown,
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.end,
+              children: [
+                Text(
+                  value,
+                  style: TextStyle(
+                    color: colors.textPrimary,
+                    fontSize: 28,
+                    fontWeight: FontWeight.w900,
+                    height: 1.05,
+                  ),
+                ),
+                if (unit.isNotEmpty) ...[
+                  const SizedBox(width: 5),
+                  Padding(
+                    padding: const EdgeInsets.only(bottom: 3),
+                    child: Text(
+                      unit,
+                      style: TextStyle(
+                        color: colors.textSecondary,
+                        fontSize: 14,
+                        fontWeight: FontWeight.w800,
+                      ),
+                    ),
+                  ),
+                ],
+              ],
+            ),
+          ),
+          const SizedBox(height: 6),
+          Text(
+            label,
+            maxLines: 2,
+            overflow: TextOverflow.ellipsis,
+            textAlign: TextAlign.center,
+            style: TextStyle(
+              color: colors.textSecondary,
+              fontSize: 13,
+              fontWeight: FontWeight.w700,
+              height: 1.15,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
 }
 
 class _SummaryMetricCard extends StatelessWidget {

@@ -80,6 +80,7 @@ class ManageUnavailabilitiesSheet extends StatefulWidget {
     this.onChanged,
     this.embeddedInScreen = false,
     this.showCloseButton = true,
+    this.showPlayerName = true,
   });
 
   final Player player;
@@ -88,6 +89,7 @@ class ManageUnavailabilitiesSheet extends StatefulWidget {
   final VoidCallback? onChanged;
   final bool embeddedInScreen;
   final bool showCloseButton;
+  final bool showPlayerName;
 
   @override
   State<ManageUnavailabilitiesSheet> createState() =>
@@ -468,26 +470,27 @@ class _ManageUnavailabilitiesSheetState extends State<ManageUnavailabilitiesShee
     final fab = _buildFab(l10n);
 
     if (widget.embeddedInScreen) {
+      final bool showName = widget.showPlayerName && playerName.isNotEmpty;
       return Stack(
         children: [
           Padding(
             padding: EdgeInsets.fromLTRB(
-              20,
               16,
-              20,
-              widget.isManager ? 88 : 20,
+              showName ? 8 : 0,
+              16,
+              widget.isManager ? 88 : 8,
             ),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                if (playerName.isNotEmpty)
+                if (showName)
                   Text(
                     playerName,
                     style: theme.textTheme.bodyMedium?.copyWith(
                       color: colors.textSecondary,
                     ),
                   ),
-                if (playerName.isNotEmpty) const SizedBox(height: 12),
+                if (showName) const SizedBox(height: 12),
                 Expanded(
                   child: _buildEntriesList(
                     context,
@@ -501,8 +504,8 @@ class _ManageUnavailabilitiesSheetState extends State<ManageUnavailabilitiesShee
           ),
           if (fab != null)
             Positioned(
-              right: 20,
-              bottom: 20,
+              right: 16,
+              bottom: 16,
               child: fab,
             ),
         ],

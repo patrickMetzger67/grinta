@@ -6057,4 +6057,7 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get preferredFootBoth => 'Beide';
+
+  @override
+  String get playerSeasonSummaryPreferredFootSaved => 'Starker Fuß aktualisiert.';
 }

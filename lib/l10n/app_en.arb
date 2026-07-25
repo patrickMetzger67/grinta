@@ -2386,5 +2386,6 @@
   "preferredFootUnspecified": "Not set",
   "preferredFootLeft": "Left",
   "preferredFootRight": "Right",
-  "preferredFootBoth": "Both"
+  "preferredFootBoth": "Both",
+  "playerSeasonSummaryPreferredFootSaved": "Preferred foot updated."
 }

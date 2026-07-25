@@ -2098,5 +2098,6 @@
   "preferredFootUnspecified": "Non indicato",
   "preferredFootLeft": "Sinistro",
   "preferredFootRight": "Destro",
-  "preferredFootBoth": "Entrambi"
+  "preferredFootBoth": "Entrambi",
+  "playerSeasonSummaryPreferredFootSaved": "Piede forte aggiornato."
 }

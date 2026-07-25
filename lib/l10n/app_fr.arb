@@ -2693,5 +2693,6 @@
   "preferredFootUnspecified": "Non renseigné",
   "preferredFootLeft": "Gauche",
   "preferredFootRight": "Droit",
-  "preferredFootBoth": "Les deux"
+  "preferredFootBoth": "Les deux",
+  "playerSeasonSummaryPreferredFootSaved": "Pied fort mis à jour."
 }

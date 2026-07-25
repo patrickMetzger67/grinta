@@ -2098,5 +2098,6 @@
   "preferredFootUnspecified": "No indicado",
   "preferredFootLeft": "Izquierdo",
   "preferredFootRight": "Derecho",
-  "preferredFootBoth": "Ambos"
+  "preferredFootBoth": "Ambos",
+  "playerSeasonSummaryPreferredFootSaved": "Pie dominante actualizado."
 }

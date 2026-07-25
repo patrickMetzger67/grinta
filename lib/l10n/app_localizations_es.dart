@@ -6046,4 +6046,7 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get preferredFootBoth => 'Ambos';
+
+  @override
+  String get playerSeasonSummaryPreferredFootSaved => 'Pie dominante actualizado.';
 }

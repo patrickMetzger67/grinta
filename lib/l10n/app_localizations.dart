@@ -10415,6 +10415,13 @@ abstract class AppLocalizations {
   /// In fr, this message translates to:
   /// **'Les deux'**
   String get preferredFootBoth;
+
+  /// No description provided for @playerSeasonSummaryPreferredFootSaved.
+  ///
+  /// In fr, this message translates to:
+  /// **'Pied fort mis à jour.'**
+  String get playerSeasonSummaryPreferredFootSaved;
+
 }
 
 class _AppLocalizationsDelegate

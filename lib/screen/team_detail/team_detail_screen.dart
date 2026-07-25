@@ -4183,9 +4183,7 @@ class _TeamDetailScreenState extends State<TeamDetailScreen> {
             textTheme: textTheme,
             sortColumn: _RosterSortColumn.player,
           ),
-          if (_canManageTeam(context) || _canManageRoster(context)) ...[
-            _headerCell('', flex: 3, textTheme: textTheme),
-          ],
+          _headerCell('', flex: 3, textTheme: textTheme),
           _headerCell(
             l10n.teamDetailColumnAge,
             flex: 1,
@@ -4576,6 +4574,7 @@ class _TeamDetailScreenState extends State<TeamDetailScreen> {
       context,
       team: _team,
       initialSeasonId: seasonId,
+      isManager: _canManageTeam(context),
       identity: PlayerSeasonSummaryIdentity(
         player: row.player,
         positionCodes: row.isGrintaRoster
@@ -4587,6 +4586,8 @@ class _TeamDetailScreenState extends State<TeamDetailScreen> {
         weightKg: weightKg != null && weightKg > 0 ? weightKg : null,
         hwMeasuredAt: hwMeasuredAt,
         preferredFoot: preferredFoot,
+        isGrintaRoster: row.isGrintaRoster,
+        effectivesDocId: effectives?.ref?.id,
       ),
     );
   }
