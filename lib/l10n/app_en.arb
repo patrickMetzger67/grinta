@@ -2373,5 +2373,30 @@
   "pendingInvitationAcceptTitle": "Invitation code",
   "pendingInvitationAcceptMessage": "Enter the code from the email to link this invitation to your account.",
   "pendingInvitationAcceptSuccess": "Invitation accepted. The team is now available in your profile.",
-  "pendingInvitationAcceptNeedAuth": "Sign in to accept this invitation."
+  "pendingInvitationAcceptNeedAuth": "Sign in to accept this invitation.",
+  "playerSeasonSummaryTitle": "Player sheet",
+  "playerSeasonSummaryTabUnavailabilities": "Unavailabilities",
+  "playerSeasonSummaryTeamMatches": "Team matches",
+  "playerSeasonSummaryTeamTrainings": "Team trainings",
+  "playerSeasonSummaryTrackerAverages": "Performance indicators (average)",
+  "playerSeasonSummaryNoTrackerData": "No sensor data for this period",
+  "playerSeasonSummaryAgeValue": "{age} yrs",
+  "@playerSeasonSummaryAgeValue": {
+    "placeholders": {
+      "age": { "type": "int" }
+    }
+  },
+  "playerSeasonSummaryHwMeasuredAt": "Measurements on {date}",
+  "@playerSeasonSummaryHwMeasuredAt": {
+    "placeholders": {
+      "date": { "type": "String" }
+    }
+  },
+  "preferredFootLabel": "Preferred foot",
+  "preferredFootHint": "Select preferred foot",
+  "preferredFootUnspecified": "Not set",
+  "preferredFootLeft": "Left",
+  "preferredFootRight": "Right",
+  "preferredFootBoth": "Both",
+  "playerSeasonSummaryPreferredFootSaved": "Preferred foot updated."
 }

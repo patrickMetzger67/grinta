@@ -10349,6 +10349,96 @@ abstract class AppLocalizations {
 
   /// No description provided for @pendingInvitationAcceptNeedAuth.
   String get pendingInvitationAcceptNeedAuth;
+
+  /// No description provided for @playerSeasonSummaryTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Fiche joueur'**
+  String get playerSeasonSummaryTitle;
+
+  /// No description provided for @playerSeasonSummaryTabUnavailabilities.
+  ///
+  /// In fr, this message translates to:
+  /// **'Indisponibilités'**
+  String get playerSeasonSummaryTabUnavailabilities;
+
+  /// No description provided for @playerSeasonSummaryTeamMatches.
+  ///
+  /// In fr, this message translates to:
+  /// **'Matchs équipe'**
+  String get playerSeasonSummaryTeamMatches;
+
+  /// No description provided for @playerSeasonSummaryTeamTrainings.
+  ///
+  /// In fr, this message translates to:
+  /// **'Entraînements équipe'**
+  String get playerSeasonSummaryTeamTrainings;
+
+  /// No description provided for @playerSeasonSummaryTrackerAverages.
+  ///
+  /// In fr, this message translates to:
+  /// **'Indicateurs de performance (moyenne)'**
+  String get playerSeasonSummaryTrackerAverages;
+
+  /// No description provided for @playerSeasonSummaryNoTrackerData.
+  ///
+  /// In fr, this message translates to:
+  /// **'Aucune donnée capteur sur cette période'**
+  String get playerSeasonSummaryNoTrackerData;
+
+  /// No description provided for @playerSeasonSummaryAgeValue.
+  ///
+  /// In fr, this message translates to:
+  /// **'{age} ans'**
+  String playerSeasonSummaryAgeValue(int age);
+
+  /// No description provided for @playerSeasonSummaryHwMeasuredAt.
+  ///
+  /// In fr, this message translates to:
+  /// **'Mensurations au {date}'**
+  String playerSeasonSummaryHwMeasuredAt(String date);
+
+  /// No description provided for @preferredFootLabel.
+  ///
+  /// In fr, this message translates to:
+  /// **'Pied fort'**
+  String get preferredFootLabel;
+
+  /// No description provided for @preferredFootHint.
+  ///
+  /// In fr, this message translates to:
+  /// **'Sélectionner le pied fort'**
+  String get preferredFootHint;
+
+  /// No description provided for @preferredFootUnspecified.
+  ///
+  /// In fr, this message translates to:
+  /// **'Non renseigné'**
+  String get preferredFootUnspecified;
+
+  /// No description provided for @preferredFootLeft.
+  ///
+  /// In fr, this message translates to:
+  /// **'Gauche'**
+  String get preferredFootLeft;
+
+  /// No description provided for @preferredFootRight.
+  ///
+  /// In fr, this message translates to:
+  /// **'Droit'**
+  String get preferredFootRight;
+
+  /// No description provided for @preferredFootBoth.
+  ///
+  /// In fr, this message translates to:
+  /// **'Les deux'**
+  String get preferredFootBoth;
+
+  /// No description provided for @playerSeasonSummaryPreferredFootSaved.
+  ///
+  /// In fr, this message translates to:
+  /// **'Pied fort mis à jour.'**
+  String get playerSeasonSummaryPreferredFootSaved;
 }
 
 class _AppLocalizationsDelegate

@@ -2085,5 +2085,30 @@
   "pendingInvitationAcceptTitle": "Código de invitación",
   "pendingInvitationAcceptMessage": "Introduce el código del correo para vincular esta invitación a tu cuenta.",
   "pendingInvitationAcceptSuccess": "Invitación aceptada. El equipo ya está disponible en tu perfil.",
-  "pendingInvitationAcceptNeedAuth": "Inicia sesión para aceptar esta invitación."
+  "pendingInvitationAcceptNeedAuth": "Inicia sesión para aceptar esta invitación.",
+  "playerSeasonSummaryTitle": "Ficha del jugador",
+  "playerSeasonSummaryTabUnavailabilities": "Indisponibilidades",
+  "playerSeasonSummaryTeamMatches": "Partidos del equipo",
+  "playerSeasonSummaryTeamTrainings": "Entrenamientos del equipo",
+  "playerSeasonSummaryTrackerAverages": "Indicadores de rendimiento (media)",
+  "playerSeasonSummaryNoTrackerData": "No hay datos de sensores en este período",
+  "playerSeasonSummaryAgeValue": "{age} años",
+  "@playerSeasonSummaryAgeValue": {
+    "placeholders": {
+      "age": { "type": "int" }
+    }
+  },
+  "playerSeasonSummaryHwMeasuredAt": "Medidas el {date}",
+  "@playerSeasonSummaryHwMeasuredAt": {
+    "placeholders": {
+      "date": { "type": "String" }
+    }
+  },
+  "preferredFootLabel": "Pie dominante",
+  "preferredFootHint": "Seleccionar pie dominante",
+  "preferredFootUnspecified": "No indicado",
+  "preferredFootLeft": "Izquierdo",
+  "preferredFootRight": "Derecho",
+  "preferredFootBoth": "Ambos",
+  "playerSeasonSummaryPreferredFootSaved": "Pie dominante actualizado."
 }

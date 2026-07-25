@@ -508,6 +508,7 @@ class _MatchConvocationsTabState extends State<MatchConvocationsTab>
                 birthday: playerDetails.birthday,
                 hwHistory: hwHistory,
                 invitationId: invitationResult.invitationId,
+                preferredFoot: playerDetails.preferredFoot,
               ),
               firebaseUserId: FirebaseAuth.instance.currentUser?.uid,
             );

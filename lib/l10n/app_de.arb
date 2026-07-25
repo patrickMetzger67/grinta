@@ -2085,5 +2085,30 @@
   "pendingInvitationAcceptTitle": "Einladungscode",
   "pendingInvitationAcceptMessage": "Gib den Code aus der E-Mail ein, um diese Einladung mit deinem Konto zu verknüpfen.",
   "pendingInvitationAcceptSuccess": "Einladung angenommen. Das Team ist jetzt in deinem Profil verfügbar.",
-  "pendingInvitationAcceptNeedAuth": "Melde dich an, um diese Einladung anzunehmen."
+  "pendingInvitationAcceptNeedAuth": "Melde dich an, um diese Einladung anzunehmen.",
+  "playerSeasonSummaryTitle": "Spielerkarte",
+  "playerSeasonSummaryTabUnavailabilities": "Ausfälle",
+  "playerSeasonSummaryTeamMatches": "Teamspiele",
+  "playerSeasonSummaryTeamTrainings": "Teamtrainings",
+  "playerSeasonSummaryTrackerAverages": "Leistungsindikatoren (Durchschnitt)",
+  "playerSeasonSummaryNoTrackerData": "Keine Sensordaten für diesen Zeitraum",
+  "playerSeasonSummaryAgeValue": "{age} J.",
+  "@playerSeasonSummaryAgeValue": {
+    "placeholders": {
+      "age": { "type": "int" }
+    }
+  },
+  "playerSeasonSummaryHwMeasuredAt": "Maße am {date}",
+  "@playerSeasonSummaryHwMeasuredAt": {
+    "placeholders": {
+      "date": { "type": "String" }
+    }
+  },
+  "preferredFootLabel": "Starker Fuß",
+  "preferredFootHint": "Starken Fuß wählen",
+  "preferredFootUnspecified": "Nicht angegeben",
+  "preferredFootLeft": "Links",
+  "preferredFootRight": "Rechts",
+  "preferredFootBoth": "Beide",
+  "playerSeasonSummaryPreferredFootSaved": "Starker Fuß aktualisiert."
 }

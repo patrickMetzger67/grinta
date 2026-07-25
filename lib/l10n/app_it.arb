@@ -2085,5 +2085,30 @@
   "pendingInvitationAcceptTitle": "Codice di invito",
   "pendingInvitationAcceptMessage": "Inserisci il codice ricevuto via e-mail per collegare questo invito al tuo account.",
   "pendingInvitationAcceptSuccess": "Invito accettato. La squadra è ora disponibile nel tuo profilo.",
-  "pendingInvitationAcceptNeedAuth": "Accedi per accettare questo invito."
+  "pendingInvitationAcceptNeedAuth": "Accedi per accettare questo invito.",
+  "playerSeasonSummaryTitle": "Scheda giocatore",
+  "playerSeasonSummaryTabUnavailabilities": "Indisponibilità",
+  "playerSeasonSummaryTeamMatches": "Partite della squadra",
+  "playerSeasonSummaryTeamTrainings": "Allenamenti della squadra",
+  "playerSeasonSummaryTrackerAverages": "Indicatori di performance (media)",
+  "playerSeasonSummaryNoTrackerData": "Nessun dato sensore per questo periodo",
+  "playerSeasonSummaryAgeValue": "{age} anni",
+  "@playerSeasonSummaryAgeValue": {
+    "placeholders": {
+      "age": { "type": "int" }
+    }
+  },
+  "playerSeasonSummaryHwMeasuredAt": "Misure del {date}",
+  "@playerSeasonSummaryHwMeasuredAt": {
+    "placeholders": {
+      "date": { "type": "String" }
+    }
+  },
+  "preferredFootLabel": "Piede forte",
+  "preferredFootHint": "Seleziona il piede forte",
+  "preferredFootUnspecified": "Non indicato",
+  "preferredFootLeft": "Sinistro",
+  "preferredFootRight": "Destro",
+  "preferredFootBoth": "Entrambi",
+  "playerSeasonSummaryPreferredFootSaved": "Piede forte aggiornato."
 }

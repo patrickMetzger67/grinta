@@ -5940,4 +5940,53 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get pendingInvitationAcceptNeedAuth => 'Sign in to accept this invitation.';
+
+  @override
+  String get playerSeasonSummaryTitle => 'Player sheet';
+
+  @override
+  String get playerSeasonSummaryTabUnavailabilities => 'Unavailabilities';
+
+  @override
+  String get playerSeasonSummaryTeamMatches => 'Team matches';
+
+  @override
+  String get playerSeasonSummaryTeamTrainings => 'Team trainings';
+
+  @override
+  String get playerSeasonSummaryTrackerAverages => 'Performance indicators (average)';
+
+  @override
+  String get playerSeasonSummaryNoTrackerData => 'No sensor data for this period';
+
+  @override
+  String playerSeasonSummaryAgeValue(int age) {
+    return '$age yrs';
+  }
+
+  @override
+  String playerSeasonSummaryHwMeasuredAt(String date) {
+    return 'Measurements on $date';
+  }
+
+  @override
+  String get preferredFootLabel => 'Preferred foot';
+
+  @override
+  String get preferredFootHint => 'Select preferred foot';
+
+  @override
+  String get preferredFootUnspecified => 'Not set';
+
+  @override
+  String get preferredFootLeft => 'Left';
+
+  @override
+  String get preferredFootRight => 'Right';
+
+  @override
+  String get preferredFootBoth => 'Both';
+
+  @override
+  String get playerSeasonSummaryPreferredFootSaved => 'Preferred foot updated.';
 }
