@@ -5920,4 +5920,24 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get forgotPasswordFailed => 'Unable to send the password reset email.';
+
+  @override
+  String get pendingInvitationNotificationTitle => 'Pending invitation';
+
+  @override
+  String pendingInvitationNotificationBody(String teamName) {
+    return 'Your coach invited you to $teamName. Enter the code from the email to join the team.';
+  }
+
+  @override
+  String get pendingInvitationAcceptTitle => 'Invitation code';
+
+  @override
+  String get pendingInvitationAcceptMessage => 'Enter the code from the email to link this invitation to your account.';
+
+  @override
+  String get pendingInvitationAcceptSuccess => 'Invitation accepted. The team is now available in your profile.';
+
+  @override
+  String get pendingInvitationAcceptNeedAuth => 'Sign in to accept this invitation.';
 }

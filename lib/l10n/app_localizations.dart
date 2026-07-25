@@ -10331,6 +10331,24 @@ abstract class AppLocalizations {
 
   /// No description provided for @forgotPasswordFailed.
   String get forgotPasswordFailed;
+
+  /// No description provided for @pendingInvitationNotificationTitle.
+  String get pendingInvitationNotificationTitle;
+
+  /// No description provided for @pendingInvitationNotificationBody.
+  String pendingInvitationNotificationBody(String teamName);
+
+  /// No description provided for @pendingInvitationAcceptTitle.
+  String get pendingInvitationAcceptTitle;
+
+  /// No description provided for @pendingInvitationAcceptMessage.
+  String get pendingInvitationAcceptMessage;
+
+  /// No description provided for @pendingInvitationAcceptSuccess.
+  String get pendingInvitationAcceptSuccess;
+
+  /// No description provided for @pendingInvitationAcceptNeedAuth.
+  String get pendingInvitationAcceptNeedAuth;
 }
 
 class _AppLocalizationsDelegate

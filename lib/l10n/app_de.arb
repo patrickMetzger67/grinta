@@ -2074,5 +2074,16 @@
   "forgotPasswordMessage": "Geben Sie die E-Mail-Adresse Ihres Kontos ein. Wir senden Ihnen einen Link zum Zurücksetzen Ihres Passworts.",
   "forgotPasswordSendAction": "Link senden",
   "forgotPasswordSent": "Eine E-Mail zum Zurücksetzen des Passworts wurde gesendet.",
-  "forgotPasswordFailed": "Die E-Mail zum Zurücksetzen konnte nicht gesendet werden."
+  "forgotPasswordFailed": "Die E-Mail zum Zurücksetzen konnte nicht gesendet werden.",
+  "pendingInvitationNotificationTitle": "Ausstehende Einladung",
+  "pendingInvitationNotificationBody": "Dein Trainer lädt dich zu {teamName} ein. Gib den Code aus der E-Mail ein, um dem Team beizutreten.",
+  "@pendingInvitationNotificationBody": {
+    "placeholders": {
+      "teamName": { "type": "String" }
+    }
+  },
+  "pendingInvitationAcceptTitle": "Einladungscode",
+  "pendingInvitationAcceptMessage": "Gib den Code aus der E-Mail ein, um diese Einladung mit deinem Konto zu verknüpfen.",
+  "pendingInvitationAcceptSuccess": "Einladung angenommen. Das Team ist jetzt in deinem Profil verfügbar.",
+  "pendingInvitationAcceptNeedAuth": "Melde dich an, um diese Einladung anzunehmen."
 }

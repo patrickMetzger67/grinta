@@ -6000,4 +6000,24 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get forgotPasswordFailed => 'No se pudo enviar el correo de restablecimiento.';
+
+  @override
+  String get pendingInvitationNotificationTitle => 'Invitación pendiente';
+
+  @override
+  String pendingInvitationNotificationBody(String teamName) {
+    return 'Tu entrenador te invita a $teamName. Introduce el código del correo para unirte al equipo.';
+  }
+
+  @override
+  String get pendingInvitationAcceptTitle => 'Código de invitación';
+
+  @override
+  String get pendingInvitationAcceptMessage => 'Introduce el código del correo para vincular esta invitación a tu cuenta.';
+
+  @override
+  String get pendingInvitationAcceptSuccess => 'Invitación aceptada. El equipo ya está disponible en tu perfil.';
+
+  @override
+  String get pendingInvitationAcceptNeedAuth => 'Inicia sesión para aceptar esta invitación.';
 }

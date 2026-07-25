@@ -2669,5 +2669,16 @@
   "forgotPasswordMessage": "Saisissez l'adresse email de votre compte. Nous vous enverrons un lien pour réinitialiser votre mot de passe.",
   "forgotPasswordSendAction": "Envoyer le lien",
   "forgotPasswordSent": "Un e-mail de réinitialisation a été envoyé.",
-  "forgotPasswordFailed": "Impossible d'envoyer l'e-mail de réinitialisation."
+  "forgotPasswordFailed": "Impossible d'envoyer l'e-mail de réinitialisation.",
+  "pendingInvitationNotificationTitle": "Invitation en attente",
+  "pendingInvitationNotificationBody": "Ton coach t'invite dans {teamName}. Saisis le code reçu par e-mail pour rejoindre l'équipe.",
+  "@pendingInvitationNotificationBody": {
+    "placeholders": {
+      "teamName": { "type": "String" }
+    }
+  },
+  "pendingInvitationAcceptTitle": "Code d'invitation",
+  "pendingInvitationAcceptMessage": "Saisis le code reçu par e-mail pour rattacher cette invitation à ton compte.",
+  "pendingInvitationAcceptSuccess": "Invitation acceptée. L'équipe est maintenant disponible dans ton profil.",
+  "pendingInvitationAcceptNeedAuth": "Connecte-toi pour accepter cette invitation."
 }

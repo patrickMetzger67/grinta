@@ -6011,4 +6011,24 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get forgotPasswordFailed => 'Die E-Mail zum Zurücksetzen konnte nicht gesendet werden.';
+
+  @override
+  String get pendingInvitationNotificationTitle => 'Ausstehende Einladung';
+
+  @override
+  String pendingInvitationNotificationBody(String teamName) {
+    return 'Dein Trainer lädt dich zu $teamName ein. Gib den Code aus der E-Mail ein, um dem Team beizutreten.';
+  }
+
+  @override
+  String get pendingInvitationAcceptTitle => 'Einladungscode';
+
+  @override
+  String get pendingInvitationAcceptMessage => 'Gib den Code aus der E-Mail ein, um diese Einladung mit deinem Konto zu verknüpfen.';
+
+  @override
+  String get pendingInvitationAcceptSuccess => 'Einladung angenommen. Das Team ist jetzt in deinem Profil verfügbar.';
+
+  @override
+  String get pendingInvitationAcceptNeedAuth => 'Melde dich an, um diese Einladung anzunehmen.';
 }

@@ -2074,5 +2074,16 @@
   "forgotPasswordMessage": "Introduce el correo de tu cuenta. Te enviaremos un enlace para restablecer tu contraseña.",
   "forgotPasswordSendAction": "Enviar enlace",
   "forgotPasswordSent": "Se ha enviado un correo para restablecer la contraseña.",
-  "forgotPasswordFailed": "No se pudo enviar el correo de restablecimiento."
+  "forgotPasswordFailed": "No se pudo enviar el correo de restablecimiento.",
+  "pendingInvitationNotificationTitle": "Invitación pendiente",
+  "pendingInvitationNotificationBody": "Tu entrenador te invita a {teamName}. Introduce el código del correo para unirte al equipo.",
+  "@pendingInvitationNotificationBody": {
+    "placeholders": {
+      "teamName": { "type": "String" }
+    }
+  },
+  "pendingInvitationAcceptTitle": "Código de invitación",
+  "pendingInvitationAcceptMessage": "Introduce el código del correo para vincular esta invitación a tu cuenta.",
+  "pendingInvitationAcceptSuccess": "Invitación aceptada. El equipo ya está disponible en tu perfil.",
+  "pendingInvitationAcceptNeedAuth": "Inicia sesión para aceptar esta invitación."
 }

@@ -2799,6 +2799,7 @@ class _TeamDetailScreenState extends State<TeamDetailScreen> {
         email: email,
         teamId: teamId,
         seasonId: widget.seasonId,
+        teamName: _team.name ?? '',
       );
 
       if (!context.mounted) {

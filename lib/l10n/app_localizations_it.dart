@@ -5985,4 +5985,24 @@ class AppLocalizationsIt extends AppLocalizations {
 
   @override
   String get forgotPasswordFailed => 'Impossibile inviare l\'email di reimpostazione.';
+
+  @override
+  String get pendingInvitationNotificationTitle => 'Invito in sospeso';
+
+  @override
+  String pendingInvitationNotificationBody(String teamName) {
+    return 'Il tuo allenatore ti invita in $teamName. Inserisci il codice ricevuto via e-mail per unirti alla squadra.';
+  }
+
+  @override
+  String get pendingInvitationAcceptTitle => 'Codice di invito';
+
+  @override
+  String get pendingInvitationAcceptMessage => 'Inserisci il codice ricevuto via e-mail per collegare questo invito al tuo account.';
+
+  @override
+  String get pendingInvitationAcceptSuccess => 'Invito accettato. La squadra è ora disponibile nel tuo profilo.';
+
+  @override
+  String get pendingInvitationAcceptNeedAuth => 'Accedi per accettare questo invito.';
 }

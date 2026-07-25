@@ -2074,5 +2074,16 @@
   "forgotPasswordMessage": "Inserisci l'email del tuo account. Ti invieremo un link per reimpostare la password.",
   "forgotPasswordSendAction": "Invia link",
   "forgotPasswordSent": "È stata inviata un'email per reimpostare la password.",
-  "forgotPasswordFailed": "Impossibile inviare l'email di reimpostazione."
+  "forgotPasswordFailed": "Impossibile inviare l'email di reimpostazione.",
+  "pendingInvitationNotificationTitle": "Invito in sospeso",
+  "pendingInvitationNotificationBody": "Il tuo allenatore ti invita in {teamName}. Inserisci il codice ricevuto via e-mail per unirti alla squadra.",
+  "@pendingInvitationNotificationBody": {
+    "placeholders": {
+      "teamName": { "type": "String" }
+    }
+  },
+  "pendingInvitationAcceptTitle": "Codice di invito",
+  "pendingInvitationAcceptMessage": "Inserisci il codice ricevuto via e-mail per collegare questo invito al tuo account.",
+  "pendingInvitationAcceptSuccess": "Invito accettato. La squadra è ora disponibile nel tuo profilo.",
+  "pendingInvitationAcceptNeedAuth": "Accedi per accettare questo invito."
 }

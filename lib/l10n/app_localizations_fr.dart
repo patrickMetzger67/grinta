@@ -5997,4 +5997,24 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get forgotPasswordFailed => 'Impossible d\'envoyer l\'e-mail de réinitialisation.';
+
+  @override
+  String get pendingInvitationNotificationTitle => 'Invitation en attente';
+
+  @override
+  String pendingInvitationNotificationBody(String teamName) {
+    return 'Ton coach t\'invite dans $teamName. Saisis le code reçu par e-mail pour rejoindre l\'équipe.';
+  }
+
+  @override
+  String get pendingInvitationAcceptTitle => 'Code d\'invitation';
+
+  @override
+  String get pendingInvitationAcceptMessage => 'Saisis le code reçu par e-mail pour rattacher cette invitation à ton compte.';
+
+  @override
+  String get pendingInvitationAcceptSuccess => 'Invitation acceptée. L\'équipe est maintenant disponible dans ton profil.';
+
+  @override
+  String get pendingInvitationAcceptNeedAuth => 'Connecte-toi pour accepter cette invitation.';
 }

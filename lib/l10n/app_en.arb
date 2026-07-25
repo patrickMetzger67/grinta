@@ -2362,5 +2362,16 @@
   "forgotPasswordMessage": "Enter the email address for your account. We will send you a link to reset your password.",
   "forgotPasswordSendAction": "Send link",
   "forgotPasswordSent": "A password reset email has been sent.",
-  "forgotPasswordFailed": "Unable to send the password reset email."
+  "forgotPasswordFailed": "Unable to send the password reset email.",
+  "pendingInvitationNotificationTitle": "Pending invitation",
+  "pendingInvitationNotificationBody": "Your coach invited you to {teamName}. Enter the code from the email to join the team.",
+  "@pendingInvitationNotificationBody": {
+    "placeholders": {
+      "teamName": { "type": "String" }
+    }
+  },
+  "pendingInvitationAcceptTitle": "Invitation code",
+  "pendingInvitationAcceptMessage": "Enter the code from the email to link this invitation to your account.",
+  "pendingInvitationAcceptSuccess": "Invitation accepted. The team is now available in your profile.",
+  "pendingInvitationAcceptNeedAuth": "Sign in to accept this invitation."
 }
