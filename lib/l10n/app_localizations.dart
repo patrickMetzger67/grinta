@@ -4802,25 +4802,25 @@ abstract class AppLocalizations {
   /// No description provided for @createPersonalSportGoogleActivity.
   ///
   /// In en, this message translates to:
-  /// **'Google Fit activity'**
+  /// **'Google Health activity'**
   String get createPersonalSportGoogleActivity;
 
   /// No description provided for @createPersonalSportGoogleAndroidOnly.
   ///
   /// In en, this message translates to:
-  /// **'Google Fit / Health Connect import is available on Android only.'**
+  /// **'Google Health import is available on Android only. On iPhone, use Apple Fitness.'**
   String get createPersonalSportGoogleAndroidOnly;
 
   /// No description provided for @createPersonalSportGoogleLoadError.
   ///
   /// In en, this message translates to:
-  /// **'Could not load Google Fit workouts.'**
+  /// **'Could not load Google Health workouts.'**
   String get createPersonalSportGoogleLoadError;
 
   /// No description provided for @createPersonalSportGoogleNoImportable.
   ///
   /// In en, this message translates to:
-  /// **'No Google Fit workouts to import.'**
+  /// **'No Google Health workouts to import.'**
   String get createPersonalSportGoogleNoImportable;
 
   /// No description provided for @createPersonalSportPolarActivity.
@@ -6813,7 +6813,7 @@ abstract class AppLocalizations {
   /// No description provided for @wearableDeviceGoogleHealthConnect.
   ///
   /// In fr, this message translates to:
-  /// **'Google Fit / Health Connect'**
+  /// **'Google Health'**
   String get wearableDeviceGoogleHealthConnect;
 
   /// No description provided for @whoopConnectToggleLabel.
@@ -7413,25 +7413,25 @@ abstract class AppLocalizations {
   /// No description provided for @googleHealthConnectToggleSubtitle.
   ///
   /// In fr, this message translates to:
-  /// **'Connecte Google Fit pour importer entraînements, fréquence cardiaque et énergie active depuis Health Connect (Android uniquement)'**
+  /// **'Connecte Google Health pour importer entraînements, fréquence cardiaque et énergie active depuis Health Connect (Android uniquement)'**
   String get googleHealthConnectToggleSubtitle;
 
   /// No description provided for @googleHealthConnectToggleConnectedSubtitle.
   ///
   /// In fr, this message translates to:
-  /// **'Google Fit / Health Connect connecté — synchronisation complète des entraînements à venir (Phase 2)'**
+  /// **'Google Health connecté — synchronisation des entraînements disponible'**
   String get googleHealthConnectToggleConnectedSubtitle;
 
   /// No description provided for @googleHealthConnectSuccess.
   ///
   /// In fr, this message translates to:
-  /// **'Google Fit / Health Connect connecté.'**
+  /// **'Google Health connecté.'**
   String get googleHealthConnectSuccess;
 
   /// No description provided for @googleHealthConnectFailed.
   ///
   /// In fr, this message translates to:
-  /// **'La connexion Google Fit / Health Connect a échoué. Réessayez.'**
+  /// **'La connexion Google Health a échoué. Réessayez.'**
   String get googleHealthConnectFailed;
 
   /// No description provided for @googleHealthConnectDenied.
@@ -7443,19 +7443,19 @@ abstract class AppLocalizations {
   /// No description provided for @googleHealthConnectAuthRequired.
   ///
   /// In fr, this message translates to:
-  /// **'Connecte-toi à Grinta pour lier Google Fit / Health Connect.'**
+  /// **'Connecte-toi à Grinta pour lier Google Health.'**
   String get googleHealthConnectAuthRequired;
 
   /// No description provided for @googleHealthAndroidOnlyMessage.
   ///
   /// In fr, this message translates to:
-  /// **'Google Fit / Health Connect est disponible uniquement sur Android. Les données sont lues sur l\'appareil via Health Connect.'**
+  /// **'Google Health est disponible uniquement sur Android (données lues sur l’appareil via Health Connect). Sur iPhone, utilise Apple Forme.'**
   String get googleHealthAndroidOnlyMessage;
 
   /// No description provided for @googleHealthDisconnectFailed.
   ///
   /// In fr, this message translates to:
-  /// **'La déconnexion Google Fit / Health Connect a échoué.'**
+  /// **'La déconnexion Google Health a échoué.'**
   String get googleHealthDisconnectFailed;
 
   /// No description provided for @googleHealthCoachVisibilityTitle.
@@ -7473,7 +7473,7 @@ abstract class AppLocalizations {
   /// No description provided for @googleHealthCoachVisibilitySaveFailed.
   ///
   /// In fr, this message translates to:
-  /// **'Impossible d\'enregistrer les préférences Google Fit / Health Connect.'**
+  /// **'Impossible d\'enregistrer les préférences Google Health.'**
   String get googleHealthCoachVisibilitySaveFailed;
 
   /// No description provided for @googleHealthMetricActivity.
@@ -7503,13 +7503,13 @@ abstract class AppLocalizations {
   /// No description provided for @googleHealthCoachConnectSubtitle.
   ///
   /// In fr, this message translates to:
-  /// **'Connecter Google Fit / Health Connect pour {playerName}'**
+  /// **'Connecter Google Health pour {playerName}'**
   String googleHealthCoachConnectSubtitle(String playerName);
 
   /// No description provided for @googleHealthCoachConnectConnectedSubtitle.
   ///
   /// In fr, this message translates to:
-  /// **'Google Fit / Health Connect connecté pour {playerName}'**
+  /// **'Google Health connecté pour {playerName}'**
   String googleHealthCoachConnectConnectedSubtitle(String playerName);
 
   /// No description provided for @createTrainingTitle.
@@ -10278,7 +10278,7 @@ abstract class AppLocalizations {
   /// No description provided for @sessionHealthExportPromptGoogle.
   ///
   /// In en, this message translates to:
-  /// **'Would you like to see this data in Google Fit?'**
+  /// **'Would you like to see this data in Google Health?'**
   String get sessionHealthExportPromptGoogle;
 
   /// No description provided for @sessionHealthExportSuccessApple.
@@ -10290,7 +10290,7 @@ abstract class AppLocalizations {
   /// No description provided for @sessionHealthExportSuccessGoogle.
   ///
   /// In en, this message translates to:
-  /// **'Session added to Google Fit.'**
+  /// **'Session added to Google Health.'**
   String get sessionHealthExportSuccessGoogle;
 
   /// No description provided for @sessionHealthExportFailed.

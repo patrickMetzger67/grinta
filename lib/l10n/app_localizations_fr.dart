@@ -2699,19 +2699,19 @@ class AppLocalizationsFr extends AppLocalizations {
       'Aucun entraînement Apple Forme à importer. Enregistre une séance dans Forme / Santé, autorise Grinta, puis réessaie.';
 
   @override
-  String get createPersonalSportGoogleActivity => 'Activité Google Fit';
+  String get createPersonalSportGoogleActivity => 'Activité Google Health';
 
   @override
   String get createPersonalSportGoogleAndroidOnly =>
-      'L’import Google Fit / Health Connect est disponible uniquement sur Android.';
+      'L’import Google Health est disponible uniquement sur Android. Sur iPhone, utilise Apple Forme.';
 
   @override
   String get createPersonalSportGoogleLoadError =>
-      'Impossible de charger les entraînements Google Fit. Vérifie les autorisations Health Connect et réessaie.';
+      'Impossible de charger les entraînements Google Health. Vérifie les autorisations Health Connect et réessaie.';
 
   @override
   String get createPersonalSportGoogleNoImportable =>
-      'Aucun entraînement Google Fit à importer. Enregistre une séance dans Google Fit, autorise Grinta dans Health Connect, puis réessaie.';
+      'Aucun entraînement Google Health à importer. Enregistre une séance dans Google Health / Fit, autorise Grinta dans Health Connect, puis réessaie.';
 
   @override
   String get createPersonalSportPolarDeployRequired => 'L’import Polar n’est pas encore déployé. Déploie polarListActivities et polarImportActivity avec firebase deploy.';
@@ -2731,7 +2731,7 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get createPersonalSportNoConnectedApps =>
-      'Aucune app connectée. Connecte Strava, Polar, Whoop, Apple Forme ou Google Fit dans Appareils / Applications.';
+      'Aucune app connectée. Connecte Strava, Polar, Whoop, Apple Forme ou Google Health dans Appareils / Applications.';
 
   @override
   String get createPersonalSportImportRequired => 'Sélectionne une activité à importer';
@@ -3904,7 +3904,7 @@ class AppLocalizationsFr extends AppLocalizations {
   String get wearableDeviceAppleHealth => 'Apple Forme';
 
   @override
-  String get wearableDeviceGoogleHealthConnect => 'Google Fit / Health Connect';
+  String get wearableDeviceGoogleHealthConnect => 'Google Health';
 
   @override
   String get whoopConnectToggleLabel => 'Sync. Whoop';
@@ -4266,19 +4266,19 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get googleHealthConnectToggleSubtitle =>
-      'Connecte Google Fit pour importer entraînements, fréquence cardiaque et énergie active depuis Health Connect (Android uniquement)';
+      'Connecte Google Health pour importer entraînements, fréquence cardiaque et énergie active depuis Health Connect (Android uniquement)';
 
   @override
   String get googleHealthConnectToggleConnectedSubtitle =>
-      'Google Fit / Health Connect connecté — synchronisation complète des entraînements à venir (Phase 2)';
+      'Google Health connecté — synchronisation des entraînements disponible';
 
   @override
   String get googleHealthConnectSuccess =>
-      'Google Fit / Health Connect connecté.';
+      'Google Health connecté.';
 
   @override
   String get googleHealthConnectFailed =>
-      'La connexion Google Fit / Health Connect a échoué. Réessayez.';
+      'La connexion Google Health a échoué. Réessayez.';
 
   @override
   String get googleHealthConnectDenied =>
@@ -4286,15 +4286,15 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get googleHealthConnectAuthRequired =>
-      'Connecte-toi à Grinta pour lier Google Fit / Health Connect.';
+      'Connecte-toi à Grinta pour lier Google Health.';
 
   @override
   String get googleHealthAndroidOnlyMessage =>
-      'Google Fit / Health Connect est disponible uniquement sur Android. Les données sont lues sur l\'appareil via Health Connect.';
+      'Google Health est disponible uniquement sur Android (données lues sur l’appareil via Health Connect). Sur iPhone, utilise Apple Forme.';
 
   @override
   String get googleHealthDisconnectFailed =>
-      'La déconnexion Google Fit / Health Connect a échoué.';
+      'La déconnexion Google Health a échoué.';
 
   @override
   String get googleHealthCoachVisibilityTitle => 'Visibilité coach';
@@ -4305,7 +4305,7 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get googleHealthCoachVisibilitySaveFailed =>
-      'Impossible d\'enregistrer les préférences Google Fit / Health Connect.';
+      'Impossible d\'enregistrer les préférences Google Health.';
 
   @override
   String get googleHealthMetricActivity => 'Entraînements / activité';
@@ -4321,12 +4321,12 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String googleHealthCoachConnectSubtitle(String playerName) {
-    return 'Connecter Google Fit / Health Connect pour $playerName';
+    return 'Connecter Google Health pour $playerName';
   }
 
   @override
   String googleHealthCoachConnectConnectedSubtitle(String playerName) {
-    return 'Google Fit / Health Connect connecté pour $playerName';
+    return 'Google Health connecté pour $playerName';
   }
 
   @override
@@ -5961,13 +5961,13 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get sessionHealthExportPromptGoogle =>
-      'Souhaites-tu retrouver ces données dans Google Fit ?';
+      'Souhaites-tu retrouver ces données dans Google Health ?';
 
   @override
   String get sessionHealthExportSuccessApple => 'Séance ajoutée à Apple Forme.';
 
   @override
-  String get sessionHealthExportSuccessGoogle => 'Séance ajoutée à Google Fit.';
+  String get sessionHealthExportSuccessGoogle => 'Séance ajoutée à Google Health.';
 
   @override
   String get sessionHealthExportFailed =>
