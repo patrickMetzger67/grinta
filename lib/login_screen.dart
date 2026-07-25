@@ -68,6 +68,7 @@ class _LoginScreenState extends State<LoginScreen> {
         title: context.l10n.slide2Title,
         subtitle: context.l10n.slide2Subtitle,
         icon: Icons.calendar_month_rounded,
+        mobileImageAsset: 'assets/images/login_slide2_mobile.png',
       ),
       _OnboardingItem(
         title: context.l10n.slide3Title,
