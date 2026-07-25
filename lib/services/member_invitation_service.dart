@@ -2,14 +2,19 @@ import 'dart:math';
 
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/foundation.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:grinta/config/invitation_config.dart';
 import 'package:grinta/l10n/app_localizations.dart';
 import 'package:grinta/model/invitation.dart';
+import 'package:grinta/model/notification.dart';
 import 'package:grinta/model/player.dart';
 import 'package:grinta/services/invitationService.dart';
 import 'package:grinta/services/invitation_email_builder.dart';
 import 'package:grinta/services/invitation_email_service.dart';
+import 'package:grinta/services/notificationService.dart';
 import 'package:grinta/services/notification_fcm_service.dart';
+import 'package:grinta/services/playerService.dart';
+import 'package:grinta/services/userService.dart';
 import 'package:grinta/util/player_photo_resolver.dart';
 import 'package:grinta/util/player_profile_validator.dart';
 import 'package:uuid/uuid.dart';
@@ -124,14 +129,23 @@ class MemberInvitationService {
   MemberInvitationService._({
     InvitationService? invitationService,
     InvitationEmailService? invitationEmailService,
+    NotificationService? notificationService,
+    UserService? userService,
+    PlayerService? playerService,
   })  : _invitationService = invitationService ?? InvitationService(),
         _invitationEmailService =
-            invitationEmailService ?? InvitationEmailService();
+            invitationEmailService ?? InvitationEmailService(),
+        _notificationService = notificationService ?? NotificationService(),
+        _userService = userService ?? UserService(),
+        _playerService = playerService ?? PlayerService();
 
   static final MemberInvitationService instance = MemberInvitationService._();
 
   final InvitationService _invitationService;
   final InvitationEmailService _invitationEmailService;
+  final NotificationService _notificationService;
+  final UserService _userService;
+  final PlayerService _playerService;
 
   static final Random _random = Random.secure();
   static const Uuid _uuid = Uuid();
@@ -187,6 +201,7 @@ class MemberInvitationService {
       type: type,
       teamId: teamId,
       seasonId: seasonId,
+      teamName: teamName,
     );
   }
 
@@ -262,6 +277,9 @@ class MemberInvitationService {
 
   /// Creates a Firestore invitation and queues the onboarding email.
   ///
+  /// When [email] already matches an existing Grinta user account, also creates
+  /// in-app [NotifType.pendingInvitation] notifications on that user's profiles.
+  ///
   /// Skips when [email] is empty or invalid. Fails when the current user is not signed in.
   Future<MemberInvitationResult> inviteMember({
     required AppLocalizations l10n,
@@ -270,6 +288,7 @@ class MemberInvitationService {
     int type = invitationTypeMember,
     String? teamId,
     String? seasonId,
+    String? teamName,
   }) async {
     debugPrint(
       'MemberInvitationService.inviteMember start memberId=$memberId '
@@ -361,6 +380,16 @@ class MemberInvitationService {
         'MemberInvitationService.inviteMember email failed memberId=$memberId '
         'invitationId=$invitationId email=$normalizedEmail error=$emailError',
       );
+      // Still try to surface the invite in-app for existing accounts.
+      await _createPendingInvitationNotifications(
+        l10n: l10n,
+        inviteeEmail: normalizedEmail,
+        invitedMemberId: normalizedMemberId,
+        invitationId: invitationId,
+        teamId: teamId?.trim(),
+        teamName: teamName,
+        createdByUid: uid.trim(),
+      );
       return MemberInvitationResult.failed(
         invitationCode: code,
         invitationCreated: true,
@@ -368,6 +397,16 @@ class MemberInvitationService {
         error: emailError,
       );
     }
+
+    await _createPendingInvitationNotifications(
+      l10n: l10n,
+      inviteeEmail: normalizedEmail,
+      invitedMemberId: normalizedMemberId,
+      invitationId: invitationId,
+      teamId: teamId?.trim(),
+      teamName: teamName,
+      createdByUid: uid.trim(),
+    );
 
     debugPrint(
       'MemberInvitationService.inviteMember complete memberId=$memberId '
@@ -387,6 +426,7 @@ class MemberInvitationService {
     required String email,
     required String teamId,
     String? seasonId,
+    String? teamName,
     int type = invitationTypeMember,
   }) {
     return inviteMember(
@@ -396,6 +436,85 @@ class MemberInvitationService {
       type: type,
       teamId: teamId,
       seasonId: seasonId,
+      teamName: teamName,
     );
+  }
+
+  /// Creates/updates unread pending-invitation notifications for an existing
+  /// account matching [inviteeEmail], so they appear in the notifications panel.
+  Future<void> _createPendingInvitationNotifications({
+    required AppLocalizations l10n,
+    required String inviteeEmail,
+    required String invitedMemberId,
+    required String invitationId,
+    required String? teamId,
+    required String? teamName,
+    required String createdByUid,
+  }) async {
+    try {
+      final inviteeUid = await _userService.getUidByEmail(inviteeEmail);
+      if (inviteeUid == null || inviteeUid.isEmpty) {
+        debugPrint(
+          'MemberInvitationService.pendingInvitationNotif skipped: noUser '
+          'email=$inviteeEmail',
+        );
+        return;
+      }
+
+      final players = await _playerService.getPlayersByUserId(inviteeUid);
+      final playerIds = <String>{};
+      for (final player in players) {
+        final id = effectiveMemberId(player)?.trim() ?? '';
+        if (id.isNotEmpty) {
+          playerIds.add(id);
+        }
+      }
+
+      if (playerIds.isEmpty) {
+        debugPrint(
+          'MemberInvitationService.pendingInvitationNotif skipped: noPlayers '
+          'uid=$inviteeUid',
+        );
+        return;
+      }
+
+      final displayTeamName =
+          (teamName?.trim().isNotEmpty ?? false)
+              ? teamName!.trim()
+              : l10n.entityTeam;
+      final title = l10n.pendingInvitationNotificationTitle;
+      final body = l10n.pendingInvitationNotificationBody(displayTeamName);
+
+      for (final playerId in playerIds) {
+        final docId =
+            'pendingInv_${inviteeUid}_${playerId}_$invitedMemberId';
+        await _notificationService.setNotification(
+          docId,
+          NotificationApp(
+            userId: inviteeUid,
+            playerId: playerId,
+            type: NotifType.pendingInvitation,
+            sendBy: SendBy.notification,
+            title: title,
+            body: body,
+            objectId: invitationId,
+            isViewed: false,
+            dateTimeCreated: Timestamp.now(),
+            createdUserId: createdByUid,
+            clubId: InvitationConfig.grintaInvitationClubId,
+          ),
+        );
+      }
+
+      debugPrint(
+        'MemberInvitationService.pendingInvitationNotif created '
+        'uid=$inviteeUid playerCount=${playerIds.length} '
+        'invitationId=$invitationId teamId=$teamId',
+      );
+    } catch (e, st) {
+      debugPrint(
+        'MemberInvitationService.pendingInvitationNotif failed: $e\n$st',
+      );
+    }
   }
 }

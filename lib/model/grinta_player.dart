@@ -11,6 +11,7 @@ String keyGrintaPlayerPhoneE164 = 'phoneE164';
 String keyGrintaPlayerBirthday = 'birthday';
 String keyGrintaPlayerHwHistory = 'hwHistory';
 String keyGrintaPlayerInvitationId = 'invitationId';
+String keyGrintaPlayerPreferredFoot = 'piedFort';
 
 class GrintaPlayer {
   String playerId;
@@ -23,6 +24,8 @@ class GrintaPlayer {
   DateTime? birthday;
   List<GrintaPlayerHW> hwHistory;
   String? invitationId;
+  /// Preferred foot code: `left`, `right`, or `both`.
+  String? preferredFoot;
 
   GrintaPlayer({
     this.playerId = '',
@@ -34,6 +37,7 @@ class GrintaPlayer {
     this.birthday,
     List<GrintaPlayerHW>? hwHistory,
     this.invitationId,
+    this.preferredFoot,
   })  : positions = positions ?? <int>[],
         trackers = trackers ?? <String>[],
         hwHistory = hwHistory ?? <GrintaPlayerHW>[];
@@ -94,6 +98,8 @@ class GrintaPlayer {
     final String? invitationId =
         _optionalTrimmedString(map?[keyGrintaPlayerInvitationId]);
     final int? fonction = _parseOptionalPositiveInt(map?[keyGrintaPlayerFonction]);
+    final String? preferredFoot =
+        _optionalTrimmedString(map?[keyGrintaPlayerPreferredFoot]);
 
     return GrintaPlayer(
       playerId: playerId,
@@ -105,6 +111,7 @@ class GrintaPlayer {
       birthday: birthday,
       hwHistory: hwHistory,
       invitationId: invitationId,
+      preferredFoot: preferredFoot,
     );
   }
 
@@ -157,6 +164,8 @@ class GrintaPlayer {
             hwHistory.map((GrintaPlayerHW entry) => entry.toMap()).toList(),
       if (invitationId != null && invitationId!.trim().isNotEmpty)
         keyGrintaPlayerInvitationId: invitationId!.trim(),
+      if (preferredFoot != null && preferredFoot!.trim().isNotEmpty)
+        keyGrintaPlayerPreferredFoot: preferredFoot!.trim(),
     };
   }
 
@@ -164,6 +173,7 @@ class GrintaPlayer {
   String toString() {
     return 'GrintaPlayer(playerId=$playerId, positions=$positions, '
         'fonction=$fonction, trackers=$trackers, email=$email, phoneE164=$phoneE164, '
-        'birthday=$birthday, hwHistory=$hwHistory, invitationId=$invitationId)';
+        'birthday=$birthday, hwHistory=$hwHistory, invitationId=$invitationId, '
+        'preferredFoot=$preferredFoot)';
   }
 }

@@ -1,4 +1,4 @@
-/// Platform-agnostic DTO for a Google Fit / Health Connect workout ready to import.
+/// Platform-agnostic DTO for a Google Health (Health Connect) workout ready to import.
 class GoogleHealthImportableActivity {
   const GoogleHealthImportableActivity({
     required this.externalId,

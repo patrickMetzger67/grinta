@@ -11,7 +11,14 @@ enum WearableDeviceType {
   googleHealthConnect,
   ;
 
-  static const List<WearableDeviceType> selectable = values;
+  /// Fitbit is intentionally omitted from the Devices / Apps picker.
+  static const List<WearableDeviceType> selectable = [
+    WearableDeviceType.whoop,
+    WearableDeviceType.strava,
+    WearableDeviceType.polar,
+    WearableDeviceType.appleHealth,
+    WearableDeviceType.googleHealthConnect,
+  ];
 
   static List<WearableDeviceType> selectableSorted(AppLocalizations l10n) {
     return [

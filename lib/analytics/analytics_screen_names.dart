@@ -29,6 +29,7 @@ abstract final class AnalyticsScreenNames {
   static const teamParam = 'team_param';
   static const teamPlayers = 'team_players';
   static const teamStats = 'team_stats';
+  static const playerSeasonSummary = 'player_season_summary';
 
   static const intenseLiveSession = 'intense_live_session';
 
@@ -47,6 +48,7 @@ abstract final class AnalyticsScreenNames {
   // Settings
   static const myUnavailabilities = 'my_unavailabilities';
   static const notifications = 'notifications';
+  static const pendingInvitationAccept = 'pending_invitation_accept';
   static const admin = 'admin';
   static const adminPromoCodes = 'admin_promo_codes';
   static const adminTrackerOwners = 'admin_tracker_owners';

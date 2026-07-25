@@ -20,6 +20,7 @@ enum NotifType {
   payment,
   trainingReminder,
   matchOpponentStatsReminder,
+  pendingInvitation,
 }
 
 enum SendBy { notification, sms, email }
@@ -128,6 +129,9 @@ class NotificationApp {
           break;
         case 'NotifType.matchOpponentStatsReminder':
           type = NotifType.matchOpponentStatsReminder;
+          break;
+        case 'NotifType.pendingInvitation':
+          type = NotifType.pendingInvitation;
           break;
       }
     }

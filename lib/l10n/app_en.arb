@@ -561,8 +561,8 @@
   "periodSelectedWeek": "Selected week: {range}",
   "periodUndefined": "No defined period",
   "hintSearchTeam": "Find a team",
-  "hintSearchMember": "Search for a member",
-  "memberSearchPrompt": "Type a first or last name to search",
+  "hintSearchMember": "Search by name or email",
+  "memberSearchPrompt": "Type a first name, last name, or email address to search",
   "memberAlreadyOnTeamRoster": "This member is already on the team roster",
   "memberAlreadyPlayer": "This member is already on the team as a player",
   "memberAlreadyStaff": "This member is already on the team as staff",
@@ -1034,16 +1034,16 @@
   "createPersonalSportAppleIosOnly": "Apple Fitness import is available on iPhone only.",
   "createPersonalSportAppleLoadError": "Could not load Apple Fitness workouts. Check Health permissions and try again.",
   "createPersonalSportAppleNoImportable": "No Apple Fitness workouts to import. Record a session in Fitness / Health, allow Grinta access, then retry.",
-  "createPersonalSportGoogleActivity": "Google Fit activity",
-  "createPersonalSportGoogleAndroidOnly": "Google Fit / Health Connect import is available on Android only.",
-  "createPersonalSportGoogleLoadError": "Could not load Google Fit workouts. Check Health Connect permissions and try again.",
-  "createPersonalSportGoogleNoImportable": "No Google Fit workouts to import. Record a session in Google Fit, allow Grinta in Health Connect, then retry.",
+  "createPersonalSportGoogleActivity": "Google Health activity",
+  "createPersonalSportGoogleAndroidOnly": "Google Health import is available on Android only. On iPhone, use Apple Fitness.",
+  "createPersonalSportGoogleLoadError": "Could not load Google Health workouts. Check Health Connect permissions and try again.",
+  "createPersonalSportGoogleNoImportable": "No Google Health workouts to import. Record a session in Google Health / Fit, allow Grinta in Health Connect, then retry.",
   "createPersonalSportPolarDeployRequired": "Polar import is not deployed yet. Run firebase deploy for polarListActivities and polarImportActivity.",
   "createPersonalSportPolarLoadError": "Could not load Polar activities. Check the connection and try again.",
   "createPersonalSportPolarNoImportable": "No Polar Flow training session to import. In Polar Flow, confirm the session is a Training (not only continuous HR), synced after connecting Grinta, then retry.",
     "createPersonalSportStravaActivity": "Strava activity",
   "createPersonalSportNoImportable": "No activities to import",
-  "createPersonalSportNoConnectedApps": "No connected app. Connect Strava, Polar, Whoop, Apple Fitness or Google Fit in Devices / Apps.",
+  "createPersonalSportNoConnectedApps": "No connected app. Connect Strava, Polar, Whoop, Apple Fitness or Google Health in Devices / Apps.",
   "createPersonalSportImportRequired": "Select an activity to import",
   "createPersonalSportNotes": "Note",
   "createPersonalSportVisibility": "Visibility",
@@ -1450,7 +1450,7 @@
   "wearableDevicePolar": "Polar",
   "wearableDeviceFitbit": "Fitbit",
   "wearableDeviceAppleHealth": "Apple Fitness",
-  "wearableDeviceGoogleHealthConnect": "Google Fit / Health Connect",
+  "wearableDeviceGoogleHealthConnect": "Google Health",
   "whoopConnectToggleLabel": "Whoop sync",
   "whoopConnectToggleSubtitle": "Connect your Whoop account to import recovery, sleep, and workouts",
   "whoopConnectToggleConnectedSubtitle": "Whoop connected — data sync coming in Phase 2",
@@ -1600,28 +1600,28 @@
       "playerName": { "type": "String" }
     }
   },
-  "googleHealthConnectToggleSubtitle": "Connect Google Fit to import workouts, heart rate, and active energy from Health Connect (Android only)",
-  "googleHealthConnectToggleConnectedSubtitle": "Google Fit / Health Connect connected — full workout sync coming in Phase 2",
-  "googleHealthConnectSuccess": "Google Fit / Health Connect connected.",
-  "googleHealthConnectFailed": "Google Fit / Health Connect connection failed. Please try again.",
+  "googleHealthConnectToggleSubtitle": "Connect Google Health to import workouts, heart rate, and active energy from Health Connect (Android only)",
+  "googleHealthConnectToggleConnectedSubtitle": "Google Health connected — workout sync available",
+  "googleHealthConnectSuccess": "Google Health connected.",
+  "googleHealthConnectFailed": "Google Health connection failed. Please try again.",
   "googleHealthConnectDenied": "Health Connect access was denied. Enable it in Health Connect → App permissions → Grinta.",
-  "googleHealthConnectAuthRequired": "Sign in to Grinta to connect Google Fit / Health Connect.",
-  "googleHealthAndroidOnlyMessage": "Google Fit / Health Connect is available on Android only. Health data is read on-device via Health Connect.",
-  "googleHealthDisconnectFailed": "Google Fit / Health Connect disconnect failed.",
+  "googleHealthConnectAuthRequired": "Sign in to Grinta to connect Google Health.",
+  "googleHealthAndroidOnlyMessage": "Google Health is available on Android only (on-device via Health Connect). On iPhone, use Apple Fitness.",
+  "googleHealthDisconnectFailed": "Google Health disconnect failed.",
   "googleHealthCoachVisibilityTitle": "Coach visibility",
   "googleHealthCoachVisibilitySubtitle": "Allow your coach to see this data type",
-  "googleHealthCoachVisibilitySaveFailed": "Could not save Google Fit / Health Connect preferences.",
+  "googleHealthCoachVisibilitySaveFailed": "Could not save Google Health preferences.",
   "googleHealthMetricActivity": "Workouts / activity",
   "googleHealthMetricHeartrate": "Heart rate",
   "googleHealthMetricActiveEnergy": "Active energy",
   "googleHealthMetricSleep": "Sleep",
-  "googleHealthCoachConnectSubtitle": "Connect Google Fit / Health Connect for {playerName}",
+  "googleHealthCoachConnectSubtitle": "Connect Google Health for {playerName}",
   "@googleHealthCoachConnectSubtitle": {
     "placeholders": {
       "playerName": { "type": "String" }
     }
   },
-  "googleHealthCoachConnectConnectedSubtitle": "Google Fit / Health Connect connected for {playerName}",
+  "googleHealthCoachConnectConnectedSubtitle": "Google Health connected for {playerName}",
   "@googleHealthCoachConnectConnectedSubtitle": {
     "placeholders": {
       "playerName": { "type": "String" }
@@ -2351,9 +2351,9 @@
   "playerFeelingLoadError": "Could not load the recap.",
   "sessionHealthExportPromptTitle": "Export session",
   "sessionHealthExportPromptApple": "Would you like to see this data in Apple Fitness?",
-  "sessionHealthExportPromptGoogle": "Would you like to see this data in Google Fit?",
+  "sessionHealthExportPromptGoogle": "Would you like to see this data in Google Health?",
   "sessionHealthExportSuccessApple": "Session added to Apple Fitness.",
-  "sessionHealthExportSuccessGoogle": "Session added to Google Fit.",
+  "sessionHealthExportSuccessGoogle": "Session added to Google Health.",
   "sessionHealthExportFailed": "Could not export the session. Please try again.",
   "sessionHealthExportConnectFailed": "Could not connect Health. Check permissions and try again.",
   "sessionHealthExportTitleMatch": "Grinta match",
@@ -2362,5 +2362,41 @@
   "forgotPasswordMessage": "Enter the email address for your account. We will send you a link to reset your password.",
   "forgotPasswordSendAction": "Send link",
   "forgotPasswordSent": "A password reset email has been sent.",
-  "forgotPasswordFailed": "Unable to send the password reset email."
+  "forgotPasswordFailed": "Unable to send the password reset email.",
+  "pendingInvitationNotificationTitle": "Pending invitation",
+  "pendingInvitationNotificationBody": "Your coach invited you to {teamName}. Enter the code from the email to join the team.",
+  "@pendingInvitationNotificationBody": {
+    "placeholders": {
+      "teamName": { "type": "String" }
+    }
+  },
+  "pendingInvitationAcceptTitle": "Invitation code",
+  "pendingInvitationAcceptMessage": "Enter the code from the email to link this invitation to your account.",
+  "pendingInvitationAcceptSuccess": "Invitation accepted. The team is now available in your profile.",
+  "pendingInvitationAcceptNeedAuth": "Sign in to accept this invitation.",
+  "playerSeasonSummaryTitle": "Player sheet",
+  "playerSeasonSummaryTabUnavailabilities": "Unavailabilities",
+  "playerSeasonSummaryTeamMatches": "Team matches",
+  "playerSeasonSummaryTeamTrainings": "Team trainings",
+  "playerSeasonSummaryTrackerAverages": "Performance indicators (average)",
+  "playerSeasonSummaryNoTrackerData": "No sensor data for this period",
+  "playerSeasonSummaryAgeValue": "{age} yrs",
+  "@playerSeasonSummaryAgeValue": {
+    "placeholders": {
+      "age": { "type": "int" }
+    }
+  },
+  "playerSeasonSummaryHwMeasuredAt": "Measurements on {date}",
+  "@playerSeasonSummaryHwMeasuredAt": {
+    "placeholders": {
+      "date": { "type": "String" }
+    }
+  },
+  "preferredFootLabel": "Preferred foot",
+  "preferredFootHint": "Select preferred foot",
+  "preferredFootUnspecified": "Not set",
+  "preferredFootLeft": "Left",
+  "preferredFootRight": "Right",
+  "preferredFootBoth": "Both",
+  "playerSeasonSummaryPreferredFootSaved": "Preferred foot updated."
 }

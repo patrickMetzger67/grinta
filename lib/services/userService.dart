@@ -40,15 +40,29 @@ class UserService {
       _firestore.collection(collectionName);
 
   Future<bool> existsByEmail(String email) async {
+    final uid = await getUidByEmail(email);
+    return uid != null;
+  }
+
+  /// Returns the Firestore `users` document id for [email], if any.
+  ///
+  /// Tries the trimmed value and its lowercase form (emails are often stored
+  /// normalized at signup).
+  Future<String?> getUidByEmail(String email) async {
     final trimmed = email.trim();
-    if (trimmed.isEmpty) return false;
+    if (trimmed.isEmpty) return null;
 
-    final snapshot = await _collection
-        .where('email', isEqualTo: trimmed)
-        .limit(1)
-        .get();
-
-    return snapshot.docs.isNotEmpty;
+    final candidates = <String>{trimmed, trimmed.toLowerCase()};
+    for (final candidate in candidates) {
+      final snapshot = await _collection
+          .where(UserDocumentFields.email, isEqualTo: candidate)
+          .limit(1)
+          .get();
+      if (snapshot.docs.isNotEmpty) {
+        return snapshot.docs.first.id;
+      }
+    }
+    return null;
   }
 
   Future<UserProfile?> getById(String uid) async {

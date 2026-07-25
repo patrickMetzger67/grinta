@@ -1293,10 +1293,10 @@ class AppLocalizationsEn extends AppLocalizations {
   String get hintSearchTeam => 'Find a team';
 
   @override
-  String get hintSearchMember => 'Search for a member';
+  String get hintSearchMember => 'Search by name or email';
 
   @override
-  String get memberSearchPrompt => 'Type a first or last name to search';
+  String get memberSearchPrompt => 'Type a first name, last name, or email address to search';
 
   @override
   String get memberAlreadyOnTeamRoster =>
@@ -2662,19 +2662,19 @@ class AppLocalizationsEn extends AppLocalizations {
       'No Apple Fitness workouts to import. Record a session in Fitness / Health, allow Grinta access, then retry.';
 
   @override
-  String get createPersonalSportGoogleActivity => 'Google Fit activity';
+  String get createPersonalSportGoogleActivity => 'Google Health activity';
 
   @override
   String get createPersonalSportGoogleAndroidOnly =>
-      'Google Fit / Health Connect import is available on Android only.';
+      'Google Health import is available on Android only. On iPhone, use Apple Fitness.';
 
   @override
   String get createPersonalSportGoogleLoadError =>
-      'Could not load Google Fit workouts. Check Health Connect permissions and try again.';
+      'Could not load Google Health workouts. Check Health Connect permissions and try again.';
 
   @override
   String get createPersonalSportGoogleNoImportable =>
-      'No Google Fit workouts to import. Record a session in Google Fit, allow Grinta in Health Connect, then retry.';
+      'No Google Health workouts to import. Record a session in Google Health / Fit, allow Grinta in Health Connect, then retry.';
 
   @override
   String get createPersonalSportPolarDeployRequired => 'Polar import is not deployed yet. Run firebase deploy for polarListActivities and polarImportActivity.';
@@ -2694,7 +2694,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get createPersonalSportNoConnectedApps =>
-      'No connected app. Connect Strava, Polar, Whoop, Apple Fitness or Google Fit in Devices / Apps.';
+      'No connected app. Connect Strava, Polar, Whoop, Apple Fitness or Google Health in Devices / Apps.';
 
   @override
   String get createPersonalSportImportRequired => 'Select an activity to import';
@@ -3860,7 +3860,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get wearableDeviceAppleHealth => 'Apple Fitness';
 
   @override
-  String get wearableDeviceGoogleHealthConnect => 'Google Fit / Health Connect';
+  String get wearableDeviceGoogleHealthConnect => 'Google Health';
 
   @override
   String get whoopConnectToggleLabel => 'Whoop sync';
@@ -4219,19 +4219,19 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get googleHealthConnectToggleSubtitle =>
-      'Connect Google Fit to import workouts, heart rate, and active energy from Health Connect (Android only)';
+      'Connect Google Health to import workouts, heart rate, and active energy from Health Connect (Android only)';
 
   @override
   String get googleHealthConnectToggleConnectedSubtitle =>
-      'Google Fit / Health Connect connected — full workout sync coming in Phase 2';
+      'Google Health connected — workout sync available';
 
   @override
   String get googleHealthConnectSuccess =>
-      'Google Fit / Health Connect connected.';
+      'Google Health connected.';
 
   @override
   String get googleHealthConnectFailed =>
-      'Google Fit / Health Connect connection failed. Please try again.';
+      'Google Health connection failed. Please try again.';
 
   @override
   String get googleHealthConnectDenied =>
@@ -4239,15 +4239,15 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get googleHealthConnectAuthRequired =>
-      'Sign in to Grinta to connect Google Fit / Health Connect.';
+      'Sign in to Grinta to connect Google Health.';
 
   @override
   String get googleHealthAndroidOnlyMessage =>
-      'Google Fit / Health Connect is available on Android only. Health data is read on-device via Health Connect.';
+      'Google Health is available on Android only (on-device via Health Connect). On iPhone, use Apple Fitness.';
 
   @override
   String get googleHealthDisconnectFailed =>
-      'Google Fit / Health Connect disconnect failed.';
+      'Google Health disconnect failed.';
 
   @override
   String get googleHealthCoachVisibilityTitle => 'Coach visibility';
@@ -4258,7 +4258,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get googleHealthCoachVisibilitySaveFailed =>
-      'Could not save Google Fit / Health Connect preferences.';
+      'Could not save Google Health preferences.';
 
   @override
   String get googleHealthMetricActivity => 'Workouts / activity';
@@ -4274,12 +4274,12 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String googleHealthCoachConnectSubtitle(String playerName) {
-    return 'Connect Google Fit / Health Connect for $playerName';
+    return 'Connect Google Health for $playerName';
   }
 
   @override
   String googleHealthCoachConnectConnectedSubtitle(String playerName) {
-    return 'Google Fit / Health Connect connected for $playerName';
+    return 'Google Health connected for $playerName';
   }
 
   @override
@@ -5884,13 +5884,13 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get sessionHealthExportPromptGoogle =>
-      'Would you like to see this data in Google Fit?';
+      'Would you like to see this data in Google Health?';
 
   @override
   String get sessionHealthExportSuccessApple => 'Session added to Apple Fitness.';
 
   @override
-  String get sessionHealthExportSuccessGoogle => 'Session added to Google Fit.';
+  String get sessionHealthExportSuccessGoogle => 'Session added to Google Health.';
 
   @override
   String get sessionHealthExportFailed =>
@@ -5920,4 +5920,73 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get forgotPasswordFailed => 'Unable to send the password reset email.';
+
+  @override
+  String get pendingInvitationNotificationTitle => 'Pending invitation';
+
+  @override
+  String pendingInvitationNotificationBody(String teamName) {
+    return 'Your coach invited you to $teamName. Enter the code from the email to join the team.';
+  }
+
+  @override
+  String get pendingInvitationAcceptTitle => 'Invitation code';
+
+  @override
+  String get pendingInvitationAcceptMessage => 'Enter the code from the email to link this invitation to your account.';
+
+  @override
+  String get pendingInvitationAcceptSuccess => 'Invitation accepted. The team is now available in your profile.';
+
+  @override
+  String get pendingInvitationAcceptNeedAuth => 'Sign in to accept this invitation.';
+
+  @override
+  String get playerSeasonSummaryTitle => 'Player sheet';
+
+  @override
+  String get playerSeasonSummaryTabUnavailabilities => 'Unavailabilities';
+
+  @override
+  String get playerSeasonSummaryTeamMatches => 'Team matches';
+
+  @override
+  String get playerSeasonSummaryTeamTrainings => 'Team trainings';
+
+  @override
+  String get playerSeasonSummaryTrackerAverages => 'Performance indicators (average)';
+
+  @override
+  String get playerSeasonSummaryNoTrackerData => 'No sensor data for this period';
+
+  @override
+  String playerSeasonSummaryAgeValue(int age) {
+    return '$age yrs';
+  }
+
+  @override
+  String playerSeasonSummaryHwMeasuredAt(String date) {
+    return 'Measurements on $date';
+  }
+
+  @override
+  String get preferredFootLabel => 'Preferred foot';
+
+  @override
+  String get preferredFootHint => 'Select preferred foot';
+
+  @override
+  String get preferredFootUnspecified => 'Not set';
+
+  @override
+  String get preferredFootLeft => 'Left';
+
+  @override
+  String get preferredFootRight => 'Right';
+
+  @override
+  String get preferredFootBoth => 'Both';
+
+  @override
+  String get playerSeasonSummaryPreferredFootSaved => 'Preferred foot updated.';
 }

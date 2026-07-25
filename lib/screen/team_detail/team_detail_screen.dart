@@ -20,6 +20,7 @@ import 'package:grinta/model/player.dart';
 import 'package:grinta/model/team.dart';
 import 'package:grinta/model/tracker/deviceOwner.dart';
 import 'package:grinta/provider/appSession.dart';
+import 'package:grinta/screen/player_season_summary/player_season_summary_screen.dart';
 import 'package:grinta/screen/team_param_screen.dart';
 import 'package:provider/provider.dart';
 import 'package:grinta/services/playerService.dart';
@@ -1326,6 +1327,7 @@ class _TeamDetailScreenState extends State<TeamDetailScreen> {
           birthday: existing.birthday,
           hwHistory: List<GrintaPlayerHW>.from(existing.hwHistory),
           invitationId: existing.invitationId,
+          preferredFoot: existing.preferredFoot,
         );
 
         final GrintaPlayer resolvedExisting = existing;
@@ -2744,6 +2746,7 @@ class _TeamDetailScreenState extends State<TeamDetailScreen> {
       birthday: existing.birthday,
       hwHistory: List<GrintaPlayerHW>.from(existing.hwHistory),
       invitationId: invitationId,
+      preferredFoot: existing.preferredFoot,
     );
 
     await TeamService().updateGrintaPlayer(
@@ -2799,6 +2802,7 @@ class _TeamDetailScreenState extends State<TeamDetailScreen> {
         email: email,
         teamId: teamId,
         seasonId: widget.seasonId,
+        teamName: _team.name ?? '',
       );
 
       if (!context.mounted) {
@@ -2949,6 +2953,7 @@ class _TeamDetailScreenState extends State<TeamDetailScreen> {
       birthday: details.birthday,
       hwHistory: hwHistory,
       invitationId: invitationId,
+      preferredFoot: details.preferredFoot,
     );
 
     debugPrint(
@@ -3242,6 +3247,7 @@ class _TeamDetailScreenState extends State<TeamDetailScreen> {
       birthday: details.birthday,
       hwHistory: hwHistory,
       invitationId: invitationId ?? existing.invitationId,
+      preferredFoot: details.preferredFoot,
     );
 
     await TeamService().updateGrintaPlayer(
@@ -3725,6 +3731,7 @@ class _TeamDetailScreenState extends State<TeamDetailScreen> {
       birthday: existing.birthday,
       hwHistory: List<GrintaPlayerHW>.from(existing.hwHistory),
       invitationId: invitationId ?? existing.invitationId,
+      preferredFoot: existing.preferredFoot,
     );
 
     await TeamService().updateGrintaPlayer(
@@ -4177,9 +4184,7 @@ class _TeamDetailScreenState extends State<TeamDetailScreen> {
             textTheme: textTheme,
             sortColumn: _RosterSortColumn.player,
           ),
-          if (_canManageTeam(context) || _canManageRoster(context)) ...[
-            _headerCell('', flex: 3, textTheme: textTheme),
-          ],
+          _headerCell('', flex: 3, textTheme: textTheme),
           _headerCell(
             l10n.teamDetailColumnAge,
             flex: 1,
@@ -4386,7 +4391,7 @@ class _TeamDetailScreenState extends State<TeamDetailScreen> {
             ),
           _mobileStaticIconHeaderCell(
             icon: Icons.info_outline_rounded,
-            tooltip: l10n.teamDetailPlayerDetailsTitle,
+            tooltip: l10n.playerSeasonSummaryTitle,
             flex: 1,
           ),
         ],
@@ -4543,93 +4548,48 @@ class _TeamDetailScreenState extends State<TeamDetailScreen> {
     BuildContext context,
     _TeamMemberVm row,
   ) async {
-    final l10n = context.l10n;
-    final colors = context.appColors;
-    final textTheme = Theme.of(context).textTheme;
-    final Effectives? effectives = row.effectives;
+    final String? seasonId = widget.seasonId?.trim();
+    if (seasonId == null || seasonId.isEmpty) {
+      return;
+    }
 
-    final String age = _buildAgeForRow(row);
-    final int? heightCm = _heightCmForRow(row);
-    final String taille = heightCm != null
-        ? l10n.teamDetailHeightCm(heightCm)
-        : '-';
+    final l10n = context.l10n;
+    final GrintaPlayer? grintaPlayer = _resolveGrintaPlayerForRow(row);
+    final Effectives? effectives = row.effectives;
     final double? weightKg =
         row.isGrintaRoster ? row.grintaWeightKg : effectives?.poids?.toDouble();
-    final String poids = weightKg != null && weightKg > 0
-        ? (row.isGrintaRoster
-            ? _formatWeightLabel(weightKg, l10n)
-            : l10n.teamDetailWeightKg(weightKg.round()))
-        : '-';
+    final DateTime? hwMeasuredAt = grintaPlayer?.latestHw?.dateTime ??
+        effectives?.modificationDate?.toDate();
+    final String? preferredFoot =
+        grintaPlayer?.preferredFoot ?? effectives?.piedFort;
+    final String positionLabel = _positionLabelForRow(row, l10n);
+    final List<String> positionLabels = positionLabel == '-'
+        ? const <String>[]
+        : positionLabel
+            .split(',')
+            .map((part) => part.trim())
+            .where((part) => part.isNotEmpty)
+            .toList(growable: false);
 
-    await showModalBottomSheet<void>(
-      context: context,
-      showDragHandle: true,
-      backgroundColor: colors.card,
-      builder: (sheetContext) {
-        final sheetL10n = sheetContext.l10n;
-        return SafeArea(
-          child: Padding(
-            padding: const EdgeInsets.fromLTRB(20, 0, 20, 20),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                Text(
-                  sheetL10n.teamDetailPlayerDetailsTitle,
-                  style: textTheme.titleMedium?.copyWith(
-                    fontWeight: FontWeight.w700,
-                  ),
-                ),
-                const SizedBox(height: 16),
-                _playerDetailLine(
-                  context,
-                  label: sheetL10n.teamDetailColumnAge,
-                  value: age,
-                ),
-                const SizedBox(height: 10),
-                _playerDetailLine(
-                  context,
-                  label: sheetL10n.teamDetailColumnHeight,
-                  value: taille,
-                ),
-                const SizedBox(height: 10),
-                _playerDetailLine(
-                  context,
-                  label: sheetL10n.teamDetailColumnWeight,
-                  value: poids,
-                ),
-              ],
-            ),
-          ),
-        );
-      },
-    );
-  }
-
-  Widget _playerDetailLine(
-    BuildContext context, {
-    required String label,
-    required String value,
-  }) {
-    final colors = context.appColors;
-
-    return Row(
-      children: [
-        Expanded(
-          child: Text(
-            label,
-            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                  color: colors.textSecondary,
-                ),
-          ),
-        ),
-        Text(
-          value,
-          style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                fontWeight: FontWeight.w700,
-              ),
-        ),
-      ],
+    await openPlayerSeasonSummaryScreen(
+      context,
+      team: _team,
+      initialSeasonId: seasonId,
+      isManager: _canManageTeam(context),
+      identity: PlayerSeasonSummaryIdentity(
+        player: row.player,
+        positionCodes: row.isGrintaRoster
+            ? List<int>.from(row.grintaPositions)
+            : const <int>[],
+        positionLabels: positionLabels,
+        birthday: _birthDateForRow(row),
+        heightCm: _heightCmForRow(row),
+        weightKg: weightKg != null && weightKg > 0 ? weightKg : null,
+        hwMeasuredAt: hwMeasuredAt,
+        preferredFoot: preferredFoot,
+        isGrintaRoster: row.isGrintaRoster,
+        effectivesDocId: effectives?.ref?.id,
+      ),
     );
   }
 
@@ -4752,21 +4712,25 @@ class _TeamDetailScreenState extends State<TeamDetailScreen> {
         children: [
           Expanded(
             flex: layout.playerFlex,
-            child: Row(
-              children: [
-                PlayerPhoto(player: player, radius: 16),
-                const SizedBox(width: 6),
-                Expanded(
-                  child: Text(
-                    playerName,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: textTheme.bodySmall?.copyWith(
-                      fontWeight: FontWeight.w600,
+            child: InkWell(
+              onTap: () => _showPlayerDetailsSheet(context, row),
+              borderRadius: BorderRadius.circular(8),
+              child: Row(
+                children: [
+                  PlayerPhoto(player: player, radius: 16),
+                  const SizedBox(width: 6),
+                  Expanded(
+                    child: Text(
+                      playerName,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: textTheme.bodySmall?.copyWith(
+                        fontWeight: FontWeight.w600,
+                      ),
                     ),
                   ),
-                ),
-              ],
+                ],
+              ),
             ),
           ),
           Expanded(
@@ -4876,7 +4840,7 @@ class _TeamDetailScreenState extends State<TeamDetailScreen> {
                   minWidth: 26,
                   minHeight: 26,
                 ),
-                tooltip: l10n.teamDetailPlayerDetailsTitle,
+                tooltip: l10n.playerSeasonSummaryTitle,
                 onPressed: () => _showPlayerDetailsSheet(context, row),
                 icon: Icon(
                   Icons.info_outline_rounded,
@@ -4969,91 +4933,100 @@ class _TeamDetailScreenState extends State<TeamDetailScreen> {
         children: [
           Expanded(
             flex: 4,
-            child: Row(
-              children: [
-                PlayerPhoto(player: player),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Row(
-                        children: [
-                          Flexible(
-                            child: Text(
-                              playerName,
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                              style: textTheme.bodySmall,
+            child: InkWell(
+              onTap: () => _showPlayerDetailsSheet(context, row),
+              borderRadius: BorderRadius.circular(8),
+              child: Row(
+                children: [
+                  PlayerPhoto(player: player),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          children: [
+                            Flexible(
+                              child: Text(
+                                playerName,
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                style: textTheme.bodySmall,
+                              ),
                             ),
-                          ),
-                          ..._buildMemberStatusIcons(context, row)
-                              .expand((icon) => [const SizedBox(width: 6), icon]),
-                        ],
-                      ),
-                      _playerContactLinesForRow(row),
-                    ],
+                            ..._buildMemberStatusIcons(context, row)
+                                .expand((icon) => [const SizedBox(width: 6), icon]),
+                          ],
+                        ),
+                        _playerContactLinesForRow(row),
+                      ],
+                    ),
                   ),
-                ),
-              ],
-            ),
-          ),
-          if (_canManageTeam(context) || _canManageRoster(context)) ...[
-            Expanded(
-              flex: 3,
-              child: FittedBox(
-                fit: BoxFit.scaleDown,
-                alignment: Alignment.center,
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    if (_canManageTeam(context)) ...[
-                      _CircleGhostButton(
-                        icon: Icons.verified_rounded,
-                        size: _CircleGhostButton.webTableButtonSize,
-                        iconSize: _CircleGhostButton.webTableIconSize,
-                        iconColor: _isPlayerManager(row)
-                            ? context.appColors.success
-                            : null,
-                        onTap: () =>
-                            _onTogglePlayerManagerPressed(context, row),
-                      ),
-                      const SizedBox(width: 3),
-                    ],
-                    if (_canManageRoster(context)) ...[
-                      _buildResendInvitationButton(context, row, compact: false),
-                      if (_canManageTeam(context)) const SizedBox(width: 3),
-                    ],
-                    if (_canManageTeam(context)) ...[
-                      _CircleGhostButton(
-                        icon: Icons.event_busy_outlined,
-                        size: _CircleGhostButton.webTableButtonSize,
-                        iconSize: _CircleGhostButton.webTableIconSize,
-                        onTap: () =>
-                            _showManageUnavailabilitiesSheet(context, row),
-                      ),
-                      if (_canManageRoster(context)) const SizedBox(width: 3),
-                    ],
-                    if (_canManageRoster(context)) ...[
-                      _CircleGhostButton(
-                        icon: Icons.edit_outlined,
-                        size: _CircleGhostButton.webTableButtonSize,
-                        iconSize: _CircleGhostButton.webTableIconSize,
-                        onTap: () => _onEditPlayerPressed(context, row),
-                      ),
-                      const SizedBox(width: 3),
-                      _CircleGhostButton(
-                        icon: Icons.delete_outline_rounded,
-                        size: _CircleGhostButton.webTableButtonSize,
-                        iconSize: _CircleGhostButton.webTableIconSize,
-                        onTap: () => _onDeletePlayerPressed(context, row),
-                      ),
-                    ],
-                  ],
-                ),
+                ],
               ),
             ),
-          ],
+          ),
+          Expanded(
+            flex: 3,
+            child: FittedBox(
+              fit: BoxFit.scaleDown,
+              alignment: Alignment.center,
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  _CircleGhostButton(
+                    icon: Icons.info_outline_rounded,
+                    size: _CircleGhostButton.webTableButtonSize,
+                    iconSize: _CircleGhostButton.webTableIconSize,
+                    onTap: () => _showPlayerDetailsSheet(context, row),
+                  ),
+                  if (_canManageTeam(context)) ...[
+                    const SizedBox(width: 3),
+                    _CircleGhostButton(
+                      icon: Icons.verified_rounded,
+                      size: _CircleGhostButton.webTableButtonSize,
+                      iconSize: _CircleGhostButton.webTableIconSize,
+                      iconColor: _isPlayerManager(row)
+                          ? context.appColors.success
+                          : null,
+                      onTap: () =>
+                          _onTogglePlayerManagerPressed(context, row),
+                    ),
+                  ],
+                  if (_canManageRoster(context)) ...[
+                    const SizedBox(width: 3),
+                    _buildResendInvitationButton(context, row, compact: false),
+                  ],
+                  if (_canManageTeam(context)) ...[
+                    const SizedBox(width: 3),
+                    _CircleGhostButton(
+                      icon: Icons.event_busy_outlined,
+                      size: _CircleGhostButton.webTableButtonSize,
+                      iconSize: _CircleGhostButton.webTableIconSize,
+                      onTap: () =>
+                          _showManageUnavailabilitiesSheet(context, row),
+                    ),
+                  ],
+                  if (_canManageRoster(context)) ...[
+                    const SizedBox(width: 3),
+                    _CircleGhostButton(
+                      icon: Icons.edit_outlined,
+                      size: _CircleGhostButton.webTableButtonSize,
+                      iconSize: _CircleGhostButton.webTableIconSize,
+                      onTap: () => _onEditPlayerPressed(context, row),
+                    ),
+                    const SizedBox(width: 3),
+                    _CircleGhostButton(
+                      icon: Icons.delete_outline_rounded,
+                      size: _CircleGhostButton.webTableButtonSize,
+                      iconSize: _CircleGhostButton.webTableIconSize,
+                      onTap: () => _onDeletePlayerPressed(context, row),
+                    ),
+                  ],
+                ],
+              ),
+            ),
+          ),
           _valueCell(age, flex: 1, center: true),
           _valueCell(position, flex: 2, center: true),
           _valueCell(taille, flex: 2, center: true),

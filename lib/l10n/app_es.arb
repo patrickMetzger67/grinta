@@ -310,8 +310,8 @@
   },
   "hintSearchClub": "Buscar un club",
   "hintSearchClubTeam": "Buscar un equipo",
-  "hintSearchMember": "Buscar un miembro",
-  "memberSearchPrompt": "Escriba un nombre o apellido para buscar",
+  "hintSearchMember": "Buscar por nombre o correo",
+  "memberSearchPrompt": "Escriba nombre, apellido o correo electrónico",
   "memberAlreadyOnTeamRoster": "Este miembro ya forma parte del plantel",
   "memberAlreadyPlayer": "Este miembro ya figura como jugador en el equipo",
   "memberAlreadyStaff": "Este miembro ya figura como staff en el equipo",
@@ -1275,16 +1275,16 @@
   "createPersonalSportAppleIosOnly": "Apple Fitness import is available on iPhone only.",
   "createPersonalSportAppleLoadError": "Could not load Apple Fitness workouts. Check Health permissions and try again.",
   "createPersonalSportAppleNoImportable": "No Apple Fitness workouts to import. Record a session in Fitness / Health, allow Grinta access, then retry.",
-  "createPersonalSportGoogleActivity": "Google Fit activity",
-  "createPersonalSportGoogleAndroidOnly": "Google Fit / Health Connect import is available on Android only.",
-  "createPersonalSportGoogleLoadError": "Could not load Google Fit workouts. Check Health Connect permissions and try again.",
-  "createPersonalSportGoogleNoImportable": "No Google Fit workouts to import. Record a session in Google Fit, allow Grinta in Health Connect, then retry.",
+  "createPersonalSportGoogleActivity": "Google Health activity",
+  "createPersonalSportGoogleAndroidOnly": "Google Health import is available on Android only. On iPhone, use Apple Fitness.",
+  "createPersonalSportGoogleLoadError": "Could not load Google Health workouts. Check Health Connect permissions and try again.",
+  "createPersonalSportGoogleNoImportable": "No Google Health workouts to import. Record a session in Google Health / Fit, allow Grinta in Health Connect, then retry.",
   "createPersonalSportPolarDeployRequired": "Polar import is not deployed yet. Run firebase deploy for polarListActivities and polarImportActivity.",
   "createPersonalSportPolarLoadError": "Could not load Polar activities. Check the connection and try again.",
   "createPersonalSportPolarNoImportable": "No Polar Flow training session to import. In Polar Flow, confirm the session is a Training (not only continuous HR), synced after connecting Grinta, then retry.",
     "createPersonalSportStravaActivity": "Strava activity",
   "createPersonalSportNoImportable": "No activities to import",
-  "createPersonalSportNoConnectedApps": "No connected app. Connect Strava, Polar, Whoop, Apple Fitness or Google Fit in Devices / Apps.",
+  "createPersonalSportNoConnectedApps": "No connected app. Connect Strava, Polar, Whoop, Apple Fitness or Google Health in Devices / Apps.",
   "createPersonalSportImportRequired": "Select an activity to import",
   "createPersonalSportNotes": "Note",
   "createPersonalSportVisibility": "Visibility",
@@ -2063,9 +2063,9 @@
   "playerFeelingLoadError": "Could not load the recap.",
   "sessionHealthExportPromptTitle": "Export session",
   "sessionHealthExportPromptApple": "Would you like to see this data in Apple Fitness?",
-  "sessionHealthExportPromptGoogle": "Would you like to see this data in Google Fit?",
+  "sessionHealthExportPromptGoogle": "Would you like to see this data in Google Health?",
   "sessionHealthExportSuccessApple": "Session added to Apple Fitness.",
-  "sessionHealthExportSuccessGoogle": "Session added to Google Fit.",
+  "sessionHealthExportSuccessGoogle": "Session added to Google Health.",
   "sessionHealthExportFailed": "Could not export the session. Please try again.",
   "sessionHealthExportConnectFailed": "Could not connect Health. Check permissions and try again.",
   "sessionHealthExportTitleMatch": "Grinta match",
@@ -2074,5 +2074,41 @@
   "forgotPasswordMessage": "Introduce el correo de tu cuenta. Te enviaremos un enlace para restablecer tu contraseña.",
   "forgotPasswordSendAction": "Enviar enlace",
   "forgotPasswordSent": "Se ha enviado un correo para restablecer la contraseña.",
-  "forgotPasswordFailed": "No se pudo enviar el correo de restablecimiento."
+  "forgotPasswordFailed": "No se pudo enviar el correo de restablecimiento.",
+  "pendingInvitationNotificationTitle": "Invitación pendiente",
+  "pendingInvitationNotificationBody": "Tu entrenador te invita a {teamName}. Introduce el código del correo para unirte al equipo.",
+  "@pendingInvitationNotificationBody": {
+    "placeholders": {
+      "teamName": { "type": "String" }
+    }
+  },
+  "pendingInvitationAcceptTitle": "Código de invitación",
+  "pendingInvitationAcceptMessage": "Introduce el código del correo para vincular esta invitación a tu cuenta.",
+  "pendingInvitationAcceptSuccess": "Invitación aceptada. El equipo ya está disponible en tu perfil.",
+  "pendingInvitationAcceptNeedAuth": "Inicia sesión para aceptar esta invitación.",
+  "playerSeasonSummaryTitle": "Ficha del jugador",
+  "playerSeasonSummaryTabUnavailabilities": "Indisponibilidades",
+  "playerSeasonSummaryTeamMatches": "Partidos del equipo",
+  "playerSeasonSummaryTeamTrainings": "Entrenamientos del equipo",
+  "playerSeasonSummaryTrackerAverages": "Indicadores de rendimiento (media)",
+  "playerSeasonSummaryNoTrackerData": "No hay datos de sensores en este período",
+  "playerSeasonSummaryAgeValue": "{age} años",
+  "@playerSeasonSummaryAgeValue": {
+    "placeholders": {
+      "age": { "type": "int" }
+    }
+  },
+  "playerSeasonSummaryHwMeasuredAt": "Medidas el {date}",
+  "@playerSeasonSummaryHwMeasuredAt": {
+    "placeholders": {
+      "date": { "type": "String" }
+    }
+  },
+  "preferredFootLabel": "Pie dominante",
+  "preferredFootHint": "Seleccionar pie dominante",
+  "preferredFootUnspecified": "No indicado",
+  "preferredFootLeft": "Izquierdo",
+  "preferredFootRight": "Derecho",
+  "preferredFootBoth": "Ambos",
+  "playerSeasonSummaryPreferredFootSaved": "Pie dominante actualizado."
 }

@@ -1,12 +1,14 @@
 import 'package:grinta/model/highlights.dart';
 import 'package:grinta/model/match.dart';
 import 'package:grinta/model/matchCompo.dart';
+import 'package:grinta/model/player.dart';
 import 'package:grinta/model/team.dart';
 import 'package:grinta/model/training.dart';
 import 'package:grinta/provider/appSession.dart';
 import 'package:grinta/services/highlightsService.dart';
 import 'package:grinta/services/matchCompoService.dart';
 import 'package:grinta/services/player_chat_stats_service.dart';
+import 'package:grinta/services/seasonService.dart';
 import 'package:grinta/services/teamWorkloadSummaryService.dart';
 import 'package:grinta/services/team_competition_stats_service.dart';
 import 'package:grinta/services/team_training_stats_service.dart';
@@ -18,6 +20,17 @@ import 'package:grinta/util/player_photo_resolver.dart';
 import 'package:grinta/util/season_period_ranges.dart';
 import 'package:grinta/util/team_player_match_stats_helper.dart';
 
+/// Match vs training tracker averages for one player on one team/season.
+class PlayerSeasonTrackerAverages {
+  const PlayerSeasonTrackerAverages({
+    required this.matches,
+    required this.trainings,
+  });
+
+  final PlayerTrackerMetricAverages matches;
+  final PlayerTrackerMetricAverages trainings;
+}
+
 /// Builds a player activity report for Ask Gio (trainings, matches, tracker).
 class PlayerActivityReportService {
   PlayerActivityReportService({
@@ -26,21 +39,73 @@ class PlayerActivityReportService {
     HighlightsService? highlightsService,
     TrainingService? trainingService,
     TeamWorkloadSummaryService? teamWorkloadSummaryService,
+    SeasonService? seasonService,
   })  : _teamCompetitionStatsService =
             teamCompetitionStatsService ?? TeamCompetitionStatsService(),
         _matchCompoService = matchCompoService ?? MatchCompoService(),
         _highlightsService = highlightsService ?? HighlightsService(),
         _trainingService = trainingService ?? TrainingService(),
         _teamWorkloadSummaryService =
-            teamWorkloadSummaryService ?? TeamWorkloadSummaryService();
+            teamWorkloadSummaryService ?? TeamWorkloadSummaryService(),
+        _seasonService = seasonService ?? SeasonService();
 
   final TeamCompetitionStatsService _teamCompetitionStatsService;
   final MatchCompoService _matchCompoService;
   final HighlightsService _highlightsService;
   final TrainingService _trainingService;
   final TeamWorkloadSummaryService _teamWorkloadSummaryService;
+  final SeasonService _seasonService;
 
   static const int _matchBatchSize = 8;
+
+  /// Loads season-scoped tracker averages for [player] on [team].
+  Future<PlayerSeasonTrackerAverages> loadSeasonTrackerAverages({
+    required Team team,
+    required Player player,
+    required String seasonId,
+  }) async {
+    final normalizedSeasonId = seasonId.trim();
+    final lookupIds = playerMemberLookupIds(player);
+    if (normalizedSeasonId.isEmpty || lookupIds.isEmpty) {
+      return const PlayerSeasonTrackerAverages(
+        matches: PlayerTrackerMetricAverages(
+          sessionsWithData: 0,
+          averages: <String, double>{},
+        ),
+        trainings: PlayerTrackerMetricAverages(
+          sessionsWithData: 0,
+          averages: <String, double>{},
+        ),
+      );
+    }
+
+    final season = await _seasonService.getSeasonById(normalizedSeasonId);
+    final period = resolveSeasonPeriodRanges(
+      seasonId: normalizedSeasonId,
+      season: season,
+    ).fullSeason;
+
+    final trackerSessions = <PlayerTrackerSessionMetrics>[];
+    await _aggregateTrackerSessionsForTeam(
+      team: team,
+      seasonId: normalizedSeasonId,
+      period: period,
+      lookupIds: lookupIds,
+      trackerSessions: trackerSessions,
+    );
+
+    final trainingSessions = trackerSessions
+        .where((PlayerTrackerSessionMetrics s) => s.eventType == 'training')
+        .toList();
+    final matchSessions = trackerSessions
+        .where((PlayerTrackerSessionMetrics s) => s.eventType == 'match')
+        .toList();
+
+    return PlayerSeasonTrackerAverages(
+      matches: aggregateTrackerSessionMetrics(matchSessions),
+      trainings: aggregateTrackerSessionMetrics(trainingSessions),
+    );
+  }
 
   Future<Map<String, dynamic>> buildActivityReport({
     required AppSession session,

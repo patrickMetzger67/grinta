@@ -30,7 +30,7 @@ class GoogleHealthPlatformConnectResult {
   }
 }
 
-/// Whether Google Fit / Health Connect can be connected on this platform.
+/// Whether Google Health (Health Connect) can be connected on this platform.
 bool get isGoogleHealthConnectSupported => false;
 
 /// Requests Health Connect read access and optionally probes recent workouts.

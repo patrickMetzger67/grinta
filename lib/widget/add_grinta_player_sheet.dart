@@ -7,6 +7,7 @@ import 'package:grinta/services/player_positions_service.dart';
 import 'package:grinta/util/app_theme.dart';
 import 'package:grinta/util/playerDisplayName.dart';
 import 'package:grinta/util/player_profile_validator.dart';
+import 'package:grinta/util/preferred_foot.dart';
 import 'package:grinta/widget/international_phone_field.dart';
 
 /// Contact, birthday, and body metrics collected when adding a player to a team.
@@ -17,6 +18,7 @@ class AddGrintaPlayerDetails {
     this.email,
     this.birthday,
     this.initialMeasurement,
+    this.preferredFoot,
   });
 
   final List<int> positions;
@@ -24,6 +26,7 @@ class AddGrintaPlayerDetails {
   final String? email;
   final DateTime? birthday;
   final GrintaPlayerHW? initialMeasurement;
+  final String? preferredFoot;
 }
 
 /// Shows position, contact, birthday, and body metrics before adding a member
@@ -97,6 +100,7 @@ class _AddGrintaPlayerSheetState extends State<AddGrintaPlayerSheet> {
   String? _heightError;
   String? _weightError;
   DateTime? _birthday;
+  String? _preferredFoot;
   bool _positionsReady = false;
   bool _isTogglingManager = false;
   bool _isSubmitting = false;
@@ -127,6 +131,8 @@ class _AddGrintaPlayerSheetState extends State<AddGrintaPlayerSheet> {
           ? weight.round().toString()
           : weight.toString();
     }
+
+    _preferredFoot = normalizePreferredFoot(existing?.preferredFoot);
 
     _initPositions();
   }
@@ -285,6 +291,7 @@ class _AddGrintaPlayerSheetState extends State<AddGrintaPlayerSheet> {
       email: email.isEmpty ? null : email,
       birthday: _birthday,
       initialMeasurement: _buildInitialMeasurement(),
+      preferredFoot: _preferredFoot,
     );
 
     final submit = widget.onSubmit;
@@ -404,6 +411,39 @@ class _AddGrintaPlayerSheetState extends State<AddGrintaPlayerSheet> {
                       ),
                     ),
                   ),
+                const SizedBox(height: 12),
+                InputDecorator(
+                  decoration: InputDecoration(
+                    labelText: l10n.preferredFootLabel,
+                    prefixIcon: const Icon(Icons.directions_walk_outlined),
+                  ),
+                  child: DropdownButtonHideUnderline(
+                    child: DropdownButton<String?>(
+                      isExpanded: true,
+                      value: _preferredFoot,
+                      hint: Text(
+                        l10n.preferredFootHint,
+                        style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                              color: colors.textSecondary,
+                            ),
+                      ),
+                      items: <DropdownMenuItem<String?>>[
+                        DropdownMenuItem<String?>(
+                          value: null,
+                          child: Text(l10n.preferredFootUnspecified),
+                        ),
+                        for (final String code in PreferredFootCodes.selectable)
+                          DropdownMenuItem<String?>(
+                            value: code,
+                            child: Text(preferredFootLabel(l10n, code)),
+                          ),
+                      ],
+                      onChanged: (value) {
+                        setState(() => _preferredFoot = value);
+                      },
+                    ),
+                  ),
+                ),
                 const SizedBox(height: 12),
                 InkWell(
                   onTap: _pickBirthday,

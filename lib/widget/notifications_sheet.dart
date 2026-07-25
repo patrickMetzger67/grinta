@@ -10,11 +10,13 @@ import 'package:grinta/model/notification.dart';
 import 'package:grinta/provider/appSession.dart';
 import 'package:grinta/screen/match_detail_screen.dart';
 import 'package:grinta/services/analytics_service.dart';
+import 'package:grinta/services/invitation_acceptance_service.dart';
 import 'package:grinta/services/matchService.dart';
 import 'package:grinta/services/match_convocation_service.dart';
 import 'package:grinta/services/internal_notification_navigation.dart';
 import 'package:grinta/services/notificationService.dart';
 import 'package:grinta/services/notification_fcm_service.dart';
+import 'package:grinta/util/app_snackbar.dart';
 import 'package:grinta/util/app_theme.dart';
 import 'package:grinta/widget/settings_menu_style.dart';
 import 'package:grinta/util/match_compo_pitch_mapper.dart';
@@ -455,6 +457,9 @@ class _NotificationListTileState extends State<_NotificationListTile> {
   bool get _isTappableFeeling =>
       widget.notification.type == NotifType.RPEAfter;
 
+  bool get _isTappablePendingInvitation =>
+      widget.notification.type == NotifType.pendingInvitation;
+
   Future<void> _openReminderTarget() async {
     if (_isConvocationActionInProgress) return;
 
@@ -503,6 +508,150 @@ class _NotificationListTileState extends State<_NotificationListTile> {
         setState(() => _isConvocationActionInProgress = false);
       }
     }
+  }
+
+  Future<void> _openPendingInvitation() async {
+    if (_isConvocationActionInProgress) return;
+
+    final uid = FirebaseAuth.instance.currentUser?.uid.trim() ?? '';
+    if (uid.isEmpty) {
+      if (!mounted) return;
+      AppSnackbar.show(
+        context,
+        context.l10n.pendingInvitationAcceptNeedAuth,
+        isError: true,
+      );
+      return;
+    }
+
+    setState(() => _isConvocationActionInProgress = true);
+    try {
+      await AnalyticsService.instance.logScreenView(
+        screenName: AnalyticsScreenNames.pendingInvitationAccept,
+      );
+
+      final code = await _promptInvitationCode();
+      if (code == null || code.trim().isEmpty) {
+        return;
+      }
+      if (!mounted) return;
+
+      final acceptance = InvitationAcceptanceService();
+      final lookup = await acceptance.lookupMemberInvitation(code);
+      if (!mounted) return;
+
+      if (!lookup.isSuccess) {
+        final message = switch (lookup.error) {
+          InvitationLookupError.alreadyUsed ||
+          InvitationLookupError.memberAlreadyLinked =>
+            context.l10n.invitationAlreadyUsed,
+          _ => context.l10n.invitationNotFound,
+        };
+        AppSnackbar.show(context, message, isError: true);
+        return;
+      }
+
+      await acceptance.acceptForUser(
+        invitation: lookup.invitation!,
+        uid: uid,
+      );
+      await _markAsRead();
+
+      if (!mounted) return;
+      final session = context.read<AppSession>();
+      await session.init();
+
+      if (!mounted) return;
+      AppSnackbar.show(
+        context,
+        context.l10n.pendingInvitationAcceptSuccess,
+      );
+    } catch (e) {
+      if (!mounted) return;
+      AppSnackbar.show(
+        context,
+        context.l10n.errorGeneric(e.toString()),
+        isError: true,
+      );
+    } finally {
+      if (mounted) {
+        setState(() => _isConvocationActionInProgress = false);
+      }
+    }
+  }
+
+  Future<String?> _promptInvitationCode() async {
+    final l10n = context.l10n;
+    final colors = context.appColors;
+    final controller = TextEditingController();
+
+    final code = await showDialog<String>(
+      context: context,
+      useRootNavigator: true,
+      builder: (dialogContext) {
+        return AlertDialog(
+          title: Text(l10n.pendingInvitationAcceptTitle),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Text(
+                l10n.pendingInvitationAcceptMessage,
+                style: Theme.of(dialogContext).textTheme.bodyMedium?.copyWith(
+                      color: colors.textSecondary,
+                    ),
+              ),
+              const SizedBox(height: 16),
+              TextField(
+                controller: controller,
+                autofocus: true,
+                textCapitalization: TextCapitalization.characters,
+                decoration: InputDecoration(
+                  labelText: l10n.invitationCode,
+                  hintText: l10n.invitationCodeHint,
+                ),
+                onSubmitted: (_) {
+                  final value = controller.text.trim();
+                  if (value.isEmpty) {
+                    ScaffoldMessenger.of(dialogContext).showSnackBar(
+                      SnackBar(content: Text(l10n.invitationCodeRequired)),
+                    );
+                    return;
+                  }
+                  Navigator.of(dialogContext).pop(value);
+                },
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(dialogContext).pop(),
+              child: Text(l10n.actionCancel),
+            ),
+            FilledButton(
+              onPressed: () {
+                final value = controller.text.trim();
+                if (value.isEmpty) {
+                  ScaffoldMessenger.of(dialogContext).showSnackBar(
+                    SnackBar(content: Text(l10n.invitationCodeRequired)),
+                  );
+                  return;
+                }
+                Navigator.of(dialogContext).pop(value);
+              },
+              child: Text(l10n.actionValidate),
+            ),
+          ],
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+            side: BorderSide(color: colors.border),
+          ),
+        );
+      },
+    );
+
+    controller.dispose();
+    return code;
   }
 
   String? _formatCreatedAt(BuildContext context) {
@@ -721,9 +870,11 @@ class _NotificationListTileState extends State<_NotificationListTile> {
       borderRadius: BorderRadius.circular(16),
       child: InkWell(
         borderRadius: BorderRadius.circular(16),
-        onTap: _isTappableFeeling
-            ? _openFeelingRecap
-            : (_isTappableReminder ? _openReminderTarget : null),
+        onTap: _isTappablePendingInvitation
+            ? _openPendingInvitation
+            : _isTappableFeeling
+                ? _openFeelingRecap
+                : (_isTappableReminder ? _openReminderTarget : null),
         child: Container(
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(

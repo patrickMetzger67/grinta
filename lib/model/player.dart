@@ -284,6 +284,7 @@ class Player {
     final searchOptions = buildPlayerSearchOptions(
       firstName: profile.firstName?.trim() ?? '',
       lastName: profile.lastName?.trim() ?? '',
+      email: profile.email?.trim() ?? '',
     );
     final trimmedUserId = userId.trim();
     final users = trimmedUserId.isEmpty ? <String>[] : <String>[trimmedUserId];
@@ -316,6 +317,7 @@ class Player {
     final searchOptions = buildPlayerSearchOptions(
       firstName: firstName?.trim() ?? '',
       lastName: lastName?.trim() ?? '',
+      email: email?.trim() ?? '',
     );
 
     return {
