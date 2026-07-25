@@ -4392,7 +4392,7 @@ class _TeamDetailScreenState extends State<TeamDetailScreen> {
             ),
           _mobileStaticIconHeaderCell(
             icon: Icons.info_outline_rounded,
-            tooltip: l10n.teamDetailPlayerDetailsTitle,
+            tooltip: l10n.playerSeasonSummaryTitle,
             flex: 1,
           ),
         ],
@@ -4710,21 +4710,25 @@ class _TeamDetailScreenState extends State<TeamDetailScreen> {
         children: [
           Expanded(
             flex: layout.playerFlex,
-            child: Row(
-              children: [
-                PlayerPhoto(player: player, radius: 16),
-                const SizedBox(width: 6),
-                Expanded(
-                  child: Text(
-                    playerName,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: textTheme.bodySmall?.copyWith(
-                      fontWeight: FontWeight.w600,
+            child: InkWell(
+              onTap: () => _showPlayerDetailsSheet(context, row),
+              borderRadius: BorderRadius.circular(8),
+              child: Row(
+                children: [
+                  PlayerPhoto(player: player, radius: 16),
+                  const SizedBox(width: 6),
+                  Expanded(
+                    child: Text(
+                      playerName,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: textTheme.bodySmall?.copyWith(
+                        fontWeight: FontWeight.w600,
+                      ),
                     ),
                   ),
-                ),
-              ],
+                ],
+              ),
             ),
           ),
           Expanded(
@@ -4927,91 +4931,100 @@ class _TeamDetailScreenState extends State<TeamDetailScreen> {
         children: [
           Expanded(
             flex: 4,
-            child: Row(
-              children: [
-                PlayerPhoto(player: player),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Row(
-                        children: [
-                          Flexible(
-                            child: Text(
-                              playerName,
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                              style: textTheme.bodySmall,
+            child: InkWell(
+              onTap: () => _showPlayerDetailsSheet(context, row),
+              borderRadius: BorderRadius.circular(8),
+              child: Row(
+                children: [
+                  PlayerPhoto(player: player),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          children: [
+                            Flexible(
+                              child: Text(
+                                playerName,
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                style: textTheme.bodySmall,
+                              ),
                             ),
-                          ),
-                          ..._buildMemberStatusIcons(context, row)
-                              .expand((icon) => [const SizedBox(width: 6), icon]),
-                        ],
-                      ),
-                      _playerContactLinesForRow(row),
-                    ],
+                            ..._buildMemberStatusIcons(context, row)
+                                .expand((icon) => [const SizedBox(width: 6), icon]),
+                          ],
+                        ),
+                        _playerContactLinesForRow(row),
+                      ],
+                    ),
                   ),
-                ),
-              ],
-            ),
-          ),
-          if (_canManageTeam(context) || _canManageRoster(context)) ...[
-            Expanded(
-              flex: 3,
-              child: FittedBox(
-                fit: BoxFit.scaleDown,
-                alignment: Alignment.center,
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    if (_canManageTeam(context)) ...[
-                      _CircleGhostButton(
-                        icon: Icons.verified_rounded,
-                        size: _CircleGhostButton.webTableButtonSize,
-                        iconSize: _CircleGhostButton.webTableIconSize,
-                        iconColor: _isPlayerManager(row)
-                            ? context.appColors.success
-                            : null,
-                        onTap: () =>
-                            _onTogglePlayerManagerPressed(context, row),
-                      ),
-                      const SizedBox(width: 3),
-                    ],
-                    if (_canManageRoster(context)) ...[
-                      _buildResendInvitationButton(context, row, compact: false),
-                      if (_canManageTeam(context)) const SizedBox(width: 3),
-                    ],
-                    if (_canManageTeam(context)) ...[
-                      _CircleGhostButton(
-                        icon: Icons.event_busy_outlined,
-                        size: _CircleGhostButton.webTableButtonSize,
-                        iconSize: _CircleGhostButton.webTableIconSize,
-                        onTap: () =>
-                            _showManageUnavailabilitiesSheet(context, row),
-                      ),
-                      if (_canManageRoster(context)) const SizedBox(width: 3),
-                    ],
-                    if (_canManageRoster(context)) ...[
-                      _CircleGhostButton(
-                        icon: Icons.edit_outlined,
-                        size: _CircleGhostButton.webTableButtonSize,
-                        iconSize: _CircleGhostButton.webTableIconSize,
-                        onTap: () => _onEditPlayerPressed(context, row),
-                      ),
-                      const SizedBox(width: 3),
-                      _CircleGhostButton(
-                        icon: Icons.delete_outline_rounded,
-                        size: _CircleGhostButton.webTableButtonSize,
-                        iconSize: _CircleGhostButton.webTableIconSize,
-                        onTap: () => _onDeletePlayerPressed(context, row),
-                      ),
-                    ],
-                  ],
-                ),
+                ],
               ),
             ),
-          ],
+          ),
+          Expanded(
+            flex: 3,
+            child: FittedBox(
+              fit: BoxFit.scaleDown,
+              alignment: Alignment.center,
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  _CircleGhostButton(
+                    icon: Icons.info_outline_rounded,
+                    size: _CircleGhostButton.webTableButtonSize,
+                    iconSize: _CircleGhostButton.webTableIconSize,
+                    onTap: () => _showPlayerDetailsSheet(context, row),
+                  ),
+                  if (_canManageTeam(context)) ...[
+                    const SizedBox(width: 3),
+                    _CircleGhostButton(
+                      icon: Icons.verified_rounded,
+                      size: _CircleGhostButton.webTableButtonSize,
+                      iconSize: _CircleGhostButton.webTableIconSize,
+                      iconColor: _isPlayerManager(row)
+                          ? context.appColors.success
+                          : null,
+                      onTap: () =>
+                          _onTogglePlayerManagerPressed(context, row),
+                    ),
+                  ],
+                  if (_canManageRoster(context)) ...[
+                    const SizedBox(width: 3),
+                    _buildResendInvitationButton(context, row, compact: false),
+                  ],
+                  if (_canManageTeam(context)) ...[
+                    const SizedBox(width: 3),
+                    _CircleGhostButton(
+                      icon: Icons.event_busy_outlined,
+                      size: _CircleGhostButton.webTableButtonSize,
+                      iconSize: _CircleGhostButton.webTableIconSize,
+                      onTap: () =>
+                          _showManageUnavailabilitiesSheet(context, row),
+                    ),
+                  ],
+                  if (_canManageRoster(context)) ...[
+                    const SizedBox(width: 3),
+                    _CircleGhostButton(
+                      icon: Icons.edit_outlined,
+                      size: _CircleGhostButton.webTableButtonSize,
+                      iconSize: _CircleGhostButton.webTableIconSize,
+                      onTap: () => _onEditPlayerPressed(context, row),
+                    ),
+                    const SizedBox(width: 3),
+                    _CircleGhostButton(
+                      icon: Icons.delete_outline_rounded,
+                      size: _CircleGhostButton.webTableButtonSize,
+                      iconSize: _CircleGhostButton.webTableIconSize,
+                      onTap: () => _onDeletePlayerPressed(context, row),
+                    ),
+                  ],
+                ],
+              ),
+            ),
+          ),
           _valueCell(age, flex: 1, center: true),
           _valueCell(position, flex: 2, center: true),
           _valueCell(taille, flex: 2, center: true),
