@@ -256,16 +256,16 @@ class _PlayerSeasonSummaryScreenState extends State<PlayerSeasonSummaryScreen> {
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           Padding(
-            padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
+            padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
                 _buildHeader(context, playerName),
-                const SizedBox(height: 16),
+                const SizedBox(height: 10),
                 _buildSeasonSelector(context),
-                const SizedBox(height: 16),
+                const SizedBox(height: 10),
                 _buildTabSelector(context),
-                const SizedBox(height: 12),
+                const SizedBox(height: 8),
               ],
             ),
           ),
@@ -329,11 +329,17 @@ class _PlayerSeasonSummaryScreenState extends State<PlayerSeasonSummaryScreen> {
         l10n.teamDetailWeightKg(weightKg.round()),
     ].join(' · ');
 
+    final measuredLabel = measuredAt == null
+        ? null
+        : l10n.playerSeasonSummaryHwMeasuredAt(
+            DateFormat.yMMMd(l10n.localeName).format(measuredAt),
+          );
+
     return Container(
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.fromLTRB(10, 8, 8, 8),
       decoration: BoxDecoration(
         color: colors.card,
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(12),
         border: Border.all(color: colors.border),
       ),
       child: Column(
@@ -342,81 +348,99 @@ class _PlayerSeasonSummaryScreenState extends State<PlayerSeasonSummaryScreen> {
           Row(
             crossAxisAlignment: CrossAxisAlignment.center,
             children: [
-              PlayerPhoto(player: widget.identity.player, radius: 36),
-              const SizedBox(width: 14),
+              PlayerPhoto(player: widget.identity.player, radius: 22),
+              const SizedBox(width: 10),
               Expanded(
-                child: Text(
-                  playerName,
-                  style: textTheme.titleLarge?.copyWith(
-                    fontWeight: FontWeight.w800,
-                    color: colors.textPrimary,
-                  ),
-                ),
-              ),
-            ],
-          ),
-          if (anthropometrics.isNotEmpty) ...[
-            const SizedBox(height: 12),
-            Text(
-              anthropometrics,
-              style: textTheme.bodyMedium?.copyWith(
-                color: colors.textSecondary,
-                fontWeight: FontWeight.w600,
-              ),
-            ),
-          ],
-          if (measuredAt != null) ...[
-            const SizedBox(height: 4),
-            Text(
-              l10n.playerSeasonSummaryHwMeasuredAt(
-                DateFormat.yMMMd(l10n.localeName).format(measuredAt),
-              ),
-              style: textTheme.bodySmall?.copyWith(
-                color: colors.textSecondary,
-              ),
-            ),
-          ],
-          if (positions.isNotEmpty) ...[
-            const SizedBox(height: 12),
-            Wrap(
-              spacing: 8,
-              runSpacing: 8,
-              children: [
-                for (final label in positions) _PositionChip(label: label),
-              ],
-            ),
-          ],
-          const SizedBox(height: 12),
-          Row(
-            children: [
-              Expanded(
-                child: Text(
-                  '${l10n.preferredFootLabel}: '
-                  '${preferredFootLabel(l10n, _preferredFoot)}',
-                  style: textTheme.bodyMedium?.copyWith(
-                    color: colors.textPrimary,
-                    fontWeight: FontWeight.w600,
-                  ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      playerName,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: textTheme.titleMedium?.copyWith(
+                        fontWeight: FontWeight.w800,
+                        color: colors.textPrimary,
+                        height: 1.15,
+                      ),
+                    ),
+                    if (anthropometrics.isNotEmpty) ...[
+                      const SizedBox(height: 2),
+                      Text(
+                        anthropometrics,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: textTheme.bodySmall?.copyWith(
+                          color: colors.textSecondary,
+                          fontWeight: FontWeight.w600,
+                          height: 1.2,
+                        ),
+                      ),
+                    ],
+                    if (measuredLabel != null) ...[
+                      const SizedBox(height: 1),
+                      Text(
+                        measuredLabel,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: textTheme.labelSmall?.copyWith(
+                          color: colors.textSecondary,
+                          height: 1.15,
+                        ),
+                      ),
+                    ],
+                  ],
                 ),
               ),
               if (widget.isManager)
                 IconButton(
                   tooltip: l10n.actionEditPlayer,
+                  visualDensity: VisualDensity.compact,
+                  constraints: const BoxConstraints(
+                    minWidth: 36,
+                    minHeight: 36,
+                  ),
+                  padding: EdgeInsets.zero,
                   onPressed:
                       _savingPreferredFoot ? null : _editPreferredFoot,
                   icon: _savingPreferredFoot
                       ? const SizedBox(
-                          width: 18,
-                          height: 18,
+                          width: 16,
+                          height: 16,
                           child: CircularProgressIndicator(strokeWidth: 2),
                         )
                       : Icon(
                           Icons.edit_outlined,
+                          size: 18,
                           color: colors.primary,
                         ),
                 ),
             ],
           ),
+          if (positions.isNotEmpty || _preferredFoot != null) ...[
+            const SizedBox(height: 6),
+            Wrap(
+              spacing: 6,
+              runSpacing: 4,
+              crossAxisAlignment: WrapCrossAlignment.center,
+              children: [
+                for (final label in positions) _PositionChip(label: label),
+                _PositionChip(
+                  label:
+                      '${l10n.preferredFootLabel}: ${preferredFootLabel(l10n, _preferredFoot)}',
+                ),
+              ],
+            ),
+          ] else ...[
+            const SizedBox(height: 4),
+            Text(
+              '${l10n.preferredFootLabel}: ${preferredFootLabel(l10n, _preferredFoot)}',
+              style: textTheme.bodySmall?.copyWith(
+                color: colors.textPrimary,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ],
         ],
       ),
     );
@@ -1217,7 +1241,7 @@ class _PositionChip extends StatelessWidget {
   Widget build(BuildContext context) {
     final colors = context.appColors;
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
       decoration: BoxDecoration(
         color: colors.primary.withValues(alpha: 0.12),
         borderRadius: BorderRadius.circular(999),
@@ -1227,9 +1251,10 @@ class _PositionChip extends StatelessWidget {
       ),
       child: Text(
         label,
-        style: Theme.of(context).textTheme.bodySmall?.copyWith(
+        style: Theme.of(context).textTheme.labelSmall?.copyWith(
               color: colors.primary,
               fontWeight: FontWeight.w700,
+              height: 1.1,
             ),
       ),
     );
