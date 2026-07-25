@@ -6011,4 +6011,50 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get forgotPasswordFailed => 'Die E-Mail zum Zurücksetzen konnte nicht gesendet werden.';
+
+  @override
+  String get playerSeasonSummaryTitle => 'Spielerkarte';
+
+  @override
+  String get playerSeasonSummaryTabUnavailabilities => 'Ausfälle';
+
+  @override
+  String get playerSeasonSummaryTeamMatches => 'Teamspiele';
+
+  @override
+  String get playerSeasonSummaryTeamTrainings => 'Teamtrainings';
+
+  @override
+  String get playerSeasonSummaryTrackerAverages => 'Leistungsindikatoren (Durchschnitt)';
+
+  @override
+  String get playerSeasonSummaryNoTrackerData => 'Keine Sensordaten für diesen Zeitraum';
+
+  @override
+  String playerSeasonSummaryAgeValue(int age) {
+    return '$age J.';
+  }
+
+  @override
+  String playerSeasonSummaryHwMeasuredAt(String date) {
+    return 'Maße am $date';
+  }
+
+  @override
+  String get preferredFootLabel => 'Starker Fuß';
+
+  @override
+  String get preferredFootHint => 'Starken Fuß wählen';
+
+  @override
+  String get preferredFootUnspecified => 'Nicht angegeben';
+
+  @override
+  String get preferredFootLeft => 'Links';
+
+  @override
+  String get preferredFootRight => 'Rechts';
+
+  @override
+  String get preferredFootBoth => 'Beide';
 }

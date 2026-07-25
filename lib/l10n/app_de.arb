@@ -2074,5 +2074,29 @@
   "forgotPasswordMessage": "Geben Sie die E-Mail-Adresse Ihres Kontos ein. Wir senden Ihnen einen Link zum Zurücksetzen Ihres Passworts.",
   "forgotPasswordSendAction": "Link senden",
   "forgotPasswordSent": "Eine E-Mail zum Zurücksetzen des Passworts wurde gesendet.",
-  "forgotPasswordFailed": "Die E-Mail zum Zurücksetzen konnte nicht gesendet werden."
+  "forgotPasswordFailed": "Die E-Mail zum Zurücksetzen konnte nicht gesendet werden.",
+  "playerSeasonSummaryTitle": "Spielerkarte",
+  "playerSeasonSummaryTabUnavailabilities": "Ausfälle",
+  "playerSeasonSummaryTeamMatches": "Teamspiele",
+  "playerSeasonSummaryTeamTrainings": "Teamtrainings",
+  "playerSeasonSummaryTrackerAverages": "Leistungsindikatoren (Durchschnitt)",
+  "playerSeasonSummaryNoTrackerData": "Keine Sensordaten für diesen Zeitraum",
+  "playerSeasonSummaryAgeValue": "{age} J.",
+  "@playerSeasonSummaryAgeValue": {
+    "placeholders": {
+      "age": { "type": "int" }
+    }
+  },
+  "playerSeasonSummaryHwMeasuredAt": "Maße am {date}",
+  "@playerSeasonSummaryHwMeasuredAt": {
+    "placeholders": {
+      "date": { "type": "String" }
+    }
+  },
+  "preferredFootLabel": "Starker Fuß",
+  "preferredFootHint": "Starken Fuß wählen",
+  "preferredFootUnspecified": "Nicht angegeben",
+  "preferredFootLeft": "Links",
+  "preferredFootRight": "Rechts",
+  "preferredFootBoth": "Beide"
 }

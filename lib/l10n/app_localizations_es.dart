@@ -6000,4 +6000,50 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get forgotPasswordFailed => 'No se pudo enviar el correo de restablecimiento.';
+
+  @override
+  String get playerSeasonSummaryTitle => 'Ficha del jugador';
+
+  @override
+  String get playerSeasonSummaryTabUnavailabilities => 'Indisponibilidades';
+
+  @override
+  String get playerSeasonSummaryTeamMatches => 'Partidos del equipo';
+
+  @override
+  String get playerSeasonSummaryTeamTrainings => 'Entrenamientos del equipo';
+
+  @override
+  String get playerSeasonSummaryTrackerAverages => 'Indicadores de rendimiento (media)';
+
+  @override
+  String get playerSeasonSummaryNoTrackerData => 'No hay datos de sensores en este período';
+
+  @override
+  String playerSeasonSummaryAgeValue(int age) {
+    return '$age años';
+  }
+
+  @override
+  String playerSeasonSummaryHwMeasuredAt(String date) {
+    return 'Medidas el $date';
+  }
+
+  @override
+  String get preferredFootLabel => 'Pie dominante';
+
+  @override
+  String get preferredFootHint => 'Seleccionar pie dominante';
+
+  @override
+  String get preferredFootUnspecified => 'No indicado';
+
+  @override
+  String get preferredFootLeft => 'Izquierdo';
+
+  @override
+  String get preferredFootRight => 'Derecho';
+
+  @override
+  String get preferredFootBoth => 'Ambos';
 }

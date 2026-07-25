@@ -2074,5 +2074,29 @@
   "forgotPasswordMessage": "Introduce el correo de tu cuenta. Te enviaremos un enlace para restablecer tu contraseña.",
   "forgotPasswordSendAction": "Enviar enlace",
   "forgotPasswordSent": "Se ha enviado un correo para restablecer la contraseña.",
-  "forgotPasswordFailed": "No se pudo enviar el correo de restablecimiento."
+  "forgotPasswordFailed": "No se pudo enviar el correo de restablecimiento.",
+  "playerSeasonSummaryTitle": "Ficha del jugador",
+  "playerSeasonSummaryTabUnavailabilities": "Indisponibilidades",
+  "playerSeasonSummaryTeamMatches": "Partidos del equipo",
+  "playerSeasonSummaryTeamTrainings": "Entrenamientos del equipo",
+  "playerSeasonSummaryTrackerAverages": "Indicadores de rendimiento (media)",
+  "playerSeasonSummaryNoTrackerData": "No hay datos de sensores en este período",
+  "playerSeasonSummaryAgeValue": "{age} años",
+  "@playerSeasonSummaryAgeValue": {
+    "placeholders": {
+      "age": { "type": "int" }
+    }
+  },
+  "playerSeasonSummaryHwMeasuredAt": "Medidas el {date}",
+  "@playerSeasonSummaryHwMeasuredAt": {
+    "placeholders": {
+      "date": { "type": "String" }
+    }
+  },
+  "preferredFootLabel": "Pie dominante",
+  "preferredFootHint": "Seleccionar pie dominante",
+  "preferredFootUnspecified": "No indicado",
+  "preferredFootLeft": "Izquierdo",
+  "preferredFootRight": "Derecho",
+  "preferredFootBoth": "Ambos"
 }

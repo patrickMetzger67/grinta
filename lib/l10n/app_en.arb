@@ -2362,5 +2362,29 @@
   "forgotPasswordMessage": "Enter the email address for your account. We will send you a link to reset your password.",
   "forgotPasswordSendAction": "Send link",
   "forgotPasswordSent": "A password reset email has been sent.",
-  "forgotPasswordFailed": "Unable to send the password reset email."
+  "forgotPasswordFailed": "Unable to send the password reset email.",
+  "playerSeasonSummaryTitle": "Player sheet",
+  "playerSeasonSummaryTabUnavailabilities": "Unavailabilities",
+  "playerSeasonSummaryTeamMatches": "Team matches",
+  "playerSeasonSummaryTeamTrainings": "Team trainings",
+  "playerSeasonSummaryTrackerAverages": "Performance indicators (average)",
+  "playerSeasonSummaryNoTrackerData": "No sensor data for this period",
+  "playerSeasonSummaryAgeValue": "{age} yrs",
+  "@playerSeasonSummaryAgeValue": {
+    "placeholders": {
+      "age": { "type": "int" }
+    }
+  },
+  "playerSeasonSummaryHwMeasuredAt": "Measurements on {date}",
+  "@playerSeasonSummaryHwMeasuredAt": {
+    "placeholders": {
+      "date": { "type": "String" }
+    }
+  },
+  "preferredFootLabel": "Preferred foot",
+  "preferredFootHint": "Select preferred foot",
+  "preferredFootUnspecified": "Not set",
+  "preferredFootLeft": "Left",
+  "preferredFootRight": "Right",
+  "preferredFootBoth": "Both"
 }

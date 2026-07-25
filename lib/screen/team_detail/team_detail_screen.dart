@@ -20,6 +20,7 @@ import 'package:grinta/model/player.dart';
 import 'package:grinta/model/team.dart';
 import 'package:grinta/model/tracker/deviceOwner.dart';
 import 'package:grinta/provider/appSession.dart';
+import 'package:grinta/screen/player_season_summary/player_season_summary_screen.dart';
 import 'package:grinta/screen/team_param_screen.dart';
 import 'package:provider/provider.dart';
 import 'package:grinta/services/playerService.dart';
@@ -1326,6 +1327,7 @@ class _TeamDetailScreenState extends State<TeamDetailScreen> {
           birthday: existing.birthday,
           hwHistory: List<GrintaPlayerHW>.from(existing.hwHistory),
           invitationId: existing.invitationId,
+          preferredFoot: existing.preferredFoot,
         );
 
         final GrintaPlayer resolvedExisting = existing;
@@ -2744,6 +2746,7 @@ class _TeamDetailScreenState extends State<TeamDetailScreen> {
       birthday: existing.birthday,
       hwHistory: List<GrintaPlayerHW>.from(existing.hwHistory),
       invitationId: invitationId,
+      preferredFoot: existing.preferredFoot,
     );
 
     await TeamService().updateGrintaPlayer(
@@ -2949,6 +2952,7 @@ class _TeamDetailScreenState extends State<TeamDetailScreen> {
       birthday: details.birthday,
       hwHistory: hwHistory,
       invitationId: invitationId,
+      preferredFoot: details.preferredFoot,
     );
 
     debugPrint(
@@ -3242,6 +3246,7 @@ class _TeamDetailScreenState extends State<TeamDetailScreen> {
       birthday: details.birthday,
       hwHistory: hwHistory,
       invitationId: invitationId ?? existing.invitationId,
+      preferredFoot: details.preferredFoot,
     );
 
     await TeamService().updateGrintaPlayer(
@@ -3725,6 +3730,7 @@ class _TeamDetailScreenState extends State<TeamDetailScreen> {
       birthday: existing.birthday,
       hwHistory: List<GrintaPlayerHW>.from(existing.hwHistory),
       invitationId: invitationId ?? existing.invitationId,
+      preferredFoot: existing.preferredFoot,
     );
 
     await TeamService().updateGrintaPlayer(
@@ -4543,93 +4549,45 @@ class _TeamDetailScreenState extends State<TeamDetailScreen> {
     BuildContext context,
     _TeamMemberVm row,
   ) async {
-    final l10n = context.l10n;
-    final colors = context.appColors;
-    final textTheme = Theme.of(context).textTheme;
-    final Effectives? effectives = row.effectives;
+    final String? seasonId = widget.seasonId?.trim();
+    if (seasonId == null || seasonId.isEmpty) {
+      return;
+    }
 
-    final String age = _buildAgeForRow(row);
-    final int? heightCm = _heightCmForRow(row);
-    final String taille = heightCm != null
-        ? l10n.teamDetailHeightCm(heightCm)
-        : '-';
+    final l10n = context.l10n;
+    final GrintaPlayer? grintaPlayer = _resolveGrintaPlayerForRow(row);
+    final Effectives? effectives = row.effectives;
     final double? weightKg =
         row.isGrintaRoster ? row.grintaWeightKg : effectives?.poids?.toDouble();
-    final String poids = weightKg != null && weightKg > 0
-        ? (row.isGrintaRoster
-            ? _formatWeightLabel(weightKg, l10n)
-            : l10n.teamDetailWeightKg(weightKg.round()))
-        : '-';
+    final DateTime? hwMeasuredAt = grintaPlayer?.latestHw?.dateTime ??
+        effectives?.modificationDate?.toDate();
+    final String? preferredFoot =
+        grintaPlayer?.preferredFoot ?? effectives?.piedFort;
+    final String positionLabel = _positionLabelForRow(row, l10n);
+    final List<String> positionLabels = positionLabel == '-'
+        ? const <String>[]
+        : positionLabel
+            .split(',')
+            .map((part) => part.trim())
+            .where((part) => part.isNotEmpty)
+            .toList(growable: false);
 
-    await showModalBottomSheet<void>(
-      context: context,
-      showDragHandle: true,
-      backgroundColor: colors.card,
-      builder: (sheetContext) {
-        final sheetL10n = sheetContext.l10n;
-        return SafeArea(
-          child: Padding(
-            padding: const EdgeInsets.fromLTRB(20, 0, 20, 20),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                Text(
-                  sheetL10n.teamDetailPlayerDetailsTitle,
-                  style: textTheme.titleMedium?.copyWith(
-                    fontWeight: FontWeight.w700,
-                  ),
-                ),
-                const SizedBox(height: 16),
-                _playerDetailLine(
-                  context,
-                  label: sheetL10n.teamDetailColumnAge,
-                  value: age,
-                ),
-                const SizedBox(height: 10),
-                _playerDetailLine(
-                  context,
-                  label: sheetL10n.teamDetailColumnHeight,
-                  value: taille,
-                ),
-                const SizedBox(height: 10),
-                _playerDetailLine(
-                  context,
-                  label: sheetL10n.teamDetailColumnWeight,
-                  value: poids,
-                ),
-              ],
-            ),
-          ),
-        );
-      },
-    );
-  }
-
-  Widget _playerDetailLine(
-    BuildContext context, {
-    required String label,
-    required String value,
-  }) {
-    final colors = context.appColors;
-
-    return Row(
-      children: [
-        Expanded(
-          child: Text(
-            label,
-            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                  color: colors.textSecondary,
-                ),
-          ),
-        ),
-        Text(
-          value,
-          style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                fontWeight: FontWeight.w700,
-              ),
-        ),
-      ],
+    await openPlayerSeasonSummaryScreen(
+      context,
+      team: _team,
+      initialSeasonId: seasonId,
+      identity: PlayerSeasonSummaryIdentity(
+        player: row.player,
+        positionCodes: row.isGrintaRoster
+            ? List<int>.from(row.grintaPositions)
+            : const <int>[],
+        positionLabels: positionLabels,
+        birthday: _birthDateForRow(row),
+        heightCm: _heightCmForRow(row),
+        weightKg: weightKg != null && weightKg > 0 ? weightKg : null,
+        hwMeasuredAt: hwMeasuredAt,
+        preferredFoot: preferredFoot,
+      ),
     );
   }
 
@@ -4876,7 +4834,7 @@ class _TeamDetailScreenState extends State<TeamDetailScreen> {
                   minWidth: 26,
                   minHeight: 26,
                 ),
-                tooltip: l10n.teamDetailPlayerDetailsTitle,
+                tooltip: l10n.playerSeasonSummaryTitle,
                 onPressed: () => _showPlayerDetailsSheet(context, row),
                 icon: Icon(
                   Icons.info_outline_rounded,

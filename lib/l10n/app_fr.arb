@@ -2669,5 +2669,29 @@
   "forgotPasswordMessage": "Saisissez l'adresse email de votre compte. Nous vous enverrons un lien pour réinitialiser votre mot de passe.",
   "forgotPasswordSendAction": "Envoyer le lien",
   "forgotPasswordSent": "Un e-mail de réinitialisation a été envoyé.",
-  "forgotPasswordFailed": "Impossible d'envoyer l'e-mail de réinitialisation."
+  "forgotPasswordFailed": "Impossible d'envoyer l'e-mail de réinitialisation.",
+  "playerSeasonSummaryTitle": "Fiche joueur",
+  "playerSeasonSummaryTabUnavailabilities": "Indisponibilités",
+  "playerSeasonSummaryTeamMatches": "Matchs équipe",
+  "playerSeasonSummaryTeamTrainings": "Entraînements équipe",
+  "playerSeasonSummaryTrackerAverages": "Indicateurs de performance (moyenne)",
+  "playerSeasonSummaryNoTrackerData": "Aucune donnée capteur sur cette période",
+  "playerSeasonSummaryAgeValue": "{age} ans",
+  "@playerSeasonSummaryAgeValue": {
+    "placeholders": {
+      "age": { "type": "int" }
+    }
+  },
+  "playerSeasonSummaryHwMeasuredAt": "Mensurations au {date}",
+  "@playerSeasonSummaryHwMeasuredAt": {
+    "placeholders": {
+      "date": { "type": "String" }
+    }
+  },
+  "preferredFootLabel": "Pied fort",
+  "preferredFootHint": "Sélectionner le pied fort",
+  "preferredFootUnspecified": "Non renseigné",
+  "preferredFootLeft": "Gauche",
+  "preferredFootRight": "Droit",
+  "preferredFootBoth": "Les deux"
 }
