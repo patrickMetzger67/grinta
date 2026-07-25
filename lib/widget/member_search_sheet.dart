@@ -74,19 +74,6 @@ class _MemberSearchSheetState extends State<MemberSearchSheet> {
     });
   }
 
-  String _firestoreSearchToken(String query) {
-    final tokens = query
-        .trim()
-        .toLowerCase()
-        .split(RegExp(r'\s+'))
-        .where((token) => token.isNotEmpty)
-        .toList();
-    if (tokens.isEmpty) {
-      return '';
-    }
-    return tokens.first;
-  }
-
   List<String> _queryTokens(String query) {
     return query
         .trim()
@@ -103,15 +90,22 @@ class _MemberSearchSheetState extends State<MemberSearchSheet> {
 
     final String displayName =
         playerDisplayName(player, unknownLabel: '').toLowerCase();
+    final String firstName = (player.firstName ?? '').trim().toLowerCase();
+    final String lastName = (player.lastName ?? '').trim().toLowerCase();
+    final String email = (player.email ?? '').trim().toLowerCase();
     final Iterable<String> searchOptions = (player.searchOptions ?? const [])
         .map((value) => value.toString().toLowerCase());
 
+    final haystacks = <String>[
+      displayName,
+      firstName,
+      lastName,
+      email,
+      ...searchOptions,
+    ].where((value) => value.isNotEmpty);
+
     return tokens.every(
-      (token) =>
-          displayName.contains(token) ||
-          searchOptions.any(
-            (option) => option.startsWith(token) || option.contains(token),
-          ),
+      (token) => haystacks.any((value) => value.contains(token)),
     );
   }
 
@@ -166,7 +160,7 @@ class _MemberSearchSheetState extends State<MemberSearchSheet> {
     final height = deviceHeight - (statusBarHeight + (kToolbarHeight / 1.5));
     final l10n = context.l10n;
     final colors = context.appColors;
-    final searchToken = _firestoreSearchToken(_query);
+    final hasQuery = _queryTokens(_query).isNotEmpty;
 
     final fabBottomPadding = widget.showCreateButton ? 88.0 : 0.0;
 
@@ -224,7 +218,7 @@ class _MemberSearchSheetState extends State<MemberSearchSheet> {
               ),
             ),
             Expanded(
-              child: searchToken.isEmpty
+              child: !hasQuery
                   ? Center(
                       child: Text(
                         l10n.memberSearchPrompt,
@@ -236,7 +230,7 @@ class _MemberSearchSheetState extends State<MemberSearchSheet> {
                     )
                   : StreamBuilder<List<Player>>(
                       stream: _playerService.streamMembersBySearchOptions(
-                        searchToken,
+                        _query,
                       ),
                       builder: (context, snapshot) {
                         if (snapshot.connectionState ==

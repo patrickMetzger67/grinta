@@ -2330,13 +2330,13 @@ abstract class AppLocalizations {
   /// No description provided for @hintSearchMember.
   ///
   /// In fr, this message translates to:
-  /// **'Rechercher un membre'**
+  /// **'Rechercher par nom, prénom ou e-mail'**
   String get hintSearchMember;
 
   /// No description provided for @memberSearchPrompt.
   ///
   /// In fr, this message translates to:
-  /// **'Saisissez un prénom ou un nom pour rechercher'**
+  /// **'Saisissez un prénom, un nom ou une adresse e-mail pour rechercher'**
   String get memberSearchPrompt;
 
   /// No description provided for @memberAlreadyOnTeamRoster.

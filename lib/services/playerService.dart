@@ -229,41 +229,137 @@ class PlayerService {
   /// Search active members by [searchOptions] token (lowercase prefix).
   ///
   /// Firestore `array-contains` matches one indexed token; multi-word queries
-  /// should pass the first token and filter client-side on the full name.
+  /// should pass the first token and filter client-side on name/email.
+  ///
+  /// When [query] looks like an e-mail (contains `@`), also matches the
+  /// `email` field so existing members without e-mail tokens in
+  /// [searchOptions] remain findable.
   Future<List<Player>> searchMembersBySearchOptions(String query) async {
-    final String normalizedQuery = query.trim().toLowerCase();
+    final String trimmedQuery = query.trim();
+    final String normalizedQuery = trimmedQuery.toLowerCase();
     if (normalizedQuery.isEmpty) {
       return const <Player>[];
     }
 
+    final String firstToken = normalizedQuery
+        .split(RegExp(r'\s+'))
+        .firstWhere((token) => token.isNotEmpty, orElse: () => '');
+    if (firstToken.isEmpty) {
+      return const <Player>[];
+    }
+
     final QuerySnapshot<Map<String, dynamic>> snapshot = await _collection
-        .where(keyPlayerSearchOptions, arrayContains: normalizedQuery)
+        .where(keyPlayerSearchOptions, arrayContains: firstToken)
         .limit(50)
         .get();
 
+    final byOptions = _mapActivePlayers(snapshot);
+
+    if (!normalizedQuery.contains('@')) {
+      return byOptions;
+    }
+
+    final byEmail = await _getActiveMembersByEmailQuery(
+      normalizedEmail: normalizedQuery,
+      rawEmail: trimmedQuery,
+    );
+    return _mergePlayersByDocId(byOptions, byEmail);
+  }
+
+  /// Stream variant of [searchMembersBySearchOptions].
+  Stream<List<Player>> streamMembersBySearchOptions(String query) {
+    final String trimmedQuery = query.trim();
+    final String normalizedQuery = trimmedQuery.toLowerCase();
+    if (normalizedQuery.isEmpty) {
+      return Stream<List<Player>>.value(const <Player>[]);
+    }
+
+    final String firstToken = normalizedQuery
+        .split(RegExp(r'\s+'))
+        .firstWhere((token) => token.isNotEmpty, orElse: () => '');
+    if (firstToken.isEmpty) {
+      return Stream<List<Player>>.value(const <Player>[]);
+    }
+
+    final searchStream = _collection
+        .where(keyPlayerSearchOptions, arrayContains: firstToken)
+        .limit(50)
+        .snapshots();
+
+    if (!normalizedQuery.contains('@')) {
+      return searchStream.map(_mapActivePlayers);
+    }
+
+    return searchStream.asyncMap((snapshot) async {
+      final byOptions = _mapActivePlayers(snapshot);
+      final byEmail = await _getActiveMembersByEmailQuery(
+        normalizedEmail: normalizedQuery,
+        rawEmail: trimmedQuery,
+      );
+      return _mergePlayersByDocId(byOptions, byEmail);
+    });
+  }
+
+  List<Player> _mapActivePlayers(
+    QuerySnapshot<Map<String, dynamic>> snapshot,
+  ) {
     return snapshot.docs
         .map((doc) => Player.fromDocumentsnapshot(doc))
         .where((player) => player.statut == 1)
         .toList();
   }
 
-  /// Stream variant of [searchMembersBySearchOptions].
-  Stream<List<Player>> streamMembersBySearchOptions(String query) {
-    final String normalizedQuery = query.trim().toLowerCase();
-    if (normalizedQuery.isEmpty) {
-      return Stream<List<Player>>.value(const <Player>[]);
+  Future<List<Player>> _getActiveMembersByEmailQuery({
+    required String normalizedEmail,
+    required String rawEmail,
+  }) async {
+    final Map<String, Player> byId = <String, Player>{};
+
+    Future<void> collect(Query<Map<String, dynamic>> query) async {
+      final snapshot = await query.limit(30).get();
+      for (final doc in snapshot.docs) {
+        final player = Player.fromDocumentsnapshot(doc);
+        if (player.statut == 1) {
+          byId[doc.id] = player;
+        }
+      }
     }
 
-    return _collection
-        .where(keyPlayerSearchOptions, arrayContains: normalizedQuery)
-        .limit(50)
-        .snapshots()
-        .map(
-          (snapshot) => snapshot.docs
-              .map((doc) => Player.fromDocumentsnapshot(doc))
-              .where((player) => player.statut == 1)
-              .toList(),
-        );
+    final emailVariants = <String>{
+      normalizedEmail,
+      if (rawEmail.isNotEmpty) rawEmail,
+    };
+
+    for (final email in emailVariants) {
+      await collect(_collection.where(keyPlayerEmail, isEqualTo: email));
+      await collect(
+        _collection
+            .where(keyPlayerEmail, isGreaterThanOrEqualTo: email)
+            .where(keyPlayerEmail, isLessThanOrEqualTo: '$email\uf8ff'),
+      );
+    }
+
+    return byId.values.toList(growable: false);
+  }
+
+  List<Player> _mergePlayersByDocId(
+    List<Player> primary,
+    List<Player> secondary,
+  ) {
+    final Map<String, Player> byId = <String, Player>{};
+    for (final player in primary) {
+      final id = effectiveMemberId(player) ?? player.keyMember?.trim();
+      if (id != null && id.isNotEmpty) {
+        byId[id] = player;
+      }
+    }
+    for (final player in secondary) {
+      final id = effectiveMemberId(player) ?? player.keyMember?.trim();
+      if (id != null && id.isNotEmpty) {
+        byId.putIfAbsent(id, () => player);
+      }
+    }
+    return byId.values.toList(growable: false);
   }
 
   /// Chercher un joueur par userID

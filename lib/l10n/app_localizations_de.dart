@@ -1310,10 +1310,10 @@ class AppLocalizationsDe extends AppLocalizations {
   String get hintSearchTeam => 'Finden Sie ein Team';
 
   @override
-  String get hintSearchMember => 'Mitglied suchen';
+  String get hintSearchMember => 'Nach Name oder E-Mail suchen';
 
   @override
-  String get memberSearchPrompt => 'Vorname oder Nachname eingeben';
+  String get memberSearchPrompt => 'Vorname, Nachname oder E-Mail eingeben';
 
   @override
   String get memberAlreadyOnTeamRoster =>

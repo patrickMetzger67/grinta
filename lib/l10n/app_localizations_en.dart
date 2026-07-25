@@ -1293,10 +1293,10 @@ class AppLocalizationsEn extends AppLocalizations {
   String get hintSearchTeam => 'Find a team';
 
   @override
-  String get hintSearchMember => 'Search for a member';
+  String get hintSearchMember => 'Search by name or email';
 
   @override
-  String get memberSearchPrompt => 'Type a first or last name to search';
+  String get memberSearchPrompt => 'Type a first name, last name, or email address to search';
 
   @override
   String get memberAlreadyOnTeamRoster =>

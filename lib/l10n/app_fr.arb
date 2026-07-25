@@ -583,8 +583,8 @@
   "periodUndefined": "Aucune période définie",
 
   "hintSearchTeam": "Rechercher une équipe",
-  "hintSearchMember": "Rechercher un membre",
-  "memberSearchPrompt": "Saisissez un prénom ou un nom pour rechercher",
+  "hintSearchMember": "Rechercher par nom, prénom ou e-mail",
+  "memberSearchPrompt": "Saisissez un prénom, un nom ou une adresse e-mail pour rechercher",
   "memberAlreadyOnTeamRoster": "Ce membre fait déjà partie de l'effectif",
   "memberAlreadyPlayer": "Ce membre fait déjà partie des joueurs",
   "memberAlreadyStaff": "Ce membre fait déjà partie du staff",

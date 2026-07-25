@@ -1305,11 +1305,11 @@ class AppLocalizationsFr extends AppLocalizations {
   String get hintSearchTeam => 'Rechercher une équipe';
 
   @override
-  String get hintSearchMember => 'Rechercher un membre';
+  String get hintSearchMember => 'Rechercher par nom, prénom ou e-mail';
 
   @override
   String get memberSearchPrompt =>
-      'Saisissez un prénom ou un nom pour rechercher';
+      'Saisissez un prénom, un nom ou une adresse e-mail pour rechercher';
 
   @override
   String get memberAlreadyOnTeamRoster =>
