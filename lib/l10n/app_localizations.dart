@@ -9804,6 +9804,18 @@ abstract class AppLocalizations {
   /// **'Ajouter Polar'**
   String get adminTrackerDevicesAddPolar;
 
+  /// No description provided for @adminTrackerDevicesAddPolarChrome.
+  ///
+  /// In fr, this message translates to:
+  /// **'Ajouter via Chrome Bluetooth'**
+  String get adminTrackerDevicesAddPolarChrome;
+
+  /// No description provided for @adminTrackerDevicesAddPolarManual.
+  ///
+  /// In fr, this message translates to:
+  /// **'Saisir l’ID manuellement'**
+  String get adminTrackerDevicesAddPolarManual;
+
   /// No description provided for @adminTrackerDevicesAddPolarTitle.
   ///
   /// In fr, this message translates to:
@@ -9819,8 +9831,35 @@ abstract class AppLocalizations {
   /// No description provided for @adminTrackerDevicesAddPolarDeviceIdHint.
   ///
   /// In fr, this message translates to:
-  /// **'ID imprimé sur le capteur (BLE)'**
+  /// **'Imprimé sur le capteur, ou fin du nom BLE (ex. Polar H10 1C709B20 → 1C709B20)'**
   String get adminTrackerDevicesAddPolarDeviceIdHint;
+
+  /// No description provided for @adminTrackerDevicesAddPolarChromeUnsupported.
+  ///
+  /// In fr, this message translates to:
+  /// **'Web Bluetooth nécessite Chrome (HTTPS ou localhost).'**
+  String get adminTrackerDevicesAddPolarChromeUnsupported;
+
+  /// No description provided for @adminTrackerDevicesAddPolarChromeCancelled.
+  ///
+  /// In fr, this message translates to:
+  /// **'Sélection Bluetooth annulée.'**
+  String get adminTrackerDevicesAddPolarChromeCancelled;
+
+  /// No description provided for @adminTrackerDevicesAddPolarChromeNoId.
+  ///
+  /// In fr, this message translates to:
+  /// **'Impossible de lire l’ID Polar dans le nom BLE. Saisis l’ID imprimé sur le capteur.'**
+  String get adminTrackerDevicesAddPolarChromeNoId;
+
+  /// No description provided for @adminTrackerDevicesAddPolarChromeSuccess.
+  ///
+  /// In fr, this message translates to:
+  /// **'Polar {deviceId} ({deviceType}) ajouté.'**
+  String adminTrackerDevicesAddPolarChromeSuccess(
+    String deviceId,
+    String deviceType,
+  );
 
   /// No description provided for @adminTrackerDevicesAddPolarDeviceType.
   ///

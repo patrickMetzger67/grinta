@@ -5592,6 +5592,12 @@ class AppLocalizationsEn extends AppLocalizations {
   String get adminTrackerDevicesAddPolar => 'Add Polar';
 
   @override
+  String get adminTrackerDevicesAddPolarChrome => 'Add via Chrome Bluetooth';
+
+  @override
+  String get adminTrackerDevicesAddPolarManual => 'Enter ID manually';
+
+  @override
   String get adminTrackerDevicesAddPolarTitle => 'Add a Polar sensor';
 
   @override
@@ -5599,7 +5605,26 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get adminTrackerDevicesAddPolarDeviceIdHint =>
-      'ID printed on the sensor (BLE)';
+      'Printed on the sensor, or last part of BLE name (e.g. Polar H10 1C709B20 → 1C709B20)';
+
+  @override
+  String get adminTrackerDevicesAddPolarChromeUnsupported =>
+      'Web Bluetooth requires Chrome (HTTPS or localhost).';
+
+  @override
+  String get adminTrackerDevicesAddPolarChromeCancelled =>
+      'Bluetooth selection cancelled.';
+
+  @override
+  String get adminTrackerDevicesAddPolarChromeNoId =>
+      'Could not read the Polar ID from the BLE name. Enter the ID printed on the sensor.';
+
+  @override
+  String adminTrackerDevicesAddPolarChromeSuccess(
+    String deviceId,
+    String deviceType,
+  ) =>
+      'Polar $deviceId ($deviceType) added.';
 
   @override
   String get adminTrackerDevicesAddPolarDeviceType => 'Sensor type';

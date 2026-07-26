@@ -1,8 +1,10 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:grinta/core/extensions/l10n_extension.dart';
 import 'package:grinta/model/tracker/deviceOwner.dart';
 import 'package:grinta/model/tracker_owner.dart';
+import 'package:grinta/services/polar_web_bluetooth.dart';
 import 'package:grinta/services/tracker_device_admin_service.dart';
 import 'package:grinta/services/tracker_device_sync_service.dart';
 import 'package:grinta/util/app_snackbar.dart';
@@ -694,7 +696,7 @@ class _AdminTrackerDevicesScreenState extends State<AdminTrackerDevicesScreen> {
       children: [
         FloatingActionButton.extended(
           heroTag: 'add_polar',
-          onPressed: () => _showAddPolarDialog(context),
+          onPressed: () => _onAddPolarPressed(context),
           icon: const Icon(Icons.bluetooth_searching),
           label: Text(l10n.adminTrackerDevicesAddPolar),
         ),
@@ -707,6 +709,125 @@ class _AdminTrackerDevicesScreenState extends State<AdminTrackerDevicesScreen> {
         ),
       ],
     );
+  }
+
+  Future<void> _onAddPolarPressed(BuildContext context) async {
+    final l10n = context.l10n;
+    final colors = context.appColors;
+    final textTheme = Theme.of(context).textTheme;
+
+    if (!kIsWeb) {
+      await _showAddPolarDialog(context);
+      return;
+    }
+
+    final choice = await showModalBottomSheet<String>(
+      context: context,
+      backgroundColor: colors.card,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+      ),
+      builder: (ctx) {
+        return SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(16, 12, 16, 16),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Text(
+                  l10n.adminTrackerDevicesAddPolarTitle,
+                  style: textTheme.titleMedium?.copyWith(
+                    color: colors.textPrimary,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+                const SizedBox(height: 12),
+                ListTile(
+                  leading: Icon(Icons.bluetooth, color: colors.primary),
+                  title: Text(l10n.adminTrackerDevicesAddPolarChrome),
+                  onTap: () => Navigator.pop(ctx, 'chrome'),
+                ),
+                ListTile(
+                  leading: Icon(Icons.edit, color: colors.textSecondary),
+                  title: Text(l10n.adminTrackerDevicesAddPolarManual),
+                  onTap: () => Navigator.pop(ctx, 'manual'),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+
+    if (!context.mounted || choice == null) return;
+    if (choice == 'chrome') {
+      await _addPolarViaChrome(context);
+    } else {
+      await _showAddPolarDialog(context);
+    }
+  }
+
+  Future<void> _addPolarViaChrome(BuildContext context) async {
+    final l10n = context.l10n;
+    final bluetooth = PolarWebBluetoothService.instance;
+
+    if (!bluetooth.isSupported) {
+      AppSnackbar.show(context, l10n.adminTrackerDevicesAddPolarChromeUnsupported);
+      return;
+    }
+
+    try {
+      final pick = await bluetooth.pickPolarDevice();
+      if (!context.mounted) return;
+
+      if (pick == null) {
+        AppSnackbar.show(
+          context,
+          l10n.adminTrackerDevicesAddPolarChromeCancelled,
+        );
+        return;
+      }
+
+      final identity = pick.identity;
+      await TrackerDeviceAdminService.instance.createPolarDevice(
+        polarDeviceId: identity.deviceId,
+        deviceType: identity.deviceType,
+        deviceName: identity.displayName,
+        customName: identity.displayName,
+      );
+
+      if (!context.mounted) return;
+      AppSnackbar.show(
+        context,
+        l10n.adminTrackerDevicesAddPolarChromeSuccess(
+          identity.deviceId,
+          identity.deviceType,
+        ),
+        isError: false,
+      );
+    } on StateError catch (e) {
+      if (!context.mounted) return;
+      if (e.message == 'permission-denied') {
+        AppSnackbar.show(context, l10n.adminTrackerDevicesPermissionDenied);
+        return;
+      }
+      if (e.message.startsWith('polar-id-not-in-name') ||
+          e.message == 'web-bluetooth-unsupported') {
+        AppSnackbar.show(
+          context,
+          e.message == 'web-bluetooth-unsupported'
+              ? l10n.adminTrackerDevicesAddPolarChromeUnsupported
+              : l10n.adminTrackerDevicesAddPolarChromeNoId,
+        );
+        await _showAddPolarDialog(context);
+        return;
+      }
+      AppSnackbar.show(context, l10n.adminTrackerDevicesError(e.toString()));
+    } catch (e) {
+      if (!context.mounted) return;
+      AppSnackbar.show(context, l10n.adminTrackerDevicesError(e.toString()));
+    }
   }
 
   Future<void> _showAddPolarDialog(BuildContext context) async {

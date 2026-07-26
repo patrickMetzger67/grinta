@@ -29,28 +29,45 @@ PlayerTraining.deviceId / PlayerCompo.deviceOwnerId
 ### Admin setup
 
 1. **Admin → Tracker owners** → create owner with type **Polar (BLE team kit)**.
-2. **Admin → Tracker devices** → **Add Polar** (device id printed on the sensor).
+2. **Admin → Tracker devices** → **Add Polar**:
+   - **Web / Chrome:** **Ajouter via Chrome Bluetooth** (picker → 1 capteur à la fois).
+   - **Manuel:** saisir l’ID Polar.
 3. Assign device → owner (optional custom name / jersey).
 4. Coach (Pro) links the owner on the team via the existing tracker-owners sheet.
 5. Coach assigns devices to players (`GrintaPlayer.trackers`) like other kits.
 
 One Polar kit owner can be linked to **several Grinta teams** (shared inventory).
 
-### Device id
+### Device id — où le trouver ?
 
-`TRACKER_Device.id` = Polar BLE device id (same string used later by Polar BLE SDK `connectToDevice`).
+`TRACKER_Device.id` = **Polar BLE device id** (pas l’id opaque de Chrome).
 
-Supported types in the admin UI: H10, H9, Verity Sense, OH1, Other.
+| Source | Exemple |
+|--------|---------|
+| Nom BLE annoncé | `Polar H10 1C709B20` → id = **`1C709B20`** |
+| Verity Sense | `Polar Sense 8C4CAD2D` → id = **`8C4CAD2D`** |
+| Imprimé sur le capteur | Même code hex au dos / sous le boîtier |
+| Chrome `BluetoothDevice.id` | **Ne pas utiliser** (id navigateur, par origine) |
+
+Sur le web, Grinta lit l’id dans le **nom BLE** après le picker Chrome. Si le nom n’a pas de suffixe hex, saisie manuelle de l’id imprimé.
+
+Supported types: H10, H9, Verity Sense, OH1, Other.
+
+### Web Bluetooth (Chrome)
+
+- HTTPS ou `localhost`, navigateur Chrome.
+- Pas de liste libre de tous les BLE : le **sélecteur Chrome** s’ouvre à chaque ajout.
+- Répéter pour chaque capteur du kit.
 
 ## What is not in this phase
 
-- Live BLE scan / multi-sensor HR streaming (`PolarBleSessionService` stub only)
-- Polar Team Pro API / Polar Pro GPS sensors (different product, read-only API)
-- Writing org/teams into Polar (AccessLink & Team Pro APIs do not support Grinta→Polar writes)
+- Live multi-sensor HR streaming during a session
+- Native iOS/Android Polar BLE SDK scan list
+- Polar Team Pro API / Polar Pro GPS sensors
+- Writing org/teams into Polar
 
-## Next phase (BLE live)
+## Next phase (mobile BLE live)
 
-1. Add Polar BLE SDK (Flutter `polar` package or native wrappers).
-2. Permissions: Android Bluetooth + iOS `NSBluetoothAlwaysUsageDescription`.
-3. Coach session UI: connect assigned devices → stream HR → write `TRACKER_Analysis`.
-4. Reuse `isPolarTrackerOwner` / `ownerUsesPolarTeamKit` for agenda eligibility.
+1. Polar BLE SDK (Flutter `polar` or native).
+2. Coach session UI: connect assigned devices → stream HR → `TRACKER_Analysis`.
+3. Reuse `isPolarTrackerOwner` / `ownerUsesPolarTeamKit`.

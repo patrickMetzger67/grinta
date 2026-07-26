@@ -2198,9 +2198,21 @@
   "adminTrackerDevicesSyncInspirit": "Sync Inspirit",
   "adminTrackerDevicesSyncFootbar": "Sync Footbar",
   "adminTrackerDevicesAddPolar": "Add Polar",
+  "adminTrackerDevicesAddPolarChrome": "Add via Chrome Bluetooth",
+  "adminTrackerDevicesAddPolarManual": "Enter ID manually",
   "adminTrackerDevicesAddPolarTitle": "Add a Polar sensor",
   "adminTrackerDevicesAddPolarDeviceId": "Polar device ID",
-  "adminTrackerDevicesAddPolarDeviceIdHint": "ID printed on the sensor (BLE)",
+  "adminTrackerDevicesAddPolarDeviceIdHint": "Printed on the sensor, or last part of BLE name (e.g. Polar H10 1C709B20 → 1C709B20)",
+  "adminTrackerDevicesAddPolarChromeUnsupported": "Web Bluetooth requires Chrome (HTTPS or localhost).",
+  "adminTrackerDevicesAddPolarChromeCancelled": "Bluetooth selection cancelled.",
+  "adminTrackerDevicesAddPolarChromeNoId": "Could not read the Polar ID from the BLE name. Enter the ID printed on the sensor.",
+  "adminTrackerDevicesAddPolarChromeSuccess": "Polar {deviceId} ({deviceType}) added.",
+  "@adminTrackerDevicesAddPolarChromeSuccess": {
+    "placeholders": {
+      "deviceId": { "type": "String" },
+      "deviceType": { "type": "String" }
+    }
+  },
   "adminTrackerDevicesAddPolarDeviceType": "Sensor type",
   "adminTrackerDevicesAddPolarDeviceName": "Display name (optional)",
   "adminTrackerDevicesAddPolarSuccess": "Polar sensor added to inventory.",
