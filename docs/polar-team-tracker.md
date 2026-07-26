@@ -31,6 +31,7 @@ PlayerTraining.deviceId / PlayerCompo.deviceOwnerId
 1. **Admin → Tracker owners** → create owner with type **Polar (BLE team kit)**.
 2. **Admin → Tracker devices** → **Add Polar**:
    - **Web / Chrome:** **Ajouter via Chrome Bluetooth** (picker → 1 capteur à la fois).
+   - **iOS / Android:** **Scanner les capteurs Polar** (liste BLE → Connecter → Ajouter au kit → owner + customName).
    - **Manuel:** saisir l’ID Polar.
 3. Assign device → owner (optional custom name / jersey).
 4. Coach (Pro) links the owner on the team via the existing tracker-owners sheet.
@@ -59,15 +60,88 @@ Supported types: H10, H9, Verity Sense, OH1, Other.
 - Pas de liste libre de tous les BLE : le **sélecteur Chrome** s’ouvre à chaque ajout.
 - Répéter pour chaque capteur du kit.
 
+### Mobile BLE (iOS / Android)
+
+- Package Flutter `polar` (Polar BLE SDK).
+- Écran admin : scan → liste des Polar → **Connecter** → **Ajouter au kit** → owner + `customName`.
+- Permissions : Bluetooth (Android 12+ `BLUETOOTH_SCAN` / `CONNECT`, iOS `NSBluetoothAlwaysUsageDescription`).
+- `minSdk` Android = 24.
+
+## End-of-session import (no live)
+
+Polar kits use `withSyncing: true` like Inspirit: coach imports **after** the
+session over BLE (Chrome or mobile). Data is **cardio**, not pitch GPS.
+
+### Collections
+
+| GPS kit | Polar kit |
+|---------|-----------|
+| `TRACKER_Analysis/{eventId}_{trackerId}` | `TRACKER_PolarAnalysis/{eventId}_{trackerId}` |
+| GNSS distance / speed / heatmap | HR / duration / calories (Loop) |
+| `TRACKER_Sync.devices.*.withAsiFile` | `TRACKER_Sync.devices.*.polarImported` |
+
+`trackerId` = `TRACKER_DeviceOwner` doc id (same as `PlayerTraining.deviceId`).
+
+### `TRACKER_PolarAnalysis` fields
+
+```
+eventId, playerId, trackerId, polarDeviceId, deviceType
+provider: "polar"
+kind: "cardio"
+durationMs, startedAt?, endedAt?
+avgHrBpm?, maxHrBpm?, minHrBpm?, hrSamplesCount
+hrZoneSeconds: { z1…z5 → seconds }
+caloriesKcal?, distanceMeters?, steps?   // Loop extras; usually null on Verity
+importChannel: "ble_mobile" | "ble_chrome" | "manual"
+importedAt, importedUid?, sourceFirmware?
+createdAt, updatedAt
+```
+
+Code: `lib/model/tracker/polar_session_analysis.dart` +
+`PolarSessionAnalysisService`.
+
+### Device coverage (phase 1)
+
+| Field | Verity Sense | Loop |
+|-------|--------------|------|
+| duration / FC avg-max-min | Oui | Oui |
+| hrZoneSeconds | Oui (dérivé) | Oui (dérivé) |
+| calories / steps / distance lifestyle | Rare | Oui si dispo |
+| GPS pitch / sprints / heatmap | Non | Non |
+
+### Sync state
+
+On `TRACKER_Sync/{eventId}.devices.{deviceId}`:
+
+- `polarImported`, `polarImportedAt`, `polarImportedUid`
+- `DeviceSync.isSynced` is true when `polarImported` (or USB/ASI paths)
+
+## End-of-session import UI
+
+Sync tab → **Upload** on a Polar-owned training/match opens
+`PolarImportHubPage` (`lib/screen/polar_import/polar_import_hub_page.dart`).
+
+| Channel | Behaviour |
+|---------|-----------|
+| **iOS / Android** | Connect → wait `fileTransfer` → `listExercises` → pick nearest to event time → `fetchExercise` → HR stats → `TRACKER_PolarAnalysis` |
+| **Web / Chrome** | Manual cardio entry (duration + HR; Loop extras optional). Full offline pull needs Polar SDK (mobile). |
+| **Fallback** | Manual entry on all platforms |
+
+Orchestration: `PolarSessionImportService` → `PolarSessionAnalysisService.saveAnalysis`
++ `EventSyncService.markPolarImported`.
+
+HR zones (absolute BPM when no HRmax): z1&lt;120 · z2 120–139 · z3 140–159 ·
+z4 160–179 · z5 ≥180. Optional % of HRmax (60/70/80/90).
+
 ## What is not in this phase
 
-- Live multi-sensor HR streaming during a session
-- Native iOS/Android Polar BLE SDK scan list
+- Live multi-sensor HR during the session
+- Chrome Web Bluetooth offline exercise pull (proprietary Polar file transfer)
 - Polar Team Pro API / Polar Pro GPS sensors
 - Writing org/teams into Polar
+- Cardio charts beside GPS analysis UI (next)
 
-## Next phase (mobile BLE live)
+## Next phase
 
-1. Polar BLE SDK (Flutter `polar` or native).
-2. Coach session UI: connect assigned devices → stream HR → `TRACKER_Analysis`.
-3. Reuse `isPolarTrackerOwner` / `ownerUsesPolarTeamKit`.
+1. Cardio views beside existing GPS analysis (do not reuse heatmap UI).
+2. Optional: Chrome HR stream snapshot if product needs a web-native path.

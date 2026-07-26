@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:grinta/core/extensions/l10n_extension.dart';
 import 'package:grinta/model/tracker/deviceOwner.dart';
 import 'package:grinta/model/tracker_owner.dart';
+import 'package:grinta/screen/admin/admin_polar_ble_scan_screen.dart';
 import 'package:grinta/services/polar_web_bluetooth.dart';
 import 'package:grinta/services/tracker_device_admin_service.dart';
 import 'package:grinta/services/tracker_device_sync_service.dart';
@@ -722,11 +723,6 @@ class _AdminTrackerDevicesScreenState extends State<AdminTrackerDevicesScreen> {
     final colors = context.appColors;
     final textTheme = Theme.of(context).textTheme;
 
-    if (!kIsWeb) {
-      await _showAddPolarDialog(context);
-      return;
-    }
-
     final choice = await showModalBottomSheet<String>(
       context: context,
       backgroundColor: colors.card,
@@ -749,11 +745,24 @@ class _AdminTrackerDevicesScreenState extends State<AdminTrackerDevicesScreen> {
                   ),
                 ),
                 const SizedBox(height: 12),
-                ListTile(
-                  leading: Icon(Icons.bluetooth, color: colors.primary),
-                  title: Text(l10n.adminTrackerDevicesAddPolarChrome),
-                  onTap: () => Navigator.pop(ctx, 'chrome'),
-                ),
+                if (kIsWeb)
+                  ListTile(
+                    leading: Icon(Icons.bluetooth, color: colors.primary),
+                    title: Text(l10n.adminTrackerDevicesAddPolarChrome),
+                    onTap: () => Navigator.pop(ctx, 'chrome'),
+                  )
+                else
+                  ListTile(
+                    leading: Icon(Icons.bluetooth_searching, color: colors.primary),
+                    title: Text(l10n.adminPolarBleScanTitle),
+                    subtitle: Text(
+                      l10n.adminPolarBleScanSheetSubtitle,
+                      style: textTheme.bodySmall?.copyWith(
+                        color: colors.textSecondary,
+                      ),
+                    ),
+                    onTap: () => Navigator.pop(ctx, 'mobile'),
+                  ),
                 ListTile(
                   leading: Icon(Icons.edit, color: colors.textSecondary),
                   title: Text(l10n.adminTrackerDevicesAddPolarManual),
@@ -769,8 +778,57 @@ class _AdminTrackerDevicesScreenState extends State<AdminTrackerDevicesScreen> {
     if (!context.mounted || choice == null) return;
     if (choice == 'chrome') {
       await _addPolarViaChrome(context);
+    } else if (choice == 'mobile') {
+      await _addPolarViaMobileScan(context);
     } else {
       await _showAddPolarDialog(context);
+    }
+  }
+
+  Future<void> _addPolarViaMobileScan(BuildContext context) async {
+    final l10n = context.l10n;
+    final pick = await showAdminPolarBleScanScreen(context);
+    if (!context.mounted || pick == null) return;
+
+    final assignment = await _promptPolarAssignment(
+      context,
+      deviceLabel: pick.displayName,
+    );
+    if (!context.mounted) return;
+    if (assignment == null) {
+      AppSnackbar.show(context, l10n.adminTrackerDevicesSelectOwnerRequired);
+      return;
+    }
+
+    try {
+      await _registerPolarDeviceInInventory(
+        polarDeviceId: pick.deviceId,
+        ownerId: assignment.ownerId,
+        deviceType: pick.deviceType,
+        deviceName: pick.displayName,
+        customName: assignment.customName,
+      );
+      if (!context.mounted) return;
+      AppSnackbar.show(
+        context,
+        l10n.adminTrackerDevicesAddPolarChromeSuccess(
+          pick.deviceId,
+          pick.deviceType,
+        ),
+        isError: false,
+      );
+    } on StateError catch (e) {
+      if (!context.mounted) return;
+      if (e.message == 'owner-required') {
+        AppSnackbar.show(context, l10n.adminTrackerDevicesSelectOwnerRequired);
+      } else if (e.message == 'permission-denied') {
+        AppSnackbar.show(context, l10n.adminTrackerDevicesPermissionDenied);
+      } else {
+        AppSnackbar.show(context, l10n.adminTrackerDevicesError(e.toString()));
+      }
+    } catch (e) {
+      if (!context.mounted) return;
+      AppSnackbar.show(context, l10n.adminTrackerDevicesError(e.toString()));
     }
   }
 

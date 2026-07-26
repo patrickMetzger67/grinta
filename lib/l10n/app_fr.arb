@@ -2508,6 +2508,65 @@
   "adminTrackerDevicesAddPolar": "Ajouter Polar",
   "adminTrackerDevicesAddPolarChrome": "Ajouter via Chrome Bluetooth",
   "adminTrackerDevicesAddPolarManual": "Saisir l’ID manuellement",
+  "adminPolarBleScanTitle": "Scanner les capteurs Polar",
+  "adminPolarBleScanSheetSubtitle": "Lister les Polar à proximité et se connecter un par un",
+  "adminPolarBleScanHint": "Allume les capteurs à proximité, connecte-toi à chacun, puis ajoute-le au kit avec un nom personnalisé.",
+  "adminPolarBleScanSearching": "Recherche de capteurs Polar…",
+  "adminPolarBleScanEmpty": "Aucun capteur Polar trouvé. Vérifie le Bluetooth et que les capteurs sont allumés.",
+  "adminPolarBleScanUnsupported": "Le scan Polar BLE est disponible uniquement sur iOS et Android.",
+  "adminPolarBleScanConnect": "Connecter",
+  "adminPolarBleScanConnecting": "Connexion…",
+  "adminPolarBleScanConnected": "Connecté",
+  "adminPolarBleScanAddToKit": "Ajouter au kit",
+  "adminPolarBleScanStop": "Arrêter le scan",
+  "adminPolarBleScanRestart": "Relancer le scan",
+  "adminPolarBleScanConnectError": "Échec de connexion : {error}",
+  "@adminPolarBleScanConnectError": {
+    "placeholders": {
+      "error": { "type": "String" }
+    }
+  },
+  "polarImportTitle": "Import Polar (cardio)",
+  "polarImportSensorsHeader": "Capteurs Polar de la séance",
+  "polarImportHint": "Reconnecte chaque capteur après la séance pour importer la FC (ou saisis les valeurs manuellement).",
+  "polarImportSelectSensor": "Sélectionne un capteur pour importer les données cardio.",
+  "polarImportStatusPending": "À importer",
+  "polarImportStatusDone": "Importé",
+  "polarImportUntitledPlayer": "Joueur",
+  "polarImportDeviceLine": "Polar {deviceId} · {deviceType} · {customName}",
+  "@polarImportDeviceLine": {
+    "placeholders": {
+      "deviceId": { "type": "String" },
+      "deviceType": { "type": "String" },
+      "customName": { "type": "String" }
+    }
+  },
+  "polarImportBleAction": "Importer via Bluetooth",
+  "polarImportBleUnavailable": "L’import Bluetooth Polar est disponible sur iOS/Android. Sur le web, utilise la saisie manuelle.",
+  "polarImportManualAction": "Saisie manuelle",
+  "polarImportManualTitle": "Saisie cardio Polar",
+  "polarImportManualSubtitle": "Renseigne la durée et la FC (calories / pas optionnels pour Loop).",
+  "polarImportFieldDurationMin": "Durée (minutes)",
+  "polarImportFieldAvgHr": "FC moyenne (bpm)",
+  "polarImportFieldMaxHr": "FC max (bpm)",
+  "polarImportFieldMinHr": "FC min (bpm)",
+  "polarImportFieldCalories": "Calories (kcal, optionnel)",
+  "polarImportFieldDistanceM": "Distance (m, optionnel)",
+  "polarImportFieldSteps": "Pas (optionnel)",
+  "polarImportMissingPlayer": "Aucun joueur associé à ce capteur.",
+  "polarImportSuccess": "Import OK — FC moy. {avgHr} · {minutes} min",
+  "@polarImportSuccess": {
+    "placeholders": {
+      "avgHr": { "type": "String" },
+      "minutes": { "type": "String" }
+    }
+  },
+  "polarImportBleError": "Import Polar échoué : {error}",
+  "@polarImportBleError": {
+    "placeholders": {
+      "error": { "type": "String" }
+    }
+  },
   "adminTrackerDevicesAddPolarTitle": "Ajouter un capteur Polar",
   "adminTrackerDevicesAddPolarDeviceId": "ID appareil Polar",
   "adminTrackerDevicesAddPolarDeviceIdHint": "Imprimé sur le capteur, ou fin du nom BLE (ex. Polar H10 1C709B20 → 1C709B20)",

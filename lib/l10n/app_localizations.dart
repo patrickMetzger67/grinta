@@ -4655,6 +4655,72 @@ abstract class AppLocalizations {
   /// **'Un évènement / activité non sportive'**
   String get agendaAddEventNonSport;
 
+  /// No description provided for @agendaAllDayLabel.
+  ///
+  /// In fr, this message translates to:
+  /// **'Journée entière'**
+  String get agendaAllDayLabel;
+
+  /// No description provided for @agendaCoachPlayersFabTooltip.
+  ///
+  /// In fr, this message translates to:
+  /// **'Joueurs — activités personnelles'**
+  String get agendaCoachPlayersFabTooltip;
+
+  /// No description provided for @agendaCoachPlayersTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Activités sportives des joueurs'**
+  String get agendaCoachPlayersTitle;
+
+  /// No description provided for @agendaCoachPlayersSubtitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Affiche dans l’agenda les activités personnelles en visibilité coach.'**
+  String get agendaCoachPlayersSubtitle;
+
+  /// No description provided for @agendaCoachPlayersTeam.
+  ///
+  /// In fr, this message translates to:
+  /// **'Équipe'**
+  String get agendaCoachPlayersTeam;
+
+  /// No description provided for @agendaCoachPlayersPlayers.
+  ///
+  /// In fr, this message translates to:
+  /// **'Joueurs'**
+  String get agendaCoachPlayersPlayers;
+
+  /// No description provided for @agendaCoachPlayersNoTeams.
+  ///
+  /// In fr, this message translates to:
+  /// **'Aucune équipe managée sur cette saison.'**
+  String get agendaCoachPlayersNoTeams;
+
+  /// No description provided for @agendaCoachPlayersLoadError.
+  ///
+  /// In fr, this message translates to:
+  /// **'Impossible de charger les joueurs.'**
+  String get agendaCoachPlayersLoadError;
+
+  /// No description provided for @agendaCoachPlayersEmptyRoster.
+  ///
+  /// In fr, this message translates to:
+  /// **'Aucun joueur dans cette équipe.'**
+  String get agendaCoachPlayersEmptyRoster;
+
+  /// No description provided for @agendaCoachPlayersClear.
+  ///
+  /// In fr, this message translates to:
+  /// **'Effacer la sélection'**
+  String get agendaCoachPlayersClear;
+
+  /// No description provided for @agendaEventSummaryNonSport.
+  ///
+  /// In fr, this message translates to:
+  /// **'{count, plural, =1{1 activité} other{{count} activités}}'**
+  String agendaEventSummaryNonSport(int count);
+
   /// No description provided for @createPersonalSportTitle.
   ///
   /// In fr, this message translates to:
@@ -4733,101 +4799,101 @@ abstract class AppLocalizations {
   /// **'App / appareil'**
   String get createPersonalSportImportSource;
 
-  /// No description provided for @createPersonalSportPolarDeployRequired.
+  /// No description provided for @createPersonalSportPolarActivity.
   ///
-  /// In en, this message translates to:
-  /// **'Polar import is not deployed yet.'**
-  String get createPersonalSportPolarDeployRequired;
-
-  /// No description provided for @createPersonalSportPolarLoadError.
-  ///
-  /// In en, this message translates to:
-  /// **'Could not load Polar activities.'**
-  String get createPersonalSportPolarLoadError;
-
-  /// No description provided for @createPersonalSportPolarNoImportable.
-  ///
-  /// In en, this message translates to:
-  /// **'No Polar Flow training session to import.'**
-  String get createPersonalSportPolarNoImportable;
+  /// In fr, this message translates to:
+  /// **'Activité Polar'**
+  String get createPersonalSportPolarActivity;
 
   /// No description provided for @createPersonalSportWhoopActivity.
   ///
-  /// In en, this message translates to:
-  /// **'Whoop activity'**
+  /// In fr, this message translates to:
+  /// **'Activité Whoop'**
   String get createPersonalSportWhoopActivity;
 
   /// No description provided for @createPersonalSportWhoopDeployRequired.
   ///
-  /// In en, this message translates to:
-  /// **'Whoop import is not deployed yet.'**
+  /// In fr, this message translates to:
+  /// **'L’import Whoop n’est pas encore déployé. Déploie whoopListActivities et whoopImportActivity avec firebase deploy.'**
   String get createPersonalSportWhoopDeployRequired;
 
   /// No description provided for @createPersonalSportWhoopLoadError.
   ///
-  /// In en, this message translates to:
-  /// **'Could not load Whoop activities.'**
+  /// In fr, this message translates to:
+  /// **'Impossible de charger les activités Whoop. Vérifie la connexion et réessaie.'**
   String get createPersonalSportWhoopLoadError;
 
   /// No description provided for @createPersonalSportWhoopNoImportable.
   ///
-  /// In en, this message translates to:
-  /// **'No Whoop workouts to import.'**
+  /// In fr, this message translates to:
+  /// **'Aucune séance Whoop à importer.'**
   String get createPersonalSportWhoopNoImportable;
 
   /// No description provided for @createPersonalSportAppleActivity.
   ///
-  /// In en, this message translates to:
-  /// **'Apple Fitness activity'**
+  /// In fr, this message translates to:
+  /// **'Activité Apple Forme'**
   String get createPersonalSportAppleActivity;
 
   /// No description provided for @createPersonalSportAppleIosOnly.
   ///
-  /// In en, this message translates to:
-  /// **'Apple Fitness import is available on iPhone only.'**
+  /// In fr, this message translates to:
+  /// **'L’import Apple Forme est disponible uniquement sur iPhone.'**
   String get createPersonalSportAppleIosOnly;
 
   /// No description provided for @createPersonalSportAppleLoadError.
   ///
-  /// In en, this message translates to:
-  /// **'Could not load Apple Fitness workouts.'**
+  /// In fr, this message translates to:
+  /// **'Impossible de charger les entraînements Apple Forme. Vérifie les autorisations Santé et réessaie.'**
   String get createPersonalSportAppleLoadError;
 
   /// No description provided for @createPersonalSportAppleNoImportable.
   ///
-  /// In en, this message translates to:
-  /// **'No Apple Fitness workouts to import.'**
+  /// In fr, this message translates to:
+  /// **'Aucun entraînement Apple Forme à importer. Enregistre une séance dans Forme / Santé, autorise Grinta, puis réessaie.'**
   String get createPersonalSportAppleNoImportable;
 
   /// No description provided for @createPersonalSportGoogleActivity.
   ///
-  /// In en, this message translates to:
-  /// **'Google Health activity'**
+  /// In fr, this message translates to:
+  /// **'Activité Google Health'**
   String get createPersonalSportGoogleActivity;
 
   /// No description provided for @createPersonalSportGoogleAndroidOnly.
   ///
-  /// In en, this message translates to:
-  /// **'Google Health import is available on Android only. On iPhone, use Apple Fitness.'**
+  /// In fr, this message translates to:
+  /// **'L’import Google Health est disponible uniquement sur Android. Sur iPhone, utilise Apple Forme.'**
   String get createPersonalSportGoogleAndroidOnly;
 
   /// No description provided for @createPersonalSportGoogleLoadError.
   ///
-  /// In en, this message translates to:
-  /// **'Could not load Google Health workouts.'**
+  /// In fr, this message translates to:
+  /// **'Impossible de charger les entraînements Google Health. Vérifie les autorisations Health Connect et réessaie.'**
   String get createPersonalSportGoogleLoadError;
 
   /// No description provided for @createPersonalSportGoogleNoImportable.
   ///
-  /// In en, this message translates to:
-  /// **'No Google Health workouts to import.'**
+  /// In fr, this message translates to:
+  /// **'Aucun entraînement Google Health à importer. Enregistre une séance dans Google Health / Fit, autorise Grinta dans Health Connect, puis réessaie.'**
   String get createPersonalSportGoogleNoImportable;
 
-  /// No description provided for @createPersonalSportPolarActivity.
+  /// No description provided for @createPersonalSportPolarDeployRequired.
   ///
-  /// In en, this message translates to:
-  /// **'Polar activity'**
-  String get createPersonalSportPolarActivity;
+  /// In fr, this message translates to:
+  /// **'L’import Polar n’est pas encore déployé. Déploie polarListActivities et polarImportActivity avec firebase deploy.'**
+  String get createPersonalSportPolarDeployRequired;
+
+  /// No description provided for @createPersonalSportPolarLoadError.
+  ///
+  /// In fr, this message translates to:
+  /// **'Impossible de charger les activités Polar. Vérifie la connexion et réessaie.'**
+  String get createPersonalSportPolarLoadError;
+
+  /// No description provided for @createPersonalSportPolarNoImportable.
+  ///
+  /// In fr, this message translates to:
+  /// **'Aucune séance d’entraînement Polar Flow à importer. Dans Polar Flow, vérifie que c’est un entraînement (pas seulement la FC continue), synchronisé après la connexion Grinta, puis réessaie.'**
+  String get createPersonalSportPolarNoImportable;
 
   /// No description provided for @createPersonalSportStravaActivity.
   ///
@@ -4838,13 +4904,13 @@ abstract class AppLocalizations {
   /// No description provided for @createPersonalSportNoImportable.
   ///
   /// In fr, this message translates to:
-  /// **'Aucune activité Strava à importer'**
+  /// **'Aucune activité à importer'**
   String get createPersonalSportNoImportable;
 
   /// No description provided for @createPersonalSportNoConnectedApps.
   ///
   /// In fr, this message translates to:
-  /// **'Aucune app connectée. Connecte Strava dans Appareils / Applications.'**
+  /// **'Aucune app connectée. Connecte Strava, Polar, Whoop, Apple Forme ou Google Health dans Appareils / Applications.'**
   String get createPersonalSportNoConnectedApps;
 
   /// No description provided for @createPersonalSportImportRequired.
@@ -5084,7 +5150,7 @@ abstract class AppLocalizations {
   /// No description provided for @personalSportMetricAvgPace.
   ///
   /// In fr, this message translates to:
-  /// **'Allure moyenne'**
+  /// **'Allure moy.'**
   String get personalSportMetricAvgPace;
 
   /// No description provided for @personalSportMetricDuration.
@@ -5102,7 +5168,7 @@ abstract class AppLocalizations {
   /// No description provided for @personalSportMetricAvgHeartRate.
   ///
   /// In fr, this message translates to:
-  /// **'Fréquence cardiaque moyenne'**
+  /// **'FCM'**
   String get personalSportMetricAvgHeartRate;
 
   /// No description provided for @personalSportUnitKcal.
@@ -5116,72 +5182,6 @@ abstract class AppLocalizations {
   /// In fr, this message translates to:
   /// **'bpm'**
   String get personalSportUnitBpm;
-
-  /// No description provided for @agendaAllDayLabel.
-  ///
-  /// In fr, this message translates to:
-  /// **'Journée entière'**
-  String get agendaAllDayLabel;
-
-  /// No description provided for @agendaCoachPlayersFabTooltip.
-  ///
-  /// In en, this message translates to:
-  /// **'Players — personal activities'**
-  String get agendaCoachPlayersFabTooltip;
-
-  /// No description provided for @agendaCoachPlayersTitle.
-  ///
-  /// In en, this message translates to:
-  /// **'Players\' sports activities'**
-  String get agendaCoachPlayersTitle;
-
-  /// No description provided for @agendaCoachPlayersSubtitle.
-  ///
-  /// In en, this message translates to:
-  /// **'Show personal sport activities with coach visibility in the agenda.'**
-  String get agendaCoachPlayersSubtitle;
-
-  /// No description provided for @agendaCoachPlayersTeam.
-  ///
-  /// In en, this message translates to:
-  /// **'Team'**
-  String get agendaCoachPlayersTeam;
-
-  /// No description provided for @agendaCoachPlayersPlayers.
-  ///
-  /// In en, this message translates to:
-  /// **'Players'**
-  String get agendaCoachPlayersPlayers;
-
-  /// No description provided for @agendaCoachPlayersNoTeams.
-  ///
-  /// In en, this message translates to:
-  /// **'No managed team for this season.'**
-  String get agendaCoachPlayersNoTeams;
-
-  /// No description provided for @agendaCoachPlayersLoadError.
-  ///
-  /// In en, this message translates to:
-  /// **'Could not load players.'**
-  String get agendaCoachPlayersLoadError;
-
-  /// No description provided for @agendaCoachPlayersEmptyRoster.
-  ///
-  /// In en, this message translates to:
-  /// **'No players in this team.'**
-  String get agendaCoachPlayersEmptyRoster;
-
-  /// No description provided for @agendaCoachPlayersClear.
-  ///
-  /// In en, this message translates to:
-  /// **'Clear selection'**
-  String get agendaCoachPlayersClear;
-
-  /// No description provided for @agendaEventSummaryNonSport.
-  ///
-  /// In fr, this message translates to:
-  /// **'{count, plural, =1{1 activité} other{{count} activités}}'**
-  String agendaEventSummaryNonSport(int count);
 
   /// No description provided for @createNonSportEventTitle.
   ///
@@ -7995,7 +7995,7 @@ abstract class AppLocalizations {
   /// No description provided for @createMatchFieldNotGeolocatedMessage.
   ///
   /// In fr, this message translates to:
-  /// **'Le terrain n'est pas géolocalisé. Souhaites-tu le faire maintenant ? C'est nécessaire pour la génération des heatmaps.'**
+  /// **'Le terrain n\'est pas géolocalisé. Souhaites-tu le faire maintenant ? C\'est nécessaire pour la génération des heatmaps.'**
   String get createMatchFieldNotGeolocatedMessage;
 
   /// No description provided for @createMatchSurface.
@@ -9567,7 +9567,7 @@ abstract class AppLocalizations {
   /// No description provided for @adminTrackerFieldsEmpty.
   ///
   /// In fr, this message translates to:
-  /// **'Aucun terrain enregistré. Crée un tracé GPS pour commencer.'**
+  /// **'Aucun terrain pour ce club.'**
   String get adminTrackerFieldsEmpty;
 
   /// No description provided for @adminTrackerFieldsLoadError.
@@ -9822,6 +9822,223 @@ abstract class AppLocalizations {
   /// **'Saisir l’ID manuellement'**
   String get adminTrackerDevicesAddPolarManual;
 
+  /// No description provided for @adminPolarBleScanTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Scanner les capteurs Polar'**
+  String get adminPolarBleScanTitle;
+
+  /// No description provided for @adminPolarBleScanSheetSubtitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Lister les Polar à proximité et se connecter un par un'**
+  String get adminPolarBleScanSheetSubtitle;
+
+  /// No description provided for @adminPolarBleScanHint.
+  ///
+  /// In fr, this message translates to:
+  /// **'Allume les capteurs à proximité, connecte-toi à chacun, puis ajoute-le au kit avec un nom personnalisé.'**
+  String get adminPolarBleScanHint;
+
+  /// No description provided for @adminPolarBleScanSearching.
+  ///
+  /// In fr, this message translates to:
+  /// **'Recherche de capteurs Polar…'**
+  String get adminPolarBleScanSearching;
+
+  /// No description provided for @adminPolarBleScanEmpty.
+  ///
+  /// In fr, this message translates to:
+  /// **'Aucun capteur Polar trouvé. Vérifie le Bluetooth et que les capteurs sont allumés.'**
+  String get adminPolarBleScanEmpty;
+
+  /// No description provided for @adminPolarBleScanUnsupported.
+  ///
+  /// In fr, this message translates to:
+  /// **'Le scan Polar BLE est disponible uniquement sur iOS et Android.'**
+  String get adminPolarBleScanUnsupported;
+
+  /// No description provided for @adminPolarBleScanConnect.
+  ///
+  /// In fr, this message translates to:
+  /// **'Connecter'**
+  String get adminPolarBleScanConnect;
+
+  /// No description provided for @adminPolarBleScanConnecting.
+  ///
+  /// In fr, this message translates to:
+  /// **'Connexion…'**
+  String get adminPolarBleScanConnecting;
+
+  /// No description provided for @adminPolarBleScanConnected.
+  ///
+  /// In fr, this message translates to:
+  /// **'Connecté'**
+  String get adminPolarBleScanConnected;
+
+  /// No description provided for @adminPolarBleScanAddToKit.
+  ///
+  /// In fr, this message translates to:
+  /// **'Ajouter au kit'**
+  String get adminPolarBleScanAddToKit;
+
+  /// No description provided for @adminPolarBleScanStop.
+  ///
+  /// In fr, this message translates to:
+  /// **'Arrêter le scan'**
+  String get adminPolarBleScanStop;
+
+  /// No description provided for @adminPolarBleScanRestart.
+  ///
+  /// In fr, this message translates to:
+  /// **'Relancer le scan'**
+  String get adminPolarBleScanRestart;
+
+  /// No description provided for @adminPolarBleScanConnectError.
+  ///
+  /// In fr, this message translates to:
+  /// **'Échec de connexion : {error}'**
+  String adminPolarBleScanConnectError(String error);
+
+  /// No description provided for @polarImportTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Import Polar (cardio)'**
+  String get polarImportTitle;
+
+  /// No description provided for @polarImportSensorsHeader.
+  ///
+  /// In fr, this message translates to:
+  /// **'Capteurs Polar de la séance'**
+  String get polarImportSensorsHeader;
+
+  /// No description provided for @polarImportHint.
+  ///
+  /// In fr, this message translates to:
+  /// **'Reconnecte chaque capteur après la séance pour importer la FC (ou saisis les valeurs manuellement).'**
+  String get polarImportHint;
+
+  /// No description provided for @polarImportSelectSensor.
+  ///
+  /// In fr, this message translates to:
+  /// **'Sélectionne un capteur pour importer les données cardio.'**
+  String get polarImportSelectSensor;
+
+  /// No description provided for @polarImportStatusPending.
+  ///
+  /// In fr, this message translates to:
+  /// **'À importer'**
+  String get polarImportStatusPending;
+
+  /// No description provided for @polarImportStatusDone.
+  ///
+  /// In fr, this message translates to:
+  /// **'Importé'**
+  String get polarImportStatusDone;
+
+  /// No description provided for @polarImportUntitledPlayer.
+  ///
+  /// In fr, this message translates to:
+  /// **'Joueur'**
+  String get polarImportUntitledPlayer;
+
+  /// No description provided for @polarImportDeviceLine.
+  ///
+  /// In fr, this message translates to:
+  /// **'Polar {deviceId} · {deviceType} · {customName}'**
+  String polarImportDeviceLine(
+      String deviceId, String deviceType, String customName);
+
+  /// No description provided for @polarImportBleAction.
+  ///
+  /// In fr, this message translates to:
+  /// **'Importer via Bluetooth'**
+  String get polarImportBleAction;
+
+  /// No description provided for @polarImportBleUnavailable.
+  ///
+  /// In fr, this message translates to:
+  /// **'L’import Bluetooth Polar est disponible sur iOS/Android. Sur le web, utilise la saisie manuelle.'**
+  String get polarImportBleUnavailable;
+
+  /// No description provided for @polarImportManualAction.
+  ///
+  /// In fr, this message translates to:
+  /// **'Saisie manuelle'**
+  String get polarImportManualAction;
+
+  /// No description provided for @polarImportManualTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Saisie cardio Polar'**
+  String get polarImportManualTitle;
+
+  /// No description provided for @polarImportManualSubtitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Renseigne la durée et la FC (calories / pas optionnels pour Loop).'**
+  String get polarImportManualSubtitle;
+
+  /// No description provided for @polarImportFieldDurationMin.
+  ///
+  /// In fr, this message translates to:
+  /// **'Durée (minutes)'**
+  String get polarImportFieldDurationMin;
+
+  /// No description provided for @polarImportFieldAvgHr.
+  ///
+  /// In fr, this message translates to:
+  /// **'FC moyenne (bpm)'**
+  String get polarImportFieldAvgHr;
+
+  /// No description provided for @polarImportFieldMaxHr.
+  ///
+  /// In fr, this message translates to:
+  /// **'FC max (bpm)'**
+  String get polarImportFieldMaxHr;
+
+  /// No description provided for @polarImportFieldMinHr.
+  ///
+  /// In fr, this message translates to:
+  /// **'FC min (bpm)'**
+  String get polarImportFieldMinHr;
+
+  /// No description provided for @polarImportFieldCalories.
+  ///
+  /// In fr, this message translates to:
+  /// **'Calories (kcal, optionnel)'**
+  String get polarImportFieldCalories;
+
+  /// No description provided for @polarImportFieldDistanceM.
+  ///
+  /// In fr, this message translates to:
+  /// **'Distance (m, optionnel)'**
+  String get polarImportFieldDistanceM;
+
+  /// No description provided for @polarImportFieldSteps.
+  ///
+  /// In fr, this message translates to:
+  /// **'Pas (optionnel)'**
+  String get polarImportFieldSteps;
+
+  /// No description provided for @polarImportMissingPlayer.
+  ///
+  /// In fr, this message translates to:
+  /// **'Aucun joueur associé à ce capteur.'**
+  String get polarImportMissingPlayer;
+
+  /// No description provided for @polarImportSuccess.
+  ///
+  /// In fr, this message translates to:
+  /// **'Import OK — FC moy. {avgHr} · {minutes} min'**
+  String polarImportSuccess(String avgHr, String minutes);
+
+  /// No description provided for @polarImportBleError.
+  ///
+  /// In fr, this message translates to:
+  /// **'Import Polar échoué : {error}'**
+  String polarImportBleError(String error);
+
   /// No description provided for @adminTrackerDevicesAddPolarTitle.
   ///
   /// In fr, this message translates to:
@@ -9863,9 +10080,7 @@ abstract class AppLocalizations {
   /// In fr, this message translates to:
   /// **'Polar {deviceId} ({deviceType}) ajouté.'**
   String adminTrackerDevicesAddPolarChromeSuccess(
-    String deviceId,
-    String deviceType,
-  );
+      String deviceId, String deviceType);
 
   /// No description provided for @adminTrackerDevicesAddPolarDeviceType.
   ///
@@ -10367,116 +10582,177 @@ abstract class AppLocalizations {
   String get playerFeelingPrompt;
 
   /// No description provided for @playerFeelingNotifTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Bilan de séance'**
   String get playerFeelingNotifTitle;
 
   /// No description provided for @playerFeelingNotifBody.
+  ///
+  /// In fr, this message translates to:
+  /// **'Découvre tes stats et dis-nous comment tu te sens.'**
   String get playerFeelingNotifBody;
 
   /// No description provided for @playerFeelingRecapTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Ton bilan'**
   String get playerFeelingRecapTitle;
 
   /// No description provided for @playerFeelingRecapSubtitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Tes données de séance'**
   String get playerFeelingRecapSubtitle;
 
   /// No description provided for @playerFeelingSubmitAction.
+  ///
+  /// In fr, this message translates to:
+  /// **'Envoyer'**
   String get playerFeelingSubmitAction;
 
   /// No description provided for @playerFeelingUpdateAction.
+  ///
+  /// In fr, this message translates to:
+  /// **'Mettre à jour'**
   String get playerFeelingUpdateAction;
 
   /// No description provided for @playerFeelingSaved.
+  ///
+  /// In fr, this message translates to:
+  /// **'Merci, ton ressenti a été enregistré.'**
   String get playerFeelingSaved;
 
   /// No description provided for @playerFeelingSaveError.
+  ///
+  /// In fr, this message translates to:
+  /// **'Impossible d\'enregistrer ton ressenti.'**
   String get playerFeelingSaveError;
 
+  /// No description provided for @playerFeelingLoadError.
+  ///
+  /// In fr, this message translates to:
+  /// **'Impossible de charger le bilan.'**
   String get playerFeelingLoadError;
 
   /// No description provided for @sessionHealthExportPromptTitle.
   ///
-  /// In en, this message translates to:
-  /// **'Export session'**
+  /// In fr, this message translates to:
+  /// **'Exporter la séance'**
   String get sessionHealthExportPromptTitle;
 
   /// No description provided for @sessionHealthExportPromptApple.
   ///
-  /// In en, this message translates to:
-  /// **'Would you like to see this data in Apple Fitness?'**
+  /// In fr, this message translates to:
+  /// **'Souhaites-tu retrouver ces données dans Apple Forme ?'**
   String get sessionHealthExportPromptApple;
 
   /// No description provided for @sessionHealthExportPromptGoogle.
   ///
-  /// In en, this message translates to:
-  /// **'Would you like to see this data in Google Health?'**
+  /// In fr, this message translates to:
+  /// **'Souhaites-tu retrouver ces données dans Google Health ?'**
   String get sessionHealthExportPromptGoogle;
 
   /// No description provided for @sessionHealthExportSuccessApple.
   ///
-  /// In en, this message translates to:
-  /// **'Session added to Apple Fitness.'**
+  /// In fr, this message translates to:
+  /// **'Séance ajoutée à Apple Forme.'**
   String get sessionHealthExportSuccessApple;
 
   /// No description provided for @sessionHealthExportSuccessGoogle.
   ///
-  /// In en, this message translates to:
-  /// **'Session added to Google Health.'**
+  /// In fr, this message translates to:
+  /// **'Séance ajoutée à Google Health.'**
   String get sessionHealthExportSuccessGoogle;
 
   /// No description provided for @sessionHealthExportFailed.
   ///
-  /// In en, this message translates to:
-  /// **'Could not export the session. Please try again.'**
+  /// In fr, this message translates to:
+  /// **'Impossible d\'exporter la séance. Réessaie.'**
   String get sessionHealthExportFailed;
 
   /// No description provided for @sessionHealthExportConnectFailed.
   ///
-  /// In en, this message translates to:
-  /// **'Could not connect Health. Check permissions and try again.'**
+  /// In fr, this message translates to:
+  /// **'Impossible de connecter l\'app Santé. Vérifie les autorisations et réessaie.'**
   String get sessionHealthExportConnectFailed;
 
   /// No description provided for @sessionHealthExportTitleMatch.
   ///
-  /// In en, this message translates to:
-  /// **'Grinta match'**
+  /// In fr, this message translates to:
+  /// **'Match Grinta'**
   String get sessionHealthExportTitleMatch;
 
   /// No description provided for @sessionHealthExportTitleTraining.
   ///
-  /// In en, this message translates to:
-  /// **'Grinta training'**
+  /// In fr, this message translates to:
+  /// **'Entraînement Grinta'**
   String get sessionHealthExportTitleTraining;
 
   /// No description provided for @forgotPasswordTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Mot de passe oublié'**
   String get forgotPasswordTitle;
 
   /// No description provided for @forgotPasswordMessage.
+  ///
+  /// In fr, this message translates to:
+  /// **'Saisissez l\'adresse email de votre compte. Nous vous enverrons un lien pour réinitialiser votre mot de passe.'**
   String get forgotPasswordMessage;
 
   /// No description provided for @forgotPasswordSendAction.
+  ///
+  /// In fr, this message translates to:
+  /// **'Envoyer le lien'**
   String get forgotPasswordSendAction;
 
   /// No description provided for @forgotPasswordSent.
+  ///
+  /// In fr, this message translates to:
+  /// **'Un e-mail de réinitialisation a été envoyé.'**
   String get forgotPasswordSent;
 
   /// No description provided for @forgotPasswordFailed.
+  ///
+  /// In fr, this message translates to:
+  /// **'Impossible d\'envoyer l\'e-mail de réinitialisation.'**
   String get forgotPasswordFailed;
 
   /// No description provided for @pendingInvitationNotificationTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Invitation en attente'**
   String get pendingInvitationNotificationTitle;
 
   /// No description provided for @pendingInvitationNotificationBody.
+  ///
+  /// In fr, this message translates to:
+  /// **'Ton coach t\'invite dans {teamName}. Saisis le code reçu par e-mail pour rejoindre l\'équipe.'**
   String pendingInvitationNotificationBody(String teamName);
 
   /// No description provided for @pendingInvitationAcceptTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Code d\'invitation'**
   String get pendingInvitationAcceptTitle;
 
   /// No description provided for @pendingInvitationAcceptMessage.
+  ///
+  /// In fr, this message translates to:
+  /// **'Saisis le code reçu par e-mail pour rattacher cette invitation à ton compte.'**
   String get pendingInvitationAcceptMessage;
 
   /// No description provided for @pendingInvitationAcceptSuccess.
+  ///
+  /// In fr, this message translates to:
+  /// **'Invitation acceptée. L\'équipe est maintenant disponible dans ton profil.'**
   String get pendingInvitationAcceptSuccess;
 
   /// No description provided for @pendingInvitationAcceptNeedAuth.
+  ///
+  /// In fr, this message translates to:
+  /// **'Connecte-toi pour accepter cette invitation.'**
   String get pendingInvitationAcceptNeedAuth;
 
   /// No description provided for @playerSeasonSummaryTitle.

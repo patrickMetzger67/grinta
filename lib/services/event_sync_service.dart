@@ -127,6 +127,25 @@ class EventSyncService {
     }, SetOptions(merge: true));
   }
 
+  /// Marks a Polar kit device as imported for [eventId]
+  /// (`TRACKER_PolarAnalysis` written).
+  Future<void> markPolarImported({
+    required String eventId,
+    required String deviceId,
+    required String uid,
+  }) async {
+    await _collection.doc(eventId).set({
+      'devices': {
+        deviceId: {
+          'deviceId': deviceId,
+          'polarImported': true,
+          'polarImportedAt': FieldValue.serverTimestamp(),
+          'polarImportedUid': uid,
+        }
+      }
+    }, SetOptions(merge: true));
+  }
+
   Future<void> resetDeviceSync({
     required String eventId,
     required String deviceId,

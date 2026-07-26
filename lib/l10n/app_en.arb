@@ -2201,6 +2201,65 @@
   "adminTrackerDevicesAddPolar": "Add Polar",
   "adminTrackerDevicesAddPolarChrome": "Add via Chrome Bluetooth",
   "adminTrackerDevicesAddPolarManual": "Enter ID manually",
+  "adminPolarBleScanTitle": "Scan Polar sensors",
+  "adminPolarBleScanSheetSubtitle": "List nearby Polar devices and connect one by one",
+  "adminPolarBleScanHint": "Turn on the sensors nearby, then connect each one and add it to the kit with a custom name.",
+  "adminPolarBleScanSearching": "Searching for Polar sensors…",
+  "adminPolarBleScanEmpty": "No Polar sensor found. Check Bluetooth and that the sensors are on.",
+  "adminPolarBleScanUnsupported": "Polar BLE scan is only available on iOS and Android.",
+  "adminPolarBleScanConnect": "Connect",
+  "adminPolarBleScanConnecting": "Connecting…",
+  "adminPolarBleScanConnected": "Connected",
+  "adminPolarBleScanAddToKit": "Add to kit",
+  "adminPolarBleScanStop": "Stop scan",
+  "adminPolarBleScanRestart": "Scan again",
+  "adminPolarBleScanConnectError": "Connection failed: {error}",
+  "@adminPolarBleScanConnectError": {
+    "placeholders": {
+      "error": { "type": "String" }
+    }
+  },
+  "polarImportTitle": "Polar import (cardio)",
+  "polarImportSensorsHeader": "Session Polar sensors",
+  "polarImportHint": "Reconnect each sensor after the session to import HR (or enter values manually).",
+  "polarImportSelectSensor": "Select a sensor to import cardio data.",
+  "polarImportStatusPending": "To import",
+  "polarImportStatusDone": "Imported",
+  "polarImportUntitledPlayer": "Player",
+  "polarImportDeviceLine": "Polar {deviceId} · {deviceType} · {customName}",
+  "@polarImportDeviceLine": {
+    "placeholders": {
+      "deviceId": { "type": "String" },
+      "deviceType": { "type": "String" },
+      "customName": { "type": "String" }
+    }
+  },
+  "polarImportBleAction": "Import via Bluetooth",
+  "polarImportBleUnavailable": "Polar Bluetooth import is available on iOS/Android. On the web, use manual entry.",
+  "polarImportManualAction": "Manual entry",
+  "polarImportManualTitle": "Polar cardio entry",
+  "polarImportManualSubtitle": "Enter duration and HR (calories / steps optional for Loop).",
+  "polarImportFieldDurationMin": "Duration (minutes)",
+  "polarImportFieldAvgHr": "Avg HR (bpm)",
+  "polarImportFieldMaxHr": "Max HR (bpm)",
+  "polarImportFieldMinHr": "Min HR (bpm)",
+  "polarImportFieldCalories": "Calories (kcal, optional)",
+  "polarImportFieldDistanceM": "Distance (m, optional)",
+  "polarImportFieldSteps": "Steps (optional)",
+  "polarImportMissingPlayer": "No player linked to this sensor.",
+  "polarImportSuccess": "Import OK — avg HR {avgHr} · {minutes} min",
+  "@polarImportSuccess": {
+    "placeholders": {
+      "avgHr": { "type": "String" },
+      "minutes": { "type": "String" }
+    }
+  },
+  "polarImportBleError": "Polar import failed: {error}",
+  "@polarImportBleError": {
+    "placeholders": {
+      "error": { "type": "String" }
+    }
+  },
   "adminTrackerDevicesAddPolarTitle": "Add a Polar sensor",
   "adminTrackerDevicesAddPolarDeviceId": "Polar device ID",
   "adminTrackerDevicesAddPolarDeviceIdHint": "Printed on the sensor, or last part of BLE name (e.g. Polar H10 1C709B20 → 1C709B20)",
