@@ -1043,11 +1043,9 @@ class _AdminTrackerDevicesScreenState extends State<AdminTrackerDevicesScreen> {
     final textTheme = Theme.of(context).textTheme;
 
     final idCtrl = TextEditingController();
-    final nameCtrl = TextEditingController();
     var deviceType = 'H10';
-    var saving = false;
 
-    await showDialog<void>(
+    final draft = await showDialog<_PolarManualDraft>(
       context: context,
       barrierDismissible: false,
       builder: (ctx) {
@@ -1068,7 +1066,6 @@ class _AdminTrackerDevicesScreenState extends State<AdminTrackerDevicesScreen> {
                   children: [
                     TextField(
                       controller: idCtrl,
-                      enabled: !saving,
                       style: textTheme.bodyMedium?.copyWith(
                         color: colors.textPrimary,
                       ),
@@ -1119,27 +1116,8 @@ class _AdminTrackerDevicesScreenState extends State<AdminTrackerDevicesScreen> {
                             ),
                           )
                           .toList(),
-                      onChanged: saving
-                          ? null
-                          : (value) => setStateDialog(
-                                () => deviceType = value ?? 'H10',
-                              ),
-                    ),
-                    const SizedBox(height: 12),
-                    TextField(
-                      controller: nameCtrl,
-                      enabled: !saving,
-                      style: textTheme.bodyMedium?.copyWith(
-                        color: colors.textPrimary,
-                      ),
-                      decoration: InputDecoration(
-                        labelText: l10n.adminTrackerDevicesAddPolarDeviceName,
-                        labelStyle: textTheme.bodySmall?.copyWith(
-                          color: colors.textSecondary,
-                        ),
-                        border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(10),
-                        ),
+                      onChanged: (value) => setStateDialog(
+                        () => deviceType = value ?? 'H10',
                       ),
                     ),
                   ],
@@ -1147,86 +1125,27 @@ class _AdminTrackerDevicesScreenState extends State<AdminTrackerDevicesScreen> {
               ),
               actions: [
                 TextButton(
-                  onPressed: saving ? null : () => Navigator.pop(ctx),
+                  onPressed: () => Navigator.pop(ctx),
                   child: Text(l10n.adminTrackerDevicesCancel),
                 ),
                 TextButton(
-                  onPressed: saving
-                      ? null
-                      : () async {
-                          final polarId = idCtrl.text.trim();
-                          if (polarId.isEmpty) {
-                            AppSnackbar.show(
-                              context,
-                              l10n.adminTrackerDevicesAddPolarDeviceIdRequired,
-                            );
-                            return;
-                          }
-
-                          setStateDialog(() => saving = true);
-                          try {
-                            // Close create sheet first, then association
-                            // (owner + customName).
-                            if (context.mounted) Navigator.pop(ctx);
-
-                            final assignment = await _promptPolarAssignment(
-                              context,
-                              suggestedCustomName: nameCtrl.text.trim(),
-                              deviceLabel: polarId,
-                            );
-                            if (assignment == null) {
-                              if (context.mounted) {
-                                AppSnackbar.show(
-                                  context,
-                                  l10n.adminTrackerDevicesSelectOwnerRequired,
-                                );
-                              }
-                              return;
-                            }
-
-                            await _registerPolarDeviceInInventory(
-                              polarDeviceId: polarId,
-                              ownerId: assignment.ownerId,
-                              deviceType: deviceType,
-                              deviceName: nameCtrl.text.trim().isEmpty
-                                  ? null
-                                  : nameCtrl.text.trim(),
-                              customName: assignment.customName,
-                            );
-
-                            if (context.mounted) {
-                              AppSnackbar.show(
-                                context,
-                                l10n.adminTrackerDevicesAddPolarSuccess,
-                                isError: false,
-                              );
-                            }
-                          } on StateError catch (e) {
-                            if (!context.mounted) return;
-                            if (e.message == 'owner-required') {
-                              AppSnackbar.show(
-                                context,
-                                l10n.adminTrackerDevicesSelectOwnerRequired,
-                              );
-                            } else if (e.message == 'permission-denied') {
-                              AppSnackbar.show(
-                                context,
-                                l10n.adminTrackerDevicesPermissionDenied,
-                              );
-                            }
-                          } catch (e) {
-                            if (context.mounted) {
-                              AppSnackbar.show(
-                                context,
-                                l10n.adminTrackerDevicesError(e.toString()),
-                              );
-                            }
-                          } finally {
-                            if (context.mounted) {
-                              setStateDialog(() => saving = false);
-                            }
-                          }
-                        },
+                  onPressed: () {
+                    final polarId = idCtrl.text.trim();
+                    if (polarId.isEmpty) {
+                      AppSnackbar.show(
+                        context,
+                        l10n.adminTrackerDevicesAddPolarDeviceIdRequired,
+                      );
+                      return;
+                    }
+                    Navigator.pop(
+                      ctx,
+                      _PolarManualDraft(
+                        polarDeviceId: polarId,
+                        deviceType: deviceType,
+                      ),
+                    );
+                  },
                   child: Text(l10n.adminTrackerDevicesValidate),
                 ),
               ],
@@ -1237,7 +1156,44 @@ class _AdminTrackerDevicesScreenState extends State<AdminTrackerDevicesScreen> {
     );
 
     idCtrl.dispose();
-    nameCtrl.dispose();
+    if (draft == null || !context.mounted) return;
+
+    final assignment = await _promptPolarAssignment(
+      context,
+      deviceLabel: draft.polarDeviceId,
+    );
+    if (!context.mounted) return;
+    if (assignment == null) {
+      AppSnackbar.show(context, l10n.adminTrackerDevicesSelectOwnerRequired);
+      return;
+    }
+
+    try {
+      await _registerPolarDeviceInInventory(
+        polarDeviceId: draft.polarDeviceId,
+        ownerId: assignment.ownerId,
+        deviceType: draft.deviceType,
+        customName: assignment.customName,
+      );
+      if (!context.mounted) return;
+      AppSnackbar.show(
+        context,
+        l10n.adminTrackerDevicesAddPolarSuccess,
+        isError: false,
+      );
+    } on StateError catch (e) {
+      if (!context.mounted) return;
+      if (e.message == 'owner-required') {
+        AppSnackbar.show(context, l10n.adminTrackerDevicesSelectOwnerRequired);
+      } else if (e.message == 'permission-denied') {
+        AppSnackbar.show(context, l10n.adminTrackerDevicesPermissionDenied);
+      } else {
+        AppSnackbar.show(context, l10n.adminTrackerDevicesError(e.toString()));
+      }
+    } catch (e) {
+      if (!context.mounted) return;
+      AppSnackbar.show(context, l10n.adminTrackerDevicesError(e.toString()));
+    }
   }
 
   Future<void> _onSyncInspirit(BuildContext context) async {
@@ -1339,4 +1295,14 @@ class _PolarAssignment {
 
   final String ownerId;
   final String? customName;
+}
+
+class _PolarManualDraft {
+  const _PolarManualDraft({
+    required this.polarDeviceId,
+    required this.deviceType,
+  });
+
+  final String polarDeviceId;
+  final String deviceType;
 }
