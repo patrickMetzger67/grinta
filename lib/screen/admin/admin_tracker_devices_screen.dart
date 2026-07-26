@@ -333,10 +333,14 @@ class _AdminTrackerDevicesScreenState extends State<AdminTrackerDevicesScreen> {
 
         final visibleDocs = docs.where((d) {
           final data = d.data();
-          final ownerId = (data['ownerId'] ?? '').toString();
+          final ownerId = (data['ownerId'] ?? '').toString().trim();
 
           if (_selectedOwnerId != null && _selectedOwnerId!.isNotEmpty) {
-            if (_deviceOwnerMap[d.id] == null) return false;
+            // Prefer DeviceOwner assignment; also accept TRACKER_Device.ownerId
+            // so Polar sensors just written to the kit remain visible.
+            final assignedViaOwnerTable = _deviceOwnerMap[d.id] != null;
+            final assignedOnDevice = ownerId == _selectedOwnerId;
+            if (!assignedViaOwnerTable && !assignedOnDevice) return false;
           }
 
           if (_showUnassignedDevices && ownerId.isNotEmpty) {
@@ -376,17 +380,19 @@ class _AdminTrackerDevicesScreenState extends State<AdminTrackerDevicesScreen> {
     final serial = _serialFromMap(data);
     final deviceId = _idFromMap(data, doc.id);
     final provider = _providerFromMap(data);
+    final deviceName = (data['device_name'] ?? data['deviceName'] ?? '')
+        .toString()
+        .trim();
     final isActive = (data['isActive'] ?? true) == true;
     final ownerId = (data['ownerId'] ?? '').toString();
     final updatedAt = _formatTimestamp(context, data['updatedAt']);
     final ownerName = ownerId.isNotEmpty ? _ownerMap[ownerId]?.name : null;
-    final customName = ownerId.isNotEmpty
-        ? (_deviceOwnerMap[doc.id] ?? _deviceOwnerByDeviceId[doc.id])
-            ?.customName
-        : null;
-    final titleText = customName != null && customName.isNotEmpty
-        ? '$deviceId ($customName)'
-        : deviceId;
+    final customName = (_deviceOwnerMap[doc.id] ?? _deviceOwnerByDeviceId[doc.id])
+            ?.customName ??
+        (data['custom_name'] ?? data['customName'])?.toString();
+    final titleText = customName != null && customName.trim().isNotEmpty
+        ? '$deviceId (${customName.trim()})'
+        : (deviceName.isNotEmpty ? deviceName : deviceId);
 
     return Material(
       color: colors.card,
@@ -790,7 +796,7 @@ class _AdminTrackerDevicesScreenState extends State<AdminTrackerDevicesScreen> {
       }
 
       final identity = pick.identity;
-      await TrackerDeviceAdminService.instance.createPolarDevice(
+      await _registerPolarDeviceInInventory(
         polarDeviceId: identity.deviceId,
         deviceType: identity.deviceType,
         deviceName: identity.displayName,
@@ -827,6 +833,54 @@ class _AdminTrackerDevicesScreenState extends State<AdminTrackerDevicesScreen> {
     } catch (e) {
       if (!context.mounted) return;
       AppSnackbar.show(context, l10n.adminTrackerDevicesError(e.toString()));
+    }
+  }
+
+  /// Creates the Polar device and makes it visible in the current list filters.
+  ///
+  /// When an owner filter is active (common when opening devices from an owner),
+  /// the new sensor is auto-assigned to that owner — otherwise it stays hidden
+  /// because the list only shows `TRACKER_DeviceOwner` rows for the selected owner.
+  Future<void> _registerPolarDeviceInInventory({
+    required String polarDeviceId,
+    String? deviceType,
+    String? deviceName,
+    String? customName,
+  }) async {
+    final deviceId =
+        await TrackerDeviceAdminService.instance.createPolarDevice(
+      polarDeviceId: polarDeviceId,
+      deviceType: deviceType,
+      deviceName: deviceName,
+      customName: customName,
+    );
+
+    final ownerId = (_selectedOwnerId ?? widget.ownerId)?.trim();
+    if (ownerId != null && ownerId.isNotEmpty) {
+      await TrackerDeviceAdminService.instance.assignDeviceToOwner(
+        deviceId: deviceId,
+        ownerId: ownerId,
+        customName: customName,
+      );
+      await _loadDeviceOwnersForOwner(ownerId);
+      await _loadAllDeviceOwners();
+      if (mounted) {
+        setState(() {
+          _showUnassignedDevices = false;
+          _selectedOwnerId = ownerId;
+        });
+      }
+      return;
+    }
+
+    // No owner filter: show unassigned list so the new sensor is obvious.
+    await _loadAllDeviceOwners();
+    if (mounted) {
+      setState(() {
+        _showUnassignedDevices = true;
+        _selectedOwnerId = null;
+        _deviceOwnerMap.clear();
+      });
     }
   }
 
@@ -958,16 +1012,12 @@ class _AdminTrackerDevicesScreenState extends State<AdminTrackerDevicesScreen> {
 
                           setStateDialog(() => saving = true);
                           try {
-                            await TrackerDeviceAdminService.instance
-                                .createPolarDevice(
+                            final name = nameCtrl.text.trim();
+                            await _registerPolarDeviceInInventory(
                               polarDeviceId: polarId,
                               deviceType: deviceType,
-                              deviceName: nameCtrl.text.trim().isEmpty
-                                  ? null
-                                  : nameCtrl.text.trim(),
-                              customName: nameCtrl.text.trim().isEmpty
-                                  ? null
-                                  : nameCtrl.text.trim(),
+                              deviceName: name.isEmpty ? null : name,
+                              customName: name.isEmpty ? null : name,
                             );
 
                             if (context.mounted) {
