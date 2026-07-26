@@ -1380,8 +1380,13 @@ class AgendaItemCard extends StatelessWidget {
 
 
                               Expanded(
-                                child: TrackerPlayerAnalysisWidget(
+                                child: SessionPlayerAnalysisView(
+                                  eventId: item.id,
+                                  ownerId: item.training?.ownerId,
                                   analysisDocId: analysisDocId,
+                                  trackerId:
+                                      teamPlayerMetricScores?.trackerId,
+                                  playerId: currentPlayerId,
                                   teamId: '',
                                   playerName: playerDisplayName(
                                     player!,
@@ -1546,8 +1551,10 @@ class AgendaItemCard extends StatelessWidget {
                                     width: double.infinity,
                                     child: Padding(
                                       padding: const EdgeInsets.all(12),
-                                      child: MatchTrackerStatsTable(
+                                      child: SessionTrackerStatsView(
                                         eventId: item.id,
+                                        ownerId: item.training?.ownerId ??
+                                            item.match?.ownerId,
                                         teamId: (item.training != null)
                                             ? item.training!.teamId!
                                             : teamId,

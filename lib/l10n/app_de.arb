@@ -2029,6 +2029,50 @@
       "error": { "type": "String" }
     }
   },
+  "polarAnalysisEmptyMessage": "Keine Polar-Cardioanalyse für diesen Spieler in dieser Einheit.",
+  "polarAnalysisEmptyTeamMessage": "Keine Polar-Cardioanalyse für diese Einheit importiert. Sensoren unter Sync importieren.",
+  "polarAnalysisTeamTitle": "Polar-Cardioanalyse",
+  "polarAnalysisTeamCount": "{count} Spieler",
+  "@polarAnalysisTeamCount": {
+    "placeholders": {
+      "count": { "type": "int" }
+    }
+  },
+  "polarAnalysisColDevice": "Sensor",
+  "polarAnalysisColHighIntensity": "Z4+Z5",
+  "polarAnalysisDeviceLine": "Polar {deviceId} · {deviceType}",
+  "@polarAnalysisDeviceLine": {
+    "placeholders": {
+      "deviceId": { "type": "String" },
+      "deviceType": { "type": "String" }
+    }
+  },
+  "polarAnalysisHrZonesTab": "HF-Zonen",
+  "polarAnalysisDuration": "Dauer",
+  "polarAnalysisDurationDetail": "{minutes} Min {seconds} s",
+  "@polarAnalysisDurationDetail": {
+    "placeholders": {
+      "minutes": { "type": "int" },
+      "seconds": { "type": "int" }
+    }
+  },
+  "polarAnalysisAvgHr": "HF Mittel",
+  "polarAnalysisMaxHr": "HF Max",
+  "polarAnalysisMinHr": "HF Min",
+  "polarAnalysisSamples": "Samples",
+  "polarAnalysisCalories": "Kalorien",
+  "polarAnalysisSteps": "Schritte",
+  "polarAnalysisUnitMin": "Min",
+  "polarAnalysisUnitBpm": "bpm",
+  "polarAnalysisUnitKcal": "kcal",
+  "polarAnalysisZoneLabel": "{zone}",
+  "@polarAnalysisZoneLabel": {
+    "placeholders": {
+      "zone": { "type": "String" }
+    }
+  },
+  "polarAnalysisNoZones": "Keine Zonenverteilung für diesen Import.",
+
   "adminTrackerDevicesAddPolarTitle": "Polar-Sensor hinzufügen",
   "adminTrackerDevicesAddPolarDeviceId": "Polar-Geräte-ID",
   "adminTrackerDevicesAddPolarDeviceIdHint": "Auf dem Sensor gedruckt, oder Ende des BLE-Namens (z. B. Polar H10 1C709B20 → 1C709B20)",

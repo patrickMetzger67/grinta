@@ -5824,6 +5824,79 @@ class AppLocalizationsDe extends AppLocalizations {
   }
 
   @override
+  String get polarAnalysisEmptyMessage =>
+      'Keine Polar-Cardioanalyse für diesen Spieler in dieser Einheit.';
+
+  @override
+  String get polarAnalysisEmptyTeamMessage =>
+      'Keine Polar-Cardioanalyse für diese Einheit importiert. Sensoren unter Sync importieren.';
+
+  @override
+  String get polarAnalysisTeamTitle => 'Polar-Cardioanalyse';
+
+  @override
+  String polarAnalysisTeamCount(int count) {
+    return '$count Spieler';
+  }
+
+  @override
+  String get polarAnalysisColDevice => 'Sensor';
+
+  @override
+  String get polarAnalysisColHighIntensity => 'Z4+Z5';
+
+  @override
+  String polarAnalysisDeviceLine(String deviceId, String deviceType) {
+    return 'Polar $deviceId · $deviceType';
+  }
+
+  @override
+  String get polarAnalysisHrZonesTab => 'HF-Zonen';
+
+  @override
+  String get polarAnalysisDuration => 'Dauer';
+
+  @override
+  String polarAnalysisDurationDetail(int minutes, int seconds) {
+    return '$minutes Min $seconds s';
+  }
+
+  @override
+  String get polarAnalysisAvgHr => 'HF Mittel';
+
+  @override
+  String get polarAnalysisMaxHr => 'HF Max';
+
+  @override
+  String get polarAnalysisMinHr => 'HF Min';
+
+  @override
+  String get polarAnalysisSamples => 'Samples';
+
+  @override
+  String get polarAnalysisCalories => 'Kalorien';
+
+  @override
+  String get polarAnalysisSteps => 'Schritte';
+
+  @override
+  String get polarAnalysisUnitMin => 'Min';
+
+  @override
+  String get polarAnalysisUnitBpm => 'bpm';
+
+  @override
+  String get polarAnalysisUnitKcal => 'kcal';
+
+  @override
+  String polarAnalysisZoneLabel(String zone) {
+    return '$zone';
+  }
+
+  @override
+  String get polarAnalysisNoZones => 'Keine Zonenverteilung für diesen Import.';
+
+  @override
   String get adminTrackerDevicesAddPolarTitle => 'Polar-Sensor hinzufügen';
 
   @override

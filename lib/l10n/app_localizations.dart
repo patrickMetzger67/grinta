@@ -10039,6 +10039,132 @@ abstract class AppLocalizations {
   /// **'Import Polar échoué : {error}'**
   String polarImportBleError(String error);
 
+  /// No description provided for @polarAnalysisEmptyMessage.
+  ///
+  /// In fr, this message translates to:
+  /// **'Aucune analyse cardio Polar pour ce joueur sur cette séance.'**
+  String get polarAnalysisEmptyMessage;
+
+  /// No description provided for @polarAnalysisEmptyTeamMessage.
+  ///
+  /// In fr, this message translates to:
+  /// **'Aucune analyse cardio Polar importée pour cette séance. Importe les capteurs depuis Sync.'**
+  String get polarAnalysisEmptyTeamMessage;
+
+  /// No description provided for @polarAnalysisTeamTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Analyse cardio Polar'**
+  String get polarAnalysisTeamTitle;
+
+  /// No description provided for @polarAnalysisTeamCount.
+  ///
+  /// In fr, this message translates to:
+  /// **'{count} joueur(s)'**
+  String polarAnalysisTeamCount(int count);
+
+  /// No description provided for @polarAnalysisColDevice.
+  ///
+  /// In fr, this message translates to:
+  /// **'Capteur'**
+  String get polarAnalysisColDevice;
+
+  /// No description provided for @polarAnalysisColHighIntensity.
+  ///
+  /// In fr, this message translates to:
+  /// **'Z4+Z5'**
+  String get polarAnalysisColHighIntensity;
+
+  /// No description provided for @polarAnalysisDeviceLine.
+  ///
+  /// In fr, this message translates to:
+  /// **'Polar {deviceId} · {deviceType}'**
+  String polarAnalysisDeviceLine(String deviceId, String deviceType);
+
+  /// No description provided for @polarAnalysisHrZonesTab.
+  ///
+  /// In fr, this message translates to:
+  /// **'Zones FC'**
+  String get polarAnalysisHrZonesTab;
+
+  /// No description provided for @polarAnalysisDuration.
+  ///
+  /// In fr, this message translates to:
+  /// **'Durée'**
+  String get polarAnalysisDuration;
+
+  /// No description provided for @polarAnalysisDurationDetail.
+  ///
+  /// In fr, this message translates to:
+  /// **'{minutes} min {seconds} s'**
+  String polarAnalysisDurationDetail(int minutes, int seconds);
+
+  /// No description provided for @polarAnalysisAvgHr.
+  ///
+  /// In fr, this message translates to:
+  /// **'FC moy.'**
+  String get polarAnalysisAvgHr;
+
+  /// No description provided for @polarAnalysisMaxHr.
+  ///
+  /// In fr, this message translates to:
+  /// **'FC max'**
+  String get polarAnalysisMaxHr;
+
+  /// No description provided for @polarAnalysisMinHr.
+  ///
+  /// In fr, this message translates to:
+  /// **'FC min'**
+  String get polarAnalysisMinHr;
+
+  /// No description provided for @polarAnalysisSamples.
+  ///
+  /// In fr, this message translates to:
+  /// **'Échantillons'**
+  String get polarAnalysisSamples;
+
+  /// No description provided for @polarAnalysisCalories.
+  ///
+  /// In fr, this message translates to:
+  /// **'Calories'**
+  String get polarAnalysisCalories;
+
+  /// No description provided for @polarAnalysisSteps.
+  ///
+  /// In fr, this message translates to:
+  /// **'Pas'**
+  String get polarAnalysisSteps;
+
+  /// No description provided for @polarAnalysisUnitMin.
+  ///
+  /// In fr, this message translates to:
+  /// **'min'**
+  String get polarAnalysisUnitMin;
+
+  /// No description provided for @polarAnalysisUnitBpm.
+  ///
+  /// In fr, this message translates to:
+  /// **'bpm'**
+  String get polarAnalysisUnitBpm;
+
+  /// No description provided for @polarAnalysisUnitKcal.
+  ///
+  /// In fr, this message translates to:
+  /// **'kcal'**
+  String get polarAnalysisUnitKcal;
+
+  /// No description provided for @polarAnalysisZoneLabel.
+  ///
+  /// In fr, this message translates to:
+  /// **'{zone}'**
+  String polarAnalysisZoneLabel(String zone);
+
+  /// No description provided for @polarAnalysisNoZones.
+  ///
+  /// In fr, this message translates to:
+  /// **'Pas de répartition par zones pour cet import.'**
+  String get polarAnalysisNoZones;
+
   /// No description provided for @adminTrackerDevicesAddPolarTitle.
   ///
   /// In fr, this message translates to:

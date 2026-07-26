@@ -52,6 +52,32 @@ class PolarSessionAnalysisService {
     );
   }
 
+  /// First Polar analysis for [playerId] on [eventId] (doc id = event_tracker).
+  Future<PolarSessionAnalysis?> getForEventPlayer({
+    required String eventId,
+    required String playerId,
+  }) async {
+    final pid = playerId.trim();
+    if (pid.isEmpty) return null;
+    final list = await listByEventId(eventId);
+    for (final analysis in list) {
+      if (analysis.playerId.trim() == pid) return analysis;
+    }
+    return null;
+  }
+
+  Future<String?> getDocIdByEventAndPlayerId({
+    required String eventId,
+    required String playerId,
+  }) async {
+    final analysis = await getForEventPlayer(
+      eventId: eventId,
+      playerId: playerId,
+    );
+    if (analysis == null) return null;
+    return analysis.docId;
+  }
+
   Future<List<PolarSessionAnalysis>> listByEventId(String eventId) async {
     final snap = await _collection
         .where('eventId', isEqualTo: eventId.trim())

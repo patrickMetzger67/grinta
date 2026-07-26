@@ -141,7 +141,22 @@ z4 160–179 · z5 ≥180. Optional % of HRmax (60/70/80/90).
 - Writing org/teams into Polar
 - Cardio charts beside GPS analysis UI (next)
 
+## Analysis UI (cardio replaces GPS)
+
+When the event owner is Polar (`typeTracker == polar`), analysis entry points
+use cardio UI instead of GPS:
+
+| Host | Polar | GPS |
+|------|-------|-----|
+| `SessionTrackerStatsView` | `MatchPolarStatsTable` | `MatchTrackerStatsTable` |
+| `SessionPlayerAnalysisView` | `PolarPlayerAnalysisWidget` | `TrackerPlayerAnalysisWidget` |
+
+Wired from match stats tab, agenda tracker sheets, and metrics panel.
+
+Polar player view: synthesis (duration, avg/max/min HR, samples, Loop extras)
++ HR zones (z1–z5). No heatmap / pitch GPS tabs.
+
 ## Next phase
 
-1. Cardio views beside existing GPS analysis (do not reuse heatmap UI).
+1. Agenda activity rings for Polar (today rings still depend on GPS `TRACKER_TeamAnalysis`).
 2. Optional: Chrome HR stream snapshot if product needs a web-native path.

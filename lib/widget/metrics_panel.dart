@@ -2,7 +2,8 @@ import 'dart:math' as math;
 
 import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
-import 'package:grinta/widget/tracker_player_analysis_widget.dart';
+import 'package:grinta/widget/session_player_analysis_view.dart';
+import 'package:grinta/widget/session_tracker_stats_view.dart';
 import 'package:provider/provider.dart';
 
 import '../model/activityMetrics.dart';
@@ -11,12 +12,13 @@ import '../model/season.dart';
 import '../model/tracker/trackerData.dart';
 import '../provider/appSession.dart';
 import '../services/playerService.dart';
+import '../services/polar_session_analysis_service.dart';
 import '../services/trackerDataAnalysisService.dart';
 import '../core/extensions/l10n_extension.dart';
 import '../util/app_theme.dart';
 import '../util/playerDisplayName.dart';
+import '../util/session_tracker_kit.dart';
 import '../util/staff_session_access.dart';
-import 'match_tracker_stats_table.dart';
 
 class MetricsPanel extends StatefulWidget {
   const MetricsPanel({
@@ -668,7 +670,22 @@ class TrainingMetricRow extends StatelessWidget {
             Player? player;
 
             if(isManager == false) {
-              docId = await TrackerAnalysisService.getAnalysisDocIdByEventAndPlayerId(item.eventId, currentPlayerId!);
+              final isPolar = await eventUsesPolarTeamKit(
+                eventId: item.eventId,
+              );
+              if (isPolar) {
+                docId = await PolarSessionAnalysisService()
+                    .getDocIdByEventAndPlayerId(
+                  eventId: item.eventId,
+                  playerId: currentPlayerId!,
+                );
+              } else {
+                docId = await TrackerAnalysisService
+                    .getAnalysisDocIdByEventAndPlayerId(
+                  item.eventId,
+                  currentPlayerId!,
+                );
+              }
               player = await PlayerService().getPlayerById(currentPlayerId);
             }
 
@@ -774,7 +791,7 @@ class TrainingMetricRow extends StatelessWidget {
                               width: double.infinity,
                               child: Padding(
                                 padding: const EdgeInsets.all(12),
-                                child: MatchTrackerStatsTable(
+                                child: SessionTrackerStatsView(
                                   eventId: item.eventId,
                                   teamId: teamId,
                                   realtime: true,
@@ -786,8 +803,10 @@ class TrainingMetricRow extends StatelessWidget {
                         ],
                         if(isManager == false) ... [
                           Expanded(
-                            child: TrackerPlayerAnalysisWidget(
+                            child: SessionPlayerAnalysisView(
+                              eventId: item.eventId,
                               analysisDocId: docId,
+                              playerId: currentPlayerId,
                               teamId: '',
                               playerName: playerDisplayName(
                                 player!,
