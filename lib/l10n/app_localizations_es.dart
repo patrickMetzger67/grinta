@@ -5636,7 +5636,12 @@ class AppLocalizationsEs extends AppLocalizations {
   String get adminTrackerDevicesAssignTitle => 'Asignar un dispositivo';
 
   @override
-  String get adminTrackerDevicesCustomName => 'Nombre (opcional)';
+  String get adminTrackerDevicesCustomName =>
+      'Nombre personalizado (opcional)';
+
+  @override
+  String get adminTrackerDevicesCustomNameHint =>
+      'Número de camiseta o etiqueta, ej. 7';
 
   @override
   String get adminTrackerDevicesCancel => 'Cancelar';

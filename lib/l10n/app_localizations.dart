@@ -9747,8 +9747,14 @@ abstract class AppLocalizations {
   /// No description provided for @adminTrackerDevicesCustomName.
   ///
   /// In fr, this message translates to:
-  /// **'Nom (optionnel)'**
+  /// **'Nom personnalisé (optionnel)'**
   String get adminTrackerDevicesCustomName;
+
+  /// No description provided for @adminTrackerDevicesCustomNameHint.
+  ///
+  /// In fr, this message translates to:
+  /// **'N° de maillot ou libellé, ex. 7'**
+  String get adminTrackerDevicesCustomNameHint;
 
   /// No description provided for @adminTrackerDevicesCancel.
   ///
