@@ -688,12 +688,207 @@ class _AdminTrackerDevicesScreenState extends State<AdminTrackerDevicesScreen> {
   Widget _buildFloatingButtons(BuildContext context) {
     final l10n = context.l10n;
 
-    return FloatingActionButton.extended(
-      heroTag: 'sync_inspirit',
-      onPressed: _isSyncingInspirit ? null : () => _onSyncInspirit(context),
-      icon: const Icon(Icons.sync),
-      label: Text(l10n.adminTrackerDevicesSyncInspirit),
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.end,
+      children: [
+        FloatingActionButton.extended(
+          heroTag: 'add_polar',
+          onPressed: () => _showAddPolarDialog(context),
+          icon: const Icon(Icons.bluetooth_searching),
+          label: Text(l10n.adminTrackerDevicesAddPolar),
+        ),
+        const SizedBox(height: 12),
+        FloatingActionButton.extended(
+          heroTag: 'sync_inspirit',
+          onPressed: _isSyncingInspirit ? null : () => _onSyncInspirit(context),
+          icon: const Icon(Icons.sync),
+          label: Text(l10n.adminTrackerDevicesSyncInspirit),
+        ),
+      ],
     );
+  }
+
+  Future<void> _showAddPolarDialog(BuildContext context) async {
+    final l10n = context.l10n;
+    final colors = context.appColors;
+    final textTheme = Theme.of(context).textTheme;
+
+    final idCtrl = TextEditingController();
+    final nameCtrl = TextEditingController();
+    var deviceType = 'H10';
+    var saving = false;
+
+    await showDialog<void>(
+      context: context,
+      barrierDismissible: false,
+      builder: (ctx) {
+        return StatefulBuilder(
+          builder: (context, setStateDialog) {
+            return AlertDialog(
+              backgroundColor: colors.card,
+              title: Text(
+                l10n.adminTrackerDevicesAddPolarTitle,
+                style: textTheme.titleLarge?.copyWith(
+                  color: colors.textPrimary,
+                ),
+              ),
+              content: SizedBox(
+                width: double.maxFinite,
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    TextField(
+                      controller: idCtrl,
+                      enabled: !saving,
+                      style: textTheme.bodyMedium?.copyWith(
+                        color: colors.textPrimary,
+                      ),
+                      decoration: InputDecoration(
+                        labelText: l10n.adminTrackerDevicesAddPolarDeviceId,
+                        hintText: l10n.adminTrackerDevicesAddPolarDeviceIdHint,
+                        labelStyle: textTheme.bodySmall?.copyWith(
+                          color: colors.textSecondary,
+                        ),
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    DropdownButtonFormField<String>(
+                      value: deviceType,
+                      dropdownColor: colors.card,
+                      isExpanded: true,
+                      decoration: InputDecoration(
+                        labelText: l10n.adminTrackerDevicesAddPolarDeviceType,
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                      ),
+                      items: <MapEntry<String, String>>[
+                        MapEntry('H10', l10n.adminTrackerDevicesPolarTypeH10),
+                        MapEntry('H9', l10n.adminTrackerDevicesPolarTypeH9),
+                        MapEntry(
+                          'Verity Sense',
+                          l10n.adminTrackerDevicesPolarTypeVeritySense,
+                        ),
+                        MapEntry('OH1', l10n.adminTrackerDevicesPolarTypeOh1),
+                        MapEntry(
+                          'other',
+                          l10n.adminTrackerDevicesPolarTypeOther,
+                        ),
+                      ]
+                          .map(
+                            (e) => DropdownMenuItem<String>(
+                              value: e.key,
+                              child: Text(
+                                e.value,
+                                style: textTheme.bodyMedium?.copyWith(
+                                  color: colors.textPrimary,
+                                ),
+                              ),
+                            ),
+                          )
+                          .toList(),
+                      onChanged: saving
+                          ? null
+                          : (value) => setStateDialog(
+                                () => deviceType = value ?? 'H10',
+                              ),
+                    ),
+                    const SizedBox(height: 12),
+                    TextField(
+                      controller: nameCtrl,
+                      enabled: !saving,
+                      style: textTheme.bodyMedium?.copyWith(
+                        color: colors.textPrimary,
+                      ),
+                      decoration: InputDecoration(
+                        labelText: l10n.adminTrackerDevicesAddPolarDeviceName,
+                        labelStyle: textTheme.bodySmall?.copyWith(
+                          color: colors.textSecondary,
+                        ),
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              actions: [
+                TextButton(
+                  onPressed: saving ? null : () => Navigator.pop(ctx),
+                  child: Text(l10n.adminTrackerDevicesCancel),
+                ),
+                TextButton(
+                  onPressed: saving
+                      ? null
+                      : () async {
+                          final polarId = idCtrl.text.trim();
+                          if (polarId.isEmpty) {
+                            AppSnackbar.show(
+                              context,
+                              l10n.adminTrackerDevicesAddPolarDeviceIdRequired,
+                            );
+                            return;
+                          }
+
+                          setStateDialog(() => saving = true);
+                          try {
+                            await TrackerDeviceAdminService.instance
+                                .createPolarDevice(
+                              polarDeviceId: polarId,
+                              deviceType: deviceType,
+                              deviceName: nameCtrl.text.trim().isEmpty
+                                  ? null
+                                  : nameCtrl.text.trim(),
+                              customName: nameCtrl.text.trim().isEmpty
+                                  ? null
+                                  : nameCtrl.text.trim(),
+                            );
+
+                            if (context.mounted) {
+                              Navigator.pop(ctx);
+                              AppSnackbar.show(
+                                context,
+                                l10n.adminTrackerDevicesAddPolarSuccess,
+                                isError: false,
+                              );
+                            }
+                          } on StateError catch (e) {
+                            if (e.message == 'permission-denied' &&
+                                context.mounted) {
+                              AppSnackbar.show(
+                                context,
+                                l10n.adminTrackerDevicesPermissionDenied,
+                              );
+                            }
+                          } catch (e) {
+                            if (context.mounted) {
+                              AppSnackbar.show(
+                                context,
+                                l10n.adminTrackerDevicesError(e.toString()),
+                              );
+                            }
+                          } finally {
+                            if (context.mounted) {
+                              setStateDialog(() => saving = false);
+                            }
+                          }
+                        },
+                  child: Text(l10n.adminTrackerDevicesValidate),
+                ),
+              ],
+            );
+          },
+        );
+      },
+    );
+
+    idCtrl.dispose();
+    nameCtrl.dispose();
   }
 
   Future<void> _onSyncInspirit(BuildContext context) async {

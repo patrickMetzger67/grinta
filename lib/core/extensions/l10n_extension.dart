@@ -14,6 +14,8 @@ extension TrackerOwnerTypeL10n on AppLocalizations {
         return adminTrackerOwnerTypeFootbar;
       case 'intense':
         return adminTrackerOwnerTypeIntense;
+      case 'polar':
+        return adminTrackerOwnerTypePolar;
       default:
         return type;
     }

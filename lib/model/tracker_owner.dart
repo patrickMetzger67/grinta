@@ -45,7 +45,7 @@ class TrackerOwner {
 
   final String id;
   final String name;
-  final String typeTracker; // "inspirit", "footbar", "intense", ...
+  final String typeTracker; // "inspirit", "footbar", "intense", "polar", ...
   final bool isActive;
   final bool withSyncing;
   final bool isIndividual;
@@ -63,13 +63,26 @@ class TrackerOwner {
     'inspirit',
     'footbar',
     'intense',
+    'polar',
   ];
 
   static const String typeIntense = 'intense';
+  static const String typePolar = 'polar';
+  static const String typeInspirit = 'inspirit';
+  static const String typeFootbar = 'footbar';
 
-  /// Intense trackers stream via SIM (no USB sync); all other types sync via USB.
+  /// Provider value stored on `TRACKER_Device.provider` for Polar kit sensors.
+  static const String providerPolar = 'polar';
+
+  /// Intense trackers stream via SIM (no USB sync).
+  /// Polar team kits use BLE live capture (`withSyncing: true`).
+  /// Inspirit / Footbar sync via USB (or provider-specific sync).
   static bool withSyncingForType(String typeTracker) =>
       typeTracker.trim().toLowerCase() != typeIntense;
+
+  /// Whether [typeTracker] is a Polar team BLE kit (not AccessLink wearable).
+  static bool isPolarType(String? typeTracker) =>
+      (typeTracker ?? '').trim().toLowerCase() == typePolar;
 
   TrackerOwner copyWith({
     String? id,

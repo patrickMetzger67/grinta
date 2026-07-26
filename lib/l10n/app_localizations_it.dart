@@ -5449,6 +5449,9 @@ class AppLocalizationsIt extends AppLocalizations {
   String get adminTrackerOwnerTypeIntense => 'Intense (SIM, streaming cloud)';
 
   @override
+  String get adminTrackerOwnerTypePolar => 'Polar (kit squadra BLE)';
+
+  @override
   String get adminTrackerOwnerFieldRequired => 'Campo obbligatorio';
 
   @override
@@ -5645,6 +5648,49 @@ class AppLocalizationsIt extends AppLocalizations {
 
   @override
   String get adminTrackerDevicesSyncFootbar => 'Sync Footbar';
+
+  @override
+  String get adminTrackerDevicesAddPolar => 'Aggiungi Polar';
+
+  @override
+  String get adminTrackerDevicesAddPolarTitle => 'Aggiungi un sensore Polar';
+
+  @override
+  String get adminTrackerDevicesAddPolarDeviceId => 'ID dispositivo Polar';
+
+  @override
+  String get adminTrackerDevicesAddPolarDeviceIdHint =>
+      'ID stampato sul sensore (BLE)';
+
+  @override
+  String get adminTrackerDevicesAddPolarDeviceType => 'Tipo di sensore';
+
+  @override
+  String get adminTrackerDevicesAddPolarDeviceName =>
+      'Nome visualizzato (opzionale)';
+
+  @override
+  String get adminTrackerDevicesAddPolarSuccess =>
+      'Sensore Polar aggiunto all’inventario.';
+
+  @override
+  String get adminTrackerDevicesAddPolarDeviceIdRequired =>
+      'L’ID dispositivo Polar è obbligatorio.';
+
+  @override
+  String get adminTrackerDevicesPolarTypeH10 => 'H10';
+
+  @override
+  String get adminTrackerDevicesPolarTypeH9 => 'H9';
+
+  @override
+  String get adminTrackerDevicesPolarTypeVeritySense => 'Verity Sense';
+
+  @override
+  String get adminTrackerDevicesPolarTypeOh1 => 'OH1';
+
+  @override
+  String get adminTrackerDevicesPolarTypeOther => 'Altro';
 
   @override
   String get adminTrackerDevicesSyncInProgress => 'Sincronizzazione...';

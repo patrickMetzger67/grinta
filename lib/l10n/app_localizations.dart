@@ -9444,6 +9444,12 @@ abstract class AppLocalizations {
   /// **'Intense (SIM, flux cloud)'**
   String get adminTrackerOwnerTypeIntense;
 
+  /// No description provided for @adminTrackerOwnerTypePolar.
+  ///
+  /// In fr, this message translates to:
+  /// **'Polar (kit équipe BLE)'**
+  String get adminTrackerOwnerTypePolar;
+
   /// No description provided for @adminTrackerOwnerFieldRequired.
   ///
   /// In fr, this message translates to:
@@ -9791,6 +9797,84 @@ abstract class AppLocalizations {
   /// In fr, this message translates to:
   /// **'Sync Footbar'**
   String get adminTrackerDevicesSyncFootbar;
+
+  /// No description provided for @adminTrackerDevicesAddPolar.
+  ///
+  /// In fr, this message translates to:
+  /// **'Ajouter Polar'**
+  String get adminTrackerDevicesAddPolar;
+
+  /// No description provided for @adminTrackerDevicesAddPolarTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Ajouter un capteur Polar'**
+  String get adminTrackerDevicesAddPolarTitle;
+
+  /// No description provided for @adminTrackerDevicesAddPolarDeviceId.
+  ///
+  /// In fr, this message translates to:
+  /// **'ID appareil Polar'**
+  String get adminTrackerDevicesAddPolarDeviceId;
+
+  /// No description provided for @adminTrackerDevicesAddPolarDeviceIdHint.
+  ///
+  /// In fr, this message translates to:
+  /// **'ID imprimé sur le capteur (BLE)'**
+  String get adminTrackerDevicesAddPolarDeviceIdHint;
+
+  /// No description provided for @adminTrackerDevicesAddPolarDeviceType.
+  ///
+  /// In fr, this message translates to:
+  /// **'Type de capteur'**
+  String get adminTrackerDevicesAddPolarDeviceType;
+
+  /// No description provided for @adminTrackerDevicesAddPolarDeviceName.
+  ///
+  /// In fr, this message translates to:
+  /// **'Nom affiché (optionnel)'**
+  String get adminTrackerDevicesAddPolarDeviceName;
+
+  /// No description provided for @adminTrackerDevicesAddPolarSuccess.
+  ///
+  /// In fr, this message translates to:
+  /// **'Capteur Polar ajouté à l’inventaire.'**
+  String get adminTrackerDevicesAddPolarSuccess;
+
+  /// No description provided for @adminTrackerDevicesAddPolarDeviceIdRequired.
+  ///
+  /// In fr, this message translates to:
+  /// **'L’ID appareil Polar est obligatoire.'**
+  String get adminTrackerDevicesAddPolarDeviceIdRequired;
+
+  /// No description provided for @adminTrackerDevicesPolarTypeH10.
+  ///
+  /// In fr, this message translates to:
+  /// **'H10'**
+  String get adminTrackerDevicesPolarTypeH10;
+
+  /// No description provided for @adminTrackerDevicesPolarTypeH9.
+  ///
+  /// In fr, this message translates to:
+  /// **'H9'**
+  String get adminTrackerDevicesPolarTypeH9;
+
+  /// No description provided for @adminTrackerDevicesPolarTypeVeritySense.
+  ///
+  /// In fr, this message translates to:
+  /// **'Verity Sense'**
+  String get adminTrackerDevicesPolarTypeVeritySense;
+
+  /// No description provided for @adminTrackerDevicesPolarTypeOh1.
+  ///
+  /// In fr, this message translates to:
+  /// **'OH1'**
+  String get adminTrackerDevicesPolarTypeOh1;
+
+  /// No description provided for @adminTrackerDevicesPolarTypeOther.
+  ///
+  /// In fr, this message translates to:
+  /// **'Autre'**
+  String get adminTrackerDevicesPolarTypeOther;
 
   /// No description provided for @adminTrackerDevicesSyncInProgress.
   ///
