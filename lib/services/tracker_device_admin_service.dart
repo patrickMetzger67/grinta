@@ -74,6 +74,7 @@ class TrackerDeviceAdminService {
   /// Doc id = `polarDeviceId` so session assignment and BLE connect share one key.
   Future<String> createPolarDevice({
     required String polarDeviceId,
+    String? ownerId,
     String? deviceType,
     String? deviceName,
     String? customName,
@@ -91,6 +92,7 @@ class TrackerDeviceAdminService {
     final name = (deviceName ?? '').trim();
     final label = (customName ?? '').trim();
     final serial = (serialNumber ?? '').trim();
+    final kitOwnerId = ownerId?.trim() ?? '';
 
     final data = <String, dynamic>{
       'id': id,
@@ -101,11 +103,14 @@ class TrackerDeviceAdminService {
       'serial_number': serial.isEmpty ? id : serial,
       'updatedAt': now,
     };
+    if (kitOwnerId.isNotEmpty) {
+      data['ownerId'] = kitOwnerId;
+    }
 
     try {
       final existing = await _devicesCol.doc(id).get();
       if (!existing.exists) {
-        data['ownerId'] = '';
+        data.putIfAbsent('ownerId', () => '');
         data['createdAt'] = now;
       }
       await _devicesCol.doc(id).set(data, SetOptions(merge: true));

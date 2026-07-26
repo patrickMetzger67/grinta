@@ -797,6 +797,7 @@ class _AdminTrackerDevicesScreenState extends State<AdminTrackerDevicesScreen> {
 
       final identity = pick.identity;
       await _registerPolarDeviceInInventory(
+        context: context,
         polarDeviceId: identity.deviceId,
         deviceType: identity.deviceType,
         deviceName: identity.displayName,
@@ -814,6 +815,10 @@ class _AdminTrackerDevicesScreenState extends State<AdminTrackerDevicesScreen> {
       );
     } on StateError catch (e) {
       if (!context.mounted) return;
+      if (e.message == 'owner-required') {
+        AppSnackbar.show(context, l10n.adminTrackerDevicesSelectOwnerRequired);
+        return;
+      }
       if (e.message == 'permission-denied') {
         AppSnackbar.show(context, l10n.adminTrackerDevicesPermissionDenied);
         return;
@@ -836,52 +841,144 @@ class _AdminTrackerDevicesScreenState extends State<AdminTrackerDevicesScreen> {
     }
   }
 
-  /// Creates the Polar device and makes it visible in the current list filters.
+  /// Creates the Polar device **and always assigns** it to a kit owner.
   ///
-  /// When an owner filter is active (common when opening devices from an owner),
-  /// the new sensor is auto-assigned to that owner — otherwise it stays hidden
-  /// because the list only shows `TRACKER_DeviceOwner` rows for the selected owner.
+  /// `TRACKER_Device.ownerId` must not stay empty — otherwise the admin list
+  /// (when filtered by owner) hides the sensor.
   Future<void> _registerPolarDeviceInInventory({
+    required BuildContext context,
     required String polarDeviceId,
     String? deviceType,
     String? deviceName,
     String? customName,
   }) async {
+    final ownerId = await _resolveOwnerIdForPolarAdd(context);
+    if (ownerId == null || ownerId.isEmpty) {
+      throw StateError('owner-required');
+    }
+
     final deviceId =
         await TrackerDeviceAdminService.instance.createPolarDevice(
       polarDeviceId: polarDeviceId,
+      ownerId: ownerId,
       deviceType: deviceType,
       deviceName: deviceName,
       customName: customName,
     );
 
-    final ownerId = (_selectedOwnerId ?? widget.ownerId)?.trim();
-    if (ownerId != null && ownerId.isNotEmpty) {
-      await TrackerDeviceAdminService.instance.assignDeviceToOwner(
-        deviceId: deviceId,
-        ownerId: ownerId,
-        customName: customName,
-      );
-      await _loadDeviceOwnersForOwner(ownerId);
-      await _loadAllDeviceOwners();
-      if (mounted) {
-        setState(() {
-          _showUnassignedDevices = false;
-          _selectedOwnerId = ownerId;
-        });
-      }
-      return;
-    }
-
-    // No owner filter: show unassigned list so the new sensor is obvious.
+    await TrackerDeviceAdminService.instance.assignDeviceToOwner(
+      deviceId: deviceId,
+      ownerId: ownerId,
+      customName: customName,
+    );
+    await _loadDeviceOwnersForOwner(ownerId);
     await _loadAllDeviceOwners();
     if (mounted) {
       setState(() {
-        _showUnassignedDevices = true;
-        _selectedOwnerId = null;
-        _deviceOwnerMap.clear();
+        _showUnassignedDevices = false;
+        _selectedOwnerId = ownerId;
       });
     }
+  }
+
+  /// Selected filter / route param, or a picker dialog (Polar owners first).
+  Future<String?> _resolveOwnerIdForPolarAdd(BuildContext context) async {
+    final current = (_selectedOwnerId ?? widget.ownerId)?.trim();
+    if (current != null && current.isNotEmpty) return current;
+    if (!context.mounted) return null;
+    return _pickOwnerForPolarAdd(context);
+  }
+
+  Future<String?> _pickOwnerForPolarAdd(BuildContext context) async {
+    final l10n = context.l10n;
+    final colors = context.appColors;
+    final textTheme = Theme.of(context).textTheme;
+
+    if (_ownerMap.isEmpty) {
+      AppSnackbar.show(context, l10n.adminTrackerDevicesSelectOwnerRequired);
+      return null;
+    }
+
+    final polarOwners = _ownerMap.entries
+        .where((e) => TrackerOwner.isPolarType(e.value.typeTracker))
+        .toList();
+    final otherOwners = _ownerMap.entries
+        .where((e) => !TrackerOwner.isPolarType(e.value.typeTracker))
+        .toList();
+    final entries = <MapEntry<String, TrackerOwner>>[
+      ...polarOwners,
+      ...otherOwners,
+    ];
+
+    String? dialogOwnerId =
+        polarOwners.isNotEmpty ? polarOwners.first.key : entries.first.key;
+
+    final confirmed = await showDialog<bool>(
+      context: context,
+      barrierDismissible: false,
+      builder: (ctx) {
+        return StatefulBuilder(
+          builder: (context, setStateDialog) {
+            return AlertDialog(
+              backgroundColor: colors.card,
+              title: Text(
+                l10n.adminTrackerDevicesAssignTitle,
+                style: textTheme.titleLarge?.copyWith(
+                  color: colors.textPrimary,
+                ),
+              ),
+              content: DropdownButtonFormField<String>(
+                value: dialogOwnerId,
+                dropdownColor: colors.card,
+                isExpanded: true,
+                decoration: InputDecoration(
+                  labelText: l10n.adminTrackerDevicesSelectOwner,
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                ),
+                items: entries
+                    .map(
+                      (e) => DropdownMenuItem<String>(
+                        value: e.key,
+                        child: Text(
+                          '${e.value.name} (${l10n.adminTrackerOwnerTypeLabel(e.value.typeTracker)})',
+                          style: textTheme.bodyMedium?.copyWith(
+                            color: colors.textPrimary,
+                          ),
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                    )
+                    .toList(),
+                onChanged: (value) =>
+                    setStateDialog(() => dialogOwnerId = value),
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.pop(ctx, false),
+                  child: Text(l10n.adminTrackerDevicesCancel),
+                ),
+                TextButton(
+                  onPressed: () => Navigator.pop(ctx, true),
+                  child: Text(l10n.adminTrackerDevicesValidate),
+                ),
+              ],
+            );
+          },
+        );
+      },
+    );
+
+    if (confirmed != true) return null;
+    final picked = dialogOwnerId?.trim();
+    if (picked == null || picked.isEmpty) {
+      if (context.mounted) {
+        AppSnackbar.show(context, l10n.adminTrackerDevicesSelectOwnerRequired);
+      }
+      return null;
+    }
+    return picked;
   }
 
   Future<void> _showAddPolarDialog(BuildContext context) async {
@@ -1014,6 +1111,7 @@ class _AdminTrackerDevicesScreenState extends State<AdminTrackerDevicesScreen> {
                           try {
                             final name = nameCtrl.text.trim();
                             await _registerPolarDeviceInInventory(
+                              context: context,
                               polarDeviceId: polarId,
                               deviceType: deviceType,
                               deviceName: name.isEmpty ? null : name,
@@ -1029,8 +1127,13 @@ class _AdminTrackerDevicesScreenState extends State<AdminTrackerDevicesScreen> {
                               );
                             }
                           } on StateError catch (e) {
-                            if (e.message == 'permission-denied' &&
-                                context.mounted) {
+                            if (!context.mounted) return;
+                            if (e.message == 'owner-required') {
+                              AppSnackbar.show(
+                                context,
+                                l10n.adminTrackerDevicesSelectOwnerRequired,
+                              );
+                            } else if (e.message == 'permission-denied') {
                               AppSnackbar.show(
                                 context,
                                 l10n.adminTrackerDevicesPermissionDenied,
