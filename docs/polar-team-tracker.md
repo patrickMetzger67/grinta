@@ -129,7 +129,7 @@ Also available:
 
 | Channel | Behaviour |
 |---------|-----------|
-| **iOS / Android** | Connect → wait `fileTransfer` → `listExercises` → pick nearest to event time → `fetchExercise` → HR stats → `TRACKER_PolarAnalysis` |
+| **iOS / Android** | Connect (listen before connect) → wait connected / `fileTransfer` (or settle if iOS Verity omits it) → `listExercises` → pick nearest to event time → `fetchExercise` → HR stats → `TRACKER_PolarAnalysis`. Verity Sense must be in **sensor mode** (blue LED); quit Polar Flow first. |
 | **Web / Chrome** | Manual cardio entry (duration + HR; Loop extras optional). Full offline pull needs Polar SDK (mobile). |
 | **Fallback** | Manual entry on all platforms |
 
