@@ -1674,7 +1674,7 @@
   "trainingDeleteError": "Could not delete the training. Please try again.",
   "finishTrainingTitle": "Finish training",
   "trainingFinishConfirmTitle": "Finish training?",
-  "trainingFinishConfirmMessage": "Unavailable players marked as present will be set to absent. Do you want to finish this training?",
+  "trainingFinishConfirmMessage": "Do you want to finish this training?",
   "trainingFinished": "Training finished",
   "trainingFinishError": "Could not finish the training. Please try again.",
   "trainingIntenseFinishTitle": "Recovering sensor data",

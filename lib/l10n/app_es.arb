@@ -1443,7 +1443,7 @@
   "trainingDeleteError": "No se pudo eliminar el entrenamiento. Inténtalo de nuevo.",
   "finishTrainingTitle": "Finalizar entrenamiento",
   "trainingFinishConfirmTitle": "¿Finalizar entrenamiento?",
-  "trainingFinishConfirmMessage": "Los jugadores no disponibles marcados como presentes pasarán a ausentes. ¿Desea finalizar este entrenamiento?",
+  "trainingFinishConfirmMessage": "¿Desea finalizar este entrenamiento?",
   "trainingFinished": "Entrenamiento finalizado",
   "trainingFinishError": "No se pudo finalizar el entrenamiento. Inténtalo de nuevo.",
   "trainingIntenseFinishTitle": "Recuperación de datos del sensor",

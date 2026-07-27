@@ -1296,7 +1296,8 @@ class AppLocalizationsEn extends AppLocalizations {
   String get hintSearchMember => 'Search by name or email';
 
   @override
-  String get memberSearchPrompt => 'Type a first name, last name, or email address to search';
+  String get memberSearchPrompt =>
+      'Type a first name, last name, or email address to search';
 
   @override
   String get memberAlreadyOnTeamRoster =>
@@ -2592,6 +2593,49 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get agendaAddEventNonSport => 'A non-sporting event / activity';
+
+  @override
+  String get agendaAllDayLabel => 'All day';
+
+  @override
+  String get agendaCoachPlayersFabTooltip => 'Players — personal activities';
+
+  @override
+  String get agendaCoachPlayersTitle => 'Players’ sports activities';
+
+  @override
+  String get agendaCoachPlayersSubtitle =>
+      'Show personal sport activities with coach visibility in the agenda.';
+
+  @override
+  String get agendaCoachPlayersTeam => 'Team';
+
+  @override
+  String get agendaCoachPlayersPlayers => 'Players';
+
+  @override
+  String get agendaCoachPlayersNoTeams => 'No managed team for this season.';
+
+  @override
+  String get agendaCoachPlayersLoadError => 'Could not load players.';
+
+  @override
+  String get agendaCoachPlayersEmptyRoster => 'No players in this team.';
+
+  @override
+  String get agendaCoachPlayersClear => 'Clear selection';
+
+  @override
+  String agendaEventSummaryNonSport(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count activities',
+      one: '1 activity',
+    );
+    return '$_temp0';
+  }
+
   @override
   String get createPersonalSportTitle => 'New sports activity';
 
@@ -2605,10 +2649,12 @@ class AppLocalizationsEn extends AppLocalizations {
   String get createPersonalSportManualEntry => 'Manual entry';
 
   @override
-  String get createPersonalSportManualEntryHint => 'Enter duration, distance and pace manually';
+  String get createPersonalSportManualEntryHint =>
+      'Enter duration, distance and pace manually';
 
   @override
-  String get createPersonalSportImportHint => 'Import an activity from a connected app';
+  String get createPersonalSportImportHint =>
+      'Import an activity from a connected app';
 
   @override
   String get createPersonalSportDuration => 'Time';
@@ -2638,13 +2684,16 @@ class AppLocalizationsEn extends AppLocalizations {
   String get createPersonalSportWhoopActivity => 'Whoop activity';
 
   @override
-  String get createPersonalSportWhoopDeployRequired => 'Whoop import is not deployed yet. Run firebase deploy for whoopListActivities and whoopImportActivity.';
+  String get createPersonalSportWhoopDeployRequired =>
+      'Whoop import is not deployed yet. Run firebase deploy for whoopListActivities and whoopImportActivity.';
 
   @override
-  String get createPersonalSportWhoopLoadError => 'Could not load Whoop activities. Check the connection and try again.';
+  String get createPersonalSportWhoopLoadError =>
+      'Could not load Whoop activities. Check the connection and try again.';
 
   @override
-  String get createPersonalSportWhoopNoImportable => 'No Whoop workouts to import.';
+  String get createPersonalSportWhoopNoImportable =>
+      'No Whoop workouts to import.';
 
   @override
   String get createPersonalSportAppleActivity => 'Apple Fitness activity';
@@ -2677,14 +2726,16 @@ class AppLocalizationsEn extends AppLocalizations {
       'No Google Health workouts to import. Record a session in Google Health / Fit, allow Grinta in Health Connect, then retry.';
 
   @override
-  String get createPersonalSportPolarDeployRequired => 'Polar import is not deployed yet. Run firebase deploy for polarListActivities and polarImportActivity.';
+  String get createPersonalSportPolarDeployRequired =>
+      'Polar import is not deployed yet. Run firebase deploy for polarListActivities and polarImportActivity.';
 
   @override
-  String get createPersonalSportPolarLoadError => 'Could not load Polar activities. Check the connection and try again.';
+  String get createPersonalSportPolarLoadError =>
+      'Could not load Polar activities. Check the connection and try again.';
 
   @override
-  String get createPersonalSportPolarNoImportable => 'No Polar Flow training session to import. In Polar Flow, confirm the session is a Training (not only continuous HR), synced after connecting Grinta, then retry.';
-
+  String get createPersonalSportPolarNoImportable =>
+      'No Polar Flow training session to import. In Polar Flow, confirm the session is a Training (not only continuous HR), synced after connecting Grinta, then retry.';
 
   @override
   String get createPersonalSportStravaActivity => 'Strava activity';
@@ -2697,7 +2748,8 @@ class AppLocalizationsEn extends AppLocalizations {
       'No connected app. Connect Strava, Polar, Whoop, Apple Fitness or Google Health in Devices / Apps.';
 
   @override
-  String get createPersonalSportImportRequired => 'Select an activity to import';
+  String get createPersonalSportImportRequired =>
+      'Select an activity to import';
 
   @override
   String get createPersonalSportNotes => 'Note';
@@ -2789,10 +2841,12 @@ class AppLocalizationsEn extends AppLocalizations {
   String get createPersonalSportSaved => 'Activity created';
 
   @override
-  String get createPersonalSportError => 'Could not create the activity. Please try again.';
+  String get createPersonalSportError =>
+      'Could not create the activity. Please try again.';
 
   @override
-  String get createPersonalSportAuthRequired => 'Sign in to create an activity.';
+  String get createPersonalSportAuthRequired =>
+      'Sign in to create an activity.';
 
   @override
   String get editPersonalSportTitle => 'Edit activity';
@@ -2804,7 +2858,8 @@ class AppLocalizationsEn extends AppLocalizations {
   String get editPersonalSportSaved => 'Activity updated';
 
   @override
-  String get editPersonalSportError => 'Could not update the activity. Please try again.';
+  String get editPersonalSportError =>
+      'Could not update the activity. Please try again.';
 
   @override
   String get viewPersonalSportTitle => 'Sports activity';
@@ -2814,14 +2869,15 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String deletePersonalSportConfirmMessage(String title) {
-    return '“{title}” will be permanently deleted.'.replaceAll('{title}', title);
+    return '“$title” will be permanently deleted.';
   }
 
   @override
   String get deletePersonalSportDeleted => 'Activity deleted';
 
   @override
-  String get deletePersonalSportError => 'Could not delete the activity. Please try again.';
+  String get deletePersonalSportError =>
+      'Could not delete the activity. Please try again.';
 
   @override
   String get personalSportMetricDistance => 'Distance';
@@ -2843,50 +2899,6 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get personalSportUnitBpm => 'bpm';
-
-
-  @override
-  String get agendaAllDayLabel => 'All day';
-
-  @override
-  String get agendaCoachPlayersFabTooltip => 'Players — personal activities';
-
-  @override
-  String get agendaCoachPlayersTitle => 'Players’ sports activities';
-
-  @override
-  String get agendaCoachPlayersSubtitle =>
-      'Show personal sport activities with coach visibility in the agenda.';
-
-  @override
-  String get agendaCoachPlayersTeam => 'Team';
-
-  @override
-  String get agendaCoachPlayersPlayers => 'Players';
-
-  @override
-  String get agendaCoachPlayersNoTeams => 'No managed team for this season.';
-
-  @override
-  String get agendaCoachPlayersLoadError => 'Could not load players.';
-
-  @override
-  String get agendaCoachPlayersEmptyRoster => 'No players in this team.';
-
-  @override
-  String get agendaCoachPlayersClear => 'Clear selection';
-
-
-  @override
-  String agendaEventSummaryNonSport(int count) {
-    String _temp0 = intl.Intl.pluralLogic(
-      count,
-      locale: localeName,
-      other: '$count activities',
-      one: '1 activity',
-    );
-    return '$_temp0';
-  }
 
   @override
   String get createNonSportEventTitle => 'New event / activity';
@@ -4226,8 +4238,7 @@ class AppLocalizationsEn extends AppLocalizations {
       'Google Health connected — workout sync available';
 
   @override
-  String get googleHealthConnectSuccess =>
-      'Google Health connected.';
+  String get googleHealthConnectSuccess => 'Google Health connected.';
 
   @override
   String get googleHealthConnectFailed =>
@@ -4246,8 +4257,7 @@ class AppLocalizationsEn extends AppLocalizations {
       'Google Health is available on Android only (on-device via Health Connect). On iPhone, use Apple Fitness.';
 
   @override
-  String get googleHealthDisconnectFailed =>
-      'Google Health disconnect failed.';
+  String get googleHealthDisconnectFailed => 'Google Health disconnect failed.';
 
   @override
   String get googleHealthCoachVisibilityTitle => 'Coach visibility';
@@ -4414,7 +4424,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get trainingFinishConfirmMessage =>
-      'Unavailable players marked as present will be set to absent. Do you want to finish this training?';
+      'Do you want to finish this training?';
 
   @override
   String get trainingFinished => 'Training finished';
@@ -5852,7 +5862,8 @@ class AppLocalizationsEn extends AppLocalizations {
   String get playerFeelingNotifTitle => 'Session recap';
 
   @override
-  String get playerFeelingNotifBody => 'Check your stats and tell us how you feel.';
+  String get playerFeelingNotifBody =>
+      'Check your stats and tell us how you feel.';
 
   @override
   String get playerFeelingRecapTitle => 'Your recap';
@@ -5873,7 +5884,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get playerFeelingSaveError => 'Unable to save your feeling.';
 
   @override
-  String get playerFeelingLoadError => 'Unable to load the recap.';
+  String get playerFeelingLoadError => 'Could not load the recap.';
 
   @override
   String get sessionHealthExportPromptTitle => 'Export session';
@@ -5887,10 +5898,12 @@ class AppLocalizationsEn extends AppLocalizations {
       'Would you like to see this data in Google Health?';
 
   @override
-  String get sessionHealthExportSuccessApple => 'Session added to Apple Fitness.';
+  String get sessionHealthExportSuccessApple =>
+      'Session added to Apple Fitness.';
 
   @override
-  String get sessionHealthExportSuccessGoogle => 'Session added to Google Health.';
+  String get sessionHealthExportSuccessGoogle =>
+      'Session added to Google Health.';
 
   @override
   String get sessionHealthExportFailed =>
@@ -5910,7 +5923,8 @@ class AppLocalizationsEn extends AppLocalizations {
   String get forgotPasswordTitle => 'Forgotten password';
 
   @override
-  String get forgotPasswordMessage => 'Enter the email address for your account. We will send you a link to reset your password.';
+  String get forgotPasswordMessage =>
+      'Enter the email address for your account. We will send you a link to reset your password.';
 
   @override
   String get forgotPasswordSendAction => 'Send link';
@@ -5933,13 +5947,16 @@ class AppLocalizationsEn extends AppLocalizations {
   String get pendingInvitationAcceptTitle => 'Invitation code';
 
   @override
-  String get pendingInvitationAcceptMessage => 'Enter the code from the email to link this invitation to your account.';
+  String get pendingInvitationAcceptMessage =>
+      'Enter the code from the email to link this invitation to your account.';
 
   @override
-  String get pendingInvitationAcceptSuccess => 'Invitation accepted. The team is now available in your profile.';
+  String get pendingInvitationAcceptSuccess =>
+      'Invitation accepted. The team is now available in your profile.';
 
   @override
-  String get pendingInvitationAcceptNeedAuth => 'Sign in to accept this invitation.';
+  String get pendingInvitationAcceptNeedAuth =>
+      'Sign in to accept this invitation.';
 
   @override
   String get playerSeasonSummaryTitle => 'Player sheet';
@@ -5954,10 +5971,12 @@ class AppLocalizationsEn extends AppLocalizations {
   String get playerSeasonSummaryTeamTrainings => 'Team trainings';
 
   @override
-  String get playerSeasonSummaryTrackerAverages => 'Performance indicators (average)';
+  String get playerSeasonSummaryTrackerAverages =>
+      'Performance indicators (average)';
 
   @override
-  String get playerSeasonSummaryNoTrackerData => 'No sensor data for this period';
+  String get playerSeasonSummaryNoTrackerData =>
+      'No sensor data for this period';
 
   @override
   String playerSeasonSummaryAgeValue(int age) {
