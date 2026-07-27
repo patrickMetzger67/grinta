@@ -4484,7 +4484,7 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get trainingFinishConfirmMessage =>
-      'Nicht verfügbare Spieler, die als anwesend markiert sind, werden als abwesend gesetzt. Möchten Sie dieses Training beenden?';
+      'Möchten Sie dieses Training beenden?';
 
   @override
   String get trainingFinished => 'Training beendet';

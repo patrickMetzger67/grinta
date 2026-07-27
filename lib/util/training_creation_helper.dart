@@ -3,16 +3,19 @@ import 'package:flutter/material.dart';
 import 'package:grinta/core/extensions/l10n_extension.dart';
 import 'package:grinta/navigation/app_navigator.dart';
 import 'package:grinta/provider/appSession.dart';
+import 'package:grinta/services/playerService.dart';
 import 'package:grinta/services/trainingService.dart';
 import 'package:grinta/util/app_snackbar.dart';
 import 'package:grinta/util/app_theme.dart';
 import 'package:grinta/util/team_deletion_access.dart';
 
 import '../model/grinta_player.dart';
+import '../model/player.dart';
 import '../model/season.dart';
 import '../model/team.dart';
 import '../model/tracker/deviceOwner.dart';
 import '../model/training.dart';
+import '../screen/team_players/training_team_players_presence.dart';
 import 'player_positions.dart';
 
 /// Formats a date as `dd/MM/yyyy` for [Training.dateTg].
@@ -320,15 +323,22 @@ void applyTrackerToPlayerTraining({
 /// When [withTracker] is true and [ownerDevicesByDocId] is provided, each player's
 /// assigned tracker from [GrintaPlayer.trackers] is copied to [PlayerTraining.deviceId]
 /// (DeviceOwner doc id), using the same resolution rules as the training players screen.
+///
+/// When [playersById] + [trainingDate] are provided, unavailable players default
+/// to [PresenceType.absent] (managers can still change presence later).
 List<PlayerTraining> playerTrainingFromGrintaPlayers(
   List<GrintaPlayer> players, {
   Set<String> managerIds = const <String>{},
   bool withTracker = false,
   Map<String, DeviceOwner>? ownerDevicesByDocId,
+  Map<String, Player>? playersById,
+  DateTime? trainingDate,
+  String? seasonId,
 }) {
   final rows = <PlayerTraining>[];
   final devicesAffected = <String>{};
   final ownerDevices = ownerDevicesByDocId ?? const <String, DeviceOwner>{};
+  final playersMap = playersById ?? const <String, Player>{};
 
   for (final GrintaPlayer player in players) {
     final String playerId = player.playerId.trim();
@@ -342,9 +352,18 @@ List<PlayerTraining> playerTrainingFromGrintaPlayers(
       continue;
     }
 
+    final fullPlayer = playersMap[playerId];
+    final presence = fullPlayer == null
+        ? PresenceType.present
+        : defaultPresenceForPlayer(
+            fullPlayer,
+            trainingDate,
+            seasonId: seasonId,
+          );
+
     final playerTraining = PlayerTraining(
       playerId: playerId,
-      presenceType: PresenceType.present,
+      presenceType: presence,
     );
 
     if (withTracker && ownerDevices.isNotEmpty) {
@@ -359,6 +378,32 @@ List<PlayerTraining> playerTrainingFromGrintaPlayers(
     rows.add(playerTraining);
   }
   return rows;
+}
+
+/// Clones [template] for [date], recomputing default presence from unavailability.
+List<PlayerTraining> clonePlayerTrainingForDate({
+  required List<PlayerTraining> template,
+  required DateTime date,
+  required Map<String, Player> playersById,
+  String? seasonId,
+}) {
+  return template.map((PlayerTraining p) {
+    final playerId = p.playerId?.trim() ?? '';
+    final fullPlayer = playersById[playerId];
+    final presence = fullPlayer == null
+        ? (p.presenceType ?? PresenceType.present)
+        : defaultPresenceForPlayer(
+            fullPlayer,
+            date,
+            seasonId: seasonId,
+          );
+    return PlayerTraining(
+      playerId: p.playerId,
+      presenceType: presence,
+    )
+      ..deviceId = p.deviceId
+      ..customName = p.customName;
+  }).toList(growable: false);
 }
 
 /// Normalizes [Team.managers] into a set of member ids.
@@ -455,6 +500,9 @@ Training buildTrainingForCreation({
 }
 
 /// Builds all [Training] instances for a single or recurrent creation request.
+///
+/// When [playersById] is provided, each occurrence gets its own playerTraining
+/// copy with presence defaulted from unavailability on that date.
 List<Training> buildTrainingsForCreation({
   required DateTime startDate,
   required TimeOfDay time,
@@ -468,7 +516,33 @@ List<Training> buildTrainingsForCreation({
   String? ownerId,
   DateTime? recurrentFrom,
   DateTime? recurrentTo,
+  Map<String, Player>? playersById,
 }) {
+  final seasonId = season.ref?.id;
+  final playersMap = playersById ?? const <String, Player>{};
+
+  List<PlayerTraining> rosterFor(DateTime date) {
+    if (playersMap.isEmpty) {
+      // Defensive copy so recurrent docs do not share one mutable list.
+      return playerTraining
+          .map(
+            (p) => PlayerTraining(
+              playerId: p.playerId,
+              presenceType: p.presenceType ?? PresenceType.present,
+            )
+              ..deviceId = p.deviceId
+              ..customName = p.customName,
+          )
+          .toList(growable: false);
+    }
+    return clonePlayerTrainingForDate(
+      template: playerTraining,
+      date: date,
+      playersById: playersMap,
+      seasonId: seasonId,
+    );
+  }
+
   if (!isRecurrent) {
     return <Training>[
       buildTrainingForCreation(
@@ -477,7 +551,7 @@ List<Training> buildTrainingsForCreation({
         durationMinutes: durationMinutes,
         team: team,
         season: season,
-        playerTraining: playerTraining,
+        playerTraining: rosterFor(startDate),
         isRecurrent: false,
         recurrentCode: '',
         recurrentWeekdays: const <int>[],
@@ -510,7 +584,7 @@ List<Training> buildTrainingsForCreation({
           durationMinutes: durationMinutes,
           team: team,
           season: season,
-          playerTraining: playerTraining,
+          playerTraining: rosterFor(date),
           isRecurrent: true,
           recurrentCode: recurrentCode,
           recurrentWeekdays: weekdayList,
@@ -702,6 +776,18 @@ Future<void> saveTrainingEdit({
   final List<PlayerTraining> templatePlayers =
       playerTrainingForNewOccurrences ?? existing.playerTraining;
 
+  final templatePlayerIds = templatePlayers
+      .map((p) => p.playerId?.trim() ?? '')
+      .where((id) => id.isNotEmpty)
+      .toList(growable: false);
+  final loadedPlayers = await Future.wait(
+    templatePlayerIds.map(PlayerService().getPlayerById),
+  );
+  final playersById = <String, Player>{
+    for (var i = 0; i < templatePlayerIds.length; i++)
+      if (loadedPlayers[i] != null) templatePlayerIds[i]: loadedPlayers[i]!,
+  };
+
   // Update / create only desired weekdays — never keep an edited date whose
   // weekday is outside the selected set.
   final List<Training> toCreate = <Training>[];
@@ -736,16 +822,12 @@ Future<void> saveTrainingEdit({
         durationMinutes: durationMinutes,
         team: team,
         season: season,
-        playerTraining: templatePlayers
-            .map((PlayerTraining p) {
-              return PlayerTraining(
-                playerId: p.playerId,
-                presenceType: PresenceType.present,
-              )
-                ..deviceId = p.deviceId
-                ..customName = p.customName;
-            })
-            .toList(),
+        playerTraining: clonePlayerTrainingForDate(
+          template: templatePlayers,
+          date: desired,
+          playersById: playersById,
+          seasonId: season.ref?.id,
+        ),
         isRecurrent: true,
         recurrentCode: recurrentCode,
         recurrentWeekdays: weekdayList,

@@ -1981,7 +1981,7 @@
   "trainingDeleteError": "Impossible de supprimer l'entraînement. Réessayez.",
   "finishTrainingTitle": "Terminer l'entraînement",
   "trainingFinishConfirmTitle": "Terminer l'entraînement ?",
-  "trainingFinishConfirmMessage": "Les joueurs indisponibles encore marqués présents seront passés absents. Voulez-vous terminer cet entraînement ?",
+  "trainingFinishConfirmMessage": "Voulez-vous terminer cet entraînement ?",
   "trainingFinished": "Entraînement terminé",
   "trainingFinishError": "Impossible de terminer l'entraînement. Réessayez.",
   "trainingIntenseFinishTitle": "Récupération des données capteurs",

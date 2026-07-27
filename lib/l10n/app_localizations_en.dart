@@ -4424,7 +4424,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get trainingFinishConfirmMessage =>
-      'Unavailable players marked as present will be set to absent. Do you want to finish this training?';
+      'Do you want to finish this training?';
 
   @override
   String get trainingFinished => 'Training finished';

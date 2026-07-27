@@ -1443,7 +1443,7 @@
   "trainingDeleteError": "Impossibile eliminare l'allenamento. Riprova.",
   "finishTrainingTitle": "Termina allenamento",
   "trainingFinishConfirmTitle": "Terminare l'allenamento?",
-  "trainingFinishConfirmMessage": "I giocatori non disponibili ancora segnati presenti saranno impostati come assenti. Vuoi terminare questo allenamento?",
+  "trainingFinishConfirmMessage": "Vuoi terminare questo allenamento?",
   "trainingFinished": "Allenamento terminato",
   "trainingFinishError": "Impossibile terminare l'allenamento. Riprova.",
   "trainingIntenseFinishTitle": "Recupero dati sensore",

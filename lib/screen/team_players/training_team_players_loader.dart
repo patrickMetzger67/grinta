@@ -120,7 +120,9 @@ class TrainingTeamPlayersLoader {
       }
 
       final answer = answersByPlayerId[playerId];
-      var playerTraining = answer?.playerTraining ??
+      // Default absent when unavailable only for brand-new rows. Never overwrite
+      // a presence already saved by the manager (including during unavailability).
+      final playerTraining = answer?.playerTraining ??
           playerTrainingById[playerId] ??
           PlayerTraining(
             playerId: playerId,
@@ -130,14 +132,6 @@ class TrainingTeamPlayersLoader {
               seasonId: seasonId,
             ),
           );
-
-      if (isPlayerUnavailableOnTrainingDate(
-        player,
-        trainingDate,
-        seasonId: seasonId,
-      )) {
-        playerTraining.presenceType = PresenceType.absent;
-      }
 
       rows.add(
         TrainingPlayerRowVm(
@@ -280,7 +274,6 @@ class TrainingTeamPlayersLoader {
     Training training, {
     String? seasonId,
   }) async {
-    final trainingDate = training.dateTime?.toDate();
     final rows = <TrainingPlayerRowVm>[];
 
     for (final pt in training.playerTraining) {
@@ -289,14 +282,6 @@ class TrainingTeamPlayersLoader {
 
       final player = await _playerService.getPlayerById(playerId);
       if (player == null) continue;
-
-      if (isPlayerUnavailableOnTrainingDate(
-        player,
-        trainingDate,
-        seasonId: seasonId,
-      )) {
-        pt.presenceType = PresenceType.absent;
-      }
 
       rows.add(
         TrainingPlayerRowVm(

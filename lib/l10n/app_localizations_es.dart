@@ -4475,7 +4475,7 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get trainingFinishConfirmMessage =>
-      'Los jugadores no disponibles marcados como presentes pasarán a ausentes. ¿Desea finalizar este entrenamiento?';
+      '¿Desea finalizar este entrenamiento?';
 
   @override
   String get trainingFinished => 'Entrenamiento finalizado';

@@ -1443,7 +1443,7 @@
   "trainingDeleteError": "Training konnte nicht gelöscht werden. Bitte erneut versuchen.",
   "finishTrainingTitle": "Training beenden",
   "trainingFinishConfirmTitle": "Training beenden?",
-  "trainingFinishConfirmMessage": "Nicht verfügbare Spieler, die als anwesend markiert sind, werden als abwesend gesetzt. Möchten Sie dieses Training beenden?",
+  "trainingFinishConfirmMessage": "Möchten Sie dieses Training beenden?",
   "trainingFinished": "Training beendet",
   "trainingFinishError": "Training konnte nicht beendet werden. Bitte erneut versuchen.",
   "trainingIntenseFinishTitle": "Sensordaten werden abgerufen",

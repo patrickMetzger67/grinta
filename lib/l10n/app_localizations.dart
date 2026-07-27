@@ -7737,7 +7737,7 @@ abstract class AppLocalizations {
   /// No description provided for @trainingFinishConfirmMessage.
   ///
   /// In fr, this message translates to:
-  /// **'Les joueurs indisponibles encore marqués présents seront passés absents. Voulez-vous terminer cet entraînement ?'**
+  /// **'Voulez-vous terminer cet entraînement ?'**
   String get trainingFinishConfirmMessage;
 
   /// No description provided for @trainingFinished.
