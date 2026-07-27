@@ -1308,7 +1308,8 @@ class AppLocalizationsEs extends AppLocalizations {
   String get hintSearchMember => 'Buscar por nombre o correo';
 
   @override
-  String get memberSearchPrompt => 'Escriba nombre, apellido o correo electrónico';
+  String get memberSearchPrompt =>
+      'Escriba nombre, apellido o correo electrónico';
 
   @override
   String get memberAlreadyOnTeamRoster =>
@@ -2633,6 +2634,49 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get agendaAddEventNonSport => 'Un evento / actividad no deportiva';
+
+  @override
+  String get agendaAllDayLabel => 'All day';
+
+  @override
+  String get agendaCoachPlayersFabTooltip => 'Players — personal activities';
+
+  @override
+  String get agendaCoachPlayersTitle => 'Players’ sports activities';
+
+  @override
+  String get agendaCoachPlayersSubtitle =>
+      'Show personal sport activities with coach visibility in the agenda.';
+
+  @override
+  String get agendaCoachPlayersTeam => 'Team';
+
+  @override
+  String get agendaCoachPlayersPlayers => 'Players';
+
+  @override
+  String get agendaCoachPlayersNoTeams => 'No managed team for this season.';
+
+  @override
+  String get agendaCoachPlayersLoadError => 'Could not load players.';
+
+  @override
+  String get agendaCoachPlayersEmptyRoster => 'No players in this team.';
+
+  @override
+  String get agendaCoachPlayersClear => 'Clear selection';
+
+  @override
+  String agendaEventSummaryNonSport(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count activities',
+      one: '1 activity',
+    );
+    return '$_temp0';
+  }
+
   @override
   String get createPersonalSportTitle => 'New sports activity';
 
@@ -2646,10 +2690,12 @@ class AppLocalizationsEs extends AppLocalizations {
   String get createPersonalSportManualEntry => 'Manual entry';
 
   @override
-  String get createPersonalSportManualEntryHint => 'Enter duration, distance and pace manually';
+  String get createPersonalSportManualEntryHint =>
+      'Enter duration, distance and pace manually';
 
   @override
-  String get createPersonalSportImportHint => 'Import an activity from a connected app';
+  String get createPersonalSportImportHint =>
+      'Import an activity from a connected app';
 
   @override
   String get createPersonalSportDuration => 'Time';
@@ -2679,13 +2725,16 @@ class AppLocalizationsEs extends AppLocalizations {
   String get createPersonalSportWhoopActivity => 'Whoop activity';
 
   @override
-  String get createPersonalSportWhoopDeployRequired => 'Whoop import is not deployed yet. Run firebase deploy for whoopListActivities and whoopImportActivity.';
+  String get createPersonalSportWhoopDeployRequired =>
+      'Whoop import is not deployed yet. Run firebase deploy for whoopListActivities and whoopImportActivity.';
 
   @override
-  String get createPersonalSportWhoopLoadError => 'Could not load Whoop activities. Check the connection and try again.';
+  String get createPersonalSportWhoopLoadError =>
+      'Could not load Whoop activities. Check the connection and try again.';
 
   @override
-  String get createPersonalSportWhoopNoImportable => 'No Whoop workouts to import.';
+  String get createPersonalSportWhoopNoImportable =>
+      'No Whoop workouts to import.';
 
   @override
   String get createPersonalSportAppleActivity => 'Apple Fitness activity';
@@ -2718,14 +2767,16 @@ class AppLocalizationsEs extends AppLocalizations {
       'No Google Health workouts to import. Record a session in Google Health / Fit, allow Grinta in Health Connect, then retry.';
 
   @override
-  String get createPersonalSportPolarDeployRequired => 'Polar import is not deployed yet. Run firebase deploy for polarListActivities and polarImportActivity.';
+  String get createPersonalSportPolarDeployRequired =>
+      'Polar import is not deployed yet. Run firebase deploy for polarListActivities and polarImportActivity.';
 
   @override
-  String get createPersonalSportPolarLoadError => 'Could not load Polar activities. Check the connection and try again.';
+  String get createPersonalSportPolarLoadError =>
+      'Could not load Polar activities. Check the connection and try again.';
 
   @override
-  String get createPersonalSportPolarNoImportable => 'No Polar Flow training session to import. In Polar Flow, confirm the session is a Training (not only continuous HR), synced after connecting Grinta, then retry.';
-
+  String get createPersonalSportPolarNoImportable =>
+      'No Polar Flow training session to import. In Polar Flow, confirm the session is a Training (not only continuous HR), synced after connecting Grinta, then retry.';
 
   @override
   String get createPersonalSportStravaActivity => 'Strava activity';
@@ -2738,7 +2789,8 @@ class AppLocalizationsEs extends AppLocalizations {
       'No connected app. Connect Strava, Polar, Whoop, Apple Fitness or Google Health in Devices / Apps.';
 
   @override
-  String get createPersonalSportImportRequired => 'Select an activity to import';
+  String get createPersonalSportImportRequired =>
+      'Select an activity to import';
 
   @override
   String get createPersonalSportNotes => 'Note';
@@ -2831,10 +2883,12 @@ class AppLocalizationsEs extends AppLocalizations {
   String get createPersonalSportSaved => 'Activity created';
 
   @override
-  String get createPersonalSportError => 'Could not create the activity. Please try again.';
+  String get createPersonalSportError =>
+      'Could not create the activity. Please try again.';
 
   @override
-  String get createPersonalSportAuthRequired => 'Sign in to create an activity.';
+  String get createPersonalSportAuthRequired =>
+      'Sign in to create an activity.';
 
   @override
   String get editPersonalSportTitle => 'Edit activity';
@@ -2846,7 +2900,8 @@ class AppLocalizationsEs extends AppLocalizations {
   String get editPersonalSportSaved => 'Activity updated';
 
   @override
-  String get editPersonalSportError => 'Could not update the activity. Please try again.';
+  String get editPersonalSportError =>
+      'Could not update the activity. Please try again.';
 
   @override
   String get viewPersonalSportTitle => 'Sports activity';
@@ -2856,14 +2911,15 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String deletePersonalSportConfirmMessage(String title) {
-    return '“{title}” will be permanently deleted.'.replaceAll('{title}', title);
+    return '“$title” will be permanently deleted.';
   }
 
   @override
   String get deletePersonalSportDeleted => 'Activity deleted';
 
   @override
-  String get deletePersonalSportError => 'Could not delete the activity. Please try again.';
+  String get deletePersonalSportError =>
+      'Could not delete the activity. Please try again.';
 
   @override
   String get personalSportMetricDistance => 'Distance';
@@ -2885,50 +2941,6 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get personalSportUnitBpm => 'bpm';
-
-
-  @override
-  String get agendaAllDayLabel => 'All day';
-
-  @override
-  String get agendaCoachPlayersFabTooltip => 'Players — personal activities';
-
-  @override
-  String get agendaCoachPlayersTitle => 'Players’ sports activities';
-
-  @override
-  String get agendaCoachPlayersSubtitle =>
-      'Show personal sport activities with coach visibility in the agenda.';
-
-  @override
-  String get agendaCoachPlayersTeam => 'Team';
-
-  @override
-  String get agendaCoachPlayersPlayers => 'Players';
-
-  @override
-  String get agendaCoachPlayersNoTeams => 'No managed team for this season.';
-
-  @override
-  String get agendaCoachPlayersLoadError => 'Could not load players.';
-
-  @override
-  String get agendaCoachPlayersEmptyRoster => 'No players in this team.';
-
-  @override
-  String get agendaCoachPlayersClear => 'Clear selection';
-
-
-  @override
-  String agendaEventSummaryNonSport(int count) {
-    String _temp0 = intl.Intl.pluralLogic(
-      count,
-      locale: localeName,
-      other: '$count activities',
-      one: '1 activity',
-    );
-    return '$_temp0';
-  }
 
   @override
   String get createNonSportEventTitle => 'New event / activity';
@@ -3794,10 +3806,10 @@ class AppLocalizationsEs extends AppLocalizations {
   }
 
   @override
-  String get teamEditNameTitle => 'Modifier le nom de l\'équipe';
+  String get teamEditNameTitle => 'Editar nombre del equipo';
 
   @override
-  String get teamEditNameSuccess => 'Nom de l\'équipe mis à jour.';
+  String get teamEditNameSuccess => 'Nombre del equipo actualizado.';
 
   @override
   String get calendarSyncToggleLabel => 'Sync. calendario';
@@ -3841,52 +3853,52 @@ class AppLocalizationsEs extends AppLocalizations {
       'Error de sincronización. Inténtalo de nuevo.';
 
   @override
-  String get settingsDevicesSection => 'Appareils/Applications';
+  String get settingsDevicesSection => 'Dispositivos/Aplicaciones';
 
   @override
-  String get settingsDevicesClose => 'Fermer';
+  String get settingsDevicesClose => 'Cerrar';
 
   @override
-  String get settingsDevicesSync => 'Synchroniser';
+  String get settingsDevicesSync => 'Sincronizar';
 
   @override
   String get settingsDevicesConnectedTitle =>
-      'Appareils/applications connectés';
+      'Dispositivos/aplicaciones conectados';
 
   @override
-  String get settingsDevicesConnectedStatus => 'Connecté';
+  String get settingsDevicesConnectedStatus => 'Conectado';
 
   @override
-  String get settingsDevicesDisconnect => 'Déconnecter';
+  String get settingsDevicesDisconnect => 'Desconectar';
 
   @override
   String get settingsDevicesNoConnected =>
-      'Aucun appareil ou application connecté';
+      'Ningún dispositivo o aplicación conectado';
 
   @override
-  String get settingsDevicesAddTitle => 'Ajouter une connexion';
+  String get settingsDevicesAddTitle => 'Añadir una conexión';
 
   @override
-  String get settingsDevicesAddFabTooltip => 'Ajouter une connexion';
+  String get settingsDevicesAddFabTooltip => 'Añadir una conexión';
 
   @override
   String get settingsDevicesAllConnected =>
-      'Tous les appareils/applications disponibles sont déjà connectés';
+      'Todos los dispositivos/aplicaciones disponibles ya están conectados';
 
   @override
   String settingsDevicesBadgeLabel(int count) {
     String _temp0 = intl.Intl.pluralLogic(
       count,
       locale: localeName,
-      other: '$count appareils/applications connectés',
-      one: '1 appareil/application connecté',
-      zero: 'Aucun appareil/application connecté',
+      other: '$count dispositivos/aplicaciones conectados',
+      one: '1 dispositivo/aplicación conectado',
+      zero: 'Ningún dispositivo/aplicación conectado',
     );
     return '$_temp0';
   }
 
   @override
-  String get wearableDeviceTypeLabel => 'Type d\'appareil/application';
+  String get wearableDeviceTypeLabel => 'Tipo de dispositivo/aplicación';
 
   @override
   String get wearableDeviceWhoop => 'Whoop';
@@ -3901,432 +3913,434 @@ class AppLocalizationsEs extends AppLocalizations {
   String get wearableDeviceFitbit => 'Fitbit';
 
   @override
-  String get wearableDeviceAppleHealth => 'Apple Forme';
+  String get wearableDeviceAppleHealth => 'Apple Fitness';
 
   @override
   String get wearableDeviceGoogleHealthConnect => 'Google Health';
 
   @override
-  String get whoopConnectToggleLabel => 'Sync. Whoop';
+  String get whoopConnectToggleLabel => 'Sinc. Whoop';
 
   @override
   String get whoopConnectToggleSubtitle =>
-      'Connecte ton compte Whoop pour importer récupération, sommeil et entraînements';
+      'Conecta tu cuenta Whoop para importar recuperación, sueño y entrenamientos';
 
   @override
   String get whoopConnectToggleConnectedSubtitle =>
-      'Whoop connecté — synchronisation des données à venir (Phase 2)';
+      'Whoop conectado — sincronización de datos en la Fase 2';
 
   @override
-  String get whoopConnectSuccess => 'Compte Whoop connecté.';
+  String get whoopConnectSuccess => 'Cuenta Whoop conectada.';
 
   @override
   String get whoopAccountHintGuidance =>
-      'L\'email Whoop peut être différent de ton compte Grinta. Indique le compte Whoop à utiliser, puis connecte-toi avec ce compte sur la page Whoop.';
+      'Tu email de Whoop puede ser distinta de tu cuenta Grinta. Indica la cuenta Whoop a usar y luego inicia sesión con esa cuenta en la página de Whoop.';
 
   @override
-  String get whoopAccountHintLabel => 'Compte Whoop';
+  String get whoopAccountHintLabel => 'Cuenta Whoop';
 
   @override
   String get whoopAccountHintPlaceholder => 'email Whoop';
 
   @override
   String get whoopAccountHintRequired =>
-      'Indique ton compte Whoop (email) avant de continuer.';
+      'Indica tu cuenta Whoop (email) antes de continuar.';
 
   @override
-  String get whoopConnectContinue => 'Continuer vers Whoop';
+  String get whoopConnectContinue => 'Continuar a Whoop';
 
   @override
   String get whoopConnectFailed =>
-      'La connexion Whoop a échoué. Vérifie que les Cloud Functions Whoop sont déployées et que les secrets WHOOP_CLIENT_ID / WHOOP_CLIENT_SECRET sont configurés.';
+      'La conexión Whoop ha fallado. Comprueba que las Cloud Functions de Whoop estén desplegadas y que los secretos WHOOP_CLIENT_ID / WHOOP_CLIENT_SECRET estén configurados.';
 
   @override
   String get whoopConnectLaunchFailed =>
-      'Impossible d\'ouvrir la page de connexion Whoop.';
+      'No se pudo abrir la página de inicio de sesión de Whoop.';
 
   @override
   String get whoopConnectAuthRequired =>
-      'Connecte-toi à Grinta pour lier Whoop.';
+      'Inicia sesión en Grinta para conectar Whoop.';
 
   @override
-  String get whoopDisconnectFailed => 'La déconnexion Whoop a échoué.';
+  String get whoopDisconnectFailed => 'Error al desconectar Whoop.';
 
   @override
-  String get whoopCoachVisibilityTitle => 'Visibilité coach';
+  String get whoopCoachVisibilityTitle => 'Visibilidad para el entrenador';
 
   @override
   String get whoopCoachVisibilitySubtitle =>
-      'Autoriser ton coach à voir cette donnée';
+      'Permite a tu entrenador ver este tipo de dato';
 
   @override
   String get whoopCoachVisibilitySaveFailed =>
-      'Impossible d\'enregistrer les préférences Whoop.';
+      'No se pudieron guardar las preferencias de Whoop.';
 
   @override
-  String get whoopMetricRecovery => 'Récupération';
+  String get whoopMetricRecovery => 'Recuperación';
 
   @override
-  String get whoopMetricCycles => 'Cycles';
+  String get whoopMetricCycles => 'Ciclos';
 
   @override
-  String get whoopMetricSleep => 'Sommeil';
+  String get whoopMetricSleep => 'Sueño';
 
   @override
-  String get whoopMetricWorkout => 'Entraînements';
+  String get whoopMetricWorkout => 'Entrenamientos';
 
   @override
-  String get whoopMetricProfile => 'Profil';
+  String get whoopMetricProfile => 'Perfil';
 
   @override
-  String get whoopMetricBodyMeasurement => 'Mensurations';
+  String get whoopMetricBodyMeasurement => 'Medidas corporales';
 
   @override
   String get whoopCoachConnectTitle => 'Whoop';
 
   @override
   String whoopCoachConnectSubtitle(String playerName) {
-    return 'Connecter le compte Whoop de $playerName';
+    return 'Conectar Whoop para $playerName';
   }
 
   @override
-  String get whoopCoachConnectAction => 'Connecter';
+  String get whoopCoachConnectAction => 'Conectar';
 
   @override
   String whoopCoachConnectConnectedSubtitle(String playerName) {
-    return 'Whoop connecté pour $playerName';
+    return 'Whoop conectado para $playerName';
   }
 
   @override
   String get stravaConnectToggleSubtitle =>
-      'Connecte ton compte Strava pour importer activités et entraînements';
+      'Conecta tu cuenta Strava para importar actividades y entrenamientos';
 
   @override
   String get stravaConnectToggleConnectedSubtitle =>
-      'Strava connecté — synchronisation des données à venir (Phase 2)';
+      'Strava conectado — sincronización de datos en la Fase 2';
 
   @override
   String get stravaAccountHintGuidance =>
-      'L\'email Strava peut être différent de ton compte Grinta. Indique le compte Strava à utiliser, puis connecte-toi avec ce compte sur la page Strava.';
+      'Tu email de Strava puede ser distinta de tu cuenta Grinta. Indica la cuenta Strava a usar y luego inicia sesión con esa cuenta en la página de Strava.';
 
   @override
-  String get stravaAccountHintLabel => 'Compte Strava';
+  String get stravaAccountHintLabel => 'Cuenta Strava';
 
   @override
-  String get stravaAccountHintPlaceholder =>
-      'email ou nom d\'utilisateur Strava';
+  String get stravaAccountHintPlaceholder => 'email o nombre de usuario Strava';
 
   @override
   String get stravaAccountHintRequired =>
-      'Indique ton compte Strava (email ou nom d\'utilisateur) avant de continuer.';
+      'Indica tu cuenta Strava (email o nombre de usuario) antes de continuar.';
 
   @override
-  String get stravaConnectContinue => 'Continuer vers Strava';
+  String get stravaConnectContinue => 'Continuar a Strava';
 
   @override
-  String get stravaConnectSuccess => 'Compte Strava connecté.';
+  String get stravaConnectSuccess => 'Cuenta Strava conectada.';
 
   @override
   String get stravaConnectFailed =>
-      'La connexion Strava a échoué. Vérifie que les Cloud Functions Strava sont déployées et que les secrets STRAVA_CLIENT_ID / STRAVA_CLIENT_SECRET sont configurés.';
+      'La conexión Strava ha fallado. Comprueba que las Cloud Functions de Strava estén desplegadas y que los secretos STRAVA_CLIENT_ID / STRAVA_CLIENT_SECRET estén configurados.';
 
   @override
   String get stravaConnectLaunchFailed =>
-      'Impossible d\'ouvrir la page de connexion Strava.';
+      'No se pudo abrir la página de inicio de sesión de Strava.';
 
   @override
   String get stravaConnectAuthRequired =>
-      'Connecte-toi à Grinta pour lier Strava.';
+      'Inicia sesión en Grinta para conectar Strava.';
 
   @override
-  String get stravaDisconnectFailed => 'La déconnexion Strava a échoué.';
+  String get stravaDisconnectFailed => 'Error al desconectar Strava.';
 
   @override
   String get stravaCoachVisibilitySaveFailed =>
-      'Impossible d\'enregistrer les préférences Strava.';
+      'No se pudieron guardar las preferencias de Strava.';
 
   @override
-  String get stravaMetricActivities => 'Activités';
+  String get stravaMetricActivities => 'Actividades';
 
   @override
-  String get stravaMetricProfile => 'Profil';
+  String get stravaMetricProfile => 'Perfil';
 
   @override
   String stravaCoachConnectSubtitle(String playerName) {
-    return 'Connecter le compte Strava de $playerName';
+    return 'Conectar Strava para $playerName';
   }
 
   @override
   String stravaCoachConnectConnectedSubtitle(String playerName) {
-    return 'Strava connecté pour $playerName';
+    return 'Strava conectado para $playerName';
   }
 
   @override
   String get polarConnectToggleSubtitle =>
-      'Connecte ton compte Polar pour importer entraînements, sommeil et fréquence cardiaque depuis Loop ou Verity Sense via Polar Flow';
+      'Conecta tu cuenta Polar para importar entrenamientos, sueño y frecuencia cardíaca desde Loop o Verity Sense vía Polar Flow';
 
   @override
   String get polarConnectToggleConnectedSubtitle =>
-      'Polar connecté — synchronisation des données à venir (Phase 2)';
+      'Polar conectado — sincronización de datos en la Fase 2';
 
   @override
   String get polarAccountHintGuidance =>
-      'L\'email Polar Flow peut être différent de ton compte Grinta. Indique le compte Polar à utiliser, puis connecte-toi avec ce compte sur la page Polar.';
+      'Tu email de Polar Flow puede ser distinta de tu cuenta Grinta. Indica la cuenta Polar a usar y luego inicia sesión con esa cuenta en la página de Polar.';
 
   @override
-  String get polarAccountHintLabel => 'Compte Polar';
+  String get polarAccountHintLabel => 'Cuenta Polar';
 
   @override
   String get polarAccountHintPlaceholder => 'email Polar Flow';
 
   @override
   String get polarAccountHintRequired =>
-      'Indique ton compte Polar (email) avant de continuer.';
+      'Indica tu cuenta Polar (email) antes de continuar.';
 
   @override
-  String get polarConnectContinue => 'Continuer vers Polar';
+  String get polarConnectContinue => 'Continuar a Polar';
 
   @override
-  String get polarConnectSuccess => 'Compte Polar connecté.';
+  String get polarConnectSuccess => 'Cuenta Polar conectada.';
 
   @override
-  String get polarConnectFailed => 'La connexion Polar a échoué. Réessayez.';
+  String get polarConnectFailed =>
+      'La conexión Polar ha fallado. Inténtalo de nuevo.';
 
   @override
   String get polarConnectLaunchFailed =>
-      'Impossible d\'ouvrir la page de connexion Polar.';
+      'No se pudo abrir la página de inicio de sesión de Polar.';
 
   @override
   String get polarConnectAuthRequired =>
-      'Connecte-toi à Grinta pour lier Polar.';
+      'Inicia sesión en Grinta para conectar Polar.';
 
   @override
-  String get polarDisconnectFailed => 'La déconnexion Polar a échoué.';
+  String get polarDisconnectFailed => 'Error al desconectar Polar.';
 
   @override
-  String get polarCoachVisibilityTitle => 'Visibilité coach';
+  String get polarCoachVisibilityTitle => 'Visibilidad para el entrenador';
 
   @override
   String get polarCoachVisibilitySubtitle =>
-      'Autoriser ton coach à voir cette donnée';
+      'Permite a tu entrenador ver este tipo de dato';
 
   @override
   String get polarCoachVisibilitySaveFailed =>
-      'Impossible d\'enregistrer les préférences Polar.';
+      'No se pudieron guardar las preferencias de Polar.';
 
   @override
-  String get polarMetricTraining => 'Entraînements';
+  String get polarMetricTraining => 'Entrenamientos';
 
   @override
-  String get polarMetricSleep => 'Sommeil';
+  String get polarMetricSleep => 'Sueño';
 
   @override
-  String get polarMetricRecoveryHr => 'Récupération / fréquence cardiaque';
+  String get polarMetricRecoveryHr => 'Recuperación / frecuencia cardíaca';
 
   @override
-  String get polarMetricProfile => 'Profil';
+  String get polarMetricProfile => 'Perfil';
 
   @override
-  String get polarMetricBody => 'Mensurations';
+  String get polarMetricBody => 'Medidas corporales';
 
   @override
   String polarCoachConnectSubtitle(String playerName) {
-    return 'Connecter le compte Polar de $playerName';
+    return 'Conectar Polar para $playerName';
   }
 
   @override
   String polarCoachConnectConnectedSubtitle(String playerName) {
-    return 'Polar connecté pour $playerName';
+    return 'Polar conectado para $playerName';
   }
 
   @override
   String get fitbitConnectToggleSubtitle =>
-      'Connecte ton compte Fitbit pour importer activité, fréquence cardiaque, sommeil et poids depuis ton bracelet via le cloud Fitbit';
+      'Conecta tu cuenta Fitbit para importar actividad, frecuencia cardíaca, sueño y peso desde tu pulsera vía la nube Fitbit';
 
   @override
   String get fitbitConnectToggleConnectedSubtitle =>
-      'Fitbit connecté — synchronisation des données à venir (Phase 2)';
+      'Fitbit conectado — sincronización de datos en la Fase 2';
 
   @override
-  String get fitbitConnectSuccess => 'Compte Fitbit connecté.';
+  String get fitbitConnectSuccess => 'Cuenta Fitbit conectada.';
 
   @override
-  String get fitbitConnectFailed => 'La connexion Fitbit a échoué. Réessayez.';
+  String get fitbitConnectFailed =>
+      'La conexión Fitbit ha fallado. Inténtalo de nuevo.';
 
   @override
   String get fitbitConnectLaunchFailed =>
-      'Impossible d\'ouvrir la page de connexion Fitbit.';
+      'No se pudo abrir la página de inicio de sesión de Fitbit.';
 
   @override
   String get fitbitConnectAuthRequired =>
-      'Connecte-toi à Grinta pour lier Fitbit.';
+      'Inicia sesión en Grinta para conectar Fitbit.';
 
   @override
-  String get fitbitDisconnectFailed => 'La déconnexion Fitbit a échoué.';
+  String get fitbitDisconnectFailed => 'Error al desconectar Fitbit.';
 
   @override
-  String get fitbitCoachVisibilityTitle => 'Visibilité coach';
+  String get fitbitCoachVisibilityTitle => 'Visibilidad para el entrenador';
 
   @override
   String get fitbitCoachVisibilitySubtitle =>
-      'Autoriser ton coach à voir cette donnée';
+      'Permite a tu entrenador ver este tipo de dato';
 
   @override
   String get fitbitCoachVisibilitySaveFailed =>
-      'Impossible d\'enregistrer les préférences Fitbit.';
+      'No se pudieron guardar las preferencias de Fitbit.';
 
   @override
-  String get fitbitMetricActivity => 'Activité / entraînements / pas';
+  String get fitbitMetricActivity => 'Actividad / entrenamientos / pasos';
 
   @override
-  String get fitbitMetricHeartrate => 'Fréquence cardiaque';
+  String get fitbitMetricHeartrate => 'Frecuencia cardíaca';
 
   @override
-  String get fitbitMetricSleep => 'Sommeil';
+  String get fitbitMetricSleep => 'Sueño';
 
   @override
-  String get fitbitMetricProfile => 'Profil';
+  String get fitbitMetricProfile => 'Perfil';
 
   @override
-  String get fitbitMetricBody => 'Poids / mensurations';
+  String get fitbitMetricBody => 'Peso / cuerpo';
 
   @override
   String fitbitCoachConnectSubtitle(String playerName) {
-    return 'Connecter le compte Fitbit de $playerName';
+    return 'Conectar Fitbit para $playerName';
   }
 
   @override
   String fitbitCoachConnectConnectedSubtitle(String playerName) {
-    return 'Fitbit connecté pour $playerName';
+    return 'Fitbit conectado para $playerName';
   }
 
   @override
   String get appleHealthConnectToggleSubtitle =>
-      'Connecte Apple Forme pour importer entraînements, fréquence cardiaque et énergie active depuis l\'app Santé (iOS uniquement)';
+      'Conecta Apple Fitness para importar entrenamientos, frecuencia cardíaca y energía activa desde la app Salud (solo iOS)';
 
   @override
   String get appleHealthConnectToggleConnectedSubtitle =>
-      'Apple Forme connecté — synchronisation complète des entraînements à venir (Phase 2)';
+      'Apple Fitness conectado — sincronización completa de entrenamientos en la Fase 2';
 
   @override
-  String get appleHealthConnectSuccess => 'Apple Forme connecté.';
+  String get appleHealthConnectSuccess => 'Apple Fitness conectado.';
 
   @override
   String get appleHealthConnectFailed =>
-      'La connexion Apple Forme a échoué. Réessayez.';
+      'La conexión Apple Fitness ha fallado. Inténtalo de nuevo.';
 
   @override
   String get appleHealthConnectDenied =>
-      'L\'accès Santé a été refusé. Active-le dans Réglages → Santé → Accès aux données et appareils → Grinta.';
+      'Se denegó el acceso a Salud. Actívalo en Ajustes → Salud → Acceso a datos y dispositivos → Grinta.';
 
   @override
   String get appleHealthConnectAuthRequired =>
-      'Connecte-toi à Grinta pour lier Apple Forme.';
+      'Inicia sesión en Grinta para conectar Apple Fitness.';
 
   @override
   String get appleHealthIosOnlyMessage =>
-      'Apple Forme est disponible uniquement sur iPhone. Les données sont lues sur l\'appareil via Apple HealthKit.';
+      'Apple Fitness está disponible solo en iPhone. Los datos de Salud se leen en el dispositivo mediante Apple HealthKit.';
 
   @override
   String get appleHealthDisconnectFailed =>
-      'La déconnexion Apple Forme a échoué.';
+      'Error al desconectar Apple Fitness.';
 
   @override
-  String get appleHealthCoachVisibilityTitle => 'Visibilité coach';
+  String get appleHealthCoachVisibilityTitle =>
+      'Visibilidad para el entrenador';
 
   @override
   String get appleHealthCoachVisibilitySubtitle =>
-      'Autoriser ton coach à voir cette donnée';
+      'Permite a tu entrenador ver este tipo de dato';
 
   @override
   String get appleHealthCoachVisibilitySaveFailed =>
-      'Impossible d\'enregistrer les préférences Apple Forme.';
+      'No se pudieron guardar las preferencias de Apple Fitness.';
 
   @override
-  String get appleHealthMetricActivity => 'Entraînements / activité';
+  String get appleHealthMetricActivity => 'Entrenamientos / actividad';
 
   @override
-  String get appleHealthMetricHeartrate => 'Fréquence cardiaque';
+  String get appleHealthMetricHeartrate => 'Frecuencia cardíaca';
 
   @override
-  String get appleHealthMetricActiveEnergy => 'Énergie active';
+  String get appleHealthMetricActiveEnergy => 'Energía activa';
 
   @override
-  String get appleHealthMetricSleep => 'Sommeil';
+  String get appleHealthMetricSleep => 'Sueño';
 
   @override
   String appleHealthCoachConnectSubtitle(String playerName) {
-    return 'Connecter Apple Forme pour $playerName';
+    return 'Conectar Apple Fitness para $playerName';
   }
 
   @override
   String appleHealthCoachConnectConnectedSubtitle(String playerName) {
-    return 'Apple Forme connecté pour $playerName';
+    return 'Apple Fitness conectado para $playerName';
   }
 
   @override
   String get googleHealthConnectToggleSubtitle =>
-      'Connecte Google Health pour importer entraînements, fréquence cardiaque et énergie active depuis Health Connect (Android uniquement)';
+      'Conecta Google Health para importar entrenamientos, frecuencia cardíaca y energía activa desde Health Connect (solo Android)';
 
   @override
   String get googleHealthConnectToggleConnectedSubtitle =>
-      'Google Health connecté — synchronisation des entraînements disponible';
+      'Google Health conectado — sincronización de entrenamientos disponible';
 
   @override
-  String get googleHealthConnectSuccess =>
-      'Google Health connecté.';
+  String get googleHealthConnectSuccess => 'Google Health conectado.';
 
   @override
   String get googleHealthConnectFailed =>
-      'La connexion Google Health a échoué. Réessayez.';
+      'La conexión Google Health ha fallado. Inténtalo de nuevo.';
 
   @override
   String get googleHealthConnectDenied =>
-      'L\'accès Health Connect a été refusé. Active-le dans Health Connect → Autorisations des applis → Grinta.';
+      'Se denegó el acceso a Health Connect. Actívalo en Health Connect → Permisos de apps → Grinta.';
 
   @override
   String get googleHealthConnectAuthRequired =>
-      'Connecte-toi à Grinta pour lier Google Health.';
+      'Inicia sesión en Grinta para conectar Google Health.';
 
   @override
   String get googleHealthAndroidOnlyMessage =>
-      'Google Health est disponible uniquement sur Android (données lues sur l’appareil via Health Connect). Sur iPhone, utilise Apple Forme.';
+      'Google Health está disponible solo en Android (en el dispositivo vía Health Connect). En iPhone, usa Apple Fitness.';
 
   @override
   String get googleHealthDisconnectFailed =>
-      'La déconnexion Google Health a échoué.';
+      'Error al desconectar Google Health.';
 
   @override
-  String get googleHealthCoachVisibilityTitle => 'Visibilité coach';
+  String get googleHealthCoachVisibilityTitle =>
+      'Visibilidad para el entrenador';
 
   @override
   String get googleHealthCoachVisibilitySubtitle =>
-      'Autoriser ton coach à voir cette donnée';
+      'Permite a tu entrenador ver este tipo de dato';
 
   @override
   String get googleHealthCoachVisibilitySaveFailed =>
-      'Impossible d\'enregistrer les préférences Google Health.';
+      'No se pudieron guardar las preferencias de Google Health.';
 
   @override
-  String get googleHealthMetricActivity => 'Entraînements / activité';
+  String get googleHealthMetricActivity => 'Entrenamientos / actividad';
 
   @override
-  String get googleHealthMetricHeartrate => 'Fréquence cardiaque';
+  String get googleHealthMetricHeartrate => 'Frecuencia cardíaca';
 
   @override
-  String get googleHealthMetricActiveEnergy => 'Énergie active';
+  String get googleHealthMetricActiveEnergy => 'Energía activa';
 
   @override
-  String get googleHealthMetricSleep => 'Sommeil';
+  String get googleHealthMetricSleep => 'Sueño';
 
   @override
   String googleHealthCoachConnectSubtitle(String playerName) {
-    return 'Connecter Google Health pour $playerName';
+    return 'Conectar Google Health para $playerName';
   }
 
   @override
   String googleHealthCoachConnectConnectedSubtitle(String playerName) {
-    return 'Google Health connecté pour $playerName';
+    return 'Google Health conectado para $playerName';
   }
 
   @override
@@ -4437,17 +4451,17 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get trainingDeleteRecurrentTitle =>
-      'Supprimer l\'entraînement récurrent ?';
+      '¿Eliminar el entrenamiento recurrente?';
 
   @override
   String get trainingDeleteRecurrentMessage =>
-      'Souhaitez-vous supprimer toutes les récurrences de cette série ?';
+      '¿Quieres eliminar todas las ocurrencias de esta serie?';
 
   @override
-  String get trainingDeleteThisOccurrence => 'Cette occurrence uniquement';
+  String get trainingDeleteThisOccurrence => 'Solo esta ocurrencia';
 
   @override
-  String get trainingDeleteAllOccurrences => 'Toutes les occurrences';
+  String get trainingDeleteAllOccurrences => 'Todas las ocurrencias';
 
   @override
   String get trainingDeleted => 'Entrenamiento eliminado';
@@ -4464,7 +4478,7 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get trainingFinishConfirmMessage =>
-      'Los jugadores no disponibles marcados como presentes pasarán a ausentes. ¿Desea finalizar este entrenamiento?';
+      '¿Desea finalizar este entrenamiento?';
 
   @override
   String get trainingFinished => 'Entrenamiento finalizado';
@@ -5462,6 +5476,9 @@ class AppLocalizationsEs extends AppLocalizations {
   String get adminTrackerOwnerTypeIntense => 'Intense (SIM, flujo en la nube)';
 
   @override
+  String get adminTrackerOwnerTypePolar => 'Polar (kit equipo BLE)';
+
+  @override
   String get adminTrackerOwnerFieldRequired => 'Campo obligatorio';
 
   @override
@@ -5540,8 +5557,7 @@ class AppLocalizationsEs extends AppLocalizations {
   String get adminTrackerFieldsSaved => 'Terreno guardado.';
 
   @override
-  String get adminTrackerFieldsSaveFailed =>
-      'No se pudo guardar el terreno.';
+  String get adminTrackerFieldsSaveFailed => 'No se pudo guardar el terreno.';
 
   @override
   String get adminTrackerFieldsAuthRequired =>
@@ -5633,7 +5649,11 @@ class AppLocalizationsEs extends AppLocalizations {
   String get adminTrackerDevicesAssignTitle => 'Asignar un dispositivo';
 
   @override
-  String get adminTrackerDevicesCustomName => 'Nombre (opcional)';
+  String get adminTrackerDevicesCustomName => 'Nombre personalizado (opcional)';
+
+  @override
+  String get adminTrackerDevicesCustomNameHint =>
+      'Número de camiseta o etiqueta, ej. 7';
 
   @override
   String get adminTrackerDevicesCancel => 'Cancelar';
@@ -5661,6 +5681,288 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get adminTrackerDevicesSyncFootbar => 'Sync Footbar';
+
+  @override
+  String get adminTrackerDevicesAddPolar => 'Añadir Polar';
+
+  @override
+  String get adminTrackerDevicesAddPolarChrome => 'Añadir vía Chrome Bluetooth';
+
+  @override
+  String get adminTrackerDevicesAddPolarManual =>
+      'Introducir el ID manualmente';
+
+  @override
+  String get adminPolarBleScanTitle => 'Escanear sensores Polar';
+
+  @override
+  String get adminPolarBleScanSheetSubtitle =>
+      'Listar Polar cercanos y conectar uno a uno';
+
+  @override
+  String get adminPolarBleScanHint =>
+      'Enciende los sensores cercanos, conéctate a cada uno y añádelo al kit con un nombre personalizado.';
+
+  @override
+  String get adminPolarBleScanSearching => 'Buscando sensores Polar…';
+
+  @override
+  String get adminPolarBleScanEmpty =>
+      'No se encontró ningún sensor Polar. Comprueba el Bluetooth y que los sensores estén encendidos.';
+
+  @override
+  String get adminPolarBleScanUnsupported =>
+      'El escaneo Polar BLE solo está disponible en iOS y Android.';
+
+  @override
+  String get adminPolarBleScanConnect => 'Conectar';
+
+  @override
+  String get adminPolarBleScanConnecting => 'Conectando…';
+
+  @override
+  String get adminPolarBleScanConnected => 'Conectado';
+
+  @override
+  String get adminPolarBleScanAddToKit => 'Añadir al kit';
+
+  @override
+  String get adminPolarBleScanStop => 'Detener escaneo';
+
+  @override
+  String get adminPolarBleScanRestart => 'Volver a escanear';
+
+  @override
+  String adminPolarBleScanConnectError(String error) {
+    return 'Error de conexión: $error';
+  }
+
+  @override
+  String get polarImportTitle => 'Importación Polar (cardio)';
+
+  @override
+  String get polarImportSensorsHeader => 'Sensores Polar de la sesión';
+
+  @override
+  String get polarImportHint =>
+      'Cierra Polar Flow, pon el Verity Sense en modo sensor (LED azul / corazón óptico) e importa por Bluetooth. Si iOS ya muestra el sensor como Conectado, olvídalo en Ajustes → Bluetooth.';
+
+  @override
+  String get polarImportSelectSensor =>
+      'Selecciona un sensor para importar los datos cardio.';
+
+  @override
+  String get polarImportStatusPending => 'Pendiente';
+
+  @override
+  String get polarImportStatusDone => 'Importado';
+
+  @override
+  String get polarImportUntitledPlayer => 'Jugador';
+
+  @override
+  String polarImportDeviceLine(
+      String deviceId, String deviceType, String customName) {
+    return 'Polar $deviceId · $deviceType · $customName';
+  }
+
+  @override
+  String get polarImportBleAction => 'Importar por Bluetooth';
+
+  @override
+  String get polarImportBleUnavailable =>
+      'La importación Bluetooth Polar está disponible en iOS/Android. En la web, usa la entrada manual.';
+
+  @override
+  String get polarImportManualAction => 'Entrada manual';
+
+  @override
+  String get polarImportManualTitle => 'Entrada cardio Polar';
+
+  @override
+  String get polarImportManualSubtitle =>
+      'Indica duración y FC (calorías / pasos opcionales para Loop).';
+
+  @override
+  String get polarImportFieldDurationMin => 'Duración (minutos)';
+
+  @override
+  String get polarImportFieldAvgHr => 'FC media (bpm)';
+
+  @override
+  String get polarImportFieldMaxHr => 'FC máx. (bpm)';
+
+  @override
+  String get polarImportFieldMinHr => 'FC mín. (bpm)';
+
+  @override
+  String get polarImportFieldCalories => 'Calorías (kcal, opcional)';
+
+  @override
+  String get polarImportFieldDistanceM => 'Distancia (m, opcional)';
+
+  @override
+  String get polarImportFieldSteps => 'Pasos (opcional)';
+
+  @override
+  String get polarImportMissingPlayer =>
+      'Ningún jugador asociado a este sensor.';
+
+  @override
+  String polarImportSuccess(String avgHr, String minutes) {
+    return 'Importación OK — FC med. $avgHr · $minutes min';
+  }
+
+  @override
+  String get polarImportBleTimeoutHint =>
+      'La conexión Polar BLE ha caducado. Cierra Polar Flow, olvida el sensor en Ajustes → Bluetooth si sigue Conectado, despierta el Verity Sense en modo sensor (LED azul) e inténtalo de nuevo.';
+
+  @override
+  String polarImportBleError(String error) {
+    return 'Error de importación Polar: $error';
+  }
+
+  @override
+  String get polarAnalysisEmptyMessage =>
+      'No hay análisis cardio Polar para este jugador en esta sesión.';
+
+  @override
+  String get polarAnalysisEmptyTeamMessage =>
+      'No hay análisis cardio Polar importado para esta sesión. Importa los sensores desde Sync.';
+
+  @override
+  String get polarAnalysisTeamTitle => 'Análisis cardio Polar';
+
+  @override
+  String polarAnalysisTeamCount(int count) {
+    return '$count jugador(es)';
+  }
+
+  @override
+  String get polarAnalysisColDevice => 'Sensor';
+
+  @override
+  String get polarAnalysisColHighIntensity => 'Z4+Z5';
+
+  @override
+  String polarAnalysisDeviceLine(String deviceId, String deviceType) {
+    return 'Polar $deviceId · $deviceType';
+  }
+
+  @override
+  String get polarAnalysisHrZonesTab => 'Zonas FC';
+
+  @override
+  String get polarAnalysisDuration => 'Duración';
+
+  @override
+  String polarAnalysisDurationDetail(int minutes, int seconds) {
+    return '$minutes min $seconds s';
+  }
+
+  @override
+  String get polarAnalysisAvgHr => 'FC med.';
+
+  @override
+  String get polarAnalysisMaxHr => 'FC máx.';
+
+  @override
+  String get polarAnalysisMinHr => 'FC mín.';
+
+  @override
+  String get polarAnalysisSamples => 'Muestras';
+
+  @override
+  String get polarAnalysisCalories => 'Calorías';
+
+  @override
+  String get polarAnalysisSteps => 'Pasos';
+
+  @override
+  String get polarAnalysisUnitMin => 'min';
+
+  @override
+  String get polarAnalysisUnitBpm => 'bpm';
+
+  @override
+  String get polarAnalysisUnitKcal => 'kcal';
+
+  @override
+  String polarAnalysisZoneLabel(String zone) {
+    return '$zone';
+  }
+
+  @override
+  String get polarAnalysisNoZones =>
+      'Sin reparto por zonas para esta importación.';
+
+  @override
+  String get polarImportMissingSeason =>
+      'Temporada no encontrada para importar sensores Polar.';
+
+  @override
+  String get polarImportAgendaAction => 'Importar datos Polar';
+
+  @override
+  String get polarAnalysisAgendaAction => 'Ver análisis Polar';
+
+  @override
+  String get adminTrackerDevicesAddPolarTitle => 'Añadir un sensor Polar';
+
+  @override
+  String get adminTrackerDevicesAddPolarDeviceId => 'ID del dispositivo Polar';
+
+  @override
+  String get adminTrackerDevicesAddPolarDeviceIdHint =>
+      'Impreso en el sensor, o final del nombre BLE (ej. Polar H10 1C709B20 → 1C709B20)';
+
+  @override
+  String get adminTrackerDevicesAddPolarChromeUnsupported =>
+      'Web Bluetooth requiere Chrome (HTTPS o localhost).';
+
+  @override
+  String get adminTrackerDevicesAddPolarChromeCancelled =>
+      'Selección Bluetooth cancelada.';
+
+  @override
+  String get adminTrackerDevicesAddPolarChromeNoId =>
+      'No se pudo leer el ID Polar del nombre BLE. Introduce el ID impreso en el sensor.';
+
+  @override
+  String adminTrackerDevicesAddPolarChromeSuccess(
+      String deviceId, String deviceType) {
+    return 'Polar $deviceId ($deviceType) añadido.';
+  }
+
+  @override
+  String get adminTrackerDevicesAddPolarDeviceType => 'Tipo de sensor';
+
+  @override
+  String get adminTrackerDevicesAddPolarDeviceName =>
+      'Nombre mostrado (opcional)';
+
+  @override
+  String get adminTrackerDevicesAddPolarSuccess =>
+      'Sensor Polar añadido al inventario.';
+
+  @override
+  String get adminTrackerDevicesAddPolarDeviceIdRequired =>
+      'El ID del dispositivo Polar es obligatorio.';
+
+  @override
+  String get adminTrackerDevicesPolarTypeH10 => 'H10';
+
+  @override
+  String get adminTrackerDevicesPolarTypeH9 => 'H9';
+
+  @override
+  String get adminTrackerDevicesPolarTypeVeritySense => 'Verity Sense';
+
+  @override
+  String get adminTrackerDevicesPolarTypeOh1 => 'OH1';
+
+  @override
+  String get adminTrackerDevicesPolarTypeOther => 'Otro';
 
   @override
   String get adminTrackerDevicesSyncInProgress => 'Sincronizando...';
@@ -5751,48 +6053,47 @@ class AppLocalizationsEs extends AppLocalizations {
       'Se requiere acceso de administrador para gestionar los grupos de chat.';
 
   @override
-  String get adminSeasonsSection => 'Saisons';
+  String get adminSeasonsSection => 'Temporadas';
 
   @override
   String get adminSeasonsSectionDesc =>
-      'Lister et gérer les saisons de la plateforme.';
+      'Listar y gestionar las temporadas de la plataforma.';
 
   @override
-  String get adminSeasonsTitle => 'Saisons';
+  String get adminSeasonsTitle => 'Temporadas';
 
   @override
-  String get adminSeasonsEmpty => 'Aucune saison pour le moment.';
+  String get adminSeasonsEmpty => 'Aún no hay temporadas.';
 
   @override
-  String get adminSeasonsLoadError => 'Impossible de charger les saisons.';
+  String get adminSeasonsLoadError => 'No se pudieron cargar las temporadas.';
 
   @override
-  String get adminSeasonCreate => 'Ajouter une saison';
+  String get adminSeasonCreate => 'Añadir temporada';
 
   @override
-  String get adminSeasonEditTitle => 'Modifier la saison';
+  String get adminSeasonEditTitle => 'Editar temporada';
 
   @override
-  String get adminSeasonCreated => 'Saison créée.';
+  String get adminSeasonCreated => 'Temporada creada.';
 
   @override
-  String get adminSeasonUpdated => 'Saison mise à jour.';
+  String get adminSeasonUpdated => 'Temporada actualizada.';
 
   @override
-  String get adminSeasonCreateFailed => 'Impossible de créer la saison.';
+  String get adminSeasonCreateFailed => 'No se pudo crear la temporada.';
 
   @override
-  String get adminSeasonUpdateFailed =>
-      'Impossible de mettre à jour la saison.';
+  String get adminSeasonUpdateFailed => 'No se pudo actualizar la temporada.';
 
   @override
-  String get adminSeasonUnnamed => 'Saison sans nom';
+  String get adminSeasonUnnamed => 'Temporada sin nombre';
 
   @override
-  String get adminSeasonCurrentBadge => 'Actuelle';
+  String get adminSeasonCurrentBadge => 'Actual';
 
   @override
-  String get adminSeasonNewVersionBadge => 'Nouvelle version';
+  String get adminSeasonNewVersionBadge => 'Nueva versión';
 
   @override
   String adminSeasonDateRange(String start, String end) {
@@ -5801,61 +6102,61 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String adminSeasonClubLabel(String clubName) {
-    return 'Club : $clubName';
+    return 'Club: $clubName';
   }
 
   @override
   String adminSeasonAffiliateLabel(String number) {
-    return 'N° affilié : $number';
+    return 'N.º afiliado: $number';
   }
 
   @override
-  String get adminSeasonFieldName => 'Nom';
+  String get adminSeasonFieldName => 'Nombre';
 
   @override
   String get adminSeasonFieldNameReadOnly =>
-      'Le nom de la saison ne peut pas être modifié après création.';
+      'El nombre de la temporada no se puede cambiar después de crearla.';
 
   @override
-  String get adminSeasonFieldRequired => 'Ce champ est obligatoire.';
+  String get adminSeasonFieldRequired => 'Este campo es obligatorio.';
 
   @override
-  String get adminSeasonFieldStartDate => 'Date de début';
+  String get adminSeasonFieldStartDate => 'Fecha de inicio';
 
   @override
-  String get adminSeasonFieldEndDate => 'Date de fin';
+  String get adminSeasonFieldEndDate => 'Fecha de fin';
 
   @override
   String adminSeasonDateSelected(String date) {
-    return 'Sélection : $date';
+    return 'Selección: $date';
   }
 
   @override
-  String get adminSeasonFieldClubName => 'Nom du club';
+  String get adminSeasonFieldClubName => 'Nombre del club';
 
   @override
-  String get adminSeasonFieldAffiliateNumber => 'Numéro d\'affilié';
+  String get adminSeasonFieldAffiliateNumber => 'Número de afiliado';
 
   @override
-  String get adminSeasonFieldCurrent => 'Saison actuelle';
+  String get adminSeasonFieldCurrent => 'Temporada actual';
 
   @override
   String get adminSeasonFieldCurrentHint =>
-      'Une seule saison peut être actuelle à la fois.';
+      'Solo una temporada puede ser la actual a la vez.';
 
   @override
-  String get adminSeasonFieldNewVersion => 'Nouvelle version';
+  String get adminSeasonFieldNewVersion => 'Nueva versión';
 
   @override
-  String get adminSeasonChangeDefaultTitle => 'Changer la saison actuelle ?';
+  String get adminSeasonChangeDefaultTitle => '¿Cambiar la temporada actual?';
 
   @override
   String adminSeasonChangeDefaultMessage(String seasonName) {
-    return '« $seasonName » est actuellement la saison par défaut. Voulez-vous la remplacer ?';
+    return '« $seasonName » es actualmente la temporada predeterminada. ¿Quieres reemplazarla?';
   }
 
   @override
-  String get adminSeasonChangeDefaultConfirm => 'Changer la saison par défaut';
+  String get adminSeasonChangeDefaultConfirm => 'Cambiar predeterminada';
 
   @override
   String get promoCodeMenuLabel => 'Código promo';
@@ -5932,7 +6233,8 @@ class AppLocalizationsEs extends AppLocalizations {
   String get playerFeelingNotifTitle => 'Resumen de sesión';
 
   @override
-  String get playerFeelingNotifBody => 'Mira tus estadísticas y dinos cómo te sientes.';
+  String get playerFeelingNotifBody =>
+      'Mira tus estadísticas y dinos cómo te sientes.';
 
   @override
   String get playerFeelingRecapTitle => 'Tu resumen';
@@ -5953,7 +6255,7 @@ class AppLocalizationsEs extends AppLocalizations {
   String get playerFeelingSaveError => 'No se pudo guardar tu sensación.';
 
   @override
-  String get playerFeelingLoadError => 'No se pudo cargar el resumen.';
+  String get playerFeelingLoadError => 'Could not load the recap.';
 
   @override
   String get sessionHealthExportPromptTitle => 'Export session';
@@ -5967,10 +6269,12 @@ class AppLocalizationsEs extends AppLocalizations {
       'Would you like to see this data in Google Health?';
 
   @override
-  String get sessionHealthExportSuccessApple => 'Session added to Apple Fitness.';
+  String get sessionHealthExportSuccessApple =>
+      'Session added to Apple Fitness.';
 
   @override
-  String get sessionHealthExportSuccessGoogle => 'Session added to Google Health.';
+  String get sessionHealthExportSuccessGoogle =>
+      'Session added to Google Health.';
 
   @override
   String get sessionHealthExportFailed =>
@@ -5990,16 +6294,19 @@ class AppLocalizationsEs extends AppLocalizations {
   String get forgotPasswordTitle => 'Contraseña olvidada';
 
   @override
-  String get forgotPasswordMessage => 'Introduce el correo de tu cuenta. Te enviaremos un enlace para restablecer tu contraseña.';
+  String get forgotPasswordMessage =>
+      'Introduce el correo de tu cuenta. Te enviaremos un enlace para restablecer tu contraseña.';
 
   @override
   String get forgotPasswordSendAction => 'Enviar enlace';
 
   @override
-  String get forgotPasswordSent => 'Se ha enviado un correo para restablecer la contraseña.';
+  String get forgotPasswordSent =>
+      'Se ha enviado un correo para restablecer la contraseña.';
 
   @override
-  String get forgotPasswordFailed => 'No se pudo enviar el correo de restablecimiento.';
+  String get forgotPasswordFailed =>
+      'No se pudo enviar el correo de restablecimiento.';
 
   @override
   String get pendingInvitationNotificationTitle => 'Invitación pendiente';
@@ -6013,13 +6320,16 @@ class AppLocalizationsEs extends AppLocalizations {
   String get pendingInvitationAcceptTitle => 'Código de invitación';
 
   @override
-  String get pendingInvitationAcceptMessage => 'Introduce el código del correo para vincular esta invitación a tu cuenta.';
+  String get pendingInvitationAcceptMessage =>
+      'Introduce el código del correo para vincular esta invitación a tu cuenta.';
 
   @override
-  String get pendingInvitationAcceptSuccess => 'Invitación aceptada. El equipo ya está disponible en tu perfil.';
+  String get pendingInvitationAcceptSuccess =>
+      'Invitación aceptada. El equipo ya está disponible en tu perfil.';
 
   @override
-  String get pendingInvitationAcceptNeedAuth => 'Inicia sesión para aceptar esta invitación.';
+  String get pendingInvitationAcceptNeedAuth =>
+      'Inicia sesión para aceptar esta invitación.';
 
   @override
   String get playerSeasonSummaryTitle => 'Ficha del jugador';
@@ -6034,10 +6344,12 @@ class AppLocalizationsEs extends AppLocalizations {
   String get playerSeasonSummaryTeamTrainings => 'Entrenamientos del equipo';
 
   @override
-  String get playerSeasonSummaryTrackerAverages => 'Indicadores de rendimiento (media)';
+  String get playerSeasonSummaryTrackerAverages =>
+      'Indicadores de rendimiento (media)';
 
   @override
-  String get playerSeasonSummaryNoTrackerData => 'No hay datos de sensores en este período';
+  String get playerSeasonSummaryNoTrackerData =>
+      'No hay datos de sensores en este período';
 
   @override
   String playerSeasonSummaryAgeValue(int age) {
@@ -6068,5 +6380,50 @@ class AppLocalizationsEs extends AppLocalizations {
   String get preferredFootBoth => 'Ambos';
 
   @override
-  String get playerSeasonSummaryPreferredFootSaved => 'Pie dominante actualizado.';
+  String get playerSeasonSummaryPreferredFootSaved =>
+      'Pie dominante actualizado.';
+
+  @override
+  String get wearableDeviceGpsInsidersIntense => 'GPS Insiders Intense';
+
+  @override
+  String get intenseGpsSerialGuidance =>
+      'Introduce el número de serie impreso en el tracker GPS Insiders Intense.';
+
+  @override
+  String get intenseGpsSerialLabel => 'Número de serie';
+
+  @override
+  String get intenseGpsSerialPlaceholder => 'N.º de serie';
+
+  @override
+  String get intenseGpsSerialRequired =>
+      'Indica el número de serie antes de continuar.';
+
+  @override
+  String get intenseGpsTrackerNotFound => 'Tracker inexistente';
+
+  @override
+  String get intenseGpsTrackerAlreadyAssigned =>
+      'Este tracker ya está asignado';
+
+  @override
+  String get intenseGpsConnectSuccess =>
+      'Tracker GPS Insiders Intense asociado.';
+
+  @override
+  String get intenseGpsConnectFailed =>
+      'No se pudo asociar el tracker GPS. Inténtalo de nuevo.';
+
+  @override
+  String get intenseGpsDisconnectFailed =>
+      'Error al desconectar el tracker GPS.';
+
+  @override
+  String get intenseGpsMissingEmail =>
+      'El perfil del jugador necesita un email para asociar un tracker GPS.';
+
+  @override
+  String get intenseGpsConnectToggleConnectedSubtitle =>
+      'GPS Insiders Intense conectado';
 }

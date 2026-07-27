@@ -12,6 +12,11 @@ class DeviceSync {
   Timestamp? withAsiFileAt;
   String? withAsiFileUid;
 
+  /// Polar kit end-of-session import (`TRACKER_PolarAnalysis` written).
+  bool polarImported;
+  Timestamp? polarImportedAt;
+  String? polarImportedUid;
+
   DeviceSync({
     required this.deviceId,
     this.dataDownloaded = false,
@@ -23,6 +28,9 @@ class DeviceSync {
     this.withAsiFile = false,
     this.withAsiFileAt,
     this.withAsiFileUid,
+    this.polarImported = false,
+    this.polarImportedAt,
+    this.polarImportedUid,
   });
 
   factory DeviceSync.fromMap(Map<String, dynamic> map) {
@@ -37,6 +45,9 @@ class DeviceSync {
       withAsiFile: map['withAsiFile'] ?? false,
       withAsiFileAt: map['withAsiFileAt'],
       withAsiFileUid: map['withAsiFileUid'],
+      polarImported: map['polarImported'] ?? false,
+      polarImportedAt: map['polarImportedAt'],
+      polarImportedUid: map['polarImportedUid']?.toString(),
     );
   }
 
@@ -52,11 +63,16 @@ class DeviceSync {
       'withAsiFile': withAsiFile,
       'withAsiFileAt': withAsiFileAt,
       'withAsiFileUid': withAsiFileUid,
+      'polarImported': polarImported,
+      'polarImportedAt': polarImportedAt,
+      'polarImportedUid': polarImportedUid,
     };
   }
 
-  /// Device is considered synced when USB download+erase completed, or ASI path done.
-  bool get isSynced => (dataDownloaded && erased) || withAsiFile;
+  /// Device is considered synced when USB download+erase completed, ASI path
+  /// done, or Polar end-of-session import completed.
+  bool get isSynced =>
+      (dataDownloaded && erased) || withAsiFile || polarImported;
 
   DeviceSync copyWith({
     String? deviceId,
@@ -69,6 +85,9 @@ class DeviceSync {
     bool? withAsiFile,
     Timestamp? withAsiFileAt,
     String? withAsiFileUid,
+    bool? polarImported,
+    Timestamp? polarImportedAt,
+    String? polarImportedUid,
   }) {
     return DeviceSync(
       deviceId: deviceId ?? this.deviceId,
@@ -81,6 +100,9 @@ class DeviceSync {
       withAsiFile: withAsiFile ?? this.withAsiFile,
       withAsiFileAt: withAsiFileAt ?? this.withAsiFileAt,
       withAsiFileUid: withAsiFileUid ?? this.withAsiFileUid,
+      polarImported: polarImported ?? this.polarImported,
+      polarImportedAt: polarImportedAt ?? this.polarImportedAt,
+      polarImportedUid: polarImportedUid ?? this.polarImportedUid,
     );
   }
 }

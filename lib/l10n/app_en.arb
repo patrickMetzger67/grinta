@@ -1674,7 +1674,7 @@
   "trainingDeleteError": "Could not delete the training. Please try again.",
   "finishTrainingTitle": "Finish training",
   "trainingFinishConfirmTitle": "Finish training?",
-  "trainingFinishConfirmMessage": "Unavailable players marked as present will be set to absent. Do you want to finish this training?",
+  "trainingFinishConfirmMessage": "Do you want to finish this training?",
   "trainingFinished": "Training finished",
   "trainingFinishError": "Could not finish the training. Please try again.",
   "trainingIntenseFinishTitle": "Recovering sensor data",
@@ -2108,6 +2108,7 @@
   "adminTrackerOwnerTypeInspirit": "Inspirit",
   "adminTrackerOwnerTypeFootbar": "Footbar",
   "adminTrackerOwnerTypeIntense": "Intense (SIM, cloud stream)",
+  "adminTrackerOwnerTypePolar": "Polar (BLE team kit)",
   "adminTrackerOwnerFieldRequired": "Required field",
   "adminTrackerOwnerFieldEmailInvalid": "Invalid email",
   "adminTrackerOwnerStatusActive": "Active",
@@ -2182,7 +2183,8 @@
   "adminTrackerDevicesAssign": "Assign",
   "adminTrackerDevicesUnassign": "Unassign",
   "adminTrackerDevicesAssignTitle": "Assign a device",
-  "adminTrackerDevicesCustomName": "Name (optional)",
+  "adminTrackerDevicesCustomName": "Custom name (optional)",
+  "adminTrackerDevicesCustomNameHint": "Jersey number or label, e.g. 7",
   "adminTrackerDevicesCancel": "Cancel",
   "adminTrackerDevicesValidate": "Confirm",
   "adminTrackerDevicesSelectOwnerRequired": "Please select an owner.",
@@ -2196,6 +2198,138 @@
   },
   "adminTrackerDevicesSyncInspirit": "Sync Inspirit",
   "adminTrackerDevicesSyncFootbar": "Sync Footbar",
+  "adminTrackerDevicesAddPolar": "Add Polar",
+  "adminTrackerDevicesAddPolarChrome": "Add via Chrome Bluetooth",
+  "adminTrackerDevicesAddPolarManual": "Enter ID manually",
+  "adminPolarBleScanTitle": "Scan Polar sensors",
+  "adminPolarBleScanSheetSubtitle": "List nearby Polar devices and connect one by one",
+  "adminPolarBleScanHint": "Turn on the sensors nearby, then connect each one and add it to the kit with a custom name.",
+  "adminPolarBleScanSearching": "Searching for Polar sensors…",
+  "adminPolarBleScanEmpty": "No Polar sensor found. Check Bluetooth and that the sensors are on.",
+  "adminPolarBleScanUnsupported": "Polar BLE scan is only available on iOS and Android.",
+  "adminPolarBleScanConnect": "Connect",
+  "adminPolarBleScanConnecting": "Connecting…",
+  "adminPolarBleScanConnected": "Connected",
+  "adminPolarBleScanAddToKit": "Add to kit",
+  "adminPolarBleScanStop": "Stop scan",
+  "adminPolarBleScanRestart": "Scan again",
+  "adminPolarBleScanConnectError": "Connection failed: {error}",
+  "@adminPolarBleScanConnectError": {
+    "placeholders": {
+      "error": { "type": "String" }
+    }
+  },
+  "polarImportTitle": "Polar import (cardio)",
+  "polarImportSensorsHeader": "Session Polar sensors",
+  "polarImportHint": "Quit Polar Flow, put the Verity Sense in sensor mode (blue LED / optical heart), then import over Bluetooth. If iOS already shows the sensor as Connected, forget it in Settings → Bluetooth.",
+  "polarImportSelectSensor": "Select a sensor to import cardio data.",
+  "polarImportStatusPending": "To import",
+  "polarImportStatusDone": "Imported",
+  "polarImportUntitledPlayer": "Player",
+  "polarImportDeviceLine": "Polar {deviceId} · {deviceType} · {customName}",
+  "@polarImportDeviceLine": {
+    "placeholders": {
+      "deviceId": { "type": "String" },
+      "deviceType": { "type": "String" },
+      "customName": { "type": "String" }
+    }
+  },
+  "polarImportBleAction": "Import via Bluetooth",
+  "polarImportBleUnavailable": "Polar Bluetooth import is available on iOS/Android. On the web, use manual entry.",
+  "polarImportManualAction": "Manual entry",
+  "polarImportManualTitle": "Polar cardio entry",
+  "polarImportManualSubtitle": "Enter duration and HR (calories / steps optional for Loop).",
+  "polarImportFieldDurationMin": "Duration (minutes)",
+  "polarImportFieldAvgHr": "Avg HR (bpm)",
+  "polarImportFieldMaxHr": "Max HR (bpm)",
+  "polarImportFieldMinHr": "Min HR (bpm)",
+  "polarImportFieldCalories": "Calories (kcal, optional)",
+  "polarImportFieldDistanceM": "Distance (m, optional)",
+  "polarImportFieldSteps": "Steps (optional)",
+  "polarImportMissingPlayer": "No player linked to this sensor.",
+  "polarImportSuccess": "Import OK — avg HR {avgHr} · {minutes} min",
+  "@polarImportSuccess": {
+    "placeholders": {
+      "avgHr": { "type": "String" },
+      "minutes": { "type": "String" }
+    }
+  },
+  "polarImportBleTimeoutHint": "Polar BLE connection timed out. Quit Polar Flow, forget the sensor in Settings → Bluetooth if it stays Connected, wake the Verity Sense in sensor mode (blue LED), then retry.",
+  "polarImportBleError": "Polar import failed: {error}",
+  "@polarImportBleError": {
+    "placeholders": {
+      "error": { "type": "String" }
+    }
+  },
+  "polarAnalysisEmptyMessage": "No Polar cardio analysis for this player on this session.",
+  "polarAnalysisEmptyTeamMessage": "No Polar cardio analysis imported for this session. Import sensors from Sync.",
+  "polarAnalysisTeamTitle": "Polar cardio analysis",
+  "polarAnalysisTeamCount": "{count} player(s)",
+  "@polarAnalysisTeamCount": {
+    "placeholders": {
+      "count": { "type": "int" }
+    }
+  },
+  "polarAnalysisColDevice": "Sensor",
+  "polarAnalysisColHighIntensity": "Z4+Z5",
+  "polarAnalysisDeviceLine": "Polar {deviceId} · {deviceType}",
+  "@polarAnalysisDeviceLine": {
+    "placeholders": {
+      "deviceId": { "type": "String" },
+      "deviceType": { "type": "String" }
+    }
+  },
+  "polarAnalysisHrZonesTab": "HR zones",
+  "polarAnalysisDuration": "Duration",
+  "polarAnalysisDurationDetail": "{minutes} min {seconds} s",
+  "@polarAnalysisDurationDetail": {
+    "placeholders": {
+      "minutes": { "type": "int" },
+      "seconds": { "type": "int" }
+    }
+  },
+  "polarAnalysisAvgHr": "Avg HR",
+  "polarAnalysisMaxHr": "Max HR",
+  "polarAnalysisMinHr": "Min HR",
+  "polarAnalysisSamples": "Samples",
+  "polarAnalysisCalories": "Calories",
+  "polarAnalysisSteps": "Steps",
+  "polarAnalysisUnitMin": "min",
+  "polarAnalysisUnitBpm": "bpm",
+  "polarAnalysisUnitKcal": "kcal",
+  "polarAnalysisZoneLabel": "{zone}",
+  "@polarAnalysisZoneLabel": {
+    "placeholders": {
+      "zone": { "type": "String" }
+    }
+  },
+  "polarAnalysisNoZones": "No zone breakdown for this import.",
+  "polarImportMissingSeason": "Season not found to import Polar sensors.",
+  "polarImportAgendaAction": "Import Polar data",
+  "polarAnalysisAgendaAction": "View Polar analysis",
+
+  "adminTrackerDevicesAddPolarTitle": "Add a Polar sensor",
+  "adminTrackerDevicesAddPolarDeviceId": "Polar device ID",
+  "adminTrackerDevicesAddPolarDeviceIdHint": "Printed on the sensor, or last part of BLE name (e.g. Polar H10 1C709B20 → 1C709B20)",
+  "adminTrackerDevicesAddPolarChromeUnsupported": "Web Bluetooth requires Chrome (HTTPS or localhost).",
+  "adminTrackerDevicesAddPolarChromeCancelled": "Bluetooth selection cancelled.",
+  "adminTrackerDevicesAddPolarChromeNoId": "Could not read the Polar ID from the BLE name. Enter the ID printed on the sensor.",
+  "adminTrackerDevicesAddPolarChromeSuccess": "Polar {deviceId} ({deviceType}) added.",
+  "@adminTrackerDevicesAddPolarChromeSuccess": {
+    "placeholders": {
+      "deviceId": { "type": "String" },
+      "deviceType": { "type": "String" }
+    }
+  },
+  "adminTrackerDevicesAddPolarDeviceType": "Sensor type",
+  "adminTrackerDevicesAddPolarDeviceName": "Display name (optional)",
+  "adminTrackerDevicesAddPolarSuccess": "Polar sensor added to inventory.",
+  "adminTrackerDevicesAddPolarDeviceIdRequired": "Polar device ID is required.",
+  "adminTrackerDevicesPolarTypeH10": "H10",
+  "adminTrackerDevicesPolarTypeH9": "H9",
+  "adminTrackerDevicesPolarTypeVeritySense": "Verity Sense",
+  "adminTrackerDevicesPolarTypeOh1": "OH1",
+  "adminTrackerDevicesPolarTypeOther": "Other",
   "adminTrackerDevicesSyncInProgress": "Syncing...",
   "adminTrackerDevicesSyncInspiritInProgress": "Inspirit sync (insiders) in progress...",
   "adminTrackerDevicesSyncFootbarInProgress": "Footbar sync in progress...",
@@ -2398,5 +2532,17 @@
   "preferredFootLeft": "Left",
   "preferredFootRight": "Right",
   "preferredFootBoth": "Both",
-  "playerSeasonSummaryPreferredFootSaved": "Preferred foot updated."
+  "playerSeasonSummaryPreferredFootSaved": "Preferred foot updated.",
+  "wearableDeviceGpsInsidersIntense": "GPS Insiders Intense",
+  "intenseGpsSerialGuidance": "Enter the serial number printed on the GPS Insiders Intense tracker.",
+  "intenseGpsSerialLabel": "Serial number",
+  "intenseGpsSerialPlaceholder": "Serial number",
+  "intenseGpsSerialRequired": "Enter the serial number before continuing.",
+  "intenseGpsTrackerNotFound": "Tracker not found",
+  "intenseGpsTrackerAlreadyAssigned": "This tracker is already assigned",
+  "intenseGpsConnectSuccess": "GPS Insiders Intense tracker linked.",
+  "intenseGpsConnectFailed": "Could not link the GPS tracker. Please try again.",
+  "intenseGpsDisconnectFailed": "GPS tracker disconnect failed.",
+  "intenseGpsMissingEmail": "The player profile needs an email to link a GPS tracker.",
+  "intenseGpsConnectToggleConnectedSubtitle": "GPS Insiders Intense connected"
 }

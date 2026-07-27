@@ -1,4 +1,5 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:grinta/model/tracker/polar_session_analysis.dart';
 import 'package:grinta/model/tracker/team_workload_summary.dart';
 
 class ActivityMetrics {
@@ -19,6 +20,7 @@ class ActivityMetrics {
     this.sprintCountZScore = 0,
     this.workloadScore = 0,
     this.workloadScoreZScore = 0,
+    this.isPolarCardio = false,
   }) : timestamp = timestamp ?? Timestamp.fromDate(DateTime(1970, 1, 1));
 
   String eventId;
@@ -44,6 +46,9 @@ class ActivityMetrics {
 
   double workloadScore;
   double workloadScoreZScore;
+
+  /// True when values come from [PolarSessionAnalysis] (cardio), not GPS workload.
+  bool isPolarCardio;
 }
 
 enum MetricType {
@@ -57,7 +62,26 @@ enum MetricType {
 }
 
 extension MetricTypeX on MetricType {
-  String get label {
+  String get label => labelFor(polarCardio: false);
+
+  String labelFor({required bool polarCardio}) {
+    if (polarCardio) {
+      switch (this) {
+        case MetricType.distanceKm:
+          return 'Distance';
+        case MetricType.highSpeedDuration:
+          return 'Temps haute intensité (Z4+Z5)';
+        case MetricType.maxValidatedSpeedKmh:
+          return 'FC max';
+        case MetricType.workloadScore:
+          return 'FC moyenne';
+        case MetricType.highAccelerationCount:
+        case MetricType.maxAccelerationMps2:
+        case MetricType.sprintCount:
+          return labelFor(polarCardio: false);
+      }
+    }
+
     switch (this) {
       case MetricType.distanceKm:
         return 'Distance parcourue';
@@ -76,7 +100,25 @@ extension MetricTypeX on MetricType {
     }
   }
 
-  String get unit {
+  String get unit => unitFor(polarCardio: false);
+
+  String unitFor({required bool polarCardio}) {
+    if (polarCardio) {
+      switch (this) {
+        case MetricType.distanceKm:
+          return 'km';
+        case MetricType.highSpeedDuration:
+          return 's';
+        case MetricType.maxValidatedSpeedKmh:
+        case MetricType.workloadScore:
+          return 'bpm';
+        case MetricType.highAccelerationCount:
+        case MetricType.maxAccelerationMps2:
+        case MetricType.sprintCount:
+          return unitFor(polarCardio: false);
+      }
+    }
+
     switch (this) {
       case MetricType.distanceKm:
         return 'km';
@@ -94,6 +136,14 @@ extension MetricTypeX on MetricType {
         return 'pts';
     }
   }
+
+  /// Metrics meaningful for Polar cardio rows in the dashboard panel.
+  static const List<MetricType> polarCardioValues = <MetricType>[
+    MetricType.workloadScore,
+    MetricType.maxValidatedSpeedKmh,
+    MetricType.highSpeedDuration,
+    MetricType.distanceKm,
+  ];
 }
 
 ActivityMetrics buildActivityMetricsFromSummary({
@@ -158,6 +208,86 @@ ActivityMetrics buildActivityMetricsFromSummary({
   return activityMetrics;
 }
 
+
+/// Maps Polar cardio into [ActivityMetrics] so dashboard lists stay clickable.
+///
+/// Field reuse (Polar has no GPS workload):
+/// - [ActivityMetrics.workloadScore] ← avg HR (bpm)
+/// - [ActivityMetrics.maxValidatedSpeedKmh] ← max HR (bpm)
+/// - [ActivityMetrics.highSpeedDuration] ← Z4+Z5 seconds
+/// - [ActivityMetrics.distanceKM] ← Loop distance when present
+ActivityMetrics buildActivityMetricsFromPolarAnalysis({
+  required String eventId,
+  required Timestamp timestamp,
+  required PolarSessionAnalysis analysis,
+}) {
+  final z4 = analysis.hrZoneSeconds['z4'] ?? 0;
+  final z5 = analysis.hrZoneSeconds['z5'] ?? 0;
+  final distanceM = analysis.distanceMeters ?? 0;
+
+  return ActivityMetrics(
+    eventId: eventId,
+    timestamp: timestamp,
+    isPolarCardio: true,
+    workloadScore: (analysis.avgHrBpm ?? 0).toDouble(),
+    maxValidatedSpeedKmh: (analysis.maxHrBpm ?? 0).toDouble(),
+    highSpeedDuration: (z4 + z5).toDouble(),
+    distanceKM: distanceM > 0 ? distanceM / 1000.0 : 0,
+  );
+}
+
+/// Team-average Polar cardio for managers / roster staff.
+ActivityMetrics buildActivityMetricsFromPolarAnalyses({
+  required String eventId,
+  required Timestamp timestamp,
+  required List<PolarSessionAnalysis> analyses,
+}) {
+  if (analyses.isEmpty) {
+    return ActivityMetrics(
+      eventId: eventId,
+      timestamp: timestamp,
+      isPolarCardio: true,
+    );
+  }
+
+  var avgHrSum = 0.0;
+  var avgHrCount = 0;
+  var maxHrSum = 0.0;
+  var maxHrCount = 0;
+  var highIntensitySum = 0.0;
+  var distanceSumKm = 0.0;
+
+  for (final analysis in analyses) {
+    final avg = analysis.avgHrBpm;
+    if (avg != null && avg > 0) {
+      avgHrSum += avg;
+      avgHrCount++;
+    }
+    final max = analysis.maxHrBpm;
+    if (max != null && max > 0) {
+      maxHrSum += max;
+      maxHrCount++;
+    }
+    final z4 = analysis.hrZoneSeconds['z4'] ?? 0;
+    final z5 = analysis.hrZoneSeconds['z5'] ?? 0;
+    highIntensitySum += z4 + z5;
+    final distanceM = analysis.distanceMeters ?? 0;
+    if (distanceM > 0) {
+      distanceSumKm += distanceM / 1000.0;
+    }
+  }
+
+  final n = analyses.length.toDouble();
+  return ActivityMetrics(
+    eventId: eventId,
+    timestamp: timestamp,
+    isPolarCardio: true,
+    workloadScore: avgHrCount > 0 ? avgHrSum / avgHrCount : 0,
+    maxValidatedSpeedKmh: maxHrCount > 0 ? maxHrSum / maxHrCount : 0,
+    highSpeedDuration: highIntensitySum / n,
+    distanceKM: distanceSumKm / n,
+  );
+}
 
 ActivityMetrics buildActivityMetricsFromPlayerScore({
   required String eventId,

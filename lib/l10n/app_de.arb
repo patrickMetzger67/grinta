@@ -43,8 +43,12 @@
   "invitationSentBy": "Die Einladung wurde Ihnen von {firstName} {lastName} gesendet",
   "@invitationSentBy": {
     "placeholders": {
-      "firstName": { "type": "String" },
-      "lastName": { "type": "String" }
+      "firstName": {
+        "type": "String"
+      },
+      "lastName": {
+        "type": "String"
+      }
     }
   },
   "signupWithoutInvitationComingSoon": "Funktion demnächst verfügbar",
@@ -65,13 +69,17 @@
   "invitationEmailSubject": "Dein Coach lädt dich ein, {appName} beizutreten",
   "@invitationEmailSubject": {
     "placeholders": {
-      "appName": { "type": "String" }
+      "appName": {
+        "type": "String"
+      }
     }
   },
   "invitationEmailIntro": "Dein Coach lädt dich ein, {appName} beizutreten",
   "@invitationEmailIntro": {
     "placeholders": {
-      "appName": { "type": "String" }
+      "appName": {
+        "type": "String"
+      }
     }
   },
   "invitationEmailCodeLabel": "Dein Einladungscode",
@@ -80,30 +88,48 @@
   "invitationEmailFooter": "Du hast diese E-Mail erhalten, weil ein Coach dich auf {appName} hinzugefügt hat. Wenn du diese Nachricht nicht erwartet hast, kannst du sie ignorieren.",
   "@invitationEmailFooter": {
     "placeholders": {
-      "appName": { "type": "String" }
+      "appName": {
+        "type": "String"
+      }
     }
   },
   "invitationSmsMessage": "Dein Coach lädt dich ein, {appName} beizutreten. Dein Code: {code}.\niPhone: {appleStoreUrl}\nAndroid: {googlePlayUrl}",
   "@invitationSmsMessage": {
     "placeholders": {
-      "appName": { "type": "String" },
-      "code": { "type": "String" },
-      "appleStoreUrl": { "type": "String" },
-      "googlePlayUrl": { "type": "String" }
+      "appName": {
+        "type": "String"
+      },
+      "code": {
+        "type": "String"
+      },
+      "appleStoreUrl": {
+        "type": "String"
+      },
+      "googlePlayUrl": {
+        "type": "String"
+      }
     }
   },
   "sessionReportEmailSubject": "{appName} — Bericht {eventLabel}: {title}",
   "@sessionReportEmailSubject": {
     "placeholders": {
-      "appName": { "type": "String" },
-      "eventLabel": { "type": "String" },
-      "title": { "type": "String" }
+      "appName": {
+        "type": "String"
+      },
+      "eventLabel": {
+        "type": "String"
+      },
+      "title": {
+        "type": "String"
+      }
     }
   },
   "sessionReportEmailIntro": "Hier ist dein Statistikbericht von {appName}",
   "@sessionReportEmailIntro": {
     "placeholders": {
-      "appName": { "type": "String" }
+      "appName": {
+        "type": "String"
+      }
     }
   },
   "sessionReportEmailEventMatch": "Spiel",
@@ -118,19 +144,25 @@
   "sessionReportEmailDateLine": "Datum: {date}",
   "@sessionReportEmailDateLine": {
     "placeholders": {
-      "date": { "type": "String" }
+      "date": {
+        "type": "String"
+      }
     }
   },
   "sessionReportEmailTeamLine": "Team: {team}",
   "@sessionReportEmailTeamLine": {
     "placeholders": {
-      "team": { "type": "String" }
+      "team": {
+        "type": "String"
+      }
     }
   },
   "sessionReportEmailPlayersLine": "Spieler mit Daten: {count}",
   "@sessionReportEmailPlayersLine": {
     "placeholders": {
-      "count": { "type": "int" }
+      "count": {
+        "type": "int"
+      }
     }
   },
   "sessionReportEmailAttachmentHint": "Der Tracker-Statistikbericht als PDF ist dieser E-Mail angehängt.",
@@ -139,7 +171,9 @@
   "sessionReportEmailDownloadLine": "PDF herunterladen: {url}",
   "@sessionReportEmailDownloadLine": {
     "placeholders": {
-      "url": { "type": "String" }
+      "url": {
+        "type": "String"
+      }
     }
   },
   "sessionReportEmailAskAddress": "Nenne mir die E-Mail-Adresse für den PDF-Bericht.",
@@ -148,7 +182,9 @@
   "sessionReportEmailFooter": "Du hast diese E-Mail erhalten, weil ein Sitzungsbericht aus {appName} erstellt wurde. Wenn du diese Nachricht nicht erwartet hast, kannst du sie ignorieren.",
   "@sessionReportEmailFooter": {
     "placeholders": {
-      "appName": { "type": "String" }
+      "appName": {
+        "type": "String"
+      }
     }
   },
   "sessionReportEmailDialogTitle": "PDF-Bericht senden",
@@ -161,19 +197,25 @@
   "sessionReportEmailSuccess": "Bericht an {email} gesendet",
   "@sessionReportEmailSuccess": {
     "placeholders": {
-      "email": { "type": "String" }
+      "email": {
+        "type": "String"
+      }
     }
   },
   "sessionReportEmailSuccessCount": "Bericht an {count} Empfänger gesendet",
   "@sessionReportEmailSuccessCount": {
     "placeholders": {
-      "count": { "type": "int" }
+      "count": {
+        "type": "int"
+      }
     }
   },
   "sessionReportEmailSelectedCount": "{count} ausgewählt",
   "@sessionReportEmailSelectedCount": {
     "placeholders": {
-      "count": { "type": "int" }
+      "count": {
+        "type": "int"
+      }
     }
   },
   "sessionReportEmailSelectAll": "Alle auswählen",
@@ -192,7 +234,9 @@
   "memberAddedToTeamNotificationBody": "Dein Coach hat dich zu {teamName} hinzugefügt.",
   "@memberAddedToTeamNotificationBody": {
     "placeholders": {
-      "teamName": { "type": "String" }
+      "teamName": {
+        "type": "String"
+      }
     }
   },
   "invitationAccepted": "Einladung angenommen",
@@ -222,7 +266,9 @@
   "memberProfileUpdateError": "Profil konnte nicht aktualisiert werden: {error}",
   "@memberProfileUpdateError": {
     "placeholders": {
-      "error": { "type": "String" }
+      "error": {
+        "type": "String"
+      }
     }
   },
   "memberProfileChangePhoto": "Foto ändern",
@@ -231,7 +277,9 @@
   "memberProfilePhotoUploadError": "Foto konnte nicht aktualisiert werden: {error}",
   "@memberProfilePhotoUploadError": {
     "placeholders": {
-      "error": { "type": "String" }
+      "error": {
+        "type": "String"
+      }
     }
   },
   "errorEditProfileUnavailable": "Kein Profil zum Bearbeiten verfügbar",
@@ -278,13 +326,17 @@
   "teamCreationSelectedClubTeamsCount": "{count, plural, =0{Keine Mannschaft ausgewählt} =1{1 Mannschaft ausgewählt} other{{count} Mannschaften ausgewählt}}",
   "@teamCreationSelectedClubTeamsCount": {
     "placeholders": {
-      "count": { "type": "int" }
+      "count": {
+        "type": "int"
+      }
     }
   },
   "teamCreationClubTeamCompetitionsCount": "{count, plural, =1{1 Wettbewerb} other{{count} Wettbewerbe}}",
   "@teamCreationClubTeamCompetitionsCount": {
     "placeholders": {
-      "count": { "type": "int" }
+      "count": {
+        "type": "int"
+      }
     }
   },
   "teamCreationSoccerType": "Fußballtyp",
@@ -293,19 +345,25 @@
   "equipeCompetitionsSheetTitle": "Wettbewerbe — {teamName}",
   "@equipeCompetitionsSheetTitle": {
     "placeholders": {
-      "teamName": { "type": "String" }
+      "teamName": {
+        "type": "String"
+      }
     }
   },
   "fffCompetitionPhaseLabel": "Phase {phase}",
   "@fffCompetitionPhaseLabel": {
     "placeholders": {
-      "phase": { "type": "int" }
+      "phase": {
+        "type": "int"
+      }
     }
   },
   "fffCompetitionGroupeLabel": "Gruppe {groupe}",
   "@fffCompetitionGroupeLabel": {
     "placeholders": {
-      "groupe": { "type": "int" }
+      "groupe": {
+        "type": "int"
+      }
     }
   },
   "hintSearchClub": "Verein suchen",
@@ -391,7 +449,6 @@
   "notificationsConvocationAbsentConfirm": "Bestätigen",
   "notificationsConvocationAbsentMessageRequired": "Bitte geben Sie eine Nachricht ein.",
   "notificationsConvocationActionError": "Antwort auf die Einberufung fehlgeschlagen.",
-
   "featureDiscoveryAgendaTitle": "Kalender entdecken",
   "featureDiscoveryAgendaMessage": "Sehen Sie kommende Spiele und Trainings im Agenda-Tab.",
   "featureDiscoveryDiscover": "Entdecken",
@@ -436,7 +493,9 @@
   "matchConvocationsSendSubtitle": "{count, plural, =1{1 Spieler einberufen} other{{count} Spieler einberufen}}",
   "@matchConvocationsSendSubtitle": {
     "placeholders": {
-      "count": { "type": "int" }
+      "count": {
+        "type": "int"
+      }
     }
   },
   "matchConvocationsSendMessage": "Nachricht",
@@ -450,79 +509,111 @@
   "matchConvocationsSendSuccess": "{count, plural, =1{1 Einberufung gesendet} other{{count} Einberufungen gesendet}}",
   "@matchConvocationsSendSuccess": {
     "placeholders": {
-      "count": { "type": "int" }
+      "count": {
+        "type": "int"
+      }
     }
   },
   "matchConvocationsSendSkippedNoAccount": "{count, plural, =1{1 Spieler ohne verknüpftes Konto} other{{count} Spieler ohne verknüpftes Konto}}",
   "@matchConvocationsSendSkippedNoAccount": {
     "placeholders": {
-      "count": { "type": "int" }
+      "count": {
+        "type": "int"
+      }
     }
   },
   "matchConvocationsSendSkippedNoPush": "{count, plural, =1{1 Spieler ohne Push-Benachrichtigung} other{{count} Spieler ohne Push-Benachrichtigung}}",
   "@matchConvocationsSendSkippedNoPush": {
     "placeholders": {
-      "count": { "type": "int" }
+      "count": {
+        "type": "int"
+      }
     }
   },
   "matchConvocationsSendNoRecipients": "Kein einberufener Spieler hat ein verknüpftes Grinta-Konto.",
   "matchConvocationsSendError": "Senden fehlgeschlagen: {error}",
   "@matchConvocationsSendError": {
     "placeholders": {
-      "error": { "type": "String" }
+      "error": {
+        "type": "String"
+      }
     }
   },
   "matchConvocationsSendErrorAuth": "Melde dich an, um Einberufungen zu senden.",
   "matchConvocationsSendDateTimeValue": "{date} um {time}",
   "@matchConvocationsSendDateTimeValue": {
     "placeholders": {
-      "date": { "type": "String" },
-      "time": { "type": "String" }
+      "date": {
+        "type": "String"
+      },
+      "time": {
+        "type": "String"
+      }
     }
   },
   "matchConvocationsSendMatchLine": "Spiel: {opponent}",
   "@matchConvocationsSendMatchLine": {
     "placeholders": {
-      "opponent": { "type": "String" }
+      "opponent": {
+        "type": "String"
+      }
     }
   },
   "matchConvocationsSendTimeLine": "Zeit: {time}",
   "@matchConvocationsSendTimeLine": {
     "placeholders": {
-      "time": { "type": "String" }
+      "time": {
+        "type": "String"
+      }
     }
   },
   "matchConvocationsSendAddressLine": "Adresse: {address}",
   "@matchConvocationsSendAddressLine": {
     "placeholders": {
-      "address": { "type": "String" }
+      "address": {
+        "type": "String"
+      }
     }
   },
   "matchConvocationNotificationTitle": "Einberufung · {opponent}",
   "@matchConvocationNotificationTitle": {
     "placeholders": {
-      "opponent": { "type": "String" }
+      "opponent": {
+        "type": "String"
+      }
     }
   },
   "matchConvocationFeedbackNotificationTitle": "Antwort Einberufung · {opponent}",
   "@matchConvocationFeedbackNotificationTitle": {
     "placeholders": {
-      "opponent": { "type": "String" }
+      "opponent": {
+        "type": "String"
+      }
     }
   },
   "matchConvocationNotificationBody": "{opponent} · Treffpunkt {time}",
   "@matchConvocationNotificationBody": {
     "placeholders": {
-      "opponent": { "type": "String" },
-      "time": { "type": "String" }
+      "opponent": {
+        "type": "String"
+      },
+      "time": {
+        "type": "String"
+      }
     }
   },
   "matchConvocationNotificationBodyWithMessage": "{opponent} · Treffpunkt {time} · {message}",
   "@matchConvocationNotificationBodyWithMessage": {
     "placeholders": {
-      "opponent": { "type": "String" },
-      "time": { "type": "String" },
-      "message": { "type": "String" }
+      "opponent": {
+        "type": "String"
+      },
+      "time": {
+        "type": "String"
+      },
+      "message": {
+        "type": "String"
+      }
     }
   },
   "tabTacticalSchema": "Taktisches Schema",
@@ -786,7 +877,9 @@
   "teamStreamChannelCreateMessage": "Stream-Gruppe für Team {teamName} erstellen? Spieler und Staff werden automatisch hinzugefügt.",
   "@teamStreamChannelCreateMessage": {
     "placeholders": {
-      "teamName": { "type": "String" }
+      "teamName": {
+        "type": "String"
+      }
     }
   },
   "teamStreamChannelCreateConfirm": "Erstellen",
@@ -794,13 +887,17 @@
   "teamStreamChannelCreateSuccess": "Stream-Gruppe für {teamName} erstellt.",
   "@teamStreamChannelCreateSuccess": {
     "placeholders": {
-      "teamName": { "type": "String" }
+      "teamName": {
+        "type": "String"
+      }
     }
   },
   "teamStreamChannelCreateError": "Stream-Gruppe konnte nicht erstellt werden: {details}",
   "@teamStreamChannelCreateError": {
     "placeholders": {
-      "details": { "type": "String" }
+      "details": {
+        "type": "String"
+      }
     }
   },
   "teamStreamChannelCreateNotManager": "Nur Manager können die Stream-Gruppe erstellen.",
@@ -827,7 +924,9 @@
   "playerAgeYears": "{age} Jahre",
   "@playerAgeYears": {
     "placeholders": {
-      "age": { "type": "int" }
+      "age": {
+        "type": "int"
+      }
     }
   },
   "playerAgeUnknown": "Alter nicht angegeben",
@@ -853,7 +952,9 @@
   "matchGrintaHighlightDeleteConfirmMessage": "Möchten Sie \"{highlightLabel}\" wirklich löschen? Diese Aktion ist endgültig.",
   "@matchGrintaHighlightDeleteConfirmMessage": {
     "placeholders": {
-      "highlightLabel": { "type": "String" }
+      "highlightLabel": {
+        "type": "String"
+      }
     }
   },
   "matchGrintaHighlightDeleted": "Highlight gelöscht",
@@ -893,7 +994,9 @@
   "highlightGoalScored": "Tor — {scorer}",
   "@highlightGoalScored": {
     "placeholders": {
-      "scorer": { "type": "String" }
+      "scorer": {
+        "type": "String"
+      }
     }
   },
   "highlightTimeHalfTime": "Halbzeit",
@@ -906,13 +1009,17 @@
   "highlightYellowCardShown": "Gelbe Karte — {player}",
   "@highlightYellowCardShown": {
     "placeholders": {
-      "player": { "type": "String" }
+      "player": {
+        "type": "String"
+      }
     }
   },
   "highlightRedCardShown": "Rote Karte — {player}",
   "@highlightRedCardShown": {
     "placeholders": {
-      "player": { "type": "String" }
+      "player": {
+        "type": "String"
+      }
     }
   },
   "highlightTypeOwnGoal": "Eigentor",
@@ -933,8 +1040,12 @@
   "trackerSyncedProgress": "{synced}/{total} synchronisiert",
   "@trackerSyncedProgress": {
     "placeholders": {
-      "synced": { "type": "int" },
-      "total": { "type": "int" }
+      "synced": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      }
     }
   },
   "trackerAlreadySyncedTitle": "Synchronisierung bereits durchgeführt",
@@ -1014,7 +1125,9 @@
   "teamDetailTrackerOwnerType": "Typ: {type}",
   "@teamDetailTrackerOwnerType": {
     "placeholders": {
-      "type": { "type": "String" }
+      "type": {
+        "type": "String"
+      }
     }
   },
   "teamDetailTrackerOwnersSaved": "Tracker-Kits aktualisiert.",
@@ -1110,7 +1223,6 @@
   "asiHeatmapPointCount": "{count} Punkt(e) - {period}",
   "metricsEvolutionTitle": "Verlauf - {metric}",
   "trainingOnDate": "Training am {date}",
-
   "subscriptionPaywallTitle": "Upgrade auf Grinta Premium",
   "subscriptionPaywallSubtitle": "Schalten Sie alle Funktionen für die Verfolgung Ihrer Teams und Spieler frei.",
   "subscriptionPaywallLater": "Später",
@@ -1143,21 +1255,24 @@
   "subscriptionPromptTitle": "Premium werden",
   "subscriptionPromptMessage": "Nutzen Sie alle Grinta-Funktionen mit einem passenden Abonnement.",
   "subscriptionPromptAction": "Angebote ansehen",
-
   "subscriptionMenu": "Abonnement",
   "subscriptionDetailsTitle": "Abonnement",
   "subscriptionTier": "Tarif",
   "subscriptionRenewalDate": "Verlängert am {date}",
   "@subscriptionRenewalDate": {
     "placeholders": {
-      "date": { "type": "String" }
+      "date": {
+        "type": "String"
+      }
     }
   },
   "subscriptionNone": "Kein aktives Abonnement",
   "subscriptionTrialEnds": "Test endet am {date}",
   "@subscriptionTrialEnds": {
     "placeholders": {
-      "date": { "type": "String" }
+      "date": {
+        "type": "String"
+      }
     }
   },
   "subscriptionPeriodLabel": "Zeitraum",
@@ -1165,31 +1280,35 @@
   "subscriptionBillingPeriodMonthly": "Monatlich",
   "subscriptionBillingPeriodYearly": "Jährlich",
   "subscriptionStatusActive": "Aktiv",
-
   "subscriptionChangePlan": "Tarif wechseln",
   "subscriptionChangePlanTitle": "Abonnement ändern",
   "subscriptionChangePlanSubtitle": "Wechseln Sie zwischen Coach und Spieler, ändern Sie die Stufe oder den Abrechnungszeitraum.",
   "subscriptionChangePlanConfirm": "Änderung bestätigen",
   "subscriptionCurrentPlan": "Aktueller Tarif",
   "subscriptionPlanChanged": "Ihr Abonnement wurde aktualisiert.",
-
   "subscriptionLimitMaxTeamsReached": "Sie haben die maximale Anzahl an Teams ({max}) für Ihr Abonnement erreicht.",
   "@subscriptionLimitMaxTeamsReached": {
     "placeholders": {
-      "max": { "type": "int" }
+      "max": {
+        "type": "int"
+      }
     }
   },
   "subscriptionLimitMaxPlayersReached": "Sie haben die maximale Anzahl an Spielern ({max}) für dieses Team erreicht.",
   "@subscriptionLimitMaxPlayersReached": {
     "placeholders": {
-      "max": { "type": "int" }
+      "max": {
+        "type": "int"
+      }
     }
   },
   "subscriptionLimitPlayerTierOnlySelf": "Mit Ihrem Spieler-Abo können Sie nur Ihr eigenes Profil zu einem Team hinzufügen.",
   "subscriptionLimitMaxProfilesReached": "Sie haben die maximale Anzahl an Profilen ({max}) für Ihr Abonnement erreicht.",
   "@subscriptionLimitMaxProfilesReached": {
     "placeholders": {
-      "max": { "type": "int" }
+      "max": {
+        "type": "int"
+      }
     }
   },
   "subscriptionLimitProfileUpgradeTitle": "Zusätzliche Profile",
@@ -1204,22 +1323,21 @@
   "subscriptionLimitTeamDetailBlockedTitle": "Teamverwaltung",
   "subscriptionLimitTeamDetailBlockedMessage": "Wechseln Sie zum Spieler-Abonnement, um auf Teamdetails zuzugreifen und Ihren Kader zu verwalten.",
   "subscriptionLimitTeamCreatedFreePlayer": "Ihr Team wurde erstellt. Upgraden Sie, um auf die Teamdetails zuzugreifen.",
-
   "trialStatusTitle": "Kostenlose Testphase",
   "trialDaysRemaining": "{days, plural, =1{1 Tag verbleibend} other{{days} Tage verbleibend}}",
   "@trialDaysRemaining": {
     "placeholders": {
-      "days": { "type": "int" }
+      "days": {
+        "type": "int"
+      }
     }
   },
-
   "shopTitle": "Grinta Shop",
   "shopPromoTitle": "Shop-Angebot",
   "shopPromoCta": "Angebot ansehen",
   "shopBrowseAll": "Shop durchsuchen",
   "shopLoadError": "Der Shop konnte nicht geladen werden.",
   "shopRetry": "Erneut versuchen",
-
   "legalPrivacyPolicy": "Datenschutzerklärung",
   "legalTermsOfService": "Nutzungsbedingungen",
   "actionDeleteAccount": "Konto löschen",
@@ -1228,7 +1346,9 @@
   "errorDeleteAccount": "Konto konnte nicht gelöscht werden: {details}",
   "@errorDeleteAccount": {
     "placeholders": {
-      "details": { "type": "String" }
+      "details": {
+        "type": "String"
+      }
     }
   },
   "errorDeleteAccountRequiresRecentLogin": "Aus Sicherheitsgründen melden Sie sich ab, erneut an und versuchen Sie es dann erneut.",
@@ -1237,16 +1357,19 @@
   "teamDeleteConfirmMessage": "Möchten Sie „{teamName}“ wirklich löschen? Diese Aktion ist endgültig. Alle teambezogenen Daten (Mitglieder, Spiele, Statistiken usw.) werden gelöscht.",
   "@teamDeleteConfirmMessage": {
     "placeholders": {
-      "teamName": { "type": "String" }
+      "teamName": {
+        "type": "String"
+      }
     }
   },
   "teamDeleteSuccess": "Team „{teamName}“ wurde gelöscht.",
   "@teamDeleteSuccess": {
     "placeholders": {
-      "teamName": { "type": "String" }
+      "teamName": {
+        "type": "String"
+      }
     }
   },
-
   "agendaAddEventTitle": "Erstellen",
   "agendaAddEventMatch": "Ein Spiel / Match",
   "agendaAddEventTraining": "Eine Trainingseinheit",
@@ -1267,7 +1390,7 @@
   "createPersonalSportTypeRequired": "Choose an activity type",
   "createPersonalSportImportSource": "App / device",
   "createPersonalSportPolarActivity": "Polar activity",
-"createPersonalSportWhoopActivity": "Whoop activity",
+  "createPersonalSportWhoopActivity": "Whoop activity",
   "createPersonalSportWhoopDeployRequired": "Whoop import is not deployed yet. Run firebase deploy for whoopListActivities and whoopImportActivity.",
   "createPersonalSportWhoopLoadError": "Could not load Whoop activities. Check the connection and try again.",
   "createPersonalSportWhoopNoImportable": "No Whoop workouts to import.",
@@ -1282,7 +1405,7 @@
   "createPersonalSportPolarDeployRequired": "Polar import is not deployed yet. Run firebase deploy for polarListActivities and polarImportActivity.",
   "createPersonalSportPolarLoadError": "Could not load Polar activities. Check the connection and try again.",
   "createPersonalSportPolarNoImportable": "No Polar Flow training session to import. In Polar Flow, confirm the session is a Training (not only continuous HR), synced after connecting Grinta, then retry.",
-    "createPersonalSportStravaActivity": "Strava activity",
+  "createPersonalSportStravaActivity": "Strava activity",
   "createPersonalSportNoImportable": "No activities to import",
   "createPersonalSportNoConnectedApps": "No connected app. Connect Strava, Polar, Whoop, Apple Fitness or Google Health in Devices / Apps.",
   "createPersonalSportImportRequired": "Select an activity to import",
@@ -1323,7 +1446,9 @@
   "deletePersonalSportConfirmMessage": "“{title}” will be permanently deleted.",
   "@deletePersonalSportConfirmMessage": {
     "placeholders": {
-      "title": { "type": "String" }
+      "title": {
+        "type": "String"
+      }
     }
   },
   "deletePersonalSportDeleted": "Activity deleted",
@@ -1336,7 +1461,6 @@
   "personalSportUnitKcal": "kcal",
   "personalSportUnitBpm": "bpm",
   "agendaAllDayLabel": "All day",
-
   "agendaCoachPlayersFabTooltip": "Players — personal activities",
   "agendaCoachPlayersTitle": "Players’ sports activities",
   "agendaCoachPlayersSubtitle": "Show personal sport activities with coach visibility in the agenda.",
@@ -1388,7 +1512,6 @@
   "createNonSportEventNotificationBody": "{title} — {when}",
   "createNonSportEventNotificationBodyWithLocation": "{title} — {when} — {location}",
   "nonSportEventInviteesTitle": "Invitations",
-
   "calendarSyncToggleLabel": "Kalender-Sync",
   "calendarSyncToggleSubtitle": "Aktualisierung beim Öffnen der Agenda (max. 1×/15 Min.)",
   "calendarSyncWebSubtitle": "ICS-Datei herunterladen und in den Kalender importieren",
@@ -1409,7 +1532,9 @@
   "createTrainingDurationMinutes": "{minutes} Min.",
   "@createTrainingDurationMinutes": {
     "placeholders": {
-      "minutes": { "type": "int" }
+      "minutes": {
+        "type": "int"
+      }
     }
   },
   "createTrainingRecurrent": "Wiederkehrend",
@@ -1426,7 +1551,9 @@
   "createTrainingSaved": "{count, plural, =1{1 Training erstellt} other{{count} Trainings erstellt}}",
   "@createTrainingSaved": {
     "placeholders": {
-      "count": { "type": "int" }
+      "count": {
+        "type": "int"
+      }
     }
   },
   "createTrainingError": "Training konnte nicht erstellt werden. Bitte erneut versuchen.",
@@ -1443,7 +1570,7 @@
   "trainingDeleteError": "Training konnte nicht gelöscht werden. Bitte erneut versuchen.",
   "finishTrainingTitle": "Training beenden",
   "trainingFinishConfirmTitle": "Training beenden?",
-  "trainingFinishConfirmMessage": "Nicht verfügbare Spieler, die als anwesend markiert sind, werden als abwesend gesetzt. Möchten Sie dieses Training beenden?",
+  "trainingFinishConfirmMessage": "Möchten Sie dieses Training beenden?",
   "trainingFinished": "Training beendet",
   "trainingFinishError": "Training konnte nicht beendet werden. Bitte erneut versuchen.",
   "trainingIntenseFinishTitle": "Sensordaten werden abgerufen",
@@ -1469,7 +1596,9 @@
   "intenseLiveLastUpdate": "Aktualisiert um {time}",
   "@intenseLiveLastUpdate": {
     "placeholders": {
-      "time": { "type": "String" }
+      "time": {
+        "type": "String"
+      }
     }
   },
   "tabLive": "Live",
@@ -1485,7 +1614,9 @@
   "createMatchDurationMinutes": "{minutes} min",
   "@createMatchDurationMinutes": {
     "placeholders": {
-      "minutes": { "type": "int" }
+      "minutes": {
+        "type": "int"
+      }
     }
   },
   "createMatchOpponent": "Gegner",
@@ -1534,8 +1665,12 @@
   "manageUnavailabilitiesDateRange": "{from} – {to}",
   "@manageUnavailabilitiesDateRange": {
     "placeholders": {
-      "from": { "type": "String" },
-      "to": { "type": "String" }
+      "from": {
+        "type": "String"
+      },
+      "to": {
+        "type": "String"
+      }
     }
   },
   "manageUnavailabilitiesHidden": "Ausgeblendet",
@@ -1554,7 +1689,9 @@
   "teamStatsScreenTitle": "Statistiken — {teamName}",
   "@teamStatsScreenTitle": {
     "placeholders": {
-      "teamName": { "type": "String" }
+      "teamName": {
+        "type": "String"
+      }
     }
   },
   "teamStatsTabAnalysis": "Analyse",
@@ -1574,28 +1711,40 @@
   "teamStatsTypicalTeamStartsLabel": "{starts}/{total} Starts",
   "@teamStatsTypicalTeamStartsLabel": {
     "placeholders": {
-      "starts": { "type": "int" },
-      "total": { "type": "int" }
+      "starts": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      }
     }
   },
   "teamStatsTypicalTeamSubsLabel": "{subs}/{total} als Einwechselspieler",
   "@teamStatsTypicalTeamSubsLabel": {
     "placeholders": {
-      "subs": { "type": "int" },
-      "total": { "type": "int" }
+      "subs": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      }
     }
   },
   "teamStatsTypicalTeamNoData": "Keine Aufstellungsdaten für diesen Gegner verfügbar",
   "teamStatsTypicalTeamIncompleteStarters": "Nur {count} Spieler mit Startelf-Daten",
   "@teamStatsTypicalTeamIncompleteStarters": {
     "placeholders": {
-      "count": { "type": "int" }
+      "count": {
+        "type": "int"
+      }
     }
   },
   "teamStatsTypicalTeamMatchesBasis": "Basierend auf {count, plural, =1{1 Spiel mit Aufstellung} other{{count} Spielen mit Aufstellung}}",
   "@teamStatsTypicalTeamMatchesBasis": {
     "placeholders": {
-      "count": { "type": "int" }
+      "count": {
+        "type": "int"
+      }
     }
   },
   "teamStatsRankingAtDate": "Aktuell",
@@ -1616,7 +1765,9 @@
   "teamStatsRankingTooltipRank": "Rang {rank}",
   "@teamStatsRankingTooltipRank": {
     "placeholders": {
-      "rank": { "type": "String" }
+      "rank": {
+        "type": "String"
+      }
     }
   },
   "teamStatsAllCompetitions": "Alle Wettbewerbe",
@@ -1630,8 +1781,12 @@
   "teamStatsWdlMatchesDialogTitle": "{outcome} — {period}",
   "@teamStatsWdlMatchesDialogTitle": {
     "placeholders": {
-      "outcome": { "type": "String" },
-      "period": { "type": "String" }
+      "outcome": {
+        "type": "String"
+      },
+      "period": {
+        "type": "String"
+      }
     }
   },
   "teamStatsTrendLabel": "Trend",
@@ -1649,14 +1804,18 @@
       "avg": {
         "type": "double",
         "format": "decimalPatternDigits",
-        "optionalParameters": { "decimalDigits": 2 }
+        "optionalParameters": {
+          "decimalDigits": 2
+        }
       }
     }
   },
   "teamStatsGoalsMatchCount": "{count, plural, =1{1 Spiel} other{{count} Spiele}}",
   "@teamStatsGoalsMatchCount": {
     "placeholders": {
-      "count": { "type": "int" }
+      "count": {
+        "type": "int"
+      }
     }
   },
   "teamStatsAvgPointsPerMatch": "{avg}",
@@ -1665,7 +1824,9 @@
       "avg": {
         "type": "double",
         "format": "decimalPatternDigits",
-        "optionalParameters": { "decimalDigits": 2 }
+        "optionalParameters": {
+          "decimalDigits": 2
+        }
       }
     }
   },
@@ -1678,21 +1839,27 @@
   "teamStatsPlayersPlayTimeMinutes": "{minutes} Min.",
   "@teamStatsPlayersPlayTimeMinutes": {
     "placeholders": {
-      "minutes": { "type": "int" }
+      "minutes": {
+        "type": "int"
+      }
     }
   },
   "teamStatsAllMonths": "Alle Monate",
   "teamStatsTrainingsCount": "{count, plural, =1{1 Trainingseinheit} other{{count} Trainingseinheiten}}",
   "@teamStatsTrainingsCount": {
     "placeholders": {
-      "count": { "type": "int" }
+      "count": {
+        "type": "int"
+      }
     }
   },
   "teamStatsTrainingsAttendanceRate": "Anwesenheitsquote",
   "teamStatsTrainingsAttendanceRateValue": "{value} %",
   "@teamStatsTrainingsAttendanceRateValue": {
     "placeholders": {
-      "value": { "type": "String" }
+      "value": {
+        "type": "String"
+      }
     }
   },
   "teamStatsTrainingsNoData": "Keine vergangenen Trainingseinheiten in diesem Zeitraum",
@@ -1722,7 +1889,9 @@
   "askDiegoSpeechError": "Spracherkennung fehlgeschlagen: {reason}",
   "@askDiegoSpeechError": {
     "placeholders": {
-      "reason": { "type": "String" }
+      "reason": {
+        "type": "String"
+      }
     }
   },
   "askDiegoEmptyResponse": "Ich habe gerade keine Antwort.",
@@ -1730,7 +1899,9 @@
   "askDiegoNavigationUnknown": "Unbekannte Navigation: {route}",
   "@askDiegoNavigationUnknown": {
     "placeholders": {
-      "route": { "type": "String" }
+      "route": {
+        "type": "String"
+      }
     }
   },
   "askDiegoNavigationAgendaHint": "Öffnen Sie den Agenda-Tab, um Ihren Kalender zu sehen.",
@@ -1758,15 +1929,21 @@
   "reminderTrainingBody": "Training heute um {time} — informiere deinen Trainer bei Abwesenheit",
   "@reminderTrainingBody": {
     "placeholders": {
-      "time": { "type": "String" }
+      "time": {
+        "type": "String"
+      }
     }
   },
   "reminderMatchOpponentStatsTitle": "Spiel heute",
   "reminderMatchOpponentStatsBody": "Heute um {time} triffst du auf {opponent} — entdecke die Statistiken",
   "@reminderMatchOpponentStatsBody": {
     "placeholders": {
-      "time": { "type": "String" },
-      "opponent": { "type": "String" }
+      "time": {
+        "type": "String"
+      },
+      "opponent": {
+        "type": "String"
+      }
     }
   },
   "trainingPresenceConfirmPresent": "Ich bin anwesend",
@@ -1787,32 +1964,44 @@
   "adminPromoCodeEntitlementLabel": "Berechtigung: {entitlement}",
   "@adminPromoCodeEntitlementLabel": {
     "placeholders": {
-      "entitlement": { "type": "String" }
+      "entitlement": {
+        "type": "String"
+      }
     }
   },
   "adminPromoCodeUsageLabel": "Nutzungen: {used} / {max}",
   "@adminPromoCodeUsageLabel": {
     "placeholders": {
-      "used": { "type": "int" },
-      "max": { "type": "int" }
+      "used": {
+        "type": "int"
+      },
+      "max": {
+        "type": "int"
+      }
     }
   },
   "adminPromoCodeDurationLabel": "Dauer: {days} Tage",
   "@adminPromoCodeDurationLabel": {
     "placeholders": {
-      "days": { "type": "int" }
+      "days": {
+        "type": "int"
+      }
     }
   },
   "adminPromoCodeTeamLabel": "Verein: {teamId}",
   "@adminPromoCodeTeamLabel": {
     "placeholders": {
-      "teamId": { "type": "String" }
+      "teamId": {
+        "type": "String"
+      }
     }
   },
   "adminPromoCodeExpiresLabel": "Läuft ab am: {date}",
   "@adminPromoCodeExpiresLabel": {
     "placeholders": {
-      "date": { "type": "String" }
+      "date": {
+        "type": "String"
+      }
     }
   },
   "adminPromoCodeStatusInactive": "Inaktiv",
@@ -1841,7 +2030,9 @@
   "adminPromoCodeDeleteConfirmMessage": "Möchten Sie den Code {code} wirklich löschen? Diese Aktion ist endgültig.",
   "@adminPromoCodeDeleteConfirmMessage": {
     "placeholders": {
-      "code": { "type": "String" }
+      "code": {
+        "type": "String"
+      }
     }
   },
   "adminPromoCodeDeleted": "Promo-Code gelöscht.",
@@ -1852,7 +2043,9 @@
   "adminPromoCodeFieldMaxUsesBelowUsed": "Die maximale Nutzung muss mindestens {used} betragen (bereits eingelöst).",
   "@adminPromoCodeFieldMaxUsesBelowUsed": {
     "placeholders": {
-      "used": { "type": "int" }
+      "used": {
+        "type": "int"
+      }
     }
   },
   "adminPromoCodeFieldActive": "Aktiv",
@@ -1877,6 +2070,7 @@
   "adminTrackerOwnerTypeInspirit": "Inspirit",
   "adminTrackerOwnerTypeFootbar": "Footbar",
   "adminTrackerOwnerTypeIntense": "Intense (SIM, Cloud-Stream)",
+  "adminTrackerOwnerTypePolar": "Polar (BLE-Team-Kit)",
   "adminTrackerOwnerFieldRequired": "Pflichtfeld",
   "adminTrackerOwnerFieldEmailInvalid": "Ungültige E-Mail",
   "adminTrackerOwnerStatusActive": "Aktiv",
@@ -1887,7 +2081,9 @@
   "adminTrackerOwnerDeleteConfirmMessage": "Möchtest du {name} wirklich löschen? Diese Aktion ist endgültig.",
   "@adminTrackerOwnerDeleteConfirmMessage": {
     "placeholders": {
-      "name": { "type": "String" }
+      "name": {
+        "type": "String"
+      }
     }
   },
   "adminTrackerOwnerCreated": "Besitzer erstellt.",
@@ -1915,7 +2111,9 @@
   "adminTrackerFieldsDeleteConfirmMessage": "Möchtest du „{fieldName}“ wirklich löschen? Diese Aktion ist endgültig.",
   "@adminTrackerFieldsDeleteConfirmMessage": {
     "placeholders": {
-      "fieldName": { "type": "String" }
+      "fieldName": {
+        "type": "String"
+      }
     }
   },
   "adminTrackerFieldsDeleted": "Platz gelöscht.",
@@ -1931,19 +2129,25 @@
   "adminTrackerDevicesSource": "Quelle: {provider}",
   "@adminTrackerDevicesSource": {
     "placeholders": {
-      "provider": { "type": "String" }
+      "provider": {
+        "type": "String"
+      }
     }
   },
   "adminTrackerDevicesSerial": "Seriennummer: {serial}",
   "@adminTrackerDevicesSerial": {
     "placeholders": {
-      "serial": { "type": "String" }
+      "serial": {
+        "type": "String"
+      }
     }
   },
   "adminTrackerDevicesUpdatedAt": "Aktualisiert: {date}",
   "@adminTrackerDevicesUpdatedAt": {
     "placeholders": {
-      "date": { "type": "String" }
+      "date": {
+        "type": "String"
+      }
     }
   },
   "adminTrackerDevicesStatusActive": "Aktiv",
@@ -1951,7 +2155,8 @@
   "adminTrackerDevicesAssign": "Zuweisen",
   "adminTrackerDevicesUnassign": "Zuweisung aufheben",
   "adminTrackerDevicesAssignTitle": "Gerät zuweisen",
-  "adminTrackerDevicesCustomName": "Name (optional)",
+  "adminTrackerDevicesCustomName": "Benutzerdefinierter Name (optional)",
+  "adminTrackerDevicesCustomNameHint": "Trikotnummer oder Label, z. B. 7",
   "adminTrackerDevicesCancel": "Abbrechen",
   "adminTrackerDevicesValidate": "Bestätigen",
   "adminTrackerDevicesSelectOwnerRequired": "Bitte wählen Sie einen Verantwortlichen aus.",
@@ -1960,24 +2165,191 @@
   "adminTrackerDevicesError": "Fehler: {error}",
   "@adminTrackerDevicesError": {
     "placeholders": {
-      "error": { "type": "String" }
+      "error": {
+        "type": "String"
+      }
     }
   },
   "adminTrackerDevicesSyncInspirit": "Inspirit synchronisieren",
   "adminTrackerDevicesSyncFootbar": "Footbar synchronisieren",
+  "adminTrackerDevicesAddPolar": "Polar hinzufügen",
+  "adminTrackerDevicesAddPolarChrome": "Über Chrome Bluetooth hinzufügen",
+  "adminTrackerDevicesAddPolarManual": "ID manuell eingeben",
+  "adminPolarBleScanTitle": "Polar-Sensoren scannen",
+  "adminPolarBleScanSheetSubtitle": "Nahe Polar-Geräte auflisten und einzeln verbinden",
+  "adminPolarBleScanHint": "Schalte die Sensoren in der Nähe ein, verbinde dich mit jedem und füge ihn mit einem eigenen Namen zum Kit hinzu.",
+  "adminPolarBleScanSearching": "Suche nach Polar-Sensoren…",
+  "adminPolarBleScanEmpty": "Kein Polar-Sensor gefunden. Bluetooth prüfen und Sensoren einschalten.",
+  "adminPolarBleScanUnsupported": "Polar-BLE-Scan ist nur auf iOS und Android verfügbar.",
+  "adminPolarBleScanConnect": "Verbinden",
+  "adminPolarBleScanConnecting": "Verbindung…",
+  "adminPolarBleScanConnected": "Verbunden",
+  "adminPolarBleScanAddToKit": "Zum Kit hinzufügen",
+  "adminPolarBleScanStop": "Scan stoppen",
+  "adminPolarBleScanRestart": "Erneut scannen",
+  "adminPolarBleScanConnectError": "Verbindung fehlgeschlagen: {error}",
+  "@adminPolarBleScanConnectError": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "polarImportTitle": "Polar-Import (Cardio)",
+  "polarImportSensorsHeader": "Polar-Sensoren der Einheit",
+  "polarImportHint": "Schließe Polar Flow, setze den Verity Sense in den Sensormodus (blaue LED / optisches Herz) und importiere per Bluetooth. Zeigt iOS den Sensor bereits als „Verbunden“, entferne ihn unter Einstellungen → Bluetooth.",
+  "polarImportSelectSensor": "Wähle einen Sensor für den Cardio-Import.",
+  "polarImportStatusPending": "Zu importieren",
+  "polarImportStatusDone": "Importiert",
+  "polarImportUntitledPlayer": "Spieler",
+  "polarImportDeviceLine": "Polar {deviceId} · {deviceType} · {customName}",
+  "@polarImportDeviceLine": {
+    "placeholders": {
+      "deviceId": {
+        "type": "String"
+      },
+      "deviceType": {
+        "type": "String"
+      },
+      "customName": {
+        "type": "String"
+      }
+    }
+  },
+  "polarImportBleAction": "Per Bluetooth importieren",
+  "polarImportBleUnavailable": "Polar-Bluetooth-Import ist unter iOS/Android verfügbar. Im Web manuelle Eingabe nutzen.",
+  "polarImportManualAction": "Manuelle Eingabe",
+  "polarImportManualTitle": "Polar-Cardio eingeben",
+  "polarImportManualSubtitle": "Dauer und HF eingeben (Kalorien / Schritte optional für Loop).",
+  "polarImportFieldDurationMin": "Dauer (Minuten)",
+  "polarImportFieldAvgHr": "HF Mittel (bpm)",
+  "polarImportFieldMaxHr": "HF Max (bpm)",
+  "polarImportFieldMinHr": "HF Min (bpm)",
+  "polarImportFieldCalories": "Kalorien (kcal, optional)",
+  "polarImportFieldDistanceM": "Distanz (m, optional)",
+  "polarImportFieldSteps": "Schritte (optional)",
+  "polarImportMissingPlayer": "Kein Spieler mit diesem Sensor verknüpft.",
+  "polarImportSuccess": "Import OK — HF Mittel {avgHr} · {minutes} Min",
+  "@polarImportSuccess": {
+    "placeholders": {
+      "avgHr": {
+        "type": "String"
+      },
+      "minutes": {
+        "type": "String"
+      }
+    }
+  },
+  "polarImportBleTimeoutHint": "Polar-BLE-Verbindung abgelaufen. Schließe Polar Flow, entferne den Sensor unter Einstellungen → Bluetooth falls er „Verbunden“ bleibt, wecke den Verity Sense im Sensormodus (blaue LED) und versuche es erneut.",
+  "polarImportBleError": "Polar-Import fehlgeschlagen: {error}",
+  "@polarImportBleError": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "polarAnalysisEmptyMessage": "Keine Polar-Cardioanalyse für diesen Spieler in dieser Einheit.",
+  "polarAnalysisEmptyTeamMessage": "Keine Polar-Cardioanalyse für diese Einheit importiert. Sensoren unter Sync importieren.",
+  "polarAnalysisTeamTitle": "Polar-Cardioanalyse",
+  "polarAnalysisTeamCount": "{count} Spieler",
+  "@polarAnalysisTeamCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "polarAnalysisColDevice": "Sensor",
+  "polarAnalysisColHighIntensity": "Z4+Z5",
+  "polarAnalysisDeviceLine": "Polar {deviceId} · {deviceType}",
+  "@polarAnalysisDeviceLine": {
+    "placeholders": {
+      "deviceId": {
+        "type": "String"
+      },
+      "deviceType": {
+        "type": "String"
+      }
+    }
+  },
+  "polarAnalysisHrZonesTab": "HF-Zonen",
+  "polarAnalysisDuration": "Dauer",
+  "polarAnalysisDurationDetail": "{minutes} Min {seconds} s",
+  "@polarAnalysisDurationDetail": {
+    "placeholders": {
+      "minutes": {
+        "type": "int"
+      },
+      "seconds": {
+        "type": "int"
+      }
+    }
+  },
+  "polarAnalysisAvgHr": "HF Mittel",
+  "polarAnalysisMaxHr": "HF Max",
+  "polarAnalysisMinHr": "HF Min",
+  "polarAnalysisSamples": "Samples",
+  "polarAnalysisCalories": "Kalorien",
+  "polarAnalysisSteps": "Schritte",
+  "polarAnalysisUnitMin": "Min",
+  "polarAnalysisUnitBpm": "bpm",
+  "polarAnalysisUnitKcal": "kcal",
+  "polarAnalysisZoneLabel": "{zone}",
+  "@polarAnalysisZoneLabel": {
+    "placeholders": {
+      "zone": {
+        "type": "String"
+      }
+    }
+  },
+  "polarAnalysisNoZones": "Keine Zonenverteilung für diesen Import.",
+  "polarImportMissingSeason": "Saison nicht gefunden, um Polar-Sensoren zu importieren.",
+  "polarImportAgendaAction": "Polar-Daten importieren",
+  "polarAnalysisAgendaAction": "Polar-Analyse anzeigen",
+  "adminTrackerDevicesAddPolarTitle": "Polar-Sensor hinzufügen",
+  "adminTrackerDevicesAddPolarDeviceId": "Polar-Geräte-ID",
+  "adminTrackerDevicesAddPolarDeviceIdHint": "Auf dem Sensor gedruckt, oder Ende des BLE-Namens (z. B. Polar H10 1C709B20 → 1C709B20)",
+  "adminTrackerDevicesAddPolarChromeUnsupported": "Web Bluetooth erfordert Chrome (HTTPS oder localhost).",
+  "adminTrackerDevicesAddPolarChromeCancelled": "Bluetooth-Auswahl abgebrochen.",
+  "adminTrackerDevicesAddPolarChromeNoId": "Polar-ID konnte nicht aus dem BLE-Namen gelesen werden. Gib die auf dem Sensor gedruckte ID ein.",
+  "adminTrackerDevicesAddPolarChromeSuccess": "Polar {deviceId} ({deviceType}) hinzugefügt.",
+  "@adminTrackerDevicesAddPolarChromeSuccess": {
+    "placeholders": {
+      "deviceId": {
+        "type": "String"
+      },
+      "deviceType": {
+        "type": "String"
+      }
+    }
+  },
+  "adminTrackerDevicesAddPolarDeviceType": "Sensortyp",
+  "adminTrackerDevicesAddPolarDeviceName": "Anzeigename (optional)",
+  "adminTrackerDevicesAddPolarSuccess": "Polar-Sensor zum Inventar hinzugefügt.",
+  "adminTrackerDevicesAddPolarDeviceIdRequired": "Polar-Geräte-ID ist erforderlich.",
+  "adminTrackerDevicesPolarTypeH10": "H10",
+  "adminTrackerDevicesPolarTypeH9": "H9",
+  "adminTrackerDevicesPolarTypeVeritySense": "Verity Sense",
+  "adminTrackerDevicesPolarTypeOh1": "OH1",
+  "adminTrackerDevicesPolarTypeOther": "Sonstiges",
   "adminTrackerDevicesSyncInProgress": "Synchronisierung...",
   "adminTrackerDevicesSyncInspiritInProgress": "Inspirit-Sync (Insiders) läuft...",
   "adminTrackerDevicesSyncFootbarInProgress": "Footbar-Sync läuft...",
   "adminTrackerDevicesSyncInspiritSuccess": "Inspirit-Sync: {count} Gerät(e) aktualisiert.",
   "@adminTrackerDevicesSyncInspiritSuccess": {
     "placeholders": {
-      "count": { "type": "int" }
+      "count": {
+        "type": "int"
+      }
     }
   },
   "adminTrackerDevicesSyncInspiritError": "Inspirit-Sync-Fehler: {error}",
   "@adminTrackerDevicesSyncInspiritError": {
     "placeholders": {
-      "error": { "type": "String" }
+      "error": {
+        "type": "String"
+      }
     }
   },
   "adminTrackerDevicesPermissionDenied": "Für die Verwaltung der Geräte ist Administratorzugriff erforderlich.",
@@ -1991,19 +2363,25 @@
   "adminStreamGroupsCid": "CID: {cid}",
   "@adminStreamGroupsCid": {
     "placeholders": {
-      "cid": { "type": "String" }
+      "cid": {
+        "type": "String"
+      }
     }
   },
   "adminStreamGroupsMemberCount": "{count} Mitglieder",
   "@adminStreamGroupsMemberCount": {
     "placeholders": {
-      "count": { "type": "int" }
+      "count": {
+        "type": "int"
+      }
     }
   },
   "adminStreamGroupsLastMessageAt": "Letzte Nachricht: {date}",
   "@adminStreamGroupsLastMessageAt": {
     "placeholders": {
-      "date": { "type": "String" }
+      "date": {
+        "type": "String"
+      }
     }
   },
   "adminStreamGroupsDelete": "Löschen",
@@ -2012,8 +2390,12 @@
   "adminStreamGroupsDeleteConfirmMessage": "Möchten Sie die Gruppe {name} ({cid}) wirklich löschen? Diese Aktion ist endgültig.",
   "@adminStreamGroupsDeleteConfirmMessage": {
     "placeholders": {
-      "name": { "type": "String" },
-      "cid": { "type": "String" }
+      "name": {
+        "type": "String"
+      },
+      "cid": {
+        "type": "String"
+      }
     }
   },
   "adminStreamGroupsDeleted": "Gruppe gelöscht.",
@@ -2028,16 +2410,26 @@
   "promoCodeRedeemSuccess": "Promo-Code angewendet: {days} Tage {entitlement}.",
   "@promoCodeRedeemSuccess": {
     "placeholders": {
-      "days": { "type": "int" },
-      "entitlement": { "type": "String" }
+      "days": {
+        "type": "int"
+      },
+      "entitlement": {
+        "type": "String"
+      }
     }
   },
   "promoCodeRedeemSuccessVerified": "{entitlement} aktiv bis {expiresAt} ({days} Tage geschenkt).",
   "@promoCodeRedeemSuccessVerified": {
     "placeholders": {
-      "entitlement": { "type": "String" },
-      "expiresAt": { "type": "String" },
-      "days": { "type": "int" }
+      "entitlement": {
+        "type": "String"
+      },
+      "expiresAt": {
+        "type": "String"
+      },
+      "days": {
+        "type": "int"
+      }
     }
   },
   "promoCodeRedeemSyncPending": "Code serverseitig registriert, aber das Abo ist noch nicht sichtbar. Öffne gleich Einstellungen → Abonnement oder melde dich ab und wieder an.",
@@ -2079,7 +2471,9 @@
   "pendingInvitationNotificationBody": "Dein Trainer lädt dich zu {teamName} ein. Gib den Code aus der E-Mail ein, um dem Team beizutreten.",
   "@pendingInvitationNotificationBody": {
     "placeholders": {
-      "teamName": { "type": "String" }
+      "teamName": {
+        "type": "String"
+      }
     }
   },
   "pendingInvitationAcceptTitle": "Einladungscode",
@@ -2095,13 +2489,17 @@
   "playerSeasonSummaryAgeValue": "{age} J.",
   "@playerSeasonSummaryAgeValue": {
     "placeholders": {
-      "age": { "type": "int" }
+      "age": {
+        "type": "int"
+      }
     }
   },
   "playerSeasonSummaryHwMeasuredAt": "Maße am {date}",
   "@playerSeasonSummaryHwMeasuredAt": {
     "placeholders": {
-      "date": { "type": "String" }
+      "date": {
+        "type": "String"
+      }
     }
   },
   "preferredFootLabel": "Starker Fuß",
@@ -2110,5 +2508,317 @@
   "preferredFootLeft": "Links",
   "preferredFootRight": "Rechts",
   "preferredFootBoth": "Beide",
-  "playerSeasonSummaryPreferredFootSaved": "Starker Fuß aktualisiert."
+  "playerSeasonSummaryPreferredFootSaved": "Starker Fuß aktualisiert.",
+  "teamEditNameTitle": "Teamnamen bearbeiten",
+  "teamEditNameSuccess": "Teamname aktualisiert.",
+  "settingsDevicesSection": "Geräte/Anwendungen",
+  "settingsDevicesClose": "Schließen",
+  "settingsDevicesSync": "Synchronisieren",
+  "settingsDevicesConnectedTitle": "Verbundene Geräte/Anwendungen",
+  "settingsDevicesConnectedStatus": "Verbunden",
+  "settingsDevicesDisconnect": "Trennen",
+  "settingsDevicesNoConnected": "Keine Geräte oder Anwendungen verbunden",
+  "settingsDevicesAddTitle": "Verbindung hinzufügen",
+  "settingsDevicesAddFabTooltip": "Verbindung hinzufügen",
+  "settingsDevicesAllConnected": "Alle verfügbaren Geräte/Anwendungen sind bereits verbunden",
+  "settingsDevicesBadgeLabel": "{count, plural, =0{Keine verbundenen Geräte/Anwendungen} =1{1 verbundenes Gerät/Anwendung} other{{count} verbundene Geräte/Anwendungen}}",
+  "@settingsDevicesBadgeLabel": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "wearableDeviceTypeLabel": "Gerät-/Anwendungstyp",
+  "wearableDeviceWhoop": "Whoop",
+  "wearableDeviceStrava": "Strava",
+  "wearableDevicePolar": "Polar",
+  "wearableDeviceFitbit": "Fitbit",
+  "wearableDeviceAppleHealth": "Apple Fitness",
+  "wearableDeviceGoogleHealthConnect": "Google Health",
+  "whoopConnectToggleLabel": "Whoop-Sync",
+  "whoopConnectToggleSubtitle": "Verbinde dein Whoop-Konto, um Erholung, Schlaf und Workouts zu importieren",
+  "whoopConnectToggleConnectedSubtitle": "Whoop verbunden — Datensync folgt in Phase 2",
+  "whoopConnectSuccess": "Whoop-Konto verbunden.",
+  "whoopAccountHintGuidance": "Deine Whoop-E-Mail kann sich von deinem Grinta-Konto unterscheiden. Gib das Whoop-Konto ein und melde dich damit auf der Whoop-Seite an.",
+  "whoopAccountHintLabel": "Whoop-Konto",
+  "whoopAccountHintPlaceholder": "Whoop-E-Mail",
+  "whoopAccountHintRequired": "Gib dein Whoop-Konto (E-Mail) ein, bevor du fortfährst.",
+  "whoopConnectContinue": "Weiter zu Whoop",
+  "whoopConnectFailed": "Whoop-Verbindung fehlgeschlagen. Prüfe, ob die Whoop Cloud Functions bereitgestellt sind und die Secrets WHOOP_CLIENT_ID / WHOOP_CLIENT_SECRET konfiguriert sind.",
+  "whoopConnectLaunchFailed": "Die Whoop-Anmeldeseite konnte nicht geöffnet werden.",
+  "whoopConnectAuthRequired": "Melde dich bei Grinta an, um Whoop zu verbinden.",
+  "whoopDisconnectFailed": "Trennen von Whoop fehlgeschlagen.",
+  "whoopCoachVisibilityTitle": "Sichtbarkeit für den Coach",
+  "whoopCoachVisibilitySubtitle": "Erlaube deinem Coach, diesen Datentyp zu sehen",
+  "whoopCoachVisibilitySaveFailed": "Whoop-Einstellungen konnten nicht gespeichert werden.",
+  "whoopMetricRecovery": "Erholung",
+  "whoopMetricCycles": "Zyklen",
+  "whoopMetricSleep": "Schlaf",
+  "whoopMetricWorkout": "Workouts",
+  "whoopMetricProfile": "Profil",
+  "whoopMetricBodyMeasurement": "Körpermaße",
+  "whoopCoachConnectTitle": "Whoop",
+  "whoopCoachConnectSubtitle": "Whoop für {playerName} verbinden",
+  "@whoopCoachConnectSubtitle": {
+    "placeholders": {
+      "playerName": {
+        "type": "String"
+      }
+    }
+  },
+  "whoopCoachConnectAction": "Verbinden",
+  "whoopCoachConnectConnectedSubtitle": "Whoop verbunden für {playerName}",
+  "@whoopCoachConnectConnectedSubtitle": {
+    "placeholders": {
+      "playerName": {
+        "type": "String"
+      }
+    }
+  },
+  "stravaConnectToggleSubtitle": "Verbinde dein Strava-Konto, um Aktivitäten und Workouts zu importieren",
+  "stravaConnectToggleConnectedSubtitle": "Strava verbunden — Datensync folgt in Phase 2",
+  "stravaAccountHintGuidance": "Deine Strava-E-Mail kann sich von deinem Grinta-Konto unterscheiden. Gib das Strava-Konto ein und melde dich damit auf der Strava-Seite an.",
+  "stravaAccountHintLabel": "Strava-Konto",
+  "stravaAccountHintPlaceholder": "Strava-E-Mail oder Benutzername",
+  "stravaAccountHintRequired": "Gib dein Strava-Konto (E-Mail oder Benutzername) ein, bevor du fortfährst.",
+  "stravaConnectContinue": "Weiter zu Strava",
+  "stravaConnectSuccess": "Strava-Konto verbunden.",
+  "stravaConnectFailed": "Strava-Verbindung fehlgeschlagen. Prüfe, ob die Strava Cloud Functions bereitgestellt sind und die Secrets STRAVA_CLIENT_ID / STRAVA_CLIENT_SECRET konfiguriert sind.",
+  "stravaConnectLaunchFailed": "Die Strava-Anmeldeseite konnte nicht geöffnet werden.",
+  "stravaConnectAuthRequired": "Melde dich bei Grinta an, um Strava zu verbinden.",
+  "stravaDisconnectFailed": "Trennen von Strava fehlgeschlagen.",
+  "stravaCoachVisibilitySaveFailed": "Strava-Einstellungen konnten nicht gespeichert werden.",
+  "stravaMetricActivities": "Aktivitäten",
+  "stravaMetricProfile": "Profil",
+  "stravaCoachConnectSubtitle": "Strava für {playerName} verbinden",
+  "@stravaCoachConnectSubtitle": {
+    "placeholders": {
+      "playerName": {
+        "type": "String"
+      }
+    }
+  },
+  "stravaCoachConnectConnectedSubtitle": "Strava verbunden für {playerName}",
+  "@stravaCoachConnectConnectedSubtitle": {
+    "placeholders": {
+      "playerName": {
+        "type": "String"
+      }
+    }
+  },
+  "polarConnectToggleSubtitle": "Verbinde dein Polar-Konto, um Training, Schlaf und Herzfrequenz von Loop oder Verity Sense über Polar Flow zu importieren",
+  "polarConnectToggleConnectedSubtitle": "Polar verbunden — Datensync folgt in Phase 2",
+  "polarAccountHintGuidance": "Deine Polar-Flow-E-Mail kann sich von deinem Grinta-Konto unterscheiden. Gib das Polar-Konto ein und melde dich damit auf der Polar-Seite an.",
+  "polarAccountHintLabel": "Polar-Konto",
+  "polarAccountHintPlaceholder": "Polar-Flow-E-Mail",
+  "polarAccountHintRequired": "Gib dein Polar-Konto (E-Mail) ein, bevor du fortfährst.",
+  "polarConnectContinue": "Weiter zu Polar",
+  "polarConnectSuccess": "Polar-Konto verbunden.",
+  "polarConnectFailed": "Polar-Verbindung fehlgeschlagen. Bitte erneut versuchen.",
+  "polarConnectLaunchFailed": "Die Polar-Anmeldeseite konnte nicht geöffnet werden.",
+  "polarConnectAuthRequired": "Melde dich bei Grinta an, um Polar zu verbinden.",
+  "polarDisconnectFailed": "Trennen von Polar fehlgeschlagen.",
+  "polarCoachVisibilityTitle": "Sichtbarkeit für den Coach",
+  "polarCoachVisibilitySubtitle": "Erlaube deinem Coach, diesen Datentyp zu sehen",
+  "polarCoachVisibilitySaveFailed": "Polar-Einstellungen konnten nicht gespeichert werden.",
+  "polarMetricTraining": "Training / Workouts",
+  "polarMetricSleep": "Schlaf",
+  "polarMetricRecoveryHr": "Erholung / Herzfrequenz",
+  "polarMetricProfile": "Profil",
+  "polarMetricBody": "Körpermaße",
+  "polarCoachConnectSubtitle": "Polar für {playerName} verbinden",
+  "@polarCoachConnectSubtitle": {
+    "placeholders": {
+      "playerName": {
+        "type": "String"
+      }
+    }
+  },
+  "polarCoachConnectConnectedSubtitle": "Polar verbunden für {playerName}",
+  "@polarCoachConnectConnectedSubtitle": {
+    "placeholders": {
+      "playerName": {
+        "type": "String"
+      }
+    }
+  },
+  "fitbitConnectToggleSubtitle": "Verbinde dein Fitbit-Konto, um Aktivität, Herzfrequenz, Schlaf und Gewicht von deinem Fitbit-Armband über die Fitbit-Cloud zu importieren",
+  "fitbitConnectToggleConnectedSubtitle": "Fitbit verbunden — Datensync folgt in Phase 2",
+  "fitbitConnectSuccess": "Fitbit-Konto verbunden.",
+  "fitbitConnectFailed": "Fitbit-Verbindung fehlgeschlagen. Bitte erneut versuchen.",
+  "fitbitConnectLaunchFailed": "Die Fitbit-Anmeldeseite konnte nicht geöffnet werden.",
+  "fitbitConnectAuthRequired": "Melde dich bei Grinta an, um Fitbit zu verbinden.",
+  "fitbitDisconnectFailed": "Trennen von Fitbit fehlgeschlagen.",
+  "fitbitCoachVisibilityTitle": "Sichtbarkeit für den Coach",
+  "fitbitCoachVisibilitySubtitle": "Erlaube deinem Coach, diesen Datentyp zu sehen",
+  "fitbitCoachVisibilitySaveFailed": "Fitbit-Einstellungen konnten nicht gespeichert werden.",
+  "fitbitMetricActivity": "Aktivität / Workouts / Schritte",
+  "fitbitMetricHeartrate": "Herzfrequenz",
+  "fitbitMetricSleep": "Schlaf",
+  "fitbitMetricProfile": "Profil",
+  "fitbitMetricBody": "Gewicht / Körper",
+  "fitbitCoachConnectSubtitle": "Fitbit für {playerName} verbinden",
+  "@fitbitCoachConnectSubtitle": {
+    "placeholders": {
+      "playerName": {
+        "type": "String"
+      }
+    }
+  },
+  "fitbitCoachConnectConnectedSubtitle": "Fitbit verbunden für {playerName}",
+  "@fitbitCoachConnectConnectedSubtitle": {
+    "placeholders": {
+      "playerName": {
+        "type": "String"
+      }
+    }
+  },
+  "appleHealthConnectToggleSubtitle": "Verbinde Apple Fitness, um Workouts, Herzfrequenz und aktive Energie aus der Health-App zu importieren (nur iOS)",
+  "appleHealthConnectToggleConnectedSubtitle": "Apple Fitness verbunden — vollständiger Workout-Sync folgt in Phase 2",
+  "appleHealthConnectSuccess": "Apple Fitness verbunden.",
+  "appleHealthConnectFailed": "Apple-Fitness-Verbindung fehlgeschlagen. Bitte erneut versuchen.",
+  "appleHealthConnectDenied": "Health-Zugriff wurde verweigert. Aktiviere ihn unter Einstellungen → Health → Datenzugriff & Geräte → Grinta.",
+  "appleHealthConnectAuthRequired": "Melde dich bei Grinta an, um Apple Fitness zu verbinden.",
+  "appleHealthIosOnlyMessage": "Apple Fitness ist nur auf dem iPhone verfügbar. Health-Daten werden auf dem Gerät über Apple HealthKit gelesen.",
+  "appleHealthDisconnectFailed": "Trennen von Apple Fitness fehlgeschlagen.",
+  "appleHealthCoachVisibilityTitle": "Sichtbarkeit für den Coach",
+  "appleHealthCoachVisibilitySubtitle": "Erlaube deinem Coach, diesen Datentyp zu sehen",
+  "appleHealthCoachVisibilitySaveFailed": "Apple-Fitness-Einstellungen konnten nicht gespeichert werden.",
+  "appleHealthMetricActivity": "Workouts / Aktivität",
+  "appleHealthMetricHeartrate": "Herzfrequenz",
+  "appleHealthMetricActiveEnergy": "Aktive Energie",
+  "appleHealthMetricSleep": "Schlaf",
+  "appleHealthCoachConnectSubtitle": "Apple Fitness für {playerName} verbinden",
+  "@appleHealthCoachConnectSubtitle": {
+    "placeholders": {
+      "playerName": {
+        "type": "String"
+      }
+    }
+  },
+  "appleHealthCoachConnectConnectedSubtitle": "Apple Fitness verbunden für {playerName}",
+  "@appleHealthCoachConnectConnectedSubtitle": {
+    "placeholders": {
+      "playerName": {
+        "type": "String"
+      }
+    }
+  },
+  "googleHealthConnectToggleSubtitle": "Verbinde Google Health, um Workouts, Herzfrequenz und aktive Energie aus Health Connect zu importieren (nur Android)",
+  "googleHealthConnectToggleConnectedSubtitle": "Google Health verbunden — Workout-Sync verfügbar",
+  "googleHealthConnectSuccess": "Google Health verbunden.",
+  "googleHealthConnectFailed": "Google-Health-Verbindung fehlgeschlagen. Bitte erneut versuchen.",
+  "googleHealthConnectDenied": "Health-Connect-Zugriff wurde verweigert. Aktiviere ihn unter Health Connect → App-Berechtigungen → Grinta.",
+  "googleHealthConnectAuthRequired": "Melde dich bei Grinta an, um Google Health zu verbinden.",
+  "googleHealthAndroidOnlyMessage": "Google Health ist nur auf Android verfügbar (auf dem Gerät über Health Connect). Auf dem iPhone nutze Apple Fitness.",
+  "googleHealthDisconnectFailed": "Trennen von Google Health fehlgeschlagen.",
+  "googleHealthCoachVisibilityTitle": "Sichtbarkeit für den Coach",
+  "googleHealthCoachVisibilitySubtitle": "Erlaube deinem Coach, diesen Datentyp zu sehen",
+  "googleHealthCoachVisibilitySaveFailed": "Google-Health-Einstellungen konnten nicht gespeichert werden.",
+  "googleHealthMetricActivity": "Workouts / Aktivität",
+  "googleHealthMetricHeartrate": "Herzfrequenz",
+  "googleHealthMetricActiveEnergy": "Aktive Energie",
+  "googleHealthMetricSleep": "Schlaf",
+  "googleHealthCoachConnectSubtitle": "Google Health für {playerName} verbinden",
+  "@googleHealthCoachConnectSubtitle": {
+    "placeholders": {
+      "playerName": {
+        "type": "String"
+      }
+    }
+  },
+  "googleHealthCoachConnectConnectedSubtitle": "Google Health verbunden für {playerName}",
+  "@googleHealthCoachConnectConnectedSubtitle": {
+    "placeholders": {
+      "playerName": {
+        "type": "String"
+      }
+    }
+  },
+  "trainingDeleteRecurrentTitle": "Wiederkehrendes Training löschen?",
+  "trainingDeleteRecurrentMessage": "Möchtest du alle Termine dieser Serie löschen?",
+  "trainingDeleteThisOccurrence": "Nur diesen Termin",
+  "trainingDeleteAllOccurrences": "Alle Termine",
+  "adminSeasonsSection": "Saisons",
+  "adminSeasonsSectionDesc": "Plattform-Saisons auflisten und verwalten.",
+  "adminSeasonsTitle": "Saisons",
+  "adminSeasonsEmpty": "Noch keine Saisons.",
+  "adminSeasonsLoadError": "Saisons konnten nicht geladen werden.",
+  "adminSeasonCreate": "Saison hinzufügen",
+  "adminSeasonEditTitle": "Saison bearbeiten",
+  "adminSeasonCreated": "Saison erstellt.",
+  "adminSeasonUpdated": "Saison aktualisiert.",
+  "adminSeasonCreateFailed": "Saison konnte nicht erstellt werden.",
+  "adminSeasonUpdateFailed": "Saison konnte nicht aktualisiert werden.",
+  "adminSeasonUnnamed": "Unbenannte Saison",
+  "adminSeasonCurrentBadge": "Aktuell",
+  "adminSeasonNewVersionBadge": "Neue Version",
+  "adminSeasonDateRange": "{start} – {end}",
+  "@adminSeasonDateRange": {
+    "placeholders": {
+      "start": {
+        "type": "String"
+      },
+      "end": {
+        "type": "String"
+      }
+    }
+  },
+  "adminSeasonClubLabel": "Club: {clubName}",
+  "@adminSeasonClubLabel": {
+    "placeholders": {
+      "clubName": {
+        "type": "String"
+      }
+    }
+  },
+  "adminSeasonAffiliateLabel": "Mitgliedsnr.: {number}",
+  "@adminSeasonAffiliateLabel": {
+    "placeholders": {
+      "number": {
+        "type": "String"
+      }
+    }
+  },
+  "adminSeasonFieldName": "Name",
+  "adminSeasonFieldNameReadOnly": "Der Saisonname kann nach der Erstellung nicht geändert werden.",
+  "adminSeasonFieldRequired": "Dieses Feld ist erforderlich.",
+  "adminSeasonFieldStartDate": "Startdatum",
+  "adminSeasonFieldEndDate": "Enddatum",
+  "adminSeasonDateSelected": "Ausgewählt: {date}",
+  "@adminSeasonDateSelected": {
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  },
+  "adminSeasonFieldClubName": "Clubname",
+  "adminSeasonFieldAffiliateNumber": "Mitgliedsnummer",
+  "adminSeasonFieldCurrent": "Aktuelle Saison",
+  "adminSeasonFieldCurrentHint": "Nur eine Saison kann gleichzeitig aktuell sein.",
+  "adminSeasonFieldNewVersion": "Neue Version",
+  "adminSeasonChangeDefaultTitle": "Aktuelle Saison ändern?",
+  "adminSeasonChangeDefaultMessage": "„{seasonName}“ ist derzeit die Standardsaison. Möchtest du sie ersetzen?",
+  "@adminSeasonChangeDefaultMessage": {
+    "placeholders": {
+      "seasonName": {
+        "type": "String"
+      }
+    }
+  },
+  "adminSeasonChangeDefaultConfirm": "Standard ändern",
+  "wearableDeviceGpsInsidersIntense": "GPS Insiders Intense",
+  "intenseGpsSerialGuidance": "Gib die auf dem GPS Insiders Intense Tracker aufgedruckte Seriennummer ein.",
+  "intenseGpsSerialLabel": "Seriennummer",
+  "intenseGpsSerialPlaceholder": "Seriennummer",
+  "intenseGpsSerialRequired": "Gib die Seriennummer ein, bevor du fortfährst.",
+  "intenseGpsTrackerNotFound": "Tracker nicht vorhanden",
+  "intenseGpsTrackerAlreadyAssigned": "Dieser Tracker ist bereits zugewiesen",
+  "intenseGpsConnectSuccess": "GPS Insiders Intense Tracker verknüpft.",
+  "intenseGpsConnectFailed": "Tracker konnte nicht verknüpft werden. Bitte erneut versuchen.",
+  "intenseGpsDisconnectFailed": "Trennen des GPS-Trackers fehlgeschlagen.",
+  "intenseGpsMissingEmail": "Das Spielerprofil benötigt eine E-Mail, um einen GPS-Tracker zu verknüpfen.",
+  "intenseGpsConnectToggleConnectedSubtitle": "GPS Insiders Intense verbunden"
 }

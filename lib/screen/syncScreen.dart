@@ -15,8 +15,10 @@ import 'package:grinta/services/ownerService.dart';
 import 'package:grinta/services/tracker_field_service.dart';
 import 'package:grinta/services/event_sync_service.dart';
 import 'package:grinta/services/trainingService.dart';
+import 'package:grinta/model/tracker_owner.dart';
 import 'package:grinta/tracker/tracker_hub_page.dart';
 import 'package:grinta/provider/appSession.dart';
+import 'package:grinta/util/polar_import_navigation.dart';
 import 'package:grinta/widget/uploadTrackerButton.dart';
 import 'package:provider/provider.dart';
 
@@ -720,8 +722,26 @@ class _SyncScreenState extends State<SyncScreen> {
                                     onPressed: () async {
                                       try {
                                         final owner = await OwnerService().getOwnerById(match.ownerId!);
+                                        if (owner == null) return;
 
-                                        if (owner != null && owner.typeTracker == "inspirit") {
+                                        final isInspirit =
+                                            owner.typeTracker == 'inspirit';
+                                        final isPolar = TrackerOwner.isPolarType(
+                                          owner.typeTracker,
+                                        );
+                                        if (!isInspirit && !isPolar) return;
+
+                                          if (isPolar) {
+                                            if (!mounted) return;
+                                            await openPolarImportHubForMatch(
+                                              context,
+                                              match: match,
+                                              seasonId: currentSeason?.ref?.id,
+                                              source: 'sync_tab',
+                                            );
+                                            return;
+                                          }
+
                                           final matchCompo = await MatchCompoService()
                                               .getFirstMatchCompoByMatchId(match.id!);
 
@@ -771,7 +791,6 @@ class _SyncScreenState extends State<SyncScreen> {
                                             devicePlayerMap: devicePlayerMap,
                                             fieldGpsCorners: fieldGpsCorners,
                                           );
-                                        }
                                       } catch (e, st) {
                                         debugPrint('Erreur upload match: $e');
                                         debugPrintStack(stackTrace: st);
@@ -931,8 +950,26 @@ class _SyncScreenState extends State<SyncScreen> {
 
                                         final owner = await OwnerService()
                                             .getOwnerById(training.ownerId!);
-                                        if (owner != null &&
-                                            owner.typeTracker == 'inspirit') {
+                                        if (owner == null) return;
+
+                                        final isInspirit =
+                                            owner.typeTracker == 'inspirit';
+                                        final isPolar = TrackerOwner.isPolarType(
+                                          owner.typeTracker,
+                                        );
+                                        if (!isInspirit && !isPolar) return;
+
+                                          if (isPolar) {
+                                            if (!mounted) return;
+                                            await openPolarImportHubForTraining(
+                                              context,
+                                              training: training,
+                                              seasonId: currentSeason?.ref?.id,
+                                              source: 'sync_tab',
+                                            );
+                                            return;
+                                          }
+
                                           final seasonId = currentSeason?.ref?.id;
                                           if (seasonId == null || seasonId.isEmpty) {
                                             return;
@@ -972,7 +1009,6 @@ class _SyncScreenState extends State<SyncScreen> {
                                             trackerIdsToSend: trackerIdsToSend,
                                             devicePlayerMap: devicePlayerMap,
                                           );
-                                        }
                                       } catch (e) {
                                         debugPrint('Erreur upload training: $e');
                                       }

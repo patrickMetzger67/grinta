@@ -1,11 +1,9 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:grinta/core/extensions/l10n_extension.dart';
 import 'package:grinta/l10n/app_localizations.dart';
 import 'package:grinta/navigation/app_navigator.dart';
 import 'package:grinta/services/ownerService.dart';
-import 'package:grinta/services/playerService.dart';
 import 'package:grinta/services/session_feeling_notification_service.dart';
 import 'package:grinta/services/teamWorkloadSummaryService.dart';
 import 'package:grinta/services/trackerDataAnalysisService.dart';
@@ -13,10 +11,11 @@ import 'package:grinta/services/trainingService.dart';
 import 'package:grinta/services/training_intense_sync_service.dart';
 import 'package:grinta/util/app_snackbar.dart';
 import 'package:grinta/util/app_theme.dart';
+import 'package:grinta/util/polar_import_navigation.dart';
+import 'package:grinta/util/polar_tracker_eligibility.dart';
 import 'package:grinta/widget/training_intense_finish_dialog.dart';
 
 import '../model/training.dart';
-import '../screen/team_players/training_team_players_presence.dart';
 
 bool isPresentOrDefaultPresence(PresenceType? presenceType) {
   return presenceType == null || presenceType == PresenceType.present;
@@ -83,49 +82,12 @@ Future<void> onTrainingFinishedProcessing({
   }
 }
 
-/// Marks players still listed as present (or unset) as absent when they are
-/// unavailable on the training date. Entries with another presence status are
-/// left unchanged.
-Future<List<PlayerTraining>> markUnavailablePresentPlayersAbsent({
-  required List<PlayerTraining> playerTraining,
-  required DateTime? trainingDate,
-  required String? seasonId,
-  PlayerService? playerService,
-}) async {
-  final service = playerService ?? PlayerService();
-  final updated = <PlayerTraining>[];
-
-  for (final pt in playerTraining) {
-    if (!isPresentOrDefaultPresence(pt.presenceType)) {
-      updated.add(pt);
-      continue;
-    }
-
-    final playerId = pt.playerId?.trim();
-    if (playerId == null || playerId.isEmpty) {
-      updated.add(pt);
-      continue;
-    }
-
-    final player = await service.getPlayerById(playerId);
-    if (player != null &&
-        isPlayerUnavailableOnTrainingDate(
-          player,
-          trainingDate,
-          seasonId: seasonId,
-        )) {
-      pt.presenceType = PresenceType.absent;
-    }
-
-    updated.add(pt);
-  }
-
-  return updated;
-}
-
 /// After a manager finishes a training, sets [trainingEndAt] and optionally
 /// marks tracker data as uploaded when the linked owner does not sync
 /// externally.
+///
+/// Presence choices (including during an unavailability window) are kept as
+/// set by the manager — finish does not force unavailable players to absent.
 Future<void> finishTrainingAfterConfirm({
   required Training training,
   bool? markTrackerDataUploaded,
@@ -141,12 +103,8 @@ Future<void> finishTrainingAfterConfirm({
     throw StateError('Training not found');
   }
 
-  final trainingDate = fresh.dateTime?.toDate();
-  final updatedPlayerTraining = await markUnavailablePresentPlayersAbsent(
-    playerTraining: List<PlayerTraining>.from(fresh.playerTraining),
-    trainingDate: trainingDate,
-    seasonId: fresh.seasonId,
-  );
+  final updatedPlayerTraining =
+      List<PlayerTraining>.from(fresh.playerTraining);
 
   var trackerDataUploaded = markTrackerDataUploaded;
   if (trackerDataUploaded == null && fresh.withTracker) {
@@ -310,6 +268,7 @@ Future<bool> finishManagedTraining(
 
   final String successMessage = context.l10n.trainingFinished;
   final String errorMessage = context.l10n.trainingFinishError;
+  final bool isPolarKit = await isPolarTrackerOwner(training.ownerId);
 
   try {
     await finishTrainingAfterConfirm(training: training);
@@ -318,6 +277,24 @@ Future<bool> finishManagedTraining(
     final BuildContext? rootContext = appNavigatorKey.currentContext;
     if (rootContext != null && rootContext.mounted) {
       AppSnackbar.show(rootContext, successMessage, isError: false);
+    }
+
+    // Polar kits: open cardio import immediately (Sync tab is web-only;
+    // BLE pull is mobile-first).
+    if (isPolarKit) {
+      final trainingId =
+          training.docId?.trim() ?? training.trainingId?.trim() ?? '';
+      final fresh = trainingId.isEmpty
+          ? null
+          : await TrainingService().getTrainingById(trainingId);
+      final navContext = appNavigatorKey.currentContext;
+      if (navContext != null && navContext.mounted) {
+        await openPolarImportHubForTraining(
+          navContext,
+          training: fresh ?? training,
+          source: 'finish_training',
+        );
+      }
     }
     return true;
   } catch (_) {

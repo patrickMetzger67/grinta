@@ -343,7 +343,10 @@ class _TeamTrackerOwnersSheetState extends State<TeamTrackerOwnersSheet> {
       itemCount: _displayOwners.length,
       itemBuilder: (context, index) {
         final Owner owner = _displayOwners[index];
-        final String typeLabel = owner.typeTracker.trim();
+        final String typeRaw = owner.typeTracker.trim();
+        final String typeLabel = typeRaw.isEmpty
+            ? ''
+            : l10n.adminTrackerOwnerTypeLabel(typeRaw);
 
         if (_readOnly) {
           return ListTile(

@@ -29,9 +29,10 @@ import '../util/playerDisplayName.dart';
 import '../widget/match_compo_widget.dart';
 import '../widget/match_highlights_timeline.dart';
 import '../widget/match_opponent_stats_button.dart';
-import '../widget/match_tracker_stats_table.dart';
+import '../util/session_tracker_kit.dart';
+import '../widget/session_player_analysis_view.dart';
+import '../widget/session_tracker_stats_view.dart';
 import '../widget/tracker_kit_icon_pill.dart';
-import '../widget/tracker_player_analysis_widget.dart';
 import 'intense_live/intense_live_session_screen.dart';
 import 'match_detail/match_convocations_tab.dart';
 import 'match_detail/match_grinta_highlights_tab.dart';
@@ -1492,8 +1493,9 @@ class _StatsTabState extends State<_StatsTab> {
     if (widget.isManager) {
       return _TabContainer(
         children: [
-          MatchTrackerStatsTable(
+          SessionTrackerStatsView(
             eventId: eventId,
+            ownerId: widget.match.ownerId,
             teamId: widget.match.teamID,
             realtime: true,
             isMatch: true,
@@ -1554,11 +1556,14 @@ class _StatsTabState extends State<_StatsTab> {
               );
             }
 
-            return StreamBuilder<TeamWorkloadSummary?>(
-              stream: TeamWorkloadSummaryService().watchByEventId(eventId),
-              builder: (context, summarySnapshot) {
-                if (summarySnapshot.connectionState ==
-                    ConnectionState.waiting) {
+            return FutureBuilder<bool>(
+              future: eventUsesPolarTeamKit(
+                eventId: eventId,
+                ownerId: widget.match.ownerId,
+              ),
+              builder: (context, kitSnapshot) {
+                if (kitSnapshot.connectionState == ConnectionState.waiting &&
+                    !kitSnapshot.hasData) {
                   return const Center(
                     child: Padding(
                       padding: EdgeInsets.all(24),
@@ -1567,59 +1572,94 @@ class _StatsTabState extends State<_StatsTab> {
                   );
                 }
 
-                if (summarySnapshot.hasError) {
-                  return _EmptyState(
-                    icon: Icons.error_outline_rounded,
-                    title: context.l10n.errorTrackerTitle,
-                    message: summarySnapshot.error.toString(),
+                final isPolar = kitSnapshot.data == true;
+                if (isPolar) {
+                  return SessionPlayerAnalysisView(
+                    eventId: eventId,
+                    ownerId: widget.match.ownerId,
+                    playerId: safePlayerId,
+                    teamId: widget.match.teamID,
+                    playerName: playerDisplayName(
+                      player,
+                      unknownLabel: context.l10n.entityPlayer,
+                    ),
+                    player: player,
+                    isMatch: true,
                   );
                 }
 
-                final TeamWorkloadSummary? summary = summarySnapshot.data;
+                return StreamBuilder<TeamWorkloadSummary?>(
+                  stream: TeamWorkloadSummaryService().watchByEventId(eventId),
+                  builder: (context, summarySnapshot) {
+                    if (summarySnapshot.connectionState ==
+                        ConnectionState.waiting) {
+                      return const Center(
+                        child: Padding(
+                          padding: EdgeInsets.all(24),
+                          child: CircularProgressIndicator(),
+                        ),
+                      );
+                    }
 
-                if (summary == null) {
-                  return _EmptyState(
-                    icon: Icons.query_stats_rounded,
-                    title: context.l10n.errorNoStats,
-                    message: context.l10n.errorNoTrackerData,
-                  );
-                }
+                    if (summarySnapshot.hasError) {
+                      return _EmptyState(
+                        icon: Icons.error_outline_rounded,
+                        title: context.l10n.errorTrackerTitle,
+                        message: summarySnapshot.error.toString(),
+                      );
+                    }
 
-                final TeamPlayerMetricScores? playerScore =
-                    _findPlayerScore(
-                  summary: summary,
-                  playerId: safePlayerId,
-                );
+                    final TeamWorkloadSummary? summary = summarySnapshot.data;
 
-                if (playerScore == null) {
-                  return _EmptyState(
-                    icon: Icons.person_search_rounded,
-                    title: context.l10n.errorPlayerNotFoundInMatch,
-                    message: context.l10n.errorPlayerNoTrackerMatch,
-                  );
-                }
+                    if (summary == null) {
+                      return _EmptyState(
+                        icon: Icons.query_stats_rounded,
+                        title: context.l10n.errorNoStats,
+                        message: context.l10n.errorNoTrackerData,
+                      );
+                    }
 
-                final String trackerId = playerScore.trackerId.trim();
+                    final TeamPlayerMetricScores? playerScore =
+                        _findPlayerScore(
+                      summary: summary,
+                      playerId: safePlayerId,
+                    );
 
-                if (trackerId.isEmpty) {
-                  return _EmptyState(
-                    icon: Icons.sensors_off_rounded,
-                    title: context.l10n.sensorNotFoundTitle,
-                    message: context.l10n.sensorNotFoundMessage,
-                  );
-                }
+                    if (playerScore == null) {
+                      return _EmptyState(
+                        icon: Icons.person_search_rounded,
+                        title: context.l10n.errorPlayerNotFoundInMatch,
+                        message: context.l10n.errorPlayerNoTrackerMatch,
+                      );
+                    }
 
-                final String analysisDocId = '${eventId}_$trackerId';
+                    final String trackerId = playerScore.trackerId.trim();
 
-                return TrackerPlayerAnalysisWidget(
-                  analysisDocId: analysisDocId,
-                  teamId: widget.match.teamID,
-                  playerName: playerDisplayName(
-                    player,
-                    unknownLabel: context.l10n.entityPlayer,
-                  ),
-                  player: player,
-                  isMatch: true,
+                    if (trackerId.isEmpty) {
+                      return _EmptyState(
+                        icon: Icons.sensors_off_rounded,
+                        title: context.l10n.sensorNotFoundTitle,
+                        message: context.l10n.sensorNotFoundMessage,
+                      );
+                    }
+
+                    final String analysisDocId = '${eventId}_$trackerId';
+
+                    return SessionPlayerAnalysisView(
+                      eventId: eventId,
+                      ownerId: widget.match.ownerId,
+                      analysisDocId: analysisDocId,
+                      trackerId: trackerId,
+                      playerId: safePlayerId,
+                      teamId: widget.match.teamID,
+                      playerName: playerDisplayName(
+                        player,
+                        unknownLabel: context.l10n.entityPlayer,
+                      ),
+                      player: player,
+                      isMatch: true,
+                    );
+                  },
                 );
               },
             );

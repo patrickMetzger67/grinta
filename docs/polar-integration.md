@@ -1,6 +1,8 @@
-# Polar integration (Phase 1)
+# Polar integration (Phase 1) — individual AccessLink
 
 Phase 1 delivers OAuth connect/disconnect for Polar Loop and Verity Sense via Polar AccessLink (Polar Flow cloud sync), plus **manual import of Polar Flow exercises** into personal sport activities (same UX as Strava). Webhooks, continuous HR/sleep sync, and coach roster badges remain Phase 2.
+
+> **Team kit (shared BLE sensors):** uses the GPS tracker model (`TRACKER_Owner.typeTracker = polar`), not AccessLink. See [Polar team kit](./polar-team-tracker.md).
 
 > **Related:** Whoop, Strava, and Fitbit use the same **Appareils/Applications** settings UI. See [Whoop integration](./whoop-integration.md), [Strava integration](./strava-integration.md), and [Fitbit integration](./fitbit-integration.md).
 

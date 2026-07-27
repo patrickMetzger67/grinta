@@ -7,7 +7,7 @@ const String kTrackerOwnerCollection = 'TRACKER_Owner';
 class Owner {
   final String id; // uuid.v4
   final String name;
-  final String typeTracker; // "inspirit", "footbar", ...
+  final String typeTracker; // "inspirit", "footbar", "intense", "polar", ...
   final bool isActive;
   final bool withSyncing;
   final bool isIndividual;

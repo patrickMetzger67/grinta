@@ -1981,7 +1981,7 @@
   "trainingDeleteError": "Impossible de supprimer l'entraînement. Réessayez.",
   "finishTrainingTitle": "Terminer l'entraînement",
   "trainingFinishConfirmTitle": "Terminer l'entraînement ?",
-  "trainingFinishConfirmMessage": "Les joueurs indisponibles encore marqués présents seront passés absents. Voulez-vous terminer cet entraînement ?",
+  "trainingFinishConfirmMessage": "Voulez-vous terminer cet entraînement ?",
   "trainingFinished": "Entraînement terminé",
   "trainingFinishError": "Impossible de terminer l'entraînement. Réessayez.",
   "trainingIntenseFinishTitle": "Récupération des données capteurs",
@@ -2415,6 +2415,7 @@
   "adminTrackerOwnerTypeInspirit": "Inspirit",
   "adminTrackerOwnerTypeFootbar": "Footbar",
   "adminTrackerOwnerTypeIntense": "Intense (SIM, flux cloud)",
+  "adminTrackerOwnerTypePolar": "Polar (kit équipe BLE)",
   "adminTrackerOwnerFieldRequired": "Champ obligatoire",
   "adminTrackerOwnerFieldEmailInvalid": "Email invalide",
   "adminTrackerOwnerStatusActive": "Actif",
@@ -2489,7 +2490,8 @@
   "adminTrackerDevicesAssign": "Affecter",
   "adminTrackerDevicesUnassign": "Désaffecter",
   "adminTrackerDevicesAssignTitle": "Affecter un device",
-  "adminTrackerDevicesCustomName": "Nom (optionnel)",
+  "adminTrackerDevicesCustomName": "Nom personnalisé (optionnel)",
+  "adminTrackerDevicesCustomNameHint": "N° de maillot ou libellé, ex. 7",
   "adminTrackerDevicesCancel": "Annuler",
   "adminTrackerDevicesValidate": "Valider",
   "adminTrackerDevicesSelectOwnerRequired": "Veuillez sélectionner un responsable.",
@@ -2503,6 +2505,138 @@
   },
   "adminTrackerDevicesSyncInspirit": "Sync Inspirit",
   "adminTrackerDevicesSyncFootbar": "Sync Footbar",
+  "adminTrackerDevicesAddPolar": "Ajouter Polar",
+  "adminTrackerDevicesAddPolarChrome": "Ajouter via Chrome Bluetooth",
+  "adminTrackerDevicesAddPolarManual": "Saisir l’ID manuellement",
+  "adminPolarBleScanTitle": "Scanner les capteurs Polar",
+  "adminPolarBleScanSheetSubtitle": "Lister les Polar à proximité et se connecter un par un",
+  "adminPolarBleScanHint": "Allume les capteurs à proximité, connecte-toi à chacun, puis ajoute-le au kit avec un nom personnalisé.",
+  "adminPolarBleScanSearching": "Recherche de capteurs Polar…",
+  "adminPolarBleScanEmpty": "Aucun capteur Polar trouvé. Vérifie le Bluetooth et que les capteurs sont allumés.",
+  "adminPolarBleScanUnsupported": "Le scan Polar BLE est disponible uniquement sur iOS et Android.",
+  "adminPolarBleScanConnect": "Connecter",
+  "adminPolarBleScanConnecting": "Connexion…",
+  "adminPolarBleScanConnected": "Connecté",
+  "adminPolarBleScanAddToKit": "Ajouter au kit",
+  "adminPolarBleScanStop": "Arrêter le scan",
+  "adminPolarBleScanRestart": "Relancer le scan",
+  "adminPolarBleScanConnectError": "Échec de connexion : {error}",
+  "@adminPolarBleScanConnectError": {
+    "placeholders": {
+      "error": { "type": "String" }
+    }
+  },
+  "polarImportTitle": "Import Polar (cardio)",
+  "polarImportSensorsHeader": "Capteurs Polar de la séance",
+  "polarImportHint": "Ferme Polar Flow, mets le Verity Sense en mode capteur (LED bleue / cœur optique), puis importe via Bluetooth. Si iOS affiche déjà le capteur « Connecté », oublie-le dans Réglages → Bluetooth.",
+  "polarImportSelectSensor": "Sélectionne un capteur pour importer les données cardio.",
+  "polarImportStatusPending": "À importer",
+  "polarImportStatusDone": "Importé",
+  "polarImportUntitledPlayer": "Joueur",
+  "polarImportDeviceLine": "Polar {deviceId} · {deviceType} · {customName}",
+  "@polarImportDeviceLine": {
+    "placeholders": {
+      "deviceId": { "type": "String" },
+      "deviceType": { "type": "String" },
+      "customName": { "type": "String" }
+    }
+  },
+  "polarImportBleAction": "Importer via Bluetooth",
+  "polarImportBleUnavailable": "L’import Bluetooth Polar est disponible sur iOS/Android. Sur le web, utilise la saisie manuelle.",
+  "polarImportManualAction": "Saisie manuelle",
+  "polarImportManualTitle": "Saisie cardio Polar",
+  "polarImportManualSubtitle": "Renseigne la durée et la FC (calories / pas optionnels pour Loop).",
+  "polarImportFieldDurationMin": "Durée (minutes)",
+  "polarImportFieldAvgHr": "FC moyenne (bpm)",
+  "polarImportFieldMaxHr": "FC max (bpm)",
+  "polarImportFieldMinHr": "FC min (bpm)",
+  "polarImportFieldCalories": "Calories (kcal, optionnel)",
+  "polarImportFieldDistanceM": "Distance (m, optionnel)",
+  "polarImportFieldSteps": "Pas (optionnel)",
+  "polarImportMissingPlayer": "Aucun joueur associé à ce capteur.",
+  "polarImportSuccess": "Import OK — FC moy. {avgHr} · {minutes} min",
+  "@polarImportSuccess": {
+    "placeholders": {
+      "avgHr": { "type": "String" },
+      "minutes": { "type": "String" }
+    }
+  },
+  "polarImportBleTimeoutHint": "Connexion Polar BLE expirée. Ferme Polar Flow, oublie le capteur dans Réglages → Bluetooth s’il reste « Connecté », réveille le Verity Sense en mode capteur (LED bleue), puis réessaie.",
+  "polarImportBleError": "Import Polar échoué : {error}",
+  "@polarImportBleError": {
+    "placeholders": {
+      "error": { "type": "String" }
+    }
+  },
+  "polarAnalysisEmptyMessage": "Aucune analyse cardio Polar pour ce joueur sur cette séance.",
+  "polarAnalysisEmptyTeamMessage": "Aucune analyse cardio Polar importée pour cette séance. Importe les capteurs depuis Sync.",
+  "polarAnalysisTeamTitle": "Analyse cardio Polar",
+  "polarAnalysisTeamCount": "{count} joueur(s)",
+  "@polarAnalysisTeamCount": {
+    "placeholders": {
+      "count": { "type": "int" }
+    }
+  },
+  "polarAnalysisColDevice": "Capteur",
+  "polarAnalysisColHighIntensity": "Z4+Z5",
+  "polarAnalysisDeviceLine": "Polar {deviceId} · {deviceType}",
+  "@polarAnalysisDeviceLine": {
+    "placeholders": {
+      "deviceId": { "type": "String" },
+      "deviceType": { "type": "String" }
+    }
+  },
+  "polarAnalysisHrZonesTab": "Zones FC",
+  "polarAnalysisDuration": "Durée",
+  "polarAnalysisDurationDetail": "{minutes} min {seconds} s",
+  "@polarAnalysisDurationDetail": {
+    "placeholders": {
+      "minutes": { "type": "int" },
+      "seconds": { "type": "int" }
+    }
+  },
+  "polarAnalysisAvgHr": "FC moy.",
+  "polarAnalysisMaxHr": "FC max",
+  "polarAnalysisMinHr": "FC min",
+  "polarAnalysisSamples": "Échantillons",
+  "polarAnalysisCalories": "Calories",
+  "polarAnalysisSteps": "Pas",
+  "polarAnalysisUnitMin": "min",
+  "polarAnalysisUnitBpm": "bpm",
+  "polarAnalysisUnitKcal": "kcal",
+  "polarAnalysisZoneLabel": "{zone}",
+  "@polarAnalysisZoneLabel": {
+    "placeholders": {
+      "zone": { "type": "String" }
+    }
+  },
+  "polarAnalysisNoZones": "Pas de répartition par zones pour cet import.",
+  "polarImportMissingSeason": "Saison introuvable pour importer les capteurs Polar.",
+  "polarImportAgendaAction": "Importer les données Polar",
+  "polarAnalysisAgendaAction": "Voir l'analyse Polar",
+
+  "adminTrackerDevicesAddPolarTitle": "Ajouter un capteur Polar",
+  "adminTrackerDevicesAddPolarDeviceId": "ID appareil Polar",
+  "adminTrackerDevicesAddPolarDeviceIdHint": "Imprimé sur le capteur, ou fin du nom BLE (ex. Polar H10 1C709B20 → 1C709B20)",
+  "adminTrackerDevicesAddPolarChromeUnsupported": "Web Bluetooth nécessite Chrome (HTTPS ou localhost).",
+  "adminTrackerDevicesAddPolarChromeCancelled": "Sélection Bluetooth annulée.",
+  "adminTrackerDevicesAddPolarChromeNoId": "Impossible de lire l’ID Polar dans le nom BLE. Saisis l’ID imprimé sur le capteur.",
+  "adminTrackerDevicesAddPolarChromeSuccess": "Polar {deviceId} ({deviceType}) ajouté.",
+  "@adminTrackerDevicesAddPolarChromeSuccess": {
+    "placeholders": {
+      "deviceId": { "type": "String" },
+      "deviceType": { "type": "String" }
+    }
+  },
+  "adminTrackerDevicesAddPolarDeviceType": "Type de capteur",
+  "adminTrackerDevicesAddPolarDeviceName": "Nom affiché (optionnel)",
+  "adminTrackerDevicesAddPolarSuccess": "Capteur Polar ajouté à l’inventaire.",
+  "adminTrackerDevicesAddPolarDeviceIdRequired": "L’ID appareil Polar est obligatoire.",
+  "adminTrackerDevicesPolarTypeH10": "H10",
+  "adminTrackerDevicesPolarTypeH9": "H9",
+  "adminTrackerDevicesPolarTypeVeritySense": "Verity Sense",
+  "adminTrackerDevicesPolarTypeOh1": "OH1",
+  "adminTrackerDevicesPolarTypeOther": "Autre",
   "adminTrackerDevicesSyncInProgress": "Synchronisation...",
   "adminTrackerDevicesSyncInspiritInProgress": "Sync Inspirit (insiders) en cours...",
   "adminTrackerDevicesSyncFootbarInProgress": "Sync Footbar en cours...",
@@ -2705,5 +2839,17 @@
   "preferredFootLeft": "Gauche",
   "preferredFootRight": "Droit",
   "preferredFootBoth": "Les deux",
-  "playerSeasonSummaryPreferredFootSaved": "Pied fort mis à jour."
+  "playerSeasonSummaryPreferredFootSaved": "Pied fort mis à jour.",
+  "wearableDeviceGpsInsidersIntense": "GPS Insiders Intense",
+  "intenseGpsSerialGuidance": "Saisis le numéro de série imprimé sur le tracker GPS Insiders Intense.",
+  "intenseGpsSerialLabel": "Numéro de série",
+  "intenseGpsSerialPlaceholder": "N° de série",
+  "intenseGpsSerialRequired": "Indique le numéro de série avant de continuer.",
+  "intenseGpsTrackerNotFound": "Tracker inexistant",
+  "intenseGpsTrackerAlreadyAssigned": "Ce tracker est déjà attribué",
+  "intenseGpsConnectSuccess": "Tracker GPS Insiders Intense associé.",
+  "intenseGpsConnectFailed": "Impossible d’associer le tracker GPS. Réessaie.",
+  "intenseGpsDisconnectFailed": "La dissociation du tracker GPS a échoué.",
+  "intenseGpsMissingEmail": "Le profil joueur doit avoir un email pour associer un tracker GPS.",
+  "intenseGpsConnectToggleConnectedSubtitle": "GPS Insiders Intense connecté"
 }

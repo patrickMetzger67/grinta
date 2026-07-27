@@ -1,8 +1,11 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:grinta/core/extensions/l10n_extension.dart';
 import 'package:grinta/model/tracker/deviceOwner.dart';
 import 'package:grinta/model/tracker_owner.dart';
+import 'package:grinta/screen/admin/admin_polar_ble_scan_screen.dart';
+import 'package:grinta/services/polar_web_bluetooth.dart';
 import 'package:grinta/services/tracker_device_admin_service.dart';
 import 'package:grinta/services/tracker_device_sync_service.dart';
 import 'package:grinta/util/app_snackbar.dart';
@@ -331,10 +334,14 @@ class _AdminTrackerDevicesScreenState extends State<AdminTrackerDevicesScreen> {
 
         final visibleDocs = docs.where((d) {
           final data = d.data();
-          final ownerId = (data['ownerId'] ?? '').toString();
+          final ownerId = (data['ownerId'] ?? '').toString().trim();
 
           if (_selectedOwnerId != null && _selectedOwnerId!.isNotEmpty) {
-            if (_deviceOwnerMap[d.id] == null) return false;
+            // Prefer DeviceOwner assignment; also accept TRACKER_Device.ownerId
+            // so Polar sensors just written to the kit remain visible.
+            final assignedViaOwnerTable = _deviceOwnerMap[d.id] != null;
+            final assignedOnDevice = ownerId == _selectedOwnerId;
+            if (!assignedViaOwnerTable && !assignedOnDevice) return false;
           }
 
           if (_showUnassignedDevices && ownerId.isNotEmpty) {
@@ -374,17 +381,19 @@ class _AdminTrackerDevicesScreenState extends State<AdminTrackerDevicesScreen> {
     final serial = _serialFromMap(data);
     final deviceId = _idFromMap(data, doc.id);
     final provider = _providerFromMap(data);
+    final deviceName = (data['device_name'] ?? data['deviceName'] ?? '')
+        .toString()
+        .trim();
     final isActive = (data['isActive'] ?? true) == true;
     final ownerId = (data['ownerId'] ?? '').toString();
     final updatedAt = _formatTimestamp(context, data['updatedAt']);
     final ownerName = ownerId.isNotEmpty ? _ownerMap[ownerId]?.name : null;
-    final customName = ownerId.isNotEmpty
-        ? (_deviceOwnerMap[doc.id] ?? _deviceOwnerByDeviceId[doc.id])
-            ?.customName
-        : null;
-    final titleText = customName != null && customName.isNotEmpty
-        ? '$deviceId ($customName)'
-        : deviceId;
+    final customName = (_deviceOwnerMap[doc.id] ?? _deviceOwnerByDeviceId[doc.id])
+            ?.customName ??
+        (data['custom_name'] ?? data['customName'])?.toString();
+    final titleText = customName != null && customName.trim().isNotEmpty
+        ? '$deviceId (${customName.trim()})'
+        : (deviceName.isNotEmpty ? deviceName : deviceId);
 
     return Material(
       color: colors.card,
@@ -688,12 +697,561 @@ class _AdminTrackerDevicesScreenState extends State<AdminTrackerDevicesScreen> {
   Widget _buildFloatingButtons(BuildContext context) {
     final l10n = context.l10n;
 
-    return FloatingActionButton.extended(
-      heroTag: 'sync_inspirit',
-      onPressed: _isSyncingInspirit ? null : () => _onSyncInspirit(context),
-      icon: const Icon(Icons.sync),
-      label: Text(l10n.adminTrackerDevicesSyncInspirit),
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.end,
+      children: [
+        FloatingActionButton.extended(
+          heroTag: 'add_polar',
+          onPressed: () => _onAddPolarPressed(context),
+          icon: const Icon(Icons.bluetooth_searching),
+          label: Text(l10n.adminTrackerDevicesAddPolar),
+        ),
+        const SizedBox(height: 12),
+        FloatingActionButton.extended(
+          heroTag: 'sync_inspirit',
+          onPressed: _isSyncingInspirit ? null : () => _onSyncInspirit(context),
+          icon: const Icon(Icons.sync),
+          label: Text(l10n.adminTrackerDevicesSyncInspirit),
+        ),
+      ],
     );
+  }
+
+  Future<void> _onAddPolarPressed(BuildContext context) async {
+    final l10n = context.l10n;
+    final colors = context.appColors;
+    final textTheme = Theme.of(context).textTheme;
+
+    final choice = await showModalBottomSheet<String>(
+      context: context,
+      backgroundColor: colors.card,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+      ),
+      builder: (ctx) {
+        return SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(16, 12, 16, 16),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Text(
+                  l10n.adminTrackerDevicesAddPolarTitle,
+                  style: textTheme.titleMedium?.copyWith(
+                    color: colors.textPrimary,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+                const SizedBox(height: 12),
+                if (kIsWeb)
+                  ListTile(
+                    leading: Icon(Icons.bluetooth, color: colors.primary),
+                    title: Text(l10n.adminTrackerDevicesAddPolarChrome),
+                    onTap: () => Navigator.pop(ctx, 'chrome'),
+                  )
+                else
+                  ListTile(
+                    leading: Icon(Icons.bluetooth_searching, color: colors.primary),
+                    title: Text(l10n.adminPolarBleScanTitle),
+                    subtitle: Text(
+                      l10n.adminPolarBleScanSheetSubtitle,
+                      style: textTheme.bodySmall?.copyWith(
+                        color: colors.textSecondary,
+                      ),
+                    ),
+                    onTap: () => Navigator.pop(ctx, 'mobile'),
+                  ),
+                ListTile(
+                  leading: Icon(Icons.edit, color: colors.textSecondary),
+                  title: Text(l10n.adminTrackerDevicesAddPolarManual),
+                  onTap: () => Navigator.pop(ctx, 'manual'),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+
+    if (!context.mounted || choice == null) return;
+    if (choice == 'chrome') {
+      await _addPolarViaChrome(context);
+    } else if (choice == 'mobile') {
+      await _addPolarViaMobileScan(context);
+    } else {
+      await _showAddPolarDialog(context);
+    }
+  }
+
+  Future<void> _addPolarViaMobileScan(BuildContext context) async {
+    final l10n = context.l10n;
+    final pick = await showAdminPolarBleScanScreen(context);
+    if (!context.mounted || pick == null) return;
+
+    final assignment = await _promptPolarAssignment(
+      context,
+      deviceLabel: pick.displayName,
+    );
+    if (!context.mounted) return;
+    if (assignment == null) {
+      AppSnackbar.show(context, l10n.adminTrackerDevicesSelectOwnerRequired);
+      return;
+    }
+
+    try {
+      await _registerPolarDeviceInInventory(
+        polarDeviceId: pick.deviceId,
+        ownerId: assignment.ownerId,
+        deviceType: pick.deviceType,
+        deviceName: pick.displayName,
+        customName: assignment.customName,
+      );
+      if (!context.mounted) return;
+      AppSnackbar.show(
+        context,
+        l10n.adminTrackerDevicesAddPolarChromeSuccess(
+          pick.deviceId,
+          pick.deviceType,
+        ),
+        isError: false,
+      );
+    } on StateError catch (e) {
+      if (!context.mounted) return;
+      if (e.message == 'owner-required') {
+        AppSnackbar.show(context, l10n.adminTrackerDevicesSelectOwnerRequired);
+      } else if (e.message == 'permission-denied') {
+        AppSnackbar.show(context, l10n.adminTrackerDevicesPermissionDenied);
+      } else {
+        AppSnackbar.show(context, l10n.adminTrackerDevicesError(e.toString()));
+      }
+    } catch (e) {
+      if (!context.mounted) return;
+      AppSnackbar.show(context, l10n.adminTrackerDevicesError(e.toString()));
+    }
+  }
+
+  Future<void> _addPolarViaChrome(BuildContext context) async {
+    final l10n = context.l10n;
+    final bluetooth = PolarWebBluetoothService.instance;
+
+    if (!bluetooth.isSupported) {
+      AppSnackbar.show(context, l10n.adminTrackerDevicesAddPolarChromeUnsupported);
+      return;
+    }
+
+    try {
+      // Bluetooth first — keeps the user gesture for Chrome's chooser.
+      final pick = await bluetooth.pickPolarDevice();
+      if (!context.mounted) return;
+
+      if (pick == null) {
+        AppSnackbar.show(
+          context,
+          l10n.adminTrackerDevicesAddPolarChromeCancelled,
+        );
+        return;
+      }
+
+      final identity = pick.identity;
+      // Then association: owner + customName (jersey / label).
+      final assignment = await _promptPolarAssignment(
+        context,
+        suggestedCustomName: '',
+        deviceLabel: identity.displayName,
+      );
+      if (!context.mounted) return;
+      if (assignment == null) {
+        AppSnackbar.show(context, l10n.adminTrackerDevicesSelectOwnerRequired);
+        return;
+      }
+
+      await _registerPolarDeviceInInventory(
+        polarDeviceId: identity.deviceId,
+        deviceType: identity.deviceType,
+        deviceName: identity.displayName,
+        ownerId: assignment.ownerId,
+        customName: assignment.customName,
+      );
+
+      if (!context.mounted) return;
+      AppSnackbar.show(
+        context,
+        l10n.adminTrackerDevicesAddPolarChromeSuccess(
+          identity.deviceId,
+          identity.deviceType,
+        ),
+        isError: false,
+      );
+    } on StateError catch (e) {
+      if (!context.mounted) return;
+      if (e.message == 'owner-required') {
+        AppSnackbar.show(context, l10n.adminTrackerDevicesSelectOwnerRequired);
+        return;
+      }
+      if (e.message == 'permission-denied') {
+        AppSnackbar.show(context, l10n.adminTrackerDevicesPermissionDenied);
+        return;
+      }
+      if (e.message.startsWith('polar-id-not-in-name') ||
+          e.message == 'web-bluetooth-unsupported') {
+        AppSnackbar.show(
+          context,
+          e.message == 'web-bluetooth-unsupported'
+              ? l10n.adminTrackerDevicesAddPolarChromeUnsupported
+              : l10n.adminTrackerDevicesAddPolarChromeNoId,
+        );
+        await _showAddPolarDialog(context);
+        return;
+      }
+      AppSnackbar.show(context, l10n.adminTrackerDevicesError(e.toString()));
+    } catch (e) {
+      if (!context.mounted) return;
+      AppSnackbar.show(context, l10n.adminTrackerDevicesError(e.toString()));
+    }
+  }
+
+  /// Creates the Polar device and assigns it with [customName] on DeviceOwner.
+  Future<void> _registerPolarDeviceInInventory({
+    required String polarDeviceId,
+    required String ownerId,
+    String? deviceType,
+    String? deviceName,
+    String? customName,
+  }) async {
+    final kitOwnerId = ownerId.trim();
+    if (kitOwnerId.isEmpty) {
+      throw StateError('owner-required');
+    }
+
+    final label = customName?.trim();
+    final deviceId =
+        await TrackerDeviceAdminService.instance.createPolarDevice(
+      polarDeviceId: polarDeviceId,
+      ownerId: kitOwnerId,
+      deviceType: deviceType,
+      deviceName: deviceName,
+      customName: label,
+    );
+
+    await TrackerDeviceAdminService.instance.assignDeviceToOwner(
+      deviceId: deviceId,
+      ownerId: kitOwnerId,
+      customName: label,
+    );
+    await _loadDeviceOwnersForOwner(kitOwnerId);
+    await _loadAllDeviceOwners();
+    if (mounted) {
+      setState(() {
+        _showUnassignedDevices = false;
+        _selectedOwnerId = kitOwnerId;
+      });
+    }
+  }
+
+  /// Dialog: kit owner + [customName] (jersey / label) at association time.
+  Future<_PolarAssignment?> _promptPolarAssignment(
+    BuildContext context, {
+    String suggestedCustomName = '',
+    String? deviceLabel,
+  }) async {
+    final l10n = context.l10n;
+    final colors = context.appColors;
+    final textTheme = Theme.of(context).textTheme;
+
+    if (_ownerMap.isEmpty) {
+      AppSnackbar.show(context, l10n.adminTrackerDevicesSelectOwnerRequired);
+      return null;
+    }
+
+    final polarOwners = _ownerMap.entries
+        .where((e) => TrackerOwner.isPolarType(e.value.typeTracker))
+        .toList();
+    final otherOwners = _ownerMap.entries
+        .where((e) => !TrackerOwner.isPolarType(e.value.typeTracker))
+        .toList();
+    final entries = <MapEntry<String, TrackerOwner>>[
+      ...polarOwners,
+      ...otherOwners,
+    ];
+
+    final preselected = (_selectedOwnerId ?? widget.ownerId)?.trim();
+    String? dialogOwnerId = (preselected != null &&
+            preselected.isNotEmpty &&
+            _ownerMap.containsKey(preselected))
+        ? preselected
+        : (polarOwners.isNotEmpty ? polarOwners.first.key : entries.first.key);
+
+    final nameCtrl = TextEditingController(text: suggestedCustomName);
+
+    final confirmed = await showDialog<bool>(
+      context: context,
+      barrierDismissible: false,
+      builder: (ctx) {
+        return StatefulBuilder(
+          builder: (context, setStateDialog) {
+            return AlertDialog(
+              backgroundColor: colors.card,
+              title: Text(
+                l10n.adminTrackerDevicesAssignTitle,
+                style: textTheme.titleLarge?.copyWith(
+                  color: colors.textPrimary,
+                ),
+              ),
+              content: SizedBox(
+                width: double.maxFinite,
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    if (deviceLabel != null && deviceLabel.trim().isNotEmpty) ...[
+                      Text(
+                        deviceLabel.trim(),
+                        style: textTheme.bodySmall?.copyWith(
+                          color: colors.textSecondary,
+                        ),
+                      ),
+                      const SizedBox(height: 12),
+                    ],
+                    DropdownButtonFormField<String>(
+                      value: dialogOwnerId,
+                      dropdownColor: colors.card,
+                      isExpanded: true,
+                      decoration: InputDecoration(
+                        labelText: l10n.adminTrackerDevicesSelectOwner,
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                      ),
+                      items: entries
+                          .map(
+                            (e) => DropdownMenuItem<String>(
+                              value: e.key,
+                              child: Text(
+                                '${e.value.name} (${l10n.adminTrackerOwnerTypeLabel(e.value.typeTracker)})',
+                                style: textTheme.bodyMedium?.copyWith(
+                                  color: colors.textPrimary,
+                                ),
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ),
+                          )
+                          .toList(),
+                      onChanged: (value) =>
+                          setStateDialog(() => dialogOwnerId = value),
+                    ),
+                    const SizedBox(height: 12),
+                    TextField(
+                      controller: nameCtrl,
+                      textCapitalization: TextCapitalization.words,
+                      style: textTheme.bodyMedium?.copyWith(
+                        color: colors.textPrimary,
+                      ),
+                      decoration: InputDecoration(
+                        labelText: l10n.adminTrackerDevicesCustomName,
+                        hintText: l10n.adminTrackerDevicesCustomNameHint,
+                        labelStyle: textTheme.bodySmall?.copyWith(
+                          color: colors.textSecondary,
+                        ),
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.pop(ctx, false),
+                  child: Text(l10n.adminTrackerDevicesCancel),
+                ),
+                TextButton(
+                  onPressed: () => Navigator.pop(ctx, true),
+                  child: Text(l10n.adminTrackerDevicesValidate),
+                ),
+              ],
+            );
+          },
+        );
+      },
+    );
+
+    final custom = nameCtrl.text.trim();
+    nameCtrl.dispose();
+
+    if (confirmed != true) return null;
+    final picked = dialogOwnerId?.trim();
+    if (picked == null || picked.isEmpty) {
+      if (context.mounted) {
+        AppSnackbar.show(context, l10n.adminTrackerDevicesSelectOwnerRequired);
+      }
+      return null;
+    }
+    return _PolarAssignment(
+      ownerId: picked,
+      customName: custom.isEmpty ? null : custom,
+    );
+  }
+
+  Future<void> _showAddPolarDialog(BuildContext context) async {
+    final l10n = context.l10n;
+    final colors = context.appColors;
+    final textTheme = Theme.of(context).textTheme;
+
+    final idCtrl = TextEditingController();
+    var deviceType = 'H10';
+
+    final draft = await showDialog<_PolarManualDraft>(
+      context: context,
+      barrierDismissible: false,
+      builder: (ctx) {
+        return StatefulBuilder(
+          builder: (context, setStateDialog) {
+            return AlertDialog(
+              backgroundColor: colors.card,
+              title: Text(
+                l10n.adminTrackerDevicesAddPolarTitle,
+                style: textTheme.titleLarge?.copyWith(
+                  color: colors.textPrimary,
+                ),
+              ),
+              content: SizedBox(
+                width: double.maxFinite,
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    TextField(
+                      controller: idCtrl,
+                      style: textTheme.bodyMedium?.copyWith(
+                        color: colors.textPrimary,
+                      ),
+                      decoration: InputDecoration(
+                        labelText: l10n.adminTrackerDevicesAddPolarDeviceId,
+                        hintText: l10n.adminTrackerDevicesAddPolarDeviceIdHint,
+                        labelStyle: textTheme.bodySmall?.copyWith(
+                          color: colors.textSecondary,
+                        ),
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    DropdownButtonFormField<String>(
+                      value: deviceType,
+                      dropdownColor: colors.card,
+                      isExpanded: true,
+                      decoration: InputDecoration(
+                        labelText: l10n.adminTrackerDevicesAddPolarDeviceType,
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                      ),
+                      items: <MapEntry<String, String>>[
+                        MapEntry('H10', l10n.adminTrackerDevicesPolarTypeH10),
+                        MapEntry('H9', l10n.adminTrackerDevicesPolarTypeH9),
+                        MapEntry(
+                          'Verity Sense',
+                          l10n.adminTrackerDevicesPolarTypeVeritySense,
+                        ),
+                        MapEntry('OH1', l10n.adminTrackerDevicesPolarTypeOh1),
+                        MapEntry(
+                          'other',
+                          l10n.adminTrackerDevicesPolarTypeOther,
+                        ),
+                      ]
+                          .map(
+                            (e) => DropdownMenuItem<String>(
+                              value: e.key,
+                              child: Text(
+                                e.value,
+                                style: textTheme.bodyMedium?.copyWith(
+                                  color: colors.textPrimary,
+                                ),
+                              ),
+                            ),
+                          )
+                          .toList(),
+                      onChanged: (value) => setStateDialog(
+                        () => deviceType = value ?? 'H10',
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.pop(ctx),
+                  child: Text(l10n.adminTrackerDevicesCancel),
+                ),
+                TextButton(
+                  onPressed: () {
+                    final polarId = idCtrl.text.trim();
+                    if (polarId.isEmpty) {
+                      AppSnackbar.show(
+                        context,
+                        l10n.adminTrackerDevicesAddPolarDeviceIdRequired,
+                      );
+                      return;
+                    }
+                    Navigator.pop(
+                      ctx,
+                      _PolarManualDraft(
+                        polarDeviceId: polarId,
+                        deviceType: deviceType,
+                      ),
+                    );
+                  },
+                  child: Text(l10n.adminTrackerDevicesValidate),
+                ),
+              ],
+            );
+          },
+        );
+      },
+    );
+
+    idCtrl.dispose();
+    if (draft == null || !context.mounted) return;
+
+    final assignment = await _promptPolarAssignment(
+      context,
+      deviceLabel: draft.polarDeviceId,
+    );
+    if (!context.mounted) return;
+    if (assignment == null) {
+      AppSnackbar.show(context, l10n.adminTrackerDevicesSelectOwnerRequired);
+      return;
+    }
+
+    try {
+      await _registerPolarDeviceInInventory(
+        polarDeviceId: draft.polarDeviceId,
+        ownerId: assignment.ownerId,
+        deviceType: draft.deviceType,
+        customName: assignment.customName,
+      );
+      if (!context.mounted) return;
+      AppSnackbar.show(
+        context,
+        l10n.adminTrackerDevicesAddPolarSuccess,
+        isError: false,
+      );
+    } on StateError catch (e) {
+      if (!context.mounted) return;
+      if (e.message == 'owner-required') {
+        AppSnackbar.show(context, l10n.adminTrackerDevicesSelectOwnerRequired);
+      } else if (e.message == 'permission-denied') {
+        AppSnackbar.show(context, l10n.adminTrackerDevicesPermissionDenied);
+      } else {
+        AppSnackbar.show(context, l10n.adminTrackerDevicesError(e.toString()));
+      }
+    } catch (e) {
+      if (!context.mounted) return;
+      AppSnackbar.show(context, l10n.adminTrackerDevicesError(e.toString()));
+    }
   }
 
   Future<void> _onSyncInspirit(BuildContext context) async {
@@ -785,4 +1343,24 @@ class _AdminTrackerDevicesScreenState extends State<AdminTrackerDevicesScreen> {
     final locale = Localizations.localeOf(context).toString();
     return DateFormat.yMd(locale).add_Hm().format(value.toDate());
   }
+}
+
+class _PolarAssignment {
+  const _PolarAssignment({
+    required this.ownerId,
+    this.customName,
+  });
+
+  final String ownerId;
+  final String? customName;
+}
+
+class _PolarManualDraft {
+  const _PolarManualDraft({
+    required this.polarDeviceId,
+    required this.deviceType,
+  });
+
+  final String polarDeviceId;
+  final String deviceType;
 }

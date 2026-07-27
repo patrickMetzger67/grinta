@@ -2,6 +2,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/foundation.dart';
 import 'package:grinta/model/tracker/deviceOwner.dart';
+import 'package:grinta/model/tracker_owner.dart';
 import 'package:grinta/services/deviceService.dart';
 import 'package:grinta/services/user_root_service.dart';
 import 'package:grinta/util/insiders_device_resolver.dart';
@@ -34,10 +35,10 @@ class TrackerDeviceAdminService {
   }) async {
     await _ensureRoot();
 
-    final resolvedDeviceId = await _resolveInsidersDeviceDocId(deviceId);
+    final resolvedDeviceId = await _resolveAssignableDeviceDocId(deviceId);
     if (resolvedDeviceId == null) {
       throw StateError(
-        'invalid-device-id: Insiders device id required for TRACKER_Device '
+        'invalid-device-id: TRACKER_Device id required '
         '(got "$deviceId")',
       );
     }
@@ -65,6 +66,63 @@ class TrackerDeviceAdminService {
       }
       rethrow;
     }
+  }
+
+  /// Registers a Polar BLE sensor into `TRACKER_Device` (team kit inventory).
+  ///
+  /// [polarDeviceId] is the id printed on the sensor (Polar BLE SDK device id).
+  /// Doc id = `polarDeviceId` so session assignment and BLE connect share one key.
+  Future<String> createPolarDevice({
+    required String polarDeviceId,
+    String? ownerId,
+    String? deviceType,
+    String? deviceName,
+    String? customName,
+    String? serialNumber,
+  }) async {
+    await _ensureRoot();
+
+    final id = polarDeviceId.trim();
+    if (id.isEmpty) {
+      throw ArgumentError.value(polarDeviceId, 'polarDeviceId', 'required');
+    }
+
+    final now = Timestamp.now();
+    final type = (deviceType ?? '').trim();
+    final name = (deviceName ?? '').trim();
+    final label = (customName ?? '').trim();
+    final serial = (serialNumber ?? '').trim();
+    final kitOwnerId = ownerId?.trim() ?? '';
+
+    final data = <String, dynamic>{
+      'id': id,
+      'provider': TrackerOwner.providerPolar,
+      'device_type': type.isEmpty ? 'polar' : type,
+      'device_name': name.isEmpty ? 'Polar $id' : name,
+      'custom_name': label.isEmpty ? null : label,
+      'serial_number': serial.isEmpty ? id : serial,
+      'updatedAt': now,
+    };
+    if (kitOwnerId.isNotEmpty) {
+      data['ownerId'] = kitOwnerId;
+    }
+
+    try {
+      final existing = await _devicesCol.doc(id).get();
+      if (!existing.exists) {
+        data.putIfAbsent('ownerId', () => '');
+        data['createdAt'] = now;
+      }
+      await _devicesCol.doc(id).set(data, SetOptions(merge: true));
+    } on FirebaseException catch (e, st) {
+      debugPrint('createPolarDevice failed: ${e.code} ${e.message}\n$st');
+      if (e.code == 'permission-denied') {
+        throw StateError('permission-denied');
+      }
+      rethrow;
+    }
+
+    return id;
   }
 
   Future<void> unassignDevice(String deviceId) async {
@@ -137,20 +195,34 @@ class TrackerDeviceAdminService {
     return _deviceService.streamDevicesOrderedByUpdatedAt();
   }
 
-  /// Ensures assignments store the TRACKER_Device doc id (Insiders numeric id).
-  Future<String?> _resolveInsidersDeviceDocId(String deviceId) async {
+  /// Resolves a `TRACKER_Device` doc id for assignment.
+  ///
+  /// - Polar (and other non-Insiders) devices: use the existing doc id.
+  /// - Insiders / Inspirit: prefer numeric Insiders id (legacy sync).
+  Future<String?> _resolveAssignableDeviceDocId(String deviceId) async {
     final trimmed = deviceId.trim();
     if (trimmed.isEmpty) return null;
+
+    final device = await _deviceService.getDeviceById(trimmed);
+    if (device != null) {
+      final provider = (device.provider ?? '').trim().toLowerCase();
+      if (provider == TrackerOwner.providerPolar ||
+          provider == TrackerOwner.typeFootbar) {
+        return device.id;
+      }
+      if (provider == TrackerOwner.typeInspirit || provider.isEmpty) {
+        return insidersNumericIdFromString(device.id) ??
+            insidersUuidFromDevice(device) ??
+            device.id;
+      }
+      return device.id;
+    }
 
     if (isInsidersNumericId(trimmed) || isInsidersDeviceUuid(trimmed)) {
       return trimmed;
     }
 
-    final device = await _deviceService.getDeviceById(trimmed);
-    if (device == null) return null;
-
-    return insidersNumericIdFromString(device.id) ??
-        insidersUuidFromDevice(device);
+    return null;
   }
 
   /// Coerces Insiders API fields to Firestore-friendly shapes (strings for text fields).

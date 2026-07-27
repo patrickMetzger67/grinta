@@ -35,6 +35,7 @@ abstract final class AnalyticsScreenNames {
 
   // Tracker / sync
   static const trackerHub = 'tracker_hub';
+  static const polarImportHub = 'polar_import_hub';
   static const playerAnalysis = 'player_analysis';
   static const sessionPlayerFeeling = 'session_player_feeling';
 

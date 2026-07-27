@@ -378,8 +378,9 @@ class _SessionPersonalDataDialogState extends State<SessionPersonalDataDialog> {
         return l10n.wearableDeviceAppleHealth;
       case WearableDeviceType.googleHealthConnect:
         return l10n.wearableDeviceGoogleHealthConnect;
-      default:
-        return source.name;
+      case WearableDeviceType.fitbit:
+      case WearableDeviceType.gpsInsidersIntense:
+        return source.label(l10n);
     }
   }
 

@@ -72,6 +72,14 @@
 		<string>626293600533-mo43u2rcr958qudvq7gfgn578pua44j3.apps.googleusercontent.com</string>
 		<key>GMSApiKey</key>
 		<string>AIzaSyDyHHcP9py2HCyx18Ssels7qqygKxeUZG0</string>
+		<key>NSBluetoothAlwaysUsageDescription</key>
+		<string>Grinta utilise le Bluetooth pour détecter et connecter les capteurs Polar du kit équipe. / Grinta uses Bluetooth to discover and connect Polar team-kit sensors.</string>
+		<key>NSBluetoothPeripheralUsageDescription</key>
+		<string>Grinta utilise le Bluetooth pour détecter et connecter les capteurs Polar du kit équipe. / Grinta uses Bluetooth to discover and connect Polar team-kit sensors.</string>
+		<key>UIBackgroundModes</key>
+		<array>
+			<string>bluetooth-central</string>
+		</array>
 		<key>NSLocationWhenInUseUsageDescription</key>
 		<string>Grinta utilise votre position pour centrer la carte sur le terrain / Grinta uses your location to center the map on the pitch.</string>
 		<key>NSMicrophoneUsageDescription</key>
