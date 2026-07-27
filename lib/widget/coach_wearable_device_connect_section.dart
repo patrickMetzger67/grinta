@@ -65,9 +65,7 @@ class _CoachWearableDeviceConnectSectionState
         UserTrialService.instance,
       ]),
       builder: (context, _) {
-        final showPremiumBadge =
-            !UserTrialService.instance.hasPremiumAccess;
-
+        // Always mark the feature as Premium; access is still gated on tap.
         return FutureBuilder<Player?>(
           future: _playerFuture,
           builder: (context, playerSnapshot) {
@@ -107,7 +105,7 @@ class _CoachWearableDeviceConnectSectionState
                             SubscriptionPremiumBadge.withIconOverlay(
                               context: context,
                               colors: colors,
-                              showPremium: showPremiumBadge,
+                              showPremium: true,
                               icon: NavIconCountBadge(
                                 icon: Icons.watch_outlined,
                                 count: connectedCount,
@@ -128,13 +126,11 @@ class _CoachWearableDeviceConnectSectionState
                                     ),
                               ),
                             ),
-                            if (showPremiumBadge) ...[
-                              SubscriptionPremiumBadge(
-                                colors: colors,
-                                compact: true,
-                              ),
-                              const SizedBox(width: 8),
-                            ],
+                            SubscriptionPremiumBadge(
+                              colors: colors,
+                              compact: true,
+                            ),
+                            const SizedBox(width: 8),
                             Icon(
                               Icons.chevron_right_rounded,
                               color: colors.textSecondary,
