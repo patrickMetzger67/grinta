@@ -193,12 +193,19 @@ class _WearableDevicesDialogContentState
     return available.isNotEmpty ? available.first : WearableDeviceType.strava;
   }
 
-  void _openAddPage(_WearableDialogState state) {
+  void _openAddPage(
+    _WearableDialogState state, {
+    WearableDeviceType? preferredType,
+  }) {
     final available = _availableTypes(state);
     if (available.isEmpty) return;
+    final preferred =
+        preferredType != null && available.contains(preferredType)
+            ? preferredType
+            : _defaultAddType(available);
     setState(() {
       _page = _WearableDialogPage.add;
-      _selectedType = _defaultAddType(available);
+      _selectedType = preferred;
     });
   }
 
@@ -948,43 +955,13 @@ class _WearableDevicesDialogContentState
     required List<WearableDeviceType> connectedTypes,
     required List<WearableDeviceType> availableTypes,
   }) {
-    if (connectedTypes.isEmpty) {
-      return Padding(
-        padding: const EdgeInsets.fromLTRB(20, 8, 20, 88),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            Text(
-              l10n.settingsDevicesConnectedTitle,
-              style: TextStyle(
-                color: colors.textSecondary,
-                fontWeight: FontWeight.w600,
-                fontSize: 13,
-              ),
-            ),
-            const SizedBox(height: 16),
-            Expanded(
-              child: Center(
-                child: Text(
-                  l10n.settingsDevicesNoConnected,
-                  textAlign: TextAlign.center,
-                  style: TextStyle(
-                    color: colors.textSecondary,
-                    fontSize: 14,
-                  ),
-                ),
-              ),
-            ),
-          ],
-        ),
-      );
-    }
+    final allTypes = WearableDeviceType.selectableSorted(l10n);
 
     return ListView(
       padding: const EdgeInsets.fromLTRB(16, 4, 16, 88),
       children: [
         Text(
-          l10n.settingsDevicesConnectedTitle,
+          l10n.settingsDevicesSection,
           style: TextStyle(
             color: colors.textSecondary,
             fontWeight: FontWeight.w600,
@@ -992,52 +969,72 @@ class _WearableDevicesDialogContentState
           ),
         ),
         const SizedBox(height: 10),
-        for (var i = 0; i < connectedTypes.length; i++) ...[
+        for (var i = 0; i < allTypes.length; i++) ...[
           if (i > 0) const SizedBox(height: 8),
           Builder(
             builder: (context) {
-              final type = connectedTypes[i];
-              final coachVisibility = _coachVisibilityFor(
-                type,
-                state,
-                syncOwnerUid,
-              );
-              final detailsExpanded = _detailType == type;
+              final type = allTypes[i];
+              final connected = _isConnected(type, state);
+              if (connected) {
+                final coachVisibility = _coachVisibilityFor(
+                  type,
+                  state,
+                  syncOwnerUid,
+                );
+                final detailsExpanded = _detailType == type;
 
-              return Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  _ConnectedWearableTile(
-                    icon: type.icon,
-                    title: type.label(l10n),
-                    subtitle: _connectedTileSubtitle(
-                      type: type,
-                      state: state,
+                return Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    _ConnectedWearableTile(
+                      icon: type.icon,
+                      title: type.label(l10n),
+                      subtitle: _connectedTileSubtitle(
+                        type: type,
+                        state: state,
+                      ),
+                      disconnectLabel: l10n.settingsDevicesDisconnect,
+                      disconnectBusy: _disconnectingType == type.name,
+                      onDisconnect: () => _disconnect(type),
+                      showDetailsButton: coachVisibility != null,
+                      detailsExpanded: detailsExpanded,
+                      onToggleDetails: coachVisibility == null
+                          ? null
+                          : () {
+                              setState(() {
+                                _detailType = detailsExpanded ? null : type;
+                              });
+                            },
                     ),
-                    disconnectLabel: l10n.settingsDevicesDisconnect,
-                    disconnectBusy: _disconnectingType == type.name,
-                    onDisconnect: () => _disconnect(type),
-                    showDetailsButton: coachVisibility != null,
-                    detailsExpanded: detailsExpanded,
-                    onToggleDetails: coachVisibility == null
-                        ? null
-                        : () {
-                            setState(() {
-                              _detailType = detailsExpanded ? null : type;
-                            });
-                          },
-                  ),
-                  if (detailsExpanded && coachVisibility != null)
-                    Padding(
-                      padding: const EdgeInsets.only(top: 4),
-                      child: coachVisibility,
-                    ),
-                ],
+                    if (detailsExpanded && coachVisibility != null)
+                      Padding(
+                        padding: const EdgeInsets.only(top: 4),
+                        child: coachVisibility,
+                      ),
+                  ],
+                );
+              }
+
+              return _AvailableWearableTile(
+                icon: type.icon,
+                title: type.label(l10n),
+                subtitle: _connectSubtitle(type),
+                connectLabel: l10n.settingsDevicesSync,
+                onConnect: () => _openAddPage(state, preferredType: type),
               );
             },
           ),
         ],
-        if (availableTypes.isEmpty) ...[
+        if (connectedTypes.isEmpty) ...[
+          const SizedBox(height: 16),
+          Text(
+            l10n.settingsDevicesNoConnected,
+            style: TextStyle(
+              color: colors.textSecondary,
+              fontSize: 13,
+            ),
+          ),
+        ] else if (availableTypes.isEmpty) ...[
           const SizedBox(height: 16),
           Text(
             l10n.settingsDevicesAllConnected,
@@ -1229,6 +1226,72 @@ class _WearableDialogState {
   final AppleHealthSyncConfig? appleHealthConfig;
   final GoogleHealthSyncConfig? googleHealthConfig;
   final IntenseGpsSyncConfig? intenseGpsConfig;
+}
+
+class _AvailableWearableTile extends StatelessWidget {
+  const _AvailableWearableTile({
+    required this.icon,
+    required this.title,
+    required this.subtitle,
+    required this.connectLabel,
+    required this.onConnect,
+  });
+
+  final IconData icon;
+  final String title;
+  final String subtitle;
+  final String connectLabel;
+  final VoidCallback onConnect;
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = context.appColors;
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+      decoration: BoxDecoration(
+        color: colors.surface,
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: colors.border),
+      ),
+      child: Row(
+        children: [
+          Icon(icon, color: colors.primary, size: 22),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  title,
+                  style: TextStyle(
+                    color: colors.textPrimary,
+                    fontWeight: FontWeight.w600,
+                    fontSize: 14,
+                  ),
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  subtitle,
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    color: colors.textSecondary,
+                    fontSize: 12,
+                    fontWeight: FontWeight.w400,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          TextButton(
+            onPressed: onConnect,
+            child: Text(connectLabel),
+          ),
+        ],
+      ),
+    );
+  }
 }
 
 class _ConnectedWearableTile extends StatelessWidget {
