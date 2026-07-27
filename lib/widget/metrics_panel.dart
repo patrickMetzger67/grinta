@@ -47,19 +47,38 @@ class MetricsPanel extends StatefulWidget {
 class _MetricsPanelState extends State<MetricsPanel> {
   late MetricType _selectedMetricType;
 
+  bool get _polarCardio =>
+      widget.metrics.isNotEmpty &&
+      widget.metrics.every((m) => m.isPolarCardio);
+
+  List<MetricType> get _availableMetricTypes => _polarCardio
+      ? MetricTypeX.polarCardioValues
+      : MetricType.values;
+
   @override
   void initState() {
     super.initState();
-    _selectedMetricType = widget.initialMetricType;
+    _selectedMetricType = _coerceMetricType(widget.initialMetricType);
   }
 
   @override
   void didUpdateWidget(covariant MetricsPanel oldWidget) {
     super.didUpdateWidget(oldWidget);
 
-    if (oldWidget.initialMetricType != widget.initialMetricType) {
-      _selectedMetricType = widget.initialMetricType;
+    if (oldWidget.initialMetricType != widget.initialMetricType ||
+        oldWidget.metrics != widget.metrics) {
+      _selectedMetricType = _coerceMetricType(
+        oldWidget.initialMetricType != widget.initialMetricType
+            ? widget.initialMetricType
+            : _selectedMetricType,
+      );
     }
+  }
+
+  MetricType _coerceMetricType(MetricType preferred) {
+    final available = _availableMetricTypes;
+    if (available.contains(preferred)) return preferred;
+    return available.first;
   }
 
   @override
@@ -83,12 +102,14 @@ class _MetricsPanelState extends State<MetricsPanel> {
           metricType: _selectedMetricType,
           maxVisibleRows: widget.maxVisibleRows,
           teamId: widget.teamId,
+          polarCardio: _polarCardio,
         ),
         if (widget.metrics.isNotEmpty) ...[
           SizedBox(height: widget.spacing),
           TrainingMetricLineChart(
             metrics: widget.metrics,
             metricType: _selectedMetricType,
+            polarCardio: _polarCardio,
           ),
         ],
       ],
@@ -133,11 +154,11 @@ class _MetricsPanelState extends State<MetricsPanel> {
         color: colors.textPrimary,
         fontWeight: FontWeight.w700,
       ),
-      items: MetricType.values.map((metricType) {
+      items: _availableMetricTypes.map((metricType) {
         return DropdownMenuItem<MetricType>(
           value: metricType,
           child: Text(
-            metricType.label,
+            metricType.labelFor(polarCardio: _polarCardio),
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
             style: textTheme.bodySmall?.copyWith(
@@ -167,12 +188,14 @@ class TrainingMetricsListView extends StatefulWidget {
     required this.metricType,
     this.maxVisibleRows = 10,
     required this.teamId,
+    this.polarCardio = false,
   });
 
   final List<ActivityMetrics> metrics;
   final MetricType metricType;
   final int maxVisibleRows;
   final String teamId;
+  final bool polarCardio;
 
   @override
   State<TrainingMetricsListView> createState() =>
@@ -277,6 +300,7 @@ class _TrainingMetricsListViewState extends State<TrainingMetricsListView> {
                 metricType: widget.metricType,
                 index: index,
                 teamId: widget.teamId,
+                polarCardio: widget.polarCardio,
               );
             },
           ),
@@ -292,11 +316,13 @@ class TrainingMetricLineChart extends StatelessWidget {
     required this.metrics,
     required this.metricType,
     this.height = 230,
+    this.polarCardio = false,
   });
 
   final List<ActivityMetrics> metrics;
   final MetricType metricType;
   final double height;
+  final bool polarCardio;
 
   @override
   Widget build(BuildContext context) {
@@ -517,6 +543,7 @@ class TrainingMetricLineChart extends StatelessWidget {
                               final String valueText = _formatMetricValue(
                                 value: touchedSpot.y,
                                 metricType: metricType,
+                                polarCardio: polarCardio,
                               );
 
                               return LineTooltipItem(
@@ -624,12 +651,14 @@ class TrainingMetricRow extends StatelessWidget {
     required this.metricType,
     required this.index,
     required this.teamId,
+    this.polarCardio = false,
   });
 
   final ActivityMetrics item;
   final MetricType metricType;
   final int index;
   final String teamId;
+  final bool polarCardio;
 
   @override
   Widget build(BuildContext context) {
@@ -642,6 +671,7 @@ class TrainingMetricRow extends StatelessWidget {
     final String valueText = _formatMetricValue(
       value: value,
       metricType: metricType,
+      polarCardio: polarCardio || item.isPolarCardio,
     );
 
     final String zScoreText = _formatZScore(zScore);
@@ -997,12 +1027,16 @@ double _metricZScore(
 String _formatMetricValue({
   required double value,
   required MetricType metricType,
+  bool polarCardio = false,
 }) {
-  final String unit = metricType.unit;
+  final String unit = metricType.unitFor(polarCardio: polarCardio);
 
   final bool isIntegerMetric =
       metricType == MetricType.highAccelerationCount ||
-          metricType == MetricType.sprintCount;
+          metricType == MetricType.sprintCount ||
+          (polarCardio &&
+              (metricType == MetricType.workloadScore ||
+                  metricType == MetricType.maxValidatedSpeedKmh));
 
   final String formatted = isIntegerMetric
       ? value.round().toString()

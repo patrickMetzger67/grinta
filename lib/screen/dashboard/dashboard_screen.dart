@@ -20,12 +20,15 @@ import '../../model/match.dart' as match_model;
 import '../../model/matchCompo.dart';
 import '../../model/season.dart';
 import '../../model/team.dart';
+import '../../model/tracker/polar_session_analysis.dart';
 import '../../model/training.dart';
 import '../../services/matchService.dart';
+import '../../services/polar_session_analysis_service.dart';
 import '../../services/teamService.dart';
 import '../../services/trainingService.dart';
 import '../../model/feature_discovery_ids.dart';
 import '../../util/app_theme.dart';
+import '../../util/polar_tracker_eligibility.dart';
 import '../../util/staff_session_access.dart';
 import '../../widget/activity_rings_card.dart';
 import '../../widget/feature_discovery_random_banner.dart';
@@ -1111,39 +1114,83 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
       if (date.millisecondsSinceEpoch <= now.millisecondsSinceEpoch) {
         done++;
-        if(training.withTracker) {
-          final workloadSummary = await TeamWorkloadSummaryService().getByEventId(training.docId!);
-          if(workloadSummary != null) {
-            bool isPlayerFounded = false;
-            for (final ps in workloadSummary.playerScores) {
-              if (ps.playerId != playerId) {
-                continue;
-              }
-              isPlayerFounded = true;
-              final String eventId = training.docId ?? '';
-              if (eventId.isEmpty) {
-                continue;
-              }
-              final ActivityMetrics activityMetrics = buildActivityMetricsFromPlayerScore(
+        if (training.withTracker != true) {
+          continue;
+        }
+
+        final String eventId = training.docId?.trim() ?? '';
+        if (eventId.isEmpty || training.dateTime == null) {
+          continue;
+        }
+
+        final workloadSummary =
+            await TeamWorkloadSummaryService().getByEventId(eventId);
+        if (workloadSummary != null) {
+          bool isPlayerFounded = false;
+          for (final ps in workloadSummary.playerScores) {
+            if (ps.playerId != playerId) {
+              continue;
+            }
+            isPlayerFounded = true;
+            trainingMetrics.add(
+              buildActivityMetricsFromPlayerScore(
                 eventId: eventId,
                 timestamp: training.dateTime!,
                 playerScore: ps,
-              );
-              trainingMetrics.add(activityMetrics);
-              break;
-            }
-            // Managers / roster staff: team averages when the user is not a tracked player.
-            final bool canUseTeamAverages = useTeamAverages ||
-                (managedTeamsIds?.contains(training.teamId) ?? false);
-            if (!isPlayerFounded && canUseTeamAverages) {
-              final ActivityMetrics activityMetrics = buildActivityMetricsFromSummary(
-                eventId:  training.docId ?? '',
+              ),
+            );
+            break;
+          }
+          // Managers / roster staff: team averages when the user is not a tracked player.
+          final bool canUseTeamAverages = useTeamAverages ||
+              (managedTeamsIds?.contains(training.teamId) ?? false);
+          if (!isPlayerFounded && canUseTeamAverages) {
+            trainingMetrics.add(
+              buildActivityMetricsFromSummary(
+                eventId: eventId,
                 timestamp: training.dateTime!,
                 tws: workloadSummary,
-              );
-              trainingMetrics.add(activityMetrics);
-            }
+              ),
+            );
           }
+          continue;
+        }
+
+        // Polar kits write TRACKER_PolarAnalysis, not TeamWorkloadSummary.
+        if (!await isPolarTrackerOwner(training.ownerId)) {
+          continue;
+        }
+        final polarAnalyses =
+            await PolarSessionAnalysisService().listByEventId(eventId);
+        if (polarAnalyses.isEmpty) {
+          continue;
+        }
+
+        PolarSessionAnalysis? playerAnalysis;
+        for (final analysis in polarAnalyses) {
+          if (analysis.playerId.trim() == playerId.trim()) {
+            playerAnalysis = analysis;
+            break;
+          }
+        }
+        final bool canUseTeamAverages = useTeamAverages ||
+            (managedTeamsIds?.contains(training.teamId) ?? false);
+        if (playerAnalysis != null) {
+          trainingMetrics.add(
+            buildActivityMetricsFromPolarAnalysis(
+              eventId: eventId,
+              timestamp: training.dateTime!,
+              analysis: playerAnalysis,
+            ),
+          );
+        } else if (canUseTeamAverages) {
+          trainingMetrics.add(
+            buildActivityMetricsFromPolarAnalyses(
+              eventId: eventId,
+              timestamp: training.dateTime!,
+              analyses: polarAnalyses,
+            ),
+          );
         }
       } else {
         planned++;
