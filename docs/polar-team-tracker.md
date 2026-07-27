@@ -118,8 +118,14 @@ On `TRACKER_Sync/{eventId}.devices.{deviceId}`:
 
 ## End-of-session import UI
 
-Sync tab → **Upload** on a Polar-owned training/match opens
-`PolarImportHubPage` (`lib/screen/polar_import/polar_import_hub_page.dart`).
+After **Finish training** on a Polar kit session, Grinta opens
+`PolarImportHubPage` immediately (required on mobile — Sync tab is web-only).
+
+Also available:
+- Agenda → **Importer les données Polar** while `isTrackerDataUploaded == false`
+- Web Sync tab → **Upload** on a Polar-owned training/match
+
+`trackerId` keys = `TRACKER_DeviceOwner` doc ids (not jersey customName).
 
 | Channel | Behaviour |
 |---------|-----------|

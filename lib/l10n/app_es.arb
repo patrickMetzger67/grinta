@@ -2072,6 +2072,8 @@
     }
   },
   "polarAnalysisNoZones": "Sin reparto por zonas para esta importación.",
+  "polarImportMissingSeason": "Temporada no encontrada para importar sensores Polar.",
+  "polarImportAgendaAction": "Importar datos Polar",
 
   "adminTrackerDevicesAddPolarTitle": "Añadir un sensor Polar",
   "adminTrackerDevicesAddPolarDeviceId": "ID del dispositivo Polar",

@@ -2303,6 +2303,8 @@
     }
   },
   "polarAnalysisNoZones": "No zone breakdown for this import.",
+  "polarImportMissingSeason": "Season not found to import Polar sensors.",
+  "polarImportAgendaAction": "Import Polar data",
 
   "adminTrackerDevicesAddPolarTitle": "Add a Polar sensor",
   "adminTrackerDevicesAddPolarDeviceId": "Polar device ID",

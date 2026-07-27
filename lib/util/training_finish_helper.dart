@@ -13,6 +13,8 @@ import 'package:grinta/services/trainingService.dart';
 import 'package:grinta/services/training_intense_sync_service.dart';
 import 'package:grinta/util/app_snackbar.dart';
 import 'package:grinta/util/app_theme.dart';
+import 'package:grinta/util/polar_import_navigation.dart';
+import 'package:grinta/util/polar_tracker_eligibility.dart';
 import 'package:grinta/widget/training_intense_finish_dialog.dart';
 
 import '../model/training.dart';
@@ -310,6 +312,7 @@ Future<bool> finishManagedTraining(
 
   final String successMessage = context.l10n.trainingFinished;
   final String errorMessage = context.l10n.trainingFinishError;
+  final bool isPolarKit = await isPolarTrackerOwner(training.ownerId);
 
   try {
     await finishTrainingAfterConfirm(training: training);
@@ -318,6 +321,24 @@ Future<bool> finishManagedTraining(
     final BuildContext? rootContext = appNavigatorKey.currentContext;
     if (rootContext != null && rootContext.mounted) {
       AppSnackbar.show(rootContext, successMessage, isError: false);
+    }
+
+    // Polar kits: open cardio import immediately (Sync tab is web-only;
+    // BLE pull is mobile-first).
+    if (isPolarKit) {
+      final trainingId =
+          training.docId?.trim() ?? training.trainingId?.trim() ?? '';
+      final fresh = trainingId.isEmpty
+          ? null
+          : await TrainingService().getTrainingById(trainingId);
+      final navContext = appNavigatorKey.currentContext;
+      if (navContext != null && navContext.mounted) {
+        await openPolarImportHubForTraining(
+          navContext,
+          training: fresh ?? training,
+          source: 'finish_training',
+        );
+      }
     }
     return true;
   } catch (_) {

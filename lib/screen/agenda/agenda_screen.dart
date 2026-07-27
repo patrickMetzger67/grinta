@@ -37,6 +37,7 @@ import '../../util/match_creation_helper.dart';
 import '../../util/training_creation_helper.dart';
 import '../../util/intense_live_eligibility.dart';
 import '../../services/training_intense_sync_service.dart';
+import '../../util/polar_import_navigation.dart';
 import '../../util/training_finish_helper.dart';
 import '../intense_live/intense_live_session_screen.dart';
 import '../../widget/create_match_sheet.dart';

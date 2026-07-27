@@ -10165,6 +10165,18 @@ abstract class AppLocalizations {
   /// **'Pas de répartition par zones pour cet import.'**
   String get polarAnalysisNoZones;
 
+  /// No description provided for @polarImportMissingSeason.
+  ///
+  /// In fr, this message translates to:
+  /// **'Saison introuvable pour importer les capteurs Polar.'**
+  String get polarImportMissingSeason;
+
+  /// No description provided for @polarImportAgendaAction.
+  ///
+  /// In fr, this message translates to:
+  /// **'Importer les données Polar'**
+  String get polarImportAgendaAction;
+
   /// No description provided for @adminTrackerDevicesAddPolarTitle.
   ///
   /// In fr, this message translates to:

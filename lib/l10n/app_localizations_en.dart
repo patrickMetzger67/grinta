@@ -5810,6 +5810,13 @@ class AppLocalizationsEn extends AppLocalizations {
   String get polarAnalysisNoZones => 'No zone breakdown for this import.';
 
   @override
+  String get polarImportMissingSeason =>
+      'Season not found to import Polar sensors.';
+
+  @override
+  String get polarImportAgendaAction => 'Import Polar data';
+
+  @override
   String get adminTrackerDevicesAddPolarTitle => 'Add a Polar sensor';
 
   @override

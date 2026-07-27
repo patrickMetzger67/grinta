@@ -5897,6 +5897,13 @@ class AppLocalizationsDe extends AppLocalizations {
   String get polarAnalysisNoZones => 'Keine Zonenverteilung für diesen Import.';
 
   @override
+  String get polarImportMissingSeason =>
+      'Saison nicht gefunden, um Polar-Sensoren zu importieren.';
+
+  @override
+  String get polarImportAgendaAction => 'Polar-Daten importieren';
+
+  @override
   String get adminTrackerDevicesAddPolarTitle => 'Polar-Sensor hinzufügen';
 
   @override

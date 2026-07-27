@@ -16,9 +16,9 @@ import 'package:grinta/services/tracker_field_service.dart';
 import 'package:grinta/services/event_sync_service.dart';
 import 'package:grinta/services/trainingService.dart';
 import 'package:grinta/model/tracker_owner.dart';
-import 'package:grinta/screen/polar_import/polar_import_hub_page.dart';
 import 'package:grinta/tracker/tracker_hub_page.dart';
 import 'package:grinta/provider/appSession.dart';
+import 'package:grinta/util/polar_import_navigation.dart';
 import 'package:grinta/widget/uploadTrackerButton.dart';
 import 'package:provider/provider.dart';
 
@@ -362,76 +362,6 @@ class _SyncScreenState extends State<SyncScreen> {
           fieldGpsCorners: null,
           devicePlayerMap: devicePlayerMap,
           ownerId: training.ownerId!,
-        ),
-      ),
-    );
-  }
-
-  Future<void> _openMatchPolarImportHub({
-    required match_model.Match match,
-    required List<String> trackerIdsToSend,
-    required Map<String, String> devicePlayerMap,
-  }) async {
-    if (!mounted || trackerIdsToSend.isEmpty) return;
-
-    final eventId = match.id;
-    if (eventId == null || eventId.isEmpty) return;
-    if (!await _ensureEventSyncNotFullyClosed(eventId)) return;
-    if (!mounted) return;
-
-    AnalyticsInteractions.logFeature(
-      AnalyticsFeatures.syncTrackerHub,
-      parameters: const <String, Object>{
-        'is_match': true,
-        'kit': 'polar',
-      },
-    );
-    await Navigator.push(
-      context,
-      analyticsMaterialRoute<void>(
-        screenName: AnalyticsScreenNames.polarImportHub,
-        builder: (_) => PolarImportHubPage(
-          trackerIds: trackerIdsToSend,
-          eventId: eventId,
-          isMatch: true,
-          devicePlayerMap: devicePlayerMap,
-          ownerId: match.ownerId!,
-          eventAt: match.timestamp?.toDate() ?? DateTime.now(),
-        ),
-      ),
-    );
-  }
-
-  Future<void> _openTrainingPolarImportHub({
-    required Training training,
-    required List<String> trackerIdsToSend,
-    required Map<String, String> devicePlayerMap,
-  }) async {
-    if (!mounted || trackerIdsToSend.isEmpty) return;
-
-    final eventId = training.docId;
-    if (eventId == null || eventId.isEmpty) return;
-    if (!await _ensureEventSyncNotFullyClosed(eventId)) return;
-    if (!mounted) return;
-
-    AnalyticsInteractions.logFeature(
-      AnalyticsFeatures.syncTrackerHub,
-      parameters: const <String, Object>{
-        'is_match': false,
-        'kit': 'polar',
-      },
-    );
-    await Navigator.push(
-      context,
-      analyticsMaterialRoute<void>(
-        screenName: AnalyticsScreenNames.polarImportHub,
-        builder: (_) => PolarImportHubPage(
-          trackerIds: trackerIdsToSend,
-          eventId: eventId,
-          isMatch: false,
-          devicePlayerMap: devicePlayerMap,
-          ownerId: training.ownerId!,
-          eventAt: training.dateTime?.toDate() ?? DateTime.now(),
         ),
       ),
     );
@@ -801,6 +731,17 @@ class _SyncScreenState extends State<SyncScreen> {
                                         );
                                         if (!isInspirit && !isPolar) return;
 
+                                          if (isPolar) {
+                                            if (!mounted) return;
+                                            await openPolarImportHubForMatch(
+                                              context,
+                                              match: match,
+                                              seasonId: currentSeason?.ref?.id,
+                                              source: 'sync_tab',
+                                            );
+                                            return;
+                                          }
+
                                           final matchCompo = await MatchCompoService()
                                               .getFirstMatchCompoByMatchId(match.id!);
 
@@ -834,15 +775,6 @@ class _SyncScreenState extends State<SyncScreen> {
                                                   context.l10n.syncNoDeviceForMatch,
                                                 ),
                                               ),
-                                            );
-                                            return;
-                                          }
-
-                                          if (isPolar) {
-                                            await _openMatchPolarImportHub(
-                                              match: match,
-                                              trackerIdsToSend: trackerIdsToSend,
-                                              devicePlayerMap: devicePlayerMap,
                                             );
                                             return;
                                           }
@@ -1027,6 +959,17 @@ class _SyncScreenState extends State<SyncScreen> {
                                         );
                                         if (!isInspirit && !isPolar) return;
 
+                                          if (isPolar) {
+                                            if (!mounted) return;
+                                            await openPolarImportHubForTraining(
+                                              context,
+                                              training: training,
+                                              seasonId: currentSeason?.ref?.id,
+                                              source: 'sync_tab',
+                                            );
+                                            return;
+                                          }
+
                                           final seasonId = currentSeason?.ref?.id;
                                           if (seasonId == null || seasonId.isEmpty) {
                                             return;
@@ -1057,15 +1000,6 @@ class _SyncScreenState extends State<SyncScreen> {
                                                   context.l10n.syncNoDeviceForTraining,
                                                 ),
                                               ),
-                                            );
-                                            return;
-                                          }
-
-                                          if (isPolar) {
-                                            await _openTrainingPolarImportHub(
-                                              training: training,
-                                              trackerIdsToSend: trackerIdsToSend,
-                                              devicePlayerMap: devicePlayerMap,
                                             );
                                             return;
                                           }

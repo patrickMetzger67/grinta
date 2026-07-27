@@ -1596,6 +1596,8 @@ class AgendaItemCard extends StatelessWidget {
                 showResync: canManageThisTraining &&
                     canResyncTrainingIntense(item.training!),
               ),
+              if (canManageThisTraining)
+                _AgendaPolarImportButton(training: item.training!),
             ],
             if (item.teamWorkloadSummary != null &&
                 canSendSessionPdfReport(
@@ -2167,6 +2169,73 @@ class _AgendaIntenseLiveButtonState extends State<_AgendaIntenseLiveButton> {
               ),
             ],
           ],
+        );
+      },
+    );
+  }
+}
+
+/// Shown after a Polar kit training is finished until cardio data is imported.
+class _AgendaPolarImportButton extends StatefulWidget {
+  const _AgendaPolarImportButton({required this.training});
+
+  final Training training;
+
+  @override
+  State<_AgendaPolarImportButton> createState() =>
+      _AgendaPolarImportButtonState();
+}
+
+class _AgendaPolarImportButtonState extends State<_AgendaPolarImportButton> {
+  Future<bool>? _needsImportFuture;
+
+  @override
+  void initState() {
+    super.initState();
+    _needsImportFuture = trainingNeedsPolarImport(widget.training);
+  }
+
+  @override
+  void didUpdateWidget(covariant _AgendaPolarImportButton oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.training.docId != widget.training.docId ||
+        oldWidget.training.isTrackerDataUploaded !=
+            widget.training.isTrackerDataUploaded ||
+        oldWidget.training.isFinish != widget.training.isFinish ||
+        oldWidget.training.ownerId != widget.training.ownerId) {
+      _needsImportFuture = trainingNeedsPolarImport(widget.training);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return FutureBuilder<bool>(
+      future: _needsImportFuture,
+      builder: (context, snapshot) {
+        if (snapshot.data != true) return const SizedBox.shrink();
+
+        final colors = context.appColors;
+        return Padding(
+          padding: const EdgeInsets.only(top: 10),
+          child: SizedBox(
+            width: double.infinity,
+            child: FilledButton.icon(
+              onPressed: () async {
+                await openPolarImportHubForTraining(
+                  context,
+                  training: widget.training,
+                  source: 'agenda',
+                );
+              },
+              icon: const Icon(Icons.favorite_rounded, size: 18),
+              label: Text(context.l10n.polarImportAgendaAction),
+              style: FilledButton.styleFrom(
+                backgroundColor: colors.primary,
+                foregroundColor: Colors.white,
+                padding: const EdgeInsets.symmetric(vertical: 12),
+              ),
+            ),
+          ),
         );
       },
     );
