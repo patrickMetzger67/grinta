@@ -6,8 +6,10 @@ import 'package:grinta/model/team.dart';
 import 'package:grinta/model/training.dart';
 import 'package:grinta/provider/appSession.dart';
 import 'package:grinta/model/tracker/deviceOwner.dart';
+import 'package:grinta/model/player.dart';
 import 'package:grinta/services/deviceOwnerService.dart' as device_owner_svc;
 import 'package:grinta/services/ownerService.dart';
+import 'package:grinta/services/playerService.dart';
 import 'package:grinta/services/trainingService.dart';
 import 'package:grinta/navigation/app_navigator.dart';
 import 'package:grinta/util/app_snackbar.dart';
@@ -458,11 +460,27 @@ class _CreateTrainingSheetState extends State<CreateTrainingSheet> {
           };
         }
 
+        final roster = team.grintaPlayers ?? const [];
+        final playerIds = roster
+            .map((p) => p.playerId.trim())
+            .where((id) => id.isNotEmpty)
+            .toList(growable: false);
+        final loadedPlayers = await Future.wait(
+          playerIds.map(PlayerService().getPlayerById),
+        );
+        final playersById = <String, Player>{
+          for (var i = 0; i < playerIds.length; i++)
+            if (loadedPlayers[i] != null) playerIds[i]: loadedPlayers[i]!,
+        };
+
         final playerTraining = playerTrainingFromGrintaPlayers(
-          team.grintaPlayers ?? const [],
+          roster,
           managerIds: managerIdsFromTeam(team),
           withTracker: _withTracker,
           ownerDevicesByDocId: ownerDevicesByDocId,
+          playersById: playersById,
+          trainingDate: _selectedDate,
+          seasonId: season.ref?.id,
         );
 
         final trainings = buildTrainingsForCreation(
@@ -478,6 +496,7 @@ class _CreateTrainingSheetState extends State<CreateTrainingSheet> {
           ownerId: _selectedOwnerId,
           recurrentFrom: _isRecurrent ? _recurrentFromDate : null,
           recurrentTo: _isRecurrent ? _recurrentToDate : null,
+          playersById: playersById,
         );
 
         if (trainings.isEmpty) {
