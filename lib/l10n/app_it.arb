@@ -2197,7 +2197,7 @@
   },
   "polarImportTitle": "Import Polar (cardio)",
   "polarImportSensorsHeader": "Sensori Polar della sessione",
-  "polarImportHint": "Ricollega ogni sensore dopo la sessione per importare la FC (oppure inserisci i valori manualmente).",
+  "polarImportHint": "Chiudi Polar Flow, metti il Verity Sense in modalità sensore (LED blu / cuore ottico), poi importa via Bluetooth. Se iOS mostra già il sensore come Connesso, dimenticalo in Impostazioni → Bluetooth.",
   "polarImportSelectSensor": "Seleziona un sensore per importare i dati cardio.",
   "polarImportStatusPending": "Da importare",
   "polarImportStatusDone": "Importato",
@@ -2240,6 +2240,7 @@
       }
     }
   },
+  "polarImportBleTimeoutHint": "Connessione Polar BLE scaduta. Chiudi Polar Flow, dimentica il sensore in Impostazioni → Bluetooth se resta Connesso, riattiva il Verity Sense in modalità sensore (LED blu), poi riprova.",
   "polarImportBleError": "Import Polar non riuscito: {error}",
   "@polarImportBleError": {
     "placeholders": {

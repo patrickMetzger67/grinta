@@ -147,7 +147,109 @@ class PolarMobileBleService {
   Stream<String> get deviceDisconnectedIds => _polar.deviceDisconnected
       .map((e) => e.info.deviceId.trim().toUpperCase());
 
+  /// Connects and waits until exercise APIs can be used.
+  ///
+  /// Subscribes to SDK events **before** [connectToDevice] to avoid missing
+  /// early `sdkFeatureReady` callbacks. On iOS Verity Sense, `fileTransfer`
+  /// is often never announced even when PFTP works — after a successful
+  /// connection we then settle briefly and proceed.
+  Future<void> connectAndPrepareForExercises(
+    String deviceId, {
+    Duration timeout = const Duration(seconds: 60),
+  }) async {
+    final id = deviceId.trim().toUpperCase();
+    if (id.isEmpty) {
+      throw ArgumentError.value(deviceId, 'deviceId', 'required');
+    }
+
+    final connected = Completer<void>();
+    final fileTransferReady = Completer<void>();
+    final features = <String>{};
+
+    final featureSub = _polar.sdkFeatureReady.listen(
+      (e) {
+        final eid = e.identifier.trim().toUpperCase();
+        if (eid != id) return;
+        features.add(e.feature.name);
+        debugPrint('[PolarMobileBle] feature ready $id → ${e.feature.name}');
+        if (e.feature == PolarSdkFeature.fileTransfer &&
+            !fileTransferReady.isCompleted) {
+          fileTransferReady.complete();
+        }
+      },
+      onError: (Object e, StackTrace st) {
+        debugPrint('[PolarMobileBle] sdkFeatureReady error: $e\n$st');
+      },
+    );
+
+    final connectedSub = _polar.deviceConnected.listen((info) {
+      final eid = info.deviceId.trim().toUpperCase();
+      debugPrint('[PolarMobileBle] deviceConnected $eid');
+      if (eid == id && !connected.isCompleted) {
+        connected.complete();
+      }
+    });
+
+    final disconnectedSub = _polar.deviceDisconnected.listen((event) {
+      final eid = event.info.deviceId.trim().toUpperCase();
+      debugPrint(
+        '[PolarMobileBle] deviceDisconnected $eid '
+        'pairingError=${event.pairingError}',
+      );
+    });
+
+    final connectBudget = Duration(
+      milliseconds: timeout.inMilliseconds.clamp(1, 25000),
+    );
+    final overallDeadline = DateTime.now().add(timeout);
+
+    try {
+      await _polar.requestPermissions();
+      // Fire-and-forget at the native layer — events above drive readiness.
+      await _polar.connectToDevice(id, requestPermissions: true);
+
+      try {
+        await connected.future.timeout(connectBudget);
+      } on TimeoutException {
+        throw TimeoutException(
+          'Polar $id did not connect within ${connectBudget.inSeconds}s. '
+          'Close Polar Flow (and any other Polar app), remove the sensor from '
+          'iOS Settings → Bluetooth if it stays “Connected”, wake the Verity '
+          'Sense in sensor mode (heart on optical LEDs, blue side LED), then retry.',
+          connectBudget,
+        );
+      }
+
+      final remaining = overallDeadline.difference(DateTime.now());
+      if (remaining <= Duration.zero) {
+        throw TimeoutException(
+          'Polar $id connected but exercise API timed out '
+          '(features: ${features.isEmpty ? 'none' : features.join(', ')}).',
+          timeout,
+        );
+      }
+
+      try {
+        await fileTransferReady.future.timeout(remaining);
+      } on TimeoutException {
+        // Verity Sense on iOS often never emits fileTransfer even though
+        // listExercises/fetchExercise can still work after connection.
+        debugPrint(
+          '[PolarMobileBle] fileTransfer not announced for $id after '
+          'connect; features=${features.join(', ')} — settling then proceed',
+        );
+        await Future<void>.delayed(const Duration(seconds: 2));
+      }
+    } finally {
+      await featureSub.cancel();
+      await connectedSub.cancel();
+      await disconnectedSub.cancel();
+    }
+  }
+
   /// Waits until Polar file-transfer feature is ready for [deviceId].
+  ///
+  /// Prefer [connectAndPrepareForExercises] which avoids missing early events.
   Future<void> waitForFileTransfer(
     String deviceId, {
     Duration timeout = const Duration(seconds: 45),

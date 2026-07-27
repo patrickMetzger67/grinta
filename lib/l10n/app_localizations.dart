@@ -9915,7 +9915,7 @@ abstract class AppLocalizations {
   /// No description provided for @polarImportHint.
   ///
   /// In fr, this message translates to:
-  /// **'Reconnecte chaque capteur après la séance pour importer la FC (ou saisis les valeurs manuellement).'**
+  /// **'Ferme Polar Flow, mets le Verity Sense en mode capteur (LED bleue / cœur optique), puis importe via Bluetooth. Si iOS affiche déjà le capteur « Connecté », oublie-le dans Réglages → Bluetooth.'**
   String get polarImportHint;
 
   /// No description provided for @polarImportSelectSensor.
@@ -10032,6 +10032,12 @@ abstract class AppLocalizations {
   /// In fr, this message translates to:
   /// **'Import OK — FC moy. {avgHr} · {minutes} min'**
   String polarImportSuccess(String avgHr, String minutes);
+
+  /// No description provided for @polarImportBleTimeoutHint.
+  ///
+  /// In fr, this message translates to:
+  /// **'Connexion Polar BLE expirée. Ferme Polar Flow, oublie le capteur dans Réglages → Bluetooth s’il reste « Connecté », réveille le Verity Sense en mode capteur (LED bleue), puis réessaie.'**
+  String get polarImportBleTimeoutHint;
 
   /// No description provided for @polarImportBleError.
   ///

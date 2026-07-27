@@ -490,10 +490,10 @@ class _PolarImportHubPageState extends State<PolarImportHubPage> {
     } catch (e, st) {
       debugPrint('[PolarImport] BLE failed: $e\n$st');
       if (!mounted) return;
-      AppSnackbar.show(
-        context,
-        context.l10n.polarImportBleError(e.toString()),
-      );
+      final message = e is TimeoutException
+          ? context.l10n.polarImportBleTimeoutHint
+          : context.l10n.polarImportBleError(e.toString());
+      AppSnackbar.show(context, message);
     } finally {
       if (mounted) setState(() => _busy = false);
     }

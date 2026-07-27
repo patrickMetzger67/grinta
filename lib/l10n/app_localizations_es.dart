@@ -5745,7 +5745,7 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get polarImportHint =>
-      'Vuelve a conectar cada sensor después de la sesión para importar la FC (o introduce los valores manualmente).';
+      'Cierra Polar Flow, pon el Verity Sense en modo sensor (LED azul / corazón óptico) e importa por Bluetooth. Si iOS ya muestra el sensor como Conectado, olvídalo en Ajustes → Bluetooth.';
 
   @override
   String get polarImportSelectSensor =>
@@ -5812,6 +5812,10 @@ class AppLocalizationsEs extends AppLocalizations {
   String polarImportSuccess(String avgHr, String minutes) {
     return 'Importación OK — FC med. $avgHr · $minutes min';
   }
+
+  @override
+  String get polarImportBleTimeoutHint =>
+      'La conexión Polar BLE ha caducado. Cierra Polar Flow, olvida el sensor en Ajustes → Bluetooth si sigue Conectado, despierta el Verity Sense en modo sensor (LED azul) e inténtalo de nuevo.';
 
   @override
   String polarImportBleError(String error) {

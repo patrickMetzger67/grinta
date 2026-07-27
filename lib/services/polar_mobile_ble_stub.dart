@@ -61,6 +61,15 @@ class PolarMobileBleService {
 
   Stream<String> get deviceDisconnectedIds => const Stream.empty();
 
+  Future<void> connectAndPrepareForExercises(
+    String deviceId, {
+    Duration timeout = const Duration(seconds: 60),
+  }) async {
+    throw UnsupportedError(
+      'Polar BLE connect is only available on iOS/Android.',
+    );
+  }
+
   Future<void> waitForFileTransfer(
     String deviceId, {
     Duration timeout = const Duration(seconds: 45),

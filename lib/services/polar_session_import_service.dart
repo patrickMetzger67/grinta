@@ -76,11 +76,10 @@ class PolarSessionImportService {
         ? 'other'
         : (device?.deviceType ?? 'other').trim();
 
-    await _ble.connect(polarDeviceId);
     try {
-      await _ble.waitForFileTransfer(
+      await _ble.connectAndPrepareForExercises(
         polarDeviceId,
-        timeout: connectTimeout ?? const Duration(seconds: 45),
+        timeout: connectTimeout ?? const Duration(seconds: 60),
       );
 
       final entries = await _ble.listExercises(polarDeviceId);
