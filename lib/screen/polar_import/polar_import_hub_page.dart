@@ -487,6 +487,7 @@ class _PolarImportHubPageState extends State<PolarImportHubPage> {
         isError: false,
       );
       setState(() => _selectedTrackerId = null);
+      await _maybeMarkEventUploaded();
     } catch (e, st) {
       debugPrint('[PolarImport] BLE failed: $e\n$st');
       if (!mounted) return;
@@ -545,6 +546,7 @@ class _PolarImportHubPageState extends State<PolarImportHubPage> {
         isError: false,
       );
       setState(() => _selectedTrackerId = null);
+      await _maybeMarkEventUploaded();
     } catch (e, st) {
       debugPrint('[PolarImport] manual failed: $e\n$st');
       if (!mounted) return;
@@ -555,6 +557,33 @@ class _PolarImportHubPageState extends State<PolarImportHubPage> {
     } finally {
       if (mounted) setState(() => _busy = false);
     }
+  }
+
+  /// When every expected Polar sensor is imported, mark the event uploaded so
+  /// agenda cards switch from "import" to "view analysis".
+  Future<void> _maybeMarkEventUploaded() async {
+    final sync =
+        await _eventSync.getEventSync(widget.eventId) ?? _eventSyncDoc;
+    if (sync == null) return;
+
+    final allSynced = _validTrackerIds.isNotEmpty &&
+        _validTrackerIds.every(
+          (id) => sync.devices[id]?.isSynced == true,
+        );
+    if (!allSynced) return;
+
+    if (widget.isMatch) {
+      final match = await MatchService().getMatchById(widget.eventId);
+      if (match == null || match.isTrackerDataUploaded == true) return;
+      match.isTrackerDataUploaded = true;
+      await MatchService().updateMatch(match);
+      return;
+    }
+
+    final training = await TrainingService().getTrainingById(widget.eventId);
+    if (training == null || training.isTrackerDataUploaded == true) return;
+    training.isTrackerDataUploaded = true;
+    await TrainingService().updateTraining(training);
   }
 
   Future<void> _confirmCloseSync() async {

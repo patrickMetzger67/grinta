@@ -2306,6 +2306,7 @@
   "polarAnalysisNoZones": "Sin reparto por zonas para esta importación.",
   "polarImportMissingSeason": "Temporada no encontrada para importar sensores Polar.",
   "polarImportAgendaAction": "Importar datos Polar",
+  "polarAnalysisAgendaAction": "Ver análisis Polar",
   "adminTrackerDevicesAddPolarTitle": "Añadir un sensor Polar",
   "adminTrackerDevicesAddPolarDeviceId": "ID del dispositivo Polar",
   "adminTrackerDevicesAddPolarDeviceIdHint": "Impreso en el sensor, o final del nombre BLE (ej. Polar H10 1C709B20 → 1C709B20)",

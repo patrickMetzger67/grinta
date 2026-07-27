@@ -2613,6 +2613,7 @@
   "polarAnalysisNoZones": "Pas de répartition par zones pour cet import.",
   "polarImportMissingSeason": "Saison introuvable pour importer les capteurs Polar.",
   "polarImportAgendaAction": "Importer les données Polar",
+  "polarAnalysisAgendaAction": "Voir l'analyse Polar",
 
   "adminTrackerDevicesAddPolarTitle": "Ajouter un capteur Polar",
   "adminTrackerDevicesAddPolarDeviceId": "ID appareil Polar",

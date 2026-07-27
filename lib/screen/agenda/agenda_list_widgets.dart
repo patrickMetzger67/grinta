@@ -1598,6 +1598,18 @@ class AgendaItemCard extends StatelessWidget {
               ),
               if (canManageThisTraining)
                 _AgendaPolarImportButton(training: item.training!),
+              if (canAccessSessionDetails)
+                _AgendaPolarAnalysisButton(
+                  training: item.training!,
+                  title: item.title,
+                  subtitle: item.subtitle,
+                  eventDate: item.startAt,
+                )
+              else if ((currentPlayerId?.trim().isNotEmpty ?? false))
+                _AgendaPolarPlayerAnalysisButton(
+                  training: item.training!,
+                  playerId: currentPlayerId!.trim(),
+                ),
             ],
             if (item.teamWorkloadSummary != null &&
                 canSendSessionPdfReport(
@@ -2189,10 +2201,14 @@ class _AgendaPolarImportButton extends StatefulWidget {
 class _AgendaPolarImportButtonState extends State<_AgendaPolarImportButton> {
   Future<bool>? _needsImportFuture;
 
+  void _reload() {
+    _needsImportFuture = trainingNeedsPolarImport(widget.training);
+  }
+
   @override
   void initState() {
     super.initState();
-    _needsImportFuture = trainingNeedsPolarImport(widget.training);
+    _reload();
   }
 
   @override
@@ -2203,7 +2219,7 @@ class _AgendaPolarImportButtonState extends State<_AgendaPolarImportButton> {
             widget.training.isTrackerDataUploaded ||
         oldWidget.training.isFinish != widget.training.isFinish ||
         oldWidget.training.ownerId != widget.training.ownerId) {
-      _needsImportFuture = trainingNeedsPolarImport(widget.training);
+      _reload();
     }
   }
 
@@ -2226,12 +2242,185 @@ class _AgendaPolarImportButtonState extends State<_AgendaPolarImportButton> {
                   training: widget.training,
                   source: 'agenda',
                 );
+                if (!mounted) return;
+                setState(_reload);
+                _notifyAgendaWorkloadUpdated(
+                  context,
+                  training: widget.training,
+                );
               },
               icon: const Icon(Icons.favorite_rounded, size: 18),
               label: Text(context.l10n.polarImportAgendaAction),
               style: FilledButton.styleFrom(
                 backgroundColor: colors.primary,
                 foregroundColor: Colors.white,
+                padding: const EdgeInsets.symmetric(vertical: 12),
+              ),
+            ),
+          ),
+        );
+      },
+    );
+  }
+}
+
+/// Opens Polar cardio analysis when GPS workload rings are unavailable.
+class _AgendaPolarAnalysisButton extends StatefulWidget {
+  const _AgendaPolarAnalysisButton({
+    required this.training,
+    required this.title,
+    this.subtitle,
+    this.eventDate,
+  });
+
+  final Training training;
+  final String title;
+  final String? subtitle;
+  final DateTime? eventDate;
+
+  @override
+  State<_AgendaPolarAnalysisButton> createState() =>
+      _AgendaPolarAnalysisButtonState();
+}
+
+class _AgendaPolarAnalysisButtonState
+    extends State<_AgendaPolarAnalysisButton> {
+  Future<bool>? _hasAnalysisFuture;
+
+  void _reload() {
+    _hasAnalysisFuture = trainingHasPolarAnalysis(widget.training);
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    _reload();
+  }
+
+  @override
+  void didUpdateWidget(covariant _AgendaPolarAnalysisButton oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.training.docId != widget.training.docId ||
+        oldWidget.training.isTrackerDataUploaded !=
+            widget.training.isTrackerDataUploaded ||
+        oldWidget.training.isFinish != widget.training.isFinish ||
+        oldWidget.training.ownerId != widget.training.ownerId) {
+      _reload();
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return FutureBuilder<bool>(
+      future: _hasAnalysisFuture,
+      builder: (context, snapshot) {
+        if (snapshot.data != true) return const SizedBox.shrink();
+
+        final colors = context.appColors;
+        return Padding(
+          padding: const EdgeInsets.only(top: 10),
+          child: SizedBox(
+            width: double.infinity,
+            child: FilledButton.icon(
+              onPressed: () async {
+                await showPolarTrainingTeamAnalysis(
+                  context,
+                  training: widget.training,
+                  title: widget.title,
+                  subtitle: widget.subtitle,
+                  eventDate: widget.eventDate,
+                );
+                if (!mounted) return;
+                setState(_reload);
+              },
+              icon: const Icon(Icons.monitor_heart_outlined, size: 18),
+              label: Text(context.l10n.polarAnalysisAgendaAction),
+              style: FilledButton.styleFrom(
+                backgroundColor: colors.card.withValues(alpha: 0.92),
+                foregroundColor: colors.textPrimary,
+                side: BorderSide(color: colors.border),
+                padding: const EdgeInsets.symmetric(vertical: 12),
+              ),
+            ),
+          ),
+        );
+      },
+    );
+  }
+}
+
+class _AgendaPolarPlayerAnalysisButton extends StatefulWidget {
+  const _AgendaPolarPlayerAnalysisButton({
+    required this.training,
+    required this.playerId,
+  });
+
+  final Training training;
+  final String playerId;
+
+  @override
+  State<_AgendaPolarPlayerAnalysisButton> createState() =>
+      _AgendaPolarPlayerAnalysisButtonState();
+}
+
+class _AgendaPolarPlayerAnalysisButtonState
+    extends State<_AgendaPolarPlayerAnalysisButton> {
+  Future<bool>? _hasAnalysisFuture;
+
+  void _reload() {
+    _hasAnalysisFuture = trainingHasPolarAnalysisForPlayer(
+      widget.training,
+      playerId: widget.playerId,
+    );
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    _reload();
+  }
+
+  @override
+  void didUpdateWidget(covariant _AgendaPolarPlayerAnalysisButton oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.training.docId != widget.training.docId ||
+        oldWidget.playerId != widget.playerId ||
+        oldWidget.training.isTrackerDataUploaded !=
+            widget.training.isTrackerDataUploaded ||
+        oldWidget.training.isFinish != widget.training.isFinish ||
+        oldWidget.training.ownerId != widget.training.ownerId) {
+      _reload();
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return FutureBuilder<bool>(
+      future: _hasAnalysisFuture,
+      builder: (context, snapshot) {
+        if (snapshot.data != true) return const SizedBox.shrink();
+
+        final colors = context.appColors;
+        return Padding(
+          padding: const EdgeInsets.only(top: 10),
+          child: SizedBox(
+            width: double.infinity,
+            child: FilledButton.icon(
+              onPressed: () async {
+                await showPolarTrainingPlayerAnalysis(
+                  context,
+                  training: widget.training,
+                  playerId: widget.playerId,
+                );
+                if (!mounted) return;
+                setState(_reload);
+              },
+              icon: const Icon(Icons.monitor_heart_outlined, size: 18),
+              label: Text(context.l10n.polarAnalysisAgendaAction),
+              style: FilledButton.styleFrom(
+                backgroundColor: colors.card.withValues(alpha: 0.92),
+                foregroundColor: colors.textPrimary,
+                side: BorderSide(color: colors.border),
                 padding: const EdgeInsets.symmetric(vertical: 12),
               ),
             ),

@@ -10183,6 +10183,12 @@ abstract class AppLocalizations {
   /// **'Importer les données Polar'**
   String get polarImportAgendaAction;
 
+  /// No description provided for @polarAnalysisAgendaAction.
+  ///
+  /// In fr, this message translates to:
+  /// **'Voir l\'analyse Polar'**
+  String get polarAnalysisAgendaAction;
+
   /// No description provided for @adminTrackerDevicesAddPolarTitle.
   ///
   /// In fr, this message translates to:

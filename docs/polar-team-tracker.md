@@ -164,5 +164,5 @@ Polar player view: synthesis (duration, avg/max/min HR, samples, Loop extras)
 
 ## Next phase
 
-1. Agenda activity rings for Polar (today rings still depend on GPS `TRACKER_TeamAnalysis`).
+1. Agenda activity rings for Polar (today rings still depend on GPS `TRACKER_TeamAnalysis`; agenda already exposes **Voir l'analyse Polar** once `TRACKER_PolarAnalysis` exists).
 2. Optional: Chrome HR stream snapshot if product needs a web-native path.

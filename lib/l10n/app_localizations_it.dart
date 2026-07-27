@@ -5882,6 +5882,9 @@ class AppLocalizationsIt extends AppLocalizations {
   String get polarImportAgendaAction => 'Importa dati Polar';
 
   @override
+  String get polarAnalysisAgendaAction => 'Vedi analisi Polar';
+
+  @override
   String get adminTrackerDevicesAddPolarTitle => 'Aggiungi un sensore Polar';
 
   @override
