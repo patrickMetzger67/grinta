@@ -5,6 +5,7 @@ import 'package:grinta/model/player.dart';
 import 'package:grinta/provider/appSession.dart';
 import 'package:grinta/services/subscription_service.dart';
 import 'package:grinta/services/user_trial_service.dart';
+import 'package:grinta/services/intense_gps_claim_service.dart';
 import 'package:grinta/services/wearable_devices_repository.dart';
 import 'package:grinta/services/whoop_sync_service.dart';
 import 'package:grinta/util/app_theme.dart';
@@ -39,6 +40,8 @@ class _DevicesSettingsSectionState extends State<DevicesSettingsSection> {
     _repairedPlayerId = playerId;
     // Legacy Whoop docs may live under member.userID; move onto auth uid.
     await WhoopSyncService.instance.repairPlayerSync(playerId: playerId);
+    // Pre-existing individual Intense TRACKER_Owner → intenseGpsSync badge.
+    await IntenseGpsClaimService.instance.repairPlayerSync(playerId: playerId);
     if (mounted) setState(() {});
   }
 

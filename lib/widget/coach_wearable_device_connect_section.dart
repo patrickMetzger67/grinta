@@ -5,6 +5,7 @@ import 'package:grinta/model/player.dart';
 import 'package:grinta/services/playerService.dart';
 import 'package:grinta/services/subscription_service.dart';
 import 'package:grinta/services/user_trial_service.dart';
+import 'package:grinta/services/intense_gps_claim_service.dart';
 import 'package:grinta/services/wearable_devices_repository.dart';
 import 'package:grinta/util/app_theme.dart';
 import 'package:grinta/util/wearable_devices_access.dart';
@@ -32,11 +33,22 @@ class _CoachWearableDeviceConnectSectionState
     extends State<CoachWearableDeviceConnectSection> {
   late final Future<Player?> _playerFuture;
   final WearableDevicesRepository _repository = WearableDevicesRepository();
+  bool _intenseGpsRepairStarted = false;
 
   @override
   void initState() {
     super.initState();
     _playerFuture = PlayerService().getPlayerById(widget.playerId.trim());
+  }
+
+  Future<void> _repairIntenseIfNeeded() async {
+    if (_intenseGpsRepairStarted) return;
+    _intenseGpsRepairStarted = true;
+    final repaired = await IntenseGpsClaimService.instance.repairPlayerSync(
+      playerId: widget.playerId.trim(),
+      initiatedBy: 'coach',
+    );
+    if (repaired && mounted) setState(() {});
   }
 
   @override
@@ -73,6 +85,13 @@ class _CoachWearableDeviceConnectSectionState
               callerUid: uid,
               player: playerSnapshot.data,
             );
+
+            if (playerSnapshot.connectionState == ConnectionState.done &&
+                !_intenseGpsRepairStarted) {
+              WidgetsBinding.instance.addPostFrameCallback((_) {
+                _repairIntenseIfNeeded();
+              });
+            }
 
             return StreamBuilder<int>(
               stream:

@@ -50,6 +50,62 @@ class IntenseGpsClaimService {
   final PlayerService _players;
   final FirebaseFirestore _firestore;
 
+  /// Hydrates `users/{uid}/intenseGpsSync/{playerId}` from an existing
+  /// individual Intense `TRACKER_Owner` linked by the player email.
+  ///
+  /// Needed so Appareils/Applications badge + list count pre-existing claims.
+  Future<bool> repairPlayerSync({
+    required String playerId,
+    String initiatedBy = 'player',
+  }) async {
+    final uid = FirebaseAuth.instance.currentUser?.uid;
+    if (uid == null || uid.isEmpty) return false;
+
+    final trimmedPlayerId = playerId.trim();
+    if (trimmedPlayerId.isEmpty) return false;
+
+    try {
+      final player = await _players.getPlayerById(trimmedPlayerId);
+      if (player == null) return false;
+
+      final syncOwnerUid = resolveWearableSyncOwnerUid(
+        callerUid: uid,
+        player: player,
+      );
+
+      final existing =
+          await _syncRepository.getConfig(syncOwnerUid, trimmedPlayerId);
+      if (existing?.connected == true) return false;
+
+      final email = (player.email ?? '').trim();
+      if (email.isEmpty) return false;
+
+      final resolved = await _resolveExistingIndividualIntense(
+        email: email,
+      );
+      if (resolved == null) return false;
+
+      await _syncRepository.saveConfig(
+        uid: syncOwnerUid,
+        playerId: trimmedPlayerId,
+        config: IntenseGpsSyncConfig(
+          connected: true,
+          connectedAt: DateTime.now(),
+          serialNumber: resolved.serialNumber,
+          deviceId: resolved.deviceId,
+          ownerId: resolved.ownerId,
+          deviceOwnerId: resolved.deviceOwnerId,
+          initiatedBy: initiatedBy,
+          coachUid: initiatedBy == 'coach' ? uid : null,
+        ),
+      );
+      return true;
+    } catch (e, st) {
+      debugPrint('[IntenseGpsClaim] repair failed: $e\n$st');
+      return false;
+    }
+  }
+
   Future<IntenseGpsClaimResult> claimBySerial({
     required String playerId,
     required String serialNumber,
@@ -93,6 +149,23 @@ class IntenseGpsClaimService {
 
       final currentOwnerId = device.ownerId?.trim() ?? '';
       if (currentOwnerId.isNotEmpty) {
+        final currentOwner = await _owners.getOwnerById(currentOwnerId);
+        if (currentOwner != null &&
+            _isIndividualIntenseOwner(currentOwner) &&
+            currentOwner.email.trim().toLowerCase() == email.toLowerCase()) {
+          await _hydrateSyncFromOwnerDevice(
+            syncOwnerUid: syncOwnerUid,
+            playerId: playerId.trim(),
+            owner: currentOwner,
+            deviceId: device.id,
+            serialNumber: device.serialNumber?.trim().isNotEmpty == true
+                ? device.serialNumber!.trim()
+                : serial,
+            initiatedBy: initiatedBy,
+            coachUid: initiatedBy == 'coach' ? uid : null,
+          );
+          return IntenseGpsClaimResult.success;
+        }
         return IntenseGpsClaimResult.alreadyAssigned;
       }
 
@@ -210,9 +283,7 @@ class IntenseGpsClaimService {
 
       if (ownerId.isNotEmpty) {
         final owner = await _owners.getOwnerById(ownerId);
-        if (owner != null &&
-            owner.isIndividual &&
-            owner.typeTracker == TrackerOwner.typeIntense) {
+        if (owner != null && _isIndividualIntenseOwner(owner)) {
           await _owners.deleteOwner(ownerId);
         }
       }
@@ -227,4 +298,114 @@ class IntenseGpsClaimService {
       return false;
     }
   }
+
+  bool _isIndividualIntenseOwner(Owner owner) {
+    if (!owner.isActive || owner.withSyncing) return false;
+    final type = owner.typeTracker.trim().toLowerCase();
+    if (type == TrackerOwner.typePolar) return false;
+    final intenseLike = type.isEmpty ||
+        type == TrackerOwner.typeIntense ||
+        type == 'insiders' ||
+        type == 'gps';
+    if (!intenseLike) return false;
+    // Prefer isIndividual; also accept legacy Intense owners missing the flag.
+    return owner.isIndividual || type == TrackerOwner.typeIntense;
+  }
+
+  Future<_ResolvedIntenseClaim?> _resolveExistingIndividualIntense({
+    required String email,
+  }) async {
+    // Email match in TRACKER_Owner is case-sensitive in Firestore queries.
+    final owners = <Owner>[];
+    final seen = <String>{};
+    for (final candidate in <String>{email, email.toLowerCase()}) {
+      for (final owner in await _owners.getOwnersByEmail(candidate)) {
+        if (seen.add(owner.id)) owners.add(owner);
+      }
+    }
+    final candidates = owners.where(_isIndividualIntenseOwner).toList();
+    candidates.sort((a, b) {
+      final aIntense =
+          a.typeTracker.trim().toLowerCase() == TrackerOwner.typeIntense
+              ? 0
+              : 1;
+      final bIntense =
+          b.typeTracker.trim().toLowerCase() == TrackerOwner.typeIntense
+              ? 0
+              : 1;
+      return aIntense.compareTo(bIntense);
+    });
+
+    for (final owner in candidates) {
+      final deviceOwners = await _deviceOwners.listByOwnerId(owner.id);
+      if (deviceOwners.isEmpty) continue;
+
+      deviceOwners.sort(
+        (a, b) => b.affectedAt.compareTo(a.affectedAt),
+      );
+      final deviceOwner = deviceOwners.first;
+      final deviceId = deviceOwner.deviceId.trim();
+      if (deviceId.isEmpty) continue;
+
+      final device = await _devices.getDeviceById(deviceId);
+      final serial = device?.serialNumber?.trim() ?? '';
+
+      return _ResolvedIntenseClaim(
+        ownerId: owner.id,
+        deviceId: deviceId,
+        deviceOwnerId: deviceOwner.id,
+        serialNumber: serial.isEmpty ? null : serial,
+      );
+    }
+    return null;
+  }
+
+  Future<void> _hydrateSyncFromOwnerDevice({
+    required String syncOwnerUid,
+    required String playerId,
+    required Owner owner,
+    required String deviceId,
+    required String serialNumber,
+    required String initiatedBy,
+    String? coachUid,
+  }) async {
+    final deviceOwners = await _deviceOwners.listByOwnerId(owner.id);
+    String? deviceOwnerId;
+    for (final row in deviceOwners) {
+      if (row.deviceId.trim() == deviceId.trim()) {
+        deviceOwnerId = row.id;
+        break;
+      }
+    }
+    deviceOwnerId ??= deviceOwners.isNotEmpty ? deviceOwners.first.id : null;
+
+    await _syncRepository.saveConfig(
+      uid: syncOwnerUid,
+      playerId: playerId,
+      config: IntenseGpsSyncConfig(
+        connected: true,
+        connectedAt: DateTime.now(),
+        serialNumber: serialNumber,
+        deviceId: deviceId,
+        ownerId: owner.id,
+        deviceOwnerId: deviceOwnerId,
+        initiatedBy: initiatedBy,
+        coachUid: coachUid,
+      ),
+    );
+  }
+}
+
+class _ResolvedIntenseClaim {
+  const _ResolvedIntenseClaim({
+    required this.ownerId,
+    required this.deviceId,
+    required this.deviceOwnerId,
+    this.serialNumber,
+  });
+
+  final String ownerId;
+  final String deviceId;
+  final String deviceOwnerId;
+  final String? serialNumber;
 }
