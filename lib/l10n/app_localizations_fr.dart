@@ -6376,4 +6376,47 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get playerSeasonSummaryPreferredFootSaved => 'Pied fort mis à jour.';
+
+  @override
+  String get wearableDeviceGpsInsidersIntense => 'GPS Insiders Intense';
+
+  @override
+  String get intenseGpsSerialGuidance =>
+      'Saisis le numéro de série imprimé sur le tracker GPS Insiders Intense.';
+
+  @override
+  String get intenseGpsSerialLabel => 'Numéro de série';
+
+  @override
+  String get intenseGpsSerialPlaceholder => 'N° de série';
+
+  @override
+  String get intenseGpsSerialRequired =>
+      'Indique le numéro de série avant de continuer.';
+
+  @override
+  String get intenseGpsTrackerNotFound => 'Tracker inexistant';
+
+  @override
+  String get intenseGpsTrackerAlreadyAssigned => 'Ce tracker est déjà attribué';
+
+  @override
+  String get intenseGpsConnectSuccess =>
+      'Tracker GPS Insiders Intense associé.';
+
+  @override
+  String get intenseGpsConnectFailed =>
+      'Impossible d’associer le tracker GPS. Réessaie.';
+
+  @override
+  String get intenseGpsDisconnectFailed =>
+      'La dissociation du tracker GPS a échoué.';
+
+  @override
+  String get intenseGpsMissingEmail =>
+      'Le profil joueur doit avoir un email pour associer un tracker GPS.';
+
+  @override
+  String get intenseGpsConnectToggleConnectedSubtitle =>
+      'GPS Insiders Intense connecté';
 }

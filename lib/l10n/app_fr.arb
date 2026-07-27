@@ -2839,5 +2839,17 @@
   "preferredFootLeft": "Gauche",
   "preferredFootRight": "Droit",
   "preferredFootBoth": "Les deux",
-  "playerSeasonSummaryPreferredFootSaved": "Pied fort mis à jour."
+  "playerSeasonSummaryPreferredFootSaved": "Pied fort mis à jour.",
+  "wearableDeviceGpsInsidersIntense": "GPS Insiders Intense",
+  "intenseGpsSerialGuidance": "Saisis le numéro de série imprimé sur le tracker GPS Insiders Intense.",
+  "intenseGpsSerialLabel": "Numéro de série",
+  "intenseGpsSerialPlaceholder": "N° de série",
+  "intenseGpsSerialRequired": "Indique le numéro de série avant de continuer.",
+  "intenseGpsTrackerNotFound": "Tracker inexistant",
+  "intenseGpsTrackerAlreadyAssigned": "Ce tracker est déjà attribué",
+  "intenseGpsConnectSuccess": "Tracker GPS Insiders Intense associé.",
+  "intenseGpsConnectFailed": "Impossible d’associer le tracker GPS. Réessaie.",
+  "intenseGpsDisconnectFailed": "La dissociation du tracker GPS a échoué.",
+  "intenseGpsMissingEmail": "Le profil joueur doit avoir un email pour associer un tracker GPS.",
+  "intenseGpsConnectToggleConnectedSubtitle": "GPS Insiders Intense connecté"
 }

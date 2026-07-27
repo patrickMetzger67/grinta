@@ -2808,5 +2808,17 @@
       }
     }
   },
-  "adminSeasonChangeDefaultConfirm": "Standard ändern"
+  "adminSeasonChangeDefaultConfirm": "Standard ändern",
+  "wearableDeviceGpsInsidersIntense": "GPS Insiders Intense",
+  "intenseGpsSerialGuidance": "Gib die auf dem GPS Insiders Intense Tracker aufgedruckte Seriennummer ein.",
+  "intenseGpsSerialLabel": "Seriennummer",
+  "intenseGpsSerialPlaceholder": "Seriennummer",
+  "intenseGpsSerialRequired": "Gib die Seriennummer ein, bevor du fortfährst.",
+  "intenseGpsTrackerNotFound": "Tracker nicht vorhanden",
+  "intenseGpsTrackerAlreadyAssigned": "Dieser Tracker ist bereits zugewiesen",
+  "intenseGpsConnectSuccess": "GPS Insiders Intense Tracker verknüpft.",
+  "intenseGpsConnectFailed": "Tracker konnte nicht verknüpft werden. Bitte erneut versuchen.",
+  "intenseGpsDisconnectFailed": "Trennen des GPS-Trackers fehlgeschlagen.",
+  "intenseGpsMissingEmail": "Das Spielerprofil benötigt eine E-Mail, um einen GPS-Tracker zu verknüpfen.",
+  "intenseGpsConnectToggleConnectedSubtitle": "GPS Insiders Intense verbunden"
 }

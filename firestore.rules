@@ -215,6 +215,11 @@ service cloud.firestore {
       match /googleHealthSync/{playerId} {
         allow read, write: if canAccessWearableSync(userId, playerId);
       }
+
+      // Individual Intense GPS claim metadata (serial → TRACKER_* association).
+      match /intenseGpsSync/{playerId} {
+        allow read, write: if canAccessWearableSync(userId, playerId);
+      }
     }
 
     // Whoop OAuth tokens — Cloud Functions / Admin SDK only.

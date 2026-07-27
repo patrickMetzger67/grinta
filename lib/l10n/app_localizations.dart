@@ -10994,6 +10994,78 @@ abstract class AppLocalizations {
   /// In fr, this message translates to:
   /// **'Pied fort mis à jour.'**
   String get playerSeasonSummaryPreferredFootSaved;
+
+  /// No description provided for @wearableDeviceGpsInsidersIntense.
+  ///
+  /// In fr, this message translates to:
+  /// **'GPS Insiders Intense'**
+  String get wearableDeviceGpsInsidersIntense;
+
+  /// No description provided for @intenseGpsSerialGuidance.
+  ///
+  /// In fr, this message translates to:
+  /// **'Saisis le numéro de série imprimé sur le tracker GPS Insiders Intense.'**
+  String get intenseGpsSerialGuidance;
+
+  /// No description provided for @intenseGpsSerialLabel.
+  ///
+  /// In fr, this message translates to:
+  /// **'Numéro de série'**
+  String get intenseGpsSerialLabel;
+
+  /// No description provided for @intenseGpsSerialPlaceholder.
+  ///
+  /// In fr, this message translates to:
+  /// **'N° de série'**
+  String get intenseGpsSerialPlaceholder;
+
+  /// No description provided for @intenseGpsSerialRequired.
+  ///
+  /// In fr, this message translates to:
+  /// **'Indique le numéro de série avant de continuer.'**
+  String get intenseGpsSerialRequired;
+
+  /// No description provided for @intenseGpsTrackerNotFound.
+  ///
+  /// In fr, this message translates to:
+  /// **'Tracker inexistant'**
+  String get intenseGpsTrackerNotFound;
+
+  /// No description provided for @intenseGpsTrackerAlreadyAssigned.
+  ///
+  /// In fr, this message translates to:
+  /// **'Ce tracker est déjà attribué'**
+  String get intenseGpsTrackerAlreadyAssigned;
+
+  /// No description provided for @intenseGpsConnectSuccess.
+  ///
+  /// In fr, this message translates to:
+  /// **'Tracker GPS Insiders Intense associé.'**
+  String get intenseGpsConnectSuccess;
+
+  /// No description provided for @intenseGpsConnectFailed.
+  ///
+  /// In fr, this message translates to:
+  /// **'Impossible d’associer le tracker GPS. Réessaie.'**
+  String get intenseGpsConnectFailed;
+
+  /// No description provided for @intenseGpsDisconnectFailed.
+  ///
+  /// In fr, this message translates to:
+  /// **'La dissociation du tracker GPS a échoué.'**
+  String get intenseGpsDisconnectFailed;
+
+  /// No description provided for @intenseGpsMissingEmail.
+  ///
+  /// In fr, this message translates to:
+  /// **'Le profil joueur doit avoir un email pour associer un tracker GPS.'**
+  String get intenseGpsMissingEmail;
+
+  /// No description provided for @intenseGpsConnectToggleConnectedSubtitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'GPS Insiders Intense connecté'**
+  String get intenseGpsConnectToggleConnectedSubtitle;
 }
 
 class _AppLocalizationsDelegate

@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:grinta/l10n/app_localizations.dart';
 
-/// Supported wearable device integrations (distinct from GPS trackers).
+/// Supported wearable device integrations (plus individual Intense GPS claim).
 enum WearableDeviceType {
   whoop,
   strava,
@@ -9,6 +9,7 @@ enum WearableDeviceType {
   fitbit,
   appleHealth,
   googleHealthConnect,
+  gpsInsidersIntense,
   ;
 
   /// Fitbit is intentionally omitted from the Devices / Apps picker.
@@ -18,6 +19,7 @@ enum WearableDeviceType {
     WearableDeviceType.polar,
     WearableDeviceType.appleHealth,
     WearableDeviceType.googleHealthConnect,
+    WearableDeviceType.gpsInsidersIntense,
   ];
 
   static List<WearableDeviceType> selectableSorted(AppLocalizations l10n) {
@@ -40,6 +42,8 @@ enum WearableDeviceType {
         return l10n.wearableDeviceAppleHealth;
       case WearableDeviceType.googleHealthConnect:
         return l10n.wearableDeviceGoogleHealthConnect;
+      case WearableDeviceType.gpsInsidersIntense:
+        return l10n.wearableDeviceGpsInsidersIntense;
     }
   }
 
@@ -57,6 +61,8 @@ enum WearableDeviceType {
         return Icons.fitness_center_outlined;
       case WearableDeviceType.googleHealthConnect:
         return Icons.directions_run_outlined;
+      case WearableDeviceType.gpsInsidersIntense:
+        return Icons.gps_fixed_rounded;
     }
   }
 }

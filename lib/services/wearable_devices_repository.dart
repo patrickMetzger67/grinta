@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:grinta/model/apple_health_sync_config.dart';
 import 'package:grinta/model/fitbit_sync_config.dart';
 import 'package:grinta/model/google_health_sync_config.dart';
+import 'package:grinta/model/intense_gps_sync_config.dart';
 import 'package:grinta/model/polar_sync_config.dart';
 import 'package:grinta/model/strava_sync_config.dart';
 import 'package:grinta/model/wearable_device_type.dart';
@@ -10,6 +11,7 @@ import 'package:grinta/model/whoop_sync_config.dart';
 import 'package:grinta/services/apple_health_sync_repository.dart';
 import 'package:grinta/services/fitbit_sync_repository.dart';
 import 'package:grinta/services/google_health_sync_repository.dart';
+import 'package:grinta/services/intense_gps_sync_repository.dart';
 import 'package:grinta/services/polar_sync_repository.dart';
 import 'package:grinta/services/strava_sync_repository.dart';
 import 'package:grinta/services/whoop_sync_repository.dart';
@@ -23,6 +25,7 @@ class WearableDevicesRepository {
     FitbitSyncRepository? fitbitRepository,
     AppleHealthSyncRepository? appleHealthRepository,
     GoogleHealthSyncRepository? googleHealthRepository,
+    IntenseGpsSyncRepository? intenseGpsRepository,
   })  : _whoopRepository = whoopRepository ?? WhoopSyncRepository(),
         _stravaRepository = stravaRepository ?? StravaSyncRepository(),
         _polarRepository = polarRepository ?? PolarSyncRepository(),
@@ -30,7 +33,9 @@ class WearableDevicesRepository {
         _appleHealthRepository =
             appleHealthRepository ?? AppleHealthSyncRepository(),
         _googleHealthRepository =
-            googleHealthRepository ?? GoogleHealthSyncRepository();
+            googleHealthRepository ?? GoogleHealthSyncRepository(),
+        _intenseGpsRepository =
+            intenseGpsRepository ?? IntenseGpsSyncRepository();
 
   final WhoopSyncRepository _whoopRepository;
   final StravaSyncRepository _stravaRepository;
@@ -38,16 +43,18 @@ class WearableDevicesRepository {
   final FitbitSyncRepository _fitbitRepository;
   final AppleHealthSyncRepository _appleHealthRepository;
   final GoogleHealthSyncRepository _googleHealthRepository;
+  final IntenseGpsSyncRepository _intenseGpsRepository;
 
   /// Live count of connected wearable devices for a player profile.
   Stream<int> watchConnectedCount(String uid, String playerId) {
-    return _combineSix(
+    return _combineSeven(
       _whoopRepository.watchConfig(uid, playerId),
       _stravaRepository.watchConfig(uid, playerId),
       _polarRepository.watchConfig(uid, playerId),
       _fitbitRepository.watchConfig(uid, playerId),
       _appleHealthRepository.watchConfig(uid, playerId),
       _googleHealthRepository.watchConfig(uid, playerId),
+      _intenseGpsRepository.watchConfig(uid, playerId),
       (
         WhoopSyncConfig? whoop,
         StravaSyncConfig? strava,
@@ -55,6 +62,7 @@ class WearableDevicesRepository {
         FitbitSyncConfig? fitbit,
         AppleHealthSyncConfig? appleHealth,
         GoogleHealthSyncConfig? googleHealth,
+        IntenseGpsSyncConfig? intenseGps,
       ) {
         var count = 0;
         if (whoop?.connected == true) count++;
@@ -63,6 +71,7 @@ class WearableDevicesRepository {
         if (fitbit?.connected == true) count++;
         if (appleHealth?.connected == true) count++;
         if (googleHealth?.connected == true) count++;
+        if (intenseGps?.connected == true) count++;
         return count;
       },
     );
@@ -76,6 +85,7 @@ class WearableDevicesRepository {
     FitbitSyncConfig? fitbitConfig,
     AppleHealthSyncConfig? appleHealthConfig,
     GoogleHealthSyncConfig? googleHealthConfig,
+    IntenseGpsSyncConfig? intenseGpsConfig,
   }) {
     switch (type) {
       case WearableDeviceType.whoop:
@@ -90,17 +100,20 @@ class WearableDevicesRepository {
         return appleHealthConfig?.connected == true;
       case WearableDeviceType.googleHealthConnect:
         return googleHealthConfig?.connected == true;
+      case WearableDeviceType.gpsInsidersIntense:
+        return intenseGpsConfig?.connected == true;
     }
   }
 
-  Stream<T> _combineSix<T, A, B, C, D, E, F>(
+  Stream<T> _combineSeven<T, A, B, C, D, E, F, G>(
     Stream<A> first,
     Stream<B> second,
     Stream<C> third,
     Stream<D> fourth,
     Stream<E> fifth,
     Stream<F> sixth,
-    T Function(A, B, C, D, E, F) combiner,
+    Stream<G> seventh,
+    T Function(A, B, C, D, E, F, G) combiner,
   ) {
     final controller = StreamController<T>();
     A? latestA;
@@ -109,12 +122,14 @@ class WearableDevicesRepository {
     D? latestD;
     E? latestE;
     F? latestF;
+    G? latestG;
     var hasA = false;
     var hasB = false;
     var hasC = false;
     var hasD = false;
     var hasE = false;
     var hasF = false;
+    var hasG = false;
 
     void emit() {
       if (!hasA ||
@@ -123,6 +138,7 @@ class WearableDevicesRepository {
           !hasD ||
           !hasE ||
           !hasF ||
+          !hasG ||
           controller.isClosed) {
         return;
       }
@@ -134,6 +150,7 @@ class WearableDevicesRepository {
           latestD as D,
           latestE as E,
           latestF as F,
+          latestG as G,
         ),
       );
     }
@@ -168,6 +185,11 @@ class WearableDevicesRepository {
       hasF = true;
       emit();
     });
+    final seventhSub = seventh.listen((value) {
+      latestG = value;
+      hasG = true;
+      emit();
+    });
 
     controller.onCancel = () async {
       await firstSub.cancel();
@@ -176,6 +198,7 @@ class WearableDevicesRepository {
       await fourthSub.cancel();
       await fifthSub.cancel();
       await sixthSub.cancel();
+      await seventhSub.cancel();
     };
 
     return controller.stream;

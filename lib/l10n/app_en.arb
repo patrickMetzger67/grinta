@@ -2532,5 +2532,17 @@
   "preferredFootLeft": "Left",
   "preferredFootRight": "Right",
   "preferredFootBoth": "Both",
-  "playerSeasonSummaryPreferredFootSaved": "Preferred foot updated."
+  "playerSeasonSummaryPreferredFootSaved": "Preferred foot updated.",
+  "wearableDeviceGpsInsidersIntense": "GPS Insiders Intense",
+  "intenseGpsSerialGuidance": "Enter the serial number printed on the GPS Insiders Intense tracker.",
+  "intenseGpsSerialLabel": "Serial number",
+  "intenseGpsSerialPlaceholder": "Serial number",
+  "intenseGpsSerialRequired": "Enter the serial number before continuing.",
+  "intenseGpsTrackerNotFound": "Tracker not found",
+  "intenseGpsTrackerAlreadyAssigned": "This tracker is already assigned",
+  "intenseGpsConnectSuccess": "GPS Insiders Intense tracker linked.",
+  "intenseGpsConnectFailed": "Could not link the GPS tracker. Please try again.",
+  "intenseGpsDisconnectFailed": "GPS tracker disconnect failed.",
+  "intenseGpsMissingEmail": "The player profile needs an email to link a GPS tracker.",
+  "intenseGpsConnectToggleConnectedSubtitle": "GPS Insiders Intense connected"
 }

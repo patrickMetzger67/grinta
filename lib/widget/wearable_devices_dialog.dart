@@ -7,6 +7,7 @@ import 'package:grinta/l10n/app_localizations.dart';
 import 'package:grinta/model/apple_health_sync_config.dart';
 import 'package:grinta/model/fitbit_sync_config.dart';
 import 'package:grinta/model/google_health_sync_config.dart';
+import 'package:grinta/model/intense_gps_sync_config.dart';
 import 'package:grinta/model/polar_sync_config.dart';
 import 'package:grinta/model/strava_sync_config.dart';
 import 'package:grinta/model/wearable_device_type.dart';
@@ -21,6 +22,8 @@ import 'package:grinta/services/fitbit_sync_service.dart';
 import 'package:grinta/services/google_health_platform.dart';
 import 'package:grinta/services/google_health_sync_repository.dart';
 import 'package:grinta/services/google_health_sync_service.dart';
+import 'package:grinta/services/intense_gps_claim_service.dart';
+import 'package:grinta/services/intense_gps_sync_repository.dart';
 import 'package:grinta/services/playerService.dart';
 import 'package:grinta/services/polar_sync_repository.dart';
 import 'package:grinta/services/polar_sync_service.dart';
@@ -112,6 +115,8 @@ class _WearableDevicesDialogContentState
       AppleHealthSyncRepository();
   final GoogleHealthSyncRepository _googleHealthRepository =
       GoogleHealthSyncRepository();
+  final IntenseGpsSyncRepository _intenseGpsRepository =
+      IntenseGpsSyncRepository();
 
   _WearableDialogPage _page = _WearableDialogPage.list;
   WearableDeviceType _selectedType = WearableDeviceType.strava;
@@ -128,6 +133,8 @@ class _WearableDevicesDialogContentState
   final TextEditingController _whoopAccountController =
       TextEditingController();
   final TextEditingController _polarAccountController =
+      TextEditingController();
+  final TextEditingController _intenseGpsSerialController =
       TextEditingController();
 
   @override
@@ -167,6 +174,7 @@ class _WearableDevicesDialogContentState
     _stravaAccountController.dispose();
     _whoopAccountController.dispose();
     _polarAccountController.dispose();
+    _intenseGpsSerialController.dispose();
     super.dispose();
   }
 
@@ -208,6 +216,8 @@ class _WearableDevicesDialogContentState
         state.appleHealthConfig?.connected == true,
       WearableDeviceType.googleHealthConnect =>
         state.googleHealthConfig?.connected == true,
+      WearableDeviceType.gpsInsidersIntense =>
+        state.intenseGpsConfig?.connected == true,
     };
   }
 
@@ -242,6 +252,11 @@ class _WearableDevicesDialogContentState
     if (_selectedType == WearableDeviceType.polar &&
         _polarAccountController.text.trim().isEmpty) {
       _showConnectError(context.l10n.polarAccountHintRequired);
+      return;
+    }
+    if (_selectedType == WearableDeviceType.gpsInsidersIntense &&
+        _intenseGpsSerialController.text.trim().isEmpty) {
+      _showConnectError(context.l10n.intenseGpsSerialRequired);
       return;
     }
 
@@ -310,6 +325,22 @@ class _WearableDevicesDialogContentState
           } else {
             _showConnectError(_googleHealthConnectMessage(result));
           }
+        case WearableDeviceType.gpsInsidersIntense:
+          final result = await IntenseGpsClaimService.instance.claimBySerial(
+            playerId: widget.playerId,
+            serialNumber: _intenseGpsSerialController.text.trim(),
+            initiatedBy: widget.initiatedBy,
+          );
+          if (!mounted) return;
+          if (result == IntenseGpsClaimResult.success) {
+            _intenseGpsSerialController.clear();
+            _backToList();
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(content: Text(context.l10n.intenseGpsConnectSuccess)),
+            );
+          } else {
+            _showConnectError(_intenseGpsClaimMessage(result));
+          }
       }
     } catch (_) {
       if (!mounted) return;
@@ -323,6 +354,8 @@ class _WearableDevicesDialogContentState
             context.l10n.appleHealthConnectFailed,
           WearableDeviceType.googleHealthConnect =>
             context.l10n.googleHealthConnectFailed,
+          WearableDeviceType.gpsInsidersIntense =>
+            context.l10n.intenseGpsConnectFailed,
         },
       );
     } finally {
@@ -397,6 +430,20 @@ class _WearableDevicesDialogContentState
     };
   }
 
+  String _intenseGpsClaimMessage(IntenseGpsClaimResult result) {
+    final l10n = context.l10n;
+    return switch (result) {
+      IntenseGpsClaimResult.missingSerial => l10n.intenseGpsSerialRequired,
+      IntenseGpsClaimResult.notFound => l10n.intenseGpsTrackerNotFound,
+      IntenseGpsClaimResult.alreadyAssigned =>
+        l10n.intenseGpsTrackerAlreadyAssigned,
+      IntenseGpsClaimResult.missingEmail => l10n.intenseGpsMissingEmail,
+      IntenseGpsClaimResult.unauthenticated =>
+        l10n.appleHealthConnectAuthRequired,
+      _ => l10n.intenseGpsConnectFailed,
+    };
+  }
+
   Future<void> _disconnect(WearableDeviceType type) async {
     if (_disconnectingType != null) return;
 
@@ -417,6 +464,9 @@ class _WearableDevicesDialogContentState
         WearableDeviceType.googleHealthConnect =>
           await GoogleHealthSyncService.instance
               .disconnect(playerId: widget.playerId),
+        WearableDeviceType.gpsInsidersIntense =>
+          await IntenseGpsClaimService.instance
+              .disconnect(playerId: widget.playerId),
       };
       if (!mounted) return;
       if (!ok) {
@@ -429,6 +479,8 @@ class _WearableDevicesDialogContentState
             context.l10n.appleHealthDisconnectFailed,
           WearableDeviceType.googleHealthConnect =>
             context.l10n.googleHealthDisconnectFailed,
+          WearableDeviceType.gpsInsidersIntense =>
+            context.l10n.intenseGpsDisconnectFailed,
         };
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text(message)),
@@ -481,10 +533,18 @@ class _WearableDevicesDialogContentState
                   widget.playerName!,
                 )
               : l10n.googleHealthCoachConnectSubtitle(widget.playerName!),
+        WearableDeviceType.gpsInsidersIntense =>
+          connected
+              ? l10n.intenseGpsConnectToggleConnectedSubtitle
+              : l10n.intenseGpsSerialGuidance,
       };
     }
     return connected
-        ? l10n.settingsDevicesConnectedStatus
+        ? switch (type) {
+            WearableDeviceType.gpsInsidersIntense =>
+              l10n.intenseGpsConnectToggleConnectedSubtitle,
+            _ => l10n.settingsDevicesConnectedStatus,
+          }
         : switch (type) {
             WearableDeviceType.whoop => l10n.whoopConnectToggleSubtitle,
             WearableDeviceType.strava => l10n.stravaConnectToggleSubtitle,
@@ -494,6 +554,8 @@ class _WearableDevicesDialogContentState
               l10n.appleHealthConnectToggleSubtitle,
             WearableDeviceType.googleHealthConnect =>
               l10n.googleHealthConnectToggleSubtitle,
+            WearableDeviceType.gpsInsidersIntense =>
+              l10n.intenseGpsSerialGuidance,
           };
   }
 
@@ -510,6 +572,7 @@ class _WearableDevicesDialogContentState
       WearableDeviceType.appleHealth => l10n.appleHealthConnectToggleSubtitle,
       WearableDeviceType.googleHealthConnect =>
         l10n.googleHealthConnectToggleSubtitle,
+      WearableDeviceType.gpsInsidersIntense => l10n.intenseGpsSerialGuidance,
     };
   }
 
@@ -523,6 +586,8 @@ class _WearableDevicesDialogContentState
         state.stravaConfig?.stravaAccountHint?.trim(),
       WearableDeviceType.whoop => state.whoopConfig?.whoopAccountHint?.trim(),
       WearableDeviceType.polar => state.polarConfig?.polarAccountHint?.trim(),
+      WearableDeviceType.gpsInsidersIntense =>
+        state.intenseGpsConfig?.serialNumber?.trim(),
       _ => null,
     };
     if (hint == null || hint.isEmpty) return base;
@@ -537,6 +602,7 @@ class _WearableDevicesDialogContentState
     required String label,
     required String placeholder,
     required bool syncDisabled,
+    TextInputType keyboardType = TextInputType.emailAddress,
   }) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -552,7 +618,7 @@ class _WearableDevicesDialogContentState
         const SizedBox(height: 12),
         TextField(
           controller: controller,
-          keyboardType: TextInputType.emailAddress,
+          keyboardType: keyboardType,
           textInputAction: TextInputAction.done,
           autocorrect: false,
           enableSuggestions: false,
@@ -606,6 +672,7 @@ class _WearableDevicesDialogContentState
     FitbitSyncConfig? fitbitConfig;
     AppleHealthSyncConfig? appleHealthConfig;
     GoogleHealthSyncConfig? googleHealthConfig;
+    IntenseGpsSyncConfig? intenseGpsConfig;
 
     void emit() {
       if (controller.isClosed) return;
@@ -617,6 +684,7 @@ class _WearableDevicesDialogContentState
           fitbitConfig: fitbitConfig,
           appleHealthConfig: appleHealthConfig,
           googleHealthConfig: googleHealthConfig,
+          intenseGpsConfig: intenseGpsConfig,
         ),
       );
     }
@@ -657,6 +725,12 @@ class _WearableDevicesDialogContentState
       googleHealthConfig = config;
       emit();
     });
+    final intenseGpsSub = _intenseGpsRepository
+        .watchConfig(syncOwnerUid, widget.playerId)
+        .listen((config) {
+      intenseGpsConfig = config;
+      emit();
+    });
 
     controller.onCancel = () async {
       await whoopSub.cancel();
@@ -665,6 +739,7 @@ class _WearableDevicesDialogContentState
       await fitbitSub.cancel();
       await appleHealthSub.cancel();
       await googleHealthSub.cancel();
+      await intenseGpsSub.cancel();
     };
 
     return controller.stream;
@@ -758,6 +833,8 @@ class _WearableDevicesDialogContentState
           contentPadding: EdgeInsets.zero,
           dense: true,
         );
+      case WearableDeviceType.gpsInsidersIntense:
+        return null;
     }
   }
 
@@ -1066,6 +1143,18 @@ class _WearableDevicesDialogContentState
               placeholder: l10n.polarAccountHintPlaceholder,
               syncDisabled: syncDisabled,
             ),
+          if (!selectedConnected &&
+              selectedType == WearableDeviceType.gpsInsidersIntense)
+            _buildAccountHintField(
+              colors: colors,
+              l10n: l10n,
+              controller: _intenseGpsSerialController,
+              guidance: l10n.intenseGpsSerialGuidance,
+              label: l10n.intenseGpsSerialLabel,
+              placeholder: l10n.intenseGpsSerialPlaceholder,
+              syncDisabled: syncDisabled,
+              keyboardType: TextInputType.text,
+            ),
           if (!selectedConnected && platformOnlyMessage != null) ...[
             const SizedBox(height: 10),
             Text(
@@ -1130,6 +1219,7 @@ class _WearableDialogState {
     this.fitbitConfig,
     this.appleHealthConfig,
     this.googleHealthConfig,
+    this.intenseGpsConfig,
   });
 
   final WhoopSyncConfig? whoopConfig;
@@ -1138,6 +1228,7 @@ class _WearableDialogState {
   final FitbitSyncConfig? fitbitConfig;
   final AppleHealthSyncConfig? appleHealthConfig;
   final GoogleHealthSyncConfig? googleHealthConfig;
+  final IntenseGpsSyncConfig? intenseGpsConfig;
 }
 
 class _ConnectedWearableTile extends StatelessWidget {
