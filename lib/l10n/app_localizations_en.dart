@@ -6338,4 +6338,41 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get intenseGpsConnectToggleConnectedSubtitle =>
       'GPS Insiders Intense connected';
+
+  @override
+  String get whoopAnalysisTitle => 'Whoop analysis';
+
+  @override
+  String get whoopAnalysisStrain => 'Activity strain';
+
+  @override
+  String get whoopAnalysisAvgHr => 'Avg HR';
+
+  @override
+  String get whoopAnalysisMaxHr => 'Max HR';
+
+  @override
+  String get whoopAnalysisDuration => 'Duration';
+
+  @override
+  String get whoopAnalysisCalories => 'Calories';
+
+  @override
+  String get whoopAnalysisAltitude => 'Elevation';
+
+  @override
+  String get whoopAnalysisHrZonesTitle => 'Heart rate zones';
+
+  @override
+  String get whoopAnalysisNoZones =>
+      'No zone breakdown for this import. Re-import the Whoop activity.';
+
+  @override
+  String whoopAnalysisZoneLabel(int zone) => 'Zone $zone';
+
+  @override
+  String whoopAnalysisZoneAboveBpm(int bpm) => '$bpm+ bpm';
+
+  @override
+  String whoopAnalysisZoneBpmRange(int min, int max) => '$min – $max bpm';
 }

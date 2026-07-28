@@ -54,10 +54,16 @@ class PersonalSportActivity {
     this.paceSecondsPerKm,
     this.caloriesKcal,
     this.averageHeartRateBpm,
+    this.maxHeartRateBpm,
+    this.strain,
+    this.altitudeGainMeters,
+    this.hrZoneSeconds = const <String, int>{},
+    this.hrMaxUsedBpm,
     this.distanceUnit = 'km',
     this.paceUnit = '/km',
     this.externalSource,
     this.externalId,
+    this.externalDevice,
     this.seasonId,
     this.teamIds = const <String>[],
     this.accessMemberIds = const <String>[],
@@ -81,15 +87,29 @@ class PersonalSportActivity {
   final int? paceSecondsPerKm;
   final double? caloriesKcal;
   final int? averageHeartRateBpm;
+  final int? maxHeartRateBpm;
+  /// Whoop activity Strain (0–21).
+  final double? strain;
+  final double? altitudeGainMeters;
+  /// Seconds per HR zone key (`z0`…`z5` for Whoop, `z1`…`z5` for Polar).
+  final Map<String, int> hrZoneSeconds;
+  /// HRmax used to label Whoop %-based zone BPM ranges.
+  final int? hrMaxUsedBpm;
   final String distanceUnit;
   final String paceUnit;
   final String? externalSource;
   final String? externalId;
+  final String? externalDevice;
   final String? seasonId;
   final List<String> teamIds;
   final List<String> accessMemberIds;
   final DateTime? createdAt;
   final DateTime? updatedAt;
+
+  bool get hasHrZones => hrZoneSeconds.values.any((seconds) => seconds > 0);
+
+  bool get isWhoopImport =>
+      (externalSource ?? '').trim().toLowerCase() == 'whoop';
 
   factory PersonalSportActivity.fromFirestore(
     DocumentSnapshot<Map<String, dynamic>> doc,
@@ -112,10 +132,16 @@ class PersonalSportActivity {
       paceSecondsPerKm: _readInt(data['paceSecondsPerKm']),
       caloriesKcal: _readDouble(data['caloriesKcal']),
       averageHeartRateBpm: _readInt(data['averageHeartRateBpm']),
+      maxHeartRateBpm: _readInt(data['maxHeartRateBpm']),
+      strain: _readDouble(data['strain']),
+      altitudeGainMeters: _readDouble(data['altitudeGainMeters']),
+      hrZoneSeconds: _readIntMap(data['hrZoneSeconds']),
+      hrMaxUsedBpm: _readInt(data['hrMaxUsedBpm']),
       distanceUnit: _optionalString(data['distanceUnit']) ?? 'km',
       paceUnit: _optionalString(data['paceUnit']) ?? '/km',
       externalSource: _optionalString(data['externalSource']),
       externalId: _optionalString(data['externalId']),
+      externalDevice: _optionalString(data['externalDevice']),
       seasonId: _optionalString(data['seasonId']),
       teamIds: _readStringList(data['teamIds']),
       accessMemberIds: _readStringList(data['accessMemberIds']),
@@ -142,10 +168,16 @@ class PersonalSportActivity {
       'paceSecondsPerKm': paceSecondsPerKm,
       'caloriesKcal': caloriesKcal,
       'averageHeartRateBpm': averageHeartRateBpm,
+      'maxHeartRateBpm': maxHeartRateBpm,
+      'strain': strain,
+      'altitudeGainMeters': altitudeGainMeters,
+      'hrZoneSeconds': hrZoneSeconds,
+      'hrMaxUsedBpm': hrMaxUsedBpm,
       'distanceUnit': distanceUnit,
       'paceUnit': paceUnit,
       'externalSource': externalSource,
       'externalId': externalId,
+      'externalDevice': externalDevice,
       if (seasonId != null) 'seasonId': seasonId,
       'teamIds': teamIds,
       'accessMemberIds': accessMemberIds,
@@ -187,5 +219,15 @@ class PersonalSportActivity {
       for (final entry in value)
         if ((entry?.toString().trim() ?? '').isNotEmpty) entry.toString().trim(),
     ];
+  }
+
+  static Map<String, int> _readIntMap(Object? value) {
+    if (value is! Map) return const <String, int>{};
+    final out = <String, int>{};
+    value.forEach((key, raw) {
+      final parsed = _readInt(raw);
+      if (parsed != null) out[key.toString()] = parsed;
+    });
+    return out;
   }
 }

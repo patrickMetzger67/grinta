@@ -132,7 +132,21 @@ firebase deploy --only \
   functions:whoopListActivities,functions:whoopImportActivity
 ```
 
-Mapped fields: duration (`start`/`end`), sport → Grinta `typeId`, average HR, calories from `score.kilojoule` (÷ 4.184), distance when present.
+Mapped fields: duration (`start`/`end`), sport → Grinta `typeId`, average / max HR,
+calories from `score.kilojoule` (÷ 4.184), distance when present, **Strain**, altitude
+gain, and **HR zone durations** (`score.zone_durations` → `hrZoneSeconds` z0…z5).
+
+Body max HR is fetched when available (`GET /v2/user/measurement/body`) and stored as
+`hrMaxUsedBpm` to label zone BPM ranges (% of HRmax).
+
+The personal activity detail sheet shows a **Whoop-style zones card** restyled with
+Grinta colours (dark canvas, Strain + avg HR, hatched zone bars).
+
+> Whoop’s public API does **not** expose a continuous HR time series for workouts
+> (unlike Polar AccessLink samples). Only zone totals and score metrics are available.
+
+Re-import existing Whoop activities after deploying `whoopImportActivity` to backfill
+zones / Strain on older documents.
 
 ## Phase 2 TODO
 

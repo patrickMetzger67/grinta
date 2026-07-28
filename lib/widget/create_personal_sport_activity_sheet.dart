@@ -21,6 +21,7 @@ import 'package:grinta/util/app_theme.dart';
 import 'package:grinta/util/player_photo_resolver.dart';
 import 'package:grinta/widget/player_feeling_faces.dart';
 import 'package:grinta/widget/sport_metric_pickers.dart';
+import 'package:grinta/widget/whoop_analysis/whoop_hr_zones_card.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 
@@ -753,10 +754,16 @@ class _CreatePersonalSportActivitySheetState
         paceSecondsPerKm: _pace?.secondsPerKm,
         caloriesKcal: existing?.caloriesKcal,
         averageHeartRateBpm: existing?.averageHeartRateBpm,
+        maxHeartRateBpm: existing?.maxHeartRateBpm,
+        strain: existing?.strain,
+        altitudeGainMeters: existing?.altitudeGainMeters,
+        hrZoneSeconds: existing?.hrZoneSeconds ?? const <String, int>{},
+        hrMaxUsedBpm: existing?.hrMaxUsedBpm,
         distanceUnit: _distance?.unit ?? existing?.distanceUnit ?? 'km',
         paceUnit: _pace?.unit ?? existing?.paceUnit ?? '/km',
         externalSource: existing?.externalSource,
         externalId: existing?.externalId,
+        externalDevice: existing?.externalDevice,
         seasonId: existing?.seasonId ?? session.selectedSeason?.ref?.id,
         teamIds: existing?.teamIds ?? const <String>[],
         accessMemberIds: existing?.accessMemberIds.isNotEmpty == true
@@ -1388,6 +1395,20 @@ class _CreatePersonalSportActivitySheetState
                       },
                     ),
                 ],
+              ],
+              if ((_isEditMode || _readOnly) &&
+                  widget.activityToEdit != null &&
+                  widget.activityToEdit!.isWhoopImport) ...[
+                const SizedBox(height: 12),
+                WhoopHrZonesCard(activity: widget.activityToEdit!),
+              ] else if ((_isEditMode || _readOnly) &&
+                  widget.activityToEdit?.averageHeartRateBpm != null) ...[
+                const SizedBox(height: 8),
+                _MetricTile(
+                  label: l10n.personalSportMetricAvgHeartRate,
+                  value:
+                      '${widget.activityToEdit!.averageHeartRateBpm} ${l10n.personalSportUnitBpm}',
+                ),
               ],
               const SizedBox(height: 16),
               Text(
