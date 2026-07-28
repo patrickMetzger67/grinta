@@ -2611,6 +2611,15 @@
     }
   },
   "polarAnalysisNoZones": "Pas de répartition par zones pour cet import.",
+  "polarAnalysisTrainingZonesTitle": "Zones d'entraînement",
+  "polarAnalysisHrTimelineHint": "Synthèse moyenne toutes les {minutes} min",
+  "@polarAnalysisHrTimelineHint": {
+    "placeholders": {
+      "minutes": { "type": "int" }
+    }
+  },
+  "polarAnalysisHrTimelineEmpty": "Courbe FC indisponible — réimporte le capteur pour générer la synthèse 5 min.",
+  "polarAnalysisAxisPercent": "%",
   "polarImportMissingSeason": "Saison introuvable pour importer les capteurs Polar.",
   "polarImportAgendaAction": "Importer les données Polar",
   "polarAnalysisAgendaAction": "Voir l'analyse Polar",

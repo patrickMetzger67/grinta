@@ -10171,6 +10171,30 @@ abstract class AppLocalizations {
   /// **'Pas de répartition par zones pour cet import.'**
   String get polarAnalysisNoZones;
 
+  /// No description provided for @polarAnalysisTrainingZonesTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Zones d\'entraînement'**
+  String get polarAnalysisTrainingZonesTitle;
+
+  /// No description provided for @polarAnalysisHrTimelineHint.
+  ///
+  /// In fr, this message translates to:
+  /// **'Synthèse moyenne toutes les {minutes} min'**
+  String polarAnalysisHrTimelineHint(int minutes);
+
+  /// No description provided for @polarAnalysisHrTimelineEmpty.
+  ///
+  /// In fr, this message translates to:
+  /// **'Courbe FC indisponible — réimporte le capteur pour générer la synthèse 5 min.'**
+  String get polarAnalysisHrTimelineEmpty;
+
+  /// No description provided for @polarAnalysisAxisPercent.
+  ///
+  /// In fr, this message translates to:
+  /// **'%'**
+  String get polarAnalysisAxisPercent;
+
   /// No description provided for @polarImportMissingSeason.
   ///
   /// In fr, this message translates to:

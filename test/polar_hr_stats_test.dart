@@ -19,6 +19,7 @@ void main() {
       expect(stats.hrZoneSeconds['z3'], 1); // 150
       expect(stats.hrZoneSeconds['z4'], 1); // 170
       expect(stats.hrZoneSeconds['z5'], 1); // 190
+      expect(stats.hrTimeline, isNotEmpty);
     });
 
     test('ignores zero samples for avg but keeps duration from length', () {
@@ -45,6 +46,63 @@ void main() {
       expect(stats.hrZoneSeconds['z3'], 1);
       expect(stats.hrZoneSeconds['z4'], 1);
       expect(stats.hrZoneSeconds['z5'], 1);
+    });
+  });
+
+  group('aggregateHrTimeline', () {
+    test('averages samples into 5-minute buckets', () {
+      // interval 60s → 5 samples per 5-min bucket
+      final samples = <int>[
+        for (var i = 0; i < 12; i++) 100 + i, // 12 minutes
+      ];
+      final timeline = aggregateHrTimeline(
+        samples: samples,
+        intervalSeconds: 60,
+      );
+
+      expect(timeline.length, 3); // 0–5, 5–10, 10–12
+      expect(timeline[0].offsetMinutes, 0);
+      expect(timeline[0].avgBpm, 102); // 100..104
+      expect(timeline[1].offsetMinutes, 5);
+      expect(timeline[1].avgBpm, 107); // 105..109
+      expect(timeline[2].offsetMinutes, 10);
+      // (110+111)/2 = 110.5 → Dart rounds half away from zero → 111
+      expect(timeline[2].avgBpm, 111);
+      expect(timeline[0].minBpm, 100);
+      expect(timeline[0].maxBpm, 104);
+    });
+
+    test('skips all-zero buckets', () {
+      final timeline = aggregateHrTimeline(
+        samples: const [0, 0, 0, 0, 0, 150, 160, 170, 180, 190],
+        intervalSeconds: 60,
+      );
+      expect(timeline.length, 1);
+      expect(timeline.first.offsetMinutes, 5);
+      expect(timeline.first.avgBpm, 170);
+    });
+
+    test('returns empty for empty samples', () {
+      expect(
+        aggregateHrTimeline(samples: const [], intervalSeconds: 1),
+        isEmpty,
+      );
+    });
+  });
+
+  group('polarHrZoneBandsBpm', () {
+    test('absolute bands use fixed BPM thresholds', () {
+      final bands = polarHrZoneBandsBpm();
+      expect(bands.map((b) => b.zone).toList(), ['z1', 'z2', 'z3', 'z4', 'z5']);
+      expect(bands.first.y1, 80);
+      expect(bands[1].y1, 120);
+      expect(bands.last.y2, 200);
+    });
+
+    test('percent bands scale with hrMax', () {
+      final bands = polarHrZoneBandsBpm(hrMaxBpm: 200);
+      expect(bands.first.y1, 100);
+      expect(bands.last.y2, 200);
     });
   });
 

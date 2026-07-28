@@ -2304,6 +2304,15 @@
     }
   },
   "polarAnalysisNoZones": "No zone breakdown for this import.",
+  "polarAnalysisTrainingZonesTitle": "Training zones",
+  "polarAnalysisHrTimelineHint": "Average synthesis every {minutes} min",
+  "@polarAnalysisHrTimelineHint": {
+    "placeholders": {
+      "minutes": { "type": "int" }
+    }
+  },
+  "polarAnalysisHrTimelineEmpty": "HR curve unavailable — re-import the sensor to generate the 5-min synthesis.",
+  "polarAnalysisAxisPercent": "%",
   "polarImportMissingSeason": "Season not found to import Polar sensors.",
   "polarImportAgendaAction": "Import Polar data",
   "polarAnalysisAgendaAction": "View Polar analysis",

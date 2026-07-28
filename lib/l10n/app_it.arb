@@ -2304,6 +2304,15 @@
     }
   },
   "polarAnalysisNoZones": "Nessuna ripartizione per zone per questo import.",
+  "polarAnalysisTrainingZonesTitle": "Zone di allenamento",
+  "polarAnalysisHrTimelineHint": "Sintesi media ogni {minutes} min",
+  "@polarAnalysisHrTimelineHint": {
+    "placeholders": {
+      "minutes": { "type": "int" }
+    }
+  },
+  "polarAnalysisHrTimelineEmpty": "Curva FC non disponibile: reimporta il sensore per generare la sintesi da 5 min.",
+  "polarAnalysisAxisPercent": "%",
   "polarImportMissingSeason": "Stagione non trovata per importare i sensori Polar.",
   "polarImportAgendaAction": "Importa dati Polar",
   "polarAnalysisAgendaAction": "Vedi analisi Polar",

@@ -5875,6 +5875,21 @@ class AppLocalizationsIt extends AppLocalizations {
       'Nessuna ripartizione per zone per questo import.';
 
   @override
+  String get polarAnalysisTrainingZonesTitle => 'Zone di allenamento';
+
+  @override
+  String polarAnalysisHrTimelineHint(int minutes) {
+    return 'Sintesi media ogni $minutes min';
+  }
+
+  @override
+  String get polarAnalysisHrTimelineEmpty =>
+      'Curva FC non disponibile: reimporta il sensore per generare la sintesi da 5 min.';
+
+  @override
+  String get polarAnalysisAxisPercent => '%';
+
+  @override
   String get polarImportMissingSeason =>
       'Stagione non trovata per importare i sensori Polar.';
 
