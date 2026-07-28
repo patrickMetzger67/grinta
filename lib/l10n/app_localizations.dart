@@ -11072,6 +11072,78 @@ abstract class AppLocalizations {
   /// In fr, this message translates to:
   /// **'GPS Insiders Intense connecté'**
   String get intenseGpsConnectToggleConnectedSubtitle;
+
+  /// No description provided for @whoopAnalysisTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Analyse Whoop'**
+  String get whoopAnalysisTitle;
+
+  /// No description provided for @whoopAnalysisStrain.
+  ///
+  /// In fr, this message translates to:
+  /// **'Effort activité'**
+  String get whoopAnalysisStrain;
+
+  /// No description provided for @whoopAnalysisAvgHr.
+  ///
+  /// In fr, this message translates to:
+  /// **'FC moyenne'**
+  String get whoopAnalysisAvgHr;
+
+  /// No description provided for @whoopAnalysisMaxHr.
+  ///
+  /// In fr, this message translates to:
+  /// **'FC max'**
+  String get whoopAnalysisMaxHr;
+
+  /// No description provided for @whoopAnalysisDuration.
+  ///
+  /// In fr, this message translates to:
+  /// **'Durée'**
+  String get whoopAnalysisDuration;
+
+  /// No description provided for @whoopAnalysisCalories.
+  ///
+  /// In fr, this message translates to:
+  /// **'Calories'**
+  String get whoopAnalysisCalories;
+
+  /// No description provided for @whoopAnalysisAltitude.
+  ///
+  /// In fr, this message translates to:
+  /// **'Dénivelé'**
+  String get whoopAnalysisAltitude;
+
+  /// No description provided for @whoopAnalysisHrZonesTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Zones cardiaques'**
+  String get whoopAnalysisHrZonesTitle;
+
+  /// No description provided for @whoopAnalysisNoZones.
+  ///
+  /// In fr, this message translates to:
+  /// **'Aucune répartition par zone pour cet import. Réimporte l’activité Whoop.'**
+  String get whoopAnalysisNoZones;
+
+  /// No description provided for @whoopAnalysisZoneLabel.
+  ///
+  /// In fr, this message translates to:
+  /// **'Zone {zone}'**
+  String whoopAnalysisZoneLabel(int zone);
+
+  /// No description provided for @whoopAnalysisZoneAboveBpm.
+  ///
+  /// In fr, this message translates to:
+  /// **'+ de {bpm} bpm'**
+  String whoopAnalysisZoneAboveBpm(int bpm);
+
+  /// No description provided for @whoopAnalysisZoneBpmRange.
+  ///
+  /// In fr, this message translates to:
+  /// **'{min} – {max} bpm'**
+  String whoopAnalysisZoneBpmRange(int min, int max);
 }
 
 class _AppLocalizationsDelegate

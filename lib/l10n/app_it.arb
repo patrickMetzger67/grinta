@@ -2821,5 +2821,34 @@
   "intenseGpsConnectFailed": "Impossibile associare il tracker GPS. Riprova.",
   "intenseGpsDisconnectFailed": "Disconnessione del tracker GPS non riuscita.",
   "intenseGpsMissingEmail": "Il profilo giocatore deve avere un’email per associare un tracker GPS.",
-  "intenseGpsConnectToggleConnectedSubtitle": "GPS Insiders Intense connesso"
+  "intenseGpsConnectToggleConnectedSubtitle": "GPS Insiders Intense connesso",
+
+  "whoopAnalysisTitle": "Analisi Whoop",
+  "whoopAnalysisStrain": "Sforzo attività",
+  "whoopAnalysisAvgHr": "FC media",
+  "whoopAnalysisMaxHr": "FC max",
+  "whoopAnalysisDuration": "Durata",
+  "whoopAnalysisCalories": "Calorie",
+  "whoopAnalysisAltitude": "Dislivello",
+  "whoopAnalysisHrZonesTitle": "Zone cardiache",
+  "whoopAnalysisNoZones": "Nessuna ripartizione per zone per questa importazione. Reimporta l’attività Whoop.",
+  "whoopAnalysisZoneLabel": "Zona {zone}",
+  "@whoopAnalysisZoneLabel": {
+    "placeholders": {
+      "zone": { "type": "int" }
+    }
+  },
+  "whoopAnalysisZoneAboveBpm": "+ di {bpm} bpm",
+  "@whoopAnalysisZoneAboveBpm": {
+    "placeholders": {
+      "bpm": { "type": "int" }
+    }
+  },
+  "whoopAnalysisZoneBpmRange": "{min} – {max} bpm",
+  "@whoopAnalysisZoneBpmRange": {
+    "placeholders": {
+      "min": { "type": "int" },
+      "max": { "type": "int" }
+    }
+  }
 }
