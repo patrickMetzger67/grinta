@@ -60,6 +60,7 @@ subprojects {
 // Align compileSdk + Java/Kotlin JVM targets across plugins.
 // Legacy plugins ship Java 1.8 / old compileSdk; google_maps_flutter_android
 // needs Java 17 (switch expressions + pattern matching instanceof).
+// sqflite_android 2.4.2+ references VERSION_CODES.BAKLAVA → compileSdk 36.
 fun Project.forceAndroidPluginCompat() {
     extensions.findByName("android")?.let { androidExt ->
         try {
@@ -73,8 +74,8 @@ fun Project.forceAndroidPluginCompat() {
                     it.name == "setCompileSdkVersion" && it.parameterCount == 1
                 }
             when {
-                setCompileSdk != null -> setCompileSdk.invoke(androidExt, 35)
-                setCompileSdkVersion != null -> setCompileSdkVersion.invoke(androidExt, 35)
+                setCompileSdk != null -> setCompileSdk.invoke(androidExt, 36)
+                setCompileSdkVersion != null -> setCompileSdkVersion.invoke(androidExt, 36)
             }
 
             val compileOptions =
