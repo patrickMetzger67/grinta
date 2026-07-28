@@ -58,8 +58,8 @@ subprojects {
 }
 
 // Align compileSdk + Java/Kotlin JVM targets across plugins.
-// device_calendar and other legacy plugins ship old compileSdk / Java 1.8 while
-// the host JDK / AGP require Java 11+ and compileSdk >= 30.
+// Legacy plugins ship Java 1.8 / old compileSdk; google_maps_flutter_android
+// needs Java 17 (switch expressions + pattern matching instanceof).
 fun Project.forceAndroidPluginCompat() {
     extensions.findByName("android")?.let { androidExt ->
         try {
@@ -86,12 +86,12 @@ fun Project.forceAndroidPluginCompat() {
                     .firstOrNull {
                         it.name == "setSourceCompatibility" && it.parameterCount == 1
                     }
-                    ?.invoke(compileOptions, JavaVersion.VERSION_11)
+                    ?.invoke(compileOptions, JavaVersion.VERSION_17)
                 compileOptions.javaClass.methods
                     .firstOrNull {
                         it.name == "setTargetCompatibility" && it.parameterCount == 1
                     }
-                    ?.invoke(compileOptions, JavaVersion.VERSION_11)
+                    ?.invoke(compileOptions, JavaVersion.VERSION_17)
             }
         } catch (e: Exception) {
             logger.warn("Could not align Android compat on :$name (${e.message})")
@@ -99,12 +99,43 @@ fun Project.forceAndroidPluginCompat() {
     }
 
     tasks.withType(JavaCompile::class.java).configureEach {
-        sourceCompatibility = JavaVersion.VERSION_11.toString()
-        targetCompatibility = JavaVersion.VERSION_11.toString()
+        sourceCompatibility = JavaVersion.VERSION_17.toString()
+        targetCompatibility = JavaVersion.VERSION_17.toString()
     }
 
     tasks.matching { it.name.contains("compile", ignoreCase = true) && it.name.contains("Kotlin") }
         .configureEach {
+            // Prefer compilerOptions (Kotlin 2.x); fall back to legacy kotlinOptions.
+            val compilerOptions =
+                this.javaClass.methods
+                    .firstOrNull { it.name == "getCompilerOptions" && it.parameterCount == 0 }
+                    ?.invoke(this)
+            if (compilerOptions != null) {
+                val jvmTargetProp =
+                    compilerOptions.javaClass.methods
+                        .firstOrNull { it.name == "getJvmTarget" && it.parameterCount == 0 }
+                        ?.invoke(compilerOptions)
+                val setMethod =
+                    jvmTargetProp?.javaClass?.methods?.firstOrNull {
+                        it.name == "set" && it.parameterCount == 1
+                    }
+                if (setMethod != null) {
+                    try {
+                        val jvmTargetClass =
+                            Class.forName("org.jetbrains.kotlin.gradle.dsl.JvmTarget")
+                        val jvm17 =
+                            jvmTargetClass.enumConstants
+                                ?.firstOrNull { it.toString().contains("17") }
+                        if (jvm17 != null) {
+                            setMethod.invoke(jvmTargetProp, jvm17)
+                            return@configureEach
+                        }
+                    } catch (_: Exception) {
+                        // Fall through to kotlinOptions.
+                    }
+                }
+            }
+
             val kotlinOptions =
                 this.javaClass.methods
                     .firstOrNull { it.name == "getKotlinOptions" && it.parameterCount == 0 }
@@ -113,7 +144,7 @@ fun Project.forceAndroidPluginCompat() {
                 ?.javaClass
                 ?.methods
                 ?.firstOrNull { it.name == "setJvmTarget" && it.parameterCount == 1 }
-                ?.invoke(kotlinOptions, "11")
+                ?.invoke(kotlinOptions, "17")
         }
 }
 
