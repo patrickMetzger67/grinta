@@ -26,7 +26,8 @@ if (keystorePropertiesFile.exists()) {
 
 android {
     namespace = "io.grinta.app"
-    compileSdk = flutter.compileSdkVersion
+    // sqflite_android / recent plugins need API 36 (BAKLAVA); keep at least Flutter's value.
+    compileSdk = maxOf(flutter.compileSdkVersion, 36)
     ndkVersion = flutter.ndkVersion
 
     compileOptions {
