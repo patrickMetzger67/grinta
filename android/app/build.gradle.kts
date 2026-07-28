@@ -31,6 +31,8 @@ android {
     ndkVersion = flutter.ndkVersion
 
     compileOptions {
+        // Required by flutter_local_notifications (java.time APIs on older Android).
+        isCoreLibraryDesugaringEnabled = true
         // google_maps_flutter_android uses switch expressions / pattern instanceof (Java 16+).
         sourceCompatibility = JavaVersion.VERSION_17
         targetCompatibility = JavaVersion.VERSION_17
@@ -57,6 +59,7 @@ android {
         targetSdk = flutter.targetSdkVersion
         versionCode = flutter.versionCode
         versionName = flutter.versionName
+        multiDexEnabled = true
     }
 
     buildTypes {
@@ -75,6 +78,10 @@ kotlin {
     compilerOptions {
         jvmTarget.set(JvmTarget.JVM_17)
     }
+}
+
+dependencies {
+    coreLibraryDesugaring("com.android.tools:desugar_jdk_libs:2.1.4")
 }
 
 flutter {
