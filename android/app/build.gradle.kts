@@ -64,12 +64,11 @@ android {
 
     buildTypes {
         release {
-            signingConfig = if (keystorePropertiesFile.exists()) {
-                signingConfigs.getByName("release")
-            } else {
-                // Fallback for local dev when key.properties is absent.
-                signingConfigs.getByName("debug")
+            // Never fall back to debug — Play Console rejects debug-signed AABs.
+            check(keystorePropertiesFile.exists()) {
+                "Missing android/key.properties. Create it with storePassword/keyPassword/keyAlias/storeFile before building a release AAB."
             }
+            signingConfig = signingConfigs.getByName("release")
         }
     }
 }
