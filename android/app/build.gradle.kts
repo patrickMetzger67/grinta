@@ -54,8 +54,8 @@ android {
         applicationId = "io.grinta.app"
         // You can update the following values to match your application needs.
         // For more information, see: https://flutter.dev/to/review-gradle-config.
-        // Polar BLE SDK requires 24+.
-        minSdk = 24
+        // health plugin requires 26+ (Polar BLE needs 24+).
+        minSdk = 26
         targetSdk = flutter.targetSdkVersion
         versionCode = flutter.versionCode
         versionName = flutter.versionName
