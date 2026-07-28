@@ -1,4 +1,5 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:grinta/util/polar_hr_stats.dart';
 
 enum PersonalSportVisibility {
   private,
@@ -54,10 +55,17 @@ class PersonalSportActivity {
     this.paceSecondsPerKm,
     this.caloriesKcal,
     this.averageHeartRateBpm,
+    this.maxHeartRateBpm,
+    this.minHeartRateBpm,
+    this.hrSamplesCount = 0,
+    this.hrZoneSeconds = const <String, int>{},
+    this.hrTimeline = const <PolarHrTimelinePoint>[],
+    this.hrTimelineBucketMinutes = 5,
     this.distanceUnit = 'km',
     this.paceUnit = '/km',
     this.externalSource,
     this.externalId,
+    this.externalDevice,
     this.seasonId,
     this.teamIds = const <String>[],
     this.accessMemberIds = const <String>[],
@@ -81,15 +89,24 @@ class PersonalSportActivity {
   final int? paceSecondsPerKm;
   final double? caloriesKcal;
   final int? averageHeartRateBpm;
+  final int? maxHeartRateBpm;
+  final int? minHeartRateBpm;
+  final int hrSamplesCount;
+  final Map<String, int> hrZoneSeconds;
+  final List<PolarHrTimelinePoint> hrTimeline;
+  final int hrTimelineBucketMinutes;
   final String distanceUnit;
   final String paceUnit;
   final String? externalSource;
   final String? externalId;
+  final String? externalDevice;
   final String? seasonId;
   final List<String> teamIds;
   final List<String> accessMemberIds;
   final DateTime? createdAt;
   final DateTime? updatedAt;
+
+  bool get hasHrTimeline => hrTimeline.isNotEmpty;
 
   factory PersonalSportActivity.fromFirestore(
     DocumentSnapshot<Map<String, dynamic>> doc,
@@ -112,10 +129,19 @@ class PersonalSportActivity {
       paceSecondsPerKm: _readInt(data['paceSecondsPerKm']),
       caloriesKcal: _readDouble(data['caloriesKcal']),
       averageHeartRateBpm: _readInt(data['averageHeartRateBpm']),
+      maxHeartRateBpm: _readInt(data['maxHeartRateBpm']),
+      minHeartRateBpm: _readInt(data['minHeartRateBpm']),
+      hrSamplesCount: _readInt(data['hrSamplesCount']) ?? 0,
+      hrZoneSeconds: _readIntMap(data['hrZoneSeconds']),
+      hrTimeline: _readTimeline(data['hrTimeline']),
+      hrTimelineBucketMinutes: _timelineBucketMinutes(
+        data['hrTimelineBucketMinutes'],
+      ),
       distanceUnit: _optionalString(data['distanceUnit']) ?? 'km',
       paceUnit: _optionalString(data['paceUnit']) ?? '/km',
       externalSource: _optionalString(data['externalSource']),
       externalId: _optionalString(data['externalId']),
+      externalDevice: _optionalString(data['externalDevice']),
       seasonId: _optionalString(data['seasonId']),
       teamIds: _readStringList(data['teamIds']),
       accessMemberIds: _readStringList(data['accessMemberIds']),
@@ -142,10 +168,17 @@ class PersonalSportActivity {
       'paceSecondsPerKm': paceSecondsPerKm,
       'caloriesKcal': caloriesKcal,
       'averageHeartRateBpm': averageHeartRateBpm,
+      'maxHeartRateBpm': maxHeartRateBpm,
+      'minHeartRateBpm': minHeartRateBpm,
+      'hrSamplesCount': hrSamplesCount,
+      'hrZoneSeconds': hrZoneSeconds,
+      'hrTimeline': hrTimeline.map((p) => p.toMap()).toList(growable: false),
+      'hrTimelineBucketMinutes': hrTimelineBucketMinutes,
       'distanceUnit': distanceUnit,
       'paceUnit': paceUnit,
       'externalSource': externalSource,
       'externalId': externalId,
+      'externalDevice': externalDevice,
       if (seasonId != null) 'seasonId': seasonId,
       'teamIds': teamIds,
       'accessMemberIds': accessMemberIds,
@@ -187,5 +220,38 @@ class PersonalSportActivity {
       for (final entry in value)
         if ((entry?.toString().trim() ?? '').isNotEmpty) entry.toString().trim(),
     ];
+  }
+
+  static Map<String, int> _readIntMap(Object? value) {
+    if (value is! Map) return const <String, int>{};
+    final out = <String, int>{};
+    value.forEach((key, raw) {
+      final parsed = _readInt(raw);
+      if (parsed != null) out[key.toString()] = parsed;
+    });
+    return out;
+  }
+
+  static List<PolarHrTimelinePoint> _readTimeline(Object? value) {
+    if (value is! List) return const <PolarHrTimelinePoint>[];
+    final out = <PolarHrTimelinePoint>[];
+    for (final item in value) {
+      if (item is Map<String, dynamic>) {
+        out.add(PolarHrTimelinePoint.fromMap(item));
+      } else if (item is Map) {
+        out.add(
+          PolarHrTimelinePoint.fromMap(
+            item.map((key, raw) => MapEntry(key.toString(), raw)),
+          ),
+        );
+      }
+    }
+    return out;
+  }
+
+  static int _timelineBucketMinutes(Object? value) {
+    final parsed = _readInt(value);
+    if (parsed == null || parsed <= 0) return 5;
+    return parsed.clamp(1, 120);
   }
 }

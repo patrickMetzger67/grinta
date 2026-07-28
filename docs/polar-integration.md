@@ -152,6 +152,20 @@ Missing metrics are stored as `null` and hidden on the agenda card. `externalDev
 
 Timezone: Polar `start_time` is local wall-clock; import converts with `start_time_utc_offset` (minutes) to true UTC.
 
+### HR timeline (Zones d'entraînement)
+
+`polarImportActivity` requests `GET /v3/exercises/{id}?samples=true&zones=true` and stores a compact cardio synthesis on `personalSportActivities`:
+
+| Field | Description |
+|-------|-------------|
+| `hrTimeline` | `[{ t, avg, min?, max? }, …]` — mean BPM every **5 minutes** |
+| `hrTimelineBucketMinutes` | `5` |
+| `hrZoneSeconds` | `{ z1…z5 → seconds }` from AccessLink zones, else absolute BPM bands |
+| `hrSamplesCount` | Count of valid HR samples |
+| `maxHeartRateBpm` / `minHeartRateBpm` | From exercise summary / samples |
+
+The personal activity detail sheet shows the same Grinta-coloured training-zones chart as the Polar team-kit player analysis when `hrTimeline` is present. Re-import older activities to backfill the curve.
+
 ## Phase 2 TODO
 
 - Polar AccessLink webhooks (`polarWebhook` HTTP function)

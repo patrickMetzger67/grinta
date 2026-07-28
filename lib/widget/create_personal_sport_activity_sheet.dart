@@ -20,6 +20,7 @@ import 'package:grinta/util/app_snackbar.dart';
 import 'package:grinta/util/app_theme.dart';
 import 'package:grinta/util/player_photo_resolver.dart';
 import 'package:grinta/widget/player_feeling_faces.dart';
+import 'package:grinta/widget/polar_analysis/polar_hr_zones_chart.dart';
 import 'package:grinta/widget/sport_metric_pickers.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
@@ -753,10 +754,17 @@ class _CreatePersonalSportActivitySheetState
         paceSecondsPerKm: _pace?.secondsPerKm,
         caloriesKcal: existing?.caloriesKcal,
         averageHeartRateBpm: existing?.averageHeartRateBpm,
+        maxHeartRateBpm: existing?.maxHeartRateBpm,
+        minHeartRateBpm: existing?.minHeartRateBpm,
+        hrSamplesCount: existing?.hrSamplesCount ?? 0,
+        hrZoneSeconds: existing?.hrZoneSeconds ?? const <String, int>{},
+        hrTimeline: existing?.hrTimeline ?? const [],
+        hrTimelineBucketMinutes: existing?.hrTimelineBucketMinutes ?? 5,
         distanceUnit: _distance?.unit ?? existing?.distanceUnit ?? 'km',
         paceUnit: _pace?.unit ?? existing?.paceUnit ?? '/km',
         externalSource: existing?.externalSource,
         externalId: existing?.externalId,
+        externalDevice: existing?.externalDevice,
         seasonId: existing?.seasonId ?? session.selectedSeason?.ref?.id,
         teamIds: existing?.teamIds ?? const <String>[],
         accessMemberIds: existing?.accessMemberIds.isNotEmpty == true
@@ -1387,6 +1395,25 @@ class _CreatePersonalSportActivitySheetState
                         });
                       },
                     ),
+                ],
+              ],
+              if (_isEditMode || _readOnly) ...[
+                if (widget.activityToEdit?.averageHeartRateBpm != null) ...[
+                  const SizedBox(height: 8),
+                  _MetricTile(
+                    label: l10n.personalSportMetricAvgHeartRate,
+                    value:
+                        '${widget.activityToEdit!.averageHeartRateBpm} ${l10n.personalSportUnitBpm}',
+                  ),
+                ],
+                if (widget.activityToEdit?.hasHrTimeline == true) ...[
+                  const SizedBox(height: 12),
+                  PolarHrZonesChart(
+                    timeline: widget.activityToEdit!.hrTimeline,
+                    bucketMinutes:
+                        widget.activityToEdit!.hrTimelineBucketMinutes,
+                    height: 260,
+                  ),
                 ],
               ],
               const SizedBox(height: 16),
