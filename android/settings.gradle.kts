@@ -20,7 +20,9 @@ pluginManagement {
 plugins {
     id("dev.flutter.flutter-plugin-loader") version "1.0.0"
     id("com.android.application") version "8.9.1" apply false
-    id("org.jetbrains.kotlin.android") version "2.1.0" apply false
+    // google_maps_flutter_android / maps-utils pull kotlin-stdlib 2.3.x metadata;
+    // KGP 2.1.0 cannot read it (FileAnalysisException / "expected version is 2.1.0").
+    id("org.jetbrains.kotlin.android") version "2.3.10" apply false
     id("com.google.gms.google-services") version "4.4.2" apply false
 }
 
