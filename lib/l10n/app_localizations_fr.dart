@@ -608,6 +608,9 @@ class AppLocalizationsFr extends AppLocalizations {
       'Souhaitez-vous attacher cette équipe à un club ?';
 
   @override
+  String get teamCreationSelectCountry => 'Sélectionner un pays';
+
+  @override
   String get teamCreationSelectClub => 'Sélectionner un club';
 
   @override
@@ -3807,10 +3810,10 @@ class AppLocalizationsFr extends AppLocalizations {
   }
 
   @override
-  String get teamEditNameTitle => 'Modifier le nom de l\'équipe';
+  String get teamEditNameTitle => 'Modifier l\'équipe';
 
   @override
-  String get teamEditNameSuccess => 'Nom de l\'équipe mis à jour.';
+  String get teamEditNameSuccess => 'Équipe mise à jour.';
 
   @override
   String get calendarSyncToggleLabel => 'Sync. calendrier';
@@ -6434,4 +6437,41 @@ class AppLocalizationsFr extends AppLocalizations {
   @override
   String get intenseGpsConnectToggleConnectedSubtitle =>
       'GPS Insiders Intense connecté';
+
+  @override
+  String get whoopAnalysisTitle => 'Analyse Whoop';
+
+  @override
+  String get whoopAnalysisStrain => 'Effort activité';
+
+  @override
+  String get whoopAnalysisAvgHr => 'FC moyenne';
+
+  @override
+  String get whoopAnalysisMaxHr => 'FC max';
+
+  @override
+  String get whoopAnalysisDuration => 'Durée';
+
+  @override
+  String get whoopAnalysisCalories => 'Calories';
+
+  @override
+  String get whoopAnalysisAltitude => 'Dénivelé';
+
+  @override
+  String get whoopAnalysisHrZonesTitle => 'Zones cardiaques';
+
+  @override
+  String get whoopAnalysisNoZones =>
+      'Aucune répartition par zone pour cet import. Réimporte l’activité Whoop.';
+
+  @override
+  String whoopAnalysisZoneLabel(int zone) => 'Zone $zone';
+
+  @override
+  String whoopAnalysisZoneAboveBpm(int bpm) => '+ de $bpm bpm';
+
+  @override
+  String whoopAnalysisZoneBpmRange(int min, int max) => '$min – $max bpm';
 }

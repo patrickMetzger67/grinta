@@ -22,6 +22,7 @@ import 'package:grinta/util/player_photo_resolver.dart';
 import 'package:grinta/widget/player_feeling_faces.dart';
 import 'package:grinta/widget/polar_analysis/polar_hr_zones_chart.dart';
 import 'package:grinta/widget/sport_metric_pickers.dart';
+import 'package:grinta/widget/whoop_analysis/whoop_hr_zones_card.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 
@@ -757,7 +758,10 @@ class _CreatePersonalSportActivitySheetState
         maxHeartRateBpm: existing?.maxHeartRateBpm,
         minHeartRateBpm: existing?.minHeartRateBpm,
         hrSamplesCount: existing?.hrSamplesCount ?? 0,
+        strain: existing?.strain,
+        altitudeGainMeters: existing?.altitudeGainMeters,
         hrZoneSeconds: existing?.hrZoneSeconds ?? const <String, int>{},
+        hrMaxUsedBpm: existing?.hrMaxUsedBpm,
         hrTimeline: existing?.hrTimeline ?? const [],
         hrTimelineBucketMinutes: existing?.hrTimelineBucketMinutes ?? 5,
         distanceUnit: _distance?.unit ?? existing?.distanceUnit ?? 'km',
@@ -1397,7 +1401,12 @@ class _CreatePersonalSportActivitySheetState
                     ),
                 ],
               ],
-              if (_isEditMode || _readOnly) ...[
+              if ((_isEditMode || _readOnly) &&
+                  widget.activityToEdit != null &&
+                  widget.activityToEdit!.isWhoopImport) ...[
+                const SizedBox(height: 12),
+                WhoopHrZonesCard(activity: widget.activityToEdit!),
+              ] else if (_isEditMode || _readOnly) ...[
                 if (widget.activityToEdit?.averageHeartRateBpm != null) ...[
                   const SizedBox(height: 8),
                   _MetricTile(

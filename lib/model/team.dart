@@ -22,6 +22,7 @@ String keyTeamUrlFb = 'urlFb';
 String keyTeamUrlInsta = 'urlInsta';
 String keyTeamUrlTwitter = 'urlTwitter';
 String keyTeamClubId = 'clubId';
+String keyTeamCountry = 'country';
 String keyTeamManagers = 'managers';
 String keyTeamPlayers = 'players';
 String keyTeamGrintaPlayers = 'grintaPlayers';
@@ -114,6 +115,8 @@ class Team {
   String? urlInsta;
   String? urlTwitter;
   String? clubId;
+  /// ISO country code (e.g. `FR`). Empty / null means France.
+  String? country;
   List<dynamic>? managers=[];
   List<Competition>? competitions;
 
@@ -146,6 +149,7 @@ class Team {
         this.urlInsta,
         this.urlTwitter,
         this.clubId,
+        this.country,
         this.players,
         this.grintaPlayers,
         this.grintaPlayerMemberIds,
@@ -209,6 +213,9 @@ class Team {
       clubId = '';
     }
 
+    final rawCountry = map[keyTeamCountry]?.toString().trim() ?? '';
+    country = rawCountry.isEmpty ? null : rawCountry.toUpperCase();
+
     final dynamic rawManagers = map[keyTeamManagers];
     if (rawManagers is List) {
       managers = List<dynamic>.from(rawManagers);
@@ -256,6 +263,12 @@ class Team {
     streamChannelSyncedAt =
         _parseStreamChannelSyncedAt(map[keyTeamStreamChannelSyncedAt]);
 
+  }
+
+  /// ISO country code; empty / null is treated as France (`FR`).
+  String get resolvedCountry {
+    final trimmed = country?.trim().toUpperCase() ?? '';
+    return trimmed.isEmpty ? 'FR' : trimmed;
   }
 
   /// Parsed entries from [owners] (id + display name).
@@ -307,6 +320,7 @@ class Team {
         'urlInst = $urlInsta ' +
         'urlTwitter = $urlTwitter ' +
         'clubId=$clubId ' +
+        'country=$country ' +
         'players=$players ' +
         'grintaPlayers=$grintaPlayers ' +
         'users=$users ' +
@@ -356,6 +370,10 @@ class Team {
       keyTeamUrlTwitter:urlTwitter,
       keyTeamCompetitions:allCompetitions,
       keyTeamClubId:clubId,
+      keyTeamCountry: (() {
+        final trimmed = country?.trim().toUpperCase() ?? '';
+        return trimmed.isEmpty ? 'FR' : trimmed;
+      })(),
       keyTeamManagers:managers,
       keyTeamPlayers:players,
       keyTeamGrintaPlayers:grintaPlayerMaps,

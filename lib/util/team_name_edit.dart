@@ -1,28 +1,26 @@
 import 'package:flutter/material.dart';
 import 'package:grinta/core/extensions/l10n_extension.dart';
+import 'package:grinta/model/club.dart';
 import 'package:grinta/model/team.dart';
+import 'package:grinta/model/teams_per_club.dart';
+import 'package:grinta/provider/appSession.dart';
+import 'package:grinta/services/clubService.dart';
+import 'package:grinta/services/engagement_service.dart';
 import 'package:grinta/services/teamService.dart';
 import 'package:grinta/util/app_snackbar.dart';
-import 'package:grinta/util/app_theme.dart';
+import 'package:grinta/util/engagement_sync.dart';
+import 'package:grinta/util/team_equipe_lookup.dart';
+import 'package:grinta/widget/team_basics_form_dialog.dart';
+import 'package:provider/provider.dart';
 
-/// Opens a dialog to edit [team]'s name and saves via [TeamService].
+/// Opens the team edit dialog (same fields as creation) and persists changes.
 ///
-/// Returns `true` when the name was updated successfully.
+/// Returns `true` when the team was updated successfully.
 /// Callers must gate access (e.g. managers/owners only).
 Future<bool> editTeamName(
   BuildContext context, {
   required Team team,
 }) async {
-  final String? newName = await showDialog<String>(
-    context: context,
-    builder: (dialogContext) => _EditTeamNameDialog(
-      initialName: team.name ?? '',
-    ),
-  );
-  if (newName == null || !context.mounted) {
-    return false;
-  }
-
   final String teamId = team.keyTeam?.trim() ?? '';
   if (teamId.isEmpty) {
     AppSnackbar.show(
@@ -33,9 +31,82 @@ Future<bool> editTeamName(
     return false;
   }
 
+  final seasonId = (team.seasonID?.trim().isNotEmpty == true)
+      ? team.seasonID!.trim()
+      : (context.read<AppSession>().selectedSeason?.ref?.id.trim() ?? '');
+
+  Club? club;
+  List<Equipe> initialEquipes = const <Equipe>[];
+  final clubId = team.clubId?.trim() ?? '';
+  if (clubId.isNotEmpty) {
+    try {
+      club = await ClubService().getClubById(clubId);
+      final equipesByTeam = await loadEquipesForTeams(
+        teams: <Team>[team],
+        fallbackSeasonId: seasonId,
+      );
+      final equipe = equipesByTeam[teamId];
+      if (equipe != null) {
+        initialEquipes = <Equipe>[equipe];
+      }
+    } catch (e, stackTrace) {
+      debugPrint('editTeam preload club/equipe failed: $e');
+      debugPrint('$stackTrace');
+    }
+  }
+
+  if (!context.mounted) return false;
+
+  final draft = await showTeamBasicsFormDialog(
+    context,
+    title: context.l10n.teamEditNameTitle,
+    submitLabel: context.l10n.actionSave,
+    initialName: team.name ?? '',
+    initialSoccerType: team.soccerType ?? 11,
+    initialCountry: team.resolvedCountry,
+    initialClubAffiliation: clubId.isEmpty ? null : clubId,
+    initialClubName: club?.name,
+    initialClubLogo: club?.logo,
+    initialEquipes: initialEquipes,
+    warnIfNoClub: true,
+  );
+
+  if (draft == null || !context.mounted) {
+    return false;
+  }
+
   try {
-    await TeamService().updateTeamName(teamId: teamId, name: newName);
-    team.name = newName;
+    final String? clubAffiliation = draft.clubAffiliation?.trim();
+    final String? firstEquipeId = _firstSelectedEquipeId(draft.selectedEquipes);
+
+    await TeamService().updateTeamBasics(
+      teamId: teamId,
+      name: draft.name,
+      soccerType: draft.soccerType,
+      country: draft.country,
+      clubId: clubAffiliation,
+      teamIdInTeamsPerClub: firstEquipeId,
+    );
+
+    await EngagementService().removeTeamIdFromAllEngagements(teamId);
+
+    if (clubAffiliation != null &&
+        clubAffiliation.isNotEmpty &&
+        draft.selectedEquipes.isNotEmpty &&
+        seasonId.isNotEmpty) {
+      await syncEngagementsForEquipes(
+        grintaTeamId: teamId,
+        clubId: clubAffiliation,
+        seasonId: seasonId,
+        equipes: draft.selectedEquipes,
+      );
+    }
+
+    team.name = draft.name;
+    team.soccerType = draft.soccerType;
+    team.country = draft.country;
+    team.clubId = clubAffiliation;
+    team.teamIdInTeamsPerClub = firstEquipeId;
 
     if (!context.mounted) {
       return true;
@@ -62,77 +133,8 @@ Future<bool> editTeamName(
   }
 }
 
-class _EditTeamNameDialog extends StatefulWidget {
-  const _EditTeamNameDialog({required this.initialName});
-
-  final String initialName;
-
-  @override
-  State<_EditTeamNameDialog> createState() => _EditTeamNameDialogState();
-}
-
-class _EditTeamNameDialogState extends State<_EditTeamNameDialog> {
-  final _formKey = GlobalKey<FormState>();
-  late final TextEditingController _nameController;
-
-  @override
-  void initState() {
-    super.initState();
-    _nameController = TextEditingController(text: widget.initialName);
-  }
-
-  @override
-  void dispose() {
-    _nameController.dispose();
-    super.dispose();
-  }
-
-  void _submit() {
-    if (_formKey.currentState?.validate() != true) {
-      return;
-    }
-    Navigator.of(context).pop(_nameController.text.trim());
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final colors = context.appColors;
-    final l10n = context.l10n;
-
-    return AlertDialog(
-      title: Text(l10n.teamEditNameTitle),
-      content: Form(
-        key: _formKey,
-        child: TextFormField(
-          controller: _nameController,
-          autofocus: true,
-          textCapitalization: TextCapitalization.words,
-          decoration: InputDecoration(
-            labelText: l10n.entityTeam,
-          ),
-          validator: (value) {
-            if ((value ?? '').trim().isEmpty) {
-              return l10n.hintRequiredField;
-            }
-            return null;
-          },
-          onFieldSubmitted: (_) => _submit(),
-        ),
-      ),
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(16),
-        side: BorderSide(color: colors.border),
-      ),
-      actions: [
-        TextButton(
-          onPressed: () => Navigator.of(context).pop(),
-          child: Text(l10n.actionCancel),
-        ),
-        ElevatedButton(
-          onPressed: _submit,
-          child: Text(l10n.actionSave),
-        ),
-      ],
-    );
-  }
+String? _firstSelectedEquipeId(List<Equipe> equipes) {
+  if (equipes.isEmpty) return null;
+  final equipeId = equipes.first.id?.trim() ?? '';
+  return equipeId.isEmpty ? null : equipeId;
 }

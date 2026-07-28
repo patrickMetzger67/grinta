@@ -58,7 +58,10 @@ class PersonalSportActivity {
     this.maxHeartRateBpm,
     this.minHeartRateBpm,
     this.hrSamplesCount = 0,
+    this.strain,
+    this.altitudeGainMeters,
     this.hrZoneSeconds = const <String, int>{},
+    this.hrMaxUsedBpm,
     this.hrTimeline = const <PolarHrTimelinePoint>[],
     this.hrTimelineBucketMinutes = 5,
     this.distanceUnit = 'km',
@@ -92,7 +95,13 @@ class PersonalSportActivity {
   final int? maxHeartRateBpm;
   final int? minHeartRateBpm;
   final int hrSamplesCount;
+  /// Whoop activity Strain (0–21).
+  final double? strain;
+  final double? altitudeGainMeters;
+  /// Seconds per HR zone key (`z0`…`z5` for Whoop, `z1`…`z5` for Polar).
   final Map<String, int> hrZoneSeconds;
+  /// HRmax used to label Whoop %-based zone BPM ranges.
+  final int? hrMaxUsedBpm;
   final List<PolarHrTimelinePoint> hrTimeline;
   final int hrTimelineBucketMinutes;
   final String distanceUnit;
@@ -107,6 +116,11 @@ class PersonalSportActivity {
   final DateTime? updatedAt;
 
   bool get hasHrTimeline => hrTimeline.isNotEmpty;
+
+  bool get hasHrZones => hrZoneSeconds.values.any((seconds) => seconds > 0);
+
+  bool get isWhoopImport =>
+      (externalSource ?? '').trim().toLowerCase() == 'whoop';
 
   factory PersonalSportActivity.fromFirestore(
     DocumentSnapshot<Map<String, dynamic>> doc,
@@ -132,7 +146,10 @@ class PersonalSportActivity {
       maxHeartRateBpm: _readInt(data['maxHeartRateBpm']),
       minHeartRateBpm: _readInt(data['minHeartRateBpm']),
       hrSamplesCount: _readInt(data['hrSamplesCount']) ?? 0,
+      strain: _readDouble(data['strain']),
+      altitudeGainMeters: _readDouble(data['altitudeGainMeters']),
       hrZoneSeconds: _readIntMap(data['hrZoneSeconds']),
+      hrMaxUsedBpm: _readInt(data['hrMaxUsedBpm']),
       hrTimeline: _readTimeline(data['hrTimeline']),
       hrTimelineBucketMinutes: _timelineBucketMinutes(
         data['hrTimelineBucketMinutes'],
@@ -171,7 +188,10 @@ class PersonalSportActivity {
       'maxHeartRateBpm': maxHeartRateBpm,
       'minHeartRateBpm': minHeartRateBpm,
       'hrSamplesCount': hrSamplesCount,
+      'strain': strain,
+      'altitudeGainMeters': altitudeGainMeters,
       'hrZoneSeconds': hrZoneSeconds,
+      'hrMaxUsedBpm': hrMaxUsedBpm,
       'hrTimeline': hrTimeline.map((p) => p.toMap()).toList(growable: false),
       'hrTimelineBucketMinutes': hrTimelineBucketMinutes,
       'distanceUnit': distanceUnit,

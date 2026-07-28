@@ -273,6 +273,7 @@
   "actionLogoutConfirmMessage": "Souhaites-tu vraiment te déconnecter ?",
   "actionCreateTeam": "Créer une équipe",
   "teamCreationAttachClubQuestion": "Souhaitez-vous attacher cette équipe à un club ?",
+  "teamCreationSelectCountry": "Sélectionner un pays",
   "teamCreationSelectClub": "Sélectionner un club",
   "teamCreationClubRequired": "Veuillez sélectionner un club",
   "teamCreationSelectClubTeams": "Sélectionner des équipes",
@@ -1722,8 +1723,8 @@
       "teamName": { "type": "String" }
     }
   },
-  "teamEditNameTitle": "Modifier le nom de l'équipe",
-  "teamEditNameSuccess": "Nom de l'équipe mis à jour.",
+  "teamEditNameTitle": "Modifier l'équipe",
+  "teamEditNameSuccess": "Équipe mise à jour.",
   "calendarSyncToggleLabel": "Sync. calendrier",
   "calendarSyncToggleSubtitle": "Mise à jour auto à l'ouverture de l'agenda (max 1×/15 min)",
   "calendarSyncWebSubtitle": "Télécharge un fichier ICS à importer dans ton calendrier",
@@ -2860,5 +2861,34 @@
   "intenseGpsConnectFailed": "Impossible d’associer le tracker GPS. Réessaie.",
   "intenseGpsDisconnectFailed": "La dissociation du tracker GPS a échoué.",
   "intenseGpsMissingEmail": "Le profil joueur doit avoir un email pour associer un tracker GPS.",
-  "intenseGpsConnectToggleConnectedSubtitle": "GPS Insiders Intense connecté"
+  "intenseGpsConnectToggleConnectedSubtitle": "GPS Insiders Intense connecté",
+
+  "whoopAnalysisTitle": "Analyse Whoop",
+  "whoopAnalysisStrain": "Effort activité",
+  "whoopAnalysisAvgHr": "FC moyenne",
+  "whoopAnalysisMaxHr": "FC max",
+  "whoopAnalysisDuration": "Durée",
+  "whoopAnalysisCalories": "Calories",
+  "whoopAnalysisAltitude": "Dénivelé",
+  "whoopAnalysisHrZonesTitle": "Zones cardiaques",
+  "whoopAnalysisNoZones": "Aucune répartition par zone pour cet import. Réimporte l’activité Whoop.",
+  "whoopAnalysisZoneLabel": "Zone {zone}",
+  "@whoopAnalysisZoneLabel": {
+    "placeholders": {
+      "zone": { "type": "int" }
+    }
+  },
+  "whoopAnalysisZoneAboveBpm": "+ de {bpm} bpm",
+  "@whoopAnalysisZoneAboveBpm": {
+    "placeholders": {
+      "bpm": { "type": "int" }
+    }
+  },
+  "whoopAnalysisZoneBpmRange": "{min} – {max} bpm",
+  "@whoopAnalysisZoneBpmRange": {
+    "placeholders": {
+      "min": { "type": "int" },
+      "max": { "type": "int" }
+    }
+  }
 }

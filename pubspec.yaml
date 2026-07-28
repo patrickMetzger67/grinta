@@ -110,6 +110,7 @@ flutter:
     - assets/images/login_slide1_web.png
     - assets/images/login_slide2_web.png
     - assets/images/login_slide3_web.png
+    - assets/images/flags/
 
   fonts:
     - family: SFPro

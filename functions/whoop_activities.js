@@ -1,6 +1,7 @@
 const { onCall, HttpsError } = require('firebase-functions/v2/https');
 const { defineSecret } = require('firebase-functions/params');
 const { getFirestore, FieldValue } = require('firebase-admin/firestore');
+const { extractWhoopScoreMetrics } = require('./whoop_hr_zones');
 
 const whoopClientId = defineSecret('WHOOP_CLIENT_ID');
 const whoopClientSecret = defineSecret('WHOOP_CLIENT_SECRET');
@@ -12,6 +13,8 @@ const REGION = 'europe-west1';
 const WHOOP_TOKEN_URL = 'https://api.prod.whoop.com/oauth/oauth2/token';
 const WHOOP_WORKOUTS_URL =
   'https://api.prod.whoop.com/developer/v2/activity/workout';
+const WHOOP_BODY_URL =
+  'https://api.prod.whoop.com/developer/v2/user/measurement/body';
 
 function integrationDocId(uid, playerId) {
   return `${uid}_${playerId}`;
@@ -200,8 +203,8 @@ function mapWorkoutSummary(entry) {
       : null;
   const kjRaw = Number(score?.kilojoule ?? NaN);
   const caloriesKcal = Number.isFinite(kjRaw) ? kjRaw / 4.184 : null;
-  const avgHrRaw = Number(score?.average_heart_rate ?? NaN);
   const sportName = (entry?.sport_name ?? '').toString();
+  const metrics = extractWhoopScoreMetrics(entry);
 
   return {
     externalId: id,
@@ -219,10 +222,39 @@ function mapWorkoutSummary(entry) {
       caloriesKcal != null && Number.isFinite(caloriesKcal)
         ? Math.round(caloriesKcal)
         : null,
-    averageHeartRateBpm: Number.isFinite(avgHrRaw)
-      ? Math.round(avgHrRaw)
-      : null,
+    averageHeartRateBpm: metrics.averageHeartRateBpm,
+    maxHeartRateBpm: metrics.maxHeartRateBpm,
+    strain: metrics.strain,
+    altitudeGainMeters: metrics.altitudeGainMeters,
+    hrZoneSeconds: metrics.hrZoneSeconds,
   };
+}
+
+/**
+ * Optional body max HR for zone BPM labels (Whoop %-based zones).
+ * @param {string} accessToken
+ * @returns {Promise<number|null>}
+ */
+async function fetchWhoopBodyMaxHr(accessToken) {
+  try {
+    const response = await fetch(WHOOP_BODY_URL, {
+      headers: {
+        Authorization: `Bearer ${accessToken}`,
+        Accept: 'application/json',
+      },
+    });
+    if (!response.ok) {
+      console.warn('Whoop body measurement failed', response.status);
+      return null;
+    }
+    const raw = await response.text();
+    const parsed = raw ? JSON.parse(raw) : null;
+    const maxHr = Number(parsed?.max_heart_rate ?? NaN);
+    return Number.isFinite(maxHr) && maxHr > 0 ? Math.round(maxHr) : null;
+  } catch (err) {
+    console.warn('Whoop body measurement error', err);
+    return null;
+  }
 }
 
 async function fetchWhoopWorkouts(accessToken, { limit = 25 } = {}) {
@@ -475,6 +507,8 @@ function createWhoopImportActivity() {
           (Number.isFinite(durationSeconds) ? durationSeconds : 0) * 1000,
       );
       const typeId = typeIdOverride || summary.typeId;
+      const bodyMaxHr = await fetchWhoopBodyMaxHr(accessToken);
+      const hrMaxUsedBpm = bodyMaxHr ?? summary.maxHeartRateBpm ?? null;
 
       const ref = db.collection(PERSONAL_ACTIVITIES_COLLECTION).doc();
       await ref.set({
@@ -499,6 +533,11 @@ function createWhoopImportActivity() {
         paceSecondsPerKm: summary.paceSecondsPerKm,
         caloriesKcal: summary.caloriesKcal,
         averageHeartRateBpm: summary.averageHeartRateBpm,
+        maxHeartRateBpm: summary.maxHeartRateBpm,
+        strain: summary.strain,
+        altitudeGainMeters: summary.altitudeGainMeters,
+        hrZoneSeconds: summary.hrZoneSeconds ?? {},
+        hrMaxUsedBpm,
         distanceUnit: 'km',
         paceUnit: '/km',
         externalSource: 'whoop',
@@ -520,4 +559,5 @@ module.exports = {
   createWhoopImportActivity,
   mapWhoopSport,
   mapWorkoutSummary,
+  fetchWhoopBodyMaxHr,
 };
