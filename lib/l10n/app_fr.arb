@@ -1722,8 +1722,8 @@
       "teamName": { "type": "String" }
     }
   },
-  "teamEditNameTitle": "Modifier le nom de l'équipe",
-  "teamEditNameSuccess": "Nom de l'équipe mis à jour.",
+  "teamEditNameTitle": "Modifier l'équipe",
+  "teamEditNameSuccess": "Équipe mise à jour.",
   "calendarSyncToggleLabel": "Sync. calendrier",
   "calendarSyncToggleSubtitle": "Mise à jour auto à l'ouverture de l'agenda (max 1×/15 min)",
   "calendarSyncWebSubtitle": "Télécharge un fichier ICS à importer dans ton calendrier",

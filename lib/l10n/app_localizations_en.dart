@@ -3764,10 +3764,10 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
-  String get teamEditNameTitle => 'Edit team name';
+  String get teamEditNameTitle => 'Edit team';
 
   @override
-  String get teamEditNameSuccess => 'Team name updated.';
+  String get teamEditNameSuccess => 'Team updated.';
 
   @override
   String get calendarSyncToggleLabel => 'Calendar sync';

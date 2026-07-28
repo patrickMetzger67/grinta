@@ -3816,10 +3816,10 @@ class AppLocalizationsDe extends AppLocalizations {
   }
 
   @override
-  String get teamEditNameTitle => 'Teamnamen bearbeiten';
+  String get teamEditNameTitle => 'Team bearbeiten';
 
   @override
-  String get teamEditNameSuccess => 'Teamname aktualisiert.';
+  String get teamEditNameSuccess => 'Team aktualisiert.';
 
   @override
   String get calendarSyncToggleLabel => 'Kalender-Sync';

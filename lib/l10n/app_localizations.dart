@@ -6633,13 +6633,13 @@ abstract class AppLocalizations {
   /// No description provided for @teamEditNameTitle.
   ///
   /// In fr, this message translates to:
-  /// **'Modifier le nom de l\'équipe'**
+  /// **'Modifier l\'équipe'**
   String get teamEditNameTitle;
 
   /// No description provided for @teamEditNameSuccess.
   ///
   /// In fr, this message translates to:
-  /// **'Nom de l\'équipe mis à jour.'**
+  /// **'Équipe mise à jour.'**
   String get teamEditNameSuccess;
 
   /// No description provided for @calendarSyncToggleLabel.
