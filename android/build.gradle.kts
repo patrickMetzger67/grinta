@@ -57,11 +57,26 @@ subprojects {
     }
 }
 
-// Align Java/Kotlin JVM targets across all plugins (device_calendar ships Java 1.8
-// while the Kotlin plugin defaults to the JDK in use, e.g. 21).
-fun Project.forceJvmTarget11() {
+// Align compileSdk + Java/Kotlin JVM targets across plugins.
+// device_calendar and other legacy plugins ship old compileSdk / Java 1.8 while
+// the host JDK / AGP require Java 11+ and compileSdk >= 30.
+fun Project.forceAndroidPluginCompat() {
     extensions.findByName("android")?.let { androidExt ->
         try {
+            // Prefer AGP 8 `compileSdk`, fall back to legacy `compileSdkVersion`.
+            val setCompileSdk =
+                androidExt.javaClass.methods.firstOrNull {
+                    it.name == "setCompileSdk" && it.parameterCount == 1
+                }
+            val setCompileSdkVersion =
+                androidExt.javaClass.methods.firstOrNull {
+                    it.name == "setCompileSdkVersion" && it.parameterCount == 1
+                }
+            when {
+                setCompileSdk != null -> setCompileSdk.invoke(androidExt, 35)
+                setCompileSdkVersion != null -> setCompileSdkVersion.invoke(androidExt, 35)
+            }
+
             val compileOptions =
                 androidExt.javaClass.methods
                     .firstOrNull { it.name == "getCompileOptions" && it.parameterCount == 0 }
@@ -79,7 +94,7 @@ fun Project.forceJvmTarget11() {
                     ?.invoke(compileOptions, JavaVersion.VERSION_11)
             }
         } catch (e: Exception) {
-            logger.warn("Could not set Java 11 on :$name (${e.message})")
+            logger.warn("Could not align Android compat on :$name (${e.message})")
         }
     }
 
@@ -105,9 +120,9 @@ fun Project.forceJvmTarget11() {
 subprojects {
     // evaluationDependsOn(":app") can leave some projects already evaluated.
     if (state.executed) {
-        forceJvmTarget11()
+        forceAndroidPluginCompat()
     } else {
-        afterEvaluate { forceJvmTarget11() }
+        afterEvaluate { forceAndroidPluginCompat() }
     }
 }
 
