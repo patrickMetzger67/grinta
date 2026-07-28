@@ -18,13 +18,28 @@ Fichiers locaux : `firestore/config/flags/{CODE}.png`
 Chemin Storage cible : `flags/{CODE}.png`  
 Règles : lecture publique (`storage.rules` → `match /flags/{fileName}`).
 
-Upload (après `firebase login`) :
+### Upload (recommandé : gcloud)
 
 ```bash
+gcloud auth login
+gcloud config set project aserstein-2453e
 ./firestore/config/upload_flags.sh
 ```
 
-Ou manuellement dans la console Storage → dossier `flags/`.
+Ou en une commande :
+
+```bash
+gcloud storage cp firestore/config/flags/*.png \
+  gs://aserstein-2453e.appspot.com/flags/ \
+  --project=aserstein-2453e \
+  --content-type=image/png
+```
+
+### Console Firebase
+
+Storage → créer le dossier `flags/` → uploader les PNG de `firestore/config/flags/`.
+
+L’app affiche aussi les drapeaux via assets locaux (`assets/images/flags/`), donc l’upload Storage n’est pas bloquant pour le dropdown.
 
 ## Schéma d’un pays
 
