@@ -608,6 +608,9 @@ class AppLocalizationsEs extends AppLocalizations {
       '¿Desea asociar este equipo a un club?';
 
   @override
+  String get teamCreationSelectCountry => 'Seleccionar un país';
+
+  @override
   String get teamCreationSelectClub => 'Seleccionar un club';
 
   @override
@@ -3806,10 +3809,10 @@ class AppLocalizationsEs extends AppLocalizations {
   }
 
   @override
-  String get teamEditNameTitle => 'Editar nombre del equipo';
+  String get teamEditNameTitle => 'Editar equipo';
 
   @override
-  String get teamEditNameSuccess => 'Nombre del equipo actualizado.';
+  String get teamEditNameSuccess => 'Equipo actualizado.';
 
   @override
   String get calendarSyncToggleLabel => 'Sync. calendario';

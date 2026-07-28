@@ -1156,6 +1156,12 @@ abstract class AppLocalizations {
   /// **'Souhaitez-vous attacher cette équipe à un club ?'**
   String get teamCreationAttachClubQuestion;
 
+  /// No description provided for @teamCreationSelectCountry.
+  ///
+  /// In fr, this message translates to:
+  /// **'Sélectionner un pays'**
+  String get teamCreationSelectCountry;
+
   /// No description provided for @teamCreationSelectClub.
   ///
   /// In fr, this message translates to:
@@ -6633,13 +6639,13 @@ abstract class AppLocalizations {
   /// No description provided for @teamEditNameTitle.
   ///
   /// In fr, this message translates to:
-  /// **'Modifier le nom de l\'équipe'**
+  /// **'Modifier l\'équipe'**
   String get teamEditNameTitle;
 
   /// No description provided for @teamEditNameSuccess.
   ///
   /// In fr, this message translates to:
-  /// **'Nom de l\'équipe mis à jour.'**
+  /// **'Équipe mise à jour.'**
   String get teamEditNameSuccess;
 
   /// No description provided for @calendarSyncToggleLabel.

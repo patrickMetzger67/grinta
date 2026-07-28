@@ -306,6 +306,44 @@ class TeamService {
     });
   }
 
+  /// Updates display name, soccer type and club / équipe linkage.
+  Future<void> updateTeamBasics({
+    required String teamId,
+    required String name,
+    required int soccerType,
+    String? clubId,
+    String? teamIdInTeamsPerClub,
+    String? country,
+  }) async {
+    final trimmedTeamId = teamId.trim();
+    final trimmedName = name.trim();
+    if (trimmedTeamId.isEmpty) {
+      throw Exception('keyTeam null ou vide');
+    }
+    if (trimmedName.isEmpty) {
+      throw Exception('name empty');
+    }
+
+    final trimmedClubId = clubId?.trim();
+    final trimmedEquipeId = teamIdInTeamsPerClub?.trim();
+    final trimmedCountry = country?.trim().toUpperCase() ?? '';
+    final resolvedCountry =
+        trimmedCountry.isEmpty ? 'FR' : trimmedCountry;
+
+    await _collection.doc(trimmedTeamId).update(<String, dynamic>{
+      keyTeamName: trimmedName,
+      keyTeamSoccerType: soccerType,
+      keyTeamCountry: resolvedCountry,
+      keyTeamClubId: (trimmedClubId == null || trimmedClubId.isEmpty)
+          ? FieldValue.delete()
+          : trimmedClubId,
+      keyTeamIdInTeamsPerClub:
+          (trimmedEquipeId == null || trimmedEquipeId.isEmpty)
+              ? FieldValue.delete()
+              : trimmedEquipeId,
+    });
+  }
+
   /// Appends a [GrintaPlayer] to [keyTeamGrintaPlayers] (read-modify-write).
   ///
   /// Uses a targeted Firestore update so roster writes are not lost when the

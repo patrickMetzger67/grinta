@@ -7,6 +7,14 @@ service firebase.storage {
       allow write: if request.auth != null;
     }
 
+    // Country flags for team create/edit (public read for Image.network).
+    match /flags/{fileName} {
+      allow read: if true;
+      allow write: if request.auth != null
+        && request.resource.size < 1 * 1024 * 1024
+        && request.resource.contentType.matches('image/.*');
+    }
+
     // Member photos and cached user avatars (app resolves via getDownloadURL).
     match /thumbs/{fileName} {
       allow read, write: if request.auth != null;

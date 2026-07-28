@@ -271,6 +271,7 @@
   "actionLogoutConfirmMessage": "Do you really want to log out?",
   "actionCreateTeam": "Create a team",
   "teamCreationAttachClubQuestion": "Would you like to attach this team to a club?",
+  "teamCreationSelectCountry": "Select a country",
   "teamCreationSelectClub": "Select a club",
   "teamCreationClubRequired": "Please select a club",
   "teamCreationSelectClubTeams": "Select club teams",
@@ -1415,8 +1416,8 @@
       "teamName": { "type": "String" }
     }
   },
-  "teamEditNameTitle": "Edit team name",
-  "teamEditNameSuccess": "Team name updated.",
+  "teamEditNameTitle": "Edit team",
+  "teamEditNameSuccess": "Team updated.",
   "calendarSyncToggleLabel": "Calendar sync",
   "calendarSyncToggleSubtitle": "Auto-updates when agenda opens (max once every 15 min)",
   "calendarSyncWebSubtitle": "Download an ICS file to import into your calendar",
