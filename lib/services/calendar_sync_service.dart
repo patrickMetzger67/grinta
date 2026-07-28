@@ -18,6 +18,7 @@ import 'package:grinta/util/calendar_event_formatter.dart';
 import 'package:grinta/util/calendar_ics_builder.dart';
 import 'package:grinta/util/download_ics.dart';
 import 'package:grinta/util/playerDisplayName.dart';
+import 'package:timezone/data/latest.dart' as tz_data;
 
 class CalendarSyncService {
   CalendarSyncService._();
@@ -31,6 +32,18 @@ class CalendarSyncService {
   final CalendarSyncRepository _repository = CalendarSyncRepository();
 
   bool _syncInProgress = false;
+  bool _timeZonesInitialized = false;
+
+  void _ensureTimeZonesInitialized() {
+    if (_timeZonesInitialized) return;
+    tz_data.initializeTimeZones();
+    _timeZonesInitialized = true;
+  }
+
+  TZDateTime _toTzDateTime(DateTime value) {
+    _ensureTimeZonesInitialized();
+    return TZDateTime.from(value, local);
+  }
 
   String calendarDisplayNameForPlayer(Player player) {
     final name = playerDisplayName(player);
@@ -346,8 +359,8 @@ class CalendarSyncService {
             deepLink: deepLink,
             item: item,
           ),
-          start: item.startAt,
-          end: item.endAt,
+          start: _toTzDateTime(item.startAt),
+          end: _toTzDateTime(item.endAt),
         )
           ..location = CalendarEventFormatter.eventLocation(item)
           ..url = Uri.parse(deepLink);
