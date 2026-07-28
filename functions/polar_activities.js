@@ -1,5 +1,6 @@
 const { onCall, HttpsError } = require('firebase-functions/v2/https');
 const { getFirestore, FieldValue } = require('firebase-admin/firestore');
+const { buildPolarCardioExtras } = require('./polar_hr_timeline');
 
 const INTEGRATIONS_COLLECTION = 'polar_integrations';
 const PERSONAL_ACTIVITIES_COLLECTION = 'personalSportActivities';
@@ -551,7 +552,9 @@ function createPolarImportActivity() {
       }
 
       const accessToken = getValidAccessToken(integration);
-      const detailUrl = `${POLAR_EXERCISES_URL}/${encodeURIComponent(externalId)}`;
+      const detailUrl =
+        `${POLAR_EXERCISES_URL}/${encodeURIComponent(externalId)}` +
+        '?samples=true&zones=true';
       const { response, raw } = await fetchPolarJson(detailUrl, accessToken);
       if (!response.ok) {
         console.error('Polar exercise detail failed', response.status, raw);
@@ -572,6 +575,7 @@ function createPolarImportActivity() {
       }
 
       const summary = mapExerciseSummary(exercise);
+      const cardio = buildPolarCardioExtras(exercise);
       const durationSeconds = summary.durationSeconds ?? 0;
       const startAt = new Date(summary.startDate);
       const endAt = new Date(
@@ -604,6 +608,12 @@ function createPolarImportActivity() {
         paceSecondsPerKm: summary.paceSecondsPerKm,
         caloriesKcal: summary.caloriesKcal,
         averageHeartRateBpm: summary.averageHeartRateBpm,
+        maxHeartRateBpm: cardio.maxHeartRateBpm,
+        minHeartRateBpm: cardio.minHeartRateBpm,
+        hrSamplesCount: cardio.hrSamplesCount,
+        hrZoneSeconds: cardio.hrZoneSeconds,
+        hrTimeline: cardio.hrTimeline,
+        hrTimelineBucketMinutes: cardio.hrTimelineBucketMinutes,
         distanceUnit: 'km',
         paceUnit: '/km',
         externalSource: 'polar',
@@ -615,7 +625,12 @@ function createPolarImportActivity() {
         updatedAt: FieldValue.serverTimestamp(),
       });
 
-      return { id: ref.id, imported: true };
+      return {
+        id: ref.id,
+        imported: true,
+        hrTimelinePoints: cardio.hrTimeline.length,
+        hrSamplesCount: cardio.hrSamplesCount,
+      };
     },
   );
 }
@@ -626,4 +641,5 @@ module.exports = {
   mapPolarSport,
   parseIsoDurationSeconds,
   polarStartToUtc,
+  buildPolarCardioExtras: require('./polar_hr_timeline').buildPolarCardioExtras,
 };

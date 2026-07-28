@@ -5817,6 +5817,21 @@ class AppLocalizationsEn extends AppLocalizations {
   String get polarAnalysisNoZones => 'No zone breakdown for this import.';
 
   @override
+  String get polarAnalysisTrainingZonesTitle => 'Training zones';
+
+  @override
+  String polarAnalysisHrTimelineHint(int minutes) {
+    return 'Average synthesis every $minutes min';
+  }
+
+  @override
+  String get polarAnalysisHrTimelineEmpty =>
+      'HR curve unavailable — re-import the sensor to generate the 5-min synthesis.';
+
+  @override
+  String get polarAnalysisAxisPercent => '%';
+
+  @override
   String get polarImportMissingSeason =>
       'Season not found to import Polar sensors.';
 

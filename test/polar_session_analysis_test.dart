@@ -1,5 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:grinta/model/tracker/polar_session_analysis.dart';
+import 'package:grinta/util/polar_hr_stats.dart';
 
 void main() {
   group('PolarSessionAnalysis', () {
@@ -26,6 +27,17 @@ void main() {
         minHrBpm: 98,
         hrSamplesCount: 4500,
         hrZoneSeconds: const {'z1': 600, 'z2': 1200, 'z3': 1800, 'z4': 900},
+        hrTimeline: const [
+          PolarHrTimelinePoint(
+            offsetMinutes: 0,
+            avgBpm: 120,
+            minBpm: 100,
+            maxBpm: 140,
+          ),
+          PolarHrTimelinePoint(offsetMinutes: 5, avgBpm: 145),
+        ],
+        hrTimelineBucketMinutes: 5,
+        hrMaxUsedBpm: 190,
         caloriesKcal: null,
         distanceMeters: null,
         steps: null,
@@ -46,9 +58,29 @@ void main() {
       expect(restored.minHrBpm, 98);
       expect(restored.hrSamplesCount, 4500);
       expect(restored.hrZoneSeconds['z3'], 1800);
+      expect(restored.hrTimeline.length, 2);
+      expect(restored.hrTimeline.first.avgBpm, 120);
+      expect(restored.hrTimeline.first.minBpm, 100);
+      expect(restored.hrTimeline[1].offsetMinutes, 5);
+      expect(restored.hrTimelineBucketMinutes, 5);
+      expect(restored.hrMaxUsedBpm, 190);
       expect(restored.caloriesKcal, isNull);
       expect(restored.importChannel, PolarImportChannel.bleMobile);
       expect(restored.docId, 'evt1_t1');
+    });
+
+    test('defaults missing timeline bucket to 5 minutes', () {
+      final restored = PolarSessionAnalysis.fromMap({
+        'eventId': 'e',
+        'playerId': 'p',
+        'trackerId': 't',
+        'polarDeviceId': 'AABB',
+        'deviceType': 'Verity Sense',
+        'durationMs': 60000,
+      });
+      expect(restored.hrTimeline, isEmpty);
+      expect(restored.hrTimelineBucketMinutes, 5);
+      expect(restored.hrMaxUsedBpm, isNull);
     });
 
     test('Loop extras serialize when present', () {

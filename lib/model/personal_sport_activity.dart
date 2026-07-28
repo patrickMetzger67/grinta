@@ -1,4 +1,5 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:grinta/util/polar_hr_stats.dart';
 
 enum PersonalSportVisibility {
   private,
@@ -55,10 +56,14 @@ class PersonalSportActivity {
     this.caloriesKcal,
     this.averageHeartRateBpm,
     this.maxHeartRateBpm,
+    this.minHeartRateBpm,
+    this.hrSamplesCount = 0,
     this.strain,
     this.altitudeGainMeters,
     this.hrZoneSeconds = const <String, int>{},
     this.hrMaxUsedBpm,
+    this.hrTimeline = const <PolarHrTimelinePoint>[],
+    this.hrTimelineBucketMinutes = 5,
     this.distanceUnit = 'km',
     this.paceUnit = '/km',
     this.externalSource,
@@ -88,6 +93,8 @@ class PersonalSportActivity {
   final double? caloriesKcal;
   final int? averageHeartRateBpm;
   final int? maxHeartRateBpm;
+  final int? minHeartRateBpm;
+  final int hrSamplesCount;
   /// Whoop activity Strain (0–21).
   final double? strain;
   final double? altitudeGainMeters;
@@ -95,6 +102,8 @@ class PersonalSportActivity {
   final Map<String, int> hrZoneSeconds;
   /// HRmax used to label Whoop %-based zone BPM ranges.
   final int? hrMaxUsedBpm;
+  final List<PolarHrTimelinePoint> hrTimeline;
+  final int hrTimelineBucketMinutes;
   final String distanceUnit;
   final String paceUnit;
   final String? externalSource;
@@ -105,6 +114,8 @@ class PersonalSportActivity {
   final List<String> accessMemberIds;
   final DateTime? createdAt;
   final DateTime? updatedAt;
+
+  bool get hasHrTimeline => hrTimeline.isNotEmpty;
 
   bool get hasHrZones => hrZoneSeconds.values.any((seconds) => seconds > 0);
 
@@ -133,10 +144,16 @@ class PersonalSportActivity {
       caloriesKcal: _readDouble(data['caloriesKcal']),
       averageHeartRateBpm: _readInt(data['averageHeartRateBpm']),
       maxHeartRateBpm: _readInt(data['maxHeartRateBpm']),
+      minHeartRateBpm: _readInt(data['minHeartRateBpm']),
+      hrSamplesCount: _readInt(data['hrSamplesCount']) ?? 0,
       strain: _readDouble(data['strain']),
       altitudeGainMeters: _readDouble(data['altitudeGainMeters']),
       hrZoneSeconds: _readIntMap(data['hrZoneSeconds']),
       hrMaxUsedBpm: _readInt(data['hrMaxUsedBpm']),
+      hrTimeline: _readTimeline(data['hrTimeline']),
+      hrTimelineBucketMinutes: _timelineBucketMinutes(
+        data['hrTimelineBucketMinutes'],
+      ),
       distanceUnit: _optionalString(data['distanceUnit']) ?? 'km',
       paceUnit: _optionalString(data['paceUnit']) ?? '/km',
       externalSource: _optionalString(data['externalSource']),
@@ -169,10 +186,14 @@ class PersonalSportActivity {
       'caloriesKcal': caloriesKcal,
       'averageHeartRateBpm': averageHeartRateBpm,
       'maxHeartRateBpm': maxHeartRateBpm,
+      'minHeartRateBpm': minHeartRateBpm,
+      'hrSamplesCount': hrSamplesCount,
       'strain': strain,
       'altitudeGainMeters': altitudeGainMeters,
       'hrZoneSeconds': hrZoneSeconds,
       'hrMaxUsedBpm': hrMaxUsedBpm,
+      'hrTimeline': hrTimeline.map((p) => p.toMap()).toList(growable: false),
+      'hrTimelineBucketMinutes': hrTimelineBucketMinutes,
       'distanceUnit': distanceUnit,
       'paceUnit': paceUnit,
       'externalSource': externalSource,
@@ -229,5 +250,28 @@ class PersonalSportActivity {
       if (parsed != null) out[key.toString()] = parsed;
     });
     return out;
+  }
+
+  static List<PolarHrTimelinePoint> _readTimeline(Object? value) {
+    if (value is! List) return const <PolarHrTimelinePoint>[];
+    final out = <PolarHrTimelinePoint>[];
+    for (final item in value) {
+      if (item is Map<String, dynamic>) {
+        out.add(PolarHrTimelinePoint.fromMap(item));
+      } else if (item is Map) {
+        out.add(
+          PolarHrTimelinePoint.fromMap(
+            item.map((key, raw) => MapEntry(key.toString(), raw)),
+          ),
+        );
+      }
+    }
+    return out;
+  }
+
+  static int _timelineBucketMinutes(Object? value) {
+    final parsed = _readInt(value);
+    if (parsed == null || parsed <= 0) return 5;
+    return parsed.clamp(1, 120);
   }
 }

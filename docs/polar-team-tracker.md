@@ -91,6 +91,9 @@ kind: "cardio"
 durationMs, startedAt?, endedAt?
 avgHrBpm?, maxHrBpm?, minHrBpm?, hrSamplesCount
 hrZoneSeconds: { z1…z5 → seconds }
+hrTimeline: [ { t: minutesFromStart, avg, min?, max? }, … ]  // 5-min synthesis
+hrTimelineBucketMinutes: 5
+hrMaxUsedBpm?   // HRmax used for % zones at import (null → absolute BPM)
 caloriesKcal?, distanceMeters?, steps?   // Loop extras; usually null on Verity
 importChannel: "ble_mobile" | "ble_chrome" | "manual"
 importedAt, importedUid?, sourceFirmware?
@@ -145,7 +148,6 @@ z4 160–179 · z5 ≥180. Optional % of HRmax (60/70/80/90).
 - Chrome Web Bluetooth offline exercise pull (proprietary Polar file transfer)
 - Polar Team Pro API / Polar Pro GPS sensors
 - Writing org/teams into Polar
-- Cardio charts beside GPS analysis UI (next)
 
 ## Analysis UI (cardio replaces GPS)
 
@@ -159,8 +161,13 @@ use cardio UI instead of GPS:
 
 Wired from match stats tab, agenda tracker sheets, and metrics panel.
 
-Polar player view: synthesis (duration, avg/max/min HR, samples, Loop extras)
-+ HR zones (z1–z5). No heatmap / pitch GPS tabs.
+Polar player view:
+- **Synthèse** — duration, avg/max/min HR, samples, Loop extras
+- **Zones FC** — Polar-style “Zones d'entraînement” chart (Grinta colours, HR
+  line on zone bands) from the 5-minute `hrTimeline` synthesis, plus z1–z5 time
+  bars. Older imports without `hrTimeline` show a re-import hint for the curve.
+
+No heatmap / pitch GPS tabs.
 
 ## Next phase
 

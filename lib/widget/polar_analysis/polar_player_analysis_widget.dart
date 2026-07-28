@@ -8,6 +8,7 @@ import 'package:grinta/model/tracker/polar_session_analysis.dart';
 import 'package:grinta/services/polar_session_analysis_service.dart';
 import 'package:grinta/util/app_theme.dart';
 import 'package:grinta/widget/playerPhoto.dart';
+import 'package:grinta/widget/polar_analysis/polar_hr_zones_chart.dart';
 
 /// Cardio session analysis for Polar team kits (`TRACKER_PolarAnalysis`).
 ///
@@ -485,32 +486,43 @@ class _PolarPlayerAnalysisContent extends StatelessWidget {
       colors.danger,
     ];
 
-    return _section(
-      context,
-      title: l10n.polarAnalysisHrZonesTab,
-      icon: Icons.stacked_bar_chart_rounded,
-      child: Column(
-        children: [
-          for (var i = 0; i < zones.length; i++) ...[
-            _zoneRow(
-              context,
-              label: l10n.polarAnalysisZoneLabel(zones[i].toUpperCase()),
-              seconds: analysis.hrZoneSeconds[zones[i]] ?? 0,
-              total: totals,
-              maxSec: maxSec,
-              color: zoneColors[i],
-            ),
-            if (i < zones.length - 1) const SizedBox(height: 10),
-          ],
-          if (totals == 0) ...[
-            const SizedBox(height: 8),
-            Text(
-              l10n.polarAnalysisNoZones,
-              style: TextStyle(color: colors.textSecondary),
-            ),
-          ],
-        ],
-      ),
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        PolarHrZonesChart(
+          timeline: analysis.hrTimeline,
+          hrMaxBpm: analysis.hrMaxUsedBpm,
+          bucketMinutes: analysis.hrTimelineBucketMinutes,
+        ),
+        const SizedBox(height: 12),
+        _section(
+          context,
+          title: l10n.polarAnalysisHrZonesTab,
+          icon: Icons.stacked_bar_chart_rounded,
+          child: Column(
+            children: [
+              for (var i = 0; i < zones.length; i++) ...[
+                _zoneRow(
+                  context,
+                  label: l10n.polarAnalysisZoneLabel(zones[i].toUpperCase()),
+                  seconds: analysis.hrZoneSeconds[zones[i]] ?? 0,
+                  total: totals,
+                  maxSec: maxSec,
+                  color: zoneColors[i],
+                ),
+                if (i < zones.length - 1) const SizedBox(height: 10),
+              ],
+              if (totals == 0) ...[
+                const SizedBox(height: 8),
+                Text(
+                  l10n.polarAnalysisNoZones,
+                  style: TextStyle(color: colors.textSecondary),
+                ),
+              ],
+            ],
+          ),
+        ),
+      ],
     );
   }
 

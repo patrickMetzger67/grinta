@@ -1,4 +1,5 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:grinta/util/polar_hr_stats.dart';
 
 /// Cardio-oriented session analysis for Polar team-kit sensors
 /// (Verity Sense, Loop, …) — **not** pitch GPS.
@@ -20,6 +21,9 @@ class PolarSessionAnalysis {
     this.minHrBpm,
     this.hrSamplesCount = 0,
     this.hrZoneSeconds = const <String, int>{},
+    this.hrTimeline = const <PolarHrTimelinePoint>[],
+    this.hrTimelineBucketMinutes = 5,
+    this.hrMaxUsedBpm,
     this.caloriesKcal,
     this.distanceMeters,
     this.steps,
@@ -57,6 +61,15 @@ class PolarSessionAnalysis {
 
   /// Seconds spent in each HR zone (`z1`…`z5` or custom keys).
   final Map<String, int> hrZoneSeconds;
+
+  /// 5-minute (or [hrTimelineBucketMinutes]) avg HR synthesis for charts.
+  final List<PolarHrTimelinePoint> hrTimeline;
+
+  /// Bucket size used to build [hrTimeline] (minutes).
+  final int hrTimelineBucketMinutes;
+
+  /// HRmax used for % zones at import time (null → absolute BPM bands).
+  final int? hrMaxUsedBpm;
 
   /// Loop / activity extras (usually null on Verity Sense).
   final double? caloriesKcal;
@@ -100,6 +113,9 @@ class PolarSessionAnalysis {
       'minHrBpm': minHrBpm,
       'hrSamplesCount': hrSamplesCount,
       'hrZoneSeconds': hrZoneSeconds,
+      'hrTimeline': hrTimeline.map((p) => p.toMap()).toList(growable: false),
+      'hrTimelineBucketMinutes': hrTimelineBucketMinutes,
+      'hrMaxUsedBpm': hrMaxUsedBpm,
       'caloriesKcal': caloriesKcal,
       'distanceMeters': distanceMeters,
       'steps': steps,
@@ -130,6 +146,9 @@ class PolarSessionAnalysis {
       minHrBpm: _toNullableInt(map['minHrBpm']),
       hrSamplesCount: _toInt(map['hrSamplesCount']),
       hrZoneSeconds: _toIntMap(map['hrZoneSeconds']),
+      hrTimeline: _toTimeline(map['hrTimeline']),
+      hrTimelineBucketMinutes: _timelineBucketMinutes(map['hrTimelineBucketMinutes']),
+      hrMaxUsedBpm: _toNullableInt(map['hrMaxUsedBpm']),
       caloriesKcal: _toNullableDouble(map['caloriesKcal']),
       distanceMeters: _toNullableDouble(map['distanceMeters']),
       steps: _toNullableInt(map['steps']),
@@ -163,6 +182,9 @@ class PolarSessionAnalysis {
     int? minHrBpm,
     int? hrSamplesCount,
     Map<String, int>? hrZoneSeconds,
+    List<PolarHrTimelinePoint>? hrTimeline,
+    int? hrTimelineBucketMinutes,
+    int? hrMaxUsedBpm,
     double? caloriesKcal,
     double? distanceMeters,
     int? steps,
@@ -187,6 +209,10 @@ class PolarSessionAnalysis {
       minHrBpm: minHrBpm ?? this.minHrBpm,
       hrSamplesCount: hrSamplesCount ?? this.hrSamplesCount,
       hrZoneSeconds: hrZoneSeconds ?? this.hrZoneSeconds,
+      hrTimeline: hrTimeline ?? this.hrTimeline,
+      hrTimelineBucketMinutes:
+          hrTimelineBucketMinutes ?? this.hrTimelineBucketMinutes,
+      hrMaxUsedBpm: hrMaxUsedBpm ?? this.hrMaxUsedBpm,
       caloriesKcal: caloriesKcal ?? this.caloriesKcal,
       distanceMeters: distanceMeters ?? this.distanceMeters,
       steps: steps ?? this.steps,
@@ -234,6 +260,29 @@ class PolarSessionAnalysis {
       out[key.toString()] = _toInt(value);
     });
     return out;
+  }
+
+  static List<PolarHrTimelinePoint> _toTimeline(dynamic v) {
+    if (v is! List) return const <PolarHrTimelinePoint>[];
+    final out = <PolarHrTimelinePoint>[];
+    for (final item in v) {
+      if (item is Map<String, dynamic>) {
+        out.add(PolarHrTimelinePoint.fromMap(item));
+      } else if (item is Map) {
+        out.add(
+          PolarHrTimelinePoint.fromMap(
+            item.map((key, value) => MapEntry(key.toString(), value)),
+          ),
+        );
+      }
+    }
+    return out;
+  }
+
+  static int _timelineBucketMinutes(dynamic v) {
+    final parsed = _toInt(v);
+    if (parsed <= 0) return 5;
+    return parsed.clamp(1, 120);
   }
 }
 
