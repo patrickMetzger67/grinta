@@ -287,7 +287,6 @@ class _TeamBasicsFormDialogState extends State<TeamBasicsFormDialog> {
   }
 
   Widget _buildCountryDropdown(BuildContext context) {
-    final colors = context.appColors;
     final l10n = context.l10n;
     final locale = Localizations.localeOf(context);
 
