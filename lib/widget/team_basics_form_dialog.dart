@@ -5,6 +5,7 @@ import 'package:grinta/provider/appSession.dart';
 import 'package:grinta/services/countries_service.dart';
 import 'package:grinta/util/app_theme.dart';
 import 'package:grinta/widget/club_picker_sheet.dart';
+import 'package:grinta/widget/country_flag_image.dart';
 import 'package:grinta/widget/equipe_picker_sheet.dart';
 import 'package:provider/provider.dart';
 
@@ -332,30 +333,33 @@ class _TeamBasicsFormDialogState extends State<TeamBasicsFormDialog> {
       decoration: InputDecoration(
         labelText: l10n.teamCreationSelectCountry,
       ),
+      selectedItemBuilder: (context) {
+        return items.map((country) {
+          return Align(
+            alignment: AlignmentDirectional.centerStart,
+            child: Row(
+              children: [
+                CountryFlagImage(country: country),
+                const SizedBox(width: 10),
+                Flexible(
+                  child: Text(
+                    country.labelForLocale(locale),
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
+              ],
+            ),
+          );
+        }).toList();
+      },
       items: items
           .map(
             (country) => DropdownMenuItem<String>(
               value: country.code,
               child: Row(
                 children: [
-                  if (country.flagUrl != null &&
-                      country.flagUrl!.isNotEmpty) ...[
-                    ClipRRect(
-                      borderRadius: BorderRadius.circular(2),
-                      child: Image.network(
-                        country.flagUrl!,
-                        width: 24,
-                        height: 16,
-                        fit: BoxFit.cover,
-                        errorBuilder: (_, __, ___) => Icon(
-                          Icons.flag_outlined,
-                          size: 18,
-                          color: colors.textSecondary,
-                        ),
-                      ),
-                    ),
-                    const SizedBox(width: 10),
-                  ],
+                  CountryFlagImage(country: country),
+                  const SizedBox(width: 10),
                   Expanded(
                     child: Text(country.labelForLocale(locale)),
                   ),

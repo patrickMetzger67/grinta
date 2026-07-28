@@ -18,6 +18,13 @@ class CountryDefinition {
   final Map<String, String> names;
   final String? flagUrl;
 
+  /// Bundled flag asset (`assets/images/flags/{CODE}.png`).
+  String get flagAssetPath => 'assets/images/flags/$code.png';
+
+  /// Public CDN fallback when Storage / asset is missing.
+  String get flagCdnUrl =>
+      'https://flagcdn.com/w80/${code.toLowerCase()}.png';
+
   String labelForLocale(Locale locale) {
     final language = locale.languageCode.toLowerCase();
     final direct = names[language]?.trim();
