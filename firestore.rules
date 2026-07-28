@@ -290,7 +290,8 @@ service cloud.firestore {
           'eshop',
           'invitation',
           'activity',
-          'playerPositions'
+          'playerPositions',
+          'countries'
         ];
       allow write: if isRootUser()
         && docId in [
@@ -298,7 +299,8 @@ service cloud.firestore {
           'eshop',
           'invitation',
           'activity',
-          'playerPositions'
+          'playerPositions',
+          'countries'
         ];
     }
 

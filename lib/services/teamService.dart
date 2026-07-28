@@ -313,6 +313,7 @@ class TeamService {
     required int soccerType,
     String? clubId,
     String? teamIdInTeamsPerClub,
+    String? country,
   }) async {
     final trimmedTeamId = teamId.trim();
     final trimmedName = name.trim();
@@ -325,10 +326,14 @@ class TeamService {
 
     final trimmedClubId = clubId?.trim();
     final trimmedEquipeId = teamIdInTeamsPerClub?.trim();
+    final trimmedCountry = country?.trim().toUpperCase() ?? '';
+    final resolvedCountry =
+        trimmedCountry.isEmpty ? 'FR' : trimmedCountry;
 
     await _collection.doc(trimmedTeamId).update(<String, dynamic>{
       keyTeamName: trimmedName,
       keyTeamSoccerType: soccerType,
+      keyTeamCountry: resolvedCountry,
       keyTeamClubId: (trimmedClubId == null || trimmedClubId.isEmpty)
           ? FieldValue.delete()
           : trimmedClubId,

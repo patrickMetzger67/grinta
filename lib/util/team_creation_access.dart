@@ -152,6 +152,7 @@ Future<void> openTeamCreationFlow(BuildContext context) async {
       teamIdInTeamsPerClub: _firstSelectedEquipeId(draft.selectedEquipes),
       category: player?.category,
       clubId: draft.clubAffiliation,
+      country: draft.country,
       isGrinta: true,
       uid: userId,
       grintaPlayers: creatorGrintaPlayer == null

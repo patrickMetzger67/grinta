@@ -1156,6 +1156,12 @@ abstract class AppLocalizations {
   /// **'Souhaitez-vous attacher cette équipe à un club ?'**
   String get teamCreationAttachClubQuestion;
 
+  /// No description provided for @teamCreationSelectCountry.
+  ///
+  /// In fr, this message translates to:
+  /// **'Sélectionner un pays'**
+  String get teamCreationSelectCountry;
+
   /// No description provided for @teamCreationSelectClub.
   ///
   /// In fr, this message translates to:

@@ -273,6 +273,7 @@
   "actionLogoutConfirmMessage": "Souhaites-tu vraiment te déconnecter ?",
   "actionCreateTeam": "Créer une équipe",
   "teamCreationAttachClubQuestion": "Souhaitez-vous attacher cette équipe à un club ?",
+  "teamCreationSelectCountry": "Sélectionner un pays",
   "teamCreationSelectClub": "Sélectionner un club",
   "teamCreationClubRequired": "Veuillez sélectionner un club",
   "teamCreationSelectClubTeams": "Sélectionner des équipes",

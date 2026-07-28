@@ -610,6 +610,9 @@ class AppLocalizationsDe extends AppLocalizations {
       'Möchten Sie dieses Team einem Verein zuordnen?';
 
   @override
+  String get teamCreationSelectCountry => 'Land auswählen';
+
+  @override
   String get teamCreationSelectClub => 'Verein auswählen';
 
   @override

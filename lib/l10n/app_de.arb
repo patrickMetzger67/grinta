@@ -319,6 +319,7 @@
   "actionLogoutConfirmMessage": "Möchten Sie sich wirklich abmelden?",
   "actionCreateTeam": "Team erstellen",
   "teamCreationAttachClubQuestion": "Möchten Sie dieses Team einem Verein zuordnen?",
+  "teamCreationSelectCountry": "Land auswählen",
   "teamCreationSelectClub": "Verein auswählen",
   "teamCreationClubRequired": "Bitte wählen Sie einen Verein aus",
   "teamCreationSelectClubTeams": "Vereinsmannschaften auswählen",

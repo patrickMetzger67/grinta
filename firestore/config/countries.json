@@ -1,0 +1,124 @@
+{
+  "countries": [
+    {
+      "code": "DE",
+      "available": false,
+      "flagUrl": "https://firebasestorage.googleapis.com/v0/b/aserstein-2453e.appspot.com/o/flags%2FDE.png?alt=media",
+      "names": {
+        "fr": "Allemagne",
+        "en": "Germany",
+        "de": "Deutschland",
+        "es": "Alemania",
+        "it": "Germania"
+      }
+    },
+    {
+      "code": "AT",
+      "available": false,
+      "flagUrl": "https://firebasestorage.googleapis.com/v0/b/aserstein-2453e.appspot.com/o/flags%2FAT.png?alt=media",
+      "names": {
+        "fr": "Autriche",
+        "en": "Austria",
+        "de": "Österreich",
+        "es": "Austria",
+        "it": "Austria"
+      }
+    },
+    {
+      "code": "BE",
+      "available": false,
+      "flagUrl": "https://firebasestorage.googleapis.com/v0/b/aserstein-2453e.appspot.com/o/flags%2FBE.png?alt=media",
+      "names": {
+        "fr": "Belgique",
+        "en": "Belgium",
+        "de": "Belgien",
+        "es": "Bélgica",
+        "it": "Belgio"
+      }
+    },
+    {
+      "code": "ES",
+      "available": false,
+      "flagUrl": "https://firebasestorage.googleapis.com/v0/b/aserstein-2453e.appspot.com/o/flags%2FES.png?alt=media",
+      "names": {
+        "fr": "Espagne",
+        "en": "Spain",
+        "de": "Spanien",
+        "es": "España",
+        "it": "Spagna"
+      }
+    },
+    {
+      "code": "FR",
+      "available": true,
+      "flagUrl": "https://firebasestorage.googleapis.com/v0/b/aserstein-2453e.appspot.com/o/flags%2FFR.png?alt=media",
+      "names": {
+        "fr": "France",
+        "en": "France",
+        "de": "Frankreich",
+        "es": "Francia",
+        "it": "Francia"
+      }
+    },
+    {
+      "code": "IT",
+      "available": false,
+      "flagUrl": "https://firebasestorage.googleapis.com/v0/b/aserstein-2453e.appspot.com/o/flags%2FIT.png?alt=media",
+      "names": {
+        "fr": "Italie",
+        "en": "Italy",
+        "de": "Italien",
+        "es": "Italia",
+        "it": "Italia"
+      }
+    },
+    {
+      "code": "LU",
+      "available": false,
+      "flagUrl": "https://firebasestorage.googleapis.com/v0/b/aserstein-2453e.appspot.com/o/flags%2FLU.png?alt=media",
+      "names": {
+        "fr": "Luxembourg",
+        "en": "Luxembourg",
+        "de": "Luxemburg",
+        "es": "Luxemburgo",
+        "it": "Lussemburgo"
+      }
+    },
+    {
+      "code": "NL",
+      "available": false,
+      "flagUrl": "https://firebasestorage.googleapis.com/v0/b/aserstein-2453e.appspot.com/o/flags%2FNL.png?alt=media",
+      "names": {
+        "fr": "Pays-Bas",
+        "en": "Netherlands",
+        "de": "Niederlande",
+        "es": "Países Bajos",
+        "it": "Paesi Bassi"
+      }
+    },
+    {
+      "code": "PT",
+      "available": false,
+      "flagUrl": "https://firebasestorage.googleapis.com/v0/b/aserstein-2453e.appspot.com/o/flags%2FPT.png?alt=media",
+      "names": {
+        "fr": "Portugal",
+        "en": "Portugal",
+        "de": "Portugal",
+        "es": "Portugal",
+        "it": "Portogallo"
+      }
+    },
+    {
+      "code": "CH",
+      "available": false,
+      "flagUrl": "https://firebasestorage.googleapis.com/v0/b/aserstein-2453e.appspot.com/o/flags%2FCH.png?alt=media",
+      "names": {
+        "fr": "Suisse",
+        "en": "Switzerland",
+        "de": "Schweiz",
+        "es": "Suiza",
+        "it": "Svizzera"
+      }
+    }
+  ]
+}

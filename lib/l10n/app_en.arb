@@ -271,6 +271,7 @@
   "actionLogoutConfirmMessage": "Do you really want to log out?",
   "actionCreateTeam": "Create a team",
   "teamCreationAttachClubQuestion": "Would you like to attach this team to a club?",
+  "teamCreationSelectCountry": "Select a country",
   "teamCreationSelectClub": "Select a club",
   "teamCreationClubRequired": "Please select a club",
   "teamCreationSelectClubTeams": "Select club teams",

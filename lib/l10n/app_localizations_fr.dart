@@ -608,6 +608,9 @@ class AppLocalizationsFr extends AppLocalizations {
       'Souhaitez-vous attacher cette équipe à un club ?';
 
   @override
+  String get teamCreationSelectCountry => 'Sélectionner un pays';
+
+  @override
   String get teamCreationSelectClub => 'Sélectionner un club';
 
   @override

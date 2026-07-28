@@ -63,6 +63,7 @@ Future<bool> editTeamName(
     submitLabel: context.l10n.actionSave,
     initialName: team.name ?? '',
     initialSoccerType: team.soccerType ?? 11,
+    initialCountry: team.resolvedCountry,
     initialClubAffiliation: clubId.isEmpty ? null : clubId,
     initialClubName: club?.name,
     initialClubLogo: club?.logo,
@@ -82,6 +83,7 @@ Future<bool> editTeamName(
       teamId: teamId,
       name: draft.name,
       soccerType: draft.soccerType,
+      country: draft.country,
       clubId: clubAffiliation,
       teamIdInTeamsPerClub: firstEquipeId,
     );
@@ -102,6 +104,7 @@ Future<bool> editTeamName(
 
     team.name = draft.name;
     team.soccerType = draft.soccerType;
+    team.country = draft.country;
     team.clubId = clubAffiliation;
     team.teamIdInTeamsPerClub = firstEquipeId;
 

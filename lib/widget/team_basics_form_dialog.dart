@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:grinta/core/extensions/l10n_extension.dart';
 import 'package:grinta/model/teams_per_club.dart';
 import 'package:grinta/provider/appSession.dart';
+import 'package:grinta/services/countries_service.dart';
 import 'package:grinta/util/app_theme.dart';
 import 'package:grinta/widget/club_picker_sheet.dart';
 import 'package:grinta/widget/equipe_picker_sheet.dart';
@@ -12,12 +13,15 @@ class TeamBasicsFormResult {
   const TeamBasicsFormResult({
     required this.name,
     required this.soccerType,
+    required this.country,
     this.clubAffiliation,
     this.selectedEquipes = const <Equipe>[],
   });
 
   final String name;
   final int soccerType;
+  /// ISO country code (never empty; defaults to France).
+  final String country;
   final String? clubAffiliation;
   final List<Equipe> selectedEquipes;
 }
@@ -29,6 +33,7 @@ Future<TeamBasicsFormResult?> showTeamBasicsFormDialog(
   required String submitLabel,
   String initialName = '',
   int initialSoccerType = 11,
+  String? initialCountry,
   String? initialClubAffiliation,
   String? initialClubName,
   String? initialClubLogo,
@@ -42,6 +47,7 @@ Future<TeamBasicsFormResult?> showTeamBasicsFormDialog(
       submitLabel: submitLabel,
       initialName: initialName,
       initialSoccerType: initialSoccerType,
+      initialCountry: initialCountry,
       initialClubAffiliation: initialClubAffiliation,
       initialClubName: initialClubName,
       initialClubLogo: initialClubLogo,
@@ -58,6 +64,7 @@ class TeamBasicsFormDialog extends StatefulWidget {
     required this.submitLabel,
     this.initialName = '',
     this.initialSoccerType = 11,
+    this.initialCountry,
     this.initialClubAffiliation,
     this.initialClubName,
     this.initialClubLogo,
@@ -69,6 +76,7 @@ class TeamBasicsFormDialog extends StatefulWidget {
   final String submitLabel;
   final String initialName;
   final int initialSoccerType;
+  final String? initialCountry;
   final String? initialClubAffiliation;
   final String? initialClubName;
   final String? initialClubLogo;
@@ -90,6 +98,9 @@ class _TeamBasicsFormDialogState extends State<TeamBasicsFormDialog> {
   String? _clubValidationError;
   List<Equipe> _selectedEquipes = <Equipe>[];
   late int _selectedSoccerType;
+  late String _selectedCountry;
+  List<CountryDefinition> _availableCountries = const <CountryDefinition>[];
+  bool _countriesLoading = true;
   String? _autoFilledTeamName;
 
   @override
@@ -97,12 +108,37 @@ class _TeamBasicsFormDialogState extends State<TeamBasicsFormDialog> {
     super.initState();
     _nameController = TextEditingController(text: widget.initialName);
     _selectedSoccerType = widget.initialSoccerType;
+    _selectedCountry =
+        CountriesService.normalizeCountryCode(widget.initialCountry);
     final affiliation = widget.initialClubAffiliation?.trim();
     _attachToClub = affiliation != null && affiliation.isNotEmpty;
     _selectedAffiliation = _attachToClub ? affiliation : null;
     _selectedClubName = widget.initialClubName?.trim();
     _selectedClubLogo = widget.initialClubLogo?.trim();
     _selectedEquipes = List<Equipe>.from(widget.initialEquipes);
+    _loadCountries();
+  }
+
+  Future<void> _loadCountries() async {
+    await CountriesService.instance.ensureInitialized();
+    if (!mounted) return;
+    final locale = Localizations.localeOf(context);
+    final available =
+        CountriesService.instance.availableSorted(locale);
+    setState(() {
+      _availableCountries = available;
+      _countriesLoading = false;
+      if (available.isEmpty) {
+        _selectedCountry = kDefaultCountryCode;
+        return;
+      }
+      final codes = available.map((c) => c.code).toSet();
+      if (!codes.contains(_selectedCountry)) {
+        _selectedCountry = codes.contains(kDefaultCountryCode)
+            ? kDefaultCountryCode
+            : available.first.code;
+      }
+    });
   }
 
   @override
@@ -241,10 +277,107 @@ class _TeamBasicsFormDialogState extends State<TeamBasicsFormDialog> {
       TeamBasicsFormResult(
         name: resolvedName,
         soccerType: _selectedSoccerType,
+        country: CountriesService.normalizeCountryCode(_selectedCountry),
         clubAffiliation: _attachToClub ? _selectedAffiliation : null,
         selectedEquipes:
             _attachToClub ? _selectedEquipes : const <Equipe>[],
       ),
+    );
+  }
+
+  Widget _buildCountryDropdown(BuildContext context) {
+    final colors = context.appColors;
+    final l10n = context.l10n;
+    final locale = Localizations.localeOf(context);
+
+    if (_countriesLoading) {
+      return InputDecorator(
+        decoration: InputDecoration(
+          labelText: l10n.teamCreationSelectCountry,
+        ),
+        child: const SizedBox(
+          height: 24,
+          child: Align(
+            alignment: Alignment.centerLeft,
+            child: SizedBox(
+              width: 18,
+              height: 18,
+              child: CircularProgressIndicator(strokeWidth: 2),
+            ),
+          ),
+        ),
+      );
+    }
+
+    final items = _availableCountries;
+    if (items.isEmpty) {
+      return InputDecorator(
+        decoration: InputDecoration(
+          labelText: l10n.teamCreationSelectCountry,
+        ),
+        child: Text(
+          CountriesService.instance
+                  .byCode(kDefaultCountryCode)
+                  ?.labelForLocale(locale) ??
+              'France',
+          style: Theme.of(context).textTheme.bodyLarge,
+        ),
+      );
+    }
+
+    return DropdownButtonFormField<String>(
+      // ignore: deprecated_member_use
+      value: _selectedCountry,
+      isExpanded: true,
+      decoration: InputDecoration(
+        labelText: l10n.teamCreationSelectCountry,
+      ),
+      items: items
+          .map(
+            (country) => DropdownMenuItem<String>(
+              value: country.code,
+              child: Row(
+                children: [
+                  if (country.flagUrl != null &&
+                      country.flagUrl!.isNotEmpty) ...[
+                    ClipRRect(
+                      borderRadius: BorderRadius.circular(2),
+                      child: Image.network(
+                        country.flagUrl!,
+                        width: 24,
+                        height: 16,
+                        fit: BoxFit.cover,
+                        errorBuilder: (_, __, ___) => Icon(
+                          Icons.flag_outlined,
+                          size: 18,
+                          color: colors.textSecondary,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 10),
+                  ],
+                  Expanded(
+                    child: Text(country.labelForLocale(locale)),
+                  ),
+                ],
+              ),
+            ),
+          )
+          .toList(),
+      onChanged: (value) {
+        if (value == null) return;
+        setState(() {
+          if (_selectedCountry != value) {
+            _selectedCountry = value;
+            _selectedAffiliation = null;
+            _selectedClubName = null;
+            _selectedClubLogo = null;
+            _selectedEquipes = <Equipe>[];
+            _clubValidationError = null;
+            _clearAutoFilledTeamNameIfNeeded();
+          }
+        });
+      },
     );
   }
 
@@ -339,6 +472,8 @@ class _TeamBasicsFormDialogState extends State<TeamBasicsFormDialog> {
                     },
                   ),
                   if (_attachToClub) ...[
+                    const SizedBox(height: 12),
+                    _buildCountryDropdown(context),
                     const SizedBox(height: 12),
                     InkWell(
                       onTap: _pickClub,
