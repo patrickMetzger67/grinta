@@ -58,8 +58,10 @@ class _DashboardScreenState extends State<DashboardScreen> {
   final MatchService _matchService = MatchService();
   final TrainingService _trainingService = TrainingService();
   final MatchCompoService _matchCompoService = MatchCompoService();
-  final PersonalSportActivityService _personalSportService =
-      PersonalSportActivityService();
+  // Lazy: survives hot reload when this field is added to an existing State.
+  PersonalSportActivityService? _personalSportService;
+  PersonalSportActivityService get _personalSports =>
+      _personalSportService ??= PersonalSportActivityService();
 
   String? _selectedTeamId;
   Season? currentSeason;
@@ -655,7 +657,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
       }
 
       return StreamBuilder<List<PersonalSportActivity>>(
-        stream: _personalSportService.watchForMemberBetweenDates(
+        stream: _personalSports.watchForMemberBetweenDates(
           memberId: memberId,
           start: range.start,
           end: range.end,
