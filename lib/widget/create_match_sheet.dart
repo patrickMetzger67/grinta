@@ -970,15 +970,21 @@ class _CreateMatchSheetState extends State<CreateMatchSheet> {
                     ),
                     items: _venueFields
                         .map(
-                          (FieldClub field) => DropdownMenuItem<String>(
-                            value: field.id,
-                            child: Text(
-                              field.name.trim().isNotEmpty
-                                  ? field.name.trim()
-                                  : field.id,
-                              overflow: TextOverflow.ellipsis,
-                            ),
-                          ),
+                          (FieldClub field) {
+                            final name = field.name.trim().isNotEmpty
+                                ? field.name.trim()
+                                : field.id;
+                            final gpsLabel = field.hasUsableFieldGpsCorners
+                                ? l10n.adminTrackerFieldsGpsReady
+                                : l10n.adminTrackerFieldsGpsMissing;
+                            return DropdownMenuItem<String>(
+                              value: field.id,
+                              child: Text(
+                                '$name · $gpsLabel',
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            );
+                          },
                         )
                         .toList(),
                     onChanged: (String? fieldId) {

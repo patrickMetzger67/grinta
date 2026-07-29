@@ -5,9 +5,9 @@ import 'package:grinta/model/player.dart';
 import 'package:grinta/model/training.dart';
 import 'package:grinta/screen/team_players/training_team_players_tracker.dart';
 import 'package:grinta/services/playerService.dart';
-import 'package:grinta/services/tracker_field_service.dart';
 import 'package:grinta/services/training_intense_sync_service.dart';
 import 'package:grinta/util/app_theme.dart';
+import 'package:grinta/util/field_gps_localization_helper.dart';
 import 'package:grinta/util/insiders_device_resolver.dart';
 import 'package:grinta/util/training_finish_helper.dart';
 
@@ -152,13 +152,10 @@ class _TrainingIntenseFinishDialogState extends State<TrainingIntenseFinishDialo
         );
       }
 
-      FieldGpsCorners? fieldGpsCorners;
-      final fieldId = widget.training.fieldId?.trim();
-      if (fieldId != null && fieldId.isNotEmpty) {
-        final trackerField =
-            await TrackerFieldService().getById(fieldId);
-        fieldGpsCorners = trackerField?.fieldGpsCorners;
-      }
+      final fieldGpsCorners =
+          await FieldGpsLocalizationHelper.loadFieldGpsCornersByFieldId(
+        widget.training.fieldId,
+      );
 
       final window = widget.resync
           ? resolveTrainingIntenseResyncWindow(widget.training)
