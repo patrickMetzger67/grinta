@@ -383,6 +383,9 @@ class AppLocalizationsEn extends AppLocalizations {
       'Member added, but the invitation email could not be sent.';
 
   @override
+  String get memberInvitationEmailSent => 'Invitation email sent';
+
+  @override
   String get memberAddedToTeamNotificationTitle => 'Team update';
 
   @override
@@ -401,6 +404,9 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get resendInvitationTooltip => 'Resend invitation email';
+
+  @override
+  String get resendInvitationAction => 'Resend invitation';
 
   @override
   String get resendInvitationNoEmailTooltip =>

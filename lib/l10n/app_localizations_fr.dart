@@ -386,6 +386,9 @@ class AppLocalizationsFr extends AppLocalizations {
       'Membre ajouté, mais l\'envoi de l\'e-mail d\'invitation a échoué.';
 
   @override
+  String get memberInvitationEmailSent => 'E-mail d\'invitation envoyé';
+
+  @override
   String get memberAddedToTeamNotificationTitle => 'Mise à jour d\'équipe';
 
   @override
@@ -404,6 +407,9 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get resendInvitationTooltip => 'Renvoyer l\'e-mail d\'invitation';
+
+  @override
+  String get resendInvitationAction => 'Renvoyer l\'invitation';
 
   @override
   String get resendInvitationNoEmailTooltip =>
