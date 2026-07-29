@@ -1,10 +1,13 @@
 import 'package:flutter/foundation.dart';
+import 'package:flutter/services.dart' show rootBundle;
 import 'package:grinta/model/player.dart';
 import 'package:grinta/model/team.dart';
 import 'package:grinta/screen/coach_workload_analysis/coach_workload_analysis_models.dart';
 import 'package:grinta/services/coach_workload_analysis_service.dart';
 import 'package:grinta/util/playerDisplayName.dart';
+import 'package:grinta/util/player_age.dart';
 import 'package:grinta/util/player_photo_resolver.dart';
+import 'package:grinta/util/svg_rasterizer.dart';
 import 'package:http/http.dart' as http;
 import 'package:intl/intl.dart';
 import 'package:pdf/pdf.dart';
@@ -39,6 +42,7 @@ class CoachWorkloadReportPdfService {
     String localeCode = 'fr',
   }) async {
     final photosByMemberId = await _loadPhotos(report.summaries);
+    final sourceLogos = await _loadSourceLogos();
     final details = await _loadPlayerDetails(
       report: report,
       team: team,
@@ -84,37 +88,33 @@ class CoachWorkloadReportPdfService {
       final photo = photosByMemberId[summary.memberId.trim()];
       doc.addPage(
         pw.MultiPage(
-          pageFormat: PdfPageFormat.a4,
-          margin: const pw.EdgeInsets.fromLTRB(22, 18, 22, 18),
-          header: (context) => _reportHeader(
-            title: playerDisplayName(summary.player),
-            subtitle: 'Analyse charge - $teamName  |  $periodLabel',
+          pageFormat: PdfPageFormat.a4.landscape,
+          margin: const pw.EdgeInsets.fromLTRB(16, 12, 16, 10),
+          header: (context) => _buildPlayerPageHeader(
+            teamName: teamName,
+            periodLabel: periodLabel,
+            generatedLabel: generatedLabel,
+            summary: summary,
+            photoBytes: photo,
           ),
           footer: (context) => _reportFooter(context),
           build: (context) => [
-            _buildPlayerRecap(
-              summary: summary,
-              photoBytes: photo,
-            ),
-            pw.SizedBox(height: 14),
-            pw.Text(
-              _ascii('Activites'),
-              style: pw.TextStyle(
-                color: _textPrimary,
-                fontSize: 13,
-                fontWeight: pw.FontWeight.bold,
-              ),
-            ),
-            pw.SizedBox(height: 8),
+            _sectionTitle('Recap'),
+            pw.SizedBox(height: 6),
+            _buildPlayerRecapGrid(summary),
+            pw.SizedBox(height: 12),
+            _sectionTitle('Activites'),
+            pw.SizedBox(height: 6),
             if (detail.activities.isEmpty)
               pw.Text(
                 _ascii('Aucune activite sur cette periode.'),
-                style: const pw.TextStyle(color: _textSecondary, fontSize: 10),
+                style: const pw.TextStyle(color: _textSecondary, fontSize: 9),
               )
             else
-              _buildActivitiesTable(
+              _buildActivitiesList(
                 activities: detail.activities,
                 dateFmt: dateFmt,
+                sourceLogos: sourceLogos,
               ),
           ],
         ),
@@ -164,6 +164,51 @@ class CoachWorkloadReportPdfService {
       );
       out.addAll(results);
     }
+    return out;
+  }
+
+  Future<Map<String, Uint8List>> _loadSourceLogos() async {
+    final out = <String, Uint8List>{};
+
+    Future<void> loadSvg(String key, String assetPath) async {
+      try {
+        final svg = await rootBundle.loadString(assetPath);
+        final bytes = await svgStringToPngBytes(svg, targetWidth: 72);
+        if (bytes != null && bytes.isNotEmpty) {
+          out[key] = bytes;
+        }
+      } catch (e) {
+        if (kDebugMode) {
+          debugPrint(
+            'CoachWorkloadReportPdfService: logo SVG load failed ($key): $e',
+          );
+        }
+      }
+    }
+
+    Future<void> loadPng(String key, String assetPath) async {
+      try {
+        final data = await rootBundle.load(assetPath);
+        final bytes = data.buffer.asUint8List();
+        if (bytes.isNotEmpty) {
+          out[key] = bytes;
+        }
+      } catch (e) {
+        if (kDebugMode) {
+          debugPrint(
+            'CoachWorkloadReportPdfService: logo PNG load failed ($key): $e',
+          );
+        }
+      }
+    }
+
+    await Future.wait([
+      loadSvg('strava', 'assets/images/strava_logo.svg'),
+      loadPng('polar', 'assets/images/polar_logo.png'),
+      loadSvg('whoop', 'assets/images/whoop_logo.svg'),
+      loadSvg('applehealth', 'assets/images/apple_forme_logo.svg'),
+      loadSvg('googlehealth', 'assets/images/google_fit_logo.svg'),
+    ]);
     return out;
   }
 
@@ -217,6 +262,112 @@ class CoachWorkloadReportPdfService {
     );
   }
 
+  pw.Widget _buildPlayerPageHeader({
+    required String teamName,
+    required String periodLabel,
+    required String generatedLabel,
+    required CoachPlayerWorkloadSummary summary,
+    required Uint8List? photoBytes,
+  }) {
+    final age = playerAgeYears(summary.player);
+    final ageLabel = age == null ? '-' : '$age ans';
+
+    return pw.Column(
+      crossAxisAlignment: pw.CrossAxisAlignment.stretch,
+      children: [
+        pw.Container(
+          padding: const pw.EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+          decoration: pw.BoxDecoration(
+            color: _surface,
+            borderRadius: pw.BorderRadius.circular(8),
+            border: pw.Border.all(color: _border),
+          ),
+          child: pw.Row(
+            children: [
+              pw.Container(
+                padding: const pw.EdgeInsets.symmetric(
+                  horizontal: 8,
+                  vertical: 5,
+                ),
+                decoration: pw.BoxDecoration(
+                  color: _primary,
+                  borderRadius: pw.BorderRadius.circular(6),
+                ),
+                child: pw.Text(
+                  'GRINTA',
+                  style: pw.TextStyle(
+                    color: _white,
+                    fontSize: 11,
+                    fontWeight: pw.FontWeight.bold,
+                    letterSpacing: 0.8,
+                  ),
+                ),
+              ),
+              pw.SizedBox(width: 10),
+              pw.Expanded(
+                child: pw.Column(
+                  crossAxisAlignment: pw.CrossAxisAlignment.start,
+                  children: [
+                    pw.Text(
+                      _ascii('Analyse charge - $teamName'),
+                      maxLines: 1,
+                      style: pw.TextStyle(
+                        color: _textPrimary,
+                        fontSize: 11,
+                        fontWeight: pw.FontWeight.bold,
+                      ),
+                    ),
+                    pw.Text(
+                      _ascii(periodLabel),
+                      maxLines: 1,
+                      style: const pw.TextStyle(
+                        color: _textSecondary,
+                        fontSize: 8.5,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              pw.SizedBox(width: 10),
+              _playerAvatar(
+                photoBytes,
+                initials: _initials(summary.player),
+                size: 32,
+              ),
+              pw.SizedBox(width: 8),
+              pw.Column(
+                crossAxisAlignment: pw.CrossAxisAlignment.start,
+                children: [
+                  pw.Text(
+                    _ascii(playerDisplayName(summary.player)),
+                    style: pw.TextStyle(
+                      color: _textPrimary,
+                      fontSize: 12,
+                      fontWeight: pw.FontWeight.bold,
+                    ),
+                  ),
+                  pw.Text(
+                    _ascii(ageLabel),
+                    style: const pw.TextStyle(
+                      color: _textSecondary,
+                      fontSize: 8.5,
+                    ),
+                  ),
+                ],
+              ),
+              pw.SizedBox(width: 10),
+              pw.Text(
+                generatedLabel,
+                style: const pw.TextStyle(color: _textSecondary, fontSize: 8),
+              ),
+            ],
+          ),
+        ),
+        pw.SizedBox(height: 8),
+      ],
+    );
+  }
+
   pw.Widget _reportFooter(pw.Context context) {
     return pw.Align(
       alignment: pw.Alignment.centerRight,
@@ -227,10 +378,18 @@ class CoachWorkloadReportPdfService {
     );
   }
 
-  pw.Widget _buildPlayerRecap({
-    required CoachPlayerWorkloadSummary summary,
-    required Uint8List? photoBytes,
-  }) {
+  pw.Widget _sectionTitle(String title) {
+    return pw.Text(
+      _ascii(title),
+      style: pw.TextStyle(
+        color: _textPrimary,
+        fontSize: 11,
+        fontWeight: pw.FontWeight.bold,
+      ),
+    );
+  }
+
+  pw.Widget _buildPlayerRecapGrid(CoachPlayerWorkloadSummary summary) {
     final presence = summary.presencePercent;
     final presenceLabel =
         presence == null ? '-' : '${presence.toStringAsFixed(0)} %';
@@ -239,150 +398,277 @@ class CoachWorkloadReportPdfService {
         : summary.avgWorkloadScore!.toStringAsFixed(0);
     final kmLabel = summary.totalDistanceKm == null
         ? '-'
-        : summary.totalDistanceKm!.toStringAsFixed(1);
+        : '${summary.totalDistanceKm!.toStringAsFixed(1)} km';
 
-    final chips = <String>[
-      'Charge $loadLabel',
-      '$kmLabel km',
-      '${summary.trainingPresent} entrainements',
-      '${summary.personalSportCount} perso',
-      '${summary.matchCount} matchs',
-      'Presence $presenceLabel',
+    final tiles = <(String, String)>[
+      ('Charge', loadLabel),
+      ('Distance', kmLabel),
+      ('Presence', presenceLabel),
+      ('Entrainements', '${summary.trainingPresent}'),
+      ('Matchs', '${summary.matchCount}'),
+      ('Sports perso', '${summary.personalSportCount}'),
+      ('Volume', '${summary.volumeMinutes} min'),
+      ('Seances', '${summary.sessionCount}'),
     ];
 
-    return pw.Container(
-      padding: const pw.EdgeInsets.all(12),
-      decoration: pw.BoxDecoration(
-        color: _surface,
-        borderRadius: const pw.BorderRadius.all(pw.Radius.circular(10)),
-        border: pw.Border.all(color: _border, width: 0.6),
-      ),
-      child: pw.Column(
-        crossAxisAlignment: pw.CrossAxisAlignment.start,
-        children: [
-          pw.Row(
+    final rows = <pw.Widget>[];
+    for (var i = 0; i < tiles.length; i += 4) {
+      final slice = tiles.skip(i).take(4).toList();
+      rows.add(
+        pw.Padding(
+          padding: const pw.EdgeInsets.only(bottom: 5),
+          child: pw.Row(
             children: [
-              _playerAvatar(
-                photoBytes,
-                initials: _initials(summary.player),
-                size: 34,
-              ),
-              pw.SizedBox(width: 10),
-              pw.Expanded(
-                child: pw.Text(
-                  _ascii(playerDisplayName(summary.player)),
-                  style: pw.TextStyle(
-                    color: _textPrimary,
-                    fontSize: 14,
-                    fontWeight: pw.FontWeight.bold,
-                  ),
+              for (var j = 0; j < 4; j++) ...[
+                if (j > 0) pw.SizedBox(width: 5),
+                pw.Expanded(
+                  child: j < slice.length
+                      ? _metricChip(slice[j].$1, slice[j].$2)
+                      : pw.SizedBox(),
                 ),
+              ],
+            ],
+          ),
+        ),
+      );
+    }
+    return pw.Column(children: rows);
+  }
+
+  pw.Widget _metricChip(String label, String value) {
+    return pw.Container(
+      padding: const pw.EdgeInsets.symmetric(horizontal: 8, vertical: 7),
+      decoration: pw.BoxDecoration(
+        color: _white,
+        borderRadius: pw.BorderRadius.circular(6),
+        border: pw.Border.all(color: _border),
+      ),
+      child: pw.Row(
+        children: [
+          pw.Expanded(
+            child: pw.Text(
+              _ascii(label),
+              style: const pw.TextStyle(
+                color: _textSecondary,
+                fontSize: 8.5,
               ),
-            ],
-          ),
-          pw.SizedBox(height: 10),
-          pw.Wrap(
-            spacing: 6,
-            runSpacing: 6,
-            children: [
-              for (final chip in chips) _pdfChip(chip),
-            ],
-          ),
-          pw.SizedBox(height: 8),
-          pw.Text(
-            _ascii(
-              '${summary.trainingPresent} entrainements · '
-              '${summary.matchCount} matchs · '
-              '${summary.personalSportCount} sports perso · '
-              '${summary.volumeMinutes} min',
             ),
-            style: const pw.TextStyle(color: _textSecondary, fontSize: 9),
+          ),
+          pw.Text(
+            _ascii(value),
+            style: pw.TextStyle(
+              color: _textPrimary,
+              fontSize: 10.5,
+              fontWeight: pw.FontWeight.bold,
+            ),
           ),
         ],
       ),
     );
   }
 
-  pw.Widget _pdfChip(String label) {
-    return pw.Container(
-      padding: const pw.EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-      decoration: pw.BoxDecoration(
-        color: _white,
-        borderRadius: const pw.BorderRadius.all(pw.Radius.circular(999)),
-        border: pw.Border.all(color: _border, width: 0.6),
-      ),
-      child: pw.Text(
-        _ascii(label),
-        style: pw.TextStyle(
-          color: _textPrimary,
-          fontSize: 9,
-          fontWeight: pw.FontWeight.bold,
-        ),
-      ),
-    );
-  }
-
-  pw.Widget _buildActivitiesTable({
+  pw.Widget _buildActivitiesList({
     required List<CoachWorkloadActivityItem> activities,
     required DateFormat dateFmt,
+    required Map<String, Uint8List> sourceLogos,
   }) {
     final sorted = List<CoachWorkloadActivityItem>.from(activities)
       ..sort((a, b) => b.startAt.compareTo(a.startAt));
 
-    return pw.Table(
-      border: pw.TableBorder.all(color: _border, width: 0.4),
-      columnWidths: const {
-        0: pw.FlexColumnWidth(1.5),
-        1: pw.FlexColumnWidth(2.2),
-        2: pw.FlexColumnWidth(1.1),
-        3: pw.FlexColumnWidth(1.0),
-        4: pw.FlexColumnWidth(1.0),
-      },
+    return pw.Column(
+      crossAxisAlignment: pw.CrossAxisAlignment.stretch,
       children: [
-        pw.TableRow(
-          decoration: const pw.BoxDecoration(color: _primary),
-          children: [
-            for (final header in const [
-              'Type',
-              'Date',
-              'Duree',
-              'Charge',
-              'Km',
-            ])
-              _headerCell(header),
-          ],
-        ),
+        _activitiesHeaderRow(),
         for (var i = 0; i < sorted.length; i++)
-          pw.TableRow(
-            decoration: i.isOdd ? const pw.BoxDecoration(color: _surface) : null,
-            children: [
-              _valueCell(
-                _activityTypeLabel(sorted[i]),
-                align: pw.Alignment.centerLeft,
-              ),
-              _valueCell(
-                dateFmt.format(sorted[i].startAt),
-                align: pw.Alignment.centerLeft,
-              ),
-              _valueCell(
-                sorted[i].durationMinutes == null ||
-                        sorted[i].durationMinutes! <= 0
-                    ? '-'
-                    : '${sorted[i].durationMinutes} min',
-              ),
-              _valueCell(
-                sorted[i].workloadScore == null
-                    ? '-'
-                    : sorted[i].workloadScore!.toStringAsFixed(0),
-              ),
-              _valueCell(
-                sorted[i].distanceKm == null || sorted[i].distanceKm! <= 0
-                    ? '-'
-                    : sorted[i].distanceKm!.toStringAsFixed(1),
-              ),
-            ],
+          _activityRow(
+            item: sorted[i],
+            dateFmt: dateFmt,
+            sourceLogos: sourceLogos,
+            odd: i.isOdd,
           ),
       ],
+    );
+  }
+
+  pw.Widget _activitiesHeaderRow() {
+    return pw.Container(
+      decoration: const pw.BoxDecoration(
+        color: _primary,
+        borderRadius: pw.BorderRadius.vertical(top: pw.Radius.circular(6)),
+      ),
+      padding: const pw.EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+      child: pw.Row(
+        children: [
+          pw.SizedBox(width: 22),
+          pw.SizedBox(width: 8),
+          pw.Expanded(
+            flex: 28,
+            child: _headerLabel('Activite'),
+          ),
+          pw.Expanded(
+            flex: 22,
+            child: _headerLabel('Date'),
+          ),
+          pw.Expanded(
+            flex: 12,
+            child: _headerLabel('Duree', align: pw.TextAlign.center),
+          ),
+          pw.Expanded(
+            flex: 12,
+            child: _headerLabel('Charge', align: pw.TextAlign.center),
+          ),
+          pw.Expanded(
+            flex: 12,
+            child: _headerLabel('Km', align: pw.TextAlign.center),
+          ),
+        ],
+      ),
+    );
+  }
+
+  pw.Widget _headerLabel(
+    String label, {
+    pw.TextAlign align = pw.TextAlign.left,
+  }) {
+    return pw.Text(
+      _ascii(label),
+      textAlign: align,
+      style: pw.TextStyle(
+        color: _white,
+        fontWeight: pw.FontWeight.bold,
+        fontSize: 9,
+      ),
+    );
+  }
+
+  pw.Widget _activityRow({
+    required CoachWorkloadActivityItem item,
+    required DateFormat dateFmt,
+    required Map<String, Uint8List> sourceLogos,
+    required bool odd,
+  }) {
+    final duration = item.durationMinutes == null || item.durationMinutes! <= 0
+        ? '-'
+        : '${item.durationMinutes} min';
+    final load = item.workloadScore == null
+        ? '-'
+        : item.workloadScore!.toStringAsFixed(0);
+    final km = item.distanceKm == null || item.distanceKm! <= 0
+        ? '-'
+        : item.distanceKm!.toStringAsFixed(1);
+
+    return pw.Container(
+      decoration: pw.BoxDecoration(
+        color: odd ? _surface : _white,
+        border: const pw.Border(
+          left: pw.BorderSide(color: _border, width: 0.5),
+          right: pw.BorderSide(color: _border, width: 0.5),
+          bottom: pw.BorderSide(color: _border, width: 0.5),
+        ),
+      ),
+      padding: const pw.EdgeInsets.symmetric(horizontal: 8, vertical: 5),
+      child: pw.Row(
+        children: [
+          _activityLeadingIcon(item, sourceLogos),
+          pw.SizedBox(width: 8),
+          pw.Expanded(
+            flex: 28,
+            child: pw.Text(
+              _ascii(_activityTypeLabel(item)),
+              maxLines: 1,
+              style: const pw.TextStyle(color: _textPrimary, fontSize: 9),
+            ),
+          ),
+          pw.Expanded(
+            flex: 22,
+            child: pw.Text(
+              _ascii(dateFmt.format(item.startAt)),
+              maxLines: 1,
+              style: const pw.TextStyle(color: _textPrimary, fontSize: 9),
+            ),
+          ),
+          pw.Expanded(
+            flex: 12,
+            child: pw.Text(
+              _ascii(duration),
+              textAlign: pw.TextAlign.center,
+              style: const pw.TextStyle(color: _textPrimary, fontSize: 9),
+            ),
+          ),
+          pw.Expanded(
+            flex: 12,
+            child: pw.Text(
+              _ascii(load),
+              textAlign: pw.TextAlign.center,
+              style: const pw.TextStyle(color: _textPrimary, fontSize: 9),
+            ),
+          ),
+          pw.Expanded(
+            flex: 12,
+            child: pw.Text(
+              _ascii(km),
+              textAlign: pw.TextAlign.center,
+              style: const pw.TextStyle(color: _textPrimary, fontSize: 9),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  pw.Widget _activityLeadingIcon(
+    CoachWorkloadActivityItem item,
+    Map<String, Uint8List> sourceLogos,
+  ) {
+    const size = 16.0;
+
+    if (item.kind == CoachWorkloadActivityKind.personalSport) {
+      final key = (item.personalSport?.externalSource ?? '')
+          .trim()
+          .toLowerCase();
+      final bytes = sourceLogos[key];
+      if (bytes != null && bytes.isNotEmpty) {
+        return pw.SizedBox(
+          width: size,
+          height: size,
+          child: pw.Image(
+            pw.MemoryImage(bytes),
+            fit: pw.BoxFit.contain,
+            width: size,
+            height: size,
+          ),
+        );
+      }
+      return _typeBadge('P', size: size);
+    }
+
+    switch (item.kind) {
+      case CoachWorkloadActivityKind.training:
+        return _typeBadge('E', size: size);
+      case CoachWorkloadActivityKind.match:
+        return _typeBadge('M', size: size);
+      case CoachWorkloadActivityKind.personalSport:
+        return _typeBadge('P', size: size);
+    }
+  }
+
+  pw.Widget _typeBadge(String letter, {double size = 16}) {
+    return pw.Container(
+      width: size,
+      height: size,
+      alignment: pw.Alignment.center,
+      decoration: pw.BoxDecoration(
+        color: _primary,
+        borderRadius: pw.BorderRadius.circular(4),
+      ),
+      child: pw.Text(
+        letter,
+        style: pw.TextStyle(
+          color: _white,
+          fontSize: size * 0.55,
+          fontWeight: pw.FontWeight.bold,
+        ),
+      ),
     );
   }
 
