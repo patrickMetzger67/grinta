@@ -11,9 +11,23 @@ class CoachWorkloadAnalysisEntryButton extends StatelessWidget {
   const CoachWorkloadAnalysisEntryButton({
     super.key,
     this.compact = false,
+    this.onPressed,
   });
 
   final bool compact;
+
+  /// When set (e.g. Dashboard), called instead of the default open helper so
+  /// callers can persist équipe / période before navigation.
+  final Future<void> Function()? onPressed;
+
+  Future<void> _open(BuildContext context) async {
+    final custom = onPressed;
+    if (custom != null) {
+      await custom();
+      return;
+    }
+    await openCoachWorkloadAnalysis(context);
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -30,7 +44,7 @@ class CoachWorkloadAnalysisEntryButton extends StatelessWidget {
     if (compact) {
       return IconButton(
         tooltip: l10n.coachWorkloadAnalysisFabTooltip,
-        onPressed: () => unawaited(openCoachWorkloadAnalysis(context)),
+        onPressed: () => unawaited(_open(context)),
         icon: icon,
       );
     }
@@ -39,7 +53,7 @@ class CoachWorkloadAnalysisEntryButton extends StatelessWidget {
       color: Colors.transparent,
       child: InkWell(
         borderRadius: BorderRadius.circular(14),
-        onTap: () => unawaited(openCoachWorkloadAnalysis(context)),
+        onTap: () => unawaited(_open(context)),
         child: Container(
           width: double.infinity,
           padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
