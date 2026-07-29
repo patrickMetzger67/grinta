@@ -181,6 +181,14 @@ class _CoachPlayerWorkloadDetailScreenState
                         ),
                       ),
                       _RecapStat(
+                        label: l10n.coachWorkloadMetricPersonalSports(
+                          _summary.personalSportCount,
+                        ),
+                        accent: _summary.personalSportCount > 0
+                            ? colors.success
+                            : colors.textSecondary,
+                      ),
+                      _RecapStat(
                         label: l10n.coachWorkloadMetricSessions(
                           _summary.sessionCount,
                         ),

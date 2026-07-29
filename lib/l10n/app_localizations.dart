@@ -4763,6 +4763,12 @@ abstract class AppLocalizations {
   /// **'{count} séances'**
   String coachWorkloadMetricSessions(int count);
 
+  /// No description provided for @coachWorkloadMetricPersonalSports.
+  ///
+  /// In fr, this message translates to:
+  /// **'{count} perso'**
+  String coachWorkloadMetricPersonalSports(int count);
+
   /// No description provided for @coachWorkloadMetricKm.
   ///
   /// In fr, this message translates to:

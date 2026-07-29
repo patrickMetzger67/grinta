@@ -90,8 +90,8 @@ class CoachWorkloadReportPdfService {
             pw.Text(
               _ascii(
                 'Charge = moyenne workload tracker. '
-                'Km = total tracker + sports perso (non prives). '
-                'Vert / orange = vs moyenne equipe.',
+                'Km = total tracker + sports perso (visibilite coach/equipe, hors prive). '
+                'Colonne Perso = nombre d activites sportives personnelles.',
               ),
               style: const pw.TextStyle(color: _textSecondary, fontSize: 9),
             ),

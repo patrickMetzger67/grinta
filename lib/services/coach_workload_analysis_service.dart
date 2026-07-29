@@ -88,7 +88,7 @@ class CoachWorkloadAnalysisService {
       trainings: trainings,
       matches: matches,
     );
-    final personalByMember = await _loadPersonalSportsByMember(
+    final personalByPlayerKey = await _loadPersonalSportsByPlayers(
       players: players,
       start: start,
       end: end,
@@ -99,6 +99,7 @@ class CoachWorkloadAnalysisService {
       final memberId = effectiveMemberId(player)?.trim() ?? '';
       if (memberId.isEmpty) continue;
       final lookupIds = playerMemberLookupIds(player);
+      final playerKey = memberId;
 
       var present = 0;
       var absent = 0;
@@ -122,7 +123,7 @@ class CoachWorkloadAnalysisService {
         matchMinutes += stats.minutesPlayed;
       }
 
-      final personal = personalByMember[memberId] ?? const [];
+      final personal = personalByPlayerKey[playerKey] ?? const [];
       var personalMinutes = 0;
       var personalDistanceKm = 0.0;
       var hasPersonalDistance = false;
@@ -219,13 +220,25 @@ class CoachWorkloadAnalysisService {
       trainings: trainings,
       matches: matches,
     );
-    final personal = memberId.isEmpty
-        ? const <PersonalSportActivity>[]
-        : await _personalSportService.fetchNonPrivateOwnedBetweenDates(
-            memberId: memberId,
-            start: start,
-            end: end,
-          );
+    final personal = <PersonalSportActivity>[];
+    if (lookupIds.isNotEmpty) {
+      final byId = <String, PersonalSportActivity>{};
+      for (final id in lookupIds) {
+        final items =
+            await _personalSportService.fetchNonPrivateOwnedBetweenDates(
+          memberId: id,
+          start: start,
+          end: end,
+        );
+        for (final activity in items) {
+          final activityId = activity.id?.trim();
+          if (activityId == null || activityId.isEmpty) continue;
+          byId[activityId] = activity;
+        }
+      }
+      personal.addAll(byId.values);
+      personal.sort((a, b) => a.startAt.compareTo(b.startAt));
+    }
 
     var present = 0;
     var absent = 0;
@@ -519,31 +532,46 @@ class CoachWorkloadAnalysisService {
     return out;
   }
 
-  Future<Map<String, List<PersonalSportActivity>>> _loadPersonalSportsByMember({
+  /// Loads non-private personal sports for each player, trying all member
+  /// lookup aliases so roster id mismatches still resolve.
+  Future<Map<String, List<PersonalSportActivity>>> _loadPersonalSportsByPlayers({
     required List<Player> players,
     required DateTime start,
     required DateTime end,
   }) async {
     final out = <String, List<PersonalSportActivity>>{};
-    final memberIds = <String>[
-      for (final player in players)
-        if ((effectiveMemberId(player) ?? '').trim().isNotEmpty)
-          effectiveMemberId(player)!.trim(),
-    ];
 
-    for (var i = 0; i < memberIds.length; i += _personalBatchSize) {
-      final batch = memberIds.skip(i).take(_personalBatchSize).toList();
+    for (var i = 0; i < players.length; i += _personalBatchSize) {
+      final batch = players.skip(i).take(_personalBatchSize).toList();
       final results = await Future.wait(
-        batch.map(
-          (memberId) => _personalSportService.fetchNonPrivateOwnedBetweenDates(
-            memberId: memberId,
-            start: start,
-            end: end,
-          ),
-        ),
+        batch.map((player) async {
+          final memberId = effectiveMemberId(player)?.trim() ?? '';
+          if (memberId.isEmpty) {
+            return MapEntry(memberId, const <PersonalSportActivity>[]);
+          }
+          final lookupIds = playerMemberLookupIds(player);
+          final byId = <String, PersonalSportActivity>{};
+          for (final id in lookupIds) {
+            final items =
+                await _personalSportService.fetchNonPrivateOwnedBetweenDates(
+              memberId: id,
+              start: start,
+              end: end,
+            );
+            for (final activity in items) {
+              final activityId = activity.id?.trim();
+              if (activityId == null || activityId.isEmpty) continue;
+              byId[activityId] = activity;
+            }
+          }
+          final merged = byId.values.toList()
+            ..sort((a, b) => a.startAt.compareTo(b.startAt));
+          return MapEntry(memberId, merged);
+        }),
       );
-      for (var j = 0; j < batch.length; j++) {
-        out[batch[j]] = results[j];
+      for (final entry in results) {
+        if (entry.key.isEmpty) continue;
+        out[entry.key] = entry.value;
       }
     }
     return out;

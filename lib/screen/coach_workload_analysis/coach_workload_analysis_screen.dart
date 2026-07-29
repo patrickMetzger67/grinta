@@ -517,6 +517,14 @@ class _PlayerSummaryTile extends StatelessWidget {
                           ),
                         ),
                         _MetricChip(
+                          label: l10n.coachWorkloadMetricPersonalSports(
+                            summary.personalSportCount,
+                          ),
+                          tone: summary.personalSportCount > 0
+                              ? CoachMetricTone.success
+                              : CoachMetricTone.neutral,
+                        ),
+                        _MetricChip(
                           label: l10n.coachWorkloadMetricSessions(
                             summary.sessionCount,
                           ),
