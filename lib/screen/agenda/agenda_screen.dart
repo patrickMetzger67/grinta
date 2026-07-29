@@ -48,7 +48,6 @@ import '../match_detail_screen.dart';
 import '../team_players_screen.dart';
 import 'agenda_add_event_menu.dart';
 import 'agenda_filter_sheet.dart';
-import '../../util/coach_workload_analysis_access.dart';
 import '../../widget/ask_diego/ask_diego_speed_dial.dart';
 import '../../widget/agenda_coach_players_dialog.dart';
 import '../../widget/agenda_training_presence_actions.dart';
@@ -949,9 +948,25 @@ class _AgendaScreenState extends State<AgendaScreen> {
                 parentScreenId: FeatureDiscoveryIds.tabAgenda,
                 excludeCurrentBaseScreen: true,
               ),
-              if (context.watch<AppSession>().hasManagedTeamsInSelectedSeason) ...[
-                const CoachWorkloadAnalysisEntryButton(),
-                const SizedBox(height: 10),
+              if (hideAppBar) ...[
+                Align(
+                  alignment: Alignment.centerRight,
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      if (context
+                          .watch<AppSession>()
+                          .hasManagedTeamsInSelectedSeason)
+                        const CoachWorkloadAnalysisEntryButton(compact: true),
+                      IconButton(
+                        tooltip: l10n.navOverview,
+                        onPressed: _showOverviewPanel,
+                        icon: const Icon(Icons.insert_chart_outlined_rounded),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 4),
               ],
               _GrintaStyleCalendarHeader(
                 pageController: _monthPageController,
@@ -1046,16 +1061,7 @@ class _AgendaScreenState extends State<AgendaScreen> {
               unawaited(_openAgendaFilter());
             },
           ),
-          if (context.watch<AppSession>().hasManagedTeamsInSelectedSeason) ...[
-            AskDiegoPrimaryAction(
-              heroTag: 'grinta-fab-agenda-coach-analysis',
-              icon: Icons.insights_rounded,
-              tooltip: context.l10n.coachWorkloadAnalysisFabTooltip,
-              showPremiumBadge: true,
-              onPressed: () {
-                unawaited(openCoachWorkloadAnalysis(context));
-              },
-            ),
+          if (context.watch<AppSession>().hasManagedTeamsInSelectedSeason)
             AskDiegoPrimaryAction(
               heroTag: 'grinta-fab-agenda-coach-players',
               icon: Icons.groups_outlined,
@@ -1064,7 +1070,6 @@ class _AgendaScreenState extends State<AgendaScreen> {
                 unawaited(_openCoachPlayersDialog());
               },
             ),
-          ],
         ],
       ),
     );
