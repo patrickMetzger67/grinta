@@ -21,6 +21,8 @@ class CoachTeamWorkloadAverages {
     this.avgWorkloadScore,
     this.totalDistanceKm,
     this.sessionCount,
+    this.trainingCount,
+    this.matchCount,
     this.presencePercent,
     this.volumeMinutes,
   });
@@ -28,6 +30,8 @@ class CoachTeamWorkloadAverages {
   final double? avgWorkloadScore;
   final double? totalDistanceKm;
   final double? sessionCount;
+  final double? trainingCount;
+  final double? matchCount;
   final double? presencePercent;
   final double? volumeMinutes;
 

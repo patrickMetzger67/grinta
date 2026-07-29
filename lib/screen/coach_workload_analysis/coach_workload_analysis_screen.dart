@@ -525,6 +525,15 @@ class _PlayerSummaryTile extends StatelessWidget {
                     ),
                   ),
                   _MetricChip(
+                    label: l10n.coachWorkloadMetricSessions(
+                      summary.trainingPresent,
+                    ),
+                    tone: teamAverages.toneFor(
+                      value: summary.trainingPresent.toDouble(),
+                      teamAverage: teamAverages.trainingCount,
+                    ),
+                  ),
+                  _MetricChip(
                     label: l10n.coachWorkloadMetricPersonalSports(
                       summary.personalSportCount,
                     ),
@@ -533,12 +542,10 @@ class _PlayerSummaryTile extends StatelessWidget {
                         : CoachMetricTone.neutral,
                   ),
                   _MetricChip(
-                    label: l10n.coachWorkloadMetricSessions(
-                      summary.sessionCount,
-                    ),
+                    label: l10n.coachWorkloadMetricMatches(summary.matchCount),
                     tone: teamAverages.toneFor(
-                      value: summary.sessionCount.toDouble(),
-                      teamAverage: teamAverages.sessionCount,
+                      value: summary.matchCount.toDouble(),
+                      teamAverage: teamAverages.matchCount,
                     ),
                   ),
                   _MetricChip(
