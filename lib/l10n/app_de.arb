@@ -1720,7 +1720,7 @@
   "createMatchVenue": "Spielort / Feldadresse",
   "createMatchSelectField": "Vereinsplatz",
   "createMatchFieldNotGeolocatedTitle": "Platz nicht geolokalisiert",
-  "createMatchFieldNotGeolocatedMessage": "Dieser Platz ist nicht geolokalisiert. Möchtest du das jetzt tun? Das ist für die Heatmap-Erstellung erforderlich.",
+  "createMatchFieldNotGeolocatedMessage": "Dieser Platz ist nicht geolokalisiert. Möchtest du das jetzt tun? So entstehen platzgenaue Heatmaps; sonst wird die GPS-Satellitenansicht genutzt.",
   "createMatchSurface": "Spielfläche",
   "createMatchSurfaceSynthetic": "Kunstrasen",
   "createMatchSurfaceNatural": "Naturrasen",

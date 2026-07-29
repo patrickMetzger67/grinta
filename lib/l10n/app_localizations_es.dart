@@ -4788,7 +4788,7 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get createMatchFieldNotGeolocatedMessage =>
-      'Este terreno no está geolocalizado. ¿Quieres hacerlo ahora? Es necesario para generar los mapas de calor.';
+      'Este terreno no está geolocalizado. ¿Quieres hacerlo ahora? Así obtienes mapas de calor alineados al campo; si no, se usa la vista satélite GPS.';
 
   @override
   String get createMatchSurface => 'Superficie de juego';

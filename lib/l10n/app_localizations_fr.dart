@@ -4786,7 +4786,7 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get createMatchFieldNotGeolocatedMessage =>
-      'Le terrain n\'est pas géolocalisé. Souhaites-tu le faire maintenant ? C\'est nécessaire pour la génération des heatmaps.';
+      'Le terrain n\'est pas géolocalisé. Souhaites-tu le faire maintenant ? Cela permet des heatmaps alignées sur le terrain ; sinon elles utiliseront la vue satellite GPS.';
 
   @override
   String get createMatchSurface => 'Surface de jeu';

@@ -2128,7 +2128,7 @@
   "createMatchVenue": "Lieu / adresse du terrain",
   "createMatchSelectField": "Terrain du club",
   "createMatchFieldNotGeolocatedTitle": "Terrain non géolocalisé",
-  "createMatchFieldNotGeolocatedMessage": "Le terrain n'est pas géolocalisé. Souhaites-tu le faire maintenant ? C'est nécessaire pour la génération des heatmaps.",
+  "createMatchFieldNotGeolocatedMessage": "Le terrain n'est pas géolocalisé. Souhaites-tu le faire maintenant ? Cela permet des heatmaps alignées sur le terrain ; sinon elles utiliseront la vue satellite GPS.",
   "createMatchSurface": "Surface de jeu",
   "createMatchSurfaceSynthetic": "Synthétique",
   "createMatchSurfaceNatural": "Pelouse naturelle",

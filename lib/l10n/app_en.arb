@@ -1820,7 +1820,7 @@
   "createMatchVenue": "Venue / field address",
   "createMatchSelectField": "Club field",
   "createMatchFieldNotGeolocatedTitle": "Field not geolocated",
-  "createMatchFieldNotGeolocatedMessage": "This field is not geolocated. Would you like to do it now? This is required to generate heatmaps.",
+  "createMatchFieldNotGeolocatedMessage": "This field is not geolocated. Would you like to do it now? This enables pitch-aligned heatmaps; otherwise they use the GPS satellite view.",
   "createMatchSurface": "Playing surface",
   "createMatchSurfaceSynthetic": "Artificial turf",
   "createMatchSurfaceNatural": "Natural grass",

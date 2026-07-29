@@ -4725,7 +4725,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get createMatchFieldNotGeolocatedMessage =>
-      'This field is not geolocated. Would you like to do it now? This is required to generate heatmaps.';
+      'This field is not geolocated. Would you like to do it now? This enables pitch-aligned heatmaps; otherwise they use the GPS satellite view.';
 
   @override
   String get createMatchSurface => 'Playing surface';

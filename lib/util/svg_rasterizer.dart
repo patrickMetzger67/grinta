@@ -55,6 +55,13 @@ Uint8List? heatmapSvgStringToPngBytes(
   int targetWidth = 720,
 }) {
   try {
+    // Satellite heatmaps embed a Google Static Maps <image>; the pure-Dart
+    // schematic pitch path cannot render them — fall back to flutter_svg.
+    if (svg.contains('data-grinta-heatmap="satellite"') ||
+        svg.contains('data:image/')) {
+      return null;
+    }
+
     final _SvgSize? size = _parseSvgSize(svg);
     if (size == null || size.width <= 0 || size.height <= 0) {
       return null;

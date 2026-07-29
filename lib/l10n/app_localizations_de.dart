@@ -4793,7 +4793,7 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get createMatchFieldNotGeolocatedMessage =>
-      'Dieser Platz ist nicht geolokalisiert. Möchtest du das jetzt tun? Das ist für die Heatmap-Erstellung erforderlich.';
+      'Dieser Platz ist nicht geolokalisiert. Möchtest du das jetzt tun? So entstehen platzgenaue Heatmaps; sonst wird die GPS-Satellitenansicht genutzt.';
 
   @override
   String get createMatchSurface => 'Spielfläche';

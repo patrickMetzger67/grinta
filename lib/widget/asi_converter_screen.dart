@@ -25,6 +25,7 @@ import '../services/sensorAnalysisService.dart';
 import '../services/trackerDataAnalysisService.dart';
 import '../util/app_theme.dart';
 import '../util/heatmap_svg_generator.dart';
+import '../util/match_heatmap_service.dart';
 
 
 enum HeatmapDisplayPeriod {
@@ -750,46 +751,7 @@ class _AsiConverterScreenState extends State<AsiConverterScreen> {
       }
 
 
-      if(widget.isMatch) {
-
-        // MATCH COMPLET = DONNÉES BRUTES
-        svgFullMatch = HeatmapSvgGenerator.generateSvg(
-          field: footballFieldGps!,
-          heatmapPoints: _analysisResult!.heatmapPoints,
-          flipX: false,
-          flipY: false,
-          svgWidth: 1600,
-          svgHeight: 1000,
-        );
-
-        // CLOUD : les SVG/PNG sont déjà persistés par la cloud function.
-        if (!kUseCloudSensorAnalysis) {
-          await HeatmapSvgGenerator.saveSvgToFirestore(
-            fileName: '${widget.deviceId}-${widget.eventId}_fullMatch',
-            svg: svgFullMatch!,
-          );
-        }
-
-        final fullMatchSprintPolylines = _buildSprintPolylines(trackerSamples);
-
-        svgFullMatchWithSprints = HeatmapSvgGenerator.generateSvg(
-          field: footballFieldGps!,
-          heatmapPoints: _analysisResult!.heatmapPoints,
-          sprintPolylines: fullMatchSprintPolylines,
-          flipX: false,
-          flipY: false,
-          svgWidth: 1600,
-          svgHeight: 1000,
-        );
-
-        if (!kUseCloudSensorAnalysis) {
-          await HeatmapSvgGenerator.saveSvgToFirestore(
-            fileName: '${widget.deviceId}-${widget.eventId}_fullMatchWithSprints',
-            svg: svgFullMatchWithSprints!,
-          );
-        }
-
-        // MI-TEMPS
+      if (widget.isMatch) {
         final firstHalfSamples = _getSamplesForPeriod(_firstHalfPeriod);
         final secondHalfSamples = _getSamplesForPeriod(_secondHalfPeriod);
 
@@ -825,110 +787,57 @@ class _AsiConverterScreenState extends State<AsiConverterScreen> {
           }
         }
 
-        const bool flipFirstHalfY = false;
-        const bool flipSecondHalfY = false;
+        final fullMatchSprintPolylines =
+            footballFieldGps != null
+                ? _buildSprintPolylines(trackerSamples)
+                : const <PitchPolyline>[];
+        final firstHalfSprintPolylines =
+            footballFieldGps != null
+                ? _buildSprintPolylines(firstHalfSamples)
+                : const <PitchPolyline>[];
+        final secondHalfSprintPolylines =
+            footballFieldGps != null
+                ? _buildSprintPolylines(secondHalfSamples)
+                : const <PitchPolyline>[];
 
-        if (firstHalfAnalysis != null) {
-          final firstHalfPointsForDisplay = flipFirstHalfY
-              ? _flipHeatmapPointsY(
-            points: firstHalfAnalysis.heatmapPoints,
-            field: footballFieldGps!,
-          )
-              : firstHalfAnalysis.heatmapPoints;
+        final fullSprintSegments = _extractSprintSegments(trackerSamples);
+        final firstHalfSprintSegments =
+            _extractSprintSegments(firstHalfSamples);
+        final secondHalfSprintSegments =
+            _extractSprintSegments(secondHalfSamples);
 
-          final firstHalfSprintsRaw = _buildSprintPolylines(firstHalfSamples);
-          final firstHalfSprintsForDisplay = flipFirstHalfY
-              ? _flipPolylinesY(
-            polylines: firstHalfSprintsRaw,
-            field: footballFieldGps!,
-          )
-              : firstHalfSprintsRaw;
+        // Terrain géolocalisé → heatmap schématique actuelle.
+        // Sinon → fond satellite Google calé sur les GPS collectés.
+        // Cloud : les SVG schématiques sont déjà persistés ; on re-persiste
+        // uniquement le fallback satellite (pas de coins terrain).
+        final bundle = await MatchHeatmapService.generateAndSaveMatchHeatmaps(
+          trackerId: widget.deviceId,
+          eventId: widget.eventId,
+          fieldGps: footballFieldGps,
+          fullSamples: trackerSamples,
+          fullHeatmapPoints: _analysisResult!.heatmapPoints,
+          fullSprintPolylines: fullMatchSprintPolylines,
+          fullSprintSegments: fullSprintSegments,
+          firstHalfSamples: firstHalfSamples,
+          firstHalfHeatmapPoints:
+              firstHalfAnalysis?.heatmapPoints ?? const [],
+          firstHalfSprintPolylines: firstHalfSprintPolylines,
+          firstHalfSprintSegments: firstHalfSprintSegments,
+          secondHalfSamples: secondHalfSamples,
+          secondHalfHeatmapPoints:
+              secondHalfAnalysis?.heatmapPoints ?? const [],
+          secondHalfSprintPolylines: secondHalfSprintPolylines,
+          secondHalfSprintSegments: secondHalfSprintSegments,
+          persist: true,
+          skipSchematicPersist: kUseCloudSensorAnalysis,
+        );
 
-          svgFirstHalf = HeatmapSvgGenerator.generateSvg(
-            field: footballFieldGps!,
-            heatmapPoints: firstHalfPointsForDisplay,
-            sprintPolylines: const [],
-            flipX: false,
-            flipY: false,
-            svgWidth: 1600,
-            svgHeight: 1000,
-          );
-          if (!kUseCloudSensorAnalysis) {
-            await HeatmapSvgGenerator.saveSvgToFirestore(
-              fileName: '${widget.deviceId}-${widget.eventId}_firstHalf',
-              svg: svgFirstHalf!,
-            );
-          }
-
-          svgFirstHalfWithSprints = HeatmapSvgGenerator.generateSvg(
-            field: footballFieldGps!,
-            heatmapPoints: firstHalfPointsForDisplay,
-            sprintPolylines: firstHalfSprintsForDisplay,
-            flipX: false,
-            flipY: false,
-            svgWidth: 1600,
-            svgHeight: 1000,
-          );
-
-          if (!kUseCloudSensorAnalysis) {
-            await HeatmapSvgGenerator.saveSvgToFirestore(
-              fileName: '${widget.deviceId}-${widget.eventId}_firstHalfWithSprints',
-              svg: svgFirstHalfWithSprints!,
-            );
-          }
-        }
-
-        if (secondHalfAnalysis != null) {
-          final secondHalfPointsForDisplay = flipSecondHalfY
-              ? _flipHeatmapPointsY(
-            points: secondHalfAnalysis.heatmapPoints,
-            field: footballFieldGps!,
-          )
-              : secondHalfAnalysis.heatmapPoints;
-
-          final secondHalfSprintsRaw = _buildSprintPolylines(secondHalfSamples);
-          final secondHalfSprintsForDisplay = flipSecondHalfY
-              ? _flipPolylinesY(
-            polylines: secondHalfSprintsRaw,
-            field: footballFieldGps!,
-          )
-              : secondHalfSprintsRaw;
-
-          svgSecondHalf = HeatmapSvgGenerator.generateSvg(
-            field: footballFieldGps!,
-            heatmapPoints: secondHalfPointsForDisplay,
-            sprintPolylines: const [],
-            flipX: false,
-            flipY: false,
-            svgWidth: 1600,
-            svgHeight: 1000,
-          );
-
-          if (!kUseCloudSensorAnalysis) {
-            await HeatmapSvgGenerator.saveSvgToFirestore(
-              fileName: '${widget.deviceId}-${widget.eventId}_secondHalf',
-              svg: svgSecondHalf!,
-            );
-          }
-
-          svgSecondHalfWithSprints = HeatmapSvgGenerator.generateSvg(
-            field: footballFieldGps!,
-            heatmapPoints: secondHalfPointsForDisplay,
-            sprintPolylines: secondHalfSprintsForDisplay,
-            flipX: false,
-            flipY: false,
-            svgWidth: 1600,
-            svgHeight: 1000,
-          );
-
-          if (!kUseCloudSensorAnalysis) {
-            await HeatmapSvgGenerator.saveSvgToFirestore(
-              fileName: '${widget.deviceId}-${widget.eventId}_secondHalfWithSprints',
-              svg: svgSecondHalfWithSprints!,
-            );
-          }
-        }
-
+        svgFullMatch = bundle.fullMatch;
+        svgFullMatchWithSprints = bundle.fullMatchWithSprints;
+        svgFirstHalf = bundle.firstHalf;
+        svgFirstHalfWithSprints = bundle.firstHalfWithSprints;
+        svgSecondHalf = bundle.secondHalf;
+        svgSecondHalfWithSprints = bundle.secondHalfWithSprints;
       }
 
 
