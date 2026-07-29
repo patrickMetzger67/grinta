@@ -4,10 +4,13 @@ import 'package:grinta/model/player.dart';
 import 'package:grinta/model/team.dart';
 import 'package:grinta/screen/coach_workload_analysis/coach_workload_analysis_models.dart';
 import 'package:grinta/services/coach_workload_analysis_service.dart';
+import 'package:grinta/model/personal_sport_activity.dart';
 import 'package:grinta/util/playerDisplayName.dart';
 import 'package:grinta/util/player_age.dart';
 import 'package:grinta/util/player_photo_resolver.dart';
 import 'package:grinta/util/svg_rasterizer.dart';
+import 'package:grinta/util/whoop_hr_zones.dart';
+import 'package:grinta/widget/sport_metric_pickers.dart';
 import 'package:http/http.dart' as http;
 import 'package:intl/intl.dart';
 import 'package:pdf/pdf.dart';
@@ -115,6 +118,7 @@ class CoachWorkloadReportPdfService {
                 activities: detail.activities,
                 dateFmt: dateFmt,
                 sourceLogos: sourceLogos,
+                localeCode: localeCode,
               ),
           ],
         ),
@@ -471,6 +475,7 @@ class CoachWorkloadReportPdfService {
     required List<CoachWorkloadActivityItem> activities,
     required DateFormat dateFmt,
     required Map<String, Uint8List> sourceLogos,
+    required String localeCode,
   }) {
     final sorted = List<CoachWorkloadActivityItem>.from(activities)
       ..sort((a, b) => b.startAt.compareTo(a.startAt));
@@ -478,66 +483,15 @@ class CoachWorkloadReportPdfService {
     return pw.Column(
       crossAxisAlignment: pw.CrossAxisAlignment.stretch,
       children: [
-        _activitiesHeaderRow(),
         for (var i = 0; i < sorted.length; i++)
           _activityRow(
             item: sorted[i],
             dateFmt: dateFmt,
             sourceLogos: sourceLogos,
+            localeCode: localeCode,
             odd: i.isOdd,
           ),
       ],
-    );
-  }
-
-  pw.Widget _activitiesHeaderRow() {
-    return pw.Container(
-      decoration: const pw.BoxDecoration(
-        color: _primary,
-        borderRadius: pw.BorderRadius.vertical(top: pw.Radius.circular(6)),
-      ),
-      padding: const pw.EdgeInsets.symmetric(horizontal: 8, vertical: 6),
-      child: pw.Row(
-        children: [
-          pw.SizedBox(width: 22),
-          pw.SizedBox(width: 8),
-          pw.Expanded(
-            flex: 28,
-            child: _headerLabel('Activite'),
-          ),
-          pw.Expanded(
-            flex: 22,
-            child: _headerLabel('Date'),
-          ),
-          pw.Expanded(
-            flex: 12,
-            child: _headerLabel('Duree', align: pw.TextAlign.center),
-          ),
-          pw.Expanded(
-            flex: 12,
-            child: _headerLabel('Charge', align: pw.TextAlign.center),
-          ),
-          pw.Expanded(
-            flex: 12,
-            child: _headerLabel('Km', align: pw.TextAlign.center),
-          ),
-        ],
-      ),
-    );
-  }
-
-  pw.Widget _headerLabel(
-    String label, {
-    pw.TextAlign align = pw.TextAlign.left,
-  }) {
-    return pw.Text(
-      _ascii(label),
-      textAlign: align,
-      style: pw.TextStyle(
-        color: _white,
-        fontWeight: pw.FontWeight.bold,
-        fontSize: 9,
-      ),
     );
   }
 
@@ -545,75 +499,232 @@ class CoachWorkloadReportPdfService {
     required CoachWorkloadActivityItem item,
     required DateFormat dateFmt,
     required Map<String, Uint8List> sourceLogos,
+    required String localeCode,
     required bool odd,
   }) {
-    final duration = item.durationMinutes == null || item.durationMinutes! <= 0
-        ? '-'
-        : '${item.durationMinutes} min';
-    final load = item.workloadScore == null
-        ? '-'
-        : item.workloadScore!.toStringAsFixed(0);
-    final km = item.distanceKm == null || item.distanceKm! <= 0
-        ? '-'
-        : item.distanceKm!.toStringAsFixed(1);
+    final metrics = _activityMetrics(item, localeCode: localeCode);
 
     return pw.Container(
       decoration: pw.BoxDecoration(
         color: odd ? _surface : _white,
-        border: const pw.Border(
-          left: pw.BorderSide(color: _border, width: 0.5),
-          right: pw.BorderSide(color: _border, width: 0.5),
-          bottom: pw.BorderSide(color: _border, width: 0.5),
-        ),
+        borderRadius: pw.BorderRadius.circular(6),
+        border: pw.Border.all(color: _border, width: 0.6),
       ),
-      padding: const pw.EdgeInsets.symmetric(horizontal: 8, vertical: 5),
-      child: pw.Row(
+      margin: const pw.EdgeInsets.only(bottom: 5),
+      padding: const pw.EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+      child: pw.Column(
+        crossAxisAlignment: pw.CrossAxisAlignment.stretch,
         children: [
-          _activityLeadingIcon(item, sourceLogos),
-          pw.SizedBox(width: 8),
-          pw.Expanded(
-            flex: 28,
-            child: pw.Text(
-              _ascii(_activityTypeLabel(item)),
-              maxLines: 1,
-              style: const pw.TextStyle(color: _textPrimary, fontSize: 9),
-            ),
+          pw.Row(
+            children: [
+              _activityLeadingIcon(item, sourceLogos),
+              pw.SizedBox(width: 8),
+              pw.Expanded(
+                child: pw.Text(
+                  _ascii(_activityTypeLabel(item)),
+                  maxLines: 1,
+                  style: pw.TextStyle(
+                    color: _textPrimary,
+                    fontSize: 10,
+                    fontWeight: pw.FontWeight.bold,
+                  ),
+                ),
+              ),
+              pw.SizedBox(width: 8),
+              pw.Text(
+                _ascii(dateFmt.format(item.startAt)),
+                style: const pw.TextStyle(color: _textSecondary, fontSize: 8.5),
+              ),
+            ],
           ),
-          pw.Expanded(
-            flex: 22,
-            child: pw.Text(
-              _ascii(dateFmt.format(item.startAt)),
-              maxLines: 1,
-              style: const pw.TextStyle(color: _textPrimary, fontSize: 9),
+          if (metrics.isNotEmpty) ...[
+            pw.SizedBox(height: 5),
+            pw.Wrap(
+              spacing: 4,
+              runSpacing: 3,
+              children: [
+                for (final metric in metrics)
+                  _activityMetricChip(metric.$1, metric.$2),
+              ],
             ),
+          ],
+        ],
+      ),
+    );
+  }
+
+  pw.Widget _activityMetricChip(String label, String value) {
+    return pw.Container(
+      padding: const pw.EdgeInsets.symmetric(horizontal: 6, vertical: 3),
+      decoration: pw.BoxDecoration(
+        color: _white,
+        borderRadius: pw.BorderRadius.circular(5),
+        border: pw.Border.all(color: _border, width: 0.5),
+      ),
+      child: pw.Row(
+        mainAxisSize: pw.MainAxisSize.min,
+        children: [
+          pw.Text(
+            _ascii(label),
+            style: const pw.TextStyle(color: _textSecondary, fontSize: 7.5),
           ),
-          pw.Expanded(
-            flex: 12,
-            child: pw.Text(
-              _ascii(duration),
-              textAlign: pw.TextAlign.center,
-              style: const pw.TextStyle(color: _textPrimary, fontSize: 9),
-            ),
-          ),
-          pw.Expanded(
-            flex: 12,
-            child: pw.Text(
-              _ascii(load),
-              textAlign: pw.TextAlign.center,
-              style: const pw.TextStyle(color: _textPrimary, fontSize: 9),
-            ),
-          ),
-          pw.Expanded(
-            flex: 12,
-            child: pw.Text(
-              _ascii(km),
-              textAlign: pw.TextAlign.center,
-              style: const pw.TextStyle(color: _textPrimary, fontSize: 9),
+          pw.SizedBox(width: 4),
+          pw.Text(
+            _ascii(value),
+            style: pw.TextStyle(
+              color: _textPrimary,
+              fontSize: 8.5,
+              fontWeight: pw.FontWeight.bold,
             ),
           ),
         ],
       ),
     );
+  }
+
+  /// Source-aware metrics shown under each activity row.
+  List<(String, String)> _activityMetrics(
+    CoachWorkloadActivityItem item, {
+    required String localeCode,
+  }) {
+    switch (item.kind) {
+      case CoachWorkloadActivityKind.training:
+      case CoachWorkloadActivityKind.match:
+        return _sessionActivityMetrics(item);
+      case CoachWorkloadActivityKind.personalSport:
+        return _personalSportMetrics(
+          item.personalSport,
+          localeCode: localeCode,
+        );
+    }
+  }
+
+  List<(String, String)> _sessionActivityMetrics(
+    CoachWorkloadActivityItem item,
+  ) {
+    final out = <(String, String)>[];
+    if (item.durationMinutes != null && item.durationMinutes! > 0) {
+      out.add(('Duree', '${item.durationMinutes} min'));
+    }
+    if (item.workloadScore != null) {
+      out.add(('Charge', item.workloadScore!.toStringAsFixed(0)));
+    }
+    if (item.distanceKm != null && item.distanceKm! > 0) {
+      out.add(('Km', item.distanceKm!.toStringAsFixed(1)));
+    }
+    if (item.wasPresent == false) {
+      out.add(('Presence', 'Absent'));
+    }
+    return out;
+  }
+
+  List<(String, String)> _personalSportMetrics(
+    PersonalSportActivity? activity, {
+    required String localeCode,
+  }) {
+    if (activity == null) return const [];
+    final source = (activity.externalSource ?? '').trim().toLowerCase();
+    switch (source) {
+      case 'whoop':
+        return _whoopMetrics(activity, localeCode: localeCode);
+      case 'strava':
+        return _stravaMetrics(activity);
+      case 'polar':
+        return _polarMetrics(activity);
+      default:
+        return _genericPersonalMetrics(activity);
+    }
+  }
+
+  /// Mirrors the in-app Whoop analysis card.
+  List<(String, String)> _whoopMetrics(
+    PersonalSportActivity activity, {
+    required String localeCode,
+  }) {
+    final out = <(String, String)>[];
+    if (activity.strain != null && activity.strain! > 0) {
+      out.add((
+        'Effort activite',
+        formatWhoopStrain(activity.strain!, locale: localeCode),
+      ));
+    }
+    if (activity.averageHeartRateBpm != null &&
+        activity.averageHeartRateBpm! > 0) {
+      out.add(('FC moyenne', '${activity.averageHeartRateBpm}'));
+    }
+    if (activity.durationSeconds != null && activity.durationSeconds! > 0) {
+      out.add(('Duree', formatWhoopDuration(activity.durationSeconds!)));
+    }
+    if (activity.maxHeartRateBpm != null && activity.maxHeartRateBpm! > 0) {
+      out.add(('FC max', '${activity.maxHeartRateBpm} bpm'));
+    }
+    if (activity.caloriesKcal != null && activity.caloriesKcal! > 0) {
+      out.add(('Calories', '${activity.caloriesKcal!.round()} kcal'));
+    }
+    if (activity.altitudeGainMeters != null &&
+        activity.altitudeGainMeters! > 0) {
+      out.add(('Deneivele', '+${activity.altitudeGainMeters!.round()} m'));
+    }
+    return out;
+  }
+
+  /// Mirrors the Strava-style personal summary (distance / duree / allure / kcal).
+  List<(String, String)> _stravaMetrics(PersonalSportActivity activity) {
+    final out = <(String, String)>[];
+    if (activity.distanceMeters != null && activity.distanceMeters! > 0) {
+      out.add((
+        'Distance',
+        formatSportDistanceKm(
+          activity.distanceMeters! / 1000,
+          activity.distanceUnit,
+        ),
+      ));
+    }
+    if (activity.durationSeconds != null && activity.durationSeconds! > 0) {
+      out.add((
+        'Duree',
+        formatSportDurationClock(Duration(seconds: activity.durationSeconds!)),
+      ));
+    }
+    if (activity.paceSecondsPerKm != null && activity.paceSecondsPerKm! > 0) {
+      out.add((
+        'Allure moy.',
+        formatSportPace(activity.paceSecondsPerKm!, activity.paceUnit),
+      ));
+    }
+    if (activity.caloriesKcal != null && activity.caloriesKcal! > 0) {
+      out.add(('Calories', '${activity.caloriesKcal!.round()} kcal'));
+    }
+    return out;
+  }
+
+  /// Polar personal metrics — same HR set as the Polar cards, without samples.
+  List<(String, String)> _polarMetrics(PersonalSportActivity activity) {
+    final out = <(String, String)>[];
+    if (activity.durationSeconds != null && activity.durationSeconds! > 0) {
+      final minutes = (activity.durationSeconds! / 60).round();
+      if (minutes > 0) {
+        out.add(('Duree', '$minutes min'));
+      }
+    }
+    if (activity.averageHeartRateBpm != null &&
+        activity.averageHeartRateBpm! > 0) {
+      out.add(('FC moy.', '${activity.averageHeartRateBpm} bpm'));
+    }
+    if (activity.maxHeartRateBpm != null && activity.maxHeartRateBpm! > 0) {
+      out.add(('FC max', '${activity.maxHeartRateBpm} bpm'));
+    }
+    if (activity.minHeartRateBpm != null && activity.minHeartRateBpm! > 0) {
+      out.add(('FC min', '${activity.minHeartRateBpm} bpm'));
+    }
+    return out;
+  }
+
+  List<(String, String)> _genericPersonalMetrics(
+    PersonalSportActivity activity,
+  ) {
+    // Manual / GPS / Health: Strava-like set when values exist.
+    return _stravaMetrics(activity);
   }
 
   pw.Widget _activityLeadingIcon(
