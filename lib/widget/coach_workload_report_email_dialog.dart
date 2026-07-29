@@ -1,6 +1,7 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:grinta/core/extensions/l10n_extension.dart';
+import 'package:grinta/model/team.dart';
 import 'package:grinta/screen/coach_workload_analysis/coach_workload_analysis_models.dart';
 import 'package:grinta/services/coach_workload_report_sender_service.dart';
 import 'package:grinta/services/session_report_manager_recipients_service.dart';
@@ -13,8 +14,10 @@ import 'package:grinta/widget/playerPhoto.dart';
 Future<void> showCoachWorkloadReportEmailDialog({
   required BuildContext context,
   required CoachTeamWorkloadReport report,
+  required Team team,
   required String teamName,
   required String teamId,
+  required String seasonId,
   required DateTime rangeStart,
   required DateTime rangeEndInclusive,
   String? clubId,
@@ -29,8 +32,10 @@ Future<void> showCoachWorkloadReportEmailDialog({
     builder: (dialogContext) {
       return _CoachWorkloadReportEmailDialog(
         report: report,
+        team: team,
         teamName: teamName,
         teamId: teamId,
+        seasonId: seasonId,
         rangeStart: rangeStart,
         rangeEndInclusive: rangeEndInclusive,
         clubId: clubId,
@@ -57,8 +62,10 @@ Future<void> showCoachWorkloadReportEmailDialog({
 class _CoachWorkloadReportEmailDialog extends StatefulWidget {
   const _CoachWorkloadReportEmailDialog({
     required this.report,
+    required this.team,
     required this.teamName,
     required this.teamId,
+    required this.seasonId,
     required this.rangeStart,
     required this.rangeEndInclusive,
     required this.colors,
@@ -67,8 +74,10 @@ class _CoachWorkloadReportEmailDialog extends StatefulWidget {
   });
 
   final CoachTeamWorkloadReport report;
+  final Team team;
   final String teamName;
   final String teamId;
+  final String seasonId;
   final DateTime rangeStart;
   final DateTime rangeEndInclusive;
   final String? clubId;
@@ -203,8 +212,10 @@ class _CoachWorkloadReportEmailDialogState
       l10n: l10n,
       toEmails: emails,
       report: widget.report,
+      team: widget.team,
       teamName: widget.teamName,
       teamId: widget.teamId,
+      seasonId: widget.seasonId,
       rangeStart: widget.rangeStart,
       rangeEndInclusive: widget.rangeEndInclusive,
       localeCode: localeCode,

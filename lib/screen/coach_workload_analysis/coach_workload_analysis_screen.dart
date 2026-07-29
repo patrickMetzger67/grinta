@@ -172,14 +172,18 @@ class _CoachWorkloadAnalysisScreenState
     if (team == null) return;
 
     final range = _resolvedRange();
+    final seasonId = (session.selectedSeason?.ref?.id ?? '').trim();
+    if (seasonId.isEmpty) return;
     await showCoachWorkloadReportEmailDialog(
       context: context,
       report: CoachTeamWorkloadReport(
         summaries: _summaries,
         teamAverages: _teamAverages,
       ),
+      team: team,
       teamName: (team.name ?? team.keyTeam ?? '').trim(),
       teamId: teamId,
+      seasonId: seasonId,
       rangeStart: range.start,
       rangeEndInclusive: range.end,
       clubId: team.clubId,
@@ -480,96 +484,102 @@ class _PlayerSummaryTile extends StatelessWidget {
       color: Colors.transparent,
       child: InkWell(
         onTap: onTap,
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(14),
         child: Container(
-          padding: const EdgeInsets.all(14),
+          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
           decoration: BoxDecoration(
             color: colors.card,
-            borderRadius: BorderRadius.circular(16),
+            borderRadius: BorderRadius.circular(14),
             border: Border.all(color: colors.border),
           ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.center,
             children: [
-              Row(
-                children: [
-                  PlayerPhoto(
-                    player: summary.player,
-                    radius: 22,
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: Text(
+              PlayerPhoto(
+                player: summary.player,
+                radius: 18,
+              ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
                       playerDisplayName(summary.player),
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                       style: TextStyle(
                         color: colors.textPrimary,
                         fontWeight: FontWeight.w800,
-                        fontSize: 15,
+                        fontSize: 14,
                       ),
                     ),
-                  ),
-                  Icon(
-                    Icons.chevron_right_rounded,
-                    color: colors.textSecondary,
-                  ),
-                ],
+                    const SizedBox(height: 5),
+                    Wrap(
+                      alignment: WrapAlignment.start,
+                      spacing: 5,
+                      runSpacing: 4,
+                      children: [
+                        _MetricChip(
+                          label: l10n.coachWorkloadMetricLoad(loadLabel),
+                          emphasized: true,
+                          tone: teamAverages.toneFor(
+                            value: summary.avgWorkloadScore,
+                            teamAverage: teamAverages.avgWorkloadScore,
+                          ),
+                        ),
+                        _MetricChip(
+                          label: l10n.coachWorkloadMetricKm(kmLabel),
+                          emphasized: true,
+                          tone: teamAverages.toneFor(
+                            value: summary.totalDistanceKm,
+                            teamAverage: teamAverages.totalDistanceKm,
+                          ),
+                        ),
+                        _MetricChip(
+                          label: l10n.coachWorkloadMetricSessions(
+                            summary.trainingPresent,
+                          ),
+                          tone: teamAverages.toneFor(
+                            value: summary.trainingPresent.toDouble(),
+                            teamAverage: teamAverages.trainingCount,
+                          ),
+                        ),
+                        _MetricChip(
+                          label: l10n.coachWorkloadMetricPersonalSports(
+                            summary.personalSportCount,
+                          ),
+                          tone: summary.personalSportCount > 0
+                              ? CoachMetricTone.success
+                              : CoachMetricTone.neutral,
+                        ),
+                        _MetricChip(
+                          label: l10n.coachWorkloadMetricMatches(
+                            summary.matchCount,
+                          ),
+                          tone: teamAverages.toneFor(
+                            value: summary.matchCount.toDouble(),
+                            teamAverage: teamAverages.matchCount,
+                          ),
+                        ),
+                        _MetricChip(
+                          label: l10n.coachWorkloadMetricPresence(presenceLabel),
+                          tone: teamAverages.toneFor(
+                            value: summary.presencePercent,
+                            teamAverage: teamAverages.presencePercent,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
               ),
-              const SizedBox(height: 10),
-              Wrap(
-                alignment: WrapAlignment.center,
-                spacing: 6,
-                runSpacing: 6,
-                children: [
-                  _MetricChip(
-                    label: l10n.coachWorkloadMetricLoad(loadLabel),
-                    emphasized: true,
-                    tone: teamAverages.toneFor(
-                      value: summary.avgWorkloadScore,
-                      teamAverage: teamAverages.avgWorkloadScore,
-                    ),
-                  ),
-                  _MetricChip(
-                    label: l10n.coachWorkloadMetricKm(kmLabel),
-                    emphasized: true,
-                    tone: teamAverages.toneFor(
-                      value: summary.totalDistanceKm,
-                      teamAverage: teamAverages.totalDistanceKm,
-                    ),
-                  ),
-                  _MetricChip(
-                    label: l10n.coachWorkloadMetricSessions(
-                      summary.trainingPresent,
-                    ),
-                    tone: teamAverages.toneFor(
-                      value: summary.trainingPresent.toDouble(),
-                      teamAverage: teamAverages.trainingCount,
-                    ),
-                  ),
-                  _MetricChip(
-                    label: l10n.coachWorkloadMetricPersonalSports(
-                      summary.personalSportCount,
-                    ),
-                    tone: summary.personalSportCount > 0
-                        ? CoachMetricTone.success
-                        : CoachMetricTone.neutral,
-                  ),
-                  _MetricChip(
-                    label: l10n.coachWorkloadMetricMatches(summary.matchCount),
-                    tone: teamAverages.toneFor(
-                      value: summary.matchCount.toDouble(),
-                      teamAverage: teamAverages.matchCount,
-                    ),
-                  ),
-                  _MetricChip(
-                    label: l10n.coachWorkloadMetricPresence(presenceLabel),
-                    tone: teamAverages.toneFor(
-                      value: summary.presencePercent,
-                      teamAverage: teamAverages.presencePercent,
-                    ),
-                  ),
-                ],
+              const SizedBox(width: 4),
+              Icon(
+                Icons.chevron_right_rounded,
+                color: colors.textSecondary,
+                size: 22,
               ),
             ],
           ),
@@ -605,8 +615,8 @@ class _MetricChip extends StatelessWidget {
 
     return Container(
       padding: EdgeInsets.symmetric(
-        horizontal: emphasized ? 10 : 8,
-        vertical: emphasized ? 5 : 3,
+        horizontal: emphasized ? 8 : 7,
+        vertical: emphasized ? 3 : 2,
       ),
       decoration: BoxDecoration(
         color: accent.withValues(alpha: tone == CoachMetricTone.neutral ? 0.08 : 0.16),
@@ -617,7 +627,7 @@ class _MetricChip extends StatelessWidget {
         label,
         style: TextStyle(
           color: accent,
-          fontSize: emphasized ? 12 : 11,
+          fontSize: emphasized ? 11 : 10,
           fontWeight: FontWeight.w800,
         ),
       ),
