@@ -4,9 +4,12 @@ import 'package:grinta/navigation/app_navigator.dart';
 import 'package:grinta/services/youtube_config_service.dart';
 import 'package:grinta/services/youtube_top_video_seen_service.dart';
 import 'package:grinta/util/app_theme.dart';
-import 'package:url_launcher/url_launcher.dart';
+import 'package:grinta/widget/youtube_embed_player.dart';
 
 /// Shows the weekly YouTube tip once per unseen [YoutubeConfig.topVideo].
+///
+/// No prompt when `topVideo` is empty. Playback is in-app (embed), not an
+/// external browser tab.
 class YoutubeTopVideoPrompt {
   YoutubeTopVideoPrompt._();
 
@@ -23,7 +26,11 @@ class YoutubeTopVideoPrompt {
     await YoutubeTopVideoSeenService.instance.ensureInitialized();
 
     final config = YoutubeConfigService.instance.config;
-    final topVideoId = config.topVideo.trim();
+    // Bypass entirely when no featured video is configured.
+    final topVideoId =
+        YoutubeConfigService.normalizeVideoId(config.topVideo) ?? '';
+    if (topVideoId.isEmpty) return;
+
     if (!YoutubeTopVideoSeenService.instance.shouldShow(topVideoId)) {
       return;
     }
@@ -65,28 +72,10 @@ class _YoutubeTopVideoDialog extends StatefulWidget {
 class _YoutubeTopVideoDialogState extends State<_YoutubeTopVideoDialog> {
   bool _busy = false;
 
-  Future<void> _markSeen() {
-    return YoutubeTopVideoSeenService.instance.markSeen(widget.videoId);
-  }
-
-  Future<void> _onSkip() async {
+  Future<void> _closeAndMarkSeen() async {
     if (_busy) return;
     setState(() => _busy = true);
-    await _markSeen();
-    if (!mounted) return;
-    Navigator.of(context, rootNavigator: true).pop();
-  }
-
-  Future<void> _onWatch() async {
-    if (_busy) return;
-    setState(() => _busy = true);
-    await _markSeen();
-    final uri = Uri.parse('https://www.youtube.com/watch?v=${widget.videoId}');
-    try {
-      await launchUrl(uri, mode: LaunchMode.externalApplication);
-    } catch (_) {
-      // Still close — video was marked seen.
-    }
+    await YoutubeTopVideoSeenService.instance.markSeen(widget.videoId);
     if (!mounted) return;
     Navigator.of(context, rootNavigator: true).pop();
   }
@@ -97,77 +86,75 @@ class _YoutubeTopVideoDialogState extends State<_YoutubeTopVideoDialog> {
     final colors = context.appColors;
     final textTheme = Theme.of(context).textTheme;
     final subtitle = widget.videoTitle;
+    final maxWidth = MediaQuery.sizeOf(context).width.clamp(280.0, 560.0);
 
-    return AlertDialog(
+    return Dialog(
+      insetPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 24),
+      backgroundColor: colors.card,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(16),
         side: BorderSide(color: colors.border),
       ),
-      title: Row(
-        children: [
-          Icon(Icons.ondemand_video_outlined, color: colors.primary),
-          const SizedBox(width: 10),
-          Expanded(
-            child: Text(
-              l10n.youtubeTopVideoTitle,
-              style: textTheme.titleLarge?.copyWith(
-                color: colors.textPrimary,
-                fontWeight: FontWeight.w700,
-              ),
-            ),
-          ),
-        ],
-      ),
-      content: Column(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            l10n.youtubeTopVideoMessage,
-            style: textTheme.bodyMedium?.copyWith(
-              color: colors.textSecondary,
-              height: 1.35,
-            ),
-          ),
-          if (subtitle != null) ...[
-            const SizedBox(height: 12),
-            Container(
-              width: double.infinity,
-              padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(
-                color: colors.surface,
-                borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: colors.border),
-              ),
-              child: Row(
+      child: ConstrainedBox(
+        constraints: BoxConstraints(maxWidth: maxWidth),
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(16, 16, 16, 12),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Row(
                 children: [
-                  Icon(Icons.play_circle_fill, color: colors.primary, size: 28),
+                  Icon(Icons.ondemand_video_outlined, color: colors.primary),
                   const SizedBox(width: 10),
                   Expanded(
                     child: Text(
-                      subtitle,
-                      style: textTheme.titleSmall?.copyWith(
+                      l10n.youtubeTopVideoTitle,
+                      style: textTheme.titleLarge?.copyWith(
                         color: colors.textPrimary,
                         fontWeight: FontWeight.w700,
                       ),
                     ),
                   ),
+                  IconButton(
+                    tooltip: l10n.youtubeTopVideoSkip,
+                    onPressed: _busy ? null : _closeAndMarkSeen,
+                    icon: const Icon(Icons.close_rounded),
+                  ),
                 ],
               ),
-            ),
-          ],
-        ],
+              if (subtitle != null) ...[
+                const SizedBox(height: 4),
+                Text(
+                  subtitle,
+                  style: textTheme.titleSmall?.copyWith(
+                    color: colors.textPrimary,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+              ],
+              const SizedBox(height: 8),
+              Text(
+                l10n.youtubeTopVideoMessage,
+                style: textTheme.bodyMedium?.copyWith(
+                  color: colors.textSecondary,
+                  height: 1.35,
+                ),
+              ),
+              const SizedBox(height: 12),
+              YoutubeEmbedPlayer(videoId: widget.videoId),
+              const SizedBox(height: 12),
+              Align(
+                alignment: Alignment.centerRight,
+                child: TextButton(
+                  onPressed: _busy ? null : _closeAndMarkSeen,
+                  child: Text(l10n.youtubeTopVideoSkip),
+                ),
+              ),
+            ],
+          ),
+        ),
       ),
-      actions: [
-        TextButton(
-          onPressed: _busy ? null : _onSkip,
-          child: Text(l10n.youtubeTopVideoSkip),
-        ),
-        ElevatedButton(
-          onPressed: _busy ? null : _onWatch,
-          child: Text(l10n.youtubeTopVideoWatch),
-        ),
-      ],
     );
   }
 }

@@ -6471,7 +6471,7 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get youtubeTopVideoMessage =>
-      'Découvrez la nouvelle astuce Grinta. Vous pouvez la regarder maintenant ou la passer.';
+      'Découvrez la nouvelle astuce Grinta. Vous pouvez la regarder ici ou la passer.';
 
   @override
   String get youtubeTopVideoWatch => 'Regarder';

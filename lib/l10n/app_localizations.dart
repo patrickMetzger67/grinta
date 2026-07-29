@@ -11153,7 +11153,7 @@ abstract class AppLocalizations {
   /// No description provided for @youtubeTopVideoMessage.
   ///
   /// In fr, this message translates to:
-  /// **'Découvrez la nouvelle astuce Grinta. Vous pouvez la regarder maintenant ou la passer.'**
+  /// **'Découvrez la nouvelle astuce Grinta. Vous pouvez la regarder ici ou la passer.'**
   String get youtubeTopVideoMessage;
 
   /// No description provided for @youtubeTopVideoWatch.
