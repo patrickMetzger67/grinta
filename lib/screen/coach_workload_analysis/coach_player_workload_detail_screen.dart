@@ -343,16 +343,58 @@ class _ActivityTile extends StatelessWidget {
     if (item.wasPresent == false) {
       chips.add(l10n.presenceAbsent);
     }
-    if (item.durationMinutes != null && item.durationMinutes! > 0) {
-      chips.add('${item.durationMinutes} min');
-    }
-    if (item.workloadScore != null) {
-      chips.add(l10n.coachWorkloadMetricLoad(
-        item.workloadScore!.toStringAsFixed(0),
-      ));
-    }
-    if (item.distanceKm != null && item.distanceKm! > 0) {
-      chips.add('${item.distanceKm!.toStringAsFixed(1)} km');
+    if (item.kind == CoachWorkloadActivityKind.training ||
+        item.kind == CoachWorkloadActivityKind.match) {
+      // Same tracker indicators as the session stats table.
+      if (item.workloadScore != null) {
+        chips.add(
+          '${l10n.statsWorkload} ${item.workloadScore!.toStringAsFixed(0)}',
+        );
+      }
+      if (item.distanceKm != null) {
+        chips.add(
+          '${l10n.statsDistance} ${item.distanceKm!.toStringAsFixed(2)} km',
+        );
+      }
+      if (item.maxValidatedSpeedKmh != null) {
+        chips.add(
+          '${l10n.statsMaxSpeed} '
+          '${item.maxValidatedSpeedKmh!.toStringAsFixed(1)} km/h',
+        );
+      }
+      if (item.highAccelerationCount != null) {
+        chips.add(
+          '${l10n.statsHighAccel} '
+          '${item.highAccelerationCount!.toStringAsFixed(0)}',
+        );
+      }
+      if (item.highSpeedDurationSec != null) {
+        chips.add(
+          '${l10n.statsHighSpeedTime} '
+          '${item.highSpeedDurationSec!.toStringAsFixed(1)} sec',
+        );
+      }
+      if (item.maxAccelerationMps2 != null) {
+        chips.add(
+          '${l10n.statsMaxAccel} '
+          '${item.maxAccelerationMps2!.toStringAsFixed(2)} m/s²',
+        );
+      }
+      if (item.durationMinutes != null && item.durationMinutes! > 0) {
+        chips.add('${item.durationMinutes} min');
+      }
+    } else {
+      if (item.durationMinutes != null && item.durationMinutes! > 0) {
+        chips.add('${item.durationMinutes} min');
+      }
+      if (item.workloadScore != null) {
+        chips.add(l10n.coachWorkloadMetricLoad(
+          item.workloadScore!.toStringAsFixed(0),
+        ));
+      }
+      if (item.distanceKm != null && item.distanceKm! > 0) {
+        chips.add('${item.distanceKm!.toStringAsFixed(1)} km');
+      }
     }
 
     return Material(

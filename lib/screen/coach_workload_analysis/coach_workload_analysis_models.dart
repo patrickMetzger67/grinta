@@ -101,6 +101,10 @@ class CoachWorkloadActivityItem {
     this.personalSport,
     this.workloadScore,
     this.distanceKm,
+    this.maxValidatedSpeedKmh,
+    this.highAccelerationCount,
+    this.highSpeedDurationSec,
+    this.maxAccelerationMps2,
     this.durationMinutes,
     this.wasPresent,
   });
@@ -112,6 +116,13 @@ class CoachWorkloadActivityItem {
   final PersonalSportActivity? personalSport;
   final double? workloadScore;
   final double? distanceKm;
+
+  /// Tracker metrics (training/match with GPS), same set as session stats table.
+  final double? maxValidatedSpeedKmh;
+  final double? highAccelerationCount;
+  final double? highSpeedDurationSec;
+  final double? maxAccelerationMps2;
+
   final int? durationMinutes;
   final bool? wasPresent;
 }
