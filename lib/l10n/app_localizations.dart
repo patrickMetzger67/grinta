@@ -748,6 +748,12 @@ abstract class AppLocalizations {
   /// **'Membre ajouté, mais l\'envoi de l\'e-mail d\'invitation a échoué.'**
   String get memberInvitationEmailFailed;
 
+  /// No description provided for @memberInvitationEmailSent.
+  ///
+  /// In fr, this message translates to:
+  /// **'E-mail d\'invitation envoyé'**
+  String get memberInvitationEmailSent;
+
   /// No description provided for @memberAddedToTeamNotificationTitle.
   ///
   /// In fr, this message translates to:
@@ -783,6 +789,12 @@ abstract class AppLocalizations {
   /// In fr, this message translates to:
   /// **'Renvoyer l\'e-mail d\'invitation'**
   String get resendInvitationTooltip;
+
+  /// No description provided for @resendInvitationAction.
+  ///
+  /// In fr, this message translates to:
+  /// **'Renvoyer l\'invitation'**
+  String get resendInvitationAction;
 
   /// No description provided for @resendInvitationNoEmailTooltip.
   ///

@@ -915,6 +915,14 @@ class _TeamDetailScreenState extends State<TeamDetailScreen> {
       return <_TeamMemberVm>[];
     }
 
+    // Grinta teams mutate `grintaPlayers` (invites + resend). Prefer that
+    // roster for display whenever it has entries, even if a stale legacy
+    // `players` array still exists — otherwise staff invites are invisible.
+    if (_team.isGrinta == true && _teamHasGrintaPlayersFor(_team)) {
+      _usesGrintaRoster = true;
+      return _loadGrintaMembers();
+    }
+
     if (_teamHasLegacyPlayers()) {
       return _loadLegacyMembers();
     }
@@ -2677,10 +2685,21 @@ class _TeamDetailScreenState extends State<TeamDetailScreen> {
     AppLocalizations l10n,
     MemberInvitationResult? result,
   ) {
-    if (result == null ||
-        result.success ||
-        !result.invitationCreated ||
-        result.emailSent) {
+    if (result == null || result.skipped) {
+      return;
+    }
+    if (result.emailSent) {
+      AppSnackbar.show(
+        context,
+        l10n.memberInvitationEmailSent,
+        isError: false,
+      );
+      return;
+    }
+    if (result.notificationSent) {
+      return;
+    }
+    if (result.success || !result.invitationCreated) {
       return;
     }
     final error = result.error?.trim();
@@ -2932,6 +2951,41 @@ class _TeamDetailScreenState extends State<TeamDetailScreen> {
       enabled: enabled,
       iconColor: enabled ? colors.primary : null,
       onTap: loading ? null : () => _onResendInvitationPressed(context, row),
+    );
+  }
+
+  /// Explicit labeled action on staff cards (icon-only was easy to miss).
+  Widget _buildStaffResendInvitationButton(
+    BuildContext context,
+    _TeamMemberVm row,
+  ) {
+    if (!_shouldShowResendInvitation(context, row)) {
+      return const SizedBox.shrink();
+    }
+
+    final AppLocalizations l10n = context.l10n;
+    final colors = context.appColors;
+    final bool enabled = _isResendInvitationEnabled(row) &&
+        !_isResendingInvitationForRow(row);
+    final bool loading = _isResendingInvitationForRow(row);
+
+    return Tooltip(
+      message: _resendInvitationTooltip(l10n, row),
+      child: OutlinedButton.icon(
+        onPressed:
+            enabled ? () => _onResendInvitationPressed(context, row) : null,
+        icon: loading
+            ? SizedBox(
+                width: 16,
+                height: 16,
+                child: CircularProgressIndicator(
+                  strokeWidth: 2,
+                  color: colors.primary,
+                ),
+              )
+            : const Icon(Icons.mail_outline_rounded, size: 18),
+        label: Text(l10n.resendInvitationAction),
+      ),
     );
   }
 
@@ -3511,7 +3565,7 @@ class _TeamDetailScreenState extends State<TeamDetailScreen> {
   Future<void> _onAddStaffPressed(BuildContext context) async {
     final teamId = _team.keyTeam?.trim();
     if (teamId == null || teamId.isEmpty) return;
-    if (!_canManageTeam(context)) return;
+    if (!_canManageRoster(context)) return;
 
     final l10n = context.l10n;
     final Player? selected = await showMemberSearchSheet(
@@ -3583,40 +3637,51 @@ class _TeamDetailScreenState extends State<TeamDetailScreen> {
           _pendingMemberInvitationResult,
         );
       } else {
+        // Legacy teams: still require email and send the same invitation flow.
         final AddGrintaStaffDetails? details = await showAddGrintaStaffSheet(
           context,
           member: selected,
+          onSubmit: (staffDetails) async {
+            final MemberInvitationResult invitationResult =
+                await MemberInvitationService.instance.notifyOrInviteMember(
+              l10n: l10n,
+              member: selected,
+              memberId: memberId,
+              email: staffDetails.email ?? '',
+              teamId: teamId,
+              seasonId: widget.seasonId,
+              teamName: _team.name ?? '',
+            );
+            if (!invitationResult.success &&
+                !invitationResult.invitationCreated) {
+              throw StateError(invitationResult.error ?? '');
+            }
+            _pendingMemberInvitationResult = invitationResult;
+            await _addStaffToLegacyTeam(
+              teamId: teamId,
+              memberId: memberId,
+              details: staffDetails,
+              profile: selected,
+            );
+            await _reloadTeamAndMembers();
+          },
         );
         if (details == null || !context.mounted) return;
 
-        _setMemberOperationLoading(true);
-        try {
-          await _addStaffToLegacyTeam(
-            teamId: teamId,
-            memberId: memberId,
-            details: details,
-            profile: selected,
-          );
-
-          if (!context.mounted) return;
-
-          _dismissOpenSheets(context);
-          await _reloadTeamAndMembers();
-
-          if (!context.mounted) return;
-
-          final String playerName = playerDisplayName(
-            selected,
-            unknownLabel: l10n.entityStaff,
-          );
-          AppSnackbar.show(
-            context,
-            '${l10n.actionAddStaff}: $playerName',
-            isError: false,
-          );
-        } finally {
-          _setMemberOperationLoading(false);
-        }
+        final String playerName = playerDisplayName(
+          selected,
+          unknownLabel: l10n.entityStaff,
+        );
+        AppSnackbar.show(
+          context,
+          '${l10n.actionAddStaff}: $playerName',
+          isError: false,
+        );
+        _showMemberInvitationResultIfNeeded(
+          context,
+          l10n,
+          _pendingMemberInvitationResult,
+        );
       }
     } catch (e) {
       if (!context.mounted) return;
@@ -3626,6 +3691,25 @@ class _TeamDetailScreenState extends State<TeamDetailScreen> {
         isError: true,
       );
     }
+  }
+
+  bool _shouldInviteStaffOnSave({
+    required Player member,
+    required GrintaPlayer existing,
+    required AddGrintaStaffDetails details,
+  }) {
+    if (isMemberLinkedToAppAccount(member)) {
+      return false;
+    }
+    final String email = details.email?.trim() ?? '';
+    if (email.isEmpty || !isValidEmailFormat(email)) {
+      return false;
+    }
+    final String? invitationId = existing.invitationId?.trim();
+    final bool missingInvitation =
+        invitationId == null || invitationId.isEmpty;
+    return missingInvitation ||
+        _invitationEmailChanged(existing.email, details.email);
   }
 
   Future<void> _onEditStaffPressed(
@@ -3647,55 +3731,69 @@ class _TeamDetailScreenState extends State<TeamDetailScreen> {
     if (existing == null) return;
 
     final l10n = context.l10n;
-    final AddGrintaStaffDetails? details = await showAddGrintaStaffSheet(
-      context,
-      member: row.player,
-      existingGrintaStaff: existing,
-    );
-    if (details == null || !context.mounted) return;
+    final bool requireInviteEmail = !isMemberLinkedToAppAccount(row.player);
 
     try {
       MemberInvitationResult? invitationResult;
-      String? invitationId = existing.invitationId;
-      if (_invitationEmailChanged(existing.email, details.email)) {
-        invitationResult =
-            await MemberInvitationService.instance.notifyOrInviteMember(
-          l10n: l10n,
-          member: row.player,
-          memberId: memberId,
-          email: details.email ?? '',
-          teamId: teamId,
-          seasonId: widget.seasonId,
-          teamName: _team.name ?? '',
-          notifyIfLinked: false,
-        );
-        if (!invitationResult.success && !invitationResult.invitationCreated) {
-          if (!context.mounted) return;
-          AppSnackbar.show(
-            context,
-            l10n.errorGeneric(invitationResult.error ?? ''),
-            isError: true,
-          );
-          return;
-        }
-        if (invitationResult.invitationId != null &&
-            invitationResult.invitationId!.trim().isNotEmpty) {
-          invitationId = invitationResult.invitationId;
-        }
-      }
+      final AddGrintaStaffDetails? details = await showAddGrintaStaffSheet(
+        context,
+        member: row.player,
+        existingGrintaStaff: existing,
+        // Require email + persist like add, so unlinked staff get invites.
+        onSubmit: requireInviteEmail
+            ? (staffDetails) async {
+                String? invitationId = existing.invitationId;
+                if (_shouldInviteStaffOnSave(
+                  member: row.player,
+                  existing: existing,
+                  details: staffDetails,
+                )) {
+                  invitationResult = await MemberInvitationService.instance
+                      .notifyOrInviteMember(
+                    l10n: l10n,
+                    member: row.player,
+                    memberId: memberId,
+                    email: staffDetails.email ?? '',
+                    teamId: teamId,
+                    seasonId: widget.seasonId,
+                    teamName: _team.name ?? '',
+                    notifyIfLinked: false,
+                  );
+                  final MemberInvitationResult result = invitationResult!;
+                  if (!result.success && !result.invitationCreated) {
+                    throw StateError(result.error ?? '');
+                  }
+                  if (result.invitationId != null &&
+                      result.invitationId!.trim().isNotEmpty) {
+                    invitationId = result.invitationId;
+                  }
+                }
 
-      await _updateGrintaTeamStaff(
-        teamId: teamId,
-        memberId: memberId,
-        existing: existing,
-        details: details,
-        invitationId: invitationId,
+                await _updateGrintaTeamStaff(
+                  teamId: teamId,
+                  memberId: memberId,
+                  existing: existing,
+                  details: staffDetails,
+                  invitationId: invitationId,
+                );
+                await _reloadTeamAndMembers();
+              }
+            : null,
       );
+      if (details == null || !context.mounted) return;
 
-      if (!context.mounted) return;
-
-      _dismissOpenSheets(context);
-      await _reloadTeamAndMembers();
+      if (!requireInviteEmail) {
+        await _updateGrintaTeamStaff(
+          teamId: teamId,
+          memberId: memberId,
+          existing: existing,
+          details: details,
+          invitationId: existing.invitationId,
+        );
+        if (!context.mounted) return;
+        _dismissOpenSheets(context);
+        await _reloadTeamAndMembers();
+      }
 
       if (!context.mounted) return;
 
@@ -4129,7 +4227,7 @@ class _TeamDetailScreenState extends State<TeamDetailScreen> {
           const SizedBox(width: 12),
           if (_canManageRoster(context)) ...[
             if (_shouldShowResendInvitation(context, row)) ...[
-              _buildResendInvitationButton(context, row, compact: false),
+              _buildStaffResendInvitationButton(context, row),
               const SizedBox(width: 6),
             ],
             if (row.isGrintaRoster) ...[

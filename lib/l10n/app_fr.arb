@@ -189,6 +189,7 @@
   "sessionReportEmailNoStats": "Aucune statistique tracker disponible pour générer ce rapport.",
   "sessionReportEmailInvalid": "Adresse e-mail invalide.",
   "memberInvitationEmailFailed": "Membre ajouté, mais l'envoi de l'e-mail d'invitation a échoué.",
+  "memberInvitationEmailSent": "E-mail d'invitation envoyé",
   "memberAddedToTeamNotificationTitle": "Mise à jour d'équipe",
   "memberAddedToTeamNotificationBody": "Ton coach t'a ajouté à {teamName}.",
   "@memberAddedToTeamNotificationBody": {
@@ -200,6 +201,7 @@
   "invitationPending": "Invitation en attente",
   "memberAppAccountLinked": "Compte application lié",
   "resendInvitationTooltip": "Renvoyer l'e-mail d'invitation",
+  "resendInvitationAction": "Renvoyer l'invitation",
   "resendInvitationNoEmailTooltip": "Ajoutez une adresse e-mail pour envoyer une invitation",
   "resendInvitationSuccess": "E-mail d'invitation envoyé",
   "resendInvitationFailed": "Impossible d'envoyer l'e-mail d'invitation",

@@ -382,6 +382,9 @@ class AppLocalizationsIt extends AppLocalizations {
       'Membro aggiunto, ma non è stato possibile inviare l\'e-mail di invito.';
 
   @override
+  String get memberInvitationEmailSent => 'E-mail di invito inviata';
+
+  @override
   String get memberAddedToTeamNotificationTitle => 'Aggiornamento squadra';
 
   @override
@@ -399,17 +402,21 @@ class AppLocalizationsIt extends AppLocalizations {
   String get memberAppAccountLinked => 'Account app collegato';
 
   @override
-  String get resendInvitationTooltip => 'Resend invitation email';
+  String get resendInvitationTooltip => 'Reinvia e-mail di invito';
+
+  @override
+  String get resendInvitationAction => 'Reinvia invito';
 
   @override
   String get resendInvitationNoEmailTooltip =>
-      'Add an email address to send an invitation';
+      'Aggiungi un\'e-mail per inviare un invito';
 
   @override
-  String get resendInvitationSuccess => 'Invitation email sent';
+  String get resendInvitationSuccess => 'E-mail di invito inviata';
 
   @override
-  String get resendInvitationFailed => 'Could not send the invitation email';
+  String get resendInvitationFailed =>
+      'Impossibile inviare l\'e-mail di invito';
 
   @override
   String get memberBirthDate => 'Data di nascita';

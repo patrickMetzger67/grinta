@@ -188,6 +188,7 @@
   "sessionReportEmailNoStats": "No tracker statistics are available to generate this report.",
   "sessionReportEmailInvalid": "Invalid email address.",
   "memberInvitationEmailFailed": "Member added, but the invitation email could not be sent.",
+  "memberInvitationEmailSent": "Invitation email sent",
   "memberAddedToTeamNotificationTitle": "Team update",
   "memberAddedToTeamNotificationBody": "Your coach added you to {teamName}.",
   "@memberAddedToTeamNotificationBody": {
@@ -199,6 +200,7 @@
   "invitationPending": "Invitation pending",
   "memberAppAccountLinked": "App account linked",
   "resendInvitationTooltip": "Resend invitation email",
+  "resendInvitationAction": "Resend invitation",
   "resendInvitationNoEmailTooltip": "Add an email address to send an invitation",
   "resendInvitationSuccess": "Invitation email sent",
   "resendInvitationFailed": "Could not send the invitation email",
