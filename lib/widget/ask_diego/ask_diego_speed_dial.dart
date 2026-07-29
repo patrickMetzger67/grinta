@@ -203,8 +203,8 @@ class _AskDiegoSpeedDialState extends State<AskDiegoSpeedDial>
             child: _isOpen
                 ? const Icon(Icons.close, key: ValueKey<String>('close'))
                 : useAskDiegoAsMain
-                    ? AskDiegoAvatar(
-                        key: const ValueKey<String>('ask-closed'),
+                    ? const AskDiegoAvatar(
+                        key: ValueKey<String>('ask-closed'),
                         size: 40,
                         backgroundColor: Colors.white,
                       )
