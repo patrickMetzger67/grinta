@@ -6473,6 +6473,19 @@ class AppLocalizationsIt extends AppLocalizations {
   String get youtubeTopVideoSkip => 'Salta';
 
   @override
+  String get settingsTipsTitle => 'Consigli';
+
+  @override
+  String get settingsTipsSubtitle =>
+      'Tutti i video della playlist Consigli sul canale YouTube.';
+
+  @override
+  String get settingsTipsEmpty => 'Nessun consiglio disponibile al momento.';
+
+  @override
+  String get settingsTipsLoadError => 'Impossibile caricare i consigli.';
+
+  @override
   String get promoCodeMenuLabel => 'Codice promo';
 
   @override

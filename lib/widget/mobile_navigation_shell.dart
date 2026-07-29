@@ -30,6 +30,7 @@ import 'package:grinta/widget/app_shell_scope.dart';
 import 'package:grinta/widget/account_create_profile_entry.dart';
 import 'package:grinta/widget/edit_member_profile.dart';
 import 'package:grinta/screen/my_unavailabilities_screen.dart';
+import 'package:grinta/screen/tips_screen.dart';
 import 'package:grinta/widget/nav_icon_count_badge.dart';
 import 'package:grinta/widget/stream_chat_nav_unread_badge.dart';
 import 'package:grinta/widget/calendar_sync_toggle.dart';
@@ -413,6 +414,22 @@ class _MobileNavigationShellState extends State<MobileNavigationShell> {
                           sheetContext,
                         );
                       },
+                    );
+                  },
+                ),
+                ListTile(
+                  leading: Icon(
+                    Icons.lightbulb_outline_rounded,
+                    color: colors.primary,
+                  ),
+                  title: Text(
+                    l10n.settingsTipsTitle,
+                    style: settingsMenuTitleStyle(sheetContext),
+                  ),
+                  onTap: () {
+                    closeSheetThen(
+                      () => openTipsScreen(context),
+                      sheetContext,
                     );
                   },
                 ),

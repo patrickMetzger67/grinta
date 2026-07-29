@@ -6399,6 +6399,19 @@ class AppLocalizationsEn extends AppLocalizations {
   String get youtubeTopVideoSkip => 'Skip';
 
   @override
+  String get settingsTipsTitle => 'Tips';
+
+  @override
+  String get settingsTipsSubtitle =>
+      'All videos from the Tips playlist on the YouTube channel.';
+
+  @override
+  String get settingsTipsEmpty => 'No tips available right now.';
+
+  @override
+  String get settingsTipsLoadError => 'Could not load tips.';
+
+  @override
   String get promoCodeMenuLabel => 'Promo code';
 
   @override

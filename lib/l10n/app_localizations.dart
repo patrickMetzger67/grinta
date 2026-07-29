@@ -11180,6 +11180,30 @@ abstract class AppLocalizations {
   /// **'Passer'**
   String get youtubeTopVideoSkip;
 
+  /// No description provided for @settingsTipsTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Astuces'**
+  String get settingsTipsTitle;
+
+  /// No description provided for @settingsTipsSubtitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Toutes les vidéos de la playlist Astuces sur la chaîne YouTube.'**
+  String get settingsTipsSubtitle;
+
+  /// No description provided for @settingsTipsEmpty.
+  ///
+  /// In fr, this message translates to:
+  /// **'Aucune astuce disponible pour le moment.'**
+  String get settingsTipsEmpty;
+
+  /// No description provided for @settingsTipsLoadError.
+  ///
+  /// In fr, this message translates to:
+  /// **'Impossible de charger les astuces.'**
+  String get settingsTipsLoadError;
+
   /// No description provided for @promoCodeMenuLabel.
   ///
   /// In fr, this message translates to:
