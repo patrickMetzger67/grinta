@@ -177,6 +177,12 @@ class _PromoCodeDialogContentState extends State<PromoCodeDialogContent> {
         'PROMO_UNAUTHENTICATED' => l10n.promoCodeRedeemUnauthenticated,
         'PROMO_EMPTY' => l10n.promoCodeRedeemEmpty,
         'PROMO_INVALID' => l10n.promoCodeRedeemInvalid,
+        // RevenueCat grant / secret issues — never "code n'est plus valide".
+        'PROMO_RC_NOT_CONFIGURED' ||
+        'PROMO_RC_KEY_REJECTED' ||
+        'PROMO_RC_ENTITLEMENT_MISSING' ||
+        'PROMO_GRANT_FAILED' =>
+          l10n.promoCodeRedeemGrantFailed,
         _ => null,
       } ??
           _messageForHttpsCode(l10n, e);
@@ -192,6 +198,13 @@ class _PromoCodeDialogContentState extends State<PromoCodeDialogContent> {
     if (PromoCodeService.isCallableMissing(e)) {
       return l10n.promoCodeRedeemFailed;
     }
+    if (PromoRedeemErrors.isGrantFailure(
+      httpsCode: e.code,
+      message: e.message,
+      details: e.details,
+    )) {
+      return l10n.promoCodeRedeemGrantFailed;
+    }
     return switch (PromoCodeService.formatFunctionsError(e)) {
       // Only map not-found → "introuvable" when the CF confirmed PROMO_NOT_FOUND.
       'not-found' => PromoRedeemErrors.shouldShowNotFoundMessage(
@@ -201,7 +214,14 @@ class _PromoCodeDialogContentState extends State<PromoCodeDialogContent> {
         )
           ? l10n.promoCodeRedeemNotFound
           : l10n.promoCodeRedeemFailed,
-      'failed-precondition' => l10n.promoCodeRedeemInvalid,
+      // Bare failed-precondition is often a server/RC issue — never assume invalid.
+      'failed-precondition' => PromoRedeemErrors.shouldShowInvalidMessage(
+          httpsCode: e.code,
+          message: e.message,
+          details: e.details,
+        )
+          ? l10n.promoCodeRedeemInvalid
+          : l10n.promoCodeRedeemFailed,
       'resource-exhausted' => l10n.promoCodeRedeemExhausted,
       'permission-denied' => l10n.promoCodeRedeemTeamMismatch,
       'unauthenticated' => l10n.promoCodeRedeemUnauthenticated,

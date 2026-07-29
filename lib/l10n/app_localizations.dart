@@ -6609,7 +6609,7 @@ abstract class AppLocalizations {
   /// No description provided for @subscriptionTrialEnds.
   ///
   /// In fr, this message translates to:
-  /// **'Fin de l\'essai le {date}'**
+  /// **'Essai jusqu\'au {date}. Vous pouvez vous abonner dès maintenant.'**
   String subscriptionTrialEnds(String date);
 
   /// No description provided for @subscriptionPeriodLabel.
@@ -11240,6 +11240,12 @@ abstract class AppLocalizations {
   /// In fr, this message translates to:
   /// **'Ce code promo n\'est plus valide.'**
   String get promoCodeRedeemInvalid;
+
+  /// No description provided for @promoCodeRedeemGrantFailed.
+  ///
+  /// In fr, this message translates to:
+  /// **'Le code est valide, mais l\'activation de l\'abonnement a échoué (configuration RevenueCat). Réessayez ou contactez le support.'**
+  String get promoCodeRedeemGrantFailed;
 
   /// No description provided for @promoCodeRedeemInactive.
   ///

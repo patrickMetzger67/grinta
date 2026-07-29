@@ -1,14 +1,14 @@
 # Codes promo Grinta — anti-régression
 
-## Pourquoi « Code promo introuvable » revient en démo
+## Pourquoi les démos cassent encore sur les codes promo
 
-Deux causes fréquentes (souvent combinées) :
+Deux messages trompeurs historiques (souvent combinés) :
 
-1. **La Cloud Function `redeemPromoCode` n’est pas déployée** (ou mauvaise région).  
-   Firebase renvoie alors un `not-found` générique. L’UI **ne doit plus** afficher « introuvable » dans ce cas — elle affiche l’échec générique (`PROMO_CALLABLE_MISSING`).
+1. **« Code promo introuvable »** — la Cloud Function `redeemPromoCode` n’est pas déployée (ou mauvaise région).  
+   Firebase renvoie un `not-found` générique. L’UI **ne doit plus** afficher « introuvable » dans ce cas — elle affiche l’échec générique (`PROMO_CALLABLE_MISSING`).
 
-2. **Le correctif n’était pas sur `main`**.  
-   Le commit du 16/07 (`Corriger le redeem code promo`) était resté sur la branche `cursor/fix-code-promo-ea82` **sans merge**. Chaque déploiement depuis `main` réintroduisait le bug.
+2. **« Ce code promo n’est plus valide »** — le code est OK, mais le **grant RevenueCat** échoue (`REVENUECAT_API_KEY` manquant / rejeté / entitlement absent).  
+   Ces erreurs serveur utilisaient un `failed-precondition` **sans** `errorCode`. L’UI ne doit **jamais** mapper un `failed-precondition` nu → « n’est plus valide » (`PROMO_INVALID` uniquement).
 
 ## Correctifs en place
 
@@ -16,7 +16,9 @@ Deux causes fréquentes (souvent combinées) :
 |--------|----------------|
 | **Functions** | Lookup tolérant (casse, tirets, `codeCompact`, scan `admin_promo_codes`) |
 | **Functions** | Miroir `subscriptionAccess` **hors** transaction (un échec user doc ne rollback pas le redeem) |
-| **Client** | `not-found` Firebase ≠ « code introuvable » sauf `errorCode: PROMO_NOT_FOUND` |
+| **Functions** | Échecs grant RC → `errorCode` (`PROMO_RC_*` / `PROMO_GRANT_FAILED`) |
+| **Client** | `not-found` Firebase ≠ « introuvable » sauf `PROMO_NOT_FOUND` |
+| **Client** | `failed-precondition` ≠ « n’est plus valide » sauf `PROMO_INVALID` |
 | **Admin UI** | Écrit `codeCompact` à la création / édition pour accélérer le lookup |
 | **Tests** | `test/promo_redeem_errors_test.dart` + `functions/promo_code_helpers.test.js` |
 

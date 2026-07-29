@@ -3796,7 +3796,7 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String subscriptionTrialEnds(String date) {
-    return 'Fin de la prueba el $date';
+    return 'Prueba hasta el $date. Puedes suscribirte ahora.';
   }
 
   @override
@@ -6528,6 +6528,10 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get promoCodeRedeemInvalid => 'Este código promo ya no es válido.';
+
+  @override
+  String get promoCodeRedeemGrantFailed =>
+      'El código es válido, pero falló la activación de la suscripción (configuración de RevenueCat). Inténtalo de nuevo o contacta con soporte.';
 
   @override
   String get promoCodeRedeemInactive => 'Este código promo no está activo.';
