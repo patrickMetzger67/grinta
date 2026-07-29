@@ -15,6 +15,7 @@ import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 
 import '../../model/agendaItem.dart';
+import '../../model/agenda_filter.dart';
 import '../../model/non_sport_event.dart';
 import '../../model/player.dart';
 import '../../model/training.dart';
@@ -36,6 +37,7 @@ import '../../widget/session_tracker_stats_view.dart';
 import '../../util/match_creation_helper.dart';
 import '../../util/training_creation_helper.dart';
 import '../../util/intense_live_eligibility.dart';
+import '../../services/agenda_filter_prefs.dart';
 import '../../services/training_intense_sync_service.dart';
 import '../../util/polar_import_navigation.dart';
 import '../../util/training_finish_helper.dart';
@@ -45,6 +47,7 @@ import '../../widget/create_training_sheet.dart';
 import '../match_detail_screen.dart';
 import '../team_players_screen.dart';
 import 'agenda_add_event_menu.dart';
+import 'agenda_filter_sheet.dart';
 import '../../widget/ask_diego/ask_diego_speed_dial.dart';
 import '../../widget/agenda_coach_players_dialog.dart';
 import '../../widget/agenda_training_presence_actions.dart';
@@ -177,6 +180,11 @@ class _AgendaScreenState extends State<AgendaScreen> {
   String? _coachViewTeamId;
   Map<String, Player> _coachViewPlayersByMemberId = <String, Player>{};
 
+  AgendaFilter _filter = AgendaFilter.none;
+  String? _filterScopeKey;
+
+  List<AgendaItem> get _filteredItems => applyAgendaFilter(_items, _filter);
+
   @override
   void initState() {
     super.initState();
@@ -207,6 +215,66 @@ class _AgendaScreenState extends State<AgendaScreen> {
     _scrollController.addListener(_handleScroll);
 
     _subscribeItems();
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    unawaited(_ensureFilterLoaded());
+  }
+
+  Future<void> _ensureFilterLoaded() async {
+    final session = context.read<AppSession>();
+    final uid = FirebaseAuth.instance.currentUser?.uid ?? '';
+    final playerId = session.selectedPlayerId ?? '';
+    final seasonId = session.selectedSeason?.ref?.id ?? '';
+    final scopeKey = '$uid|$playerId|$seasonId';
+    if (scopeKey == _filterScopeKey) return;
+    _filterScopeKey = scopeKey;
+
+    final loaded = await AgendaFilterPrefs.instance.load(
+      uid: uid,
+      playerId: playerId,
+      seasonId: seasonId,
+    );
+    if (!mounted || _filterScopeKey != scopeKey) return;
+    setState(() => _filter = loaded);
+  }
+
+  Future<void> _openAgendaFilter() async {
+    final session = context.read<AppSession>();
+    final teams = session.teamsForAgendaSelectedSeason;
+    final result = await showAgendaFilterSheet(
+      context,
+      initialFilter: _filter,
+      teams: teams,
+    );
+    if (!mounted || result == null) return;
+
+    final uid = FirebaseAuth.instance.currentUser?.uid ?? '';
+    final playerId = session.selectedPlayerId ?? '';
+    final seasonId = session.selectedSeason?.ref?.id ?? '';
+    setState(() => _filter = result);
+    await AgendaFilterPrefs.instance.save(
+      uid: uid,
+      playerId: playerId,
+      seasonId: seasonId,
+      filter: result,
+    );
+  }
+
+  Future<void> _clearAgendaFilter() async {
+    final session = context.read<AppSession>();
+    final uid = FirebaseAuth.instance.currentUser?.uid ?? '';
+    final playerId = session.selectedPlayerId ?? '';
+    final seasonId = session.selectedSeason?.ref?.id ?? '';
+    setState(() => _filter = AgendaFilter.none);
+    await AgendaFilterPrefs.instance.save(
+      uid: uid,
+      playerId: playerId,
+      seasonId: seasonId,
+      filter: AgendaFilter.none,
+    );
   }
 
   @override
@@ -686,7 +754,7 @@ class _AgendaScreenState extends State<AgendaScreen> {
                   ),
                   const SizedBox(height: 16),
                   _AgendaHeaderSummary(
-                    items: _items,
+                    items: _filteredItems,
                     periodLabel: _formatPeriodLabel(
                       _rangeStart,
                       _rangeEnd,
@@ -792,16 +860,66 @@ class _AgendaScreenState extends State<AgendaScreen> {
     await _subscribeItems(scrollToSelection: false);
   }
 
+  Widget _buildActiveFilterBanner(BuildContext context) {
+    final colors = context.appColors;
+    final l10n = context.l10n;
+    return Material(
+      color: colors.primary.withValues(alpha: 0.12),
+      borderRadius: BorderRadius.circular(14),
+      child: InkWell(
+        borderRadius: BorderRadius.circular(14),
+        onTap: () => unawaited(_openAgendaFilter()),
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(12, 10, 6, 10),
+          child: Row(
+            children: [
+              Icon(Icons.filter_alt_rounded, color: colors.primary, size: 20),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      l10n.agendaFilterActiveBanner,
+                      style: TextStyle(
+                        color: colors.primary,
+                        fontWeight: FontWeight.w700,
+                        fontSize: 13,
+                      ),
+                    ),
+                    Text(
+                      l10n.agendaFilterActiveBannerDetail,
+                      style: TextStyle(
+                        color: colors.textSecondary,
+                        fontSize: 12,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              TextButton(
+                onPressed: () => unawaited(_clearAgendaFilter()),
+                child: Text(l10n.agendaFilterClear),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final colors = context.appColors;
+    final visibleItems = _filteredItems;
     final weeks = _generateWeeks(_rangeStart, _rangeEnd);
-    final groupedByWeek = _groupItemsByWeek(_items);
+    final groupedByWeek = _groupItemsByWeek(visibleItems);
     final compact = MediaQuery.of(context).size.width < 700;
-    final headerEventTypesByDay = _headerEventTypesByDay(_items);
+    final headerEventTypesByDay = _headerEventTypesByDay(visibleItems);
 
     final l10n = context.l10n;
     final bool hideAppBar = AppShellScope.hidesChildAppBar(context);
+    final bool filterActive = _filter.isActive;
 
     final Widget scaffold = Scaffold(
       backgroundColor: colors.background,
@@ -866,6 +984,10 @@ class _AgendaScreenState extends State<AgendaScreen> {
                   await _selectDate(date);
                 },
               ),
+              if (filterActive) ...[
+                const SizedBox(height: 8),
+                _buildActiveFilterBanner(context),
+              ],
               if (_isRefreshing) ...[
                 const SizedBox(height: 8),
                 ClipRRect(
@@ -895,6 +1017,7 @@ class _AgendaScreenState extends State<AgendaScreen> {
       ),
       floatingActionButton: AskDiegoSpeedDial(
         heroTagPrefix: 'agenda',
+        showClosedBadge: filterActive,
         primaryAction: AskDiegoPrimaryAction(
           heroTag: 'grinta-fab-agenda',
           icon: Icons.add,
@@ -906,6 +1029,15 @@ class _AgendaScreenState extends State<AgendaScreen> {
           ),
         ),
         secondaryActions: [
+          AskDiegoPrimaryAction(
+            heroTag: 'grinta-fab-agenda-filter',
+            icon: Icons.filter_alt_rounded,
+            tooltip: context.l10n.agendaFilterFabTooltip,
+            showBadge: filterActive,
+            onPressed: () {
+              unawaited(_openAgendaFilter());
+            },
+          ),
           if (context.watch<AppSession>().hasManagedTeamsInSelectedSeason)
             AskDiegoPrimaryAction(
               heroTag: 'grinta-fab-agenda-coach-players',
@@ -1052,7 +1184,7 @@ class _AgendaScreenState extends State<AgendaScreen> {
       );
     }
 
-    final dayItems = _items
+    final dayItems = _filteredItems
         .where((e) => _agendaItemOccursOnDay(e, _selectedDate))
         .toList()
       ..sort(_compareAgendaItems);

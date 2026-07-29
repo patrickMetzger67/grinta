@@ -4721,6 +4721,72 @@ abstract class AppLocalizations {
   /// **'Effacer la sélection'**
   String get agendaCoachPlayersClear;
 
+  /// No description provided for @agendaFilterFabTooltip.
+  ///
+  /// In fr, this message translates to:
+  /// **'Filtrer l’agenda'**
+  String get agendaFilterFabTooltip;
+
+  /// No description provided for @agendaFilterTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Filtrer l’agenda'**
+  String get agendaFilterTitle;
+
+  /// No description provided for @agendaFilterTypesSection.
+  ///
+  /// In fr, this message translates to:
+  /// **'Types d’événements'**
+  String get agendaFilterTypesSection;
+
+  /// No description provided for @agendaFilterTeamsSection.
+  ///
+  /// In fr, this message translates to:
+  /// **'Équipes'**
+  String get agendaFilterTeamsSection;
+
+  /// No description provided for @agendaFilterNoTeams.
+  ///
+  /// In fr, this message translates to:
+  /// **'Aucune équipe disponible sur cette saison.'**
+  String get agendaFilterNoTeams;
+
+  /// No description provided for @agendaFilterSelectAllTeams.
+  ///
+  /// In fr, this message translates to:
+  /// **'Tout sélectionner'**
+  String get agendaFilterSelectAllTeams;
+
+  /// No description provided for @agendaFilterSelectNoneTeams.
+  ///
+  /// In fr, this message translates to:
+  /// **'Réduire la sélection'**
+  String get agendaFilterSelectNoneTeams;
+
+  /// No description provided for @agendaFilterApply.
+  ///
+  /// In fr, this message translates to:
+  /// **'Appliquer'**
+  String get agendaFilterApply;
+
+  /// No description provided for @agendaFilterActiveBanner.
+  ///
+  /// In fr, this message translates to:
+  /// **'Filtre actif'**
+  String get agendaFilterActiveBanner;
+
+  /// No description provided for @agendaFilterActiveBannerDetail.
+  ///
+  /// In fr, this message translates to:
+  /// **'Certaines équipes ou types sont masqués.'**
+  String get agendaFilterActiveBannerDetail;
+
+  /// No description provided for @agendaFilterClear.
+  ///
+  /// In fr, this message translates to:
+  /// **'Effacer le filtre'**
+  String get agendaFilterClear;
+
   /// No description provided for @agendaEventSummaryNonSport.
   ///
   /// In fr, this message translates to:
