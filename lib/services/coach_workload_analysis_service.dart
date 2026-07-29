@@ -69,7 +69,11 @@ class CoachWorkloadAnalysisService {
       );
     }
 
-    final period = SeasonPeriodRange(start: start, end: end);
+    final bounds = _normalizeRange(start: start, end: end);
+    final period = SeasonPeriodRange(
+      start: bounds.start,
+      end: bounds.endInclusive,
+    );
     final trainings = await _loadTrainings(
       teamId: teamId,
       seasonId: seasonId,
@@ -90,8 +94,8 @@ class CoachWorkloadAnalysisService {
     );
     final personalByPlayerKey = await _loadPersonalSportsByPlayers(
       players: players,
-      start: start,
-      end: end,
+      start: bounds.start,
+      end: bounds.endExclusive,
     );
 
     final summaries = <CoachPlayerWorkloadSummary>[];
@@ -201,7 +205,11 @@ class CoachWorkloadAnalysisService {
     final teamId = team.keyTeam?.trim() ?? '';
     final memberId = effectiveMemberId(player)?.trim() ?? '';
     final lookupIds = playerMemberLookupIds(player);
-    final period = SeasonPeriodRange(start: start, end: end);
+    final bounds = _normalizeRange(start: start, end: end);
+    final period = SeasonPeriodRange(
+      start: bounds.start,
+      end: bounds.endInclusive,
+    );
 
     final trainings = teamId.isEmpty
         ? const <Training>[]
@@ -227,8 +235,8 @@ class CoachWorkloadAnalysisService {
         final items =
             await _personalSportService.fetchNonPrivateOwnedBetweenDates(
           memberId: id,
-          start: start,
-          end: end,
+          start: bounds.start,
+          end: bounds.endExclusive,
         );
         for (final activity in items) {
           final activityId = activity.id?.trim();
@@ -530,6 +538,34 @@ class CoachWorkloadAnalysisService {
       out[eventId] = await _teamWorkloadSummaryService.getByEventId(eventId);
     }
     return out;
+  }
+
+  /// Normalizes analysis ranges.
+  ///
+  /// Callers pass `[start, end)` where [end] is exclusive (next day at 00:00),
+  /// matching [CoachWorkloadAnalysisScreen].
+  ({DateTime start, DateTime endInclusive, DateTime endExclusive})
+      _normalizeRange({
+    required DateTime start,
+    required DateTime end,
+  }) {
+    final startDay = DateTime(start.year, start.month, start.day);
+    // Midnight → exclusive bound as-is; any later time → next calendar day.
+    final DateTime endExclusive = (end.hour == 0 &&
+            end.minute == 0 &&
+            end.second == 0 &&
+            end.millisecond == 0)
+        ? DateTime(end.year, end.month, end.day)
+        : DateTime(end.year, end.month, end.day).add(const Duration(days: 1));
+    final safeEndExclusive = endExclusive.isAfter(startDay)
+        ? endExclusive
+        : startDay.add(const Duration(days: 1));
+    final endInclusive = safeEndExclusive.subtract(const Duration(days: 1));
+    return (
+      start: startDay,
+      endInclusive: endInclusive,
+      endExclusive: safeEndExclusive,
+    );
   }
 
   /// Loads non-private personal sports for each player, trying all member

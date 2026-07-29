@@ -157,6 +157,7 @@ class _CoachPlayerWorkloadDetailScreenState
                   ),
                   const SizedBox(height: 14),
                   Wrap(
+                    alignment: WrapAlignment.center,
                     spacing: 8,
                     runSpacing: 8,
                     children: [
