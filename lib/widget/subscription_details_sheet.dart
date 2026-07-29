@@ -154,7 +154,19 @@ class _SubscriptionDetailsBodyState extends State<_SubscriptionDetailsBody> {
     if (!context.mounted) return;
     if (subscribed == true) {
       await subscription.refreshForActiveSession();
+      if (!context.mounted) return;
+      // Promo redeem (or purchase) succeeded — leave Abonnement details.
+      widget.onClose();
     }
+  }
+
+  Future<void> _openPromoCode(BuildContext context) async {
+    final successMessage = await showPromoCodeDialog(context);
+    if (!context.mounted || successMessage == null) return;
+    await SubscriptionService.instance.refreshForActiveSession();
+    if (!context.mounted) return;
+    AppSnackbar.show(context, successMessage, isError: false);
+    widget.onClose();
   }
 
   @override
@@ -276,7 +288,7 @@ class _SubscriptionDetailsBodyState extends State<_SubscriptionDetailsBody> {
                             if (!subscription.isPurchaseAvailable) ...[
                               const SizedBox(height: 12),
                               OutlinedButton.icon(
-                                onPressed: () => showPromoCodeDialog(context),
+                                onPressed: () => _openPromoCode(context),
                                 icon: const Icon(
                                   Icons.confirmation_number_outlined,
                                 ),
