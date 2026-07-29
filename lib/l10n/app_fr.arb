@@ -1722,7 +1722,7 @@
     }
   },
   "subscriptionNone": "Aucun abonnement actif",
-  "subscriptionTrialEnds": "Fin de l'essai le {date}",
+  "subscriptionTrialEnds": "Essai jusqu'au {date}. Vous pouvez vous abonner dès maintenant.",
   "@subscriptionTrialEnds": {
     "placeholders": {
       "date": { "type": "String" }
@@ -2925,6 +2925,7 @@
   "promoCodeRedeemRcUnavailable": "Code enregistré côté serveur, mais RevenueCat n'est pas configuré sur cet appareil (vérifiez les clés API). Essayez sur iOS ou web, ou relancez avec dart_defines.json.",
   "promoCodeRedeemNotFound": "Code promo introuvable.",
   "promoCodeRedeemInvalid": "Ce code promo n'est plus valide.",
+  "promoCodeRedeemGrantFailed": "Le code est valide, mais l'activation de l'abonnement a échoué (configuration RevenueCat). Réessayez ou contactez le support.",
   "promoCodeRedeemInactive": "Ce code promo n'est plus actif.",
   "promoCodeRedeemExpired": "Ce code promo a expiré.",
   "promoCodeRedeemAlreadyRedeemed": "Vous avez déjà utilisé ce code promo.",

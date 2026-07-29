@@ -434,8 +434,10 @@ function extractGrantedEntitlement(subscriber, entitlementId) {
 async function grantPromotionalEntitlement(appUserId, entitlementId, durationDays) {
   const apiKey = revenueCatApiKey.value();
   if (!apiKey) {
-    throw new HttpsError(
+    // Must carry errorCode — bare failed-precondition must never look like an invalid promo.
+    throwPromoError(
       'failed-precondition',
+      'PROMO_RC_NOT_CONFIGURED',
       'REVENUECAT_API_KEY secret is not configured.',
     );
   }
@@ -469,20 +471,23 @@ async function grantPromotionalEntitlement(appUserId, entitlementId, durationDay
     }
 
     if (response.status === 401 || response.status === 403) {
-      throw new HttpsError(
+      throwPromoError(
         'failed-precondition',
+        'PROMO_RC_KEY_REJECTED',
         `RevenueCat API key rejected (${response.status}). Check REVENUECAT_API_KEY secret matches the same RC project as the app SDK keys.`,
       );
     }
     if (response.status === 404) {
-      throw new HttpsError(
+      throwPromoError(
         'failed-precondition',
+        'PROMO_RC_ENTITLEMENT_MISSING',
         `RevenueCat entitlement "${entitlementId}" was not found. Check RevenueCat dashboard identifiers.`,
       );
     }
 
-    throw new HttpsError(
+    throwPromoError(
       'internal',
+      'PROMO_GRANT_FAILED',
       `RevenueCat grant failed (${response.status}): ${detail || 'unknown error'}`,
     );
   }
@@ -503,15 +508,17 @@ async function grantPromotionalEntitlement(appUserId, entitlementId, durationDay
       'RevenueCat grant HTTP OK but entitlement missing in response',
       { appUserId, entitlementId, body },
     );
-    throw new HttpsError(
+    throwPromoError(
       'internal',
+      'PROMO_GRANT_FAILED',
       `RevenueCat grant did not activate entitlement "${entitlementId}".`,
     );
   }
 
   if (expiresAt && expiresAt.getTime() <= Date.now()) {
-    throw new HttpsError(
+    throwPromoError(
       'internal',
+      'PROMO_GRANT_FAILED',
       `RevenueCat grant returned an already-expired entitlement "${entitlementId}".`,
     );
   }

@@ -75,5 +75,41 @@ void main() {
         'ALREADY_REDEEMED',
       );
     });
+
+    test('bare failed-precondition is NOT invalid promo', () {
+      expect(
+        PromoRedeemErrors.shouldShowInvalidMessage(
+          httpsCode: 'failed-precondition',
+          message: 'REVENUECAT_API_KEY secret is not configured.',
+        ),
+        isFalse,
+      );
+      expect(
+        PromoRedeemErrors.isGrantFailure(
+          httpsCode: 'failed-precondition',
+          message: 'REVENUECAT_API_KEY secret is not configured.',
+        ),
+        isTrue,
+      );
+      expect(
+        PromoRedeemErrors.extractErrorCode(
+          httpsCode: 'failed-precondition',
+          message: 'RevenueCat API key rejected (401).',
+          details: {'errorCode': 'PROMO_RC_KEY_REJECTED'},
+        ),
+        'PROMO_RC_KEY_REJECTED',
+      );
+    });
+
+    test('explicit PROMO_INVALID still shows invalid', () {
+      expect(
+        PromoRedeemErrors.shouldShowInvalidMessage(
+          httpsCode: 'failed-precondition',
+          message: 'Invalid promo entitlement.',
+          details: {'errorCode': 'PROMO_INVALID'},
+        ),
+        isTrue,
+      );
+    });
   });
 }

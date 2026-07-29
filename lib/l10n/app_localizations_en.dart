@@ -3747,7 +3747,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String subscriptionTrialEnds(String date) {
-    return 'Trial ends on $date';
+    return 'Trial until $date. You can subscribe now.';
   }
 
   @override
@@ -6434,6 +6434,10 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get promoCodeRedeemInvalid => 'This promo code is no longer valid.';
+
+  @override
+  String get promoCodeRedeemGrantFailed =>
+      'The code is valid, but activating the subscription failed (RevenueCat configuration). Try again or contact support.';
 
   @override
   String get promoCodeRedeemInactive => 'This promo code is inactive.';

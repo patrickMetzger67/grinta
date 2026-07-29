@@ -8,6 +8,7 @@ import 'package:grinta/services/subscription_service.dart';
 import 'package:grinta/services/user_trial_service.dart';
 import 'package:grinta/util/app_snackbar.dart';
 import 'package:grinta/util/app_theme.dart';
+import 'package:grinta/widget/promo_code_dialog.dart';
 import 'package:grinta/widget/subscription_paywall.dart';
 import 'package:intl/intl.dart';
 
@@ -263,11 +264,23 @@ class _SubscriptionDetailsBodyState extends State<_SubscriptionDetailsBody> {
                                 icon: Icons.workspace_premium_outlined,
                                 message: l10n.subscriptionNone,
                               ),
-                            if (subscription.isPurchaseAvailable) ...[
-                              const SizedBox(height: 16),
-                              ElevatedButton(
-                                onPressed: () => _openSubscribe(context),
-                                child: Text(l10n.subscriptionSubscribe),
+                            // Always offer subscribe during trial / no plan.
+                            // Do not gate on isPurchaseAvailable — demos and
+                            // misconfigured RC must still reach the paywall
+                            // (store message + promo code path).
+                            const SizedBox(height: 16),
+                            ElevatedButton(
+                              onPressed: () => _openSubscribe(context),
+                              child: Text(l10n.subscriptionSubscribe),
+                            ),
+                            if (!subscription.isPurchaseAvailable) ...[
+                              const SizedBox(height: 12),
+                              OutlinedButton.icon(
+                                onPressed: () => showPromoCodeDialog(context),
+                                icon: const Icon(
+                                  Icons.confirmation_number_outlined,
+                                ),
+                                label: Text(l10n.promoCodeMenuLabel),
                               ),
                             ],
                           ],

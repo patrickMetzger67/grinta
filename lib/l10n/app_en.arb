@@ -1414,7 +1414,7 @@
     }
   },
   "subscriptionNone": "No active subscription",
-  "subscriptionTrialEnds": "Trial ends on {date}",
+  "subscriptionTrialEnds": "Trial until {date}. You can subscribe now.",
   "@subscriptionTrialEnds": {
     "placeholders": {
       "date": { "type": "String" }
@@ -2617,6 +2617,7 @@
   "promoCodeRedeemRcUnavailable": "Code registered on the server, but RevenueCat is not configured on this device (check API keys). Try on iOS or web, or relaunch with dart_defines.json.",
   "promoCodeRedeemNotFound": "Promo code not found.",
   "promoCodeRedeemInvalid": "This promo code is no longer valid.",
+  "promoCodeRedeemGrantFailed": "The code is valid, but activating the subscription failed (RevenueCat configuration). Try again or contact support.",
   "promoCodeRedeemInactive": "This promo code is inactive.",
   "promoCodeRedeemExpired": "This promo code has expired.",
   "promoCodeRedeemAlreadyRedeemed": "You have already redeemed this promo code.",
