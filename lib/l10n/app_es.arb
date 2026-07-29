@@ -1088,6 +1088,10 @@
   "loadingStats": "Cargando estadísticas...",
   "dashboardMyManagedTeams": "Mis equipos gestionados",
   "dashboardMatchListTitle": "Lista de partidos",
+  "entityPersonalSports": "Actividades deportivas individuales",
+  "dashboardPersonalSportsListTitle": "Lista de actividades deportivas",
+  "emptyNoPersonalSportToShow": "No hay actividades deportivas que mostrar",
+
   "periodCustomRange": "del {start} al {end}",
   "statsPresenceRate": "Tasa de presencia: ({value}) %",
   "statsDoneSingular": "comprendió",

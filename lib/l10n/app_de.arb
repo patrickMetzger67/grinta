@@ -1088,6 +1088,10 @@
   "loadingStats": "Statistiken werden geladen...",
   "dashboardMyManagedTeams": "Meine verwalteten Teams",
   "dashboardMatchListTitle": "Liste der Übereinstimmungen",
+  "entityPersonalSports": "Individuelle Sportaktivitäten",
+  "dashboardPersonalSportsListTitle": "Liste der Sportaktivitäten",
+  "emptyNoPersonalSportToShow": "Keine Sportaktivitäten zum Anzeigen",
+
   "periodCustomRange": "vom {start} bis {end}",
   "statsPresenceRate": "Anwesenheitsquote: ({value}) %",
   "statsDoneSingular": "realisiert",

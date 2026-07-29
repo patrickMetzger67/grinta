@@ -1166,6 +1166,10 @@
   "loadingStats": "Chargement des statistiques...",
   "dashboardMyManagedTeams": "Mes équipes managées",
   "dashboardMatchListTitle": "Liste des matchs",
+  "entityPersonalSports": "Activités sportives individuelles",
+  "dashboardPersonalSportsListTitle": "Liste des activités sportives",
+  "emptyNoPersonalSportToShow": "Aucune activité sportive à afficher",
+
   "periodCustomRange": "du {start} au {end}",
   "@periodCustomRange": {
     "placeholders": {

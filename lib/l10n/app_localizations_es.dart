@@ -2576,6 +2576,17 @@ class AppLocalizationsEs extends AppLocalizations {
   String get dashboardMatchListTitle => 'Lista de partidos';
 
   @override
+  String get entityPersonalSports => 'Actividades deportivas individuales';
+
+  @override
+  String get dashboardPersonalSportsListTitle =>
+      'Lista de actividades deportivas';
+
+  @override
+  String get emptyNoPersonalSportToShow =>
+      'No hay actividades deportivas que mostrar';
+
+  @override
   String periodCustomRange(String start, String end) {
     return 'del $start al $end';
   }

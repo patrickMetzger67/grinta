@@ -92,10 +92,12 @@ class _StatCompactCardState extends State<_StatCompactCard> {
 
     final bool hasMatchOutcomes = widget.stats.hasMatchOutcomes;
     final bool hasTrainingMetrics = widget.stats.hasTrainingMetrics;
+    final bool showPersonalSports =
+        widget.type == DashboardStatsType.personalSports;
 
     final double minHeight = hasMatchOutcomes
         ? 232
-        : hasTrainingMetrics
+        : hasTrainingMetrics || showPersonalSports
         ? 0
         : 92;
 
@@ -157,9 +159,61 @@ class _StatCompactCardState extends State<_StatCompactCard> {
                 teamId: widget.teamId,
               ),
             ],
+
+            if (showPersonalSports) ...[
+              const SizedBox(height: 12),
+              _buildPersonalSportsList(
+                context: context,
+                colors: colors,
+                textTheme: textTheme,
+              ),
+            ],
           ],
         ),
       ),
+    );
+  }
+
+  Widget _buildPersonalSportsList({
+    required BuildContext context,
+    required AppColors colors,
+    required TextTheme textTheme,
+  }) {
+    final l10n = context.l10n;
+    final activities = widget.stats.personalActivities;
+    if (activities.isEmpty) {
+      return Text(
+        l10n.emptyNoPersonalSportToShow,
+        style: textTheme.bodySmall?.copyWith(
+          color: colors.textSecondary,
+          fontWeight: FontWeight.w600,
+        ),
+      );
+    }
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          l10n.dashboardPersonalSportsListTitle,
+          style: textTheme.bodyMedium?.copyWith(
+            color: colors.textPrimary,
+            fontWeight: FontWeight.w800,
+          ),
+        ),
+        const SizedBox(height: 10),
+        ListView.separated(
+          shrinkWrap: true,
+          physics: const NeverScrollableScrollPhysics(),
+          itemCount: activities.length,
+          separatorBuilder: (_, __) => const SizedBox(height: 10),
+          itemBuilder: (context, index) {
+            return PersonalSportActivityDashboardTile(
+              activity: activities[index],
+            );
+          },
+        ),
+      ],
     );
   }
 

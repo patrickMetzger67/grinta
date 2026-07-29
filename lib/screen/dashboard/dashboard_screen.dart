@@ -18,11 +18,13 @@ import 'package:provider/provider.dart';
 import '../../model/activityMetrics.dart';
 import '../../model/match.dart' as match_model;
 import '../../model/matchCompo.dart';
+import '../../model/personal_sport_activity.dart';
 import '../../model/season.dart';
 import '../../model/team.dart';
 import '../../model/tracker/polar_session_analysis.dart';
 import '../../model/training.dart';
 import '../../services/matchService.dart';
+import '../../services/personal_sport_activity_service.dart';
 import '../../services/polar_session_analysis_service.dart';
 import '../../services/teamService.dart';
 import '../../services/trainingService.dart';
@@ -37,6 +39,7 @@ import '../../widget/app_shell_scope.dart';
 import '../../widget/ask_diego/ask_diego_speed_dial.dart';
 import '../../widget/agendaMatchRow.dart';
 import '../../widget/metrics_panel.dart';
+import '../../widget/personal_sport_activity_summary.dart';
 import '../match_detail_screen.dart';
 
 
@@ -55,6 +58,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
   final MatchService _matchService = MatchService();
   final TrainingService _trainingService = TrainingService();
   final MatchCompoService _matchCompoService = MatchCompoService();
+  final PersonalSportActivityService _personalSportService =
+      PersonalSportActivityService();
 
   String? _selectedTeamId;
   Season? currentSeason;
@@ -455,7 +460,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
           SizedBox(height: isPhone ? 14 : 18),
 
-          if (isPlayer) ...[
+          if (isPlayer &&
+              _selectedStatsType != DashboardStatsType.personalSports) ...[
             _buildStatsWhereSelector(
               context: context,
               colors: colors,
@@ -514,6 +520,19 @@ class _DashboardScreenState extends State<DashboardScreen> {
           );
           setState(() {
             _selectedStatsType = DashboardStatsType.matches;
+          });
+        },
+      ),
+      _PeriodChip(
+        label: l10n.entityPersonalSports,
+        selected: _selectedStatsType == DashboardStatsType.personalSports,
+        onTap: () {
+          AnalyticsInteractions.logFeature(
+            AnalyticsFeatures.dashboardStatsTypeSelect,
+            parameters: const <String, Object>{'value': 'personal_sports'},
+          );
+          setState(() {
+            _selectedStatsType = DashboardStatsType.personalSports;
           });
         },
       ),
@@ -622,17 +641,85 @@ class _DashboardScreenState extends State<DashboardScreen> {
     bool useTeamTrainingAverages = false,
   }) {
     final l10n = context.l10n;
+    final DateTimeRange range = getSelectedDateRange();
+    final Timestamp start = Timestamp.fromDate(range.start);
+    final Timestamp end = Timestamp.fromDate(range.end);
+
+    if (statsType == DashboardStatsType.personalSports) {
+      final memberId = (playerId ?? '').trim();
+      if (memberId.isEmpty) {
+        return _InfoMessage(
+          title: l10n.entityPersonalSports,
+          message: l10n.emptyNoPersonalSportToShow,
+        );
+      }
+
+      return StreamBuilder<List<PersonalSportActivity>>(
+        stream: _personalSportService.watchForMemberBetweenDates(
+          memberId: memberId,
+          start: range.start,
+          end: range.end,
+        ),
+        builder: (context, snapshot) {
+          if (snapshot.hasError) {
+            return _InfoMessage(
+              title: l10n.entityPersonalSports,
+              message: l10n.errorLoadingResource(l10n.entityPersonalSports),
+              isError: true,
+            );
+          }
+          if (!snapshot.hasData) {
+            return _buildStatsLoading(
+              context: context,
+              colors: colors,
+              textTheme: textTheme,
+            );
+          }
+
+          final activities = List<PersonalSportActivity>.from(
+            snapshot.data ?? const <PersonalSportActivity>[],
+          )..sort((a, b) => b.startAt.compareTo(a.startAt));
+
+          final now = DateTime.now();
+          var done = 0;
+          var planned = 0;
+          for (final activity in activities) {
+            if (activity.endAt.isBefore(now)) {
+              done++;
+            } else {
+              planned++;
+            }
+          }
+
+          return _buildSingleStatResponsive(
+            context: context,
+            colors: colors,
+            textTheme: textTheme,
+            icon: Icons.directions_run_rounded,
+            stats: _ActivityStats(
+              done: done,
+              planned: planned,
+              presentPecent: 0,
+              personalActivities: activities,
+            ),
+            label: l10n.entityPersonalSports,
+            accentColor: colors.success,
+            matches: const <match_model.Match>[],
+            teamId: teamId ?? '',
+            userId: userId ?? '',
+            managedTeamsIds: managedTeamsIds ?? const <String>[],
+            playerId: memberId,
+          );
+        },
+      );
+    }
+
     if (teamId == null || teamId.isEmpty) {
       return _InfoMessage(
         title: l10n.navStatistics,
         message: l10n.emptyNoTeamForStats,
       );
     }
-
-    final DateTimeRange range = getSelectedDateRange();
-
-    final Timestamp start = Timestamp.fromDate(range.start);
-    final Timestamp end = Timestamp.fromDate(range.end);
 
     if (statsType == DashboardStatsType.matches) {
       return StreamBuilder<List<match_model.Match>>(
