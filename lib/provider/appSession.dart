@@ -35,6 +35,9 @@ class AppSession extends ChangeNotifier {
   Season? selectedSeason;
   String? selectedPlayerId;
 
+  /// Last managed team chosen on Dashboard / Analyse charge (season-scoped UX).
+  String? selectedManagedTeamId;
+
   StreamSubscription<User?>? _authSub;
   StreamSubscription<User?>? _userProfileSub;
   StreamSubscription<User?>? _idTokenSub;
@@ -244,6 +247,7 @@ class AppSession extends ChangeNotifier {
       currentSeason = null;
       selectedSeason = null;
       selectedPlayerId = null;
+      selectedManagedTeamId = null;
 
       _safeNotify();
 
@@ -1440,6 +1444,38 @@ class AppSession extends ChangeNotifier {
   void setSelectedSeason(Season? season) {
     selectedSeason = season;
     _safeNotify();
+  }
+
+  /// Persists the managed-team selection shared by Dashboard and Analyse charge.
+  void setSelectedManagedTeamId(String? teamId) {
+    final trimmed = teamId?.trim();
+    final next = (trimmed == null || trimmed.isEmpty) ? null : trimmed;
+    if (selectedManagedTeamId == next) return;
+    selectedManagedTeamId = next;
+    _safeNotify();
+  }
+
+  /// Resolves a managed team id still valid for the selected season.
+  String? resolveSelectedManagedTeamId({List<String>? preferredOrder}) {
+    final managedIds = managedTeamsIdsForSelectedSeason
+        .map((id) => id.trim())
+        .where((id) => id.isNotEmpty)
+        .toSet();
+    if (managedIds.isEmpty) return null;
+
+    final current = selectedManagedTeamId?.trim() ?? '';
+    if (current.isNotEmpty && managedIds.contains(current)) {
+      return current;
+    }
+
+    for (final id in preferredOrder ?? const <String>[]) {
+      final trimmed = id.trim();
+      if (trimmed.isNotEmpty && managedIds.contains(trimmed)) {
+        return trimmed;
+      }
+    }
+
+    return managedIds.first;
   }
 
   Map<String, Team> get selectedTeamsMap {

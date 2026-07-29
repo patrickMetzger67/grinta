@@ -44,7 +44,8 @@ class _CoachWorkloadAnalysisScreenState
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) return;
-      final teams = context.read<AppSession>().managerTeamsForSelectedSeason;
+      final session = context.read<AppSession>();
+      final teams = session.managerTeamsForSelectedSeason;
       if (teams.isEmpty) {
         setState(() {
           _loading = false;
@@ -52,7 +53,17 @@ class _CoachWorkloadAnalysisScreenState
         });
         return;
       }
-      _teamId = teams.first.keyTeam?.trim();
+      final teamIds = <String>[
+        for (final team in teams)
+          if ((team.keyTeam ?? '').trim().isNotEmpty) team.keyTeam!.trim(),
+      ];
+      final preferred = session.resolveSelectedManagedTeamId(
+        preferredOrder: teamIds,
+      );
+      _teamId = preferred ?? teamIds.first;
+      if (_teamId != null) {
+        session.setSelectedManagedTeamId(_teamId);
+      }
       unawaited(_reload());
     });
   }
@@ -269,6 +280,9 @@ class _CoachWorkloadAnalysisScreenState
                     onChanged: (value) {
                       if (value == null) return;
                       setState(() => _teamId = value);
+                      context
+                          .read<AppSession>()
+                          .setSelectedManagedTeamId(value);
                       unawaited(_reload());
                     },
                   ),
