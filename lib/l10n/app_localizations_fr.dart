@@ -2689,7 +2689,12 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String coachWorkloadMetricSessions(int count) {
-    return '$count séances';
+    return '$count entraînements';
+  }
+
+  @override
+  String coachWorkloadMetricMatches(int count) {
+    return '$count matchs';
   }
 
   @override

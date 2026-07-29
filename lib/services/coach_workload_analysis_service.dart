@@ -705,6 +705,12 @@ class CoachWorkloadAnalysisService {
       sessionCount: avg([
         for (final s in summaries) s.sessionCount.toDouble(),
       ]),
+      trainingCount: avg([
+        for (final s in summaries) s.trainingPresent.toDouble(),
+      ]),
+      matchCount: avg([
+        for (final s in summaries) s.matchCount.toDouble(),
+      ]),
       presencePercent: avg([
         for (final s in summaries)
           if (s.presencePercent != null) s.presencePercent!,

@@ -1014,15 +1014,19 @@
   "coachWorkloadEmptyActivities": "No activities in this period.",
   "coachWorkloadPlayerRecapTitle": "Workload summary",
   "coachWorkloadActivitiesTitle": "Activities",
-  "coachWorkloadMetricSessions": "{count} sessions",
+  "coachWorkloadMetricSessions": "{count} trainings",
   "@coachWorkloadMetricSessions": {
     "placeholders": { "count": { "type": "int" } }
   },
-    "coachWorkloadMetricPersonalSports": "{count} personal",
+  "coachWorkloadMetricMatches": "{count} matches",
+  "@coachWorkloadMetricMatches": {
+    "placeholders": { "count": { "type": "int" } }
+  },
+  "coachWorkloadMetricPersonalSports": "{count} personal",
   "@coachWorkloadMetricPersonalSports": {
     "placeholders": { "count": { "type": "int" } }
   },
-"coachWorkloadMetricKm": "{value} km",
+  "coachWorkloadMetricKm": "{value} km",
   "@coachWorkloadMetricKm": {
     "placeholders": { "value": { "type": "String" } }
   },

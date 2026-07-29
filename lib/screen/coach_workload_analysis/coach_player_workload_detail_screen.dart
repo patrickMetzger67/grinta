@@ -182,6 +182,18 @@ class _CoachPlayerWorkloadDetailScreenState
                         ),
                       ),
                       _RecapStat(
+                        label: l10n.coachWorkloadMetricSessions(
+                          _summary.trainingPresent,
+                        ),
+                        accent: toneColor(
+                          averages.toneFor(
+                            value: _summary.trainingPresent.toDouble(),
+                            teamAverage: averages.trainingCount,
+                          ),
+                          colors.primary,
+                        ),
+                      ),
+                      _RecapStat(
                         label: l10n.coachWorkloadMetricPersonalSports(
                           _summary.personalSportCount,
                         ),
@@ -190,13 +202,13 @@ class _CoachPlayerWorkloadDetailScreenState
                             : colors.textSecondary,
                       ),
                       _RecapStat(
-                        label: l10n.coachWorkloadMetricSessions(
-                          _summary.sessionCount,
+                        label: l10n.coachWorkloadMetricMatches(
+                          _summary.matchCount,
                         ),
                         accent: toneColor(
                           averages.toneFor(
-                            value: _summary.sessionCount.toDouble(),
-                            teamAverage: averages.sessionCount,
+                            value: _summary.matchCount.toDouble(),
+                            teamAverage: averages.matchCount,
                           ),
                           colors.primary,
                         ),

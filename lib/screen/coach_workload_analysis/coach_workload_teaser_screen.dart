@@ -246,7 +246,7 @@ class _FakePlayerCard extends StatelessWidget {
                 const SizedBox(height: 6),
                 Row(
                   children: [
-                    _chip(colors, '${sessions[index]} séances'),
+                    _chip(colors, '${sessions[index]} entraînements'),
                     const SizedBox(width: 6),
                     _chip(colors, 'Charge ${loads[index]}'),
                     const SizedBox(width: 6),
