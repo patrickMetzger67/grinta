@@ -1,5 +1,3 @@
-import 'dart:typed_data';
-
 import 'package:flutter/foundation.dart';
 import 'package:grinta/model/player.dart';
 import 'package:grinta/screen/coach_workload_analysis/coach_workload_analysis_models.dart';
