@@ -10892,6 +10892,258 @@ abstract class AppLocalizations {
   /// **'Changer la saison par défaut'**
   String get adminSeasonChangeDefaultConfirm;
 
+  /// No description provided for @adminYoutubeSection.
+  ///
+  /// In fr, this message translates to:
+  /// **'YouTube / Astuces'**
+  String get adminYoutubeSection;
+
+  /// No description provided for @adminYoutubeSectionDesc.
+  ///
+  /// In fr, this message translates to:
+  /// **'Configurer la chaîne YouTube, la playlist Astuces et les vidéos mises en avant.'**
+  String get adminYoutubeSectionDesc;
+
+  /// No description provided for @adminYoutubeTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'YouTube / Astuces'**
+  String get adminYoutubeTitle;
+
+  /// No description provided for @adminYoutubeSubtitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Document config/youtube — chaîne, playlist, liste des vidéos et vidéos spéciales.'**
+  String get adminYoutubeSubtitle;
+
+  /// No description provided for @adminYoutubeSave.
+  ///
+  /// In fr, this message translates to:
+  /// **'Enregistrer'**
+  String get adminYoutubeSave;
+
+  /// No description provided for @adminYoutubeSaved.
+  ///
+  /// In fr, this message translates to:
+  /// **'Configuration YouTube enregistrée.'**
+  String get adminYoutubeSaved;
+
+  /// No description provided for @adminYoutubeSaveFailed.
+  ///
+  /// In fr, this message translates to:
+  /// **'Impossible d\'enregistrer la configuration YouTube.'**
+  String get adminYoutubeSaveFailed;
+
+  /// No description provided for @adminYoutubePermissionDenied.
+  ///
+  /// In fr, this message translates to:
+  /// **'Un accès administrateur est requis pour gérer YouTube.'**
+  String get adminYoutubePermissionDenied;
+
+  /// No description provided for @adminYoutubeLoadError.
+  ///
+  /// In fr, this message translates to:
+  /// **'Impossible de charger la configuration YouTube.'**
+  String get adminYoutubeLoadError;
+
+  /// No description provided for @adminYoutubeRetry.
+  ///
+  /// In fr, this message translates to:
+  /// **'Réessayer'**
+  String get adminYoutubeRetry;
+
+  /// No description provided for @adminYoutubeChannelSection.
+  ///
+  /// In fr, this message translates to:
+  /// **'Chaîne'**
+  String get adminYoutubeChannelSection;
+
+  /// No description provided for @adminYoutubeFeaturedSection.
+  ///
+  /// In fr, this message translates to:
+  /// **'Vidéos mises en avant'**
+  String get adminYoutubeFeaturedSection;
+
+  /// No description provided for @adminYoutubeVideosSection.
+  ///
+  /// In fr, this message translates to:
+  /// **'Liste des vidéos Astuces'**
+  String get adminYoutubeVideosSection;
+
+  /// No description provided for @adminYoutubeVideosEmpty.
+  ///
+  /// In fr, this message translates to:
+  /// **'Aucune vidéo pour le moment. Ajoutez les Astuces publiées sur la chaîne.'**
+  String get adminYoutubeVideosEmpty;
+
+  /// No description provided for @adminYoutubeFieldChannelId.
+  ///
+  /// In fr, this message translates to:
+  /// **'ID chaîne'**
+  String get adminYoutubeFieldChannelId;
+
+  /// No description provided for @adminYoutubeFieldChannelIdHint.
+  ///
+  /// In fr, this message translates to:
+  /// **'Ex. UCxxxxxxxx'**
+  String get adminYoutubeFieldChannelIdHint;
+
+  /// No description provided for @adminYoutubeFieldChannelUrl.
+  ///
+  /// In fr, this message translates to:
+  /// **'URL chaîne'**
+  String get adminYoutubeFieldChannelUrl;
+
+  /// No description provided for @adminYoutubeFieldChannelUrlHint.
+  ///
+  /// In fr, this message translates to:
+  /// **'https://www.youtube.com/@Grinta'**
+  String get adminYoutubeFieldChannelUrlHint;
+
+  /// No description provided for @adminYoutubeFieldPlaylistId.
+  ///
+  /// In fr, this message translates to:
+  /// **'ID playlist Astuces'**
+  String get adminYoutubeFieldPlaylistId;
+
+  /// No description provided for @adminYoutubeFieldPlaylistIdHint.
+  ///
+  /// In fr, this message translates to:
+  /// **'Ex. PLxxxxxxxx'**
+  String get adminYoutubeFieldPlaylistIdHint;
+
+  /// No description provided for @adminYoutubeFieldTopVideo.
+  ///
+  /// In fr, this message translates to:
+  /// **'Vidéo de la semaine (topVideo)'**
+  String get adminYoutubeFieldTopVideo;
+
+  /// No description provided for @adminYoutubeFieldWelcomePlayer.
+  ///
+  /// In fr, this message translates to:
+  /// **'Welcome joueur (welcomePlayer)'**
+  String get adminYoutubeFieldWelcomePlayer;
+
+  /// No description provided for @adminYoutubeFieldWelcomeCoach.
+  ///
+  /// In fr, this message translates to:
+  /// **'Welcome coach (welcomeCoach)'**
+  String get adminYoutubeFieldWelcomeCoach;
+
+  /// No description provided for @adminYoutubeFieldVideoIdOrUrl.
+  ///
+  /// In fr, this message translates to:
+  /// **'ID ou URL vidéo'**
+  String get adminYoutubeFieldVideoIdOrUrl;
+
+  /// No description provided for @adminYoutubeFieldVideoIdHint.
+  ///
+  /// In fr, this message translates to:
+  /// **'ID YouTube ou lien youtube.com / youtu.be'**
+  String get adminYoutubeFieldVideoIdHint;
+
+  /// No description provided for @adminYoutubeFieldVideoIdInvalid.
+  ///
+  /// In fr, this message translates to:
+  /// **'Saisissez un ID ou une URL YouTube valide.'**
+  String get adminYoutubeFieldVideoIdInvalid;
+
+  /// No description provided for @adminYoutubeFieldTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Titre'**
+  String get adminYoutubeFieldTitle;
+
+  /// No description provided for @adminYoutubeFieldTitleRequired.
+  ///
+  /// In fr, this message translates to:
+  /// **'Le titre est obligatoire.'**
+  String get adminYoutubeFieldTitleRequired;
+
+  /// No description provided for @adminYoutubeFieldDescription.
+  ///
+  /// In fr, this message translates to:
+  /// **'Description (optionnel)'**
+  String get adminYoutubeFieldDescription;
+
+  /// No description provided for @adminYoutubeFieldThumbnailUrl.
+  ///
+  /// In fr, this message translates to:
+  /// **'URL miniature (optionnel)'**
+  String get adminYoutubeFieldThumbnailUrl;
+
+  /// No description provided for @adminYoutubeFeaturedNone.
+  ///
+  /// In fr, this message translates to:
+  /// **'Aucune'**
+  String get adminYoutubeFeaturedNone;
+
+  /// No description provided for @adminYoutubeAddVideo.
+  ///
+  /// In fr, this message translates to:
+  /// **'Ajouter une vidéo'**
+  String get adminYoutubeAddVideo;
+
+  /// No description provided for @adminYoutubeAddVideoTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Ajouter une Astuce'**
+  String get adminYoutubeAddVideoTitle;
+
+  /// No description provided for @adminYoutubeEditVideo.
+  ///
+  /// In fr, this message translates to:
+  /// **'Modifier'**
+  String get adminYoutubeEditVideo;
+
+  /// No description provided for @adminYoutubeEditVideoTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Modifier la vidéo'**
+  String get adminYoutubeEditVideoTitle;
+
+  /// No description provided for @adminYoutubeUpdateVideo.
+  ///
+  /// In fr, this message translates to:
+  /// **'Mettre à jour'**
+  String get adminYoutubeUpdateVideo;
+
+  /// No description provided for @adminYoutubeDeleteVideo.
+  ///
+  /// In fr, this message translates to:
+  /// **'Supprimer'**
+  String get adminYoutubeDeleteVideo;
+
+  /// No description provided for @adminYoutubeDeleteVideoTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Supprimer la vidéo ?'**
+  String get adminYoutubeDeleteVideoTitle;
+
+  /// No description provided for @adminYoutubeDeleteVideoMessage.
+  ///
+  /// In fr, this message translates to:
+  /// **'Supprimer « {title} » de la liste des Astuces ?'**
+  String adminYoutubeDeleteVideoMessage(String title);
+
+  /// No description provided for @adminYoutubeBadgeTop.
+  ///
+  /// In fr, this message translates to:
+  /// **'Semaine'**
+  String get adminYoutubeBadgeTop;
+
+  /// No description provided for @adminYoutubeBadgeWelcomePlayer.
+  ///
+  /// In fr, this message translates to:
+  /// **'Welcome joueur'**
+  String get adminYoutubeBadgeWelcomePlayer;
+
+  /// No description provided for @adminYoutubeBadgeWelcomeCoach.
+  ///
+  /// In fr, this message translates to:
+  /// **'Welcome coach'**
+  String get adminYoutubeBadgeWelcomeCoach;
+
   /// No description provided for @promoCodeMenuLabel.
   ///
   /// In fr, this message translates to:

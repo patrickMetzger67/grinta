@@ -291,7 +291,8 @@ service cloud.firestore {
           'invitation',
           'activity',
           'playerPositions',
-          'countries'
+          'countries',
+          'youtube'
         ];
       allow write: if isRootUser()
         && docId in [
@@ -300,7 +301,8 @@ service cloud.firestore {
           'invitation',
           'activity',
           'playerPositions',
-          'countries'
+          'countries',
+          'youtube'
         ];
     }
 

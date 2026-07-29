@@ -8,6 +8,7 @@ import 'package:grinta/screen/admin/admin_stream_groups_screen.dart';
 import 'package:grinta/screen/admin/admin_tracker_devices_screen.dart';
 import 'package:grinta/screen/admin/admin_tracker_fields_screen.dart';
 import 'package:grinta/screen/admin/admin_tracker_owners_screen.dart';
+import 'package:grinta/screen/admin/admin_youtube_screen.dart';
 import 'package:grinta/util/app_theme.dart';
 
 Future<void> openAdminScreen(BuildContext context) async {
@@ -126,6 +127,20 @@ class AdminScreen extends StatelessWidget {
                 analyticsMaterialRoute<void>(
                   screenName: AnalyticsScreenNames.adminStreamGroups,
                   builder: (_) => const AdminStreamGroupsScreen(),
+                ),
+              );
+            },
+          ),
+          const SizedBox(height: 12),
+          _AdminSectionCard(
+            icon: Icons.ondemand_video_outlined,
+            title: l10n.adminYoutubeSection,
+            subtitle: l10n.adminYoutubeSectionDesc,
+            onTap: () {
+              Navigator.of(context).push(
+                analyticsMaterialRoute<void>(
+                  screenName: AnalyticsScreenNames.adminYoutube,
+                  builder: (_) => const AdminYoutubeScreen(),
                 ),
               );
             },
