@@ -445,6 +445,10 @@ class _DashboardScreenState extends State<DashboardScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          if (session.hasManagedTeamsInSelectedSeason) ...[
+            const CoachWorkloadAnalysisEntryButton(),
+            SizedBox(height: isPhone ? 12 : 14),
+          ],
           _buildPeriodSelector(
             context: context,
             colors: colors,
