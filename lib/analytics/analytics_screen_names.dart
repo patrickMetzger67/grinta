@@ -60,4 +60,5 @@ abstract final class AnalyticsScreenNames {
   static const adminTrackerFields = 'admin_tracker_fields';
   static const adminStreamGroups = 'admin_stream_groups';
   static const adminSeasons = 'admin_seasons';
+  static const adminYoutube = 'admin_youtube';
 }

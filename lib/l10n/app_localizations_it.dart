@@ -6315,6 +6315,144 @@ class AppLocalizationsIt extends AppLocalizations {
   String get adminSeasonChangeDefaultConfirm => 'Cambia predefinita';
 
   @override
+  String get adminYoutubeSection => 'YouTube / Consigli';
+
+  @override
+  String get adminYoutubeSectionDesc =>
+      'Configura il canale YouTube, la playlist Consigli e i video in evidenza.';
+
+  @override
+  String get adminYoutubeTitle => 'YouTube / Consigli';
+
+  @override
+  String get adminYoutubeSubtitle =>
+      'Documento config/youtube — canale, playlist, elenco video e video speciali.';
+
+  @override
+  String get adminYoutubeSave => 'Salva';
+
+  @override
+  String get adminYoutubeSaved => 'Configurazione YouTube salvata.';
+
+  @override
+  String get adminYoutubeSaveFailed =>
+      'Impossibile salvare la configurazione YouTube.';
+
+  @override
+  String get adminYoutubePermissionDenied =>
+      'È richiesto l\'accesso admin per gestire YouTube.';
+
+  @override
+  String get adminYoutubeLoadError =>
+      'Impossibile caricare la configurazione YouTube.';
+
+  @override
+  String get adminYoutubeRetry => 'Riprova';
+
+  @override
+  String get adminYoutubeChannelSection => 'Canale';
+
+  @override
+  String get adminYoutubeFeaturedSection => 'Video in evidenza';
+
+  @override
+  String get adminYoutubeVideosSection => 'Elenco video Consigli';
+
+  @override
+  String get adminYoutubeVideosEmpty =>
+      'Nessun video per ora. Aggiungi i Consigli pubblicati sul canale.';
+
+  @override
+  String get adminYoutubeFieldChannelId => 'ID canale';
+
+  @override
+  String get adminYoutubeFieldChannelIdHint => 'Es. UCxxxxxxxx';
+
+  @override
+  String get adminYoutubeFieldChannelUrl => 'URL canale';
+
+  @override
+  String get adminYoutubeFieldChannelUrlHint =>
+      'https://www.youtube.com/@Grinta';
+
+  @override
+  String get adminYoutubeFieldPlaylistId => 'ID playlist Consigli';
+
+  @override
+  String get adminYoutubeFieldPlaylistIdHint => 'Es. PLxxxxxxxx';
+
+  @override
+  String get adminYoutubeFieldTopVideo => 'Video della settimana (topVideo)';
+
+  @override
+  String get adminYoutubeFieldWelcomePlayer =>
+      'Welcome giocatore (welcomePlayer)';
+
+  @override
+  String get adminYoutubeFieldWelcomeCoach => 'Welcome coach (welcomeCoach)';
+
+  @override
+  String get adminYoutubeFieldVideoIdOrUrl => 'ID o URL video';
+
+  @override
+  String get adminYoutubeFieldVideoIdHint =>
+      'ID YouTube o link youtube.com / youtu.be';
+
+  @override
+  String get adminYoutubeFieldVideoIdInvalid =>
+      'Inserisci un ID o URL YouTube valido.';
+
+  @override
+  String get adminYoutubeFieldTitle => 'Titolo';
+
+  @override
+  String get adminYoutubeFieldTitleRequired => 'Il titolo è obbligatorio.';
+
+  @override
+  String get adminYoutubeFieldDescription => 'Descrizione (opzionale)';
+
+  @override
+  String get adminYoutubeFieldThumbnailUrl => 'URL miniatura (opzionale)';
+
+  @override
+  String get adminYoutubeFeaturedNone => 'Nessuno';
+
+  @override
+  String get adminYoutubeAddVideo => 'Aggiungi video';
+
+  @override
+  String get adminYoutubeAddVideoTitle => 'Aggiungi un Consiglio';
+
+  @override
+  String get adminYoutubeEditVideo => 'Modifica';
+
+  @override
+  String get adminYoutubeEditVideoTitle => 'Modifica video';
+
+  @override
+  String get adminYoutubeUpdateVideo => 'Aggiorna';
+
+  @override
+  String get adminYoutubeDeleteVideo => 'Elimina';
+
+  @override
+  String get adminYoutubeDeleteVideoTitle => 'Eliminare il video?';
+
+  @override
+  String adminYoutubeDeleteVideoMessage(String title) {
+    return 'Rimuovere « $title » dall\'elenco dei Consigli?';
+  }
+
+  @override
+  String get adminYoutubeBadgeTop => 'Settimana';
+
+  @override
+  String get adminYoutubeBadgeWelcomePlayer => 'Welcome giocatore';
+
+  @override
+  String get adminYoutubeBadgeWelcomeCoach => 'Welcome coach';
+
+  @override
   String get promoCodeMenuLabel => 'Codice promo';
 
   @override
