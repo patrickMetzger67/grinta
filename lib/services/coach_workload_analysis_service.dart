@@ -1,0 +1,559 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:grinta/model/highlights.dart';
+import 'package:grinta/model/match.dart' as match_model;
+import 'package:grinta/model/matchCompo.dart';
+import 'package:grinta/model/personal_sport_activity.dart';
+import 'package:grinta/model/player.dart';
+import 'package:grinta/model/team.dart';
+import 'package:grinta/model/tracker/team_workload_summary.dart';
+import 'package:grinta/model/training.dart';
+import 'package:grinta/screen/coach_workload_analysis/coach_workload_analysis_models.dart';
+import 'package:grinta/services/highlightsService.dart';
+import 'package:grinta/services/matchCompoService.dart';
+import 'package:grinta/services/matchService.dart';
+import 'package:grinta/services/personal_sport_activity_service.dart';
+import 'package:grinta/services/teamWorkloadSummaryService.dart';
+import 'package:grinta/services/trainingService.dart';
+import 'package:grinta/util/player_activity_report_aggregator.dart';
+import 'package:grinta/util/player_photo_resolver.dart';
+import 'package:grinta/util/season_period_ranges.dart';
+import 'package:grinta/util/team_player_match_stats_helper.dart';
+
+/// Builds coach-facing workload summaries for a team over a period.
+class CoachWorkloadAnalysisService {
+  CoachWorkloadAnalysisService({
+    TrainingService? trainingService,
+    MatchService? matchService,
+    MatchCompoService? matchCompoService,
+    HighlightsService? highlightsService,
+    TeamWorkloadSummaryService? teamWorkloadSummaryService,
+    PersonalSportActivityService? personalSportActivityService,
+  })  : _trainingService = trainingService ?? TrainingService(),
+        _matchService = matchService ?? MatchService(),
+        _matchCompoService = matchCompoService ?? MatchCompoService(),
+        _highlightsService = highlightsService ?? HighlightsService(),
+        _teamWorkloadSummaryService =
+            teamWorkloadSummaryService ?? TeamWorkloadSummaryService(),
+        _personalSportService =
+            personalSportActivityService ?? PersonalSportActivityService();
+
+  final TrainingService _trainingService;
+  final MatchService _matchService;
+  final MatchCompoService _matchCompoService;
+  final HighlightsService _highlightsService;
+  final TeamWorkloadSummaryService _teamWorkloadSummaryService;
+  final PersonalSportActivityService _personalSportService;
+
+  static const int _matchBatchSize = 6;
+  static const int _personalBatchSize = 6;
+
+  Future<List<CoachPlayerWorkloadSummary>> loadTeamSummaries({
+    required Team team,
+    required String seasonId,
+    required DateTime start,
+    required DateTime end,
+    required List<Player> players,
+  }) async {
+    if (players.isEmpty) return const [];
+
+    final teamId = team.keyTeam?.trim() ?? '';
+    if (teamId.isEmpty) return const [];
+
+    final period = SeasonPeriodRange(start: start, end: end);
+    final trainings = await _loadTrainings(
+      teamId: teamId,
+      seasonId: seasonId,
+      period: period,
+    );
+    final matches = await _loadMatches(
+      teamId: teamId,
+      period: period,
+    );
+
+    final matchStatsByPlayer = await _aggregateMatchStatsByPlayer(
+      teamId: teamId,
+      matches: matches,
+    );
+    final trackerByPlayer = await _aggregateTrackerByPlayer(
+      trainings: trainings,
+      matches: matches,
+    );
+    final personalByMember = await _loadPersonalSportsByMember(
+      players: players,
+      start: start,
+      end: end,
+    );
+
+    final summaries = <CoachPlayerWorkloadSummary>[];
+    for (final player in players) {
+      final memberId = effectiveMemberId(player)?.trim() ?? '';
+      if (memberId.isEmpty) continue;
+      final lookupIds = playerMemberLookupIds(player);
+
+      var present = 0;
+      var absent = 0;
+      var trainingMinutes = 0;
+      for (final training in trainings) {
+        final presence = _presenceForLookupIds(training, lookupIds);
+        if (presence == _Presence.present) {
+          present++;
+          trainingMinutes += training.duration ?? 0;
+        } else if (presence == _Presence.absent) {
+          absent++;
+        }
+      }
+
+      var matchCount = 0;
+      var matchMinutes = 0;
+      for (final id in lookupIds) {
+        final stats = matchStatsByPlayer[id];
+        if (stats == null) continue;
+        matchCount += stats.convocations;
+        matchMinutes += stats.minutesPlayed;
+      }
+
+      final personal = personalByMember[memberId] ?? const [];
+      var personalMinutes = 0;
+      for (final activity in personal) {
+        if (activity.durationSeconds != null && activity.durationSeconds! > 0) {
+          personalMinutes += (activity.durationSeconds! / 60).round();
+        }
+      }
+
+      final trackerSessions = <Map<String, double>>[];
+      for (final id in lookupIds) {
+        trackerSessions.addAll(trackerByPlayer[id] ?? const []);
+      }
+      final avgWorkload = _averageMetric(
+        trackerSessions,
+        TeamWorkloadMetricKeys.workloadScore,
+      );
+      final avgDistance = _averageMetric(
+        trackerSessions,
+        TeamWorkloadMetricKeys.distanceKm,
+      );
+
+      summaries.add(
+        CoachPlayerWorkloadSummary(
+          player: player,
+          memberId: memberId,
+          trainingPresent: present,
+          trainingAbsent: absent,
+          matchCount: matchCount,
+          personalSportCount: personal.length,
+          volumeMinutes: trainingMinutes + matchMinutes + personalMinutes,
+          avgWorkloadScore: avgWorkload,
+          avgDistanceKm: avgDistance,
+        ),
+      );
+    }
+
+    summaries.sort((a, b) {
+      final bySessions = b.sessionCount.compareTo(a.sessionCount);
+      if (bySessions != 0) return bySessions;
+      final nameA = '${a.player.lastName ?? ''} ${a.player.firstName ?? ''}';
+      final nameB = '${b.player.lastName ?? ''} ${b.player.firstName ?? ''}';
+      return nameA.compareTo(nameB);
+    });
+    return summaries;
+  }
+
+  Future<CoachPlayerWorkloadDetail> loadPlayerDetail({
+    required Team team,
+    required String seasonId,
+    required DateTime start,
+    required DateTime end,
+    required Player player,
+  }) async {
+    final teamId = team.keyTeam?.trim() ?? '';
+    final memberId = effectiveMemberId(player)?.trim() ?? '';
+    final lookupIds = playerMemberLookupIds(player);
+    final period = SeasonPeriodRange(start: start, end: end);
+
+    final trainings = teamId.isEmpty
+        ? const <Training>[]
+        : await _loadTrainings(
+            teamId: teamId,
+            seasonId: seasonId,
+            period: period,
+          );
+    final matches = teamId.isEmpty
+        ? const <match_model.Match>[]
+        : await _loadMatches(teamId: teamId, period: period);
+    final matchStatsByPlayer = teamId.isEmpty
+        ? const <String, TeamPlayerMatchStatsAccumulator>{}
+        : await _aggregateMatchStatsByPlayer(teamId: teamId, matches: matches);
+    final trackerByEvent = await _loadTrackerByEventId(
+      trainings: trainings,
+      matches: matches,
+    );
+    final personal = memberId.isEmpty
+        ? const <PersonalSportActivity>[]
+        : await _personalSportService.fetchCoachVisibleOwnedBetweenDates(
+            memberId: memberId,
+            start: start,
+            end: end,
+          );
+
+    var present = 0;
+    var absent = 0;
+    var trainingMinutes = 0;
+    final activities = <CoachWorkloadActivityItem>[];
+
+    for (final training in trainings) {
+      final presence = _presenceForLookupIds(training, lookupIds);
+      if (presence == null) continue;
+      final isPresent = presence == _Presence.present;
+      if (isPresent) {
+        present++;
+        trainingMinutes += training.duration ?? 0;
+      } else {
+        absent++;
+      }
+      final eventId = training.docId?.trim() ?? '';
+      final scores = eventId.isEmpty ? null : trackerByEvent[eventId];
+      final playerScore = _scoreForLookupIds(scores, lookupIds);
+      final values = playerScore == null
+          ? const <String, double>{}
+          : trackerValuesFromPlayerScore(playerScore);
+      final date = training.dateTime?.toDate() ?? DateTime.now();
+      activities.add(
+        CoachWorkloadActivityItem(
+          kind: CoachWorkloadActivityKind.training,
+          startAt: date,
+          training: training,
+          workloadScore: values[TeamWorkloadMetricKeys.workloadScore],
+          distanceKm: values[TeamWorkloadMetricKeys.distanceKm],
+          durationMinutes: training.duration,
+          wasPresent: isPresent,
+        ),
+      );
+    }
+
+    var matchCount = 0;
+    var matchMinutes = 0;
+    for (final id in lookupIds) {
+      final stats = matchStatsByPlayer[id];
+      if (stats == null) continue;
+      matchCount += stats.convocations;
+      matchMinutes += stats.minutesPlayed;
+    }
+
+    for (final match in matches) {
+      final matchId = match.id?.trim() ?? '';
+      if (matchId.isEmpty || teamId.isEmpty) continue;
+      final compo = await _matchCompoService.getMatchCompoByMatchAndTeamId(
+        matchId,
+        teamId,
+      );
+      final highlights = await _highlightsService.getHighlightsByMatchCalendarId(
+        matchId,
+        teamId: teamId,
+      );
+      final stats = statsForMatch(
+        match: match,
+        compo: compo,
+        highlights: highlights,
+      );
+      final playerStats = _statsForLookupIds(stats, lookupIds);
+      if (playerStats == null || playerStats.convocations <= 0) continue;
+
+      final scores = trackerByEvent[matchId];
+      final playerScore = _scoreForLookupIds(scores, lookupIds);
+      final values = playerScore == null
+          ? const <String, double>{}
+          : trackerValuesFromPlayerScore(playerScore);
+      final date = match.timestamp?.toDate() ?? DateTime.now();
+      activities.add(
+        CoachWorkloadActivityItem(
+          kind: CoachWorkloadActivityKind.match,
+          startAt: date,
+          match: match,
+          workloadScore: values[TeamWorkloadMetricKeys.workloadScore],
+          distanceKm: values[TeamWorkloadMetricKeys.distanceKm],
+          durationMinutes: playerStats.minutesPlayed,
+          wasPresent: true,
+        ),
+      );
+    }
+
+    var personalMinutes = 0;
+    for (final activity in personal) {
+      final minutes = activity.durationSeconds == null
+          ? null
+          : (activity.durationSeconds! / 60).round();
+      if (minutes != null) personalMinutes += minutes;
+      activities.add(
+        CoachWorkloadActivityItem(
+          kind: CoachWorkloadActivityKind.personalSport,
+          startAt: activity.startAt,
+          personalSport: activity,
+          distanceKm: activity.distanceMeters == null
+              ? null
+              : activity.distanceMeters! / 1000,
+          durationMinutes: minutes,
+          wasPresent: true,
+        ),
+      );
+    }
+
+    activities.sort((a, b) => b.startAt.compareTo(a.startAt));
+
+    final trackerSessions = <Map<String, double>>[];
+    for (final entry in trackerByEvent.values) {
+      final score = _scoreForLookupIds(entry, lookupIds);
+      if (score == null) continue;
+      final values = trackerValuesFromPlayerScore(score);
+      if (values.isNotEmpty) trackerSessions.add(values);
+    }
+
+    final summary = CoachPlayerWorkloadSummary(
+      player: player,
+      memberId: memberId,
+      trainingPresent: present,
+      trainingAbsent: absent,
+      matchCount: matchCount,
+      personalSportCount: personal.length,
+      volumeMinutes: trainingMinutes + matchMinutes + personalMinutes,
+      avgWorkloadScore: _averageMetric(
+        trackerSessions,
+        TeamWorkloadMetricKeys.workloadScore,
+      ),
+      avgDistanceKm: _averageMetric(
+        trackerSessions,
+        TeamWorkloadMetricKeys.distanceKm,
+      ),
+    );
+
+    return CoachPlayerWorkloadDetail(
+      summary: summary,
+      activities: activities,
+    );
+  }
+
+  Future<List<Training>> _loadTrainings({
+    required String teamId,
+    required String seasonId,
+    required SeasonPeriodRange period,
+  }) async {
+    final start = Timestamp.fromDate(
+      DateTime(period.start.year, period.start.month, period.start.day),
+    );
+    final endExclusive = Timestamp.fromDate(
+      DateTime(period.end.year, period.end.month, period.end.day)
+          .add(const Duration(days: 1)),
+    );
+    final trainings = await _trainingService.getTrainingsByTeamIdBetweenDates(
+      teamId: teamId,
+      start: start,
+      end: endExclusive,
+    );
+    return trainings.where((training) {
+      final trainingSeasonId = training.seasonId?.trim() ?? '';
+      if (trainingSeasonId.isNotEmpty && trainingSeasonId != seasonId) {
+        return false;
+      }
+      final date = training.dateTime?.toDate();
+      if (date == null) return false;
+      return period.contains(date);
+    }).toList();
+  }
+
+  Future<List<match_model.Match>> _loadMatches({
+    required String teamId,
+    required SeasonPeriodRange period,
+  }) async {
+    final start = Timestamp.fromDate(
+      DateTime(period.start.year, period.start.month, period.start.day),
+    );
+    final endExclusive = Timestamp.fromDate(
+      DateTime(period.end.year, period.end.month, period.end.day)
+          .add(const Duration(days: 1)),
+    );
+    final matches = await _matchService.getMatchesByTeamIdBetweenDates(
+      teamId: teamId,
+      start: start,
+      end: endExclusive,
+    );
+    return matches.where((match) {
+      final date = match.timestamp?.toDate();
+      if (date == null) return false;
+      return period.contains(date);
+    }).toList();
+  }
+
+  Future<Map<String, TeamPlayerMatchStatsAccumulator>>
+      _aggregateMatchStatsByPlayer({
+    required String teamId,
+    required List<match_model.Match> matches,
+  }) async {
+    final byPlayer = <String, TeamPlayerMatchStatsAccumulator>{};
+    for (var i = 0; i < matches.length; i += _matchBatchSize) {
+      final batch = matches.skip(i).take(_matchBatchSize).toList();
+      final results = await Future.wait(
+        batch.map((match) async {
+          final matchId = match.id?.trim() ?? '';
+          if (matchId.isEmpty) {
+            return const <String, TeamPlayerMatchStatsAccumulator>{};
+          }
+          final loaded = await Future.wait([
+            _matchCompoService.getMatchCompoByMatchAndTeamId(matchId, teamId),
+            _highlightsService.getHighlightsByMatchCalendarId(
+              matchId,
+              teamId: teamId,
+            ),
+          ]);
+          return statsForMatch(
+            match: match,
+            compo: loaded[0] as MatchCompo?,
+            highlights: loaded[1] as List<Highlights>,
+          );
+        }),
+      );
+      for (final stats in results) {
+        for (final entry in stats.entries) {
+          final key = entry.key.trim();
+          if (key.isEmpty) continue;
+          final acc = byPlayer.putIfAbsent(
+            key,
+            () => TeamPlayerMatchStatsAccumulator(playerId: key),
+          );
+          acc.merge(entry.value);
+        }
+      }
+    }
+    return byPlayer;
+  }
+
+  Future<Map<String, List<Map<String, double>>>> _aggregateTrackerByPlayer({
+    required List<Training> trainings,
+    required List<match_model.Match> matches,
+  }) async {
+    final byPlayer = <String, List<Map<String, double>>>{};
+    final eventIds = <String>{
+      for (final t in trainings)
+        if (t.withTracker == true && (t.docId?.trim().isNotEmpty ?? false))
+          t.docId!.trim(),
+      for (final m in matches)
+        if (m.withTracker == true && (m.id?.trim().isNotEmpty ?? false))
+          m.id!.trim(),
+    };
+
+    for (final eventId in eventIds) {
+      final summary = await _teamWorkloadSummaryService.getByEventId(eventId);
+      if (summary == null) continue;
+      for (final score in summary.playerScores) {
+        final playerId = score.playerId.trim();
+        if (playerId.isEmpty) continue;
+        final values = trackerValuesFromPlayerScore(score);
+        if (values.isEmpty) continue;
+        byPlayer.putIfAbsent(playerId, () => <Map<String, double>>[]).add(values);
+      }
+    }
+    return byPlayer;
+  }
+
+  Future<Map<String, TeamWorkloadSummary?>> _loadTrackerByEventId({
+    required List<Training> trainings,
+    required List<match_model.Match> matches,
+  }) async {
+    final eventIds = <String>{
+      for (final t in trainings)
+        if (t.withTracker == true && (t.docId?.trim().isNotEmpty ?? false))
+          t.docId!.trim(),
+      for (final m in matches)
+        if (m.withTracker == true && (m.id?.trim().isNotEmpty ?? false))
+          m.id!.trim(),
+    };
+    final out = <String, TeamWorkloadSummary?>{};
+    for (final eventId in eventIds) {
+      out[eventId] = await _teamWorkloadSummaryService.getByEventId(eventId);
+    }
+    return out;
+  }
+
+  Future<Map<String, List<PersonalSportActivity>>> _loadPersonalSportsByMember({
+    required List<Player> players,
+    required DateTime start,
+    required DateTime end,
+  }) async {
+    final out = <String, List<PersonalSportActivity>>{};
+    final memberIds = <String>[
+      for (final player in players)
+        if ((effectiveMemberId(player) ?? '').trim().isNotEmpty)
+          effectiveMemberId(player)!.trim(),
+    ];
+
+    for (var i = 0; i < memberIds.length; i += _personalBatchSize) {
+      final batch = memberIds.skip(i).take(_personalBatchSize).toList();
+      final results = await Future.wait(
+        batch.map(
+          (memberId) => _personalSportService.fetchCoachVisibleOwnedBetweenDates(
+            memberId: memberId,
+            start: start,
+            end: end,
+          ),
+        ),
+      );
+      for (var j = 0; j < batch.length; j++) {
+        out[batch[j]] = results[j];
+      }
+    }
+    return out;
+  }
+
+  TeamPlayerMetricScores? _scoreForLookupIds(
+    TeamWorkloadSummary? summary,
+    Set<String> lookupIds,
+  ) {
+    if (summary == null) return null;
+    for (final score in summary.playerScores) {
+      if (lookupIds.contains(score.playerId.trim())) return score;
+    }
+    return null;
+  }
+
+  TeamPlayerMatchStatsAccumulator? _statsForLookupIds(
+    Map<String, TeamPlayerMatchStatsAccumulator> stats,
+    Set<String> lookupIds,
+  ) {
+    TeamPlayerMatchStatsAccumulator? found;
+    for (final entry in stats.entries) {
+      if (!lookupIds.contains(entry.key.trim())) continue;
+      found ??= TeamPlayerMatchStatsAccumulator(playerId: entry.key);
+      found.merge(entry.value);
+    }
+    return found;
+  }
+
+  _Presence? _presenceForLookupIds(Training training, Set<String> lookupIds) {
+    for (final playerTraining in training.playerTraining) {
+      final memberId = playerTraining.playerId?.trim() ?? '';
+      if (memberId.isEmpty || !lookupIds.contains(memberId)) continue;
+      final type = playerTraining.presenceType;
+      if (type == PresenceType.present || type == PresenceType.late) {
+        return _Presence.present;
+      }
+      if (type == PresenceType.absent) {
+        return _Presence.absent;
+      }
+      return null;
+    }
+    return null;
+  }
+
+  double? _averageMetric(List<Map<String, double>> sessions, String key) {
+    var sum = 0.0;
+    var count = 0;
+    for (final session in sessions) {
+      final value = session[key];
+      if (value == null || !value.isFinite) continue;
+      sum += value;
+      count++;
+    }
+    if (count == 0) return null;
+    return double.parse((sum / count).toStringAsFixed(1));
+  }
+}
+
+enum _Presence { present, absent }

@@ -1466,6 +1466,42 @@
   "personalSportUnitKcal": "kcal",
   "personalSportUnitBpm": "bpm",
   "agendaAllDayLabel": "All day",
+  "coachWorkloadAnalysisFabTooltip": "Belastungsanalyse Spieler",
+  "coachWorkloadAnalysisTitle": "Belastungsanalyse",
+  "coachWorkloadTeaserHeadline": "Vergleiche die Belastung deiner Spieler",
+  "coachWorkloadTeaserBody": "Team- + Einzelübersicht für den Zeitraum, Belastungskennzahlen und Aktivitätsliste. Verfügbar mit Coach Pro.",
+  "coachWorkloadTeaserCta": "Coach Pro entdecken",
+  "coachWorkloadCompareHint": "Vergleiche Spieler auf einen Blick und öffne dann die Details.",
+  "coachWorkloadNoManagedTeam": "Kein betreutes Team in dieser Saison.",
+  "coachWorkloadLoadError": "Analyse konnte nicht geladen werden.",
+  "coachWorkloadEmptyPlayers": "Keine Spieler zum Anzeigen.",
+  "coachWorkloadEmptyActivities": "Keine Aktivitäten in diesem Zeitraum.",
+  "coachWorkloadPlayerRecapTitle": "Belastungsübersicht",
+  "coachWorkloadActivitiesTitle": "Aktivitäten",
+  "coachWorkloadMetricSessions": "{count} Einheiten",
+  "@coachWorkloadMetricSessions": {
+    "placeholders": { "count": { "type": "int" } }
+  },
+  "coachWorkloadMetricLoad": "Last {value}",
+  "@coachWorkloadMetricLoad": {
+    "placeholders": { "value": { "type": "String" } }
+  },
+  "coachWorkloadMetricVolume": "{minutes} Min.",
+  "@coachWorkloadMetricVolume": {
+    "placeholders": { "minutes": { "type": "int" } }
+  },
+  "coachWorkloadMetricPresence": "Anwesenheit {value}",
+  "@coachWorkloadMetricPresence": {
+    "placeholders": { "value": { "type": "String" } }
+  },
+  "coachWorkloadBreakdown": "{trainings} Trainings · {matches} Spiele · {personal} Eigenaktivität",
+  "@coachWorkloadBreakdown": {
+    "placeholders": {
+      "trainings": { "type": "int" },
+      "matches": { "type": "int" },
+      "personal": { "type": "int" }
+    }
+  },
   "agendaCoachPlayersFabTooltip": "Players — personal activities",
   "agendaCoachPlayersTitle": "Players’ sports activities",
   "agendaCoachPlayersSubtitle": "Show personal sport activities with coach visibility in the agenda.",

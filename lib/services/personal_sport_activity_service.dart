@@ -139,4 +139,36 @@ class PersonalSportActivityService {
       debugPrint('watch coach-visible personalSportActivities failed: $e\n$st');
     });
   }
+
+  /// One-shot coach-visible personal activities for [memberId] in [start, end).
+  Future<List<PersonalSportActivity>> fetchCoachVisibleOwnedBetweenDates({
+    required String memberId,
+    required DateTime start,
+    required DateTime end,
+  }) async {
+    final trimmed = memberId.trim();
+    if (trimmed.isEmpty) return const [];
+
+    try {
+      final snap = await _collection
+          .where('memberId', isEqualTo: trimmed)
+          .where(
+            'startAt',
+            isGreaterThanOrEqualTo: Timestamp.fromDate(start),
+          )
+          .where('startAt', isLessThan: Timestamp.fromDate(end))
+          .get();
+      final items = snap.docs
+          .map(PersonalSportActivity.fromFirestore)
+          .where(
+            (activity) => activity.visibility == PersonalSportVisibility.coach,
+          )
+          .toList()
+        ..sort((a, b) => a.startAt.compareTo(b.startAt));
+      return items;
+    } catch (e, st) {
+      debugPrint('fetch coach-visible personalSportActivities failed: $e\n$st');
+      return const [];
+    }
+  }
 }

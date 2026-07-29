@@ -2653,6 +2653,72 @@ class AppLocalizationsEs extends AppLocalizations {
   String get agendaAllDayLabel => 'All day';
 
   @override
+  String get coachWorkloadAnalysisFabTooltip =>
+      'Análisis de carga de jugadores';
+
+  @override
+  String get coachWorkloadAnalysisTitle => 'Análisis de carga';
+
+  @override
+  String get coachWorkloadTeaserHeadline => 'Compara la carga de tus jugadores';
+
+  @override
+  String get coachWorkloadTeaserBody =>
+      'Resumen colectivo + individual del periodo, indicadores de carga y lista de actividades. Disponible con Coach Pro.';
+
+  @override
+  String get coachWorkloadTeaserCta => 'Descubrir Coach Pro';
+
+  @override
+  String get coachWorkloadCompareHint =>
+      'Compara jugadores de un vistazo y abre el detalle.';
+
+  @override
+  String get coachWorkloadNoManagedTeam =>
+      'Ningún equipo gestionado en esta temporada.';
+
+  @override
+  String get coachWorkloadLoadError => 'No se pudo cargar el análisis.';
+
+  @override
+  String get coachWorkloadEmptyPlayers => 'No hay jugadores que mostrar.';
+
+  @override
+  String get coachWorkloadEmptyActivities =>
+      'Ninguna actividad en este periodo.';
+
+  @override
+  String get coachWorkloadPlayerRecapTitle => 'Resumen de carga';
+
+  @override
+  String get coachWorkloadActivitiesTitle => 'Actividades';
+
+  @override
+  String coachWorkloadMetricSessions(int count) {
+    return '$count sesiones';
+  }
+
+  @override
+  String coachWorkloadMetricLoad(String value) {
+    return 'Carga $value';
+  }
+
+  @override
+  String coachWorkloadMetricVolume(int minutes) {
+    return '$minutes min';
+  }
+
+  @override
+  String coachWorkloadMetricPresence(String value) {
+    return 'Asistencia $value';
+  }
+
+  @override
+  String coachWorkloadBreakdown(int trainings, int matches, int personal) {
+    return '$trainings entrenamientos · $matches partidos · $personal deporte personal';
+  }
+
+  @override
   String get agendaCoachPlayersFabTooltip => 'Players — personal activities';
 
   @override

@@ -1207,6 +1207,42 @@
   "agendaAddEventNonSport": "Un évènement / activité non sportive",
   "agendaAllDayLabel": "Journée entière",
 
+  "coachWorkloadAnalysisFabTooltip": "Analyse charge joueurs",
+  "coachWorkloadAnalysisTitle": "Analyse charge",
+  "coachWorkloadTeaserHeadline": "Compare la charge de tes joueurs",
+  "coachWorkloadTeaserBody": "Récap collectif + individuel sur la période, indicateurs de charge et liste des activités. Disponible avec Coach Pro.",
+  "coachWorkloadTeaserCta": "Découvrir Coach Pro",
+  "coachWorkloadCompareHint": "Compare tes joueurs d’un coup d’œil, puis ouvre le détail.",
+  "coachWorkloadNoManagedTeam": "Aucune équipe managée sur cette saison.",
+  "coachWorkloadLoadError": "Impossible de charger l’analyse.",
+  "coachWorkloadEmptyPlayers": "Aucun joueur à afficher.",
+  "coachWorkloadEmptyActivities": "Aucune activité sur cette période.",
+  "coachWorkloadPlayerRecapTitle": "Récapitulatif de charge",
+  "coachWorkloadActivitiesTitle": "Activités",
+  "coachWorkloadMetricSessions": "{count} séances",
+  "@coachWorkloadMetricSessions": {
+    "placeholders": { "count": { "type": "int" } }
+  },
+  "coachWorkloadMetricLoad": "Charge {value}",
+  "@coachWorkloadMetricLoad": {
+    "placeholders": { "value": { "type": "String" } }
+  },
+  "coachWorkloadMetricVolume": "{minutes} min",
+  "@coachWorkloadMetricVolume": {
+    "placeholders": { "minutes": { "type": "int" } }
+  },
+  "coachWorkloadMetricPresence": "Présence {value}",
+  "@coachWorkloadMetricPresence": {
+    "placeholders": { "value": { "type": "String" } }
+  },
+  "coachWorkloadBreakdown": "{trainings} entraînements · {matches} matchs · {personal} sports perso",
+  "@coachWorkloadBreakdown": {
+    "placeholders": {
+      "trainings": { "type": "int" },
+      "matches": { "type": "int" },
+      "personal": { "type": "int" }
+    }
+  },
   "agendaCoachPlayersFabTooltip": "Joueurs — activités personnelles",
   "agendaCoachPlayersTitle": "Activités sportives des joueurs",
   "agendaCoachPlayersSubtitle": "Affiche dans l’agenda les activités personnelles en visibilité coach.",

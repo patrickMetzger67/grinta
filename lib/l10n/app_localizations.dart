@@ -4685,6 +4685,108 @@ abstract class AppLocalizations {
   /// **'Journée entière'**
   String get agendaAllDayLabel;
 
+  /// No description provided for @coachWorkloadAnalysisFabTooltip.
+  ///
+  /// In fr, this message translates to:
+  /// **'Analyse charge joueurs'**
+  String get coachWorkloadAnalysisFabTooltip;
+
+  /// No description provided for @coachWorkloadAnalysisTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Analyse charge'**
+  String get coachWorkloadAnalysisTitle;
+
+  /// No description provided for @coachWorkloadTeaserHeadline.
+  ///
+  /// In fr, this message translates to:
+  /// **'Compare la charge de tes joueurs'**
+  String get coachWorkloadTeaserHeadline;
+
+  /// No description provided for @coachWorkloadTeaserBody.
+  ///
+  /// In fr, this message translates to:
+  /// **'Récap collectif + individuel sur la période, indicateurs de charge et liste des activités. Disponible avec Coach Pro.'**
+  String get coachWorkloadTeaserBody;
+
+  /// No description provided for @coachWorkloadTeaserCta.
+  ///
+  /// In fr, this message translates to:
+  /// **'Découvrir Coach Pro'**
+  String get coachWorkloadTeaserCta;
+
+  /// No description provided for @coachWorkloadCompareHint.
+  ///
+  /// In fr, this message translates to:
+  /// **'Compare tes joueurs d’un coup d’œil, puis ouvre le détail.'**
+  String get coachWorkloadCompareHint;
+
+  /// No description provided for @coachWorkloadNoManagedTeam.
+  ///
+  /// In fr, this message translates to:
+  /// **'Aucune équipe managée sur cette saison.'**
+  String get coachWorkloadNoManagedTeam;
+
+  /// No description provided for @coachWorkloadLoadError.
+  ///
+  /// In fr, this message translates to:
+  /// **'Impossible de charger l’analyse.'**
+  String get coachWorkloadLoadError;
+
+  /// No description provided for @coachWorkloadEmptyPlayers.
+  ///
+  /// In fr, this message translates to:
+  /// **'Aucun joueur à afficher.'**
+  String get coachWorkloadEmptyPlayers;
+
+  /// No description provided for @coachWorkloadEmptyActivities.
+  ///
+  /// In fr, this message translates to:
+  /// **'Aucune activité sur cette période.'**
+  String get coachWorkloadEmptyActivities;
+
+  /// No description provided for @coachWorkloadPlayerRecapTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Récapitulatif de charge'**
+  String get coachWorkloadPlayerRecapTitle;
+
+  /// No description provided for @coachWorkloadActivitiesTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Activités'**
+  String get coachWorkloadActivitiesTitle;
+
+  /// No description provided for @coachWorkloadMetricSessions.
+  ///
+  /// In fr, this message translates to:
+  /// **'{count} séances'**
+  String coachWorkloadMetricSessions(int count);
+
+  /// No description provided for @coachWorkloadMetricLoad.
+  ///
+  /// In fr, this message translates to:
+  /// **'Charge {value}'**
+  String coachWorkloadMetricLoad(String value);
+
+  /// No description provided for @coachWorkloadMetricVolume.
+  ///
+  /// In fr, this message translates to:
+  /// **'{minutes} min'**
+  String coachWorkloadMetricVolume(int minutes);
+
+  /// No description provided for @coachWorkloadMetricPresence.
+  ///
+  /// In fr, this message translates to:
+  /// **'Présence {value}'**
+  String coachWorkloadMetricPresence(String value);
+
+  /// No description provided for @coachWorkloadBreakdown.
+  ///
+  /// In fr, this message translates to:
+  /// **'{trainings} entraînements · {matches} matchs · {personal} sports perso'**
+  String coachWorkloadBreakdown(int trainings, int matches, int personal);
+
   /// No description provided for @agendaCoachPlayersFabTooltip.
   ///
   /// In fr, this message translates to:

@@ -3,6 +3,7 @@ import 'dart:async' show unawaited;
 import 'package:flutter/material.dart';
 import 'package:grinta/core/extensions/l10n_extension.dart';
 import 'package:grinta/util/app_theme.dart';
+import 'package:grinta/widget/account_create_profile_entry.dart';
 import 'package:grinta/widget/ask_diego/ask_diego_access.dart';
 import 'package:grinta/widget/ask_diego/ask_diego_avatar.dart';
 
@@ -14,6 +15,7 @@ class AskDiegoPrimaryAction {
     required this.tooltip,
     required this.heroTag,
     this.showBadge = false,
+    this.showPremiumBadge = false,
   });
 
   final VoidCallback onPressed;
@@ -23,6 +25,9 @@ class AskDiegoPrimaryAction {
 
   /// When true, shows a small status dot on the mini FAB icon.
   final bool showBadge;
+
+  /// When true, overlays the Premium crown on the mini FAB icon.
+  final bool showPremiumBadge;
 }
 
 /// Speed dial FAB: primary screen action(s) + premium-gated Ask Diego entry.
@@ -107,7 +112,8 @@ class _AskDiegoSpeedDialState extends State<AskDiegoSpeedDial>
   @override
   Widget build(BuildContext context) {
     final primary = widget.primaryAction;
-    if (primary == null) {
+    final secondary = widget.secondaryActions;
+    if (primary == null && secondary.isEmpty) {
       return _AskDiegoImageButton(
         heroTag: '${widget.heroTagPrefix}-ask-diego',
         tooltip: context.l10n.askDiegoTitle,
@@ -118,7 +124,7 @@ class _AskDiegoSpeedDialState extends State<AskDiegoSpeedDial>
 
     final colors = context.appColors;
     final l10n = context.l10n;
-    final secondary = widget.secondaryActions;
+    final useAskDiegoAsMain = primary == null;
 
     return Stack(
       alignment: Alignment.bottomRight,
@@ -151,22 +157,29 @@ class _AskDiegoSpeedDialState extends State<AskDiegoSpeedDial>
                     },
                     backgroundColor: Colors.white,
                     foregroundColor: colors.primary,
-                    child: _badgedIcon(
-                      icon: action.icon,
-                      showBadge: action.showBadge,
-                      badgeColor: colors.primary,
+                    child: SubscriptionPremiumBadge.withIconOverlay(
+                      context: context,
+                      colors: colors,
+                      showPremium: action.showPremiumBadge,
+                      icon: _badgedIcon(
+                        icon: action.icon,
+                        showBadge: action.showBadge,
+                        badgeColor: colors.primary,
+                      ),
                     ),
                   ),
                   const SizedBox(height: 12),
                 ],
-                _SpeedDialMiniFab(
-                  heroTag: primary.heroTag,
-                  tooltip: primary.tooltip,
-                  onPressed: _onPrimaryPressed,
-                  backgroundColor: Colors.white,
-                  foregroundColor: colors.primary,
-                  child: Icon(primary.icon),
-                ),
+                if (primary != null) ...[
+                  _SpeedDialMiniFab(
+                    heroTag: primary.heroTag,
+                    tooltip: primary.tooltip,
+                    onPressed: _onPrimaryPressed,
+                    backgroundColor: Colors.white,
+                    foregroundColor: colors.primary,
+                    child: Icon(primary.icon),
+                  ),
+                ],
                 const SizedBox(height: _miniFabSpacing),
               ],
             ),
@@ -174,7 +187,9 @@ class _AskDiegoSpeedDialState extends State<AskDiegoSpeedDial>
         ),
         FloatingActionButton(
           heroTag: '${widget.heroTagPrefix}-main',
-          tooltip: _isOpen ? l10n.askDiegoCloseSpeedDial : primary.tooltip,
+          tooltip: _isOpen
+              ? l10n.askDiegoCloseSpeedDial
+              : (primary?.tooltip ?? l10n.askDiegoTitle),
           backgroundColor: colors.primary,
           foregroundColor: Colors.white,
           elevation: 6,
@@ -187,12 +202,18 @@ class _AskDiegoSpeedDialState extends State<AskDiegoSpeedDial>
             duration: const Duration(milliseconds: 180),
             child: _isOpen
                 ? const Icon(Icons.close, key: ValueKey<String>('close'))
-                : _badgedIcon(
-                    key: const ValueKey<String>('open'),
-                    icon: primary.icon,
-                    showBadge: widget.showClosedBadge,
-                    badgeColor: Colors.white,
-                  ),
+                : useAskDiegoAsMain
+                    ? AskDiegoAvatar(
+                        key: const ValueKey<String>('ask-closed'),
+                        size: 40,
+                        backgroundColor: Colors.white,
+                      )
+                    : _badgedIcon(
+                        key: const ValueKey<String>('open'),
+                        icon: primary.icon,
+                        showBadge: widget.showClosedBadge,
+                        badgeColor: Colors.white,
+                      ),
           ),
         ),
       ],
