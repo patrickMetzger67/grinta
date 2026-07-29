@@ -167,8 +167,10 @@ class CoachWorkloadReportSenderService {
     final uid = _auth.currentUser?.uid.trim();
     if (uid == null || uid.isEmpty) return null;
 
+    // Use sessionReports/ so existing deployed Storage rules allow the upload
+    // immediately; coachWorkloadReports/ is also declared in storage.rules.
     final path =
-        'coachWorkloadReports/$uid/${teamId}_${DateTime.now().millisecondsSinceEpoch}_$filename';
+        'sessionReports/$uid/coach_workload_${teamId}_${DateTime.now().millisecondsSinceEpoch}_$filename';
     try {
       final ref = _storage.ref().child(path);
       await ref.putData(

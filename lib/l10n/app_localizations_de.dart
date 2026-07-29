@@ -2708,6 +2708,11 @@ class AppLocalizationsDe extends AppLocalizations {
   }
 
   @override
+  String coachWorkloadMetricPersonalSports(int count) {
+    return '$count Eigenakt.';
+  }
+
+  @override
   String coachWorkloadMetricKm(String value) {
     return '$value km';
   }

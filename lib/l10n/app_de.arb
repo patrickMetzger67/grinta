@@ -1482,7 +1482,11 @@
   "@coachWorkloadMetricSessions": {
     "placeholders": { "count": { "type": "int" } }
   },
-  "coachWorkloadMetricKm": "{value} km",
+    "coachWorkloadMetricPersonalSports": "{count} Eigenakt.",
+  "@coachWorkloadMetricPersonalSports": {
+    "placeholders": { "count": { "type": "int" } }
+  },
+"coachWorkloadMetricKm": "{value} km",
   "@coachWorkloadMetricKm": {
     "placeholders": { "value": { "type": "String" } }
   },
