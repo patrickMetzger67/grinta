@@ -5,3 +5,14 @@ gradle-wrapper.jar
 /gradlew.bat
 /local.properties
 GeneratedPluginRegistrant.java
+
+# Build outputs
+/build/
+/app/build/
+
+# Release signing — never commit secrets or keystores
+key.properties
+*.jks
+*.keystore
+**/*.jks
+**/*.keystore
