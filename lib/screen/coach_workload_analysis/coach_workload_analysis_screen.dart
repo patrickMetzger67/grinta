@@ -13,6 +13,7 @@ import 'package:grinta/services/team_players_service.dart';
 import 'package:grinta/util/app_theme.dart';
 import 'package:grinta/util/playerDisplayName.dart';
 import 'package:grinta/widget/account_create_profile_entry.dart';
+import 'package:grinta/widget/coach_workload_report_email_dialog.dart';
 import 'package:grinta/widget/playerPhoto.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
@@ -34,6 +35,7 @@ class _CoachWorkloadAnalysisScreenState
   DateTimeRange? _customRange;
   String? _teamId;
   List<CoachPlayerWorkloadSummary> _summaries = const [];
+  CoachTeamWorkloadAverages _teamAverages = const CoachTeamWorkloadAverages();
   bool _loading = true;
   String? _error;
 
@@ -87,6 +89,7 @@ class _CoachWorkloadAnalysisScreenState
         _loading = false;
         _error = context.l10n.coachWorkloadNoManagedTeam;
         _summaries = const [];
+        _teamAverages = const CoachTeamWorkloadAverages();
       });
       return;
     }
@@ -104,6 +107,7 @@ class _CoachWorkloadAnalysisScreenState
         _loading = false;
         _error = context.l10n.coachWorkloadNoManagedTeam;
         _summaries = const [];
+        _teamAverages = const CoachTeamWorkloadAverages();
       });
       return;
     }
@@ -118,7 +122,7 @@ class _CoachWorkloadAnalysisScreenState
       final range = _resolvedRange();
       // End exclusive for personal sports / queries: next day 00:00
       final endExclusive = range.end.add(const Duration(days: 1));
-      final summaries = await _analysisService.loadTeamSummaries(
+      final report = await _analysisService.loadTeamSummaries(
         team: team,
         seasonId: seasonId,
         start: range.start,
@@ -127,7 +131,8 @@ class _CoachWorkloadAnalysisScreenState
       );
       if (!mounted) return;
       setState(() {
-        _summaries = summaries;
+        _summaries = report.summaries;
+        _teamAverages = report.teamAverages;
         _loading = false;
       });
     } catch (e) {
@@ -136,8 +141,38 @@ class _CoachWorkloadAnalysisScreenState
         _loading = false;
         _error = context.l10n.coachWorkloadLoadError;
         _summaries = const [];
+        _teamAverages = const CoachTeamWorkloadAverages();
       });
     }
+  }
+
+  Future<void> _sendPdfReport() async {
+    if (_summaries.isEmpty) return;
+    final session = context.read<AppSession>();
+    final teams = session.managerTeamsForSelectedSeason;
+    final teamId = (_teamId ?? '').trim();
+    Team? team;
+    for (final t in teams) {
+      if ((t.keyTeam?.trim() ?? '') == teamId) {
+        team = t;
+        break;
+      }
+    }
+    if (team == null) return;
+
+    final range = _resolvedRange();
+    await showCoachWorkloadReportEmailDialog(
+      context: context,
+      report: CoachTeamWorkloadReport(
+        summaries: _summaries,
+        teamAverages: _teamAverages,
+      ),
+      teamName: (team.name ?? team.keyTeam ?? '').trim(),
+      teamId: teamId,
+      rangeStart: range.start,
+      rangeEndInclusive: range.end,
+      clubId: team.clubId,
+    );
   }
 
   Future<void> _pickCustomRange() async {
@@ -193,6 +228,15 @@ class _CoachWorkloadAnalysisScreenState
             SubscriptionPremiumBadge(colors: colors, compact: true),
           ],
         ),
+        actions: [
+          IconButton(
+            tooltip: l10n.coachWorkloadReportEmailActionTooltip,
+            onPressed: _loading || _summaries.isEmpty
+                ? null
+                : () => unawaited(_sendPdfReport()),
+            icon: const Icon(Icons.picture_as_pdf_outlined),
+          ),
+        ],
       ),
       body: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -313,6 +357,7 @@ class _CoachWorkloadAnalysisScreenState
                                 final summary = _summaries[index];
                                 return _PlayerSummaryTile(
                                   summary: summary,
+                                  teamAverages: _teamAverages,
                                   onTap: () {
                                     final teamId = (_teamId ?? '').trim();
                                     Team? team;
@@ -340,6 +385,7 @@ class _CoachWorkloadAnalysisScreenState
                                           ),
                                           player: summary.player,
                                           initialSummary: summary,
+                                          teamAverages: _teamAverages,
                                         ),
                                       ),
                                     );
@@ -394,10 +440,12 @@ class _PeriodChip extends StatelessWidget {
 class _PlayerSummaryTile extends StatelessWidget {
   const _PlayerSummaryTile({
     required this.summary,
+    required this.teamAverages,
     required this.onTap,
   });
 
   final CoachPlayerWorkloadSummary summary;
+  final CoachTeamWorkloadAverages teamAverages;
   final VoidCallback onTap;
 
   @override
@@ -405,12 +453,14 @@ class _PlayerSummaryTile extends StatelessWidget {
     final colors = context.appColors;
     final l10n = context.l10n;
     final presence = summary.presencePercent;
-    final presenceLabel = presence == null
-        ? '—'
-        : '${presence.toStringAsFixed(0)} %';
+    final presenceLabel =
+        presence == null ? '—' : '${presence.toStringAsFixed(0)} %';
     final loadLabel = summary.avgWorkloadScore == null
         ? '—'
         : summary.avgWorkloadScore!.toStringAsFixed(0);
+    final kmLabel = summary.totalDistanceKm == null
+        ? '—'
+        : summary.totalDistanceKm!.toStringAsFixed(1);
 
     return Material(
       color: Colors.transparent,
@@ -451,20 +501,36 @@ class _PlayerSummaryTile extends StatelessWidget {
                       runSpacing: 6,
                       children: [
                         _MetricChip(
-                          label: l10n.coachWorkloadMetricSessions(
-                            summary.sessionCount,
+                          label: l10n.coachWorkloadMetricLoad(loadLabel),
+                          emphasized: true,
+                          tone: teamAverages.toneFor(
+                            value: summary.avgWorkloadScore,
+                            teamAverage: teamAverages.avgWorkloadScore,
                           ),
                         ),
                         _MetricChip(
-                          label: l10n.coachWorkloadMetricLoad(loadLabel),
+                          label: l10n.coachWorkloadMetricKm(kmLabel),
+                          emphasized: true,
+                          tone: teamAverages.toneFor(
+                            value: summary.totalDistanceKm,
+                            teamAverage: teamAverages.totalDistanceKm,
+                          ),
                         ),
                         _MetricChip(
-                          label: l10n.coachWorkloadMetricVolume(
-                            summary.volumeMinutes,
+                          label: l10n.coachWorkloadMetricSessions(
+                            summary.sessionCount,
+                          ),
+                          tone: teamAverages.toneFor(
+                            value: summary.sessionCount.toDouble(),
+                            teamAverage: teamAverages.sessionCount,
                           ),
                         ),
                         _MetricChip(
                           label: l10n.coachWorkloadMetricPresence(presenceLabel),
+                          tone: teamAverages.toneFor(
+                            value: summary.presencePercent,
+                            teamAverage: teamAverages.presencePercent,
+                          ),
                         ),
                       ],
                     ),
@@ -481,25 +547,45 @@ class _PlayerSummaryTile extends StatelessWidget {
 }
 
 class _MetricChip extends StatelessWidget {
-  const _MetricChip({required this.label});
+  const _MetricChip({
+    required this.label,
+    this.tone = CoachMetricTone.neutral,
+    this.emphasized = false,
+  });
+
   final String label;
+  final CoachMetricTone tone;
+  final bool emphasized;
 
   @override
   Widget build(BuildContext context) {
     final colors = context.appColors;
+    final Color accent;
+    switch (tone) {
+      case CoachMetricTone.success:
+        accent = colors.success;
+      case CoachMetricTone.warning:
+        accent = colors.warning;
+      case CoachMetricTone.neutral:
+        accent = colors.textSecondary;
+    }
+
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+      padding: EdgeInsets.symmetric(
+        horizontal: emphasized ? 10 : 8,
+        vertical: emphasized ? 5 : 3,
+      ),
       decoration: BoxDecoration(
-        color: colors.surface,
+        color: accent.withValues(alpha: tone == CoachMetricTone.neutral ? 0.08 : 0.16),
         borderRadius: BorderRadius.circular(999),
-        border: Border.all(color: colors.border),
+        border: Border.all(color: accent.withValues(alpha: 0.45)),
       ),
       child: Text(
         label,
         style: TextStyle(
-          color: colors.textSecondary,
-          fontSize: 11,
-          fontWeight: FontWeight.w700,
+          color: accent,
+          fontSize: emphasized ? 12 : 11,
+          fontWeight: FontWeight.w800,
         ),
       ),
     );

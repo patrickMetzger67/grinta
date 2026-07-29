@@ -21,6 +21,7 @@ class CoachPlayerWorkloadDetailScreen extends StatefulWidget {
     required this.range,
     required this.player,
     this.initialSummary,
+    this.teamAverages = const CoachTeamWorkloadAverages(),
   });
 
   final Team team;
@@ -28,6 +29,7 @@ class CoachPlayerWorkloadDetailScreen extends StatefulWidget {
   final DateTimeRange range;
   final Player player;
   final CoachPlayerWorkloadSummary? initialSummary;
+  final CoachTeamWorkloadAverages teamAverages;
 
   @override
   State<CoachPlayerWorkloadDetailScreen> createState() =>
@@ -101,6 +103,21 @@ class _CoachPlayerWorkloadDetailScreenState
     final loadLabel = _summary.avgWorkloadScore == null
         ? '—'
         : _summary.avgWorkloadScore!.toStringAsFixed(0);
+    final kmLabel = _summary.totalDistanceKm == null
+        ? '—'
+        : _summary.totalDistanceKm!.toStringAsFixed(1);
+    final averages = widget.teamAverages;
+
+    Color toneColor(CoachMetricTone tone, Color fallback) {
+      switch (tone) {
+        case CoachMetricTone.success:
+          return colors.success;
+        case CoachMetricTone.warning:
+          return colors.warning;
+        case CoachMetricTone.neutral:
+          return fallback;
+      }
+    }
 
     return Scaffold(
       backgroundColor: colors.background,
@@ -144,24 +161,46 @@ class _CoachPlayerWorkloadDetailScreenState
                     runSpacing: 8,
                     children: [
                       _RecapStat(
+                        label: l10n.coachWorkloadMetricLoad(loadLabel),
+                        accent: toneColor(
+                          averages.toneFor(
+                            value: _summary.avgWorkloadScore,
+                            teamAverage: averages.avgWorkloadScore,
+                          ),
+                          colors.primary,
+                        ),
+                      ),
+                      _RecapStat(
+                        label: l10n.coachWorkloadMetricKm(kmLabel),
+                        accent: toneColor(
+                          averages.toneFor(
+                            value: _summary.totalDistanceKm,
+                            teamAverage: averages.totalDistanceKm,
+                          ),
+                          colors.primary,
+                        ),
+                      ),
+                      _RecapStat(
                         label: l10n.coachWorkloadMetricSessions(
                           _summary.sessionCount,
                         ),
-                        accent: colors.primary,
-                      ),
-                      _RecapStat(
-                        label: l10n.coachWorkloadMetricLoad(loadLabel),
-                        accent: colors.warning,
-                      ),
-                      _RecapStat(
-                        label: l10n.coachWorkloadMetricVolume(
-                          _summary.volumeMinutes,
+                        accent: toneColor(
+                          averages.toneFor(
+                            value: _summary.sessionCount.toDouble(),
+                            teamAverage: averages.sessionCount,
+                          ),
+                          colors.primary,
                         ),
-                        accent: colors.success,
                       ),
                       _RecapStat(
                         label: l10n.coachWorkloadMetricPresence(presenceLabel),
-                        accent: colors.primary,
+                        accent: toneColor(
+                          averages.toneFor(
+                            value: _summary.presencePercent,
+                            teamAverage: averages.presencePercent,
+                          ),
+                          colors.primary,
+                        ),
                       ),
                     ],
                   ),

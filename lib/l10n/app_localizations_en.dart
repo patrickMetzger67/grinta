@@ -2653,6 +2653,42 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
+  String coachWorkloadMetricKm(String value) {
+    return '$value km';
+  }
+
+  @override
+  String get coachWorkloadReportEmailActionTooltip => 'Send PDF report';
+
+  @override
+  String get coachWorkloadReportEmailDialogTitle =>
+      'Send workload analysis (PDF)';
+
+  @override
+  String get coachWorkloadReportEmpty => 'No data to export for this period.';
+
+  @override
+  String coachWorkloadReportEmailSubject(String team, String period) {
+    return 'Grinta — Workload analysis $team ($period)';
+  }
+
+  @override
+  String get coachWorkloadReportEmailGreeting => 'Hello,';
+
+  @override
+  String coachWorkloadReportEmailIntro(String team, String period) {
+    return 'Here is the workload analysis for $team over $period.';
+  }
+
+  @override
+  String get coachWorkloadReportEmailDownload => 'Download PDF';
+
+  @override
+  String coachWorkloadReportEmailText(String team, String period, String url) {
+    return 'Workload analysis — $team\nPeriod: $period\nPDF: $url';
+  }
+
+  @override
   String coachWorkloadMetricLoad(String value) {
     return 'Load $value';
   }

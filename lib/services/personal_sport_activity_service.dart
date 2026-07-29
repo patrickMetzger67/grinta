@@ -145,6 +145,40 @@ class PersonalSportActivityService {
     required String memberId,
     required DateTime start,
     required DateTime end,
+  }) {
+    return fetchOwnedBetweenDates(
+      memberId: memberId,
+      start: start,
+      end: end,
+      includeCoach: true,
+      includeTeam: false,
+      includePrivate: false,
+    );
+  }
+
+  /// Personal activities visible to a coach (not private) in [start, end).
+  Future<List<PersonalSportActivity>> fetchNonPrivateOwnedBetweenDates({
+    required String memberId,
+    required DateTime start,
+    required DateTime end,
+  }) {
+    return fetchOwnedBetweenDates(
+      memberId: memberId,
+      start: start,
+      end: end,
+      includeCoach: true,
+      includeTeam: true,
+      includePrivate: false,
+    );
+  }
+
+  Future<List<PersonalSportActivity>> fetchOwnedBetweenDates({
+    required String memberId,
+    required DateTime start,
+    required DateTime end,
+    bool includeCoach = true,
+    bool includeTeam = false,
+    bool includePrivate = false,
   }) async {
     final trimmed = memberId.trim();
     if (trimmed.isEmpty) return const [];
@@ -160,14 +194,21 @@ class PersonalSportActivityService {
           .get();
       final items = snap.docs
           .map(PersonalSportActivity.fromFirestore)
-          .where(
-            (activity) => activity.visibility == PersonalSportVisibility.coach,
-          )
+          .where((activity) {
+            switch (activity.visibility) {
+              case PersonalSportVisibility.private:
+                return includePrivate;
+              case PersonalSportVisibility.coach:
+                return includeCoach;
+              case PersonalSportVisibility.team:
+                return includeTeam;
+            }
+          })
           .toList()
         ..sort((a, b) => a.startAt.compareTo(b.startAt));
       return items;
     } catch (e, st) {
-      debugPrint('fetch coach-visible personalSportActivities failed: $e\n$st');
+      debugPrint('fetch personalSportActivities failed: $e\n$st');
       return const [];
     }
   }

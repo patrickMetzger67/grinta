@@ -9,6 +9,41 @@ enum CoachWorkloadPeriod {
   custom,
 }
 
+enum CoachMetricTone {
+  neutral,
+  success,
+  warning,
+}
+
+/// Team-wide averages used to color player metric chips.
+class CoachTeamWorkloadAverages {
+  const CoachTeamWorkloadAverages({
+    this.avgWorkloadScore,
+    this.totalDistanceKm,
+    this.sessionCount,
+    this.presencePercent,
+    this.volumeMinutes,
+  });
+
+  final double? avgWorkloadScore;
+  final double? totalDistanceKm;
+  final double? sessionCount;
+  final double? presencePercent;
+  final double? volumeMinutes;
+
+  CoachMetricTone toneFor({
+    required double? value,
+    required double? teamAverage,
+  }) {
+    if (value == null || teamAverage == null) {
+      return CoachMetricTone.neutral;
+    }
+    return value + 1e-9 >= teamAverage
+        ? CoachMetricTone.success
+        : CoachMetricTone.warning;
+  }
+}
+
 /// Compact per-player row for the coach comparison list.
 class CoachPlayerWorkloadSummary {
   const CoachPlayerWorkloadSummary({
@@ -20,7 +55,7 @@ class CoachPlayerWorkloadSummary {
     required this.personalSportCount,
     required this.volumeMinutes,
     this.avgWorkloadScore,
-    this.avgDistanceKm,
+    this.totalDistanceKm,
   });
 
   final Player player;
@@ -31,7 +66,9 @@ class CoachPlayerWorkloadSummary {
   final int personalSportCount;
   final int volumeMinutes;
   final double? avgWorkloadScore;
-  final double? avgDistanceKm;
+
+  /// Tracker distance + personal sport distance over the period.
+  final double? totalDistanceKm;
 
   int get sessionCount =>
       trainingPresent + matchCount + personalSportCount;
@@ -79,8 +116,20 @@ class CoachPlayerWorkloadDetail {
   const CoachPlayerWorkloadDetail({
     required this.summary,
     required this.activities,
+    this.teamAverages = const CoachTeamWorkloadAverages(),
   });
 
   final CoachPlayerWorkloadSummary summary;
   final List<CoachWorkloadActivityItem> activities;
+  final CoachTeamWorkloadAverages teamAverages;
+}
+
+class CoachTeamWorkloadReport {
+  const CoachTeamWorkloadReport({
+    required this.summaries,
+    required this.teamAverages,
+  });
+
+  final List<CoachPlayerWorkloadSummary> summaries;
+  final CoachTeamWorkloadAverages teamAverages;
 }

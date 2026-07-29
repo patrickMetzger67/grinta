@@ -29,7 +29,6 @@ import 'widget/settings_menu_style.dart';
 import 'widget/subscription_details_sheet.dart';
 import 'widget/notifications_sheet.dart';
 import 'widget/ask_diego/ask_diego_sidebar_entry.dart';
-import 'widget/ask_diego/coach_workload_analysis_sidebar_entry.dart';
 
 import 'main.dart';
 
@@ -447,9 +446,8 @@ class _WebNavigationShellState extends State<WebNavigationShell> {
   List<Widget> _buildNavListItems(int safeSelectedIndex) {
     final children = <Widget>[];
 
-    // Main tabs + notifications + coach analysis + Ask Diego.
-    final extraCount = 3;
-    for (var index = 0; index < widget.items.length + extraCount; index++) {
+    // Main tabs + notifications + Ask Diego.
+    for (var index = 0; index < widget.items.length + 2; index++) {
       if (index > 0) {
         children.add(const SizedBox(height: _kWebSidebarNavItemSpacing));
       }
@@ -475,13 +473,6 @@ class _WebNavigationShellState extends State<WebNavigationShell> {
       } else if (index == widget.items.length) {
         children.add(
           NotificationSidebarEntry(
-            collapsed: _sidebarCollapsed,
-            itemHeight: _kWebSidebarNavItemHeight,
-          ),
-        );
-      } else if (index == widget.items.length + 1) {
-        children.add(
-          CoachWorkloadAnalysisSidebarEntry(
             collapsed: _sidebarCollapsed,
             itemHeight: _kWebSidebarNavItemHeight,
           ),
