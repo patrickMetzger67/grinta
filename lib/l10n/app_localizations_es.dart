@@ -6474,6 +6474,19 @@ class AppLocalizationsEs extends AppLocalizations {
   String get adminYoutubeBadgeWelcomeCoach => 'Welcome coach';
 
   @override
+  String get youtubeTopVideoTitle => 'Consejo de la semana';
+
+  @override
+  String get youtubeTopVideoMessage =>
+      'Descubre el nuevo consejo Grinta. Puedes verlo ahora o saltarlo.';
+
+  @override
+  String get youtubeTopVideoWatch => 'Ver';
+
+  @override
+  String get youtubeTopVideoSkip => 'Saltar';
+
+  @override
   String get promoCodeMenuLabel => 'Código promo';
 
   @override

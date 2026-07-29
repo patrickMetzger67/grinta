@@ -27,6 +27,7 @@ import '../util/app_theme.dart';
 import '../core/extensions/l10n_extension.dart';
 import 'mobile_navigation_shell.dart';
 import 'stream_chat_nav_unread_badge.dart';
+import 'youtube_top_video_prompt.dart';
 import '../webNavigationShell.dart';
 
 class WebAppRoot extends StatefulWidget {
@@ -38,6 +39,7 @@ class WebAppRoot extends StatefulWidget {
 
 class _WebAppRootState extends State<WebAppRoot> {
   bool _isLoading = true;
+  bool _topVideoPromptScheduled = false;
   final AgendaService _agendaService = AgendaService();
 
   AppSession get appSession => context.read<AppSession>();
@@ -79,7 +81,15 @@ class _WebAppRootState extends State<WebAppRoot> {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       CalendarDeepLinkService.instance.notifyShellReady();
       unawaited(CalendarDeepLinkService.instance.processPendingIfReady());
+      _scheduleTopVideoPrompt();
     });
+  }
+
+  void _scheduleTopVideoPrompt() {
+    if (_topVideoPromptScheduled) return;
+    _topVideoPromptScheduled = true;
+    // Let the shell paint, then offer the weekly tip if unseen.
+    unawaited(YoutubeTopVideoPrompt.maybeShow());
   }
 
   Stream<List<AgendaItem>> _watchAgendaItems({
