@@ -1,16 +1,29 @@
 import 'dart:async' show unawaited;
 
 import 'package:flutter/material.dart';
+import 'package:grinta/analytics/analytics_features.dart';
+import 'package:grinta/analytics/analytics_interactions.dart';
+import 'package:grinta/analytics/analytics_routes.dart';
+import 'package:grinta/analytics/analytics_screen_names.dart';
 import 'package:grinta/core/extensions/l10n_extension.dart';
 import 'package:grinta/model/player.dart';
 import 'package:grinta/model/team.dart';
+import 'package:grinta/model/tracker/team_workload_summary.dart';
+import 'package:grinta/model/training.dart';
 import 'package:grinta/screen/coach_workload_analysis/coach_workload_analysis_models.dart';
+import 'package:grinta/screen/match_detail_screen.dart';
+import 'package:grinta/screen/team_players/team_players_screen.dart';
 import 'package:grinta/services/coach_workload_analysis_service.dart';
+import 'package:grinta/services/teamWorkloadSummaryService.dart';
 import 'package:grinta/util/app_theme.dart';
 import 'package:grinta/util/playerDisplayName.dart';
+import 'package:grinta/util/player_photo_resolver.dart';
+import 'package:grinta/util/polar_import_navigation.dart';
+import 'package:grinta/util/session_tracker_kit.dart';
 import 'package:grinta/widget/create_personal_sport_activity_sheet.dart';
 import 'package:grinta/widget/personal_sport_activity_summary.dart';
 import 'package:grinta/widget/playerPhoto.dart';
+import 'package:grinta/widget/session_player_analysis_view.dart';
 import 'package:intl/intl.dart';
 
 class CoachPlayerWorkloadDetailScreen extends StatefulWidget {
@@ -88,6 +101,183 @@ class _CoachPlayerWorkloadDetailScreenState
         _error = context.l10n.coachWorkloadLoadError;
       });
     }
+  }
+
+  Future<void> _openActivity(CoachWorkloadActivityItem item) async {
+    switch (item.kind) {
+      case CoachWorkloadActivityKind.personalSport:
+        if (item.personalSport == null) return;
+        await showCreatePersonalSportActivitySheet(
+          context,
+          activityToEdit: item.personalSport,
+          readOnly: true,
+        );
+      case CoachWorkloadActivityKind.match:
+        final match = item.match;
+        if (match == null) return;
+        AnalyticsInteractions.logFeature(
+          AnalyticsFeatures.openMatchDetail,
+          parameters: <String, Object>{
+            'has_tracker': match.withTracker == true,
+            'source': 'coach_workload_detail',
+          },
+        );
+        if (!mounted) return;
+        await Navigator.of(context).push(
+          analyticsMaterialRoute<void>(
+            screenName: AnalyticsScreenNames.matchDetail,
+            fullscreenDialog: true,
+            builder: (_) => MatchDetailScreen(
+              match: match,
+              isManager: false,
+              playerId: effectiveMemberId(widget.player),
+              initialTabIndex: MatchDetailScreen.statsTabIndexFor(match),
+            ),
+          ),
+        );
+      case CoachWorkloadActivityKind.training:
+        final training = item.training;
+        if (training == null) return;
+        await _openTrainingDetail(training);
+    }
+  }
+
+  Future<void> _openTrainingDetail(Training training) async {
+    final eventId = trainingEventId(training);
+    final playerId = effectiveMemberId(widget.player)?.trim() ?? '';
+    final hasTracker = training.withTracker == true &&
+        eventId != null &&
+        eventId.isNotEmpty &&
+        playerId.isNotEmpty;
+
+    if (!hasTracker) {
+      await TeamPlayersScreen.open(
+        context,
+        training: training,
+        seasonId: widget.seasonId,
+        readOnly: true,
+      );
+      return;
+    }
+
+    AnalyticsInteractions.logFeature(
+      AnalyticsFeatures.openPlayerAnalysis,
+      parameters: const <String, Object>{
+        'source': 'coach_workload_detail',
+        'is_match': false,
+      },
+    );
+
+    final isPolar = await eventUsesPolarTeamKit(
+      eventId: eventId,
+      ownerId: training.ownerId,
+    );
+    if (!mounted) return;
+
+    String? analysisDocId;
+    String? trackerId;
+    if (!isPolar) {
+      final summary =
+          await TeamWorkloadSummaryService().getByEventId(eventId);
+      final score = summary == null
+          ? null
+          : _findPlayerScore(summary, widget.player);
+      trackerId = score?.trackerId.trim();
+      if (trackerId != null && trackerId.isNotEmpty) {
+        analysisDocId = '${eventId}_$trackerId';
+      }
+    }
+
+    if (!mounted) return;
+
+    // No GPS tracker row for this player → fall back to training roster.
+    if (!isPolar && (analysisDocId == null || analysisDocId.isEmpty)) {
+      await TeamPlayersScreen.open(
+        context,
+        training: training,
+        seasonId: widget.seasonId,
+        readOnly: true,
+      );
+      return;
+    }
+
+    final colors = context.appColors;
+    await showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      useSafeArea: true,
+      backgroundColor: colors.background,
+      barrierColor: Colors.black54,
+      builder: (sheetContext) {
+        return Scaffold(
+          backgroundColor: colors.background,
+          body: SafeArea(
+            child: Column(
+              children: [
+                Padding(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 12,
+                    vertical: 8,
+                  ),
+                  child: Row(
+                    children: [
+                      Expanded(
+                        child: Text(
+                          playerDisplayName(
+                            widget.player,
+                            unknownLabel: sheetContext.l10n.entityPlayer,
+                          ),
+                          style: TextStyle(
+                            color: colors.textPrimary,
+                            fontSize: 16,
+                            fontWeight: FontWeight.w800,
+                          ),
+                        ),
+                      ),
+                      IconButton(
+                        onPressed: () => Navigator.of(sheetContext).pop(),
+                        icon: const Icon(Icons.close_rounded),
+                      ),
+                    ],
+                  ),
+                ),
+                Divider(height: 1, color: colors.border),
+                Expanded(
+                  child: SessionPlayerAnalysisView(
+                    eventId: eventId,
+                    ownerId: training.ownerId,
+                    analysisDocId: analysisDocId,
+                    trackerId: trackerId,
+                    playerId: playerId,
+                    teamId: training.teamId ?? widget.team.keyTeam,
+                    playerName: playerDisplayName(
+                      widget.player,
+                      unknownLabel: sheetContext.l10n.entityPlayer,
+                    ),
+                    player: widget.player,
+                    isMatch: false,
+                    showHeader: false,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  TeamPlayerMetricScores? _findPlayerScore(
+    TeamWorkloadSummary summary,
+    Player player,
+  ) {
+    final ids = playerMemberLookupIds(player);
+    for (final score in summary.playerScores) {
+      if (ids.contains(score.playerId.trim())) {
+        return score;
+      }
+    }
+    return null;
   }
 
   @override
@@ -269,6 +459,7 @@ class _CoachPlayerWorkloadDetailScreenState
                       _ActivityTile(
                         item: item,
                         dateLabel: dateFmt.format(item.startAt),
+                        onTap: () => unawaited(_openActivity(item)),
                       ),
                       const SizedBox(height: 10),
                     ],
@@ -310,10 +501,12 @@ class _ActivityTile extends StatelessWidget {
   const _ActivityTile({
     required this.item,
     required this.dateLabel,
+    required this.onTap,
   });
 
   final CoachWorkloadActivityItem item;
   final String dateLabel;
+  final VoidCallback onTap;
 
   @override
   Widget build(BuildContext context) {
@@ -401,16 +594,7 @@ class _ActivityTile extends StatelessWidget {
       color: Colors.transparent,
       child: InkWell(
         borderRadius: BorderRadius.circular(16),
-        onTap: item.kind == CoachWorkloadActivityKind.personalSport &&
-                item.personalSport != null
-            ? () {
-                showCreatePersonalSportActivitySheet(
-                  context,
-                  activityToEdit: item.personalSport,
-                  readOnly: true,
-                );
-              }
-            : null,
+        onTap: onTap,
         child: Container(
           width: double.infinity,
           padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
@@ -482,6 +666,10 @@ class _ActivityTile extends StatelessWidget {
                     ],
                   ],
                 ),
+              ),
+              Icon(
+                Icons.chevron_right_rounded,
+                color: colors.textSecondary,
               ),
             ],
           ),
