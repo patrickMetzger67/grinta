@@ -277,6 +277,14 @@ class CoachWorkloadAnalysisService {
           training: training,
           workloadScore: values[TeamWorkloadMetricKeys.workloadScore],
           distanceKm: values[TeamWorkloadMetricKeys.distanceKm],
+          maxValidatedSpeedKmh:
+              values[TeamWorkloadMetricKeys.maxValidatedSpeedKmh],
+          highAccelerationCount:
+              values[TeamWorkloadMetricKeys.highAccelerationCount],
+          highSpeedDurationSec:
+              values[TeamWorkloadMetricKeys.highSpeedDuration],
+          maxAccelerationMps2:
+              values[TeamWorkloadMetricKeys.maxAccelerationMps2],
           durationMinutes: training.duration,
           wasPresent: isPresent,
         ),
@@ -324,6 +332,14 @@ class CoachWorkloadAnalysisService {
           match: match,
           workloadScore: values[TeamWorkloadMetricKeys.workloadScore],
           distanceKm: values[TeamWorkloadMetricKeys.distanceKm],
+          maxValidatedSpeedKmh:
+              values[TeamWorkloadMetricKeys.maxValidatedSpeedKmh],
+          highAccelerationCount:
+              values[TeamWorkloadMetricKeys.highAccelerationCount],
+          highSpeedDurationSec:
+              values[TeamWorkloadMetricKeys.highSpeedDuration],
+          maxAccelerationMps2:
+              values[TeamWorkloadMetricKeys.maxAccelerationMps2],
           durationMinutes: playerStats.minutesPlayed,
           wasPresent: true,
         ),

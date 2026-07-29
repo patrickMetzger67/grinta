@@ -599,21 +599,51 @@ class CoachWorkloadReportPdfService {
     }
   }
 
+  /// Same tracker indicators as the session stats table (Workload → Acc. max).
   List<(String, String)> _sessionActivityMetrics(
     CoachWorkloadActivityItem item,
   ) {
     final out = <(String, String)>[];
-    if (item.durationMinutes != null && item.durationMinutes! > 0) {
-      out.add(('Duree', '${item.durationMinutes} min'));
-    }
-    if (item.workloadScore != null) {
-      out.add(('Charge', item.workloadScore!.toStringAsFixed(0)));
-    }
-    if (item.distanceKm != null && item.distanceKm! > 0) {
-      out.add(('Km', item.distanceKm!.toStringAsFixed(1)));
-    }
     if (item.wasPresent == false) {
       out.add(('Presence', 'Absent'));
+      if (item.durationMinutes != null && item.durationMinutes! > 0) {
+        out.add(('Duree', '${item.durationMinutes} min'));
+      }
+      return out;
+    }
+
+    if (item.workloadScore != null) {
+      out.add(('Workload', item.workloadScore!.toStringAsFixed(0)));
+    }
+    if (item.distanceKm != null) {
+      out.add(('Distance', '${item.distanceKm!.toStringAsFixed(2)} km'));
+    }
+    if (item.maxValidatedSpeedKmh != null) {
+      out.add((
+        'Vitesse max',
+        '${item.maxValidatedSpeedKmh!.toStringAsFixed(1)} km/h',
+      ));
+    }
+    if (item.highAccelerationCount != null) {
+      out.add((
+        'Acc. hautes',
+        item.highAccelerationCount!.toStringAsFixed(0),
+      ));
+    }
+    if (item.highSpeedDurationSec != null) {
+      out.add((
+        'Haute vitesse',
+        '${item.highSpeedDurationSec!.toStringAsFixed(1)} sec',
+      ));
+    }
+    if (item.maxAccelerationMps2 != null) {
+      out.add((
+        'Acc. max',
+        '${item.maxAccelerationMps2!.toStringAsFixed(2)} m/s2',
+      ));
+    }
+    if (item.durationMinutes != null && item.durationMinutes! > 0) {
+      out.add(('Duree', '${item.durationMinutes} min'));
     }
     return out;
   }
