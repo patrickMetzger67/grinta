@@ -405,7 +405,17 @@ class _CreateMatchSheetState extends State<CreateMatchSheet> {
     );
 
     if (shouldLocalize != true || !mounted) return true;
+    await _openSelectedFieldGeolocation();
+    return true;
+  }
 
+  /// Opens the field map to view / edit the pitch outline for the selected
+  /// club field, then persists GPS corners on `fieldClub`.
+  Future<void> _openSelectedFieldGeolocation() async {
+    final field = _selectedFieldClub;
+    if (field == null) return;
+
+    final l10n = context.l10n;
     final geo = field.location?.geopoint;
     final result = await FieldGpsLocalizationHelper.openLocalizationScreen(
       context,
@@ -414,10 +424,11 @@ class _CreateMatchSheetState extends State<CreateMatchSheet> {
       initialFieldGpsCorners: field.fieldGpsCorners,
       initialTarget: geo == null ? null : LatLng(geo.latitude, geo.longitude),
     );
-    if (result == null || !mounted) return true;
+    if (result == null || !mounted) return;
 
     try {
-      final saved = await FieldGpsLocalizationHelper.saveLocalizationResultToFieldClub(
+      final saved =
+          await FieldGpsLocalizationHelper.saveLocalizationResultToFieldClub(
         result: result,
         clubId: field.clubId,
         existing: field,
@@ -429,15 +440,20 @@ class _CreateMatchSheetState extends State<CreateMatchSheet> {
             : field.address,
         fieldClubService: _fieldClubService,
       );
-      if (!mounted) return true;
+      if (!mounted) return;
       _applySelectedField(saved);
-      return true;
+      // Keep list status (GPS OK) in sync after save.
+      final updated = List<FieldClub>.from(_venueFields);
+      final index = updated.indexWhere((f) => f.id == saved.id);
+      if (index >= 0) {
+        updated[index] = saved;
+      }
+      setState(() => _venueFields = updated);
     } catch (e, st) {
       debugPrint('match field geoloc save failed: $e\n$st');
       if (mounted) {
         AppSnackbar.show(context, l10n.adminTrackerFieldsSaveFailed);
       }
-      return true;
     }
   }
 
@@ -1003,6 +1019,34 @@ class _CreateMatchSheetState extends State<CreateMatchSheet> {
                       }
                     },
                   ),
+                  if (_selectedFieldClub != null) ...[
+                    const SizedBox(height: 8),
+                    OutlinedButton.icon(
+                      onPressed: () =>
+                          unawaited(_openSelectedFieldGeolocation()),
+                      icon: Icon(
+                        _selectedFieldClub!.hasUsableFieldGpsCorners
+                            ? Icons.gps_fixed
+                            : Icons.gps_not_fixed,
+                      ),
+                      label: Text(
+                        _selectedFieldClub!.hasUsableFieldGpsCorners
+                            ? l10n.createMatchFieldGpsActionView
+                            : l10n.createMatchFieldGpsActionSet,
+                      ),
+                      style: OutlinedButton.styleFrom(
+                        foregroundColor: colors.primary,
+                        side: BorderSide(color: colors.primary),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 12,
+                          vertical: 12,
+                        ),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                      ),
+                    ),
+                  ],
                   const SizedBox(height: 12),
                 ],
                 TextFormField(

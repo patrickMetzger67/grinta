@@ -3785,6 +3785,18 @@ abstract class AppLocalizations {
   /// **'Lieu du match'**
   String get matchDetailVenueTitle;
 
+  /// No description provided for @matchVenueFieldGpsView.
+  ///
+  /// In fr, this message translates to:
+  /// **'Terrain géolocalisé — voir le tracé'**
+  String get matchVenueFieldGpsView;
+
+  /// No description provided for @matchVenueFieldGpsSet.
+  ///
+  /// In fr, this message translates to:
+  /// **'Géolocaliser le terrain'**
+  String get matchVenueFieldGpsSet;
+
   /// No description provided for @matchDetailTrackerKitTitle.
   ///
   /// In fr, this message translates to:
@@ -8255,6 +8267,18 @@ abstract class AppLocalizations {
   /// In fr, this message translates to:
   /// **'Terrain du club'**
   String get createMatchSelectField;
+
+  /// No description provided for @createMatchFieldGpsActionView.
+  ///
+  /// In fr, this message translates to:
+  /// **'Terrain géolocalisé — voir le tracé'**
+  String get createMatchFieldGpsActionView;
+
+  /// No description provided for @createMatchFieldGpsActionSet.
+  ///
+  /// In fr, this message translates to:
+  /// **'Géolocaliser ce terrain'**
+  String get createMatchFieldGpsActionSet;
 
   /// No description provided for @createMatchFieldNotGeolocatedTitle.
   ///

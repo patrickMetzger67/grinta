@@ -2151,6 +2151,12 @@ class AppLocalizationsDe extends AppLocalizations {
   String get matchDetailVenueTitle => 'Spielort';
 
   @override
+  String get matchVenueFieldGpsView => 'Platz geolokalisiert — Umriss anzeigen';
+
+  @override
+  String get matchVenueFieldGpsSet => 'Platz geolokalisieren';
+
+  @override
   String get matchDetailTrackerKitTitle => 'Kit-Auswahl';
 
   @override
@@ -4787,6 +4793,13 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get createMatchSelectField => 'Vereinsplatz';
+
+  @override
+  String get createMatchFieldGpsActionView =>
+      'Platz geolokalisiert — Umriss anzeigen';
+
+  @override
+  String get createMatchFieldGpsActionSet => 'Diesen Platz geolokalisieren';
 
   @override
   String get createMatchFieldNotGeolocatedTitle => 'Platz nicht geolokalisiert';
