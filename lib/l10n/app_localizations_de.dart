@@ -6477,6 +6477,19 @@ class AppLocalizationsDe extends AppLocalizations {
   String get adminYoutubeBadgeWelcomeCoach => 'Willkommen Coach';
 
   @override
+  String get youtubeTopVideoTitle => 'Tipp der Woche';
+
+  @override
+  String get youtubeTopVideoMessage =>
+      'Entdecke den neuen Grinta-Tipp. Du kannst ihn jetzt ansehen oder überspringen.';
+
+  @override
+  String get youtubeTopVideoWatch => 'Ansehen';
+
+  @override
+  String get youtubeTopVideoSkip => 'Überspringen';
+
+  @override
   String get promoCodeMenuLabel => 'Promo-Code';
 
   @override

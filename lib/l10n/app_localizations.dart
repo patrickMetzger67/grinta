@@ -11144,6 +11144,30 @@ abstract class AppLocalizations {
   /// **'Welcome coach'**
   String get adminYoutubeBadgeWelcomeCoach;
 
+  /// No description provided for @youtubeTopVideoTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Astuce de la semaine'**
+  String get youtubeTopVideoTitle;
+
+  /// No description provided for @youtubeTopVideoMessage.
+  ///
+  /// In fr, this message translates to:
+  /// **'Découvrez la nouvelle astuce Grinta. Vous pouvez la regarder maintenant ou la passer.'**
+  String get youtubeTopVideoMessage;
+
+  /// No description provided for @youtubeTopVideoWatch.
+  ///
+  /// In fr, this message translates to:
+  /// **'Regarder'**
+  String get youtubeTopVideoWatch;
+
+  /// No description provided for @youtubeTopVideoSkip.
+  ///
+  /// In fr, this message translates to:
+  /// **'Passer'**
+  String get youtubeTopVideoSkip;
+
   /// No description provided for @promoCodeMenuLabel.
   ///
   /// In fr, this message translates to:
