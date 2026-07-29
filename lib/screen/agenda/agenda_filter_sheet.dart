@@ -211,25 +211,38 @@ class _AgendaFilterBodyState extends State<_AgendaFilterBody> {
               Wrap(
                 spacing: 8,
                 runSpacing: 8,
-                children: [
-                  for (final type in AgendaItemType.values)
-                    FilterChip(
-                      avatar: Icon(_typeIcon(type), size: 18),
-                      label: Text(_typeLabel(l10n, type)),
-                      selected: _selectedTypes.contains(type),
-                      selectedColor: colors.primary.withValues(alpha: 0.18),
-                      checkmarkColor: colors.primary,
-                      onSelected: (selected) {
-                        setState(() {
-                          if (selected) {
-                            _selectedTypes.add(type);
-                          } else if (_selectedTypes.length > 1) {
-                            _selectedTypes.remove(type);
-                          }
-                        });
-                      },
+                children: AgendaItemType.values.map((type) {
+                  final isSelected = _selectedTypes.contains(type);
+                  return FilterChip(
+                    avatar: Icon(
+                      _typeIcon(type),
+                      size: 18,
+                      color: isSelected ? colors.success : colors.primary,
                     ),
-                ],
+                    label: Text(_typeLabel(l10n, type)),
+                    selected: isSelected,
+                    selectedColor: colors.success.withValues(alpha: 0.22),
+                    checkmarkColor: colors.success,
+                    labelStyle: TextStyle(
+                      color:
+                          isSelected ? colors.success : colors.textPrimary,
+                      fontWeight:
+                          isSelected ? FontWeight.w700 : FontWeight.w500,
+                    ),
+                    side: BorderSide(
+                      color: isSelected ? colors.success : colors.border,
+                    ),
+                    onSelected: (selected) {
+                      setState(() {
+                        if (selected) {
+                          _selectedTypes.add(type);
+                        } else if (_selectedTypes.length > 1) {
+                          _selectedTypes.remove(type);
+                        }
+                      });
+                    },
+                  );
+                }).toList(),
               ),
               const SizedBox(height: 22),
               Text(
