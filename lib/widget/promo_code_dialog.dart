@@ -11,9 +11,12 @@ import 'package:grinta/util/promo_redeem_errors.dart';
 import 'package:intl/intl.dart';
 
 /// Opens promo code redemption in a dialog (web) or bottom sheet (mobile).
-Future<void> showPromoCodeDialog(BuildContext context) {
+///
+/// Returns a localized success message when the code was redeemed and verified.
+/// Callers (paywall) should close themselves when this is non-null.
+Future<String?> showPromoCodeDialog(BuildContext context) {
   if (kIsWeb) {
-    return showDialog<void>(
+    return showDialog<String>(
       context: context,
       barrierDismissible: true,
       useRootNavigator: true,
@@ -33,7 +36,7 @@ Future<void> showPromoCodeDialog(BuildContext context) {
     );
   }
 
-  return showModalBottomSheet<void>(
+  return showModalBottomSheet<String>(
     context: context,
     isScrollControlled: true,
     showDragHandle: true,
@@ -90,20 +93,18 @@ class _PromoCodeDialogContentState extends State<PromoCodeDialogContent> {
 
       if (verified) {
         final expiresAt = subscription.subscriptionExpiresAt ?? result.expiresAt;
-        setState(() {
-          _feedbackMessage = expiresAt != null
-              ? context.l10n.promoCodeRedeemSuccessVerified(
-                  _entitlementLabel(context, result.entitlement),
-                  _formatExpiry(context, expiresAt),
-                  result.durationDays,
-                )
-              : context.l10n.promoCodeRedeemSuccess(
-                  result.durationDays,
-                  _entitlementLabel(context, result.entitlement),
-                );
-          _feedbackIsError = false;
-          _controller.clear();
-        });
+        final message = expiresAt != null
+            ? context.l10n.promoCodeRedeemSuccessVerified(
+                _entitlementLabel(context, result.entitlement),
+                _formatExpiry(context, expiresAt),
+                result.durationDays,
+              )
+            : context.l10n.promoCodeRedeemSuccess(
+                result.durationDays,
+                _entitlementLabel(context, result.entitlement),
+              );
+        // Close the promo sheet/dialog immediately — callers close the paywall.
+        Navigator.of(context).pop(message);
         return;
       }
 
