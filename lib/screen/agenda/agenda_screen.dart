@@ -48,6 +48,7 @@ import '../match_detail_screen.dart';
 import '../team_players_screen.dart';
 import 'agenda_add_event_menu.dart';
 import 'agenda_filter_sheet.dart';
+import '../../util/coach_workload_analysis_access.dart';
 import '../../widget/ask_diego/ask_diego_speed_dial.dart';
 import '../../widget/agenda_coach_players_dialog.dart';
 import '../../widget/agenda_training_presence_actions.dart';
@@ -1038,7 +1039,16 @@ class _AgendaScreenState extends State<AgendaScreen> {
               unawaited(_openAgendaFilter());
             },
           ),
-          if (context.watch<AppSession>().hasManagedTeamsInSelectedSeason)
+          if (context.watch<AppSession>().hasManagedTeamsInSelectedSeason) ...[
+            AskDiegoPrimaryAction(
+              heroTag: 'grinta-fab-agenda-coach-analysis',
+              icon: Icons.insights_rounded,
+              tooltip: context.l10n.coachWorkloadAnalysisFabTooltip,
+              showPremiumBadge: true,
+              onPressed: () {
+                unawaited(openCoachWorkloadAnalysis(context));
+              },
+            ),
             AskDiegoPrimaryAction(
               heroTag: 'grinta-fab-agenda-coach-players',
               icon: Icons.groups_outlined,
@@ -1047,6 +1057,7 @@ class _AgendaScreenState extends State<AgendaScreen> {
                 unawaited(_openCoachPlayersDialog());
               },
             ),
+          ],
         ],
       ),
     );

@@ -14,6 +14,9 @@ abstract final class AnalyticsFeatures {
   static const openTeamParam = 'open_team_param';
   static const openTrackerStats = 'open_tracker_stats';
   static const openPlayerAnalysis = 'open_player_analysis';
+  static const openCoachWorkloadAnalysis = 'open_coach_workload_analysis';
+  static const openCoachWorkloadAnalysisTeaser =
+      'open_coach_workload_analysis_teaser';
 
   // Tracker kit & sync
   static const trackerKitTap = 'tracker_kit_tap';

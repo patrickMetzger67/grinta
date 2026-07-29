@@ -1002,6 +1002,42 @@
   "agendaAddEventNonSport": "A non-sporting event / activity",
   "agendaAllDayLabel": "All day",
 
+  "coachWorkloadAnalysisFabTooltip": "Player workload analysis",
+  "coachWorkloadAnalysisTitle": "Workload analysis",
+  "coachWorkloadTeaserHeadline": "Compare your players’ workload",
+  "coachWorkloadTeaserBody": "Team + individual recap for the period, workload indicators and activity list. Available with Coach Pro.",
+  "coachWorkloadTeaserCta": "Discover Coach Pro",
+  "coachWorkloadCompareHint": "Compare players at a glance, then open the detail.",
+  "coachWorkloadNoManagedTeam": "No managed team for this season.",
+  "coachWorkloadLoadError": "Unable to load analysis.",
+  "coachWorkloadEmptyPlayers": "No players to show.",
+  "coachWorkloadEmptyActivities": "No activities in this period.",
+  "coachWorkloadPlayerRecapTitle": "Workload summary",
+  "coachWorkloadActivitiesTitle": "Activities",
+  "coachWorkloadMetricSessions": "{count} sessions",
+  "@coachWorkloadMetricSessions": {
+    "placeholders": { "count": { "type": "int" } }
+  },
+  "coachWorkloadMetricLoad": "Load {value}",
+  "@coachWorkloadMetricLoad": {
+    "placeholders": { "value": { "type": "String" } }
+  },
+  "coachWorkloadMetricVolume": "{minutes} min",
+  "@coachWorkloadMetricVolume": {
+    "placeholders": { "minutes": { "type": "int" } }
+  },
+  "coachWorkloadMetricPresence": "Attendance {value}",
+  "@coachWorkloadMetricPresence": {
+    "placeholders": { "value": { "type": "String" } }
+  },
+  "coachWorkloadBreakdown": "{trainings} workouts · {matches} matches · {personal} personal sports",
+  "@coachWorkloadBreakdown": {
+    "placeholders": {
+      "trainings": { "type": "int" },
+      "matches": { "type": "int" },
+      "personal": { "type": "int" }
+    }
+  },
   "agendaCoachPlayersFabTooltip": "Players — personal activities",
   "agendaCoachPlayersTitle": "Players’ sports activities",
   "agendaCoachPlayersSubtitle": "Show personal sport activities with coach visibility in the agenda.",

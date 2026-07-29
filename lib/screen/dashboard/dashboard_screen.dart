@@ -30,6 +30,7 @@ import '../../services/teamService.dart';
 import '../../services/trainingService.dart';
 import '../../model/feature_discovery_ids.dart';
 import '../../util/app_theme.dart';
+import '../../util/coach_workload_analysis_access.dart';
 import '../../util/polar_tracker_eligibility.dart';
 import '../../util/staff_session_access.dart';
 import '../../widget/activity_rings_card.dart';
@@ -172,7 +173,21 @@ class _DashboardScreenState extends State<DashboardScreen> {
     return Scaffold(
       backgroundColor: colors.background,
       floatingActionButton: (AppShellScope.maybeOf(context)?.isMobileShell ?? false)
-          ? const AskDiegoSpeedDial(heroTagPrefix: 'dashboard')
+          ? AskDiegoSpeedDial(
+              heroTagPrefix: 'dashboard',
+              secondaryActions: [
+                if (context.watch<AppSession>().hasManagedTeamsInSelectedSeason)
+                  AskDiegoPrimaryAction(
+                    heroTag: 'grinta-fab-dashboard-coach-analysis',
+                    icon: Icons.insights_rounded,
+                    tooltip: context.l10n.coachWorkloadAnalysisFabTooltip,
+                    showPremiumBadge: true,
+                    onPressed: () {
+                      unawaited(openCoachWorkloadAnalysis(context));
+                    },
+                  ),
+              ],
+            )
           : null,
       body: SafeArea(
         child: LayoutBuilder(
