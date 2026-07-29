@@ -52,6 +52,7 @@ import '../../util/coach_workload_analysis_access.dart';
 import '../../widget/ask_diego/ask_diego_speed_dial.dart';
 import '../../widget/agenda_coach_players_dialog.dart';
 import '../../widget/agenda_training_presence_actions.dart';
+import '../../widget/coach_workload_analysis_entry_button.dart';
 import '../../widget/create_non_sport_event_sheet.dart';
 import '../../widget/create_personal_sport_activity_sheet.dart';
 import '../../widget/session_personal_data_dialog.dart';
@@ -929,6 +930,8 @@ class _AgendaScreenState extends State<AgendaScreen> {
           : AppBar(
               title: Text(l10n.navAgenda),
               actions: [
+                if (context.watch<AppSession>().hasManagedTeamsInSelectedSeason)
+                  const CoachWorkloadAnalysisEntryButton(compact: true),
                 IconButton(
                   tooltip: l10n.navOverview,
                   onPressed: _showOverviewPanel,
@@ -946,6 +949,10 @@ class _AgendaScreenState extends State<AgendaScreen> {
                 parentScreenId: FeatureDiscoveryIds.tabAgenda,
                 excludeCurrentBaseScreen: true,
               ),
+              if (context.watch<AppSession>().hasManagedTeamsInSelectedSeason) ...[
+                const CoachWorkloadAnalysisEntryButton(),
+                const SizedBox(height: 10),
+              ],
               _GrintaStyleCalendarHeader(
                 pageController: _monthPageController,
                 initialPage: _initialMonthPage,
