@@ -4547,6 +4547,24 @@ abstract class AppLocalizations {
   /// **'Liste des matchs'**
   String get dashboardMatchListTitle;
 
+  /// No description provided for @entityPersonalSports.
+  ///
+  /// In fr, this message translates to:
+  /// **'Activités sportives individuelles'**
+  String get entityPersonalSports;
+
+  /// No description provided for @dashboardPersonalSportsListTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Liste des activités sportives'**
+  String get dashboardPersonalSportsListTitle;
+
+  /// No description provided for @emptyNoPersonalSportToShow.
+  ///
+  /// In fr, this message translates to:
+  /// **'Aucune activité sportive à afficher'**
+  String get emptyNoPersonalSportToShow;
+
   /// No description provided for @periodCustomRange.
   ///
   /// In fr, this message translates to:

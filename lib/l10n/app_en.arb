@@ -977,6 +977,10 @@
   "loadingStats": "Loading statistics...",
   "dashboardMyManagedTeams": "My managed teams",
   "dashboardMatchListTitle": "List of matches",
+  "entityPersonalSports": "Individual sports activities",
+  "dashboardPersonalSportsListTitle": "Sports activities list",
+  "emptyNoPersonalSportToShow": "No sports activities to show",
+
   "periodCustomRange": "from {start} to {end}",
   "statsPresenceRate": "Attendance rate: ({value}) %",
   "statsDoneSingular": "realized",

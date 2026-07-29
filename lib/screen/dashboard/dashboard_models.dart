@@ -8,6 +8,7 @@ enum DashboardPeriod {
 enum DashboardStatsType {
   matches,
   trainings,
+  personalSports,
 }
 
 enum DashboardWhereType {
@@ -28,6 +29,7 @@ class _ActivityStats {
     required this.presentPecent,
     this.matchOutcomes = const <_MatchOutcome, int>{},
     this.trainingMetrics = const <ActivityMetrics>[],
+    this.personalActivities = const <PersonalSportActivity>[],
   });
 
   final int done;
@@ -37,6 +39,9 @@ class _ActivityStats {
 
   /// Utilisé uniquement pour les entraînements.
   final List<ActivityMetrics> trainingMetrics;
+
+  /// Utilisé uniquement pour les activités sportives personnelles.
+  final List<PersonalSportActivity> personalActivities;
 
   int get total => done + planned;
 
@@ -49,4 +54,6 @@ class _ActivityStats {
   bool get hasMatchOutcomes => totalOutcomes > 0;
 
   bool get hasTrainingMetrics => trainingMetrics.isNotEmpty;
+
+  bool get hasPersonalActivities => personalActivities.isNotEmpty;
 }
