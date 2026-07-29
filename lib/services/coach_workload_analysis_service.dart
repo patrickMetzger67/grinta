@@ -18,6 +18,7 @@ import 'package:grinta/util/player_activity_report_aggregator.dart';
 import 'package:grinta/util/player_photo_resolver.dart';
 import 'package:grinta/util/season_period_ranges.dart';
 import 'package:grinta/util/team_player_match_stats_helper.dart';
+import 'package:grinta/util/training_finish_helper.dart';
 
 /// Builds coach-facing workload summaries for a team over a period.
 class CoachWorkloadAnalysisService {
@@ -433,6 +434,10 @@ class CoachWorkloadAnalysisService {
       end: endExclusive,
     );
     return trainings.where((training) {
+      // Planned / not-yet-finished sessions must not count in Analyse charge.
+      if (!isTrainingFinished(training)) {
+        return false;
+      }
       final trainingSeasonId = training.seasonId?.trim() ?? '';
       if (trainingSeasonId.isNotEmpty && trainingSeasonId != seasonId) {
         return false;
