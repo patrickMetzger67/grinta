@@ -173,7 +173,7 @@ class CoachWorkloadReportPdfService {
     Future<void> loadSvg(String key, String assetPath) async {
       try {
         final svg = await rootBundle.loadString(assetPath);
-        final bytes = await svgStringToPngBytes(svg, targetWidth: 72);
+        final bytes = await brandSvgToPngBytes(svg, targetWidth: 72);
         if (bytes != null && bytes.isNotEmpty) {
           out[key] = bytes;
         }

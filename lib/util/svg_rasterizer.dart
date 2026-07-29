@@ -26,12 +26,30 @@ Future<Uint8List?> svgStringToPngBytes(
     return fromRects;
   }
 
+  return brandSvgToPngBytes(trimmed, targetWidth: targetWidth);
+}
+
+/// Rasterizes brand / UI SVGs for PDF embedding (always via flutter_svg).
+///
+/// Prefer this for logos (Whoop, Strava, Apple, …). [svgStringToPngBytes]
+/// first tries the heatmap rect path, which used to mis-render simple brand
+/// marks that contain a background `<rect>` as a green pitch square.
+Future<Uint8List?> brandSvgToPngBytes(
+  String svg, {
+  double targetWidth = 72,
+}) async {
+  final String trimmed = svg.trim();
+  if (trimmed.isEmpty) {
+    return null;
+  }
   return _flutterSvgToPngBytes(trimmed, targetWidth: targetWidth);
 }
 
 /// Pure-Dart rasterizer for TRACKER_Svg heatmaps (pitch + heat rects).
 ///
 /// Works on web/mobile/desktop without `dart:ui` image encoding.
+/// Returns null when the SVG does not look like a heatmap so callers can
+/// fall back to [brandSvgToPngBytes] for logos and other marks.
 Uint8List? heatmapSvgStringToPngBytes(
   String svg, {
   int targetWidth = 720,
@@ -70,6 +88,7 @@ Uint8List? heatmapSvgStringToPngBytes(
     _fillRect(image, pitch, scale);
 
     // Heat cells (smaller colored rects with opacity).
+    var heatCellCount = 0;
     for (final _SvgRectPaint rect in rects) {
       if (identical(rect, pitch)) continue;
       if (rect.width >= size.width * 0.4 && rect.height >= size.height * 0.4) {
@@ -80,7 +99,14 @@ Uint8List? heatmapSvgStringToPngBytes(
       if (rect.color.r < 20 && rect.color.g < 20 && rect.color.b < 30) {
         continue;
       }
+      heatCellCount++;
       _fillRect(image, rect, scale);
+    }
+
+    // Brand logos (Whoop, Apple, …) often have a viewBox + background rect.
+    // Without heat cells, this path would return a green pitch square.
+    if (heatCellCount == 0) {
+      return null;
     }
 
     // Pitch outline + boxes from white stroke rects in the SVG itself.
