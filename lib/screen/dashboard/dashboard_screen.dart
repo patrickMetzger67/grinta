@@ -30,6 +30,8 @@ import '../../services/teamService.dart';
 import '../../services/trainingService.dart';
 import '../../model/feature_discovery_ids.dart';
 import '../../util/app_theme.dart';
+import '../../util/coach_filter_period.dart';
+import '../../util/coach_workload_analysis_access.dart';
 import '../../util/polar_tracker_eligibility.dart';
 import '../../util/staff_session_access.dart';
 import '../../widget/activity_rings_card.dart';
@@ -73,6 +75,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
   DashboardStatsType _selectedStatsType = DashboardStatsType.trainings;
   DashboardWhereType _selectedStatsWhere = DashboardWhereType.player;
   DateTimeRange? _customRange;
+  bool _hydratedCoachPeriodFromSession = false;
 
   bool _sessionWaitTimedOut = false;
   Timer? _sessionWaitTimer;
@@ -81,6 +84,45 @@ class _DashboardScreenState extends State<DashboardScreen> {
   void dispose() {
     _sessionWaitTimer?.cancel();
     super.dispose();
+  }
+
+  CoachFilterPeriod _toCoachFilterPeriod(DashboardPeriod period) {
+    return switch (period) {
+      DashboardPeriod.week => CoachFilterPeriod.week,
+      DashboardPeriod.month => CoachFilterPeriod.month,
+      DashboardPeriod.custom => CoachFilterPeriod.custom,
+    };
+  }
+
+  DashboardPeriod _fromCoachFilterPeriod(CoachFilterPeriod period) {
+    return switch (period) {
+      CoachFilterPeriod.week => DashboardPeriod.week,
+      CoachFilterPeriod.month => DashboardPeriod.month,
+      CoachFilterPeriod.custom => DashboardPeriod.custom,
+    };
+  }
+
+  void _hydrateCoachPeriodFromSession(AppSession session) {
+    if (_hydratedCoachPeriodFromSession) return;
+    _hydratedCoachPeriodFromSession = true;
+    _selectedPeriod = _fromCoachFilterPeriod(session.selectedCoachFilterPeriod);
+    _customRange = session.selectedCoachFilterCustomRange;
+  }
+
+  void _persistCoachFiltersToSession(AppSession session) {
+    session.setSelectedCoachFilterPeriod(
+      _toCoachFilterPeriod(_selectedPeriod),
+      customRange: _customRange,
+    );
+    final String? teamId = _selectedTeamId?.trim();
+    if (teamId != null && teamId.isNotEmpty) {
+      session.setSelectedManagedTeamId(teamId);
+    }
+  }
+
+  Future<void> _openCoachWorkloadAnalysis(BuildContext context) async {
+    _persistCoachFiltersToSession(context.read<AppSession>());
+    await openCoachWorkloadAnalysis(context);
   }
 
   void _startSessionWaitTimer() {
@@ -117,6 +159,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
 
     final appSession = context.watch<AppSession>();
+    _hydrateCoachPeriodFromSession(appSession);
 
     final firebaseUser = FirebaseAuth.instance.currentUser;
     final sessionUser = appSession.user;
@@ -456,7 +499,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           if (session.hasManagedTeamsInSelectedSeason) ...[
-            const CoachWorkloadAnalysisEntryButton(),
+            CoachWorkloadAnalysisEntryButton(
+              onPressed: () => _openCoachWorkloadAnalysis(context),
+            ),
             SizedBox(height: isPhone ? 12 : 14),
           ],
           _buildPeriodSelector(
@@ -1407,6 +1452,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
           setState(() {
             _selectedPeriod = DashboardPeriod.week;
           });
+          context.read<AppSession>().setSelectedCoachFilterPeriod(
+                CoachFilterPeriod.week,
+              );
         },
       ),
       _PeriodChip(
@@ -1420,6 +1468,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
           setState(() {
             _selectedPeriod = DashboardPeriod.month;
           });
+          context.read<AppSession>().setSelectedCoachFilterPeriod(
+                CoachFilterPeriod.month,
+              );
         },
       ),
       _PeriodChip(
@@ -1505,6 +1556,11 @@ class _DashboardScreenState extends State<DashboardScreen> {
       _selectedPeriod = DashboardPeriod.custom;
       _customRange = range;
     });
+    if (!context.mounted) return;
+    context.read<AppSession>().setSelectedCoachFilterPeriod(
+          CoachFilterPeriod.custom,
+          customRange: range,
+        );
   }
 
 
@@ -1539,52 +1595,10 @@ class _DashboardScreenState extends State<DashboardScreen> {
   }
 
   DateTimeRange getSelectedDateRange() {
-    final DateTime now = DateTime.now();
-
-    if (_selectedPeriod == DashboardPeriod.week) {
-      final int weekday = now.weekday;
-
-      final DateTime start = DateTime(
-        now.year,
-        now.month,
-        now.day,
-      ).subtract(Duration(days: weekday - 1));
-
-      final DateTime end = DateTime(
-        start.year,
-        start.month,
-        start.day + 7,
-      );
-
-      return DateTimeRange(start: start, end: end);
-    }
-
-    if (_selectedPeriod == DashboardPeriod.month) {
-      final DateTime start = DateTime(now.year, now.month, 1);
-      final DateTime end = DateTime(now.year, now.month + 1, 1);
-
-      return DateTimeRange(start: start, end: end);
-    }
-
-    final DateTimeRange range = _customRange ??
-        DateTimeRange(
-          start: DateTime(now.year, now.month, 1),
-          end: now,
-        );
-
-    final DateTime start = DateTime(
-      range.start.year,
-      range.start.month,
-      range.start.day,
+    return CoachFilterPeriodRange.queryExclusive(
+      period: _toCoachFilterPeriod(_selectedPeriod),
+      customRange: _customRange,
     );
-
-    final DateTime end = DateTime(
-      range.end.year,
-      range.end.month,
-      range.end.day + 1,
-    );
-
-    return DateTimeRange(start: start, end: end);
   }
 
   bool isDateInSelectedRange(DateTime date) {

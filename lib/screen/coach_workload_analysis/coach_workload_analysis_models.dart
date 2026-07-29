@@ -2,12 +2,10 @@ import 'package:grinta/model/match.dart' as match_model;
 import 'package:grinta/model/personal_sport_activity.dart';
 import 'package:grinta/model/player.dart';
 import 'package:grinta/model/training.dart';
+import 'package:grinta/util/coach_filter_period.dart';
 
-enum CoachWorkloadPeriod {
-  week,
-  month,
-  custom,
-}
+/// Alias kept for existing Analyse charge call sites.
+typedef CoachWorkloadPeriod = CoachFilterPeriod;
 
 enum CoachMetricTone {
   neutral,

@@ -11,6 +11,7 @@ import 'package:grinta/services/playerService.dart';
 import 'package:grinta/services/seasonService.dart';
 import 'package:grinta/services/teamService.dart';
 import 'package:grinta/services/user_avatar_service.dart';
+import 'package:grinta/util/coach_filter_period.dart';
 import 'package:grinta/util/player_photo_resolver.dart';
 import 'package:grinta/util/team_deletion_access.dart';
 import 'package:grinta/util/team_list_visibility.dart';
@@ -37,6 +38,12 @@ class AppSession extends ChangeNotifier {
 
   /// Last managed team chosen on Dashboard / Analyse charge (season-scoped UX).
   String? selectedManagedTeamId;
+
+  /// Last Semaine / Mois / Personnalisé chosen on Dashboard / Analyse charge.
+  CoachFilterPeriod selectedCoachFilterPeriod = CoachFilterPeriod.month;
+
+  /// Inclusive custom range when [selectedCoachFilterPeriod] is custom.
+  DateTimeRange? selectedCoachFilterCustomRange;
 
   StreamSubscription<User?>? _authSub;
   StreamSubscription<User?>? _userProfileSub;
@@ -248,6 +255,8 @@ class AppSession extends ChangeNotifier {
       selectedSeason = null;
       selectedPlayerId = null;
       selectedManagedTeamId = null;
+      selectedCoachFilterPeriod = CoachFilterPeriod.month;
+      selectedCoachFilterCustomRange = null;
 
       _safeNotify();
 
@@ -1452,6 +1461,36 @@ class AppSession extends ChangeNotifier {
     final next = (trimmed == null || trimmed.isEmpty) ? null : trimmed;
     if (selectedManagedTeamId == next) return;
     selectedManagedTeamId = next;
+    _safeNotify();
+  }
+
+  /// Persists Semaine / Mois / Personnalisé shared by Dashboard and Analyse charge.
+  void setSelectedCoachFilterPeriod(
+    CoachFilterPeriod period, {
+    DateTimeRange? customRange,
+  }) {
+    final DateTimeRange? nextCustom = period == CoachFilterPeriod.custom
+        ? (customRange == null
+            ? selectedCoachFilterCustomRange
+            : DateTimeRange(
+                start: DateTime(
+                  customRange.start.year,
+                  customRange.start.month,
+                  customRange.start.day,
+                ),
+                end: DateTime(
+                  customRange.end.year,
+                  customRange.end.month,
+                  customRange.end.day,
+                ),
+              ))
+        : null;
+    if (selectedCoachFilterPeriod == period &&
+        selectedCoachFilterCustomRange == nextCustom) {
+      return;
+    }
+    selectedCoachFilterPeriod = period;
+    selectedCoachFilterCustomRange = nextCustom;
     _safeNotify();
   }
 

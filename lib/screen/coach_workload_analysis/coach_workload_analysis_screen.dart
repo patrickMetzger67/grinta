@@ -11,6 +11,7 @@ import 'package:grinta/screen/coach_workload_analysis/coach_workload_analysis_mo
 import 'package:grinta/services/coach_workload_analysis_service.dart';
 import 'package:grinta/services/team_players_service.dart';
 import 'package:grinta/util/app_theme.dart';
+import 'package:grinta/util/coach_filter_period.dart';
 import 'package:grinta/util/playerDisplayName.dart';
 import 'package:grinta/widget/account_create_profile_entry.dart';
 import 'package:grinta/widget/coach_workload_report_email_dialog.dart';
@@ -64,31 +65,25 @@ class _CoachWorkloadAnalysisScreenState
       if (_teamId != null) {
         session.setSelectedManagedTeamId(_teamId);
       }
+      // Keep Dashboard Semaine / Mois / Personnalisé when opening Analyse charge.
+      _period = session.selectedCoachFilterPeriod;
+      _customRange = session.selectedCoachFilterCustomRange;
       unawaited(_reload());
     });
   }
 
+  void _persistPeriodToSession() {
+    context.read<AppSession>().setSelectedCoachFilterPeriod(
+          _period,
+          customRange: _customRange,
+        );
+  }
+
   DateTimeRange _resolvedRange() {
-    final now = DateTime.now();
-    final today = DateTime(now.year, now.month, now.day);
-    switch (_period) {
-      case CoachWorkloadPeriod.week:
-        return DateTimeRange(
-          start: today.subtract(const Duration(days: 6)),
-          end: today,
-        );
-      case CoachWorkloadPeriod.month:
-        return DateTimeRange(
-          start: today.subtract(const Duration(days: 29)),
-          end: today,
-        );
-      case CoachWorkloadPeriod.custom:
-        return _customRange ??
-            DateTimeRange(
-              start: today.subtract(const Duration(days: 29)),
-              end: today,
-            );
-    }
+    return CoachFilterPeriodRange.inclusive(
+      period: _period,
+      customRange: _customRange,
+    );
   }
 
   Future<void> _reload() async {
@@ -211,6 +206,7 @@ class _CoachWorkloadAnalysisScreenState
         end: DateTime(picked.end.year, picked.end.month, picked.end.day),
       );
     });
+    _persistPeriodToSession();
     await _reload();
   }
 
@@ -301,6 +297,7 @@ class _CoachWorkloadAnalysisScreenState
                       selected: _period == CoachWorkloadPeriod.week,
                       onTap: () {
                         setState(() => _period = CoachWorkloadPeriod.week);
+                        _persistPeriodToSession();
                         unawaited(_reload());
                       },
                     ),
@@ -309,6 +306,7 @@ class _CoachWorkloadAnalysisScreenState
                       selected: _period == CoachWorkloadPeriod.month,
                       onTap: () {
                         setState(() => _period = CoachWorkloadPeriod.month);
+                        _persistPeriodToSession();
                         unawaited(_reload());
                       },
                     ),
