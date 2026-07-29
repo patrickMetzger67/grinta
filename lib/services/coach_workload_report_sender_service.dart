@@ -5,6 +5,7 @@ import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter/foundation.dart';
 import 'package:grinta/config/invitation_config.dart';
 import 'package:grinta/l10n/app_localizations.dart';
+import 'package:grinta/model/team.dart';
 import 'package:grinta/screen/coach_workload_analysis/coach_workload_analysis_models.dart';
 import 'package:grinta/services/coach_workload_report_email_builder.dart';
 import 'package:grinta/services/coach_workload_report_pdf_service.dart';
@@ -59,8 +60,10 @@ class CoachWorkloadReportSenderService {
     required AppLocalizations l10n,
     required List<String> toEmails,
     required CoachTeamWorkloadReport report,
+    required Team team,
     required String teamName,
     required String teamId,
+    required String seasonId,
     required DateTime rangeStart,
     required DateTime rangeEndInclusive,
     String localeCode = 'fr',
@@ -88,6 +91,8 @@ class CoachWorkloadReportSenderService {
     try {
       final pdfBytes = await _pdfService.buildPdf(
         report: report,
+        team: team,
+        seasonId: seasonId,
         teamName: teamName,
         rangeStart: rangeStart,
         rangeEndInclusive: rangeEndInclusive,
