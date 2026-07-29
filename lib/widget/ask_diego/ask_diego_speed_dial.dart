@@ -13,12 +13,16 @@ class AskDiegoPrimaryAction {
     required this.icon,
     required this.tooltip,
     required this.heroTag,
+    this.showBadge = false,
   });
 
   final VoidCallback onPressed;
   final IconData icon;
   final String tooltip;
   final String heroTag;
+
+  /// When true, shows a small status dot on the mini FAB icon.
+  final bool showBadge;
 }
 
 /// Speed dial FAB: primary screen action(s) + premium-gated Ask Diego entry.
@@ -30,6 +34,7 @@ class AskDiegoSpeedDial extends StatefulWidget {
     this.primaryAction,
     this.secondaryActions = const [],
     required this.heroTagPrefix,
+    this.showClosedBadge = false,
   });
 
   final AskDiegoPrimaryAction? primaryAction;
@@ -39,6 +44,9 @@ class AskDiegoSpeedDial extends StatefulWidget {
   final List<AskDiegoPrimaryAction> secondaryActions;
 
   final String heroTagPrefix;
+
+  /// Badge on the closed main FAB (e.g. agenda filter active).
+  final bool showClosedBadge;
 
   @override
   State<AskDiegoSpeedDial> createState() => _AskDiegoSpeedDialState();
@@ -143,7 +151,11 @@ class _AskDiegoSpeedDialState extends State<AskDiegoSpeedDial>
                     },
                     backgroundColor: Colors.white,
                     foregroundColor: colors.primary,
-                    child: Icon(action.icon),
+                    child: _badgedIcon(
+                      icon: action.icon,
+                      showBadge: action.showBadge,
+                      badgeColor: colors.primary,
+                    ),
                   ),
                   const SizedBox(height: 12),
                 ],
@@ -173,13 +185,33 @@ class _AskDiegoSpeedDialState extends State<AskDiegoSpeedDial>
           onPressed: _toggle,
           child: AnimatedSwitcher(
             duration: const Duration(milliseconds: 180),
-            child: Icon(
-              _isOpen ? Icons.close : primary.icon,
-              key: ValueKey<bool>(_isOpen),
-            ),
+            child: _isOpen
+                ? const Icon(Icons.close, key: ValueKey<String>('close'))
+                : _badgedIcon(
+                    key: const ValueKey<String>('open'),
+                    icon: primary.icon,
+                    showBadge: widget.showClosedBadge,
+                    badgeColor: Colors.white,
+                  ),
           ),
         ),
       ],
+    );
+  }
+
+  Widget _badgedIcon({
+    Key? key,
+    required IconData icon,
+    required bool showBadge,
+    required Color badgeColor,
+  }) {
+    final iconWidget = Icon(icon, key: key);
+    if (!showBadge) return iconWidget;
+    return Badge(
+      key: key,
+      smallSize: 8,
+      backgroundColor: badgeColor,
+      child: Icon(icon),
     );
   }
 }

@@ -1007,6 +1007,17 @@
   "agendaCoachPlayersLoadError": "Could not load players.",
   "agendaCoachPlayersEmptyRoster": "No players in this team.",
   "agendaCoachPlayersClear": "Clear selection",
+  "agendaFilterFabTooltip": "Filter agenda",
+  "agendaFilterTitle": "Filter agenda",
+  "agendaFilterTypesSection": "Event types",
+  "agendaFilterTeamsSection": "Teams",
+  "agendaFilterNoTeams": "No teams available for this season.",
+  "agendaFilterSelectAllTeams": "Select all",
+  "agendaFilterSelectNoneTeams": "Narrow selection",
+  "agendaFilterApply": "Apply",
+  "agendaFilterActiveBanner": "Filter active",
+  "agendaFilterActiveBannerDetail": "Some teams or types are hidden.",
+  "agendaFilterClear": "Clear filter",
   "agendaEventSummaryNonSport": "{count, plural, =1{1 activity} other{{count} activities}}",
   "@agendaEventSummaryNonSport": {
     "placeholders": {

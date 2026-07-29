@@ -1212,6 +1212,18 @@
   "agendaCoachPlayersLoadError": "Impossible de charger les joueurs.",
   "agendaCoachPlayersEmptyRoster": "Aucun joueur dans cette équipe.",
   "agendaCoachPlayersClear": "Effacer la sélection",
+  "agendaFilterFabTooltip": "Filtrer l’agenda",
+  "agendaFilterTitle": "Filtrer l’agenda",
+  "agendaFilterTypesSection": "Types d’événements",
+  "agendaFilterTeamsSection": "Équipes",
+  "agendaFilterNoTeams": "Aucune équipe disponible sur cette saison.",
+  "agendaFilterSelectAllTeams": "Tout sélectionner",
+  "agendaFilterSelectNoneTeams": "Réduire la sélection",
+  "agendaFilterApply": "Appliquer",
+  "agendaFilterActiveBanner": "Filtre actif",
+  "agendaFilterActiveBannerDetail": "Certaines équipes ou types sont masqués.",
+  "agendaFilterClear": "Effacer le filtre",
+
   "agendaEventSummaryNonSport": "{count, plural, =1{1 activité} other{{count} activités}}",
   "@agendaEventSummaryNonSport": {
     "placeholders": {

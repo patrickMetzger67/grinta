@@ -2670,6 +2670,41 @@ class AppLocalizationsEs extends AppLocalizations {
   String get agendaCoachPlayersClear => 'Clear selection';
 
   @override
+  String get agendaFilterFabTooltip => 'Filtrar agenda';
+
+  @override
+  String get agendaFilterTitle => 'Filtrar agenda';
+
+  @override
+  String get agendaFilterTypesSection => 'Tipos de evento';
+
+  @override
+  String get agendaFilterTeamsSection => 'Equipos';
+
+  @override
+  String get agendaFilterNoTeams =>
+      'No hay equipos disponibles en esta temporada.';
+
+  @override
+  String get agendaFilterSelectAllTeams => 'Seleccionar todo';
+
+  @override
+  String get agendaFilterSelectNoneTeams => 'Reducir selección';
+
+  @override
+  String get agendaFilterApply => 'Aplicar';
+
+  @override
+  String get agendaFilterActiveBanner => 'Filtro activo';
+
+  @override
+  String get agendaFilterActiveBannerDetail =>
+      'Algunos equipos o tipos están ocultos.';
+
+  @override
+  String get agendaFilterClear => 'Quitar filtro';
+
+  @override
   String agendaEventSummaryNonSport(int count) {
     String _temp0 = intl.Intl.pluralLogic(
       count,
@@ -6474,11 +6509,17 @@ class AppLocalizationsEs extends AppLocalizations {
       'Sin desglose por zonas para esta importación. Vuelve a importar la actividad Whoop.';
 
   @override
-  String whoopAnalysisZoneLabel(int zone) => 'Zona $zone';
+  String whoopAnalysisZoneLabel(int zone) {
+    return 'Zona $zone';
+  }
 
   @override
-  String whoopAnalysisZoneAboveBpm(int bpm) => '+ de $bpm bpm';
+  String whoopAnalysisZoneAboveBpm(int bpm) {
+    return '+ de $bpm bpm';
+  }
 
   @override
-  String whoopAnalysisZoneBpmRange(int min, int max) => '$min – $max bpm';
+  String whoopAnalysisZoneBpmRange(int min, int max) {
+    return '$min – $max bpm';
+  }
 }
