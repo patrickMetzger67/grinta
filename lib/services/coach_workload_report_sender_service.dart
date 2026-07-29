@@ -6,6 +6,7 @@ import 'package:flutter/foundation.dart';
 import 'package:grinta/config/invitation_config.dart';
 import 'package:grinta/l10n/app_localizations.dart';
 import 'package:grinta/screen/coach_workload_analysis/coach_workload_analysis_models.dart';
+import 'package:grinta/services/coach_workload_report_email_builder.dart';
 import 'package:grinta/services/coach_workload_report_pdf_service.dart';
 import 'package:grinta/services/invitation_email_service.dart';
 import 'package:grinta/util/player_profile_validator.dart';
@@ -112,32 +113,21 @@ class CoachWorkloadReportSenderService {
       final periodLabel =
           '${DateFormat.yMMMd(localeCode).format(rangeStart)} – '
           '${DateFormat.yMMMd(localeCode).format(rangeEndInclusive)}';
-      final subject = l10n.coachWorkloadReportEmailSubject(teamName, periodLabel);
-      final text = l10n.coachWorkloadReportEmailText(
-        teamName,
-        periodLabel,
-        uploaded.downloadUrl,
+      final emailContent = CoachWorkloadReportEmailBuilder.build(
+        l10n: l10n,
+        config: config,
+        teamName: teamName,
+        periodLabel: periodLabel,
+        playersCount: report.summaries.length,
+        pdfDownloadUrl: uploaded.downloadUrl,
       );
-      final html = '''
-<!DOCTYPE html>
-<html>
-<body style="font-family:Arial,sans-serif;color:#111214;">
-  <p>${_escape(l10n.coachWorkloadReportEmailGreeting)}</p>
-  <p>${_escape(l10n.coachWorkloadReportEmailIntro(teamName, periodLabel))}</p>
-  <p><a href="${uploaded.downloadUrl}" style="color:#F95C1B;font-weight:700;">
-    ${_escape(l10n.coachWorkloadReportEmailDownload)}
-  </a></p>
-  <p style="color:#6B7280;font-size:12px;">${_escape(config.fromEmail)}</p>
-</body>
-</html>
-''';
 
       for (final to in recipients) {
         final sendError = await _emailService.send(
           toEmail: to,
-          subject: subject,
-          text: text,
-          html: html,
+          subject: emailContent.subject,
+          text: emailContent.text,
+          html: emailContent.html,
           clubId: clubId,
           pdfStoragePath: uploaded.storagePath,
           pdfFilename: uploaded.filename,
@@ -194,13 +184,6 @@ class CoachWorkloadReportSenderService {
     }
   }
 
-  static String _escape(String value) {
-    return value
-        .replaceAll('&', '&amp;')
-        .replaceAll('<', '&lt;')
-        .replaceAll('>', '&gt;')
-        .replaceAll('"', '&quot;');
-  }
 }
 
 class _UploadedPdf {

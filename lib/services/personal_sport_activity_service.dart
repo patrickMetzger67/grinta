@@ -157,19 +157,76 @@ class PersonalSportActivityService {
   }
 
   /// Personal activities visible to a coach (not private) in [start, end).
+  ///
+  /// Queries both [memberId] and [accessMemberIds] (same path as agenda) so
+  /// roster / ownership id mismatches still resolve.
   Future<List<PersonalSportActivity>> fetchNonPrivateOwnedBetweenDates({
     required String memberId,
     required DateTime start,
     required DateTime end,
-  }) {
-    return fetchOwnedBetweenDates(
-      memberId: memberId,
+  }) async {
+    final trimmed = memberId.trim();
+    if (trimmed.isEmpty) return const [];
+
+    final byId = <String, PersonalSportActivity>{};
+    final owned = await fetchOwnedBetweenDates(
+      memberId: trimmed,
       start: start,
       end: end,
       includeCoach: true,
       includeTeam: true,
       includePrivate: false,
     );
+    for (final activity in owned) {
+      final id = activity.id?.trim();
+      if (id == null || id.isEmpty) continue;
+      byId[id] = activity;
+    }
+
+    final viaAccess = await fetchNonPrivateAccessibleBetweenDates(
+      memberId: trimmed,
+      start: start,
+      end: end,
+    );
+    for (final activity in viaAccess) {
+      final id = activity.id?.trim();
+      if (id == null || id.isEmpty) continue;
+      byId[id] = activity;
+    }
+
+    return byId.values.toList()
+      ..sort((a, b) => a.startAt.compareTo(b.startAt));
+  }
+
+  /// Non-private activities reachable via [accessMemberIds] arrayContains.
+  Future<List<PersonalSportActivity>> fetchNonPrivateAccessibleBetweenDates({
+    required String memberId,
+    required DateTime start,
+    required DateTime end,
+  }) async {
+    final trimmed = memberId.trim();
+    if (trimmed.isEmpty) return const [];
+
+    try {
+      final snap = await _collection
+          .where('accessMemberIds', arrayContains: trimmed)
+          .where(
+            'startAt',
+            isGreaterThanOrEqualTo: Timestamp.fromDate(start),
+          )
+          .where('startAt', isLessThan: Timestamp.fromDate(end))
+          .get();
+      return snap.docs
+          .map(PersonalSportActivity.fromFirestore)
+          .where(_isCoachOrTeamVisible)
+          .toList()
+        ..sort((a, b) => a.startAt.compareTo(b.startAt));
+    } catch (e, st) {
+      debugPrint(
+        'fetch personalSportActivities (accessMemberIds) failed: $e\n$st',
+      );
+      return const [];
+    }
   }
 
   Future<List<PersonalSportActivity>> fetchOwnedBetweenDates({
@@ -210,6 +267,16 @@ class PersonalSportActivityService {
     } catch (e, st) {
       debugPrint('fetch personalSportActivities failed: $e\n$st');
       return const [];
+    }
+  }
+
+  static bool _isCoachOrTeamVisible(PersonalSportActivity activity) {
+    switch (activity.visibility) {
+      case PersonalSportVisibility.private:
+        return false;
+      case PersonalSportVisibility.coach:
+      case PersonalSportVisibility.team:
+        return true;
     }
   }
 }
