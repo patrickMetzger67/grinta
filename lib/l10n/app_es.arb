@@ -1482,6 +1482,37 @@
   "@coachWorkloadMetricSessions": {
     "placeholders": { "count": { "type": "int" } }
   },
+  "coachWorkloadMetricKm": "{value} km",
+  "@coachWorkloadMetricKm": {
+    "placeholders": { "value": { "type": "String" } }
+  },
+  "coachWorkloadReportEmailActionTooltip": "Enviar informe PDF",
+  "coachWorkloadReportEmailDialogTitle": "Enviar análisis de carga (PDF)",
+  "coachWorkloadReportEmpty": "No hay datos para exportar en este periodo.",
+  "coachWorkloadReportEmailSubject": "Grinta — Análisis de carga {team} ({period})",
+  "@coachWorkloadReportEmailSubject": {
+    "placeholders": {
+      "team": { "type": "String" },
+      "period": { "type": "String" }
+    }
+  },
+  "coachWorkloadReportEmailGreeting": "Hola,",
+  "coachWorkloadReportEmailIntro": "Aquí tienes el análisis de carga de {team} en el periodo {period}.",
+  "@coachWorkloadReportEmailIntro": {
+    "placeholders": {
+      "team": { "type": "String" },
+      "period": { "type": "String" }
+    }
+  },
+  "coachWorkloadReportEmailDownload": "Descargar PDF",
+  "coachWorkloadReportEmailText": "Análisis de carga — {team}\nPeriodo: {period}\nPDF: {url}",
+  "@coachWorkloadReportEmailText": {
+    "placeholders": {
+      "team": { "type": "String" },
+      "period": { "type": "String" },
+      "url": { "type": "String" }
+    }
+  },
   "coachWorkloadMetricLoad": "Carga {value}",
   "@coachWorkloadMetricLoad": {
     "placeholders": { "value": { "type": "String" } }

@@ -4763,6 +4763,60 @@ abstract class AppLocalizations {
   /// **'{count} séances'**
   String coachWorkloadMetricSessions(int count);
 
+  /// No description provided for @coachWorkloadMetricKm.
+  ///
+  /// In fr, this message translates to:
+  /// **'{value} km'**
+  String coachWorkloadMetricKm(String value);
+
+  /// No description provided for @coachWorkloadReportEmailActionTooltip.
+  ///
+  /// In fr, this message translates to:
+  /// **'Envoyer le rapport PDF'**
+  String get coachWorkloadReportEmailActionTooltip;
+
+  /// No description provided for @coachWorkloadReportEmailDialogTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Envoyer l’analyse charge (PDF)'**
+  String get coachWorkloadReportEmailDialogTitle;
+
+  /// No description provided for @coachWorkloadReportEmpty.
+  ///
+  /// In fr, this message translates to:
+  /// **'Aucune donnée à exporter pour cette période.'**
+  String get coachWorkloadReportEmpty;
+
+  /// No description provided for @coachWorkloadReportEmailSubject.
+  ///
+  /// In fr, this message translates to:
+  /// **'Grinta — Analyse charge {team} ({period})'**
+  String coachWorkloadReportEmailSubject(String team, String period);
+
+  /// No description provided for @coachWorkloadReportEmailGreeting.
+  ///
+  /// In fr, this message translates to:
+  /// **'Bonjour,'**
+  String get coachWorkloadReportEmailGreeting;
+
+  /// No description provided for @coachWorkloadReportEmailIntro.
+  ///
+  /// In fr, this message translates to:
+  /// **'Voici l’analyse de charge pour {team} sur la période {period}.'**
+  String coachWorkloadReportEmailIntro(String team, String period);
+
+  /// No description provided for @coachWorkloadReportEmailDownload.
+  ///
+  /// In fr, this message translates to:
+  /// **'Télécharger le PDF'**
+  String get coachWorkloadReportEmailDownload;
+
+  /// No description provided for @coachWorkloadReportEmailText.
+  ///
+  /// In fr, this message translates to:
+  /// **'Analyse charge — {team}\nPériode : {period}\nPDF : {url}'**
+  String coachWorkloadReportEmailText(String team, String period, String url);
+
   /// No description provided for @coachWorkloadMetricLoad.
   ///
   /// In fr, this message translates to:

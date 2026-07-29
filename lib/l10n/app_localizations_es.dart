@@ -2699,6 +2699,43 @@ class AppLocalizationsEs extends AppLocalizations {
   }
 
   @override
+  String coachWorkloadMetricKm(String value) {
+    return '$value km';
+  }
+
+  @override
+  String get coachWorkloadReportEmailActionTooltip => 'Enviar informe PDF';
+
+  @override
+  String get coachWorkloadReportEmailDialogTitle =>
+      'Enviar análisis de carga (PDF)';
+
+  @override
+  String get coachWorkloadReportEmpty =>
+      'No hay datos para exportar en este periodo.';
+
+  @override
+  String coachWorkloadReportEmailSubject(String team, String period) {
+    return 'Grinta — Análisis de carga $team ($period)';
+  }
+
+  @override
+  String get coachWorkloadReportEmailGreeting => 'Hola,';
+
+  @override
+  String coachWorkloadReportEmailIntro(String team, String period) {
+    return 'Aquí tienes el análisis de carga de $team en el periodo $period.';
+  }
+
+  @override
+  String get coachWorkloadReportEmailDownload => 'Descargar PDF';
+
+  @override
+  String coachWorkloadReportEmailText(String team, String period, String url) {
+    return 'Análisis de carga — $team\nPeriodo: $period\nPDF: $url';
+  }
+
+  @override
   String coachWorkloadMetricLoad(String value) {
     return 'Carga $value';
   }

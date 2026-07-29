@@ -47,17 +47,27 @@ class CoachWorkloadAnalysisService {
   static const int _matchBatchSize = 6;
   static const int _personalBatchSize = 6;
 
-  Future<List<CoachPlayerWorkloadSummary>> loadTeamSummaries({
+  Future<CoachTeamWorkloadReport> loadTeamSummaries({
     required Team team,
     required String seasonId,
     required DateTime start,
     required DateTime end,
     required List<Player> players,
   }) async {
-    if (players.isEmpty) return const [];
+    if (players.isEmpty) {
+      return const CoachTeamWorkloadReport(
+        summaries: [],
+        teamAverages: CoachTeamWorkloadAverages(),
+      );
+    }
 
     final teamId = team.keyTeam?.trim() ?? '';
-    if (teamId.isEmpty) return const [];
+    if (teamId.isEmpty) {
+      return const CoachTeamWorkloadReport(
+        summaries: [],
+        teamAverages: CoachTeamWorkloadAverages(),
+      );
+    }
 
     final period = SeasonPeriodRange(start: start, end: end);
     final trainings = await _loadTrainings(
@@ -114,9 +124,15 @@ class CoachWorkloadAnalysisService {
 
       final personal = personalByMember[memberId] ?? const [];
       var personalMinutes = 0;
+      var personalDistanceKm = 0.0;
+      var hasPersonalDistance = false;
       for (final activity in personal) {
         if (activity.durationSeconds != null && activity.durationSeconds! > 0) {
           personalMinutes += (activity.durationSeconds! / 60).round();
+        }
+        if (activity.distanceMeters != null && activity.distanceMeters! > 0) {
+          personalDistanceKm += activity.distanceMeters! / 1000;
+          hasPersonalDistance = true;
         }
       }
 
@@ -128,10 +144,14 @@ class CoachWorkloadAnalysisService {
         trackerSessions,
         TeamWorkloadMetricKeys.workloadScore,
       );
-      final avgDistance = _averageMetric(
+      final trackerDistance = _sumMetric(
         trackerSessions,
         TeamWorkloadMetricKeys.distanceKm,
       );
+      double? totalDistance;
+      if (trackerDistance != null || hasPersonalDistance) {
+        totalDistance = (trackerDistance ?? 0) + personalDistanceKm;
+      }
 
       summaries.add(
         CoachPlayerWorkloadSummary(
@@ -143,19 +163,31 @@ class CoachWorkloadAnalysisService {
           personalSportCount: personal.length,
           volumeMinutes: trainingMinutes + matchMinutes + personalMinutes,
           avgWorkloadScore: avgWorkload,
-          avgDistanceKm: avgDistance,
+          totalDistanceKm: totalDistance == null
+              ? null
+              : double.parse(totalDistance.toStringAsFixed(2)),
         ),
       );
     }
 
     summaries.sort((a, b) {
-      final bySessions = b.sessionCount.compareTo(a.sessionCount);
-      if (bySessions != 0) return bySessions;
+      final kmA = a.totalDistanceKm ?? -1;
+      final kmB = b.totalDistanceKm ?? -1;
+      final byKm = kmB.compareTo(kmA);
+      if (byKm != 0) return byKm;
+      final loadA = a.avgWorkloadScore ?? -1;
+      final loadB = b.avgWorkloadScore ?? -1;
+      final byLoad = loadB.compareTo(loadA);
+      if (byLoad != 0) return byLoad;
       final nameA = '${a.player.lastName ?? ''} ${a.player.firstName ?? ''}';
       final nameB = '${b.player.lastName ?? ''} ${b.player.firstName ?? ''}';
       return nameA.compareTo(nameB);
     });
-    return summaries;
+
+    return CoachTeamWorkloadReport(
+      summaries: summaries,
+      teamAverages: _computeTeamAverages(summaries),
+    );
   }
 
   Future<CoachPlayerWorkloadDetail> loadPlayerDetail({
@@ -189,7 +221,7 @@ class CoachWorkloadAnalysisService {
     );
     final personal = memberId.isEmpty
         ? const <PersonalSportActivity>[]
-        : await _personalSportService.fetchCoachVisibleOwnedBetweenDates(
+        : await _personalSportService.fetchNonPrivateOwnedBetweenDates(
             memberId: memberId,
             start: start,
             end: end,
@@ -278,19 +310,26 @@ class CoachWorkloadAnalysisService {
     }
 
     var personalMinutes = 0;
+    var personalDistanceKm = 0.0;
+    var hasPersonalDistance = false;
     for (final activity in personal) {
       final minutes = activity.durationSeconds == null
           ? null
           : (activity.durationSeconds! / 60).round();
       if (minutes != null) personalMinutes += minutes;
+      final distanceKm = activity.distanceMeters == null
+          ? null
+          : activity.distanceMeters! / 1000;
+      if (distanceKm != null && distanceKm > 0) {
+        personalDistanceKm += distanceKm;
+        hasPersonalDistance = true;
+      }
       activities.add(
         CoachWorkloadActivityItem(
           kind: CoachWorkloadActivityKind.personalSport,
           startAt: activity.startAt,
           personalSport: activity,
-          distanceKm: activity.distanceMeters == null
-              ? null
-              : activity.distanceMeters! / 1000,
+          distanceKm: distanceKm,
           durationMinutes: minutes,
           wasPresent: true,
         ),
@@ -307,6 +346,15 @@ class CoachWorkloadAnalysisService {
       if (values.isNotEmpty) trackerSessions.add(values);
     }
 
+    final trackerDistance = _sumMetric(
+      trackerSessions,
+      TeamWorkloadMetricKeys.distanceKm,
+    );
+    double? totalDistance;
+    if (trackerDistance != null || hasPersonalDistance) {
+      totalDistance = (trackerDistance ?? 0) + personalDistanceKm;
+    }
+
     final summary = CoachPlayerWorkloadSummary(
       player: player,
       memberId: memberId,
@@ -319,10 +367,9 @@ class CoachWorkloadAnalysisService {
         trackerSessions,
         TeamWorkloadMetricKeys.workloadScore,
       ),
-      avgDistanceKm: _averageMetric(
-        trackerSessions,
-        TeamWorkloadMetricKeys.distanceKm,
-      ),
+      totalDistanceKm: totalDistance == null
+          ? null
+          : double.parse(totalDistance.toStringAsFixed(2)),
     );
 
     return CoachPlayerWorkloadDetail(
@@ -488,7 +535,7 @@ class CoachWorkloadAnalysisService {
       final batch = memberIds.skip(i).take(_personalBatchSize).toList();
       final results = await Future.wait(
         batch.map(
-          (memberId) => _personalSportService.fetchCoachVisibleOwnedBetweenDates(
+          (memberId) => _personalSportService.fetchNonPrivateOwnedBetweenDates(
             memberId: memberId,
             start: start,
             end: end,
@@ -553,6 +600,55 @@ class CoachWorkloadAnalysisService {
     }
     if (count == 0) return null;
     return double.parse((sum / count).toStringAsFixed(1));
+  }
+
+  double? _sumMetric(List<Map<String, double>> sessions, String key) {
+    var sum = 0.0;
+    var count = 0;
+    for (final session in sessions) {
+      final value = session[key];
+      if (value == null || !value.isFinite) continue;
+      sum += value;
+      count++;
+    }
+    if (count == 0) return null;
+    return sum;
+  }
+
+  CoachTeamWorkloadAverages _computeTeamAverages(
+    List<CoachPlayerWorkloadSummary> summaries,
+  ) {
+    if (summaries.isEmpty) {
+      return const CoachTeamWorkloadAverages();
+    }
+
+    double? avg(Iterable<double> values) {
+      final list = values.toList();
+      if (list.isEmpty) return null;
+      final sum = list.fold<double>(0, (a, b) => a + b);
+      return sum / list.length;
+    }
+
+    return CoachTeamWorkloadAverages(
+      avgWorkloadScore: avg([
+        for (final s in summaries)
+          if (s.avgWorkloadScore != null) s.avgWorkloadScore!,
+      ]),
+      totalDistanceKm: avg([
+        for (final s in summaries)
+          if (s.totalDistanceKm != null) s.totalDistanceKm!,
+      ]),
+      sessionCount: avg([
+        for (final s in summaries) s.sessionCount.toDouble(),
+      ]),
+      presencePercent: avg([
+        for (final s in summaries)
+          if (s.presencePercent != null) s.presencePercent!,
+      ]),
+      volumeMinutes: avg([
+        for (final s in summaries) s.volumeMinutes.toDouble(),
+      ]),
+    );
   }
 }
 
