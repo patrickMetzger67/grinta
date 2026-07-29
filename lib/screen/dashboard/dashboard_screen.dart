@@ -149,14 +149,21 @@ class _DashboardScreenState extends State<DashboardScreen> {
       ...currentPlayerTeamIds,
     }.where((teamId) => teamId.trim().isNotEmpty).toList();
 
+    final String? sharedManagedTeamId = appSession.resolveSelectedManagedTeamId(
+      preferredOrder: availableTeamIds,
+    );
+
     final bool selectedTeamExists =
         _selectedTeamId != null && availableTeamIds.contains(_selectedTeamId);
 
     final String? activeTeamId = selectedTeamExists
         ? _selectedTeamId
-        : availableTeamIds.isNotEmpty
-        ? availableTeamIds.first
-        : null;
+        : (sharedManagedTeamId != null &&
+                availableTeamIds.contains(sharedManagedTeamId))
+            ? sharedManagedTeamId
+            : availableTeamIds.isNotEmpty
+                ? availableTeamIds.first
+                : null;
 
     if (!selectedTeamExists &&
         activeTeamId != null &&
@@ -167,6 +174,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
         setState(() {
           _selectedTeamId = activeTeamId;
         });
+        if (managedTeamsIds.contains(activeTeamId)) {
+          appSession.setSelectedManagedTeamId(activeTeamId);
+        }
       });
     }
 
@@ -1691,20 +1701,37 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
 
 
+        final String? sharedManagedId = isManagedTeams
+            ? context.read<AppSession>().resolveSelectedManagedTeamId(
+                preferredOrder: [
+                  for (final team in cleanTeams)
+                    if ((team.keyTeam ?? '').trim().isNotEmpty)
+                      team.keyTeam!.trim(),
+                ],
+              )
+            : null;
+
         final bool selectedExists = cleanTeams.any(
               (team) => team.keyTeam == _selectedTeamId,
         );
+        final bool sharedExists = sharedManagedId != null &&
+            cleanTeams.any((team) => team.keyTeam == sharedManagedId);
 
-        final String selectedValue =
-        selectedExists ? _selectedTeamId! : cleanTeams.first.keyTeam!;
+        final String selectedValue = selectedExists
+            ? _selectedTeamId!
+            : (sharedExists ? sharedManagedId : null) ??
+                cleanTeams.first.keyTeam!;
 
-        if (!selectedExists && _selectedTeamId != selectedValue) {
+        if (_selectedTeamId != selectedValue) {
           WidgetsBinding.instance.addPostFrameCallback((_) {
             if (!mounted) return;
 
             setState(() {
               _selectedTeamId = selectedValue;
             });
+            if (isManagedTeams) {
+              context.read<AppSession>().setSelectedManagedTeamId(selectedValue);
+            }
           });
         }
 
@@ -1765,6 +1792,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 setState(() {
                   _selectedTeamId = value;
                 });
+                if (isManagedTeams) {
+                  context.read<AppSession>().setSelectedManagedTeamId(value);
+                }
               },
             ),
           ],
