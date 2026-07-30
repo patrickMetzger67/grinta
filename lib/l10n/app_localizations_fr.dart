@@ -6499,6 +6499,13 @@ class AppLocalizationsFr extends AppLocalizations {
   String get settingsTipsLoadError => 'Impossible de charger les astuces.';
 
   @override
+  String get settingsTipsSearchHint => 'Rechercher une astuce…';
+
+  @override
+  String get settingsTipsSearchEmpty =>
+      'Aucune astuce ne correspond à ta recherche.';
+
+  @override
   String get promoCodeMenuLabel => 'Code promo';
 
   @override

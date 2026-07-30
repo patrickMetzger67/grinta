@@ -2598,6 +2598,8 @@
   "settingsTipsSubtitle": "All videos from the Tips playlist on the YouTube channel.",
   "settingsTipsEmpty": "No tips available right now.",
   "settingsTipsLoadError": "Could not load tips.",
+  "settingsTipsSearchHint": "Search tips…",
+  "settingsTipsSearchEmpty": "No tips match your search.",
   "promoCodeMenuLabel": "Promo code",
   "promoCodeDialogValidate": "Validate",
   "promoCodeRedeemTitle": "Have a promo code?",

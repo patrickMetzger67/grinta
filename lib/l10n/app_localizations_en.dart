@@ -6412,6 +6412,12 @@ class AppLocalizationsEn extends AppLocalizations {
   String get settingsTipsLoadError => 'Could not load tips.';
 
   @override
+  String get settingsTipsSearchHint => 'Search tips…';
+
+  @override
+  String get settingsTipsSearchEmpty => 'No tips match your search.';
+
+  @override
   String get promoCodeMenuLabel => 'Promo code';
 
   @override

@@ -11204,6 +11204,18 @@ abstract class AppLocalizations {
   /// **'Impossible de charger les astuces.'**
   String get settingsTipsLoadError;
 
+  /// No description provided for @settingsTipsSearchHint.
+  ///
+  /// In fr, this message translates to:
+  /// **'Rechercher une astuce…'**
+  String get settingsTipsSearchHint;
+
+  /// No description provided for @settingsTipsSearchEmpty.
+  ///
+  /// In fr, this message translates to:
+  /// **'Aucune astuce ne correspond à ta recherche.'**
+  String get settingsTipsSearchEmpty;
+
   /// No description provided for @promoCodeMenuLabel.
   ///
   /// In fr, this message translates to:

@@ -2967,6 +2967,8 @@
   "settingsTipsSubtitle": "Todos los vídeos de la lista Consejos en el canal de YouTube.",
   "settingsTipsEmpty": "No hay consejos disponibles por ahora.",
   "settingsTipsLoadError": "No se pudieron cargar los consejos.",
+  "settingsTipsSearchHint": "Buscar un consejo…",
+  "settingsTipsSearchEmpty": "Ningún consejo coincide con tu búsqueda.",
   "wearableDeviceGpsInsidersIntense": "GPS Insiders Intense",
   "intenseGpsSerialGuidance": "Introduce el número de serie impreso en el tracker GPS Insiders Intense.",
   "intenseGpsSerialLabel": "Número de serie",

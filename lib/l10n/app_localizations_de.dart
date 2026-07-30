@@ -6510,6 +6510,13 @@ class AppLocalizationsDe extends AppLocalizations {
   String get settingsTipsLoadError => 'Tipps konnten nicht geladen werden.';
 
   @override
+  String get settingsTipsSearchHint => 'Tipps suchen…';
+
+  @override
+  String get settingsTipsSearchEmpty =>
+      'Keine Tipps entsprechen deiner Suche.';
+
+  @override
   String get promoCodeMenuLabel => 'Promo-Code';
 
   @override

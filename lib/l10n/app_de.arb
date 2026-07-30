@@ -2967,6 +2967,8 @@
   "settingsTipsSubtitle": "Alle Videos der Tipps-Playlist auf dem YouTube-Kanal.",
   "settingsTipsEmpty": "Derzeit sind keine Tipps verfügbar.",
   "settingsTipsLoadError": "Tipps konnten nicht geladen werden.",
+  "settingsTipsSearchHint": "Tipps suchen…",
+  "settingsTipsSearchEmpty": "Keine Tipps entsprechen deiner Suche.",
   "wearableDeviceGpsInsidersIntense": "GPS Insiders Intense",
   "intenseGpsSerialGuidance": "Gib die auf dem GPS Insiders Intense Tracker aufgedruckte Seriennummer ein.",
   "intenseGpsSerialLabel": "Seriennummer",

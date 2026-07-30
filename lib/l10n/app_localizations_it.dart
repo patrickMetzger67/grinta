@@ -6486,6 +6486,13 @@ class AppLocalizationsIt extends AppLocalizations {
   String get settingsTipsLoadError => 'Impossibile caricare i consigli.';
 
   @override
+  String get settingsTipsSearchHint => 'Cerca un consiglio…';
+
+  @override
+  String get settingsTipsSearchEmpty =>
+      'Nessun consiglio corrisponde alla ricerca.';
+
+  @override
   String get promoCodeMenuLabel => 'Codice promo';
 
   @override

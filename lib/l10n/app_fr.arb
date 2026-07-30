@@ -2906,6 +2906,8 @@
   "settingsTipsSubtitle": "Toutes les vidéos de la playlist Astuces sur la chaîne YouTube.",
   "settingsTipsEmpty": "Aucune astuce disponible pour le moment.",
   "settingsTipsLoadError": "Impossible de charger les astuces.",
+  "settingsTipsSearchHint": "Rechercher une astuce…",
+  "settingsTipsSearchEmpty": "Aucune astuce ne correspond à ta recherche.",
   "promoCodeMenuLabel": "Code promo",
   "promoCodeDialogValidate": "Valider",
   "promoCodeRedeemTitle": "Vous avez un code promo ?",
