@@ -47,13 +47,16 @@ Future<void> main() async {
     options: DefaultFirebaseOptions.currentPlatform,
   );
 
-  await NotificationFCMService.init();
-  await InternalReminderService.instance.init();
-  await CalendarDeepLinkService.instance.init();
-  await WhoopDeepLinkService.instance.init();
-  await StravaDeepLinkService.instance.init();
-  await PolarDeepLinkService.instance.init();
-  await FitbitDeepLinkService.instance.init();
+  // Independent bootstraps after Firebase — run in parallel to shorten web blank time.
+  await Future.wait<void>([
+    NotificationFCMService.init(),
+    InternalReminderService.instance.init(),
+    CalendarDeepLinkService.instance.init(),
+    WhoopDeepLinkService.instance.init(),
+    StravaDeepLinkService.instance.init(),
+    PolarDeepLinkService.instance.init(),
+    FitbitDeepLinkService.instance.init(),
+  ]);
 
   if (kIsWeb) {
     await firebase_auth.FirebaseAuth.instance.setPersistence(
@@ -65,14 +68,17 @@ Future<void> main() async {
   await waitForFirebaseAuthReady(firebase_auth.FirebaseAuth.instance);
 
   ActiveSessionService.instance;
-  await FeatureDiscoveryService.instance.ensureInitialized();
   UserTrialService.instance;
-  await UserTrialService.instance.ensureInitialized();
   UserRootService.instance;
-  await UserRootService.instance.ensureInitialized();
-  await SubscriptionService.instance.ensureInitialized();
-  await SubscriptionLimitsService.instance.ensureInitialized();
-  await EshopConfigService.instance.ensureInitialized();
+
+  await Future.wait<void>([
+    FeatureDiscoveryService.instance.ensureInitialized(),
+    UserTrialService.instance.ensureInitialized(),
+    UserRootService.instance.ensureInitialized(),
+    SubscriptionService.instance.ensureInitialized(),
+    SubscriptionLimitsService.instance.ensureInitialized(),
+    EshopConfigService.instance.ensureInitialized(),
+  ]);
 
   runApp(
     MultiProvider(
@@ -517,10 +523,15 @@ class _LoadingScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colors = context.appColors;
     return Scaffold(
-      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
-      body: const Center(
-        child: CircularProgressIndicator(),
+      backgroundColor: colors.background,
+      body: Center(
+        child: CircularProgressIndicator(
+          color: colors.primary,
+          backgroundColor: colors.border.withValues(alpha: 0.35),
+          strokeWidth: 3,
+        ),
       ),
     );
   }

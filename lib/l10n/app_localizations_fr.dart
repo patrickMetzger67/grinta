@@ -4799,7 +4799,7 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get createMatchFieldNotGeolocatedMessage =>
-      'Le terrain n\'est pas géolocalisé. Souhaites-tu le faire maintenant ? C\'est nécessaire pour la génération des heatmaps.';
+      'Le terrain n\'est pas géolocalisé. Souhaites-tu le faire maintenant ? Cela permet des heatmaps alignées sur le terrain ; sinon elles utiliseront la vue satellite GPS.';
 
   @override
   String get createMatchSurface => 'Surface de jeu';
@@ -6490,13 +6490,55 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get youtubeTopVideoMessage =>
-      'Découvrez la nouvelle astuce Grinta. Vous pouvez la regarder ici ou la passer.';
+      'Découvrez la nouvelle astuce Grinta. Vous pouvez la regarder ici, la passer, ou vous la faire rappeler demain.';
 
   @override
   String get youtubeTopVideoWatch => 'Regarder';
 
   @override
   String get youtubeTopVideoSkip => 'Passer';
+
+  @override
+  String get youtubePromptRemindTomorrow =>
+      'Plus tard, me le rappeler demain';
+
+  @override
+  String get youtubePromptTipsHint =>
+      'Toutes les vidéos sont disponibles dans Astuces (menu Réglages).';
+
+  @override
+  String get youtubeWelcomePlayerTitle => 'Bienvenue sur Grinta';
+
+  @override
+  String get youtubeWelcomePlayerMessage =>
+      'Voici une courte vidéo pour démarrer en tant que joueur.';
+
+  @override
+  String get youtubeWelcomeCoachTitle => 'Bienvenue coach';
+
+  @override
+  String get youtubeWelcomeCoachMessage =>
+      'Voici une courte vidéo pour démarrer en tant que coach.';
+
+  @override
+  String get settingsTipsTitle => 'Astuces';
+
+  @override
+  String get settingsTipsSubtitle =>
+      'Toutes les vidéos de la playlist Astuces sur la chaîne YouTube.';
+
+  @override
+  String get settingsTipsEmpty => 'Aucune astuce disponible pour le moment.';
+
+  @override
+  String get settingsTipsLoadError => 'Impossible de charger les astuces.';
+
+  @override
+  String get settingsTipsSearchHint => 'Rechercher une astuce…';
+
+  @override
+  String get settingsTipsSearchEmpty =>
+      'Aucune astuce ne correspond à ta recherche.';
 
   @override
   String get promoCodeMenuLabel => 'Code promo';

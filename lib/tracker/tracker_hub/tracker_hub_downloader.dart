@@ -584,38 +584,7 @@ class _AsiDownloaderPanelState extends State<AsiDownloaderPanel> {
         isMatch: widget.isMatch,
       );
 
-      if (widget.isMatch == true && footballFieldGps != null) {
-        final String svgFullMatch = HeatmapSvgGenerator.generateSvg(
-          field: footballFieldGps!,
-          heatmapPoints: analysisResult.heatmapPoints,
-          flipX: false,
-          flipY: false,
-          svgWidth: 1600,
-          svgHeight: 1000,
-        );
-
-        await HeatmapSvgGenerator.saveSvgToFirestore(
-          fileName: '${widget.trackerId}-${widget.eventId}_fullMatch',
-          svg: svgFullMatch,
-        );
-
-        final fullMatchSprintPolylines = _buildSprintPolylines(trackerSamples);
-
-        final String svgFullMatchWithSprints = HeatmapSvgGenerator.generateSvg(
-          field: footballFieldGps!,
-          heatmapPoints: analysisResult.heatmapPoints,
-          sprintPolylines: fullMatchSprintPolylines,
-          flipX: false,
-          flipY: false,
-          svgWidth: 1600,
-          svgHeight: 1000,
-        );
-
-        await HeatmapSvgGenerator.saveSvgToFirestore(
-          fileName: '${widget.trackerId}-${widget.eventId}_fullMatchWithSprints',
-          svg: svgFullMatchWithSprints,
-        );
-
+      if (widget.isMatch == true) {
         final firstHalfSamples = _getSamplesForPeriod(
           period: _firstHalfPeriod,
           allTrackerSamples: trackerSamples,
@@ -651,104 +620,35 @@ class _AsiDownloaderPanelState extends State<AsiDownloaderPanel> {
           );
         }
 
-        const bool flipFirstHalfY = false;
-        const bool flipSecondHalfY = false;
+        final fullMatchSprintPolylines = footballFieldGps != null
+            ? _buildSprintPolylines(trackerSamples)
+            : const <PitchPolyline>[];
+        final firstHalfSprintPolylines = footballFieldGps != null
+            ? _buildSprintPolylines(firstHalfSamples)
+            : const <PitchPolyline>[];
+        final secondHalfSprintPolylines = footballFieldGps != null
+            ? _buildSprintPolylines(secondHalfSamples)
+            : const <PitchPolyline>[];
 
-        if (firstHalfAnalysis != null) {
-          final firstHalfPointsForDisplay = flipFirstHalfY
-              ? _flipHeatmapPointsY(
-            points: firstHalfAnalysis.heatmapPoints,
-            field: footballFieldGps!,
-          )
-              : firstHalfAnalysis.heatmapPoints;
-
-          final firstHalfSprintsRaw = _buildSprintPolylines(firstHalfSamples);
-
-          final firstHalfSprintsForDisplay = flipFirstHalfY
-              ? _flipPolylinesY(
-            polylines: firstHalfSprintsRaw,
-            field: footballFieldGps!,
-          )
-              : firstHalfSprintsRaw;
-
-          final String svgFirstHalf = HeatmapSvgGenerator.generateSvg(
-            field: footballFieldGps!,
-            heatmapPoints: firstHalfPointsForDisplay,
-            sprintPolylines: const [],
-            flipX: false,
-            flipY: false,
-            svgWidth: 1600,
-            svgHeight: 1000,
-          );
-
-          await HeatmapSvgGenerator.saveSvgToFirestore(
-            fileName: '${widget.trackerId}-${widget.eventId}_firstHalf',
-            svg: svgFirstHalf,
-          );
-
-          final String svgFirstHalfWithSprints = HeatmapSvgGenerator.generateSvg(
-            field: footballFieldGps!,
-            heatmapPoints: firstHalfPointsForDisplay,
-            sprintPolylines: firstHalfSprintsForDisplay,
-            flipX: false,
-            flipY: false,
-            svgWidth: 1600,
-            svgHeight: 1000,
-          );
-
-          await HeatmapSvgGenerator.saveSvgToFirestore(
-            fileName: '${widget.trackerId}-${widget.eventId}_firstHalfWithSprints',
-            svg: svgFirstHalfWithSprints,
-          );
-        }
-
-        if (secondHalfAnalysis != null) {
-          final secondHalfPointsForDisplay = flipSecondHalfY
-              ? _flipHeatmapPointsY(
-            points: secondHalfAnalysis.heatmapPoints,
-            field: footballFieldGps!,
-          )
-              : secondHalfAnalysis.heatmapPoints;
-
-          final secondHalfSprintsRaw = _buildSprintPolylines(secondHalfSamples);
-
-          final secondHalfSprintsForDisplay = flipSecondHalfY
-              ? _flipPolylinesY(
-            polylines: secondHalfSprintsRaw,
-            field: footballFieldGps!,
-          )
-              : secondHalfSprintsRaw;
-
-          final String svgSecondHalf = HeatmapSvgGenerator.generateSvg(
-            field: footballFieldGps!,
-            heatmapPoints: secondHalfPointsForDisplay,
-            sprintPolylines: const [],
-            flipX: false,
-            flipY: false,
-            svgWidth: 1600,
-            svgHeight: 1000,
-          );
-
-          await HeatmapSvgGenerator.saveSvgToFirestore(
-            fileName: '${widget.trackerId}-${widget.eventId}_secondHalf',
-            svg: svgSecondHalf,
-          );
-
-          final String svgSecondHalfWithSprints = HeatmapSvgGenerator.generateSvg(
-            field: footballFieldGps!,
-            heatmapPoints: secondHalfPointsForDisplay,
-            sprintPolylines: secondHalfSprintsForDisplay,
-            flipX: false,
-            flipY: false,
-            svgWidth: 1600,
-            svgHeight: 1000,
-          );
-
-          await HeatmapSvgGenerator.saveSvgToFirestore(
-            fileName: '${widget.trackerId}-${widget.eventId}_secondHalfWithSprints',
-            svg: svgSecondHalfWithSprints,
-          );
-        }
+        await MatchHeatmapService.generateAndSaveMatchHeatmaps(
+          trackerId: widget.trackerId,
+          eventId: widget.eventId,
+          fieldGps: footballFieldGps,
+          fullSamples: trackerSamples,
+          fullHeatmapPoints: analysisResult.heatmapPoints,
+          fullSprintPolylines: fullMatchSprintPolylines,
+          fullSprintSegments: _extractSprintSegments(trackerSamples),
+          firstHalfSamples: firstHalfSamples,
+          firstHalfHeatmapPoints:
+              firstHalfAnalysis?.heatmapPoints ?? const [],
+          firstHalfSprintPolylines: firstHalfSprintPolylines,
+          firstHalfSprintSegments: _extractSprintSegments(firstHalfSamples),
+          secondHalfSamples: secondHalfSamples,
+          secondHalfHeatmapPoints:
+              secondHalfAnalysis?.heatmapPoints ?? const [],
+          secondHalfSprintPolylines: secondHalfSprintPolylines,
+          secondHalfSprintSegments: _extractSprintSegments(secondHalfSamples),
+        );
       }
 
       final start = rows.first.timestamp.toDate();

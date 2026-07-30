@@ -30,6 +30,7 @@ import '../../services/sensorAnalysisService.dart';
 import '../../services/teamWorkloadSummaryService.dart';
 import '../../services/trackerDataAnalysisService.dart';
 import '../../util/heatmap_svg_generator.dart';
+import '../../util/match_heatmap_service.dart';
 import '../../widget/asi_converter_screen.dart';
 import '../../model/timeRange.dart';
 import '../../model/trackerDeviceRaw.dart';

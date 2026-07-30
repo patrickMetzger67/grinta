@@ -4737,7 +4737,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get createMatchFieldNotGeolocatedMessage =>
-      'This field is not geolocated. Would you like to do it now? This is required to generate heatmaps.';
+      'This field is not geolocated. Would you like to do it now? This enables pitch-aligned heatmaps; otherwise they use the GPS satellite view.';
 
   @override
   String get createMatchSurface => 'Playing surface';
@@ -6402,13 +6402,53 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get youtubeTopVideoMessage =>
-      'Check out the latest Grinta tip. You can watch it here or skip it.';
+      'Check out the latest Grinta tip. You can watch it here, skip it, or be reminded tomorrow.';
 
   @override
   String get youtubeTopVideoWatch => 'Watch';
 
   @override
   String get youtubeTopVideoSkip => 'Skip';
+
+  @override
+  String get youtubePromptRemindTomorrow => 'Later, remind me tomorrow';
+
+  @override
+  String get youtubePromptTipsHint =>
+      'All videos are available in Tips (Settings menu).';
+
+  @override
+  String get youtubeWelcomePlayerTitle => 'Welcome to Grinta';
+
+  @override
+  String get youtubeWelcomePlayerMessage =>
+      'Here is a short video to get started as a player.';
+
+  @override
+  String get youtubeWelcomeCoachTitle => 'Welcome coach';
+
+  @override
+  String get youtubeWelcomeCoachMessage =>
+      'Here is a short video to get started as a coach.';
+
+  @override
+  String get settingsTipsTitle => 'Tips';
+
+  @override
+  String get settingsTipsSubtitle =>
+      'All videos from the Tips playlist on the YouTube channel.';
+
+  @override
+  String get settingsTipsEmpty => 'No tips available right now.';
+
+  @override
+  String get settingsTipsLoadError => 'Could not load tips.';
+
+  @override
+  String get settingsTipsSearchHint => 'Search tips…';
+
+  @override
+  String get settingsTipsSearchEmpty => 'No tips match your search.';
 
   @override
   String get promoCodeMenuLabel => 'Promo code';

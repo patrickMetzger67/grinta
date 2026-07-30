@@ -4801,7 +4801,7 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get createMatchFieldNotGeolocatedMessage =>
-      'Este terreno no está geolocalizado. ¿Quieres hacerlo ahora? Es necesario para generar los mapas de calor.';
+      'Este terreno no está geolocalizado. ¿Quieres hacerlo ahora? Así obtienes mapas de calor alineados al campo; si no, se usa la vista satélite GPS.';
 
   @override
   String get createMatchSurface => 'Superficie de juego';
@@ -6498,13 +6498,55 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get youtubeTopVideoMessage =>
-      'Descubre el nuevo consejo Grinta. Puedes verlo aquí o saltarlo.';
+      'Descubre el nuevo consejo Grinta. Puedes verlo aquí, saltarlo o recordarlo mañana.';
 
   @override
   String get youtubeTopVideoWatch => 'Ver';
 
   @override
   String get youtubeTopVideoSkip => 'Saltar';
+
+  @override
+  String get youtubePromptRemindTomorrow =>
+      'Más tarde, recordármelo mañana';
+
+  @override
+  String get youtubePromptTipsHint =>
+      'Todos los vídeos están disponibles en Consejos (menú Ajustes).';
+
+  @override
+  String get youtubeWelcomePlayerTitle => 'Bienvenido a Grinta';
+
+  @override
+  String get youtubeWelcomePlayerMessage =>
+      'Aquí tienes un vídeo corto para empezar como jugador.';
+
+  @override
+  String get youtubeWelcomeCoachTitle => 'Bienvenido coach';
+
+  @override
+  String get youtubeWelcomeCoachMessage =>
+      'Aquí tienes un vídeo corto para empezar como coach.';
+
+  @override
+  String get settingsTipsTitle => 'Consejos';
+
+  @override
+  String get settingsTipsSubtitle =>
+      'Todos los vídeos de la lista Consejos en el canal de YouTube.';
+
+  @override
+  String get settingsTipsEmpty => 'No hay consejos disponibles por ahora.';
+
+  @override
+  String get settingsTipsLoadError => 'No se pudieron cargar los consejos.';
+
+  @override
+  String get settingsTipsSearchHint => 'Buscar un consejo…';
+
+  @override
+  String get settingsTipsSearchEmpty =>
+      'Ningún consejo coincide con tu búsqueda.';
 
   @override
   String get promoCodeMenuLabel => 'Código promo';

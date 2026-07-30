@@ -4806,7 +4806,7 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get createMatchFieldNotGeolocatedMessage =>
-      'Dieser Platz ist nicht geolokalisiert. Möchtest du das jetzt tun? Das ist für die Heatmap-Erstellung erforderlich.';
+      'Dieser Platz ist nicht geolokalisiert. Möchtest du das jetzt tun? So entstehen platzgenaue Heatmaps; sonst wird die GPS-Satellitenansicht genutzt.';
 
   @override
   String get createMatchSurface => 'Spielfläche';
@@ -6501,13 +6501,54 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get youtubeTopVideoMessage =>
-      'Entdecke den neuen Grinta-Tipp. Du kannst ihn hier ansehen oder überspringen.';
+      'Entdecke den neuen Grinta-Tipp. Du kannst ihn hier ansehen, überspringen oder dich morgen erinnern lassen.';
 
   @override
   String get youtubeTopVideoWatch => 'Ansehen';
 
   @override
   String get youtubeTopVideoSkip => 'Überspringen';
+
+  @override
+  String get youtubePromptRemindTomorrow => 'Später, morgen erinnern';
+
+  @override
+  String get youtubePromptTipsHint =>
+      'Alle Videos findest du unter Tipps (Menü Einstellungen).';
+
+  @override
+  String get youtubeWelcomePlayerTitle => 'Willkommen bei Grinta';
+
+  @override
+  String get youtubeWelcomePlayerMessage =>
+      'Hier ist ein kurzes Video für den Start als Spieler.';
+
+  @override
+  String get youtubeWelcomeCoachTitle => 'Willkommen Coach';
+
+  @override
+  String get youtubeWelcomeCoachMessage =>
+      'Hier ist ein kurzes Video für den Start als Coach.';
+
+  @override
+  String get settingsTipsTitle => 'Tipps';
+
+  @override
+  String get settingsTipsSubtitle =>
+      'Alle Videos der Tipps-Playlist auf dem YouTube-Kanal.';
+
+  @override
+  String get settingsTipsEmpty => 'Derzeit sind keine Tipps verfügbar.';
+
+  @override
+  String get settingsTipsLoadError => 'Tipps konnten nicht geladen werden.';
+
+  @override
+  String get settingsTipsSearchHint => 'Tipps suchen…';
+
+  @override
+  String get settingsTipsSearchEmpty =>
+      'Keine Tipps entsprechen deiner Suche.';
 
   @override
   String get promoCodeMenuLabel => 'Promo-Code';

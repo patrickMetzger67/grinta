@@ -51,6 +51,7 @@ abstract final class AnalyticsScreenNames {
 
   // Settings
   static const myUnavailabilities = 'my_unavailabilities';
+  static const tips = 'tips';
   static const notifications = 'notifications';
   static const pendingInvitationAccept = 'pending_invitation_accept';
   static const admin = 'admin';

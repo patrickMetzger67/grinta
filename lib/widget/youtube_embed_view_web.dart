@@ -10,9 +10,12 @@ Widget buildYoutubeEmbedView({
 }) {
   // ignore: undefined_prefixed_name
   ui_web.platformViewRegistry.registerViewFactory(viewType, (int viewId) {
+    final origin = Uri.encodeComponent('https://www.grinta.io');
     final iframe = web.HTMLIFrameElement()
       ..src =
-          'https://www.youtube.com/embed/$videoId?autoplay=1&playsinline=1&rel=0'
+          'https://www.youtube.com/embed/$videoId'
+          '?autoplay=1&playsinline=1&rel=0&modestbranding=1'
+          '&enablejsapi=1&origin=$origin&widget_referrer=$origin'
       ..style.border = 'none'
       ..style.width = '100%'
       ..style.height = '100%'
@@ -21,7 +24,8 @@ Widget buildYoutubeEmbedView({
         'allow',
         'accelerometer; autoplay; clipboard-write; encrypted-media; '
             'gyroscope; picture-in-picture; web-share',
-      );
+      )
+      ..setAttribute('referrerpolicy', 'strict-origin-when-cross-origin');
     return iframe;
   });
 

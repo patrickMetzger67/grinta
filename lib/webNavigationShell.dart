@@ -21,6 +21,7 @@ import 'widget/app_logo.dart';
 import 'widget/account_create_profile_entry.dart';
 import 'widget/edit_member_profile.dart';
 import 'screen/my_unavailabilities_screen.dart';
+import 'screen/tips_screen.dart';
 import 'widget/nav_icon_count_badge.dart';
 import 'widget/calendar_sync_toggle.dart';
 import 'widget/devices_settings_section.dart';
@@ -532,6 +533,7 @@ class _WebNavigationShellState extends State<WebNavigationShell> {
           },
         ),
         _buildEditProfileButton(context),
+        _buildTipsButton(context),
         _buildMyUnavailabilitiesButton(context),
         AccountCreateProfileSidebarButton(
           collapsed: _settingsContentCollapsed,
@@ -963,6 +965,70 @@ class _WebNavigationShellState extends State<WebNavigationShell> {
               Expanded(
                 child: Text(
                   context.l10n.actionEditProfile,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: settingsMenuTitleStyle(context),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildTipsButton(BuildContext context) {
+    final colors = context.appColors;
+    if (_settingsContentCollapsed) {
+      return Padding(
+        padding: const EdgeInsets.fromLTRB(12, 0, 12, 12),
+        child: Tooltip(
+          message: context.l10n.settingsTipsTitle,
+          child: InkWell(
+            borderRadius: BorderRadius.circular(16),
+            onTap: () => openTipsScreen(context),
+            child: Container(
+              width: double.infinity,
+              height: 52,
+              decoration: BoxDecoration(
+                color: colors.card,
+                borderRadius: BorderRadius.circular(16),
+                border: Border.all(color: colors.border),
+              ),
+              child: Icon(
+                Icons.lightbulb_outline_rounded,
+                color: colors.primary,
+                size: kWebMenuIconSize,
+              ),
+            ),
+          ),
+        ),
+      );
+    }
+
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(12, 0, 12, 12),
+      child: InkWell(
+        borderRadius: BorderRadius.circular(18),
+        onTap: () => openTipsScreen(context),
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+          decoration: BoxDecoration(
+            color: colors.card,
+            borderRadius: BorderRadius.circular(18),
+            border: Border.all(color: colors.border),
+          ),
+          child: Row(
+            children: [
+              Icon(
+                Icons.lightbulb_outline_rounded,
+                color: colors.primary,
+                size: kWebMenuIconSize,
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Text(
+                  context.l10n.settingsTipsTitle,
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                   style: settingsMenuTitleStyle(context),

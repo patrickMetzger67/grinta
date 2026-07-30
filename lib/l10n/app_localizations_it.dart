@@ -4788,7 +4788,7 @@ class AppLocalizationsIt extends AppLocalizations {
 
   @override
   String get createMatchFieldNotGeolocatedMessage =>
-      'Questo campo non è geolocalizzato. Vuoi farlo ora? È necessario per generare le heatmap.';
+      'Questo campo non è geolocalizzato. Vuoi farlo ora? Così ottieni heatmap allineate al campo; altrimenti useranno la vista satellite GPS.';
 
   @override
   String get createMatchSurface => 'Superficie di gioco';
@@ -6478,13 +6478,55 @@ class AppLocalizationsIt extends AppLocalizations {
 
   @override
   String get youtubeTopVideoMessage =>
-      'Scopri il nuovo consiglio Grinta. Puoi guardarlo qui o saltarlo.';
+      'Scopri il nuovo consiglio Grinta. Puoi guardarlo qui, saltarlo o farti ricordare domani.';
 
   @override
   String get youtubeTopVideoWatch => 'Guarda';
 
   @override
   String get youtubeTopVideoSkip => 'Salta';
+
+  @override
+  String get youtubePromptRemindTomorrow =>
+      'Più tardi, ricordamelo domani';
+
+  @override
+  String get youtubePromptTipsHint =>
+      'Tutti i video sono disponibili in Consigli (menu Impostazioni).';
+
+  @override
+  String get youtubeWelcomePlayerTitle => 'Benvenuto su Grinta';
+
+  @override
+  String get youtubeWelcomePlayerMessage =>
+      'Ecco un breve video per iniziare come giocatore.';
+
+  @override
+  String get youtubeWelcomeCoachTitle => 'Benvenuto coach';
+
+  @override
+  String get youtubeWelcomeCoachMessage =>
+      'Ecco un breve video per iniziare come coach.';
+
+  @override
+  String get settingsTipsTitle => 'Consigli';
+
+  @override
+  String get settingsTipsSubtitle =>
+      'Tutti i video della playlist Consigli sul canale YouTube.';
+
+  @override
+  String get settingsTipsEmpty => 'Nessun consiglio disponibile al momento.';
+
+  @override
+  String get settingsTipsLoadError => 'Impossibile caricare i consigli.';
+
+  @override
+  String get settingsTipsSearchHint => 'Cerca un consiglio…';
+
+  @override
+  String get settingsTipsSearchEmpty =>
+      'Nessun consiglio corrisponde alla ricerca.';
 
   @override
   String get promoCodeMenuLabel => 'Codice promo';

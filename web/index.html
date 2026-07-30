@@ -4,17 +4,89 @@
   <base href="$FLUTTER_BASE_HREF">
   <meta charset="UTF-8">
   <meta content="IE=Edge" http-equiv="X-UA-Compatible">
-  <meta name="description" content="A new Flutter project.">
+  <meta name="description" content="Grinta Performance">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-
-  <!-- Obligatoire pour GoogleMap sur Flutter Web -->
-  <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyDyHHcP9py2HCyx18Ssels7qqygKxeUZG0"></script>
+  <meta name="theme-color" content="#F95C1B">
 
   <title>Grinta Performance</title>
   <link rel="manifest" href="manifest.json">
+  <link rel="icon" type="image/png" href="favicon.png"/>
+
+  <!-- Instant boot splash (covers white page while Flutter JS downloads). -->
+  <style>
+    html, body {
+      height: 100%;
+      margin: 0;
+      padding: 0;
+      background: #F95C1B;
+    }
+    @media (prefers-color-scheme: dark) {
+      html, body { background: #111214; }
+      #grinta-boot-splash { background: #111214; }
+      #grinta-boot-splash .boot-spinner {
+        border-color: rgba(255, 255, 255, 0.22);
+        border-top-color: #F95C1B;
+      }
+    }
+    #grinta-boot-splash {
+      position: fixed;
+      inset: 0;
+      z-index: 99999;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 28px;
+      background: #F95C1B;
+      transition: opacity 220ms ease;
+    }
+    #grinta-boot-splash.boot-hide {
+      opacity: 0;
+      pointer-events: none;
+    }
+    #grinta-boot-splash img {
+      width: min(160px, 42vw);
+      height: auto;
+      display: block;
+    }
+    #grinta-boot-splash .boot-spinner {
+      width: 28px;
+      height: 28px;
+      border-radius: 50%;
+      border: 3px solid rgba(255, 255, 255, 0.35);
+      border-top-color: #ffffff;
+      animation: grinta-boot-spin 0.75s linear infinite;
+    }
+    @keyframes grinta-boot-spin {
+      to { transform: rotate(360deg); }
+    }
+  </style>
 </head>
 
 <body oncontextmenu="return false;">
+<div id="grinta-boot-splash" aria-busy="true" aria-label="Chargement Grinta">
+  <img src="icons/Icon-192.png" alt="Grinta" width="192" height="192"/>
+  <div class="boot-spinner" role="progressbar"></div>
+</div>
+<script>
+  (function () {
+    var removed = false;
+    function hideBootSplash() {
+      if (removed) return;
+      removed = true;
+      var el = document.getElementById('grinta-boot-splash');
+      if (!el) return;
+      el.classList.add('boot-hide');
+      setTimeout(function () {
+        if (el && el.parentNode) el.parentNode.removeChild(el);
+      }, 240);
+    }
+    window.addEventListener('flutter-first-frame', hideBootSplash);
+    // Safety net if the event is missed.
+    setTimeout(hideBootSplash, 20000);
+  })();
+</script>
+
 <script>
   window.asiUsb = {
     _device: null,
@@ -205,6 +277,26 @@
       });
     });
   }
+</script>
+
+<!-- Google Maps: deferred so it does not block the first paint / Flutter download. -->
+<script>
+  (function () {
+    var loaded = false;
+    window.grintaLoadGoogleMaps = function () {
+      if (loaded) return;
+      loaded = true;
+      var s = document.createElement('script');
+      s.src = 'https://maps.googleapis.com/maps/api/js?key=AIzaSyDyHHcP9py2HCyx18Ssels7qqygKxeUZG0';
+      s.async = true;
+      document.head.appendChild(s);
+    };
+    // Warm the Maps SDK after Flutter has painted (or after a short idle).
+    window.addEventListener('flutter-first-frame', function () {
+      setTimeout(window.grintaLoadGoogleMaps, 800);
+    });
+    setTimeout(window.grintaLoadGoogleMaps, 4000);
+  })();
 </script>
 
 <script src="flutter_bootstrap.js" async></script>

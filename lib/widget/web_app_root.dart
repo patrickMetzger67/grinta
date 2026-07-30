@@ -70,7 +70,10 @@ class _WebAppRootState extends State<WebAppRoot> {
   }
 
   Future<void> _initApp() async {
-    await Future.delayed(const Duration(seconds: 2));
+    // Let the first Flutter frame paint (replacing the HTML boot splash),
+    // then drop this short overlay. Avoids a long artificial white/blank wait.
+    await WidgetsBinding.instance.endOfFrame;
+    await Future<void>.delayed(const Duration(milliseconds: 250));
 
     if (!mounted) return;
 
