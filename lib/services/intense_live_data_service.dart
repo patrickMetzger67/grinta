@@ -14,8 +14,8 @@ import 'package:grinta/services/deviceOwnerService.dart' as device_owner_svc;
 import 'package:grinta/services/matchCompoService.dart';
 import 'package:grinta/services/playerService.dart';
 import 'package:grinta/services/sensorAnalysisService.dart';
-import 'package:grinta/services/tracker_field_service.dart';
 import 'package:grinta/services/trainingService.dart';
+import 'package:grinta/util/field_gps_localization_helper.dart';
 import 'package:grinta/util/insiders_device_resolver.dart';
 import 'package:grinta/util/playerDisplayName.dart';
 import 'package:grinta/util/training_finish_helper.dart';
@@ -247,11 +247,10 @@ class IntenseLiveDataService {
     return targets;
   }
 
-  Future<FieldGpsCorners?> loadFieldGpsCorners(String? fieldId) async {
-    final id = fieldId?.trim();
-    if (id == null || id.isEmpty) return null;
-    final field = await TrackerFieldService().getById(id);
-    return field?.fieldGpsCorners;
+  /// Loads pitch GPS by [fieldId]: `fieldClub` first, then legacy
+  /// `TRACKER_Fields` (match create/admin write fieldClub ids).
+  Future<FieldGpsCorners?> loadFieldGpsCorners(String? fieldId) {
+    return FieldGpsLocalizationHelper.loadFieldGpsCornersByFieldId(fieldId);
   }
 
   Future<IntenseLivePlayerMetrics> fetchLiveMetrics({

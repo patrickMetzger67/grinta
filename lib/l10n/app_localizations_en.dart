@@ -2107,6 +2107,12 @@ class AppLocalizationsEn extends AppLocalizations {
   String get matchDetailVenueTitle => 'Match venue';
 
   @override
+  String get matchVenueFieldGpsView => 'Field geolocated — view outline';
+
+  @override
+  String get matchVenueFieldGpsSet => 'Geolocate the field';
+
+  @override
   String get matchDetailTrackerKitTitle => 'Kit selection';
 
   @override
@@ -4719,6 +4725,12 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get createMatchSelectField => 'Club field';
+
+  @override
+  String get createMatchFieldGpsActionView => 'Field geolocated — view outline';
+
+  @override
+  String get createMatchFieldGpsActionSet => 'Geolocate this field';
 
   @override
   String get createMatchFieldNotGeolocatedTitle => 'Field not geolocated';

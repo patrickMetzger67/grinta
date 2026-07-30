@@ -2135,6 +2135,12 @@ class AppLocalizationsFr extends AppLocalizations {
   String get matchDetailVenueTitle => 'Lieu du match';
 
   @override
+  String get matchVenueFieldGpsView => 'Terrain géolocalisé — voir le tracé';
+
+  @override
+  String get matchVenueFieldGpsSet => 'Géolocaliser le terrain';
+
+  @override
   String get matchDetailTrackerKitTitle => 'Sélection du kit';
 
   @override
@@ -4780,6 +4786,13 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get createMatchSelectField => 'Terrain du club';
+
+  @override
+  String get createMatchFieldGpsActionView =>
+      'Terrain géolocalisé — voir le tracé';
+
+  @override
+  String get createMatchFieldGpsActionSet => 'Géolocaliser ce terrain';
 
   @override
   String get createMatchFieldNotGeolocatedTitle => 'Terrain non géolocalisé';

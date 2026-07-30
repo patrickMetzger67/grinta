@@ -1,5 +1,4 @@
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:grinta/analytics/analytics_routes.dart';
@@ -18,27 +17,41 @@ import 'package:grinta/util/french_address_parser.dart';
 class FieldGpsLocalizationHelper {
   FieldGpsLocalizationHelper._();
 
+  /// Returns [corners] when all four pitch corners are present.
+  ///
+  /// Used to decide whether stored GPS can be reused without re-prompting.
+  /// Incomplete outlines are ignored so the user can fix them.
+  static FieldGpsCorners? completeCornersOrNull(FieldGpsCorners? corners) {
+    if (corners == null || !corners.isComplete) return null;
+    return corners;
+  }
+
   /// Ensures [match] has GPS corners for pitch heatmap analysis.
   ///
-  /// Order: match document → `TRACKER_Fields` → confirm dialog → localization
-  /// screen. Returns `null` if the user declines or cancels.
+  /// Order: match document → `fieldClub` (by [models.Match.fieldId]) →
+  /// `TRACKER_Fields` → confirm dialog → localization screen.
+  /// Returns `null` if the user declines or cancels.
   static Future<FieldGpsCorners?> ensureMatchFieldGpsCorners(
     BuildContext context, {
     required models.Match match,
     MatchService? matchService,
     TrackerFieldService? trackerFieldService,
+    FieldClubService? fieldClubService,
     bool askConfirmation = true,
   }) async {
-    if (match.fieldGpsCorners != null) {
-      return match.fieldGpsCorners;
+    final fromMatch = completeCornersOrNull(match.fieldGpsCorners);
+    if (fromMatch != null) {
+      return fromMatch;
     }
 
     final fieldService = trackerFieldService ?? TrackerFieldService();
+    final clubService = fieldClubService ?? FieldClubService();
     final matches = matchService ?? MatchService();
 
-    final stored = await loadFieldGpsCornersFromTrackerFields(
+    final stored = await loadStoredFieldGpsCorners(
       match,
       trackerFieldService: fieldService,
+      fieldClubService: clubService,
     );
     if (stored != null) {
       match.fieldGpsCorners = stored;
@@ -62,7 +75,59 @@ class FieldGpsLocalizationHelper {
       match: match,
       matchService: matches,
       trackerFieldService: fieldService,
+      fieldClubService: clubService,
     );
+  }
+
+  /// Loads pitch GPS for a match without prompting.
+  ///
+  /// Prefers `fieldClub/{fieldId}` (match create/edit + admin), then falls back
+  /// to legacy `TRACKER_Fields` (USB sync address-hash ids).
+  static Future<FieldGpsCorners?> loadStoredFieldGpsCorners(
+    models.Match match, {
+    TrackerFieldService? trackerFieldService,
+    FieldClubService? fieldClubService,
+  }) async {
+    final fromClub = await loadFieldGpsCornersByFieldId(
+      match.fieldId,
+      fieldClubService: fieldClubService,
+      trackerFieldService: trackerFieldService,
+    );
+    if (fromClub != null) return fromClub;
+
+    return loadFieldGpsCornersFromTrackerFields(
+      match,
+      trackerFieldService: trackerFieldService,
+    );
+  }
+
+  /// Resolves GPS corners by document id: `fieldClub` first, then
+  /// `TRACKER_Fields` (legacy).
+  static Future<FieldGpsCorners?> loadFieldGpsCornersByFieldId(
+    String? fieldId, {
+    FieldClubService? fieldClubService,
+    TrackerFieldService? trackerFieldService,
+  }) async {
+    final id = fieldId?.trim() ?? '';
+    if (id.isEmpty) return null;
+
+    try {
+      final clubField =
+          await (fieldClubService ?? FieldClubService()).getById(id);
+      final fromClub = completeCornersOrNull(clubField?.fieldGpsCorners);
+      if (fromClub != null) return fromClub;
+    } catch (e) {
+      debugPrint('loadFieldGpsCornersByFieldId fieldClub failed: $e');
+    }
+
+    try {
+      final trackerField =
+          await (trackerFieldService ?? TrackerFieldService()).getById(id);
+      return completeCornersOrNull(trackerField?.fieldGpsCorners);
+    } catch (e) {
+      debugPrint('loadFieldGpsCornersByFieldId TRACKER_Fields failed: $e');
+      return null;
+    }
   }
 
   static Future<FieldGpsCorners?> loadFieldGpsCornersFromTrackerFields(
@@ -73,7 +138,8 @@ class FieldGpsLocalizationHelper {
     final fieldId = match.fieldId?.trim() ?? '';
     if (fieldId.isNotEmpty) {
       final byId = await fieldService.getById(fieldId);
-      if (byId?.fieldGpsCorners != null) return byId!.fieldGpsCorners;
+      final fromId = completeCornersOrNull(byId?.fieldGpsCorners);
+      if (fromId != null) return fromId;
     }
 
     final terrainNom = match.nomDuTerrain?.trim() ?? '';
@@ -88,7 +154,7 @@ class FieldGpsLocalizationHelper {
     if (computedId.isEmpty) return null;
 
     final trackerField = await fieldService.getById(computedId);
-    return trackerField?.fieldGpsCorners;
+    return completeCornersOrNull(trackerField?.fieldGpsCorners);
   }
 
   static Future<bool?> confirmFieldGeolocation(BuildContext context) {
@@ -111,39 +177,125 @@ class FieldGpsLocalizationHelper {
     );
   }
 
-  /// Opens the localization screen and persists corners on the match +
-  /// `TRACKER_Fields`.
+  /// Opens the localization screen and persists corners on the match,
+  /// `fieldClub` (when [models.Match.fieldId] points there), and
+  /// `TRACKER_Fields` (legacy address-hash cache).
+  ///
+  /// Prefills the map with match / fieldClub corners when available so the
+  /// pitch outline (“tracé”) is visible when revisiting an already geolocated
+  /// field.
   static Future<FieldGpsCorners?> localizeAndSaveMatchField(
     BuildContext context, {
     required models.Match match,
     MatchService? matchService,
     TrackerFieldService? trackerFieldService,
+    FieldClubService? fieldClubService,
   }) async {
+    final clubService = fieldClubService ?? FieldClubService();
+    final fieldService = trackerFieldService ?? TrackerFieldService();
+
+    FieldClub? clubField;
+    final fieldId = match.fieldId?.trim() ?? '';
+    if (fieldId.isNotEmpty) {
+      try {
+        clubField = await clubService.getById(fieldId);
+      } catch (e) {
+        debugPrint('localizeAndSaveMatchField load fieldClub failed: $e');
+      }
+    }
+
+    final existingCorners = completeCornersOrNull(match.fieldGpsCorners) ??
+        completeCornersOrNull(clubField?.fieldGpsCorners) ??
+        await loadStoredFieldGpsCorners(
+          match,
+          trackerFieldService: fieldService,
+          fieldClubService: clubService,
+        );
+    if (!context.mounted) return null;
+
+    final geo = clubField?.location?.geopoint;
     final result = await openLocalizationScreen(
       context,
-      initialName: match.nomDuTerrain?.trim() ?? '',
-      initialAddress: match.terrainAdresse1?.trim() ?? '',
+      initialName: (match.nomDuTerrain?.trim().isNotEmpty == true)
+          ? match.nomDuTerrain!.trim()
+          : (clubField?.name.trim() ?? ''),
+      initialAddress: (match.terrainAdresse1?.trim().isNotEmpty == true)
+          ? match.terrainAdresse1!.trim()
+          : (clubField?.address.trim() ?? ''),
+      initialFieldGpsCorners: existingCorners,
+      initialTarget: geo == null ? null : LatLng(geo.latitude, geo.longitude),
     );
     if (result == null || !context.mounted) return null;
 
-    match.fieldGpsCorners = result.fieldGpsCorners;
+    return persistMatchFieldGpsCorners(
+      match: match,
+      corners: result.fieldGpsCorners,
+      fieldName: result.fieldName,
+      fieldAddress: result.fieldAddress,
+      matchService: matchService,
+      trackerFieldService: fieldService,
+      fieldClubService: clubService,
+      existingFieldClub: clubField,
+    );
+  }
+
+  /// Persists [corners] on the match, linked `fieldClub`, and legacy
+  /// `TRACKER_Fields` cache.
+  static Future<FieldGpsCorners> persistMatchFieldGpsCorners({
+    required models.Match match,
+    required FieldGpsCorners corners,
+    String fieldName = '',
+    String fieldAddress = '',
+    MatchService? matchService,
+    TrackerFieldService? trackerFieldService,
+    FieldClubService? fieldClubService,
+    FieldClub? existingFieldClub,
+  }) async {
+    match.fieldGpsCorners = corners;
+    final name = fieldName.trim().isNotEmpty
+        ? fieldName.trim()
+        : (match.nomDuTerrain?.trim() ?? '');
+    if (name.isNotEmpty) {
+      match.nomDuTerrain = name;
+    }
+    final address = fieldAddress.trim().isNotEmpty
+        ? fieldAddress.trim()
+        : (match.terrainAdresse1?.trim() ?? '');
+    if (address.isNotEmpty) {
+      match.terrainAdresse1 = address;
+    }
+
     try {
       await (matchService ?? MatchService()).updateMatch(match);
     } catch (e) {
-      debugPrint('localizeAndSaveMatchField updateMatch failed: $e');
+      debugPrint('persistMatchFieldGpsCorners updateMatch failed: $e');
+    }
+
+    final clubService = fieldClubService ?? FieldClubService();
+    final fieldId = match.fieldId?.trim() ?? '';
+    if (fieldId.isNotEmpty) {
+      try {
+        final existing =
+            existingFieldClub ?? await clubService.getById(fieldId);
+        if (existing != null) {
+          await clubService.updateFieldGpsCorners(
+            fieldClubId: fieldId,
+            fieldGpsCorners: corners,
+          );
+        }
+      } catch (e) {
+        debugPrint('persistMatchFieldGpsCorners fieldClub update failed: $e');
+      }
     }
 
     final uid = FirebaseAuth.instance.currentUser?.uid;
     if (uid != null) {
-      final terrainNom = result.fieldName.trim().isNotEmpty
-          ? result.fieldName.trim()
-          : (match.nomDuTerrain?.trim() ?? '');
       try {
         await (trackerFieldService ?? TrackerFieldService())
             .saveFromMatchLocalization(
-          terrainNom: terrainNom,
-          terrainAdresse1: match.terrainAdresse1 ?? '',
-          fieldGpsCorners: result.fieldGpsCorners,
+          terrainNom: name,
+          terrainAdresse1: match.terrainAdresse1 ?? address,
+          fieldGpsCorners: corners,
           uid: uid,
         );
       } catch (e) {
@@ -151,7 +303,7 @@ class FieldGpsLocalizationHelper {
       }
     }
 
-    return result.fieldGpsCorners;
+    return corners;
   }
 
   /// Opens the field localization screen (admin / match / discovery).

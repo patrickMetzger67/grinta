@@ -5,6 +5,8 @@ import 'package:grinta/core/extensions/l10n_extension.dart';
 import 'package:grinta/model/feature_discovery_ids.dart';
 import 'package:grinta/feature_discovery/match_detail_tab_navigation_scope.dart';
 import 'package:grinta/services/feature_discovery_service.dart';
+import 'package:grinta/util/app_snackbar.dart';
+import 'package:grinta/util/field_gps_localization_helper.dart';
 import 'package:grinta/widget/feature_discovery_random_banner.dart';
 
 import '../model/highlights.dart';
@@ -679,94 +681,49 @@ class _MatchHeaderState extends State<_MatchHeader> {
     return _clean(match.surfaceDeJeu);
   }
 
-  static void _showVenueSheet(BuildContext context, models.Match match) {
+  static void _showVenueSheet(
+    BuildContext context,
+    models.Match match,
+  ) {
     final colors = context.appColors;
-    final l10n = context.l10n;
 
     showModalBottomSheet<void>(
       context: context,
       backgroundColor: colors.background,
       barrierColor: Colors.black54,
+      isScrollControlled: true,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
       ),
-      builder: (ctx) {
-        return SafeArea(
-          child: Padding(
-            padding: const EdgeInsets.fromLTRB(16, 12, 16, 20),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                Text(
-                  l10n.matchDetailVenueTitle,
-                  style: Theme.of(ctx).textTheme.titleMedium?.copyWith(
-                        fontWeight: FontWeight.w800,
-                        color: colors.textPrimary,
-                      ),
-                ),
-                const SizedBox(height: 10),
-                Container(
-                  width: double.infinity,
-                  padding: const EdgeInsets.all(14),
-                  decoration: BoxDecoration(
-                    color: colors.surface,
-                    borderRadius: BorderRadius.circular(14),
-                    border: Border.all(
-                      color: colors.primary.withValues(alpha: 0.45),
-                      width: 1.2,
-                    ),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black.withValues(alpha: 0.12),
-                        blurRadius: 12,
-                        offset: const Offset(0, 4),
-                      ),
-                    ],
-                  ),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
-                    children: [
-                      if (_clean(match.nomDuTerrain).isNotEmpty)
-                        _HeaderInfoLine(
-                          icon: Icons.stadium_rounded,
-                          value: match.nomDuTerrain!,
-                          valueColor: colors.textPrimary,
-                        ),
-                      if (_clean(match.terrainAdresse1).isNotEmpty ||
-                          _clean(match.terrainAddress2).isNotEmpty) ...[
-                        const SizedBox(height: 8),
-                        _HeaderInfoLine(
-                          icon: Icons.place_outlined,
-                          value: [
-                            _clean(match.terrainAdresse1),
-                            _clean(match.terrainAddress2),
-                          ].where((s) => s.isNotEmpty).join(' — '),
-                          valueColor: colors.textPrimary,
-                        ),
-                      ],
-                      if (_clean(match.surfaceDeJeu).isNotEmpty) ...[
-                        const SizedBox(height: 8),
-                        _HeaderInfoLine(
-                          icon: Icons.grass_rounded,
-                          value: match.surfaceDeJeu!,
-                          valueColor: colors.textPrimary,
-                        ),
-                      ],
-                      if (!_hasVenueInfo(match))
-                        Text(
-                          l10n.entityFieldUndefined,
-                          style: TextStyle(color: colors.textSecondary),
-                        ),
-                    ],
-                  ),
-                ),
-              ],
-            ),
-          ),
-        );
-      },
+      builder: (sheetContext) => _MatchVenueSheet(
+        match: match,
+        onOpenFieldGps: () async {
+          Navigator.of(sheetContext).pop();
+          if (!context.mounted) return;
+          try {
+            await FieldGpsLocalizationHelper.localizeAndSaveMatchField(
+              context,
+              match: match,
+            );
+          } catch (e, st) {
+            debugPrint('match venue field GPS open failed: $e\n$st');
+            if (context.mounted) {
+              AppSnackbar.show(
+                context,
+                context.l10n.adminTrackerFieldsSaveFailed,
+              );
+            }
+          }
+        },
+      ),
     );
+  }
+
+  static bool _hasFieldGps(models.Match match) {
+    return FieldGpsLocalizationHelper.completeCornersOrNull(
+          match.fieldGpsCorners,
+        ) !=
+        null;
   }
 
   @override
@@ -977,6 +934,14 @@ class _MatchHeaderState extends State<_MatchHeader> {
                           ),
                         ),
                       ),
+                      if (_hasFieldGps(match)) ...[
+                        Icon(
+                          Icons.gps_fixed,
+                          size: 18,
+                          color: colors.primary,
+                        ),
+                        const SizedBox(width: 6),
+                      ],
                       Icon(
                         Icons.info_outline_rounded,
                         size: 18,
@@ -1010,6 +975,179 @@ class _MatchHeaderState extends State<_MatchHeader> {
     return time;
   }
 
+}
+
+/// Bottom sheet for match venue details + field GPS outline access.
+class _MatchVenueSheet extends StatefulWidget {
+  const _MatchVenueSheet({
+    required this.match,
+    required this.onOpenFieldGps,
+  });
+
+  final models.Match match;
+  final Future<void> Function() onOpenFieldGps;
+
+  @override
+  State<_MatchVenueSheet> createState() => _MatchVenueSheetState();
+}
+
+class _MatchVenueSheetState extends State<_MatchVenueSheet> {
+  bool _loadingGps = true;
+  bool _hasGps = false;
+  bool _openingMap = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _resolveGps();
+  }
+
+  Future<void> _resolveGps() async {
+    final fromMatch = FieldGpsLocalizationHelper.completeCornersOrNull(
+      widget.match.fieldGpsCorners,
+    );
+    if (fromMatch != null) {
+      if (!mounted) return;
+      setState(() {
+        _hasGps = true;
+        _loadingGps = false;
+      });
+      return;
+    }
+
+    final stored = await FieldGpsLocalizationHelper.loadStoredFieldGpsCorners(
+      widget.match,
+    );
+    if (!mounted) return;
+    if (stored != null) {
+      widget.match.fieldGpsCorners = stored;
+    }
+    setState(() {
+      _hasGps = stored != null;
+      _loadingGps = false;
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = context.appColors;
+    final l10n = context.l10n;
+    final match = widget.match;
+
+    return SafeArea(
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(16, 12, 16, 20),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Text(
+              l10n.matchDetailVenueTitle,
+              style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                    fontWeight: FontWeight.w800,
+                    color: colors.textPrimary,
+                  ),
+            ),
+            const SizedBox(height: 10),
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.all(14),
+              decoration: BoxDecoration(
+                color: colors.surface,
+                borderRadius: BorderRadius.circular(14),
+                border: Border.all(
+                  color: colors.primary.withValues(alpha: 0.45),
+                  width: 1.2,
+                ),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withValues(alpha: 0.12),
+                    blurRadius: 12,
+                    offset: const Offset(0, 4),
+                  ),
+                ],
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  if (_clean(match.nomDuTerrain).isNotEmpty)
+                    _HeaderInfoLine(
+                      icon: Icons.stadium_rounded,
+                      value: match.nomDuTerrain!,
+                      valueColor: colors.textPrimary,
+                    ),
+                  if (_clean(match.terrainAdresse1).isNotEmpty ||
+                      _clean(match.terrainAddress2).isNotEmpty) ...[
+                    const SizedBox(height: 8),
+                    _HeaderInfoLine(
+                      icon: Icons.place_outlined,
+                      value: [
+                        _clean(match.terrainAdresse1),
+                        _clean(match.terrainAddress2),
+                      ].where((s) => s.isNotEmpty).join(' — '),
+                      valueColor: colors.textPrimary,
+                    ),
+                  ],
+                  if (_clean(match.surfaceDeJeu).isNotEmpty) ...[
+                    const SizedBox(height: 8),
+                    _HeaderInfoLine(
+                      icon: Icons.grass_rounded,
+                      value: match.surfaceDeJeu!,
+                      valueColor: colors.textPrimary,
+                    ),
+                  ],
+                  if (!_MatchHeaderState._hasVenueInfo(match))
+                    Text(
+                      l10n.entityFieldUndefined,
+                      style: TextStyle(color: colors.textSecondary),
+                    ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 12),
+            if (_loadingGps)
+              const Padding(
+                padding: EdgeInsets.symmetric(vertical: 8),
+                child: Center(
+                  child: SizedBox(
+                    width: 22,
+                    height: 22,
+                    child: CircularProgressIndicator(strokeWidth: 2),
+                  ),
+                ),
+              )
+            else
+              FilledButton.icon(
+                onPressed: _openingMap
+                    ? null
+                    : () async {
+                        setState(() => _openingMap = true);
+                        await widget.onOpenFieldGps();
+                      },
+                icon: Icon(
+                  _hasGps ? Icons.gps_fixed : Icons.gps_not_fixed,
+                ),
+                label: Text(
+                  _hasGps
+                      ? l10n.matchVenueFieldGpsView
+                      : l10n.matchVenueFieldGpsSet,
+                ),
+                style: FilledButton.styleFrom(
+                  backgroundColor: colors.primary,
+                  foregroundColor: Colors.white,
+                  disabledBackgroundColor:
+                      colors.primary.withValues(alpha: 0.5),
+                  padding: const EdgeInsets.symmetric(vertical: 12),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                ),
+              ),
+          ],
+        ),
+      ),
+    );
+  }
 }
 
 class _TeamBlock extends StatelessWidget {
