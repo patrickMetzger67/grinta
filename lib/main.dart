@@ -5,6 +5,7 @@ import 'package:firebase_auth/firebase_auth.dart' as firebase_auth;
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_native_splash/flutter_native_splash.dart';
 import 'util/app_theme.dart';
 import 'util/stream_chat_theme.dart';
 import 'package:provider/provider.dart';
@@ -41,67 +42,85 @@ const String kStreamApiKey = 'vg9g2zz7s2fc';
 const Duration _kSessionPrepTimeout = Duration(seconds: 30);
 
 Future<void> main() async {
-  WidgetsFlutterBinding.ensureInitialized();
-
-  await Firebase.initializeApp(
-    options: DefaultFirebaseOptions.currentPlatform,
-  );
-
-  // Independent bootstraps after Firebase — run in parallel to shorten web blank time.
-  await Future.wait<void>([
-    NotificationFCMService.init(),
-    InternalReminderService.instance.init(),
-    CalendarDeepLinkService.instance.init(),
-    WhoopDeepLinkService.instance.init(),
-    StravaDeepLinkService.instance.init(),
-    PolarDeepLinkService.instance.init(),
-    FitbitDeepLinkService.instance.init(),
-  ]);
-
-  if (kIsWeb) {
-    await firebase_auth.FirebaseAuth.instance.setPersistence(
-      firebase_auth.Persistence.LOCAL,
-    );
+  final widgetsBinding = WidgetsFlutterBinding.ensureInitialized();
+  // Keep the native splash up during Firebase / services boot (Android + iOS).
+  // On web the package is a no-op; web uses its own boot splash in index.html.
+  if (!kIsWeb) {
+    FlutterNativeSplash.preserve(widgetsBinding: widgetsBinding);
   }
 
-  // Restaure la session Firebase persistée avant le premier frame.
-  await waitForFirebaseAuthReady(firebase_auth.FirebaseAuth.instance);
+  try {
+    await Firebase.initializeApp(
+      options: DefaultFirebaseOptions.currentPlatform,
+    );
 
-  ActiveSessionService.instance;
-  UserTrialService.instance;
-  UserRootService.instance;
+    // Independent bootstraps after Firebase — run in parallel to shorten web blank time.
+    await Future.wait<void>([
+      NotificationFCMService.init(),
+      InternalReminderService.instance.init(),
+      CalendarDeepLinkService.instance.init(),
+      WhoopDeepLinkService.instance.init(),
+      StravaDeepLinkService.instance.init(),
+      PolarDeepLinkService.instance.init(),
+      FitbitDeepLinkService.instance.init(),
+    ]);
 
-  await Future.wait<void>([
-    FeatureDiscoveryService.instance.ensureInitialized(),
-    UserTrialService.instance.ensureInitialized(),
-    UserRootService.instance.ensureInitialized(),
-    SubscriptionService.instance.ensureInitialized(),
-    SubscriptionLimitsService.instance.ensureInitialized(),
-    EshopConfigService.instance.ensureInitialized(),
-  ]);
+    if (kIsWeb) {
+      await firebase_auth.FirebaseAuth.instance.setPersistence(
+        firebase_auth.Persistence.LOCAL,
+      );
+    }
 
-  runApp(
-    MultiProvider(
-      providers: [
-        ChangeNotifierProvider<AppSession>(
-          create: (_) => AppSession(),
-        ),
-        ChangeNotifierProvider<SubscriptionService>.value(
-          value: SubscriptionService.instance,
-        ),
-        ChangeNotifierProvider<UserTrialService>.value(
-          value: UserTrialService.instance,
-        ),
-        ChangeNotifierProvider<UserRootService>.value(
-          value: UserRootService.instance,
-        ),
-        ChangeNotifierProvider<EshopConfigService>.value(
-          value: EshopConfigService.instance,
-        ),
-      ],
-      child: const MyApp(),
-    ),
-  );
+    // Restaure la session Firebase persistée avant le premier frame.
+    await waitForFirebaseAuthReady(firebase_auth.FirebaseAuth.instance);
+
+    ActiveSessionService.instance;
+    UserTrialService.instance;
+    UserRootService.instance;
+
+    await Future.wait<void>([
+      FeatureDiscoveryService.instance.ensureInitialized(),
+      UserTrialService.instance.ensureInitialized(),
+      UserRootService.instance.ensureInitialized(),
+      SubscriptionService.instance.ensureInitialized(),
+      SubscriptionLimitsService.instance.ensureInitialized(),
+      EshopConfigService.instance.ensureInitialized(),
+    ]);
+
+    runApp(
+      MultiProvider(
+        providers: [
+          ChangeNotifierProvider<AppSession>(
+            create: (_) => AppSession(),
+          ),
+          ChangeNotifierProvider<SubscriptionService>.value(
+            value: SubscriptionService.instance,
+          ),
+          ChangeNotifierProvider<UserTrialService>.value(
+            value: UserTrialService.instance,
+          ),
+          ChangeNotifierProvider<UserRootService>.value(
+            value: UserRootService.instance,
+          ),
+          ChangeNotifierProvider<EshopConfigService>.value(
+            value: EshopConfigService.instance,
+          ),
+        ],
+        child: const MyApp(),
+      ),
+    );
+
+    if (!kIsWeb) {
+      widgetsBinding.addPostFrameCallback((_) {
+        FlutterNativeSplash.remove();
+      });
+    }
+  } catch (_) {
+    if (!kIsWeb) {
+      FlutterNativeSplash.remove();
+    }
+    rethrow;
+  }
 }
 
 class MyApp extends StatefulWidget {
