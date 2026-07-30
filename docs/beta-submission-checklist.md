@@ -69,7 +69,7 @@
 - [ ] Créer / ouvrir le projet sur [app.revenuecat.com](https://app.revenuecat.com)
 - [ ] Ajouter l'app **iOS** : bundle ID `io.grinta.app`
 - [ ] Ajouter l'app **Android** : package `io.grinta.app`
-- [ ] (Optionnel web) Configurer **Web Billing** avec Stripe pour les abonnements cross-platform
+- [ ] (Optionnel web) Configurer **Web Billing** avec Stripe pour les abonnements cross-platform — checklist détaillée Apple Pay / Google Pay : [`docs/web-billing-apple-google-pay.md`](./web-billing-apple-google-pay.md)
 
 ### Phase 2 — Lier les stores
 
