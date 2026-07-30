@@ -248,7 +248,7 @@ class _TipsScreenState extends State<TipsScreen> {
             );
           }
 
-          final filtered = filterVideos(videos, _searchQuery);
+          final filtered = TipsScreen.filterVideos(videos, _searchQuery);
 
           return Column(
             children: [
