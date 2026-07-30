@@ -137,7 +137,7 @@ class _YoutubeEmbedPlayerState extends State<YoutubeEmbedPlayer> {
     if (!kIsWeb && defaultTargetPlatform == TargetPlatform.iOS) {
       return WebKitWebViewControllerCreationParams(
         allowsInlineMediaPlayback: true,
-        mediaTypesRequiringUserGesture: const <PlaybackMediaTypes>{},
+        mediaTypesRequiringUserAction: const <PlaybackMediaTypes>{},
       );
     }
     if (!kIsWeb && defaultTargetPlatform == TargetPlatform.android) {
