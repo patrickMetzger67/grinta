@@ -1410,7 +1410,7 @@
   "createPersonalSportGoogleActivity": "Google Health activity",
   "createPersonalSportGoogleAndroidOnly": "Google Health import is available on Android only. On iPhone, use Apple Fitness.",
   "createPersonalSportGoogleLoadError": "Could not load Google Health workouts. Check Health Connect permissions and try again.",
-  "createPersonalSportGoogleNoImportable": "No Google Health workouts to import. Record a session in Google Health / Fit, allow Grinta in Health Connect, then retry.",
+  "createPersonalSportGoogleNoImportable": "No Google Health workouts on this device. Grinta reads Health Connect locally: sign in with the same Google account that recorded the sessions, open Google Fit to sync, confirm Fit writes to Health Connect, then retry.",
   "createPersonalSportPolarDeployRequired": "Polar import is not deployed yet. Run firebase deploy for polarListActivities and polarImportActivity.",
   "createPersonalSportPolarLoadError": "Could not load Polar activities. Check the connection and try again.",
   "createPersonalSportPolarNoImportable": "No Polar Flow training session to import. In Polar Flow, confirm the session is a Training (not only continuous HR), synced after connecting Grinta, then retry.",
@@ -2812,9 +2812,11 @@
       }
     }
   },
-  "googleHealthConnectToggleSubtitle": "Conecta Google Health para importar entrenamientos, frecuencia cardíaca y energía activa desde Health Connect (solo Android)",
+  "googleHealthConnectToggleSubtitle": "Conecta Google Health para importar entrenamientos, frecuencia cardíaca y energía activa desde Health Connect en este teléfono (solo Android)",
   "googleHealthConnectToggleConnectedSubtitle": "Google Health conectado — sincronización de entrenamientos disponible",
   "googleHealthConnectSuccess": "Google Health conectado.",
+  "googleHealthConnectNoWorkouts": "Google Health conectado, pero no se encontraron entrenamientos en este teléfono. Las sesiones de otro dispositivo o cuenta de Google solo aparecen tras sincronizarlas en Health Connect aquí (misma cuenta de Google + Google Fit).",
+  "googleHealthConnectNoWorkoutsShort": "Conectado — sin entrenamientos en este dispositivo",
   "googleHealthConnectFailed": "La conexión Google Health ha fallado. Inténtalo de nuevo.",
   "googleHealthConnectDenied": "Se denegó el acceso a Health Connect. Actívalo en Health Connect → Permisos de apps → Grinta.",
   "googleHealthConnectAuthRequired": "Inicia sesión en Grinta para conectar Google Health.",

@@ -340,8 +340,17 @@ class _WearableDevicesDialogContentState
             initiatedBy: widget.initiatedBy,
           );
           if (!mounted) return;
-          if (result == GoogleHealthConnectResult.success) {
+          if (result.isAuthorized) {
             _backToList();
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text(
+                  result == GoogleHealthConnectResult.successNoRecentWorkouts
+                      ? context.l10n.googleHealthConnectNoWorkouts
+                      : context.l10n.googleHealthConnectSuccess,
+                ),
+              ),
+            );
           } else {
             _showConnectError(_googleHealthConnectMessage(result));
           }
@@ -446,6 +455,9 @@ class _WearableDevicesDialogContentState
       GoogleHealthConnectResult.denied => l10n.googleHealthConnectDenied,
       GoogleHealthConnectResult.unauthenticated =>
         l10n.googleHealthConnectAuthRequired,
+      GoogleHealthConnectResult.successNoRecentWorkouts =>
+        l10n.googleHealthConnectNoWorkouts,
+      GoogleHealthConnectResult.success => l10n.googleHealthConnectSuccess,
       _ => l10n.googleHealthConnectFailed,
     };
   }
@@ -600,6 +612,10 @@ class _WearableDevicesDialogContentState
     required WearableDeviceType type,
     required _WearableDialogState state,
   }) {
+    if (type == WearableDeviceType.googleHealthConnect &&
+        (state.googleHealthConfig?.recentWorkoutCount ?? 0) <= 0) {
+      return context.l10n.googleHealthConnectNoWorkoutsShort;
+    }
     final base = _statusSubtitle(type: type, connected: true);
     final hint = switch (type) {
       WearableDeviceType.strava =>

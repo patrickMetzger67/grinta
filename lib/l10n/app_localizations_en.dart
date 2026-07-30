@@ -2890,7 +2890,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get createPersonalSportGoogleNoImportable =>
-      'No Google Health workouts to import. Record a session in Google Health / Fit, allow Grinta in Health Connect, then retry.';
+      'No Google Health workouts on this device. Grinta reads Health Connect locally: sign in with the same Google account that recorded the sessions, open Google Fit to sync, confirm Fit writes to Health Connect, then retry.';
 
   @override
   String get createPersonalSportPolarDeployRequired =>
@@ -4398,7 +4398,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get googleHealthConnectToggleSubtitle =>
-      'Connect Google Health to import workouts, heart rate, and active energy from Health Connect (Android only)';
+      'Connect Google Health to import workouts, heart rate, and active energy from Health Connect on this phone (Android only)';
 
   @override
   String get googleHealthConnectToggleConnectedSubtitle =>
@@ -4406,6 +4406,14 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get googleHealthConnectSuccess => 'Google Health connected.';
+
+  @override
+  String get googleHealthConnectNoWorkouts =>
+      'Google Health connected, but no workouts were found on this phone. Sessions from another device or Google account only appear after they sync into Health Connect here (same Google account + Google Fit).';
+
+  @override
+  String get googleHealthConnectNoWorkoutsShort =>
+      'Connected — no workouts on this device';
 
   @override
   String get googleHealthConnectFailed =>

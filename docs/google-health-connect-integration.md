@@ -141,6 +141,20 @@ flutter pub get
 | **Disconnect** in Grinta | Sets `connected: false` in Firestore; clears probe metadata |
 | **Revoke in Health Connect** | Removes app permissions; user should also Disconnect in Grinta |
 
+## 5b. Troubleshooting — « Aucune activité » / empty import list
+
+Grinta does **not** call Google Fit cloud APIs. An empty list almost always means Health Connect on **this phone** has no Exercise sessions Grinta can read.
+
+| Situation | What happens | What to do |
+|-----------|--------------|------------|
+| Workouts recorded on **another phone/watch** | Cloud Fit history is not auto-visible to Grinta | On the phone running Grinta: install/open **Google Fit**, sign in with the **same Google account**, wait for sync, confirm Fit can **write** Exercise into **Health Connect** |
+| Different **Google account** on this phone | Health Connect holds data for the accounts/apps on this device | Switch Google Fit (and the phone’s primary Google account if needed) to the account that owns the workouts |
+| Fit not writing to Health Connect | Grinta has nothing to read | **Health Connect → App permissions → Google Fit** → allow Exercise (and related) write; then **Health Connect → App permissions → Grinta** → allow Exercise read |
+| Session older than ~90 days | Outside import lookback | Record/sync a more recent workout, or recreate one in Fit |
+| Permissions incomplete | Connect may succeed with `recentWorkoutCount: 0` | Re-run Sync and enable **Exercise** for Grinta |
+
+After connect, if Health Connect authorization succeeds but the local probe finds **0 workouts**, Grinta still marks the link as connected and surfaces a **no workouts on this device** message (snackbar + Devices list subtitle).
+
 ## 6. Later enhancements (optional)
 
 - [ ] Background / scheduled read of new workouts

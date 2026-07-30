@@ -69,6 +69,26 @@ class GoogleHealthSyncRepository {
     );
   }
 
+  /// Updates local Health Connect probe fields without resetting connection metadata.
+  Future<void> updateProbe({
+    required String uid,
+    required String playerId,
+    required int recentWorkoutCount,
+    DateTime? mostRecentWorkoutAt,
+  }) async {
+    await _syncDoc(uid, playerId).set(
+      {
+        'lastSyncedAt': Timestamp.fromDate(DateTime.now()),
+        'recentWorkoutCount': recentWorkoutCount,
+        if (mostRecentWorkoutAt != null)
+          'mostRecentWorkoutAt': Timestamp.fromDate(mostRecentWorkoutAt)
+        else
+          'mostRecentWorkoutAt': FieldValue.delete(),
+      },
+      SetOptions(merge: true),
+    );
+  }
+
   Future<void> updateCoachVisibility({
     required String uid,
     required String playerId,

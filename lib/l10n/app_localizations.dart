@@ -5156,7 +5156,7 @@ abstract class AppLocalizations {
   /// No description provided for @createPersonalSportGoogleNoImportable.
   ///
   /// In fr, this message translates to:
-  /// **'Aucun entraînement Google Health à importer. Enregistre une séance dans Google Health / Fit, autorise Grinta dans Health Connect, puis réessaie.'**
+  /// **'Aucun entraînement Google Health sur cet appareil. Grinta lit Health Connect localement : connecte le même compte Google que celui des séances, ouvre Google Fit pour synchroniser, vérifie que Fit écrit dans Health Connect, puis réessaie.'**
   String get createPersonalSportGoogleNoImportable;
 
   /// No description provided for @createPersonalSportPolarDeployRequired.
@@ -7695,7 +7695,7 @@ abstract class AppLocalizations {
   /// No description provided for @googleHealthConnectToggleSubtitle.
   ///
   /// In fr, this message translates to:
-  /// **'Connecte Google Health pour importer entraînements, fréquence cardiaque et énergie active depuis Health Connect (Android uniquement)'**
+  /// **'Connecte Google Health pour importer entraînements, fréquence cardiaque et énergie active depuis Health Connect sur ce téléphone (Android uniquement)'**
   String get googleHealthConnectToggleSubtitle;
 
   /// No description provided for @googleHealthConnectToggleConnectedSubtitle.
@@ -7709,6 +7709,18 @@ abstract class AppLocalizations {
   /// In fr, this message translates to:
   /// **'Google Health connecté.'**
   String get googleHealthConnectSuccess;
+
+  /// No description provided for @googleHealthConnectNoWorkouts.
+  ///
+  /// In fr, this message translates to:
+  /// **'Google Health connecté, mais aucun entraînement trouvé sur ce téléphone. Les séances d’un autre appareil ou compte n’apparaissent qu’après sync dans Health Connect ici (même compte Google + Google Fit).'**
+  String get googleHealthConnectNoWorkouts;
+
+  /// No description provided for @googleHealthConnectNoWorkoutsShort.
+  ///
+  /// In fr, this message translates to:
+  /// **'Connecté — aucun entraînement sur cet appareil'**
+  String get googleHealthConnectNoWorkoutsShort;
 
   /// No description provided for @googleHealthConnectFailed.
   ///
