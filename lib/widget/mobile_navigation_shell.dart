@@ -314,14 +314,29 @@ class _MobileNavigationShellState extends State<MobileNavigationShell> {
                   ),
                 ),
                 const SizedBox(height: 8),
-                ListTile(
-                  leading: Icon(
-                    Icons.settings_outlined,
-                    color: colors.primary,
-                  ),
-                  title: Text(
-                    l10n.navSettings,
-                    style: settingsMenuTitleStyle(sheetContext),
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(16, 0, 8, 0),
+                  child: Row(
+                    children: [
+                      Icon(
+                        Icons.settings_outlined,
+                        color: colors.primary,
+                      ),
+                      const SizedBox(width: 16),
+                      Expanded(
+                        child: Text(
+                          l10n.navSettings,
+                          style: settingsMenuTitleStyle(sheetContext),
+                        ),
+                      ),
+                      TextButton(
+                        onPressed: () => Navigator.of(sheetContext).pop(),
+                        style: TextButton.styleFrom(
+                          foregroundColor: colors.primary,
+                        ),
+                        child: Text(l10n.actionClose),
+                      ),
+                    ],
                   ),
                 ),
                 const Divider(height: 1),
