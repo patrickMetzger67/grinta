@@ -142,15 +142,9 @@ class _TipsScreenState extends State<TipsScreen> {
                     ],
                   ),
                   const SizedBox(height: 8),
-                  AspectRatio(
-                    aspectRatio: 16 / 9,
-                    child: ClipRRect(
-                      borderRadius: BorderRadius.circular(12),
-                      child: YoutubeEmbedPlayer(
-                        videoId: video.id,
-                        autoplay: true,
-                      ),
-                    ),
+                  YoutubeEmbedPlayer(
+                    videoId: video.id,
+                    autoplay: true,
                   ),
                   if ((video.description ?? '').trim().isNotEmpty) ...[
                     const SizedBox(height: 12),

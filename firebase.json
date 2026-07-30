@@ -88,6 +88,19 @@
               "value": "public, max-age=3600"
             }
           ]
+        },
+        {
+          "source": "/youtube_embed.html",
+          "headers": [
+            {
+              "key": "Referrer-Policy",
+              "value": "strict-origin-when-cross-origin"
+            },
+            {
+              "key": "Cache-Control",
+              "value": "public, max-age=3600"
+            }
+          ]
         }
       ]
     },
@@ -154,6 +167,19 @@
         {
           "source": "**/*.@(css|png|jpg|jpeg|gif|svg|webp|ico|woff|woff2|ttf|otf)",
           "headers": [
+            {
+              "key": "Cache-Control",
+              "value": "public, max-age=3600"
+            }
+          ]
+        },
+        {
+          "source": "/youtube_embed.html",
+          "headers": [
+            {
+              "key": "Referrer-Policy",
+              "value": "strict-origin-when-cross-origin"
+            },
             {
               "key": "Cache-Control",
               "value": "public, max-age=3600"

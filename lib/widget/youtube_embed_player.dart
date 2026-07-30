@@ -12,9 +12,11 @@ import 'package:webview_flutter_wkwebview/webview_flutter_wkwebview.dart';
 
 /// In-app YouTube player: iframe on web, WebView embed on iOS/Android.
 ///
-/// On iOS, YouTube Error 153 appears when the embed lacks a valid Referer /
-/// origin. We load a local HTML shell with `referrerpolicy` and a HTTPS
-/// [baseUrl], and block navigations that leave the embed iframe.
+/// YouTube Error 153 ("Video player configuration error") happens when the
+/// embed request has no valid HTTP Referer. On iOS WKWebView, loading an
+/// HTML shell with an iframe often strips that header (WebKit bug 169846).
+/// Loading the `/embed/` URL as the main document with an explicit Referer
+/// is the reliable fix.
 class YoutubeEmbedPlayer extends StatefulWidget {
   const YoutubeEmbedPlayer({
     super.key,
@@ -25,18 +27,24 @@ class YoutubeEmbedPlayer extends StatefulWidget {
   final String videoId;
   final bool autoplay;
 
-  /// Origin used as Referer / HTML baseUrl for YouTube embed verification.
+  /// Origin / Referer YouTube uses to verify the embed client.
   static const String embedOrigin = 'https://www.grinta.io';
+
+  /// Bundle-style origin used as a secondary Referer fallback on iOS.
+  static const String bundleOrigin = 'https://io.grinta.app';
 
   @override
   State<YoutubeEmbedPlayer> createState() => _YoutubeEmbedPlayerState();
 }
 
 class _YoutubeEmbedPlayerState extends State<YoutubeEmbedPlayer> {
+  static const String _ytChannelName = 'GrintaYt';
+
   WebViewController? _controller;
   Widget? _webView;
   bool _loading = true;
   String? _error;
+  bool _showOpenExternally = false;
 
   String get _watchUrl =>
       'https://www.youtube.com/watch?v=${widget.videoId}';
@@ -50,8 +58,14 @@ class _YoutubeEmbedPlayerState extends State<YoutubeEmbedPlayer> {
         '&modestbranding=1'
         '&fs=1'
         '&enablejsapi=1'
-        '&origin=${Uri.encodeComponent(YoutubeEmbedPlayer.embedOrigin)}';
+        '&origin=${Uri.encodeComponent(YoutubeEmbedPlayer.embedOrigin)}'
+        '&widget_referrer=${Uri.encodeComponent(YoutubeEmbedPlayer.embedOrigin)}';
   }
+
+  Map<String, String> get _embedHeaders => const <String, String>{
+        'Referer': '${YoutubeEmbedPlayer.embedOrigin}/',
+        'Referrer-Policy': 'strict-origin-when-cross-origin',
+      };
 
   String get _embedHtml {
     return '''
@@ -132,47 +146,81 @@ class _YoutubeEmbedPlayerState extends State<YoutubeEmbedPlayer> {
     return const PlatformWebViewControllerCreationParams();
   }
 
+  bool _isEmbedUrl(Uri uri) {
+    final host = uri.host.toLowerCase();
+    final path = uri.path.toLowerCase();
+    final isYoutubeHost = host.contains('youtube.com') ||
+        host.contains('youtube-nocookie.com');
+    return isYoutubeHost && path.contains('/embed');
+  }
+
+  bool _isPlayerResource(Uri uri) {
+    final host = uri.host.toLowerCase();
+    return host.contains('youtube.com') ||
+        host.contains('youtube-nocookie.com') ||
+        host.contains('youtu.be') ||
+        host.contains('ytimg.com') ||
+        host.contains('googlevideo.com') ||
+        host.contains('google.com') ||
+        host.contains('gstatic.com') ||
+        host.contains('ggpht.com');
+  }
+
+  bool _isForbiddenMainFrame(Uri uri) {
+    final host = uri.host.toLowerCase();
+    final path = uri.path.toLowerCase();
+    if (host == 'm.youtube.com') return true;
+    if (path.contains('/watch')) return true;
+    if (path.contains('/shorts')) return true;
+    if (path.contains('/feed') || path == '/' || path.isEmpty) {
+      if (host.contains('youtube.com')) return true;
+    }
+    return false;
+  }
+
   void _initMobileWebView() {
     final controller = WebViewController.fromPlatformCreationParams(
       _platformParams(),
     )
       ..setJavaScriptMode(JavaScriptMode.unrestricted)
       ..setBackgroundColor(const Color(0xFF000000))
+      ..addJavaScriptChannel(
+        _ytChannelName,
+        onMessageReceived: (message) {
+          if (!mounted) return;
+          if (message.message == 'error153') {
+            setState(() {
+              _loading = false;
+              _showOpenExternally = true;
+            });
+          }
+        },
+      )
       ..setNavigationDelegate(
         NavigationDelegate(
           onNavigationRequest: (request) {
             final uri = Uri.tryParse(request.url);
             if (uri == null) return NavigationDecision.prevent;
 
-            // Allow the initial HTML document / about:blank / embed frames.
-            final host = uri.host.toLowerCase();
-            final path = uri.path.toLowerCase();
-            final isEmbed = host.contains('youtube.com') &&
-                (path.contains('/embed/') || path.contains('/embed'));
-            final isYoutubeCdn = host.contains('youtube.com') ||
-                host.contains('youtu.be') ||
-                host.contains('ytimg.com') ||
-                host.contains('googlevideo.com') ||
-                host.contains('google.com') ||
-                host.contains('gstatic.com');
             final isLocalDoc = uri.scheme == 'about' ||
                 uri.scheme == 'data' ||
                 request.url == 'about:blank';
 
-            if (isLocalDoc || isEmbed) {
+            if (isLocalDoc || _isEmbedUrl(uri)) {
               return NavigationDecision.navigate;
             }
 
-            // Block leaving the embed for the full YouTube mobile site.
-            if (path.contains('/watch') ||
-                path.contains('/shorts') ||
-                host == 'm.youtube.com' ||
-                (host.contains('youtu.be') && !isEmbed)) {
+            // Main frame must stay on the embed — never the full mobile site.
+            if (request.isMainFrame) {
+              if (_isForbiddenMainFrame(uri)) {
+                return NavigationDecision.prevent;
+              }
+              // Any other top-level navigation leaves the player.
               return NavigationDecision.prevent;
             }
 
-            // Allow ancillary YouTube/Google resources for the player.
-            if (isYoutubeCdn) {
+            // Subframe / CDN resources needed by the player.
+            if (_isPlayerResource(uri)) {
               return NavigationDecision.navigate;
             }
 
@@ -183,11 +231,13 @@ class _YoutubeEmbedPlayerState extends State<YoutubeEmbedPlayer> {
             setState(() {
               _loading = true;
               _error = null;
+              _showOpenExternally = false;
             });
           },
-          onPageFinished: (_) {
+          onPageFinished: (_) async {
             if (!mounted) return;
             setState(() => _loading = false);
+            await _injectError153Watcher();
           },
           onWebResourceError: (details) {
             if (!mounted) return;
@@ -196,6 +246,7 @@ class _YoutubeEmbedPlayerState extends State<YoutubeEmbedPlayer> {
             setState(() {
               _loading = false;
               _error = details.description;
+              _showOpenExternally = true;
             });
           },
         ),
@@ -211,30 +262,70 @@ class _YoutubeEmbedPlayerState extends State<YoutubeEmbedPlayer> {
     _loadEmbed(controller);
   }
 
-  Future<void> _loadEmbed(WebViewController controller) async {
+  Future<void> _injectError153Watcher() async {
+    final controller = _controller;
+    if (controller == null) return;
     try {
-      // HTML shell + HTTPS baseUrl supplies the Referer YouTube requires
-      // (avoids Error 153 on iOS WKWebView).
+      await controller.runJavaScript('''
+(function() {
+  if (window.__grintaYtWatch) return;
+  window.__grintaYtWatch = true;
+  function check() {
+    try {
+      var t = (document.body && document.body.innerText) || '';
+      if (t.indexOf('Error 153') !== -1 || t.indexOf('Erreur 153') !== -1) {
+        if (window.$_ytChannelName && window.$_ytChannelName.postMessage) {
+          window.$_ytChannelName.postMessage('error153');
+        }
+      }
+    } catch (e) {}
+  }
+  check();
+  setInterval(check, 800);
+})();
+''');
+    } catch (_) {
+      // Best-effort; ignore if the page blocks script injection.
+    }
+  }
+
+  Future<void> _loadEmbed(WebViewController controller) async {
+    // 1) Preferred: embed as main document with explicit Referer.
+    //    This is what fixes Error 153 on iOS WKWebView.
+    try {
+      await controller.loadRequest(
+        Uri.parse(_embedSrc),
+        headers: _embedHeaders,
+      );
+      return;
+    } catch (_) {
+      // Continue to fallbacks.
+    }
+
+    // 2) HTML shell + HTTPS baseUrl (helps Android / some iOS builds).
+    try {
       await controller.loadHtmlString(
         _embedHtml,
         baseUrl: YoutubeEmbedPlayer.embedOrigin,
       );
+      return;
+    } catch (_) {
+      // Continue.
+    }
+
+    // 3) Last resort: HTML shell with bundle-id style origin.
+    try {
+      await controller.loadHtmlString(
+        _embedHtml,
+        baseUrl: YoutubeEmbedPlayer.bundleOrigin,
+      );
     } catch (e) {
-      // Fallback: direct embed URL with explicit Referer header.
-      try {
-        await controller.loadRequest(
-          Uri.parse(_embedSrc),
-          headers: const <String, String>{
-            'Referer': YoutubeEmbedPlayer.embedOrigin,
-          },
-        );
-      } catch (e2) {
-        if (!mounted) return;
-        setState(() {
-          _loading = false;
-          _error = e2.toString();
-        });
-      }
+      if (!mounted) return;
+      setState(() {
+        _loading = false;
+        _error = e.toString();
+        _showOpenExternally = true;
+      });
     }
   }
 
@@ -284,6 +375,24 @@ class _YoutubeEmbedPlayerState extends State<YoutubeEmbedPlayer> {
                           child: Text(l10n.youtubeTopVideoWatch),
                         ),
                       ],
+                    ),
+                  ),
+                ),
+              if (_showOpenExternally && _error == null)
+                Positioned(
+                  left: 8,
+                  right: 8,
+                  bottom: 8,
+                  child: Material(
+                    color: Colors.black.withValues(alpha: 0.72),
+                    borderRadius: BorderRadius.circular(8),
+                    child: TextButton.icon(
+                      onPressed: _openExternally,
+                      icon: const Icon(Icons.open_in_new, size: 18),
+                      label: Text(l10n.youtubeTopVideoWatch),
+                      style: TextButton.styleFrom(
+                        foregroundColor: Colors.white,
+                      ),
                     ),
                   ),
                 ),
