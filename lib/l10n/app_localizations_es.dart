@@ -4478,7 +4478,11 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get googleHealthConnectDenied =>
-      'Se denegó el acceso a Health Connect. Actívalo en Health Connect → Permisos de apps → Grinta.';
+      'Se denegó el acceso a Health Connect o no se completó la hoja de permisos. Abre la app Health Connect → Permisos de apps → activa Grinta (Ejercicio) y vuelve a Sync.';
+
+  @override
+  String get googleHealthConnectUnavailable =>
+      'Health Connect no está instalado o está desactualizado. Instálalo o actualízalo desde Play Store y vuelve a Sync en Grinta.';
 
   @override
   String get googleHealthConnectAuthRequired =>

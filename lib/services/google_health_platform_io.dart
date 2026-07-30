@@ -3,24 +3,47 @@ import 'dart:io' show Platform;
 import 'package:flutter/foundation.dart';
 import 'package:grinta/model/google_health_importable_activity.dart';
 import 'package:health/health.dart';
+import 'package:permission_handler/permission_handler.dart';
+
+/// Why Health Connect authorization failed on Android.
+enum GoogleHealthPlatformFailure {
+  androidOnly,
+  denied,
+  /// Health Connect app/SDK missing — Play Store install was prompted when possible.
+  unavailable,
+}
 
 /// Result of a local Health Connect authorization attempt.
 class GoogleHealthPlatformConnectResult {
   const GoogleHealthPlatformConnectResult._({
     required this.authorized,
+    this.failure,
     this.recentWorkoutCount,
     this.mostRecentWorkoutAt,
   });
 
   final bool authorized;
+  final GoogleHealthPlatformFailure? failure;
   final int? recentWorkoutCount;
   final DateTime? mostRecentWorkoutAt;
 
   static const GoogleHealthPlatformConnectResult androidOnly =
-      GoogleHealthPlatformConnectResult._(authorized: false);
+      GoogleHealthPlatformConnectResult._(
+    authorized: false,
+    failure: GoogleHealthPlatformFailure.androidOnly,
+  );
 
   static const GoogleHealthPlatformConnectResult denied =
-      GoogleHealthPlatformConnectResult._(authorized: false);
+      GoogleHealthPlatformConnectResult._(
+    authorized: false,
+    failure: GoogleHealthPlatformFailure.denied,
+  );
+
+  static const GoogleHealthPlatformConnectResult unavailable =
+      GoogleHealthPlatformConnectResult._(
+    authorized: false,
+    failure: GoogleHealthPlatformFailure.unavailable,
+  );
 
   static GoogleHealthPlatformConnectResult success({
     required int recentWorkoutCount,
@@ -43,21 +66,69 @@ const List<HealthDataType> _kGoogleHealthReadTypes = [
 
 bool get isGoogleHealthConnectSupported => Platform.isAndroid;
 
+Future<void> _requestRuntimePermissions() async {
+  // Workouts / sleep / fitness types require Activity Recognition on Android.
+  // Distance on workouts also needs location (dangerous permission).
+  try {
+    await Permission.activityRecognition.request();
+  } catch (e, st) {
+    debugPrint('Activity recognition permission request failed: $e\n$st');
+  }
+  try {
+    await Permission.locationWhenInUse.request();
+  } catch (e, st) {
+    debugPrint('Location permission request failed: $e\n$st');
+  }
+}
+
+Future<bool> _ensureHealthConnectAvailable(Health health) async {
+  try {
+    final available = await health.isHealthConnectAvailable();
+    if (available) return true;
+
+    final status = await health.getHealthConnectSdkStatus();
+    debugPrint('Health Connect SDK status: $status');
+    // Opens Play Store / provider update flow when HC is missing.
+    await health.installHealthConnect();
+    return false;
+  } catch (e, st) {
+    debugPrint('Health Connect availability check failed: $e\n$st');
+    try {
+      await health.installHealthConnect();
+    } catch (_) {}
+    return false;
+  }
+}
+
 Future<bool> _ensureAuthorized(Health health) async {
   final permissions = List<HealthDataAccess>.filled(
     _kGoogleHealthReadTypes.length,
     HealthDataAccess.READ,
   );
   try {
-    final hasPermissions = await health.hasPermissions(
+    await _requestRuntimePermissions();
+
+    // Always show the Health Connect permission sheet. `hasPermissions` is
+    // unreliable on Android and skipping the request leaves Grinta invisible
+    // under Health Connect → App permissions.
+    final granted = await health.requestAuthorization(
       _kGoogleHealthReadTypes,
       permissions: permissions,
     );
-    if (hasPermissions == true) return true;
-    return health.requestAuthorization(
-      _kGoogleHealthReadTypes,
-      permissions: permissions,
-    );
+    if (!granted) return false;
+
+    try {
+      if (await health.isHealthDataHistoryAvailable()) {
+        final historyOk = await health.isHealthDataHistoryAuthorized();
+        if (!historyOk) {
+          await health.requestHealthDataHistoryAuthorization();
+        }
+      }
+    } catch (e, st) {
+      debugPrint('Health Connect history authorization failed: $e\n$st');
+    }
+
+    return true;
   } catch (e, st) {
     debugPrint('Google Health Connect authorization failed: $e\n$st');
     return false;
@@ -71,12 +142,21 @@ Future<GoogleHealthPlatformConnectResult> authorizeAndProbeWorkouts() async {
 
   final health = Health();
   await health.configure();
+
+  final available = await _ensureHealthConnectAvailable(health);
+  if (!available) {
+    return GoogleHealthPlatformConnectResult.unavailable;
+  }
+
   final granted = await _ensureAuthorized(health);
   if (!granted) {
     return GoogleHealthPlatformConnectResult.denied;
   }
 
-  final workouts = await listGoogleHealthWorkouts(lookbackDays: 30);
+  final workouts = await listGoogleHealthWorkouts(
+    lookbackDays: 30,
+    skipAuthorization: true,
+  );
   DateTime? mostRecentWorkoutAt;
   for (final workout in workouts) {
     if (mostRecentWorkoutAt == null ||
@@ -191,13 +271,18 @@ GoogleHealthImportableActivity? _mapWorkoutPoint(HealthDataPoint point) {
 /// Lists recent workouts from Health Connect (newest first).
 Future<List<GoogleHealthImportableActivity>> listGoogleHealthWorkouts({
   int lookbackDays = 90,
+  bool skipAuthorization = false,
 }) async {
   if (!Platform.isAndroid) return const [];
 
   final health = Health();
   await health.configure();
-  final granted = await _ensureAuthorized(health);
-  if (!granted) return const [];
+  if (!skipAuthorization) {
+    final available = await health.isHealthConnectAvailable();
+    if (!available) return const [];
+    final granted = await _ensureAuthorized(health);
+    if (!granted) return const [];
+  }
 
   final now = DateTime.now();
   final start = now.subtract(Duration(days: lookbackDays.clamp(1, 365)));
@@ -267,6 +352,10 @@ Future<bool> ensureGoogleWorkoutWriteAuthorized() async {
 
   final health = Health();
   await health.configure();
+  if (!await health.isHealthConnectAvailable()) return false;
+
+  await _requestRuntimePermissions();
+
   final types = <HealthDataType>[
     ..._kGoogleHealthReadTypes,
     HealthDataType.WORKOUT,

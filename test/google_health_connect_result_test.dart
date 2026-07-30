@@ -11,8 +11,9 @@ void main() {
       );
     });
 
-    test('is false for denied / failed / android-only / unauthenticated', () {
+    test('is false for denied / unavailable / failed / android-only / auth', () {
       expect(GoogleHealthConnectResult.denied.isAuthorized, isFalse);
+      expect(GoogleHealthConnectResult.unavailable.isAuthorized, isFalse);
       expect(GoogleHealthConnectResult.failed.isAuthorized, isFalse);
       expect(GoogleHealthConnectResult.androidOnly.isAuthorized, isFalse);
       expect(GoogleHealthConnectResult.unauthenticated.isAuthorized, isFalse);

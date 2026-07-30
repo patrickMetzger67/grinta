@@ -7731,8 +7731,14 @@ abstract class AppLocalizations {
   /// No description provided for @googleHealthConnectDenied.
   ///
   /// In fr, this message translates to:
-  /// **'L\'accès Health Connect a été refusé. Active-le dans Health Connect → Autorisations des applis → Grinta.'**
+  /// **'L\'accès Health Connect a été refusé ou la feuille d\'autorisations n\'a pas abouti. Ouvre l\'app Health Connect → Autorisations des applis → active Grinta (Exercice), puis réessaie Sync.'**
   String get googleHealthConnectDenied;
+
+  /// No description provided for @googleHealthConnectUnavailable.
+  ///
+  /// In fr, this message translates to:
+  /// **'Health Connect n’est pas installé ou à jour sur ce téléphone. Installe / mets à jour Health Connect depuis le Play Store, puis réessaie Sync dans Grinta.'**
+  String get googleHealthConnectUnavailable;
 
   /// No description provided for @googleHealthConnectAuthRequired.
   ///

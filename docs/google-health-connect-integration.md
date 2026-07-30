@@ -115,12 +115,22 @@ flutter pub get
 ### Player flow — connect
 
 1. Sign in to Grinta and select a player profile.
-2. Open **Settings** → **Appareils/Applications**.
-3. Tap **+**, select **Google Fit / Health Connect**.
-4. Tap **Sync** → accept the Health Connect permission sheet (enable **Exercise** and other types).
-5. Confirm it appears in the connections list; badge count increases.
-6. Toggle **Coach visibility** (workouts, heart rate, active energy, sleep).
-7. Tap **Disconnect** — clears Grinta state only. To fully revoke: **Health Connect → App permissions → Grinta**.
+2. Open **Grinta** avatar → **Réglages** → **Appareils/Applications** (not Android system Settings).
+3. Tap **+**, select **Google Health**.
+4. Tap **Sync**.
+5. Android may ask for **Activity recognition** / **Location** first (needed for workouts).
+6. Then the **Health Connect** permission sheet should open — enable **Exercise** (and heart rate / energy / sleep if offered).
+7. Confirm **Grinta** appears under the **Health Connect** app → **App permissions** (not under Google Fit’s “connected apps” list).
+8. Toggle **Coach visibility** (workouts, heart rate, active energy, sleep).
+9. Tap **Disconnect** — clears Grinta state only. To fully revoke: **Health Connect → App permissions → Grinta**.
+
+If Sync does **not** show the Health Connect sheet:
+
+| Cause | What Grinta does / what to do |
+|-------|-------------------------------|
+| Health Connect missing (Android 9–13) or outdated | Grinta opens Play Store via `installHealthConnect`; install/update, then Sync again |
+| Runtime permissions skipped previously | Rebuild with current Sync flow (requests Activity Recognition + location before HC) |
+| Sheet dismissed / denied | Open **Health Connect** app → App permissions → enable Grinta manually |
 
 ### Player flow — import workout
 

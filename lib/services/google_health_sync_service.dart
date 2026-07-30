@@ -13,6 +13,8 @@ enum GoogleHealthConnectResult {
   successNoRecentWorkouts,
   androidOnly,
   denied,
+  /// Health Connect app/SDK missing; install/update was prompted when possible.
+  unavailable,
   unauthenticated,
   failed,
 }
@@ -68,7 +70,13 @@ class GoogleHealthSyncService {
     try {
       final platformResult = await authorizeAndProbeWorkouts();
       if (!platformResult.authorized) {
-        return GoogleHealthConnectResult.denied;
+        return switch (platformResult.failure) {
+          GoogleHealthPlatformFailure.androidOnly =>
+            GoogleHealthConnectResult.androidOnly,
+          GoogleHealthPlatformFailure.unavailable =>
+            GoogleHealthConnectResult.unavailable,
+          _ => GoogleHealthConnectResult.denied,
+        };
       }
 
       final workoutCount = platformResult.recentWorkoutCount ?? 0;

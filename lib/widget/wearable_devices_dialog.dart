@@ -453,6 +453,8 @@ class _WearableDevicesDialogContentState
       GoogleHealthConnectResult.androidOnly =>
         l10n.googleHealthAndroidOnlyMessage,
       GoogleHealthConnectResult.denied => l10n.googleHealthConnectDenied,
+      GoogleHealthConnectResult.unavailable =>
+        l10n.googleHealthConnectUnavailable,
       GoogleHealthConnectResult.unauthenticated =>
         l10n.googleHealthConnectAuthRequired,
       GoogleHealthConnectResult.successNoRecentWorkouts =>
