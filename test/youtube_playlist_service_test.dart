@@ -3,6 +3,44 @@ import 'package:grinta/services/youtube_config_service.dart';
 import 'package:grinta/services/youtube_playlist_service.dart';
 
 void main() {
+  group('YoutubePlaylistService.normalizePlaylistId', () {
+    test('keeps bare playlist ids', () {
+      expect(
+        YoutubePlaylistService.normalizePlaylistId('PLBCF2DAC6FFB574DE'),
+        'PLBCF2DAC6FFB574DE',
+      );
+    });
+
+    test('extracts list from watch / playlist URLs', () {
+      expect(
+        YoutubePlaylistService.normalizePlaylistId(
+          'https://www.youtube.com/playlist?list=PLBCF2DAC6FFB574DE',
+        ),
+        'PLBCF2DAC6FFB574DE',
+      );
+      expect(
+        YoutubePlaylistService.normalizePlaylistId(
+          'https://www.youtube.com/watch?v=GvgqDSnpRQM&list=PLBCF2DAC6FFB574DE',
+        ),
+        'PLBCF2DAC6FFB574DE',
+      );
+    });
+
+    test('returns null for empty / invalid', () {
+      expect(YoutubePlaylistService.normalizePlaylistId(''), isNull);
+      expect(YoutubePlaylistService.normalizePlaylistId('not a id'), isNull);
+    });
+  });
+
+  group('YoutubePlaylistService.playlistAtomUri', () {
+    test('uses videos.xml?playlist_id=', () {
+      final uri = YoutubePlaylistService.playlistAtomUri('PLBCF2DAC6FFB574DE');
+      expect(uri.host, 'www.youtube.com');
+      expect(uri.path, '/feeds/videos.xml');
+      expect(uri.queryParameters['playlist_id'], 'PLBCF2DAC6FFB574DE');
+    });
+  });
+
   group('YoutubePlaylistService.parsePlaylistAtomFeed', () {
     test('parses video id, title, description and thumbnail', () {
       const xml = '''
@@ -65,7 +103,10 @@ void main() {
     });
 
     test('returns empty for malformed feed', () {
-      expect(YoutubePlaylistService.parsePlaylistAtomFeed('<html></html>'), isEmpty);
+      expect(
+        YoutubePlaylistService.parsePlaylistAtomFeed('<html></html>'),
+        isEmpty,
+      );
       expect(YoutubePlaylistService.parsePlaylistAtomFeed(''), isEmpty);
     });
   });

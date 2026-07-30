@@ -165,9 +165,13 @@ class _TipsScreenState extends State<TipsScreen> {
           final result = snapshot.data;
           final videos = result?.videos ?? const <YoutubeVideoEntry>[];
           if (videos.isEmpty) {
+            final hasPlaylist =
+                (result?.playlistId ?? '').trim().isNotEmpty;
             return _TipsMessage(
               icon: Icons.lightbulb_outline_rounded,
-              title: l10n.settingsTipsEmpty,
+              title: hasPlaylist
+                  ? l10n.settingsTipsLoadError
+                  : l10n.settingsTipsEmpty,
               actionLabel: l10n.actionRetry,
               onAction: _reload,
             );

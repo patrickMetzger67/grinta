@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 
@@ -22,6 +24,15 @@ class YoutubePlaylistService {
 
   static final YoutubePlaylistService instance = YoutubePlaylistService();
 
+  /// Canonical public Atom/RSS URL for a playlist (no API key).
+  static Uri playlistAtomUri(String playlistId) {
+    return Uri.https(
+      'www.youtube.com',
+      '/feeds/videos.xml',
+      <String, String>{'playlist_id': playlistId},
+    );
+  }
+
   /// Fetches playlist videos, then curated fallback if needed.
   ///
   /// When both the live playlist feed and the curated Firestore list are
@@ -32,18 +43,24 @@ class YoutubePlaylistService {
   }) async {
     await _configService.ensureInitialized();
     final config = _configService.config;
-    final playlistId = config.playlistId.trim();
+    final playlistId = normalizePlaylistId(config.playlistId) ?? '';
     final curated = config.videos
         .where((v) => v.id.trim().isNotEmpty)
         .toList(growable: false);
 
     List<YoutubeVideoEntry> fromPlaylist = const [];
+    Object? playlistError;
     if (playlistId.isNotEmpty) {
       try {
         fromPlaylist = await fetchPlaylistVideos(playlistId);
       } catch (e, st) {
-        debugPrint('[YoutubePlaylist] feed failed: $e\n$st');
+        playlistError = e;
+        debugPrint('[YoutubePlaylist] feed failed for $playlistId: $e\n$st');
       }
+    } else if (config.playlistId.trim().isNotEmpty) {
+      debugPrint(
+        '[YoutubePlaylist] invalid playlistId="${config.playlistId.trim()}"',
+      );
     }
 
     if (fromPlaylist.isNotEmpty && curated.isNotEmpty) {
@@ -71,6 +88,7 @@ class YoutubePlaylistService {
       videos: const [],
       source: YoutubeTipsSource.empty,
       playlistId: playlistId.isEmpty ? null : playlistId,
+      error: playlistError?.toString(),
     );
   }
 
@@ -89,23 +107,124 @@ class YoutubePlaylistService {
     return List<YoutubeVideoEntry>.unmodifiable(merged);
   }
 
-  /// Public Atom feed for a playlist (no API key).
-  Future<List<YoutubeVideoEntry>> fetchPlaylistVideos(String playlistId) async {
-    final id = playlistId.trim();
-    if (id.isEmpty) return const [];
+  /// Extracts a playlist id from a bare id or common YouTube playlist URLs.
+  @visibleForTesting
+  static String? normalizePlaylistId(String? raw) {
+    final value = (raw ?? '').trim();
+    if (value.isEmpty) return null;
 
-    final uri = Uri.https(
-      'www.youtube.com',
-      '/feeds/playlist',
-      <String, String>{'list': id},
-    );
-
-    final response = await _client.get(uri).timeout(const Duration(seconds: 15));
-    if (response.statusCode != 200) {
-      throw StateError('playlist feed HTTP ${response.statusCode}');
+    // Bare playlist id (PL… / UU… / OL… etc.).
+    final bare = RegExp(r'^[A-Za-z0-9_-]{10,}$');
+    if (bare.hasMatch(value) && !value.contains('/') && !value.contains('.')) {
+      return value;
     }
 
-    return parsePlaylistAtomFeed(response.body);
+    final uri = Uri.tryParse(value);
+    if (uri == null) return null;
+
+    final list = uri.queryParameters['list']?.trim();
+    if (list != null && list.isNotEmpty) return list;
+
+    // /playlist?list=… already covered; also path segments like /playlist/PL…
+    final segments = uri.pathSegments;
+    for (var i = 0; i < segments.length; i++) {
+      final seg = segments[i];
+      if (bare.hasMatch(seg) &&
+          (seg.startsWith('PL') ||
+              seg.startsWith('UU') ||
+              seg.startsWith('OL') ||
+              seg.startsWith('LL'))) {
+        return seg;
+      }
+    }
+    return null;
+  }
+
+  /// Public Atom feed for a playlist (no API key).
+  ///
+  /// On web, YouTube's Atom host often blocks CORS — we then retry via a
+  /// JSON feed proxy that allows browser requests.
+  Future<List<YoutubeVideoEntry>> fetchPlaylistVideos(String playlistId) async {
+    final id = normalizePlaylistId(playlistId) ?? '';
+    if (id.isEmpty) return const [];
+
+    final atomUri = playlistAtomUri(id);
+
+    try {
+      final response =
+          await _client.get(atomUri).timeout(const Duration(seconds: 15));
+      if (response.statusCode == 200) {
+        final videos = parsePlaylistAtomFeed(response.body);
+        if (videos.isNotEmpty) return videos;
+      } else {
+        debugPrint(
+          '[YoutubePlaylist] atom HTTP ${response.statusCode} for $id',
+        );
+      }
+    } catch (e, st) {
+      debugPrint('[YoutubePlaylist] atom fetch error: $e\n$st');
+    }
+
+    // Web / CORS fallback: rss2json returns the same playlist with CORS.
+    return _fetchPlaylistViaRss2Json(id);
+  }
+
+  Future<List<YoutubeVideoEntry>> _fetchPlaylistViaRss2Json(
+    String playlistId,
+  ) async {
+    final rssUrl = playlistAtomUri(playlistId).toString();
+    final uri = Uri.https(
+      'api.rss2json.com',
+      '/v1/api.json',
+      <String, String>{'rss_url': rssUrl},
+    );
+
+    final response =
+        await _client.get(uri).timeout(const Duration(seconds: 20));
+    if (response.statusCode != 200) {
+      throw StateError('rss2json HTTP ${response.statusCode}');
+    }
+
+    final decoded = jsonDecode(response.body);
+    if (decoded is! Map) {
+      throw StateError('rss2json: unexpected payload');
+    }
+    final map = Map<String, dynamic>.from(decoded);
+    if (map['status']?.toString() != 'ok') {
+      throw StateError('rss2json status=${map['status']}');
+    }
+
+    final items = map['items'];
+    if (items is! List) return const [];
+
+    final videos = <YoutubeVideoEntry>[];
+    final seen = <String>{};
+    for (final item in items) {
+      if (item is! Map) continue;
+      final entry = Map<String, dynamic>.from(item);
+      final id = YoutubeConfigService.normalizeVideoId(
+            entry['guid']?.toString(),
+          ) ??
+          YoutubeConfigService.normalizeVideoId(entry['link']?.toString());
+      if (id == null || id.isEmpty || !seen.add(id)) continue;
+
+      final title = (entry['title'] ?? '').toString().trim();
+      final description = (entry['description'] ?? '').toString().trim();
+      final thumbnail = (entry['thumbnail'] ?? '').toString().trim();
+
+      videos.add(
+        YoutubeVideoEntry(
+          id: id,
+          title: title.isEmpty ? id : title,
+          description: description.isEmpty ? null : description,
+          thumbnailUrl: thumbnail.isEmpty
+              ? 'https://i.ytimg.com/vi/$id/hqdefault.jpg'
+              : thumbnail,
+        ),
+      );
+    }
+
+    return List<YoutubeVideoEntry>.unmodifiable(videos);
   }
 
   /// Parses YouTube playlist Atom/XML into [YoutubeVideoEntry]s.
@@ -242,11 +361,13 @@ class YoutubePlaylistResult {
     required this.videos,
     required this.source,
     this.playlistId,
+    this.error,
   });
 
   final List<YoutubeVideoEntry> videos;
   final YoutubeTipsSource source;
   final String? playlistId;
+  final String? error;
 
   bool get isEmpty => videos.isEmpty;
 }
