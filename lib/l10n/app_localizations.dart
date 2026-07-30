@@ -11180,6 +11180,42 @@ abstract class AppLocalizations {
   /// **'Passer'**
   String get youtubeTopVideoSkip;
 
+  /// No description provided for @youtubePromptRemindTomorrow.
+  ///
+  /// In fr, this message translates to:
+  /// **'Plus tard, me le rappeler demain'**
+  String get youtubePromptRemindTomorrow;
+
+  /// No description provided for @youtubePromptTipsHint.
+  ///
+  /// In fr, this message translates to:
+  /// **'Toutes les vidéos sont disponibles dans Astuces (menu Réglages).'**
+  String get youtubePromptTipsHint;
+
+  /// No description provided for @youtubeWelcomePlayerTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Bienvenue sur Grinta'**
+  String get youtubeWelcomePlayerTitle;
+
+  /// No description provided for @youtubeWelcomePlayerMessage.
+  ///
+  /// In fr, this message translates to:
+  /// **'Voici une courte vidéo pour démarrer en tant que joueur.'**
+  String get youtubeWelcomePlayerMessage;
+
+  /// No description provided for @youtubeWelcomeCoachTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Bienvenue coach'**
+  String get youtubeWelcomeCoachTitle;
+
+  /// No description provided for @youtubeWelcomeCoachMessage.
+  ///
+  /// In fr, this message translates to:
+  /// **'Voici une courte vidéo pour démarrer en tant que coach.'**
+  String get youtubeWelcomeCoachMessage;
+
   /// No description provided for @settingsTipsTitle.
   ///
   /// In fr, this message translates to:

@@ -6488,13 +6488,34 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get youtubeTopVideoMessage =>
-      'Entdecke den neuen Grinta-Tipp. Du kannst ihn hier ansehen oder überspringen.';
+      'Entdecke den neuen Grinta-Tipp. Du kannst ihn hier ansehen, überspringen oder dich morgen erinnern lassen.';
 
   @override
   String get youtubeTopVideoWatch => 'Ansehen';
 
   @override
   String get youtubeTopVideoSkip => 'Überspringen';
+
+  @override
+  String get youtubePromptRemindTomorrow => 'Später, morgen erinnern';
+
+  @override
+  String get youtubePromptTipsHint =>
+      'Alle Videos findest du unter Tipps (Menü Einstellungen).';
+
+  @override
+  String get youtubeWelcomePlayerTitle => 'Willkommen bei Grinta';
+
+  @override
+  String get youtubeWelcomePlayerMessage =>
+      'Hier ist ein kurzes Video für den Start als Spieler.';
+
+  @override
+  String get youtubeWelcomeCoachTitle => 'Willkommen Coach';
+
+  @override
+  String get youtubeWelcomeCoachMessage =>
+      'Hier ist ein kurzes Video für den Start als Coach.';
 
   @override
   String get settingsTipsTitle => 'Tipps';

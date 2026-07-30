@@ -1,15 +1,19 @@
 import 'package:flutter/material.dart';
 import 'package:grinta/core/extensions/l10n_extension.dart';
+import 'package:grinta/model/player.dart';
 import 'package:grinta/navigation/app_navigator.dart';
+import 'package:grinta/provider/appSession.dart';
+import 'package:grinta/screen/tips_screen.dart';
 import 'package:grinta/services/youtube_config_service.dart';
 import 'package:grinta/services/youtube_top_video_seen_service.dart';
 import 'package:grinta/util/app_theme.dart';
 import 'package:grinta/widget/youtube_embed_player.dart';
+import 'package:provider/provider.dart';
 
-/// Shows the weekly YouTube tip once per unseen [YoutubeConfig.topVideo].
+/// Shows welcome / tip-of-the-week YouTube prompts when unseen (or snooze expired).
 ///
-/// No prompt when `topVideo` is empty. Playback is in-app (embed), not an
-/// external browser tab.
+/// Priority: welcome (coach or player) → then [YoutubeConfig.topVideo].
+/// Playback is in-app (embed).
 class YoutubeTopVideoPrompt {
   YoutubeTopVideoPrompt._();
 
@@ -25,18 +29,8 @@ class YoutubeTopVideoPrompt {
     await YoutubeConfigService.instance.ensureInitialized();
     await YoutubeTopVideoSeenService.instance.ensureInitialized();
 
-    final config = YoutubeConfigService.instance.config;
-    // Bypass entirely when no featured video is configured.
-    final topVideoId =
-        YoutubeConfigService.normalizeVideoId(config.topVideo) ?? '';
-    if (topVideoId.isEmpty) return;
-
-    if (!YoutubeTopVideoSeenService.instance.shouldShow(topVideoId)) {
-      return;
-    }
-
-    final video = config.findVideo(topVideoId);
-    final title = (video?.title ?? '').trim();
+    final prompt = _resolvePrompt(rootContext);
+    if (prompt == null) return;
 
     if (!rootContext.mounted) return;
     _dialogOpen = true;
@@ -45,39 +39,147 @@ class YoutubeTopVideoPrompt {
         context: rootContext,
         useRootNavigator: true,
         barrierDismissible: false,
-        builder: (ctx) => _YoutubeTopVideoDialog(
-          videoId: topVideoId,
-          videoTitle: title.isEmpty ? null : title,
+        builder: (ctx) => _YoutubePromptDialog(
+          videoId: prompt.videoId,
+          videoTitle: prompt.videoTitle,
+          slot: prompt.slot,
+          dialogTitle: prompt.dialogTitle,
+          dialogMessage: prompt.dialogMessage,
         ),
       );
     } finally {
       _dialogOpen = false;
     }
   }
+
+  static _ResolvedPrompt? _resolvePrompt(BuildContext context) {
+    final config = YoutubeConfigService.instance.config;
+    final seen = YoutubeTopVideoSeenService.instance;
+    final l10n = context.l10n;
+
+    Player? player;
+    try {
+      player = context.read<AppSession>().selectedPlayer;
+    } catch (_) {
+      player = null;
+    }
+
+    final isCoach = player?.isEducatorOrCoach == true;
+    final welcomeId = YoutubeConfigService.normalizeVideoId(
+          isCoach ? config.welcomeCoach : config.welcomePlayer,
+        ) ??
+        '';
+    final welcomeSlot = isCoach
+        ? YoutubePromptSlot.welcomeCoach
+        : YoutubePromptSlot.welcomePlayer;
+
+    if (welcomeId.isNotEmpty && seen.shouldShow(welcomeId, slot: welcomeSlot)) {
+      final video = config.findVideo(welcomeId);
+      final title = (video?.title ?? '').trim();
+      return _ResolvedPrompt(
+        videoId: welcomeId,
+        videoTitle: title.isEmpty ? null : title,
+        slot: welcomeSlot,
+        dialogTitle: isCoach
+            ? l10n.youtubeWelcomeCoachTitle
+            : l10n.youtubeWelcomePlayerTitle,
+        dialogMessage: isCoach
+            ? l10n.youtubeWelcomeCoachMessage
+            : l10n.youtubeWelcomePlayerMessage,
+      );
+    }
+
+    final topVideoId =
+        YoutubeConfigService.normalizeVideoId(config.topVideo) ?? '';
+    if (topVideoId.isEmpty) return null;
+    if (!seen.shouldShow(topVideoId, slot: YoutubePromptSlot.topVideo)) {
+      return null;
+    }
+
+    final video = config.findVideo(topVideoId);
+    final title = (video?.title ?? '').trim();
+    return _ResolvedPrompt(
+      videoId: topVideoId,
+      videoTitle: title.isEmpty ? null : title,
+      slot: YoutubePromptSlot.topVideo,
+      dialogTitle: l10n.youtubeTopVideoTitle,
+      dialogMessage: l10n.youtubeTopVideoMessage,
+    );
+  }
 }
 
-class _YoutubeTopVideoDialog extends StatefulWidget {
-  const _YoutubeTopVideoDialog({
+class _ResolvedPrompt {
+  const _ResolvedPrompt({
     required this.videoId,
+    required this.slot,
+    required this.dialogTitle,
+    required this.dialogMessage,
     this.videoTitle,
   });
 
   final String videoId;
   final String? videoTitle;
-
-  @override
-  State<_YoutubeTopVideoDialog> createState() => _YoutubeTopVideoDialogState();
+  final YoutubePromptSlot slot;
+  final String dialogTitle;
+  final String dialogMessage;
 }
 
-class _YoutubeTopVideoDialogState extends State<_YoutubeTopVideoDialog> {
+class _YoutubePromptDialog extends StatefulWidget {
+  const _YoutubePromptDialog({
+    required this.videoId,
+    required this.slot,
+    required this.dialogTitle,
+    required this.dialogMessage,
+    this.videoTitle,
+  });
+
+  final String videoId;
+  final String? videoTitle;
+  final YoutubePromptSlot slot;
+  final String dialogTitle;
+  final String dialogMessage;
+
+  @override
+  State<_YoutubePromptDialog> createState() => _YoutubePromptDialogState();
+}
+
+class _YoutubePromptDialogState extends State<_YoutubePromptDialog> {
   bool _busy = false;
 
   Future<void> _closeAndMarkSeen() async {
     if (_busy) return;
     setState(() => _busy = true);
-    await YoutubeTopVideoSeenService.instance.markSeen(widget.videoId);
+    await YoutubeTopVideoSeenService.instance.markSeen(
+      widget.videoId,
+      slot: widget.slot,
+    );
     if (!mounted) return;
     Navigator.of(context, rootNavigator: true).pop();
+  }
+
+  Future<void> _closeAndSnoozeUntilTomorrow() async {
+    if (_busy) return;
+    setState(() => _busy = true);
+    await YoutubeTopVideoSeenService.instance.snoozeUntilTomorrow(
+      widget.videoId,
+      slot: widget.slot,
+    );
+    if (!mounted) return;
+    Navigator.of(context, rootNavigator: true).pop();
+  }
+
+  Future<void> _openTips() async {
+    if (_busy) return;
+    // Keep the prompt un-seen so it can come back tomorrow if user only browses.
+    await YoutubeTopVideoSeenService.instance.snoozeUntilTomorrow(
+      widget.videoId,
+      slot: widget.slot,
+    );
+    if (!mounted) return;
+    Navigator.of(context, rootNavigator: true).pop();
+    final rootContext = appNavigatorKey.currentContext;
+    if (rootContext == null || !rootContext.mounted) return;
+    await openTipsScreen(rootContext);
   }
 
   @override
@@ -109,7 +211,7 @@ class _YoutubeTopVideoDialogState extends State<_YoutubeTopVideoDialog> {
                   const SizedBox(width: 10),
                   Expanded(
                     child: Text(
-                      l10n.youtubeTopVideoTitle,
+                      widget.dialogTitle,
                       style: textTheme.titleLarge?.copyWith(
                         color: colors.textPrimary,
                         fontWeight: FontWeight.w700,
@@ -135,8 +237,16 @@ class _YoutubeTopVideoDialogState extends State<_YoutubeTopVideoDialog> {
               ],
               const SizedBox(height: 8),
               Text(
-                l10n.youtubeTopVideoMessage,
+                widget.dialogMessage,
                 style: textTheme.bodyMedium?.copyWith(
+                  color: colors.textSecondary,
+                  height: 1.35,
+                ),
+              ),
+              const SizedBox(height: 8),
+              Text(
+                l10n.youtubePromptTipsHint,
+                style: textTheme.bodySmall?.copyWith(
                   color: colors.textSecondary,
                   height: 1.35,
                 ),
@@ -145,11 +255,28 @@ class _YoutubeTopVideoDialogState extends State<_YoutubeTopVideoDialog> {
               YoutubeEmbedPlayer(videoId: widget.videoId),
               const SizedBox(height: 12),
               Align(
-                alignment: Alignment.centerRight,
-                child: TextButton(
-                  onPressed: _busy ? null : _closeAndMarkSeen,
-                  child: Text(l10n.youtubeTopVideoSkip),
+                alignment: Alignment.centerLeft,
+                child: TextButton.icon(
+                  onPressed: _busy ? null : _openTips,
+                  icon: const Icon(Icons.lightbulb_outline_rounded, size: 18),
+                  label: Text(l10n.settingsTipsTitle),
                 ),
+              ),
+              const SizedBox(height: 4),
+              Wrap(
+                alignment: WrapAlignment.end,
+                spacing: 8,
+                runSpacing: 4,
+                children: [
+                  TextButton(
+                    onPressed: _busy ? null : _closeAndSnoozeUntilTomorrow,
+                    child: Text(l10n.youtubePromptRemindTomorrow),
+                  ),
+                  TextButton(
+                    onPressed: _busy ? null : _closeAndMarkSeen,
+                    child: Text(l10n.youtubeTopVideoSkip),
+                  ),
+                ],
               ),
             ],
           ),

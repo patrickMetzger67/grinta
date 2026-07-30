@@ -6390,13 +6390,34 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get youtubeTopVideoMessage =>
-      'Check out the latest Grinta tip. You can watch it here or skip it.';
+      'Check out the latest Grinta tip. You can watch it here, skip it, or be reminded tomorrow.';
 
   @override
   String get youtubeTopVideoWatch => 'Watch';
 
   @override
   String get youtubeTopVideoSkip => 'Skip';
+
+  @override
+  String get youtubePromptRemindTomorrow => 'Later, remind me tomorrow';
+
+  @override
+  String get youtubePromptTipsHint =>
+      'All videos are available in Tips (Settings menu).';
+
+  @override
+  String get youtubeWelcomePlayerTitle => 'Welcome to Grinta';
+
+  @override
+  String get youtubeWelcomePlayerMessage =>
+      'Here is a short video to get started as a player.';
+
+  @override
+  String get youtubeWelcomeCoachTitle => 'Welcome coach';
+
+  @override
+  String get youtubeWelcomeCoachMessage =>
+      'Here is a short video to get started as a coach.';
 
   @override
   String get settingsTipsTitle => 'Tips';
