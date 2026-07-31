@@ -171,5 +171,16 @@
         <intent>
             <action android:name="androidx.health.ACTION_SHOW_PERMISSIONS_RATIONALE" />
         </intent>
+        <!-- Calendar open intents (Android 11+ package visibility). -->
+        <intent>
+            <action android:name="android.intent.action.VIEW" />
+            <data android:scheme="content" android:host="com.android.calendar" />
+        </intent>
+        <intent>
+            <action android:name="android.intent.action.MAIN" />
+            <category android:name="android.intent.category.APP_CALENDAR" />
+        </intent>
+        <package android:name="com.google.android.calendar" />
+        <package android:name="com.samsung.android.calendar" />
     </queries>
 </manifest>

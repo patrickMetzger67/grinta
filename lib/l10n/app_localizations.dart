@@ -7021,6 +7021,12 @@ abstract class AppLocalizations {
   /// **'Ouvrir le calendrier'**
   String get calendarSyncOpenCalendar;
 
+  /// No description provided for @calendarSyncOpenCalendarFailed.
+  ///
+  /// In fr, this message translates to:
+  /// **'Impossible d’ouvrir l’application Calendrier. Ouvre-la manuellement et coche le calendrier Grinta.'**
+  String get calendarSyncOpenCalendarFailed;
+
   /// No description provided for @calendarSyncHelpUnderstood.
   ///
   /// In fr, this message translates to:

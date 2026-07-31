@@ -51,10 +51,21 @@ class GrintaDeviceCalendarPlatform {
     }
   }
 
-  static Future<bool> openCalendarApp() async {
+  /// Opens the device calendar app focused on [calendarId] when possible.
+  ///
+  /// On Android this ensures the Grinta calendar is visible, then opens the
+  /// next (or latest) event in that calendar so the user lands where synced
+  /// agenda items actually live — not only the default Google account view.
+  static Future<bool> openCalendarApp({String? calendarId}) async {
     if (!_isAndroid) return false;
     try {
-      final result = await _channel.invokeMethod<bool>('openCalendarApp');
+      final result = await _channel.invokeMethod<bool>(
+        'openCalendarApp',
+        {
+          if (calendarId != null && calendarId.trim().isNotEmpty)
+            'calendarId': calendarId.trim(),
+        },
+      );
       return result == true;
     } catch (e) {
       debugPrint('GrintaDeviceCalendarPlatform.openCalendarApp: $e');
