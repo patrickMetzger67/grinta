@@ -29,24 +29,24 @@ class OpponentAnalysisReportPdfService {
     final generatedLabel =
         DateFormat('yyyy-MM-dd HH:mm').format(DateTime.now());
     final kickoffLabel =
-        DateFormat.yMMMMEEEEd(localeCode).add_Hm().format(data.upcomingKickoff);
-    final dateFmt = DateFormat.yMMMd(localeCode);
+        DateFormat('yyyy-MM-dd HH:mm').format(data.upcomingKickoff);
+    final dateFmt = DateFormat('yyyy-MM-dd');
 
     doc.addPage(
       pw.MultiPage(
         pageFormat: PdfPageFormat.a4,
         margin: const pw.EdgeInsets.fromLTRB(24, 20, 24, 20),
         header: (context) => _header(
-          title: 'Analyse adversaire — ${data.opponent.displayName}',
+          title: 'Analyse adversaire - ${data.opponent.displayName}',
           subtitle:
-              '${data.teamName}  ·  ${data.competitionLabel}  ·  Match $kickoffLabel  ·  gen. $generatedLabel',
+              '${data.teamName}  |  ${data.competitionLabel}  |  Match $kickoffLabel  |  gen. $generatedLabel',
         ),
         footer: (context) => _footer(context),
         build: (context) {
           return [
             _sectionTitle('Tendance'),
             pw.Text(
-              _trendLabel(data.trend.direction),
+              _ascii(_trendLabel(data.trend.direction)),
               style: pw.TextStyle(
                 color: _trendColor(data.trend.direction),
                 fontSize: 13,
@@ -55,21 +55,21 @@ class OpponentAnalysisReportPdfService {
             ),
             pw.SizedBox(height: 14),
             _wdlBlock(
-              title: 'Saison complète',
+              title: 'Saison complete',
               period: data.wdl.fullSeason,
             ),
             pw.SizedBox(height: 10),
             _wdlBlock(
-              title: '1ère partie',
+              title: '1ere partie',
               period: data.wdl.firstHalf,
             ),
             pw.SizedBox(height: 10),
             _wdlBlock(
-              title: '2ème partie',
+              title: '2eme partie',
               period: data.wdl.secondHalf,
             ),
             pw.SizedBox(height: 18),
-            _sectionTitle('Résultats — Victoires'),
+            _sectionTitle('Resultats - Victoires'),
             ..._matchList(
               matches: data.wdl.fullSeason.matches,
               outcome: MatchOutcome.win,
@@ -77,7 +77,7 @@ class OpponentAnalysisReportPdfService {
               dateFmt: dateFmt,
             ),
             pw.SizedBox(height: 12),
-            _sectionTitle('Résultats — Nuls'),
+            _sectionTitle('Resultats - Nuls'),
             ..._matchList(
               matches: data.wdl.fullSeason.matches,
               outcome: MatchOutcome.draw,
@@ -85,7 +85,7 @@ class OpponentAnalysisReportPdfService {
               dateFmt: dateFmt,
             ),
             pw.SizedBox(height: 12),
-            _sectionTitle('Résultats — Défaites'),
+            _sectionTitle('Resultats - Defaites'),
             ..._matchList(
               matches: data.wdl.fullSeason.matches,
               outcome: MatchOutcome.loss,
@@ -93,7 +93,7 @@ class OpponentAnalysisReportPdfService {
               dateFmt: dateFmt,
             ),
             pw.SizedBox(height: 18),
-            _sectionTitle('Évolution du classement'),
+            _sectionTitle('Evolution du classement'),
             _rankingEvolution(data),
           ];
         },
@@ -105,7 +105,7 @@ class OpponentAnalysisReportPdfService {
         pageFormat: PdfPageFormat.a4,
         margin: const pw.EdgeInsets.fromLTRB(24, 20, 24, 20),
         header: (context) => _header(
-          title: 'Joueurs — ${data.opponent.displayName}',
+          title: 'Joueurs - ${data.opponent.displayName}',
           subtitle: data.competitionLabel,
         ),
         footer: (context) => _footer(context),
@@ -114,11 +114,13 @@ class OpponentAnalysisReportPdfService {
             _sectionTitle('Effectif adversaire'),
             _playersTable(data.players),
             pw.SizedBox(height: 18),
-            _sectionTitle('Equipe type — Titulaires probables'),
+            _sectionTitle('Equipe type - Titulaires probables'),
             pw.Text(
-              data.typicalTeam.hasSquadData
-                  ? 'Basé sur ${data.typicalTeam.matchesWithSquadData} matchs avec composition'
-                  : 'Pas assez de compositions disponibles',
+              _ascii(
+                data.typicalTeam.hasSquadData
+                    ? 'Base sur ${data.typicalTeam.matchesWithSquadData} matchs avec composition'
+                    : 'Pas assez de compositions disponibles',
+              ),
               style: const pw.TextStyle(color: _textSecondary, fontSize: 10),
             ),
             pw.SizedBox(height: 8),
@@ -127,7 +129,7 @@ class OpponentAnalysisReportPdfService {
               startsLabel: true,
             ),
             pw.SizedBox(height: 14),
-            _sectionTitle('Equipe type — Remplaçants probables'),
+            _sectionTitle('Equipe type - Remplacants probables'),
             _typicalTeamTable(
               data.typicalTeam.probableSubstitutes,
               startsLabel: false,
@@ -151,7 +153,7 @@ class OpponentAnalysisReportPdfService {
         crossAxisAlignment: pw.CrossAxisAlignment.start,
         children: [
           pw.Text(
-            title,
+            _ascii(title),
             style: pw.TextStyle(
               color: _textPrimary,
               fontSize: 16,
@@ -160,7 +162,7 @@ class OpponentAnalysisReportPdfService {
           ),
           pw.SizedBox(height: 2),
           pw.Text(
-            subtitle,
+            _ascii(subtitle),
             style: const pw.TextStyle(color: _textSecondary, fontSize: 9),
           ),
         ],
@@ -173,7 +175,7 @@ class OpponentAnalysisReportPdfService {
       alignment: pw.Alignment.centerRight,
       margin: const pw.EdgeInsets.only(top: 8),
       child: pw.Text(
-        'Grinta  ·  ${context.pageNumber}/${context.pagesCount}',
+        _ascii('Grinta  |  ${context.pageNumber}/${context.pagesCount}'),
         style: const pw.TextStyle(color: _textSecondary, fontSize: 9),
       ),
     );
@@ -183,7 +185,7 @@ class OpponentAnalysisReportPdfService {
     return pw.Padding(
       padding: const pw.EdgeInsets.only(bottom: 6),
       child: pw.Text(
-        title,
+        _ascii(title),
         style: pw.TextStyle(
           color: _primary,
           fontSize: 13,
@@ -200,7 +202,7 @@ class OpponentAnalysisReportPdfService {
     final counts = period.counts;
     final total = counts.total;
     final avg = counts.avgPointsPerMatch;
-    final avgLabel = avg == null ? '—' : avg.toStringAsFixed(2);
+    final avgLabel = avg == null ? '-' : avg.toStringAsFixed(2);
 
     return pw.Container(
       padding: const pw.EdgeInsets.all(10),
@@ -213,7 +215,7 @@ class OpponentAnalysisReportPdfService {
         crossAxisAlignment: pw.CrossAxisAlignment.start,
         children: [
           pw.Text(
-            '$title — $total matchs — Σ $avgLabel',
+            _ascii('$title - $total matchs - moy. $avgLabel'),
             style: pw.TextStyle(
               fontWeight: pw.FontWeight.bold,
               fontSize: 11,
@@ -224,16 +226,18 @@ class OpponentAnalysisReportPdfService {
           _wdlBar(counts),
           pw.SizedBox(height: 6),
           pw.Text(
-            'Victoires ${counts.wins} (${_pct(counts.wins, total)})  ·  '
-            'Nuls ${counts.draws} (${_pct(counts.draws, total)})  ·  '
-            'Défaites ${counts.losses} (${_pct(counts.losses, total)})',
+            _ascii(
+              'Victoires ${counts.wins} (${_pct(counts.wins, total)})  |  '
+              'Nuls ${counts.draws} (${_pct(counts.draws, total)})  |  '
+              'Defaites ${counts.losses} (${_pct(counts.losses, total)})',
+            ),
             style: const pw.TextStyle(color: _textSecondary, fontSize: 9),
           ),
           if (period.matches.isEmpty)
             pw.Padding(
               padding: const pw.EdgeInsets.only(top: 4),
               child: pw.Text(
-                'Aucun match sur cette période.',
+                _ascii('Aucun match sur cette periode.'),
                 style: const pw.TextStyle(color: _textSecondary, fontSize: 9),
               ),
             ),
@@ -245,14 +249,14 @@ class OpponentAnalysisReportPdfService {
   pw.Widget _rankingEvolution(OpponentAnalysisReportData data) {
     if (data.rankingSeries.isEmpty || data.rankingMatchdays.isEmpty) {
       return pw.Text(
-        'Aucun classement disponible pour cette compétition.',
+        _ascii('Aucun classement disponible pour cette competition.'),
         style: const pw.TextStyle(color: _textSecondary, fontSize: 10),
       );
     }
 
-    final headers = <String>['Journée'];
+    final headers = <String>[_ascii('Journee')];
     for (final series in data.rankingSeries) {
-      headers.add(series.label);
+      headers.add(_ascii(series.label));
     }
 
     final rows = <List<String>>[];
@@ -267,10 +271,12 @@ class OpponentAnalysisReportPdfService {
           }
         }
         if (point?.rank == null) {
-          row.add('—');
+          row.add('-');
         } else {
           final pts = point!.pts;
-          row.add(pts == null ? '${point.rank}' : '${point.rank}e (${pts} pts)');
+          row.add(
+            pts == null ? '${point.rank}' : '${point.rank}e (${pts} pts)',
+          );
         }
       }
       rows.add(row);
@@ -280,9 +286,11 @@ class OpponentAnalysisReportPdfService {
       crossAxisAlignment: pw.CrossAxisAlignment.start,
       children: [
         pw.Text(
-          data.rankingSeries
-              .map((s) => s.isOwnTeam ? '${s.label} (toi)' : s.label)
-              .join('  ·  '),
+          _ascii(
+            data.rankingSeries
+                .map((s) => s.isOwnTeam ? '${s.label} (toi)' : s.label)
+                .join('  |  '),
+          ),
           style: const pw.TextStyle(color: _textSecondary, fontSize: 9),
         ),
         pw.SizedBox(height: 6),
@@ -350,7 +358,7 @@ class OpponentAnalysisReportPdfService {
     if (filtered.isEmpty) {
       return [
         pw.Text(
-          'Aucun match.',
+          _ascii('Aucun match.'),
           style: const pw.TextStyle(color: _textSecondary, fontSize: 10),
         ),
       ];
@@ -381,12 +389,14 @@ class OpponentAnalysisReportPdfService {
             crossAxisAlignment: pw.CrossAxisAlignment.start,
             children: [
               pw.Text(
-                _matchDateLabel(match, dateFmt),
+                _ascii(_matchDateLabel(match, dateFmt)),
                 style: const pw.TextStyle(color: _textSecondary, fontSize: 9),
               ),
               pw.SizedBox(height: 2),
               pw.Text(
-                '${match.team1 ?? '?'}  ${match.homeScore ?? '-'} - ${match.outSideScore ?? '-'}  ${match.team2 ?? '?'}',
+                _ascii(
+                  '${match.team1 ?? '?'}  ${match.homeScore ?? '-'} - ${match.outSideScore ?? '-'}  ${match.team2 ?? '?'}',
+                ),
                 style: pw.TextStyle(
                   color: _textPrimary,
                   fontSize: 10,
@@ -395,7 +405,7 @@ class OpponentAnalysisReportPdfService {
               ),
               if ((match.chType ?? '').trim().isNotEmpty)
                 pw.Text(
-                  match.chType!.trim(),
+                  _ascii(match.chType!.trim()),
                   style: const pw.TextStyle(color: _textSecondary, fontSize: 9),
                 ),
             ],
@@ -413,7 +423,7 @@ class OpponentAnalysisReportPdfService {
   pw.Widget _playersTable(List<OpponentAnalysisPlayerRow> players) {
     if (players.isEmpty) {
       return pw.Text(
-        'Aucun joueur.',
+        _ascii('Aucun joueur.'),
         style: const pw.TextStyle(color: _textSecondary, fontSize: 10),
       );
     }
@@ -424,7 +434,7 @@ class OpponentAnalysisReportPdfService {
       data: [
         for (final player in rows)
           [
-            player.displayName,
+            _ascii(player.displayName),
             '${player.convocations}',
             '${player.starts}',
             '${player.minutesPlayed}',
@@ -453,7 +463,7 @@ class OpponentAnalysisReportPdfService {
   }) {
     if (starters.isEmpty) {
       return pw.Text(
-        'Aucune donnée.',
+        _ascii('Aucune donnee.'),
         style: const pw.TextStyle(color: _textSecondary, fontSize: 10),
       );
     }
@@ -466,7 +476,7 @@ class OpponentAnalysisReportPdfService {
         for (var i = 0; i < starters.length; i++)
           [
             '${i + 1}',
-            starters[i].displayName,
+            _ascii(starters[i].displayName),
             startsLabel
                 ? '${starters[i].titularCount}/${starters[i].matchesWithSquadData}'
                 : '${starters[i].substituteCount}/${starters[i].matchesWithSquadData}',
@@ -501,7 +511,7 @@ class OpponentAnalysisReportPdfService {
       case TeamWdlTrendDirection.flat:
         return 'Stable';
       case TeamWdlTrendDirection.insufficientData:
-        return 'Données insuffisantes';
+        return 'Donnees insuffisantes';
     }
   }
 
@@ -516,5 +526,44 @@ class OpponentAnalysisReportPdfService {
       case TeamWdlTrendDirection.insufficientData:
         return _textSecondary;
     }
+  }
+
+  /// Helvetica / WinAnsi-safe text (same approach as coach workload PDF).
+  String _ascii(String value) {
+    return value
+        .replaceAll('Σ', 'moy.')
+        .replaceAll('·', '|')
+        .replaceAll('é', 'e')
+        .replaceAll('è', 'e')
+        .replaceAll('ê', 'e')
+        .replaceAll('ë', 'e')
+        .replaceAll('à', 'a')
+        .replaceAll('â', 'a')
+        .replaceAll('ä', 'a')
+        .replaceAll('ù', 'u')
+        .replaceAll('û', 'u')
+        .replaceAll('ü', 'u')
+        .replaceAll('ô', 'o')
+        .replaceAll('ö', 'o')
+        .replaceAll('î', 'i')
+        .replaceAll('ï', 'i')
+        .replaceAll('ç', 'c')
+        .replaceAll('ñ', 'n')
+        .replaceAll('É', 'E')
+        .replaceAll('È', 'E')
+        .replaceAll('Ê', 'E')
+        .replaceAll('À', 'A')
+        .replaceAll('Â', 'A')
+        .replaceAll('Ù', 'U')
+        .replaceAll('Ô', 'O')
+        .replaceAll('Î', 'I')
+        .replaceAll('Ç', 'C')
+        .replaceAll('’', "'")
+        .replaceAll('‘', "'")
+        .replaceAll('“', '"')
+        .replaceAll('”', '"')
+        .replaceAll('–', '-')
+        .replaceAll('—', '-')
+        .replaceAll('…', '...');
   }
 }

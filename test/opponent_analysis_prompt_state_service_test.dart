@@ -15,12 +15,17 @@ void main() {
       expect(service.shouldPromptMatch('match-1'), isTrue);
     });
 
-    test('shouldPromptMatch is false after sent or skipped', () {
-      service.debugReset(matchStatus: {'match-1': 'sent'});
+    test('shouldPromptMatch is false after accepted or skipped', () {
+      service.debugReset(matchStatus: {'match-1': 'accepted'});
       expect(service.shouldPromptMatch('match-1'), isFalse);
 
       service.debugReset(matchStatus: {'match-2': 'skipped'});
       expect(service.shouldPromptMatch('match-2'), isFalse);
+    });
+
+    test('legacy sent status still allows prompt (recovery)', () {
+      service.debugReset(matchStatus: {'match-1': 'sent'});
+      expect(service.shouldPromptMatch('match-1'), isTrue);
     });
 
     test('isSnoozed respects snoozeUntilDate (exclusive of that day)', () {

@@ -129,6 +129,7 @@ class OpponentAnalysisReportPrompt {
   static Future<void> startPolling() async {
     if (_polling || _offeredThisSession || _settledNoOffer) return;
     _polling = true;
+    debugPrint('OpponentAnalysisReportPrompt: startPolling (home shell)');
     try {
       for (var attempt = 0; attempt < 20; attempt++) {
         if (_offeredThisSession || _settledNoOffer) return;
@@ -188,15 +189,23 @@ class OpponentAnalysisReportPrompt {
       return;
     }
 
+    // On web, the Agenda tab is not mounted until selected — so live agenda
+    // items may be empty. Always load this week independently as well.
+    final loadedItems = await _loadWeekMatchItems(session, teams);
+    final merged = <String, AgendaItem>{};
+    for (final item in [..._latestAgendaItems, ...loadedItems]) {
+      merged['${item.type.name}_${item.id}'] = item;
+    }
+
     final candidate = _pickCandidate(
       session: session,
       teams: teams,
-      items: _latestAgendaItems,
+      items: merged.values.toList(),
     );
     if (candidate == null) {
       debugPrint(
-        'OpponentAnalysisReportPrompt: no candidate in '
-        '${_latestAgendaItems.length} agenda item(s) yet',
+        'OpponentAnalysisReportPrompt: no candidate '
+        '(live=${_latestAgendaItems.length}, loaded=${loadedItems.length})',
       );
       return;
     }
@@ -240,6 +249,32 @@ class OpponentAnalysisReportPrompt {
     return weekStart
         .add(const Duration(days: 7))
         .subtract(const Duration(milliseconds: 1));
+  }
+
+  static Future<List<AgendaItem>> _loadWeekMatchItems(
+    AppSession session,
+    List<Team> teams,
+  ) async {
+    final now = DateTime.now();
+    final weekStart = _weekStartMonday(now);
+    final weekEnd = _weekEndSunday(weekStart);
+    final seasonId = session.selectedSeason?.ref?.id?.trim() ?? '';
+    try {
+      final items = await AgendaService().loadAgendaItems(
+        teams: teams,
+        seasonId: seasonId.isEmpty ? null : seasonId,
+        start: weekStart,
+        end: weekEnd,
+      );
+      debugPrint(
+        'OpponentAnalysisReportPrompt: loaded ${items.length} agenda items '
+        'for week $weekStart → $weekEnd',
+      );
+      return items;
+    } catch (e, st) {
+      debugPrint('OpponentAnalysisReportPrompt: loadAgendaItems failed: $e\n$st');
+      return const [];
+    }
   }
 
   static Team? _teamForMatch({
@@ -432,11 +467,9 @@ class _OpponentAnalysisPromptDialogState
     final session = context.read<AppSession>();
 
     try {
-      await OpponentAnalysisPromptStateService.instance.markSent(_matchId);
-
       final competition = await _resolveCompetition(session);
       if (competition == null) {
-        throw StateError('competition unresolved');
+        throw StateError('competition_unresolved');
       }
 
       final data = await OpponentAnalysisReportDataService.instance.build(
@@ -450,20 +483,32 @@ class _OpponentAnalysisPromptDialogState
         teamName: widget.candidate.team.name,
       );
 
+      // Only after the report payload is ready: don't re-ask for this match.
+      await OpponentAnalysisPromptStateService.instance.markAccepted(_matchId);
+
       if (!mounted) return;
       Navigator.of(context, rootNavigator: true).pop();
 
-      await showOpponentAnalysisReportEmailDialog(
+      final sent = await showOpponentAnalysisReportEmailDialog(
         context: appNavigatorKey.currentContext ?? context,
         data: data,
       );
-    } catch (e) {
-      debugPrint('Opponent analysis prompt yes failed: $e');
+      if (sent) {
+        await OpponentAnalysisPromptStateService.instance.markSent(_matchId);
+      }
+    } catch (e, st) {
+      debugPrint('Opponent analysis prompt yes failed: $e\n$st');
       if (mounted) {
+        final detail = e.toString();
         messenger?.showSnackBar(
           SnackBar(
-            content: Text(l10n.opponentAnalysisReportSendFailed),
+            content: Text(
+              detail.contains('competition_unresolved')
+                  ? l10n.opponentAnalysisReportSendFailed
+                  : '${l10n.opponentAnalysisReportSendFailed}\n$detail',
+            ),
             backgroundColor: colors.danger,
+            duration: const Duration(seconds: 6),
           ),
         );
       }

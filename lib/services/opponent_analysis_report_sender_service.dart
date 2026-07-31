@@ -97,9 +97,8 @@ class OpponentAnalysisReportSenderService {
       }
 
       final config = await InvitationConfig.resolve();
-      final kickoffLabel = DateFormat.yMMMMEEEEd(localeCode)
-          .add_Hm()
-          .format(data.upcomingKickoff);
+      final kickoffLabel =
+          DateFormat('yyyy-MM-dd HH:mm').format(data.upcomingKickoff);
       final emailContent = OpponentAnalysisReportEmailBuilder.build(
         l10n: l10n,
         config: config,

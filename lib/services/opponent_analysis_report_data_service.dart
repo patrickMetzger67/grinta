@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:grinta/model/match.dart';
 import 'package:grinta/model/team.dart';
 import 'package:grinta/services/clubService.dart';
@@ -120,75 +121,114 @@ class OpponentAnalysisReportDataService {
     String? teamName,
   }) async {
     final resolvedTeamName =
-        (teamName ?? team.name ?? 'Équipe').trim();
+        (teamName ?? team.name ?? 'Equipe').trim();
 
-    final wdlFuture = _competitionStatsService.computeWdlStatsForTeam(
-      team: team,
-      seasonId: seasonId,
-      competitionUrl: competitionUrl,
-      opponentFilter: opponent,
-    );
-    final playersFuture = _playerStatsService.computePlayerStatsForTeam(
-      team: team,
-      seasonId: seasonId,
-      competitionUrl: competitionUrl,
-      opponentFilter: opponent,
-      useMatchStats: true,
-      forceRefresh: true,
-    );
-    final typicalFuture = _typicalTeamService.computeTypicalTeamForOpponent(
-      team: team,
-      seasonId: seasonId,
-      competitionUrl: competitionUrl,
-      opponentFilter: opponent,
-      forceRefresh: true,
-    );
-    final rankingFuture = _loadRankingEvolution(
+    final teamId = team.keyTeam?.trim() ?? '';
+
+    TeamWdlStatsByPeriod wdl;
+    try {
+      wdl = await _competitionStatsService.computeWdlStatsForTeam(
+        team: team,
+        seasonId: seasonId,
+        competitionUrl: competitionUrl,
+        opponentFilter: opponent,
+      );
+    } catch (e, st) {
+      debugPrint('OpponentAnalysisReportDataService WDL failed: $e\n$st');
+      wdl = TeamWdlStatsByPeriod(
+        fullSeason: const TeamWdlPeriodData(
+          counts: TeamWdlCounts(),
+          matches: [],
+        ),
+        firstHalf: const TeamWdlPeriodData(
+          counts: TeamWdlCounts(),
+          matches: [],
+        ),
+        secondHalf: const TeamWdlPeriodData(
+          counts: TeamWdlCounts(),
+          matches: [],
+        ),
+        teamId: teamId,
+        clubId: team.clubId,
+        perspectiveDisplayName: opponent.displayName,
+      );
+    }
+
+    List<OpponentAnalysisPlayerRow> playerRows = const [];
+    try {
+      final playersResult = await _playerStatsService.computePlayerStatsForTeam(
+        team: team,
+        seasonId: seasonId,
+        competitionUrl: competitionUrl,
+        opponentFilter: opponent,
+        useMatchStats: true,
+        forceRefresh: true,
+      );
+      playerRows = playersResult.statsByPlayerId.values
+          .map(
+            (stats) => OpponentAnalysisPlayerRow(
+              displayName: (stats.displayName?.trim().isNotEmpty == true)
+                  ? stats.displayName!.trim()
+                  : (stats.player != null
+                      ? playerDisplayName(stats.player!).trim()
+                      : stats.playerId),
+              convocations: stats.convocations,
+              starts: stats.starts,
+              minutesPlayed: stats.minutesPlayed,
+            ),
+          )
+          .where((row) => row.displayName.isNotEmpty)
+          .toList()
+        ..sort((a, b) {
+          final byStarts = b.starts.compareTo(a.starts);
+          if (byStarts != 0) return byStarts;
+          final byConvo = b.convocations.compareTo(a.convocations);
+          if (byConvo != 0) return byConvo;
+          return a.displayName
+              .toLowerCase()
+              .compareTo(b.displayName.toLowerCase());
+        });
+    } catch (e, st) {
+      debugPrint('OpponentAnalysisReportDataService players failed: $e\n$st');
+    }
+
+    TypicalTeamResult typicalTeam;
+    try {
+      typicalTeam = await _typicalTeamService.computeTypicalTeamForOpponent(
+        team: team,
+        seasonId: seasonId,
+        competitionUrl: competitionUrl,
+        opponentFilter: opponent,
+        forceRefresh: true,
+      );
+    } catch (e, st) {
+      debugPrint('OpponentAnalysisReportDataService typical team failed: $e\n$st');
+      typicalTeam = const TypicalTeamResult(
+        probableStarters: [],
+        probableSubstitutes: [],
+        matchesWithSquadData: 0,
+        totalPlayedMatches: 0,
+      );
+    }
+
+    final ranking = await _loadRankingEvolution(
       team: team,
       competitionUrl: competitionUrl,
       opponent: opponent,
     );
-
-    final wdl = await wdlFuture;
-    final playersResult = await playersFuture;
-    final typicalTeam = await typicalFuture;
-    final ranking = await rankingFuture;
 
     final trend = TeamWdlHalfTrend.compare(
       firstHalf: wdl.firstHalf.counts,
       secondHalf: wdl.secondHalf.counts,
     );
 
-    final playerRows = playersResult.statsByPlayerId.values
-        .map(
-          (stats) => OpponentAnalysisPlayerRow(
-            displayName: (stats.displayName?.trim().isNotEmpty == true)
-                ? stats.displayName!.trim()
-                : (stats.player != null
-                    ? playerDisplayName(stats.player!).trim()
-                    : stats.playerId),
-            convocations: stats.convocations,
-            starts: stats.starts,
-            minutesPlayed: stats.minutesPlayed,
-          ),
-        )
-        .where((row) => row.displayName.isNotEmpty)
-        .toList()
-      ..sort((a, b) {
-        final byStarts = b.starts.compareTo(a.starts);
-        if (byStarts != 0) return byStarts;
-        final byConvo = b.convocations.compareTo(a.convocations);
-        if (byConvo != 0) return byConvo;
-        return a.displayName.toLowerCase().compareTo(b.displayName.toLowerCase());
-      });
-
     return OpponentAnalysisReportData(
       team: team,
-      teamName: resolvedTeamName.isEmpty ? 'Équipe' : resolvedTeamName,
+      teamName: resolvedTeamName.isEmpty ? 'Equipe' : resolvedTeamName,
       seasonId: seasonId,
       competitionUrl: competitionUrl,
       competitionLabel: competitionLabel.trim().isEmpty
-          ? 'Compétition'
+          ? 'Competition'
           : competitionLabel.trim(),
       opponent: opponent,
       upcomingMatch: upcomingMatch,

@@ -87,6 +87,9 @@ class _WebAppRootState extends State<WebAppRoot> {
       unawaited(CalendarDeepLinkService.instance.processPendingIfReady());
       // Tip video and opponent analysis are independent features.
       _scheduleTipVideoPrompt();
+      // Web: prompt from the home shell (Dashboard), never wait for Agenda tab.
+      // Mobile: same — host also polls; Agenda feed is only a bonus signal.
+      unawaited(OpponentAnalysisReportPrompt.startPolling());
     });
   }
 

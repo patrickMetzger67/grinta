@@ -151,12 +151,37 @@ class OpponentAnalysisPromptStateService {
     if (id.isEmpty) return false;
     if (isSnoozed) return false;
     final status = _matchStatus[id];
-    return status != 'sent' && status != 'skipped';
+    // "sent" used to be written before the report was ready; only treat
+    // explicit skip / accepted as "don't ask again".
+    return status != 'skipped' && status != 'accepted';
   }
+
+  Future<void> markAccepted(String matchId) => _markStatus(matchId, 'accepted');
 
   Future<void> markSent(String matchId) => _markStatus(matchId, 'sent');
 
   Future<void> markSkipped(String matchId) => _markStatus(matchId, 'skipped');
+
+  Future<void> clearMatch(String matchId) async {
+    await ensureInitialized();
+    final uid = FirebaseAuth.instance.currentUser?.uid;
+    final id = matchId.trim();
+    if (uid == null || id.isEmpty) return;
+    final previous = _matchStatus.remove(id);
+    try {
+      await _docRef(uid).set(const {}, SetOptions(merge: true));
+      await _docRef(uid).update({
+        'matches.$id': FieldValue.delete(),
+      });
+    } catch (e, st) {
+      if (previous != null) {
+        _matchStatus[id] = previous;
+      }
+      debugPrint(
+        'OpponentAnalysisPromptStateService clearMatch failed: $e\n$st',
+      );
+    }
+  }
 
   Future<void> _markStatus(String matchId, String status) async {
     await ensureInitialized();

@@ -124,9 +124,14 @@ class _OpponentAnalysisReportEmailDialogState
         _errorText = switch (result.error) {
           'invalidEmail' => l10n.sessionReportEmailInvalid,
           'emptyEmail' => l10n.sessionReportEmailNoSelection,
-          _ => l10n.opponentAnalysisReportSendFailed,
+          'uploadFailed' => l10n.opponentAnalysisReportSendFailed,
+          _ =>
+            '${l10n.opponentAnalysisReportSendFailed}${result.error == null || result.error!.isEmpty ? '' : '\n${result.error}'}',
         };
       });
+      debugPrint(
+        'OpponentAnalysisReportEmailDialog send failed: ${result.error}',
+      );
       return;
     }
 
