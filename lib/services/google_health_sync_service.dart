@@ -9,10 +9,21 @@ import 'package:grinta/services/personal_sport_activity_service.dart';
 
 enum GoogleHealthConnectResult {
   success,
+  /// Health Connect authorized, but no workouts found on this device.
+  successNoRecentWorkouts,
   androidOnly,
   denied,
+  /// Health Connect app/SDK missing; install/update was prompted when possible.
+  unavailable,
   unauthenticated,
   failed,
+}
+
+extension GoogleHealthConnectResultX on GoogleHealthConnectResult {
+  /// True when Health Connect access was granted (workouts may still be empty).
+  bool get isAuthorized =>
+      this == GoogleHealthConnectResult.success ||
+      this == GoogleHealthConnectResult.successNoRecentWorkouts;
 }
 
 class GoogleHealthListActivitiesResult {
@@ -59,16 +70,26 @@ class GoogleHealthSyncService {
     try {
       final platformResult = await authorizeAndProbeWorkouts();
       if (!platformResult.authorized) {
-        return GoogleHealthConnectResult.denied;
+        return switch (platformResult.failure) {
+          GoogleHealthPlatformFailure.androidOnly =>
+            GoogleHealthConnectResult.androidOnly,
+          GoogleHealthPlatformFailure.unavailable =>
+            GoogleHealthConnectResult.unavailable,
+          _ => GoogleHealthConnectResult.denied,
+        };
       }
 
+      final workoutCount = platformResult.recentWorkoutCount ?? 0;
       await _repository.markConnected(
         uid: uid,
         playerId: playerId,
         initiatedBy: initiatedBy,
-        recentWorkoutCount: platformResult.recentWorkoutCount,
+        recentWorkoutCount: workoutCount,
         mostRecentWorkoutAt: platformResult.mostRecentWorkoutAt,
       );
+      if (workoutCount <= 0) {
+        return GoogleHealthConnectResult.successNoRecentWorkouts;
+      }
       return GoogleHealthConnectResult.success;
     } catch (e, st) {
       debugPrint('Google Health Connect error: $e\n$st');
@@ -131,6 +152,8 @@ class GoogleHealthSyncService {
       final workouts = await listGoogleHealthWorkouts(
         lookbackDays: lookbackDays,
       );
+      await _refreshProbeMetadata(playerId: playerId, workouts: workouts);
+
       final imported = await _activities.importedExternalIds(
         memberId: playerId,
         externalSource: externalSource,
@@ -147,6 +170,34 @@ class GoogleHealthSyncService {
         errorCode: 'unknown',
         errorMessage: e.toString(),
       );
+    }
+  }
+
+  /// Best-effort refresh of connection probe fields after a local HC read.
+  Future<void> _refreshProbeMetadata({
+    required String playerId,
+    required List<GoogleHealthImportableActivity> workouts,
+  }) async {
+    final uid = FirebaseAuth.instance.currentUser?.uid;
+    if (uid == null) return;
+
+    DateTime? mostRecentWorkoutAt;
+    for (final workout in workouts) {
+      if (mostRecentWorkoutAt == null ||
+          workout.startDate.isAfter(mostRecentWorkoutAt)) {
+        mostRecentWorkoutAt = workout.startDate;
+      }
+    }
+
+    try {
+      await _repository.updateProbe(
+        uid: uid,
+        playerId: playerId,
+        recentWorkoutCount: workouts.length,
+        mostRecentWorkoutAt: mostRecentWorkoutAt,
+      );
+    } catch (e, st) {
+      debugPrint('Google Health Connect probe refresh failed: $e\n$st');
     }
   }
 

@@ -2957,7 +2957,7 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get createPersonalSportGoogleNoImportable =>
-      'No Google Health workouts to import. Record a session in Google Health / Fit, allow Grinta in Health Connect, then retry.';
+      'No Google Health workouts on this device. Grinta reads Health Connect locally: sign in with the same Google account that recorded the sessions, open Google Fit to sync, confirm Fit writes to Health Connect, then retry.';
 
   @override
   String get createPersonalSportPolarDeployRequired =>
@@ -4491,7 +4491,7 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get googleHealthConnectToggleSubtitle =>
-      'Verbinde Google Health, um Workouts, Herzfrequenz und aktive Energie aus Health Connect zu importieren (nur Android)';
+      'Verbinde Google Health, um Workouts, Herzfrequenz und aktive Energie aus Health Connect auf diesem Telefon zu importieren (nur Android)';
 
   @override
   String get googleHealthConnectToggleConnectedSubtitle =>
@@ -4501,12 +4501,24 @@ class AppLocalizationsDe extends AppLocalizations {
   String get googleHealthConnectSuccess => 'Google Health verbunden.';
 
   @override
+  String get googleHealthConnectNoWorkouts =>
+      'Google Health verbunden, aber auf diesem Telefon wurden keine Workouts gefunden. Sitzungen von einem anderen Gerät oder Google-Konto erscheinen erst nach Sync in Health Connect hier (gleiches Google-Konto + Google Fit).';
+
+  @override
+  String get googleHealthConnectNoWorkoutsShort =>
+      'Verbunden — keine Workouts auf diesem Gerät';
+
+  @override
   String get googleHealthConnectFailed =>
       'Google-Health-Verbindung fehlgeschlagen. Bitte erneut versuchen.';
 
   @override
   String get googleHealthConnectDenied =>
-      'Health-Connect-Zugriff wurde verweigert. Aktiviere ihn unter Health Connect → App-Berechtigungen → Grinta.';
+      'Health-Connect-Zugriff wurde verweigert oder der Berechtigungsdialog wurde nicht abgeschlossen. Öffne die Health-Connect-App → App-Berechtigungen → aktiviere Grinta (Training), dann Sync erneut.';
+
+  @override
+  String get googleHealthConnectUnavailable =>
+      'Health Connect fehlt oder ist veraltet. Installiere oder aktualisiere Health Connect im Play Store und versuche Sync in Grinta erneut.';
 
   @override
   String get googleHealthConnectAuthRequired =>

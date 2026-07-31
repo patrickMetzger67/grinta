@@ -2900,7 +2900,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get createPersonalSportGoogleNoImportable =>
-      'No Google Health workouts to import. Record a session in Google Health / Fit, allow Grinta in Health Connect, then retry.';
+      'No Google Health workouts on this device. Grinta reads Health Connect locally: sign in with the same Google account that recorded the sessions, open Google Fit to sync, confirm Fit writes to Health Connect, then retry.';
 
   @override
   String get createPersonalSportPolarDeployRequired =>
@@ -4428,7 +4428,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get googleHealthConnectToggleSubtitle =>
-      'Connect Google Health to import workouts, heart rate, and active energy from Health Connect (Android only)';
+      'Connect Google Health to import workouts, heart rate, and active energy from Health Connect on this phone (Android only)';
 
   @override
   String get googleHealthConnectToggleConnectedSubtitle =>
@@ -4438,12 +4438,24 @@ class AppLocalizationsEn extends AppLocalizations {
   String get googleHealthConnectSuccess => 'Google Health connected.';
 
   @override
+  String get googleHealthConnectNoWorkouts =>
+      'Google Health connected, but no workouts were found on this phone. Sessions from another device or Google account only appear after they sync into Health Connect here (same Google account + Google Fit).';
+
+  @override
+  String get googleHealthConnectNoWorkoutsShort =>
+      'Connected — no workouts on this device';
+
+  @override
   String get googleHealthConnectFailed =>
       'Google Health connection failed. Please try again.';
 
   @override
   String get googleHealthConnectDenied =>
-      'Health Connect access was denied. Enable it in Health Connect → App permissions → Grinta.';
+      'Health Connect access was denied or the permission sheet did not complete. Open the Health Connect app → App permissions → enable Grinta (Exercise), then retry Sync.';
+
+  @override
+  String get googleHealthConnectUnavailable =>
+      'Health Connect is missing or outdated on this phone. Install or update Health Connect from the Play Store, then retry Sync in Grinta.';
 
   @override
   String get googleHealthConnectAuthRequired =>

@@ -214,7 +214,7 @@ class SessionHealthExportService {
       playerId: playerId,
       initiatedBy: uid,
     );
-    if (result != GoogleHealthConnectResult.success) return false;
+    if (!result.isAuthorized) return false;
     return ensureGoogleWorkoutWriteAuthorized();
   }
 

@@ -1,22 +1,43 @@
 import 'package:grinta/model/google_health_importable_activity.dart';
 
+/// Why Health Connect authorization failed.
+enum GoogleHealthPlatformFailure {
+  androidOnly,
+  denied,
+  unavailable,
+}
+
 /// Result of a local Health Connect authorization attempt (non-Android platforms).
 class GoogleHealthPlatformConnectResult {
   const GoogleHealthPlatformConnectResult._({
     required this.authorized,
+    this.failure,
     this.recentWorkoutCount,
     this.mostRecentWorkoutAt,
   });
 
   final bool authorized;
+  final GoogleHealthPlatformFailure? failure;
   final int? recentWorkoutCount;
   final DateTime? mostRecentWorkoutAt;
 
   static const GoogleHealthPlatformConnectResult androidOnly =
-      GoogleHealthPlatformConnectResult._(authorized: false);
+      GoogleHealthPlatformConnectResult._(
+    authorized: false,
+    failure: GoogleHealthPlatformFailure.androidOnly,
+  );
 
   static const GoogleHealthPlatformConnectResult denied =
-      GoogleHealthPlatformConnectResult._(authorized: false);
+      GoogleHealthPlatformConnectResult._(
+    authorized: false,
+    failure: GoogleHealthPlatformFailure.denied,
+  );
+
+  static const GoogleHealthPlatformConnectResult unavailable =
+      GoogleHealthPlatformConnectResult._(
+    authorized: false,
+    failure: GoogleHealthPlatformFailure.unavailable,
+  );
 
   static GoogleHealthPlatformConnectResult success({
     required int recentWorkoutCount,
@@ -41,6 +62,7 @@ Future<GoogleHealthPlatformConnectResult> authorizeAndProbeWorkouts() async {
 /// Lists recent workouts from Health Connect (empty off Android).
 Future<List<GoogleHealthImportableActivity>> listGoogleHealthWorkouts({
   int lookbackDays = 90,
+  bool skipAuthorization = false,
 }) async {
   return const [];
 }
