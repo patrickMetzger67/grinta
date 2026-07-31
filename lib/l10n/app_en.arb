@@ -2785,5 +2785,8 @@
     }
   },
   "opponentAnalysisReportEmailRecipientsLabel": "Recipients",
-  "opponentAnalysisReportSendFailed": "Could not send the opponent analysis report."
+  "opponentAnalysisReportSendFailed": "Could not send the opponent analysis report.",
+  "opponentAnalysisSendDetailedReport": "Send detailed report",
+  "opponentAnalysisCoachEliteRequiredTitle": "Opponent analysis report",
+  "opponentAnalysisCoachEliteRequiredMessage": "Sending the opponent analysis report requires a Coach Elite subscription."
 }

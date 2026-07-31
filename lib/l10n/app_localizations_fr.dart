@@ -6946,4 +6946,16 @@ class AppLocalizationsFr extends AppLocalizations {
   @override
   String get opponentAnalysisReportSendFailed =>
       'Impossible d’envoyer le rapport d’analyse adversaire.';
+
+  @override
+  String get opponentAnalysisSendDetailedReport =>
+      'Envoyer le rapport détaillé';
+
+  @override
+  String get opponentAnalysisCoachEliteRequiredTitle =>
+      'Rapport d’analyse adversaire';
+
+  @override
+  String get opponentAnalysisCoachEliteRequiredMessage =>
+      'L’envoi du rapport d’analyse adversaire nécessite un abonnement Coach Elite.';
 }

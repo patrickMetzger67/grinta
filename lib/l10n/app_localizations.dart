@@ -11943,6 +11943,24 @@ abstract class AppLocalizations {
   /// In fr, this message translates to:
   /// **'Impossible d’envoyer le rapport d’analyse adversaire.'**
   String get opponentAnalysisReportSendFailed;
+
+  /// No description provided for @opponentAnalysisSendDetailedReport.
+  ///
+  /// In fr, this message translates to:
+  /// **'Envoyer le rapport détaillé'**
+  String get opponentAnalysisSendDetailedReport;
+
+  /// No description provided for @opponentAnalysisCoachEliteRequiredTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Rapport d’analyse adversaire'**
+  String get opponentAnalysisCoachEliteRequiredTitle;
+
+  /// No description provided for @opponentAnalysisCoachEliteRequiredMessage.
+  ///
+  /// In fr, this message translates to:
+  /// **'L’envoi du rapport d’analyse adversaire nécessite un abonnement Coach Elite.'**
+  String get opponentAnalysisCoachEliteRequiredMessage;
 }
 
 class _AppLocalizationsDelegate

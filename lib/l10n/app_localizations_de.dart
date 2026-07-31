@@ -6960,4 +6960,15 @@ class AppLocalizationsDe extends AppLocalizations {
   @override
   String get opponentAnalysisReportSendFailed =>
       'Could not send the opponent analysis report.';
+
+  @override
+  String get opponentAnalysisSendDetailedReport => 'Send detailed report';
+
+  @override
+  String get opponentAnalysisCoachEliteRequiredTitle =>
+      'Opponent analysis report';
+
+  @override
+  String get opponentAnalysisCoachEliteRequiredMessage =>
+      'Sending the opponent analysis report requires a Coach Elite subscription.';
 }
