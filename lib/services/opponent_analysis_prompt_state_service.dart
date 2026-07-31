@@ -151,9 +151,10 @@ class OpponentAnalysisPromptStateService {
     if (id.isEmpty) return false;
     if (isSnoozed) return false;
     final status = _matchStatus[id];
-    // "sent" used to be written before the report was ready; only treat
-    // explicit skip / accepted as "don't ask again".
-    return status != 'skipped' && status != 'accepted';
+    // Any prior answer (yes / skip / sent) → never ask again for this match.
+    return status != 'skipped' &&
+        status != 'accepted' &&
+        status != 'sent';
   }
 
   Future<void> markAccepted(String matchId) => _markStatus(matchId, 'accepted');

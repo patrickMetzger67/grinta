@@ -64,11 +64,12 @@ class _OpponentAnalysisPromptHostState
   Widget build(BuildContext context) => const SizedBox.shrink();
 }
 
-/// Home shell: one question per team that has a match this week.
+/// Home: ask once per team (max), never re-run in the same app process.
 class OpponentAnalysisReportPrompt {
   OpponentAnalysisReportPrompt._();
 
-  static bool _started = false;
+  /// Absolute lock: this process shows the prompt sequence at most once.
+  static bool _locked = false;
   static BuildContext? Function()? _hostContext;
 
   static void bindHost(BuildContext? Function() contextGetter) {
@@ -81,9 +82,9 @@ class OpponentAnalysisReportPrompt {
 
   /// Call once when the home shell is painted.
   static void onHomeShellReady() {
-    if (_started) return;
-    _started = true;
-    unawaited(_run());
+    if (_locked) return;
+    _locked = true;
+    unawaited(_runOnce());
   }
 
   static BuildContext? _resolveContext() {
@@ -107,71 +108,55 @@ class OpponentAnalysisReportPrompt {
     return false;
   }
 
-  static Future<void> _run() async {
-    // Soft wait once if session/teams are not ready yet.
-    for (var attempt = 0; attempt < 2; attempt++) {
-      final context = _resolveContext();
-      if (context == null) {
-        if (attempt == 0) {
-          await Future<void>.delayed(const Duration(seconds: 2));
-          continue;
-        }
-        return;
-      }
+  static Future<void> _runOnce() async {
+    await Future<void>.delayed(const Duration(seconds: 2));
 
-      AppSession session;
-      try {
-        session = context.read<AppSession>();
-      } catch (_) {
-        return;
-      }
+    final context = _resolveContext();
+    if (context == null) return;
 
-      if (session.isLoading || !isEligibleCoachOrManager(session)) {
-        if (attempt == 0) {
-          await Future<void>.delayed(const Duration(seconds: 2));
-          continue;
-        }
-        return;
-      }
-
-      final teams = session.teamsForAgendaSelectedSeason;
-      if (teams.isEmpty) {
-        if (attempt == 0) {
-          await Future<void>.delayed(const Duration(seconds: 2));
-          continue;
-        }
-        return;
-      }
-
-      await OpponentAnalysisPromptStateService.instance.ensureInitialized();
-      if (OpponentAnalysisPromptStateService.instance.isSnoozed) return;
-
-      // Wait for tip video if open.
-      for (var i = 0; i < 40 && YoutubeTopVideoPrompt.isDialogOpen; i++) {
-        await Future<void>.delayed(const Duration(milliseconds: 250));
-        if (!context.mounted) return;
-      }
-
-      final items = await _loadWeekMatchItems(session, teams);
-      final candidates = _pickOneMatchPerTeam(
-        session: session,
-        teams: teams,
-        items: items,
-      );
-      if (candidates.isEmpty) return;
-
-      for (final candidate in candidates) {
-        if (!context.mounted) return;
-        if (OpponentAnalysisPromptStateService.instance.isSnoozed) return;
-
-        await showDialog<void>(
-          context: context,
-          useRootNavigator: true,
-          barrierDismissible: false,
-          builder: (ctx) => _OpponentAnalysisPromptDialog(candidate: candidate),
-        );
-      }
+    AppSession session;
+    try {
+      session = context.read<AppSession>();
+    } catch (_) {
       return;
+    }
+
+    if (session.isLoading || !isEligibleCoachOrManager(session)) return;
+
+    final teams = session.teamsForAgendaSelectedSeason;
+    if (teams.isEmpty) return;
+
+    await OpponentAnalysisPromptStateService.instance.ensureInitialized();
+    if (OpponentAnalysisPromptStateService.instance.isSnoozed) return;
+
+    for (var i = 0; i < 20 && YoutubeTopVideoPrompt.isDialogOpen; i++) {
+      await Future<void>.delayed(const Duration(milliseconds: 250));
+      if (!context.mounted) return;
+    }
+
+    final items = await _loadWeekMatchItems(session, teams);
+    final candidates = _pickOneMatchPerTeam(
+      session: session,
+      teams: teams,
+      items: items,
+    );
+    if (candidates.isEmpty || !context.mounted) return;
+
+    // One dialog per team, sequential — then never again this process.
+    for (final candidate in candidates) {
+      if (!context.mounted) return;
+      if (OpponentAnalysisPromptStateService.instance.isSnoozed) return;
+      if (!OpponentAnalysisPromptStateService.instance
+          .shouldPromptMatch(candidate.matchId)) {
+        continue;
+      }
+
+      await showDialog<void>(
+        context: context,
+        useRootNavigator: true,
+        barrierDismissible: false,
+        builder: (ctx) => _OpponentAnalysisPromptDialog(candidate: candidate),
+      );
     }
   }
 
@@ -207,7 +192,6 @@ class OpponentAnalysisReportPrompt {
     }
   }
 
-  /// Same rule as match detail: prefer [Match.teamID].
   static Team? _teamForMatch({
     required models.Match match,
     required List<Team> teams,
@@ -230,7 +214,6 @@ class OpponentAnalysisReportPrompt {
     return null;
   }
 
-  /// One upcoming match per team (earliest this week, not yet answered).
   static List<_UpcomingOpponentMatch> _pickOneMatchPerTeam({
     required AppSession session,
     required List<Team> teams,
@@ -278,7 +261,6 @@ class OpponentAnalysisReportPrompt {
       );
       if (opponent == null || opponent.displayName.trim().isEmpty) continue;
 
-      // Safety: never treat our own side as the opponent.
       final ownSide = teamSideForMatch(
         match: match,
         teamId: teamId,
@@ -334,7 +316,6 @@ class _OpponentAnalysisPromptDialogState
     return value.toLowerCase().replaceAll(RegExp(r'[^a-z0-9]'), '');
   }
 
-  /// Find a competition where this opponent exists (Adversaires data).
   Future<
       ({
         String url,
@@ -397,7 +378,6 @@ class _OpponentAnalysisPromptDialogState
       }
     }
 
-    // Match has a competition URL even if opponent not listed yet.
     if (matchUrl != null && matchUrl.trim().isNotEmpty) {
       String label = 'Compétition';
       for (final option in ordered) {
@@ -425,6 +405,9 @@ class _OpponentAnalysisPromptDialogState
     final messenger = ScaffoldMessenger.maybeOf(context);
     final session = context.read<AppSession>();
 
+    // Persist immediately so a reload never re-asks this match.
+    await OpponentAnalysisPromptStateService.instance.markAccepted(_matchId);
+
     try {
       final source = await _resolveReportSource(session);
       if (source == null) {
@@ -436,6 +419,7 @@ class _OpponentAnalysisPromptDialogState
               duration: const Duration(seconds: 6),
             ),
           );
+          Navigator.of(context, rootNavigator: true).pop();
         }
         return;
       }
@@ -450,8 +434,6 @@ class _OpponentAnalysisPromptDialogState
         upcomingKickoff: widget.candidate.kickoff,
         teamName: widget.candidate.team.name,
       );
-
-      await OpponentAnalysisPromptStateService.instance.markAccepted(_matchId);
 
       if (!mounted) return;
       Navigator.of(context, rootNavigator: true).pop();
@@ -473,6 +455,7 @@ class _OpponentAnalysisPromptDialogState
             duration: const Duration(seconds: 6),
           ),
         );
+        Navigator.of(context, rootNavigator: true).pop();
       }
     } finally {
       if (mounted) setState(() => _busy = false);
