@@ -2776,7 +2776,7 @@
       "kickoff": { "type": "String" }
     }
   },
-  "opponentAnalysisReportEmailIncludes": "The PDF includes trend, W/D/L (season and halves), results, players (call-ups / starts / minutes), typical team and ranking evolution.",
+  "opponentAnalysisReportEmailIncludes": "The PDF includes trend, W/D/L (season and halves), results, goals, players (call-ups / starts / minutes / cards), typical team and ranking evolution.",
   "opponentAnalysisReportEmailDialogTitle": "Send analysis report",
   "opponentAnalysisReportEmailDialogMessage": "The analysis report for {opponentName} will be sent to the addresses below.",
   "@opponentAnalysisReportEmailDialogMessage": {

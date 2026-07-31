@@ -6929,7 +6929,7 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get opponentAnalysisReportEmailIncludes =>
-      'Le PDF contient la tendance, le bilan V/N/D (saison et mi-saisons), les résultats, les joueurs (convo / titu. / temps de jeu), l’équipe type et l’évolution du classement.';
+      'Le PDF contient la tendance, le bilan V/N/D (saison et mi-saisons), les résultats, les buts, les joueurs (convo / titu. / temps de jeu / cartons), l’équipe type et l’évolution du classement.';
 
   @override
   String get opponentAnalysisReportEmailDialogTitle =>

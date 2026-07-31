@@ -3084,7 +3084,7 @@
       "kickoff": { "type": "String" }
     }
   },
-  "opponentAnalysisReportEmailIncludes": "Le PDF contient la tendance, le bilan V/N/D (saison et mi-saisons), les résultats, les joueurs (convo / titu. / temps de jeu), l’équipe type et l’évolution du classement.",
+  "opponentAnalysisReportEmailIncludes": "Le PDF contient la tendance, le bilan V/N/D (saison et mi-saisons), les résultats, les buts, les joueurs (convo / titu. / temps de jeu / cartons), l’équipe type et l’évolution du classement.",
   "opponentAnalysisReportEmailDialogTitle": "Envoyer le rapport d’analyse",
   "opponentAnalysisReportEmailDialogMessage": "Le rapport d’analyse de {opponentName} sera envoyé aux adresses ci-dessous.",
   "@opponentAnalysisReportEmailDialogMessage": {
