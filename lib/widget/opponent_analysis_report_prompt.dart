@@ -14,6 +14,7 @@ import 'package:grinta/services/opponent_analysis_prompt_state_service.dart';
 import 'package:grinta/services/opponent_analysis_report_data_service.dart';
 import 'package:grinta/services/team_competition_stats_service.dart';
 import 'package:grinta/util/app_theme.dart';
+import 'package:grinta/util/match_goal_helper.dart';
 import 'package:grinta/util/match_outcome_helper.dart';
 import 'package:grinta/util/staff_session_access.dart';
 import 'package:grinta/util/team_stats_opponent_helper.dart';
