@@ -65,7 +65,7 @@ class _OpponentAnalysisPromptHostState
   Widget build(BuildContext context) => const SizedBox.shrink();
 }
 
-/// Home: ask once per team (max), never re-run in the same app process.
+/// Home: ask for each match this week (Passer → suivante), once per process.
 class OpponentAnalysisReportPrompt {
   OpponentAnalysisReportPrompt._();
 
@@ -136,14 +136,20 @@ class OpponentAnalysisReportPrompt {
     }
 
     final items = await _loadWeekMatchItems(session, teams);
-    final candidates = _pickOneMatchPerTeam(
+    final candidates = _pickWeekMatches(
       session: session,
       teams: teams,
       items: items,
     );
     if (candidates.isEmpty || !context.mounted) return;
 
-    // One dialog per team, sequential — then never again this process.
+    debugPrint(
+      'OpponentAnalysisReportPrompt: ${candidates.length} rencontre(s) '
+      'à proposer cette semaine',
+    );
+
+    // Une question par rencontre, à la suite. « Passer » / Oui → suivante.
+    // Seul « Me le rappeler demain » arrête la série.
     for (final candidate in candidates) {
       if (!context.mounted) return;
       if (OpponentAnalysisPromptStateService.instance.isSnoozed) return;
@@ -215,7 +221,8 @@ class OpponentAnalysisReportPrompt {
     return null;
   }
 
-  static List<_UpcomingOpponentMatch> _pickOneMatchPerTeam({
+  /// Toutes les rencontres de la semaine pour les équipes du coach/manager.
+  static List<_UpcomingOpponentMatch> _pickWeekMatches({
     required AppSession session,
     required List<Team> teams,
     required List<AgendaItem> items,
@@ -224,7 +231,7 @@ class OpponentAnalysisReportPrompt {
     final weekStart = _weekStartMonday(now);
     final weekEnd = _weekEndSunday(weekStart);
     final state = OpponentAnalysisPromptStateService.instance;
-    final seenTeamIds = <String>{};
+    final seenMatchIds = <String>{};
     final result = <_UpcomingOpponentMatch>[];
 
     final matchItems = items
@@ -242,13 +249,14 @@ class OpponentAnalysisReportPrompt {
     for (final item in matchItems) {
       final match = item.match!;
       final matchId = match.id?.trim() ?? item.id.trim();
-      if (matchId.isEmpty || !state.shouldPromptMatch(matchId)) continue;
+      if (matchId.isEmpty || !seenMatchIds.add(matchId)) continue;
+      if (!state.shouldPromptMatch(matchId)) continue;
 
       final team = _teamForMatch(match: match, teams: teams);
       if (team == null) continue;
 
       final teamId = team.keyTeam?.trim() ?? '';
-      if (teamId.isEmpty || seenTeamIds.contains(teamId)) continue;
+      if (teamId.isEmpty) continue;
 
       if (!canAccessTeamSessionDetails(session, teamId) &&
           session.selectedPlayer?.isEducatorOrCoach != true) {
@@ -277,7 +285,6 @@ class OpponentAnalysisReportPrompt {
         }
       }
 
-      seenTeamIds.add(teamId);
       result.add(
         _UpcomingOpponentMatch(
           match: match,
