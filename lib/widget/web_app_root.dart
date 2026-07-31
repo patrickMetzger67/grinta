@@ -1,4 +1,4 @@
-import 'dart:async' show StreamSubscription, unawaited;
+import 'dart:async' show unawaited;
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
@@ -41,10 +41,7 @@ class WebAppRoot extends StatefulWidget {
 class _WebAppRootState extends State<WebAppRoot> {
   bool _isLoading = true;
   bool _tipVideoPromptScheduled = false;
-  bool _homeShellReady = false;
   final AgendaService _agendaService = AgendaService();
-  StreamSubscription<List<AgendaItem>>? _homeOpponentPromptSub;
-  String? _homeOpponentPromptFeedKey;
 
   AppSession get appSession => context.read<AppSession>();
 
@@ -65,8 +62,6 @@ class _WebAppRootState extends State<WebAppRoot> {
     CalendarDeepLinkService.instance.pendingAgendaDate.removeListener(
       _onPendingAgendaDateChanged,
     );
-    unawaited(_homeOpponentPromptSub?.cancel() ?? Future<void>.value());
-    _homeOpponentPromptSub = null;
     super.dispose();
   }
 
@@ -85,19 +80,14 @@ class _WebAppRootState extends State<WebAppRoot> {
 
     setState(() {
       _isLoading = false;
-      _homeShellReady = true;
     });
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
       CalendarDeepLinkService.instance.notifyShellReady();
       unawaited(CalendarDeepLinkService.instance.processPendingIfReady());
-      // Tip video and opponent analysis are independent features.
       _scheduleTipVideoPrompt();
-      // Web + mobile: prompt from the home shell (Dashboard), never wait for
-      // the Agenda tab (on web it is not even mounted until selected).
-      OpponentAnalysisReportPrompt.markHomeShellReady();
-      _syncHomeOpponentPromptFeed();
-      unawaited(OpponentAnalysisReportPrompt.startPolling());
+      // One shot: load this week's matches and offer the dialog once.
+      OpponentAnalysisReportPrompt.onHomeShellReady();
     });
   }
 
@@ -105,92 +95,6 @@ class _WebAppRootState extends State<WebAppRoot> {
     if (_tipVideoPromptScheduled) return;
     _tipVideoPromptScheduled = true;
     unawaited(YoutubeTopVideoPrompt.maybeShow());
-  }
-
-  DateTime _weekStartMonday(DateTime now) {
-    final day = DateTime(now.year, now.month, now.day);
-    return day.subtract(Duration(days: day.weekday - DateTime.monday));
-  }
-
-  DateTime _weekEndSunday(DateTime weekStart) {
-    return weekStart
-        .add(const Duration(days: 7))
-        .subtract(const Duration(milliseconds: 1));
-  }
-
-  /// On web the Agenda page is not built until its tab is opened — feed the
-  /// opponent-analysis prompt from the home shell with a dedicated week watch.
-  void _syncHomeOpponentPromptFeed() {
-    if (!_homeShellReady || !mounted) return;
-
-    final session = appSession;
-    if (session.isLoading) return;
-
-    final teams = session.teamsForAgendaSelectedSeason;
-    final seasonId = session.selectedSeason?.ref?.id;
-    final playerId = session.selectedPlayerId;
-    final feedKey = '${session.agendaTeamsKey}|$seasonId|$playerId';
-    if (feedKey == _homeOpponentPromptFeedKey &&
-        _homeOpponentPromptSub != null) {
-      return;
-    }
-    _homeOpponentPromptFeedKey = feedKey;
-
-    unawaited(_homeOpponentPromptSub?.cancel() ?? Future<void>.value());
-    _homeOpponentPromptSub = null;
-
-    if (teams.isEmpty) {
-      debugPrint(
-        'OpponentAnalysisReportPrompt: home feed — no agenda teams yet',
-      );
-      return;
-    }
-
-    final now = DateTime.now();
-    final weekStart = _weekStartMonday(now);
-    final weekEnd = _weekEndSunday(weekStart);
-
-    debugPrint(
-      'OpponentAnalysisReportPrompt: home feed watch '
-      '${teams.length} team(s) $weekStart → $weekEnd',
-    );
-
-    _homeOpponentPromptSub = _agendaService
-        .watchAgendaItems(
-          teams: teams,
-          seasonId: seasonId,
-          start: weekStart,
-          end: weekEnd,
-          memberId: playerId,
-        )
-        .listen(
-      (items) {
-        OpponentAnalysisReportPrompt.noteAgendaItems(items);
-      },
-      onError: (Object e, StackTrace st) {
-        debugPrint(
-          'OpponentAnalysisReportPrompt: home feed watch failed: $e\n$st',
-        );
-      },
-    );
-
-    // One-shot load as well (competition matches can lag on the stream).
-    unawaited(() async {
-      try {
-        final loaded = await _agendaService.loadAgendaItems(
-          teams: teams,
-          seasonId: seasonId,
-          start: weekStart,
-          end: weekEnd,
-          memberId: playerId,
-        );
-        OpponentAnalysisReportPrompt.noteAgendaItems(loaded);
-      } catch (e, st) {
-        debugPrint(
-          'OpponentAnalysisReportPrompt: home feed load failed: $e\n$st',
-        );
-      }
-    }());
   }
 
   Stream<List<AgendaItem>> _watchAgendaItems({
@@ -218,8 +122,6 @@ class _WebAppRootState extends State<WebAppRoot> {
           ),
         );
       }
-      // Same match list as the agenda UI — drives the opponent-analysis prompt.
-      OpponentAnalysisReportPrompt.noteAgendaItems(items);
       InternalReminderService.instance.onAgendaChanged();
       return items;
     });
@@ -250,14 +152,6 @@ class _WebAppRootState extends State<WebAppRoot> {
     final agendaTeamsKey = context.select<AppSession, String>(
           (session) => session.agendaTeamsKey,
     );
-
-    // Keep the home-week match feed in sync when season / player / teams change
-    // so the opponent prompt can appear on Dashboard without opening Agenda.
-    if (_homeShellReady) {
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        _syncHomeOpponentPromptFeed();
-      });
-    }
 
     final l10n = context.l10n;
     final localeCode = Localizations.localeOf(context).languageCode;
