@@ -783,6 +783,81 @@ String normalizeTypicalTeamPlayerKey(String? playerName, String? shirt) {
   return '$nameKey#$shirtToken';
 }
 
+/// Identity for uniqueness in the typical XI/bench: first name + last name.
+///
+/// Ignores shirt number so the same person cannot appear twice when listed
+/// under different numbers across matches.
+String normalizeTypicalTeamPlayerIdentity(String? playerName) {
+  final normalized = _normalizeMatchStatPlayerName(playerName);
+  if (normalized.isEmpty) {
+    return '';
+  }
+
+  final parts = normalized.split(' ');
+  if (parts.length == 1) {
+    return parts.first;
+  }
+
+  return '${parts.first} ${parts.last}';
+}
+
+bool _typicalTeamIdentityTaken({
+  required String identity,
+  required Iterable<String> selectedIdentities,
+}) {
+  if (identity.isEmpty) {
+    return false;
+  }
+
+  for (final selected in selectedIdentities) {
+    if (selected.isEmpty) {
+      continue;
+    }
+    if (selected == identity || sameMatchStatPlayer(selected, identity)) {
+      return true;
+    }
+  }
+
+  return false;
+}
+
+/// Walks a ranked candidate list and keeps the first [maxCount] players whose
+/// first+last name identity is not already reserved/selected.
+List<_TypicalTeamPlayerAccumulator> _pickUniqueTypicalTeamPlayers({
+  required List<_TypicalTeamPlayerAccumulator> rankedCandidates,
+  required int maxCount,
+  required Set<String> reservedIdentities,
+}) {
+  if (maxCount <= 0) {
+    return <_TypicalTeamPlayerAccumulator>[];
+  }
+
+  final selected = <_TypicalTeamPlayerAccumulator>[];
+  final identities = <String>{...reservedIdentities};
+
+  for (final candidate in rankedCandidates) {
+    if (selected.length >= maxCount) {
+      break;
+    }
+
+    final identity = normalizeTypicalTeamPlayerIdentity(candidate.displayName);
+    if (identity.isEmpty) {
+      continue;
+    }
+    if (_typicalTeamIdentityTaken(
+      identity: identity,
+      selectedIdentities: identities,
+    )) {
+      continue;
+    }
+
+    identities.add(identity);
+    selected.add(candidate);
+  }
+
+  return selected;
+}
+
 int? parseMatchStatShirtNumber(String? shirt) {
   final trimmed = _cleanMatchStatText(shirt);
   if (trimmed.isEmpty) {
@@ -1110,13 +1185,20 @@ TypicalTeamResult computeTypicalTeamFromMatchStats({
       .toList()
     ..sort(_compareTypicalTeamStarters);
 
-  final selectedStarterKeys = starterCandidates
-      .take(maxStarters)
+  final selectedStarterAccumulators = _pickUniqueTypicalTeamPlayers(
+    rankedCandidates: starterCandidates,
+    maxCount: maxStarters,
+    reservedIdentities: const {},
+  );
+  final selectedStarterKeys = selectedStarterAccumulators
       .map((player) => player.playerKey)
       .toSet();
+  final selectedStarterIdentities = selectedStarterAccumulators
+      .map((player) => normalizeTypicalTeamPlayerIdentity(player.displayName))
+      .where((identity) => identity.isNotEmpty)
+      .toSet();
 
-  final probableStarters = starterCandidates
-      .take(maxStarters)
+  final probableStarters = selectedStarterAccumulators
       .map(
         (player) => player.toEntry(matchesWithSquadData: matchesWithSquadData),
       )
@@ -1124,16 +1206,33 @@ TypicalTeamResult computeTypicalTeamFromMatchStats({
     ..sort(_compareTypicalTeamDisplayOrder);
 
   final substituteCandidates = accumulators.values
-      .where(
-        (player) =>
-            !selectedStarterKeys.contains(player.playerKey) &&
-            player.totalMatchesInSquad >= 1,
-      )
+      .where((player) {
+        if (selectedStarterKeys.contains(player.playerKey)) {
+          return false;
+        }
+        if (player.totalMatchesInSquad < 1) {
+          return false;
+        }
+        final identity =
+            normalizeTypicalTeamPlayerIdentity(player.displayName);
+        if (_typicalTeamIdentityTaken(
+          identity: identity,
+          selectedIdentities: selectedStarterIdentities,
+        )) {
+          return false;
+        }
+        return true;
+      })
       .toList()
     ..sort(_compareTypicalTeamSubstitutes);
 
-  final probableSubstitutes = substituteCandidates
-      .take(maxSubstitutes)
+  final selectedSubstituteAccumulators = _pickUniqueTypicalTeamPlayers(
+    rankedCandidates: substituteCandidates,
+    maxCount: maxSubstitutes,
+    reservedIdentities: selectedStarterIdentities,
+  );
+
+  final probableSubstitutes = selectedSubstituteAccumulators
       .map(
         (player) => player.toEntry(matchesWithSquadData: matchesWithSquadData),
       )
