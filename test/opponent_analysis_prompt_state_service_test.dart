@@ -23,9 +23,9 @@ void main() {
       expect(service.shouldPromptMatch('match-2'), isFalse);
     });
 
-    test('legacy sent status still allows prompt (recovery)', () {
+    test('sent status never re-asks', () {
       service.debugReset(matchStatus: {'match-1': 'sent'});
-      expect(service.shouldPromptMatch('match-1'), isTrue);
+      expect(service.shouldPromptMatch('match-1'), isFalse);
     });
 
     test('isSnoozed respects snoozeUntilDate (exclusive of that day)', () {
