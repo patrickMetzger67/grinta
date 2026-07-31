@@ -35,6 +35,11 @@
     <uses-permission android:name="android.permission.health.READ_HEART_RATE" />
     <uses-permission android:name="android.permission.health.READ_ACTIVE_CALORIES_BURNED" />
     <uses-permission android:name="android.permission.health.READ_SLEEP" />
+    <!-- Required by health plugin workout enrichment (Distance / TotalCalories / Steps).
+         Without these, getData(WORKOUT) fails with SecurityException and returns []. -->
+    <uses-permission android:name="android.permission.health.READ_DISTANCE" />
+    <uses-permission android:name="android.permission.health.READ_TOTAL_CALORIES_BURNED" />
+    <uses-permission android:name="android.permission.health.READ_STEPS" />
     <uses-permission android:name="android.permission.health.WRITE_EXERCISE" />
     <uses-permission android:name="android.permission.health.WRITE_DISTANCE" />
     <uses-permission android:name="android.permission.health.WRITE_TOTAL_CALORIES_BURNED" />
@@ -182,5 +187,7 @@
         </intent>
         <package android:name="com.google.android.calendar" />
         <package android:name="com.samsung.android.calendar" />
+        <package android:name="com.huawei.calendar" />
+        <package android:name="com.xiaomi.calendar" />
     </queries>
 </manifest>

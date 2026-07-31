@@ -5,6 +5,7 @@ import android.content.ContentValues
 import android.content.Intent
 import android.net.Uri
 import android.provider.CalendarContract
+import android.util.Log
 import io.flutter.embedding.engine.FlutterEngine
 import io.flutter.plugin.common.MethodChannel
 
@@ -18,6 +19,7 @@ import io.flutter.plugin.common.MethodChannel
  */
 object GrintaCalendarChannel {
     const val CHANNEL_NAME = "io.grinta.app/calendar"
+    private const val TAG = "GrintaCalendar"
 
     fun register(flutterEngine: FlutterEngine, activity: MainActivity) {
         MethodChannel(
@@ -145,10 +147,19 @@ object GrintaCalendarChannel {
         return null
     }
 
-    private fun openCalendarApp(activity: MainActivity, calendarId: String?): Boolean {
+    /**
+     * Opens a calendar app focused near Grinta events.
+     *
+     * Returns a map `{ok, via, attempts}` so Flutter can show a useful error.
+     * Prefer day/time view over event detail: Google Calendar often flashes and
+     * closes for LOCAL calendar event URIs even when startActivity does not throw.
+     */
+    private fun openCalendarApp(
+        activity: MainActivity,
+        calendarId: String?,
+    ): Map<String, Any?> {
         val id = calendarId?.trim()?.toLongOrNull()
         if (id != null) {
-            // Make sure the Grinta local calendar is listed before opening.
             ensureCalendarVisible(activity, id.toString())
         }
 
@@ -158,63 +169,78 @@ object GrintaCalendarChannel {
             System.currentTimeMillis()
         }
 
-        // Prefer opening a concrete Grinta event so the calendar app lands on
-        // the calendar that actually holds the synced agenda.
-        if (id != null) {
-            val eventId = findFocusEventId(activity, id, focusMillis)
-            if (eventId != null) {
-                val eventIntent = Intent(Intent.ACTION_VIEW).apply {
-                    data = ContentUris.withAppendedId(
-                        CalendarContract.Events.CONTENT_URI,
-                        eventId,
-                    )
-                    putExtra(CalendarContract.EXTRA_EVENT_BEGIN_TIME, focusMillis)
-                    putExtra(CalendarContract.Events.CALENDAR_ID, id)
-                    addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-                }
-                if (startActivitySafely(activity, eventIntent)) return true
+        val timeUri = CalendarContract.CONTENT_URI.buildUpon()
+            .appendPath("time")
+            .let { builder ->
+                ContentUris.appendId(builder, focusMillis)
+                builder.build()
             }
-        }
+        val legacyTimeUri = Uri.parse("content://com.android.calendar/time/$focusMillis")
 
-        val timeBuilder = CalendarContract.CONTENT_URI.buildUpon().appendPath("time")
-        ContentUris.appendId(timeBuilder, focusMillis)
-        val timeIntent = Intent(Intent.ACTION_VIEW).apply {
-            data = timeBuilder.build()
+        val packages = listOf(
+            "com.google.android.calendar",
+            "com.samsung.android.calendar",
+            "com.huawei.calendar",
+            "com.xiaomi.calendar",
+        )
+
+        val candidates = mutableListOf<Pair<String, Intent>>()
+        for (pkg in packages) {
+            candidates += "pkg:$pkg/time" to Intent(Intent.ACTION_VIEW, timeUri).setPackage(pkg)
+            candidates += "pkg:$pkg/legacy" to Intent(Intent.ACTION_VIEW, legacyTimeUri).setPackage(pkg)
+        }
+        candidates += "implicit/time" to Intent(Intent.ACTION_VIEW, timeUri).also { intent ->
             if (id != null) {
-                putExtra(CalendarContract.Events.CALENDAR_ID, id)
-                putExtra("calendar_id", id)
+                intent.putExtra(CalendarContract.Events.CALENDAR_ID, id)
+                intent.putExtra("calendar_id", id)
             }
-            addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
         }
-        if (startActivitySafely(activity, timeIntent)) return true
+        candidates += "implicit/legacy" to Intent(Intent.ACTION_VIEW, legacyTimeUri)
+        candidates += "app_calendar" to Intent(Intent.ACTION_MAIN).addCategory(Intent.CATEGORY_APP_CALENDAR)
 
-        val legacyTimeIntent = Intent(Intent.ACTION_VIEW).apply {
-            data = Uri.parse("content://com.android.calendar/time/$focusMillis")
-            if (id != null) {
-                putExtra(CalendarContract.Events.CALENDAR_ID, id)
-                putExtra("calendar_id", id)
+        // Explicit launchers as last package-targeted resorts.
+        for (pkg in packages) {
+            val launch = activity.packageManager.getLaunchIntentForPackage(pkg)
+            if (launch != null) {
+                candidates += "launcher:$pkg" to launch
             }
-            addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
         }
-        if (startActivitySafely(activity, legacyTimeIntent)) return true
 
-        val appIntent = Intent(Intent.ACTION_MAIN).apply {
-            addCategory(Intent.CATEGORY_APP_CALENDAR)
-            addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-        }
-        return startActivitySafely(activity, appIntent)
-    }
+        candidates += "chooser/time" to Intent.createChooser(
+            Intent(Intent.ACTION_VIEW, timeUri),
+            "Calendar",
+        )
 
-    private fun startActivitySafely(activity: MainActivity, intent: Intent): Boolean {
-        return try {
-            // Do not gate on resolveActivity(): on Android 11+ it often returns
-            // null for calendar apps unless <queries> lists them, even when
-            // startActivity would succeed.
-            activity.startActivity(intent)
-            true
-        } catch (_: Exception) {
-            false
+        val attempts = mutableListOf<String>()
+        for ((label, intent) in candidates) {
+            // Activity context: do not use FLAG_ACTIVITY_NEW_TASK (can leave the
+            // calendar in another task so it never comes to the foreground).
+            intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP)
+            try {
+                activity.startActivity(intent)
+                Log.i(TAG, "opened via $label focus=$focusMillis calendarId=$id")
+                return mapOf(
+                    "ok" to true,
+                    "via" to label,
+                    "focusMillis" to focusMillis,
+                    "calendarId" to id?.toString(),
+                    "attempts" to attempts,
+                )
+            } catch (e: Exception) {
+                val detail = "$label -> ${e.javaClass.simpleName}: ${e.message}"
+                attempts += detail
+                Log.w(TAG, "open failed: $detail", e)
+            }
         }
+
+        Log.e(TAG, "all open attempts failed calendarId=$id attempts=$attempts")
+        return mapOf(
+            "ok" to false,
+            "via" to null,
+            "focusMillis" to focusMillis,
+            "calendarId" to id?.toString(),
+            "attempts" to attempts,
+        )
     }
 
     /**
@@ -243,24 +269,6 @@ object GrintaCalendarChannel {
             selectionArgs = arrayOf(calendarId.toString()),
             sortOrder = "${CalendarContract.Events.DTSTART} DESC",
             column = CalendarContract.Events.DTSTART,
-        )
-    }
-
-    private fun findFocusEventId(
-        activity: MainActivity,
-        calendarId: Long,
-        focusMillis: Long,
-    ): Long? {
-        return queryEventLong(
-            activity = activity,
-            selection = (
-                "${CalendarContract.Events.CALENDAR_ID}=? AND " +
-                    "${CalendarContract.Events.DELETED}=0 AND " +
-                    "${CalendarContract.Events.DTSTART}=?"
-                ),
-            selectionArgs = arrayOf(calendarId.toString(), focusMillis.toString()),
-            sortOrder = null,
-            column = CalendarContract.Events._ID,
         )
     }
 

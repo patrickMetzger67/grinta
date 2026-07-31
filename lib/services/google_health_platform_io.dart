@@ -62,6 +62,18 @@ const List<HealthDataType> _kGoogleHealthReadTypes = [
   HealthDataType.HEART_RATE,
   HealthDataType.ACTIVE_ENERGY_BURNED,
   HealthDataType.SLEEP_ASLEEP,
+  // health 13.x always enriches WORKOUT with these reads; missing grants make
+  // getData(WORKOUT) throw SecurityException and return an empty list.
+  HealthDataType.DISTANCE_DELTA,
+  HealthDataType.TOTAL_CALORIES_BURNED,
+  HealthDataType.STEPS,
+];
+
+const List<HealthDataType> _kGoogleHealthWorkoutEnrichmentTypes = [
+  HealthDataType.WORKOUT,
+  HealthDataType.DISTANCE_DELTA,
+  HealthDataType.TOTAL_CALORIES_BURNED,
+  HealthDataType.STEPS,
 ];
 
 bool get isGoogleHealthConnectSupported => Platform.isAndroid;
@@ -115,6 +127,7 @@ Future<bool> _ensureAuthorized(Health health) async {
       _kGoogleHealthReadTypes,
       permissions: permissions,
     );
+    debugPrint('Google Health Connect requestAuthorization => $granted');
     if (!granted) return false;
 
     try {
@@ -126,6 +139,30 @@ Future<bool> _ensureAuthorized(Health health) async {
       }
     } catch (e, st) {
       debugPrint('Health Connect history authorization failed: $e\n$st');
+    }
+
+    // Plugin returns true if *any* type was granted. Log enrichment coverage
+    // (hasPermissions is imperfect on Android — do not hard-fail here).
+    try {
+      final workoutOk = await health.hasPermissions(
+        _kGoogleHealthWorkoutEnrichmentTypes,
+        permissions: List<HealthDataAccess>.filled(
+          _kGoogleHealthWorkoutEnrichmentTypes.length,
+          HealthDataAccess.READ,
+        ),
+      );
+      debugPrint(
+        'Google Health Connect hasPermissions(WORKOUT+DISTANCE+CALORIES+STEPS)='
+        '$workoutOk',
+      );
+      if (workoutOk == false) {
+        debugPrint(
+          'Google Health Connect: Exercise/Distance/Calories/Steps may be '
+          'incomplete — enable them in Health Connect → App permissions → Grinta',
+        );
+      }
+    } catch (e, st) {
+      debugPrint('Google Health Connect hasPermissions check failed: $e\n$st');
     }
 
     return true;
@@ -154,7 +191,7 @@ Future<GoogleHealthPlatformConnectResult> authorizeAndProbeWorkouts() async {
   }
 
   final workouts = await listGoogleHealthWorkouts(
-    lookbackDays: 30,
+    lookbackDays: 90,
     skipAuthorization: true,
   );
   DateTime? mostRecentWorkoutAt;
@@ -293,6 +330,10 @@ Future<List<GoogleHealthImportableActivity>> listGoogleHealthWorkouts({
       endTime: now,
       types: const [HealthDataType.WORKOUT],
     );
+    debugPrint(
+      'Google Health Connect WORKOUT points=${points.length} '
+      'lookbackDays=$lookbackDays',
+    );
     final activities = <GoogleHealthImportableActivity>[];
     final seen = <String>{};
     for (final point in points) {
@@ -302,6 +343,9 @@ Future<List<GoogleHealthImportableActivity>> listGoogleHealthWorkouts({
       activities.add(mapped);
     }
     activities.sort((a, b) => b.startDate.compareTo(a.startDate));
+    debugPrint(
+      'Google Health Connect mapped activities=${activities.length}',
+    );
     return activities;
   } catch (e, st) {
     debugPrint('Google Health Connect list workouts failed: $e\n$st');

@@ -39,6 +39,11 @@ On connect (and when listing importable workouts), Grinta requests read access f
 - **Heart rate** (`HEART_RATE`) — used for average HR on import when available
 - **Active energy** (`ACTIVE_ENERGY_BURNED`)
 - **Sleep** (`SLEEP_ASLEEP`)
+- **Distance** (`DISTANCE_DELTA`) — required by the `health` plugin when enriching workouts
+- **Total calories** (`TOTAL_CALORIES_BURNED`) — same workout enrichment
+- **Steps** (`STEPS`) — same workout enrichment
+
+Without Distance / Total calories / Steps, native `getData(WORKOUT)` can fail with a `SecurityException` and Grinta shows an empty activity list even after Exercise was granted.
 
 ## Workout import (Créer → activité sportive personnelle)
 
@@ -76,7 +81,7 @@ Manifest needs `WRITE_EXERCISE` / `WRITE_DISTANCE` (and calories write if reques
 
 The repo includes Health Connect setup in `android/app/src/main/AndroidManifest.xml`:
 
-- Read permissions: `READ_EXERCISE`, `READ_HEART_RATE`, `READ_ACTIVE_CALORIES_BURNED`, `READ_SLEEP`
+- Read permissions: `READ_EXERCISE`, `READ_HEART_RATE`, `READ_ACTIVE_CALORIES_BURNED`, `READ_SLEEP`, `READ_DISTANCE`, `READ_TOTAL_CALORIES_BURNED`, `READ_STEPS`
 - Write permissions (session export V1): `WRITE_EXERCISE`, `WRITE_DISTANCE`, `WRITE_TOTAL_CALORIES_BURNED`
 - `ACTIVITY_RECOGNITION` (required for fitness data)
 - `<queries>` for `com.google.android.apps.healthdata`

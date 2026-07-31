@@ -83,7 +83,10 @@ class _CalendarSyncToggleState extends State<CalendarSyncToggle>
                 final opened = await GrintaDeviceCalendarPlatform.openCalendarApp(
                   calendarId: calendarId,
                 );
-                if (!opened && mounted) {
+                if (!opened.ok && mounted) {
+                  debugPrint(
+                    'Open calendar failed via=${opened.via} detail=${opened.detail}',
+                  );
                   ScaffoldMessenger.of(context).showSnackBar(
                     SnackBar(content: Text(l10n.calendarSyncOpenCalendarFailed)),
                   );
