@@ -914,6 +914,8 @@ class TypicalTeamPlayerEntry {
   final TeamWdlTrendDirection titularTrend;
 
   /// e.g. `#6 - 8/21 - #5 - 3/21` when several shirts were used; otherwise null.
+  ///
+  /// Omits `#N - 0/x` entries. Returns null unless at least two positive counts remain.
   String? shirtBreakdownLabel({required bool useTitularCounts}) {
     if (shirtUsages.length < 2 || matchesWithSquadData <= 0) {
       return null;
@@ -923,7 +925,13 @@ class TypicalTeamPlayerEntry {
     for (final usage in shirtUsages) {
       final count =
           useTitularCounts ? usage.titularCount : usage.substituteCount;
+      if (count <= 0) {
+        continue;
+      }
       parts.add('#${usage.shirtNumber} - $count/$matchesWithSquadData');
+    }
+    if (parts.length < 2) {
+      return null;
     }
     return parts.join(' - ');
   }

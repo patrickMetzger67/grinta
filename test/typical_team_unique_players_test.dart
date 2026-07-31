@@ -213,5 +213,63 @@ void main() {
       expect(paul.shirtUsages, hasLength(1));
       expect(paul.shirtBreakdownLabel(useTitularCounts: true), isNull);
     });
+
+    test('omits zero-count shirts from breakdown label', () {
+      final result = computeTypicalTeamFromMatchStats(
+        matches: [
+          for (var i = 0; i < 9; i++)
+            _matchInput(
+              titulars: [
+                _player(name: 'Jean Philippe', shirt: '6'),
+              ],
+            ),
+          for (var i = 0; i < 9; i++)
+            _matchInput(
+              titulars: [
+                _player(name: 'Jean Philippe', shirt: '8'),
+              ],
+            ),
+          for (var i = 0; i < 2; i++)
+            _matchInput(
+              titulars: [
+                _player(name: 'Paul Martin', shirt: '9'),
+              ],
+              substitutes: [
+                _player(name: 'Jean Philippe', shirt: '13'),
+              ],
+            ),
+          _matchInput(
+            titulars: [
+              _player(name: 'Paul Martin', shirt: '9'),
+            ],
+            substitutes: [
+              _player(name: 'Jean Philippe', shirt: '14'),
+            ],
+          ),
+        ],
+        maxStarters: 11,
+        maxSubstitutes: 0,
+      );
+
+      final jean = result.probableStarters.singleWhere(
+        (player) =>
+            normalizeTypicalTeamPlayerIdentity(player.displayName) ==
+            'jean philippe',
+      );
+
+      expect(jean.shirtUsages.length, greaterThanOrEqualTo(2));
+      expect(
+        jean.shirtBreakdownLabel(useTitularCounts: true),
+        '#6 - 9/21 - #8 - 9/21',
+      );
+      expect(
+        jean.shirtBreakdownLabel(useTitularCounts: true),
+        isNot(contains('#13')),
+      );
+      expect(
+        jean.shirtBreakdownLabel(useTitularCounts: true),
+        isNot(contains('#14')),
+      );
+    });
   });
 }
