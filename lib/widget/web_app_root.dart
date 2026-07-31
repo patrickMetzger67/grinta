@@ -41,7 +41,6 @@ class WebAppRoot extends StatefulWidget {
 class _WebAppRootState extends State<WebAppRoot> {
   bool _isLoading = true;
   bool _tipVideoPromptScheduled = false;
-  bool _opponentAnalysisPromptScheduled = false;
   final AgendaService _agendaService = AgendaService();
 
   AppSession get appSession => context.read<AppSession>();
@@ -88,7 +87,7 @@ class _WebAppRootState extends State<WebAppRoot> {
       unawaited(CalendarDeepLinkService.instance.processPendingIfReady());
       // Tip video and opponent analysis are independent features.
       _scheduleTipVideoPrompt();
-      _scheduleOpponentAnalysisPrompt();
+      unawaited(OpponentAnalysisReportPrompt.startPolling());
     });
   }
 
@@ -96,17 +95,6 @@ class _WebAppRootState extends State<WebAppRoot> {
     if (_tipVideoPromptScheduled) return;
     _tipVideoPromptScheduled = true;
     unawaited(YoutubeTopVideoPrompt.maybeShow());
-  }
-
-  void _scheduleOpponentAnalysisPrompt() {
-    if (_opponentAnalysisPromptScheduled) return;
-    _opponentAnalysisPromptScheduled = true;
-    // Defer slightly so AppSession teams/player are more likely ready; also
-    // retried from the agenda stream below.
-    unawaited(() async {
-      await Future<void>.delayed(const Duration(milliseconds: 800));
-      await OpponentAnalysisReportPrompt.maybeShow();
-    }());
   }
 
   Stream<List<AgendaItem>> _watchAgendaItems({
@@ -124,7 +112,6 @@ class _WebAppRootState extends State<WebAppRoot> {
     );
 
     var didTriggerCalendarSync = false;
-    var didTriggerOpponentAnalysisPrompt = false;
 
     return stream.map((List<AgendaItem> items) {
       if (!didTriggerCalendarSync) {
@@ -135,11 +122,8 @@ class _WebAppRootState extends State<WebAppRoot> {
           ),
         );
       }
-      if (!didTriggerOpponentAnalysisPrompt) {
-        didTriggerOpponentAnalysisPrompt = true;
-        // Independent of tip video: retry once agenda data path is live.
-        unawaited(OpponentAnalysisReportPrompt.maybeShow());
-      }
+      // Keep asking until the prompt settles (shown or no match).
+      unawaited(OpponentAnalysisReportPrompt.startPolling());
       InternalReminderService.instance.onAgendaChanged();
       return items;
     });

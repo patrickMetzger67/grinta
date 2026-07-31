@@ -40,12 +40,14 @@ class _UpcomingOpponentMatch {
 
 /// Coach/manager prompt: offer an opponent analysis report for a match this week.
 ///
-/// Independent from the tip-of-the-week video — same shell timing only.
+/// Independent from the tip-of-the-week video (same shell timing only).
 class OpponentAnalysisReportPrompt {
   OpponentAnalysisReportPrompt._();
 
   static bool _dialogOpen = false;
   static bool _offeredThisSession = false;
+  static bool _settledNoOffer = false;
+  static bool _polling = false;
 
   /// True for Educateur/Entraineur **or** manager/owner of a team this season.
   static bool isEligibleCoachOrManager(AppSession session) {
@@ -56,35 +58,87 @@ class OpponentAnalysisReportPrompt {
     return false;
   }
 
+  /// Poll until the dialog is shown, or until we know there is nothing to offer.
+  ///
+  /// Safe to call multiple times (from shell ready + agenda stream).
+  static Future<void> startPolling() async {
+    if (_polling || _offeredThisSession || _settledNoOffer) return;
+    _polling = true;
+    try {
+      // Up to ~45s while AppSession / agenda hydrate after login.
+      for (var attempt = 0; attempt < 15; attempt++) {
+        if (_offeredThisSession || _settledNoOffer) return;
+        await maybeShow();
+        if (_offeredThisSession || _settledNoOffer) return;
+        await Future<void>.delayed(const Duration(seconds: 3));
+      }
+      debugPrint(
+        'OpponentAnalysisReportPrompt: polling ended without offer',
+      );
+    } finally {
+      _polling = false;
+    }
+  }
+
   static Future<void> maybeShow() async {
-    if (_dialogOpen || _offeredThisSession) return;
+    if (_dialogOpen || _offeredThisSession || _settledNoOffer) return;
 
     final rootContext = appNavigatorKey.currentContext;
-    if (rootContext == null || !rootContext.mounted) return;
+    if (rootContext == null || !rootContext.mounted) {
+      debugPrint('OpponentAnalysisReportPrompt: no root context yet');
+      return;
+    }
 
     AppSession session;
     try {
       session = rootContext.read<AppSession>();
     } catch (_) {
+      debugPrint('OpponentAnalysisReportPrompt: AppSession not in tree');
+      return;
+    }
+
+    if (session.isLoading) {
+      debugPrint('OpponentAnalysisReportPrompt: session still loading');
       return;
     }
 
     if (!isEligibleCoachOrManager(session)) {
-      debugPrint('OpponentAnalysisReportPrompt: skip — not coach/manager');
+      debugPrint(
+        'OpponentAnalysisReportPrompt: settle — not coach/manager '
+        '(educator=${session.selectedPlayer?.isEducatorOrCoach}, '
+        'managed=${session.managedTeamsIdsForSelectedSeason})',
+      );
+      _settledNoOffer = true;
+      return;
+    }
+
+    final teams = session.teamsForAgendaSelectedSeason;
+    if (teams.isEmpty) {
+      debugPrint('OpponentAnalysisReportPrompt: no agenda teams yet');
       return;
     }
 
     await OpponentAnalysisPromptStateService.instance.ensureInitialized();
     if (OpponentAnalysisPromptStateService.instance.isSnoozed) {
-      debugPrint('OpponentAnalysisReportPrompt: skip — snoozed until tomorrow');
+      debugPrint('OpponentAnalysisReportPrompt: settle — snoozed');
+      _settledNoOffer = true;
       return;
     }
 
     final candidate = await _resolveUpcomingMatch(
       context: rootContext,
       session: session,
+      teams: teams,
     );
-    if (candidate == null) return;
+
+    if (candidate == null) {
+      // Keep polling — matches can arrive after teams hydrate.
+      debugPrint(
+        'OpponentAnalysisReportPrompt: no promptable match yet, will retry',
+      );
+      return;
+    }
+
     if (!rootContext.mounted) return;
 
     // Avoid stacking on tip/welcome dialog — features stay independent.
@@ -96,6 +150,10 @@ class OpponentAnalysisReportPrompt {
 
     _dialogOpen = true;
     _offeredThisSession = true;
+    debugPrint(
+      'OpponentAnalysisReportPrompt: showing for '
+      '${candidate.opponent.displayName} @ ${candidate.kickoff}',
+    );
     try {
       await showDialog<void>(
         context: rootContext,
@@ -119,20 +177,54 @@ class OpponentAnalysisReportPrompt {
         .subtract(const Duration(milliseconds: 1));
   }
 
+  static Team? _teamForMatch({
+    required models.Match match,
+    required List<Team> teams,
+  }) {
+    final ids = <String>{};
+    final primary = match.teamID?.trim() ?? '';
+    if (primary.isNotEmpty) ids.add(primary);
+    for (final raw in match.teams ?? const []) {
+      final id = raw?.toString().trim() ?? '';
+      if (id.isNotEmpty) ids.add(id);
+    }
+
+    for (final team in teams) {
+      final key = team.keyTeam?.trim() ?? '';
+      if (key.isNotEmpty && ids.contains(key)) {
+        return team;
+      }
+    }
+
+    // Last resort: match by team display name on either side.
+    for (final team in teams) {
+      final name = (team.name ?? '').trim().toLowerCase();
+      if (name.isEmpty) continue;
+      if ((match.team1 ?? '').trim().toLowerCase() == name ||
+          (match.team2 ?? '').trim().toLowerCase() == name) {
+        return team;
+      }
+    }
+
+    if (teams.length == 1) return teams.first;
+    return null;
+  }
+
   static Future<_UpcomingOpponentMatch?> _resolveUpcomingMatch({
     required BuildContext context,
     required AppSession session,
+    required List<Team> teams,
   }) async {
-    final teams = session.teamsForAgendaSelectedSeason;
-    if (teams.isEmpty) {
-      debugPrint('OpponentAnalysisReportPrompt: skip — no agenda teams yet');
-      return null;
-    }
-
     final now = DateTime.now();
     final weekStart = _weekStartMonday(now);
     final weekEnd = _weekEndSunday(weekStart);
     final seasonId = session.selectedSeason?.ref?.id?.trim() ?? '';
+
+    debugPrint(
+      'OpponentAnalysisReportPrompt: loading agenda '
+      '${weekStart.toIso8601String()} → ${weekEnd.toIso8601String()} '
+      'teams=${teams.map((t) => t.keyTeam).join(",")}',
+    );
 
     final items = await AgendaService().loadAgendaItems(
       teams: teams,
@@ -145,7 +237,6 @@ class OpponentAnalysisReportPrompt {
         .where((item) => item.type == AgendaItemType.match)
         .where((item) => item.match != null)
         .where((item) => item.match!.isMatchPlayed != true)
-        // Still upcoming (not finished).
         .where((item) => !item.endAt.isBefore(now))
         .where((item) => !item.startAt.isBefore(weekStart))
         .where((item) => !item.startAt.isAfter(weekEnd))
@@ -153,9 +244,17 @@ class OpponentAnalysisReportPrompt {
       ..sort((a, b) => a.startAt.compareTo(b.startAt));
 
     debugPrint(
-      'OpponentAnalysisReportPrompt: ${matchItems.length} upcoming match(es) '
-      'this week (of ${items.length} agenda items)',
+      'OpponentAnalysisReportPrompt: agenda items=${items.length}, '
+      'upcoming matches=${matchItems.length}',
     );
+    for (final item in matchItems) {
+      debugPrint(
+        '  match ${item.id} start=${item.startAt} '
+        'teamID=${item.match?.teamID} '
+        'teams=${item.match?.teams} '
+        '${item.match?.team1} vs ${item.match?.team2}',
+      );
+    }
 
     final state = OpponentAnalysisPromptStateService.instance;
     final l10n = context.l10n;
@@ -165,24 +264,17 @@ class OpponentAnalysisReportPrompt {
       final matchId = match.id?.trim() ?? item.id.trim();
       if (matchId.isEmpty || !state.shouldPromptMatch(matchId)) {
         debugPrint(
-          'OpponentAnalysisReportPrompt: skip match $matchId '
-          '(empty or already answered)',
+          'OpponentAnalysisReportPrompt: skip $matchId '
+          '(answered/snooze status=${state.shouldPromptMatch(matchId)})',
         );
         continue;
       }
 
-      final teamId = match.teamID?.trim() ?? '';
-      Team? team;
-      for (final candidate in teams) {
-        if ((candidate.keyTeam?.trim() ?? '') == teamId) {
-          team = candidate;
-          break;
-        }
-      }
-      team ??= teams.length == 1 ? teams.first : null;
+      final team = _teamForMatch(match: match, teams: teams);
       if (team == null) {
         debugPrint(
-          'OpponentAnalysisReportPrompt: skip match $matchId — team $teamId not found',
+          'OpponentAnalysisReportPrompt: skip $matchId — no matching team '
+          'among ${teams.length} agenda teams',
         );
         continue;
       }
@@ -194,7 +286,8 @@ class OpponentAnalysisReportPrompt {
       );
       if (opponent == null || opponent.displayName.trim().isEmpty) {
         debugPrint(
-          'OpponentAnalysisReportPrompt: skip match $matchId — no opponent',
+          'OpponentAnalysisReportPrompt: skip $matchId — opponent unresolved '
+          'for team ${team.keyTeam} / ${team.name}',
         );
         continue;
       }
@@ -202,9 +295,7 @@ class OpponentAnalysisReportPrompt {
       final resolvedSeasonId =
           teamStatsSeasonIdForTeam(team, seasonId) ?? seasonId;
       if (resolvedSeasonId.isEmpty) {
-        debugPrint(
-          'OpponentAnalysisReportPrompt: skip match $matchId — no season',
-        );
+        debugPrint('OpponentAnalysisReportPrompt: skip $matchId — no season');
         continue;
       }
 
@@ -230,18 +321,17 @@ class OpponentAnalysisReportPrompt {
           }
         }
       } else if (options.isNotEmpty) {
-        // Fallback: first competition of the team so the prompt still appears.
         competitionUrl = options.first.url?.trim();
         competitionLabel = options.first.label;
         debugPrint(
-          'OpponentAnalysisReportPrompt: match $matchId using fallback '
-          'competition $competitionLabel',
+          'OpponentAnalysisReportPrompt: $matchId fallback competition '
+          '$competitionLabel',
         );
       }
 
       if (competitionUrl == null || competitionUrl.trim().isEmpty) {
         debugPrint(
-          'OpponentAnalysisReportPrompt: skip match $matchId — no competition URL',
+          'OpponentAnalysisReportPrompt: skip $matchId — no competition',
         );
         continue;
       }
@@ -289,7 +379,6 @@ class _OpponentAnalysisPromptDialogState
     final messenger = ScaffoldMessenger.maybeOf(context);
 
     try {
-      // Oui → ne plus reposer la question pour ce match.
       await OpponentAnalysisPromptStateService.instance.markSent(_matchId);
 
       final data = await OpponentAnalysisReportDataService.instance.build(
