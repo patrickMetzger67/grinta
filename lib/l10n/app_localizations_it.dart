@@ -6918,7 +6918,7 @@ class AppLocalizationsIt extends AppLocalizations {
 
   @override
   String get opponentAnalysisReportEmailIncludes =>
-      'The PDF includes trend, W/D/L (season and halves), results, players (call-ups / starts / minutes), typical team and ranking evolution.';
+      'The PDF includes trend, W/D/L (season and halves), results, goals, players (call-ups / starts / minutes / cards), typical team and ranking evolution.';
 
   @override
   String get opponentAnalysisReportEmailDialogTitle => 'Send analysis report';
