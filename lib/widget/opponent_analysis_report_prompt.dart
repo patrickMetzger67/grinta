@@ -1,3 +1,5 @@
+import 'dart:async' show unawaited;
+
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:grinta/core/extensions/l10n_extension.dart';
@@ -11,6 +13,7 @@ import 'package:grinta/services/agenda_service.dart';
 import 'package:grinta/services/opponent_analysis_prompt_state_service.dart';
 import 'package:grinta/services/opponent_analysis_report_data_service.dart';
 import 'package:grinta/util/app_theme.dart';
+import 'package:grinta/util/staff_session_access.dart';
 import 'package:grinta/util/team_stats_opponent_helper.dart';
 import 'package:grinta/widget/opponent_analysis_report_email_dialog.dart';
 import 'package:grinta/widget/youtube_top_video_prompt.dart';
@@ -23,9 +26,6 @@ class _UpcomingOpponentMatch {
     required this.team,
     required this.kickoff,
     required this.opponent,
-    required this.competitionUrl,
-    required this.competitionLabel,
-    required this.seasonId,
   });
 
   final models.Match match;
@@ -33,14 +33,53 @@ class _UpcomingOpponentMatch {
   final Team team;
   final DateTime kickoff;
   final TeamStatsOpponent opponent;
-  final String competitionUrl;
-  final String competitionLabel;
-  final String seasonId;
+}
+
+/// Invisible host: uses [WebAppRoot] context (AppSession + overlay) to offer
+/// the opponent-analysis prompt. Independent from the tip-of-the-week video.
+class OpponentAnalysisPromptHost extends StatefulWidget {
+  const OpponentAnalysisPromptHost({super.key});
+
+  @override
+  State<OpponentAnalysisPromptHost> createState() =>
+      _OpponentAnalysisPromptHostState();
+}
+
+class _OpponentAnalysisPromptHostState
+    extends State<OpponentAnalysisPromptHost> {
+  @override
+  void initState() {
+    super.initState();
+    OpponentAnalysisReportPrompt.bindHost(() => mounted ? context : null);
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      unawaited(OpponentAnalysisReportPrompt.startPolling());
+    });
+  }
+
+  @override
+  void dispose() {
+    OpponentAnalysisReportPrompt.unbindHost();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    // Rebuild / re-check when player, season or managed teams change.
+    context.select<AppSession, String?>((s) => s.selectedPlayerId);
+    context.select<AppSession, String?>((s) => s.selectedSeason?.ref?.id);
+    context.select<AppSession, int>(
+      (s) => s.managedTeamsIdsForSelectedSeason.length,
+    );
+    context.select<AppSession, String>((s) => s.agendaTeamsKey);
+
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      unawaited(OpponentAnalysisReportPrompt.maybeShow());
+    });
+    return const SizedBox.shrink();
+  }
 }
 
 /// Coach/manager prompt: offer an opponent analysis report for a match this week.
-///
-/// Independent from the tip-of-the-week video (same shell timing only).
 class OpponentAnalysisReportPrompt {
   OpponentAnalysisReportPrompt._();
 
@@ -48,33 +87,56 @@ class OpponentAnalysisReportPrompt {
   static bool _offeredThisSession = false;
   static bool _settledNoOffer = false;
   static bool _polling = false;
+  static BuildContext? Function()? _hostContext;
+  static List<AgendaItem> _latestAgendaItems = const [];
 
-  /// True for Educateur/Entraineur **or** manager/owner of a team this season.
+  static void bindHost(BuildContext? Function() contextGetter) {
+    _hostContext = contextGetter;
+  }
+
+  static void unbindHost() {
+    _hostContext = null;
+  }
+
+  /// Feed live agenda items (same source as the agenda UI).
+  static void noteAgendaItems(List<AgendaItem> items) {
+    _latestAgendaItems = List<AgendaItem>.unmodifiable(items);
+    unawaited(maybeShow());
+  }
+
+  static BuildContext? _resolveContext() {
+    final host = _hostContext?.call();
+    if (host != null && host.mounted) return host;
+    final root = appNavigatorKey.currentContext;
+    if (root != null && root.mounted) return root;
+    return null;
+  }
+
+  /// Educateur/Entraineur, manager/owner, or roster staff with team access.
   static bool isEligibleCoachOrManager(AppSession session) {
     final player = session.selectedPlayer;
     if (player == null) return false;
     if (player.isEducatorOrCoach) return true;
     if (session.hasManagedTeamsInSelectedSeason) return true;
+    for (final team in session.teamsForAgendaSelectedSeason) {
+      if (canAccessTeamSessionDetails(session, team.keyTeam)) {
+        return true;
+      }
+    }
     return false;
   }
 
-  /// Poll until the dialog is shown, or until we know there is nothing to offer.
-  ///
-  /// Safe to call multiple times (from shell ready + agenda stream).
   static Future<void> startPolling() async {
     if (_polling || _offeredThisSession || _settledNoOffer) return;
     _polling = true;
     try {
-      // Up to ~45s while AppSession / agenda hydrate after login.
-      for (var attempt = 0; attempt < 15; attempt++) {
+      for (var attempt = 0; attempt < 20; attempt++) {
         if (_offeredThisSession || _settledNoOffer) return;
         await maybeShow();
         if (_offeredThisSession || _settledNoOffer) return;
-        await Future<void>.delayed(const Duration(seconds: 3));
+        await Future<void>.delayed(const Duration(seconds: 2));
       }
-      debugPrint(
-        'OpponentAnalysisReportPrompt: polling ended without offer',
-      );
+      debugPrint('OpponentAnalysisReportPrompt: polling ended without offer');
     } finally {
       _polling = false;
     }
@@ -83,17 +145,17 @@ class OpponentAnalysisReportPrompt {
   static Future<void> maybeShow() async {
     if (_dialogOpen || _offeredThisSession || _settledNoOffer) return;
 
-    final rootContext = appNavigatorKey.currentContext;
-    if (rootContext == null || !rootContext.mounted) {
-      debugPrint('OpponentAnalysisReportPrompt: no root context yet');
+    final context = _resolveContext();
+    if (context == null) {
+      debugPrint('OpponentAnalysisReportPrompt: no context yet');
       return;
     }
 
     AppSession session;
     try {
-      session = rootContext.read<AppSession>();
-    } catch (_) {
-      debugPrint('OpponentAnalysisReportPrompt: AppSession not in tree');
+      session = context.read<AppSession>();
+    } catch (e) {
+      debugPrint('OpponentAnalysisReportPrompt: AppSession missing ($e)');
       return;
     }
 
@@ -104,11 +166,12 @@ class OpponentAnalysisReportPrompt {
 
     if (!isEligibleCoachOrManager(session)) {
       debugPrint(
-        'OpponentAnalysisReportPrompt: settle — not coach/manager '
+        'OpponentAnalysisReportPrompt: not eligible yet '
         '(educator=${session.selectedPlayer?.isEducatorOrCoach}, '
-        'managed=${session.managedTeamsIdsForSelectedSeason})',
+        'managed=${session.managedTeamsIdsForSelectedSeason}, '
+        'agendaTeams=${session.agendaTeamsKey})',
       );
-      _settledNoOffer = true;
+      // Do not settle — manager teams may still be hydrating.
       return;
     }
 
@@ -120,47 +183,49 @@ class OpponentAnalysisReportPrompt {
 
     await OpponentAnalysisPromptStateService.instance.ensureInitialized();
     if (OpponentAnalysisPromptStateService.instance.isSnoozed) {
-      debugPrint('OpponentAnalysisReportPrompt: settle — snoozed');
+      debugPrint('OpponentAnalysisReportPrompt: settle — snoozed until tomorrow');
       _settledNoOffer = true;
       return;
     }
 
-    final candidate = await _resolveUpcomingMatch(
-      context: rootContext,
+    final candidate = _pickCandidate(
       session: session,
       teams: teams,
+      items: _latestAgendaItems,
     );
-
     if (candidate == null) {
-      // Keep polling — matches can arrive after teams hydrate.
       debugPrint(
-        'OpponentAnalysisReportPrompt: no promptable match yet, will retry',
+        'OpponentAnalysisReportPrompt: no candidate in '
+        '${_latestAgendaItems.length} agenda item(s) yet',
       );
       return;
     }
 
-    if (!rootContext.mounted) return;
+    if (!context.mounted) return;
 
-    // Avoid stacking on tip/welcome dialog — features stay independent.
     while (YoutubeTopVideoPrompt.isDialogOpen) {
       await Future<void>.delayed(const Duration(milliseconds: 300));
-      if (!rootContext.mounted) return;
+      if (!context.mounted) return;
       if (_offeredThisSession) return;
     }
 
     _dialogOpen = true;
     _offeredThisSession = true;
     debugPrint(
-      'OpponentAnalysisReportPrompt: showing for '
-      '${candidate.opponent.displayName} @ ${candidate.kickoff}',
+      'OpponentAnalysisReportPrompt: SHOW '
+      '${candidate.opponent.displayName} @ ${candidate.kickoff} '
+      'team=${candidate.team.name}',
     );
     try {
       await showDialog<void>(
-        context: rootContext,
+        context: context,
         useRootNavigator: true,
         barrierDismissible: false,
         builder: (ctx) => _OpponentAnalysisPromptDialog(candidate: candidate),
       );
+    } catch (e, st) {
+      debugPrint('OpponentAnalysisReportPrompt: showDialog failed: $e\n$st');
+      _offeredThisSession = false;
     } finally {
       _dialogOpen = false;
     }
@@ -196,7 +261,6 @@ class OpponentAnalysisReportPrompt {
       }
     }
 
-    // Last resort: match by team display name on either side.
     for (final team in teams) {
       final name = (team.name ?? '').trim().toLowerCase();
       if (name.isEmpty) continue;
@@ -210,62 +274,40 @@ class OpponentAnalysisReportPrompt {
     return null;
   }
 
-  static Future<_UpcomingOpponentMatch?> _resolveUpcomingMatch({
-    required BuildContext context,
+  static _UpcomingOpponentMatch? _pickCandidate({
     required AppSession session,
     required List<Team> teams,
-  }) async {
+    required List<AgendaItem> items,
+  }) {
     final now = DateTime.now();
     final weekStart = _weekStartMonday(now);
     final weekEnd = _weekEndSunday(weekStart);
-    final seasonId = session.selectedSeason?.ref?.id?.trim() ?? '';
-
-    debugPrint(
-      'OpponentAnalysisReportPrompt: loading agenda '
-      '${weekStart.toIso8601String()} → ${weekEnd.toIso8601String()} '
-      'teams=${teams.map((t) => t.keyTeam).join(",")}',
-    );
-
-    final items = await AgendaService().loadAgendaItems(
-      teams: teams,
-      seasonId: seasonId.isEmpty ? null : seasonId,
-      start: weekStart,
-      end: weekEnd,
-    );
+    final state = OpponentAnalysisPromptStateService.instance;
 
     final matchItems = items
         .where((item) => item.type == AgendaItemType.match)
         .where((item) => item.match != null)
-        .where((item) => item.match!.isMatchPlayed != true)
-        .where((item) => !item.endAt.isBefore(now))
+        .where(
+          (item) =>
+              item.startAt.isAfter(now.subtract(const Duration(hours: 2))),
+        )
         .where((item) => !item.startAt.isBefore(weekStart))
         .where((item) => !item.startAt.isAfter(weekEnd))
         .toList()
       ..sort((a, b) => a.startAt.compareTo(b.startAt));
 
     debugPrint(
-      'OpponentAnalysisReportPrompt: agenda items=${items.length}, '
-      'upcoming matches=${matchItems.length}',
+      'OpponentAnalysisReportPrompt: pick from ${items.length} items → '
+      '${matchItems.length} match(es) in week '
+      '${weekStart.toLocal()}..${weekEnd.toLocal()}',
     );
-    for (final item in matchItems) {
-      debugPrint(
-        '  match ${item.id} start=${item.startAt} '
-        'teamID=${item.match?.teamID} '
-        'teams=${item.match?.teams} '
-        '${item.match?.team1} vs ${item.match?.team2}',
-      );
-    }
-
-    final state = OpponentAnalysisPromptStateService.instance;
-    final l10n = context.l10n;
 
     for (final item in matchItems) {
       final match = item.match!;
       final matchId = match.id?.trim() ?? item.id.trim();
       if (matchId.isEmpty || !state.shouldPromptMatch(matchId)) {
         debugPrint(
-          'OpponentAnalysisReportPrompt: skip $matchId '
-          '(answered/snooze status=${state.shouldPromptMatch(matchId)})',
+          'OpponentAnalysisReportPrompt: skip $matchId (already answered)',
         );
         continue;
       }
@@ -273,8 +315,18 @@ class OpponentAnalysisReportPrompt {
       final team = _teamForMatch(match: match, teams: teams);
       if (team == null) {
         debugPrint(
-          'OpponentAnalysisReportPrompt: skip $matchId — no matching team '
-          'among ${teams.length} agenda teams',
+          'OpponentAnalysisReportPrompt: skip $matchId — team not matched '
+          '(teamID=${match.teamID}, teams=${match.teams}, '
+          '${match.team1} vs ${match.team2})',
+        );
+        continue;
+      }
+
+      if (!canAccessTeamSessionDetails(session, team.keyTeam) &&
+          session.selectedPlayer?.isEducatorOrCoach != true) {
+        debugPrint(
+          'OpponentAnalysisReportPrompt: skip $matchId — no access to '
+          '${team.keyTeam}',
         );
         continue;
       }
@@ -286,57 +338,10 @@ class OpponentAnalysisReportPrompt {
       );
       if (opponent == null || opponent.displayName.trim().isEmpty) {
         debugPrint(
-          'OpponentAnalysisReportPrompt: skip $matchId — opponent unresolved '
-          'for team ${team.keyTeam} / ${team.name}',
+          'OpponentAnalysisReportPrompt: skip $matchId — no opponent for '
+          '${team.name}',
         );
         continue;
-      }
-
-      final resolvedSeasonId =
-          teamStatsSeasonIdForTeam(team, seasonId) ?? seasonId;
-      if (resolvedSeasonId.isEmpty) {
-        debugPrint('OpponentAnalysisReportPrompt: skip $matchId — no season');
-        continue;
-      }
-
-      var competitionUrl = await resolveTeamStatsCompetitionUrlForMatch(
-        team: team,
-        match: match,
-        fallbackSeasonId: resolvedSeasonId,
-      );
-      var competitionLabel = match.chType?.trim() ?? '';
-
-      final options = await loadTeamStatsCompetitionOptions(
-        team: team,
-        l10n: l10n,
-        fallbackSeasonId: resolvedSeasonId,
-        includeAllOption: false,
-      );
-
-      if (competitionUrl != null && competitionUrl.trim().isNotEmpty) {
-        for (final option in options) {
-          if ((option.url ?? '').trim() == competitionUrl.trim()) {
-            competitionLabel = option.label;
-            break;
-          }
-        }
-      } else if (options.isNotEmpty) {
-        competitionUrl = options.first.url?.trim();
-        competitionLabel = options.first.label;
-        debugPrint(
-          'OpponentAnalysisReportPrompt: $matchId fallback competition '
-          '$competitionLabel',
-        );
-      }
-
-      if (competitionUrl == null || competitionUrl.trim().isEmpty) {
-        debugPrint(
-          'OpponentAnalysisReportPrompt: skip $matchId — no competition',
-        );
-        continue;
-      }
-      if (competitionLabel.isEmpty) {
-        competitionLabel = 'Compétition';
       }
 
       return _UpcomingOpponentMatch(
@@ -345,9 +350,6 @@ class OpponentAnalysisReportPrompt {
         team: team,
         kickoff: item.startAt,
         opponent: opponent,
-        competitionUrl: competitionUrl.trim(),
-        competitionLabel: competitionLabel,
-        seasonId: resolvedSeasonId,
       );
     }
 
@@ -371,21 +373,77 @@ class _OpponentAnalysisPromptDialogState
 
   String get _matchId => widget.candidate.matchId;
 
+  Future<({String url, String label, String seasonId})?> _resolveCompetition(
+    AppSession session,
+  ) async {
+    final l10n = context.l10n;
+    final team = widget.candidate.team;
+    final match = widget.candidate.match;
+    final seasonId = session.selectedSeason?.ref?.id?.trim() ?? '';
+    final resolvedSeasonId =
+        teamStatsSeasonIdForTeam(team, seasonId) ?? seasonId;
+    if (resolvedSeasonId.isEmpty) return null;
+
+    var competitionUrl = await resolveTeamStatsCompetitionUrlForMatch(
+      team: team,
+      match: match,
+      fallbackSeasonId: resolvedSeasonId,
+    );
+    var competitionLabel = match.chType?.trim() ?? '';
+
+    final options = await loadTeamStatsCompetitionOptions(
+      team: team,
+      l10n: l10n,
+      fallbackSeasonId: resolvedSeasonId,
+      includeAllOption: false,
+    );
+
+    if (competitionUrl != null && competitionUrl.trim().isNotEmpty) {
+      for (final option in options) {
+        if ((option.url ?? '').trim() == competitionUrl.trim()) {
+          competitionLabel = option.label;
+          break;
+        }
+      }
+    } else if (options.isNotEmpty) {
+      competitionUrl = options.first.url?.trim();
+      competitionLabel = options.first.label;
+    }
+
+    if (competitionUrl == null || competitionUrl.trim().isEmpty) {
+      return null;
+    }
+    if (competitionLabel.isEmpty) {
+      competitionLabel = 'Compétition';
+    }
+    return (
+      url: competitionUrl.trim(),
+      label: competitionLabel,
+      seasonId: resolvedSeasonId,
+    );
+  }
+
   Future<void> _onYes() async {
     if (_busy) return;
     setState(() => _busy = true);
     final l10n = context.l10n;
     final colors = context.appColors;
     final messenger = ScaffoldMessenger.maybeOf(context);
+    final session = context.read<AppSession>();
 
     try {
       await OpponentAnalysisPromptStateService.instance.markSent(_matchId);
 
+      final competition = await _resolveCompetition(session);
+      if (competition == null) {
+        throw StateError('competition unresolved');
+      }
+
       final data = await OpponentAnalysisReportDataService.instance.build(
         team: widget.candidate.team,
-        seasonId: widget.candidate.seasonId,
-        competitionUrl: widget.candidate.competitionUrl,
-        competitionLabel: widget.candidate.competitionLabel,
+        seasonId: competition.seasonId,
+        competitionUrl: competition.url,
+        competitionLabel: competition.label,
         opponent: widget.candidate.opponent,
         upcomingMatch: widget.candidate.match,
         upcomingKickoff: widget.candidate.kickoff,
@@ -452,7 +510,11 @@ class _OpponentAnalysisPromptDialogState
         children: [
           Text(
             l10n.opponentAnalysisPromptMessage(weekday, time, opponent),
-            style: TextStyle(color: colors.textPrimary, fontSize: 15, height: 1.4),
+            style: TextStyle(
+              color: colors.textPrimary,
+              fontSize: 15,
+              height: 1.4,
+            ),
           ),
           if (_busy) ...[
             const SizedBox(height: 16),

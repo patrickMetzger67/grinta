@@ -87,7 +87,6 @@ class _WebAppRootState extends State<WebAppRoot> {
       unawaited(CalendarDeepLinkService.instance.processPendingIfReady());
       // Tip video and opponent analysis are independent features.
       _scheduleTipVideoPrompt();
-      unawaited(OpponentAnalysisReportPrompt.startPolling());
     });
   }
 
@@ -122,8 +121,8 @@ class _WebAppRootState extends State<WebAppRoot> {
           ),
         );
       }
-      // Keep asking until the prompt settles (shown or no match).
-      unawaited(OpponentAnalysisReportPrompt.startPolling());
+      // Same match list as the agenda UI — drives the opponent-analysis prompt.
+      OpponentAnalysisReportPrompt.noteAgendaItems(items);
       InternalReminderService.instance.onAgendaChanged();
       return items;
     });
@@ -285,6 +284,7 @@ class _WebAppRootState extends State<WebAppRoot> {
     return Stack(
       children: [
         shell,
+        const OpponentAnalysisPromptHost(),
 
         if (_isLoading)
           Positioned.fill(
