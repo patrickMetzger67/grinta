@@ -51,9 +51,6 @@ class _OpponentAnalysisPromptHostState
   void initState() {
     super.initState();
     OpponentAnalysisReportPrompt.bindHost(() => mounted ? context : null);
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      unawaited(OpponentAnalysisReportPrompt.startPolling());
-    });
   }
 
   @override
@@ -72,6 +69,7 @@ class _OpponentAnalysisPromptHostState
     );
     context.select<AppSession, String>((s) => s.agendaTeamsKey);
 
+    // Only after the home shell is ready (web Dashboard / mobile root).
     WidgetsBinding.instance.addPostFrameCallback((_) {
       unawaited(OpponentAnalysisReportPrompt.maybeShow());
     });
@@ -87,6 +85,8 @@ class OpponentAnalysisReportPrompt {
   static bool _offeredThisSession = false;
   static bool _settledNoOffer = false;
   static bool _polling = false;
+  /// Set when [WebAppRoot] home shell finished boot (Dashboard visible on web).
+  static bool _homeShellReady = false;
   static BuildContext? Function()? _hostContext;
   static List<AgendaItem> _latestAgendaItems = const [];
 
@@ -98,6 +98,14 @@ class OpponentAnalysisReportPrompt {
     _hostContext = null;
   }
 
+  /// Call once the main home shell is painted (web: Dashboard tab).
+  /// Opponent prompt must not wait for the Agenda tab.
+  static void markHomeShellReady() {
+    if (_homeShellReady) return;
+    _homeShellReady = true;
+    debugPrint('OpponentAnalysisReportPrompt: home shell ready');
+  }
+
   /// Feed live agenda items (same source as the agenda UI).
   static void noteAgendaItems(List<AgendaItem> items) {
     _latestAgendaItems = List<AgendaItem>.unmodifiable(items);
@@ -105,10 +113,11 @@ class OpponentAnalysisReportPrompt {
   }
 
   static BuildContext? _resolveContext() {
-    final host = _hostContext?.call();
-    if (host != null && host.mounted) return host;
+    // Prefer root navigator (same as tip video) so the dialog is above the shell.
     final root = appNavigatorKey.currentContext;
     if (root != null && root.mounted) return root;
+    final host = _hostContext?.call();
+    if (host != null && host.mounted) return host;
     return null;
   }
 
@@ -128,10 +137,14 @@ class OpponentAnalysisReportPrompt {
 
   static Future<void> startPolling() async {
     if (_polling || _offeredThisSession || _settledNoOffer) return;
+    if (!_homeShellReady) {
+      debugPrint('OpponentAnalysisReportPrompt: startPolling deferred (home not ready)');
+      return;
+    }
     _polling = true;
     debugPrint('OpponentAnalysisReportPrompt: startPolling (home shell)');
     try {
-      for (var attempt = 0; attempt < 20; attempt++) {
+      for (var attempt = 0; attempt < 30; attempt++) {
         if (_offeredThisSession || _settledNoOffer) return;
         await maybeShow();
         if (_offeredThisSession || _settledNoOffer) return;
@@ -145,6 +158,7 @@ class OpponentAnalysisReportPrompt {
 
   static Future<void> maybeShow() async {
     if (_dialogOpen || _offeredThisSession || _settledNoOffer) return;
+    if (!_homeShellReady) return;
 
     final context = _resolveContext();
     if (context == null) {
