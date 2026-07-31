@@ -151,10 +151,9 @@ class OpponentAnalysisPromptStateService {
     if (id.isEmpty) return false;
     if (isSnoozed) return false;
     final status = _matchStatus[id];
-    // Any prior answer (yes / skip / sent) → never ask again for this match.
-    return status != 'skipped' &&
-        status != 'accepted' &&
-        status != 'sent';
+    // Skip / sent are final. "accepted" alone means Oui failed before send —
+    // allow asking again so the coach can retry.
+    return status != 'skipped' && status != 'sent';
   }
 
   Future<void> markAccepted(String matchId) => _markStatus(matchId, 'accepted');

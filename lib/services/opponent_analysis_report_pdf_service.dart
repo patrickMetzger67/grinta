@@ -528,42 +528,77 @@ class OpponentAnalysisReportPdfService {
     }
   }
 
-  /// Helvetica / WinAnsi-safe text (same approach as coach workload PDF).
+  /// Helvetica / WinAnsi-safe text (strip anything outside basic ASCII).
   String _ascii(String value) {
-    return value
-        .replaceAll('Σ', 'moy.')
-        .replaceAll('·', '|')
-        .replaceAll('é', 'e')
-        .replaceAll('è', 'e')
-        .replaceAll('ê', 'e')
-        .replaceAll('ë', 'e')
-        .replaceAll('à', 'a')
-        .replaceAll('â', 'a')
-        .replaceAll('ä', 'a')
-        .replaceAll('ù', 'u')
-        .replaceAll('û', 'u')
-        .replaceAll('ü', 'u')
-        .replaceAll('ô', 'o')
-        .replaceAll('ö', 'o')
-        .replaceAll('î', 'i')
-        .replaceAll('ï', 'i')
-        .replaceAll('ç', 'c')
-        .replaceAll('ñ', 'n')
-        .replaceAll('É', 'E')
-        .replaceAll('È', 'E')
-        .replaceAll('Ê', 'E')
-        .replaceAll('À', 'A')
-        .replaceAll('Â', 'A')
-        .replaceAll('Ù', 'U')
-        .replaceAll('Ô', 'O')
-        .replaceAll('Î', 'I')
-        .replaceAll('Ç', 'C')
-        .replaceAll('’', "'")
-        .replaceAll('‘', "'")
-        .replaceAll('“', '"')
-        .replaceAll('”', '"')
-        .replaceAll('–', '-')
-        .replaceAll('—', '-')
-        .replaceAll('…', '...');
+    const map = <String, String>{
+      'À': 'A',
+      'Á': 'A',
+      'Â': 'A',
+      'Ä': 'A',
+      'à': 'a',
+      'á': 'a',
+      'â': 'a',
+      'ä': 'a',
+      'È': 'E',
+      'É': 'E',
+      'Ê': 'E',
+      'Ë': 'E',
+      'è': 'e',
+      'é': 'e',
+      'ê': 'e',
+      'ë': 'e',
+      'Ì': 'I',
+      'Í': 'I',
+      'Î': 'I',
+      'Ï': 'I',
+      'ì': 'i',
+      'í': 'i',
+      'î': 'i',
+      'ï': 'i',
+      'Ò': 'O',
+      'Ó': 'O',
+      'Ô': 'O',
+      'Ö': 'O',
+      'ò': 'o',
+      'ó': 'o',
+      'ô': 'o',
+      'ö': 'o',
+      'Ù': 'U',
+      'Ú': 'U',
+      'Û': 'U',
+      'Ü': 'U',
+      'ù': 'u',
+      'ú': 'u',
+      'û': 'u',
+      'ü': 'u',
+      'Ç': 'C',
+      'ç': 'c',
+      'Ñ': 'N',
+      'ñ': 'n',
+      'Œ': 'OE',
+      'œ': 'oe',
+      'Æ': 'AE',
+      'æ': 'ae',
+      '°': 'o',
+      '²': '2',
+      '³': '3',
+      '×': 'x',
+      'Σ': 'moy.',
+      '·': '|',
+      '–': '-',
+      '—': '-',
+      '’': "'",
+      '‘': "'",
+      '“': '"',
+      '”': '"',
+      '…': '...',
+      '€': 'EUR',
+    };
+    final buffer = StringBuffer();
+    for (final code in value.runes) {
+      final ch = String.fromCharCode(code);
+      buffer.write(map[ch] ?? (code < 32 || code > 126 ? '?' : ch));
+    }
+    return buffer.toString();
   }
 }

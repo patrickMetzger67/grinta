@@ -15,17 +15,17 @@ void main() {
       expect(service.shouldPromptMatch('match-1'), isTrue);
     });
 
-    test('shouldPromptMatch is false after accepted or skipped', () {
-      service.debugReset(matchStatus: {'match-1': 'accepted'});
-      expect(service.shouldPromptMatch('match-1'), isFalse);
-
+    test('shouldPromptMatch is false after skipped or sent', () {
       service.debugReset(matchStatus: {'match-2': 'skipped'});
       expect(service.shouldPromptMatch('match-2'), isFalse);
-    });
 
-    test('sent status never re-asks', () {
       service.debugReset(matchStatus: {'match-1': 'sent'});
       expect(service.shouldPromptMatch('match-1'), isFalse);
+    });
+
+    test('accepted without sent can be asked again (retry after failed Oui)', () {
+      service.debugReset(matchStatus: {'match-1': 'accepted'});
+      expect(service.shouldPromptMatch('match-1'), isTrue);
     });
 
     test('isSnoozed respects snoozeUntilDate (exclusive of that day)', () {
