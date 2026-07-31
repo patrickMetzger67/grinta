@@ -66,7 +66,7 @@ import 'app_localizations_it.dart';
 /// property.
 abstract class AppLocalizations {
   AppLocalizations(String locale)
-      : localeName = intl.Intl.canonicalizedLocale(locale.toString());
+    : localeName = intl.Intl.canonicalizedLocale(locale.toString());
 
   final String localeName;
 
@@ -89,11 +89,11 @@ abstract class AppLocalizations {
   /// of delegates is preferred or required.
   static const List<LocalizationsDelegate<dynamic>> localizationsDelegates =
       <LocalizationsDelegate<dynamic>>[
-    delegate,
-    GlobalMaterialLocalizations.delegate,
-    GlobalCupertinoLocalizations.delegate,
-    GlobalWidgetsLocalizations.delegate,
-  ];
+        delegate,
+        GlobalMaterialLocalizations.delegate,
+        GlobalCupertinoLocalizations.delegate,
+        GlobalWidgetsLocalizations.delegate,
+      ];
 
   /// A list of this localizations delegate's supported locales.
   static const List<Locale> supportedLocales = <Locale>[
@@ -101,7 +101,7 @@ abstract class AppLocalizations {
     Locale('en'),
     Locale('es'),
     Locale('fr'),
-    Locale('it')
+    Locale('it'),
   ];
 
   /// No description provided for @appName.
@@ -481,14 +481,21 @@ abstract class AppLocalizations {
   /// In fr, this message translates to:
   /// **'Ton coach t\'invite à rejoindre {appName}. Ton code : {code}.\niPhone : {appleStoreUrl}\nAndroid : {googlePlayUrl}'**
   String invitationSmsMessage(
-      String appName, String code, String appleStoreUrl, String googlePlayUrl);
+    String appName,
+    String code,
+    String appleStoreUrl,
+    String googlePlayUrl,
+  );
 
   /// No description provided for @sessionReportEmailSubject.
   ///
   /// In fr, this message translates to:
   /// **'{appName} — Rapport {eventLabel} : {title}'**
   String sessionReportEmailSubject(
-      String appName, String eventLabel, String title);
+    String appName,
+    String eventLabel,
+    String title,
+  );
 
   /// No description provided for @sessionReportEmailIntro.
   ///
@@ -2097,7 +2104,10 @@ abstract class AppLocalizations {
   /// In fr, this message translates to:
   /// **'{opponent} · RDV {time} · {message}'**
   String matchConvocationNotificationBodyWithMessage(
-      String opponent, String time, String message);
+    String opponent,
+    String time,
+    String message,
+  );
 
   /// No description provided for @tabTacticalSchema.
   ///
@@ -5704,7 +5714,10 @@ abstract class AppLocalizations {
   /// In fr, this message translates to:
   /// **'{title} — {when} — {location}'**
   String createNonSportEventNotificationBodyWithLocation(
-      String title, String when, String location);
+    String title,
+    String when,
+    String location,
+  );
 
   /// No description provided for @nonSportEventInviteesTitle.
   ///
@@ -6933,7 +6946,7 @@ abstract class AppLocalizations {
   /// No description provided for @calendarSyncToggleSubtitle.
   ///
   /// In fr, this message translates to:
-  /// **'Mise à jour auto à l\'ouverture de l\'agenda (max 1×/15 min)'**
+  /// **'Calendrier local de l’appareil (pas Google cloud). Mise à jour à l’ouverture de l’agenda (max 1×/15 min).'**
   String get calendarSyncToggleSubtitle;
 
   /// No description provided for @calendarSyncWebSubtitle.
@@ -6989,6 +7002,36 @@ abstract class AppLocalizations {
   /// In fr, this message translates to:
   /// **'La synchronisation a échoué. Réessayez.'**
   String get calendarSyncForceFailed;
+
+  /// No description provided for @calendarSyncEnabledTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Calendrier Grinta activé'**
+  String get calendarSyncEnabledTitle;
+
+  /// No description provided for @calendarSyncEnabledMessage.
+  ///
+  /// In fr, this message translates to:
+  /// **'Les matchs et entraînements sont écrits dans le calendrier local « {calendarName} » sur cet appareil (même profil Android que Grinta : perso ou pro).\n\nCe n’est pas un calendrier Google cloud : il n’apparaît pas sur calendar.google.com ni dans l’autre profil.\n\nDans ton app Calendrier → menu → coche « {calendarName} » (souvent sous « Calendriers de l’appareil » / Device Calendar).'**
+  String calendarSyncEnabledMessage(String calendarName);
+
+  /// No description provided for @calendarSyncOpenCalendar.
+  ///
+  /// In fr, this message translates to:
+  /// **'Ouvrir le calendrier'**
+  String get calendarSyncOpenCalendar;
+
+  /// No description provided for @calendarSyncHelpUnderstood.
+  ///
+  /// In fr, this message translates to:
+  /// **'Compris'**
+  String get calendarSyncHelpUnderstood;
+
+  /// No description provided for @calendarSyncHelpButton.
+  ///
+  /// In fr, this message translates to:
+  /// **'Où voir mes événements ?'**
+  String get calendarSyncHelpButton;
 
   /// No description provided for @settingsDevicesSection.
   ///
@@ -8289,7 +8332,7 @@ abstract class AppLocalizations {
   /// No description provided for @createMatchFieldNotGeolocatedMessage.
   ///
   /// In fr, this message translates to:
-  /// **'Le terrain n\'est pas géolocalisé. Souhaites-tu le faire maintenant ? C\'est nécessaire pour la génération des heatmaps.'**
+  /// **'Le terrain n\'est pas géolocalisé. Souhaites-tu le faire maintenant ? Cela permet des heatmaps alignées sur le terrain ; sinon elles utiliseront la vue satellite GPS.'**
   String get createMatchFieldNotGeolocatedMessage;
 
   /// No description provided for @createMatchSurface.
@@ -10241,7 +10284,10 @@ abstract class AppLocalizations {
   /// In fr, this message translates to:
   /// **'Polar {deviceId} · {deviceType} · {customName}'**
   String polarImportDeviceLine(
-      String deviceId, String deviceType, String customName);
+    String deviceId,
+    String deviceType,
+    String customName,
+  );
 
   /// No description provided for @polarImportBleAction.
   ///
@@ -10548,7 +10594,9 @@ abstract class AppLocalizations {
   /// In fr, this message translates to:
   /// **'Polar {deviceId} ({deviceType}) ajouté.'**
   String adminTrackerDevicesAddPolarChromeSuccess(
-      String deviceId, String deviceType);
+    String deviceId,
+    String deviceType,
+  );
 
   /// No description provided for @adminTrackerDevicesAddPolarDeviceType.
   ///
@@ -11189,7 +11237,7 @@ abstract class AppLocalizations {
   /// No description provided for @youtubeTopVideoMessage.
   ///
   /// In fr, this message translates to:
-  /// **'Découvrez la nouvelle astuce Grinta. Vous pouvez la regarder ici ou la passer.'**
+  /// **'Découvrez la nouvelle astuce Grinta. Vous pouvez la regarder ici, la passer, ou vous la faire rappeler demain.'**
   String get youtubeTopVideoMessage;
 
   /// No description provided for @youtubeTopVideoWatch.
@@ -11323,7 +11371,10 @@ abstract class AppLocalizations {
   /// In fr, this message translates to:
   /// **'{entitlement} actif jusqu\'au {expiresAt} ({days} jours offerts).'**
   String promoCodeRedeemSuccessVerified(
-      String entitlement, String expiresAt, int days);
+    String entitlement,
+    String expiresAt,
+    int days,
+  );
 
   /// No description provided for @promoCodeRedeemSyncPending.
   ///
@@ -11845,8 +11896,9 @@ AppLocalizations lookupAppLocalizations(Locale locale) {
   }
 
   throw FlutterError(
-      'AppLocalizations.delegate failed to load unsupported locale "$locale". This is likely '
-      'an issue with the localizations generation tool. Please file an issue '
-      'on GitHub with a reproducible sample app and the gen-l10n configuration '
-      'that was used.');
+    'AppLocalizations.delegate failed to load unsupported locale "$locale". This is likely '
+    'an issue with the localizations generation tool. Please file an issue '
+    'on GitHub with a reproducible sample app and the gen-l10n configuration '
+    'that was used.',
+  );
 }

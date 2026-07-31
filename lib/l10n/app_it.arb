@@ -1608,7 +1608,7 @@
   "createNonSportEventNotificationBodyWithLocation": "{title} — {when} — {location}",
   "nonSportEventInviteesTitle": "Invitations",
   "calendarSyncToggleLabel": "Sync. calendario",
-  "calendarSyncToggleSubtitle": "Aggiornamento all'apertura dell'agenda (max 1×/15 min)",
+  "calendarSyncToggleSubtitle": "Calendario locale del dispositivo (non Google cloud). Aggiornamento all'apertura dell'agenda (max 1×/15 min)",
   "calendarSyncWebSubtitle": "Scarica un file ICS da importare nel calendario",
   "calendarSyncWebRedownloadHint": "Tocca per scaricare di nuovo il file del calendario",
   "calendarSyncWebDownloaded": "File calendario scaricato. Importalo nella tua app calendario.",
@@ -1618,6 +1618,16 @@
   "calendarSyncForceNow": "Sincronizza ora",
   "calendarSyncForceSuccess": "Calendario sincronizzato.",
   "calendarSyncForceFailed": "Sincronizzazione non riuscita. Riprova.",
+  "calendarSyncEnabledTitle": "Grinta calendar enabled",
+  "calendarSyncEnabledMessage": "Matches and trainings are written to the local calendar \"{calendarName}\" on this device (same Android profile as Grinta: personal or work).\n\nThis is not a Google cloud calendar: it will not appear on calendar.google.com or in the other profile.\n\nIn your Calendar app → menu → enable \"{calendarName}\" (often under \"Device calendars\" / Device Calendar).",
+  "@calendarSyncEnabledMessage": {
+    "placeholders": {
+      "calendarName": { "type": "String" }
+    }
+  },
+  "calendarSyncOpenCalendar": "Open calendar",
+  "calendarSyncHelpUnderstood": "Got it",
+  "calendarSyncHelpButton": "Where are my events?",
   "createTrainingTitle": "Nuova sessione di allenamento",
   "createTrainingTeam": "Squadra",
   "createTrainingTeamRequired": "Seleziona una squadra",

@@ -217,13 +217,20 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String invitationSmsMessage(
-      String appName, String code, String appleStoreUrl, String googlePlayUrl) {
+    String appName,
+    String code,
+    String appleStoreUrl,
+    String googlePlayUrl,
+  ) {
     return 'Dein Coach lädt dich ein, $appName beizutreten. Dein Code: $code.\niPhone: $appleStoreUrl\nAndroid: $googlePlayUrl';
   }
 
   @override
   String sessionReportEmailSubject(
-      String appName, String eventLabel, String title) {
+    String appName,
+    String eventLabel,
+    String title,
+  ) {
     return '$appName — Bericht $eventLabel: $title';
   }
 
@@ -1178,7 +1185,10 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String matchConvocationNotificationBodyWithMessage(
-      String opponent, String time, String message) {
+    String opponent,
+    String time,
+    String message,
+  ) {
     return '$opponent · Treffpunkt $time · $message';
   }
 
@@ -3260,7 +3270,10 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String createNonSportEventNotificationBodyWithLocation(
-      String title, String when, String location) {
+    String title,
+    String when,
+    String location,
+  ) {
     return '$title — $when — $location';
   }
 
@@ -3999,7 +4012,7 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get calendarSyncToggleSubtitle =>
-      'Aktualisierung beim Öffnen der Agenda (max. 1×/15 Min.)';
+      'Lokaler Gerätekalender (nicht Google Cloud). Aktualisierung beim Öffnen der Agenda (max. 1×/15 Min.)';
 
   @override
   String get calendarSyncWebSubtitle =>
@@ -4034,6 +4047,23 @@ class AppLocalizationsDe extends AppLocalizations {
   @override
   String get calendarSyncForceFailed =>
       'Synchronisation fehlgeschlagen. Bitte erneut versuchen.';
+
+  @override
+  String get calendarSyncEnabledTitle => 'Grinta calendar enabled';
+
+  @override
+  String calendarSyncEnabledMessage(String calendarName) {
+    return 'Matches and trainings are written to the local calendar \"$calendarName\" on this device (same Android profile as Grinta: personal or work).\n\nThis is not a Google cloud calendar: it will not appear on calendar.google.com or in the other profile.\n\nIn your Calendar app → menu → enable \"$calendarName\" (often under \"Device calendars\" / Device Calendar).';
+  }
+
+  @override
+  String get calendarSyncOpenCalendar => 'Open calendar';
+
+  @override
+  String get calendarSyncHelpUnderstood => 'Got it';
+
+  @override
+  String get calendarSyncHelpButton => 'Where are my events?';
 
   @override
   String get settingsDevicesSection => 'Geräte/Anwendungen';
@@ -5161,7 +5191,9 @@ class AppLocalizationsDe extends AppLocalizations {
   String teamStatsGoalsAvgPerMatch(double avg) {
     final intl.NumberFormat avgNumberFormat =
         intl.NumberFormat.decimalPatternDigits(
-            locale: localeName, decimalDigits: 2);
+          locale: localeName,
+          decimalDigits: 2,
+        );
     final String avgString = avgNumberFormat.format(avg);
 
     return '$avgString/Spiel';
@@ -5182,7 +5214,9 @@ class AppLocalizationsDe extends AppLocalizations {
   String teamStatsAvgPointsPerMatch(double avg) {
     final intl.NumberFormat avgNumberFormat =
         intl.NumberFormat.decimalPatternDigits(
-            locale: localeName, decimalDigits: 2);
+          locale: localeName,
+          decimalDigits: 2,
+        );
     final String avgString = avgNumberFormat.format(avg);
 
     return '$avgString';
@@ -5947,7 +5981,10 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String polarImportDeviceLine(
-      String deviceId, String deviceType, String customName) {
+    String deviceId,
+    String deviceType,
+    String customName,
+  ) {
     return 'Polar $deviceId · $deviceType · $customName';
   }
 
@@ -6129,7 +6166,9 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String adminTrackerDevicesAddPolarChromeSuccess(
-      String deviceId, String deviceType) {
+    String deviceId,
+    String deviceType,
+  ) {
     return 'Polar $deviceId ($deviceType) hinzugefügt.';
   }
 
@@ -6547,8 +6586,7 @@ class AppLocalizationsDe extends AppLocalizations {
   String get settingsTipsSearchHint => 'Tipps suchen…';
 
   @override
-  String get settingsTipsSearchEmpty =>
-      'Keine Tipps entsprechen deiner Suche.';
+  String get settingsTipsSearchEmpty => 'Keine Tipps entsprechen deiner Suche.';
 
   @override
   String get promoCodeMenuLabel => 'Promo-Code';
@@ -6575,7 +6613,10 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String promoCodeRedeemSuccessVerified(
-      String entitlement, String expiresAt, int days) {
+    String entitlement,
+    String expiresAt,
+    int days,
+  ) {
     return '$entitlement aktiv bis $expiresAt ($days Tage geschenkt).';
   }
 
