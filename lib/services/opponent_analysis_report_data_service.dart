@@ -54,12 +54,16 @@ class OpponentAnalysisPlayerRow {
     required this.convocations,
     required this.starts,
     required this.minutesPlayed,
+    this.yellowCards = 0,
+    this.redCards = 0,
   });
 
   final String displayName;
   final int convocations;
   final int starts;
   final int minutesPlayed;
+  final int yellowCards;
+  final int redCards;
 }
 
 class OpponentAnalysisRankingPoint {
@@ -175,6 +179,8 @@ class OpponentAnalysisReportDataService {
               convocations: stats.convocations,
               starts: stats.starts,
               minutesPlayed: stats.minutesPlayed,
+              yellowCards: stats.yellowCards,
+              redCards: stats.redCards,
             ),
           )
           .where((row) => row.displayName.isNotEmpty)

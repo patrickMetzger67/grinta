@@ -1,3 +1,4 @@
+import 'dart:math' as math;
 import 'dart:typed_data';
 
 import 'package:grinta/model/match.dart';
@@ -20,6 +21,10 @@ class OpponentAnalysisReportPdfService {
   static const PdfColor _win = PdfColor.fromInt(0xFF22C55E);
   static const PdfColor _draw = PdfColor.fromInt(0xFFF59E0B);
   static const PdfColor _loss = PdfColor.fromInt(0xFFEF4444);
+  static const PdfColor _seriesOrange = PdfColor.fromInt(0xFFF95C1B);
+  static const PdfColor _seriesGreen = PdfColor.fromInt(0xFF22C55E);
+  static const PdfColor _seriesCyan = PdfColor.fromInt(0xFF26C6DA);
+  static const PdfColor _seriesPurple = PdfColor.fromInt(0xFFAB47BC);
 
   Future<Uint8List> buildPdf({
     required OpponentAnalysisReportData data,
@@ -254,60 +259,214 @@ class OpponentAnalysisReportPdfService {
       );
     }
 
-    final headers = <String>[_ascii('Journee')];
+    final matchdays = data.rankingMatchdays;
+    var maxRank = 1;
     for (final series in data.rankingSeries) {
-      headers.add(_ascii(series.label));
+      for (final point in series.points) {
+        final rank = point.rank;
+        if (rank != null && rank > maxRank) maxRank = rank;
+      }
     }
 
-    final rows = <List<String>>[];
-    for (final day in data.rankingMatchdays) {
-      final row = <String>['J$day'];
-      for (final series in data.rankingSeries) {
-        OpponentAnalysisRankingPoint? point;
-        for (final candidate in series.points) {
-          if (candidate.matchday == day) {
-            point = candidate;
-            break;
-          }
-        }
-        if (point?.rank == null) {
-          row.add('-');
-        } else {
-          final pts = point!.pts;
-          row.add(
-            pts == null ? '${point.rank}' : '${point.rank}e (${pts} pts)',
-          );
-        }
-      }
-      rows.add(row);
-    }
+    final palette = <PdfColor>[
+      _seriesOrange,
+      _seriesGreen,
+      _seriesCyan,
+      _seriesPurple,
+      _draw,
+      _loss,
+    ];
 
     return pw.Column(
       crossAxisAlignment: pw.CrossAxisAlignment.start,
       children: [
-        pw.Text(
-          _ascii(
-            data.rankingSeries
-                .map((s) => s.isOwnTeam ? '${s.label} (toi)' : s.label)
-                .join('  |  '),
+        pw.Container(
+          width: double.infinity,
+          height: 210,
+          decoration: pw.BoxDecoration(
+            color: _surface,
+            borderRadius: pw.BorderRadius.circular(10),
+            border: pw.Border.all(color: _border),
           ),
-          style: const pw.TextStyle(color: _textSecondary, fontSize: 9),
+          padding: const pw.EdgeInsets.fromLTRB(8, 8, 10, 6),
+          child: pw.CustomPaint(
+            size: const PdfPoint(520, 190),
+            painter: (PdfGraphics canvas, PdfPoint size) {
+              _paintRankingChart(
+                canvas: canvas,
+                size: size,
+                matchdays: matchdays,
+                series: data.rankingSeries,
+                maxRank: maxRank,
+                palette: palette,
+              );
+            },
+          ),
         ),
-        pw.SizedBox(height: 6),
-        pw.TableHelper.fromTextArray(
-          headers: headers,
-          data: rows,
-          headerStyle: pw.TextStyle(
-            color: _white,
-            fontWeight: pw.FontWeight.bold,
-            fontSize: 8,
-          ),
-          headerDecoration: const pw.BoxDecoration(color: _primary),
-          cellStyle: const pw.TextStyle(fontSize: 8, color: _textPrimary),
-          cellAlignment: pw.Alignment.centerLeft,
+        pw.SizedBox(height: 8),
+        pw.Wrap(
+          spacing: 12,
+          runSpacing: 4,
+          children: [
+            for (var i = 0; i < data.rankingSeries.length; i++)
+              pw.Row(
+                mainAxisSize: pw.MainAxisSize.min,
+                children: [
+                  pw.Container(
+                    width: 8,
+                    height: 8,
+                    decoration: pw.BoxDecoration(
+                      color: palette[i % palette.length],
+                      shape: pw.BoxShape.circle,
+                    ),
+                  ),
+                  pw.SizedBox(width: 4),
+                  pw.Text(
+                    _ascii(
+                      data.rankingSeries[i].isOwnTeam
+                          ? '${data.rankingSeries[i].label} (toi)'
+                          : data.rankingSeries[i].label,
+                    ),
+                    style: pw.TextStyle(
+                      color: _textPrimary,
+                      fontSize: 9,
+                      fontWeight: data.rankingSeries[i].isOwnTeam
+                          ? pw.FontWeight.bold
+                          : pw.FontWeight.normal,
+                    ),
+                  ),
+                ],
+              ),
+          ],
         ),
       ],
     );
+  }
+
+  void _paintRankingChart({
+    required PdfGraphics canvas,
+    required PdfPoint size,
+    required List<int> matchdays,
+    required List<OpponentAnalysisRankingSeries> series,
+    required int maxRank,
+    required List<PdfColor> palette,
+  }) {
+    // PdfGraphics origin is bottom-left; rank 1 must sit at the top.
+    const left = 28.0;
+    const right = 8.0;
+    const topPad = 8.0;
+    const bottomPad = 22.0;
+    final chartW = size.x - left - right;
+    final chartH = size.y - topPad - bottomPad;
+    if (chartW <= 0 || chartH <= 0 || matchdays.isEmpty) return;
+
+    final plotBottom = bottomPad;
+    final plotTop = bottomPad + chartH;
+    final yInterval = _rankingHorizontalInterval(maxRank);
+    final xStep = matchdays.length <= 1
+        ? 0.0
+        : chartW / (matchdays.length - 1);
+    final font = canvas.defaultFont;
+
+    double yForRank(int rank) {
+      if (maxRank <= 1) return plotBottom + chartH / 2;
+      return plotTop - ((rank - 1) / (maxRank - 1)) * chartH;
+    }
+
+    // Horizontal grid + Y labels.
+    for (var rank = 1; rank <= maxRank; rank += yInterval) {
+      final yy = yForRank(rank);
+      canvas
+        ..setStrokeColor(PdfColor.fromInt(0xFFD1D5DB))
+        ..setLineWidth(0.6)
+        ..moveTo(left, yy)
+        ..lineTo(left + chartW, yy)
+        ..strokePath();
+      if (font != null) {
+        canvas
+          ..setFillColor(_textSecondary)
+          ..drawString(font, 8, '$rank', left - 16, yy - 3);
+      }
+    }
+
+    // Vertical grid + X labels.
+    final labelStep = _rankingBottomLabelStep(matchdays.length);
+    for (var i = 0; i < matchdays.length; i++) {
+      final x = left + i * xStep;
+      if (i % labelStep != 0 && i != matchdays.length - 1) continue;
+      canvas
+        ..setStrokeColor(PdfColor.fromInt(0xFFE5E7EB))
+        ..setLineWidth(0.5)
+        ..moveTo(x, plotBottom)
+        ..lineTo(x, plotTop)
+        ..strokePath();
+      if (font != null) {
+        canvas
+          ..setFillColor(_textSecondary)
+          ..drawString(font, 8, '${matchdays[i]}', x - 4, bottomPad - 14);
+      }
+    }
+
+    for (var s = 0; s < series.length; s++) {
+      final color = palette[s % palette.length];
+      final points = <PdfPoint>[];
+      for (var i = 0; i < matchdays.length; i++) {
+        final day = matchdays[i];
+        int? rank;
+        for (final p in series[s].points) {
+          if (p.matchday == day) {
+            rank = p.rank;
+            break;
+          }
+        }
+        if (rank == null) continue;
+        points.add(PdfPoint(left + i * xStep, yForRank(rank)));
+      }
+      if (points.isEmpty) continue;
+
+      canvas
+        ..setStrokeColor(color)
+        ..setLineWidth(2.2)
+        ..setLineCap(PdfLineCap.round)
+        ..setLineJoin(PdfLineJoin.round)
+        ..moveTo(points.first.x, points.first.y);
+      if (points.length == 1) {
+        canvas
+          ..lineTo(points.first.x + 0.1, points.first.y)
+          ..strokePath()
+          ..setFillColor(color)
+          ..drawEllipse(points.first.x - 2.5, points.first.y - 2.5, 5, 5)
+          ..fillPath();
+      } else {
+        for (var i = 1; i < points.length; i++) {
+          final prev = points[i - 1];
+          final curr = points[i];
+          final dx = (curr.x - prev.x) * 0.35;
+          canvas.curveTo(
+            prev.x + dx,
+            prev.y,
+            curr.x - dx,
+            curr.y,
+            curr.x,
+            curr.y,
+          );
+        }
+        canvas.strokePath();
+      }
+    }
+  }
+
+  int _rankingHorizontalInterval(int maxRank) {
+    if (maxRank <= 4) return 1;
+    if (maxRank <= 10) return 2;
+    return math.max(1, (maxRank / 5).ceil());
+  }
+
+  int _rankingBottomLabelStep(int matchdayCount) {
+    if (matchdayCount <= 8) return 1;
+    if (matchdayCount <= 16) return 2;
+    if (matchdayCount <= 24) return 3;
+    return math.max(1, (matchdayCount / 6).ceil());
   }
 
   pw.Widget _wdlBar(TeamWdlCounts counts) {
@@ -430,7 +589,7 @@ class OpponentAnalysisReportPdfService {
 
     final rows = players.take(40).toList();
     return pw.TableHelper.fromTextArray(
-      headers: const ['Joueur', 'Convo', 'Titu.', 'Tps jeu'],
+      headers: const ['Joueur', 'Convo', 'Titu.', 'Tps jeu', 'CJ', 'CR'],
       data: [
         for (final player in rows)
           [
@@ -438,6 +597,8 @@ class OpponentAnalysisReportPdfService {
             '${player.convocations}',
             '${player.starts}',
             '${player.minutesPlayed}',
+            '${player.yellowCards}',
+            '${player.redCards}',
           ],
       ],
       headerStyle: pw.TextStyle(
@@ -453,6 +614,8 @@ class OpponentAnalysisReportPdfService {
         1: const pw.FlexColumnWidth(1),
         2: const pw.FlexColumnWidth(1),
         3: const pw.FlexColumnWidth(1),
+        4: const pw.FlexColumnWidth(0.8),
+        5: const pw.FlexColumnWidth(0.8),
       },
     );
   }
