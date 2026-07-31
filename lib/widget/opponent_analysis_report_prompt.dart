@@ -12,7 +12,9 @@ import 'package:grinta/screen/team_stats/team_stats_competition_selector.dart';
 import 'package:grinta/services/agenda_service.dart';
 import 'package:grinta/services/opponent_analysis_prompt_state_service.dart';
 import 'package:grinta/services/opponent_analysis_report_data_service.dart';
+import 'package:grinta/services/team_competition_stats_service.dart';
 import 'package:grinta/util/app_theme.dart';
+import 'package:grinta/util/match_outcome_helper.dart';
 import 'package:grinta/util/staff_session_access.dart';
 import 'package:grinta/util/team_stats_opponent_helper.dart';
 import 'package:grinta/widget/opponent_analysis_report_email_dialog.dart';
@@ -62,14 +64,10 @@ class _OpponentAnalysisPromptHostState
   Widget build(BuildContext context) => const SizedBox.shrink();
 }
 
-/// Coach/manager prompt: offer an opponent analysis report for a match this week.
-///
-/// One shot after home shell ready — no polling, no agenda watch loop.
+/// Home shell: one question per team that has a match this week.
 class OpponentAnalysisReportPrompt {
   OpponentAnalysisReportPrompt._();
 
-  static bool _dialogOpen = false;
-  static bool _done = false;
   static bool _started = false;
   static BuildContext? Function()? _hostContext;
 
@@ -81,12 +79,11 @@ class OpponentAnalysisReportPrompt {
     _hostContext = null;
   }
 
-  /// Call once when the home shell is painted. Loads this week once and shows
-  /// the dialog at most once per session.
+  /// Call once when the home shell is painted.
   static void onHomeShellReady() {
-    if (_started || _done) return;
+    if (_started) return;
     _started = true;
-    unawaited(_tryShow());
+    unawaited(_run());
   }
 
   static BuildContext? _resolveContext() {
@@ -110,18 +107,15 @@ class OpponentAnalysisReportPrompt {
     return false;
   }
 
-  static Future<void> _tryShow() async {
-    // Wait briefly for session/teams if needed — one soft retry only.
+  static Future<void> _run() async {
+    // Soft wait once if session/teams are not ready yet.
     for (var attempt = 0; attempt < 2; attempt++) {
-      if (_done || _dialogOpen) return;
-
       final context = _resolveContext();
       if (context == null) {
         if (attempt == 0) {
           await Future<void>.delayed(const Duration(seconds: 2));
           continue;
         }
-        _done = true;
         return;
       }
 
@@ -129,7 +123,6 @@ class OpponentAnalysisReportPrompt {
       try {
         session = context.read<AppSession>();
       } catch (_) {
-        _done = true;
         return;
       }
 
@@ -138,7 +131,6 @@ class OpponentAnalysisReportPrompt {
           await Future<void>.delayed(const Duration(seconds: 2));
           continue;
         }
-        _done = true;
         return;
       }
 
@@ -148,54 +140,36 @@ class OpponentAnalysisReportPrompt {
           await Future<void>.delayed(const Duration(seconds: 2));
           continue;
         }
-        _done = true;
         return;
       }
 
       await OpponentAnalysisPromptStateService.instance.ensureInitialized();
-      if (OpponentAnalysisPromptStateService.instance.isSnoozed) {
-        _done = true;
-        return;
+      if (OpponentAnalysisPromptStateService.instance.isSnoozed) return;
+
+      // Wait for tip video if open.
+      for (var i = 0; i < 40 && YoutubeTopVideoPrompt.isDialogOpen; i++) {
+        await Future<void>.delayed(const Duration(milliseconds: 250));
+        if (!context.mounted) return;
       }
 
       final items = await _loadWeekMatchItems(session, teams);
-      final candidate = _pickCandidate(
+      final candidates = _pickOneMatchPerTeam(
         session: session,
         teams: teams,
         items: items,
       );
-      if (candidate == null) {
-        _done = true;
-        return;
-      }
+      if (candidates.isEmpty) return;
 
-      if (!context.mounted) {
-        _done = true;
-        return;
-      }
+      for (final candidate in candidates) {
+        if (!context.mounted) return;
+        if (OpponentAnalysisPromptStateService.instance.isSnoozed) return;
 
-      // Let the tip video finish first if it is open.
-      for (var i = 0; i < 40 && YoutubeTopVideoPrompt.isDialogOpen; i++) {
-        await Future<void>.delayed(const Duration(milliseconds: 250));
-        if (!context.mounted) {
-          _done = true;
-          return;
-        }
-      }
-
-      _dialogOpen = true;
-      _done = true;
-      try {
         await showDialog<void>(
           context: context,
           useRootNavigator: true,
           barrierDismissible: false,
           builder: (ctx) => _OpponentAnalysisPromptDialog(candidate: candidate),
         );
-      } catch (e, st) {
-        debugPrint('OpponentAnalysisReportPrompt: showDialog failed: $e\n$st');
-      } finally {
-        _dialogOpen = false;
       }
       return;
     }
@@ -233,39 +207,31 @@ class OpponentAnalysisReportPrompt {
     }
   }
 
+  /// Same rule as match detail: prefer [Match.teamID].
   static Team? _teamForMatch({
     required models.Match match,
     required List<Team> teams,
   }) {
-    final ids = <String>{};
     final primary = match.teamID?.trim() ?? '';
-    if (primary.isNotEmpty) ids.add(primary);
+    if (primary.isNotEmpty) {
+      for (final team in teams) {
+        if ((team.keyTeam?.trim() ?? '') == primary) return team;
+      }
+    }
+
     for (final raw in match.teams ?? const []) {
       final id = raw?.toString().trim() ?? '';
-      if (id.isNotEmpty) ids.add(id);
-    }
-
-    for (final team in teams) {
-      final key = team.keyTeam?.trim() ?? '';
-      if (key.isNotEmpty && ids.contains(key)) {
-        return team;
+      if (id.isEmpty) continue;
+      for (final team in teams) {
+        if ((team.keyTeam?.trim() ?? '') == id) return team;
       }
     }
 
-    for (final team in teams) {
-      final name = (team.name ?? '').trim().toLowerCase();
-      if (name.isEmpty) continue;
-      if ((match.team1 ?? '').trim().toLowerCase() == name ||
-          (match.team2 ?? '').trim().toLowerCase() == name) {
-        return team;
-      }
-    }
-
-    if (teams.length == 1) return teams.first;
     return null;
   }
 
-  static _UpcomingOpponentMatch? _pickCandidate({
+  /// One upcoming match per team (earliest this week, not yet answered).
+  static List<_UpcomingOpponentMatch> _pickOneMatchPerTeam({
     required AppSession session,
     required List<Team> teams,
     required List<AgendaItem> items,
@@ -274,6 +240,8 @@ class OpponentAnalysisReportPrompt {
     final weekStart = _weekStartMonday(now);
     final weekEnd = _weekEndSunday(weekStart);
     final state = OpponentAnalysisPromptStateService.instance;
+    final seenTeamIds = <String>{};
+    final result = <_UpcomingOpponentMatch>[];
 
     final matchItems = items
         .where((item) => item.type == AgendaItemType.match)
@@ -295,28 +263,54 @@ class OpponentAnalysisReportPrompt {
       final team = _teamForMatch(match: match, teams: teams);
       if (team == null) continue;
 
-      if (!canAccessTeamSessionDetails(session, team.keyTeam) &&
+      final teamId = team.keyTeam?.trim() ?? '';
+      if (teamId.isEmpty || seenTeamIds.contains(teamId)) continue;
+
+      if (!canAccessTeamSessionDetails(session, teamId) &&
           session.selectedPlayer?.isEducatorOrCoach != true) {
         continue;
       }
 
       final opponent = opponentForMatch(
         match: match,
-        teamId: team.keyTeam ?? '',
+        teamId: teamId,
         clubId: team.clubId,
       );
       if (opponent == null || opponent.displayName.trim().isEmpty) continue;
 
-      return _UpcomingOpponentMatch(
+      // Safety: never treat our own side as the opponent.
+      final ownSide = teamSideForMatch(
         match: match,
-        matchId: matchId,
-        team: team,
-        kickoff: item.startAt,
-        opponent: opponent,
+        teamId: teamId,
+        clubId: team.clubId,
+      );
+      if (ownSide != null) {
+        final ownName = ownSide == MatchSide.team1
+            ? (match.team1 ?? '').trim()
+            : (match.team2 ?? '').trim();
+        if (ownName.isNotEmpty &&
+            _compactName(ownName) == _compactName(opponent.displayName)) {
+          continue;
+        }
+      }
+
+      seenTeamIds.add(teamId);
+      result.add(
+        _UpcomingOpponentMatch(
+          match: match,
+          matchId: matchId,
+          team: team,
+          kickoff: item.startAt,
+          opponent: opponent,
+        ),
       );
     }
 
-    return null;
+    return result;
+  }
+
+  static String _compactName(String value) {
+    return value.toLowerCase().replaceAll(RegExp(r'[^a-z0-9]'), '');
   }
 }
 
@@ -336,53 +330,91 @@ class _OpponentAnalysisPromptDialogState
 
   String get _matchId => widget.candidate.matchId;
 
-  /// Best-effort competition: match URL, else first team option, else empty
-  /// (report is still built — ranking/stats sections stay empty).
-  Future<({String url, String label, String seasonId})> _resolveCompetition(
-    AppSession session,
-  ) async {
+  static String _compactName(String value) {
+    return value.toLowerCase().replaceAll(RegExp(r'[^a-z0-9]'), '');
+  }
+
+  /// Find a competition where this opponent exists (Adversaires data).
+  Future<
+      ({
+        String url,
+        String label,
+        String seasonId,
+        TeamStatsOpponent opponent,
+      })?> _resolveReportSource(AppSession session) async {
     final l10n = context.l10n;
     final team = widget.candidate.team;
     final match = widget.candidate.match;
     final seasonId = session.selectedSeason?.ref?.id?.trim() ?? '';
     final resolvedSeasonId =
         teamStatsSeasonIdForTeam(team, seasonId) ?? seasonId;
+    if (resolvedSeasonId.isEmpty) return null;
 
-    var competitionUrl = await resolveTeamStatsCompetitionUrlForMatch(
+    final options = await loadTeamStatsCompetitionOptions(
+      team: team,
+      l10n: l10n,
+      fallbackSeasonId: resolvedSeasonId,
+      includeAllOption: false,
+    );
+    if (options.isEmpty) return null;
+
+    final matchUrl = await resolveTeamStatsCompetitionUrlForMatch(
       team: team,
       match: match,
       fallbackSeasonId: resolvedSeasonId,
     );
-    var competitionLabel = match.chType?.trim() ?? '';
 
-    if (competitionUrl == null || competitionUrl.trim().isEmpty) {
+    final ordered = <TeamStatsCompetitionOption>[
+      ...options.where((o) => (o.url ?? '').trim() == (matchUrl ?? '').trim()),
+      ...options.where((o) => (o.url ?? '').trim() != (matchUrl ?? '').trim()),
+    ];
+
+    final needle = _compactName(widget.candidate.opponent.displayName);
+    final stats = TeamCompetitionStatsService();
+
+    for (final option in ordered) {
+      final url = option.url?.trim() ?? '';
+      if (url.isEmpty) continue;
       try {
-        final options = await loadTeamStatsCompetitionOptions(
+        final opponents = await stats.loadOpponentsForTeam(
           team: team,
-          l10n: l10n,
-          fallbackSeasonId: resolvedSeasonId,
-          includeAllOption: false,
+          seasonId: resolvedSeasonId,
+          competitionUrl: url,
         );
-        if (options.isNotEmpty) {
-          competitionUrl = options.first.url?.trim();
-          competitionLabel = options.first.label;
+        for (final opponent in opponents) {
+          if (_compactName(opponent.displayName) == needle ||
+              opponent.key == widget.candidate.opponent.key) {
+            return (
+              url: url,
+              label: option.label,
+              seasonId: resolvedSeasonId,
+              opponent: opponent,
+            );
+          }
         }
       } catch (e, st) {
-        debugPrint('Opponent analysis: competition options failed: $e\n$st');
+        debugPrint('Opponent analysis: loadOpponents failed: $e\n$st');
       }
     }
 
-    if (competitionLabel.isEmpty) {
-      competitionLabel = competitionUrl?.trim().isNotEmpty == true
-          ? 'Compétition'
-          : 'Hors compétition';
+    // Match has a competition URL even if opponent not listed yet.
+    if (matchUrl != null && matchUrl.trim().isNotEmpty) {
+      String label = 'Compétition';
+      for (final option in ordered) {
+        if ((option.url ?? '').trim() == matchUrl.trim()) {
+          label = option.label;
+          break;
+        }
+      }
+      return (
+        url: matchUrl.trim(),
+        label: label,
+        seasonId: resolvedSeasonId,
+        opponent: widget.candidate.opponent,
+      );
     }
 
-    return (
-      url: (competitionUrl ?? '').trim(),
-      label: competitionLabel,
-      seasonId: resolvedSeasonId,
-    );
+    return null;
   }
 
   Future<void> _onYes() async {
@@ -394,14 +426,26 @@ class _OpponentAnalysisPromptDialogState
     final session = context.read<AppSession>();
 
     try {
-      final competition = await _resolveCompetition(session);
+      final source = await _resolveReportSource(session);
+      if (source == null) {
+        if (mounted) {
+          messenger?.showSnackBar(
+            SnackBar(
+              content: Text(l10n.opponentAnalysisReportSendFailed),
+              backgroundColor: colors.danger,
+              duration: const Duration(seconds: 6),
+            ),
+          );
+        }
+        return;
+      }
 
       final data = await OpponentAnalysisReportDataService.instance.build(
         team: widget.candidate.team,
-        seasonId: competition.seasonId,
-        competitionUrl: competition.url,
-        competitionLabel: competition.label,
-        opponent: widget.candidate.opponent,
+        seasonId: source.seasonId,
+        competitionUrl: source.url,
+        competitionLabel: source.label,
+        opponent: source.opponent,
         upcomingMatch: widget.candidate.match,
         upcomingKickoff: widget.candidate.kickoff,
         teamName: widget.candidate.team.name,
@@ -463,6 +507,7 @@ class _OpponentAnalysisPromptDialogState
       locale: locale,
     );
     final opponent = widget.candidate.opponent.displayName;
+    final teamName = (widget.candidate.team.name ?? '').trim();
 
     return AlertDialog(
       backgroundColor: colors.card,
@@ -471,6 +516,17 @@ class _OpponentAnalysisPromptDialogState
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
+          if (teamName.isNotEmpty) ...[
+            Text(
+              teamName,
+              style: TextStyle(
+                color: colors.primary,
+                fontSize: 14,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+            const SizedBox(height: 8),
+          ],
           Text(
             l10n.opponentAnalysisPromptMessage(weekday, time, opponent),
             style: TextStyle(

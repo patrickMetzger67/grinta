@@ -86,7 +86,7 @@ class _WebAppRootState extends State<WebAppRoot> {
       CalendarDeepLinkService.instance.notifyShellReady();
       unawaited(CalendarDeepLinkService.instance.processPendingIfReady());
       _scheduleTipVideoPrompt();
-      // One shot: load this week's matches and offer the dialog once.
+      // One question per team that has a match this week.
       OpponentAnalysisReportPrompt.onHomeShellReady();
     });
   }

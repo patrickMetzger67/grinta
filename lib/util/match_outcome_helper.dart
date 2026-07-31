@@ -403,11 +403,19 @@ MatchSide? teamSideForMatch({
     final List<String> linkedTeamIds =
         normalizeTeamIdList(match.teams ?? const <dynamic>[]);
     final int linkedIndex = linkedTeamIds.indexOf(trimmedTeamId);
-    if (linkedIndex == 0) {
-      return MatchSide.team1;
-    }
-    if (linkedIndex == 1) {
-      return MatchSide.team2;
+
+    // Matches often store only our team id in [teams]. Index 0 then does NOT
+    // mean home — use isOwnClub (home=team1 / away=team2), same as teamIdForSide.
+    if (linkedIndex >= 0) {
+      if (linkedTeamIds.length == 1 && match.isOwnClub != null) {
+        return match.isOwnClub == true ? MatchSide.team1 : MatchSide.team2;
+      }
+      if (linkedIndex == 0) {
+        return MatchSide.team1;
+      }
+      if (linkedIndex == 1) {
+        return MatchSide.team2;
+      }
     }
 
     final String? primaryTeamId = match.teamID?.trim();
