@@ -43,7 +43,9 @@ On connect (and when listing importable workouts), Grinta requests read access f
 - **Total calories** (`TOTAL_CALORIES_BURNED`) — same workout enrichment
 - **Steps** (`STEPS`) — same workout enrichment
 
-Without Distance / Total calories / Steps, native `getData(WORKOUT)` can fail with a `SecurityException` and Grinta shows an empty activity list even after Exercise was granted.
+Without Distance / Total calories / Steps, the Flutter `health` plugin's `getData(WORKOUT)` can fail with a `SecurityException` and return an empty list even after Exercise was granted.
+
+**Mitigation:** Grinta also reads Exercise sessions through a native channel (`io.grinta.app/health_connect`) that never drops workouts when enrichment permissions are missing. Distance / calories remain best-effort.
 
 ## Workout import (Créer → activité sportive personnelle)
 

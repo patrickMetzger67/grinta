@@ -141,6 +141,7 @@ class MainActivity : FlutterFragmentActivity() {
             }
 
         GrintaCalendarChannel.register(flutterEngine, this)
+        GrintaHealthConnectChannel.register(flutterEngine, this)
     }
 
     override fun onDestroy() {

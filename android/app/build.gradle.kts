@@ -81,6 +81,9 @@ kotlin {
 
 dependencies {
     coreLibraryDesugaring("com.android.tools:desugar_jdk_libs:2.1.4")
+    // Align with health plugin; used by GrintaHealthConnectChannel.
+    implementation("androidx.health.connect:connect-client:1.2.0-alpha02")
+    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.10.2")
 }
 
 flutter {

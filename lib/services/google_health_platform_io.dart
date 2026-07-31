@@ -2,6 +2,7 @@ import 'dart:io' show Platform;
 
 import 'package:flutter/foundation.dart';
 import 'package:grinta/model/google_health_importable_activity.dart';
+import 'package:grinta/services/grinta_health_connect_platform.dart';
 import 'package:health/health.dart';
 import 'package:permission_handler/permission_handler.dart';
 
@@ -321,6 +322,33 @@ Future<List<GoogleHealthImportableActivity>> listGoogleHealthWorkouts({
     if (!granted) return const [];
   }
 
+  // Prefer the native reader: the health plugin's WORKOUT path enriches with
+  // Distance/Calories/Steps and returns [] on any SecurityException.
+  final native = await GrintaHealthConnectPlatform.listExerciseSessions(
+    lookbackDays: lookbackDays,
+  );
+  if (native.ok && native.workouts.isNotEmpty) {
+    return native.workouts;
+  }
+  if (native.ok && native.sessionCount == 0) {
+    debugPrint(
+      'Google Health Connect native found 0 Exercise sessions '
+      '(lookbackDays=$lookbackDays warnings=${native.warnings})',
+    );
+    return const [];
+  }
+  if (!native.ok) {
+    debugPrint(
+      'Google Health Connect native list unavailable '
+      '(reason=${native.reason}); falling back to health plugin',
+    );
+  } else if (native.workouts.isEmpty && native.sessionCount > 0) {
+    debugPrint(
+      'Google Health Connect native mapped 0 of ${native.sessionCount} '
+      'sessions; falling back to health plugin',
+    );
+  }
+
   final now = DateTime.now();
   final start = now.subtract(Duration(days: lookbackDays.clamp(1, 365)));
 
@@ -349,7 +377,9 @@ Future<List<GoogleHealthImportableActivity>> listGoogleHealthWorkouts({
     return activities;
   } catch (e, st) {
     debugPrint('Google Health Connect list workouts failed: $e\n$st');
-    return const [];
+    // If the plugin path failed but native had sessions that failed mapping,
+    // still return whatever native produced (possibly empty).
+    return native.workouts;
   }
 }
 
