@@ -40,7 +40,8 @@ class WebAppRoot extends StatefulWidget {
 
 class _WebAppRootState extends State<WebAppRoot> {
   bool _isLoading = true;
-  bool _topVideoPromptScheduled = false;
+  bool _tipVideoPromptScheduled = false;
+  bool _opponentAnalysisPromptScheduled = false;
   final AgendaService _agendaService = AgendaService();
 
   AppSession get appSession => context.read<AppSession>();
@@ -85,17 +86,25 @@ class _WebAppRootState extends State<WebAppRoot> {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       CalendarDeepLinkService.instance.notifyShellReady();
       unawaited(CalendarDeepLinkService.instance.processPendingIfReady());
-      _scheduleTopVideoPrompt();
+      // Tip video and opponent analysis are independent features.
+      _scheduleTipVideoPrompt();
+      _scheduleOpponentAnalysisPrompt();
     });
   }
 
-  void _scheduleTopVideoPrompt() {
-    if (_topVideoPromptScheduled) return;
-    _topVideoPromptScheduled = true;
-    // Let the shell paint, then offer the weekly tip if unseen, then the
-    // coach opponent-analysis report prompt for matches this week.
+  void _scheduleTipVideoPrompt() {
+    if (_tipVideoPromptScheduled) return;
+    _tipVideoPromptScheduled = true;
+    unawaited(YoutubeTopVideoPrompt.maybeShow());
+  }
+
+  void _scheduleOpponentAnalysisPrompt() {
+    if (_opponentAnalysisPromptScheduled) return;
+    _opponentAnalysisPromptScheduled = true;
+    // Defer slightly so AppSession teams/player are more likely ready; also
+    // retried from the agenda stream below.
     unawaited(() async {
-      await YoutubeTopVideoPrompt.maybeShow();
+      await Future<void>.delayed(const Duration(milliseconds: 800));
       await OpponentAnalysisReportPrompt.maybeShow();
     }());
   }
@@ -115,6 +124,7 @@ class _WebAppRootState extends State<WebAppRoot> {
     );
 
     var didTriggerCalendarSync = false;
+    var didTriggerOpponentAnalysisPrompt = false;
 
     return stream.map((List<AgendaItem> items) {
       if (!didTriggerCalendarSync) {
@@ -124,6 +134,11 @@ class _WebAppRootState extends State<WebAppRoot> {
             appSession: appSession,
           ),
         );
+      }
+      if (!didTriggerOpponentAnalysisPrompt) {
+        didTriggerOpponentAnalysisPrompt = true;
+        // Independent of tip video: retry once agenda data path is live.
+        unawaited(OpponentAnalysisReportPrompt.maybeShow());
       }
       InternalReminderService.instance.onAgendaChanged();
       return items;
