@@ -6946,7 +6946,7 @@ abstract class AppLocalizations {
   /// No description provided for @calendarSyncToggleSubtitle.
   ///
   /// In fr, this message translates to:
-  /// **'Mise à jour auto à l\'ouverture de l\'agenda (max 1×/15 min)'**
+  /// **'Calendrier local de l’appareil (pas Google cloud). Mise à jour à l’ouverture de l’agenda (max 1×/15 min).'**
   String get calendarSyncToggleSubtitle;
 
   /// No description provided for @calendarSyncWebSubtitle.
@@ -7002,6 +7002,36 @@ abstract class AppLocalizations {
   /// In fr, this message translates to:
   /// **'La synchronisation a échoué. Réessayez.'**
   String get calendarSyncForceFailed;
+
+  /// No description provided for @calendarSyncEnabledTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Calendrier Grinta activé'**
+  String get calendarSyncEnabledTitle;
+
+  /// No description provided for @calendarSyncEnabledMessage.
+  ///
+  /// In fr, this message translates to:
+  /// **'Les matchs et entraînements sont écrits dans le calendrier local « {calendarName} » sur cet appareil (même profil Android que Grinta : perso ou pro).\n\nCe n’est pas un calendrier Google cloud : il n’apparaît pas sur calendar.google.com ni dans l’autre profil.\n\nDans ton app Calendrier → menu → coche « {calendarName} » (souvent sous « Calendriers de l’appareil » / Device Calendar).'**
+  String calendarSyncEnabledMessage(String calendarName);
+
+  /// No description provided for @calendarSyncOpenCalendar.
+  ///
+  /// In fr, this message translates to:
+  /// **'Ouvrir le calendrier'**
+  String get calendarSyncOpenCalendar;
+
+  /// No description provided for @calendarSyncHelpUnderstood.
+  ///
+  /// In fr, this message translates to:
+  /// **'Compris'**
+  String get calendarSyncHelpUnderstood;
+
+  /// No description provided for @calendarSyncHelpButton.
+  ///
+  /// In fr, this message translates to:
+  /// **'Où voir mes événements ?'**
+  String get calendarSyncHelpButton;
 
   /// No description provided for @settingsDevicesSection.
   ///

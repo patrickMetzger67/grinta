@@ -139,6 +139,8 @@ class MainActivity : FlutterFragmentActivity() {
                     result.error("USB_ERROR", e.message, null)
                 }
             }
+
+        GrintaCalendarChannel.register(flutterEngine, this)
     }
 
     override fun onDestroy() {

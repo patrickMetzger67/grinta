@@ -1513,7 +1513,7 @@
   "teamEditNameTitle": "Edit team",
   "teamEditNameSuccess": "Team updated.",
   "calendarSyncToggleLabel": "Calendar sync",
-  "calendarSyncToggleSubtitle": "Auto-updates when agenda opens (max once every 15 min)",
+  "calendarSyncToggleSubtitle": "On-device local calendar (not Google cloud). Auto-updates when agenda opens (max once every 15 min).",
   "calendarSyncWebSubtitle": "Download an ICS file to import into your calendar",
   "calendarSyncWebRedownloadHint": "Tap to download the calendar file again",
   "calendarSyncWebDownloaded": "Calendar file downloaded. Import it into your calendar app.",
@@ -1523,6 +1523,16 @@
   "calendarSyncForceNow": "Sync now",
   "calendarSyncForceSuccess": "Calendar synced.",
   "calendarSyncForceFailed": "Sync failed. Please try again.",
+  "calendarSyncEnabledTitle": "Grinta calendar enabled",
+  "calendarSyncEnabledMessage": "Matches and trainings are written to the local calendar “{calendarName}” on this device (same Android profile as Grinta: personal or work).\n\nThis is not a Google cloud calendar: it will not appear on calendar.google.com or in the other profile.\n\nIn your Calendar app → menu → enable “{calendarName}” (often under “Device calendars” / Device Calendar).",
+  "@calendarSyncEnabledMessage": {
+    "placeholders": {
+      "calendarName": { "type": "String" }
+    }
+  },
+  "calendarSyncOpenCalendar": "Open calendar",
+  "calendarSyncHelpUnderstood": "Got it",
+  "calendarSyncHelpButton": "Where are my events?",
   "settingsDevicesSection": "Devices/Applications",
   "settingsDevicesClose": "Close",
   "settingsDevicesSync": "Sync",

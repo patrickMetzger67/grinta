@@ -8,6 +8,7 @@ import 'package:grinta/model/calendar_sync_config.dart';
 import 'package:grinta/provider/appSession.dart';
 import 'package:grinta/services/calendar_sync_repository.dart';
 import 'package:grinta/services/calendar_sync_service.dart';
+import 'package:grinta/services/grinta_device_calendar_platform.dart';
 import 'package:grinta/util/app_theme.dart';
 import 'package:provider/provider.dart';
 
@@ -41,6 +42,51 @@ class _CalendarSyncToggleState extends State<CalendarSyncToggle>
     super.dispose();
   }
 
+  String _calendarNameForSession(AppSession appSession) {
+    final player = appSession.selectedPlayer;
+    if (player == null) return 'Grinta';
+    return CalendarSyncService.instance.calendarDisplayNameForPlayer(player);
+  }
+
+  Future<void> _showLocalCalendarHelp(String calendarName) async {
+    if (!mounted || kIsWeb) return;
+    final l10n = context.l10n;
+    final colors = context.appColors;
+
+    await showDialog<void>(
+      context: context,
+      builder: (dialogContext) {
+        return AlertDialog(
+          backgroundColor: colors.card,
+          title: Text(l10n.calendarSyncEnabledTitle),
+          content: SingleChildScrollView(
+            child: Text(
+              l10n.calendarSyncEnabledMessage(calendarName),
+              style: TextStyle(
+                color: colors.textPrimary,
+                fontSize: 14,
+                height: 1.4,
+              ),
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(dialogContext).pop(),
+              child: Text(l10n.calendarSyncHelpUnderstood),
+            ),
+            FilledButton(
+              onPressed: () async {
+                Navigator.of(dialogContext).pop();
+                await GrintaDeviceCalendarPlatform.openCalendarApp();
+              },
+              child: Text(l10n.calendarSyncOpenCalendar),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
   Future<void> _onChanged(bool value) async {
     if (_busy) return;
 
@@ -68,6 +114,8 @@ class _CalendarSyncToggleState extends State<CalendarSyncToggle>
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(content: Text(context.l10n.calendarSyncWebDownloaded)),
           );
+        } else if (result.success && !kIsWeb) {
+          await _showLocalCalendarHelp(_calendarNameForSession(appSession));
         } else if (!result.success) {
           final message = switch (result) {
             CalendarSyncResult.permissionDenied =>
@@ -164,6 +212,7 @@ class _CalendarSyncToggleState extends State<CalendarSyncToggle>
     final playerId = context.select<AppSession, String?>(
       (session) => session.selectedPlayerId,
     );
+    final appSession = context.read<AppSession>();
 
     if (uid == null || playerId == null) {
       return const SizedBox.shrink();
@@ -173,6 +222,8 @@ class _CalendarSyncToggleState extends State<CalendarSyncToggle>
       stream: _repository.watchConfig(uid, playerId),
       builder: (context, snapshot) {
         final enabled = snapshot.data?.enabled == true;
+        final calendarName = snapshot.data?.calendarDisplayName ??
+            _calendarNameForSession(appSession);
 
         return Column(
           mainAxisSize: MainAxisSize.min,
@@ -221,26 +272,44 @@ class _CalendarSyncToggleState extends State<CalendarSyncToggle>
             ),
             if (enabled)
               Padding(
-                padding: const EdgeInsets.only(left: 16, right: 16, bottom: 4),
-                child: Align(
-                  alignment: Alignment.centerLeft,
-                  child: TextButton.icon(
-                    onPressed: _forceSyncNow,
-                    icon: RotationTransition(
-                      turns: _syncSpinController,
-                      child: Icon(
-                        Icons.sync,
-                        size: 18,
-                        color: colors.primary,
+                padding: const EdgeInsets.only(left: 8, right: 16, bottom: 4),
+                child: Wrap(
+                  spacing: 4,
+                  runSpacing: 0,
+                  children: [
+                    TextButton.icon(
+                      onPressed: _forceSyncNow,
+                      icon: RotationTransition(
+                        turns: _syncSpinController,
+                        child: Icon(
+                          Icons.sync,
+                          size: 18,
+                          color: colors.primary,
+                        ),
+                      ),
+                      label: Text(l10n.calendarSyncForceNow),
+                      style: TextButton.styleFrom(
+                        foregroundColor: colors.primary,
+                        padding: const EdgeInsets.symmetric(horizontal: 8),
+                        visualDensity: VisualDensity.compact,
                       ),
                     ),
-                    label: Text(l10n.calendarSyncForceNow),
-                    style: TextButton.styleFrom(
-                      foregroundColor: colors.primary,
-                      padding: const EdgeInsets.symmetric(horizontal: 8),
-                      visualDensity: VisualDensity.compact,
-                    ),
-                  ),
+                    if (!kIsWeb)
+                      TextButton.icon(
+                        onPressed: () => _showLocalCalendarHelp(calendarName),
+                        icon: Icon(
+                          Icons.help_outline,
+                          size: 18,
+                          color: colors.primary,
+                        ),
+                        label: Text(l10n.calendarSyncHelpButton),
+                        style: TextButton.styleFrom(
+                          foregroundColor: colors.primary,
+                          padding: const EdgeInsets.symmetric(horizontal: 8),
+                          visualDensity: VisualDensity.compact,
+                        ),
+                      ),
+                  ],
                 ),
               ),
           ],

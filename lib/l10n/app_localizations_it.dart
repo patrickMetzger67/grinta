@@ -3999,7 +3999,7 @@ class AppLocalizationsIt extends AppLocalizations {
 
   @override
   String get calendarSyncToggleSubtitle =>
-      'Aggiornamento all\'apertura dell\'agenda (max 1×/15 min)';
+      'Calendario locale del dispositivo (non Google cloud). Aggiornamento all\'apertura dell\'agenda (max 1×/15 min)';
 
   @override
   String get calendarSyncWebSubtitle =>
@@ -4034,6 +4034,23 @@ class AppLocalizationsIt extends AppLocalizations {
   @override
   String get calendarSyncForceFailed =>
       'Sincronizzazione non riuscita. Riprova.';
+
+  @override
+  String get calendarSyncEnabledTitle => 'Grinta calendar enabled';
+
+  @override
+  String calendarSyncEnabledMessage(String calendarName) {
+    return 'Matches and trainings are written to the local calendar \"$calendarName\" on this device (same Android profile as Grinta: personal or work).\n\nThis is not a Google cloud calendar: it will not appear on calendar.google.com or in the other profile.\n\nIn your Calendar app → menu → enable \"$calendarName\" (often under \"Device calendars\" / Device Calendar).';
+  }
+
+  @override
+  String get calendarSyncOpenCalendar => 'Open calendar';
+
+  @override
+  String get calendarSyncHelpUnderstood => 'Got it';
+
+  @override
+  String get calendarSyncHelpButton => 'Where are my events?';
 
   @override
   String get settingsDevicesSection => 'Dispositivi/Applicazioni';
