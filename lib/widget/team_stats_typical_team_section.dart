@@ -45,6 +45,7 @@ class TeamStatsTypicalTeamSection extends StatelessWidget {
         _PlayerGroupCard(
           title: l10n.teamStatsTypicalTeamStartersSection,
           players: result.probableStarters,
+          useTitularCounts: true,
           statLabelBuilder: (player) => l10n.teamStatsTypicalTeamStartsLabel(
             player.titularCount,
             player.matchesWithSquadData,
@@ -60,6 +61,7 @@ class TeamStatsTypicalTeamSection extends StatelessWidget {
           _PlayerGroupCard(
             title: l10n.teamStatsTypicalTeamSubstitutesSection,
             players: result.probableSubstitutes,
+            useTitularCounts: false,
             statLabelBuilder: (player) => l10n.teamStatsTypicalTeamSubsLabel(
               player.substituteCount,
               player.matchesWithSquadData,
@@ -113,12 +115,14 @@ class _PlayerGroupCard extends StatelessWidget {
   const _PlayerGroupCard({
     required this.title,
     required this.players,
+    required this.useTitularCounts,
     required this.statLabelBuilder,
     this.footer,
   });
 
   final String title;
   final List<TypicalTeamPlayerEntry> players;
+  final bool useTitularCounts;
   final String Function(TypicalTeamPlayerEntry player) statLabelBuilder;
   final String? footer;
 
@@ -151,6 +155,7 @@ class _PlayerGroupCard extends StatelessWidget {
           for (var i = 0; i < players.length; i++) ...[
             _TypicalTeamPlayerRow(
               player: players[i],
+              useTitularCounts: useTitularCounts,
               statLabel: statLabelBuilder(players[i]),
             ),
             if (i < players.length - 1)
@@ -178,10 +183,12 @@ class _PlayerGroupCard extends StatelessWidget {
 class _TypicalTeamPlayerRow extends StatelessWidget {
   const _TypicalTeamPlayerRow({
     required this.player,
+    required this.useTitularCounts,
     required this.statLabel,
   });
 
   final TypicalTeamPlayerEntry player;
+  final bool useTitularCounts;
   final String statLabel;
 
   @override
@@ -189,6 +196,8 @@ class _TypicalTeamPlayerRow extends StatelessWidget {
     final l10n = context.l10n;
     final colors = context.appColors;
     final textTheme = Theme.of(context).textTheme;
+    final breakdown =
+        player.shirtBreakdownLabel(useTitularCounts: useTitularCounts);
 
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
@@ -197,13 +206,27 @@ class _TypicalTeamPlayerRow extends StatelessWidget {
           _ShirtBadge(number: player.shirtNumber, colors: colors, textTheme: textTheme),
           const SizedBox(width: 12),
           Expanded(
-            child: Text(
-              player.displayName,
-              style: textTheme.bodyMedium?.copyWith(
-                color: colors.textPrimary,
-                fontWeight: FontWeight.w700,
-              ),
-              overflow: TextOverflow.ellipsis,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  player.displayName,
+                  style: textTheme.bodyMedium?.copyWith(
+                    color: colors.textPrimary,
+                    fontWeight: FontWeight.w700,
+                  ),
+                  overflow: TextOverflow.ellipsis,
+                ),
+                if (breakdown != null)
+                  Text(
+                    breakdown,
+                    style: textTheme.labelSmall?.copyWith(
+                      color: colors.textSecondary,
+                      fontWeight: FontWeight.w600,
+                    ),
+                    overflow: TextOverflow.ellipsis,
+                  ),
+              ],
             ),
           ),
           const SizedBox(width: 8),

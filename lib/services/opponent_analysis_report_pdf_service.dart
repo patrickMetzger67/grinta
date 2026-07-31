@@ -933,32 +933,107 @@ class OpponentAnalysisReportPdfService {
       );
     }
 
-    return pw.TableHelper.fromTextArray(
-      headers: startsLabel
-          ? const ['#', 'Joueur', 'Titularisations']
-          : const ['#', 'Joueur', 'Remplacements'],
-      data: [
-        for (var i = 0; i < starters.length; i++)
-          [
-            '${i + 1}',
-            _ascii(starters[i].displayName),
-            startsLabel
-                ? '${starters[i].titularCount}/${starters[i].matchesWithSquadData}'
-                : '${starters[i].substituteCount}/${starters[i].matchesWithSquadData}',
-          ],
-      ],
-      headerStyle: pw.TextStyle(
-        color: _white,
-        fontWeight: pw.FontWeight.bold,
-        fontSize: 9,
-      ),
-      headerDecoration: const pw.BoxDecoration(color: _primary),
-      cellStyle: const pw.TextStyle(fontSize: 9, color: _textPrimary),
+    final headerLabel = startsLabel ? 'Titularisations' : 'Remplacements';
+
+    pw.Widget cell(pw.Widget child) {
+      return pw.Container(
+        padding: const pw.EdgeInsets.symmetric(horizontal: 6, vertical: 5),
+        alignment: pw.Alignment.centerLeft,
+        child: child,
+      );
+    }
+
+    return pw.Table(
+      border: pw.TableBorder.all(color: _border, width: 0.6),
       columnWidths: {
         0: const pw.FlexColumnWidth(0.6),
         1: const pw.FlexColumnWidth(3),
         2: const pw.FlexColumnWidth(1.4),
       },
+      children: [
+        pw.TableRow(
+          decoration: const pw.BoxDecoration(color: _primary),
+          children: [
+            cell(
+              pw.Text(
+                '#',
+                style: pw.TextStyle(
+                  color: _white,
+                  fontWeight: pw.FontWeight.bold,
+                  fontSize: 9,
+                ),
+              ),
+            ),
+            cell(
+              pw.Text(
+                'Joueur',
+                style: pw.TextStyle(
+                  color: _white,
+                  fontWeight: pw.FontWeight.bold,
+                  fontSize: 9,
+                ),
+              ),
+            ),
+            cell(
+              pw.Text(
+                headerLabel,
+                style: pw.TextStyle(
+                  color: _white,
+                  fontWeight: pw.FontWeight.bold,
+                  fontSize: 9,
+                ),
+              ),
+            ),
+          ],
+        ),
+        for (final player in starters)
+          pw.TableRow(
+            children: [
+              cell(
+                pw.Text(
+                  player.shirtNumber?.toString() ?? '-',
+                  style: const pw.TextStyle(fontSize: 9, color: _textPrimary),
+                ),
+              ),
+              cell(_typicalTeamPlayerCell(player, startsLabel: startsLabel)),
+              cell(
+                pw.Text(
+                  startsLabel
+                      ? '${player.titularCount}/${player.matchesWithSquadData}'
+                      : '${player.substituteCount}/${player.matchesWithSquadData}',
+                  style: const pw.TextStyle(fontSize: 9, color: _textPrimary),
+                ),
+              ),
+            ],
+          ),
+      ],
+    );
+  }
+
+  pw.Widget _typicalTeamPlayerCell(
+    TypicalTeamPlayerEntry player, {
+    required bool startsLabel,
+  }) {
+    final breakdown = player.shirtBreakdownLabel(useTitularCounts: startsLabel);
+    return pw.Column(
+      crossAxisAlignment: pw.CrossAxisAlignment.start,
+      children: [
+        pw.Text(
+          _ascii(player.displayName),
+          style: pw.TextStyle(
+            fontSize: 9,
+            color: _textPrimary,
+            fontWeight: pw.FontWeight.bold,
+          ),
+        ),
+        if (breakdown != null) ...[
+          pw.SizedBox(height: 2),
+          pw.Text(
+            _ascii(breakdown),
+            style: const pw.TextStyle(fontSize: 8, color: _textSecondary),
+          ),
+        ],
+      ],
     );
   }
 

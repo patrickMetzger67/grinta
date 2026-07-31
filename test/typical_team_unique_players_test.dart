@@ -154,5 +154,64 @@ void main() {
       expect(subIds, isNot(contains('jean dupont')));
       expect(subIds, contains('paul martin'));
     });
+
+    test('merges shirt usages for the same player across numbers', () {
+      final result = computeTypicalTeamFromMatchStats(
+        matches: [
+          for (var i = 0; i < 8; i++)
+            _matchInput(
+              titulars: [
+                _player(name: 'Mohamed Ali', shirt: '6'),
+                _player(name: 'Paul Martin', shirt: '9'),
+              ],
+            ),
+          for (var i = 0; i < 3; i++)
+            _matchInput(
+              titulars: [
+                _player(name: 'Mohamed Ali', shirt: '5'),
+                _player(name: 'Paul Martin', shirt: '9'),
+              ],
+            ),
+        ],
+        maxStarters: 11,
+        maxSubstitutes: 0,
+      );
+
+      final mohamed = result.probableStarters.singleWhere(
+        (player) =>
+            normalizeTypicalTeamPlayerIdentity(player.displayName) ==
+            'mohamed ali',
+      );
+
+      expect(mohamed.titularCount, 11);
+      expect(mohamed.shirtNumber, 6);
+      expect(mohamed.shirtUsages, hasLength(2));
+      expect(mohamed.shirtUsages[0].shirtNumber, 6);
+      expect(mohamed.shirtUsages[0].titularCount, 8);
+      expect(mohamed.shirtUsages[1].shirtNumber, 5);
+      expect(mohamed.shirtUsages[1].titularCount, 3);
+      expect(
+        mohamed.shirtBreakdownLabel(useTitularCounts: true),
+        '#6 - 8/11 - #5 - 3/11',
+      );
+    });
+
+    test('omits shirt breakdown when only one number was used', () {
+      final result = computeTypicalTeamFromMatchStats(
+        matches: [
+          _matchInput(
+            titulars: [
+              _player(name: 'Paul Martin', shirt: '9'),
+            ],
+          ),
+        ],
+        maxStarters: 11,
+        maxSubstitutes: 0,
+      );
+
+      final paul = result.probableStarters.single;
+      expect(paul.shirtUsages, hasLength(1));
+      expect(paul.shirtBreakdownLabel(useTitularCounts: true), isNull);
+    });
   });
 }

@@ -872,12 +872,28 @@ int? parseMatchStatShirtNumber(String? shirt) {
   return int.tryParse(digits);
 }
 
+/// How often a typical-team player wore a given shirt number.
+class TypicalTeamShirtUsage {
+  const TypicalTeamShirtUsage({
+    required this.shirtNumber,
+    required this.titularCount,
+    required this.substituteCount,
+  });
+
+  final int shirtNumber;
+  final int titularCount;
+  final int substituteCount;
+
+  int get totalMatchesInSquad => titularCount + substituteCount;
+}
+
 /// One player row in a computed typical team.
 class TypicalTeamPlayerEntry {
   const TypicalTeamPlayerEntry({
     required this.playerKey,
     required this.displayName,
     this.shirtNumber,
+    this.shirtUsages = const [],
     required this.titularCount,
     required this.substituteCount,
     required this.totalMatchesInSquad,
@@ -888,11 +904,29 @@ class TypicalTeamPlayerEntry {
   final String playerKey;
   final String displayName;
   final int? shirtNumber;
+
+  /// Distinct shirt numbers worn across squad matches, richest first.
+  final List<TypicalTeamShirtUsage> shirtUsages;
   final int titularCount;
   final int substituteCount;
   final int totalMatchesInSquad;
   final int matchesWithSquadData;
   final TeamWdlTrendDirection titularTrend;
+
+  /// e.g. `#6 - 8/21 - #5 - 3/21` when several shirts were used; otherwise null.
+  String? shirtBreakdownLabel({required bool useTitularCounts}) {
+    if (shirtUsages.length < 2 || matchesWithSquadData <= 0) {
+      return null;
+    }
+
+    final parts = <String>[];
+    for (final usage in shirtUsages) {
+      final count =
+          useTitularCounts ? usage.titularCount : usage.substituteCount;
+      parts.add('#${usage.shirtNumber} - $count/$matchesWithSquadData');
+    }
+    return parts.join(' - ');
+  }
 }
 
 /// Probable starting XI and bench derived from [matchStats] lineups.
@@ -982,38 +1016,157 @@ class _TypicalTeamPlayerAccumulator {
   TypicalTeamPlayerEntry toEntry({
     required int matchesWithSquadData,
   }) {
+    final usages = shirtNumber == null
+        ? const <TypicalTeamShirtUsage>[]
+        : <TypicalTeamShirtUsage>[
+            TypicalTeamShirtUsage(
+              shirtNumber: shirtNumber!,
+              titularCount: titularCount,
+              substituteCount: substituteCount,
+            ),
+          ];
     return TypicalTeamPlayerEntry(
       playerKey: playerKey,
       displayName: displayName.isNotEmpty ? displayName : playerKey,
       shirtNumber: shirtNumber,
+      shirtUsages: usages,
       titularCount: titularCount,
       substituteCount: substituteCount,
       totalMatchesInSquad: totalMatchesInSquad,
       matchesWithSquadData: matchesWithSquadData,
-      titularTrend: _titularTrend(),
+      titularTrend: _titularTrendFromCounts(
+        firstHalfTitularCount: firstHalfTitularCount,
+        firstHalfSquadCount: firstHalfSquadCount,
+        secondHalfTitularCount: secondHalfTitularCount,
+        secondHalfSquadCount: secondHalfSquadCount,
+      ),
     );
   }
+}
 
-  TeamWdlTrendDirection _titularTrend() {
-    final firstRate = firstHalfSquadCount == 0
-        ? null
-        : firstHalfTitularCount / firstHalfSquadCount;
-    final secondRate = secondHalfSquadCount == 0
-        ? null
-        : secondHalfTitularCount / secondHalfSquadCount;
+TeamWdlTrendDirection _titularTrendFromCounts({
+  required int firstHalfTitularCount,
+  required int firstHalfSquadCount,
+  required int secondHalfTitularCount,
+  required int secondHalfSquadCount,
+}) {
+  final firstRate = firstHalfSquadCount == 0
+      ? null
+      : firstHalfTitularCount / firstHalfSquadCount;
+  final secondRate = secondHalfSquadCount == 0
+      ? null
+      : secondHalfTitularCount / secondHalfSquadCount;
 
-    if (firstRate == null || secondRate == null) {
-      return TeamWdlTrendDirection.insufficientData;
-    }
-
-    const flatThreshold = 0.02;
-    final diff = secondRate - firstRate;
-    if (diff.abs() <= flatThreshold) {
-      return TeamWdlTrendDirection.flat;
-    }
-
-    return diff > 0 ? TeamWdlTrendDirection.up : TeamWdlTrendDirection.down;
+  if (firstRate == null || secondRate == null) {
+    return TeamWdlTrendDirection.insufficientData;
   }
+
+  const flatThreshold = 0.02;
+  final diff = secondRate - firstRate;
+  if (diff.abs() <= flatThreshold) {
+    return TeamWdlTrendDirection.flat;
+  }
+
+  return diff > 0 ? TeamWdlTrendDirection.up : TeamWdlTrendDirection.down;
+}
+
+bool _sameTypicalTeamIdentity(String? left, String? right) {
+  if (left == null || right == null || left.isEmpty || right.isEmpty) {
+    return false;
+  }
+  return left == right || sameMatchStatPlayer(left, right);
+}
+
+TypicalTeamPlayerEntry _mergedTypicalTeamEntry({
+  required _TypicalTeamPlayerAccumulator selected,
+  required Iterable<_TypicalTeamPlayerAccumulator> allAccumulators,
+  required int matchesWithSquadData,
+}) {
+  final selectedIdentity =
+      normalizeTypicalTeamPlayerIdentity(selected.displayName);
+  final siblings = allAccumulators.where((candidate) {
+    final identity = normalizeTypicalTeamPlayerIdentity(candidate.displayName);
+    return _sameTypicalTeamIdentity(selectedIdentity, identity);
+  }).toList();
+
+  final group = siblings.isEmpty ? <_TypicalTeamPlayerAccumulator>[selected] : siblings;
+
+  var titularCount = 0;
+  var substituteCount = 0;
+  var firstHalfTitularCount = 0;
+  var firstHalfSquadCount = 0;
+  var secondHalfTitularCount = 0;
+  var secondHalfSquadCount = 0;
+  var bestDisplayName = selected.displayName;
+  final shirtTotals = <int, List<int>>{};
+
+  for (final player in group) {
+    titularCount += player.titularCount;
+    substituteCount += player.substituteCount;
+    firstHalfTitularCount += player.firstHalfTitularCount;
+    firstHalfSquadCount += player.firstHalfSquadCount;
+    secondHalfTitularCount += player.secondHalfTitularCount;
+    secondHalfSquadCount += player.secondHalfSquadCount;
+    if (player.displayName.trim().length > bestDisplayName.trim().length) {
+      bestDisplayName = player.displayName;
+    }
+
+    final shirt = player.shirtNumber;
+    if (shirt == null) {
+      continue;
+    }
+    final totals = shirtTotals.putIfAbsent(shirt, () => <int>[0, 0]);
+    totals[0] += player.titularCount;
+    totals[1] += player.substituteCount;
+  }
+
+  final shirtUsages = shirtTotals.entries
+      .map(
+        (entry) => TypicalTeamShirtUsage(
+          shirtNumber: entry.key,
+          titularCount: entry.value[0],
+          substituteCount: entry.value[1],
+        ),
+      )
+      .toList()
+    ..sort(_compareTypicalTeamShirtUsage);
+
+  return TypicalTeamPlayerEntry(
+    playerKey: selected.playerKey,
+    displayName: bestDisplayName.isNotEmpty ? bestDisplayName : selected.playerKey,
+    shirtNumber: shirtUsages.isNotEmpty
+        ? shirtUsages.first.shirtNumber
+        : selected.shirtNumber,
+    shirtUsages: shirtUsages,
+    titularCount: titularCount,
+    substituteCount: substituteCount,
+    totalMatchesInSquad: titularCount + substituteCount,
+    matchesWithSquadData: matchesWithSquadData,
+    titularTrend: _titularTrendFromCounts(
+      firstHalfTitularCount: firstHalfTitularCount,
+      firstHalfSquadCount: firstHalfSquadCount,
+      secondHalfTitularCount: secondHalfTitularCount,
+      secondHalfSquadCount: secondHalfSquadCount,
+    ),
+  );
+}
+
+int _compareTypicalTeamShirtUsage(
+  TypicalTeamShirtUsage left,
+  TypicalTeamShirtUsage right,
+) {
+  final byTitular = right.titularCount.compareTo(left.titularCount);
+  if (byTitular != 0) {
+    return byTitular;
+  }
+
+  final byTotal =
+      right.totalMatchesInSquad.compareTo(left.totalMatchesInSquad);
+  if (byTotal != 0) {
+    return byTotal;
+  }
+
+  return left.shirtNumber.compareTo(right.shirtNumber);
 }
 
 int _compareTypicalTeamShirt(int? left, int? right) {
@@ -1200,7 +1353,11 @@ TypicalTeamResult computeTypicalTeamFromMatchStats({
 
   final probableStarters = selectedStarterAccumulators
       .map(
-        (player) => player.toEntry(matchesWithSquadData: matchesWithSquadData),
+        (player) => _mergedTypicalTeamEntry(
+          selected: player,
+          allAccumulators: accumulators.values,
+          matchesWithSquadData: matchesWithSquadData,
+        ),
       )
       .toList()
     ..sort(_compareTypicalTeamDisplayOrder);
@@ -1234,7 +1391,11 @@ TypicalTeamResult computeTypicalTeamFromMatchStats({
 
   final probableSubstitutes = selectedSubstituteAccumulators
       .map(
-        (player) => player.toEntry(matchesWithSquadData: matchesWithSquadData),
+        (player) => _mergedTypicalTeamEntry(
+          selected: player,
+          allAccumulators: accumulators.values,
+          matchesWithSquadData: matchesWithSquadData,
+        ),
       )
       .toList()
     ..sort(_compareTypicalTeamDisplayOrder);
