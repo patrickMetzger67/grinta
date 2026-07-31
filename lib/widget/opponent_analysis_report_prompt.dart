@@ -13,6 +13,7 @@ import 'package:grinta/services/opponent_analysis_report_data_service.dart';
 import 'package:grinta/util/app_theme.dart';
 import 'package:grinta/util/team_stats_opponent_helper.dart';
 import 'package:grinta/widget/opponent_analysis_report_email_dialog.dart';
+import 'package:grinta/widget/youtube_top_video_prompt.dart';
 import 'package:provider/provider.dart';
 
 class _UpcomingOpponentMatch {
@@ -85,6 +86,13 @@ class OpponentAnalysisReportPrompt {
     );
     if (candidate == null) return;
     if (!rootContext.mounted) return;
+
+    // Avoid stacking on tip/welcome dialog — features stay independent.
+    while (YoutubeTopVideoPrompt.isDialogOpen) {
+      await Future<void>.delayed(const Duration(milliseconds: 300));
+      if (!rootContext.mounted) return;
+      if (_offeredThisSession) return;
+    }
 
     _dialogOpen = true;
     _offeredThisSession = true;
