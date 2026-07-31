@@ -1821,7 +1821,7 @@
   "teamEditNameTitle": "Modifier l'équipe",
   "teamEditNameSuccess": "Équipe mise à jour.",
   "calendarSyncToggleLabel": "Sync. calendrier",
-  "calendarSyncToggleSubtitle": "Mise à jour auto à l'ouverture de l'agenda (max 1×/15 min)",
+  "calendarSyncToggleSubtitle": "Calendrier local de l’appareil (pas Google cloud). Mise à jour à l’ouverture de l’agenda (max 1×/15 min).",
   "calendarSyncWebSubtitle": "Télécharge un fichier ICS à importer dans ton calendrier",
   "calendarSyncWebRedownloadHint": "Appuie pour télécharger à nouveau le fichier calendrier",
   "calendarSyncWebDownloaded": "Fichier calendrier téléchargé. Importe-le dans ton application de calendrier.",
@@ -1831,6 +1831,16 @@
   "calendarSyncForceNow": "Synchroniser maintenant",
   "calendarSyncForceSuccess": "Calendrier synchronisé.",
   "calendarSyncForceFailed": "La synchronisation a échoué. Réessayez.",
+  "calendarSyncEnabledTitle": "Calendrier Grinta activé",
+  "calendarSyncEnabledMessage": "Les matchs et entraînements sont écrits dans le calendrier local « {calendarName} » sur cet appareil (même profil Android que Grinta : perso ou pro).\n\nCe n’est pas un calendrier Google cloud : il n’apparaît pas sur calendar.google.com ni dans l’autre profil.\n\nDans ton app Calendrier → menu → coche « {calendarName} » (souvent sous « Calendriers de l’appareil » / Device Calendar).",
+  "@calendarSyncEnabledMessage": {
+    "placeholders": {
+      "calendarName": { "type": "String" }
+    }
+  },
+  "calendarSyncOpenCalendar": "Ouvrir le calendrier",
+  "calendarSyncHelpUnderstood": "Compris",
+  "calendarSyncHelpButton": "Où voir mes événements ?",
   "settingsDevicesSection": "Appareils/Applications",
   "settingsDevicesClose": "Fermer",
   "settingsDevicesSync": "Synchroniser",
@@ -3051,5 +3061,40 @@
       "min": { "type": "int" },
       "max": { "type": "int" }
     }
-  }
+  },
+
+  "opponentAnalysisPromptTitle": "Analyse adversaire",
+  "opponentAnalysisPromptMessage": "Tu rencontres, ce {weekday} à {time}, {opponentName}. Souhaites-tu un rapport d’analyse de ton adversaire ?",
+  "@opponentAnalysisPromptMessage": {
+    "placeholders": {
+      "weekday": { "type": "String" },
+      "time": { "type": "String" },
+      "opponentName": { "type": "String" }
+    }
+  },
+  "opponentAnalysisPromptYes": "Oui",
+  "opponentAnalysisPromptRemindTomorrow": "Me le rappeler demain",
+  "opponentAnalysisPromptSkip": "Passer",
+  "opponentAnalysisReportTitle": "Rapport d’analyse adversaire",
+  "opponentAnalysisReportOpponentLabel": "Adversaire",
+  "opponentAnalysisReportEmailIntro": "Voici le rapport d’analyse de {opponentName} pour ton match du {kickoff}.",
+  "@opponentAnalysisReportEmailIntro": {
+    "placeholders": {
+      "opponentName": { "type": "String" },
+      "kickoff": { "type": "String" }
+    }
+  },
+  "opponentAnalysisReportEmailIncludes": "Le PDF contient la tendance, le bilan V/N/D (saison et mi-saisons), les résultats, les buts, les joueurs (convo / titu. / temps de jeu / cartons), l’équipe type et l’évolution du classement.",
+  "opponentAnalysisReportEmailDialogTitle": "Envoyer le rapport d’analyse",
+  "opponentAnalysisReportEmailDialogMessage": "Le rapport d’analyse de {opponentName} sera envoyé aux adresses ci-dessous.",
+  "@opponentAnalysisReportEmailDialogMessage": {
+    "placeholders": {
+      "opponentName": { "type": "String" }
+    }
+  },
+  "opponentAnalysisReportEmailRecipientsLabel": "Destinataires",
+  "opponentAnalysisReportSendFailed": "Impossible d’envoyer le rapport d’analyse adversaire.",
+  "opponentAnalysisSendDetailedReport": "Envoyer le rapport détaillé",
+  "opponentAnalysisCoachEliteRequiredTitle": "Rapport d’analyse adversaire",
+  "opponentAnalysisCoachEliteRequiredMessage": "L’envoi du rapport d’analyse adversaire nécessite un abonnement Coach Elite."
 }

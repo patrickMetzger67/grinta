@@ -11,6 +11,7 @@ import 'package:grinta/model/calendar_sync_config.dart';
 import 'package:grinta/model/player.dart';
 import 'package:grinta/provider/appSession.dart';
 import 'package:grinta/services/calendar_sync_repository.dart';
+import 'package:grinta/services/grinta_device_calendar_platform.dart';
 import 'package:grinta/services/matchService.dart';
 import 'package:grinta/services/trainingService.dart';
 import 'package:grinta/util/buildTimestampFromDateAndTime.dart';
@@ -112,7 +113,11 @@ class CalendarSyncService {
     final calendars = calendarsResult.data ?? const <Calendar>[];
     for (final calendar in calendars) {
       if (calendar.name == displayName && calendar.isReadOnly != true) {
-        return calendar.id;
+        final id = calendar.id;
+        if (id != null && id.isNotEmpty) {
+          await _makeCalendarVisible(id);
+          return id;
+        }
       }
     }
 
@@ -121,10 +126,26 @@ class CalendarSyncService {
       calendarColor: brandColor,
     );
     if (createResult.isSuccess && createResult.data != null) {
-      return createResult.data;
+      final id = createResult.data!;
+      await _makeCalendarVisible(id);
+      return id;
     }
 
     return null;
+  }
+
+  Future<void> _makeCalendarVisible(String calendarId) async {
+    final ok =
+        await GrintaDeviceCalendarPlatform.ensureCalendarVisible(calendarId);
+    if (!ok) {
+      debugPrint(
+        'CalendarSyncService: could not force visibility for calendar $calendarId',
+      );
+      return;
+    }
+    final info =
+        await GrintaDeviceCalendarPlatform.getCalendarVisibility(calendarId);
+    debugPrint('CalendarSyncService: calendar visibility $info');
   }
 
   /// Returns a valid local calendar id, recreating the calendar and clearing
@@ -146,6 +167,7 @@ class CalendarSyncService {
     if (storedId != null &&
         storedId.isNotEmpty &&
         calendars.any((calendar) => calendar.id == storedId)) {
+      await _makeCalendarVisible(storedId);
       return storedId;
     }
 
@@ -331,6 +353,9 @@ class CalendarSyncService {
           )
           .toList();
 
+      var writtenCount = 0;
+      var failedCount = 0;
+
       final existingMaps = await _repository.getAllEventMaps(uid, playerId);
       final existingById = {
         for (final entry in existingMaps) entry.grintaEventId: entry,
@@ -348,6 +373,7 @@ class CalendarSyncService {
         final existing = existingById[item.id];
 
         if (existing != null && existing.contentHash == contentHash) {
+          writtenCount++;
           continue;
         }
 
@@ -380,6 +406,7 @@ class CalendarSyncService {
           result = await _plugin.createOrUpdateEvent(freshEvent);
         }
         if (result == null || !result.isSuccess || result.data == null) {
+          failedCount++;
           debugPrint(
             'CalendarSyncService: failed to sync event ${item.id}: '
             '${result?.errors}',
@@ -387,6 +414,7 @@ class CalendarSyncService {
           continue;
         }
 
+        writtenCount++;
         await _repository.upsertEventMap(
           uid: uid,
           playerId: playerId,
@@ -413,6 +441,14 @@ class CalendarSyncService {
       }
 
       await _repository.updateLastSyncedAt(uid: uid, playerId: playerId);
+      debugPrint(
+        'CalendarSyncService: synced $writtenCount events '
+        '(${syncableItems.length} agenda items, $failedCount failed) '
+        'into calendar $calendarId',
+      );
+      if (syncableItems.isNotEmpty && writtenCount == 0 && failedCount > 0) {
+        return CalendarSyncResult.failed;
+      }
       return CalendarSyncResult.success;
     } catch (e, st) {
       debugPrint('CalendarSyncService.syncForPlayer error: $e\n$st');

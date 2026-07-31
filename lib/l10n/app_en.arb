@@ -1513,7 +1513,7 @@
   "teamEditNameTitle": "Edit team",
   "teamEditNameSuccess": "Team updated.",
   "calendarSyncToggleLabel": "Calendar sync",
-  "calendarSyncToggleSubtitle": "Auto-updates when agenda opens (max once every 15 min)",
+  "calendarSyncToggleSubtitle": "On-device local calendar (not Google cloud). Auto-updates when agenda opens (max once every 15 min).",
   "calendarSyncWebSubtitle": "Download an ICS file to import into your calendar",
   "calendarSyncWebRedownloadHint": "Tap to download the calendar file again",
   "calendarSyncWebDownloaded": "Calendar file downloaded. Import it into your calendar app.",
@@ -1523,6 +1523,16 @@
   "calendarSyncForceNow": "Sync now",
   "calendarSyncForceSuccess": "Calendar synced.",
   "calendarSyncForceFailed": "Sync failed. Please try again.",
+  "calendarSyncEnabledTitle": "Grinta calendar enabled",
+  "calendarSyncEnabledMessage": "Matches and trainings are written to the local calendar “{calendarName}” on this device (same Android profile as Grinta: personal or work).\n\nThis is not a Google cloud calendar: it will not appear on calendar.google.com or in the other profile.\n\nIn your Calendar app → menu → enable “{calendarName}” (often under “Device calendars” / Device Calendar).",
+  "@calendarSyncEnabledMessage": {
+    "placeholders": {
+      "calendarName": { "type": "String" }
+    }
+  },
+  "calendarSyncOpenCalendar": "Open calendar",
+  "calendarSyncHelpUnderstood": "Got it",
+  "calendarSyncHelpButton": "Where are my events?",
   "settingsDevicesSection": "Devices/Applications",
   "settingsDevicesClose": "Close",
   "settingsDevicesSync": "Sync",
@@ -2743,5 +2753,40 @@
       "min": { "type": "int" },
       "max": { "type": "int" }
     }
-  }
+  },
+
+  "opponentAnalysisPromptTitle": "Opponent analysis",
+  "opponentAnalysisPromptMessage": "You play this {weekday} at {time} against {opponentName}. Would you like an opponent analysis report?",
+  "@opponentAnalysisPromptMessage": {
+    "placeholders": {
+      "weekday": { "type": "String" },
+      "time": { "type": "String" },
+      "opponentName": { "type": "String" }
+    }
+  },
+  "opponentAnalysisPromptYes": "Yes",
+  "opponentAnalysisPromptRemindTomorrow": "Remind me tomorrow",
+  "opponentAnalysisPromptSkip": "Skip",
+  "opponentAnalysisReportTitle": "Opponent analysis report",
+  "opponentAnalysisReportOpponentLabel": "Opponent",
+  "opponentAnalysisReportEmailIntro": "Here is the analysis report for {opponentName} for your match on {kickoff}.",
+  "@opponentAnalysisReportEmailIntro": {
+    "placeholders": {
+      "opponentName": { "type": "String" },
+      "kickoff": { "type": "String" }
+    }
+  },
+  "opponentAnalysisReportEmailIncludes": "The PDF includes trend, W/D/L (season and halves), results, goals, players (call-ups / starts / minutes / cards), typical team and ranking evolution.",
+  "opponentAnalysisReportEmailDialogTitle": "Send analysis report",
+  "opponentAnalysisReportEmailDialogMessage": "The analysis report for {opponentName} will be sent to the addresses below.",
+  "@opponentAnalysisReportEmailDialogMessage": {
+    "placeholders": {
+      "opponentName": { "type": "String" }
+    }
+  },
+  "opponentAnalysisReportEmailRecipientsLabel": "Recipients",
+  "opponentAnalysisReportSendFailed": "Could not send the opponent analysis report.",
+  "opponentAnalysisSendDetailedReport": "Send detailed report",
+  "opponentAnalysisCoachEliteRequiredTitle": "Opponent analysis report",
+  "opponentAnalysisCoachEliteRequiredMessage": "Sending the opponent analysis report requires a Coach Elite subscription."
 }

@@ -212,13 +212,20 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String invitationSmsMessage(
-      String appName, String code, String appleStoreUrl, String googlePlayUrl) {
+    String appName,
+    String code,
+    String appleStoreUrl,
+    String googlePlayUrl,
+  ) {
     return 'Your coach invites you to join $appName. Your code: $code.\niPhone: $appleStoreUrl\nAndroid: $googlePlayUrl';
   }
 
   @override
   String sessionReportEmailSubject(
-      String appName, String eventLabel, String title) {
+    String appName,
+    String eventLabel,
+    String title,
+  ) {
     return '$appName — $eventLabel report: $title';
   }
 
@@ -1163,7 +1170,10 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String matchConvocationNotificationBodyWithMessage(
-      String opponent, String time, String message) {
+    String opponent,
+    String time,
+    String message,
+  ) {
     return '$opponent · Meet at $time · $message';
   }
 
@@ -3203,7 +3213,10 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String createNonSportEventNotificationBodyWithLocation(
-      String title, String when, String location) {
+    String title,
+    String when,
+    String location,
+  ) {
     return '$title — $when — $location';
   }
 
@@ -3941,7 +3954,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get calendarSyncToggleSubtitle =>
-      'Auto-updates when agenda opens (max once every 15 min)';
+      'On-device local calendar (not Google cloud). Auto-updates when agenda opens (max once every 15 min).';
 
   @override
   String get calendarSyncWebSubtitle =>
@@ -3975,6 +3988,23 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get calendarSyncForceFailed => 'Sync failed. Please try again.';
+
+  @override
+  String get calendarSyncEnabledTitle => 'Grinta calendar enabled';
+
+  @override
+  String calendarSyncEnabledMessage(String calendarName) {
+    return 'Matches and trainings are written to the local calendar “$calendarName” on this device (same Android profile as Grinta: personal or work).\n\nThis is not a Google cloud calendar: it will not appear on calendar.google.com or in the other profile.\n\nIn your Calendar app → menu → enable “$calendarName” (often under “Device calendars” / Device Calendar).';
+  }
+
+  @override
+  String get calendarSyncOpenCalendar => 'Open calendar';
+
+  @override
+  String get calendarSyncHelpUnderstood => 'Got it';
+
+  @override
+  String get calendarSyncHelpButton => 'Where are my events?';
 
   @override
   String get settingsDevicesSection => 'Devices/Applications';
@@ -5086,7 +5116,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String teamStatsGoalsAvgPerMatch(double avg) {
     final intl.NumberFormat avgNumberFormat =
         intl.NumberFormat.decimalPatternDigits(
-            locale: localeName, decimalDigits: 2);
+          locale: localeName,
+          decimalDigits: 2,
+        );
     final String avgString = avgNumberFormat.format(avg);
 
     return '$avgString/match';
@@ -5107,7 +5139,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String teamStatsAvgPointsPerMatch(double avg) {
     final intl.NumberFormat avgNumberFormat =
         intl.NumberFormat.decimalPatternDigits(
-            locale: localeName, decimalDigits: 2);
+          locale: localeName,
+          decimalDigits: 2,
+        );
     final String avgString = avgNumberFormat.format(avg);
 
     return '$avgString';
@@ -5854,7 +5888,10 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String polarImportDeviceLine(
-      String deviceId, String deviceType, String customName) {
+    String deviceId,
+    String deviceType,
+    String customName,
+  ) {
     return 'Polar $deviceId · $deviceType · $customName';
   }
 
@@ -6035,7 +6072,9 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String adminTrackerDevicesAddPolarChromeSuccess(
-      String deviceId, String deviceType) {
+    String deviceId,
+    String deviceType,
+  ) {
     return 'Polar $deviceId ($deviceType) added.';
   }
 
@@ -6475,7 +6514,10 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String promoCodeRedeemSuccessVerified(
-      String entitlement, String expiresAt, int days) {
+    String entitlement,
+    String expiresAt,
+    int days,
+  ) {
     return '$entitlement active until $expiresAt ($days days granted).';
   }
 
@@ -6760,4 +6802,66 @@ class AppLocalizationsEn extends AppLocalizations {
   String whoopAnalysisZoneBpmRange(int min, int max) {
     return '$min – $max bpm';
   }
+
+  @override
+  String get opponentAnalysisPromptTitle => 'Opponent analysis';
+
+  @override
+  String opponentAnalysisPromptMessage(
+    String weekday,
+    String time,
+    String opponentName,
+  ) {
+    return 'You play this $weekday at $time against $opponentName. Would you like an opponent analysis report?';
+  }
+
+  @override
+  String get opponentAnalysisPromptYes => 'Yes';
+
+  @override
+  String get opponentAnalysisPromptRemindTomorrow => 'Remind me tomorrow';
+
+  @override
+  String get opponentAnalysisPromptSkip => 'Skip';
+
+  @override
+  String get opponentAnalysisReportTitle => 'Opponent analysis report';
+
+  @override
+  String get opponentAnalysisReportOpponentLabel => 'Opponent';
+
+  @override
+  String opponentAnalysisReportEmailIntro(String opponentName, String kickoff) {
+    return 'Here is the analysis report for $opponentName for your match on $kickoff.';
+  }
+
+  @override
+  String get opponentAnalysisReportEmailIncludes =>
+      'The PDF includes trend, W/D/L (season and halves), results, goals, players (call-ups / starts / minutes / cards), typical team and ranking evolution.';
+
+  @override
+  String get opponentAnalysisReportEmailDialogTitle => 'Send analysis report';
+
+  @override
+  String opponentAnalysisReportEmailDialogMessage(String opponentName) {
+    return 'The analysis report for $opponentName will be sent to the addresses below.';
+  }
+
+  @override
+  String get opponentAnalysisReportEmailRecipientsLabel => 'Recipients';
+
+  @override
+  String get opponentAnalysisReportSendFailed =>
+      'Could not send the opponent analysis report.';
+
+  @override
+  String get opponentAnalysisSendDetailedReport => 'Send detailed report';
+
+  @override
+  String get opponentAnalysisCoachEliteRequiredTitle =>
+      'Opponent analysis report';
+
+  @override
+  String get opponentAnalysisCoachEliteRequiredMessage =>
+      'Sending the opponent analysis report requires a Coach Elite subscription.';
 }

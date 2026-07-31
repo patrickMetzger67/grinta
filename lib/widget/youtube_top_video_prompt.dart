@@ -19,6 +19,9 @@ class YoutubeTopVideoPrompt {
 
   static bool _dialogOpen = false;
 
+  /// Whether the tip/welcome dialog is currently visible (for UI stacking only).
+  static bool get isDialogOpen => _dialogOpen;
+
   /// Call after the main shell is ready. Safe to invoke multiple times.
   static Future<void> maybeShow() async {
     if (_dialogOpen) return;

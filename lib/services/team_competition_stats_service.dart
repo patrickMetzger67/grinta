@@ -374,6 +374,7 @@ class TeamCompetitionStatsService {
         teamId: context.teamId,
         clubId: context.clubId.isEmpty ? null : context.clubId,
         clubAffiliation: context.clubAffiliation,
+        displayName: context.perspectiveDisplayName,
       );
     }
 

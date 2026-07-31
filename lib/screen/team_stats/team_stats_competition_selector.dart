@@ -72,17 +72,33 @@ Future<List<TeamStatsCompetitionOption>> loadTeamStatsCompetitionOptions({
     );
   }
 
-  for (final url in equipe?.competitions ?? const <String>[]) {
-    if (url.trim().isEmpty) continue;
-    if (isFriendlyCompetitionUrl(url)) continue;
+  final seenUrls = <String>{};
+  void addUrl(String rawUrl, {String? fallbackLabel}) {
+    final url = rawUrl.trim();
+    if (url.isEmpty || isFriendlyCompetitionUrl(url) || !seenUrls.add(url)) {
+      return;
+    }
     final info = parseFffCompetitionUrl(url);
     competitionOptions.add(
       TeamStatsCompetitionOption(
         value: url,
-        label: info?.name ?? url,
+        label: info?.name ?? fallbackLabel ?? url,
         url: url,
       ),
     );
+  }
+
+  for (final url in equipe?.competitions ?? const <String>[]) {
+    addUrl(url);
+  }
+
+  // Fallback: competitions stored on the Team document itself.
+  if (seenUrls.isEmpty) {
+    for (final competition in team.competitions ?? const <Competition>[]) {
+      final url = (competition.urlCalendar ?? '').trim();
+      if (url.isEmpty) continue;
+      addUrl(url, fallbackLabel: competition.name);
+    }
   }
 
   return competitionOptions;
@@ -119,12 +135,25 @@ Future<List<String>> loadTeamStatsCompetitionUrls({
   }
 
   final urls = <String>[];
-  for (final url in equipe?.competitions ?? const <String>[]) {
-    final trimmed = url.trim();
-    if (trimmed.isEmpty || isFriendlyCompetitionUrl(trimmed)) {
-      continue;
+  final seen = <String>{};
+  void addUrl(String raw) {
+    final trimmed = raw.trim();
+    if (trimmed.isEmpty ||
+        isFriendlyCompetitionUrl(trimmed) ||
+        !seen.add(trimmed)) {
+      return;
     }
     urls.add(trimmed);
+  }
+
+  for (final url in equipe?.competitions ?? const <String>[]) {
+    addUrl(url);
+  }
+
+  if (urls.isEmpty) {
+    for (final competition in team.competitions ?? const <Competition>[]) {
+      addUrl(competition.urlCalendar ?? '');
+    }
   }
   return urls;
 }

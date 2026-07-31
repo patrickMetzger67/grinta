@@ -28,6 +28,7 @@ import '../core/extensions/l10n_extension.dart';
 import 'mobile_navigation_shell.dart';
 import 'stream_chat_nav_unread_badge.dart';
 import 'youtube_top_video_prompt.dart';
+import 'opponent_analysis_report_prompt.dart';
 import '../webNavigationShell.dart';
 
 class WebAppRoot extends StatefulWidget {
@@ -39,7 +40,7 @@ class WebAppRoot extends StatefulWidget {
 
 class _WebAppRootState extends State<WebAppRoot> {
   bool _isLoading = true;
-  bool _topVideoPromptScheduled = false;
+  bool _tipVideoPromptScheduled = false;
   final AgendaService _agendaService = AgendaService();
 
   AppSession get appSession => context.read<AppSession>();
@@ -84,14 +85,15 @@ class _WebAppRootState extends State<WebAppRoot> {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       CalendarDeepLinkService.instance.notifyShellReady();
       unawaited(CalendarDeepLinkService.instance.processPendingIfReady());
-      _scheduleTopVideoPrompt();
+      _scheduleTipVideoPrompt();
+      // One question per team that has a match this week.
+      OpponentAnalysisReportPrompt.onHomeShellReady();
     });
   }
 
-  void _scheduleTopVideoPrompt() {
-    if (_topVideoPromptScheduled) return;
-    _topVideoPromptScheduled = true;
-    // Let the shell paint, then offer the weekly tip if unseen.
+  void _scheduleTipVideoPrompt() {
+    if (_tipVideoPromptScheduled) return;
+    _tipVideoPromptScheduled = true;
     unawaited(YoutubeTopVideoPrompt.maybeShow());
   }
 
@@ -281,7 +283,6 @@ class _WebAppRootState extends State<WebAppRoot> {
     return Stack(
       children: [
         shell,
-
         if (_isLoading)
           Positioned.fill(
             child: AbsorbPointer(
@@ -299,6 +300,9 @@ class _WebAppRootState extends State<WebAppRoot> {
               ),
             ),
           ),
+        // Always mounted on the home shell (web Dashboard included) — does not
+        // depend on the Agenda tab being opened.
+        const OpponentAnalysisPromptHost(),
       ],
     );
   }

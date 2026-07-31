@@ -1,18 +1,29 @@
+import 'dart:async' show unawaited;
+
 import 'package:flutter/material.dart';
 import 'package:grinta/core/extensions/l10n_extension.dart';
 import 'package:grinta/l10n/app_localizations.dart';
+import 'package:grinta/model/match.dart' as models;
+import 'package:grinta/model/subscription_state.dart';
 import 'package:grinta/model/team.dart';
 import 'package:grinta/provider/appSession.dart';
 import 'package:grinta/screen/team_stats/team_stats_competition_selector.dart';
+import 'package:grinta/services/opponent_analysis_report_data_service.dart';
 import 'package:grinta/services/opponent_stats_view_tracker.dart';
+import 'package:grinta/services/subscription_service.dart';
 import 'package:grinta/services/team_competition_stats_service.dart';
 import 'package:grinta/services/team_player_stats_service.dart';
 import 'package:grinta/services/team_typical_team_service.dart';
 import 'package:grinta/services/teams_per_club_service.dart';
+import 'package:grinta/services/user_root_service.dart';
+import 'package:grinta/services/user_trial_service.dart';
 import 'package:grinta/util/app_theme.dart';
 import 'package:grinta/util/match_outcome_helper.dart';
 import 'package:grinta/util/team_player_match_stats_helper.dart';
 import 'package:grinta/util/team_stats_opponent_helper.dart';
+import 'package:grinta/widget/account_create_profile_entry.dart';
+import 'package:grinta/widget/opponent_analysis_report_email_dialog.dart';
+import 'package:grinta/widget/subscription_paywall.dart';
 import 'package:grinta/widget/team_stats_players_table.dart';
 import 'package:grinta/widget/team_stats_typical_team_section.dart';
 import 'package:grinta/widget/team_stats_wdl_matches_dialog.dart';
@@ -63,6 +74,7 @@ class _TeamStatsOpponentsTabState extends State<TeamStatsOpponentsTab>
   bool _statsLoading = false;
   bool _playersStatsLoading = false;
   bool _typicalTeamLoading = false;
+  bool _sendingReport = false;
   bool _didInit = false;
   List<TeamStatsCompetitionOption> _competitionOptions = const [];
   String? _selectedCompetitionValue;
@@ -369,6 +381,174 @@ class _TeamStatsOpponentsTabState extends State<TeamStatsOpponentsTab>
     return result.statsByPlayerId.values.toList();
   }
 
+  String _selectedCompetitionLabel() {
+    final value = _selectedCompetitionValue;
+    if (value == null) return 'Competition';
+    for (final option in _competitionOptions) {
+      if (option.value == value) return option.label;
+    }
+    return 'Competition';
+  }
+
+  bool _hasCoachEliteAccess() {
+    if (UserRootService.instance.isRoot) return true;
+    if (UserTrialService.instance.shouldShowTrial) return true;
+    final tier = SubscriptionService.instance.coachTier;
+    return tier?.satisfies(CoachTier.elite) ?? false;
+  }
+
+  Future<bool> _ensureCoachEliteAccess() async {
+    await UserTrialService.instance.ensureInitialized();
+    await SubscriptionService.instance.refreshForActiveSession();
+    if (_hasCoachEliteAccess()) return true;
+    if (!mounted) return false;
+
+    final l10n = context.l10n;
+    final colors = context.appColors;
+    final upgrade = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) {
+        return AlertDialog(
+          title: Text(l10n.opponentAnalysisCoachEliteRequiredTitle),
+          content: Text(l10n.opponentAnalysisCoachEliteRequiredMessage),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+            side: BorderSide(color: colors.border),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(dialogContext).pop(false),
+              child: Text(l10n.actionCancel),
+            ),
+            ElevatedButton(
+              onPressed: () => Navigator.of(dialogContext).pop(true),
+              child: Text(l10n.subscriptionSubscribe),
+            ),
+          ],
+        );
+      },
+    );
+    if (upgrade != true || !mounted) return false;
+
+    await SubscriptionPaywall.show(
+      context,
+      allowSkip: true,
+      initialKind: SubscriptionOfferingKind.coach,
+      changePlanMode: SubscriptionService.instance.hasActivePaidSubscription,
+    );
+    await SubscriptionService.instance.refreshForActiveSession();
+    return _hasCoachEliteAccess();
+  }
+
+  Future<void> _sendDetailedReport() async {
+    if (_sendingReport) return;
+    final opponent = _selectedOpponent();
+    final seasonId = _seasonIdForTeam();
+    final competitionUrl =
+        teamStatsSelectedCompetitionUrl(_selectedCompetitionValue ?? '');
+    if (opponent == null || seasonId == null || competitionUrl == null) {
+      return;
+    }
+
+    final allowed = await _ensureCoachEliteAccess();
+    if (!allowed || !mounted) return;
+
+    setState(() => _sendingReport = true);
+    final l10n = context.l10n;
+    final colors = context.appColors;
+    final messenger = ScaffoldMessenger.maybeOf(context);
+
+    try {
+      final now = DateTime.now();
+      final teamName = (widget.team.name ?? '').trim();
+      final data = await OpponentAnalysisReportDataService.instance.build(
+        team: widget.team,
+        seasonId: seasonId,
+        competitionUrl: competitionUrl,
+        competitionLabel: _selectedCompetitionLabel(),
+        opponent: opponent,
+        upcomingMatch: models.Match(
+          team1: teamName.isEmpty ? 'Equipe' : teamName,
+          team2: opponent.displayName,
+          teamID: widget.team.keyTeam,
+          isOwnClub: true,
+        ),
+        upcomingKickoff: now,
+        teamName: widget.team.name,
+      );
+      if (!mounted) return;
+      await showOpponentAnalysisReportEmailDialog(
+        context: context,
+        data: data,
+      );
+    } catch (e, st) {
+      debugPrint('TeamStatsOpponentsTab send report failed: $e\n$st');
+      if (mounted) {
+        messenger?.showSnackBar(
+          SnackBar(
+            content: Text('${l10n.opponentAnalysisReportSendFailed}\n$e'),
+            backgroundColor: colors.danger,
+            duration: const Duration(seconds: 8),
+          ),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _sendingReport = false);
+    }
+  }
+
+  Widget _buildSendDetailedReportButton(AppColors colors, AppLocalizations l10n) {
+    final icon = SubscriptionPremiumBadge.withIconOverlay(
+      context: context,
+      colors: colors,
+      showPremium: true,
+      icon: Icon(Icons.picture_as_pdf_outlined, color: colors.primary),
+    );
+
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        borderRadius: BorderRadius.circular(14),
+        onTap: _sendingReport ? null : () => unawaited(_sendDetailedReport()),
+        child: Container(
+          width: double.infinity,
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+          decoration: BoxDecoration(
+            color: colors.primary.withValues(alpha: 0.10),
+            borderRadius: BorderRadius.circular(14),
+            border: Border.all(color: colors.primary.withValues(alpha: 0.28)),
+          ),
+          child: Row(
+            children: [
+              if (_sendingReport)
+                SizedBox(
+                  width: 24,
+                  height: 24,
+                  child: CircularProgressIndicator(
+                    strokeWidth: 2,
+                    color: colors.primary,
+                  ),
+                )
+              else
+                icon,
+              const SizedBox(width: 10),
+              Expanded(
+                child: Text(
+                  l10n.opponentAnalysisSendDetailedReport,
+                  style: TextStyle(
+                    color: colors.textPrimary,
+                    fontWeight: FontWeight.w800,
+                  ),
+                ),
+              ),
+              Icon(Icons.chevron_right_rounded, color: colors.textSecondary),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final l10n = context.l10n;
@@ -437,6 +617,10 @@ class _TeamStatsOpponentsTabState extends State<TeamStatsOpponentsTab>
               _loadStats();
             },
           ),
+          if (_selectedOpponent() != null) ...[
+            const SizedBox(height: 12),
+            _buildSendDetailedReportButton(colors, l10n),
+          ],
           const SizedBox(height: 24),
           if (_statsLoading)
             const Padding(
