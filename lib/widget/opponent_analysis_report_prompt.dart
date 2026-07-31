@@ -107,7 +107,7 @@ class OpponentAnalysisReportPrompt {
     final weekEnd = _weekEndSunday(weekStart);
     final seasonId = session.selectedSeason?.ref?.id?.trim() ?? '';
 
-    final items = await AgendaService.instance.loadAgendaItems(
+    final items = await AgendaService().loadAgendaItems(
       teams: teams,
       seasonId: seasonId.isEmpty ? null : seasonId,
       start: weekStart,
