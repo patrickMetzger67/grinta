@@ -217,13 +217,20 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String invitationSmsMessage(
-      String appName, String code, String appleStoreUrl, String googlePlayUrl) {
+    String appName,
+    String code,
+    String appleStoreUrl,
+    String googlePlayUrl,
+  ) {
     return 'Dein Coach lädt dich ein, $appName beizutreten. Dein Code: $code.\niPhone: $appleStoreUrl\nAndroid: $googlePlayUrl';
   }
 
   @override
   String sessionReportEmailSubject(
-      String appName, String eventLabel, String title) {
+    String appName,
+    String eventLabel,
+    String title,
+  ) {
     return '$appName — Bericht $eventLabel: $title';
   }
 
@@ -1178,7 +1185,10 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String matchConvocationNotificationBodyWithMessage(
-      String opponent, String time, String message) {
+    String opponent,
+    String time,
+    String message,
+  ) {
     return '$opponent · Treffpunkt $time · $message';
   }
 
@@ -3260,7 +3270,10 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String createNonSportEventNotificationBodyWithLocation(
-      String title, String when, String location) {
+    String title,
+    String when,
+    String location,
+  ) {
     return '$title — $when — $location';
   }
 
@@ -5161,7 +5174,9 @@ class AppLocalizationsDe extends AppLocalizations {
   String teamStatsGoalsAvgPerMatch(double avg) {
     final intl.NumberFormat avgNumberFormat =
         intl.NumberFormat.decimalPatternDigits(
-            locale: localeName, decimalDigits: 2);
+          locale: localeName,
+          decimalDigits: 2,
+        );
     final String avgString = avgNumberFormat.format(avg);
 
     return '$avgString/Spiel';
@@ -5182,7 +5197,9 @@ class AppLocalizationsDe extends AppLocalizations {
   String teamStatsAvgPointsPerMatch(double avg) {
     final intl.NumberFormat avgNumberFormat =
         intl.NumberFormat.decimalPatternDigits(
-            locale: localeName, decimalDigits: 2);
+          locale: localeName,
+          decimalDigits: 2,
+        );
     final String avgString = avgNumberFormat.format(avg);
 
     return '$avgString';
@@ -5947,7 +5964,10 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String polarImportDeviceLine(
-      String deviceId, String deviceType, String customName) {
+    String deviceId,
+    String deviceType,
+    String customName,
+  ) {
     return 'Polar $deviceId · $deviceType · $customName';
   }
 
@@ -6129,7 +6149,9 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String adminTrackerDevicesAddPolarChromeSuccess(
-      String deviceId, String deviceType) {
+    String deviceId,
+    String deviceType,
+  ) {
     return 'Polar $deviceId ($deviceType) hinzugefügt.';
   }
 
@@ -6547,8 +6569,7 @@ class AppLocalizationsDe extends AppLocalizations {
   String get settingsTipsSearchHint => 'Tipps suchen…';
 
   @override
-  String get settingsTipsSearchEmpty =>
-      'Keine Tipps entsprechen deiner Suche.';
+  String get settingsTipsSearchEmpty => 'Keine Tipps entsprechen deiner Suche.';
 
   @override
   String get promoCodeMenuLabel => 'Promo-Code';
@@ -6575,7 +6596,10 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String promoCodeRedeemSuccessVerified(
-      String entitlement, String expiresAt, int days) {
+    String entitlement,
+    String expiresAt,
+    int days,
+  ) {
     return '$entitlement aktiv bis $expiresAt ($days Tage geschenkt).';
   }
 
@@ -6868,4 +6892,55 @@ class AppLocalizationsDe extends AppLocalizations {
   String whoopAnalysisZoneBpmRange(int min, int max) {
     return '$min – $max bpm';
   }
+
+  @override
+  String get opponentAnalysisPromptTitle => 'Opponent analysis';
+
+  @override
+  String opponentAnalysisPromptMessage(
+    String weekday,
+    String time,
+    String opponentName,
+  ) {
+    return 'You play this $weekday at $time against $opponentName. Would you like an opponent analysis report?';
+  }
+
+  @override
+  String get opponentAnalysisPromptYes => 'Yes';
+
+  @override
+  String get opponentAnalysisPromptRemindTomorrow => 'Remind me tomorrow';
+
+  @override
+  String get opponentAnalysisPromptSkip => 'Skip';
+
+  @override
+  String get opponentAnalysisReportTitle => 'Opponent analysis report';
+
+  @override
+  String get opponentAnalysisReportOpponentLabel => 'Opponent';
+
+  @override
+  String opponentAnalysisReportEmailIntro(String opponentName, String kickoff) {
+    return 'Here is the analysis report for $opponentName for your match on $kickoff.';
+  }
+
+  @override
+  String get opponentAnalysisReportEmailIncludes =>
+      'The PDF includes trend, W/D/L (season and halves), results, players (call-ups / starts / minutes), typical team and ranking evolution.';
+
+  @override
+  String get opponentAnalysisReportEmailDialogTitle => 'Send analysis report';
+
+  @override
+  String opponentAnalysisReportEmailDialogMessage(String opponentName) {
+    return 'The analysis report for $opponentName will be sent to the addresses below.';
+  }
+
+  @override
+  String get opponentAnalysisReportEmailRecipientsLabel => 'Recipients';
+
+  @override
+  String get opponentAnalysisReportSendFailed =>
+      'Could not send the opponent analysis report.';
 }

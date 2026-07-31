@@ -28,6 +28,7 @@ import '../core/extensions/l10n_extension.dart';
 import 'mobile_navigation_shell.dart';
 import 'stream_chat_nav_unread_badge.dart';
 import 'youtube_top_video_prompt.dart';
+import 'opponent_analysis_report_prompt.dart';
 import '../webNavigationShell.dart';
 
 class WebAppRoot extends StatefulWidget {
@@ -91,8 +92,12 @@ class _WebAppRootState extends State<WebAppRoot> {
   void _scheduleTopVideoPrompt() {
     if (_topVideoPromptScheduled) return;
     _topVideoPromptScheduled = true;
-    // Let the shell paint, then offer the weekly tip if unseen.
-    unawaited(YoutubeTopVideoPrompt.maybeShow());
+    // Let the shell paint, then offer the weekly tip if unseen, then the
+    // coach opponent-analysis report prompt for matches this week.
+    unawaited(() async {
+      await YoutubeTopVideoPrompt.maybeShow();
+      await OpponentAnalysisReportPrompt.maybeShow();
+    }());
   }
 
   Stream<List<AgendaItem>> _watchAgendaItems({
