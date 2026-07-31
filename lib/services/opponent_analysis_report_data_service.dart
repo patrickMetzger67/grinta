@@ -26,6 +26,8 @@ class OpponentAnalysisReportData {
     required this.upcomingKickoff,
     required this.wdl,
     required this.trend,
+    required this.goals,
+    required this.goalsTrend,
     required this.players,
     required this.typicalTeam,
     required this.rankingSeries,
@@ -42,6 +44,8 @@ class OpponentAnalysisReportData {
   final DateTime upcomingKickoff;
   final TeamWdlStatsByPeriod wdl;
   final TeamWdlHalfTrend trend;
+  final TeamGoalsStatsByPeriod goals;
+  final TeamGoalsHalfTrends goalsTrend;
   final List<OpponentAnalysisPlayerRow> players;
   final TypicalTeamResult typicalTeam;
   final List<OpponentAnalysisRankingSeries> rankingSeries;
@@ -217,6 +221,23 @@ class OpponentAnalysisReportDataService {
       );
     }
 
+    TeamGoalsStatsByPeriod goals;
+    try {
+      goals = await _competitionStatsService.computeGoalsStatsForTeam(
+        team: team,
+        seasonId: seasonId,
+        competitionUrl: competitionUrl,
+        opponentFilter: opponent,
+      );
+    } catch (e, st) {
+      debugPrint('OpponentAnalysisReportDataService goals failed: $e\n$st');
+      goals = const TeamGoalsStatsByPeriod(
+        fullSeason: TeamGoalsCounts(),
+        firstHalf: TeamGoalsCounts(),
+        secondHalf: TeamGoalsCounts(),
+      );
+    }
+
     final ranking = await _loadRankingEvolution(
       team: team,
       competitionUrl: competitionUrl,
@@ -226,6 +247,10 @@ class OpponentAnalysisReportDataService {
     final trend = TeamWdlHalfTrend.compare(
       firstHalf: wdl.firstHalf.counts,
       secondHalf: wdl.secondHalf.counts,
+    );
+    final goalsTrend = TeamGoalsHalfTrends.compare(
+      firstHalf: goals.firstHalf,
+      secondHalf: goals.secondHalf,
     );
 
     return OpponentAnalysisReportData(
@@ -241,6 +266,8 @@ class OpponentAnalysisReportDataService {
       upcomingKickoff: upcomingKickoff,
       wdl: wdl,
       trend: trend,
+      goals: goals,
+      goalsTrend: goalsTrend,
       players: playerRows,
       typicalTeam: typicalTeam,
       rankingSeries: ranking.series,

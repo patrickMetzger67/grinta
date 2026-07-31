@@ -98,6 +98,9 @@ class OpponentAnalysisReportPdfService {
               dateFmt: dateFmt,
             ),
             pw.SizedBox(height: 18),
+            _sectionTitle('Buts'),
+            ..._goalsSection(data),
+            pw.SizedBox(height: 18),
             _sectionTitle('Evolution du classement'),
             _rankingEvolution(data),
           ];
@@ -248,6 +251,305 @@ class OpponentAnalysisReportPdfService {
             ),
         ],
       ),
+    );
+  }
+
+  List<pw.Widget> _goalsSection(OpponentAnalysisReportData data) {
+    return [
+      _goalsTrendBlock(data.goalsTrend),
+      pw.SizedBox(height: 10),
+      _goalsPeriodBlock(title: 'Saison complete', counts: data.goals.fullSeason),
+      pw.SizedBox(height: 10),
+      _goalsPeriodBlock(title: '1ere partie', counts: data.goals.firstHalf),
+      pw.SizedBox(height: 10),
+      _goalsPeriodBlock(title: '2eme partie', counts: data.goals.secondHalf),
+    ];
+  }
+
+  pw.Widget _goalsTrendBlock(TeamGoalsHalfTrends trends) {
+    return pw.Container(
+      width: double.infinity,
+      padding: const pw.EdgeInsets.all(10),
+      decoration: pw.BoxDecoration(
+        color: _surface,
+        borderRadius: pw.BorderRadius.circular(8),
+        border: pw.Border.all(color: _border),
+      ),
+      child: pw.Column(
+        crossAxisAlignment: pw.CrossAxisAlignment.start,
+        children: [
+          pw.Text(
+            _ascii('Tendance'),
+            style: pw.TextStyle(
+              color: _textSecondary,
+              fontSize: 10,
+              fontWeight: pw.FontWeight.bold,
+            ),
+          ),
+          pw.SizedBox(height: 8),
+          _goalsTrendRow(
+            label: 'Buts marques',
+            direction: trends.scored.direction,
+          ),
+          pw.SizedBox(height: 6),
+          _goalsTrendRow(
+            label: 'Buts encaisses',
+            direction: trends.conceded.direction,
+          ),
+        ],
+      ),
+    );
+  }
+
+  pw.Widget _goalsTrendRow({
+    required String label,
+    required TeamWdlTrendDirection direction,
+  }) {
+    final color = _trendColor(direction);
+    return pw.Row(
+      children: [
+        pw.Text(
+          _ascii(_trendArrow(direction)),
+          style: pw.TextStyle(
+            color: color,
+            fontSize: 12,
+            fontWeight: pw.FontWeight.bold,
+          ),
+        ),
+        pw.SizedBox(width: 8),
+        pw.Expanded(
+          child: pw.Column(
+            crossAxisAlignment: pw.CrossAxisAlignment.start,
+            children: [
+              pw.Text(
+                _ascii(label),
+                style: pw.TextStyle(
+                  color: _textPrimary,
+                  fontSize: 10,
+                  fontWeight: pw.FontWeight.bold,
+                ),
+              ),
+              pw.Text(
+                _ascii(_goalsTrendStatusLabel(direction)),
+                style: pw.TextStyle(
+                  color: color,
+                  fontSize: 9,
+                  fontWeight: pw.FontWeight.bold,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
+  String _trendArrow(TeamWdlTrendDirection direction) {
+    switch (direction) {
+      case TeamWdlTrendDirection.up:
+        return '/\\';
+      case TeamWdlTrendDirection.down:
+        return '\\/';
+      case TeamWdlTrendDirection.flat:
+      case TeamWdlTrendDirection.insufficientData:
+        return '--';
+    }
+  }
+
+  String _goalsTrendStatusLabel(TeamWdlTrendDirection direction) {
+    switch (direction) {
+      case TeamWdlTrendDirection.up:
+        return 'En progression';
+      case TeamWdlTrendDirection.down:
+        return 'En baisse';
+      case TeamWdlTrendDirection.flat:
+        return 'Stable';
+      case TeamWdlTrendDirection.insufficientData:
+        return 'Donnees insuffisantes';
+    }
+  }
+
+  pw.Widget _goalsPeriodBlock({
+    required String title,
+    required TeamGoalsCounts counts,
+  }) {
+    return pw.Container(
+      width: double.infinity,
+      padding: const pw.EdgeInsets.all(10),
+      decoration: pw.BoxDecoration(
+        color: _surface,
+        borderRadius: pw.BorderRadius.circular(8),
+        border: pw.Border.all(color: _border),
+      ),
+      child: pw.Column(
+        crossAxisAlignment: pw.CrossAxisAlignment.start,
+        children: [
+          pw.Text(
+            _ascii(title),
+            style: pw.TextStyle(
+              color: _textPrimary,
+              fontSize: 11,
+              fontWeight: pw.FontWeight.bold,
+            ),
+          ),
+          pw.SizedBox(height: 8),
+          if (counts.isEmpty)
+            pw.Text(
+              _ascii('Aucun match sur cette periode.'),
+              style: const pw.TextStyle(color: _textSecondary, fontSize: 9),
+            )
+          else ...[
+            pw.Container(
+              width: double.infinity,
+              height: 120,
+              child: pw.CustomPaint(
+                size: const PdfPoint(500, 110),
+                painter: (PdfGraphics canvas, PdfPoint size) {
+                  _paintGoalsBars(canvas: canvas, size: size, counts: counts);
+                },
+              ),
+            ),
+            pw.SizedBox(height: 8),
+            _goalsLegendRow(
+              label: 'Buts marques',
+              value: counts.scored,
+              avg: counts.avgScoredPerMatch,
+              color: _win,
+            ),
+            pw.SizedBox(height: 4),
+            _goalsLegendRow(
+              label: 'Buts encaisses',
+              value: counts.conceded,
+              avg: counts.avgConcededPerMatch,
+              color: _primary,
+            ),
+            pw.SizedBox(height: 4),
+            pw.Text(
+              _ascii('${counts.matchCount} matchs'),
+              style: const pw.TextStyle(color: _textSecondary, fontSize: 8),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+
+  pw.Widget _goalsLegendRow({
+    required String label,
+    required int value,
+    required double? avg,
+    required PdfColor color,
+  }) {
+    final avgLabel = avg == null ? '-' : avg.toStringAsFixed(2).replaceAll('.', ',');
+    return pw.Row(
+      children: [
+        pw.Container(
+          width: 8,
+          height: 8,
+          decoration: pw.BoxDecoration(color: color, shape: pw.BoxShape.circle),
+        ),
+        pw.SizedBox(width: 6),
+        pw.Expanded(
+          child: pw.Text(
+            _ascii(label),
+            style: const pw.TextStyle(color: _textPrimary, fontSize: 9),
+          ),
+        ),
+        pw.Text(
+          _ascii('$value · $avgLabel/match'),
+          style: pw.TextStyle(
+            color: _textPrimary,
+            fontSize: 9,
+            fontWeight: pw.FontWeight.bold,
+          ),
+        ),
+      ],
+    );
+  }
+
+  void _paintGoalsBars({
+    required PdfGraphics canvas,
+    required PdfPoint size,
+    required TeamGoalsCounts counts,
+  }) {
+    const left = 28.0;
+    const right = 12.0;
+    const topPad = 6.0;
+    const bottomPad = 28.0;
+    final chartW = size.x - left - right;
+    final chartH = size.y - topPad - bottomPad;
+    if (chartW <= 0 || chartH <= 0) return;
+
+    final maxValue =
+        counts.scored > counts.conceded ? counts.scored : counts.conceded;
+    final maxY = maxValue <= 0 ? 1.0 : (maxValue + 1).toDouble();
+    final interval = maxY <= 5
+        ? 1.0
+        : maxY <= 12
+            ? 2.0
+            : (maxY / 5).ceilToDouble();
+    final plotBottom = bottomPad;
+    final font = canvas.defaultFont;
+
+    double yForValue(double value) {
+      return plotBottom + (value / maxY) * chartH;
+    }
+
+    for (var v = 0.0; v <= maxY + 0.001; v += interval) {
+      final yy = yForValue(v);
+      canvas
+        ..setStrokeColor(PdfColor.fromInt(0xFFD1D5DB))
+        ..setLineWidth(0.5)
+        ..moveTo(left, yy)
+        ..lineTo(left + chartW, yy)
+        ..strokePath();
+      if (font != null) {
+        canvas
+          ..setFillColor(_textSecondary)
+          ..drawString(font, 7, '${v.round()}', left - 18, yy - 2);
+      }
+    }
+
+    final barWidth = chartW * 0.22;
+    final firstCenter = left + chartW * 0.32;
+    final secondCenter = left + chartW * 0.68;
+
+    void drawBar({
+      required double centerX,
+      required double value,
+      required PdfColor color,
+      required String label,
+    }) {
+      final barH = (value / maxY) * chartH;
+      final x = centerX - barWidth / 2;
+      canvas
+        ..setFillColor(color)
+        ..drawRRect(x, plotBottom, barWidth, barH, 3, 3)
+        ..fillPath();
+      if (font != null) {
+        canvas
+          ..setFillColor(_textSecondary)
+          ..drawString(
+            font,
+            7,
+            label,
+            centerX - 18,
+            plotBottom - 16,
+          );
+      }
+    }
+
+    drawBar(
+      centerX: firstCenter,
+      value: counts.scored.toDouble(),
+      color: _win,
+      label: 'Marques',
+    );
+    drawBar(
+      centerX: secondCenter,
+      value: counts.conceded.toDouble(),
+      color: _primary,
+      label: 'Encaisses',
     );
   }
 

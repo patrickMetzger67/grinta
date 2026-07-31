@@ -234,6 +234,7 @@ class TeamGoalsCounts {
     required String teamId,
     String? clubId,
     String? clubAffiliation,
+    String? displayName,
   }) {
     var scored = 0;
     var conceded = 0;
@@ -245,6 +246,7 @@ class TeamGoalsCounts {
         teamId: teamId,
         clubId: clubId,
         clubAffiliation: clubAffiliation,
+        displayName: displayName,
       );
       if (goals == null) continue;
 
@@ -366,6 +368,7 @@ class TeamGoalsHalfTrends {
   required String teamId,
   String? clubId,
   String? clubAffiliation,
+  String? displayName,
 }) {
   if (match.isMatchPlayed != true) {
     return null;
@@ -376,6 +379,7 @@ class TeamGoalsHalfTrends {
     teamId: teamId,
     clubId: clubId,
     clubAffiliation: clubAffiliation,
+    displayName: displayName,
   );
   if (side == null) {
     return null;
