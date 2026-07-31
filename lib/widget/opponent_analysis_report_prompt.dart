@@ -317,34 +317,44 @@ class _OpponentAnalysisPromptDialogState
     return value.toLowerCase().replaceAll(RegExp(r'[^a-z0-9]'), '');
   }
 
+  /// Always returns a source so Oui can open the email dialog.
+  /// Prefer a competition that contains the opponent; otherwise best-effort.
   Future<
       ({
         String url,
         String label,
         String seasonId,
         TeamStatsOpponent opponent,
-      })?> _resolveReportSource(AppSession session) async {
+      })> _resolveReportSource(AppSession session) async {
     final l10n = context.l10n;
     final team = widget.candidate.team;
     final match = widget.candidate.match;
     final seasonId = session.selectedSeason?.ref?.id?.trim() ?? '';
     final resolvedSeasonId =
         teamStatsSeasonIdForTeam(team, seasonId) ?? seasonId;
-    if (resolvedSeasonId.isEmpty) return null;
 
-    final options = await loadTeamStatsCompetitionOptions(
-      team: team,
-      l10n: l10n,
-      fallbackSeasonId: resolvedSeasonId,
-      includeAllOption: false,
-    );
-    if (options.isEmpty) return null;
+    List<TeamStatsCompetitionOption> options = const [];
+    try {
+      options = await loadTeamStatsCompetitionOptions(
+        team: team,
+        l10n: l10n,
+        fallbackSeasonId: resolvedSeasonId,
+        includeAllOption: false,
+      );
+    } catch (e, st) {
+      debugPrint('Opponent analysis: competition options failed: $e\n$st');
+    }
 
-    final matchUrl = await resolveTeamStatsCompetitionUrlForMatch(
-      team: team,
-      match: match,
-      fallbackSeasonId: resolvedSeasonId,
-    );
+    String? matchUrl;
+    try {
+      matchUrl = await resolveTeamStatsCompetitionUrlForMatch(
+        team: team,
+        match: match,
+        fallbackSeasonId: resolvedSeasonId,
+      );
+    } catch (e, st) {
+      debugPrint('Opponent analysis: match competition failed: $e\n$st');
+    }
 
     final ordered = <TeamStatsCompetitionOption>[
       ...options.where((o) => (o.url ?? '').trim() == (matchUrl ?? '').trim()),
@@ -354,33 +364,35 @@ class _OpponentAnalysisPromptDialogState
     final needle = _compactName(widget.candidate.opponent.displayName);
     final stats = TeamCompetitionStatsService();
 
-    for (final option in ordered) {
-      final url = option.url?.trim() ?? '';
-      if (url.isEmpty) continue;
-      try {
-        final opponents = await stats.loadOpponentsForTeam(
-          team: team,
-          seasonId: resolvedSeasonId,
-          competitionUrl: url,
-        );
-        for (final opponent in opponents) {
-          if (_compactName(opponent.displayName) == needle ||
-              opponent.key == widget.candidate.opponent.key) {
-            return (
-              url: url,
-              label: option.label,
-              seasonId: resolvedSeasonId,
-              opponent: opponent,
-            );
+    if (resolvedSeasonId.isNotEmpty) {
+      for (final option in ordered) {
+        final url = option.url?.trim() ?? '';
+        if (url.isEmpty) continue;
+        try {
+          final opponents = await stats.loadOpponentsForTeam(
+            team: team,
+            seasonId: resolvedSeasonId,
+            competitionUrl: url,
+          );
+          for (final opponent in opponents) {
+            if (_compactName(opponent.displayName) == needle ||
+                opponent.key == widget.candidate.opponent.key) {
+              return (
+                url: url,
+                label: option.label,
+                seasonId: resolvedSeasonId,
+                opponent: opponent,
+              );
+            }
           }
+        } catch (e, st) {
+          debugPrint('Opponent analysis: loadOpponents failed: $e\n$st');
         }
-      } catch (e, st) {
-        debugPrint('Opponent analysis: loadOpponents failed: $e\n$st');
       }
     }
 
     if (matchUrl != null && matchUrl.trim().isNotEmpty) {
-      String label = 'Compétition';
+      String label = 'Competition';
       for (final option in ordered) {
         if ((option.url ?? '').trim() == matchUrl.trim()) {
           label = option.label;
@@ -395,7 +407,23 @@ class _OpponentAnalysisPromptDialogState
       );
     }
 
-    return null;
+    if (ordered.isNotEmpty && (ordered.first.url ?? '').trim().isNotEmpty) {
+      return (
+        url: ordered.first.url!.trim(),
+        label: ordered.first.label,
+        seasonId: resolvedSeasonId,
+        opponent: widget.candidate.opponent,
+      );
+    }
+
+    return (
+      url: '',
+      label: match.chType?.trim().isNotEmpty == true
+          ? match.chType!.trim()
+          : 'Hors competition',
+      seasonId: resolvedSeasonId,
+      opponent: widget.candidate.opponent,
+    );
   }
 
   Future<void> _onYes() async {
@@ -406,24 +434,8 @@ class _OpponentAnalysisPromptDialogState
     final messenger = ScaffoldMessenger.maybeOf(context);
     final session = context.read<AppSession>();
 
-    // Persist immediately so a reload never re-asks this match.
-    await OpponentAnalysisPromptStateService.instance.markAccepted(_matchId);
-
     try {
       final source = await _resolveReportSource(session);
-      if (source == null) {
-        if (mounted) {
-          messenger?.showSnackBar(
-            SnackBar(
-              content: Text(l10n.opponentAnalysisReportSendFailed),
-              backgroundColor: colors.danger,
-              duration: const Duration(seconds: 6),
-            ),
-          );
-          Navigator.of(context, rootNavigator: true).pop();
-        }
-        return;
-      }
 
       final data = await OpponentAnalysisReportDataService.instance.build(
         team: widget.candidate.team,
@@ -445,18 +457,22 @@ class _OpponentAnalysisPromptDialogState
       );
       if (sent) {
         await OpponentAnalysisPromptStateService.instance.markSent(_matchId);
+      } else {
+        // Oui but email cancelled — don't ask again for this match.
+        await OpponentAnalysisPromptStateService.instance.markAccepted(_matchId);
       }
     } catch (e, st) {
       debugPrint('Opponent analysis prompt yes failed: $e\n$st');
       if (mounted) {
         messenger?.showSnackBar(
           SnackBar(
-            content: Text(l10n.opponentAnalysisReportSendFailed),
+            content: Text(
+              '${l10n.opponentAnalysisReportSendFailed}\n$e',
+            ),
             backgroundColor: colors.danger,
-            duration: const Duration(seconds: 6),
+            duration: const Duration(seconds: 8),
           ),
         );
-        Navigator.of(context, rootNavigator: true).pop();
       }
     } finally {
       if (mounted) setState(() => _busy = false);
