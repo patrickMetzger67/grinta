@@ -3019,5 +3019,38 @@
       "min": { "type": "int" },
       "max": { "type": "int" }
     }
-  }
+  },
+
+  "opponentAnalysisPromptTitle": "Opponent analysis",
+  "opponentAnalysisPromptMessage": "You play this {weekday} at {time} against {opponentName}. Would you like an opponent analysis report?",
+  "@opponentAnalysisPromptMessage": {
+    "placeholders": {
+      "weekday": { "type": "String" },
+      "time": { "type": "String" },
+      "opponentName": { "type": "String" }
+    }
+  },
+  "opponentAnalysisPromptYes": "Yes",
+  "opponentAnalysisPromptRemindTomorrow": "Remind me tomorrow",
+  "opponentAnalysisPromptSkip": "Skip",
+  "opponentAnalysisReportTitle": "Opponent analysis report",
+  "opponentAnalysisReportOpponentLabel": "Opponent",
+  "opponentAnalysisReportEmailIntro": "Here is the analysis report for {opponentName} for your match on {kickoff}.",
+  "@opponentAnalysisReportEmailIntro": {
+    "placeholders": {
+      "opponentName": { "type": "String" },
+      "kickoff": { "type": "String" }
+    }
+  },
+  "opponentAnalysisReportEmailIncludes": "The PDF includes trend, W/D/L (season and halves), results, players (call-ups / starts / minutes), typical team and ranking evolution.",
+  "opponentAnalysisReportEmailDialogTitle": "Send analysis report",
+  "opponentAnalysisReportEmailDialogMessage": "The analysis report for {opponentName} will be sent to the addresses below.",
+  "@opponentAnalysisReportEmailDialogMessage": {
+    "placeholders": {
+      "opponentName": { "type": "String" }
+    }
+  },
+  "opponentAnalysisReportEmailRecipientsLabel": "Recipients",
+  "opponentAnalysisReportSendFailed": "Could not send the opponent analysis report."
+
 }

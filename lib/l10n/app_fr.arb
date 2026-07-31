@@ -3051,5 +3051,37 @@
       "min": { "type": "int" },
       "max": { "type": "int" }
     }
-  }
+  },
+
+  "opponentAnalysisPromptTitle": "Analyse adversaire",
+  "opponentAnalysisPromptMessage": "Tu rencontres, ce {weekday} à {time}, {opponentName}. Souhaites-tu un rapport d’analyse de ton adversaire ?",
+  "@opponentAnalysisPromptMessage": {
+    "placeholders": {
+      "weekday": { "type": "String" },
+      "time": { "type": "String" },
+      "opponentName": { "type": "String" }
+    }
+  },
+  "opponentAnalysisPromptYes": "Oui",
+  "opponentAnalysisPromptRemindTomorrow": "Me le rappeler demain",
+  "opponentAnalysisPromptSkip": "Passer",
+  "opponentAnalysisReportTitle": "Rapport d’analyse adversaire",
+  "opponentAnalysisReportOpponentLabel": "Adversaire",
+  "opponentAnalysisReportEmailIntro": "Voici le rapport d’analyse de {opponentName} pour ton match du {kickoff}.",
+  "@opponentAnalysisReportEmailIntro": {
+    "placeholders": {
+      "opponentName": { "type": "String" },
+      "kickoff": { "type": "String" }
+    }
+  },
+  "opponentAnalysisReportEmailIncludes": "Le PDF contient la tendance, le bilan V/N/D (saison et mi-saisons), les résultats, les joueurs (convo / titu. / temps de jeu), l’équipe type et l’évolution du classement.",
+  "opponentAnalysisReportEmailDialogTitle": "Envoyer le rapport d’analyse",
+  "opponentAnalysisReportEmailDialogMessage": "Le rapport d’analyse de {opponentName} sera envoyé aux adresses ci-dessous.",
+  "@opponentAnalysisReportEmailDialogMessage": {
+    "placeholders": {
+      "opponentName": { "type": "String" }
+    }
+  },
+  "opponentAnalysisReportEmailRecipientsLabel": "Destinataires",
+  "opponentAnalysisReportSendFailed": "Impossible d’envoyer le rapport d’analyse adversaire."
 }
