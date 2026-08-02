@@ -213,20 +213,13 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String invitationSmsMessage(
-    String appName,
-    String code,
-    String appleStoreUrl,
-    String googlePlayUrl,
-  ) {
+      String appName, String code, String appleStoreUrl, String googlePlayUrl) {
     return 'Ton coach t\'invite à rejoindre $appName. Ton code : $code.\niPhone : $appleStoreUrl\nAndroid : $googlePlayUrl';
   }
 
   @override
   String sessionReportEmailSubject(
-    String appName,
-    String eventLabel,
-    String title,
-  ) {
+      String appName, String eventLabel, String title) {
     return '$appName — Rapport $eventLabel : $title';
   }
 
@@ -1181,10 +1174,7 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String matchConvocationNotificationBodyWithMessage(
-    String opponent,
-    String time,
-    String message,
-  ) {
+      String opponent, String time, String message) {
     return '$opponent · RDV $time · $message';
   }
 
@@ -2262,6 +2252,15 @@ class AppLocalizationsFr extends AppLocalizations {
   String get matchGoalAddTitle => 'Enregistrer un but';
 
   @override
+  String get matchScoreIncreaseTooltip => 'Ajouter un but';
+
+  @override
+  String get matchScoreDecreaseTooltip => 'Retirer un but';
+
+  @override
+  String get matchScoreUpdateFailed => 'Impossible de mettre à jour le score.';
+
+  @override
   String get matchGoalPickTeamTitle => 'Quelle équipe a marqué ?';
 
   @override
@@ -3262,10 +3261,7 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String createNonSportEventNotificationBodyWithLocation(
-    String title,
-    String when,
-    String location,
-  ) {
+      String title, String when, String location) {
     return '$title — $when — $location';
   }
 
@@ -5194,9 +5190,7 @@ class AppLocalizationsFr extends AppLocalizations {
   String teamStatsGoalsAvgPerMatch(double avg) {
     final intl.NumberFormat avgNumberFormat =
         intl.NumberFormat.decimalPatternDigits(
-          locale: localeName,
-          decimalDigits: 2,
-        );
+            locale: localeName, decimalDigits: 2);
     final String avgString = avgNumberFormat.format(avg);
 
     return '$avgString/match';
@@ -5217,9 +5211,7 @@ class AppLocalizationsFr extends AppLocalizations {
   String teamStatsAvgPointsPerMatch(double avg) {
     final intl.NumberFormat avgNumberFormat =
         intl.NumberFormat.decimalPatternDigits(
-          locale: localeName,
-          decimalDigits: 2,
-        );
+            locale: localeName, decimalDigits: 2);
     final String avgString = avgNumberFormat.format(avg);
 
     return '$avgString';
@@ -5984,10 +5976,7 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String polarImportDeviceLine(
-    String deviceId,
-    String deviceType,
-    String customName,
-  ) {
+      String deviceId, String deviceType, String customName) {
     return 'Polar $deviceId · $deviceType · $customName';
   }
 
@@ -6169,9 +6158,7 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String adminTrackerDevicesAddPolarChromeSuccess(
-    String deviceId,
-    String deviceType,
-  ) {
+      String deviceId, String deviceType) {
     return 'Polar $deviceId ($deviceType) ajouté.';
   }
 
@@ -6615,10 +6602,7 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String promoCodeRedeemSuccessVerified(
-    String entitlement,
-    String expiresAt,
-    int days,
-  ) {
+      String entitlement, String expiresAt, int days) {
     return '$entitlement actif jusqu\'au $expiresAt ($days jours offerts).';
   }
 
@@ -6912,10 +6896,7 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String opponentAnalysisPromptMessage(
-    String weekday,
-    String time,
-    String opponentName,
-  ) {
+      String weekday, String time, String opponentName) {
     return 'Tu rencontres, ce $weekday à $time, $opponentName. Souhaites-tu un rapport d’analyse de ton adversaire ?';
   }
 

@@ -22,6 +22,7 @@ import 'package:grinta/util/app_theme.dart';
 import '../util/highlight_minute_helper.dart';
 import '../util/intense_live_eligibility.dart';
 import '../util/match_creation_helper.dart';
+import '../util/match_goal_helper.dart';
 import 'package:grinta/widget/create_match_sheet.dart';
 import 'package:grinta/widget/match_intense_highlights_actions.dart';
 import 'package:provider/provider.dart';
@@ -654,11 +655,35 @@ class _MatchHeader extends StatefulWidget {
 
 class _MatchHeaderState extends State<_MatchHeader> {
   late models.Match _match;
+  bool _scoreBusy = false;
 
   @override
   void initState() {
     super.initState();
     _match = widget.match;
+  }
+
+  Future<void> _adjustScore(MatchSide side, int delta) async {
+    if (!isManager || _scoreBusy) return;
+    setState(() => _scoreBusy = true);
+    try {
+      await adjustMatchSideScore(
+        match: _match,
+        side: side,
+        delta: delta,
+      );
+      if (mounted) setState(() {});
+    } catch (e, st) {
+      debugPrint('match score adjust failed: $e\n$st');
+      if (mounted) {
+        AppSnackbar.show(
+          context,
+          context.l10n.matchScoreUpdateFailed,
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _scoreBusy = false);
+    }
   }
 
   @override
@@ -769,13 +794,13 @@ class _MatchHeaderState extends State<_MatchHeader> {
     final bool liveScore = match.isInHighLight == true ||
         (match.homeScore ?? 0) > 0 ||
         (match.outSideScore ?? 0) > 0;
-    final bool showScore = played || liveScore;
+    final bool showScore = played || liveScore || isManager;
     final bool isReport = match.isReport == true;
     final bool hasVenue = _hasVenueInfo(match);
 
-    final String score = showScore
-        ? '${match.homeScore ?? 0} - ${match.outSideScore ?? 0}'
-        : '-';
+    final int homeScore = match.homeScore ?? 0;
+    final int awayScore = match.outSideScore ?? 0;
+    final String score = showScore ? '$homeScore - $awayScore' : '-';
 
     return Container(
       width: double.infinity,
@@ -826,6 +851,23 @@ class _MatchHeaderState extends State<_MatchHeader> {
             builder: (context, constraints) {
               final bool compact = constraints.maxWidth < 360;
 
+              final scoreBlock = isManager
+                  ? _EditableScoreBlock(
+                      homeScore: homeScore,
+                      awayScore: awayScore,
+                      tab: match.tab,
+                      busy: _scoreBusy,
+                      onHomeMinus: () => _adjustScore(MatchSide.team1, -1),
+                      onHomePlus: () => _adjustScore(MatchSide.team1, 1),
+                      onAwayMinus: () => _adjustScore(MatchSide.team2, -1),
+                      onAwayPlus: () => _adjustScore(MatchSide.team2, 1),
+                    )
+                  : _ScoreBlock(
+                      score: score,
+                      tab: match.tab,
+                      played: showScore,
+                    );
+
               if (compact) {
                 return Column(
                   children: [
@@ -836,11 +878,7 @@ class _MatchHeaderState extends State<_MatchHeader> {
                       compact: true,
                     ),
                     const SizedBox(height: 6),
-                    _ScoreBlock(
-                      score: score,
-                      tab: match.tab,
-                      played: showScore,
-                    ),
+                    scoreBlock,
                     const SizedBox(height: 6),
                     _TeamBlock(
                       name: team2,
@@ -864,11 +902,7 @@ class _MatchHeaderState extends State<_MatchHeader> {
                   ),
                   Padding(
                     padding: const EdgeInsets.symmetric(horizontal: 8),
-                    child: _ScoreBlock(
-                      score: score,
-                      tab: match.tab,
-                      played: showScore,
-                    ),
+                    child: scoreBlock,
                   ),
                   Expanded(
                     child: _TeamBlock(
@@ -1320,6 +1354,181 @@ class _ScoreBlock extends StatelessWidget {
             ),
           ),
       ],
+    );
+  }
+}
+
+/// Manager scoreboard: [-] N [+] — [-] N [+] for home / away.
+class _EditableScoreBlock extends StatelessWidget {
+  final int homeScore;
+  final int awayScore;
+  final String? tab;
+  final bool busy;
+  final VoidCallback onHomeMinus;
+  final VoidCallback onHomePlus;
+  final VoidCallback onAwayMinus;
+  final VoidCallback onAwayPlus;
+
+  const _EditableScoreBlock({
+    required this.homeScore,
+    required this.awayScore,
+    required this.tab,
+    required this.busy,
+    required this.onHomeMinus,
+    required this.onHomePlus,
+    required this.onAwayMinus,
+    required this.onAwayPlus,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = context.appColors;
+    final l10n = context.l10n;
+
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            _ScoreSideControls(
+              score: homeScore,
+              busy: busy,
+              decreaseTooltip: l10n.matchScoreDecreaseTooltip,
+              increaseTooltip: l10n.matchScoreIncreaseTooltip,
+              onMinus: onHomeMinus,
+              onPlus: onHomePlus,
+            ),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 6),
+              child: Text(
+                '-',
+                style: TextStyle(
+                  color: colors.textSecondary,
+                  fontSize: 22,
+                  fontWeight: FontWeight.w800,
+                  height: 1,
+                ),
+              ),
+            ),
+            _ScoreSideControls(
+              score: awayScore,
+              busy: busy,
+              decreaseTooltip: l10n.matchScoreDecreaseTooltip,
+              increaseTooltip: l10n.matchScoreIncreaseTooltip,
+              onMinus: onAwayMinus,
+              onPlus: onAwayPlus,
+            ),
+          ],
+        ),
+        if (_clean(tab).isNotEmpty)
+          Text(
+            'TAB $tab',
+            textAlign: TextAlign.center,
+            style: TextStyle(
+              color: colors.textSecondary,
+              fontSize: 10,
+              fontWeight: FontWeight.w600,
+              height: 1.1,
+            ),
+          ),
+      ],
+    );
+  }
+}
+
+class _ScoreSideControls extends StatelessWidget {
+  final int score;
+  final bool busy;
+  final String decreaseTooltip;
+  final String increaseTooltip;
+  final VoidCallback onMinus;
+  final VoidCallback onPlus;
+
+  const _ScoreSideControls({
+    required this.score,
+    required this.busy,
+    required this.decreaseTooltip,
+    required this.increaseTooltip,
+    required this.onMinus,
+    required this.onPlus,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = context.appColors;
+
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        _ScoreIconButton(
+          icon: Icons.remove_rounded,
+          tooltip: decreaseTooltip,
+          enabled: !busy && score > 0,
+          onPressed: onMinus,
+        ),
+        ConstrainedBox(
+          constraints: const BoxConstraints(minWidth: 28),
+          child: Text(
+            '$score',
+            textAlign: TextAlign.center,
+            style: TextStyle(
+              color: colors.textPrimary,
+              fontSize: 26,
+              fontWeight: FontWeight.w900,
+              height: 1,
+            ),
+          ),
+        ),
+        _ScoreIconButton(
+          icon: Icons.add_rounded,
+          tooltip: increaseTooltip,
+          enabled: !busy && score < 99,
+          onPressed: onPlus,
+        ),
+      ],
+    );
+  }
+}
+
+class _ScoreIconButton extends StatelessWidget {
+  final IconData icon;
+  final String tooltip;
+  final bool enabled;
+  final VoidCallback onPressed;
+
+  const _ScoreIconButton({
+    required this.icon,
+    required this.tooltip,
+    required this.enabled,
+    required this.onPressed,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = context.appColors;
+
+    return SizedBox(
+      width: 32,
+      height: 32,
+      child: IconButton(
+        padding: EdgeInsets.zero,
+        constraints: const BoxConstraints.tightFor(width: 32, height: 32),
+        tooltip: tooltip,
+        onPressed: enabled ? onPressed : null,
+        icon: Icon(
+          icon,
+          size: 18,
+          color: enabled ? colors.primary : colors.textSecondary,
+        ),
+        style: IconButton.styleFrom(
+          backgroundColor: colors.surface,
+          side: BorderSide(color: colors.border),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(8),
+          ),
+        ),
+      ),
     );
   }
 }

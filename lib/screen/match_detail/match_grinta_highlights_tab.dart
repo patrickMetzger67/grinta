@@ -38,11 +38,45 @@ class MatchGrintaHighlightsTab extends StatefulWidget {
 
 class _MatchGrintaHighlightsTabState extends State<MatchGrintaHighlightsTab> {
   bool _saving = false;
+  bool _healingScore = false;
+  String? _scoreHealedForMatchId;
 
   String get _matchCalendarId => (widget.match.id ?? '').trim();
 
   bool get _canEdit =>
       widget.isManager && widget.match.isMatchPlayed != true;
+
+  /// Repairs match.homeScore/outSideScore when they drifted from goal highlights.
+  void _maybeHealScoreFromHighlights(List<Highlights> highlights) {
+    if (!widget.isManager || _healingScore) {
+      return;
+    }
+    final matchId = _matchCalendarId;
+    if (matchId.isEmpty || _scoreHealedForMatchId == matchId) {
+      return;
+    }
+    final hasGoals =
+        highlights.any((h) => h.actionType == ActionType.goal);
+    if (!hasGoals) {
+      return;
+    }
+
+    final computed = scoreFromGoalHighlights(widget.match, highlights);
+    final storedHome = widget.match.homeScore ?? 0;
+    final storedAway = widget.match.outSideScore ?? 0;
+    if (computed.homeScore == storedHome &&
+        computed.outsideScore == storedAway) {
+      _scoreHealedForMatchId = matchId;
+      return;
+    }
+
+    _healingScore = true;
+    _scoreHealedForMatchId = matchId;
+    // Fetch unfiltered goals for the match, then rewrite the scoreboard.
+    syncMatchScoreFromGoalHighlights(widget.match).whenComplete(() {
+      _healingScore = false;
+    });
+  }
 
   Future<void> _onAddPressed(List<Highlights> existing) async {
     if (!_canEdit || _saving || _matchCalendarId.isEmpty) {
@@ -450,6 +484,10 @@ class _MatchGrintaHighlightsTabState extends State<MatchGrintaHighlightsTab> {
         }
 
         final highlights = snapshot.data ?? const <Highlights>[];
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (!mounted) return;
+          _maybeHealScoreFromHighlights(highlights);
+        });
 
         return Scaffold(
           backgroundColor: Colors.transparent,

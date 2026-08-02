@@ -74,6 +74,9 @@ bool isManagedSide(
 }
 
 /// Returns updated `(homeScore, outsideScore)` after one goal for [side].
+///
+/// Prefer [scoreFromGoalHighlights] for persisted score updates — incrementing
+/// from a stale in-memory [match] races and desyncs the scoreboard.
 ({int homeScore, int outsideScore}) incrementedScoresForSide(
   models.Match match,
   MatchSide side,
@@ -88,6 +91,8 @@ bool isManagedSide(
 }
 
 /// Returns updated `(homeScore, outsideScore)` after removing one goal for [side].
+///
+/// Prefer [scoreFromGoalHighlights] for persisted score updates.
 ({int homeScore, int outsideScore}) decrementedScoresForSide(
   models.Match match,
   MatchSide side,
@@ -99,6 +104,125 @@ bool isManagedSide(
     return (homeScore: home > 0 ? home - 1 : 0, outsideScore: away);
   }
   return (homeScore: home, outsideScore: away > 0 ? away - 1 : 0);
+}
+
+/// Scoreboard derived from Grinta goal highlights (source of truth).
+///
+/// Counts each [ActionType.goal] by [Goal.affiliationTeam] against
+/// [Match.affiliationTeam1] / [Match.affiliationTeam2]. Goals with an unknown
+/// affiliation are ignored.
+({int homeScore, int outsideScore}) scoreFromGoalHighlights(
+  models.Match match,
+  Iterable<Highlights> highlights,
+) {
+  var home = 0;
+  var away = 0;
+
+  for (final highlight in highlights) {
+    if (highlight.actionType != ActionType.goal) {
+      continue;
+    }
+    final Goal? goal = highlight.value as Goal?;
+    final MatchSide? side = sideForAffiliationTeam(
+      match,
+      goal?.affiliationTeam,
+    );
+    if (side == null) {
+      continue;
+    }
+    if (isHomeSide(side)) {
+      home += 1;
+    } else {
+      away += 1;
+    }
+  }
+
+  return (homeScore: home, outsideScore: away);
+}
+
+/// Applies a manual ±1 score change for [side] on the match document.
+///
+/// Clamps at 0. Updates [match.homeScore] / [match.outSideScore] in memory.
+Future<({int homeScore, int outsideScore})> adjustMatchSideScore({
+  required models.Match match,
+  required MatchSide side,
+  required int delta,
+  MatchService? matchService,
+}) async {
+  final String? matchId = match.id?.trim();
+  if (matchId == null || matchId.isEmpty) {
+    throw Exception('Match id is missing');
+  }
+  if (delta == 0) {
+    return (
+      homeScore: match.homeScore ?? 0,
+      outsideScore: match.outSideScore ?? 0,
+    );
+  }
+
+  var home = match.homeScore ?? 0;
+  var away = match.outSideScore ?? 0;
+  if (isHomeSide(side)) {
+    home = (home + delta).clamp(0, 99);
+  } else {
+    away = (away + delta).clamp(0, 99);
+  }
+
+  final MatchService mService = matchService ?? MatchService();
+  await mService.updateScore(
+    matchId: matchId,
+    homeScore: home,
+    outsideScore: away,
+    tab: match.tab,
+    isMatchPlayed: match.isMatchPlayed == true,
+  );
+
+  match.homeScore = home;
+  match.outSideScore = away;
+  if (delta > 0 && match.isInHighLight != true) {
+    await mService.updateHighlightStatus(
+      matchId: matchId,
+      isInHighLight: true,
+    );
+    match.isInHighLight = true;
+  }
+
+  return (homeScore: home, outsideScore: away);
+}
+
+/// Reloads all Grinta highlights for [match] and writes the derived score.
+///
+/// Updates [match.homeScore] / [match.outSideScore] in memory to match.
+Future<({int homeScore, int outsideScore})> syncMatchScoreFromGoalHighlights(
+  models.Match match, {
+  HighlightsService? highlightsService,
+  MatchService? matchService,
+  List<Highlights>? highlights,
+}) async {
+  final String? matchId = match.id?.trim();
+  if (matchId == null || matchId.isEmpty) {
+    throw Exception('Match id is missing');
+  }
+
+  final HighlightsService hlService = highlightsService ?? HighlightsService();
+  final MatchService mService = matchService ?? MatchService();
+
+  final List<Highlights> allHighlights = highlights ??
+      await hlService.getHighlightsByMatchCalendarId(matchId);
+
+  final scores = scoreFromGoalHighlights(match, allHighlights);
+
+  await mService.updateScore(
+    matchId: matchId,
+    homeScore: scores.homeScore,
+    outsideScore: scores.outsideScore,
+    tab: match.tab,
+    isMatchPlayed: match.isMatchPlayed == true,
+  );
+
+  match.homeScore = scores.homeScore;
+  match.outSideScore = scores.outsideScore;
+  return scores;
 }
 
 String? affiliationTeamForHighlight(Highlights highlight) {
@@ -274,6 +398,9 @@ Future<void> saveGoalHighlightAndUpdateScore({
     throw Exception('Match id is missing');
   }
 
+  // Persist affiliation from the selected side so score recomputation is exact.
+  goal.affiliationTeam = affiliationTeamForSide(match, side);
+
   final highlight = Highlights(
     matchCalendarId: matchId,
     teamId: teamId,
@@ -284,18 +411,11 @@ Future<void> saveGoalHighlightAndUpdateScore({
     dateTime: Timestamp.now(),
   );
 
+  final MatchService matchService = MatchService();
   await HighlightsService().addHighlight(highlight);
 
-  final scores = incrementedScoresForSide(match, side);
-  final MatchService matchService = MatchService();
-
-  await matchService.updateScore(
-    matchId: matchId,
-    homeScore: scores.homeScore,
-    outsideScore: scores.outsideScore,
-    tab: match.tab,
-    isMatchPlayed: match.isMatchPlayed == true,
-  );
+  // Always recompute from all goal highlights — never increment a stale score.
+  await syncMatchScoreFromGoalHighlights(match, matchService: matchService);
 
   if (match.isInHighLight != true) {
     await matchService.updateHighlightStatus(
@@ -361,23 +481,11 @@ Future<void> deleteHighlightAndMaybeUpdateScore({
     return;
   }
 
-  final Goal? goal = highlight.value as Goal?;
-  final MatchSide? side = sideForAffiliationTeam(match, goal?.affiliationTeam);
-  if (side == null) {
-    return;
-  }
-
   final String? matchId = match.id?.trim();
   if (matchId == null || matchId.isEmpty) {
     return;
   }
 
-  final scores = decrementedScoresForSide(match, side);
-  await MatchService().updateScore(
-    matchId: matchId,
-    homeScore: scores.homeScore,
-    outsideScore: scores.outsideScore,
-    tab: match.tab,
-    isMatchPlayed: match.isMatchPlayed == true,
-  );
+  // Recompute from remaining goals (handles multi-delete / stale match safely).
+  await syncMatchScoreFromGoalHighlights(match);
 }
