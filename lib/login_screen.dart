@@ -1036,7 +1036,7 @@ class _WebLoginLayout extends StatelessWidget {
                                     height: 1.1,
                                     fontSize: isCompactHeight ? 28 : null,
                                   ),
-                                  maxLines: 2,
+                                  maxLines: 3,
                                   overflow: TextOverflow.ellipsis,
                                 ),
                                 SizedBox(height: isCompactHeight ? 10 : 18),
@@ -1049,7 +1049,7 @@ class _WebLoginLayout extends StatelessWidget {
                                     color: colors.textSecondary,
                                     height: 1.5,
                                   ),
-                                  maxLines: isCompactHeight ? 2 : 3,
+                                  maxLines: isCompactHeight ? 6 : 8,
                                   overflow: TextOverflow.ellipsis,
                                 ),
                                 SizedBox(height: isCompactHeight ? 12 : 24),
@@ -1993,7 +1993,7 @@ class _FeatureShowcaseCard extends StatelessWidget {
                   const SizedBox(height: 8),
                   Text(
                     item.subtitle,
-                    maxLines: ultraCompact ? 2 : (compact ? 3 : 4),
+                    maxLines: ultraCompact ? 3 : (compact ? 4 : 5),
                     overflow: TextOverflow.ellipsis,
                     style: Theme.of(context).textTheme.bodyLarge?.copyWith(
                       color: colors.textSecondary,

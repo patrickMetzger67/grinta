@@ -113,13 +113,13 @@ abstract class AppLocalizations {
   /// No description provided for @heroTitle.
   ///
   /// In fr, this message translates to:
-  /// **'Pilotez votre activité sportive simplement'**
+  /// **'Le FOOTBALL Amateur passe à la vitesse supérieure'**
   String get heroTitle;
 
   /// No description provided for @heroSubtitle.
   ///
   /// In fr, this message translates to:
-  /// **'Organisez vos événements, gérez vos membres et suivez votre activité depuis une interface claire, moderne et responsive.'**
+  /// **'Grinta rassemble dans une seule application les informations de ton équipe, l’analyse des matchs et le suivi des performances.\n\nQue tu sois coach ou joueur, Grinta t’aide à mieux comprendre le jeu, à suivre ta progression et à préparer chaque rencontre avec des données concrètes'**
   String get heroSubtitle;
 
   /// No description provided for @loginTitle.
@@ -967,13 +967,13 @@ abstract class AppLocalizations {
   /// No description provided for @slide1Title.
   ///
   /// In fr, this message translates to:
-  /// **'Gérez votre équipe'**
+  /// **'TES COMPÉTITIONS AU MÊME ENDROIT'**
   String get slide1Title;
 
   /// No description provided for @slide1Subtitle.
   ///
   /// In fr, this message translates to:
-  /// **'Centralisez vos membres, vos informations et votre organisation dans une seule application.'**
+  /// **'Retrouve automatiquement les calendriers et les résultats de tes compétitions officielles. Consulte les prochains matchs et reste informé des résultats de ton équipe.'**
   String get slide1Subtitle;
 
   /// No description provided for @slide2Title.

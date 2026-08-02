@@ -12,11 +12,11 @@ class AppLocalizationsEn extends AppLocalizations {
   String get appName => 'Grinta';
 
   @override
-  String get heroTitle => 'Manage your sporting activity simply';
+  String get heroTitle => 'Amateur FOOTBALL shifts into high gear';
 
   @override
   String get heroSubtitle =>
-      'Organize your events, manage your members and monitor your activity from a clear, modern and responsive interface.';
+      'Grinta brings your team\'s information, match analysis and performance tracking together in a single app.\n\nWhether you\'re a coach or a player, Grinta helps you understand the game better, track your progress and prepare every match with concrete data.';
 
   @override
   String get loginTitle => 'Connection';
@@ -499,11 +499,11 @@ class AppLocalizationsEn extends AppLocalizations {
   String get createTeamPromptLater => 'Later';
 
   @override
-  String get slide1Title => 'Manage your team';
+  String get slide1Title => 'YOUR COMPETITIONS IN ONE PLACE';
 
   @override
   String get slide1Subtitle =>
-      'Centralize your members, information and organization in a single application.';
+      'Automatically find calendars and results for your official competitions. Check upcoming matches and stay up to date with your team\'s results.';
 
   @override
   String get slide2Title => 'Plan your matches';
