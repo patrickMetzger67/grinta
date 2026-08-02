@@ -12,10 +12,12 @@
     <uses-permission android:name="android.permission.WRITE_CALENDAR" />
 
     <!--
-      Google Play Photo/Video Permissions policy:
-      Grinta only picks occasional photos (profile) via image_picker / system
-      Photo Picker — broad gallery access is NOT a core use case.
-      Force-remove media permissions even if plugins merge them in.
+      Google Play Photo/Video Permissions policy (mandatory):
+      Occasional photo pick (profile) must use the system Photo Picker
+      (image_picker). Broad gallery / media read is NOT a core use case.
+      Force-remove every media permission plugins may merge in.
+      IMPORTANT: every versionCode in a Play release must be clean — remove
+      older AABs (+1/+2/+3) from the same publication if they still declare these.
     -->
     <uses-permission
         android:name="android.permission.READ_MEDIA_IMAGES"
@@ -24,7 +26,16 @@
         android:name="android.permission.READ_MEDIA_VIDEO"
         tools:node="remove" />
     <uses-permission
+        android:name="android.permission.READ_MEDIA_AUDIO"
+        tools:node="remove" />
+    <uses-permission
         android:name="android.permission.READ_MEDIA_VISUAL_USER_SELECTED"
+        tools:node="remove" />
+    <uses-permission
+        android:name="android.permission.ACCESS_MEDIA_LOCATION"
+        tools:node="remove" />
+    <uses-permission
+        android:name="android.permission.MANAGE_EXTERNAL_STORAGE"
         tools:node="remove" />
     <uses-permission
         android:name="android.permission.READ_EXTERNAL_STORAGE"
