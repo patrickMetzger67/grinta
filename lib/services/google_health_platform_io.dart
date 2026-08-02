@@ -2,6 +2,7 @@ import 'dart:io' show Platform;
 
 import 'package:flutter/foundation.dart';
 import 'package:grinta/model/google_health_importable_activity.dart';
+import 'package:grinta/services/grinta_health_connect_platform.dart';
 import 'package:health/health.dart';
 import 'package:permission_handler/permission_handler.dart';
 
@@ -62,6 +63,18 @@ const List<HealthDataType> _kGoogleHealthReadTypes = [
   HealthDataType.HEART_RATE,
   HealthDataType.ACTIVE_ENERGY_BURNED,
   HealthDataType.SLEEP_ASLEEP,
+  // health 13.x always enriches WORKOUT with these reads; missing grants make
+  // getData(WORKOUT) throw SecurityException and return an empty list.
+  HealthDataType.DISTANCE_DELTA,
+  HealthDataType.TOTAL_CALORIES_BURNED,
+  HealthDataType.STEPS,
+];
+
+const List<HealthDataType> _kGoogleHealthWorkoutEnrichmentTypes = [
+  HealthDataType.WORKOUT,
+  HealthDataType.DISTANCE_DELTA,
+  HealthDataType.TOTAL_CALORIES_BURNED,
+  HealthDataType.STEPS,
 ];
 
 bool get isGoogleHealthConnectSupported => Platform.isAndroid;
@@ -115,6 +128,7 @@ Future<bool> _ensureAuthorized(Health health) async {
       _kGoogleHealthReadTypes,
       permissions: permissions,
     );
+    debugPrint('Google Health Connect requestAuthorization => $granted');
     if (!granted) return false;
 
     try {
@@ -126,6 +140,30 @@ Future<bool> _ensureAuthorized(Health health) async {
       }
     } catch (e, st) {
       debugPrint('Health Connect history authorization failed: $e\n$st');
+    }
+
+    // Plugin returns true if *any* type was granted. Log enrichment coverage
+    // (hasPermissions is imperfect on Android — do not hard-fail here).
+    try {
+      final workoutOk = await health.hasPermissions(
+        _kGoogleHealthWorkoutEnrichmentTypes,
+        permissions: List<HealthDataAccess>.filled(
+          _kGoogleHealthWorkoutEnrichmentTypes.length,
+          HealthDataAccess.READ,
+        ),
+      );
+      debugPrint(
+        'Google Health Connect hasPermissions(WORKOUT+DISTANCE+CALORIES+STEPS)='
+        '$workoutOk',
+      );
+      if (workoutOk == false) {
+        debugPrint(
+          'Google Health Connect: Exercise/Distance/Calories/Steps may be '
+          'incomplete — enable them in Health Connect → App permissions → Grinta',
+        );
+      }
+    } catch (e, st) {
+      debugPrint('Google Health Connect hasPermissions check failed: $e\n$st');
     }
 
     return true;
@@ -154,7 +192,7 @@ Future<GoogleHealthPlatformConnectResult> authorizeAndProbeWorkouts() async {
   }
 
   final workouts = await listGoogleHealthWorkouts(
-    lookbackDays: 30,
+    lookbackDays: 90,
     skipAuthorization: true,
   );
   DateTime? mostRecentWorkoutAt;
@@ -284,6 +322,33 @@ Future<List<GoogleHealthImportableActivity>> listGoogleHealthWorkouts({
     if (!granted) return const [];
   }
 
+  // Prefer the native reader: the health plugin's WORKOUT path enriches with
+  // Distance/Calories/Steps and returns [] on any SecurityException.
+  final native = await GrintaHealthConnectPlatform.listExerciseSessions(
+    lookbackDays: lookbackDays,
+  );
+  if (native.ok && native.workouts.isNotEmpty) {
+    return native.workouts;
+  }
+  if (native.ok && native.sessionCount == 0) {
+    debugPrint(
+      'Google Health Connect native found 0 Exercise sessions '
+      '(lookbackDays=$lookbackDays warnings=${native.warnings})',
+    );
+    return const [];
+  }
+  if (!native.ok) {
+    debugPrint(
+      'Google Health Connect native list unavailable '
+      '(reason=${native.reason}); falling back to health plugin',
+    );
+  } else if (native.workouts.isEmpty && native.sessionCount > 0) {
+    debugPrint(
+      'Google Health Connect native mapped 0 of ${native.sessionCount} '
+      'sessions; falling back to health plugin',
+    );
+  }
+
   final now = DateTime.now();
   final start = now.subtract(Duration(days: lookbackDays.clamp(1, 365)));
 
@@ -292,6 +357,10 @@ Future<List<GoogleHealthImportableActivity>> listGoogleHealthWorkouts({
       startTime: start,
       endTime: now,
       types: const [HealthDataType.WORKOUT],
+    );
+    debugPrint(
+      'Google Health Connect WORKOUT points=${points.length} '
+      'lookbackDays=$lookbackDays',
     );
     final activities = <GoogleHealthImportableActivity>[];
     final seen = <String>{};
@@ -302,10 +371,15 @@ Future<List<GoogleHealthImportableActivity>> listGoogleHealthWorkouts({
       activities.add(mapped);
     }
     activities.sort((a, b) => b.startDate.compareTo(a.startDate));
+    debugPrint(
+      'Google Health Connect mapped activities=${activities.length}',
+    );
     return activities;
   } catch (e, st) {
     debugPrint('Google Health Connect list workouts failed: $e\n$st');
-    return const [];
+    // If the plugin path failed but native had sessions that failed mapping,
+    // still return whatever native produced (possibly empty).
+    return native.workouts;
   }
 }
 

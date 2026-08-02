@@ -4051,6 +4051,10 @@ class AppLocalizationsFr extends AppLocalizations {
   String get calendarSyncOpenCalendar => 'Ouvrir le calendrier';
 
   @override
+  String get calendarSyncOpenCalendarFailed =>
+      'Impossible d’ouvrir l’application Calendrier. Ouvre-la manuellement et coche le calendrier Grinta.';
+
+  @override
   String get calendarSyncHelpUnderstood => 'Compris';
 
   @override

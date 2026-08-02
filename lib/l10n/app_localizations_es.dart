@@ -4052,6 +4052,10 @@ class AppLocalizationsEs extends AppLocalizations {
   String get calendarSyncOpenCalendar => 'Open calendar';
 
   @override
+  String get calendarSyncOpenCalendarFailed =>
+      'Could not open the Calendar app. Open it manually and enable the Grinta calendar.';
+
+  @override
   String get calendarSyncHelpUnderstood => 'Got it';
 
   @override

@@ -48,7 +48,10 @@ class _CalendarSyncToggleState extends State<CalendarSyncToggle>
     return CalendarSyncService.instance.calendarDisplayNameForPlayer(player);
   }
 
-  Future<void> _showLocalCalendarHelp(String calendarName) async {
+  Future<void> _showLocalCalendarHelp(
+    String calendarName, {
+    String? calendarId,
+  }) async {
     if (!mounted || kIsWeb) return;
     final l10n = context.l10n;
     final colors = context.appColors;
@@ -77,7 +80,17 @@ class _CalendarSyncToggleState extends State<CalendarSyncToggle>
             FilledButton(
               onPressed: () async {
                 Navigator.of(dialogContext).pop();
-                await GrintaDeviceCalendarPlatform.openCalendarApp();
+                final opened = await GrintaDeviceCalendarPlatform.openCalendarApp(
+                  calendarId: calendarId,
+                );
+                if (!opened.ok && mounted) {
+                  debugPrint(
+                    'Open calendar failed via=${opened.via} detail=${opened.detail}',
+                  );
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(content: Text(l10n.calendarSyncOpenCalendarFailed)),
+                  );
+                }
               },
               child: Text(l10n.calendarSyncOpenCalendar),
             ),
@@ -115,7 +128,12 @@ class _CalendarSyncToggleState extends State<CalendarSyncToggle>
             SnackBar(content: Text(context.l10n.calendarSyncWebDownloaded)),
           );
         } else if (result.success && !kIsWeb) {
-          await _showLocalCalendarHelp(_calendarNameForSession(appSession));
+          final config = await _repository.getConfig(uid, playerId);
+          if (!mounted) return;
+          await _showLocalCalendarHelp(
+            config?.calendarDisplayName ?? _calendarNameForSession(appSession),
+            calendarId: config?.calendarExternalId,
+          );
         } else if (!result.success) {
           final message = switch (result) {
             CalendarSyncResult.permissionDenied =>
@@ -224,6 +242,7 @@ class _CalendarSyncToggleState extends State<CalendarSyncToggle>
         final enabled = snapshot.data?.enabled == true;
         final calendarName = snapshot.data?.calendarDisplayName ??
             _calendarNameForSession(appSession);
+        final calendarId = snapshot.data?.calendarExternalId;
 
         return Column(
           mainAxisSize: MainAxisSize.min,
@@ -296,7 +315,10 @@ class _CalendarSyncToggleState extends State<CalendarSyncToggle>
                     ),
                     if (!kIsWeb)
                       TextButton.icon(
-                        onPressed: () => _showLocalCalendarHelp(calendarName),
+                        onPressed: () => _showLocalCalendarHelp(
+                          calendarName,
+                          calendarId: calendarId,
+                        ),
                         icon: Icon(
                           Icons.help_outline,
                           size: 18,

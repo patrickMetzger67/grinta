@@ -1531,6 +1531,7 @@
     }
   },
   "calendarSyncOpenCalendar": "Open calendar",
+  "calendarSyncOpenCalendarFailed": "Could not open the Calendar app. Open it manually and enable the Grinta calendar.",
   "calendarSyncHelpUnderstood": "Got it",
   "calendarSyncHelpButton": "Where are my events?",
   "settingsDevicesSection": "Devices/Applications",

@@ -1839,6 +1839,7 @@
     }
   },
   "calendarSyncOpenCalendar": "Ouvrir le calendrier",
+  "calendarSyncOpenCalendarFailed": "Impossible d’ouvrir l’application Calendrier. Ouvre-la manuellement et coche le calendrier Grinta.",
   "calendarSyncHelpUnderstood": "Compris",
   "calendarSyncHelpButton": "Où voir mes événements ?",
   "settingsDevicesSection": "Appareils/Applications",
