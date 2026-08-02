@@ -149,19 +149,29 @@ bool canResyncTrainingIntense(Training training, {DateTime? now}) {
 }
 
 /// Best-effort match end for Intense re-sync eligibility / windows.
+///
+/// Prefers full-time Temps forts, else scheduled kick-off + duration
+/// (no Temps forts required).
 DateTime? matchIntenseEndLocal(
   models.Match match,
   List<Highlights> highlights, {
   DateTime? now,
+  DateTime? scheduledStart,
+  DateTime? scheduledEnd,
 }) {
   final endHighlight =
       findTimeEventHighlight(highlights, TimeType.end)?.dateTime?.toDate();
   if (endHighlight != null) return endHighlight;
+  if (scheduledEnd != null) return scheduledEnd;
 
-  final start = matchSessionStartLocal(match, highlights);
+  final start = matchLiveStartLocal(
+        match,
+        highlights,
+        scheduledStart: scheduledStart,
+      ) ??
+      matchSessionStartLocal(match, highlights);
   if (start != null) {
-    final durationMinutes = match.duration ?? 90;
-    return start.add(Duration(minutes: durationMinutes > 0 ? durationMinutes : 90));
+    return matchIntenseScheduledEndLocal(match, start);
   }
 
   // Match already marked played without usable schedule/highlights.
@@ -218,23 +228,25 @@ TrainingIntenseTimeWindow? resolveMatchIntenseFinishWindow(
 
 /// True when an Intense match re-sync is allowed (48h after full-time).
 ///
-/// Accepts either a recorded full-time Temps forts event **or**
-/// [Match.isMatchPlayed] (schedule/duration used as fallback window).
+/// No Temps forts required: uses full-time highlight when present, otherwise
+/// scheduled kick-off + duration, or [Match.isMatchPlayed] as last resort.
 bool canResyncMatchIntense({
   required models.Match match,
   required List<Highlights> highlights,
+  DateTime? scheduledStart,
+  DateTime? scheduledEnd,
   DateTime? now,
 }) {
   if (match.withTracker != true) return false;
 
-  final hasEndHighlight =
-      findTimeEventHighlight(highlights, TimeType.end) != null;
-  if (match.isMatchPlayed != true && !hasEndHighlight) {
-    return false;
-  }
-
   final clock = now ?? DateTime.now();
-  final end = matchIntenseEndLocal(match, highlights, now: clock);
+  final end = matchIntenseEndLocal(
+    match,
+    highlights,
+    now: clock,
+    scheduledStart: scheduledStart,
+    scheduledEnd: scheduledEnd,
+  );
   if (end == null) return false;
 
   // If the match is already marked played, allow re-sync even when the

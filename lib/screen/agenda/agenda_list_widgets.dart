@@ -1611,6 +1611,13 @@ class AgendaItemCard extends StatelessWidget {
                   playerId: currentPlayerId!.trim(),
                 ),
             ],
+            if (item.match != null && canManageThisMatch)
+              _AgendaMatchIntenseLiveButton(
+                match: item.match!,
+                scheduledStart: item.startAt,
+                scheduledEnd: item.endAt,
+                title: item.title,
+              ),
             if (item.teamWorkloadSummary != null &&
                 canSendSessionPdfReport(
                   session: context.read<AppSession>(),
@@ -1983,6 +1990,192 @@ void _notifyAgendaWorkloadUpdated(BuildContext context, {Training? training}) {
     return;
   }
   _AgendaWorkloadRefreshScope.notify(context, eventId);
+}
+
+/// Live + Re-sync on agenda cards for noSync match kits (no Temps forts needed).
+class _AgendaMatchIntenseLiveButton extends StatefulWidget {
+  const _AgendaMatchIntenseLiveButton({
+    required this.match,
+    required this.scheduledStart,
+    required this.scheduledEnd,
+    required this.title,
+  });
+
+  final models.Match match;
+  final DateTime scheduledStart;
+  final DateTime scheduledEnd;
+  final String title;
+
+  @override
+  State<_AgendaMatchIntenseLiveButton> createState() =>
+      _AgendaMatchIntenseLiveButtonState();
+}
+
+class _AgendaMatchIntenseLiveButtonState
+    extends State<_AgendaMatchIntenseLiveButton> {
+  Timer? _slotTimer;
+  Future<bool>? _intenseOwnerFuture;
+  String? _ownerIdForFuture;
+  bool _busy = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _ensureIntenseOwnerFuture();
+    _slotTimer = Timer.periodic(const Duration(seconds: 30), (_) {
+      if (mounted) {
+        setState(() {});
+      }
+    });
+  }
+
+  @override
+  void didUpdateWidget(covariant _AgendaMatchIntenseLiveButton oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.match.ownerId != widget.match.ownerId) {
+      _ensureIntenseOwnerFuture();
+    }
+  }
+
+  @override
+  void dispose() {
+    _slotTimer?.cancel();
+    super.dispose();
+  }
+
+  void _ensureIntenseOwnerFuture() {
+    final ownerId = widget.match.ownerId?.trim() ?? '';
+    if (ownerId.isEmpty || widget.match.withTracker != true) {
+      _intenseOwnerFuture = null;
+      _ownerIdForFuture = null;
+      return;
+    }
+    if (_ownerIdForFuture == ownerId && _intenseOwnerFuture != null) {
+      return;
+    }
+    _ownerIdForFuture = ownerId;
+    _intenseOwnerFuture = isIntenseTrackerOwner(ownerId);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    if (widget.match.withTracker != true) {
+      return const SizedBox.shrink();
+    }
+
+    final matchId = widget.match.id?.trim() ?? '';
+    final ownerId = widget.match.ownerId?.trim() ?? '';
+    if (matchId.isEmpty || ownerId.isEmpty) {
+      return const SizedBox.shrink();
+    }
+
+    _ensureIntenseOwnerFuture();
+
+    return FutureBuilder<bool>(
+      future: _intenseOwnerFuture,
+      builder: (context, intenseSnapshot) {
+        final isIntenseOwner = intenseSnapshot.data == true;
+        if (!isIntenseOwner) {
+          return const SizedBox.shrink();
+        }
+
+        return StreamBuilder<List<Highlights>>(
+          stream: HighlightsService().streamHighlightsByMatchCalendarId(
+            matchId,
+          ),
+          builder: (context, highlightsSnapshot) {
+            final highlights =
+                highlightsSnapshot.data ?? const <Highlights>[];
+            final showLive = isMatchSessionLive(
+              match: widget.match,
+              highlights: highlights,
+              scheduledStart: widget.scheduledStart,
+              scheduledEnd: widget.scheduledEnd,
+            );
+            final showResync = canResyncMatchIntense(
+              match: widget.match,
+              highlights: highlights,
+              scheduledStart: widget.scheduledStart,
+              scheduledEnd: widget.scheduledEnd,
+            );
+            final liveStart = intenseLiveMatchStartUtc(
+              highlights,
+              match: widget.match,
+              scheduledStart: widget.scheduledStart,
+            );
+
+            if (!showLive && !showResync) {
+              return const SizedBox.shrink();
+            }
+
+            final colors = context.appColors;
+            final l10n = context.l10n;
+
+            return Column(
+              children: [
+                if (showLive && liveStart != null) ...[
+                  const SizedBox(height: 10),
+                  SizedBox(
+                    width: double.infinity,
+                    child: FilledButton.icon(
+                      onPressed: _busy
+                          ? null
+                          : () {
+                              IntenseLiveSessionScreen.openForMatch(
+                                context,
+                                match: widget.match,
+                                title: widget.title,
+                                sessionStartUtc: liveStart,
+                              );
+                            },
+                      icon: const Icon(Icons.sensors_rounded, size: 18),
+                      label: Text(l10n.intenseLiveTitle),
+                      style: FilledButton.styleFrom(
+                        backgroundColor: colors.danger,
+                        foregroundColor: Colors.white,
+                        padding: const EdgeInsets.symmetric(vertical: 12),
+                      ),
+                    ),
+                  ),
+                ],
+                if (showResync) ...[
+                  const SizedBox(height: 10),
+                  SizedBox(
+                    width: double.infinity,
+                    child: FilledButton.icon(
+                      onPressed: _busy
+                          ? null
+                          : () async {
+                              setState(() => _busy = true);
+                              try {
+                                await resyncManagedMatchIntense(
+                                  context,
+                                  match: widget.match,
+                                  highlights: highlights,
+                                );
+                              } finally {
+                                if (mounted) {
+                                  setState(() => _busy = false);
+                                }
+                              }
+                            },
+                      icon: const Icon(Icons.sync_rounded, size: 18),
+                      label: Text(l10n.trainingIntenseResyncButton),
+                      style: FilledButton.styleFrom(
+                        backgroundColor: colors.primary,
+                        foregroundColor: Colors.white,
+                        padding: const EdgeInsets.symmetric(vertical: 12),
+                      ),
+                    ),
+                  ),
+                ],
+              ],
+            );
+          },
+        );
+      },
+    );
+  }
 }
 
 class _AgendaIntenseLiveButton extends StatefulWidget {

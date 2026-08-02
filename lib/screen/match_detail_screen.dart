@@ -179,6 +179,15 @@ class MatchDetailScreen extends StatelessWidget {
                     child: Column(
                       children: [
                         _MatchHeader(match: match, isManager: isManager),
+                        // Live / Re-sync for noSync kits — visible without
+                        // opening Temps forts (and without kick-off highlight).
+                        Padding(
+                          padding: const EdgeInsets.fromLTRB(8, 8, 8, 0),
+                          child: MatchIntenseHighlightsActions(
+                            match: match,
+                            isManager: isManager,
+                          ),
+                        ),
                         Expanded(
                           child: StreamBuilder<MatchStats?>(
                             stream: MatchStatsService()
@@ -1510,10 +1519,6 @@ class _HighlightsTabState extends State<_HighlightsTab> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              MatchIntenseHighlightsActions(
-                match: widget.match,
-                isManager: widget.isManager,
-              ),
               SegmentedButton<_HighlightsSource>(
                 showSelectedIcon: false,
                 segments: [

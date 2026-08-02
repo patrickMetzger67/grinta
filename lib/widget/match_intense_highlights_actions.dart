@@ -10,9 +10,10 @@ import 'package:grinta/util/app_theme.dart';
 import 'package:grinta/util/intense_live_eligibility.dart';
 import 'package:grinta/util/match_intense_finish_helper.dart';
 
-/// Live + Re-sync actions for Intense cloud match kits.
+/// Live + Re-sync actions for Intense cloud (noSync) match kits.
 ///
-/// Shown above the FMI/Grinta Temps forts switch so managers always see them.
+/// Shown under the match header. Requires no Temps forts kick-off — only a
+/// noSync owner + scheduled kick-off / resync window.
 class MatchIntenseHighlightsActions extends StatefulWidget {
   const MatchIntenseHighlightsActions({
     super.key,

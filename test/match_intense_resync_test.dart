@@ -24,6 +24,7 @@ models.Match _match({
   bool isMatchPlayed = false,
   String? dateCh,
   String? timeCh,
+  int? duration = 90,
 }) {
   return models.Match(
     withTracker: withTracker,
@@ -31,7 +32,7 @@ models.Match _match({
     dateCh: dateCh,
     timeCh: timeCh,
     ownerId: 'owner1',
-    duration: 90,
+    duration: duration,
   );
 }
 
@@ -45,7 +46,7 @@ void main() {
 
       expect(
         isMatchSessionLive(
-          match: _match(),
+          match: _match(dateCh: '02/08/2026', timeCh: '15:00'),
           highlights: highlights,
           now: DateTime(2026, 8, 2, 15, 30),
         ),
@@ -64,12 +65,42 @@ void main() {
       );
     });
 
+    test('prefers schedule over recorded kick-off for Live start', () {
+      // Recorded kick-off is late; Live must still open at scheduled 15:00.
+      final highlights = [
+        _timeEvent(
+          type: TimeType.kickOff,
+          at: DateTime(2026, 8, 2, 15, 20),
+        ),
+      ];
+
+      expect(
+        isMatchSessionLive(
+          match: _match(dateCh: '02/08/2026', timeCh: '15:00'),
+          highlights: highlights,
+          now: DateTime(2026, 8, 2, 15, 5),
+        ),
+        isTrue,
+      );
+    });
+
     test('false before scheduled kick-off', () {
       expect(
         isMatchSessionLive(
           match: _match(dateCh: '02/08/2026', timeCh: '15:00'),
           highlights: const [],
           now: DateTime(2026, 8, 2, 14, 50),
+        ),
+        isFalse,
+      );
+    });
+
+    test('false after scheduled duration without temps forts', () {
+      expect(
+        isMatchSessionLive(
+          match: _match(dateCh: '02/08/2026', timeCh: '15:00'),
+          highlights: const [],
+          now: DateTime(2026, 8, 2, 16, 40),
         ),
         isFalse,
       );
@@ -85,7 +116,7 @@ void main() {
 
       expect(
         isMatchSessionLive(
-          match: _match(),
+          match: _match(dateCh: '02/08/2026', timeCh: '15:00'),
           highlights: highlights,
           now: DateTime(2026, 8, 2, 17, 0),
         ),
@@ -125,6 +156,34 @@ void main() {
           now: DateTime(2026, 8, 2, 18, 0),
         ),
         isTrue,
+      );
+    });
+
+    test('true after scheduled end without any temps forts', () {
+      expect(
+        canResyncMatchIntense(
+          match: _match(
+            dateCh: '02/08/2026',
+            timeCh: '15:00',
+          ),
+          highlights: const [],
+          now: DateTime(2026, 8, 2, 16, 40),
+        ),
+        isTrue,
+      );
+    });
+
+    test('false during scheduled match window without temps forts', () {
+      expect(
+        canResyncMatchIntense(
+          match: _match(
+            dateCh: '02/08/2026',
+            timeCh: '15:00',
+          ),
+          highlights: const [],
+          now: DateTime(2026, 8, 2, 15, 30),
+        ),
+        isFalse,
       );
     });
 
@@ -174,6 +233,16 @@ void main() {
       expect(window, isNotNull);
       expect(window!.start.toLocal(), DateTime(2026, 8, 2, 15, 0));
       expect(window.stop.toLocal(), DateTime(2026, 8, 2, 16, 30));
+    });
+  });
+
+  group('intenseLiveMatchStartUtc', () {
+    test('uses schedule when kick-off highlight missing', () {
+      final start = intenseLiveMatchStartUtc(
+        const [],
+        match: _match(dateCh: '02/08/2026', timeCh: '15:00'),
+      );
+      expect(start?.toLocal(), DateTime(2026, 8, 2, 15, 0));
     });
   });
 }
