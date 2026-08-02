@@ -148,15 +148,43 @@ bool canResyncTrainingIntense(Training training, {DateTime? now}) {
   return !clock.isAfter(deadline);
 }
 
+/// Best-effort match end for Intense re-sync eligibility / windows.
+DateTime? matchIntenseEndLocal(
+  models.Match match,
+  List<Highlights> highlights, {
+  DateTime? now,
+}) {
+  final endHighlight =
+      findTimeEventHighlight(highlights, TimeType.end)?.dateTime?.toDate();
+  if (endHighlight != null) return endHighlight;
+
+  final start = matchSessionStartLocal(match, highlights);
+  if (start != null) {
+    final durationMinutes = match.duration ?? 90;
+    return start.add(Duration(minutes: durationMinutes > 0 ? durationMinutes : 90));
+  }
+
+  // Match already marked played without usable schedule/highlights.
+  if (match.isMatchPlayed == true) {
+    return now ?? DateTime.now();
+  }
+  return null;
+}
+
 /// Full match window for finish/re-sync: kick-off → full-time (Temps forts).
 TrainingIntenseTimeWindow? resolveMatchIntenseResyncWindow(
   models.Match match,
-  List<Highlights> highlights,
-) {
-  final startLocal = matchSessionStartLocal(match, highlights);
-  final endLocal =
-      findTimeEventHighlight(highlights, TimeType.end)?.dateTime?.toDate();
-  if (startLocal == null || endLocal == null) return null;
+  List<Highlights> highlights, {
+  DateTime? now,
+}) {
+  final clock = now ?? DateTime.now();
+  final endLocal = matchIntenseEndLocal(match, highlights, now: clock);
+  if (endLocal == null) return null;
+
+  var startLocal = matchSessionStartLocal(match, highlights);
+  startLocal ??= endLocal.subtract(
+    Duration(minutes: (match.duration ?? 90) > 0 ? (match.duration ?? 90) : 90),
+  );
 
   final startUtc = startLocal.toUtc();
   final endUtc = endLocal.toUtc();
@@ -189,19 +217,32 @@ TrainingIntenseTimeWindow? resolveMatchIntenseFinishWindow(
 }
 
 /// True when an Intense match re-sync is allowed (48h after full-time).
+///
+/// Accepts either a recorded full-time Temps forts event **or**
+/// [Match.isMatchPlayed] (schedule/duration used as fallback window).
 bool canResyncMatchIntense({
   required models.Match match,
   required List<Highlights> highlights,
   DateTime? now,
 }) {
   if (match.withTracker != true) return false;
-  if (match.isMatchPlayed != true) return false;
-  if (matchSessionStartLocal(match, highlights) == null) return false;
-  final end =
-      findTimeEventHighlight(highlights, TimeType.end)?.dateTime?.toDate();
-  if (end == null) return false;
+
+  final hasEndHighlight =
+      findTimeEventHighlight(highlights, TimeType.end) != null;
+  if (match.isMatchPlayed != true && !hasEndHighlight) {
+    return false;
+  }
+
   final clock = now ?? DateTime.now();
-  if (clock.isBefore(end)) return false;
+  final end = matchIntenseEndLocal(match, highlights, now: clock);
+  if (end == null) return false;
+
+  // If the match is already marked played, allow re-sync even when the
+  // computed end is slightly in the future (stale schedule / missing highlight).
+  if (match.isMatchPlayed != true && clock.isBefore(end)) {
+    return false;
+  }
+
   final deadline = end.add(kTrainingIntenseResyncEligibility);
   return !clock.isAfter(deadline);
 }

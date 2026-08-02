@@ -14,11 +14,8 @@ import 'package:grinta/util/match_creation_helper.dart';
 import 'package:grinta/util/match_card_helper.dart';
 import 'package:grinta/util/match_goal_helper.dart';
 import 'package:grinta/util/match_substitution_helper.dart';
-import 'package:grinta/util/intense_live_eligibility.dart';
 import 'package:grinta/util/match_intense_finish_helper.dart';
 import 'package:grinta/util/match_time_event_helper.dart';
-import 'package:grinta/screen/intense_live/intense_live_session_screen.dart';
-import 'package:grinta/services/training_intense_sync_service.dart';
 import 'package:grinta/widget/add_card_highlight_sheet.dart';
 import 'package:grinta/widget/add_goal_highlight_sheet.dart';
 import 'package:grinta/widget/add_substitution_highlight_sheet.dart';
@@ -41,22 +38,6 @@ class MatchGrintaHighlightsTab extends StatefulWidget {
 
 class _MatchGrintaHighlightsTabState extends State<MatchGrintaHighlightsTab> {
   bool _saving = false;
-  Future<bool>? _intenseOwnerFuture;
-  String? _ownerIdForFuture;
-
-  void _ensureIntenseOwnerFuture() {
-    final ownerId = widget.match.ownerId?.trim() ?? '';
-    if (ownerId.isEmpty || widget.match.withTracker != true) {
-      _intenseOwnerFuture = null;
-      _ownerIdForFuture = null;
-      return;
-    }
-    if (_ownerIdForFuture == ownerId && _intenseOwnerFuture != null) {
-      return;
-    }
-    _ownerIdForFuture = ownerId;
-    _intenseOwnerFuture = isIntenseTrackerOwner(ownerId);
-  }
 
   String get _matchCalendarId => (widget.match.id ?? '').trim();
 
@@ -424,100 +405,12 @@ class _MatchGrintaHighlightsTabState extends State<MatchGrintaHighlightsTab> {
     }
   }
 
-  Widget _buildIntenseActions({
-    required BuildContext context,
-    required List<Highlights> highlights,
-    required bool isIntenseOwner,
-  }) {
-    if (!widget.isManager || !isIntenseOwner) {
-      return const SizedBox.shrink();
-    }
-
-    final colors = context.appColors;
-    final l10n = context.l10n;
-    final showLive = isMatchSessionLive(
-      match: widget.match,
-      highlights: highlights,
-    );
-    final showResync = canResyncMatchIntense(
-      match: widget.match,
-      highlights: highlights,
-    );
-    final liveStart = intenseLiveMatchStartUtc(
-      highlights,
-      match: widget.match,
-    );
-
-    if (!showLive && !showResync) {
-      return const SizedBox.shrink();
-    }
-
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(0, 0, 0, 12),
-      child: Column(
-        children: [
-          if (showLive && liveStart != null)
-            SizedBox(
-              width: double.infinity,
-              child: FilledButton.icon(
-                onPressed: () {
-                  IntenseLiveSessionScreen.openForMatch(
-                    context,
-                    match: widget.match,
-                    title: l10n.intenseLiveTitle,
-                    sessionStartUtc: liveStart,
-                  );
-                },
-                icon: const Icon(Icons.sensors_rounded, size: 18),
-                label: Text(l10n.intenseLiveTitle),
-                style: FilledButton.styleFrom(
-                  backgroundColor: colors.danger,
-                  foregroundColor: Colors.white,
-                  padding: const EdgeInsets.symmetric(vertical: 12),
-                ),
-              ),
-            ),
-          if (showResync) ...[
-            if (showLive && liveStart != null) const SizedBox(height: 10),
-            SizedBox(
-              width: double.infinity,
-              child: FilledButton.icon(
-                onPressed: _saving
-                    ? null
-                    : () async {
-                        setState(() => _saving = true);
-                        try {
-                          await resyncManagedMatchIntense(
-                            context,
-                            match: widget.match,
-                            highlights: highlights,
-                          );
-                        } finally {
-                          if (mounted) setState(() => _saving = false);
-                        }
-                      },
-                icon: const Icon(Icons.sync_rounded, size: 18),
-                label: Text(l10n.trainingIntenseResyncButton),
-                style: FilledButton.styleFrom(
-                  backgroundColor: colors.primary,
-                  foregroundColor: Colors.white,
-                  padding: const EdgeInsets.symmetric(vertical: 12),
-                ),
-              ),
-            ),
-          ],
-        ],
-      ),
-    );
-  }
-
   @override
   Widget build(BuildContext context) {
     final l10n = context.l10n;
     final matchCalendarId = _matchCalendarId;
     final session = context.watch<AppSession>();
     final highlightTeamId = _highlightTeamId(session);
-    _ensureIntenseOwnerFuture();
 
     if (matchCalendarId.isEmpty) {
       return _GrintaHighlightsEmptyState(
@@ -558,67 +451,46 @@ class _MatchGrintaHighlightsTabState extends State<MatchGrintaHighlightsTab> {
 
         final highlights = snapshot.data ?? const <Highlights>[];
 
-        return FutureBuilder<bool>(
-          future: _intenseOwnerFuture,
-          builder: (context, intenseSnapshot) {
-            final isIntenseOwner = intenseSnapshot.data == true;
-
-            return Scaffold(
-              backgroundColor: Colors.transparent,
-              floatingActionButton: _canEdit
-                  ? FloatingActionButton(
-                      tooltip: l10n.matchGrintaHighlightsAddAction,
-                      onPressed:
-                          _saving ? null : () => _onAddPressed(highlights),
-                      child: _saving
-                          ? const SizedBox(
-                              width: 22,
-                              height: 22,
-                              child: CircularProgressIndicator(
-                                strokeWidth: 2,
-                                color: Colors.white,
-                              ),
-                            )
-                          : const Icon(Icons.add_rounded),
-                    )
-                  : null,
-              body: Column(
-                children: [
-                  _buildIntenseActions(
-                    context: context,
-                    highlights: highlights,
-                    isIntenseOwner: isIntenseOwner,
-                  ),
-                  Expanded(
-                    child: highlights.isEmpty
-                        ? _GrintaHighlightsEmptyState(
-                            title: l10n.matchHighlightsSourceGrinta,
-                            message: _canEdit
-                                ? l10n.matchGrintaHighlightsEmptyMessage
-                                : l10n.matchHighlightsGrintaPlaceholderMessage,
-                          )
-                        : ListView.separated(
-                            padding: const EdgeInsets.fromLTRB(0, 0, 0, 88),
-                            itemCount: highlights.length,
-                            separatorBuilder: (_, __) =>
-                                const SizedBox(height: 8),
-                            itemBuilder: (context, index) {
-                              return _GrintaHighlightTile(
-                                match: widget.match,
-                                highlight: highlights[index],
-                                onLongPress: _canEdit
-                                    ? () => _onHighlightLongPress(
-                                          highlights[index],
-                                        )
-                                    : null,
-                              );
-                            },
+        return Scaffold(
+          backgroundColor: Colors.transparent,
+          floatingActionButton: _canEdit
+              ? FloatingActionButton(
+                  tooltip: l10n.matchGrintaHighlightsAddAction,
+                  onPressed:
+                      _saving ? null : () => _onAddPressed(highlights),
+                  child: _saving
+                      ? const SizedBox(
+                          width: 22,
+                          height: 22,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2,
+                            color: Colors.white,
                           ),
-                  ),
-                ],
-              ),
-            );
-          },
+                        )
+                      : const Icon(Icons.add_rounded),
+                )
+              : null,
+          body: highlights.isEmpty
+              ? _GrintaHighlightsEmptyState(
+                  title: l10n.matchHighlightsSourceGrinta,
+                  message: _canEdit
+                      ? l10n.matchGrintaHighlightsEmptyMessage
+                      : l10n.matchHighlightsGrintaPlaceholderMessage,
+                )
+              : ListView.separated(
+                  padding: const EdgeInsets.fromLTRB(0, 0, 0, 88),
+                  itemCount: highlights.length,
+                  separatorBuilder: (_, __) => const SizedBox(height: 8),
+                  itemBuilder: (context, index) {
+                    return _GrintaHighlightTile(
+                      match: widget.match,
+                      highlight: highlights[index],
+                      onLongPress: _canEdit
+                          ? () => _onHighlightLongPress(highlights[index])
+                          : null,
+                    );
+                  },
+                ),
         );
       },
     );

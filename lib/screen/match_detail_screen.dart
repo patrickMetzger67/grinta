@@ -23,6 +23,7 @@ import '../util/highlight_minute_helper.dart';
 import '../util/intense_live_eligibility.dart';
 import '../util/match_creation_helper.dart';
 import 'package:grinta/widget/create_match_sheet.dart';
+import 'package:grinta/widget/match_intense_highlights_actions.dart';
 import 'package:provider/provider.dart';
 
 import '../provider/appSession.dart';
@@ -1509,6 +1510,10 @@ class _HighlightsTabState extends State<_HighlightsTab> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
+              MatchIntenseHighlightsActions(
+                match: widget.match,
+                isManager: widget.isManager,
+              ),
               SegmentedButton<_HighlightsSource>(
                 showSelectedIcon: false,
                 segments: [

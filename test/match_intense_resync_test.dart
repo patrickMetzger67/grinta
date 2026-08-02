@@ -113,6 +113,21 @@ void main() {
       );
     });
 
+    test('true when match played without full-time highlight', () {
+      expect(
+        canResyncMatchIntense(
+          match: _match(
+            isMatchPlayed: true,
+            dateCh: '02/08/2026',
+            timeCh: '15:00',
+          ),
+          highlights: const [],
+          now: DateTime(2026, 8, 2, 18, 0),
+        ),
+        isTrue,
+      );
+    });
+
     test('false after 48h window', () {
       final kickOff = DateTime(2026, 8, 2, 15, 0);
       final end = DateTime(2026, 8, 2, 16, 50);
@@ -145,6 +160,20 @@ void main() {
       expect(window, isNotNull);
       expect(window!.start.toUtc(), kickOff.toUtc());
       expect(window.stop.toUtc(), end.toUtc());
+    });
+
+    test('falls back to schedule + duration when end highlight missing', () {
+      final window = resolveMatchIntenseResyncWindow(
+        _match(
+          isMatchPlayed: true,
+          dateCh: '02/08/2026',
+          timeCh: '15:00',
+        ),
+        const [],
+      );
+      expect(window, isNotNull);
+      expect(window!.start.toLocal(), DateTime(2026, 8, 2, 15, 0));
+      expect(window.stop.toLocal(), DateTime(2026, 8, 2, 16, 30));
     });
   });
 }
