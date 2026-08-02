@@ -139,7 +139,7 @@ class SessionPersonalDataService {
       'hasFieldGps=${fieldCorners != null}',
     );
 
-    final result = await _intenseSyncService.analyzeDeviceWindow(
+    final outcome = await _intenseSyncService.analyzeDeviceWindow(
       target: target,
       window: TrainingIntenseTimeWindow(
         start: window.start.toUtc(),
@@ -151,7 +151,8 @@ class SessionPersonalDataService {
       isMatch: isMatch,
       onProgress: (t) => onStage?.call(t.stage),
     );
-    if (result == null) return null;
+    if (outcome == null) return null;
+    final result = outcome.result;
 
     final docId = '${eventId}_${device.trackerId}';
     await TrackerAnalysisService.saveAnalysis(
