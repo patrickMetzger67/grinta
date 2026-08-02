@@ -3,10 +3,14 @@ import 'dart:convert';
 import 'package:cloud_functions/cloud_functions.dart';
 import 'package:flutter/foundation.dart';
 import 'package:grinta/model/fieldGpsCorners.dart';
+import 'package:grinta/model/highlights.dart';
+import 'package:grinta/model/match.dart' as models;
 import 'package:grinta/model/tracker/trackerData.dart';
 import 'package:grinta/model/training.dart';
 import 'package:grinta/services/sensorAnalysisService.dart';
 import 'package:grinta/services/trackerDataAnalysisService.dart';
+import 'package:grinta/util/highlight_minute_helper.dart';
+import 'package:grinta/util/intense_live_eligibility.dart';
 
 /// Retries when Insiders / Cloud Function returns HTTP 429 (finish + live).
 const int kIntenseInsidersFetchMaxAttempts = 4;
@@ -144,6 +148,166 @@ bool canResyncTrainingIntense(Training training, {DateTime? now}) {
   return !clock.isAfter(deadline);
 }
 
+/// Best-effort match end for Intense re-sync eligibility / windows.
+///
+/// Prefers full-time Temps forts, else scheduled kick-off + duration
+/// (no Temps forts required).
+DateTime? matchIntenseEndLocal(
+  models.Match match,
+  List<Highlights> highlights, {
+  DateTime? now,
+  DateTime? scheduledStart,
+  DateTime? scheduledEnd,
+}) {
+  final endHighlight =
+      findTimeEventHighlight(highlights, TimeType.end)?.dateTime?.toDate();
+  if (endHighlight != null) return endHighlight;
+  if (scheduledEnd != null) return scheduledEnd;
+
+  final start = matchLiveStartLocal(
+        match,
+        highlights,
+        scheduledStart: scheduledStart,
+      ) ??
+      matchSessionStartLocal(match, highlights);
+  if (start != null) {
+    return matchIntenseScheduledEndLocal(match, start);
+  }
+
+  // Match already marked played without usable schedule/highlights.
+  if (match.isMatchPlayed == true) {
+    return now ?? DateTime.now();
+  }
+  return null;
+}
+
+Duration _matchIntenseDuration(models.Match match) {
+  final minutes = match.duration ?? 90;
+  return Duration(minutes: minutes > 0 ? minutes : 90);
+}
+
+/// True when [candidateEnd] forms a usable Insiders window after [start].
+bool _isPlausibleMatchEnd(DateTime start, DateTime candidateEnd) {
+  if (!candidateEnd.isAfter(start.add(const Duration(minutes: 5)))) {
+    return false;
+  }
+  // Reject absurd retrospectively-tapped ends (days later).
+  if (candidateEnd.isAfter(start.add(const Duration(hours: 4)))) {
+    return false;
+  }
+  return true;
+}
+
+/// Insiders fetch window for a match.
+///
+/// Prefers the **scheduled** kick-off ([Match.dateCh]/[timeCh]) so a Temps
+/// forts « début » tapped after the match (wall-clock ≠ real kick-off) cannot
+/// collapse the window to `start == stop` and return 0 GNSS samples.
+TrainingIntenseTimeWindow? resolveMatchIntenseFetchWindow(
+  models.Match match,
+  List<Highlights> highlights, {
+  DateTime? scheduledStart,
+  DateTime? scheduledEnd,
+  DateTime? stopCap,
+}) {
+  final startLocal = matchLiveStartLocal(
+        match,
+        highlights,
+        scheduledStart: scheduledStart,
+      ) ??
+      matchSessionStartLocal(match, highlights);
+  if (startLocal == null) return null;
+
+  final duration = _matchIntenseDuration(match);
+  final fallbackEnd = scheduledEnd ?? startLocal.add(duration);
+
+  DateTime endLocal = fallbackEnd;
+  final endHighlight =
+      findTimeEventHighlight(highlights, TimeType.end)?.dateTime?.toDate();
+  if (endHighlight != null && _isPlausibleMatchEnd(startLocal, endHighlight)) {
+    endLocal = endHighlight;
+  }
+
+  if (stopCap != null && stopCap.isBefore(endLocal)) {
+    endLocal = stopCap;
+  }
+
+  if (!endLocal.isAfter(startLocal)) {
+    endLocal = startLocal.add(duration);
+  }
+
+  return TrainingIntenseTimeWindow(
+    start: startLocal.toUtc(),
+    stop: endLocal.toUtc(),
+  );
+}
+
+/// Full match window for re-sync: schedule (preferred) → full-time / duration.
+TrainingIntenseTimeWindow? resolveMatchIntenseResyncWindow(
+  models.Match match,
+  List<Highlights> highlights, {
+  DateTime? now,
+  DateTime? scheduledStart,
+  DateTime? scheduledEnd,
+}) {
+  return resolveMatchIntenseFetchWindow(
+    match,
+    highlights,
+    scheduledStart: scheduledStart,
+    scheduledEnd: scheduledEnd,
+  );
+}
+
+/// Finish window: schedule (preferred) → min(now, plausible full-time).
+TrainingIntenseTimeWindow? resolveMatchIntenseFinishWindow(
+  models.Match match,
+  List<Highlights> highlights, {
+  required DateTime syncStopAt,
+  DateTime? scheduledStart,
+  DateTime? scheduledEnd,
+}) {
+  return resolveMatchIntenseFetchWindow(
+    match,
+    highlights,
+    scheduledStart: scheduledStart,
+    scheduledEnd: scheduledEnd,
+    stopCap: syncStopAt,
+  );
+}
+
+/// True when an Intense match re-sync is allowed (48h after full-time).
+///
+/// No Temps forts required: uses full-time highlight when present, otherwise
+/// scheduled kick-off + duration, or [Match.isMatchPlayed] as last resort.
+bool canResyncMatchIntense({
+  required models.Match match,
+  required List<Highlights> highlights,
+  DateTime? scheduledStart,
+  DateTime? scheduledEnd,
+  DateTime? now,
+}) {
+  if (match.withTracker != true) return false;
+
+  final clock = now ?? DateTime.now();
+  final end = matchIntenseEndLocal(
+    match,
+    highlights,
+    now: clock,
+    scheduledStart: scheduledStart,
+    scheduledEnd: scheduledEnd,
+  );
+  if (end == null) return false;
+
+  // If the match is already marked played, allow re-sync even when the
+  // computed end is slightly in the future (stale schedule / missing highlight).
+  if (match.isMatchPlayed != true && clock.isBefore(end)) {
+    return false;
+  }
+
+  final deadline = end.add(kTrainingIntenseResyncEligibility);
+  return !clock.isAfter(deadline);
+}
+
 /// GNSS step floor for Intense analysis.
 ///
 /// Must stay **0** to match the Live pipeline ([IntenseLiveDataService]): a
@@ -202,6 +366,38 @@ class TrainingIntenseSyncService {
       result,
       docId: '${trainingId}_${target.trackerId}',
       eventId: trainingId,
+    );
+  }
+
+  /// Same Insiders pipeline as [syncDevice] for a match event id.
+  Future<void> syncMatchDevice({
+    required IntenseTrainingDeviceTarget target,
+    required String matchId,
+    required TrainingIntenseTimeWindow window,
+    FieldGpsCorners? fieldGpsCorners,
+    void Function(IntenseTrainingDeviceTarget target)? onProgress,
+  }) async {
+    final eventId = matchId.trim();
+    if (eventId.isEmpty) {
+      throw StateError('Match id missing');
+    }
+
+    final result = await analyzeDeviceWindow(
+      target: target,
+      window: window,
+      eventId: eventId,
+      fieldGpsCorners: fieldGpsCorners,
+      onProgress: onProgress,
+      treatEmptyAsSuccess: true,
+      isMatch: true,
+    );
+
+    if (result == null) return;
+
+    await TrackerAnalysisService.saveAnalysis(
+      result,
+      docId: '${eventId}_${target.trackerId}',
+      eventId: eventId,
     );
   }
 

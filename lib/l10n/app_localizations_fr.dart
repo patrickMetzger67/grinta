@@ -2252,6 +2252,15 @@ class AppLocalizationsFr extends AppLocalizations {
   String get matchGoalAddTitle => 'Enregistrer un but';
 
   @override
+  String get matchScoreIncreaseTooltip => 'Ajouter un but';
+
+  @override
+  String get matchScoreDecreaseTooltip => 'Retirer un but';
+
+  @override
+  String get matchScoreUpdateFailed => 'Impossible de mettre à jour le score.';
+
+  @override
   String get matchGoalPickTeamTitle => 'Quelle équipe a marqué ?';
 
   @override

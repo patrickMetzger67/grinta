@@ -2266,6 +2266,16 @@ class AppLocalizationsDe extends AppLocalizations {
   String get matchGoalAddTitle => 'Tor erfassen';
 
   @override
+  String get matchScoreIncreaseTooltip => 'Ein Tor hinzufügen';
+
+  @override
+  String get matchScoreDecreaseTooltip => 'Ein Tor entfernen';
+
+  @override
+  String get matchScoreUpdateFailed =>
+      'Ergebnis konnte nicht aktualisiert werden.';
+
+  @override
   String get matchGoalPickTeamTitle => 'Welches Team hat getroffen?';
 
   @override

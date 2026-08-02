@@ -16,6 +16,8 @@ import 'package:provider/provider.dart';
 
 import '../../model/agendaItem.dart';
 import '../../model/agenda_filter.dart';
+import '../../model/highlights.dart';
+import '../../model/match.dart' as models;
 import '../../model/non_sport_event.dart';
 import '../../model/player.dart';
 import '../../model/training.dart';
@@ -37,7 +39,9 @@ import '../../widget/session_tracker_stats_view.dart';
 import '../../util/match_creation_helper.dart';
 import '../../util/training_creation_helper.dart';
 import '../../util/intense_live_eligibility.dart';
+import '../../util/match_intense_finish_helper.dart';
 import '../../services/agenda_filter_prefs.dart';
+import '../../services/highlightsService.dart';
 import '../../services/training_intense_sync_service.dart';
 import '../../util/polar_import_navigation.dart';
 import '../../util/training_finish_helper.dart';

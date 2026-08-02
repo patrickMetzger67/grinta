@@ -2250,6 +2250,15 @@ class AppLocalizationsIt extends AppLocalizations {
   String get matchGoalAddTitle => 'Registra un gol';
 
   @override
+  String get matchScoreIncreaseTooltip => 'Aggiungi un gol';
+
+  @override
+  String get matchScoreDecreaseTooltip => 'Togli un gol';
+
+  @override
+  String get matchScoreUpdateFailed => 'Impossibile aggiornare il punteggio.';
+
+  @override
   String get matchGoalPickTeamTitle => 'Quale squadra ha segnato?';
 
   @override

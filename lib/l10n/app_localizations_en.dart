@@ -2221,6 +2221,15 @@ class AppLocalizationsEn extends AppLocalizations {
   String get matchGoalAddTitle => 'Record a goal';
 
   @override
+  String get matchScoreIncreaseTooltip => 'Add one goal';
+
+  @override
+  String get matchScoreDecreaseTooltip => 'Remove one goal';
+
+  @override
+  String get matchScoreUpdateFailed => 'Could not update the score.';
+
+  @override
   String get matchGoalPickTeamTitle => 'Which team scored?';
 
   @override

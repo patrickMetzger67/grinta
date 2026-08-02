@@ -133,21 +133,76 @@ bool isTrainingSessionLive({
   return !clock.isBefore(start) && clock.isBefore(end);
 }
 
-/// Match session is live-eligible: kick-off recorded, full-time not reached.
+/// Match Live window for noSync / Intense cloud kits.
+///
+/// Does **not** require a Temps forts kick-off highlight. Uses the scheduled
+/// kick-off ([Match.dateCh]/[Match.timeCh] or [scheduledStart]) first, then a
+/// recorded kick-off only as fallback. Ends at full-time highlight, else
+/// schedule + duration (or [scheduledEnd]).
 bool isMatchSessionLive({
   required models.Match match,
   required List<Highlights> highlights,
+  DateTime? scheduledStart,
+  DateTime? scheduledEnd,
+  DateTime? now,
 }) {
   if (match.withTracker != true) return false;
   if (match.isMatchPlayed == true) return false;
 
+  final endHighlight =
+      findTimeEventHighlight(highlights, TimeType.end)?.dateTime?.toDate();
+  if (endHighlight != null) return false;
+
+  final kickOffAt = matchLiveStartLocal(
+    match,
+    highlights,
+    scheduledStart: scheduledStart,
+  );
+  if (kickOffAt == null) return false;
+
+  final clock = now ?? DateTime.now();
+  if (clock.isBefore(kickOffAt)) return false;
+
+  final endAt = scheduledEnd ??
+      matchIntenseScheduledEndLocal(match, kickOffAt) ??
+      kickOffAt.add(const Duration(minutes: 90));
+  return clock.isBefore(endAt);
+}
+
+/// Live kick-off: **scheduled first** (no Temps forts required), then recorded.
+DateTime? matchLiveStartLocal(
+  models.Match match,
+  List<Highlights> highlights, {
+  DateTime? scheduledStart,
+}) {
+  final scheduled = matchKickoffDateTime(match) ?? scheduledStart;
+  if (scheduled != null) return scheduled;
+
   final kickOff = findTimeEventHighlight(highlights, TimeType.kickOff);
-  if (kickOff?.dateTime == null) return false;
+  return kickOff?.dateTime?.toDate();
+}
 
-  final end = findTimeEventHighlight(highlights, TimeType.end);
-  if (end?.dateTime != null) return false;
+/// Scheduled full-time from kick-off + [Match.duration] (default 90).
+DateTime? matchIntenseScheduledEndLocal(
+  models.Match match,
+  DateTime kickOffAt,
+) {
+  final durationMinutes = match.duration ?? 90;
+  if (durationMinutes <= 0) {
+    return kickOffAt.add(const Duration(minutes: 90));
+  }
+  return kickOffAt.add(Duration(minutes: durationMinutes));
+}
 
-  return true;
+/// Local kick-off for Insiders windows: recorded Temps forts, else schedule.
+DateTime? matchSessionStartLocal(
+  models.Match match,
+  List<Highlights> highlights,
+) {
+  final kickOff = findTimeEventHighlight(highlights, TimeType.kickOff);
+  final recorded = kickOff?.dateTime?.toDate();
+  if (recorded != null) return recorded;
+  return matchKickoffDateTime(match);
 }
 
 /// Session start for Insiders fetch (UTC).
@@ -156,8 +211,23 @@ DateTime intenseLiveTrainingStartUtc(Training training) {
   return (startTs?.toDate() ?? DateTime.now()).toUtc();
 }
 
-/// Session start for Insiders fetch from kick-off highlight (UTC).
-DateTime? intenseLiveMatchStartUtc(List<Highlights> highlights) {
+/// Session start for Live / Insiders fetch (UTC).
+///
+/// Prefers the scheduled kick-off so Live works without a Temps forts
+/// « début de match ». Falls back to a recorded kick-off when present.
+DateTime? intenseLiveMatchStartUtc(
+  List<Highlights> highlights, {
+  models.Match? match,
+  DateTime? scheduledStart,
+}) {
+  if (match != null) {
+    final liveStart = matchLiveStartLocal(
+      match,
+      highlights,
+      scheduledStart: scheduledStart,
+    );
+    if (liveStart != null) return liveStart.toUtc();
+  }
   final kickOff = findTimeEventHighlight(highlights, TimeType.kickOff);
   return kickOff?.dateTime?.toDate().toUtc();
 }

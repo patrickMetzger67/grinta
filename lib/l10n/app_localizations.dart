@@ -3989,6 +3989,24 @@ abstract class AppLocalizations {
   /// **'Enregistrer un but'**
   String get matchGoalAddTitle;
 
+  /// No description provided for @matchScoreIncreaseTooltip.
+  ///
+  /// In fr, this message translates to:
+  /// **'Ajouter un but'**
+  String get matchScoreIncreaseTooltip;
+
+  /// No description provided for @matchScoreDecreaseTooltip.
+  ///
+  /// In fr, this message translates to:
+  /// **'Retirer un but'**
+  String get matchScoreDecreaseTooltip;
+
+  /// No description provided for @matchScoreUpdateFailed.
+  ///
+  /// In fr, this message translates to:
+  /// **'Impossible de mettre à jour le score.'**
+  String get matchScoreUpdateFailed;
+
   /// No description provided for @matchGoalPickTeamTitle.
   ///
   /// In fr, this message translates to:
