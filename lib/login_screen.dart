@@ -992,20 +992,25 @@ class _WebLoginLayout extends StatelessWidget {
                 ),
               ),
               child: SafeArea(
-                child: Padding(
-                  padding: const EdgeInsets.all(40),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      const SizedBox(
-                        height: 72,
-                        child: Align(
-                          alignment: Alignment.topCenter,
-                          child: _BrandHeader(),
-                        ),
+                child: LayoutBuilder(
+                  builder: (context, constraints) {
+                    final isCompactHeight = constraints.maxHeight < 740;
+                    final carouselHeight = isCompactHeight
+                        ? (constraints.maxHeight * 0.42).clamp(160.0, 280.0)
+                        : 420.0;
+                    final horizontalPadding = isCompactHeight ? 24.0 : 40.0;
+                    final verticalPadding = isCompactHeight ? 20.0 : 40.0;
+
+                    return SingleChildScrollView(
+                      padding: EdgeInsets.symmetric(
+                        horizontal: horizontalPadding,
+                        vertical: verticalPadding,
                       ),
-                      const SizedBox(height: 16),
-                      Expanded(
+                      child: ConstrainedBox(
+                        constraints: BoxConstraints(
+                          minHeight: constraints.maxHeight -
+                              (verticalPadding * 2),
+                        ),
                         child: Align(
                           alignment: Alignment.topCenter,
                           child: ConstrainedBox(
@@ -1013,6 +1018,14 @@ class _WebLoginLayout extends StatelessWidget {
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
+                                SizedBox(
+                                  height: isCompactHeight ? 48 : 72,
+                                  child: const Align(
+                                    alignment: Alignment.topCenter,
+                                    child: _BrandHeader(),
+                                  ),
+                                ),
+                                SizedBox(height: isCompactHeight ? 8 : 16),
                                 Text(
                                   context.l10n.heroTitle,
                                   style: Theme.of(context)
@@ -1021,11 +1034,12 @@ class _WebLoginLayout extends StatelessWidget {
                                       ?.copyWith(
                                     fontWeight: FontWeight.w700,
                                     height: 1.1,
+                                    fontSize: isCompactHeight ? 28 : null,
                                   ),
                                   maxLines: 2,
                                   overflow: TextOverflow.ellipsis,
                                 ),
-                                const SizedBox(height: 18),
+                                SizedBox(height: isCompactHeight ? 10 : 18),
                                 Text(
                                   context.l10n.heroSubtitle,
                                   style: Theme.of(context)
@@ -1035,12 +1049,12 @@ class _WebLoginLayout extends StatelessWidget {
                                     color: colors.textSecondary,
                                     height: 1.5,
                                   ),
-                                  maxLines: 3,
+                                  maxLines: isCompactHeight ? 2 : 3,
                                   overflow: TextOverflow.ellipsis,
                                 ),
-                                const SizedBox(height: 24),
+                                SizedBox(height: isCompactHeight ? 12 : 24),
                                 SizedBox(
-                                  height: 420,
+                                  height: carouselHeight,
                                   child: _OnboardingCardCarousel(
                                     items: items,
                                     controller: pageController,
@@ -1048,7 +1062,7 @@ class _WebLoginLayout extends StatelessWidget {
                                     onPageChanged: onPageChanged,
                                   ),
                                 ),
-                                const SizedBox(height: 20),
+                                SizedBox(height: isCompactHeight ? 12 : 20),
                                 SizedBox(
                                   height: 56,
                                   child: _DesktopCarouselControls(
@@ -1063,8 +1077,8 @@ class _WebLoginLayout extends StatelessWidget {
                           ),
                         ),
                       ),
-                    ],
-                  ),
+                    );
+                  },
                 ),
               ),
             ),
@@ -1110,19 +1124,23 @@ class _BrandHeader extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final screenWidth = MediaQuery.of(context).size.width;
+    final size = MediaQuery.of(context).size;
+    final isLandscape = size.width > size.height;
 
     double logoWidth;
     if (isMobile) {
-      logoWidth = screenWidth * 0.82;
-    } else if (screenWidth < 1200) {
-      logoWidth = screenWidth * 0.30;
+      logoWidth = isLandscape ? size.height * 0.55 : size.width * 0.82;
+    } else if (size.width < 1200) {
+      logoWidth = size.width * 0.30;
     } else {
-      logoWidth = screenWidth * 0.24;
+      logoWidth = size.width * 0.24;
     }
 
+    final minWidth = isMobile && isLandscape ? 120.0 : 280.0;
+    final maxWidth = isMobile && isLandscape ? 220.0 : 760.0;
+
     return AppLogo(
-      width: logoWidth.clamp(280.0, 760.0),
+      width: logoWidth.clamp(minWidth, maxWidth),
     );
   }
 }
@@ -1253,6 +1271,10 @@ class _MobileLoginLayout extends StatelessWidget {
     final colors = context.appColors;
     final size = MediaQuery.of(context).size;
     final isTablet = size.width >= 700;
+    final isLandscape = size.width > size.height;
+    final brandHeight = isLandscape
+        ? (size.height * 0.14).clamp(40.0, 64.0)
+        : size.height * 0.10;
 
     return Scaffold(
       body: Container(
@@ -1269,64 +1291,81 @@ class _MobileLoginLayout extends StatelessWidget {
           ),
         ),
         child: SafeArea(
-          child: Column(
-            children: [
-              Transform.translate(
-                offset: const Offset(0, -18),
-                child: SizedBox(
-                  height: MediaQuery.of(context).size.height * 0.10,
-                  child: const Align(
-                    alignment: Alignment.topCenter,
-                    child: _BrandHeader(isMobile: true),
-                  ),
-                ),
-              ),
-              Expanded(
-                child: Padding(
-                  padding: EdgeInsets.symmetric(horizontal: isTablet ? 28 : 16),
-                  child: Column(
-                    children: [
-                      const SizedBox(height: 12),
-                      Expanded(
-                        child: Center(
-                          child: ConstrainedBox(
-                            constraints: BoxConstraints(
-                              maxWidth: isTablet ? 700 : 420,
-                            ),
-                            child: _MobileHeroCard(
-                              items: items,
-                              controller: pageController,
-                              currentPage: currentPage,
-                              onPageChanged: onPageChanged,
-                            ),
-                          ),
-                        ),
+          child: LayoutBuilder(
+            builder: (context, constraints) {
+              final content = Column(
+                children: [
+                  Transform.translate(
+                    offset: Offset(0, isLandscape ? -8 : -18),
+                    child: SizedBox(
+                      height: brandHeight,
+                      child: const Align(
+                        alignment: Alignment.topCenter,
+                        child: _BrandHeader(isMobile: true),
                       ),
-                      const SizedBox(height: 24),
-                      ConstrainedBox(
-                        constraints: BoxConstraints(
-                          maxWidth: isTablet ? 520 : double.infinity,
-                        ),
-                        child: Column(
-                          children: [
-                            SizedBox(
-                              width: double.infinity,
-                              child: ElevatedButton(
-                                onPressed: onLogin,
-                                child: Text(context.l10n.signIn),
+                    ),
+                  ),
+                  Expanded(
+                    child: Padding(
+                      padding: EdgeInsets.symmetric(
+                        horizontal: isTablet ? 28 : 16,
+                      ),
+                      child: Column(
+                        children: [
+                          SizedBox(height: isLandscape ? 4 : 12),
+                          Expanded(
+                            child: Center(
+                              child: ConstrainedBox(
+                                constraints: BoxConstraints(
+                                  maxWidth: isTablet ? 700 : 420,
+                                ),
+                                child: _MobileHeroCard(
+                                  items: items,
+                                  controller: pageController,
+                                  currentPage: currentPage,
+                                  onPageChanged: onPageChanged,
+                                ),
                               ),
                             ),
-                            const SizedBox(height: 12),
-                            const LegalLinksFooter(),
-                            const SizedBox(height: 20),
-                          ],
-                        ),
+                          ),
+                          SizedBox(height: isLandscape ? 12 : 24),
+                          ConstrainedBox(
+                            constraints: BoxConstraints(
+                              maxWidth: isTablet ? 520 : double.infinity,
+                            ),
+                            child: Column(
+                              children: [
+                                SizedBox(
+                                  width: double.infinity,
+                                  child: ElevatedButton(
+                                    onPressed: onLogin,
+                                    child: Text(context.l10n.signIn),
+                                  ),
+                                ),
+                                const SizedBox(height: 12),
+                                const LegalLinksFooter(),
+                                SizedBox(height: isLandscape ? 8 : 20),
+                              ],
+                            ),
+                          ),
+                        ],
                       ),
-                    ],
+                    ),
                   ),
-                ),
-              ),
-            ],
+                ],
+              );
+
+              if (constraints.maxHeight < 420) {
+                return SingleChildScrollView(
+                  child: SizedBox(
+                    height: 420,
+                    child: content,
+                  ),
+                );
+              }
+
+              return content;
+            },
           ),
         ),
       ),
@@ -1540,12 +1579,16 @@ class _LoginCardState extends State<_LoginCard> {
               child: Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  Text(
-                    _isSignUpMode
-                        ? context.l10n.alreadyHaveAccount
-                        : context.l10n.noAccountYet,
-                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                      color: colors.textSecondary,
+                  Flexible(
+                    child: Text(
+                      _isSignUpMode
+                          ? context.l10n.alreadyHaveAccount
+                          : context.l10n.noAccountYet,
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                        color: colors.textSecondary,
+                      ),
                     ),
                   ),
                   TextButton(

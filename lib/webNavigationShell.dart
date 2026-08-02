@@ -26,6 +26,8 @@ import 'widget/nav_icon_count_badge.dart';
 import 'widget/calendar_sync_toggle.dart';
 import 'widget/devices_settings_section.dart';
 import 'widget/notification_preferences_section.dart';
+import 'widget/app_version_label.dart';
+import 'widget/settings_infos_sheet.dart';
 import 'widget/settings_menu_style.dart';
 import 'widget/subscription_details_sheet.dart';
 import 'widget/notifications_sheet.dart';
@@ -539,8 +541,13 @@ class _WebNavigationShellState extends State<WebNavigationShell> {
           collapsed: _settingsContentCollapsed,
           onTap: () => openAccountCreateProfileFlow(context),
         ),
+        _buildInfosButton(context),
         _buildDeleteAccountButton(context),
         _buildLogoutButton(context),
+        if (!_settingsContentCollapsed)
+          const AppVersionLabel(
+            padding: EdgeInsets.fromLTRB(12, 0, 12, 12),
+          ),
       ],
     );
   }
@@ -1029,6 +1036,70 @@ class _WebNavigationShellState extends State<WebNavigationShell> {
               Expanded(
                 child: Text(
                   context.l10n.settingsTipsTitle,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: settingsMenuTitleStyle(context),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildInfosButton(BuildContext context) {
+    final colors = context.appColors;
+    if (_settingsContentCollapsed) {
+      return Padding(
+        padding: const EdgeInsets.fromLTRB(12, 0, 12, 12),
+        child: Tooltip(
+          message: context.l10n.settingsInfosTitle,
+          child: InkWell(
+            borderRadius: BorderRadius.circular(16),
+            onTap: () => showSettingsInfosSheet(context),
+            child: Container(
+              width: double.infinity,
+              height: 52,
+              decoration: BoxDecoration(
+                color: colors.card,
+                borderRadius: BorderRadius.circular(16),
+                border: Border.all(color: colors.border),
+              ),
+              child: Icon(
+                Icons.info_outline_rounded,
+                color: colors.primary,
+                size: kWebMenuIconSize,
+              ),
+            ),
+          ),
+        ),
+      );
+    }
+
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(12, 0, 12, 12),
+      child: InkWell(
+        borderRadius: BorderRadius.circular(18),
+        onTap: () => showSettingsInfosSheet(context),
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+          decoration: BoxDecoration(
+            color: colors.card,
+            borderRadius: BorderRadius.circular(18),
+            border: Border.all(color: colors.border),
+          ),
+          child: Row(
+            children: [
+              Icon(
+                Icons.info_outline_rounded,
+                color: colors.primary,
+                size: kWebMenuIconSize,
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Text(
+                  context.l10n.settingsInfosTitle,
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                   style: settingsMenuTitleStyle(context),

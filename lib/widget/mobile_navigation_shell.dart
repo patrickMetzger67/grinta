@@ -39,6 +39,8 @@ import 'package:grinta/widget/notification_preferences_section.dart';
 import 'package:grinta/widget/subscription_details_sheet.dart';
 import 'package:grinta/widget/notifications_sheet.dart';
 import 'package:grinta/widget/promo_code_redeem_section.dart';
+import 'package:grinta/widget/app_version_label.dart';
+import 'package:grinta/widget/settings_infos_sheet.dart';
 import 'package:grinta/widget/settings_menu_style.dart';
 import 'package:provider/provider.dart';
 
@@ -489,6 +491,22 @@ class _MobileNavigationShellState extends State<MobileNavigationShell> {
                   },
                 ),
                 ListTile(
+                  leading: Icon(
+                    Icons.info_outline_rounded,
+                    color: colors.primary,
+                  ),
+                  title: Text(
+                    l10n.settingsInfosTitle,
+                    style: settingsMenuTitleStyle(sheetContext),
+                  ),
+                  onTap: () {
+                    closeSheetThen(
+                      () => showSettingsInfosSheet(context),
+                      sheetContext,
+                    );
+                  },
+                ),
+                ListTile(
                   leading: _isSigningOut
                       ? SizedBox(
                           width: 24,
@@ -509,7 +527,7 @@ class _MobileNavigationShellState extends State<MobileNavigationShell> {
                           closeSheetThen(() => _logout(), sheetContext);
                         },
                 ),
-                const SizedBox(height: 8),
+                const AppVersionLabel(),
               ],
             ),
           ),

@@ -2993,6 +2993,15 @@
   "settingsTipsLoadError": "Impossibile caricare i consigli.",
   "settingsTipsSearchHint": "Cerca un consiglio…",
   "settingsTipsSearchEmpty": "Nessun consiglio corrisponde alla ricerca.",
+  "settingsInfosTitle": "Info",
+  "settingsInfosWebsite": "Sito web",
+  "settingsInfosEmail": "Contatto",
+  "settingsVersionLabel": "Versione {version}",
+  "@settingsVersionLabel": {
+    "placeholders": {
+      "version": { "type": "String" }
+    }
+  },
   "wearableDeviceGpsInsidersIntense": "GPS Insiders Intense",
   "intenseGpsSerialGuidance": "Inserisci il numero di serie stampato sul tracker GPS Insiders Intense.",
   "intenseGpsSerialLabel": "Numero di serie",

@@ -1250,6 +1250,7 @@ class _CreatePersonalSportActivitySheetState
                     )
                   else if (_importSource == WearableDeviceType.strava)
                     DropdownButtonFormField<String>(
+                      isExpanded: true,
                       value: _selectedStrava?.externalId,
                       decoration: InputDecoration(
                         labelText: l10n.createPersonalSportStravaActivity,
@@ -1260,7 +1261,9 @@ class _CreatePersonalSportActivitySheetState
                             value: activity.externalId,
                             child: Text(
                               activity.displayLabel,
+                              maxLines: 1,
                               overflow: TextOverflow.ellipsis,
+                              softWrap: false,
                             ),
                           ),
                       ],
@@ -1280,6 +1283,7 @@ class _CreatePersonalSportActivitySheetState
                     )
                   else if (_importSource == WearableDeviceType.polar)
                     DropdownButtonFormField<String>(
+                      isExpanded: true,
                       value: _selectedPolar?.externalId,
                       decoration: InputDecoration(
                         labelText: l10n.createPersonalSportPolarActivity,
@@ -1290,7 +1294,9 @@ class _CreatePersonalSportActivitySheetState
                             value: activity.externalId,
                             child: Text(
                               activity.displayLabel,
+                              maxLines: 1,
                               overflow: TextOverflow.ellipsis,
+                              softWrap: false,
                             ),
                           ),
                       ],
@@ -1310,6 +1316,7 @@ class _CreatePersonalSportActivitySheetState
                     )
                   else if (_importSource == WearableDeviceType.whoop)
                     DropdownButtonFormField<String>(
+                      isExpanded: true,
                       value: _selectedWhoop?.externalId,
                       decoration: InputDecoration(
                         labelText: l10n.createPersonalSportWhoopActivity,
@@ -1320,7 +1327,9 @@ class _CreatePersonalSportActivitySheetState
                             value: activity.externalId,
                             child: Text(
                               activity.displayLabel,
+                              maxLines: 1,
                               overflow: TextOverflow.ellipsis,
+                              softWrap: false,
                             ),
                           ),
                       ],
@@ -1340,6 +1349,7 @@ class _CreatePersonalSportActivitySheetState
                     )
                   else if (_importSource == WearableDeviceType.appleHealth)
                     DropdownButtonFormField<String>(
+                      isExpanded: true,
                       value: _selectedApple?.externalId,
                       decoration: InputDecoration(
                         labelText: l10n.createPersonalSportAppleActivity,
@@ -1350,7 +1360,9 @@ class _CreatePersonalSportActivitySheetState
                             value: activity.externalId,
                             child: Text(
                               activity.displayLabel,
+                              maxLines: 1,
                               overflow: TextOverflow.ellipsis,
+                              softWrap: false,
                             ),
                           ),
                       ],
@@ -1371,6 +1383,7 @@ class _CreatePersonalSportActivitySheetState
                   else if (_importSource ==
                       WearableDeviceType.googleHealthConnect)
                     DropdownButtonFormField<String>(
+                      isExpanded: true,
                       value: _selectedGoogle?.externalId,
                       decoration: InputDecoration(
                         labelText: l10n.createPersonalSportGoogleActivity,
@@ -1381,7 +1394,9 @@ class _CreatePersonalSportActivitySheetState
                             value: activity.externalId,
                             child: Text(
                               activity.displayLabel,
+                              maxLines: 1,
                               overflow: TextOverflow.ellipsis,
+                              softWrap: false,
                             ),
                           ),
                       ],

@@ -2932,6 +2932,15 @@
   "settingsTipsLoadError": "Impossible de charger les astuces.",
   "settingsTipsSearchHint": "Rechercher une astuce…",
   "settingsTipsSearchEmpty": "Aucune astuce ne correspond à ta recherche.",
+  "settingsInfosTitle": "Infos",
+  "settingsInfosWebsite": "Site web",
+  "settingsInfosEmail": "Contact",
+  "settingsVersionLabel": "Version {version}",
+  "@settingsVersionLabel": {
+    "placeholders": {
+      "version": { "type": "String" }
+    }
+  },
   "promoCodeMenuLabel": "Code promo",
   "promoCodeDialogValidate": "Valider",
   "promoCodeRedeemTitle": "Vous avez un code promo ?",
