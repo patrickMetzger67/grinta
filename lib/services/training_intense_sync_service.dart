@@ -7,10 +7,13 @@ import 'package:grinta/model/highlights.dart';
 import 'package:grinta/model/match.dart' as models;
 import 'package:grinta/model/tracker/trackerData.dart';
 import 'package:grinta/model/training.dart';
+import 'package:grinta/services/pitch_heatmap_builder.dart';
 import 'package:grinta/services/sensorAnalysisService.dart';
 import 'package:grinta/services/trackerDataAnalysisService.dart';
 import 'package:grinta/util/highlight_minute_helper.dart';
 import 'package:grinta/util/intense_live_eligibility.dart';
+import 'package:grinta/util/match_heatmap_service.dart';
+import 'package:grinta/widget/proPitchView.dart';
 
 /// Retries when Insiders / Cloud Function returns HTTP 429 (finish + live).
 const int kIntenseInsidersFetchMaxAttempts = 4;
@@ -60,6 +63,19 @@ class TrainingIntenseTimeWindow {
       'stop': formatInsidersApiTimestamp(stop),
     };
   }
+}
+
+/// Result of an Intense Insiders fetch + local analysis (before Firestore writes).
+class IntenseDeviceAnalysisOutcome {
+  const IntenseDeviceAnalysisOutcome({
+    required this.result,
+    required this.samples,
+    required this.fieldGps,
+  });
+
+  final TrackerAnalysisResult result;
+  final List<TrackerRaw> samples;
+  final FootballFieldGps? fieldGps;
 }
 
 /// One present player with an assigned Intense/SIM tracker to sync at finish.
@@ -338,6 +354,8 @@ class TrainingIntenseSyncService {
   final FirebaseFunctions _functions;
 
   static const int _minRequiredSamples = 1;
+  static const double _sprintThresholdKmh = 20.0;
+  static const int _minSprintPoints = 4;
 
   Future<void> syncDevice({
     required IntenseTrainingDeviceTarget target,
@@ -351,7 +369,7 @@ class TrainingIntenseSyncService {
       throw StateError('Training id missing');
     }
 
-    final result = await analyzeDeviceWindow(
+    final outcome = await analyzeDeviceWindow(
       target: target,
       window: window,
       eventId: trainingId,
@@ -360,12 +378,23 @@ class TrainingIntenseSyncService {
       treatEmptyAsSuccess: true,
     );
 
-    if (result == null) return;
+    if (outcome == null) return;
 
     await TrackerAnalysisService.saveAnalysis(
-      result,
+      outcome.result,
       docId: '${trainingId}_${target.trackerId}',
       eventId: trainingId,
+    );
+
+    // Training: persist full-session heatmap (schematic or satellite).
+    await _persistIntenseHeatmaps(
+      trackerId: target.trackerId,
+      playerId: target.playerId,
+      eventId: trainingId,
+      samples: outcome.samples,
+      result: outcome.result,
+      fieldGps: outcome.fieldGps,
+      isMatch: false,
     );
   }
 
@@ -382,7 +411,7 @@ class TrainingIntenseSyncService {
       throw StateError('Match id missing');
     }
 
-    final result = await analyzeDeviceWindow(
+    final outcome = await analyzeDeviceWindow(
       target: target,
       window: window,
       eventId: eventId,
@@ -392,18 +421,30 @@ class TrainingIntenseSyncService {
       isMatch: true,
     );
 
-    if (result == null) return;
+    if (outcome == null) return;
 
     await TrackerAnalysisService.saveAnalysis(
-      result,
+      outcome.result,
       docId: '${eventId}_${target.trackerId}',
       eventId: eventId,
+      isMatch: true,
+    );
+
+    // Match: persist TRACKER_Svg heatmaps (was missing — stats without heatmaps).
+    await _persistIntenseHeatmaps(
+      trackerId: target.trackerId,
+      playerId: target.playerId,
+      eventId: eventId,
+      samples: outcome.samples,
+      result: outcome.result,
+      fieldGps: outcome.fieldGps,
+      isMatch: true,
     );
   }
 
   /// Same Insiders fetch + local analysis as [syncDevice], without writing
-  /// `TRACKER_Analysis`. Returns `null` when the GNSS window is empty.
-  Future<TrackerAnalysisResult?> analyzeDeviceWindow({
+  /// `TRACKER_Analysis` / heatmaps. Returns `null` when the GNSS window is empty.
+  Future<IntenseDeviceAnalysisOutcome?> analyzeDeviceWindow({
     required IntenseTrainingDeviceTarget target,
     required TrainingIntenseTimeWindow window,
     required String eventId,
@@ -547,7 +588,15 @@ class TrainingIntenseSyncService {
 
       FootballFieldGps? fieldGps;
       if (fieldGpsCorners != null) {
-        fieldGps = FootballFieldGps.fromFieldGpsCorners(fieldGpsCorners);
+        try {
+          fieldGps = FootballFieldGps.fromFieldGpsCorners(fieldGpsCorners);
+        } catch (e, st) {
+          debugPrint(
+            '[IntenseSync] invalid field GPS corners — '
+            'satellite heatmap fallback: $e\n$st',
+          );
+          fieldGps = null;
+        }
       }
 
       final result = SensorAnalysisService.analyzeSensorData(
@@ -561,7 +610,11 @@ class TrainingIntenseSyncService {
       );
 
       emit(IntenseDeviceSyncStage.done, 1);
-      return result;
+      return IntenseDeviceAnalysisOutcome(
+        result: result,
+        samples: samples,
+        fieldGps: fieldGps,
+      );
     } catch (e) {
       target.errorMessage = formatIntenseSyncError(e, target: target);
       debugPrint(
@@ -572,6 +625,212 @@ class TrainingIntenseSyncService {
       emit(IntenseDeviceSyncStage.error, target.progress);
       rethrow;
     }
+  }
+
+  /// Writes schematic/satellite heatmaps to `TRACKER_Svg` (same as USB hub).
+  Future<void> _persistIntenseHeatmaps({
+    required String trackerId,
+    required String playerId,
+    required String eventId,
+    required List<TrackerRaw> samples,
+    required TrackerAnalysisResult result,
+    required FootballFieldGps? fieldGps,
+    required bool isMatch,
+  }) async {
+    if (samples.isEmpty) return;
+
+    try {
+      if (!isMatch) {
+        await MatchHeatmapService.generateAndSaveMatchHeatmaps(
+          trackerId: trackerId,
+          eventId: eventId,
+          fieldGps: fieldGps,
+          fullSamples: samples,
+          fullHeatmapPoints: result.heatmapPoints,
+          fullSprintPolylines: fieldGps == null
+              ? const <PitchPolyline>[]
+              : _buildSprintPolylines(
+                  samples: samples,
+                  trackerId: trackerId,
+                  playerId: playerId,
+                  eventId: eventId,
+                  fieldGps: fieldGps,
+                  isMatch: false,
+                ),
+          fullSprintSegments: _extractSprintSegments(samples),
+        );
+        debugPrint(
+          '[IntenseSync] heatmap saved (training) '
+          'tracker=$trackerId event=$eventId '
+          'points=${result.heatmapPoints.length} '
+          'geolocalized=${fieldGps != null}',
+        );
+        return;
+      }
+
+      final halves = _splitSamplesByMidpoint(samples);
+      TrackerAnalysisResult? firstHalfAnalysis;
+      TrackerAnalysisResult? secondHalfAnalysis;
+      if (halves.first.isNotEmpty) {
+        firstHalfAnalysis = SensorAnalysisService.analyzeSensorData(
+          trackerId: trackerId,
+          playerId: playerId,
+          eventId: eventId,
+          allSamples: halves.first,
+          isMatch: true,
+          fieldGps: fieldGps,
+          minMeaningfulStepDistanceMeters:
+              kIntenseMinMeaningfulStepDistanceMeters,
+        );
+      }
+      if (halves.second.isNotEmpty) {
+        secondHalfAnalysis = SensorAnalysisService.analyzeSensorData(
+          trackerId: trackerId,
+          playerId: playerId,
+          eventId: eventId,
+          allSamples: halves.second,
+          isMatch: true,
+          fieldGps: fieldGps,
+          minMeaningfulStepDistanceMeters:
+              kIntenseMinMeaningfulStepDistanceMeters,
+        );
+      }
+
+      await MatchHeatmapService.generateAndSaveMatchHeatmaps(
+        trackerId: trackerId,
+        eventId: eventId,
+        fieldGps: fieldGps,
+        fullSamples: samples,
+        fullHeatmapPoints: result.heatmapPoints,
+        fullSprintPolylines: fieldGps == null
+            ? const <PitchPolyline>[]
+            : _buildSprintPolylines(
+                samples: samples,
+                trackerId: trackerId,
+                playerId: playerId,
+                eventId: eventId,
+                fieldGps: fieldGps,
+                isMatch: true,
+              ),
+        fullSprintSegments: _extractSprintSegments(samples),
+        firstHalfSamples: halves.first,
+        firstHalfHeatmapPoints:
+            firstHalfAnalysis?.heatmapPoints ?? const [],
+        firstHalfSprintPolylines: fieldGps == null
+            ? const <PitchPolyline>[]
+            : _buildSprintPolylines(
+                samples: halves.first,
+                trackerId: trackerId,
+                playerId: playerId,
+                eventId: eventId,
+                fieldGps: fieldGps,
+                isMatch: true,
+              ),
+        firstHalfSprintSegments: _extractSprintSegments(halves.first),
+        secondHalfSamples: halves.second,
+        secondHalfHeatmapPoints:
+            secondHalfAnalysis?.heatmapPoints ?? const [],
+        secondHalfSprintPolylines: fieldGps == null
+            ? const <PitchPolyline>[]
+            : _buildSprintPolylines(
+                samples: halves.second,
+                trackerId: trackerId,
+                playerId: playerId,
+                eventId: eventId,
+                fieldGps: fieldGps,
+                isMatch: true,
+              ),
+        secondHalfSprintSegments: _extractSprintSegments(halves.second),
+      );
+      debugPrint(
+        '[IntenseSync] heatmap saved (match) '
+        'tracker=$trackerId event=$eventId '
+        'points=${result.heatmapPoints.length} '
+        'geolocalized=${fieldGps != null}',
+      );
+    } catch (e, st) {
+      // Stats already saved — don't fail the whole sync on SVG errors.
+      debugPrint(
+        '[IntenseSync] heatmap persist FAILED '
+        'tracker=$trackerId event=$eventId: $e\n$st',
+      );
+    }
+  }
+
+  ({List<TrackerRaw> first, List<TrackerRaw> second}) _splitSamplesByMidpoint(
+    List<TrackerRaw> samples,
+  ) {
+    if (samples.length < 2) {
+      return (first: samples, second: const <TrackerRaw>[]);
+    }
+    final startMs = samples.first.timeMs;
+    final endMs = samples.last.timeMs;
+    final midMs = startMs + ((endMs - startMs) ~/ 2);
+    final first = samples.where((s) => s.timeMs <= midMs).toList(growable: false);
+    final second = samples.where((s) => s.timeMs > midMs).toList(growable: false);
+    return (first: first, second: second);
+  }
+
+  List<List<TrackerRaw>> _extractSprintSegments(List<TrackerRaw> samples) {
+    final List<List<TrackerRaw>> segments = [];
+    List<TrackerRaw> current = [];
+
+    for (final sample in samples) {
+      final speedKmh = sample.speedMps * 3.6;
+      if (speedKmh >= _sprintThresholdKmh) {
+        current.add(sample);
+      } else {
+        if (current.length >= _minSprintPoints) {
+          segments.add(List<TrackerRaw>.from(current));
+        }
+        current = [];
+      }
+    }
+    if (current.length >= _minSprintPoints) {
+      segments.add(List<TrackerRaw>.from(current));
+    }
+    return segments;
+  }
+
+  List<PitchPolyline> _buildSprintPolylines({
+    required List<TrackerRaw> samples,
+    required String trackerId,
+    required String playerId,
+    required String eventId,
+    required FootballFieldGps fieldGps,
+    required bool isMatch,
+  }) {
+    final segments = _extractSprintSegments(samples);
+    if (segments.isEmpty) return const [];
+
+    final List<PitchPolyline> polylines = [];
+    for (final segment in segments) {
+      final sprintAnalysis = SensorAnalysisService.analyzeSensorData(
+        trackerId: trackerId,
+        playerId: playerId,
+        eventId: eventId,
+        allSamples: segment,
+        isMatch: isMatch,
+        fieldGps: fieldGps,
+        minMeaningfulStepDistanceMeters: kIntenseMinMeaningfulStepDistanceMeters,
+      );
+      if (sprintAnalysis.heatmapPoints.length < 2) continue;
+      polylines.add(
+        PitchPolyline(
+          pointsM: PitchHeatmapBuilder.polylineFromHeatmapPoints(
+            sprintAnalysis.heatmapPoints,
+          ),
+          segmentIntensity01:
+              PitchHeatmapBuilder.segmentIntensityFromHeatmapPoints(
+            sprintAnalysis.heatmapPoints,
+          ),
+          strokeWidth: 3.2,
+          showArrow: true,
+          showStartEndDots: false,
+        ),
+      );
+    }
+    return polylines;
   }
 
   /// Same Insiders 429 backoff as [IntenseLiveDataService._fetchSamples].
