@@ -207,7 +207,7 @@ void main() {
   });
 
   group('resolveMatchIntenseResyncWindow', () {
-    test('uses kick-off and full-time timestamps', () {
+    test('uses kick-off and full-time timestamps when no schedule', () {
       final kickOff = DateTime(2026, 8, 2, 15, 0);
       final end = DateTime(2026, 8, 2, 16, 50);
       final highlights = [
@@ -233,6 +233,46 @@ void main() {
       expect(window, isNotNull);
       expect(window!.start.toLocal(), DateTime(2026, 8, 2, 15, 0));
       expect(window.stop.toLocal(), DateTime(2026, 8, 2, 16, 30));
+    });
+
+    test('ignores late-tapped kick-off that collapses the GNSS window', () {
+      // Real bug: kick-off Temps forts tapped after the match (15:46 UTC wall
+      // clock) while the fixture was scheduled 15:00 → start==stop → 0 samples.
+      final highlights = [
+        _timeEvent(
+          type: TimeType.kickOff,
+          at: DateTime.utc(2026, 8, 2, 15, 46, 48).toLocal(),
+        ),
+      ];
+
+      final window = resolveMatchIntenseResyncWindow(
+        _match(
+          isMatchPlayed: true,
+          dateCh: '02/08/2026',
+          timeCh: '15:00',
+        ),
+        highlights,
+      );
+
+      expect(window, isNotNull);
+      expect(window!.start.toLocal(), DateTime(2026, 8, 2, 15, 0));
+      expect(window.stop.toLocal(), DateTime(2026, 8, 2, 16, 30));
+      expect(window.stop.isAfter(window.start), isTrue);
+    });
+
+    test('never returns a zero-width window', () {
+      final kickOff = DateTime(2026, 8, 2, 15, 46, 48);
+      final highlights = [
+        _timeEvent(type: TimeType.kickOff, at: kickOff),
+        _timeEvent(type: TimeType.end, at: kickOff),
+      ];
+
+      final window = resolveMatchIntenseResyncWindow(
+        _match(duration: 90),
+        highlights,
+      );
+      expect(window, isNotNull);
+      expect(window!.stop.difference(window.start), const Duration(minutes: 90));
     });
   });
 

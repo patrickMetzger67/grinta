@@ -181,49 +181,98 @@ DateTime? matchIntenseEndLocal(
   return null;
 }
 
-/// Full match window for finish/re-sync: kick-off → full-time (Temps forts).
+Duration _matchIntenseDuration(models.Match match) {
+  final minutes = match.duration ?? 90;
+  return Duration(minutes: minutes > 0 ? minutes : 90);
+}
+
+/// True when [candidateEnd] forms a usable Insiders window after [start].
+bool _isPlausibleMatchEnd(DateTime start, DateTime candidateEnd) {
+  if (!candidateEnd.isAfter(start.add(const Duration(minutes: 5)))) {
+    return false;
+  }
+  // Reject absurd retrospectively-tapped ends (days later).
+  if (candidateEnd.isAfter(start.add(const Duration(hours: 4)))) {
+    return false;
+  }
+  return true;
+}
+
+/// Insiders fetch window for a match.
+///
+/// Prefers the **scheduled** kick-off ([Match.dateCh]/[timeCh]) so a Temps
+/// forts « début » tapped after the match (wall-clock ≠ real kick-off) cannot
+/// collapse the window to `start == stop` and return 0 GNSS samples.
+TrainingIntenseTimeWindow? resolveMatchIntenseFetchWindow(
+  models.Match match,
+  List<Highlights> highlights, {
+  DateTime? scheduledStart,
+  DateTime? scheduledEnd,
+  DateTime? stopCap,
+}) {
+  final startLocal = matchLiveStartLocal(
+        match,
+        highlights,
+        scheduledStart: scheduledStart,
+      ) ??
+      matchSessionStartLocal(match, highlights);
+  if (startLocal == null) return null;
+
+  final duration = _matchIntenseDuration(match);
+  final fallbackEnd = scheduledEnd ?? startLocal.add(duration);
+
+  DateTime endLocal = fallbackEnd;
+  final endHighlight =
+      findTimeEventHighlight(highlights, TimeType.end)?.dateTime?.toDate();
+  if (endHighlight != null && _isPlausibleMatchEnd(startLocal, endHighlight)) {
+    endLocal = endHighlight;
+  }
+
+  if (stopCap != null && stopCap.isBefore(endLocal)) {
+    endLocal = stopCap;
+  }
+
+  if (!endLocal.isAfter(startLocal)) {
+    endLocal = startLocal.add(duration);
+  }
+
+  return TrainingIntenseTimeWindow(
+    start: startLocal.toUtc(),
+    stop: endLocal.toUtc(),
+  );
+}
+
+/// Full match window for re-sync: schedule (preferred) → full-time / duration.
 TrainingIntenseTimeWindow? resolveMatchIntenseResyncWindow(
   models.Match match,
   List<Highlights> highlights, {
   DateTime? now,
+  DateTime? scheduledStart,
+  DateTime? scheduledEnd,
 }) {
-  final clock = now ?? DateTime.now();
-  final endLocal = matchIntenseEndLocal(match, highlights, now: clock);
-  if (endLocal == null) return null;
-
-  var startLocal = matchSessionStartLocal(match, highlights);
-  startLocal ??= endLocal.subtract(
-    Duration(minutes: (match.duration ?? 90) > 0 ? (match.duration ?? 90) : 90),
+  return resolveMatchIntenseFetchWindow(
+    match,
+    highlights,
+    scheduledStart: scheduledStart,
+    scheduledEnd: scheduledEnd,
   );
-
-  final startUtc = startLocal.toUtc();
-  final endUtc = endLocal.toUtc();
-  if (!endUtc.isAfter(startUtc)) {
-    return TrainingIntenseTimeWindow(start: startUtc, stop: startUtc);
-  }
-  return TrainingIntenseTimeWindow(start: startUtc, stop: endUtc);
 }
 
-/// Finish window: kick-off → min(now, full-time highlight).
+/// Finish window: schedule (preferred) → min(now, plausible full-time).
 TrainingIntenseTimeWindow? resolveMatchIntenseFinishWindow(
   models.Match match,
   List<Highlights> highlights, {
   required DateTime syncStopAt,
+  DateTime? scheduledStart,
+  DateTime? scheduledEnd,
 }) {
-  final startLocal = matchSessionStartLocal(match, highlights);
-  if (startLocal == null) return null;
-
-  final startUtc = startLocal.toUtc();
-  final syncStopUtc = syncStopAt.toUtc();
-  final endLocal =
-      findTimeEventHighlight(highlights, TimeType.end)?.dateTime?.toDate();
-  final scheduledEndUtc = endLocal?.toUtc();
-
-  final stopUtc = scheduledEndUtc == null
-      ? syncStopUtc
-      : (syncStopUtc.isBefore(scheduledEndUtc) ? syncStopUtc : scheduledEndUtc);
-
-  return TrainingIntenseTimeWindow(start: startUtc, stop: stopUtc);
+  return resolveMatchIntenseFetchWindow(
+    match,
+    highlights,
+    scheduledStart: scheduledStart,
+    scheduledEnd: scheduledEnd,
+    stopCap: syncStopAt,
+  );
 }
 
 /// True when an Intense match re-sync is allowed (48h after full-time).
