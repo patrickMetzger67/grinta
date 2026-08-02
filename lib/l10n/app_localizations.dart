@@ -66,7 +66,7 @@ import 'app_localizations_it.dart';
 /// property.
 abstract class AppLocalizations {
   AppLocalizations(String locale)
-    : localeName = intl.Intl.canonicalizedLocale(locale.toString());
+      : localeName = intl.Intl.canonicalizedLocale(locale.toString());
 
   final String localeName;
 
@@ -89,11 +89,11 @@ abstract class AppLocalizations {
   /// of delegates is preferred or required.
   static const List<LocalizationsDelegate<dynamic>> localizationsDelegates =
       <LocalizationsDelegate<dynamic>>[
-        delegate,
-        GlobalMaterialLocalizations.delegate,
-        GlobalCupertinoLocalizations.delegate,
-        GlobalWidgetsLocalizations.delegate,
-      ];
+    delegate,
+    GlobalMaterialLocalizations.delegate,
+    GlobalCupertinoLocalizations.delegate,
+    GlobalWidgetsLocalizations.delegate,
+  ];
 
   /// A list of this localizations delegate's supported locales.
   static const List<Locale> supportedLocales = <Locale>[
@@ -101,7 +101,7 @@ abstract class AppLocalizations {
     Locale('en'),
     Locale('es'),
     Locale('fr'),
-    Locale('it'),
+    Locale('it')
   ];
 
   /// No description provided for @appName.
@@ -481,21 +481,14 @@ abstract class AppLocalizations {
   /// In fr, this message translates to:
   /// **'Ton coach t\'invite à rejoindre {appName}. Ton code : {code}.\niPhone : {appleStoreUrl}\nAndroid : {googlePlayUrl}'**
   String invitationSmsMessage(
-    String appName,
-    String code,
-    String appleStoreUrl,
-    String googlePlayUrl,
-  );
+      String appName, String code, String appleStoreUrl, String googlePlayUrl);
 
   /// No description provided for @sessionReportEmailSubject.
   ///
   /// In fr, this message translates to:
   /// **'{appName} — Rapport {eventLabel} : {title}'**
   String sessionReportEmailSubject(
-    String appName,
-    String eventLabel,
-    String title,
-  );
+      String appName, String eventLabel, String title);
 
   /// No description provided for @sessionReportEmailIntro.
   ///
@@ -2104,10 +2097,7 @@ abstract class AppLocalizations {
   /// In fr, this message translates to:
   /// **'{opponent} · RDV {time} · {message}'**
   String matchConvocationNotificationBodyWithMessage(
-    String opponent,
-    String time,
-    String message,
-  );
+      String opponent, String time, String message);
 
   /// No description provided for @tabTacticalSchema.
   ///
@@ -5714,10 +5704,7 @@ abstract class AppLocalizations {
   /// In fr, this message translates to:
   /// **'{title} — {when} — {location}'**
   String createNonSportEventNotificationBodyWithLocation(
-    String title,
-    String when,
-    String location,
-  );
+      String title, String when, String location);
 
   /// No description provided for @nonSportEventInviteesTitle.
   ///
@@ -10302,10 +10289,7 @@ abstract class AppLocalizations {
   /// In fr, this message translates to:
   /// **'Polar {deviceId} · {deviceType} · {customName}'**
   String polarImportDeviceLine(
-    String deviceId,
-    String deviceType,
-    String customName,
-  );
+      String deviceId, String deviceType, String customName);
 
   /// No description provided for @polarImportBleAction.
   ///
@@ -10612,9 +10596,7 @@ abstract class AppLocalizations {
   /// In fr, this message translates to:
   /// **'Polar {deviceId} ({deviceType}) ajouté.'**
   String adminTrackerDevicesAddPolarChromeSuccess(
-    String deviceId,
-    String deviceType,
-  );
+      String deviceId, String deviceType);
 
   /// No description provided for @adminTrackerDevicesAddPolarDeviceType.
   ///
@@ -11342,6 +11324,30 @@ abstract class AppLocalizations {
   /// **'Aucune astuce ne correspond à ta recherche.'**
   String get settingsTipsSearchEmpty;
 
+  /// No description provided for @settingsInfosTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Infos'**
+  String get settingsInfosTitle;
+
+  /// No description provided for @settingsInfosWebsite.
+  ///
+  /// In fr, this message translates to:
+  /// **'Site web'**
+  String get settingsInfosWebsite;
+
+  /// No description provided for @settingsInfosEmail.
+  ///
+  /// In fr, this message translates to:
+  /// **'Contact'**
+  String get settingsInfosEmail;
+
+  /// No description provided for @settingsVersionLabel.
+  ///
+  /// In fr, this message translates to:
+  /// **'Version {version}'**
+  String settingsVersionLabel(String version);
+
   /// No description provided for @promoCodeMenuLabel.
   ///
   /// In fr, this message translates to:
@@ -11389,10 +11395,7 @@ abstract class AppLocalizations {
   /// In fr, this message translates to:
   /// **'{entitlement} actif jusqu\'au {expiresAt} ({days} jours offerts).'**
   String promoCodeRedeemSuccessVerified(
-    String entitlement,
-    String expiresAt,
-    int days,
-  );
+      String entitlement, String expiresAt, int days);
 
   /// No description provided for @promoCodeRedeemSyncPending.
   ///
@@ -11891,10 +11894,7 @@ abstract class AppLocalizations {
   /// In fr, this message translates to:
   /// **'Tu rencontres, ce {weekday} à {time}, {opponentName}. Souhaites-tu un rapport d’analyse de ton adversaire ?'**
   String opponentAnalysisPromptMessage(
-    String weekday,
-    String time,
-    String opponentName,
-  );
+      String weekday, String time, String opponentName);
 
   /// No description provided for @opponentAnalysisPromptYes.
   ///
@@ -11935,7 +11935,7 @@ abstract class AppLocalizations {
   /// No description provided for @opponentAnalysisReportEmailIncludes.
   ///
   /// In fr, this message translates to:
-  /// **'Le PDF contient la tendance, le bilan V/N/D (saison et mi-saisons), les résultats, les joueurs (convo / titu. / temps de jeu), l’équipe type et l’évolution du classement.'**
+  /// **'Le PDF contient la tendance, le bilan V/N/D (saison et mi-saisons), les résultats, les buts, les joueurs (convo / titu. / temps de jeu / cartons), l’équipe type et l’évolution du classement.'**
   String get opponentAnalysisReportEmailIncludes;
 
   /// No description provided for @opponentAnalysisReportEmailDialogTitle.
@@ -12014,9 +12014,8 @@ AppLocalizations lookupAppLocalizations(Locale locale) {
   }
 
   throw FlutterError(
-    'AppLocalizations.delegate failed to load unsupported locale "$locale". This is likely '
-    'an issue with the localizations generation tool. Please file an issue '
-    'on GitHub with a reproducible sample app and the gen-l10n configuration '
-    'that was used.',
-  );
+      'AppLocalizations.delegate failed to load unsupported locale "$locale". This is likely '
+      'an issue with the localizations generation tool. Please file an issue '
+      'on GitHub with a reproducible sample app and the gen-l10n configuration '
+      'that was used.');
 }

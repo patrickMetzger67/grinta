@@ -211,20 +211,13 @@ class AppLocalizationsIt extends AppLocalizations {
 
   @override
   String invitationSmsMessage(
-    String appName,
-    String code,
-    String appleStoreUrl,
-    String googlePlayUrl,
-  ) {
+      String appName, String code, String appleStoreUrl, String googlePlayUrl) {
     return 'Il tuo allenatore ti invita a unirti a $appName. Il tuo codice: $code.\niPhone: $appleStoreUrl\nAndroid: $googlePlayUrl';
   }
 
   @override
   String sessionReportEmailSubject(
-    String appName,
-    String eventLabel,
-    String title,
-  ) {
+      String appName, String eventLabel, String title) {
     return '$appName — Report $eventLabel: $title';
   }
 
@@ -1174,10 +1167,7 @@ class AppLocalizationsIt extends AppLocalizations {
 
   @override
   String matchConvocationNotificationBodyWithMessage(
-    String opponent,
-    String time,
-    String message,
-  ) {
+      String opponent, String time, String message) {
     return '$opponent · Appuntamento alle $time · $message';
   }
 
@@ -3257,10 +3247,7 @@ class AppLocalizationsIt extends AppLocalizations {
 
   @override
   String createNonSportEventNotificationBodyWithLocation(
-    String title,
-    String when,
-    String location,
-  ) {
+      String title, String when, String location) {
     return '$title — $when — $location';
   }
 
@@ -5182,9 +5169,7 @@ class AppLocalizationsIt extends AppLocalizations {
   String teamStatsGoalsAvgPerMatch(double avg) {
     final intl.NumberFormat avgNumberFormat =
         intl.NumberFormat.decimalPatternDigits(
-          locale: localeName,
-          decimalDigits: 2,
-        );
+            locale: localeName, decimalDigits: 2);
     final String avgString = avgNumberFormat.format(avg);
 
     return '$avgString/partita';
@@ -5205,9 +5190,7 @@ class AppLocalizationsIt extends AppLocalizations {
   String teamStatsAvgPointsPerMatch(double avg) {
     final intl.NumberFormat avgNumberFormat =
         intl.NumberFormat.decimalPatternDigits(
-          locale: localeName,
-          decimalDigits: 2,
-        );
+            locale: localeName, decimalDigits: 2);
     final String avgString = avgNumberFormat.format(avg);
 
     return '$avgString';
@@ -5969,10 +5952,7 @@ class AppLocalizationsIt extends AppLocalizations {
 
   @override
   String polarImportDeviceLine(
-    String deviceId,
-    String deviceType,
-    String customName,
-  ) {
+      String deviceId, String deviceType, String customName) {
     return 'Polar $deviceId · $deviceType · $customName';
   }
 
@@ -6155,9 +6135,7 @@ class AppLocalizationsIt extends AppLocalizations {
 
   @override
   String adminTrackerDevicesAddPolarChromeSuccess(
-    String deviceId,
-    String deviceType,
-  ) {
+      String deviceId, String deviceType) {
     return 'Polar $deviceId ($deviceType) aggiunto.';
   }
 
@@ -6579,6 +6557,20 @@ class AppLocalizationsIt extends AppLocalizations {
       'Nessun consiglio corrisponde alla ricerca.';
 
   @override
+  String get settingsInfosTitle => 'Info';
+
+  @override
+  String get settingsInfosWebsite => 'Sito web';
+
+  @override
+  String get settingsInfosEmail => 'Contatto';
+
+  @override
+  String settingsVersionLabel(String version) {
+    return 'Versione $version';
+  }
+
+  @override
   String get promoCodeMenuLabel => 'Codice promo';
 
   @override
@@ -6603,10 +6595,7 @@ class AppLocalizationsIt extends AppLocalizations {
 
   @override
   String promoCodeRedeemSuccessVerified(
-    String entitlement,
-    String expiresAt,
-    int days,
-  ) {
+      String entitlement, String expiresAt, int days) {
     return '$entitlement attivo fino al $expiresAt ($days giorni offerti).';
   }
 
@@ -6901,10 +6890,7 @@ class AppLocalizationsIt extends AppLocalizations {
 
   @override
   String opponentAnalysisPromptMessage(
-    String weekday,
-    String time,
-    String opponentName,
-  ) {
+      String weekday, String time, String opponentName) {
     return 'You play this $weekday at $time against $opponentName. Would you like an opponent analysis report?';
   }
 

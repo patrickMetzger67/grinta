@@ -672,71 +672,75 @@ class _AskDiegoSheetState extends State<AskDiegoSheet> {
   Widget build(BuildContext context) {
     final colors = context.appColors;
     final l10n = context.l10n;
+    final bottomInset = MediaQuery.viewInsetsOf(context).bottom;
 
-    return Column(
-      children: [
-        const SizedBox(height: 8),
-        Container(
-          width: 40,
-          height: 4,
-          decoration: BoxDecoration(
-            color: colors.border,
-            borderRadius: BorderRadius.circular(999),
+    return Padding(
+      padding: EdgeInsets.only(bottom: bottomInset),
+      child: Column(
+        children: [
+          const SizedBox(height: 8),
+          Container(
+            width: 40,
+            height: 4,
+            decoration: BoxDecoration(
+              color: colors.border,
+              borderRadius: BorderRadius.circular(999),
+            ),
           ),
-        ),
-        Padding(
-          padding: const EdgeInsets.fromLTRB(16, 12, 8, 4),
-          child: Row(
-            children: [
-              const AskDiegoAvatar(size: 32),
-              const SizedBox(width: 10),
-              Expanded(
-                child: Text(
-                  l10n.askDiegoTitle,
-                  style: TextStyle(
-                    color: colors.textPrimary,
-                    fontWeight: FontWeight.w700,
-                    fontSize: 18,
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 12, 8, 4),
+            child: Row(
+              children: [
+                const AskDiegoAvatar(size: 32),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: Text(
+                    l10n.askDiegoTitle,
+                    style: TextStyle(
+                      color: colors.textPrimary,
+                      fontWeight: FontWeight.w700,
+                      fontSize: 18,
+                    ),
                   ),
                 ),
-              ),
-              IconButton(
-                onPressed: () => Navigator.of(context).pop(),
-                icon: Icon(Icons.close, color: colors.textSecondary),
-              ),
-            ],
+                IconButton(
+                  onPressed: () => Navigator.of(context).pop(),
+                  icon: Icon(Icons.close, color: colors.textSecondary),
+                ),
+              ],
+            ),
           ),
-        ),
-        Divider(height: 1, color: colors.border),
-        Expanded(
-          child: ListView.builder(
-            controller: widget.scrollController,
-            padding: const EdgeInsets.symmetric(vertical: 8),
-            itemCount: _messages.length,
-            itemBuilder: (context, index) {
-              final message = _messages[index];
-              return ChatMessageBubble(
-                message: message,
-                isSpeaking: _speakingMessageId == message.id,
-                onSpeak: message.role == ChatMessageRole.assistant &&
-                        !message.isLoading
-                    ? () => unawaited(_speakMessage(message))
-                    : null,
-                onNavigate: message.navigationRoute != null
-                    ? () => unawaited(_openMessageNavigation(message))
-                    : null,
-              );
-            },
+          Divider(height: 1, color: colors.border),
+          Expanded(
+            child: ListView.builder(
+              controller: widget.scrollController,
+              padding: const EdgeInsets.symmetric(vertical: 8),
+              itemCount: _messages.length,
+              itemBuilder: (context, index) {
+                final message = _messages[index];
+                return ChatMessageBubble(
+                  message: message,
+                  isSpeaking: _speakingMessageId == message.id,
+                  onSpeak: message.role == ChatMessageRole.assistant &&
+                          !message.isLoading
+                      ? () => unawaited(_speakMessage(message))
+                      : null,
+                  onNavigate: message.navigationRoute != null
+                      ? () => unawaited(_openMessageNavigation(message))
+                      : null,
+                );
+              },
+            ),
           ),
-        ),
-        ChatInputBar(
-          controller: _inputController,
-          onSend: () => unawaited(_sendMessage()),
-          onMicPressed: () => unawaited(_toggleListening()),
-          isListening: _isListening,
-          isSending: _isSending,
-        ),
-      ],
+          ChatInputBar(
+            controller: _inputController,
+            onSend: () => unawaited(_sendMessage()),
+            onMicPressed: () => unawaited(_toggleListening()),
+            isListening: _isListening,
+            isSending: _isSending,
+          ),
+        ],
+      ),
     );
   }
 }

@@ -2992,6 +2992,15 @@
   "settingsTipsLoadError": "Tipps konnten nicht geladen werden.",
   "settingsTipsSearchHint": "Tipps suchen…",
   "settingsTipsSearchEmpty": "Keine Tipps entsprechen deiner Suche.",
+  "settingsInfosTitle": "Infos",
+  "settingsInfosWebsite": "Webseite",
+  "settingsInfosEmail": "Kontakt",
+  "settingsVersionLabel": "Version {version}",
+  "@settingsVersionLabel": {
+    "placeholders": {
+      "version": { "type": "String" }
+    }
+  },
   "wearableDeviceGpsInsidersIntense": "GPS Insiders Intense",
   "intenseGpsSerialGuidance": "Gib die auf dem GPS Insiders Intense Tracker aufgedruckte Seriennummer ein.",
   "intenseGpsSerialLabel": "Seriennummer",

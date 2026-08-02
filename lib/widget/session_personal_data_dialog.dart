@@ -724,6 +724,7 @@ class _SessionPersonalDataDialogState extends State<SessionPersonalDataDialog> {
         );
       }
       return DropdownButtonFormField<String>(
+        isExpanded: true,
         value: _selectedStrava?.externalId,
         decoration: InputDecoration(
           labelText: l10n.createPersonalSportStravaActivity,
@@ -734,7 +735,9 @@ class _SessionPersonalDataDialogState extends State<SessionPersonalDataDialog> {
               value: activity.externalId,
               child: Text(
                 activity.displayLabel,
+                maxLines: 1,
                 overflow: TextOverflow.ellipsis,
+                softWrap: false,
               ),
             ),
         ],
@@ -759,6 +762,7 @@ class _SessionPersonalDataDialogState extends State<SessionPersonalDataDialog> {
         );
       }
       return DropdownButtonFormField<String>(
+        isExpanded: true,
         value: _selectedPolar?.externalId,
         decoration: InputDecoration(
           labelText: l10n.createPersonalSportPolarActivity,
@@ -769,7 +773,9 @@ class _SessionPersonalDataDialogState extends State<SessionPersonalDataDialog> {
               value: activity.externalId,
               child: Text(
                 activity.displayLabel,
+                maxLines: 1,
                 overflow: TextOverflow.ellipsis,
+                softWrap: false,
               ),
             ),
         ],
@@ -794,6 +800,7 @@ class _SessionPersonalDataDialogState extends State<SessionPersonalDataDialog> {
         );
       }
       return DropdownButtonFormField<String>(
+        isExpanded: true,
         value: _selectedWhoop?.externalId,
         decoration: InputDecoration(
           labelText: l10n.createPersonalSportWhoopActivity,
@@ -804,7 +811,9 @@ class _SessionPersonalDataDialogState extends State<SessionPersonalDataDialog> {
               value: activity.externalId,
               child: Text(
                 activity.displayLabel,
+                maxLines: 1,
                 overflow: TextOverflow.ellipsis,
+                softWrap: false,
               ),
             ),
         ],
@@ -829,6 +838,7 @@ class _SessionPersonalDataDialogState extends State<SessionPersonalDataDialog> {
         );
       }
       return DropdownButtonFormField<String>(
+        isExpanded: true,
         value: _selectedApple?.externalId,
         decoration: InputDecoration(
           labelText: l10n.createPersonalSportAppleActivity,
@@ -839,7 +849,9 @@ class _SessionPersonalDataDialogState extends State<SessionPersonalDataDialog> {
               value: activity.externalId,
               child: Text(
                 activity.displayLabel,
+                maxLines: 1,
                 overflow: TextOverflow.ellipsis,
+                softWrap: false,
               ),
             ),
         ],
@@ -864,6 +876,7 @@ class _SessionPersonalDataDialogState extends State<SessionPersonalDataDialog> {
         );
       }
       return DropdownButtonFormField<String>(
+        isExpanded: true,
         value: _selectedGoogle?.externalId,
         decoration: InputDecoration(
           labelText: l10n.createPersonalSportGoogleActivity,
@@ -874,7 +887,9 @@ class _SessionPersonalDataDialogState extends State<SessionPersonalDataDialog> {
               value: activity.externalId,
               child: Text(
                 activity.displayLabel,
+                maxLines: 1,
                 overflow: TextOverflow.ellipsis,
+                softWrap: false,
               ),
             ),
         ],

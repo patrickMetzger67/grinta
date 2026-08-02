@@ -66,6 +66,7 @@ dependencies:
   polar: ^7.7.3
   # Runtime API keeps the native splash visible during boot (see main.dart).
   flutter_native_splash: ^2.4.6
+  package_info_plus: ^9.0.1
 
 # device_calendar 4.3.3 pins timezone ^0.9.0; flutter_local_notifications needs ^0.10.
 dependency_overrides:

@@ -2623,6 +2623,15 @@
   "settingsTipsLoadError": "Could not load tips.",
   "settingsTipsSearchHint": "Search tips…",
   "settingsTipsSearchEmpty": "No tips match your search.",
+  "settingsInfosTitle": "Info",
+  "settingsInfosWebsite": "Website",
+  "settingsInfosEmail": "Contact",
+  "settingsVersionLabel": "Version {version}",
+  "@settingsVersionLabel": {
+    "placeholders": {
+      "version": { "type": "String" }
+    }
+  },
   "promoCodeMenuLabel": "Promo code",
   "promoCodeDialogValidate": "Validate",
   "promoCodeRedeemTitle": "Have a promo code?",
