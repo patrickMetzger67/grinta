@@ -133,21 +133,35 @@ bool isTrainingSessionLive({
   return !clock.isBefore(start) && clock.isBefore(end);
 }
 
-/// Match session is live-eligible: kick-off recorded, full-time not reached.
+/// Match session is live-eligible: kick-off known (recorded or scheduled),
+/// full-time not reached, and [now] is at/after kick-off.
 bool isMatchSessionLive({
   required models.Match match,
   required List<Highlights> highlights,
+  DateTime? now,
 }) {
   if (match.withTracker != true) return false;
   if (match.isMatchPlayed == true) return false;
 
-  final kickOff = findTimeEventHighlight(highlights, TimeType.kickOff);
-  if (kickOff?.dateTime == null) return false;
-
   final end = findTimeEventHighlight(highlights, TimeType.end);
   if (end?.dateTime != null) return false;
 
-  return true;
+  final kickOffAt = matchSessionStartLocal(match, highlights);
+  if (kickOffAt == null) return false;
+
+  final clock = now ?? DateTime.now();
+  return !clock.isBefore(kickOffAt);
+}
+
+/// Local kick-off: recorded Temps forts highlight, else scheduled match time.
+DateTime? matchSessionStartLocal(
+  models.Match match,
+  List<Highlights> highlights,
+) {
+  final kickOff = findTimeEventHighlight(highlights, TimeType.kickOff);
+  final recorded = kickOff?.dateTime?.toDate();
+  if (recorded != null) return recorded;
+  return matchKickoffDateTime(match);
 }
 
 /// Session start for Insiders fetch (UTC).
@@ -156,8 +170,14 @@ DateTime intenseLiveTrainingStartUtc(Training training) {
   return (startTs?.toDate() ?? DateTime.now()).toUtc();
 }
 
-/// Session start for Insiders fetch from kick-off highlight (UTC).
-DateTime? intenseLiveMatchStartUtc(List<Highlights> highlights) {
+/// Session start for Insiders fetch (UTC): kick-off highlight, else schedule.
+DateTime? intenseLiveMatchStartUtc(
+  List<Highlights> highlights, {
+  models.Match? match,
+}) {
   final kickOff = findTimeEventHighlight(highlights, TimeType.kickOff);
-  return kickOff?.dateTime?.toDate().toUtc();
+  final recorded = kickOff?.dateTime?.toDate();
+  if (recorded != null) return recorded.toUtc();
+  if (match == null) return null;
+  return matchKickoffDateTime(match)?.toUtc();
 }

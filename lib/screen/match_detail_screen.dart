@@ -214,7 +214,10 @@ class MatchDetailScreen extends StatelessWidget {
                                             highlights: highlights,
                                           );
                                       final liveSessionStart =
-                                          intenseLiveMatchStartUtc(highlights);
+                                          intenseLiveMatchStartUtc(
+                                        highlights,
+                                        match: match,
+                                      );
 
                                       final tabs = <Widget>[
                                         if (showCompo)

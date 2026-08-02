@@ -3,10 +3,14 @@ import 'dart:convert';
 import 'package:cloud_functions/cloud_functions.dart';
 import 'package:flutter/foundation.dart';
 import 'package:grinta/model/fieldGpsCorners.dart';
+import 'package:grinta/model/highlights.dart';
+import 'package:grinta/model/match.dart' as models;
 import 'package:grinta/model/tracker/trackerData.dart';
 import 'package:grinta/model/training.dart';
 import 'package:grinta/services/sensorAnalysisService.dart';
 import 'package:grinta/services/trackerDataAnalysisService.dart';
+import 'package:grinta/util/highlight_minute_helper.dart';
+import 'package:grinta/util/intense_live_eligibility.dart';
 
 /// Retries when Insiders / Cloud Function returns HTTP 429 (finish + live).
 const int kIntenseInsidersFetchMaxAttempts = 4;
@@ -144,6 +148,64 @@ bool canResyncTrainingIntense(Training training, {DateTime? now}) {
   return !clock.isAfter(deadline);
 }
 
+/// Full match window for finish/re-sync: kick-off → full-time (Temps forts).
+TrainingIntenseTimeWindow? resolveMatchIntenseResyncWindow(
+  models.Match match,
+  List<Highlights> highlights,
+) {
+  final startLocal = matchSessionStartLocal(match, highlights);
+  final endLocal =
+      findTimeEventHighlight(highlights, TimeType.end)?.dateTime?.toDate();
+  if (startLocal == null || endLocal == null) return null;
+
+  final startUtc = startLocal.toUtc();
+  final endUtc = endLocal.toUtc();
+  if (!endUtc.isAfter(startUtc)) {
+    return TrainingIntenseTimeWindow(start: startUtc, stop: startUtc);
+  }
+  return TrainingIntenseTimeWindow(start: startUtc, stop: endUtc);
+}
+
+/// Finish window: kick-off → min(now, full-time highlight).
+TrainingIntenseTimeWindow? resolveMatchIntenseFinishWindow(
+  models.Match match,
+  List<Highlights> highlights, {
+  required DateTime syncStopAt,
+}) {
+  final startLocal = matchSessionStartLocal(match, highlights);
+  if (startLocal == null) return null;
+
+  final startUtc = startLocal.toUtc();
+  final syncStopUtc = syncStopAt.toUtc();
+  final endLocal =
+      findTimeEventHighlight(highlights, TimeType.end)?.dateTime?.toDate();
+  final scheduledEndUtc = endLocal?.toUtc();
+
+  final stopUtc = scheduledEndUtc == null
+      ? syncStopUtc
+      : (syncStopUtc.isBefore(scheduledEndUtc) ? syncStopUtc : scheduledEndUtc);
+
+  return TrainingIntenseTimeWindow(start: startUtc, stop: stopUtc);
+}
+
+/// True when an Intense match re-sync is allowed (48h after full-time).
+bool canResyncMatchIntense({
+  required models.Match match,
+  required List<Highlights> highlights,
+  DateTime? now,
+}) {
+  if (match.withTracker != true) return false;
+  if (match.isMatchPlayed != true) return false;
+  if (matchSessionStartLocal(match, highlights) == null) return false;
+  final end =
+      findTimeEventHighlight(highlights, TimeType.end)?.dateTime?.toDate();
+  if (end == null) return false;
+  final clock = now ?? DateTime.now();
+  if (clock.isBefore(end)) return false;
+  final deadline = end.add(kTrainingIntenseResyncEligibility);
+  return !clock.isAfter(deadline);
+}
+
 /// GNSS step floor for Intense analysis.
 ///
 /// Must stay **0** to match the Live pipeline ([IntenseLiveDataService]): a
@@ -202,6 +264,38 @@ class TrainingIntenseSyncService {
       result,
       docId: '${trainingId}_${target.trackerId}',
       eventId: trainingId,
+    );
+  }
+
+  /// Same Insiders pipeline as [syncDevice] for a match event id.
+  Future<void> syncMatchDevice({
+    required IntenseTrainingDeviceTarget target,
+    required String matchId,
+    required TrainingIntenseTimeWindow window,
+    FieldGpsCorners? fieldGpsCorners,
+    void Function(IntenseTrainingDeviceTarget target)? onProgress,
+  }) async {
+    final eventId = matchId.trim();
+    if (eventId.isEmpty) {
+      throw StateError('Match id missing');
+    }
+
+    final result = await analyzeDeviceWindow(
+      target: target,
+      window: window,
+      eventId: eventId,
+      fieldGpsCorners: fieldGpsCorners,
+      onProgress: onProgress,
+      treatEmptyAsSuccess: true,
+      isMatch: true,
+    );
+
+    if (result == null) return;
+
+    await TrackerAnalysisService.saveAnalysis(
+      result,
+      docId: '${eventId}_${target.trackerId}',
+      eventId: eventId,
     );
   }
 
