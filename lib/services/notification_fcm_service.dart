@@ -39,10 +39,10 @@ import 'package:stream_chat_flutter/stream_chat_flutter.dart';
 
 /// Push notification (FCM) setup, token persistence, and tap navigation.
 ///
-/// Cloud Functions expected (region `europe-west1`, not in this repo):
-/// - `sendPushFCMNotification` — see [fcm_config.dart] for dual-brand payload shape
-///   (`brand`: `grinta` | `aserstein`, optional `data.icon` / `data.image`)
-/// - `sendSms` — payload: to, message, clubId
+/// Cloud Functions (region `europe-west1`):
+/// - `sendPushFCMNotification` — [`functions/send_push_fcm.js`](../../functions/send_push_fcm.js);
+///   see [fcm_config.dart] for dual-brand payload (`brand`: `grinta` | `aserstein`)
+/// - `sendSms` — payload: to, message, clubId (not in this repo)
 ///
 /// ## Web support
 /// - Token registration, permission prompt, foreground display (browser Notification
@@ -827,6 +827,10 @@ class NotificationFCMService {
   ///
   /// Always sends [FcmConfig.brandGrinta] so the server attaches Grinta icon/image
   /// (shared Firebase project with Aserstein). See [fcm_config.dart].
+  ///
+  /// The remote callable **requires** a non-empty `clubId` (returns
+  /// `invalid-argument: clubId requis` otherwise). Callers may omit it; we
+  /// default to `'0'` (Grinta / InvitationConfig.grintaInvitationClubId).
   /// Returns `true` when the Cloud Function call succeeds.
   Future<bool> postNotification({
     required List<String> tokens,
@@ -847,12 +851,19 @@ class NotificationFCMService {
       return false;
     }
 
+    final resolvedClubId = (clubId ?? '').trim().isNotEmpty
+        ? clubId!.trim()
+        : '0';
+
     try {
       final functions = FirebaseFunctions.instanceFor(region: 'europe-west1');
       final result =
           await functions.httpsCallable('sendPushFCMNotification').call({
-        if (clubId != null && clubId.isNotEmpty) 'clubId': clubId,
+        'clubId': resolvedClubId,
         'brand': FcmConfig.brandGrinta,
+        // Explicit Grinta icons (CF also resolves from brand; belt-and-suspenders).
+        'icon': FcmConfig.icon192Url,
+        'image': FcmConfig.icon512Url,
         'title': title,
         'body': body,
         'fcmTokens': tokens,
@@ -860,10 +871,21 @@ class NotificationFCMService {
         'payload': payload,
       });
 
-      debugPrint('postNotification success: ${result.data}');
+      debugPrint(
+        'postNotification success: type=$type clubId=$resolvedClubId '
+        'tokens=${tokens.length} result=${result.data}',
+      );
       return true;
+    } on FirebaseFunctionsException catch (e, st) {
+      debugPrint(
+        'postNotification CF error: type=$type clubId=$resolvedClubId '
+        'code=${e.code} message=${e.message} details=${e.details}\n$st',
+      );
+      return false;
     } catch (e, st) {
-      debugPrint('postNotification error: $e\n$st');
+      debugPrint(
+        'postNotification error: type=$type clubId=$resolvedClubId $e\n$st',
+      );
       return false;
     }
   }

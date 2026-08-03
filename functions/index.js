@@ -40,6 +40,7 @@ const {
 } = require('./fitbit_oauth');
 const { createSendMailOnCreate } = require('./send_mail');
 const { createSendPasswordResetMail } = require('./password_reset');
+const { createSendPushFCMNotification } = require('./send_push_fcm');
 const {
   normalizePromoCode,
   compactPromoCode,
@@ -743,3 +744,14 @@ exports.fitbitDisconnect = createFitbitDisconnect();
  */
 exports.sendMailOnCreate = createSendMailOnCreate();
 exports.sendPasswordResetMail = createSendPasswordResetMail();
+
+/**
+ * FCM push (Grinta + Aserstein dual-brand, shared project).
+ *
+ * Grinta clients always pass `brand: "grinta"` and typically `clubId: "0"`.
+ * Icons: https://grinta.web.app/icons/Icon-192.png (and 512).
+ *
+ * Deploy:
+ *   firebase deploy --only functions:sendPushFCMNotification
+ */
+exports.sendPushFCMNotification = createSendPushFCMNotification();

@@ -37,10 +37,14 @@
 ///
 /// Recommended server-side icon/image URLs (host on Firebase Storage or CDN):
 ///
-/// | `brand`     | `data.icon` (small)              | `notification.image` (large, optional) |
-/// |-------------|----------------------------------|----------------------------------------|
-/// | `grinta`    | `https://…/grinta-icon-192.png`  | `https://…/grinta-icon-512.png`        |
-/// | `aserstein` | `https://…/aserstein-icon.png`   | `https://…/aserstein-banner.png`       |
+/// | `brand`     | `data.icon` (small)                         | `notification.image` (large)                |
+/// |-------------|---------------------------------------------|---------------------------------------------|
+/// | `grinta`    | `https://grinta.web.app/icons/Icon-192.png` | `https://grinta.web.app/icons/Icon-512.png` |
+/// | `aserstein` | Aserstein favicon / Storage asset           | same                                        |
+///
+/// Grinta always sends [FcmConfig.brandGrinta] with `clubId: "0"` (platform club).
+/// The Cloud Function `sendPushFCMNotification` in `functions/send_push_fcm.js`
+/// attaches Grinta icons when `brand == grinta` (or `clubId == "0"` if brand omitted).
 ///
 /// - **Android**: system tray icon comes from the app manifest
 ///   (`@drawable/ic_notification`); `notification.image` is the expanded large icon.
@@ -58,6 +62,10 @@ bool get fcmWebVapidKeyConfigured => kFcmWebVapidKey.isNotEmpty;
 /// Grinta FCM constants (this app always sends [FcmConfig.brandGrinta]).
 abstract final class FcmConfig {
   static const String brandGrinta = 'grinta';
+
+  /// Absolute Grinta PWA icons used by the push Cloud Function / web SW.
+  static const String icon192Url = 'https://grinta.web.app/icons/Icon-192.png';
+  static const String icon512Url = 'https://grinta.web.app/icons/Icon-512.png';
 }
 
 /// Default push brand for Grinta clients calling `sendPushFCMNotification`.
@@ -65,6 +73,12 @@ const String kFcmDefaultBrand = FcmConfig.brandGrinta;
 
 /// Relative path to the Grinta PWA icon (see `web/icons/Icon-192.png`).
 const String kFcmGrintaWebIconPath = '/icons/Icon-192.png';
+
+/// Absolute Grinta icon (web push / CF data.icon).
+const String kFcmGrintaIconUrl = FcmConfig.icon192Url;
+
+/// Absolute Grinta large image (CF notification.image).
+const String kFcmGrintaImageUrl = FcmConfig.icon512Url;
 
 /// Android drawable resource for foreground/local notification small icon.
 const String kFcmAndroidNotificationIcon = '@drawable/ic_notification';

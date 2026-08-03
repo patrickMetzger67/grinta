@@ -220,6 +220,16 @@ service cloud.firestore {
       match /intenseGpsSync/{playerId} {
         allow read, write: if canAccessWearableSync(userId, playerId);
       }
+
+      // FCM device tokens (doc id = token). Owner read/write only.
+      // Other signed-in clients read tokens when sending push (convocation, etc.).
+      match /fcmTokens/{tokenId} {
+        allow read: if request.auth != null;
+        allow create, update: if request.auth != null
+          && request.auth.uid == userId;
+        allow delete: if request.auth != null
+          && request.auth.uid == userId;
+      }
     }
 
     // Whoop OAuth tokens — Cloud Functions / Admin SDK only.
