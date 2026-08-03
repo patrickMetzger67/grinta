@@ -6,6 +6,9 @@ const {
   resolveBrandAssets,
   normalizeTokenList,
   buildDataPayload,
+  parseNotificationPreferences,
+  isQuietAt,
+  evaluatePushPermission,
   BRAND_GRINTA,
   BRAND_ASERSTEIN,
   GRINTA_ICON_192,
@@ -100,5 +103,55 @@ describe('buildDataPayload', () => {
     assert.equal(data.type, 'convocation');
     assert.equal(data.clubId, '0');
     assert.equal(data.nested, '{"ok":true}');
+  });
+});
+
+describe('notification preferences', () => {
+  it('defaults remindersEnabled to true', () => {
+    const prefs = parseNotificationPreferences(null);
+    assert.equal(prefs.remindersEnabled, true);
+    assert.equal(prefs.quietHoursStart, 22);
+    assert.equal(prefs.quietHoursEnd, 7);
+  });
+
+  it('blocks when remindersEnabled is false', () => {
+    const prefs = parseNotificationPreferences({ remindersEnabled: false });
+    assert.deepEqual(evaluatePushPermission(prefs), {
+      allowed: false,
+      reason: 'disabled',
+    });
+  });
+
+  it('detects overnight quiet hours in Europe/Paris', () => {
+    const prefs = parseNotificationPreferences({
+      remindersEnabled: true,
+      quietHoursStart: 22,
+      quietHoursEnd: 7,
+      timezone: 'Europe/Paris',
+      quietDays: [],
+    });
+
+    // 2026-08-03 23:30 UTC = 01:30 Paris (UTC+2 in August) → quiet
+    const lateUtc = new Date('2026-08-03T23:30:00Z');
+    assert.equal(isQuietAt(prefs, lateUtc), true);
+    assert.equal(evaluatePushPermission(prefs, lateUtc).reason, 'quiet');
+
+    // 2026-08-03 10:00 UTC = 12:00 Paris → not quiet
+    const noonUtc = new Date('2026-08-03T10:00:00Z');
+    assert.equal(isQuietAt(prefs, noonUtc), false);
+    assert.equal(evaluatePushPermission(prefs, noonUtc).allowed, true);
+  });
+
+  it('blocks quiet weekdays', () => {
+    // 2026-08-03 was a Monday
+    const prefs = parseNotificationPreferences({
+      remindersEnabled: true,
+      quietDays: [1],
+      quietHoursStart: 0,
+      quietHoursEnd: 0,
+      timezone: 'UTC',
+    });
+    const monday = new Date('2026-08-03T12:00:00Z');
+    assert.equal(isQuietAt(prefs, monday), true);
   });
 });

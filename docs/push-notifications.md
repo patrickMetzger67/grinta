@@ -8,6 +8,7 @@ Grinta sends phone/web pushes via the callable Cloud Function
 ```json
 {
   "fcmTokens": ["…"],
+  "recipientUserIds": ["firebaseAuthUid…"],
   "clubId": "0",
   "brand": "grinta",
   "icon": "https://grinta.web.app/icons/Icon-192.png",
@@ -22,7 +23,13 @@ Grinta sends phone/web pushes via the callable Cloud Function
 - **`clubId`**: always `"0"` for the Grinta platform club (required by the CF).
 - **`brand`**: always `"grinta"` from the Flutter client — forces Grinta icons
   (never Aserstein `/favicon.png`).
+- **`recipientUserIds`**: Auth uids of recipients. The CF loads each user's
+  `users/{uid}/app_state/notification_preferences` and **skips** push when:
+  - `remindersEnabled === false`, or
+  - current local time is in quiet days / quiet hours (timezone-aware).
 - Tokens live in `users/{uid}/fcmTokens/{token}` with `app: "grinta"`.
+
+In-app cloche notifications are still created by the app even when push is skipped.
 
 ## Deploy
 

@@ -831,7 +831,12 @@ class NotificationFCMService {
   /// The remote callable **requires** a non-empty `clubId` (returns
   /// `invalid-argument: clubId requis` otherwise). Callers may omit it; we
   /// default to `'0'` (Grinta / InvitationConfig.grintaInvitationClubId).
-  /// Returns `true` when the Cloud Function call succeeds.
+  ///
+  /// Pass [recipientUserIds] (Firebase Auth uids) so the CF can honour each
+  /// recipient's `notification_preferences` (`remindersEnabled`, quiet days /
+  /// hours). Without it, prefs are not applied.
+  /// Returns `true` when the Cloud Function call succeeds (including when all
+  /// recipients were skipped by prefs — check CF summary logs).
   Future<bool> postNotification({
     required List<String> tokens,
     required String title,
@@ -839,6 +844,7 @@ class NotificationFCMService {
     required String type,
     required Map<String, dynamic> payload,
     String? clubId,
+    List<String>? recipientUserIds,
   }) async {
     if (tokens.isEmpty) {
       debugPrint('postNotification: no tokens provided');
@@ -854,6 +860,11 @@ class NotificationFCMService {
     final resolvedClubId = (clubId ?? '').trim().isNotEmpty
         ? clubId!.trim()
         : '0';
+    final recipients = (recipientUserIds ?? const <String>[])
+        .map((id) => id.trim())
+        .where((id) => id.isNotEmpty)
+        .toSet()
+        .toList();
 
     try {
       final functions = FirebaseFunctions.instanceFor(region: 'europe-west1');
@@ -869,11 +880,13 @@ class NotificationFCMService {
         'fcmTokens': tokens,
         'type': type,
         'payload': payload,
+        if (recipients.isNotEmpty) 'recipientUserIds': recipients,
       });
 
       debugPrint(
         'postNotification success: type=$type clubId=$resolvedClubId '
-        'tokens=${tokens.length} result=${result.data}',
+        'tokens=${tokens.length} recipients=${recipients.length} '
+        'result=${result.data}',
       );
       return true;
     } on FirebaseFunctionsException catch (e, st) {

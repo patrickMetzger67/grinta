@@ -265,6 +265,7 @@ class MemberInvitationService {
           'seasonId': seasonId.trim(),
       },
       clubId: InvitationConfig.grintaInvitationClubId,
+      recipientUserIds: linkedUids.toList(),
     );
 
     debugPrint(

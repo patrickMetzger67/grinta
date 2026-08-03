@@ -262,6 +262,7 @@ class SessionFeelingNotificationService {
           'body': notificationBody,
         },
         clubId: clubId,
+        recipientUserIds: linkedUids.toList(),
       );
       if (pushSent) {
         pushNotificationsSent++;

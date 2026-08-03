@@ -643,6 +643,7 @@ class NonSportEventService {
               'body': pushBody,
             },
             clubId: event.clubId,
+            recipientUserIds: linkedUids,
           );
           if (pushSent) {
             pushNotificationsSent++;

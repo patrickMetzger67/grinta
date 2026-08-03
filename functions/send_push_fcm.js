@@ -1,8 +1,11 @@
 const { onCall, HttpsError } = require('firebase-functions/v2/https');
+const { getFirestore } = require('firebase-admin/firestore');
 const { getMessaging } = require('firebase-admin/messaging');
 const {
   readNonEmptyString,
   normalizeTokenList,
+  normalizeUserIdList,
+  filterTokensByRecipientPreferences,
   resolveBrand,
   resolveBrandAssets,
   buildDataPayload,
@@ -21,6 +24,7 @@ const REGION = 'europe-west1';
  * {
  *   fcmTokens: string[],
  *   clubId: string,          // Grinta platform = "0"
+ *   recipientUserIds?: string[], // Firebase Auth uids — prefs filtered
  *   brand?: "grinta"|"aserstein",
  *   icon?: string,
  *   image?: string,
@@ -30,11 +34,9 @@ const REGION = 'europe-west1';
  *   payload?: object
  * }
  *
- * Response:
- * {
- *   success: true,
- *   summary: { total, successCount, failureCount, invalidTokensCount, invalidTokens }
- * }
+ * Recipient prefs (`users/{uid}/app_state/notification_preferences`):
+ * - remindersEnabled === false → skip
+ * - quiet days / quiet hours (timezone-aware) → skip
  *
  * Deploy:
  *   firebase deploy --only functions:sendPushFCMNotification
@@ -42,9 +44,14 @@ const REGION = 'europe-west1';
 function createSendPushFCMNotification() {
   return onCall({ region: REGION, timeoutSeconds: 60 }, async (request) => {
     const data = request.data ?? {};
+    const db = getFirestore();
 
-    const fcmTokens = normalizeTokenList(data.fcmTokens);
-    if (fcmTokens.length === 0) {
+    const requestedTokens = normalizeTokenList(data.fcmTokens);
+    const recipientUserIds = normalizeUserIdList(
+      data.recipientUserIds ?? data.userIds,
+    );
+
+    if (requestedTokens.length === 0 && recipientUserIds.length === 0) {
       throw new HttpsError(
         'invalid-argument',
         'Liste de fcmTokens requise',
@@ -64,6 +71,42 @@ function createSendPushFCMNotification() {
       icon: data.icon,
       image: data.image,
     });
+
+    const filtered = await filterTokensByRecipientPreferences({
+      db,
+      recipientUserIds,
+      fcmTokens: requestedTokens,
+      brand,
+    });
+
+    const fcmTokens = filtered.tokens;
+    if (fcmTokens.length === 0) {
+      console.log(
+        '[sendPushFCMNotification] no tokens after prefs filter',
+        JSON.stringify({
+          brand,
+          clubId,
+          type,
+          requested: requestedTokens.length,
+          recipients: recipientUserIds.length,
+          skippedDisabled: filtered.skippedDisabled,
+          skippedQuiet: filtered.skippedQuiet,
+        }),
+      );
+      return {
+        success: true,
+        summary: {
+          total: 0,
+          successCount: 0,
+          failureCount: 0,
+          invalidTokensCount: 0,
+          invalidTokens: [],
+          skippedDisabled: filtered.skippedDisabled,
+          skippedQuiet: filtered.skippedQuiet,
+          skippedUserIds: filtered.skippedUserIds,
+        },
+      };
+    }
 
     const dataPayload = buildDataPayload({
       type,
@@ -87,7 +130,6 @@ function createSendPushFCMNotification() {
       android: {
         priority: 'high',
         notification: {
-          // Small tray icon stays the app drawable; large image is Grinta-branded.
           imageUrl: assets.image,
         },
       },
@@ -139,6 +181,8 @@ function createSendPushFCMNotification() {
           successCount: response.successCount,
           failureCount: response.failureCount,
           invalidTokensCount: invalidTokens.length,
+          skippedDisabled: filtered.skippedDisabled,
+          skippedQuiet: filtered.skippedQuiet,
         }),
       );
 
@@ -150,6 +194,9 @@ function createSendPushFCMNotification() {
           failureCount: response.failureCount,
           invalidTokensCount: invalidTokens.length,
           invalidTokens,
+          skippedDisabled: filtered.skippedDisabled,
+          skippedQuiet: filtered.skippedQuiet,
+          skippedUserIds: filtered.skippedUserIds,
         },
       };
     } catch (error) {
@@ -165,7 +212,6 @@ function createSendPushFCMNotification() {
 
 module.exports = {
   createSendPushFCMNotification,
-  // Re-export helpers for convenience / existing require paths.
   resolveBrand,
   resolveBrandAssets,
   normalizeTokenList,
