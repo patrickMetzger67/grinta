@@ -154,4 +154,30 @@ describe('notification preferences', () => {
     const monday = new Date('2026-08-03T12:00:00Z');
     assert.equal(isQuietAt(prefs, monday), true);
   });
+
+  it('computeSendAfter finds end of overnight quiet window', () => {
+    const { computeSendAfter } = require('./send_push_fcm_helpers');
+    const prefs = parseNotificationPreferences({
+      remindersEnabled: true,
+      quietHoursStart: 22,
+      quietHoursEnd: 7,
+      quietDays: [],
+      timezone: 'UTC',
+    });
+    // 23:00 UTC → quiet until 07:00 UTC
+    const duringQuiet = new Date('2026-08-03T23:00:00Z');
+    const sendAfter = computeSendAfter(prefs, duringQuiet);
+    assert.ok(sendAfter);
+    assert.equal(sendAfter.getUTCHours(), 7);
+    assert.equal(evaluatePushPermission(prefs, sendAfter).allowed, true);
+  });
+
+  it('computeSendAfter returns null when reminders disabled', () => {
+    const { computeSendAfter } = require('./send_push_fcm_helpers');
+    const prefs = parseNotificationPreferences({ remindersEnabled: false });
+    assert.equal(
+      computeSendAfter(prefs, new Date('2026-08-03T23:00:00Z')),
+      null,
+    );
+  });
 });

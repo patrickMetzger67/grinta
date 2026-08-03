@@ -68,6 +68,7 @@ service cloud.firestore {
           request.path[4] == 'admin_promo_codes'
           || request.path[4] == 'invitations'
           || request.path[4] == 'mail'
+          || request.path[4] == 'pending_push'
           || request.path[4] == 'member'
           || (request.path[4] == 'users' && request.path.size() == 5)
         );
@@ -362,6 +363,11 @@ service cloud.firestore {
     match /mail/{mailId} {
       allow create: if request.auth != null && isValidMailCreate();
       allow read, update, delete: if false;
+    }
+
+    // Deferred FCM pushes (quiet hours) — Cloud Functions / Admin SDK only.
+    match /pending_push/{pushId} {
+      allow read, write: if false;
     }
 
     // Catch-all for the rest of the app (matches deployed prod behavior).

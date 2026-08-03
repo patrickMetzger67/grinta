@@ -251,10 +251,74 @@ function isInvalidTokenError(error) {
   );
 }
 
+const PENDING_PUSH_COLLECTION = 'pending_push';
+/** Max deferral window when quiet (ms). */
+const PENDING_PUSH_MAX_DEFER_MS = 48 * 60 * 60 * 1000;
+/** Step used to find the next non-quiet instant. */
+const PENDING_PUSH_SCAN_STEP_MS = 15 * 60 * 1000;
+
+/**
+ * Next Date when [evaluatePushPermission] allows push, or null if none within
+ * [PENDING_PUSH_MAX_DEFER_MS].
+ */
+function computeSendAfter(prefs, now = new Date()) {
+  const startMs = now.getTime();
+  const maxMs = startMs + PENDING_PUSH_MAX_DEFER_MS;
+
+  // If already allowed, send ASAP (caller normally won't enqueue).
+  if (evaluatePushPermission(prefs, now).allowed) {
+    return now;
+  }
+  // Disabled permanently for this window — do not schedule.
+  if (!prefs.remindersEnabled) {
+    return null;
+  }
+
+  for (
+    let ts = startMs + PENDING_PUSH_SCAN_STEP_MS;
+    ts <= maxMs;
+    ts += PENDING_PUSH_SCAN_STEP_MS
+  ) {
+    const candidate = new Date(ts);
+    if (evaluatePushPermission(prefs, candidate).allowed) {
+      return candidate;
+    }
+  }
+  return null;
+}
+
+async function loadUserFcmTokens(db, userId, brand, requestedTokens) {
+  const tokensRef = db.collection('users').doc(userId).collection('fcmTokens');
+  let tokenDocs;
+  if (brand === BRAND_GRINTA) {
+    const branded = await tokensRef.where('app', '==', BRAND_GRINTA).get();
+    if (!branded.empty) {
+      tokenDocs = branded.docs;
+    } else {
+      const all = await tokensRef.get();
+      tokenDocs = all.docs.filter((doc) => {
+        const app = (doc.data()?.app ?? '').toString().trim();
+        return app.length === 0 || app === BRAND_GRINTA;
+      });
+    }
+  } else {
+    const all = await tokensRef.get();
+    tokenDocs = all.docs;
+  }
+
+  const tokens = [];
+  for (const doc of tokenDocs) {
+    const token = doc.id.trim();
+    if (!token) continue;
+    if (requestedTokens.size > 0 && !requestedTokens.has(token)) continue;
+    tokens.push(token);
+  }
+  return tokens;
+}
+
 /**
  * Load prefs + evaluate push permission for each recipient uid.
- * Returns tokens to send (intersection of client tokens with allowed users'
- * Grinta tokens) and skip stats.
+ * Returns tokens to send now, skip stats, and quiet recipients to defer.
  */
 async function filterTokensByRecipientPreferences({
   db,
@@ -274,11 +338,13 @@ async function filterTokensByRecipientPreferences({
       skippedQuiet: 0,
       allowedUserIds: [],
       skippedUserIds: [],
+      quietDeferred: [],
     };
   }
 
   const allowedUserIds = [];
   const skippedUserIds = [];
+  const quietDeferred = [];
   let skippedDisabled = 0;
   let skippedQuiet = 0;
   const allowedTokens = new Set();
@@ -294,43 +360,34 @@ async function filterTokensByRecipientPreferences({
       prefSnap.exists ? prefSnap.data() : null,
     );
     const decision = evaluatePushPermission(prefs, now);
+    const userTokens = await loadUserFcmTokens(
+      db,
+      userId,
+      brand,
+      requestedTokens,
+    );
+
     if (!decision.allowed) {
       skippedUserIds.push(userId);
-      if (decision.reason === 'disabled') skippedDisabled += 1;
-      if (decision.reason === 'quiet') skippedQuiet += 1;
-      continue;
-    }
-    allowedUserIds.push(userId);
-
-    const tokensRef = db
-      .collection('users')
-      .doc(userId)
-      .collection('fcmTokens');
-
-    let tokenDocs;
-    if (brand === BRAND_GRINTA) {
-      const branded = await tokensRef.where('app', '==', BRAND_GRINTA).get();
-      if (!branded.empty) {
-        tokenDocs = branded.docs;
-      } else {
-        const all = await tokensRef.get();
-        tokenDocs = all.docs.filter((doc) => {
-          const app = (doc.data()?.app ?? '').toString().trim();
-          return app.length === 0 || app === BRAND_GRINTA;
-        });
-      }
-    } else {
-      const all = await tokensRef.get();
-      tokenDocs = all.docs;
-    }
-
-    for (const doc of tokenDocs) {
-      const token = doc.id.trim();
-      if (!token) continue;
-      // If the client passed an explicit token list, only keep the intersection.
-      if (requestedTokens.size > 0 && !requestedTokens.has(token)) {
+      if (decision.reason === 'disabled') {
+        skippedDisabled += 1;
         continue;
       }
+      if (decision.reason === 'quiet') {
+        skippedQuiet += 1;
+        if (userTokens.length > 0) {
+          quietDeferred.push({
+            userId,
+            prefs,
+            tokens: userTokens,
+          });
+        }
+      }
+      continue;
+    }
+
+    allowedUserIds.push(userId);
+    for (const token of userTokens) {
       allowedTokens.add(token);
     }
   }
@@ -341,6 +398,7 @@ async function filterTokensByRecipientPreferences({
     skippedQuiet,
     allowedUserIds,
     skippedUserIds,
+    quietDeferred,
   };
 }
 
@@ -352,7 +410,9 @@ module.exports = {
   getZonedWeekdayAndHour,
   isQuietAt,
   evaluatePushPermission,
+  computeSendAfter,
   filterTokensByRecipientPreferences,
+  loadUserFcmTokens,
   resolveBrand,
   resolveBrandAssets,
   isGrintaAssetUrl,
@@ -364,4 +424,7 @@ module.exports = {
   GRINTA_ICON_512,
   ASERSTEIN_ICON,
   DEFAULT_TIMEZONE,
+  PENDING_PUSH_COLLECTION,
+  PENDING_PUSH_MAX_DEFER_MS,
+  PENDING_PUSH_SCAN_STEP_MS,
 };

@@ -1,6 +1,5 @@
 const { onCall, HttpsError } = require('firebase-functions/v2/https');
 const { getFirestore } = require('firebase-admin/firestore');
-const { getMessaging } = require('firebase-admin/messaging');
 const {
   readNonEmptyString,
   normalizeTokenList,
@@ -8,38 +7,26 @@ const {
   filterTokensByRecipientPreferences,
   resolveBrand,
   resolveBrandAssets,
-  buildDataPayload,
-  isInvalidTokenError,
   BRAND_GRINTA,
   GRINTA_ICON_192,
   GRINTA_ICON_512,
 } = require('./send_push_fcm_helpers');
+const {
+  enqueueQuietDeferredPushes,
+  sendFcmToTokens,
+} = require('./pending_push');
 
 const REGION = 'europe-west1';
 
 /**
  * Callable: sendPushFCMNotification (europe-west1)
  *
- * Request:
- * {
- *   fcmTokens: string[],
- *   clubId: string,          // Grinta platform = "0"
- *   recipientUserIds?: string[], // Firebase Auth uids — prefs filtered
- *   brand?: "grinta"|"aserstein",
- *   icon?: string,
- *   image?: string,
- *   title?: string,
- *   body?: string,
- *   type?: string,
- *   payload?: object
- * }
- *
  * Recipient prefs (`users/{uid}/app_state/notification_preferences`):
- * - remindersEnabled === false → skip
- * - quiet days / quiet hours (timezone-aware) → skip
+ * - remindersEnabled === false → skip (no queue)
+ * - quiet days / quiet hours → enqueue `pending_push` until sendAfter
  *
  * Deploy:
- *   firebase deploy --only functions:sendPushFCMNotification
+ *   firebase deploy --only functions:sendPushFCMNotification,functions:drainPendingPushNotifications
  */
 function createSendPushFCMNotification() {
   return onCall({ region: REGION, timeoutSeconds: 60 }, async (request) => {
@@ -79,10 +66,23 @@ function createSendPushFCMNotification() {
       brand,
     });
 
+    const deferredCount = await enqueueQuietDeferredPushes({
+      db,
+      quietDeferred: filtered.quietDeferred ?? [],
+      clubId,
+      brand,
+      title,
+      body,
+      type,
+      payload: data.payload,
+      icon: assets.icon,
+      image: assets.image,
+    });
+
     const fcmTokens = filtered.tokens;
     if (fcmTokens.length === 0) {
       console.log(
-        '[sendPushFCMNotification] no tokens after prefs filter',
+        '[sendPushFCMNotification] no immediate tokens',
         JSON.stringify({
           brand,
           clubId,
@@ -91,6 +91,7 @@ function createSendPushFCMNotification() {
           recipients: recipientUserIds.length,
           skippedDisabled: filtered.skippedDisabled,
           skippedQuiet: filtered.skippedQuiet,
+          deferredCount,
         }),
       );
       return {
@@ -104,71 +105,22 @@ function createSendPushFCMNotification() {
           skippedDisabled: filtered.skippedDisabled,
           skippedQuiet: filtered.skippedQuiet,
           skippedUserIds: filtered.skippedUserIds,
+          deferredCount,
         },
       };
     }
 
-    const dataPayload = buildDataPayload({
-      type,
-      payload: data.payload,
-      brand,
-      icon: assets.icon,
-      image: assets.image,
-      title,
-      body,
-      clubId,
-    });
-
-    const message = {
-      tokens: fcmTokens,
-      notification: {
-        title: title || 'Grinta',
-        body: body || '',
-        ...(brand === BRAND_GRINTA ? { imageUrl: assets.image } : {}),
-      },
-      data: dataPayload,
-      android: {
-        priority: 'high',
-        notification: {
-          imageUrl: assets.image,
-        },
-      },
-      apns: {
-        payload: {
-          aps: {
-            sound: 'default',
-            'content-available': 1,
-          },
-        },
-        fcmOptions: {
-          imageUrl: assets.image,
-        },
-      },
-      webpush: {
-        headers: {
-          Urgency: 'high',
-        },
-        notification: {
-          title: title || 'Grinta',
-          body: body || '',
-          icon: assets.icon,
-          image: assets.image,
-        },
-        fcmOptions: {
-          link: '/',
-        },
-      },
-    };
-
     try {
-      const response = await getMessaging().sendEachForMulticast(message);
-
-      const invalidTokens = [];
-      response.responses.forEach((resp, idx) => {
-        if (resp.success) return;
-        if (isInvalidTokenError(resp.error)) {
-          invalidTokens.push(fcmTokens[idx]);
-        }
+      const result = await sendFcmToTokens({
+        tokens: fcmTokens,
+        title,
+        body,
+        type,
+        payload: data.payload,
+        brand,
+        clubId,
+        icon: assets.icon,
+        image: assets.image,
       });
 
       console.log(
@@ -177,26 +129,28 @@ function createSendPushFCMNotification() {
           brand,
           clubId,
           type,
-          total: fcmTokens.length,
-          successCount: response.successCount,
-          failureCount: response.failureCount,
-          invalidTokensCount: invalidTokens.length,
+          total: result.total,
+          successCount: result.successCount,
+          failureCount: result.failureCount,
+          invalidTokensCount: result.invalidTokens.length,
           skippedDisabled: filtered.skippedDisabled,
           skippedQuiet: filtered.skippedQuiet,
+          deferredCount,
         }),
       );
 
       return {
         success: true,
         summary: {
-          total: fcmTokens.length,
-          successCount: response.successCount,
-          failureCount: response.failureCount,
-          invalidTokensCount: invalidTokens.length,
-          invalidTokens,
+          total: result.total,
+          successCount: result.successCount,
+          failureCount: result.failureCount,
+          invalidTokensCount: result.invalidTokens.length,
+          invalidTokens: result.invalidTokens,
           skippedDisabled: filtered.skippedDisabled,
           skippedQuiet: filtered.skippedQuiet,
           skippedUserIds: filtered.skippedUserIds,
+          deferredCount,
         },
       };
     } catch (error) {
@@ -215,7 +169,6 @@ module.exports = {
   resolveBrand,
   resolveBrandAssets,
   normalizeTokenList,
-  buildDataPayload,
   BRAND_GRINTA,
   GRINTA_ICON_192,
   GRINTA_ICON_512,

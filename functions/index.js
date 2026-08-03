@@ -41,6 +41,7 @@ const {
 const { createSendMailOnCreate } = require('./send_mail');
 const { createSendPasswordResetMail } = require('./password_reset');
 const { createSendPushFCMNotification } = require('./send_push_fcm');
+const { createDrainPendingPushNotifications } = require('./pending_push');
 const {
   normalizePromoCode,
   compactPromoCode,
@@ -749,9 +750,11 @@ exports.sendPasswordResetMail = createSendPasswordResetMail();
  * FCM push (Grinta + Aserstein dual-brand, shared project).
  *
  * Grinta clients always pass `brand: "grinta"` and typically `clubId: "0"`.
- * Icons: https://grinta.web.app/icons/Icon-192.png (and 512).
+ * Quiet-hours recipients are deferred to `pending_push` and drained by
+ * `drainPendingPushNotifications`.
  *
  * Deploy:
- *   firebase deploy --only functions:sendPushFCMNotification
+ *   firebase deploy --only functions:sendPushFCMNotification,functions:drainPendingPushNotifications
  */
 exports.sendPushFCMNotification = createSendPushFCMNotification();
+exports.drainPendingPushNotifications = createDrainPendingPushNotifications();

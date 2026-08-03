@@ -24,20 +24,23 @@ Grinta sends phone/web pushes via the callable Cloud Function
 - **`brand`**: always `"grinta"` from the Flutter client — forces Grinta icons
   (never Aserstein `/favicon.png`).
 - **`recipientUserIds`**: Auth uids of recipients. The CF loads each user's
-  `users/{uid}/app_state/notification_preferences` and **skips** push when:
-  - `remindersEnabled === false`, or
-  - current local time is in quiet days / quiet hours (timezone-aware).
+  `users/{uid}/app_state/notification_preferences` and:
+  - `remindersEnabled === false` → **skip** (no queue)
+  - quiet days / quiet hours → **enqueue** `pending_push` until `sendAfter`
+    (drained by `drainPendingPushNotifications` every 5 minutes; max defer 48h)
 - Tokens live in `users/{uid}/fcmTokens/{token}` with `app: "grinta"`.
 
-In-app cloche notifications are still created by the app even when push is skipped.
+In-app cloche notifications are still created by the app even when push is
+skipped or deferred.
 
 ## Deploy
 
 ```bash
-firebase deploy --only functions:sendPushFCMNotification,firestore:rules
+firebase deploy --only functions:sendPushFCMNotification,functions:drainPendingPushNotifications,firestore:rules,firestore:indexes
 ```
 
-Source: [`functions/send_push_fcm.js`](../functions/send_push_fcm.js).
+Source: [`functions/send_push_fcm.js`](../functions/send_push_fcm.js),
+[`functions/pending_push.js`](../functions/pending_push.js).
 
 ## Client checklist
 
