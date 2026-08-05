@@ -1128,6 +1128,10 @@
   "createPersonalSportWhoopDeployRequired": "Whoop import is not deployed yet. Run firebase deploy for whoopListActivities and whoopImportActivity.",
   "createPersonalSportWhoopLoadError": "Could not load Whoop activities. Check the connection and try again.",
   "createPersonalSportWhoopNoImportable": "No Whoop workouts to import.",
+  "createPersonalSportOuraActivity": "Oura activity",
+  "createPersonalSportOuraDeployRequired": "Oura import is not deployed yet. Run firebase deploy for ouraListActivities and ouraImportActivity.",
+  "createPersonalSportOuraLoadError": "Could not load Oura activities. Check the connection and try again.",
+  "createPersonalSportOuraNoImportable": "No Oura workouts to import.",
   "createPersonalSportAppleActivity": "Apple Fitness activity",
   "createPersonalSportAppleIosOnly": "Apple Fitness import is available on iPhone only.",
   "createPersonalSportAppleLoadError": "Could not load Apple Fitness workouts. Check Health permissions and try again.",
@@ -1557,6 +1561,7 @@
   "wearableDeviceWhoop": "Whoop",
   "wearableDeviceStrava": "Strava",
   "wearableDevicePolar": "Polar",
+  "wearableDeviceOura": "Oura",
   "wearableDeviceFitbit": "Fitbit",
   "wearableDeviceAppleHealth": "Apple Fitness",
   "wearableDeviceGoogleHealthConnect": "Google Health",
@@ -1592,6 +1597,43 @@
   "whoopCoachConnectAction": "Connect",
   "whoopCoachConnectConnectedSubtitle": "Whoop connected for {playerName}",
   "@whoopCoachConnectConnectedSubtitle": {
+    "placeholders": {
+      "playerName": { "type": "String" }
+    }
+  },
+  "ouraConnectToggleLabel": "Oura sync",
+  "ouraConnectToggleSubtitle": "Connect your Oura account to import readiness, sleep, and workouts",
+  "ouraConnectToggleConnectedSubtitle": "Oura connected — data sync coming in Phase 2",
+  "ouraConnectSuccess": "Oura account connected.",
+  "ouraAccountHintGuidance": "Your Oura email can differ from your Grinta account. Enter the Oura account to use, then sign in with that account on the Oura page.",
+  "ouraAccountHintLabel": "Oura account",
+  "ouraAccountHintPlaceholder": "Oura email",
+  "ouraAccountHintRequired": "Enter your Oura account (email) before continuing.",
+  "ouraConnectContinue": "Continue to Oura",
+  "ouraConnectFailed": "Oura connection failed. Check that Oura Cloud Functions are deployed and OURA_CLIENT_ID / OURA_CLIENT_SECRET secrets are configured.",
+  "ouraConnectLaunchFailed": "Could not open the Oura sign-in page.",
+  "ouraConnectAuthRequired": "Sign in to Grinta to connect Oura.",
+  "ouraDisconnectFailed": "Oura disconnect failed.",
+  "ouraCoachVisibilityTitle": "Coach visibility",
+  "ouraCoachVisibilitySubtitle": "Allow your coach to see this data type",
+  "ouraCoachVisibilitySaveFailed": "Could not save Oura preferences.",
+  "ouraMetricReadiness": "Readiness",
+  "ouraMetricSleep": "Sleep",
+  "ouraMetricActivity": "Daily activity",
+  "ouraMetricWorkout": "Workouts",
+  "ouraMetricPersonal": "Personal info",
+  "ouraMetricHeartrate": "Heart rate",
+  "ouraMetricSpo2": "SpO2",
+  "ouraCoachConnectTitle": "Oura",
+  "ouraCoachConnectSubtitle": "Connect Oura for {playerName}",
+  "@ouraCoachConnectSubtitle": {
+    "placeholders": {
+      "playerName": { "type": "String" }
+    }
+  },
+  "ouraCoachConnectAction": "Connect",
+  "ouraCoachConnectConnectedSubtitle": "Oura connected for {playerName}",
+  "@ouraCoachConnectConnectedSubtitle": {
     "placeholders": {
       "playerName": { "type": "String" }
     }

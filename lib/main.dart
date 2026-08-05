@@ -33,6 +33,7 @@ import 'package:grinta/services/notification_fcm_service.dart';
 import 'package:grinta/services/internal_reminder_service.dart';
 import 'package:grinta/services/calendar_deep_link_service.dart';
 import 'package:grinta/services/fitbit_deep_link_service.dart';
+import 'package:grinta/services/oura_deep_link_service.dart';
 import 'package:grinta/services/polar_deep_link_service.dart';
 import 'package:grinta/services/strava_deep_link_service.dart';
 import 'package:grinta/services/whoop_deep_link_service.dart';
@@ -62,6 +63,7 @@ Future<void> main() async {
       WhoopDeepLinkService.instance.init(),
       StravaDeepLinkService.instance.init(),
       PolarDeepLinkService.instance.init(),
+      OuraDeepLinkService.instance.init(),
       FitbitDeepLinkService.instance.init(),
     ]);
 

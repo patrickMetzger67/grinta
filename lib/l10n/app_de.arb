@@ -1406,6 +1406,10 @@
   "createPersonalSportWhoopDeployRequired": "Whoop import is not deployed yet. Run firebase deploy for whoopListActivities and whoopImportActivity.",
   "createPersonalSportWhoopLoadError": "Could not load Whoop activities. Check the connection and try again.",
   "createPersonalSportWhoopNoImportable": "No Whoop workouts to import.",
+  "createPersonalSportOuraActivity": "Oura-Aktivität",
+  "createPersonalSportOuraDeployRequired": "Oura-Import ist noch nicht deployed. Führe firebase deploy für ouraListActivities und ouraImportActivity aus.",
+  "createPersonalSportOuraLoadError": "Oura-Aktivitäten konnten nicht geladen werden. Prüfe die Verbindung und versuche es erneut.",
+  "createPersonalSportOuraNoImportable": "Keine Oura-Workouts zum Importieren.",
   "createPersonalSportAppleActivity": "Apple Fitness activity",
   "createPersonalSportAppleIosOnly": "Apple Fitness import is available on iPhone only.",
   "createPersonalSportAppleLoadError": "Could not load Apple Fitness workouts. Check Health permissions and try again.",
@@ -2654,6 +2658,7 @@
   "wearableDeviceWhoop": "Whoop",
   "wearableDeviceStrava": "Strava",
   "wearableDevicePolar": "Polar",
+  "wearableDeviceOura": "Oura",
   "wearableDeviceFitbit": "Fitbit",
   "wearableDeviceAppleHealth": "Apple Fitness",
   "wearableDeviceGoogleHealthConnect": "Google Health",
@@ -2695,6 +2700,43 @@
       "playerName": {
         "type": "String"
       }
+    }
+  },
+  "ouraConnectToggleLabel": "Oura-Sync",
+  "ouraConnectToggleSubtitle": "Verbinde dein Oura-Konto, um Readiness, Schlaf und Workouts zu importieren",
+  "ouraConnectToggleConnectedSubtitle": "Oura verbunden — Datensync folgt in Phase 2",
+  "ouraConnectSuccess": "Oura-Konto verbunden.",
+  "ouraAccountHintGuidance": "Deine Oura-E-Mail kann sich von deinem Grinta-Konto unterscheiden. Gib das Oura-Konto ein und melde dich damit auf der Oura-Seite an.",
+  "ouraAccountHintLabel": "Oura-Konto",
+  "ouraAccountHintPlaceholder": "Oura-E-Mail",
+  "ouraAccountHintRequired": "Gib dein Oura-Konto (E-Mail) ein, bevor du fortfährst.",
+  "ouraConnectContinue": "Weiter zu Oura",
+  "ouraConnectFailed": "Oura-Verbindung fehlgeschlagen. Prüfe, ob die Oura Cloud Functions bereitgestellt sind und die Secrets OURA_CLIENT_ID / OURA_CLIENT_SECRET konfiguriert sind.",
+  "ouraConnectLaunchFailed": "Die Oura-Anmeldeseite konnte nicht geöffnet werden.",
+  "ouraConnectAuthRequired": "Melde dich bei Grinta an, um Oura zu verbinden.",
+  "ouraDisconnectFailed": "Oura-Trennung fehlgeschlagen.",
+  "ouraCoachVisibilityTitle": "Sichtbarkeit für Trainer",
+  "ouraCoachVisibilitySubtitle": "Erlaube deinem Trainer, diesen Datentyp zu sehen",
+  "ouraCoachVisibilitySaveFailed": "Oura-Einstellungen konnten nicht gespeichert werden.",
+  "ouraMetricReadiness": "Readiness",
+  "ouraMetricSleep": "Schlaf",
+  "ouraMetricActivity": "Tägliche Aktivität",
+  "ouraMetricWorkout": "Workouts",
+  "ouraMetricPersonal": "Persönliche Infos",
+  "ouraMetricHeartrate": "Herzfrequenz",
+  "ouraMetricSpo2": "SpO2",
+  "ouraCoachConnectTitle": "Oura",
+  "ouraCoachConnectSubtitle": "Oura für {playerName} verbinden",
+  "@ouraCoachConnectSubtitle": {
+    "placeholders": {
+      "playerName": { "type": "String" }
+    }
+  },
+  "ouraCoachConnectAction": "Verbinden",
+  "ouraCoachConnectConnectedSubtitle": "Oura verbunden für {playerName}",
+  "@ouraCoachConnectConnectedSubtitle": {
+    "placeholders": {
+      "playerName": { "type": "String" }
     }
   },
   "stravaConnectToggleSubtitle": "Verbinde dein Strava-Konto, um Aktivitäten und Workouts zu importieren",

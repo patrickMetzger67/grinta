@@ -11,6 +11,7 @@ import 'package:grinta/model/intense_gps_sync_config.dart';
 import 'package:grinta/model/polar_sync_config.dart';
 import 'package:grinta/model/strava_sync_config.dart';
 import 'package:grinta/model/wearable_device_type.dart';
+import 'package:grinta/model/oura_sync_config.dart';
 import 'package:grinta/model/whoop_sync_config.dart';
 import 'package:grinta/model/player.dart';
 import 'package:grinta/provider/appSession.dart';
@@ -29,6 +30,8 @@ import 'package:grinta/services/polar_sync_repository.dart';
 import 'package:grinta/services/polar_sync_service.dart';
 import 'package:grinta/services/strava_sync_repository.dart';
 import 'package:grinta/services/strava_sync_service.dart';
+import 'package:grinta/services/oura_sync_repository.dart';
+import 'package:grinta/services/oura_sync_service.dart';
 import 'package:grinta/services/whoop_sync_repository.dart';
 import 'package:grinta/services/whoop_sync_service.dart';
 import 'package:grinta/util/app_theme.dart';
@@ -39,6 +42,7 @@ import 'package:grinta/widget/google_health_coach_visibility_section.dart';
 import 'package:grinta/widget/polar_coach_visibility_section.dart';
 import 'package:grinta/widget/strava_coach_visibility_section.dart';
 import 'package:grinta/widget/wearable_device_type_dropdown.dart';
+import 'package:grinta/widget/oura_coach_visibility_section.dart';
 import 'package:grinta/widget/whoop_coach_visibility_section.dart';
 import 'package:provider/provider.dart';
 
@@ -108,6 +112,7 @@ class WearableDevicesDialogContent extends StatefulWidget {
 class _WearableDevicesDialogContentState
     extends State<WearableDevicesDialogContent> {
   final WhoopSyncRepository _whoopRepository = WhoopSyncRepository();
+  final OuraSyncRepository _ouraRepository = OuraSyncRepository();
   final StravaSyncRepository _stravaRepository = StravaSyncRepository();
   final PolarSyncRepository _polarRepository = PolarSyncRepository();
   final FitbitSyncRepository _fitbitRepository = FitbitSyncRepository();
@@ -128,8 +133,11 @@ class _WearableDevicesDialogContentState
   bool _playerLoadStarted = false;
   bool _playerLoaded = false;
   bool _whoopRepairStarted = false;
+  bool _ouraRepairStarted = false;
   bool _intenseGpsRepairStarted = false;
   final TextEditingController _stravaAccountController =
+      TextEditingController();
+  final TextEditingController _ouraAccountController =
       TextEditingController();
   final TextEditingController _whoopAccountController =
       TextEditingController();
@@ -171,6 +179,12 @@ class _WearableDevicesDialogContentState
               .repairPlayerSync(playerId: widget.playerId) ||
           changed;
     }
+    if (!_ouraRepairStarted && widget.initiatedBy == 'player') {
+      _ouraRepairStarted = true;
+      changed = await OuraSyncService.instance
+              .repairPlayerSync(playerId: widget.playerId) ||
+          changed;
+    }
     if (!_intenseGpsRepairStarted) {
       _intenseGpsRepairStarted = true;
       changed = await IntenseGpsClaimService.instance.repairPlayerSync(
@@ -186,6 +200,7 @@ class _WearableDevicesDialogContentState
   void dispose() {
     _stravaAccountController.dispose();
     _whoopAccountController.dispose();
+    _ouraAccountController.dispose();
     _polarAccountController.dispose();
     _intenseGpsSerialController.dispose();
     super.dispose();
@@ -231,6 +246,7 @@ class _WearableDevicesDialogContentState
       WearableDeviceType.whoop => state.whoopConfig?.connected == true,
       WearableDeviceType.strava => state.stravaConfig?.connected == true,
       WearableDeviceType.polar => state.polarConfig?.connected == true,
+      WearableDeviceType.oura => state.ouraConfig?.connected == true,
       WearableDeviceType.fitbit => state.fitbitConfig?.connected == true,
       WearableDeviceType.appleHealth =>
         state.appleHealthConfig?.connected == true,
@@ -269,6 +285,11 @@ class _WearableDevicesDialogContentState
       _showConnectError(context.l10n.whoopAccountHintRequired);
       return;
     }
+    if (_selectedType == WearableDeviceType.oura &&
+        _ouraAccountController.text.trim().isEmpty) {
+      _showConnectError(context.l10n.ouraAccountHintRequired);
+      return;
+    }
     if (_selectedType == WearableDeviceType.polar &&
         _polarAccountController.text.trim().isEmpty) {
       _showConnectError(context.l10n.polarAccountHintRequired);
@@ -293,6 +314,16 @@ class _WearableDevicesDialogContentState
           if (!mounted) return;
           if (result != WhoopConnectResult.success) {
             _showConnectError(_whoopConnectMessage(result));
+          }
+        case WearableDeviceType.oura:
+          final result = await OuraSyncService.instance.startOAuth(
+            playerId: widget.playerId,
+            initiatedBy: widget.initiatedBy,
+            ouraAccountHint: _ouraAccountController.text.trim(),
+          );
+          if (!mounted) return;
+          if (result != OuraConnectResult.success) {
+            _showConnectError(_ouraConnectMessage(result));
           }
         case WearableDeviceType.strava:
           final result = await StravaSyncService.instance.startOAuth(
@@ -376,6 +407,7 @@ class _WearableDevicesDialogContentState
       _showConnectError(
         switch (_selectedType) {
           WearableDeviceType.whoop => context.l10n.whoopConnectFailed,
+          WearableDeviceType.oura => context.l10n.ouraConnectFailed,
           WearableDeviceType.strava => context.l10n.stravaConnectFailed,
           WearableDeviceType.polar => context.l10n.polarConnectFailed,
           WearableDeviceType.fitbit => context.l10n.fitbitConnectFailed,
@@ -406,6 +438,15 @@ class _WearableDevicesDialogContentState
       WhoopConnectResult.launchFailed => l10n.whoopConnectLaunchFailed,
       WhoopConnectResult.unauthenticated => l10n.whoopConnectAuthRequired,
       _ => l10n.whoopConnectFailed,
+    };
+  }
+
+  String _ouraConnectMessage(OuraConnectResult result) {
+    final l10n = context.l10n;
+    return switch (result) {
+      OuraConnectResult.launchFailed => l10n.ouraConnectLaunchFailed,
+      OuraConnectResult.unauthenticated => l10n.ouraConnectAuthRequired,
+      _ => l10n.ouraConnectFailed,
     };
   }
 
@@ -487,6 +528,8 @@ class _WearableDevicesDialogContentState
       final ok = switch (type) {
         WearableDeviceType.whoop =>
           await WhoopSyncService.instance.disconnect(playerId: widget.playerId),
+        WearableDeviceType.oura =>
+          await OuraSyncService.instance.disconnect(playerId: widget.playerId),
         WearableDeviceType.strava => await StravaSyncService.instance
             .disconnect(playerId: widget.playerId),
         WearableDeviceType.polar =>
@@ -506,6 +549,7 @@ class _WearableDevicesDialogContentState
       if (!ok) {
         final message = switch (type) {
           WearableDeviceType.whoop => context.l10n.whoopDisconnectFailed,
+          WearableDeviceType.oura => context.l10n.ouraDisconnectFailed,
           WearableDeviceType.strava => context.l10n.stravaDisconnectFailed,
           WearableDeviceType.polar => context.l10n.polarDisconnectFailed,
           WearableDeviceType.fitbit => context.l10n.fitbitDisconnectFailed,
@@ -543,6 +587,10 @@ class _WearableDevicesDialogContentState
           connected
               ? l10n.whoopCoachConnectConnectedSubtitle(widget.playerName!)
               : l10n.whoopCoachConnectSubtitle(widget.playerName!),
+        WearableDeviceType.oura =>
+          connected
+              ? l10n.ouraCoachConnectConnectedSubtitle(widget.playerName!)
+              : l10n.ouraCoachConnectSubtitle(widget.playerName!),
         WearableDeviceType.strava =>
           connected
               ? l10n.stravaCoachConnectConnectedSubtitle(widget.playerName!)
@@ -581,6 +629,7 @@ class _WearableDevicesDialogContentState
           }
         : switch (type) {
             WearableDeviceType.whoop => l10n.whoopConnectToggleSubtitle,
+            WearableDeviceType.oura => l10n.ouraConnectToggleSubtitle,
             WearableDeviceType.strava => l10n.stravaConnectToggleSubtitle,
             WearableDeviceType.polar => l10n.polarConnectToggleSubtitle,
             WearableDeviceType.fitbit => l10n.fitbitConnectToggleSubtitle,
@@ -600,6 +649,7 @@ class _WearableDevicesDialogContentState
     }
     return switch (type) {
       WearableDeviceType.whoop => l10n.whoopConnectToggleSubtitle,
+      WearableDeviceType.oura => l10n.ouraConnectToggleSubtitle,
       WearableDeviceType.strava => l10n.stravaConnectToggleSubtitle,
       WearableDeviceType.polar => l10n.polarConnectToggleSubtitle,
       WearableDeviceType.fitbit => l10n.fitbitConnectToggleSubtitle,
@@ -623,6 +673,7 @@ class _WearableDevicesDialogContentState
       WearableDeviceType.strava =>
         state.stravaConfig?.stravaAccountHint?.trim(),
       WearableDeviceType.whoop => state.whoopConfig?.whoopAccountHint?.trim(),
+      WearableDeviceType.oura => state.ouraConfig?.ouraAccountHint?.trim(),
       WearableDeviceType.polar => state.polarConfig?.polarAccountHint?.trim(),
       WearableDeviceType.gpsInsidersIntense =>
         state.intenseGpsConfig?.serialNumber?.trim(),
@@ -707,6 +758,7 @@ class _WearableDevicesDialogContentState
     WhoopSyncConfig? whoopConfig;
     StravaSyncConfig? stravaConfig;
     PolarSyncConfig? polarConfig;
+    OuraSyncConfig? ouraConfig;
     FitbitSyncConfig? fitbitConfig;
     AppleHealthSyncConfig? appleHealthConfig;
     GoogleHealthSyncConfig? googleHealthConfig;
@@ -719,6 +771,7 @@ class _WearableDevicesDialogContentState
           whoopConfig: whoopConfig,
           stravaConfig: stravaConfig,
           polarConfig: polarConfig,
+          ouraConfig: ouraConfig,
           fitbitConfig: fitbitConfig,
           appleHealthConfig: appleHealthConfig,
           googleHealthConfig: googleHealthConfig,
@@ -743,6 +796,12 @@ class _WearableDevicesDialogContentState
         .watchConfig(syncOwnerUid, widget.playerId)
         .listen((config) {
       polarConfig = config;
+      emit();
+    });
+    final ouraSub = _ouraRepository
+        .watchConfig(syncOwnerUid, widget.playerId)
+        .listen((config) {
+      ouraConfig = config;
       emit();
     });
     final fitbitSub = _fitbitRepository
@@ -774,6 +833,7 @@ class _WearableDevicesDialogContentState
       await whoopSub.cancel();
       await stravaSub.cancel();
       await polarSub.cancel();
+      await ouraSub.cancel();
       await fitbitSub.cancel();
       await appleHealthSub.cancel();
       await googleHealthSub.cancel();
@@ -801,6 +861,19 @@ class _WearableDevicesDialogContentState
           uid: syncOwnerUid,
           playerId: widget.playerId,
           visibility: config?.coachVisibility ?? const WhoopCoachVisibility(),
+          contentPadding: EdgeInsets.zero,
+          dense: true,
+        );
+      case WearableDeviceType.oura:
+        final config = state.ouraConfig;
+        if (config?.connected != true) return null;
+        if (config?.initiatedBy != 'player' && config?.initiatedBy != null) {
+          return null;
+        }
+        return OuraCoachVisibilitySection(
+          uid: syncOwnerUid,
+          playerId: widget.playerId,
+          visibility: config?.coachVisibility ?? const OuraCoachVisibility(),
           contentPadding: EdgeInsets.zero,
           dense: true,
         );
@@ -1171,6 +1244,16 @@ class _WearableDevicesDialogContentState
               placeholder: l10n.whoopAccountHintPlaceholder,
               syncDisabled: syncDisabled,
             ),
+          if (!selectedConnected && selectedType == WearableDeviceType.oura)
+            _buildAccountHintField(
+              colors: colors,
+              l10n: l10n,
+              controller: _ouraAccountController,
+              guidance: l10n.ouraAccountHintGuidance,
+              label: l10n.ouraAccountHintLabel,
+              placeholder: l10n.ouraAccountHintPlaceholder,
+              syncDisabled: syncDisabled,
+            ),
           if (!selectedConnected && selectedType == WearableDeviceType.polar)
             _buildAccountHintField(
               colors: colors,
@@ -1238,6 +1321,7 @@ class _WearableDevicesDialogContentState
                 switch (selectedType) {
                   WearableDeviceType.strava => l10n.stravaConnectContinue,
                   WearableDeviceType.whoop => l10n.whoopConnectContinue,
+                  WearableDeviceType.oura => l10n.ouraConnectContinue,
                   WearableDeviceType.polar => l10n.polarConnectContinue,
                   _ => l10n.settingsDevicesSync,
                 },
@@ -1254,6 +1338,7 @@ class _WearableDialogState {
     this.whoopConfig,
     this.stravaConfig,
     this.polarConfig,
+    this.ouraConfig,
     this.fitbitConfig,
     this.appleHealthConfig,
     this.googleHealthConfig,
@@ -1263,6 +1348,7 @@ class _WearableDialogState {
   final WhoopSyncConfig? whoopConfig;
   final StravaSyncConfig? stravaConfig;
   final PolarSyncConfig? polarConfig;
+  final OuraSyncConfig? ouraConfig;
   final FitbitSyncConfig? fitbitConfig;
   final AppleHealthSyncConfig? appleHealthConfig;
   final GoogleHealthSyncConfig? googleHealthConfig;

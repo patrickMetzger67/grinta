@@ -6,6 +6,7 @@ enum WearableDeviceType {
   whoop,
   strava,
   polar,
+  oura,
   fitbit,
   appleHealth,
   googleHealthConnect,
@@ -17,6 +18,7 @@ enum WearableDeviceType {
     WearableDeviceType.whoop,
     WearableDeviceType.strava,
     WearableDeviceType.polar,
+    WearableDeviceType.oura,
     WearableDeviceType.appleHealth,
     WearableDeviceType.googleHealthConnect,
     WearableDeviceType.gpsInsidersIntense,
@@ -36,6 +38,8 @@ enum WearableDeviceType {
         return l10n.wearableDeviceStrava;
       case WearableDeviceType.polar:
         return l10n.wearableDevicePolar;
+      case WearableDeviceType.oura:
+        return l10n.wearableDeviceOura;
       case WearableDeviceType.fitbit:
         return l10n.wearableDeviceFitbit;
       case WearableDeviceType.appleHealth:
@@ -55,6 +59,8 @@ enum WearableDeviceType {
         return Icons.directions_run_outlined;
       case WearableDeviceType.polar:
         return Icons.favorite_outline;
+      case WearableDeviceType.oura:
+        return Icons.nightlight_round;
       case WearableDeviceType.fitbit:
         return Icons.watch_outlined;
       case WearableDeviceType.appleHealth:

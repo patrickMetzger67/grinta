@@ -2913,6 +2913,18 @@ class AppLocalizationsIt extends AppLocalizations {
   @override
   String get createPersonalSportWhoopNoImportable =>
       'No Whoop workouts to import.';
+  @override
+  String get createPersonalSportOuraActivity => 'Attività Oura';
+
+  @override
+  String get createPersonalSportOuraDeployRequired => 'L\'import Oura non è ancora deployato. Esegui firebase deploy per ouraListActivities e ouraImportActivity.';
+
+  @override
+  String get createPersonalSportOuraLoadError => 'Impossibile caricare le attività Oura. Controlla la connessione e riprova.';
+
+  @override
+  String get createPersonalSportOuraNoImportable => 'Nessun allenamento Oura da importare.';
+
 
   @override
   String get createPersonalSportAppleActivity => 'Apple Fitness activity';
@@ -4108,6 +4120,9 @@ class AppLocalizationsIt extends AppLocalizations {
 
   @override
   String get wearableDevicePolar => 'Polar';
+  @override
+  String get wearableDeviceOura => 'Oura';
+
 
   @override
   String get wearableDeviceFitbit => 'Fitbit';
@@ -4206,6 +4221,91 @@ class AppLocalizationsIt extends AppLocalizations {
   @override
   String whoopCoachConnectConnectedSubtitle(String playerName) {
     return 'Whoop connesso per $playerName';
+  }
+
+  @override
+  String get ouraConnectToggleLabel => 'Sinc. Oura';
+
+  @override
+  String get ouraConnectToggleSubtitle => 'Collega il tuo account Oura per importare readiness, sonno e allenamenti';
+
+  @override
+  String get ouraConnectToggleConnectedSubtitle => 'Oura connesso — sincronizzazione dati in Fase 2';
+
+  @override
+  String get ouraConnectSuccess => 'Account Oura connesso.';
+
+  @override
+  String get ouraAccountHintGuidance => 'La tua email Oura può essere diversa dal tuo account Grinta. Inserisci l\'account Oura da usare, poi accedi con quell\'account nella pagina Oura.';
+
+  @override
+  String get ouraAccountHintLabel => 'Account Oura';
+
+  @override
+  String get ouraAccountHintPlaceholder => 'email Oura';
+
+  @override
+  String get ouraAccountHintRequired => 'Inserisci il tuo account Oura (email) prima di continuare.';
+
+  @override
+  String get ouraConnectContinue => 'Continua su Oura';
+
+  @override
+  String get ouraConnectFailed => 'Connessione Oura non riuscita. Verifica che le Cloud Functions Oura siano deployate e che i secret OURA_CLIENT_ID / OURA_CLIENT_SECRET siano configurati.';
+
+  @override
+  String get ouraConnectLaunchFailed => 'Impossibile aprire la pagina di accesso Oura.';
+
+  @override
+  String get ouraConnectAuthRequired => 'Accedi a Grinta per collegare Oura.';
+
+  @override
+  String get ouraDisconnectFailed => 'Disconnessione Oura non riuscita.';
+
+  @override
+  String get ouraCoachVisibilityTitle => 'Visibilità coach';
+
+  @override
+  String get ouraCoachVisibilitySubtitle => 'Consenti al coach di vedere questo tipo di dati';
+
+  @override
+  String get ouraCoachVisibilitySaveFailed => 'Impossibile salvare le preferenze Oura.';
+
+  @override
+  String get ouraMetricReadiness => 'Readiness';
+
+  @override
+  String get ouraMetricSleep => 'Sonno';
+
+  @override
+  String get ouraMetricActivity => 'Attività quotidiana';
+
+  @override
+  String get ouraMetricWorkout => 'Allenamenti';
+
+  @override
+  String get ouraMetricPersonal => 'Info personali';
+
+  @override
+  String get ouraMetricHeartrate => 'Frequenza cardiaca';
+
+  @override
+  String get ouraMetricSpo2 => 'SpO2';
+
+  @override
+  String get ouraCoachConnectTitle => 'Oura';
+
+  @override
+  String ouraCoachConnectSubtitle(String playerName) {
+    return 'Collega Oura per ${playerName}';
+  }
+
+  @override
+  String get ouraCoachConnectAction => 'Collega';
+
+  @override
+  String ouraCoachConnectConnectedSubtitle(String playerName) {
+    return 'Oura connesso per ${playerName}';
   }
 
   @override

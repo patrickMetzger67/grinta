@@ -5128,6 +5128,30 @@ abstract class AppLocalizations {
   /// In fr, this message translates to:
   /// **'Aucune séance Whoop à importer.'**
   String get createPersonalSportWhoopNoImportable;
+  /// No description provided for @createPersonalSportOuraActivity.
+  ///
+  /// In fr, this message translates to:
+  /// **'Activité Oura'**
+  String get createPersonalSportOuraActivity;
+
+  /// No description provided for @createPersonalSportOuraDeployRequired.
+  ///
+  /// In fr, this message translates to:
+  /// **'L\'import Oura n\'est pas encore déployé. Lance firebase deploy pour ouraListActivities et ouraImportActivity.'**
+  String get createPersonalSportOuraDeployRequired;
+
+  /// No description provided for @createPersonalSportOuraLoadError.
+  ///
+  /// In fr, this message translates to:
+  /// **'Impossible de charger les activités Oura. Vérifie la connexion et réessaie.'**
+  String get createPersonalSportOuraLoadError;
+
+  /// No description provided for @createPersonalSportOuraNoImportable.
+  ///
+  /// In fr, this message translates to:
+  /// **'Aucun entraînement Oura à importer.'**
+  String get createPersonalSportOuraNoImportable;
+
 
   /// No description provided for @createPersonalSportAppleActivity.
   ///
@@ -7133,6 +7157,12 @@ abstract class AppLocalizations {
   /// In fr, this message translates to:
   /// **'Polar'**
   String get wearableDevicePolar;
+  /// No description provided for @wearableDeviceOura.
+  ///
+  /// In fr, this message translates to:
+  /// **'Oura'**
+  String get wearableDeviceOura;
+
 
   /// No description provided for @wearableDeviceFitbit.
   ///
@@ -7307,6 +7337,168 @@ abstract class AppLocalizations {
   /// In fr, this message translates to:
   /// **'Whoop connecté pour {playerName}'**
   String whoopCoachConnectConnectedSubtitle(String playerName);
+  /// No description provided for @ouraConnectToggleLabel.
+  ///
+  /// In fr, this message translates to:
+  /// **'Sync. Oura'**
+  String get ouraConnectToggleLabel;
+
+  /// No description provided for @ouraConnectToggleSubtitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Connecte ton compte Oura pour importer readiness, sommeil et entraînements'**
+  String get ouraConnectToggleSubtitle;
+
+  /// No description provided for @ouraConnectToggleConnectedSubtitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Oura connecté — synchronisation des données à venir (Phase 2)'**
+  String get ouraConnectToggleConnectedSubtitle;
+
+  /// No description provided for @ouraConnectSuccess.
+  ///
+  /// In fr, this message translates to:
+  /// **'Compte Oura connecté.'**
+  String get ouraConnectSuccess;
+
+  /// No description provided for @ouraAccountHintGuidance.
+  ///
+  /// In fr, this message translates to:
+  /// **'L\'email Oura peut être différent de ton compte Grinta. Indique le compte Oura à utiliser, puis connecte-toi avec ce compte sur la page Oura.'**
+  String get ouraAccountHintGuidance;
+
+  /// No description provided for @ouraAccountHintLabel.
+  ///
+  /// In fr, this message translates to:
+  /// **'Compte Oura'**
+  String get ouraAccountHintLabel;
+
+  /// No description provided for @ouraAccountHintPlaceholder.
+  ///
+  /// In fr, this message translates to:
+  /// **'email Oura'**
+  String get ouraAccountHintPlaceholder;
+
+  /// No description provided for @ouraAccountHintRequired.
+  ///
+  /// In fr, this message translates to:
+  /// **'Indique ton compte Oura (email) avant de continuer.'**
+  String get ouraAccountHintRequired;
+
+  /// No description provided for @ouraConnectContinue.
+  ///
+  /// In fr, this message translates to:
+  /// **'Continuer vers Oura'**
+  String get ouraConnectContinue;
+
+  /// No description provided for @ouraConnectFailed.
+  ///
+  /// In fr, this message translates to:
+  /// **'La connexion Oura a échoué. Vérifie que les Cloud Functions Oura sont déployées et que les secrets OURA_CLIENT_ID / OURA_CLIENT_SECRET sont configurés.'**
+  String get ouraConnectFailed;
+
+  /// No description provided for @ouraConnectLaunchFailed.
+  ///
+  /// In fr, this message translates to:
+  /// **'Impossible d\'ouvrir la page de connexion Oura.'**
+  String get ouraConnectLaunchFailed;
+
+  /// No description provided for @ouraConnectAuthRequired.
+  ///
+  /// In fr, this message translates to:
+  /// **'Connecte-toi à Grinta pour lier Oura.'**
+  String get ouraConnectAuthRequired;
+
+  /// No description provided for @ouraDisconnectFailed.
+  ///
+  /// In fr, this message translates to:
+  /// **'La déconnexion Oura a échoué.'**
+  String get ouraDisconnectFailed;
+
+  /// No description provided for @ouraCoachVisibilityTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Visibilité coach'**
+  String get ouraCoachVisibilityTitle;
+
+  /// No description provided for @ouraCoachVisibilitySubtitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Autorise ton coach à voir ce type de données'**
+  String get ouraCoachVisibilitySubtitle;
+
+  /// No description provided for @ouraCoachVisibilitySaveFailed.
+  ///
+  /// In fr, this message translates to:
+  /// **'Impossible d’enregistrer les préférences Oura.'**
+  String get ouraCoachVisibilitySaveFailed;
+
+  /// No description provided for @ouraMetricReadiness.
+  ///
+  /// In fr, this message translates to:
+  /// **'Readiness'**
+  String get ouraMetricReadiness;
+
+  /// No description provided for @ouraMetricSleep.
+  ///
+  /// In fr, this message translates to:
+  /// **'Sommeil'**
+  String get ouraMetricSleep;
+
+  /// No description provided for @ouraMetricActivity.
+  ///
+  /// In fr, this message translates to:
+  /// **'Activité quotidienne'**
+  String get ouraMetricActivity;
+
+  /// No description provided for @ouraMetricWorkout.
+  ///
+  /// In fr, this message translates to:
+  /// **'Entraînements'**
+  String get ouraMetricWorkout;
+
+  /// No description provided for @ouraMetricPersonal.
+  ///
+  /// In fr, this message translates to:
+  /// **'Infos personnelles'**
+  String get ouraMetricPersonal;
+
+  /// No description provided for @ouraMetricHeartrate.
+  ///
+  /// In fr, this message translates to:
+  /// **'Fréquence cardiaque'**
+  String get ouraMetricHeartrate;
+
+  /// No description provided for @ouraMetricSpo2.
+  ///
+  /// In fr, this message translates to:
+  /// **'SpO2'**
+  String get ouraMetricSpo2;
+
+  /// No description provided for @ouraCoachConnectTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Oura'**
+  String get ouraCoachConnectTitle;
+
+  /// No description provided for @ouraCoachConnectSubtitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Connecter Oura pour {playerName}'**
+  String ouraCoachConnectSubtitle(String playerName);
+
+  /// No description provided for @ouraCoachConnectAction.
+  ///
+  /// In fr, this message translates to:
+  /// **'Connecter'**
+  String get ouraCoachConnectAction;
+
+  /// No description provided for @ouraCoachConnectConnectedSubtitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Oura connecté pour {playerName}'**
+  String ouraCoachConnectConnectedSubtitle(String playerName);
+
 
   /// No description provided for @stravaConnectToggleSubtitle.
   ///

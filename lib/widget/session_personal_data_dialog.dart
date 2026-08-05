@@ -12,6 +12,7 @@ import 'package:grinta/services/personal_gps_sync_service.dart';
 import 'package:grinta/services/polar_sync_service.dart';
 import 'package:grinta/services/session_personal_data_service.dart';
 import 'package:grinta/services/strava_sync_service.dart';
+import 'package:grinta/services/oura_sync_service.dart';
 import 'package:grinta/services/whoop_sync_service.dart';
 import 'package:grinta/util/app_snackbar.dart';
 import 'package:grinta/util/app_theme.dart';
@@ -170,6 +171,8 @@ class _SessionPersonalDataDialogState extends State<SessionPersonalDataDialog> {
   PolarImportableActivity? _selectedPolar;
   List<WhoopImportableActivity> _whoopActivities = const [];
   WhoopImportableActivity? _selectedWhoop;
+  List<OuraImportableActivity> _ouraActivities = const [];
+  OuraImportableActivity? _selectedOura;
   List<AppleHealthImportableActivity> _appleActivities = const [];
   AppleHealthImportableActivity? _selectedApple;
   List<GoogleHealthImportableActivity> _googleActivities = const [];
@@ -257,6 +260,8 @@ class _SessionPersonalDataDialogState extends State<SessionPersonalDataDialog> {
         await PolarSyncService.instance.repository.getConfig(uid, playerId);
     final whoopConfig =
         await WhoopSyncService.instance.repository.getConfig(uid, playerId);
+    final ouraConfig =
+        await OuraSyncService.instance.repository.getConfig(uid, playerId);
     final appleConfig =
         await AppleHealthSyncService.instance.repository.getConfig(uid, playerId);
     final googleConfig = await GoogleHealthSyncService.instance.repository
@@ -272,6 +277,9 @@ class _SessionPersonalDataDialogState extends State<SessionPersonalDataDialog> {
     }
     if (whoopConfig?.connected == true) {
       connected.add(WearableDeviceType.whoop);
+    }
+    if (ouraConfig?.connected == true) {
+      connected.add(WearableDeviceType.oura);
     }
     if (appleConfig?.connected == true) {
       connected.add(WearableDeviceType.appleHealth);
@@ -338,6 +346,18 @@ class _SessionPersonalDataDialogState extends State<SessionPersonalDataDialog> {
       });
       return;
     }
+    if (source == WearableDeviceType.oura) {
+      final result = await OuraSyncService.instance
+          .listImportableActivities(playerId: playerId);
+      if (!mounted) return;
+      setState(() {
+        _ouraActivities = result.activities;
+        _selectedOura =
+            result.activities.isNotEmpty ? result.activities.first : null;
+        _loadingImportActivities = false;
+      });
+      return;
+    }
     if (source == WearableDeviceType.appleHealth) {
       final result = await AppleHealthSyncService.instance
           .listImportableActivities(playerId: playerId);
@@ -374,6 +394,8 @@ class _SessionPersonalDataDialogState extends State<SessionPersonalDataDialog> {
         return l10n.wearableDevicePolar;
       case WearableDeviceType.whoop:
         return l10n.wearableDeviceWhoop;
+      case WearableDeviceType.oura:
+        return l10n.wearableDeviceOura;
       case WearableDeviceType.appleHealth:
         return l10n.wearableDeviceAppleHealth;
       case WearableDeviceType.googleHealthConnect:
@@ -519,6 +541,18 @@ class _SessionPersonalDataDialogState extends State<SessionPersonalDataDialog> {
       durationSeconds = selected.durationSeconds;
       distanceMeters = selected.distanceMeters;
       sourceId = 'whoop';
+    } else if (source == WearableDeviceType.oura) {
+      final selected = _selectedOura;
+      if (selected == null) {
+        AppSnackbar.show(
+          context,
+          context.l10n.createPersonalSportImportRequired,
+        );
+        return;
+      }
+      durationSeconds = selected.durationSeconds;
+      distanceMeters = selected.distanceMeters;
+      sourceId = 'oura';
     } else if (source == WearableDeviceType.appleHealth) {
       final selected = _selectedApple;
       if (selected == null) {
@@ -826,6 +860,44 @@ class _SessionPersonalDataDialogState extends State<SessionPersonalDataDialog> {
             }
           }
           setState(() => _selectedWhoop = match);
+        },
+      );
+    }
+
+    if (source == WearableDeviceType.oura) {
+      if (_ouraActivities.isEmpty) {
+        return Text(
+          l10n.createPersonalSportOuraNoImportable,
+          style: TextStyle(color: colors.textSecondary),
+        );
+      }
+      return DropdownButtonFormField<String>(
+        isExpanded: true,
+        value: _selectedOura?.externalId,
+        decoration: InputDecoration(
+          labelText: l10n.createPersonalSportOuraActivity,
+        ),
+        items: [
+          for (final activity in _ouraActivities)
+            DropdownMenuItem(
+              value: activity.externalId,
+              child: Text(
+                activity.displayLabel,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                softWrap: false,
+              ),
+            ),
+        ],
+        onChanged: (id) {
+          OuraImportableActivity? match;
+          for (final activity in _ouraActivities) {
+            if (activity.externalId == id) {
+              match = activity;
+              break;
+            }
+          }
+          setState(() => _selectedOura = match);
         },
       );
     }

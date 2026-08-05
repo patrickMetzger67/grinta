@@ -2,7 +2,7 @@
 
 Phase 1 delivers OAuth connect/disconnect plus **manual import of Whoop workouts** into personal sport activities (same UX as Strava / Polar). Continuous recovery/sleep sync, webhooks, and coach roster badges remain Phase 2.
 
-> **Related:** Strava, Polar, and Fitbit use the same **Appareils/Applications** settings UI. See [Strava integration](./strava-integration.md), [Polar integration](./polar-integration.md), and [Fitbit integration](./fitbit-integration.md).
+> **Related:** Strava, Polar, Fitbit, and Oura use the same **Appareils/Applications** settings UI. See [Strava integration](./strava-integration.md), [Polar integration](./polar-integration.md), [Fitbit integration](./fitbit-integration.md), and [Oura integration](./oura-integration.md).
 
 ## 1. Create a Whoop developer app
 
