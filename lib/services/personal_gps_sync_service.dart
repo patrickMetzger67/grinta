@@ -158,7 +158,9 @@ class PersonalGpsSyncService {
       '[PersonalGps] sync → ownerDevice=${device.deviceOwner.id} '
       'insiders=${device.insidersDeviceId} '
       'start=${window.toCloudPayload()['start']} '
-      'stop=${window.toCloudPayload()['stop']}',
+      'stop=${window.toCloudPayload()['stop']} '
+      'startLocal=${startAt.toIso8601String()} '
+      'stopLocal=${stopAt.toIso8601String()}',
     );
 
     // Empty GNSS windows return null (no exception) so the UI can prompt
@@ -170,7 +172,25 @@ class PersonalGpsSyncService {
       treatEmptyAsSuccess: true,
       onProgress: (t) => onStage?.call(t.stage),
     );
-    return outcome?.result;
+
+    if (outcome == null) {
+      debugPrint('[PersonalGps] sync → empty GNSS window (null outcome)');
+      return null;
+    }
+
+    logIntenseSampleTimestampRange(
+      'PersonalGps kept samples',
+      outcome.samples,
+      window: window,
+    );
+    debugPrint(
+      '[PersonalGps] sync result → '
+      'duration=${outcome.result.duration.inMinutes}m'
+      '${outcome.result.duration.inSeconds.remainder(60)}s '
+      'distanceKm=${outcome.result.distanceKm.toStringAsFixed(3)} '
+      'samples=${outcome.result.samplesCount}',
+    );
+    return outcome.result;
   }
 
   /// Maps analysis metrics to personal-sport duration / distance / pace.
