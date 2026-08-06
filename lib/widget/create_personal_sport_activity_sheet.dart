@@ -122,7 +122,6 @@ class _CreatePersonalSportActivitySheetState
   late DateTime _date;
   late TimeOfDay _time;
   bool _manualEntry = true;
-  bool _useMyGps = false;
   bool _submitting = false;
   bool _loadingTypes = true;
   bool _loadingImportActivities = false;
@@ -195,8 +194,10 @@ class _CreatePersonalSportActivitySheetState
       }
     } else {
       final now = DateTime.now();
-      _date = DateUtils.dateOnly(widget.initialDate ?? now);
-      _time = widget.initialTime ?? TimeOfDay(hour: now.hour, minute: 0);
+      final defaultStart = now.subtract(const Duration(hours: 2));
+      _date = DateUtils.dateOnly(widget.initialDate ?? defaultStart);
+      _time = widget.initialTime ??
+          TimeOfDay(hour: defaultStart.hour, minute: defaultStart.minute);
     }
     _loadTypes();
     if (!_isEditMode && !_readOnly) {
@@ -249,6 +250,10 @@ class _CreatePersonalSportActivitySheetState
       !_readOnly &&
       _gpsAvailability != null &&
       _gpsAvailability!.devices.isNotEmpty;
+
+  bool get _importingFromGps =>
+      !_manualEntry &&
+      _importSource == WearableDeviceType.gpsInsidersIntense;
 
   void _closeWithoutSaving() {
     if (_submitting) return;
@@ -352,6 +357,12 @@ class _CreatePersonalSportActivitySheetState
     final googleConfig = await googleFuture;
     if (!mounted) return;
 
+    // Ensure personal Intense GPS is resolved before building the source list.
+    if (_gpsAvailability == null) {
+      await _loadGpsOwnerAvailability();
+      if (!mounted) return;
+    }
+
     final connected = <WearableDeviceType>[];
     if (stravaConfig?.connected == true) {
       connected.add(WearableDeviceType.strava);
@@ -367,6 +378,9 @@ class _CreatePersonalSportActivitySheetState
     }
     if (googleConfig?.connected == true) {
       connected.add(WearableDeviceType.googleHealthConnect);
+    }
+    if (_canUseMyGps) {
+      connected.add(WearableDeviceType.gpsInsidersIntense);
     }
 
     setState(() {
@@ -403,6 +417,13 @@ class _CreatePersonalSportActivitySheetState
     }
     if (source == WearableDeviceType.googleHealthConnect) {
       await _loadGoogleHealthActivities();
+      return;
+    }
+    if (source == WearableDeviceType.gpsInsidersIntense) {
+      // Window-based sync (start → now), no discrete activity list.
+      if (mounted) {
+        setState(() => _loadingImportActivities = false);
+      }
       return;
     }
     if (mounted) {
@@ -611,8 +632,9 @@ class _CreatePersonalSportActivitySheetState
         return l10n.wearableDeviceAppleHealth;
       case WearableDeviceType.googleHealthConnect:
         return l10n.wearableDeviceGoogleHealthConnect;
-      case WearableDeviceType.fitbit:
       case WearableDeviceType.gpsInsidersIntense:
+        return l10n.wearableDeviceGpsInsidersIntense;
+      case WearableDeviceType.fitbit:
         return source.label(l10n);
     }
   }
@@ -633,15 +655,15 @@ class _CreatePersonalSportActivitySheetState
     setState(() => _submitting = true);
     try {
       final existing = widget.activityToEdit;
-      if (!_isEditMode && _useMyGps) {
-        await _submitFromGps(
-          uid: uid,
-          playerId: playerId,
-          session: session,
-        );
-        return;
-      }
       if (!_isEditMode && !_manualEntry) {
+        if (_importSource == WearableDeviceType.gpsInsidersIntense) {
+          await _submitFromGps(
+            uid: uid,
+            playerId: playerId,
+            session: session,
+          );
+          return;
+        }
         PersonalSportActivity? imported;
         if (_importSource == WearableDeviceType.strava &&
             _selectedStrava != null) {
@@ -910,7 +932,7 @@ class _CreatePersonalSportActivitySheetState
       useRootNavigator: true,
       builder: (dialogContext) {
         return AlertDialog(
-          title: Text(l10n.createPersonalSportUseMyGps),
+          title: Text(l10n.wearableDeviceGpsInsidersIntense),
           content: Text(
             '${l10n.createPersonalSportGpsNoData}\n\n'
             '${l10n.createPersonalSportGpsManualEntryQuestion}',
@@ -930,8 +952,8 @@ class _CreatePersonalSportActivitySheetState
     );
     if (!mounted || useManual != true) return;
     setState(() {
-      _useMyGps = false;
       _manualEntry = true;
+      _importSource = null;
     });
   }
 
@@ -1001,110 +1023,15 @@ class _CreatePersonalSportActivitySheetState
                   ),
                   value: _manualEntry,
                   activeColor: colors.primary,
-                  onChanged: _useMyGps
-                      ? null
-                      : (value) {
-                          setState(() {
-                            _manualEntry = value;
-                            if (!value) _useMyGps = false;
-                          });
-                          if (!value) {
-                            _loadConnectedAppsAndActivities();
-                          }
-                        },
-                ),
-              if (_loadingGpsOwner && !_isEditMode)
-                const Padding(
-                  padding: EdgeInsets.symmetric(vertical: 8),
-                  child: Center(child: CircularProgressIndicator()),
-                )
-              else if (_canUseMyGps)
-                SwitchListTile.adaptive(
-                  contentPadding: EdgeInsets.zero,
-                  title: Text(l10n.createPersonalSportUseMyGps),
-                  subtitle: Text(
-                    l10n.createPersonalSportUseMyGpsHint,
-                    style: TextStyle(
-                      color: colors.textSecondary,
-                      fontSize: 13,
-                    ),
-                  ),
-                  value: _useMyGps,
-                  activeColor: colors.primary,
                   onChanged: (value) {
-                    setState(() {
-                      _useMyGps = value;
-                      if (value) {
-                        _manualEntry = true;
-                        _clearImportSelections();
-                        _importSource = null;
-                      }
-                    });
+                    setState(() => _manualEntry = value);
+                    if (!value) {
+                      _loadConnectedAppsAndActivities();
+                    }
                   },
                 ),
-              if (_useMyGps && _canUseMyGps) ...[
-                if (_gpsAvailability!.devices.length > 1) ...[
-                  const SizedBox(height: 8),
-                  DropdownButtonFormField<String>(
-                    value: _selectedGpsDevice?.deviceOwner.id,
-                    decoration: InputDecoration(
-                      labelText: l10n.createPersonalSportGpsDevice,
-                    ),
-                    items: [
-                      for (final device in _gpsAvailability!.devices)
-                        DropdownMenuItem(
-                          value: device.deviceOwner.id,
-                          child: Text(device.label),
-                        ),
-                    ],
-                    onChanged: (id) {
-                      if (id == null) return;
-                      PersonalGpsDeviceOption? match;
-                      for (final device in _gpsAvailability!.devices) {
-                        if (device.deviceOwner.id == id) {
-                          match = device;
-                          break;
-                        }
-                      }
-                      setState(() => _selectedGpsDevice = match);
-                    },
-                  ),
-                ],
-                const SizedBox(height: 8),
-                Text(
-                  l10n.createPersonalSportGpsMetricsHint,
-                  style: TextStyle(
-                    color: colors.textSecondary,
-                    fontSize: 13,
-                  ),
-                ),
-              ],
               const SizedBox(height: 8),
-              if (_useMyGps) ...[
-                if (_loadingTypes)
-                  const Center(child: CircularProgressIndicator())
-                else
-                  DropdownButtonFormField<String>(
-                    value: _typeId,
-                    decoration: InputDecoration(
-                      labelText: l10n.createPersonalSportType,
-                    ),
-                    items: [
-                      for (final type in _types)
-                        DropdownMenuItem(
-                          value: type.id,
-                          child: Text(type.labelForLocale(locale)),
-                        ),
-                    ],
-                    onChanged: _readOnly
-                        ? null
-                        : (value) {
-                            if (value != null) {
-                              setState(() => _typeId = value);
-                            }
-                          },
-                  ),
-              ] else if (_manualEntry || _isEditMode) ...[
+              if (_manualEntry || _isEditMode) ...[
                 _MetricTile(
                   label: l10n.createPersonalSportDuration,
                   value: _duration.inSeconds > 0
@@ -1211,7 +1138,67 @@ class _CreatePersonalSportActivitySheetState
                     },
                   ),
                   const SizedBox(height: 12),
-                  if (_loadingImportActivities)
+                  if (_importingFromGps) ...[
+                    if (_gpsAvailability != null &&
+                        _gpsAvailability!.devices.length > 1) ...[
+                      DropdownButtonFormField<String>(
+                        value: _selectedGpsDevice?.deviceOwner.id,
+                        decoration: InputDecoration(
+                          labelText: l10n.createPersonalSportGpsDevice,
+                        ),
+                        items: [
+                          for (final device in _gpsAvailability!.devices)
+                            DropdownMenuItem(
+                              value: device.deviceOwner.id,
+                              child: Text(device.label),
+                            ),
+                        ],
+                        onChanged: (id) {
+                          if (id == null) return;
+                          PersonalGpsDeviceOption? match;
+                          for (final device in _gpsAvailability!.devices) {
+                            if (device.deviceOwner.id == id) {
+                              match = device;
+                              break;
+                            }
+                          }
+                          setState(() => _selectedGpsDevice = match);
+                        },
+                      ),
+                      const SizedBox(height: 8),
+                    ],
+                    Text(
+                      l10n.createPersonalSportGpsMetricsHint,
+                      style: TextStyle(
+                        color: colors.textSecondary,
+                        fontSize: 13,
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    if (_loadingTypes)
+                      const Center(child: CircularProgressIndicator())
+                    else
+                      DropdownButtonFormField<String>(
+                        value: _typeId,
+                        decoration: InputDecoration(
+                          labelText: l10n.createPersonalSportType,
+                        ),
+                        items: [
+                          for (final type in _types)
+                            DropdownMenuItem(
+                              value: type.id,
+                              child: Text(type.labelForLocale(locale)),
+                            ),
+                        ],
+                        onChanged: _readOnly
+                            ? null
+                            : (value) {
+                                if (value != null) {
+                                  setState(() => _typeId = value);
+                                }
+                              },
+                      ),
+                  ] else if (_loadingImportActivities)
                     const Center(child: CircularProgressIndicator())
                   else if (_importSource == WearableDeviceType.strava &&
                       _stravaActivities.isEmpty)
@@ -1521,7 +1508,7 @@ class _CreatePersonalSportActivitySheetState
                                 ),
                               )
                             : Text(
-                                _useMyGps
+                                _importingFromGps
                                     ? l10n.createPersonalSportGpsSubmit
                                     : _isEditMode
                                         ? l10n.editPersonalSportSubmit

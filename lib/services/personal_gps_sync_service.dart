@@ -5,6 +5,7 @@ import 'package:grinta/model/tracker/trackerData.dart';
 import 'package:grinta/services/deviceOwnerService.dart';
 import 'package:grinta/services/ownerService.dart';
 import 'package:grinta/services/training_intense_sync_service.dart';
+import 'package:grinta/util/intense_live_eligibility.dart';
 import 'package:grinta/util/insiders_device_resolver.dart';
 import 'package:uuid/uuid.dart';
 
@@ -57,7 +58,12 @@ class PersonalGpsSyncService {
     final normalized = email.trim();
     if (normalized.isEmpty) return const [];
 
-    final owners = await _ownerService.getOwnersByEmail(normalized);
+    // Firestore email match is case-sensitive — try exact then lowercase.
+    var owners = await _ownerService.getOwnersByEmail(normalized);
+    final lower = normalized.toLowerCase();
+    if (owners.isEmpty && lower != normalized) {
+      owners = await _ownerService.getOwnersByEmail(lower);
+    }
     final individuals = owners
         .where((o) => o.isActive && o.isIndividual)
         .toList(growable: false);
@@ -82,8 +88,10 @@ class PersonalGpsSyncService {
     final candidates = await resolveIndividualOwnersForEmail(email);
     if (candidates.isEmpty) return null;
 
-    final gpsCandidates =
-        candidates.where((o) => !o.withSyncing).toList(growable: false);
+    // Prefer cloud Intense kits (handles omitted withSyncing on older docs).
+    final gpsCandidates = candidates
+        .where(ownerUsesIntenseCloudSync)
+        .toList(growable: false);
     if (gpsCandidates.isEmpty) return null;
 
     for (final owner in gpsCandidates) {
