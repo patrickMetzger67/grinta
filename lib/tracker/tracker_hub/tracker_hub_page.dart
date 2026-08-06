@@ -39,6 +39,7 @@ import '../../usb/asi_protocol.dart';
 import '../../usb/asi_usb_client.dart';
 import '../../usb/asi_usb_factory.dart';
 import '../../util/app_theme.dart';
+import '../../util/training_usb_sync_window.dart';
 import '../../widget/proPitchView.dart';
 
 part 'tracker_hub_cards.dart';
@@ -156,17 +157,17 @@ class _TrackerHubPageState extends State<TrackerHubPage> {
 
 
   Future<void> getData() async {
-
     TimeRange firsthalf = TimeRange(start: null, end: null);
     TimeRange senddHalf = TimeRange(start: null, end: null);
 
-    if(widget.isMatch) {
-      final hls = await HighlightsService().getHighlightsByMatchCalendarId(widget.eventId);
-      for(var hl in hls) {
-        if(hl.actionType == ActionType.timeEvent) {
+    if (widget.isMatch) {
+      final hls =
+          await HighlightsService().getHighlightsByMatchCalendarId(widget.eventId);
+      for (var hl in hls) {
+        if (hl.actionType == ActionType.timeEvent) {
           final timeEvent = hl.value as TimeEvent;
-          switch(timeEvent.type) {
-            case  TimeType.kickOff: // début match
+          switch (timeEvent.type) {
+            case TimeType.kickOff: // début match
               firsthalf.start = hl.dateTime!;
               break;
             case TimeType.startExtraTime:
@@ -182,14 +183,37 @@ class _TrackerHubPageState extends State<TrackerHubPage> {
               break;
             case null:
               throw UnimplementedError();
-
           }
         }
       }
       matchPeriods.add(firsthalf);
       matchPeriods.add(senddHalf);
+    } else {
+      // USB / withSyncing=true: keep only samples inside the training slot
+      // [dateTime, dateTime + duration], otherwise previous pod sessions leak in.
+      final training = await TrainingService().getTrainingById(widget.eventId);
+      final periods = training == null
+          ? const <TimeRange>[]
+          : resolveTrainingUsbSyncPeriods(training);
+      if (periods.isEmpty) {
+        debugPrint(
+          '[TrackerHub] training USB sync window missing '
+          '(eventId=${widget.eventId} dateTime=${training?.dateTime} '
+          'duration=${training?.duration}) — samples will NOT be time-filtered',
+        );
+      } else {
+        final p = periods.first;
+        debugPrint(
+          '[TrackerHub] training USB sync window → '
+          'start=${p.start.toDate().toIso8601String()} '
+          'end=${p.end.toDate().toIso8601String()} '
+          '(${training?.duration} min)',
+        );
+        matchPeriods.addAll(periods);
+      }
     }
 
+    if (!mounted) return;
     setState(() {
       isDataLoaded = true;
     });
