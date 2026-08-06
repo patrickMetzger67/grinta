@@ -152,6 +152,7 @@ Renseigner au minimum `REVENUECAT_IOS_API_KEY_PROD` (clé publique `appl_…` de
 - [ ] **Pages légales accessibles :**
   - Politique de confidentialité : https://grinta.io/privacy
   - Conditions d'utilisation : https://grinta.io/terms (vérifier que la page est bien en ligne avant soumission)
+  - En cas de refus **3.1.2** (lien EULA manquant dans les métadonnées) : [app-store-rejection-3-1-2-eula.md](./app-store-rejection-3-1-2-eula.md)
 
 ### Phase 1 — Enregistrer l'app et le bundle ID
 
@@ -276,7 +277,7 @@ flutter build ipa \
 | Capture d'écran paywall manquante | Rejet systématique pour les IAP |
 | Politique de confidentialité inaccessible | Rejet App Review |
 | Guideline 2.1 (App Completeness) | L'app doit être fonctionnelle sans crash au lancement ; login testable |
-| Guideline 3.1.2 (Subscriptions) | Lien vers CGU et politique de confidentialité visibles dans l'app avant achat |
+| Guideline 3.1.2 (Subscriptions) | Lien vers CGU et politique de confidentialité visibles dans l'app **et** dans la Description App Store (EULA). Voir [refus 3.1.2 EULA](./app-store-rejection-3-1-2-eula.md) |
 | Build « Missing Compliance » | Répondre à la question export compliance dans ASC (souvent « Non » si pas de chiffrement custom) |
 | Sandbox vs production | En TestFlight, les achats passent par le sandbox Apple si le testeur utilise un compte sandbox ; pas besoin de build debug |
 
