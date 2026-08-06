@@ -5,6 +5,8 @@ import 'package:grinta/model/tracker/trackerData.dart';
 import 'package:grinta/services/deviceOwnerService.dart';
 import 'package:grinta/services/ownerService.dart';
 import 'package:grinta/services/training_intense_sync_service.dart';
+import 'package:grinta/util/gps_distance_smoothing.dart';
+import 'package:grinta/util/intense_live_eligibility.dart';
 import 'package:grinta/util/insiders_device_resolver.dart';
 import 'package:uuid/uuid.dart';
 
@@ -34,6 +36,25 @@ class PersonalGpsOwnerAvailability {
   final List<PersonalGpsDeviceOption> devices;
 }
 
+/// Result of a personal GPS window sync (analysis + sample time bounds).
+class PersonalGpsSyncResult {
+  const PersonalGpsSyncResult({
+    required this.analysis,
+    required this.firstSampleAt,
+    required this.lastSampleAt,
+    required this.durationSeconds,
+    required this.distanceMeters,
+    required this.paceSecondsPerKm,
+  });
+
+  final TrackerAnalysisResult analysis;
+  final DateTime firstSampleAt;
+  final DateTime lastSampleAt;
+  final int durationSeconds;
+  final double distanceMeters;
+  final int? paceSecondsPerKm;
+}
+
 /// Resolves individual Intense owners (`withSyncing == false`) by profile email
 /// and syncs GNSS via the same Insiders pipeline as training finish.
 class PersonalGpsSyncService {
@@ -57,7 +78,12 @@ class PersonalGpsSyncService {
     final normalized = email.trim();
     if (normalized.isEmpty) return const [];
 
-    final owners = await _ownerService.getOwnersByEmail(normalized);
+    // Firestore email match is case-sensitive — try exact then lowercase.
+    var owners = await _ownerService.getOwnersByEmail(normalized);
+    final lower = normalized.toLowerCase();
+    if (owners.isEmpty && lower != normalized) {
+      owners = await _ownerService.getOwnersByEmail(lower);
+    }
     final individuals = owners
         .where((o) => o.isActive && o.isIndividual)
         .toList(growable: false);
@@ -82,8 +108,10 @@ class PersonalGpsSyncService {
     final candidates = await resolveIndividualOwnersForEmail(email);
     if (candidates.isEmpty) return null;
 
-    final gpsCandidates =
-        candidates.where((o) => !o.withSyncing).toList(growable: false);
+    // Prefer cloud Intense kits (handles omitted withSyncing on older docs).
+    final gpsCandidates = candidates
+        .where(ownerUsesIntenseCloudSync)
+        .toList(growable: false);
     if (gpsCandidates.isEmpty) return null;
 
     for (final owner in gpsCandidates) {
@@ -120,7 +148,7 @@ class PersonalGpsSyncService {
   }
 
   /// Syncs [device] over [[startAt], [stopAt]] and returns analyzed metrics.
-  Future<TrackerAnalysisResult?> syncWindow({
+  Future<PersonalGpsSyncResult?> syncWindow({
     required PersonalGpsDeviceOption device,
     required String playerId,
     required DateTime startAt,
@@ -150,7 +178,9 @@ class PersonalGpsSyncService {
       '[PersonalGps] sync → ownerDevice=${device.deviceOwner.id} '
       'insiders=${device.insidersDeviceId} '
       'start=${window.toCloudPayload()['start']} '
-      'stop=${window.toCloudPayload()['stop']}',
+      'stop=${window.toCloudPayload()['stop']} '
+      'startLocal=${startAt.toIso8601String()} '
+      'stopLocal=${stopAt.toIso8601String()}',
     );
 
     // Empty GNSS windows return null (no exception) so the UI can prompt
@@ -162,24 +192,79 @@ class PersonalGpsSyncService {
       treatEmptyAsSuccess: true,
       onProgress: (t) => onStage?.call(t.stage),
     );
-    return outcome?.result;
+
+    if (outcome == null || outcome.samples.isEmpty) {
+      debugPrint('[PersonalGps] sync → empty GNSS window (null outcome)');
+      return null;
+    }
+
+    final samples = List<TrackerRaw>.from(outcome.samples)
+      ..sort((a, b) => a.timeMs.compareTo(b.timeMs));
+    final first = samples.first;
+    final last = samples.last;
+    final firstSampleAt =
+        DateTime.fromMillisecondsSinceEpoch(first.timeMs, isUtc: true).toLocal();
+    final lastSampleAt =
+        DateTime.fromMillisecondsSinceEpoch(last.timeMs, isUtc: true).toLocal();
+
+    logIntenseSampleTimestampRange(
+      'PersonalGps kept samples',
+      samples,
+      window: window,
+    );
+
+    final metrics = metricsFromAnalysis(outcome.result);
+    debugPrint(
+      '[PersonalGps] sync result → '
+      'sampleStart=${firstSampleAt.toIso8601String()} '
+      'sampleEnd=${lastSampleAt.toIso8601String()} '
+      'duration=${metrics.durationSeconds}s '
+      'distanceKm=${(metrics.distanceMeters / 1000).toStringAsFixed(3)} '
+      'paceSecPerKm=${metrics.paceSecondsPerKm} '
+      'samples=${outcome.result.samplesCount}',
+    );
+
+    return PersonalGpsSyncResult(
+      analysis: outcome.result,
+      firstSampleAt: firstSampleAt,
+      lastSampleAt: lastSampleAt,
+      durationSeconds: metrics.durationSeconds,
+      distanceMeters: metrics.distanceMeters,
+      paceSecondsPerKm: metrics.paceSecondsPerKm,
+    );
   }
 
   /// Maps analysis metrics to personal-sport duration / distance / pace.
+  ///
+  /// Applies a max average-speed clamp so residual GNSS jitter cannot invent
+  /// absurd paces (e.g. 2:00 /km from a walk).
   static ({
     int durationSeconds,
     double distanceMeters,
     int? paceSecondsPerKm,
   }) metricsFromAnalysis(TrackerAnalysisResult result) {
     final durationSeconds = result.duration.inSeconds.clamp(0, 24 * 3600);
-    final distanceMeters = (result.distanceKm * 1000).clamp(0, 1000000);
+    final rawDistanceMeters = (result.distanceKm * 1000).clamp(0, 1000000);
+    final distanceMeters = clampPersonalGpsDistanceMeters(
+      distanceMeters: rawDistanceMeters.toDouble(),
+      durationSeconds: durationSeconds,
+    );
+    if (distanceMeters < rawDistanceMeters) {
+      debugPrint(
+        '[PersonalGps] distance clamped → '
+        'rawKm=${result.distanceKm.toStringAsFixed(3)} '
+        'clampedKm=${(distanceMeters / 1000).toStringAsFixed(3)} '
+        'duration=${durationSeconds}s',
+      );
+    }
     int? paceSecondsPerKm;
-    if (result.distanceKm > 0 && durationSeconds > 0) {
-      paceSecondsPerKm = (durationSeconds / result.distanceKm).round();
+    if (distanceMeters > 0 && durationSeconds > 0) {
+      paceSecondsPerKm =
+          (durationSeconds / (distanceMeters / 1000.0)).round();
     }
     return (
       durationSeconds: durationSeconds,
-      distanceMeters: distanceMeters.toDouble(),
+      distanceMeters: distanceMeters,
       paceSecondsPerKm: paceSecondsPerKm,
     );
   }

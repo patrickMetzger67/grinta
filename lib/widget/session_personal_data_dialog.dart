@@ -155,7 +155,6 @@ class _SessionPersonalDataDialogState extends State<SessionPersonalDataDialog> {
 
   bool _loading = true;
   bool _submitting = false;
-  bool _useMyGps = false;
 
   PersonalGpsOwnerAvailability? _gpsAvailability;
   PersonalGpsDeviceOption? _selectedGpsDevice;
@@ -226,13 +225,11 @@ class _SessionPersonalDataDialogState extends State<SessionPersonalDataDialog> {
       _gpsAvailability = gps;
       _selectedGpsDevice =
           gps?.devices.isNotEmpty == true ? gps!.devices.first : null;
-      _useMyGps = gps != null;
+      // GPS appears in the App / device import list when available.
       _loading = false;
     });
 
-    if (!_useMyGps) {
-      await _loadConnectedAppsAndActivities();
-    }
+    await _loadConnectedAppsAndActivities();
   }
 
   bool get _canUseMyGps =>
@@ -278,6 +275,9 @@ class _SessionPersonalDataDialogState extends State<SessionPersonalDataDialog> {
     }
     if (googleConfig?.connected == true) {
       connected.add(WearableDeviceType.googleHealthConnect);
+    }
+    if (_canUseMyGps) {
+      connected.add(WearableDeviceType.gpsInsidersIntense);
     }
 
     setState(() {
@@ -362,6 +362,10 @@ class _SessionPersonalDataDialogState extends State<SessionPersonalDataDialog> {
       });
       return;
     }
+    if (source == WearableDeviceType.gpsInsidersIntense) {
+      if (mounted) setState(() => _loadingImportActivities = false);
+      return;
+    }
     if (mounted) setState(() => _loadingImportActivities = false);
   }
 
@@ -378,8 +382,9 @@ class _SessionPersonalDataDialogState extends State<SessionPersonalDataDialog> {
         return l10n.wearableDeviceAppleHealth;
       case WearableDeviceType.googleHealthConnect:
         return l10n.wearableDeviceGoogleHealthConnect;
-      case WearableDeviceType.fitbit:
       case WearableDeviceType.gpsInsidersIntense:
+        return l10n.wearableDeviceGpsInsidersIntense;
+      case WearableDeviceType.fitbit:
         return source.label(l10n);
     }
   }
@@ -394,7 +399,7 @@ class _SessionPersonalDataDialogState extends State<SessionPersonalDataDialog> {
 
     setState(() => _submitting = true);
     try {
-      if (_useMyGps) {
+      if (_importSource == WearableDeviceType.gpsInsidersIntense) {
         await _submitGps(playerId);
       } else {
         await _submitApp(playerId);
@@ -458,7 +463,14 @@ class _SessionPersonalDataDialogState extends State<SessionPersonalDataDialog> {
       );
       if (!mounted) return;
       if (useManual == true) {
-        setState(() => _useMyGps = false);
+        setState(() {
+          _importSource = _connectedSources.isEmpty
+              ? null
+              : _connectedSources.firstWhere(
+                  (s) => s != WearableDeviceType.gpsInsidersIntense,
+                  orElse: () => _connectedSources.first,
+                );
+        });
         await _loadConnectedAppsAndActivities();
       }
       return;
@@ -594,95 +606,80 @@ class _SessionPersonalDataDialogState extends State<SessionPersonalDataDialog> {
                         fontSize: 13,
                       ),
                     ),
-                    if (_canUseMyGps) ...[
+                    const SizedBox(height: 12),
+                    if (_connectedSources.isEmpty)
+                      Text(
+                        l10n.createPersonalSportNoConnectedApps,
+                        style: TextStyle(color: colors.textSecondary),
+                      )
+                    else ...[
+                      DropdownButtonFormField<WearableDeviceType>(
+                        value: _importSource,
+                        decoration: InputDecoration(
+                          labelText: l10n.createPersonalSportImportSource,
+                        ),
+                        items: [
+                          for (final source in _connectedSources)
+                            DropdownMenuItem(
+                              value: source,
+                              child: Text(_labelForImportSource(source)),
+                            ),
+                        ],
+                        onChanged: _submitting
+                            ? null
+                            : (value) {
+                                if (value == null) return;
+                                setState(() => _importSource = value);
+                                _loadImportActivitiesForSource(value);
+                              },
+                      ),
                       const SizedBox(height: 12),
-                      SwitchListTile.adaptive(
-                        contentPadding: EdgeInsets.zero,
-                        title: Text(l10n.createPersonalSportUseMyGps),
-                        subtitle: Text(
+                      if (_importSource ==
+                          WearableDeviceType.gpsInsidersIntense) ...[
+                        if (_gpsAvailability != null &&
+                            _gpsAvailability!.devices.length > 1) ...[
+                          DropdownButtonFormField<String>(
+                            value: _selectedGpsDevice?.deviceOwner.id,
+                            decoration: InputDecoration(
+                              labelText: l10n.createPersonalSportGpsDevice,
+                            ),
+                            items: [
+                              for (final device in _gpsAvailability!.devices)
+                                DropdownMenuItem(
+                                  value: device.deviceOwner.id,
+                                  child: Text(device.label),
+                                ),
+                            ],
+                            onChanged: _submitting
+                                ? null
+                                : (id) {
+                                    if (id == null) return;
+                                    PersonalGpsDeviceOption? match;
+                                    for (final device
+                                        in _gpsAvailability!.devices) {
+                                      if (device.deviceOwner.id == id) {
+                                        match = device;
+                                        break;
+                                      }
+                                    }
+                                    setState(
+                                      () => _selectedGpsDevice = match,
+                                    );
+                                  },
+                          ),
+                          const SizedBox(height: 8),
+                        ],
+                        Text(
                           l10n.sessionPersonalDataGpsHint,
                           style: TextStyle(
                             color: colors.textSecondary,
                             fontSize: 13,
                           ),
                         ),
-                        value: _useMyGps,
-                        activeColor: colors.primary,
-                        onChanged: _submitting
-                            ? null
-                            : (value) async {
-                                setState(() => _useMyGps = value);
-                                if (!value) {
-                                  await _loadConnectedAppsAndActivities();
-                                }
-                              },
-                      ),
-                      if (_useMyGps &&
-                          _gpsAvailability!.devices.length > 1) ...[
-                        const SizedBox(height: 8),
-                        DropdownButtonFormField<String>(
-                          value: _selectedGpsDevice?.deviceOwner.id,
-                          decoration: InputDecoration(
-                            labelText: l10n.createPersonalSportGpsDevice,
-                          ),
-                          items: [
-                            for (final device in _gpsAvailability!.devices)
-                              DropdownMenuItem(
-                                value: device.deviceOwner.id,
-                                child: Text(device.label),
-                              ),
-                          ],
-                          onChanged: _submitting
-                              ? null
-                              : (id) {
-                                  if (id == null) return;
-                                  PersonalGpsDeviceOption? match;
-                                  for (final device
-                                      in _gpsAvailability!.devices) {
-                                    if (device.deviceOwner.id == id) {
-                                      match = device;
-                                      break;
-                                    }
-                                  }
-                                  setState(() => _selectedGpsDevice = match);
-                                },
-                        ),
-                      ],
-                    ],
-                    if (!_useMyGps) ...[
-                      const SizedBox(height: 12),
-                      if (_connectedSources.isEmpty)
-                        Text(
-                          l10n.createPersonalSportNoConnectedApps,
-                          style: TextStyle(color: colors.textSecondary),
-                        )
-                      else ...[
-                        DropdownButtonFormField<WearableDeviceType>(
-                          value: _importSource,
-                          decoration: InputDecoration(
-                            labelText: l10n.createPersonalSportImportSource,
-                          ),
-                          items: [
-                            for (final source in _connectedSources)
-                              DropdownMenuItem(
-                                value: source,
-                                child: Text(_labelForImportSource(source)),
-                              ),
-                          ],
-                          onChanged: _submitting
-                              ? null
-                              : (value) {
-                                  if (value == null) return;
-                                  setState(() => _importSource = value);
-                                  _loadImportActivitiesForSource(value);
-                                },
-                        ),
-                        const SizedBox(height: 12),
-                        if (_loadingImportActivities)
-                          const Center(child: CircularProgressIndicator())
-                        else
-                          _buildActivityPicker(),
-                      ],
+                      ] else if (_loadingImportActivities)
+                        const Center(child: CircularProgressIndicator())
+                      else
+                        _buildActivityPicker(),
                     ],
                   ],
                 ),
@@ -702,7 +699,7 @@ class _SessionPersonalDataDialogState extends State<SessionPersonalDataDialog> {
                   child: CircularProgressIndicator(strokeWidth: 2),
                 )
               : Text(
-                  _useMyGps
+                  _importSource == WearableDeviceType.gpsInsidersIntense
                       ? l10n.sessionPersonalDataGpsSubmit
                       : l10n.sessionPersonalDataAppSubmit,
                 ),

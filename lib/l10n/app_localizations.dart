@@ -5039,6 +5039,12 @@ abstract class AppLocalizations {
   /// **'Heure'**
   String get createPersonalSportTime;
 
+  /// No description provided for @createPersonalSportTimeRequired.
+  ///
+  /// In fr, this message translates to:
+  /// **'Indique l'heure de début'**
+  String get createPersonalSportTimeRequired;
+
   /// No description provided for @createPersonalSportManualEntry.
   ///
   /// In fr, this message translates to:

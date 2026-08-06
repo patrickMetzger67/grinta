@@ -326,9 +326,10 @@ bool canResyncMatchIntense({
 
 /// GNSS step floor for Intense analysis.
 ///
-/// Must stay **0** to match the Live pipeline ([IntenseLiveDataService]): a
-/// non-zero floor (e.g. 3 m) zeroes distance at typical Insiders sample rates
-/// (sub-second steps are often under 3 m even at running speed).
+/// Kept at **0**: a non-zero floor (e.g. 3 m) zeroes distance at typical
+/// Insiders rates (sub-second steps are often under 3 m even when running).
+/// Anti-jitter for Live / training / match / personal GPS is handled inside
+/// [SensorAnalysisService] via [GpsDistanceSmoother] (median windows + speed gate).
 const double kIntenseMinMeaningfulStepDistanceMeters = 0;
 
 /// Keeps only samples whose timestamps fall within [window] (inclusive).
@@ -343,6 +344,54 @@ List<TrackerRaw> intenseSamplesWithinWindow(
   return samples
       .where((s) => s.timeMs >= startMs && s.timeMs <= stopMs)
       .toList(growable: false);
+}
+
+/// Logs first / last sample timestamps (min/max by timeMs) for console diagnosis.
+void logIntenseSampleTimestampRange(
+  String label,
+  List<TrackerRaw> samples, {
+  TrainingIntenseTimeWindow? window,
+}) {
+  if (samples.isEmpty) {
+    debugPrint('[IntenseSync] $label → 0 samples (no first/last timestamp)');
+    if (window != null) {
+      debugPrint(
+        '[IntenseSync] $label window → '
+        'start=${formatInsidersApiTimestamp(window.start)} '
+        'stop=${formatInsidersApiTimestamp(window.stop)}',
+      );
+    }
+    return;
+  }
+
+  var first = samples.first;
+  var last = samples.first;
+  for (final sample in samples) {
+    if (sample.timeMs < first.timeMs) first = sample;
+    if (sample.timeMs > last.timeMs) last = sample;
+  }
+
+  final firstAt = DateTime.fromMillisecondsSinceEpoch(first.timeMs, isUtc: true);
+  final lastAt = DateTime.fromMillisecondsSinceEpoch(last.timeMs, isUtc: true);
+  final span = Duration(milliseconds: last.timeMs - first.timeMs);
+
+  debugPrint(
+    '[IntenseSync] $label → count=${samples.length} '
+    'firstUtc=${firstAt.toIso8601String()} '
+    'lastUtc=${lastAt.toIso8601String()} '
+    'firstLocal=${firstAt.toLocal().toIso8601String()} '
+    'lastLocal=${lastAt.toLocal().toIso8601String()} '
+    'span=${span.inMinutes}m${span.inSeconds.remainder(60)}s '
+    'firstMs=${first.timeMs} lastMs=${last.timeMs}',
+  );
+  if (window != null) {
+    debugPrint(
+      '[IntenseSync] $label window → '
+      'start=${formatInsidersApiTimestamp(window.start)} '
+      'stop=${formatInsidersApiTimestamp(window.stop)} '
+      'startMs=${window.startMs} stopMs=${window.stopMs}',
+    );
+  }
 }
 
 /// Cloud + optional local fallback for Intense tracker recovery at training finish.
@@ -568,7 +617,19 @@ class TrainingIntenseSyncService {
         samples = _samplesFromCsv(csv, trackerId: target.trackerId);
       }
 
+      logIntenseSampleTimestampRange(
+        'samples BEFORE window filter (${target.trackerLabel})',
+        samples,
+        window: window,
+      );
+
       samples = intenseSamplesWithinWindow(samples, window);
+
+      logIntenseSampleTimestampRange(
+        'samples AFTER window filter (${target.trackerLabel})',
+        samples,
+        window: window,
+      );
 
       if (samples.length < _minRequiredSamples) {
         debugPrint(
@@ -607,6 +668,14 @@ class TrainingIntenseSyncService {
         isMatch: isMatch,
         fieldGps: fieldGps,
         minMeaningfulStepDistanceMeters: kIntenseMinMeaningfulStepDistanceMeters,
+      );
+
+      debugPrint(
+        '[IntenseSync] analysis metrics (${target.trackerLabel}) → '
+        'duration=${result.duration.inMinutes}m'
+        '${result.duration.inSeconds.remainder(60)}s '
+        'distanceKm=${result.distanceKm.toStringAsFixed(3)} '
+        'samplesCount=${result.samplesCount}',
       );
 
       emit(IntenseDeviceSyncStage.done, 1);

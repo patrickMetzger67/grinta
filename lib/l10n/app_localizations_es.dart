@@ -2871,6 +2871,9 @@ class AppLocalizationsEs extends AppLocalizations {
   String get createPersonalSportTime => 'Time';
 
   @override
+  String get createPersonalSportTimeRequired => 'Choose a start time';
+
+  @override
   String get createPersonalSportManualEntry => 'Manual entry';
 
   @override
