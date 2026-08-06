@@ -891,6 +891,13 @@ class AppLocalizationsEs extends AppLocalizations {
       'No se pudo marcar la notificación como leída.';
 
   @override
+  String get notificationsDismiss => 'No volver a mostrar';
+
+  @override
+  String get notificationsDismissError =>
+      'No se pudo ocultar la notificación.';
+
+  @override
   String get notificationsConvocationMatchDetails => 'Detalles del partido';
 
   @override

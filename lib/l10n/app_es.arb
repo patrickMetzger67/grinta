@@ -444,6 +444,8 @@
   "notificationsEmptyMessage": "No tienes notificaciones sin leer.",
   "notificationsMarkAsRead": "Marcar como leída",
   "notificationsMarkAsReadError": "No se pudo marcar la notificación como leída.",
+  "notificationsDismiss": "No volver a mostrar",
+  "notificationsDismissError": "No se pudo ocultar la notificación.",
   "notificationsConvocationMatchDetails": "Detalles del partido",
   "notificationsConvocationPresent": "Estaré presente",
   "notificationsConvocationAbsent": "No presente",

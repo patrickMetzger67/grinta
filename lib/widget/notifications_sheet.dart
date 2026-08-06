@@ -442,11 +442,6 @@ class _NotificationListTileState extends State<_NotificationListTile> {
   bool _isMarkingRead = false;
   bool _isConvocationActionInProgress = false;
 
-  static const _readCheckboxTypes = {NotifType.match, NotifType.highlights};
-
-  bool get _showsReadCheckbox =>
-      _readCheckboxTypes.contains(widget.notification.type);
-
   bool get _showsConvocationActions =>
       widget.notification.type == NotifType.convocation;
 
@@ -673,9 +668,14 @@ class _NotificationListTileState extends State<_NotificationListTile> {
       if (!mounted) return;
       setState(() => _isMarkingRead = false);
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(context.l10n.notificationsMarkAsReadError)),
+        SnackBar(content: Text(context.l10n.notificationsDismissError)),
       );
     }
+  }
+
+  Future<void> _dismissNotification() async {
+    if (_isMarkingRead || _isConvocationActionInProgress) return;
+    await _markAsRead();
   }
 
   List<String> _sessionTeamIds(AppSession session) {
@@ -921,19 +921,33 @@ class _NotificationListTileState extends State<_NotificationListTile> {
                   ],
                 ),
               ),
-              if (_showsReadCheckbox)
-                Tooltip(
-                  message: l10n.notificationsMarkAsRead,
-                  child: Semantics(
-                    label: l10n.notificationsMarkAsRead,
-                    checked: false,
-                    child: Checkbox(
-                      value: false,
-                      activeColor: colors.primary,
-                      onChanged: _isMarkingRead ? null : (_) => _markAsRead(),
-                    ),
+              Tooltip(
+                message: l10n.notificationsDismiss,
+                child: IconButton(
+                  visualDensity: VisualDensity.compact,
+                  padding: EdgeInsets.zero,
+                  constraints: const BoxConstraints(
+                    minWidth: 36,
+                    minHeight: 36,
                   ),
+                  icon: _isMarkingRead
+                      ? SizedBox(
+                          width: 18,
+                          height: 18,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2,
+                            color: colors.textSecondary,
+                          ),
+                        )
+                      : Icon(
+                          Icons.close_rounded,
+                          color: colors.textSecondary,
+                        ),
+                  onPressed: (_isMarkingRead || _isConvocationActionInProgress)
+                      ? null
+                      : _dismissNotification,
                 ),
+              ),
             ],
           ),
           if (_showsConvocationActions) ...[

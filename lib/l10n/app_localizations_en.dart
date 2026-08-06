@@ -883,6 +883,13 @@ class AppLocalizationsEn extends AppLocalizations {
       'Could not mark notification as read.';
 
   @override
+  String get notificationsDismiss => 'Don\'t show again';
+
+  @override
+  String get notificationsDismissError =>
+      'Could not hide this notification.';
+
+  @override
   String get notificationsConvocationMatchDetails => 'Match details';
 
   @override

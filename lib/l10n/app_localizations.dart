@@ -1666,6 +1666,18 @@ abstract class AppLocalizations {
   /// **'Impossible de marquer la notification comme lue.'**
   String get notificationsMarkAsReadError;
 
+  /// No description provided for @notificationsDismiss.
+  ///
+  /// In fr, this message translates to:
+  /// **'Ne plus afficher'**
+  String get notificationsDismiss;
+
+  /// No description provided for @notificationsDismissError.
+  ///
+  /// In fr, this message translates to:
+  /// **'Impossible de masquer la notification.'**
+  String get notificationsDismissError;
+
   /// No description provided for @notificationsConvocationMatchDetails.
   ///
   /// In fr, this message translates to:

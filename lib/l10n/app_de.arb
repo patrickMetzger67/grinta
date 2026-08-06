@@ -444,6 +444,8 @@
   "notificationsEmptyMessage": "Sie haben keine ungelesenen Benachrichtigungen.",
   "notificationsMarkAsRead": "Als gelesen markieren",
   "notificationsMarkAsReadError": "Benachrichtigung konnte nicht als gelesen markiert werden.",
+  "notificationsDismiss": "Nicht mehr anzeigen",
+  "notificationsDismissError": "Benachrichtigung konnte nicht ausgeblendet werden.",
   "notificationsConvocationMatchDetails": "Spieldetails",
   "notificationsConvocationPresent": "Ich werde anwesend sein",
   "notificationsConvocationAbsent": "Nicht anwesend",
