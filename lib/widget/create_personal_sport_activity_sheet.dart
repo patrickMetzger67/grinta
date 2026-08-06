@@ -868,25 +868,29 @@ class _CreatePersonalSportActivitySheetState
     }
 
     try {
-      final analysis = await _gpsSyncService.syncWindow(
+      final sync = await _gpsSyncService.syncWindow(
         device: device,
         playerId: playerId,
         startAt: startAt,
         stopAt: stopAt,
       );
       if (!mounted) return;
-      if (analysis == null) {
+      if (sync == null) {
         await _promptGpsNoDataManualEntry();
         return;
       }
 
-      final metrics = PersonalGpsSyncService.metricsFromAnalysis(analysis);
-      if (metrics.durationSeconds <= 0 && metrics.distanceMeters <= 0) {
+      if (sync.durationSeconds <= 0 && sync.distanceMeters <= 0) {
         await _promptGpsNoDataManualEntry();
         return;
       }
 
-      final endAt = startAt.add(Duration(seconds: metrics.durationSeconds));
+      // Persist the real GNSS span (not the search window the user opened).
+      final activityStartAt = sync.firstSampleAt;
+      final activityEndAt = sync.lastSampleAt.isAfter(sync.firstSampleAt)
+          ? sync.lastSampleAt
+          : sync.firstSampleAt
+              .add(Duration(seconds: sync.durationSeconds));
       final typeLabel = ActivityTypesService.instance
               .byId(_typeId!)
               ?.labelForLocale(Localizations.localeOf(context)) ??
@@ -895,8 +899,8 @@ class _CreatePersonalSportActivitySheetState
       final activity = PersonalSportActivity(
         memberId: playerId,
         createdByUserId: uid,
-        startAt: startAt,
-        endAt: endAt,
+        startAt: activityStartAt,
+        endAt: activityEndAt,
         typeId: _typeId!,
         title: typeLabel,
         visibility: _visibility,
@@ -906,10 +910,10 @@ class _CreatePersonalSportActivitySheetState
             : _notesController.text.trim(),
         feeling: _feeling?.value,
         durationSeconds:
-            metrics.durationSeconds > 0 ? metrics.durationSeconds : null,
+            sync.durationSeconds > 0 ? sync.durationSeconds : null,
         distanceMeters:
-            metrics.distanceMeters > 0 ? metrics.distanceMeters : null,
-        paceSecondsPerKm: metrics.paceSecondsPerKm,
+            sync.distanceMeters > 0 ? sync.distanceMeters : null,
+        paceSecondsPerKm: sync.paceSecondsPerKm,
         distanceUnit: 'km',
         paceUnit: '/km',
         externalSource: PersonalGpsSyncService.externalSource,

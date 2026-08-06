@@ -3,56 +3,49 @@ import 'dart:math' as math;
 /// GNSS path smoothing for distance accumulation.
 ///
 /// High-rate Insiders samples (~10 Hz) include meter-scale jitter. Summing raw
-/// haversine steps inflates distance (e.g. "2 km" while barely moving).
-/// A hard step floor (e.g. 3 m) cannot fix this: at 10 Hz even real running
-/// steps are often under 1 m.
+/// haversine steps inflates distance (e.g. "2 km" in a few minutes while
+/// walking or nearly still).
 ///
 /// Approach:
-/// 1. EMA on lat/lon to damp high-frequency noise
-/// 2. Accumulate distance on ~1 s commits (net displacement, not jagged path)
-/// 3. Reject commits whose smoothed speed is below walking drift
+/// 1. Buffer fixes into time windows (~2 s)
+/// 2. Take the **median** lat/lon of each window (rejects outlier jumps)
+/// 3. Accumulate haversine between consecutive medians
+/// 4. Reject commits slower than [minDistanceSpeedMps] (stationary drift)
 class GpsDistanceSmoother {
   GpsDistanceSmoother({
-    this.alpha = defaultAlpha,
     this.minDistanceSpeedMps = defaultMinDistanceSpeedMps,
-    this.minCommitDtMs = defaultMinCommitDtMs,
+    this.windowMs = defaultWindowMs,
   });
 
-  /// EMA blend toward each new fix (0..1). Lower = stronger smoothing.
-  static const double defaultAlpha = 0.08;
-
-  /// Below this smoothed speed, treat displacement as stationary GNSS drift.
-  /// ~1.0 m/s ≈ 3.6 km/h — under normal walking (~5 km/h), cuts post-EMA wander.
+  /// Below this window speed, treat displacement as stationary GNSS drift.
+  /// ~1.0 m/s ≈ 3.6 km/h — under normal walking, above median-window wander.
   static const double defaultMinDistanceSpeedMps = 1.0;
 
-  /// Minimum time between distance commits. Net displacement over ~1 s is far
-  /// more stable than summing ~10 Hz micro-steps.
-  static const int defaultMinCommitDtMs = 1000;
+  /// Median window length. Longer ⇒ more noise rejection, less path detail.
+  static const int defaultWindowMs = 2000;
 
-  final double alpha;
   final double minDistanceSpeedMps;
-  final int minCommitDtMs;
+  final int windowMs;
 
-  double? _smoothLat;
-  double? _smoothLon;
-  double? _prevSmoothLat;
-  double? _prevSmoothLon;
+  final List<double> _windowLats = <double>[];
+  final List<double> _windowLons = <double>[];
+  int? _windowStartMs;
   int? _lastRawTimeMs;
-  int? _lastCommitTimeMs;
+  double? _prevMedLat;
+  double? _prevMedLon;
+  int? _prevMedTimeMs;
 
   void reset() {
-    _smoothLat = null;
-    _smoothLon = null;
-    _prevSmoothLat = null;
-    _prevSmoothLon = null;
+    _windowLats.clear();
+    _windowLons.clear();
+    _windowStartMs = null;
     _lastRawTimeMs = null;
-    _lastCommitTimeMs = null;
+    _prevMedLat = null;
+    _prevMedLon = null;
+    _prevMedTimeMs = null;
   }
 
-  /// Ingest one GNSS fix and return meters to add for this step (may be 0).
-  ///
-  /// On gaps larger than [maxDtMs] since the previous raw sample, the smoother
-  /// snaps to the new fix and returns 0.
+  /// Ingest one GNSS fix and return meters to add (0 when not committing).
   double ingest({
     required int timeMs,
     required double latitude,
@@ -62,55 +55,71 @@ class GpsDistanceSmoother {
     required double maxPlausibleSpeedMps,
     double minMeaningfulStepDistanceMeters = 0,
   }) {
-    if (_smoothLat == null ||
-        _smoothLon == null ||
-        _lastRawTimeMs == null ||
-        _lastCommitTimeMs == null) {
-      _smoothLat = latitude;
-      _smoothLon = longitude;
-      _prevSmoothLat = latitude;
-      _prevSmoothLon = longitude;
-      _lastRawTimeMs = timeMs;
-      _lastCommitTimeMs = timeMs;
-      return 0;
+    if (_lastRawTimeMs != null) {
+      final dtRawMs = timeMs - _lastRawTimeMs!;
+      if (dtRawMs <= 0) return 0;
+      if (dtRawMs > maxDtMs) {
+        _clearWindow();
+        _prevMedLat = null;
+        _prevMedLon = null;
+        _prevMedTimeMs = null;
+        _lastRawTimeMs = timeMs;
+        _openWindow(timeMs, latitude, longitude);
+        return 0;
+      }
     }
-
-    final dtRawMs = timeMs - _lastRawTimeMs!;
-    if (dtRawMs <= 0) return 0;
     _lastRawTimeMs = timeMs;
 
-    if (dtRawMs > maxDtMs) {
-      _smoothLat = latitude;
-      _smoothLon = longitude;
-      _prevSmoothLat = latitude;
-      _prevSmoothLon = longitude;
-      _lastCommitTimeMs = timeMs;
+    if (_windowStartMs == null) {
+      _openWindow(timeMs, latitude, longitude);
       return 0;
     }
 
-    final a = alpha.clamp(0.01, 1.0);
-    _smoothLat = a * latitude + (1 - a) * _smoothLat!;
-    _smoothLon = a * longitude + (1 - a) * _smoothLon!;
+    _windowLats.add(latitude);
+    _windowLons.add(longitude);
 
-    final commitDtMs = timeMs - _lastCommitTimeMs!;
-    final requiredCommitDt = math.max(minDtMs, minCommitDtMs);
-    if (commitDtMs < requiredCommitDt) {
+    if (timeMs - _windowStartMs! < windowMs) {
       return 0;
     }
 
-    final prevLat = _prevSmoothLat!;
-    final prevLon = _prevSmoothLon!;
-    final currLat = _smoothLat!;
-    final currLon = _smoothLon!;
+    final medLat = _median(_windowLats);
+    final medLon = _median(_windowLons);
+    final medTimeMs = (_windowStartMs! + timeMs) ~/ 2;
+    _clearWindow();
+    // Next window starts at the current fix (not the median).
+    _openWindow(timeMs, latitude, longitude);
 
-    final rawDistance = haversineMeters(prevLat, prevLon, currLat, currLon);
-    final dtSec = commitDtMs / 1000.0;
+    if (_prevMedLat == null ||
+        _prevMedLon == null ||
+        _prevMedTimeMs == null) {
+      _prevMedLat = medLat;
+      _prevMedLon = medLon;
+      _prevMedTimeMs = medTimeMs;
+      return 0;
+    }
+
+    final dtMs = medTimeMs - _prevMedTimeMs!;
+    if (dtMs < math.max(minDtMs, windowMs ~/ 2)) {
+      _prevMedLat = medLat;
+      _prevMedLon = medLon;
+      _prevMedTimeMs = medTimeMs;
+      return 0;
+    }
+
+    final rawDistance = haversineMeters(
+      _prevMedLat!,
+      _prevMedLon!,
+      medLat,
+      medLon,
+    );
+
+    _prevMedLat = medLat;
+    _prevMedLon = medLon;
+    _prevMedTimeMs = medTimeMs;
+
+    final dtSec = dtMs / 1000.0;
     final maxStepDistance = maxPlausibleSpeedMps * dtSec * 1.5;
     final stepSpeedMps = dtSec > 0 ? rawDistance / dtSec : 0.0;
-
-    _prevSmoothLat = currLat;
-    _prevSmoothLon = currLon;
-    _lastCommitTimeMs = timeMs;
 
     final isValid = rawDistance >= minMeaningfulStepDistanceMeters &&
         rawDistance <= maxStepDistance &&
@@ -118,6 +127,30 @@ class GpsDistanceSmoother {
 
     return isValid ? rawDistance : 0.0;
   }
+
+  void _openWindow(int timeMs, double latitude, double longitude) {
+    _windowStartMs = timeMs;
+    _windowLats
+      ..clear()
+      ..add(latitude);
+    _windowLons
+      ..clear()
+      ..add(longitude);
+  }
+
+  void _clearWindow() {
+    _windowLats.clear();
+    _windowLons.clear();
+    _windowStartMs = null;
+  }
+}
+
+double _median(List<double> values) {
+  if (values.isEmpty) return 0;
+  final sorted = List<double>.from(values)..sort();
+  final mid = sorted.length ~/ 2;
+  if (sorted.length.isOdd) return sorted[mid];
+  return (sorted[mid - 1] + sorted[mid]) / 2.0;
 }
 
 double haversineMeters(
@@ -142,3 +175,17 @@ double haversineMeters(
 }
 
 double _degToRad(double deg) => deg * math.pi / 180.0;
+
+/// Caps personal-GPS average speed so jitter cannot invent sprint-pace km.
+///
+/// 5.0 m/s ≈ 18 km/h — above easy jogging, below sustained ~2:00 /km absurdity.
+double clampPersonalGpsDistanceMeters({
+  required double distanceMeters,
+  required int durationSeconds,
+  double maxAverageSpeedMps = 5.0,
+}) {
+  if (distanceMeters <= 0 || durationSeconds <= 0) return distanceMeters;
+  final maxDistance = maxAverageSpeedMps * durationSeconds;
+  if (distanceMeters <= maxDistance) return distanceMeters;
+  return maxDistance;
+}

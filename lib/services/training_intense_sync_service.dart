@@ -329,7 +329,7 @@ bool canResyncMatchIntense({
 /// Kept at **0**: a non-zero floor (e.g. 3 m) zeroes distance at typical
 /// Insiders rates (sub-second steps are often under 3 m even when running).
 /// Anti-jitter for Live / training / match / personal GPS is handled inside
-/// [SensorAnalysisService] via [GpsDistanceSmoother] (EMA + min speed gate).
+/// [SensorAnalysisService] via [GpsDistanceSmoother] (median windows + speed gate).
 const double kIntenseMinMeaningfulStepDistanceMeters = 0;
 
 /// Keeps only samples whose timestamps fall within [window] (inclusive).

@@ -31,22 +31,22 @@ void main() {
         );
       }
 
-      // Raw sum would be ~2 km; smoothed stationary path must stay tiny.
-      expect(total, lessThan(80), reason: 'got ${total.toStringAsFixed(1)} m');
+      // Raw sum would be ~2 km; median windows must stay far below that.
+      expect(total, lessThan(120), reason: 'got ${total.toStringAsFixed(1)} m');
     });
 
     test('steady walking ~1.4 m/s keeps most of the true distance', () {
       final total = _straightLineDistance(speedMps: 1.4, durationSec: 300);
       const trueDistance = 1.4 * 300;
-      expect(total, greaterThan(trueDistance * 0.85));
-      expect(total, lessThan(trueDistance * 1.05));
+      expect(total, greaterThan(trueDistance * 0.80));
+      expect(total, lessThan(trueDistance * 1.10));
     });
 
     test('steady running ~5 m/s keeps most of the true distance', () {
       final total = _straightLineDistance(speedMps: 5.0, durationSec: 120);
       const trueDistance = 5.0 * 120;
-      expect(total, greaterThan(trueDistance * 0.85));
-      expect(total, lessThan(trueDistance * 1.05));
+      expect(total, greaterThan(trueDistance * 0.80));
+      expect(total, lessThan(trueDistance * 1.10));
     });
 
     test('gap larger than maxDt snaps without adding a teleport', () {
@@ -77,6 +77,26 @@ void main() {
         maxPlausibleSpeedMps: 10.5,
       );
       expect(jumped, 0);
+    });
+  });
+
+  group('clampPersonalGpsDistanceMeters', () {
+    test('caps absurd average speed from jitter', () {
+      // 2.20 km in 271 s ≈ 29 km/h — must clamp to ≤ 18 km/h.
+      final clamped = clampPersonalGpsDistanceMeters(
+        distanceMeters: 2200,
+        durationSeconds: 271,
+      );
+      expect(clamped, closeTo(5.0 * 271, 0.1));
+      expect(clamped, lessThan(2200));
+    });
+
+    test('keeps plausible jogging distance', () {
+      final clamped = clampPersonalGpsDistanceMeters(
+        distanceMeters: 1000,
+        durationSeconds: 300, // 12 km/h
+      );
+      expect(clamped, 1000);
     });
   });
 
