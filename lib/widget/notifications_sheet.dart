@@ -325,10 +325,50 @@ class _NotificationsSheet extends StatelessWidget {
   }
 }
 
-class _NotificationsListBody extends StatelessWidget {
+class _NotificationsListBody extends StatefulWidget {
   const _NotificationsListBody({required this.showDragHandle});
 
   final bool showDragHandle;
+
+  @override
+  State<_NotificationsListBody> createState() => _NotificationsListBodyState();
+}
+
+class _NotificationsListBodyState extends State<_NotificationsListBody> {
+  final NotificationService _notificationService = NotificationService();
+
+  /// Optimistic hide while Firestore catches up (avoids stuck spinners).
+  final Set<String> _locallyDismissedIds = <String>{};
+
+  Future<void> _dismissNotification(NotificationApp notification) async {
+    final notificationId = notification.ref?.id.trim() ?? '';
+    if (notificationId.isEmpty) return;
+    if (_locallyDismissedIds.contains(notificationId)) return;
+
+    setState(() => _locallyDismissedIds.add(notificationId));
+    try {
+      await _notificationService.markNotificationAsViewed(notificationId);
+    } catch (e) {
+      if (!mounted) return;
+      setState(() => _locallyDismissedIds.remove(notificationId));
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(context.l10n.notificationsDismissError)),
+      );
+    }
+  }
+
+  List<NotificationApp> _visibleNotifications(
+    List<NotificationApp> raw,
+  ) {
+    final filtered = filterCommerceNotifications(raw);
+    if (_locallyDismissedIds.isEmpty) return filtered;
+    return filtered
+        .where((n) {
+          final id = n.ref?.id.trim() ?? '';
+          return id.isEmpty || !_locallyDismissedIds.contains(id);
+        })
+        .toList(growable: false);
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -341,7 +381,7 @@ class _NotificationsListBody extends StatelessWidget {
     return Column(
       mainAxisSize: MainAxisSize.min,
       children: [
-        if (showDragHandle) ...[
+        if (widget.showDragHandle) ...[
           const SizedBox(height: 12),
           Container(
             width: 40,
@@ -395,9 +435,8 @@ class _NotificationsListBody extends StatelessWidget {
                           );
                         }
 
-                        final notifications = filterCommerceNotifications(
-                          snapshot.data ?? const [],
-                        );
+                        final raw = snapshot.data ?? const <NotificationApp>[];
+                        final notifications = _visibleNotifications(raw);
                         if (notifications.isEmpty) {
                           return _NotificationsEmptyState(
                             message: l10n.notificationsEmptyMessage,
@@ -410,8 +449,13 @@ class _NotificationsListBody extends StatelessWidget {
                           separatorBuilder: (_, __) =>
                               const SizedBox(height: 8),
                           itemBuilder: (context, index) {
+                            final notification = notifications[index];
+                            final id = notification.ref?.id ?? '$index';
                             return _NotificationListTile(
-                              notification: notifications[index],
+                              key: ValueKey(id),
+                              notification: notification,
+                              onDismiss: () =>
+                                  _dismissNotification(notification),
                             );
                           },
                         );
@@ -426,20 +470,23 @@ class _NotificationsListBody extends StatelessWidget {
 }
 
 class _NotificationListTile extends StatefulWidget {
-  const _NotificationListTile({required this.notification});
+  const _NotificationListTile({
+    super.key,
+    required this.notification,
+    required this.onDismiss,
+  });
 
   final NotificationApp notification;
+  final Future<void> Function() onDismiss;
 
   @override
   State<_NotificationListTile> createState() => _NotificationListTileState();
 }
 
 class _NotificationListTileState extends State<_NotificationListTile> {
-  final NotificationService _notificationService = NotificationService();
   final MatchConvocationService _matchConvocationService =
       MatchConvocationService();
   final MatchService _matchService = MatchService();
-  bool _isMarkingRead = false;
   bool _isConvocationActionInProgress = false;
 
   bool get _showsConvocationActions =>
@@ -658,24 +705,13 @@ class _NotificationListTileState extends State<_NotificationListTile> {
   }
 
   Future<void> _markAsRead() async {
-    final notificationId = widget.notification.ref?.id;
-    if (notificationId == null || _isMarkingRead) return;
-
-    setState(() => _isMarkingRead = true);
-    try {
-      await _notificationService.markNotificationAsViewed(notificationId);
-    } catch (e) {
-      if (!mounted) return;
-      setState(() => _isMarkingRead = false);
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(context.l10n.notificationsDismissError)),
-      );
-    }
+    // Optimistic dismiss at list level — tile disappears immediately.
+    await widget.onDismiss();
   }
 
   Future<void> _dismissNotification() async {
-    if (_isMarkingRead || _isConvocationActionInProgress) return;
-    await _markAsRead();
+    if (_isConvocationActionInProgress) return;
+    await widget.onDismiss();
   }
 
   List<String> _sessionTeamIds(AppSession session) {
@@ -930,20 +966,11 @@ class _NotificationListTileState extends State<_NotificationListTile> {
                     minWidth: 36,
                     minHeight: 36,
                   ),
-                  icon: _isMarkingRead
-                      ? SizedBox(
-                          width: 18,
-                          height: 18,
-                          child: CircularProgressIndicator(
-                            strokeWidth: 2,
-                            color: colors.textSecondary,
-                          ),
-                        )
-                      : Icon(
-                          Icons.close_rounded,
-                          color: colors.textSecondary,
-                        ),
-                  onPressed: (_isMarkingRead || _isConvocationActionInProgress)
+                  icon: Icon(
+                    Icons.close_rounded,
+                    color: colors.textSecondary,
+                  ),
+                  onPressed: _isConvocationActionInProgress
                       ? null
                       : _dismissNotification,
                 ),
