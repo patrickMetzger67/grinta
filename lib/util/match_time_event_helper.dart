@@ -57,6 +57,39 @@ Future<void> updateMatchAfterEndTimeEventHighlight({
   }
 }
 
+/// True when the match calendar slot is over: [Match.timestamp] + [Match.duration]
+/// minutes (default 90). Used after Intense re-sync (`withSyncing == false`) to
+/// decide whether [isTrackerDataUploaded] can be set.
+bool isMatchTheoreticallyFinishedByTimestamp(
+  models.Match match, {
+  DateTime? now,
+}) {
+  final start = match.timestamp?.toDate();
+  if (start == null) return false;
+
+  final minutes = match.duration ?? 90;
+  final end = start.add(Duration(minutes: minutes > 0 ? minutes : 90));
+  final clock = now ?? DateTime.now();
+  return !clock.isBefore(end);
+}
+
+/// After a successful Intense match re-sync: always refresh workload; mark
+/// [isTrackerDataUploaded] when the calendar slot ([timestamp]+[duration]) is over.
+Future<void> finalizeMatchIntenseResyncSuccess({
+  required models.Match match,
+  DateTime? now,
+}) async {
+  final matchId = match.id?.trim() ?? '';
+  if (matchId.isEmpty) return;
+
+  if (isMatchTheoreticallyFinishedByTimestamp(match, now: now)) {
+    await markMatchTrackerDataUploadedAfterIntenseSync(match: match);
+    return;
+  }
+
+  await computeTeamWorkloadSummaryForEvent(eventId: matchId);
+}
+
 /// Marks tracker data uploaded after a successful Intense match sync.
 Future<void> markMatchTrackerDataUploadedAfterIntenseSync({
   required models.Match match,
