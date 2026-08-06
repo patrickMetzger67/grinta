@@ -892,6 +892,13 @@ class AppLocalizationsFr extends AppLocalizations {
       'Impossible de marquer la notification comme lue.';
 
   @override
+  String get notificationsDismiss => 'Ne plus afficher';
+
+  @override
+  String get notificationsDismissError =>
+      'Impossible de masquer la notification.';
+
+  @override
   String get notificationsConvocationMatchDetails => 'Détails du match';
 
   @override

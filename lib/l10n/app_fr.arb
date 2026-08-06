@@ -390,6 +390,8 @@
   "notificationsEmptyMessage": "Vous n'avez aucune notification non lue.",
   "notificationsMarkAsRead": "Marquer comme lue",
   "notificationsMarkAsReadError": "Impossible de marquer la notification comme lue.",
+  "notificationsDismiss": "Ne plus afficher",
+  "notificationsDismissError": "Impossible de masquer la notification.",
   "notificationsConvocationMatchDetails": "Détails du match",
   "notificationsConvocationPresent": "Je serai présent",
   "notificationsConvocationAbsent": "Pas présent",

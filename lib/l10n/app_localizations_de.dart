@@ -896,6 +896,13 @@ class AppLocalizationsDe extends AppLocalizations {
       'Benachrichtigung konnte nicht als gelesen markiert werden.';
 
   @override
+  String get notificationsDismiss => 'Nicht mehr anzeigen';
+
+  @override
+  String get notificationsDismissError =>
+      'Benachrichtigung konnte nicht ausgeblendet werden.';
+
+  @override
   String get notificationsConvocationMatchDetails => 'Spieldetails';
 
   @override

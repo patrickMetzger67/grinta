@@ -381,6 +381,8 @@
   "notificationsEmptyMessage": "You have no unread notifications.",
   "notificationsMarkAsRead": "Mark as read",
   "notificationsMarkAsReadError": "Could not mark notification as read.",
+  "notificationsDismiss": "Don't show again",
+  "notificationsDismissError": "Could not hide this notification.",
   "notificationsConvocationMatchDetails": "Match details",
   "notificationsConvocationPresent": "I'll be there",
   "notificationsConvocationAbsent": "Not attending",

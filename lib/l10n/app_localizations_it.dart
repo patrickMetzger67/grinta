@@ -884,6 +884,13 @@ class AppLocalizationsIt extends AppLocalizations {
       'Impossibile segnare la notifica come letta.';
 
   @override
+  String get notificationsDismiss => 'Non mostrare più';
+
+  @override
+  String get notificationsDismissError =>
+      'Impossibile nascondere la notifica.';
+
+  @override
   String get notificationsConvocationMatchDetails => 'Dettagli partita';
 
   @override
