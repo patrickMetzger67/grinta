@@ -1391,6 +1391,7 @@
   "createPersonalSportTitle": "New sports activity",
   "createPersonalSportDate": "Date",
   "createPersonalSportTime": "Time",
+  "createPersonalSportTimeRequired": "Choose a start time",
   "createPersonalSportManualEntry": "Manual entry",
   "createPersonalSportManualEntryHint": "Enter duration, distance and pace manually",
   "createPersonalSportImportHint": "Import an activity from a connected app",

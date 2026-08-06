@@ -1319,6 +1319,7 @@
   "createPersonalSportTitle": "Nouvelle activité sportive",
   "createPersonalSportDate": "Date",
   "createPersonalSportTime": "Heure",
+  "createPersonalSportTimeRequired": "Indique l'heure de début",
   "createPersonalSportManualEntry": "Saisie manuelle",
   "createPersonalSportManualEntryHint": "Renseigne durée, distance et allure à la main",
   "createPersonalSportImportHint": "Importe une activité depuis une app connectée",

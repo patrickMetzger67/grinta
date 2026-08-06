@@ -120,7 +120,7 @@ class _CreatePersonalSportActivitySheetState
   final _formKey = GlobalKey<FormState>();
 
   late DateTime _date;
-  late TimeOfDay _time;
+  TimeOfDay? _time;
   bool _manualEntry = true;
   bool _submitting = false;
   bool _loadingTypes = true;
@@ -193,11 +193,9 @@ class _CreatePersonalSportActivitySheetState
         );
       }
     } else {
-      final now = DateTime.now();
-      final defaultStart = now.subtract(const Duration(hours: 2));
-      _date = DateUtils.dateOnly(widget.initialDate ?? defaultStart);
-      _time = widget.initialTime ??
-          TimeOfDay(hour: defaultStart.hour, minute: defaultStart.minute);
+      // No default time: user must pick a start time explicitly.
+      _date = DateUtils.dateOnly(widget.initialDate ?? DateTime.now());
+      _time = widget.initialTime;
     }
     _loadTypes();
     if (!_isEditMode && !_readOnly) {
@@ -296,11 +294,17 @@ class _CreatePersonalSportActivitySheetState
     if (_readOnly) return;
     final picked = await showTimePicker(
       context: context,
-      initialTime: _time,
+      initialTime: _time ?? TimeOfDay.now(),
     );
     if (picked != null && mounted) {
       setState(() => _time = picked);
     }
+  }
+
+  bool _ensureStartTimeSelected() {
+    if (_time != null) return true;
+    AppSnackbar.show(context, context.l10n.createPersonalSportTimeRequired);
+    return false;
   }
 
   void _clearImportSelections() {
@@ -652,6 +656,11 @@ class _CreatePersonalSportActivitySheetState
       return;
     }
 
+    final needsStartTime = _manualEntry ||
+        _isEditMode ||
+        _importSource == WearableDeviceType.gpsInsidersIntense;
+    if (needsStartTime && !_ensureStartTimeSelected()) return;
+
     setState(() => _submitting = true);
     try {
       final existing = widget.activityToEdit;
@@ -737,12 +746,18 @@ class _CreatePersonalSportActivitySheetState
         return;
       }
 
+      final time = _time;
+      if (time == null) {
+        AppSnackbar.show(context, context.l10n.createPersonalSportTimeRequired);
+        return;
+      }
+
       final startAt = DateTime(
         _date.year,
         _date.month,
         _date.day,
-        _time.hour,
-        _time.minute,
+        time.hour,
+        time.minute,
       );
       final durationSeconds = _duration.inSeconds;
       final endAt = startAt.add(
@@ -833,12 +848,18 @@ class _CreatePersonalSportActivitySheetState
       return;
     }
 
+    final time = _time;
+    if (time == null) {
+      AppSnackbar.show(context, context.l10n.createPersonalSportTimeRequired);
+      return;
+    }
+
     final startAt = DateTime(
       _date.year,
       _date.month,
       _date.day,
-      _time.hour,
-      _time.minute,
+      time.hour,
+      time.minute,
     );
     final stopAt = DateTime.now();
     if (!stopAt.isAfter(startAt)) {
@@ -963,7 +984,7 @@ class _CreatePersonalSportActivitySheetState
     final l10n = context.l10n;
     final locale = Localizations.localeOf(context);
     final dateLabel = DateFormat.yMMMEd(locale.toString()).format(_date);
-    final timeLabel = _time.format(context);
+    final timeLabel = _time?.format(context) ?? l10n.createPersonalSportTapToSet;
 
     final media = MediaQuery.of(context);
     return Padding(
@@ -1003,7 +1024,15 @@ class _CreatePersonalSportActivitySheetState
               ListTile(
                 contentPadding: EdgeInsets.zero,
                 title: Text(l10n.createPersonalSportTime),
-                subtitle: Text(timeLabel),
+                subtitle: Text(
+                  timeLabel,
+                  style: _time == null
+                      ? TextStyle(
+                          color: colors.textSecondary,
+                          fontStyle: FontStyle.italic,
+                        )
+                      : null,
+                ),
                 trailing:
                     _readOnly ? null : const Icon(Icons.schedule_rounded),
                 onTap: _readOnly ? null : _pickTime,

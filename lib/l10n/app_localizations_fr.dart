@@ -2866,6 +2866,9 @@ class AppLocalizationsFr extends AppLocalizations {
   String get createPersonalSportTime => 'Heure';
 
   @override
+  String get createPersonalSportTimeRequired => 'Indique l\'heure de début';
+
+  @override
   String get createPersonalSportManualEntry => 'Saisie manuelle';
 
   @override
