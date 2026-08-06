@@ -7,6 +7,7 @@ import 'package:firebase_storage/firebase_storage.dart';
 
 import '../model/teamParam.dart';
 import '../model/tracker/trackerData.dart';
+import '../util/gps_distance_smoothing.dart';
 
 
 class SensorAnalysisService {
@@ -127,6 +128,9 @@ class SensorAnalysisService {
     final int timelineBucketMs = params.timelineBucketMs;
     final Map<int, Map<String, double>> distanceTimelineBuckets = {};
 
+    // EMA + min-speed gate — shared by Live, training finish, match, personal.
+    final distanceSmoother = GpsDistanceSmoother();
+
     for (int i = 0; i < samples.length; i++) {
       final current = samples[i];
 
@@ -158,12 +162,34 @@ class SensorAnalysisService {
         }
       }
 
-      if (i == 0) continue;
+      if (i == 0) {
+        distanceSmoother.ingest(
+          timeMs: current.timeMs,
+          latitude: current.latitude,
+          longitude: current.longitude,
+          minDtMs: minDtMs,
+          maxDtMs: maxDtMs,
+          maxPlausibleSpeedMps: maxPlausibleSpeedMps,
+          minMeaningfulStepDistanceMeters: minMeaningfulStepDistanceMeters,
+        );
+        continue;
+      }
 
       final prev = samples[i - 1];
       final dtMs = current.timeMs - prev.timeMs;
 
       if (dtMs <= 0) continue;
+
+      // Always feed the smoother so EMA stays continuous across short gaps.
+      final stepDistance = distanceSmoother.ingest(
+        timeMs: current.timeMs,
+        latitude: current.latitude,
+        longitude: current.longitude,
+        minDtMs: minDtMs,
+        maxDtMs: maxDtMs,
+        maxPlausibleSpeedMps: maxPlausibleSpeedMps,
+        minMeaningfulStepDistanceMeters: minMeaningfulStepDistanceMeters,
+      );
 
       if (dtMs < minDtMs) continue;
 
@@ -180,6 +206,7 @@ class SensorAnalysisService {
 
       final dtSec = dtMs / 1000.0;
 
+      // Raw haversine still gates "isGpsStepValid" for speed retention fallback.
       final rawDistance = _haversineMeters(
         prev.latitude,
         prev.longitude,
@@ -190,10 +217,6 @@ class SensorAnalysisService {
       final maxStepDistance = maxPlausibleSpeedMps * dtSec * 1.5;
       final isGpsStepValid = rawDistance >= 0 && rawDistance <= maxStepDistance;
 
-      final stepDistance = isGpsStepValid &&
-              rawDistance >= minMeaningfulStepDistanceMeters
-          ? rawDistance
-          : 0.0;
       totalDistanceMeters += stepDistance;
 
       if (current.timeMs <= midTimeMs) {
@@ -202,7 +225,10 @@ class SensorAnalysisService {
         secondHalfDistanceMeters += stepDistance;
       }
 
-      final gpsSpeedMps = dtSec > 0 ? stepDistance / dtSec : 0.0;
+      // Speed / sprints keep the high-rate raw step (capped). Distance alone
+      // uses [GpsDistanceSmoother] so jitter does not inflate km.
+      final gpsSpeedMps =
+          isGpsStepValid && dtSec > 0 ? rawDistance / dtSec : 0.0;
 
       recentSpeeds.add(gpsSpeedMps);
       if (recentSpeeds.length > smoothingWindow) {
@@ -570,6 +596,7 @@ class SensorAnalysisService {
       ) {
     double speedSumMps = 0;
     double distanceMeters = 0;
+    final smoother = GpsDistanceSmoother();
 
     final globalMaxRawSensorSpeed = samples
         .map((e) => e.speedMps)
@@ -583,17 +610,17 @@ class SensorAnalysisService {
           : samples[i].speedMps;
       speedSumMps += speedMps;
 
-      if (i > 0) {
-        final d = _haversineMeters(
-          samples[i - 1].latitude,
-          samples[i - 1].longitude,
-          samples[i].latitude,
-          samples[i].longitude,
-        );
-
-        if (d <= params.maxAcceptedStepDistanceMeters) {
-          distanceMeters += d;
-        }
+      final d = smoother.ingest(
+        timeMs: samples[i].timeMs,
+        latitude: samples[i].latitude,
+        longitude: samples[i].longitude,
+        minDtMs: params.minDtMs,
+        maxDtMs: params.maxDtMs,
+        maxPlausibleSpeedMps: params.maxPlausibleSpeedMps,
+      );
+      // Keep the legacy absolute cap as a last-resort guard.
+      if (d > 0 && d <= params.maxAcceptedStepDistanceMeters) {
+        distanceMeters += d;
       }
     }
 
