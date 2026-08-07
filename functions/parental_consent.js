@@ -17,25 +17,52 @@ function readToken(req) {
   return null;
 }
 
+// Grinta brand (aligned with AppColors.light / invitation emails).
+const BRAND = {
+  primary: '#F95C1B',
+  secondary: '#FF8A5B',
+  background: '#F7F7F8',
+  surface: '#FFFFFF',
+  textPrimary: '#1C1C1E',
+  textSecondary: '#6E6E73',
+  border: '#E5E5EA',
+  danger: '#B42318',
+  logoUrl:
+    'https://firebasestorage.googleapis.com/v0/b/aserstein-2453e.appspot.com/o/logoClubs%2Fthumbs%2FGrinta_1920x1920.png?alt=media',
+};
+
 function htmlPage({ title, heading, body, ok }) {
-  const accent = ok ? '#F95C1B' : '#B42318';
+  const accent = ok ? BRAND.primary : BRAND.danger;
   return `<!DOCTYPE html>
 <html lang="fr">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>${title}</title>
+  <title>${title} — Grinta Performance</title>
   <style>
-    body { margin:0; font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif; background:#F7F7F8; color:#1C1C1E; }
-    .card { max-width:480px; margin:48px auto; background:#fff; border:1px solid #E5E5EA; border-radius:16px; padding:28px; }
+    body { margin:0; font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif; background:${BRAND.background}; color:${BRAND.textPrimary}; }
+    .wrap { max-width:560px; margin:40px auto; padding:0 16px; }
+    .card { background:${BRAND.surface}; border:1px solid ${BRAND.border}; border-radius:16px; overflow:hidden; }
+    .banner { background:linear-gradient(135deg,${BRAND.primary} 0%,${BRAND.secondary} 100%); padding:28px 32px; text-align:center; }
+    .banner img { display:block; margin:0 auto 12px; max-width:140px; height:auto; border:0; }
+    .banner p { margin:0; color:#fff; font-size:16px; font-weight:600; }
+    .body { padding:28px 32px 32px; }
     h1 { margin:0 0 12px; font-size:22px; color:${accent}; }
-    p { margin:0; line-height:1.55; color:#6E6E73; }
+    p { margin:0; line-height:1.55; color:${BRAND.textSecondary}; font-size:15px; }
   </style>
 </head>
 <body>
-  <div class="card">
-    <h1>${heading}</h1>
-    <p>${body}</p>
+  <div class="wrap">
+    <div class="card">
+      <div class="banner">
+        <img src="${BRAND.logoUrl}" alt="Grinta Performance" width="140" />
+        <p>Grinta Performance</p>
+      </div>
+      <div class="body">
+        <h1>${heading}</h1>
+        <p>${body}</p>
+      </div>
+    </div>
   </div>
 </body>
 </html>`;
