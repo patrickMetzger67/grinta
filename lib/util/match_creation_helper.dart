@@ -10,6 +10,7 @@ import 'package:grinta/services/matchService.dart';
 import 'package:grinta/util/app_snackbar.dart';
 import 'package:grinta/util/app_theme.dart';
 import 'package:grinta/util/team_deletion_access.dart';
+import 'package:grinta/util/team_stats_competition_filter.dart';
 import 'package:http/http.dart' as http;
 
 import '../model/club.dart';
@@ -125,13 +126,50 @@ bool matchAffiliationMatchesClubId(Match match, String? clubId) {
   return trimmedClub == a1 || trimmedClub == a2;
 }
 
+/// True when [team] has a competition matching [match]'s engagement.
+///
+/// Compares [Match.competitionID], [Match.poule] (groupe) and [Match.stage]
+/// (phase) to the team's competition URLs / fields. Matches without a
+/// [Match.competitionID] (manual creations) are not constrained.
+@visibleForTesting
+bool teamCompetitionsIncludeMatch(Team team, Match match) {
+  final String needId = match.competitionID?.trim() ?? '';
+  if (needId.isEmpty) return true;
+
+  for (final Competition competition
+      in team.competitions ?? const <Competition>[]) {
+    final String url = (competition.urlCalendar ?? '').trim();
+    if (url.isNotEmpty) {
+      final filter = competitionFilterFromUrl(url);
+      if (filter != null && matchMatchesCompetitionFilter(match, filter)) {
+        return true;
+      }
+      continue;
+    }
+
+    // No parseable URL: compare stored competitionID + poule only when the
+    // match has no stage (stage lives in the FFF engagement URL).
+    final String needStage = match.stage?.trim() ?? '';
+    if (needStage.isNotEmpty) continue;
+
+    final String competitionId = competition.competitionID?.trim() ?? '';
+    if (competitionId != needId) continue;
+
+    final String needPoule = match.poule?.trim() ?? '';
+    final String competitionPoule = competition.poule?.trim() ?? '';
+    if (needPoule.isNotEmpty && competitionPoule != needPoule) continue;
+    return true;
+  }
+  return false;
+}
+
 /// Team ids the signed-in user can manage for [match].
 ///
-/// Includes:
-/// 1. Teams listed in [Match.teams] that the user manages
-/// 2. Managed teams whose [Team.clubId] matches [Match.affiliationTeam1]
-///    or [Match.affiliationTeam2] (scraped calendar matches often have
-///    `teams: []` but still belong to the user's club)
+/// Includes teams the user manages when:
+/// 1. listed in [Match.teams], or
+/// 2. [Team.clubId] matches [Match.affiliationTeam1]/[2],
+/// and the team's competitions include the match engagement
+/// (`competitionID` / `poule` / `stage`) when those fields are set.
 @visibleForTesting
 List<String> resolveManagedMatchTeamIds({
   required Match match,
@@ -151,6 +189,7 @@ List<String> resolveManagedMatchTeamIds({
   void consider(Team team) {
     final String teamId = team.keyTeam?.trim() ?? '';
     if (teamId.isEmpty || managedTeamIds.contains(teamId)) return;
+    if (!teamCompetitionsIncludeMatch(team, match)) return;
     if (canManageTeam(
       team,
       currentUserUid,

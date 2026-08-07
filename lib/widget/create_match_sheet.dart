@@ -221,11 +221,28 @@ class _CreateMatchSheetState extends State<CreateMatchSheet> {
 
   void _initTeams() {
     final AppSession session = context.read<AppSession>();
-    final List<Team> teams = List<Team>.from(session.managerTeamsForSelectedSeason)
-      ..sort(
-        (Team a, Team b) =>
-            (a.name ?? '').toLowerCase().compareTo((b.name ?? '').toLowerCase()),
-      );
+    List<Team> teams = List<Team>.from(session.managerTeamsForSelectedSeason);
+
+    // In edit mode, only offer teams allowed for this match (manager + club
+    // affiliation + competitionID/poule/stage).
+    final Match? matchToEdit = widget.matchToEdit;
+    if (matchToEdit != null) {
+      final Set<String> allowedIds = resolveManagedMatchTeamIds(
+        match: matchToEdit,
+        seasonTeams: session.teamsForAgendaSelectedSeason,
+        currentUserUid: session.user?.uid,
+        managedTeamsIdsForSelectedSeason:
+            session.managedTeamsIdsForSelectedSeason,
+      ).toSet();
+      teams = teams
+          .where((Team team) => allowedIds.contains(team.keyTeam?.trim()))
+          .toList();
+    }
+
+    teams.sort(
+      (Team a, Team b) =>
+          (a.name ?? '').toLowerCase().compareTo((b.name ?? '').toLowerCase()),
+    );
 
     _teams = teams;
     if (teams.length == 1) {
@@ -612,6 +629,17 @@ class _CreateMatchSheetState extends State<CreateMatchSheet> {
       return;
     }
 
+    final Match? existingMatch = widget.matchToEdit;
+    if (_isEditMode && existingMatch != null) {
+      final List<String> allowed =
+          managedMatchTeamIds(existingMatch, session);
+      final String selectedId = team.keyTeam!.trim();
+      if (selectedId.isEmpty || !allowed.contains(selectedId)) {
+        AppSnackbar.show(context, context.l10n.editMatchError);
+        return;
+      }
+    }
+
     await _ensureSelectedFieldGeolocatedIfNeeded();
     if (!mounted) return;
 
@@ -622,7 +650,6 @@ class _CreateMatchSheetState extends State<CreateMatchSheet> {
         _isEditMode ? context.l10n.editMatchError : context.l10n.createMatchError;
     final NavigatorState navigator = Navigator.of(context, rootNavigator: true);
     final VoidCallback? onSaved = widget.onSaved;
-    final Match? existingMatch = widget.matchToEdit;
     final FieldClub? selectedField = _selectedFieldClub;
 
     if (venueAddress.isNotEmpty) {
@@ -811,7 +838,7 @@ class _CreateMatchSheetState extends State<CreateMatchSheet> {
                           ),
                         )
                         .toList(),
-                    onChanged: _isEditMode ? null : _onTeamChanged,
+                    onChanged: _onTeamChanged,
                   ),
                 const SizedBox(height: 8),
                 SwitchListTile(
