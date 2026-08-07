@@ -836,11 +836,12 @@ class AgendaItemCard extends StatelessWidget {
     /// Manager/owner or roster staff — unlocks training/match detail views.
     bool canAccessSessionDetails = false;
     String teamId='';
+    bool canManageThisMatch = false;
     bool canManageThisTraining = false;
 
     if(item.match != null) {
       final AppSession session = context.watch<AppSession>();
-      final bool managesMatchClub = canManageMatch(item.match!, session);
+      canManageThisMatch = canManageMatch(item.match!, session);
       canAccessSessionDetails =
           canAccessMatchSessionDetails(item.match!, session);
       final String? managedTeamId =
@@ -848,7 +849,7 @@ class AgendaItemCard extends StatelessWidget {
       if (managedTeamId != null) {
         isManager =
             session.managedTeamsIdsForSelectedSeason.contains(managedTeamId) ||
-                managesMatchClub;
+                canManageThisMatch;
         teamId = managedTeamId;
       } else {
         for (final dynamic raw in item.match!.teams ?? const <dynamic>[]) {
