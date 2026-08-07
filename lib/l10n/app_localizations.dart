@@ -826,6 +826,78 @@ abstract class AppLocalizations {
   /// **'Date de naissance (facultatif)'**
   String get memberBirthDateOptional;
 
+  /// No description provided for @memberBirthDateRequired.
+  ///
+  /// In fr, this message translates to:
+  /// **'La date de naissance est obligatoire'**
+  String get memberBirthDateRequired;
+
+  /// No description provided for @accountAgeBlockedUnderage.
+  ///
+  /// In fr, this message translates to:
+  /// **'Grinta Performance est réservé aux personnes de 13 ans et plus.'**
+  String get accountAgeBlockedUnderage;
+
+  /// No description provided for @parentalConsentEmailTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Autorisation parentale'**
+  String get parentalConsentEmailTitle;
+
+  /// No description provided for @parentalConsentEmailMessage.
+  ///
+  /// In fr, this message translates to:
+  /// **'Tu as entre 13 et 14 ans. Pour créer ton compte, indique l\'adresse e-mail de ton représentant légal. Il devra autoriser ton accès à Grinta Performance.'**
+  String get parentalConsentEmailMessage;
+
+  /// No description provided for @parentalConsentEmailLabel.
+  ///
+  /// In fr, this message translates to:
+  /// **'E-mail du représentant légal'**
+  String get parentalConsentEmailLabel;
+
+  /// No description provided for @parentalConsentSendError.
+  ///
+  /// In fr, this message translates to:
+  /// **'Impossible d\'envoyer la demande d\'autorisation parentale. Réessaie.'**
+  String get parentalConsentSendError;
+
+  /// No description provided for @parentalConsentPendingTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'En attente d\'autorisation'**
+  String get parentalConsentPendingTitle;
+
+  /// No description provided for @parentalConsentPendingMessage.
+  ///
+  /// In fr, this message translates to:
+  /// **'Un e-mail a été envoyé à {parentEmail}. Dès que ton représentant légal aura autorisé ton compte, tu pourras utiliser Grinta Performance.'**
+  String parentalConsentPendingMessage(String parentEmail);
+
+  /// No description provided for @parentalConsentPendingMessageGeneric.
+  ///
+  /// In fr, this message translates to:
+  /// **'Un e-mail a été envoyé à ton représentant légal. Dès qu\'il aura autorisé ton compte, tu pourras utiliser Grinta Performance.'**
+  String get parentalConsentPendingMessageGeneric;
+
+  /// No description provided for @parentalConsentResend.
+  ///
+  /// In fr, this message translates to:
+  /// **'Renvoyer l\'e-mail'**
+  String get parentalConsentResend;
+
+  /// No description provided for @parentalConsentResendSuccess.
+  ///
+  /// In fr, this message translates to:
+  /// **'E-mail d\'autorisation renvoyé.'**
+  String get parentalConsentResendSuccess;
+
+  /// No description provided for @parentalConsentResendError.
+  ///
+  /// In fr, this message translates to:
+  /// **'Impossible de renvoyer l\'e-mail. Réessaie.'**
+  String get parentalConsentResendError;
+
   /// No description provided for @memberBirthPlace.
   ///
   /// In fr, this message translates to:
@@ -5054,7 +5126,7 @@ abstract class AppLocalizations {
   /// No description provided for @createPersonalSportTimeRequired.
   ///
   /// In fr, this message translates to:
-  /// **'Indique l'heure de début'**
+  /// **'Indique l\'heure de début'**
   String get createPersonalSportTimeRequired;
 
   /// No description provided for @createPersonalSportManualEntry.

@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 
 import '../core/extensions/l10n_extension.dart';
 import '../model/player.dart';
+import '../util/account_age_gate.dart';
 import '../util/nationalities.dart';
 import '../util/player_positions.dart';
 import '../util/player_profile_validator.dart';
@@ -174,6 +175,9 @@ class MemberProfileFormState extends State<MemberProfileForm> {
     if (_lastNameCtrl.text.trim().isEmpty) {
       return context.l10n.memberLastNameRequired;
     }
+    if (_birthDate == null) {
+      return context.l10n.memberBirthDateRequired;
+    }
     if (_nationalityCountryCode == null ||
         _nationalityCountryCode!.trim().isEmpty) {
       return context.l10n.memberNationalityRequired;
@@ -253,13 +257,16 @@ class MemberProfileFormState extends State<MemberProfileForm> {
     if (!widget.enabled) return;
 
     final now = DateTime.now();
-    final initial = _birthDate ?? DateTime(now.year - 20, now.month, now.day);
+    final lastDate = maxBirthDateForMinAge(now: now);
+    final initial = _birthDate ??
+        DateTime(now.year - kSelfServeAccountAgeYears, now.month, now.day);
+    final safeInitial = initial.isAfter(lastDate) ? lastDate : initial;
 
     final picked = await showDatePicker(
       context: context,
-      initialDate: initial,
+      initialDate: safeInitial,
       firstDate: DateTime(1900),
-      lastDate: now,
+      lastDate: lastDate,
       helpText: context.l10n.memberBirthDate,
     );
 
@@ -290,7 +297,7 @@ class MemberProfileFormState extends State<MemberProfileForm> {
     final colors = context.appColors;
     final l10n = context.l10n;
     final birthDayLabel = _birthDate == null
-        ? l10n.memberBirthDateOptional
+        ? l10n.memberBirthDate
         : _formatBirthDay(_birthDate);
 
     return Column(

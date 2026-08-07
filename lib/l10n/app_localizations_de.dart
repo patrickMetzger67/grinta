@@ -432,6 +432,50 @@ class AppLocalizationsDe extends AppLocalizations {
   String get memberBirthDateOptional => 'Geburtsdatum (optional)';
 
   @override
+  String get memberBirthDateRequired => 'Geburtsdatum ist erforderlich';
+
+  @override
+  String get accountAgeBlockedUnderage =>
+      'Grinta Performance ist für Nutzer ab 13 Jahren.';
+
+  @override
+  String get parentalConsentEmailTitle => 'Elternliche Zustimmung';
+
+  @override
+  String get parentalConsentEmailMessage =>
+      'Du bist 13 oder 14 Jahre alt. Gib die E-Mail-Adresse deines gesetzlichen Vertreters ein. Er muss deinen Zugang zu Grinta Performance freigeben.';
+
+  @override
+  String get parentalConsentEmailLabel => 'E-Mail des gesetzlichen Vertreters';
+
+  @override
+  String get parentalConsentSendError =>
+      'Die Einwilligungsanfrage konnte nicht gesendet werden. Bitte erneut versuchen.';
+
+  @override
+  String get parentalConsentPendingTitle => 'Warten auf Freigabe';
+
+  @override
+  String parentalConsentPendingMessage(String parentEmail) {
+    return 'Eine E-Mail wurde an $parentEmail gesendet. Sobald dein gesetzlicher Vertreter zustimmt, kannst du Grinta Performance nutzen.';
+  }
+
+  @override
+  String get parentalConsentPendingMessageGeneric =>
+      'Eine E-Mail wurde an deinen gesetzlichen Vertreter gesendet. Sobald er zustimmt, kannst du Grinta Performance nutzen.';
+
+  @override
+  String get parentalConsentResend => 'E-Mail erneut senden';
+
+  @override
+  String get parentalConsentResendSuccess =>
+      'Einwilligungs-E-Mail erneut gesendet.';
+
+  @override
+  String get parentalConsentResendError =>
+      'E-Mail konnte nicht erneut gesendet werden. Bitte erneut versuchen.';
+
+  @override
   String get memberBirthPlace => 'Geburtsort';
 
   @override

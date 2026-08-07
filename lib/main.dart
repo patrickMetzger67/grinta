@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:cloud_functions/cloud_functions.dart';
 import 'package:firebase_auth/firebase_auth.dart' as firebase_auth;
 import 'package:firebase_core/firebase_core.dart';
@@ -36,6 +37,8 @@ import 'package:grinta/services/fitbit_deep_link_service.dart';
 import 'package:grinta/services/polar_deep_link_service.dart';
 import 'package:grinta/services/strava_deep_link_service.dart';
 import 'package:grinta/services/whoop_deep_link_service.dart';
+import 'package:grinta/services/userService.dart';
+import 'package:grinta/widget/parental_consent_pending_screen.dart';
 import 'package:grinta/util/firebase_auth_ready.dart';
 
 const String kStreamApiKey = 'vg9g2zz7s2fc';
@@ -527,11 +530,54 @@ class _AuthGateState extends State<AuthGate> {
                   return const _LoadingScreen();
                 }
 
-                return const WebAppRoot();
+                return _AccountAccessGate(user: confirmedUser);
               },
             );
           },
         );
+      },
+    );
+  }
+}
+
+/// Blocks the main shell until parental consent is granted (13–14 accounts).
+class _AccountAccessGate extends StatelessWidget {
+  const _AccountAccessGate({required this.user});
+
+  final firebase_auth.User user;
+
+  @override
+  Widget build(BuildContext context) {
+    return StreamBuilder<DocumentSnapshot<Map<String, dynamic>>>(
+      stream: FirebaseFirestore.instance
+          .collection(UserService.collectionName)
+          .doc(user.uid)
+          .snapshots(),
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting &&
+            !snapshot.hasData) {
+          return const _LoadingScreen();
+        }
+
+        final data = snapshot.data?.data();
+        final status = data?[UserDocumentFields.accountStatus]
+                ?.toString()
+                .trim() ??
+            UserAccountStatus.active;
+
+        if (status == UserAccountStatus.pendingParentalConsent) {
+          final first = data?[UserDocumentFields.firstName]?.toString() ?? '';
+          final last = data?[UserDocumentFields.lastName]?.toString() ?? '';
+          final name = '$first $last'.trim();
+          return ParentalConsentPendingScreen(
+            uid: user.uid,
+            childDisplayName: name.isEmpty ? null : name,
+            parentEmail:
+                data?[UserDocumentFields.parentEmail]?.toString(),
+          );
+        }
+
+        return const WebAppRoot();
       },
     );
   }

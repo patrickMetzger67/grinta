@@ -170,10 +170,16 @@ service cloud.firestore {
         && !('subscriptionAccess' in request.resource.data);
 
       // isRoot + subscriptionAccess are server/admin only (Cloud Functions).
+      // Once pending parental consent, only the CF may activate the account.
       allow update: if request.auth != null
         && request.auth.uid == userId
         && !request.resource.data.diff(resource.data).affectedKeys()
-          .hasAny(['isRoot', 'subscriptionAccess']);
+          .hasAny(['isRoot', 'subscriptionAccess'])
+        && (
+          resource.data.get('accountStatus', 'active') != 'pendingParentalConsent'
+          || !request.resource.data.diff(resource.data).affectedKeys()
+            .hasAny(['accountStatus', 'parentalConsentToken', 'parentalConsentAt'])
+        );
 
       allow delete: if request.auth != null && request.auth.uid == userId;
 

@@ -746,6 +746,9 @@ exports.fitbitDisconnect = createFitbitDisconnect();
 exports.sendMailOnCreate = createSendMailOnCreate();
 exports.sendPasswordResetMail = createSendPasswordResetMail();
 
+const { createApproveParentalConsent } = require('./parental_consent');
+exports.approveParentalConsent = createApproveParentalConsent();
+
 /**
  * FCM push (Grinta + Aserstein dual-brand, shared project).
  *

@@ -250,6 +250,23 @@
   "resendInvitationFailed": "Einladungs-E-Mail konnte nicht gesendet werden",
   "memberBirthDate": "Geburtsdatum",
   "memberBirthDateOptional": "Geburtsdatum (optional)",
+  "memberBirthDateRequired": "Geburtsdatum ist erforderlich",
+  "accountAgeBlockedUnderage": "Grinta Performance ist für Nutzer ab 13 Jahren.",
+  "parentalConsentEmailTitle": "Elternliche Zustimmung",
+  "parentalConsentEmailMessage": "Du bist 13 oder 14 Jahre alt. Gib die E-Mail-Adresse deines gesetzlichen Vertreters ein. Er muss deinen Zugang zu Grinta Performance freigeben.",
+  "parentalConsentEmailLabel": "E-Mail des gesetzlichen Vertreters",
+  "parentalConsentSendError": "Die Einwilligungsanfrage konnte nicht gesendet werden. Bitte erneut versuchen.",
+  "parentalConsentPendingTitle": "Warten auf Freigabe",
+  "parentalConsentPendingMessage": "Eine E-Mail wurde an {parentEmail} gesendet. Sobald dein gesetzlicher Vertreter zustimmt, kannst du Grinta Performance nutzen.",
+  "@parentalConsentPendingMessage": {
+    "placeholders": {
+      "parentEmail": { "type": "String" }
+    }
+  },
+  "parentalConsentPendingMessageGeneric": "Eine E-Mail wurde an deinen gesetzlichen Vertreter gesendet. Sobald er zustimmt, kannst du Grinta Performance nutzen.",
+  "parentalConsentResend": "E-Mail erneut senden",
+  "parentalConsentResendSuccess": "Einwilligungs-E-Mail erneut gesendet.",
+  "parentalConsentResendError": "E-Mail konnte nicht erneut gesendet werden. Bitte erneut versuchen.",
   "memberBirthPlace": "Geburtsort",
   "memberBirthPlaceOptional": "Geburtsort (optional)",
   "memberNationality": "Nationalität",

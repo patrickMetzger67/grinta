@@ -206,6 +206,23 @@
   "resendInvitationFailed": "Could not send the invitation email",
   "memberBirthDate": "Date of birth",
   "memberBirthDateOptional": "Date of birth (optional)",
+  "memberBirthDateRequired": "Date of birth is required",
+  "accountAgeBlockedUnderage": "Grinta Performance is for users aged 13 and over.",
+  "parentalConsentEmailTitle": "Parental consent",
+  "parentalConsentEmailMessage": "You are 13 or 14 years old. To create your account, enter a legal guardian's email. They must approve your access to Grinta Performance.",
+  "parentalConsentEmailLabel": "Legal guardian email",
+  "parentalConsentSendError": "Could not send the parental consent request. Please try again.",
+  "parentalConsentPendingTitle": "Waiting for approval",
+  "parentalConsentPendingMessage": "An email was sent to {parentEmail}. Once your legal guardian approves your account, you can use Grinta Performance.",
+  "@parentalConsentPendingMessage": {
+    "placeholders": {
+      "parentEmail": { "type": "String" }
+    }
+  },
+  "parentalConsentPendingMessageGeneric": "An email was sent to your legal guardian. Once they approve your account, you can use Grinta Performance.",
+  "parentalConsentResend": "Resend email",
+  "parentalConsentResendSuccess": "Consent email resent.",
+  "parentalConsentResendError": "Could not resend the email. Please try again.",
   "memberBirthPlace": "Place of birth",
   "memberBirthPlaceOptional": "Place of birth (optional)",
   "memberNationality": "Nationality",

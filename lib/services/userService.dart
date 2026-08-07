@@ -10,6 +10,20 @@ abstract final class UserDocumentFields {
   static const isRoot = 'isRoot';
   /// Server-written paid access mirror (promo / future webhooks). Clients read only.
   static const subscriptionAccess = 'subscriptionAccess';
+
+  /// `active` | `pendingParentalConsent` (missing ⇒ treat as active).
+  static const accountStatus = 'accountStatus';
+  static const birthDay = 'birthDay';
+  static const parentEmail = 'parentEmail';
+  static const parentalConsentToken = 'parentalConsentToken';
+  static const parentalConsentRequestedAt = 'parentalConsentRequestedAt';
+  static const parentalConsentAt = 'parentalConsentAt';
+}
+
+/// Account lifecycle for age / parental consent.
+abstract final class UserAccountStatus {
+  static const active = 'active';
+  static const pendingParentalConsent = 'pendingParentalConsent';
 }
 
 /// Free trial length applied on first account creation.
@@ -100,6 +114,10 @@ class UserService {
     required String email,
     required String firstName,
     required String lastName,
+    String accountStatus = UserAccountStatus.active,
+    String? birthDay,
+    String? parentEmail,
+    String? parentalConsentToken,
   }) async {
     final ref = _collection.doc(uid);
     final existing = await ref.get();
@@ -107,6 +125,9 @@ class UserService {
     final trimmedEmail = email.trim();
     final trimmedFirst = firstName.trim();
     final trimmedLast = lastName.trim();
+    final trimmedBirthDay = birthDay?.trim();
+    final trimmedParentEmail = parentEmail?.trim();
+    final trimmedToken = parentalConsentToken?.trim();
 
     if (!existing.exists) {
       final trialEndsAt = DateTime.now().add(kUserTrialDuration);
@@ -116,6 +137,16 @@ class UserService {
         UserDocumentFields.lastName: trimmedLast,
         UserDocumentFields.createdAt: FieldValue.serverTimestamp(),
         UserDocumentFields.trialEndsAt: Timestamp.fromDate(trialEndsAt),
+        UserDocumentFields.accountStatus: accountStatus,
+        if (trimmedBirthDay != null && trimmedBirthDay.isNotEmpty)
+          UserDocumentFields.birthDay: trimmedBirthDay,
+        if (trimmedParentEmail != null && trimmedParentEmail.isNotEmpty)
+          UserDocumentFields.parentEmail: trimmedParentEmail,
+        if (trimmedToken != null && trimmedToken.isNotEmpty) ...{
+          UserDocumentFields.parentalConsentToken: trimmedToken,
+          UserDocumentFields.parentalConsentRequestedAt:
+              FieldValue.serverTimestamp(),
+        },
       });
       return;
     }
@@ -127,9 +158,57 @@ class UserService {
       firstName: trimmedFirst,
       lastName: trimmedLast,
     );
+    if (accountStatus == UserAccountStatus.pendingParentalConsent &&
+        data[UserDocumentFields.accountStatus] != UserAccountStatus.active) {
+      updates[UserDocumentFields.accountStatus] = accountStatus;
+    }
+    if (trimmedBirthDay != null && trimmedBirthDay.isNotEmpty) {
+      updates[UserDocumentFields.birthDay] = trimmedBirthDay;
+    }
+    if (trimmedParentEmail != null && trimmedParentEmail.isNotEmpty) {
+      updates[UserDocumentFields.parentEmail] = trimmedParentEmail;
+    }
+    if (trimmedToken != null && trimmedToken.isNotEmpty) {
+      updates[UserDocumentFields.parentalConsentToken] = trimmedToken;
+      updates[UserDocumentFields.parentalConsentRequestedAt] =
+          FieldValue.serverTimestamp();
+    }
     if (updates.isEmpty) return;
 
     await ref.set(updates, SetOptions(merge: true));
+  }
+
+  /// Resolves account status; missing field means legacy active accounts.
+  Future<String> getAccountStatus(String uid) async {
+    final snap = await _collection.doc(uid).get();
+    if (!snap.exists) return UserAccountStatus.active;
+    final raw = snap.data()?[UserDocumentFields.accountStatus]?.toString().trim();
+    if (raw == null || raw.isEmpty) return UserAccountStatus.active;
+    return raw;
+  }
+
+  Future<Map<String, dynamic>?> getUserData(String uid) async {
+    final snap = await _collection.doc(uid).get();
+    if (!snap.exists) return null;
+    return snap.data();
+  }
+
+  Future<void> refreshParentalConsentRequest({
+    required String uid,
+    required String parentEmail,
+    required String token,
+  }) async {
+    await _collection.doc(uid).set(
+      <String, dynamic>{
+        UserDocumentFields.accountStatus:
+            UserAccountStatus.pendingParentalConsent,
+        UserDocumentFields.parentEmail: parentEmail.trim(),
+        UserDocumentFields.parentalConsentToken: token.trim(),
+        UserDocumentFields.parentalConsentRequestedAt:
+            FieldValue.serverTimestamp(),
+      },
+      SetOptions(merge: true),
+    );
   }
 
   /// Backfills missing trial timestamps for accounts created before trial

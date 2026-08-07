@@ -425,6 +425,50 @@ class AppLocalizationsIt extends AppLocalizations {
   String get memberBirthDateOptional => 'Data di nascita (facoltativa)';
 
   @override
+  String get memberBirthDateRequired => 'La data di nascita è obbligatoria';
+
+  @override
+  String get accountAgeBlockedUnderage =>
+      'Grinta Performance è riservata agli utenti di almeno 13 anni.';
+
+  @override
+  String get parentalConsentEmailTitle => 'Autorizzazione genitoriale';
+
+  @override
+  String get parentalConsentEmailMessage =>
+      'Hai 13 o 14 anni. Inserisci l\'email del tuo rappresentante legale. Dovrà autorizzare l\'accesso a Grinta Performance.';
+
+  @override
+  String get parentalConsentEmailLabel => 'Email del rappresentante legale';
+
+  @override
+  String get parentalConsentSendError =>
+      'Impossibile inviare la richiesta di autorizzazione. Riprova.';
+
+  @override
+  String get parentalConsentPendingTitle => 'In attesa di autorizzazione';
+
+  @override
+  String parentalConsentPendingMessage(String parentEmail) {
+    return 'È stata inviata un\'email a $parentEmail. Quando il rappresentante legale autorizzerà l\'account, potrai usare Grinta Performance.';
+  }
+
+  @override
+  String get parentalConsentPendingMessageGeneric =>
+      'È stata inviata un\'email al rappresentante legale. Quando autorizzerà l\'account, potrai usare Grinta Performance.';
+
+  @override
+  String get parentalConsentResend => 'Reinvia email';
+
+  @override
+  String get parentalConsentResendSuccess =>
+      'Email di autorizzazione reinviata.';
+
+  @override
+  String get parentalConsentResendError =>
+      'Impossibile reinviare l\'email. Riprova.';
+
+  @override
   String get memberBirthPlace => 'Luogo di nascita';
 
   @override
@@ -887,8 +931,7 @@ class AppLocalizationsIt extends AppLocalizations {
   String get notificationsDismiss => 'Non mostrare più';
 
   @override
-  String get notificationsDismissError =>
-      'Impossibile nascondere la notifica.';
+  String get notificationsDismissError => 'Impossibile nascondere la notifica.';
 
   @override
   String get notificationsConvocationMatchDetails => 'Dettagli partita';

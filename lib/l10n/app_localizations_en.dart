@@ -425,6 +425,49 @@ class AppLocalizationsEn extends AppLocalizations {
   String get memberBirthDateOptional => 'Date of birth (optional)';
 
   @override
+  String get memberBirthDateRequired => 'Date of birth is required';
+
+  @override
+  String get accountAgeBlockedUnderage =>
+      'Grinta Performance is for users aged 13 and over.';
+
+  @override
+  String get parentalConsentEmailTitle => 'Parental consent';
+
+  @override
+  String get parentalConsentEmailMessage =>
+      'You are 13 or 14 years old. To create your account, enter a legal guardian\'s email. They must approve your access to Grinta Performance.';
+
+  @override
+  String get parentalConsentEmailLabel => 'Legal guardian email';
+
+  @override
+  String get parentalConsentSendError =>
+      'Could not send the parental consent request. Please try again.';
+
+  @override
+  String get parentalConsentPendingTitle => 'Waiting for approval';
+
+  @override
+  String parentalConsentPendingMessage(String parentEmail) {
+    return 'An email was sent to $parentEmail. Once your legal guardian approves your account, you can use Grinta Performance.';
+  }
+
+  @override
+  String get parentalConsentPendingMessageGeneric =>
+      'An email was sent to your legal guardian. Once they approve your account, you can use Grinta Performance.';
+
+  @override
+  String get parentalConsentResend => 'Resend email';
+
+  @override
+  String get parentalConsentResendSuccess => 'Consent email resent.';
+
+  @override
+  String get parentalConsentResendError =>
+      'Could not resend the email. Please try again.';
+
+  @override
   String get memberBirthPlace => 'Place of birth';
 
   @override
@@ -886,8 +929,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get notificationsDismiss => 'Don\'t show again';
 
   @override
-  String get notificationsDismissError =>
-      'Could not hide this notification.';
+  String get notificationsDismissError => 'Could not hide this notification.';
 
   @override
   String get notificationsConvocationMatchDetails => 'Match details';

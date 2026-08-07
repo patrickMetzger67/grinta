@@ -31,6 +31,9 @@ import 'widget/signup_invitation_onboarding.dart';
 import 'widget/legal_links_footer.dart';
 import 'widget/social_auth_button.dart';
 import 'widget/subscription_paywall.dart';
+import 'widget/parental_consent_pending_screen.dart';
+import 'services/parental_consent_service.dart';
+import 'util/account_age_gate.dart';
 
 bool _isPasswordValid(String password) {
   if (password.length < 8) return false;
@@ -379,20 +382,16 @@ class _LoginScreenState extends State<LoginScreen> {
       }
 
       try {
-        await _createUserAccountDocument(
+        final ageHandled = await _completeSignupWithAgeGate(
           uid: newUserUid,
           email: email,
           profile: profile,
+          invitation: onboarding.linkedExistingMember
+              ? onboarding.invitation
+              : null,
+          snackBarContext: snackBarContext,
         );
-        if (onboarding.linkedExistingMember) {
-          await _completeInvitationOnboarding(
-            uid: newUserUid,
-            profile: profile,
-            invitation: onboarding.invitation!,
-          );
-        } else {
-          await _completeSocialOnboarding(uid: newUserUid, profile: profile);
-        }
+        if (!ageHandled) return;
         await _refreshSessionAvatars(appSession);
       } catch (e) {
         debugPrint('Email signup profile error: $e');
@@ -400,7 +399,9 @@ class _LoginScreenState extends State<LoginScreen> {
         final message = e is StateError &&
                 e.message == 'member profile incomplete'
             ? l10n.memberProfileIncomplete
-            : '${l10n.unexpectedError} : $e';
+            : e is StateError && e.message == 'blockedUnderage'
+                ? l10n.accountAgeBlockedUnderage
+                : '${l10n.unexpectedError} : $e';
         _showSnackBar(message, snackBarContext: snackBarContext);
         return;
       }
@@ -408,6 +409,12 @@ class _LoginScreenState extends State<LoginScreen> {
       await AnalyticsService.instance.logFeatureUsed(
         feature: AnalyticsFeatures.loginSuccess,
       );
+
+      // Pending parental consent: AuthGate shows the waiting screen.
+      final status = await UserService().getAccountStatus(newUserUid);
+      if (status == UserAccountStatus.pendingParentalConsent) {
+        return;
+      }
 
       await _finishOnboardingAfterMemberCreated(
         appSession,
@@ -588,6 +595,87 @@ class _LoginScreenState extends State<LoginScreen> {
     await appSession.refreshPlayerAvatarUrls();
   }
 
+  /// Age gate + user/member creation. Returns `false` when signup was aborted
+  /// (underage cancel / parent email cancelled). Throws on hard failures.
+  Future<bool> _completeSignupWithAgeGate({
+    required String uid,
+    required String email,
+    required Player profile,
+    Invitation? invitation,
+    BuildContext? snackBarContext,
+  }) async {
+    final gate = classifyPlayerAccountAge(profile);
+    if (gate == AccountAgeGateResult.birthDateRequired) {
+      throw StateError('member profile incomplete');
+    }
+    if (gate == AccountAgeGateResult.blockedUnderage) {
+      throw StateError('blockedUnderage');
+    }
+
+    if (gate == AccountAgeGateResult.parentalConsentRequired) {
+      final rootContext = appNavigatorKey.currentContext;
+      if (rootContext == null || !rootContext.mounted) {
+        await _deleteNewAccountAndSignOut();
+        return false;
+      }
+
+      final parentEmail = await promptParentalConsentEmail(rootContext);
+      if (parentEmail == null || parentEmail.isEmpty) {
+        await _deleteNewAccountAndSignOut();
+        return false;
+      }
+
+      final childName =
+          '${profile.firstName?.trim() ?? ''} ${profile.lastName?.trim() ?? ''}'
+              .trim();
+      final consentError = await ParentalConsentService().requestParentalConsent(
+        uid: uid,
+        accountEmail: email,
+        profile: profile,
+        parentEmail: parentEmail,
+        childDisplayName: childName.isEmpty ? 'votre enfant' : childName,
+      );
+      if (consentError != null) {
+        await _deleteNewAccountAndSignOut();
+        final msgContext = snackBarContext ?? appNavigatorKey.currentContext;
+        if (msgContext != null && msgContext.mounted) {
+          _showSnackBar(
+            msgContext.l10n.parentalConsentSendError,
+            snackBarContext: snackBarContext,
+          );
+        }
+        return false;
+      }
+
+      if (invitation != null) {
+        await _completeInvitationOnboarding(
+          uid: uid,
+          profile: profile,
+          invitation: invitation,
+        );
+      } else {
+        await _completeSocialOnboarding(uid: uid, profile: profile);
+      }
+      return true;
+    }
+
+    await _createUserAccountDocument(
+      uid: uid,
+      email: email,
+      profile: profile,
+    );
+    if (invitation != null) {
+      await _completeInvitationOnboarding(
+        uid: uid,
+        profile: profile,
+        invitation: invitation,
+      );
+    } else {
+      await _completeSocialOnboarding(uid: uid, profile: profile);
+    }
+    return true;
+  }
+
   Future<void> _completeSocialOnboarding({
     required String uid,
     required Player profile,
@@ -642,12 +730,15 @@ class _LoginScreenState extends State<LoginScreen> {
     required String uid,
     required String email,
     required Player profile,
+    String accountStatus = UserAccountStatus.active,
   }) async {
     await UserService().createAccountIfNeeded(
       uid: uid,
       email: email,
       firstName: profile.firstName?.trim() ?? '',
       lastName: profile.lastName?.trim() ?? '',
+      accountStatus: accountStatus,
+      birthDay: profile.birthDay,
     );
     await UserTrialService.instance.reload();
     await UserRootService.instance.reload();
@@ -757,20 +848,16 @@ class _LoginScreenState extends State<LoginScreen> {
         }
 
         try {
-          await _createUserAccountDocument(
+          final ageHandled = await _completeSignupWithAgeGate(
             uid: uid,
             email: credential.user?.email ?? '',
             profile: profile,
+            invitation: onboarding.linkedExistingMember
+                ? onboarding.invitation
+                : null,
+            snackBarContext: sheetContext,
           );
-          if (onboarding.linkedExistingMember) {
-            await _completeInvitationOnboarding(
-              uid: uid,
-              profile: profile,
-              invitation: onboarding.invitation!,
-            );
-          } else {
-            await _completeSocialOnboarding(uid: uid, profile: profile);
-          }
+          if (!ageHandled) return;
           final refreshSession = (appNavigatorKey.currentContext ?? rootContext)
                   ?.read<AppSession>() ??
               (mounted ? context.read<AppSession>() : null);
@@ -786,7 +873,9 @@ class _LoginScreenState extends State<LoginScreen> {
           final message = e is StateError &&
                   e.message == 'member profile incomplete'
               ? l10n.memberProfileIncomplete
-              : '${l10n.unexpectedError} : $e';
+              : e is StateError && e.message == 'blockedUnderage'
+                  ? l10n.accountAgeBlockedUnderage
+                  : '${l10n.unexpectedError} : $e';
           _showSnackBar(message, snackBarContext: sheetContext);
           return;
         }
@@ -800,6 +889,10 @@ class _LoginScreenState extends State<LoginScreen> {
       );
 
       if (memberJustCreated && createdProfile != null) {
+        final status = await UserService().getAccountStatus(uid);
+        if (status == UserAccountStatus.pendingParentalConsent) {
+          return;
+        }
         final appSession = (appNavigatorKey.currentContext ?? rootContext)
                 ?.read<AppSession>() ??
             (mounted ? context.read<AppSession>() : null);

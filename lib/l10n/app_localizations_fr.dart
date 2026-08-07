@@ -429,6 +429,49 @@ class AppLocalizationsFr extends AppLocalizations {
   String get memberBirthDateOptional => 'Date de naissance (facultatif)';
 
   @override
+  String get memberBirthDateRequired => 'La date de naissance est obligatoire';
+
+  @override
+  String get accountAgeBlockedUnderage =>
+      'Grinta Performance est réservé aux personnes de 13 ans et plus.';
+
+  @override
+  String get parentalConsentEmailTitle => 'Autorisation parentale';
+
+  @override
+  String get parentalConsentEmailMessage =>
+      'Tu as entre 13 et 14 ans. Pour créer ton compte, indique l\'adresse e-mail de ton représentant légal. Il devra autoriser ton accès à Grinta Performance.';
+
+  @override
+  String get parentalConsentEmailLabel => 'E-mail du représentant légal';
+
+  @override
+  String get parentalConsentSendError =>
+      'Impossible d\'envoyer la demande d\'autorisation parentale. Réessaie.';
+
+  @override
+  String get parentalConsentPendingTitle => 'En attente d\'autorisation';
+
+  @override
+  String parentalConsentPendingMessage(String parentEmail) {
+    return 'Un e-mail a été envoyé à $parentEmail. Dès que ton représentant légal aura autorisé ton compte, tu pourras utiliser Grinta Performance.';
+  }
+
+  @override
+  String get parentalConsentPendingMessageGeneric =>
+      'Un e-mail a été envoyé à ton représentant légal. Dès qu\'il aura autorisé ton compte, tu pourras utiliser Grinta Performance.';
+
+  @override
+  String get parentalConsentResend => 'Renvoyer l\'e-mail';
+
+  @override
+  String get parentalConsentResendSuccess => 'E-mail d\'autorisation renvoyé.';
+
+  @override
+  String get parentalConsentResendError =>
+      'Impossible de renvoyer l\'e-mail. Réessaie.';
+
+  @override
   String get memberBirthPlace => 'Lieu de naissance';
 
   @override
