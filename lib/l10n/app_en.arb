@@ -71,6 +71,7 @@
       "email": { "type": "String" }
     }
   },
+  "signupUseCreateAccountForSocial": "To create an account with Google or Apple, tap “Create an account”, then choose Google or Apple after your profile.",
   "invitationEmailSubject": "Your coach invites you to join {appName}",
   "@invitationEmailSubject": {
     "placeholders": {

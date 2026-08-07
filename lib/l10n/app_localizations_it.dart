@@ -202,6 +202,10 @@ class AppLocalizationsIt extends AppLocalizations {
   }
 
   @override
+  String get signupUseCreateAccountForSocial =>
+      'Per creare un account con Google o Apple, tocca «Crea un account», poi scegli Google o Apple dopo il profilo.';
+
+  @override
   String invitationEmailSubject(String appName) {
     return 'Il tuo allenatore ti invita a unirti a $appName';
   }

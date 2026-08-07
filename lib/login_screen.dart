@@ -371,6 +371,19 @@ class _LoginScreenState extends State<LoginScreen> {
         return;
       }
 
+      // 13–14: parental email BEFORE Auth / users / member.
+      String? parentEmail;
+      if (gate == AccountAgeGateResult.parentalConsentRequired) {
+        final promptContext = appNavigatorKey.currentContext;
+        if (promptContext == null || !promptContext.mounted) {
+          return;
+        }
+        parentEmail = await promptParentalConsentEmail(promptContext);
+        if (parentEmail == null || parentEmail.trim().isEmpty) {
+          return;
+        }
+      }
+
       final password = await SignupInvitationOnboarding.promptSignupPassword(
         email: email,
       );
@@ -415,6 +428,7 @@ class _LoginScreenState extends State<LoginScreen> {
               ? onboarding.invitation
               : null,
           snackBarContext: snackBarContext,
+          parentEmail: parentEmail,
         );
         if (!ageHandled) {
           createdUid = null; // deleted inside age gate / consent cancel
@@ -631,12 +645,16 @@ class _LoginScreenState extends State<LoginScreen> {
 
   /// Age gate + user/member creation. Returns `false` when signup was aborted
   /// (underage cancel / parent email cancelled). Throws on hard failures.
+  ///
+  /// For 13–14, [parentEmail] must already have been collected **before** Auth
+  /// when possible; otherwise we prompt here as a fallback.
   Future<bool> _completeSignupWithAgeGate({
     required String uid,
     required String email,
     required Player profile,
     Invitation? invitation,
     BuildContext? snackBarContext,
+    String? parentEmail,
   }) async {
     final gate = classifyPlayerAccountAge(profile);
     if (gate == AccountAgeGateResult.birthDateRequired) {
@@ -647,14 +665,17 @@ class _LoginScreenState extends State<LoginScreen> {
     }
 
     if (gate == AccountAgeGateResult.parentalConsentRequired) {
-      final rootContext = appNavigatorKey.currentContext;
-      if (rootContext == null || !rootContext.mounted) {
-        await _deleteNewAccountAndSignOut();
-        return false;
+      var resolvedParent = parentEmail?.trim() ?? '';
+      if (resolvedParent.isEmpty) {
+        final rootContext = appNavigatorKey.currentContext;
+        if (rootContext == null || !rootContext.mounted) {
+          await _deleteNewAccountAndSignOut();
+          return false;
+        }
+        resolvedParent =
+            (await promptParentalConsentEmail(rootContext))?.trim() ?? '';
       }
-
-      final parentEmail = await promptParentalConsentEmail(rootContext);
-      if (parentEmail == null || parentEmail.isEmpty) {
+      if (resolvedParent.isEmpty) {
         await _deleteNewAccountAndSignOut();
         return false;
       }
@@ -666,7 +687,7 @@ class _LoginScreenState extends State<LoginScreen> {
         uid: uid,
         accountEmail: email,
         profile: profile,
-        parentEmail: parentEmail,
+        parentEmail: resolvedParent,
         childDisplayName: childName.isEmpty ? 'votre enfant' : childName,
       );
       if (consentError != null) {
@@ -782,7 +803,17 @@ class _LoginScreenState extends State<LoginScreen> {
     SocialAuthProvider provider, {
     bool manageParentLoading = true,
     BuildContext? snackBarContext,
+    bool profileFirst = false,
   }) async {
+    if (profileFirst) {
+      await _signUpWithSocialProfileFirst(
+        provider,
+        manageParentLoading: manageParentLoading,
+        snackBarContext: snackBarContext,
+      );
+      return;
+    }
+
     final rootContext = appNavigatorKey.currentContext;
     final sheetContext = snackBarContext;
 
@@ -851,119 +882,38 @@ class _LoginScreenState extends State<LoginScreen> {
       final needsInvitation =
           await _userNeedsInvitationOnboarding(credential);
       debugPrint('login: needsInvitation=$needsInvitation');
-      var memberJustCreated = false;
-      var linkedViaInvitation = false;
-      Player? createdProfile;
 
+      // Returning social login should not create a member here.
+      // New accounts must use profile-first signup (Créer un compte).
       if (needsInvitation) {
-        if (manageParentLoading && mounted) {
-          setState(() => _isLoading = false);
-        }
-
-        _dismissLoginBottomSheetIfOpen(sheetContext: sheetContext);
-        await _waitForBottomSheetDismissal();
-
-        final coordinator = SocialOnboardingCoordinator.instance;
-        coordinator.beginProfileOnboarding();
-        try {
-          final onboarding = await SignupInvitationOnboarding.run();
-          debugPrint(
-            'login: signup onboarding result='
-            '${onboarding?.profile.firstName ?? 'cancelled'} '
-            'linkedExisting=${onboarding?.linkedExistingMember ?? false}',
-          );
-
-          if (onboarding == null) {
-            await _deleteNewAccountAndSignOut();
-            return;
-          }
-
-          final profile = onboarding.profile;
-
-          if (manageParentLoading && mounted) {
-            setState(() => _isLoading = true);
-          }
-
-          try {
-            final ageHandled = await _completeSignupWithAgeGate(
-              uid: uid,
-              email: credential.user?.email ?? '',
-              profile: profile,
-              invitation: onboarding.linkedExistingMember
-                  ? onboarding.invitation
-                  : null,
-              snackBarContext: sheetContext,
-            );
-            if (!ageHandled) return;
-            final refreshSession =
-                (appNavigatorKey.currentContext ?? rootContext)
-                        ?.read<AppSession>() ??
-                    (mounted ? context.read<AppSession>() : null);
-            if (refreshSession != null) {
-              await _refreshSessionAvatars(refreshSession);
-            }
-            createdProfile = profile;
-            linkedViaInvitation = onboarding.linkedExistingMember;
-            memberJustCreated = true;
-          } catch (e) {
-            debugPrint('Social onboarding error: $e');
-            await _deleteNewAccountAndSignOut();
-            final message = e is StateError &&
-                    e.message == 'member profile incomplete'
-                ? l10n.memberProfileIncomplete
-                : e is StateError && e.message == 'blockedUnderage'
-                    ? l10n.accountAgeBlockedUnderage
-                    : '${l10n.unexpectedError} : $e';
-            _showSnackBar(message, snackBarContext: sheetContext);
-            return;
-          }
-        } finally {
-          coordinator.endProfileOnboarding();
-        }
-      } else {
-        _dismissLoginBottomSheetIfOpen(sheetContext: sheetContext);
-        await _waitForBottomSheetDismissal();
+        await _deleteNewAccountAndSignOut();
+        _showSnackBar(
+          l10n.signupUseCreateAccountForSocial,
+          snackBarContext: sheetContext,
+        );
+        return;
       }
+
+      _dismissLoginBottomSheetIfOpen(sheetContext: sheetContext);
+      await _waitForBottomSheetDismissal();
 
       await AnalyticsService.instance.logFeatureUsed(
         feature: AnalyticsFeatures.loginSuccess,
       );
 
-      if (memberJustCreated && createdProfile != null) {
-        final status = await UserService().getAccountStatus(uid);
-        if (status == UserAccountStatus.pendingParentalConsent) {
-          return;
-        }
-        final appSession = (appNavigatorKey.currentContext ?? rootContext)
-                ?.read<AppSession>() ??
-            (mounted ? context.read<AppSession>() : null);
-        if (appSession != null) {
-          await _finishOnboardingAfterMemberCreated(
-            appSession,
-            profile: createdProfile,
-            linkedViaInvitation: linkedViaInvitation,
-          );
-        } else {
-          debugPrint(
-            'login: onboarding finish skipped — no AppSession for avatar refresh',
-          );
-        }
-        await YoutubeTopVideoPrompt.maybeShow();
-      } else {
-        final sessionContext = appNavigatorKey.currentContext ?? rootContext;
-        if (sessionContext != null && sessionContext.mounted) {
-          final session = sessionContext.read<AppSession>();
-          await session.init();
-          await session.refreshPlayerAvatarUrls();
-          await UserRootService.instance.reload();
-        } else if (mounted) {
-          final session = context.read<AppSession>();
-          await session.init();
-          await session.refreshPlayerAvatarUrls();
-          await UserRootService.instance.reload();
-        }
-        await YoutubeTopVideoPrompt.maybeShow();
+      final sessionContext = appNavigatorKey.currentContext ?? rootContext;
+      if (sessionContext != null && sessionContext.mounted) {
+        final session = sessionContext.read<AppSession>();
+        await session.init();
+        await session.refreshPlayerAvatarUrls();
+        await UserRootService.instance.reload();
+      } else if (mounted) {
+        final session = context.read<AppSession>();
+        await session.init();
+        await session.refreshPlayerAvatarUrls();
+        await UserRootService.instance.reload();
       }
+      await YoutubeTopVideoPrompt.maybeShow();
       debugPrint('login: social sign-in complete, appSession initialized');
     } on SocialAuthCancelledException {
       debugPrint('Auth cancelled provider=$methodName');
@@ -972,19 +922,227 @@ class _LoginScreenState extends State<LoginScreen> {
       debugPrint(
         'Auth error provider=$methodName code=${e.code} message=${e.message}',
       );
-
       _showSnackBar(
         e.message ?? l10n.signInError,
         snackBarContext: sheetContext,
       );
     } catch (e) {
       debugPrint('Auth error provider=$methodName unexpected: $e');
-
       _showSnackBar(
         '${l10n.unexpectedError} : $e',
         snackBarContext: sheetContext,
       );
     } finally {
+      if (manageParentLoading && mounted) {
+        setState(() => _isLoading = false);
+      }
+    }
+  }
+
+  /// Google/Apple signup: invitation? → profile → age (+ parent email) → THEN OAuth
+  /// → Auth + users/{uid} + member. Cancel before OAuth creates nothing.
+  Future<void> _signUpWithSocialProfileFirst(
+    SocialAuthProvider provider, {
+    bool manageParentLoading = true,
+    BuildContext? snackBarContext,
+  }) async {
+    final rootContext = appNavigatorKey.currentContext;
+    final sheetContext = snackBarContext;
+
+    if (mounted) {
+      FocusScope.of(context).unfocus();
+    } else if (sheetContext != null && sheetContext.mounted) {
+      FocusScope.of(sheetContext).unfocus();
+    }
+
+    final methodName = switch (provider) {
+      SocialAuthProvider.google => 'google',
+      SocialAuthProvider.apple => 'apple',
+    };
+
+    final l10n = (mounted ? context.l10n : null) ??
+        (sheetContext != null && sheetContext.mounted
+            ? sheetContext.l10n
+            : null) ??
+        (rootContext != null && rootContext.mounted
+            ? rootContext.l10n
+            : null);
+    if (l10n == null) {
+      debugPrint('login: social signup aborted — no context for l10n');
+      return;
+    }
+
+    if (manageParentLoading) {
+      if (_isLoading) return;
+      if (mounted) {
+        setState(() => _isLoading = true);
+      }
+    }
+
+    AnalyticsInteractions.logFeature(AnalyticsFeatures.loginAttempt);
+
+    _dismissLoginBottomSheetIfOpen(sheetContext: sheetContext);
+    await _waitForBottomSheetDismissal();
+
+    if (manageParentLoading && mounted) {
+      setState(() => _isLoading = false);
+    }
+
+    final coordinator = SocialOnboardingCoordinator.instance;
+    coordinator.beginProfileOnboarding();
+    String? createdUid;
+    try {
+      final onboarding = await SignupInvitationOnboarding.run(
+        requireEmail: false,
+      );
+      if (onboarding == null) {
+        return;
+      }
+
+      final profile = onboarding.profile;
+      final gate = classifyPlayerAccountAge(profile);
+      if (gate == AccountAgeGateResult.blockedUnderage) {
+        _showSnackBar(
+          l10n.accountAgeBlockedUnderage,
+          snackBarContext: sheetContext,
+        );
+        return;
+      }
+      if (gate == AccountAgeGateResult.birthDateRequired) {
+        _showSnackBar(
+          l10n.memberProfileIncomplete,
+          snackBarContext: sheetContext,
+        );
+        return;
+      }
+
+      String? parentEmail;
+      if (gate == AccountAgeGateResult.parentalConsentRequired) {
+        final promptContext = appNavigatorKey.currentContext;
+        if (promptContext == null || !promptContext.mounted) {
+          return;
+        }
+        parentEmail = await promptParentalConsentEmail(promptContext);
+        if (parentEmail == null || parentEmail.trim().isEmpty) {
+          return;
+        }
+      }
+
+      if (manageParentLoading && mounted) {
+        setState(() => _isLoading = true);
+      }
+
+      final credential = await SocialAuthService.instance.signIn(provider);
+      final uid = credential.user?.uid;
+      if (uid == null) {
+        throw Exception('Firebase user uid missing after social signup');
+      }
+      createdUid = uid;
+
+      final authUser = credential.user;
+      if (authUser != null) {
+        final resolvedUser = FirebaseAuth.instance.currentUser ?? authUser;
+        final oauthPhoto = readAuthUserPhotoUrl(resolvedUser);
+        final session = (appNavigatorKey.currentContext ?? rootContext)
+                ?.read<AppSession>() ??
+            (mounted ? context.read<AppSession>() : null);
+        session?.cacheOAuthPhotoUrl(oauthPhoto);
+      }
+
+      await AnalyticsService.instance.logLogin(method: methodName);
+
+      // Existing social account with a member: treat as login, drop draft profile.
+      final needsInvitation =
+          await _userNeedsInvitationOnboarding(credential);
+      if (!needsInvitation) {
+        createdUid = null;
+        coordinator.endProfileOnboarding();
+        final sessionContext = appNavigatorKey.currentContext ?? rootContext;
+        if (sessionContext != null && sessionContext.mounted) {
+          final session = sessionContext.read<AppSession>();
+          await session.init();
+          await session.refreshPlayerAvatarUrls();
+          await UserRootService.instance.reload();
+        }
+        await YoutubeTopVideoPrompt.maybeShow();
+        return;
+      }
+
+      var accountEmail = credential.user?.email?.trim() ?? '';
+      if (accountEmail.isEmpty) {
+        accountEmail = profile.email?.trim() ?? '';
+      }
+      // Prefer OAuth email on the profile when profile email is empty.
+      var finalProfile = profile;
+      if ((finalProfile.email == null || finalProfile.email!.trim().isEmpty) &&
+          accountEmail.isNotEmpty) {
+        finalProfile = finalProfile.copyWith(email: accountEmail);
+      }
+
+      final ageHandled = await _completeSignupWithAgeGate(
+        uid: uid,
+        email: accountEmail,
+        profile: finalProfile,
+        invitation: onboarding.linkedExistingMember
+            ? onboarding.invitation
+            : null,
+        snackBarContext: sheetContext,
+        parentEmail: parentEmail,
+      );
+      if (!ageHandled) {
+        createdUid = null;
+        return;
+      }
+
+      final refreshSession = (appNavigatorKey.currentContext ?? rootContext)
+              ?.read<AppSession>() ??
+          (mounted ? context.read<AppSession>() : null);
+      if (refreshSession != null) {
+        await _refreshSessionAvatars(refreshSession);
+      }
+
+      await AnalyticsService.instance.logFeatureUsed(
+        feature: AnalyticsFeatures.loginSuccess,
+      );
+
+      final status = await UserService().getAccountStatus(uid);
+      if (status == UserAccountStatus.pendingParentalConsent) {
+        return;
+      }
+
+      if (refreshSession != null) {
+        await _finishOnboardingAfterMemberCreated(
+          refreshSession,
+          profile: finalProfile,
+          linkedViaInvitation: onboarding.linkedExistingMember,
+        );
+      }
+      await YoutubeTopVideoPrompt.maybeShow();
+    } on SocialAuthCancelledException {
+      debugPrint('Auth cancelled provider=$methodName (profile-first signup)');
+      return;
+    } on FirebaseAuthException catch (e) {
+      debugPrint(
+        'Auth error provider=$methodName code=${e.code} message=${e.message}',
+      );
+      if (createdUid != null) {
+        await _deleteNewAccountAndSignOut();
+      }
+      _showSnackBar(
+        e.message ?? l10n.signInError,
+        snackBarContext: sheetContext,
+      );
+    } catch (e) {
+      debugPrint('Auth error provider=$methodName unexpected: $e');
+      if (createdUid != null) {
+        await _deleteNewAccountAndSignOut();
+      }
+      _showSnackBar(
+        '${l10n.unexpectedError} : $e',
+        snackBarContext: sheetContext,
+      );
+    } finally {
+      coordinator.endProfileOnboarding();
       if (manageParentLoading && mounted) {
         setState(() => _isLoading = false);
       }
@@ -1050,7 +1208,8 @@ class _LoginScreenState extends State<LoginScreen> {
         },
         onSignIn: _submit,
         onSignUp: () => _startEmailSignup(),
-        onSocialSignIn: _signInWithSocial,
+        onSocialSignIn: (provider, {bool profileFirst = false}) =>
+            _signInWithSocial(provider, profileFirst: profileFirst),
         onForgotPassword: () => _onForgotPassword(),
         onPreviousPage: () => _goPreviousPage(items.length),
         onNextPage: () => _goNextPage(items.length),
@@ -1079,7 +1238,10 @@ class _WebLoginLayout extends StatelessWidget {
   final VoidCallback onToggleObscure;
   final VoidCallback onSignIn;
   final Future<void> Function() onSignUp;
-  final Future<void> Function(SocialAuthProvider provider) onSocialSignIn;
+  final Future<void> Function(
+    SocialAuthProvider provider, {
+    bool profileFirst,
+  }) onSocialSignIn;
   final VoidCallback onForgotPassword;
   final VoidCallback onPreviousPage;
   final VoidCallback onNextPage;
@@ -1514,7 +1676,10 @@ class _LoginCard extends StatefulWidget {
   final VoidCallback onToggleObscure;
   final VoidCallback onSignIn;
   final Future<void> Function() onSignUp;
-  final Future<void> Function(SocialAuthProvider provider) onSocialSignIn;
+  final Future<void> Function(
+    SocialAuthProvider provider, {
+    bool profileFirst,
+  }) onSocialSignIn;
   final VoidCallback onForgotPassword;
   final ValueChanged<Locale> onLocaleChanged;
   final VoidCallback? onBack;
@@ -1734,7 +1899,10 @@ class _LoginCardState extends State<_LoginCard> {
               label: context.l10n.continueWithGoogle,
               onPressed: widget.isLoading
                   ? null
-                  : () => widget.onSocialSignIn(SocialAuthProvider.google),
+                  : () => widget.onSocialSignIn(
+                        SocialAuthProvider.google,
+                        profileFirst: _isSignUpMode,
+                      ),
             ),
             const SizedBox(height: 12),
             SocialAuthButton(
@@ -1742,7 +1910,10 @@ class _LoginCardState extends State<_LoginCard> {
               label: context.l10n.continueWithApple,
               onPressed: widget.isLoading
                   ? null
-                  : () => widget.onSocialSignIn(SocialAuthProvider.apple),
+                  : () => widget.onSocialSignIn(
+                        SocialAuthProvider.apple,
+                        profileFirst: _isSignUpMode,
+                      ),
             ),
             const SizedBox(height: 16),
             const LegalLinksFooter(),
@@ -1768,6 +1939,7 @@ class _LoginBottomSheet extends StatefulWidget {
     SocialAuthProvider provider, {
     bool manageParentLoading,
     BuildContext? snackBarContext,
+    bool profileFirst,
   }) onSocialSignIn;
   final VoidCallback onForgotPassword;
 
@@ -1832,7 +2004,10 @@ class _LoginBottomSheetState extends State<_LoginBottomSheet> {
     }
   }
 
-  Future<void> _handleSocialSignIn(SocialAuthProvider provider) async {
+  Future<void> _handleSocialSignIn(
+    SocialAuthProvider provider, {
+    bool profileFirst = false,
+  }) async {
     if (_isLoading) return;
 
     setState(() => _isLoading = true);
@@ -1841,6 +2016,7 @@ class _LoginBottomSheetState extends State<_LoginBottomSheet> {
         provider,
         manageParentLoading: false,
         snackBarContext: context,
+        profileFirst: profileFirst,
       );
     } finally {
       if (mounted) {

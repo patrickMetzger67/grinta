@@ -464,6 +464,12 @@ abstract class AppLocalizations {
   /// **'Compte : {email}'**
   String signupPasswordMessage(String email);
 
+  /// No description provided for @signupUseCreateAccountForSocial.
+  ///
+  /// In fr, this message translates to:
+  /// **'Pour créer un compte avec Google ou Apple, utilise « Créer un compte », puis choisis Google ou Apple après ton profil.'**
+  String get signupUseCreateAccountForSocial;
+
   /// No description provided for @invitationEmailSubject.
   ///
   /// In fr, this message translates to:
