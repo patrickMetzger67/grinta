@@ -364,9 +364,14 @@ class _SignupMemberProfileDialog extends StatefulWidget {
 
 class _SignupMemberProfileDialogState extends State<_SignupMemberProfileDialog> {
   MemberProfileFormState? _formState;
+  String? _inlineError;
 
   void _onFormStateCreated(MemberProfileFormState state) {
     _formState = state;
+  }
+
+  void _showError(String message) {
+    setState(() => _inlineError = message);
   }
 
   void _submit() {
@@ -375,13 +380,13 @@ class _SignupMemberProfileDialogState extends State<_SignupMemberProfileDialog> 
 
     final validationError = formState.validateAndGetError();
     if (validationError != null) {
-      AppSnackbar.show(context, validationError);
+      _showError(validationError);
       return;
     }
 
     final profile = formState.buildProfile();
     if (profile == null) {
-      AppSnackbar.show(context, context.l10n.memberProfileIncomplete);
+      _showError(context.l10n.memberProfileIncomplete);
       return;
     }
 
@@ -390,6 +395,7 @@ class _SignupMemberProfileDialogState extends State<_SignupMemberProfileDialog> 
 
   @override
   Widget build(BuildContext context) {
+    final colors = context.appColors;
     return AlertDialog(
       title: Text(context.l10n.memberProfileTitle),
       content: SingleChildScrollView(
@@ -397,11 +403,42 @@ class _SignupMemberProfileDialogState extends State<_SignupMemberProfileDialog> 
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
+            if (_inlineError != null) ...[
+              Material(
+                color: colors.primary.withValues(alpha: 0.12),
+                borderRadius: BorderRadius.circular(12),
+                child: Padding(
+                  padding: const EdgeInsets.all(12),
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Icon(
+                        Icons.error_outline_rounded,
+                        color: colors.primary,
+                        size: 22,
+                      ),
+                      const SizedBox(width: 10),
+                      Expanded(
+                        child: Text(
+                          _inlineError!,
+                          style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                                color: colors.textPrimary,
+                                fontWeight: FontWeight.w600,
+                                height: 1.35,
+                              ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+              const SizedBox(height: 12),
+            ],
             if (widget.subtitle != null) ...[
               Text(
                 widget.subtitle!,
                 style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                      color: context.appColors.textSecondary,
+                      color: colors.textSecondary,
                     ),
               ),
               const SizedBox(height: 12),
@@ -413,6 +450,11 @@ class _SignupMemberProfileDialogState extends State<_SignupMemberProfileDialog> 
               enabled: true,
               initialProfile: widget.initialProfile,
               onFormStateCreated: _onFormStateCreated,
+              onChanged: (_) {
+                if (_inlineError != null) {
+                  setState(() => _inlineError = null);
+                }
+              },
             ),
           ],
         ),

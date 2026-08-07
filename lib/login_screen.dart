@@ -32,6 +32,7 @@ import 'widget/legal_links_footer.dart';
 import 'widget/social_auth_button.dart';
 import 'widget/subscription_paywall.dart';
 import 'widget/parental_consent_pending_screen.dart';
+import 'widget/youtube_top_video_prompt.dart';
 import 'services/parental_consent_service.dart';
 import 'util/account_age_gate.dart';
 
@@ -363,64 +364,74 @@ class _LoginScreenState extends State<LoginScreen> {
       _dismissLoginBottomSheetIfOpen(sheetContext: snackBarContext);
       await _waitForBottomSheetDismissal();
 
-      final onboarding = await SignupInvitationOnboarding.run();
-      debugPrint(
-        'login: signup onboarding result='
-        '${onboarding?.profile.firstName ?? 'cancelled'} '
-        'linkedExisting=${onboarding?.linkedExistingMember ?? false}',
-      );
-
-      if (onboarding == null) {
-        await _deleteNewAccountAndSignOut();
-        return;
-      }
-
-      final profile = onboarding.profile;
-
-      if (manageParentLoading && mounted) {
-        setState(() => _isLoading = true);
-      }
-
+      final coordinator = SocialOnboardingCoordinator.instance;
+      coordinator.beginProfileOnboarding();
+      SignupMemberOnboardingResult? onboarding;
       try {
-        final ageHandled = await _completeSignupWithAgeGate(
-          uid: newUserUid,
-          email: email,
-          profile: profile,
-          invitation: onboarding.linkedExistingMember
-              ? onboarding.invitation
-              : null,
-          snackBarContext: snackBarContext,
+        onboarding = await SignupInvitationOnboarding.run();
+        debugPrint(
+          'login: signup onboarding result='
+          '${onboarding?.profile.firstName ?? 'cancelled'} '
+          'linkedExisting=${onboarding?.linkedExistingMember ?? false}',
         );
-        if (!ageHandled) return;
-        await _refreshSessionAvatars(appSession);
-      } catch (e) {
-        debugPrint('Email signup profile error: $e');
-        await _deleteNewAccountAndSignOut();
-        final message = e is StateError &&
-                e.message == 'member profile incomplete'
-            ? l10n.memberProfileIncomplete
-            : e is StateError && e.message == 'blockedUnderage'
-                ? l10n.accountAgeBlockedUnderage
-                : '${l10n.unexpectedError} : $e';
-        _showSnackBar(message, snackBarContext: snackBarContext);
-        return;
+
+        if (onboarding == null) {
+          await _deleteNewAccountAndSignOut();
+          return;
+        }
+
+        final profile = onboarding.profile;
+
+        if (manageParentLoading && mounted) {
+          setState(() => _isLoading = true);
+        }
+
+        try {
+          final ageHandled = await _completeSignupWithAgeGate(
+            uid: newUserUid,
+            email: email,
+            profile: profile,
+            invitation: onboarding.linkedExistingMember
+                ? onboarding.invitation
+                : null,
+            snackBarContext: snackBarContext,
+          );
+          if (!ageHandled) return;
+          await _refreshSessionAvatars(appSession);
+        } catch (e) {
+          debugPrint('Email signup profile error: $e');
+          await _deleteNewAccountAndSignOut();
+          final message = e is StateError &&
+                  e.message == 'member profile incomplete'
+              ? l10n.memberProfileIncomplete
+              : e is StateError && e.message == 'blockedUnderage'
+                  ? l10n.accountAgeBlockedUnderage
+                  : '${l10n.unexpectedError} : $e';
+          _showSnackBar(message, snackBarContext: snackBarContext);
+          return;
+        }
+
+        await AnalyticsService.instance.logFeatureUsed(
+          feature: AnalyticsFeatures.loginSuccess,
+        );
+
+        // Pending parental consent: AuthGate shows the waiting screen.
+        final status = await UserService().getAccountStatus(newUserUid);
+        if (status == UserAccountStatus.pendingParentalConsent) {
+          return;
+        }
+
+        await _finishOnboardingAfterMemberCreated(
+          appSession,
+          profile: profile,
+          linkedViaInvitation: onboarding.linkedExistingMember,
+        );
+      } finally {
+        coordinator.endProfileOnboarding();
       }
 
-      await AnalyticsService.instance.logFeatureUsed(
-        feature: AnalyticsFeatures.loginSuccess,
-      );
-
-      // Pending parental consent: AuthGate shows the waiting screen.
-      final status = await UserService().getAccountStatus(newUserUid);
-      if (status == UserAccountStatus.pendingParentalConsent) {
-        return;
-      }
-
-      await _finishOnboardingAfterMemberCreated(
-        appSession,
-        profile: profile,
-        linkedViaInvitation: onboarding.linkedExistingMember,
-      );
+      // Welcome / tip videos only after profile is created and validated.
+      await YoutubeTopVideoPrompt.maybeShow();
     } on FirebaseAuthException catch (e) {
       debugPrint(
         'Auth error method=signup code=${e.code} message=${e.message}',
@@ -829,55 +840,62 @@ class _LoginScreenState extends State<LoginScreen> {
         _dismissLoginBottomSheetIfOpen(sheetContext: sheetContext);
         await _waitForBottomSheetDismissal();
 
-        final onboarding = await SignupInvitationOnboarding.run();
-        debugPrint(
-          'login: signup onboarding result='
-          '${onboarding?.profile.firstName ?? 'cancelled'} '
-          'linkedExisting=${onboarding?.linkedExistingMember ?? false}',
-        );
-
-        if (onboarding == null) {
-          await _deleteNewAccountAndSignOut();
-          return;
-        }
-
-        final profile = onboarding.profile;
-
-        if (manageParentLoading && mounted) {
-          setState(() => _isLoading = true);
-        }
-
+        final coordinator = SocialOnboardingCoordinator.instance;
+        coordinator.beginProfileOnboarding();
         try {
-          final ageHandled = await _completeSignupWithAgeGate(
-            uid: uid,
-            email: credential.user?.email ?? '',
-            profile: profile,
-            invitation: onboarding.linkedExistingMember
-                ? onboarding.invitation
-                : null,
-            snackBarContext: sheetContext,
+          final onboarding = await SignupInvitationOnboarding.run();
+          debugPrint(
+            'login: signup onboarding result='
+            '${onboarding?.profile.firstName ?? 'cancelled'} '
+            'linkedExisting=${onboarding?.linkedExistingMember ?? false}',
           );
-          if (!ageHandled) return;
-          final refreshSession = (appNavigatorKey.currentContext ?? rootContext)
-                  ?.read<AppSession>() ??
-              (mounted ? context.read<AppSession>() : null);
-          if (refreshSession != null) {
-            await _refreshSessionAvatars(refreshSession);
+
+          if (onboarding == null) {
+            await _deleteNewAccountAndSignOut();
+            return;
           }
-          createdProfile = profile;
-          linkedViaInvitation = onboarding.linkedExistingMember;
-          memberJustCreated = true;
-        } catch (e) {
-          debugPrint('Social onboarding error: $e');
-          await _deleteNewAccountAndSignOut();
-          final message = e is StateError &&
-                  e.message == 'member profile incomplete'
-              ? l10n.memberProfileIncomplete
-              : e is StateError && e.message == 'blockedUnderage'
-                  ? l10n.accountAgeBlockedUnderage
-                  : '${l10n.unexpectedError} : $e';
-          _showSnackBar(message, snackBarContext: sheetContext);
-          return;
+
+          final profile = onboarding.profile;
+
+          if (manageParentLoading && mounted) {
+            setState(() => _isLoading = true);
+          }
+
+          try {
+            final ageHandled = await _completeSignupWithAgeGate(
+              uid: uid,
+              email: credential.user?.email ?? '',
+              profile: profile,
+              invitation: onboarding.linkedExistingMember
+                  ? onboarding.invitation
+                  : null,
+              snackBarContext: sheetContext,
+            );
+            if (!ageHandled) return;
+            final refreshSession =
+                (appNavigatorKey.currentContext ?? rootContext)
+                        ?.read<AppSession>() ??
+                    (mounted ? context.read<AppSession>() : null);
+            if (refreshSession != null) {
+              await _refreshSessionAvatars(refreshSession);
+            }
+            createdProfile = profile;
+            linkedViaInvitation = onboarding.linkedExistingMember;
+            memberJustCreated = true;
+          } catch (e) {
+            debugPrint('Social onboarding error: $e');
+            await _deleteNewAccountAndSignOut();
+            final message = e is StateError &&
+                    e.message == 'member profile incomplete'
+                ? l10n.memberProfileIncomplete
+                : e is StateError && e.message == 'blockedUnderage'
+                    ? l10n.accountAgeBlockedUnderage
+                    : '${l10n.unexpectedError} : $e';
+            _showSnackBar(message, snackBarContext: sheetContext);
+            return;
+          }
+        } finally {
+          coordinator.endProfileOnboarding();
         }
       } else {
         _dismissLoginBottomSheetIfOpen(sheetContext: sheetContext);
@@ -907,6 +925,7 @@ class _LoginScreenState extends State<LoginScreen> {
             'login: onboarding finish skipped — no AppSession for avatar refresh',
           );
         }
+        await YoutubeTopVideoPrompt.maybeShow();
       } else {
         final sessionContext = appNavigatorKey.currentContext ?? rootContext;
         if (sessionContext != null && sessionContext.mounted) {
@@ -920,6 +939,7 @@ class _LoginScreenState extends State<LoginScreen> {
           await session.refreshPlayerAvatarUrls();
           await UserRootService.instance.reload();
         }
+        await YoutubeTopVideoPrompt.maybeShow();
       }
       debugPrint('login: social sign-in complete, appSession initialized');
     } on SocialAuthCancelledException {
