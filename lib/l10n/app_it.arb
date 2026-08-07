@@ -251,6 +251,7 @@
   "memberBirthDate": "Data di nascita",
   "memberBirthDateOptional": "Data di nascita (facoltativa)",
   "memberBirthDateRequired": "La data di nascita è obbligatoria",
+  "memberBirthDateAgeHint": "Grinta Performance è riservata agli utenti di almeno 13 anni. I 13–14 anni richiedono l'autorizzazione di un rappresentante legale.",
   "accountAgeBlockedUnderage": "Grinta Performance è riservata agli utenti di almeno 13 anni.",
   "parentalConsentEmailTitle": "Autorizzazione genitoriale",
   "parentalConsentEmailMessage": "Hai 13 o 14 anni. Inserisci l'email del tuo rappresentante legale. Dovrà autorizzare l'accesso a Grinta Performance, incluso il trattamento della frequenza cardiaca e di altri dati fisiologici se colleghi un dispositivo (Polar, Whoop, ecc.).",

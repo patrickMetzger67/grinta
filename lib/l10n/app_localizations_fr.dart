@@ -432,6 +432,10 @@ class AppLocalizationsFr extends AppLocalizations {
   String get memberBirthDateRequired => 'La date de naissance est obligatoire';
 
   @override
+  String get memberBirthDateAgeHint =>
+      'Grinta Performance est réservé aux personnes de 13 ans et plus. Les 13–14 ans nécessitent l\'autorisation d\'un représentant légal.';
+
+  @override
   String get accountAgeBlockedUnderage =>
       'Grinta Performance est réservé aux personnes de 13 ans et plus.';
 

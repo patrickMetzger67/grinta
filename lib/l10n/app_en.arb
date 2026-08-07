@@ -207,6 +207,7 @@
   "memberBirthDate": "Date of birth",
   "memberBirthDateOptional": "Date of birth (optional)",
   "memberBirthDateRequired": "Date of birth is required",
+  "memberBirthDateAgeHint": "Grinta Performance is for users aged 13 and over. Ages 13–14 require a legal guardian's approval.",
   "accountAgeBlockedUnderage": "Grinta Performance is for users aged 13 and over.",
   "parentalConsentEmailTitle": "Parental consent",
   "parentalConsentEmailMessage": "You are 13 or 14 years old. To create your account, enter a legal guardian's email. They must approve your access to Grinta Performance, including processing of your heart-rate and other physiological data if you connect a device (Polar, Whoop, etc.).",

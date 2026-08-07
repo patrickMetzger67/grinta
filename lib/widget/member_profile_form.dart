@@ -178,6 +178,10 @@ class MemberProfileFormState extends State<MemberProfileForm> {
     if (_birthDate == null) {
       return context.l10n.memberBirthDateRequired;
     }
+    final ageYears = ageYearsFromBirthDate(_birthDate!);
+    if (classifyAccountAge(ageYears) == AccountAgeGateResult.blockedUnderage) {
+      return context.l10n.accountAgeBlockedUnderage;
+    }
     if (_nationalityCountryCode == null ||
         _nationalityCountryCode!.trim().isEmpty) {
       return context.l10n.memberNationalityRequired;
@@ -257,7 +261,9 @@ class MemberProfileFormState extends State<MemberProfileForm> {
     if (!widget.enabled) return;
 
     final now = DateTime.now();
-    final lastDate = maxBirthDateForMinAge(now: now);
+    // Allow declaring any age (including under 13) so the age gate can block
+    // honestly — Google/Apple already created Auth before this form.
+    final lastDate = DateTime(now.year, now.month, now.day);
     final initial = _birthDate ??
         DateTime(now.year - kSelfServeAccountAgeYears, now.month, now.day);
     final safeInitial = initial.isAfter(lastDate) ? lastDate : initial;
@@ -389,6 +395,13 @@ class MemberProfileFormState extends State<MemberProfileForm> {
                   ),
             ),
           ),
+        ),
+        const SizedBox(height: 6),
+        Text(
+          l10n.memberBirthDateAgeHint,
+          style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                color: colors.textSecondary,
+              ),
         ),
         const SizedBox(height: 12),
         TextField(

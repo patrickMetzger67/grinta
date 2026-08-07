@@ -832,6 +832,12 @@ abstract class AppLocalizations {
   /// **'La date de naissance est obligatoire'**
   String get memberBirthDateRequired;
 
+  /// No description provided for @memberBirthDateAgeHint.
+  ///
+  /// In fr, this message translates to:
+  /// **'Grinta Performance est réservé aux personnes de 13 ans et plus. Les 13–14 ans nécessitent l\'autorisation d\'un représentant légal.'**
+  String get memberBirthDateAgeHint;
+
   /// No description provided for @accountAgeBlockedUnderage.
   ///
   /// In fr, this message translates to:

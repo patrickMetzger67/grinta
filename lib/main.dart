@@ -39,7 +39,9 @@ import 'package:grinta/services/strava_deep_link_service.dart';
 import 'package:grinta/services/whoop_deep_link_service.dart';
 import 'package:grinta/services/userService.dart';
 import 'package:grinta/widget/parental_consent_pending_screen.dart';
+import 'package:grinta/util/account_age_gate.dart';
 import 'package:grinta/util/firebase_auth_ready.dart';
+import 'package:grinta/model/player.dart';
 
 const String kStreamApiKey = 'vg9g2zz7s2fc';
 const Duration _kSessionPrepTimeout = Duration(seconds: 30);
@@ -565,6 +567,17 @@ class _AccountAccessGate extends StatelessWidget {
                 .trim() ??
             UserAccountStatus.active;
 
+        final birthRaw = data?[UserDocumentFields.birthDay]?.toString();
+        final birthDate = Player.parseBirthDay(birthRaw);
+        if (birthDate != null) {
+          final ageGate = classifyAccountAge(
+            ageYearsFromBirthDate(birthDate),
+          );
+          if (ageGate == AccountAgeGateResult.blockedUnderage) {
+            return const _UnderageBlockedScreen();
+          }
+        }
+
         if (status == UserAccountStatus.pendingParentalConsent) {
           final first = data?[UserDocumentFields.firstName]?.toString() ?? '';
           final last = data?[UserDocumentFields.lastName]?.toString() ?? '';
@@ -579,6 +592,57 @@ class _AccountAccessGate extends StatelessWidget {
 
         return const WebAppRoot();
       },
+    );
+  }
+}
+
+/// Shown if a session somehow has an under-13 birth date on the user doc.
+class _UnderageBlockedScreen extends StatelessWidget {
+  const _UnderageBlockedScreen();
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = context.appColors;
+    final l10n = context.l10n;
+    return Scaffold(
+      backgroundColor: colors.background,
+      body: SafeArea(
+        child: Center(
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 480),
+            child: Padding(
+              padding: const EdgeInsets.all(24),
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(
+                    Icons.block,
+                    size: 56,
+                    color: colors.danger,
+                  ),
+                  const SizedBox(height: 20),
+                  Text(
+                    l10n.accountAgeBlockedUnderage,
+                    textAlign: TextAlign.center,
+                    style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                          color: colors.textPrimary,
+                          fontWeight: FontWeight.w700,
+                          height: 1.4,
+                        ),
+                  ),
+                  const SizedBox(height: 28),
+                  FilledButton(
+                    onPressed: () async {
+                      await firebase_auth.FirebaseAuth.instance.signOut();
+                    },
+                    child: Text(l10n.actionLogout),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      ),
     );
   }
 }
