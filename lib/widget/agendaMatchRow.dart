@@ -274,6 +274,10 @@ class AgendaMatchRow extends StatelessWidget {
           )
               : Image.network(
             safeUrl,
+            // Web HTML images keep the previous bitmap when only the URL
+            // changes on a reused element (e.g. matchday navigator). Key by
+            // URL so Flutter recreates the platform view — same as ClubLogo.
+            key: ValueKey(safeUrl),
             fit: BoxFit.contain,
             webHtmlElementStrategy: WebHtmlElementStrategy.prefer,
             errorBuilder: (context, error, stackTrace) {

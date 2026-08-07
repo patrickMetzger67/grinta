@@ -1231,8 +1231,8 @@ class _AgendaScreenState extends State<AgendaScreen> {
                   (item) => Padding(
                 padding: const EdgeInsets.only(bottom: 10),
                 child: item.allDay && item.type == AgendaItemType.nonSport
-                    ? _AllDayNonSportRow(item: item)
-                    : AgendaItemCard(item: item),
+                    ? _AllDayNonSportRow(key: ValueKey(item.id), item: item)
+                    : AgendaItemCard(key: ValueKey(item.id), item: item),
               ),
             ),
         ],
