@@ -113,7 +113,7 @@ abstract class AppLocalizations {
   /// No description provided for @heroTitle.
   ///
   /// In fr, this message translates to:
-  /// **'Le FOOTBALL Amateur passe à la vitesse supérieure'**
+  /// **'Le Football Amateur passe à la vitesse supérieure'**
   String get heroTitle;
 
   /// No description provided for @heroSubtitle.

@@ -12,7 +12,7 @@ class AppLocalizationsFr extends AppLocalizations {
   String get appName => 'Grinta';
 
   @override
-  String get heroTitle => 'Le FOOTBALL Amateur passe à la vitesse supérieure';
+  String get heroTitle => 'Le Football Amateur passe à la vitesse supérieure';
 
   @override
   String get heroSubtitle =>
