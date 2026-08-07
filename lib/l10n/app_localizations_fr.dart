@@ -609,18 +609,18 @@ class AppLocalizationsFr extends AppLocalizations {
       'Retrouve automatiquement les calendriers et les résultats de tes compétitions officielles. Consulte les prochains matchs et reste informé des résultats de ton équipe.';
 
   @override
-  String get slide2Title => 'Planifiez vos matchs';
+  String get slide2Title => 'Planifie tes matchs';
 
   @override
   String get slide2Subtitle =>
-      'Créez vos événements, convoquez vos joueurs et suivez facilement les disponibilités.';
+      'Crée tes événements, convoque tes joueurs et suis facilement les disponibilités.';
 
   @override
-  String get slide3Title => 'Suivez vos performances';
+  String get slide3Title => 'Suis tes performances';
 
   @override
   String get slide3Subtitle =>
-      'Consultez les statistiques, l’activité et les résultats depuis une interface claire.';
+      'Consulte les statistiques, l’activité et les résultats depuis une interface claire.';
 
   @override
   String get actionCancel => 'Annuler';
