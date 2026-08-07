@@ -18,6 +18,16 @@ abstract final class UserDocumentFields {
   static const parentalConsentToken = 'parentalConsentToken';
   static const parentalConsentRequestedAt = 'parentalConsentRequestedAt';
   static const parentalConsentAt = 'parentalConsentAt';
+
+  /// Explicit consent for heart rate / physiological wearable data (CNIL).
+  /// `true` = authorized, `false` = refused, missing = not decided.
+  static const physiologicalDataConsent = 'physiologicalDataConsent';
+  static const physiologicalDataConsentAt = 'physiologicalDataConsentAt';
+  static const physiologicalDataConsentVersion =
+      'physiologicalDataConsentVersion';
+  /// `self` | `parent` — see [PhysiologicalDataConsentSource].
+  static const physiologicalDataConsentSource =
+      'physiologicalDataConsentSource';
 }
 
 /// Account lifecycle for age / parental consent.

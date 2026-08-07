@@ -441,7 +441,7 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get parentalConsentEmailMessage =>
-      'Tienes 13 o 14 años. Indica el correo de tu representante legal. Debe autorizar tu acceso a Grinta Performance.';
+      'Tienes 13 o 14 años. Indica el correo de tu representante legal. Debe autorizar tu acceso a Grinta Performance, incluido el tratamiento de tu frecuencia cardíaca y otros datos fisiológicos si conectas un dispositivo (Polar, Whoop, etc.).';
 
   @override
   String get parentalConsentEmailLabel => 'Correo del representante legal';
@@ -472,6 +472,36 @@ class AppLocalizationsEs extends AppLocalizations {
   @override
   String get parentalConsentResendError =>
       'No se pudo reenviar el correo. Inténtalo de nuevo.';
+
+  @override
+  String get physiologicalConsentTitle =>
+      'Autorizar el uso de mis datos fisiológicos';
+
+  @override
+  String get physiologicalConsentMessage =>
+      'Autorizo explícitamente a Grinta Performance a tratar mis datos de frecuencia cardíaca y otros datos fisiológicos de mis dispositivos conectados para analizar mi rendimiento deportivo.';
+
+  @override
+  String get physiologicalConsentAuthorize => 'Autorizo';
+
+  @override
+  String get physiologicalConsentRefuse => 'Me niego';
+
+  @override
+  String get physiologicalConsentRefusedHint =>
+      'Conexión del dispositivo cancelada. Puedes seguir usando Grinta sin sensor de frecuencia cardíaca.';
+
+  @override
+  String get physiologicalConsentParentRequiredTitle =>
+      'Autorización parental requerida';
+
+  @override
+  String get physiologicalConsentParentRequiredMessage =>
+      'Para usuarios de 13–14 años, la autorización para tratar la frecuencia cardíaca y otros datos fisiológicos la da el representante legal (por el correo de consentimiento parental). Sin ella, puedes usar la app pero no conectar estos dispositivos.';
+
+  @override
+  String get physiologicalConsentRequestParentEmail =>
+      'Enviar correo al padre/madre';
 
   @override
   String get memberBirthPlace => 'Lugar de nacimiento';

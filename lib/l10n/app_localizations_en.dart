@@ -436,7 +436,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get parentalConsentEmailMessage =>
-      'You are 13 or 14 years old. To create your account, enter a legal guardian\'s email. They must approve your access to Grinta Performance.';
+      'You are 13 or 14 years old. To create your account, enter a legal guardian\'s email. They must approve your access to Grinta Performance, including processing of your heart-rate and other physiological data if you connect a device (Polar, Whoop, etc.).';
 
   @override
   String get parentalConsentEmailLabel => 'Legal guardian email';
@@ -450,12 +450,12 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String parentalConsentPendingMessage(String parentEmail) {
-    return 'An email was sent to $parentEmail. Once your legal guardian approves your account, you can use Grinta Performance.';
+    return 'An email was sent to $parentEmail. Once your legal guardian approves your account (and physiological data processing), you can use Grinta Performance.';
   }
 
   @override
   String get parentalConsentPendingMessageGeneric =>
-      'An email was sent to your legal guardian. Once they approve your account, you can use Grinta Performance.';
+      'An email was sent to your legal guardian. Once they approve your account (and physiological data processing), you can use Grinta Performance.';
 
   @override
   String get parentalConsentResend => 'Resend email';
@@ -466,6 +466,35 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get parentalConsentResendError =>
       'Could not resend the email. Please try again.';
+
+  @override
+  String get physiologicalConsentTitle =>
+      'Authorize use of my physiological data';
+
+  @override
+  String get physiologicalConsentMessage =>
+      'I explicitly authorize Grinta Performance to process my heart-rate data and other physiological data from my connected devices in order to analyze my sports performance.';
+
+  @override
+  String get physiologicalConsentAuthorize => 'I authorize';
+
+  @override
+  String get physiologicalConsentRefuse => 'I refuse';
+
+  @override
+  String get physiologicalConsentRefusedHint =>
+      'Device connection cancelled. You can keep using Grinta without a heart-rate sensor.';
+
+  @override
+  String get physiologicalConsentParentRequiredTitle =>
+      'Parental authorization required';
+
+  @override
+  String get physiologicalConsentParentRequiredMessage =>
+      'For users aged 13–14, authorization to process heart-rate and other physiological data is given by a legal guardian (via the parental consent email). Without it, you can use the app but cannot connect these devices.';
+
+  @override
+  String get physiologicalConsentRequestParentEmail => 'Email the parent';
 
   @override
   String get memberBirthPlace => 'Place of birth';

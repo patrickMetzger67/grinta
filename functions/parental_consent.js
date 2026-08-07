@@ -125,11 +125,33 @@ function createApproveParentalConsent() {
         const status = (data.accountStatus || '').toString();
 
         if (status === ACCOUNT_STATUS_ACTIVE) {
+          const alreadyPhysio = data.physiologicalDataConsent === true;
+          if (!alreadyPhysio) {
+            await doc.ref.set(
+              {
+                physiologicalDataConsent: true,
+                physiologicalDataConsentAt: new Date(),
+                physiologicalDataConsentVersion: '1',
+                physiologicalDataConsentSource: 'parent',
+                parentalConsentToken: null,
+              },
+              { merge: true },
+            );
+            res.status(200).send(
+              htmlPage({
+                title: 'Données physiologiques autorisées',
+                heading: 'Autorisation confirmée',
+                body: 'Vous avez autorisé Grinta Performance à traiter les données de fréquence cardiaque et autres données physiologiques de votre enfant. Il peut maintenant connecter ses appareils (Polar, Whoop, etc.).',
+                ok: true,
+              }),
+            );
+            return;
+          }
           res.status(200).send(
             htmlPage({
               title: 'Déjà autorisé',
               heading: 'Compte déjà autorisé',
-              body: 'Le compte Grinta Performance est déjà actif. Votre enfant peut se connecter.',
+              body: 'Le compte Grinta Performance est déjà actif et les données physiologiques sont déjà autorisées. Votre enfant peut se connecter.',
               ok: true,
             }),
           );
@@ -153,6 +175,10 @@ function createApproveParentalConsent() {
             accountStatus: ACCOUNT_STATUS_ACTIVE,
             parentalConsentAt: new Date(),
             parentalConsentToken: null,
+            physiologicalDataConsent: true,
+            physiologicalDataConsentAt: new Date(),
+            physiologicalDataConsentVersion: '1',
+            physiologicalDataConsentSource: 'parent',
           },
           { merge: true },
         );
@@ -161,7 +187,7 @@ function createApproveParentalConsent() {
           htmlPage({
             title: 'Autorisation confirmée',
             heading: 'Merci — compte autorisé',
-            body: 'Le compte Grinta Performance de votre enfant est maintenant actif. Il peut se connecter à l’application.',
+            body: 'Le compte Grinta Performance de votre enfant est maintenant actif. Vous avez également autorisé le traitement des données de fréquence cardiaque et autres données physiologiques provenant de ses appareils connectés. Il peut se connecter à l’application.',
             ok: true,
           }),
         );

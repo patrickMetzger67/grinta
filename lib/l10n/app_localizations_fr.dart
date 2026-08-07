@@ -440,7 +440,7 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get parentalConsentEmailMessage =>
-      'Tu as entre 13 et 14 ans. Pour créer ton compte, indique l\'adresse e-mail de ton représentant légal. Il devra autoriser ton accès à Grinta Performance.';
+      'Tu as entre 13 et 14 ans. Pour créer ton compte, indique l\'adresse e-mail de ton représentant légal. Il devra autoriser ton accès à Grinta Performance, y compris le traitement de ta fréquence cardiaque et autres données physiologiques si tu connectes un appareil (Polar, Whoop, etc.).';
 
   @override
   String get parentalConsentEmailLabel => 'E-mail du représentant légal';
@@ -454,12 +454,12 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String parentalConsentPendingMessage(String parentEmail) {
-    return 'Un e-mail a été envoyé à $parentEmail. Dès que ton représentant légal aura autorisé ton compte, tu pourras utiliser Grinta Performance.';
+    return 'Un e-mail a été envoyé à $parentEmail. Dès que ton représentant légal aura autorisé ton compte (et le traitement des données physiologiques), tu pourras utiliser Grinta Performance.';
   }
 
   @override
   String get parentalConsentPendingMessageGeneric =>
-      'Un e-mail a été envoyé à ton représentant légal. Dès qu\'il aura autorisé ton compte, tu pourras utiliser Grinta Performance.';
+      'Un e-mail a été envoyé à ton représentant légal. Dès qu\'il aura autorisé ton compte (et le traitement des données physiologiques), tu pourras utiliser Grinta Performance.';
 
   @override
   String get parentalConsentResend => 'Renvoyer l\'e-mail';
@@ -470,6 +470,36 @@ class AppLocalizationsFr extends AppLocalizations {
   @override
   String get parentalConsentResendError =>
       'Impossible de renvoyer l\'e-mail. Réessaie.';
+
+  @override
+  String get physiologicalConsentTitle =>
+      'Autoriser l\'utilisation de mes données physiologiques';
+
+  @override
+  String get physiologicalConsentMessage =>
+      'J\'autorise explicitement Grinta Performance à traiter mes données de fréquence cardiaque et autres données physiologiques provenant de mes appareils connectés afin d\'analyser ma performance sportive.';
+
+  @override
+  String get physiologicalConsentAuthorize => 'J\'autorise';
+
+  @override
+  String get physiologicalConsentRefuse => 'Je refuse';
+
+  @override
+  String get physiologicalConsentRefusedHint =>
+      'Connexion de l\'appareil annulée. Tu peux continuer à utiliser Grinta sans capteur de fréquence cardiaque.';
+
+  @override
+  String get physiologicalConsentParentRequiredTitle =>
+      'Autorisation parentale requise';
+
+  @override
+  String get physiologicalConsentParentRequiredMessage =>
+      'Pour les 13–14 ans, l\'autorisation de traiter la fréquence cardiaque et les autres données physiologiques est donnée par le représentant légal (via l\'e-mail d\'autorisation parentale). Sans elle, tu peux utiliser l\'app mais pas connecter ces appareils.';
+
+  @override
+  String get physiologicalConsentRequestParentEmail =>
+      'Envoyer l\'e-mail au parent';
 
   @override
   String get memberBirthPlace => 'Lieu de naissance';

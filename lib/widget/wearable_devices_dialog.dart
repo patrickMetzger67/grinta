@@ -32,10 +32,12 @@ import 'package:grinta/services/strava_sync_service.dart';
 import 'package:grinta/services/whoop_sync_repository.dart';
 import 'package:grinta/services/whoop_sync_service.dart';
 import 'package:grinta/util/app_theme.dart';
+import 'package:grinta/util/physiological_data_consent.dart';
 import 'package:grinta/util/wearable_sync_owner.dart';
 import 'package:grinta/widget/apple_health_coach_visibility_section.dart';
 import 'package:grinta/widget/fitbit_coach_visibility_section.dart';
 import 'package:grinta/widget/google_health_coach_visibility_section.dart';
+import 'package:grinta/widget/physiological_data_consent_dialog.dart';
 import 'package:grinta/widget/polar_coach_visibility_section.dart';
 import 'package:grinta/widget/strava_coach_visibility_section.dart';
 import 'package:grinta/widget/wearable_device_type_dropdown.dart';
@@ -278,6 +280,30 @@ class _WearableDevicesDialogContentState
         _intenseGpsSerialController.text.trim().isEmpty) {
       _showConnectError(context.l10n.intenseGpsSerialRequired);
       return;
+    }
+
+    if (wearableRequiresPhysiologicalConsent(_selectedType)) {
+      final player =
+          await PlayerService().getPlayerById(widget.playerId);
+      if (!mounted) return;
+      final consentUid = resolveWearableSyncOwnerUid(
+        callerUid: uid,
+        player: player,
+      );
+      final gate = await ensurePhysiologicalDataConsent(
+        context: context,
+        consentUid: consentUid,
+        player: player,
+      );
+      if (!mounted) return;
+      if (gate != PhysiologicalConsentGateResult.allowed) {
+        if (gate == PhysiologicalConsentGateResult.blocked) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text(context.l10n.physiologicalConsentRefusedHint)),
+          );
+        }
+        return;
+      }
     }
 
     setState(() => _syncBusy = true);

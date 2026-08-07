@@ -847,7 +847,7 @@ abstract class AppLocalizations {
   /// No description provided for @parentalConsentEmailMessage.
   ///
   /// In fr, this message translates to:
-  /// **'Tu as entre 13 et 14 ans. Pour créer ton compte, indique l\'adresse e-mail de ton représentant légal. Il devra autoriser ton accès à Grinta Performance.'**
+  /// **'Tu as entre 13 et 14 ans. Pour créer ton compte, indique l\'adresse e-mail de ton représentant légal. Il devra autoriser ton accès à Grinta Performance, y compris le traitement de ta fréquence cardiaque et autres données physiologiques si tu connectes un appareil (Polar, Whoop, etc.).'**
   String get parentalConsentEmailMessage;
 
   /// No description provided for @parentalConsentEmailLabel.
@@ -871,13 +871,13 @@ abstract class AppLocalizations {
   /// No description provided for @parentalConsentPendingMessage.
   ///
   /// In fr, this message translates to:
-  /// **'Un e-mail a été envoyé à {parentEmail}. Dès que ton représentant légal aura autorisé ton compte, tu pourras utiliser Grinta Performance.'**
+  /// **'Un e-mail a été envoyé à {parentEmail}. Dès que ton représentant légal aura autorisé ton compte (et le traitement des données physiologiques), tu pourras utiliser Grinta Performance.'**
   String parentalConsentPendingMessage(String parentEmail);
 
   /// No description provided for @parentalConsentPendingMessageGeneric.
   ///
   /// In fr, this message translates to:
-  /// **'Un e-mail a été envoyé à ton représentant légal. Dès qu\'il aura autorisé ton compte, tu pourras utiliser Grinta Performance.'**
+  /// **'Un e-mail a été envoyé à ton représentant légal. Dès qu\'il aura autorisé ton compte (et le traitement des données physiologiques), tu pourras utiliser Grinta Performance.'**
   String get parentalConsentPendingMessageGeneric;
 
   /// No description provided for @parentalConsentResend.
@@ -897,6 +897,54 @@ abstract class AppLocalizations {
   /// In fr, this message translates to:
   /// **'Impossible de renvoyer l\'e-mail. Réessaie.'**
   String get parentalConsentResendError;
+
+  /// No description provided for @physiologicalConsentTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Autoriser l\'utilisation de mes données physiologiques'**
+  String get physiologicalConsentTitle;
+
+  /// No description provided for @physiologicalConsentMessage.
+  ///
+  /// In fr, this message translates to:
+  /// **'J\'autorise explicitement Grinta Performance à traiter mes données de fréquence cardiaque et autres données physiologiques provenant de mes appareils connectés afin d\'analyser ma performance sportive.'**
+  String get physiologicalConsentMessage;
+
+  /// No description provided for @physiologicalConsentAuthorize.
+  ///
+  /// In fr, this message translates to:
+  /// **'J\'autorise'**
+  String get physiologicalConsentAuthorize;
+
+  /// No description provided for @physiologicalConsentRefuse.
+  ///
+  /// In fr, this message translates to:
+  /// **'Je refuse'**
+  String get physiologicalConsentRefuse;
+
+  /// No description provided for @physiologicalConsentRefusedHint.
+  ///
+  /// In fr, this message translates to:
+  /// **'Connexion de l\'appareil annulée. Tu peux continuer à utiliser Grinta sans capteur de fréquence cardiaque.'**
+  String get physiologicalConsentRefusedHint;
+
+  /// No description provided for @physiologicalConsentParentRequiredTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Autorisation parentale requise'**
+  String get physiologicalConsentParentRequiredTitle;
+
+  /// No description provided for @physiologicalConsentParentRequiredMessage.
+  ///
+  /// In fr, this message translates to:
+  /// **'Pour les 13–14 ans, l\'autorisation de traiter la fréquence cardiaque et les autres données physiologiques est donnée par le représentant légal (via l\'e-mail d\'autorisation parentale). Sans elle, tu peux utiliser l\'app mais pas connecter ces appareils.'**
+  String get physiologicalConsentParentRequiredMessage;
+
+  /// No description provided for @physiologicalConsentRequestParentEmail.
+  ///
+  /// In fr, this message translates to:
+  /// **'Envoyer l\'e-mail au parent'**
+  String get physiologicalConsentRequestParentEmail;
 
   /// No description provided for @memberBirthPlace.
   ///

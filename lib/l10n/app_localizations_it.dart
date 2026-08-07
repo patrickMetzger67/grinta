@@ -436,7 +436,7 @@ class AppLocalizationsIt extends AppLocalizations {
 
   @override
   String get parentalConsentEmailMessage =>
-      'Hai 13 o 14 anni. Inserisci l\'email del tuo rappresentante legale. Dovrà autorizzare l\'accesso a Grinta Performance.';
+      'Hai 13 o 14 anni. Inserisci l\'email del tuo rappresentante legale. Dovrà autorizzare l\'accesso a Grinta Performance, incluso il trattamento della frequenza cardiaca e di altri dati fisiologici se colleghi un dispositivo (Polar, Whoop, ecc.).';
 
   @override
   String get parentalConsentEmailLabel => 'Email del rappresentante legale';
@@ -467,6 +467,36 @@ class AppLocalizationsIt extends AppLocalizations {
   @override
   String get parentalConsentResendError =>
       'Impossibile reinviare l\'email. Riprova.';
+
+  @override
+  String get physiologicalConsentTitle =>
+      'Autorizza l\'uso dei miei dati fisiologici';
+
+  @override
+  String get physiologicalConsentMessage =>
+      'Autorizzo esplicitamente Grinta Performance a trattare i miei dati di frequenza cardiaca e altri dati fisiologici provenienti dai miei dispositivi connessi per analizzare la mia prestazione sportiva.';
+
+  @override
+  String get physiologicalConsentAuthorize => 'Autorizzo';
+
+  @override
+  String get physiologicalConsentRefuse => 'Rifiuto';
+
+  @override
+  String get physiologicalConsentRefusedHint =>
+      'Connessione del dispositivo annullata. Puoi continuare a usare Grinta senza sensore di frequenza cardiaca.';
+
+  @override
+  String get physiologicalConsentParentRequiredTitle =>
+      'Autorizzazione parentale richiesta';
+
+  @override
+  String get physiologicalConsentParentRequiredMessage =>
+      'Per i 13–14 anni, l\'autorizzazione a trattare la frequenza cardiaca e gli altri dati fisiologici è data dal rappresentante legale (tramite l\'email di consenso parentale). Senza di essa puoi usare l\'app ma non collegare questi dispositivi.';
+
+  @override
+  String get physiologicalConsentRequestParentEmail =>
+      'Invia email al genitore';
 
   @override
   String get memberBirthPlace => 'Luogo di nascita';

@@ -178,7 +178,15 @@ service cloud.firestore {
         && (
           resource.data.get('accountStatus', 'active') != 'pendingParentalConsent'
           || !request.resource.data.diff(resource.data).affectedKeys()
-            .hasAny(['accountStatus', 'parentalConsentToken', 'parentalConsentAt'])
+            .hasAny([
+              'accountStatus',
+              'parentalConsentToken',
+              'parentalConsentAt',
+              'physiologicalDataConsent',
+              'physiologicalDataConsentAt',
+              'physiologicalDataConsentVersion',
+              'physiologicalDataConsentSource',
+            ])
         );
 
       allow delete: if request.auth != null && request.auth.uid == userId;

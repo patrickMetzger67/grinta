@@ -443,7 +443,7 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get parentalConsentEmailMessage =>
-      'Du bist 13 oder 14 Jahre alt. Gib die E-Mail-Adresse deines gesetzlichen Vertreters ein. Er muss deinen Zugang zu Grinta Performance freigeben.';
+      'Du bist 13 oder 14 Jahre alt. Gib die E-Mail-Adresse deines gesetzlichen Vertreters ein. Er muss deinen Zugang zu Grinta Performance freigeben, einschließlich der Verarbeitung von Herzfrequenz- und anderen physiologischen Daten bei Geräteverbindung (Polar, Whoop usw.).';
 
   @override
   String get parentalConsentEmailLabel => 'E-Mail des gesetzlichen Vertreters';
@@ -474,6 +474,36 @@ class AppLocalizationsDe extends AppLocalizations {
   @override
   String get parentalConsentResendError =>
       'E-Mail konnte nicht erneut gesendet werden. Bitte erneut versuchen.';
+
+  @override
+  String get physiologicalConsentTitle =>
+      'Nutzung meiner physiologischen Daten erlauben';
+
+  @override
+  String get physiologicalConsentMessage =>
+      'Ich ermächtige Grinta Performance ausdrücklich, meine Herzfrequenzdaten und andere physiologische Daten von meinen verbundenen Geräten zu verarbeiten, um meine sportliche Leistung zu analysieren.';
+
+  @override
+  String get physiologicalConsentAuthorize => 'Ich erlaube';
+
+  @override
+  String get physiologicalConsentRefuse => 'Ich lehne ab';
+
+  @override
+  String get physiologicalConsentRefusedHint =>
+      'Geräteverbindung abgebrochen. Du kannst Grinta weiterhin ohne Herzfrequenzsensor nutzen.';
+
+  @override
+  String get physiologicalConsentParentRequiredTitle =>
+      'Elterliche Freigabe erforderlich';
+
+  @override
+  String get physiologicalConsentParentRequiredMessage =>
+      'Für 13–14-Jährige muss ein gesetzlicher Vertreter die Verarbeitung von Herzfrequenz- und anderen physiologischen Daten freigeben (per elterlicher Einwilligungs-E-Mail). Ohne Freigabe kannst du die App nutzen, aber diese Geräte nicht verbinden.';
+
+  @override
+  String get physiologicalConsentRequestParentEmail =>
+      'E-Mail an Eltern senden';
 
   @override
   String get memberBirthPlace => 'Geburtsort';

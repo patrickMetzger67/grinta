@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:grinta/l10n/app_localizations.dart';
+import 'package:grinta/util/physiological_data_consent.dart';
 
 /// Supported wearable device integrations (plus individual Intense GPS claim).
 enum WearableDeviceType {
@@ -46,6 +47,10 @@ enum WearableDeviceType {
         return l10n.wearableDeviceGpsInsidersIntense;
     }
   }
+
+  /// Whoop / Polar / Fitbit / Apple Health / Google Health Connect.
+  bool get requiresPhysiologicalConsent =>
+      wearableRequiresPhysiologicalConsent(this);
 
   IconData get icon {
     switch (this) {
