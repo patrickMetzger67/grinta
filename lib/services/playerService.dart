@@ -115,9 +115,7 @@ class PlayerService {
 
     final linked = await getPlayersByUserId(trimmedUid);
     for (final player in linked) {
-      final memberId = player.keyMember?.trim().isNotEmpty == true
-          ? player.keyMember!.trim()
-          : (player.id?.trim() ?? '');
+      final memberId = player.keyMember?.trim() ?? '';
       if (memberId.isEmpty) continue;
 
       final users = (player.users ?? const <dynamic>[])
