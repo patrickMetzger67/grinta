@@ -174,7 +174,9 @@ class _CreateMatchSheetState extends State<CreateMatchSheet> {
     _pendingFieldName = match.nomDuTerrain?.trim();
 
     _initTeams();
-    _selectedTeamId = singleManagedMatchTeamId(match) ?? _selectedTeamId;
+    _selectedTeamId =
+        preferredManagedMatchTeamId(match, context.read<AppSession>()) ??
+            _selectedTeamId;
 
     final String opponentName = (_isHome ? match.team2 : match.team1)?.trim() ?? '';
     final String opponentAffiliation =

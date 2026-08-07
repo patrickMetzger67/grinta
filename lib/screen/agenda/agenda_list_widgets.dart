@@ -765,15 +765,19 @@ class AgendaItemCard extends StatelessWidget {
       canManageThisMatch = canManageMatch(item.match!, session);
       canAccessSessionDetails =
           canAccessMatchSessionDetails(item.match!, session);
-      final String? managedTeamId = singleManagedMatchTeamId(item.match!);
+      final String? managedTeamId =
+          preferredManagedMatchTeamId(item.match!, session);
       if (managedTeamId != null) {
-        isManager = session.managedTeamsIdsForSelectedSeason.contains(managedTeamId);
+        isManager =
+            session.managedTeamsIdsForSelectedSeason.contains(managedTeamId) ||
+                canManageThisMatch;
         teamId = managedTeamId;
       } else {
-        for (var t in item.match!.teams!) {
+        for (final dynamic raw in item.match!.teams ?? const <dynamic>[]) {
+          final String t = raw?.toString() ?? '';
           isManager = managedTeamsIds.contains(t);
           teamId = t;
-          if(isManager) {
+          if (isManager) {
             break;
           }
         }
