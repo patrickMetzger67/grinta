@@ -495,7 +495,10 @@ class _MatchdayMatchesList extends StatelessWidget {
           switch (listEntries[index]) {
             _MatchdayDayHeaderEntry(:final date) =>
               _MatchdayMatchDateLabel(date: date, locale: locale),
-            _MatchdayCardEntry(:final item) => AgendaItemCard(item: item),
+            _MatchdayCardEntry(:final item) => AgendaItemCard(
+                  key: ValueKey(item.id),
+                  item: item,
+                ),
           },
         ],
       ],

@@ -1295,6 +1295,7 @@ class _TeamLogo extends StatelessWidget {
           )
               : Image.network(
             safeUrl,
+            key: ValueKey(safeUrl),
             fit: BoxFit.contain,
             webHtmlElementStrategy: WebHtmlElementStrategy.prefer,
             errorBuilder: (context, error, stackTrace) {
