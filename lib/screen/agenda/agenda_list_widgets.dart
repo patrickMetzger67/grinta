@@ -588,7 +588,7 @@ class _DayContent extends StatelessWidget {
 }
 
 class _AllDayNonSportRow extends StatelessWidget {
-  const _AllDayNonSportRow({required this.item});
+  const _AllDayNonSportRow({super.key, required this.item});
 
   final AgendaItem item;
 
