@@ -1,6 +1,7 @@
 import 'dart:convert';
 
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:grinta/core/extensions/l10n_extension.dart';
 import 'package:grinta/navigation/app_navigator.dart';
@@ -115,44 +116,90 @@ String? singleManagedMatchTeamId(Match match) {
   return teamId;
 }
 
-/// Team ids from [Match.teams] that the signed-in user can manage.
-List<String> managedMatchTeamIds(Match match, AppSession session) {
-  final List<dynamic>? rawTeams = match.teams;
-  if (rawTeams == null || rawTeams.isEmpty) {
-    return const <String>[];
+/// True when [clubId] matches [Match.affiliationTeam1] or [Match.affiliationTeam2].
+bool matchAffiliationMatchesClubId(Match match, String? clubId) {
+  final String trimmedClub = clubId?.trim() ?? '';
+  if (trimmedClub.isEmpty) return false;
+  final String a1 = match.affiliationTeam1?.trim() ?? '';
+  final String a2 = match.affiliationTeam2?.trim() ?? '';
+  return trimmedClub == a1 || trimmedClub == a2;
+}
+
+/// Team ids the signed-in user can manage for [match].
+///
+/// Includes:
+/// 1. Teams listed in [Match.teams] that the user manages
+/// 2. Managed teams whose [Team.clubId] matches [Match.affiliationTeam1]
+///    or [Match.affiliationTeam2] (scraped calendar matches often have
+///    `teams: []` but still belong to the user's club)
+@visibleForTesting
+List<String> resolveManagedMatchTeamIds({
+  required Match match,
+  required Iterable<Team> seasonTeams,
+  required String? currentUserUid,
+  required List<String> managedTeamsIdsForSelectedSeason,
+}) {
+  final Set<String> managedTeamIds = <String>{};
+  final Map<String, Team> teamsById = <String, Team>{};
+  for (final Team candidate in seasonTeams) {
+    final String id = candidate.keyTeam?.trim() ?? '';
+    if (id.isNotEmpty) {
+      teamsById[id] = candidate;
+    }
   }
 
-  final List<String> managedTeamIds = <String>[];
-  for (final dynamic raw in rawTeams) {
-    final String teamId = raw?.toString().trim() ?? '';
-    if (teamId.isEmpty) {
-      continue;
-    }
-
-    Team? team;
-    for (final Team candidate in session.teamsForAgendaSelectedSeason) {
-      if (candidate.keyTeam?.trim() == teamId) {
-        team = candidate;
-        break;
-      }
-    }
-    if (team == null) {
-      continue;
-    }
-
+  void consider(Team team) {
+    final String teamId = team.keyTeam?.trim() ?? '';
+    if (teamId.isEmpty || managedTeamIds.contains(teamId)) return;
     if (canManageTeam(
       team,
-      session.user?.uid,
-      isManager: session.managedTeamsIdsForSelectedSeason.contains(teamId),
+      currentUserUid,
+      isManager: managedTeamsIdsForSelectedSeason.contains(teamId),
     )) {
       managedTeamIds.add(teamId);
     }
   }
 
-  return managedTeamIds;
+  for (final dynamic raw in match.teams ?? const <dynamic>[]) {
+    final String teamId = raw?.toString().trim() ?? '';
+    final Team? team = teamsById[teamId];
+    if (team != null) {
+      consider(team);
+    }
+  }
+
+  for (final Team team in teamsById.values) {
+    if (matchAffiliationMatchesClubId(match, team.clubId)) {
+      consider(team);
+    }
+  }
+
+  return managedTeamIds.toList(growable: false);
 }
 
-/// True when the user can manage at least one team listed in [Match.teams].
+/// Team ids from [Match.teams] / club affiliation that the user can manage.
+List<String> managedMatchTeamIds(Match match, AppSession session) {
+  return resolveManagedMatchTeamIds(
+    match: match,
+    seasonTeams: session.teamsForAgendaSelectedSeason,
+    currentUserUid: session.user?.uid,
+    managedTeamsIdsForSelectedSeason: session.managedTeamsIdsForSelectedSeason,
+  );
+}
+
+/// Best team id to preselect when editing [match] (single managed team, or
+/// the sole id on the document when still managed).
+String? preferredManagedMatchTeamId(Match match, AppSession session) {
+  final List<String> managed = managedMatchTeamIds(match, session);
+  if (managed.isEmpty) return null;
+  if (managed.length == 1) return managed.first;
+
+  final String? onDoc = singleManagedMatchTeamId(match);
+  if (onDoc != null && managed.contains(onDoc)) return onDoc;
+  return managed.first;
+}
+
+/// True when the user can manage this match (linked team or club affiliation).
 bool canManageMatch(Match match, AppSession session) {
   return managedMatchTeamIds(match, session).isNotEmpty;
 }
