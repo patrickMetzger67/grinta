@@ -945,6 +945,19 @@
   "navHome": "Benvenuto",
   "myTeams": "Le mie squadre",
   "syncTrainingsToSync": "Allenamenti da sincronizzare",
+  "syncUpcomingTrainingsTooltip": "Allinea gli allenamenti futuri all'organico",
+  "syncUpcomingTrainingsConfirmTitle": "Aggiornare gli allenamenti futuri?",
+  "syncUpcomingTrainingsConfirmMessage": "I giocatori dell'organico saranno aggiunti agli allenamenti futuri e quelli non più in rosa saranno rimossi.",
+  "syncUpcomingTrainingsSuccess": "Allenamenti aggiornati: {updated} sessione/i, {added} aggiunti, {removed} rimossi.",
+  "@syncUpcomingTrainingsSuccess": {
+    "placeholders": {
+      "updated": { "type": "int" },
+      "added": { "type": "int" },
+      "removed": { "type": "int" }
+    }
+  },
+  "syncUpcomingTrainingsNothingToDo": "Gli allenamenti futuri sono già allineati all'organico.",
+  "syncUpcomingTrainingsError": "Impossibile aggiornare gli allenamenti. Riprova.",
   "chatSelectConversation": "Seleziona una conversazione",
   "chatStartNewHint": "Premi \"Nuovo\" per avviare una chat.",
   "chatTryAnotherName": "Prova un altro nome.",

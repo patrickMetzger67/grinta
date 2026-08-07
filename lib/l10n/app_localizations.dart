@@ -3899,6 +3899,42 @@ abstract class AppLocalizations {
   /// **'Entraînements à synchroniser'**
   String get syncTrainingsToSync;
 
+  /// No description provided for @syncUpcomingTrainingsTooltip.
+  ///
+  /// In fr, this message translates to:
+  /// **'Aligner les entraînements à venir sur l\'effectif'**
+  String get syncUpcomingTrainingsTooltip;
+
+  /// No description provided for @syncUpcomingTrainingsConfirmTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Mettre à jour les entraînements ?'**
+  String get syncUpcomingTrainingsConfirmTitle;
+
+  /// No description provided for @syncUpcomingTrainingsConfirmMessage.
+  ///
+  /// In fr, this message translates to:
+  /// **'Les joueurs de l\'effectif seront ajoutés aux entraînements à venir, et ceux qui n\'en font plus partie seront retirés.'**
+  String get syncUpcomingTrainingsConfirmMessage;
+
+  /// No description provided for @syncUpcomingTrainingsSuccess.
+  ///
+  /// In fr, this message translates to:
+  /// **'Entraînements mis à jour : {updated} séance(s), {added} ajout(s), {removed} retrait(s).'**
+  String syncUpcomingTrainingsSuccess(int updated, int added, int removed);
+
+  /// No description provided for @syncUpcomingTrainingsNothingToDo.
+  ///
+  /// In fr, this message translates to:
+  /// **'Les entraînements à venir sont déjà alignés sur l\'effectif.'**
+  String get syncUpcomingTrainingsNothingToDo;
+
+  /// No description provided for @syncUpcomingTrainingsError.
+  ///
+  /// In fr, this message translates to:
+  /// **'Impossible de mettre à jour les entraînements. Réessayez.'**
+  String get syncUpcomingTrainingsError;
+
   /// No description provided for @chatSelectConversation.
   ///
   /// In fr, this message translates to:

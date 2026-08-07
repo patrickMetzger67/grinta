@@ -945,6 +945,19 @@
   "navHome": "Willkommen",
   "myTeams": "Meine Teams",
   "syncTrainingsToSync": "Trainings zum Synchronisieren",
+  "syncUpcomingTrainingsTooltip": "Kommende Trainings an den Kader anpassen",
+  "syncUpcomingTrainingsConfirmTitle": "Kommende Trainings aktualisieren?",
+  "syncUpcomingTrainingsConfirmMessage": "Kaderspieler werden zu kommenden Trainings hinzugefügt und nicht mehr im Kader befindliche Spieler entfernt.",
+  "syncUpcomingTrainingsSuccess": "Trainings aktualisiert: {updated} Einheit(en), {added} hinzugefügt, {removed} entfernt.",
+  "@syncUpcomingTrainingsSuccess": {
+    "placeholders": {
+      "updated": { "type": "int" },
+      "added": { "type": "int" },
+      "removed": { "type": "int" }
+    }
+  },
+  "syncUpcomingTrainingsNothingToDo": "Kommende Trainings entsprechen bereits dem Kader.",
+  "syncUpcomingTrainingsError": "Trainings konnten nicht aktualisiert werden. Bitte erneut versuchen.",
   "chatSelectConversation": "Wählen Sie eine Konversation aus",
   "chatStartNewHint": "Klicken Sie auf „Neu“, um einen Chat zu starten.",
   "chatTryAnotherName": "Versuchen Sie es mit einem anderen Namen.",

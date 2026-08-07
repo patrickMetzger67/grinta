@@ -848,6 +848,19 @@
   "navHome": "Welcome",
   "myTeams": "My teams",
   "syncTrainingsToSync": "Workouts to sync",
+  "syncUpcomingTrainingsTooltip": "Align upcoming trainings with roster",
+  "syncUpcomingTrainingsConfirmTitle": "Update upcoming trainings?",
+  "syncUpcomingTrainingsConfirmMessage": "Roster players will be added to upcoming trainings, and players no longer on the roster will be removed.",
+  "syncUpcomingTrainingsSuccess": "Trainings updated: {updated} session(s), {added} added, {removed} removed.",
+  "@syncUpcomingTrainingsSuccess": {
+    "placeholders": {
+      "updated": { "type": "int" },
+      "added": { "type": "int" },
+      "removed": { "type": "int" }
+    }
+  },
+  "syncUpcomingTrainingsNothingToDo": "Upcoming trainings already match the roster.",
+  "syncUpcomingTrainingsError": "Could not update trainings. Please try again.",
   "chatSelectConversation": "Select a conversation",
   "chatStartNewHint": "Press \"New\" to start a chat.",
   "chatTryAnotherName": "Try another name.",

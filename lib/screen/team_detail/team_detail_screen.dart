@@ -33,6 +33,7 @@ import '../../util/subscription_limits_access.dart';
 import '../../util/team_deletion_access.dart';
 import '../../util/team_name_edit.dart';
 import '../../util/team_tracker_access.dart';
+import '../../util/training_roster_sync_helper.dart';
 import '../../util/player_photo_resolver.dart';
 import '../../util/player_profile_validator.dart';
 
@@ -242,6 +243,96 @@ class _TeamDetailScreenState extends State<TeamDetailScreen> {
       icon: Icons.sensors_rounded,
       onTap: () => _onTrackerOwnersPressed(context),
     );
+  }
+
+  Future<void> _syncUpcomingTrainingsQuietly({
+    String? addedPlayerId,
+    String? removedPlayerId,
+  }) async {
+    final Team team = _serverTeam ?? _team;
+    final String? teamId = team.keyTeam?.trim();
+    if (teamId == null || teamId.isEmpty) return;
+
+    final helper = TrainingRosterSyncHelper();
+    try {
+      if (addedPlayerId != null && addedPlayerId.trim().isNotEmpty) {
+        await helper.addPlayerToUpcomingTrainings(
+          team: team,
+          playerId: addedPlayerId,
+        );
+      } else if (removedPlayerId != null && removedPlayerId.trim().isNotEmpty) {
+        await helper.removePlayerFromUpcomingTrainings(
+          team: team,
+          playerId: removedPlayerId,
+        );
+      }
+    } catch (e, st) {
+      debugPrint('TeamDetailScreen: upcoming training roster sync failed: $e\n$st');
+    }
+  }
+
+  Future<void> _onSyncUpcomingTrainingsPressed(BuildContext context) async {
+    if (!_canManageTeam(context)) return;
+    final l10n = context.l10n;
+    final colors = context.appColors;
+
+    final bool? confirmed = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) {
+        return AlertDialog(
+          backgroundColor: colors.surface,
+          surfaceTintColor: Colors.transparent,
+          title: Text(l10n.syncUpcomingTrainingsConfirmTitle),
+          content: Text(l10n.syncUpcomingTrainingsConfirmMessage),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(dialogContext).pop(false),
+              child: Text(l10n.actionCancel),
+            ),
+            FilledButton(
+              onPressed: () => Navigator.of(dialogContext).pop(true),
+              child: Text(l10n.actionOk),
+            ),
+          ],
+        );
+      },
+    );
+    if (confirmed != true || !context.mounted) return;
+
+    showDialog<void>(
+      context: context,
+      barrierDismissible: false,
+      builder: (_) => const Center(child: CircularProgressIndicator()),
+    );
+
+    try {
+      final result = await TrainingRosterSyncHelper()
+          .syncUpcomingTrainingsWithRoster(team: _serverTeam ?? _team);
+      if (!context.mounted) return;
+      Navigator.of(context, rootNavigator: true).pop();
+      if (!result.hasChanges) {
+        AppSnackbar.show(
+          context,
+          l10n.syncUpcomingTrainingsNothingToDo,
+          isError: false,
+        );
+        return;
+      }
+      AppSnackbar.show(
+        context,
+        l10n.syncUpcomingTrainingsSuccess(
+          result.trainingsUpdated,
+          result.playersAdded,
+          result.playersRemoved,
+        ),
+        isError: false,
+      );
+    } catch (e, st) {
+      debugPrint('TeamDetailScreen: sync upcoming trainings failed: $e\n$st');
+      if (!context.mounted) return;
+      Navigator.of(context, rootNavigator: true).pop();
+      AppSnackbar.show(context, l10n.syncUpcomingTrainingsError);
+    }
   }
 
   /// Managers ([widget.isManager] / session managed teams), Grinta owners
@@ -2128,6 +2219,15 @@ class _TeamDetailScreenState extends State<TeamDetailScreen> {
                     onTap: () => _onEditTeamName(context),
                   ),
                 if (_canManageTeam(context)) const SizedBox(width: 8),
+                if (_canManageTeam(context))
+                  _HeaderSquareIconButton(
+                    size: 40,
+                    iconSize: 20,
+                    icon: Icons.group_add_outlined,
+                    tooltip: context.l10n.syncUpcomingTrainingsTooltip,
+                    onTap: () => _onSyncUpcomingTrainingsPressed(context),
+                  ),
+                if (_canManageTeam(context)) const SizedBox(width: 8),
                 _HeaderSquareIconButton(
                   size: 40,
                   iconSize: 20,
@@ -2284,6 +2384,12 @@ class _TeamDetailScreenState extends State<TeamDetailScreen> {
                           _HeaderSquareIconButton(
                             icon: Icons.edit_outlined,
                             onTap: () => _onEditTeamName(context),
+                          ),
+                          _HeaderSquareIconButton(
+                            icon: Icons.group_add_outlined,
+                            tooltip: context.l10n.syncUpcomingTrainingsTooltip,
+                            onTap: () =>
+                                _onSyncUpcomingTrainingsPressed(context),
                           ),
                         ],
                         _HeaderSquareIconButton(
@@ -3033,6 +3139,7 @@ class _TeamDetailScreenState extends State<TeamDetailScreen> {
       grintaPlayers.add(newPlayer);
     }
     _team.grintaPlayers = grintaPlayers;
+    await _syncUpcomingTrainingsQuietly(addedPlayerId: memberId);
   }
 
   Future<void> _addPlayerToLegacyTeam({
@@ -3062,6 +3169,7 @@ class _TeamDetailScreenState extends State<TeamDetailScreen> {
       players.add(memberId);
     }
     _team.players = players;
+    await _syncUpcomingTrainingsQuietly(addedPlayerId: memberId);
   }
 
   bool _usesGrintaRosterPathFor(Team team) =>
@@ -3370,12 +3478,19 @@ class _TeamDetailScreenState extends State<TeamDetailScreen> {
                         !_isGrintaStaffGrintaPlayer(entry),
                   );
                   _team.grintaPlayers = grintaPlayers;
+                  await _syncUpcomingTrainingsQuietly(removedPlayerId: memberId);
                 } else if (row.effectives != null) {
                   await EffectivesService().deleteEffectives(row.effectives!);
 
                   rawPlayers.remove(player.keyMember);
                   _team.players = rawPlayers;
                   await TeamService().updateTeam(_team);
+                  final String? legacyId = effectiveMemberId(player);
+                  if (legacyId != null && legacyId.isNotEmpty) {
+                    await _syncUpcomingTrainingsQuietly(
+                      removedPlayerId: legacyId,
+                    );
+                  }
                 }
 
                 if (!dialogContext.mounted) return;

@@ -1004,6 +1004,19 @@
   "navHome": "Accueil",
   "myTeams": "Mes équipes",
   "syncTrainingsToSync": "Entraînements à synchroniser",
+  "syncUpcomingTrainingsTooltip": "Aligner les entraînements à venir sur l'effectif",
+  "syncUpcomingTrainingsConfirmTitle": "Mettre à jour les entraînements ?",
+  "syncUpcomingTrainingsConfirmMessage": "Les joueurs de l'effectif seront ajoutés aux entraînements à venir, et ceux qui n'en font plus partie seront retirés.",
+  "syncUpcomingTrainingsSuccess": "Entraînements mis à jour : {updated} séance(s), {added} ajout(s), {removed} retrait(s).",
+  "@syncUpcomingTrainingsSuccess": {
+    "placeholders": {
+      "updated": { "type": "int" },
+      "added": { "type": "int" },
+      "removed": { "type": "int" }
+    }
+  },
+  "syncUpcomingTrainingsNothingToDo": "Les entraînements à venir sont déjà alignés sur l'effectif.",
+  "syncUpcomingTrainingsError": "Impossible de mettre à jour les entraînements. Réessayez.",
   "chatSelectConversation": "Sélectionne une conversation",
   "chatStartNewHint": "Appuie sur \"Nouveau\" pour démarrer un chat.",
   "chatTryAnotherName": "Essaie avec un autre nom.",

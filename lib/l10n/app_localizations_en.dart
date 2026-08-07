@@ -2181,6 +2181,30 @@ class AppLocalizationsEn extends AppLocalizations {
   String get syncTrainingsToSync => 'Workouts to sync';
 
   @override
+  String get syncUpcomingTrainingsTooltip =>
+      'Align upcoming trainings with roster';
+
+  @override
+  String get syncUpcomingTrainingsConfirmTitle => 'Update upcoming trainings?';
+
+  @override
+  String get syncUpcomingTrainingsConfirmMessage =>
+      'Roster players will be added to upcoming trainings, and players no longer on the roster will be removed.';
+
+  @override
+  String syncUpcomingTrainingsSuccess(int updated, int added, int removed) {
+    return 'Trainings updated: $updated session(s), $added added, $removed removed.';
+  }
+
+  @override
+  String get syncUpcomingTrainingsNothingToDo =>
+      'Upcoming trainings already match the roster.';
+
+  @override
+  String get syncUpcomingTrainingsError =>
+      'Could not update trainings. Please try again.';
+
+  @override
   String get chatSelectConversation => 'Select a conversation';
 
   @override

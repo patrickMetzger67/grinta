@@ -2208,6 +2208,31 @@ class AppLocalizationsIt extends AppLocalizations {
   String get syncTrainingsToSync => 'Allenamenti da sincronizzare';
 
   @override
+  String get syncUpcomingTrainingsTooltip =>
+      'Allinea gli allenamenti futuri all\'organico';
+
+  @override
+  String get syncUpcomingTrainingsConfirmTitle =>
+      'Aggiornare gli allenamenti futuri?';
+
+  @override
+  String get syncUpcomingTrainingsConfirmMessage =>
+      'I giocatori dell\'organico saranno aggiunti agli allenamenti futuri e quelli non più in rosa saranno rimossi.';
+
+  @override
+  String syncUpcomingTrainingsSuccess(int updated, int added, int removed) {
+    return 'Allenamenti aggiornati: $updated sessione/i, $added aggiunti, $removed rimossi.';
+  }
+
+  @override
+  String get syncUpcomingTrainingsNothingToDo =>
+      'Gli allenamenti futuri sono già allineati all\'organico.';
+
+  @override
+  String get syncUpcomingTrainingsError =>
+      'Impossibile aggiornare gli allenamenti. Riprova.';
+
+  @override
   String get chatSelectConversation => 'Seleziona una conversazione';
 
   @override

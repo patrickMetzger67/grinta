@@ -156,16 +156,18 @@ class _HeaderSquareIconButton extends StatelessWidget {
     required this.onTap,
     this.size = 50,
     this.iconSize = 24,
+    this.tooltip,
   });
 
   final IconData icon;
   final VoidCallback onTap;
   final double size;
   final double iconSize;
+  final String? tooltip;
 
   @override
   Widget build(BuildContext context) {
-    return InkWell(
+    Widget button = InkWell(
       onTap: onTap,
       borderRadius: BorderRadius.circular(10),
       child: Container(
@@ -182,6 +184,10 @@ class _HeaderSquareIconButton extends StatelessWidget {
         ),
       ),
     );
+    if (tooltip != null && tooltip!.isNotEmpty) {
+      button = Tooltip(message: tooltip!, child: button);
+    }
+    return button;
   }
 }
 
