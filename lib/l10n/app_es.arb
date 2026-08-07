@@ -945,6 +945,19 @@
   "navHome": "Bienvenido",
   "myTeams": "mis equipos",
   "syncTrainingsToSync": "Entrenamientos para sincronizar",
+  "syncUpcomingTrainingsTooltip": "Alinear los próximos entrenamientos con la plantilla",
+  "syncUpcomingTrainingsConfirmTitle": "¿Actualizar los próximos entrenamientos?",
+  "syncUpcomingTrainingsConfirmMessage": "Los jugadores de la plantilla se añadirán a los próximos entrenamientos y se eliminarán los que ya no formen parte.",
+  "syncUpcomingTrainingsSuccess": "Entrenamientos actualizados: {updated} sesión(es), {added} añadidos, {removed} eliminados.",
+  "@syncUpcomingTrainingsSuccess": {
+    "placeholders": {
+      "updated": { "type": "int" },
+      "added": { "type": "int" },
+      "removed": { "type": "int" }
+    }
+  },
+  "syncUpcomingTrainingsNothingToDo": "Los próximos entrenamientos ya coinciden con la plantilla.",
+  "syncUpcomingTrainingsError": "No se pudieron actualizar los entrenamientos. Inténtalo de nuevo.",
   "chatSelectConversation": "Seleccione una conversación",
   "chatStartNewHint": "Presione \"Nuevo\" para iniciar un chat.",
   "chatTryAnotherName": "Prueba con otro nombre.",
