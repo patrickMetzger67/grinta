@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 
 import '../core/extensions/l10n_extension.dart';
 import '../model/player.dart';
+import '../util/account_age_gate.dart';
 import '../util/nationalities.dart';
 import '../util/player_positions.dart';
 import '../util/player_profile_validator.dart';
@@ -24,6 +25,9 @@ class MemberProfileForm extends StatefulWidget {
   final Player? initialProfile;
   final bool showTitle;
 
+  /// When true (email signup), email is mandatory for Firebase Auth.
+  final bool requireEmail;
+
   const MemberProfileForm({
     super.key,
     required this.enabled,
@@ -32,6 +36,7 @@ class MemberProfileForm extends StatefulWidget {
     this.onFormStateCreated,
     this.initialProfile,
     this.showTitle = true,
+    this.requireEmail = false,
   });
 
   @override
@@ -174,18 +179,34 @@ class MemberProfileFormState extends State<MemberProfileForm> {
     if (_lastNameCtrl.text.trim().isEmpty) {
       return context.l10n.memberLastNameRequired;
     }
+    if (_birthDate == null) {
+      return context.l10n.memberBirthDateRequired;
+    }
+    final ageYears = ageYearsFromBirthDate(_birthDate!);
+    if (classifyAccountAge(ageYears) == AccountAgeGateResult.blockedUnderage) {
+      return context.l10n.accountAgeBlockedUnderage;
+    }
     if (_nationalityCountryCode == null ||
         _nationalityCountryCode!.trim().isEmpty) {
       return context.l10n.memberNationalityRequired;
+    }
+    final email = _emailCtrl.text.trim();
+    if (widget.requireEmail) {
+      if (email.isEmpty) {
+        return context.l10n.signupEmailRequired;
+      }
+      if (!isValidEmailFormat(email)) {
+        return context.l10n.memberEmailInvalid;
+      }
     }
     final draftProfile = Player(
       email: _trimOrNull(_emailCtrl.text),
       phoneE164: _phoneE164,
     );
-    if (!hasContactInfo(draftProfile)) {
+    if (!widget.requireEmail && !hasContactInfo(draftProfile)) {
       return context.l10n.memberContactRequired;
     }
-    if (!isValidEmailFormat(_emailCtrl.text)) {
+    if (!widget.requireEmail && !isValidEmailFormat(_emailCtrl.text)) {
       return context.l10n.memberEmailInvalid;
     }
     if (!isValidE164Phone(_phoneE164)) {
@@ -253,13 +274,18 @@ class MemberProfileFormState extends State<MemberProfileForm> {
     if (!widget.enabled) return;
 
     final now = DateTime.now();
-    final initial = _birthDate ?? DateTime(now.year - 20, now.month, now.day);
+    // Allow declaring any age (including under 13) so the age gate can block
+    // honestly — Google/Apple already created Auth before this form.
+    final lastDate = DateTime(now.year, now.month, now.day);
+    final initial = _birthDate ??
+        DateTime(now.year - kSelfServeAccountAgeYears, now.month, now.day);
+    final safeInitial = initial.isAfter(lastDate) ? lastDate : initial;
 
     final picked = await showDatePicker(
       context: context,
-      initialDate: initial,
+      initialDate: safeInitial,
       firstDate: DateTime(1900),
-      lastDate: now,
+      lastDate: lastDate,
       helpText: context.l10n.memberBirthDate,
     );
 
@@ -290,7 +316,7 @@ class MemberProfileFormState extends State<MemberProfileForm> {
     final colors = context.appColors;
     final l10n = context.l10n;
     final birthDayLabel = _birthDate == null
-        ? l10n.memberBirthDateOptional
+        ? l10n.memberBirthDate
         : _formatBirthDay(_birthDate);
 
     return Column(
@@ -333,7 +359,9 @@ class MemberProfileFormState extends State<MemberProfileForm> {
           keyboardType: TextInputType.emailAddress,
           autocorrect: false,
           decoration: InputDecoration(
-            labelText: l10n.memberEmailOptional,
+            labelText: widget.requireEmail
+                ? l10n.memberEmail
+                : l10n.memberEmailOptional,
             prefixIcon: const Icon(Icons.email_outlined),
           ),
           onChanged: (_) => _notifyChanged(),
@@ -382,6 +410,13 @@ class MemberProfileFormState extends State<MemberProfileForm> {
                   ),
             ),
           ),
+        ),
+        const SizedBox(height: 6),
+        Text(
+          l10n.memberBirthDateAgeHint,
+          style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                color: colors.textSecondary,
+              ),
         ),
         const SizedBox(height: 12),
         TextField(

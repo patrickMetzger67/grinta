@@ -187,6 +187,25 @@ class AppLocalizationsEn extends AppLocalizations {
   String get memberEmailRequired => 'Email is required for member invitations';
 
   @override
+  String get signupEmailRequired => 'Email is required to create your account';
+
+  @override
+  String get signupFlowStartHint =>
+      'You will first complete your profile (and optionally an invitation code). Your password is asked next, before the account is created.';
+
+  @override
+  String get signupPasswordTitle => 'Choose a password';
+
+  @override
+  String signupPasswordMessage(String email) {
+    return 'Account: $email';
+  }
+
+  @override
+  String get signupUseCreateAccountForSocial =>
+      'To create an account with Google or Apple, tap “Create an account”, then choose Google or Apple after your profile.';
+
+  @override
   String invitationEmailSubject(String appName) {
     return 'Your coach invites you to join $appName';
   }
@@ -423,6 +442,82 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get memberBirthDateOptional => 'Date of birth (optional)';
+
+  @override
+  String get memberBirthDateRequired => 'Date of birth is required';
+
+  @override
+  String get memberBirthDateAgeHint =>
+      'Grinta Performance is for users aged 13 and over. Ages 13–14 require a legal guardian\'s approval.';
+
+  @override
+  String get accountAgeBlockedUnderage =>
+      'Grinta Performance is for users aged 13 and over.';
+
+  @override
+  String get parentalConsentEmailTitle => 'Parental consent';
+
+  @override
+  String get parentalConsentEmailMessage =>
+      'You are 13 or 14 years old. To create your account, enter a legal guardian\'s email. They must approve your access to Grinta Performance, including processing of your heart-rate and other physiological data if you connect a device (Polar, Whoop, etc.).';
+
+  @override
+  String get parentalConsentEmailLabel => 'Legal guardian email';
+
+  @override
+  String get parentalConsentSendError =>
+      'Could not send the parental consent request. Please try again.';
+
+  @override
+  String get parentalConsentPendingTitle => 'Waiting for approval';
+
+  @override
+  String parentalConsentPendingMessage(String parentEmail) {
+    return 'An email was sent to $parentEmail. Once your legal guardian approves your account (and physiological data processing), you can use Grinta Performance.';
+  }
+
+  @override
+  String get parentalConsentPendingMessageGeneric =>
+      'An email was sent to your legal guardian. Once they approve your account (and physiological data processing), you can use Grinta Performance.';
+
+  @override
+  String get parentalConsentResend => 'Resend email';
+
+  @override
+  String get parentalConsentResendSuccess => 'Consent email resent.';
+
+  @override
+  String get parentalConsentResendError =>
+      'Could not resend the email. Please try again.';
+
+  @override
+  String get physiologicalConsentTitle =>
+      'Authorize use of my physiological data';
+
+  @override
+  String get physiologicalConsentMessage =>
+      'I explicitly authorize Grinta Performance to process my heart-rate data and other physiological data from my connected devices in order to analyze my sports performance.';
+
+  @override
+  String get physiologicalConsentAuthorize => 'I authorize';
+
+  @override
+  String get physiologicalConsentRefuse => 'I refuse';
+
+  @override
+  String get physiologicalConsentRefusedHint =>
+      'Device connection cancelled. You can keep using Grinta without a heart-rate sensor.';
+
+  @override
+  String get physiologicalConsentParentRequiredTitle =>
+      'Parental authorization required';
+
+  @override
+  String get physiologicalConsentParentRequiredMessage =>
+      'For users aged 13–14, authorization to process heart-rate and other physiological data is given by a legal guardian (via the parental consent email). Without it, you can use the app but cannot connect these devices.';
+
+  @override
+  String get physiologicalConsentRequestParentEmail => 'Email the parent';
 
   @override
   String get memberBirthPlace => 'Place of birth';
@@ -886,8 +981,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get notificationsDismiss => 'Don\'t show again';
 
   @override
-  String get notificationsDismissError =>
-      'Could not hide this notification.';
+  String get notificationsDismissError => 'Could not hide this notification.';
 
   @override
   String get notificationsConvocationMatchDetails => 'Match details';

@@ -11,6 +11,7 @@ import 'package:grinta/services/internal_reminder_service.dart';
 import 'package:grinta/services/calendar_deep_link_service.dart';
 import 'package:grinta/services/agenda_service.dart';
 import 'package:grinta/services/sync_pending_count_service.dart';
+import 'package:grinta/services/social_onboarding_coordinator.dart';
 import 'package:grinta/analytics/analytics_features.dart';
 import 'package:grinta/analytics/analytics_interactions.dart';
 import 'package:grinta/analytics/analytics_routes.dart';
@@ -41,6 +42,8 @@ class WebAppRoot extends StatefulWidget {
 class _WebAppRootState extends State<WebAppRoot> {
   bool _isLoading = true;
   bool _tipVideoPromptScheduled = false;
+  VoidCallback? _tipVideoSessionListener;
+  VoidCallback? _tipVideoOnboardingListener;
   final AgendaService _agendaService = AgendaService();
 
   AppSession get appSession => context.read<AppSession>();
@@ -59,6 +62,7 @@ class _WebAppRootState extends State<WebAppRoot> {
 
   @override
   void dispose() {
+    _clearTipVideoListeners();
     CalendarDeepLinkService.instance.pendingAgendaDate.removeListener(
       _onPendingAgendaDateChanged,
     );
@@ -92,9 +96,51 @@ class _WebAppRootState extends State<WebAppRoot> {
   }
 
   void _scheduleTipVideoPrompt() {
-    if (_tipVideoPromptScheduled) return;
-    _tipVideoPromptScheduled = true;
-    unawaited(YoutubeTopVideoPrompt.maybeShow());
+    unawaited(_tryShowTipVideoWhenProfileReady());
+  }
+
+  void _clearTipVideoListeners() {
+    final sessionListener = _tipVideoSessionListener;
+    final onboardingListener = _tipVideoOnboardingListener;
+    _tipVideoSessionListener = null;
+    _tipVideoOnboardingListener = null;
+    if (sessionListener != null) {
+      try {
+        context.read<AppSession>().removeListener(sessionListener);
+      } catch (_) {}
+    }
+    if (onboardingListener != null) {
+      SocialOnboardingCoordinator.instance.removeListener(onboardingListener);
+    }
+  }
+
+  /// Welcome / tip videos wait until a member profile exists (post-signup).
+  Future<void> _tryShowTipVideoWhenProfileReady() async {
+    if (_tipVideoPromptScheduled || !mounted) return;
+
+    final session = context.read<AppSession>();
+    final coordinator = SocialOnboardingCoordinator.instance;
+
+    bool tryShow() {
+      if (!mounted || _tipVideoPromptScheduled) return true;
+      if (coordinator.isProfileOnboardingActive) return false;
+      if (session.selectedPlayer == null) return false;
+      _tipVideoPromptScheduled = true;
+      _clearTipVideoListeners();
+      unawaited(YoutubeTopVideoPrompt.maybeShow());
+      return true;
+    }
+
+    if (tryShow()) return;
+
+    void onChanged() {
+      tryShow();
+    }
+
+    _tipVideoSessionListener = onChanged;
+    _tipVideoOnboardingListener = onChanged;
+    session.addListener(onChanged);
+    coordinator.addListener(onChanged);
   }
 
   Stream<List<AgendaItem>> _watchAgendaItems({

@@ -113,7 +113,7 @@ abstract class AppLocalizations {
   /// No description provided for @heroTitle.
   ///
   /// In fr, this message translates to:
-  /// **'Le FOOTBALL Amateur passe à la vitesse supérieure'**
+  /// **'Le Football Amateur passe à la vitesse supérieure'**
   String get heroTitle;
 
   /// No description provided for @heroSubtitle.
@@ -439,6 +439,36 @@ abstract class AppLocalizations {
   /// In fr, this message translates to:
   /// **'L\'e-mail est requis pour les invitations'**
   String get memberEmailRequired;
+
+  /// No description provided for @signupEmailRequired.
+  ///
+  /// In fr, this message translates to:
+  /// **'L\'e-mail est obligatoire pour créer ton compte'**
+  String get signupEmailRequired;
+
+  /// No description provided for @signupFlowStartHint.
+  ///
+  /// In fr, this message translates to:
+  /// **'Tu vas d\'abord renseigner ton profil (et éventuellement un code d\'invitation). Le mot de passe sera demandé ensuite, avant de créer le compte.'**
+  String get signupFlowStartHint;
+
+  /// No description provided for @signupPasswordTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Choisir un mot de passe'**
+  String get signupPasswordTitle;
+
+  /// No description provided for @signupPasswordMessage.
+  ///
+  /// In fr, this message translates to:
+  /// **'Compte : {email}'**
+  String signupPasswordMessage(String email);
+
+  /// No description provided for @signupUseCreateAccountForSocial.
+  ///
+  /// In fr, this message translates to:
+  /// **'Pour créer un compte avec Google ou Apple, utilise « Créer un compte », puis choisis Google ou Apple après ton profil.'**
+  String get signupUseCreateAccountForSocial;
 
   /// No description provided for @invitationEmailSubject.
   ///
@@ -825,6 +855,132 @@ abstract class AppLocalizations {
   /// In fr, this message translates to:
   /// **'Date de naissance (facultatif)'**
   String get memberBirthDateOptional;
+
+  /// No description provided for @memberBirthDateRequired.
+  ///
+  /// In fr, this message translates to:
+  /// **'La date de naissance est obligatoire'**
+  String get memberBirthDateRequired;
+
+  /// No description provided for @memberBirthDateAgeHint.
+  ///
+  /// In fr, this message translates to:
+  /// **'Grinta Performance est réservé aux personnes de 13 ans et plus. Les 13–14 ans nécessitent l\'autorisation d\'un représentant légal.'**
+  String get memberBirthDateAgeHint;
+
+  /// No description provided for @accountAgeBlockedUnderage.
+  ///
+  /// In fr, this message translates to:
+  /// **'Grinta Performance est réservé aux personnes de 13 ans et plus.'**
+  String get accountAgeBlockedUnderage;
+
+  /// No description provided for @parentalConsentEmailTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Autorisation parentale'**
+  String get parentalConsentEmailTitle;
+
+  /// No description provided for @parentalConsentEmailMessage.
+  ///
+  /// In fr, this message translates to:
+  /// **'Tu as entre 13 et 14 ans. Pour créer ton compte, indique l\'adresse e-mail de ton représentant légal. Il devra autoriser ton accès à Grinta Performance, y compris le traitement de ta fréquence cardiaque et autres données physiologiques si tu connectes un appareil (Polar, Whoop, etc.).'**
+  String get parentalConsentEmailMessage;
+
+  /// No description provided for @parentalConsentEmailLabel.
+  ///
+  /// In fr, this message translates to:
+  /// **'E-mail du représentant légal'**
+  String get parentalConsentEmailLabel;
+
+  /// No description provided for @parentalConsentSendError.
+  ///
+  /// In fr, this message translates to:
+  /// **'Impossible d\'envoyer la demande d\'autorisation parentale. Réessaie.'**
+  String get parentalConsentSendError;
+
+  /// No description provided for @parentalConsentPendingTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'En attente d\'autorisation'**
+  String get parentalConsentPendingTitle;
+
+  /// No description provided for @parentalConsentPendingMessage.
+  ///
+  /// In fr, this message translates to:
+  /// **'Un e-mail a été envoyé à {parentEmail}. Dès que ton représentant légal aura autorisé ton compte (et le traitement des données physiologiques), tu pourras utiliser Grinta Performance.'**
+  String parentalConsentPendingMessage(String parentEmail);
+
+  /// No description provided for @parentalConsentPendingMessageGeneric.
+  ///
+  /// In fr, this message translates to:
+  /// **'Un e-mail a été envoyé à ton représentant légal. Dès qu\'il aura autorisé ton compte (et le traitement des données physiologiques), tu pourras utiliser Grinta Performance.'**
+  String get parentalConsentPendingMessageGeneric;
+
+  /// No description provided for @parentalConsentResend.
+  ///
+  /// In fr, this message translates to:
+  /// **'Renvoyer l\'e-mail'**
+  String get parentalConsentResend;
+
+  /// No description provided for @parentalConsentResendSuccess.
+  ///
+  /// In fr, this message translates to:
+  /// **'E-mail d\'autorisation renvoyé.'**
+  String get parentalConsentResendSuccess;
+
+  /// No description provided for @parentalConsentResendError.
+  ///
+  /// In fr, this message translates to:
+  /// **'Impossible de renvoyer l\'e-mail. Réessaie.'**
+  String get parentalConsentResendError;
+
+  /// No description provided for @physiologicalConsentTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Autoriser l\'utilisation de mes données physiologiques'**
+  String get physiologicalConsentTitle;
+
+  /// No description provided for @physiologicalConsentMessage.
+  ///
+  /// In fr, this message translates to:
+  /// **'J\'autorise explicitement Grinta Performance à traiter mes données de fréquence cardiaque et autres données physiologiques provenant de mes appareils connectés afin d\'analyser ma performance sportive.'**
+  String get physiologicalConsentMessage;
+
+  /// No description provided for @physiologicalConsentAuthorize.
+  ///
+  /// In fr, this message translates to:
+  /// **'J\'autorise'**
+  String get physiologicalConsentAuthorize;
+
+  /// No description provided for @physiologicalConsentRefuse.
+  ///
+  /// In fr, this message translates to:
+  /// **'Je refuse'**
+  String get physiologicalConsentRefuse;
+
+  /// No description provided for @physiologicalConsentRefusedHint.
+  ///
+  /// In fr, this message translates to:
+  /// **'Connexion de l\'appareil annulée. Tu peux continuer à utiliser Grinta sans capteur de fréquence cardiaque.'**
+  String get physiologicalConsentRefusedHint;
+
+  /// No description provided for @physiologicalConsentParentRequiredTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Autorisation parentale requise'**
+  String get physiologicalConsentParentRequiredTitle;
+
+  /// No description provided for @physiologicalConsentParentRequiredMessage.
+  ///
+  /// In fr, this message translates to:
+  /// **'Pour les 13–14 ans, l\'autorisation de traiter la fréquence cardiaque et les autres données physiologiques est donnée par le représentant légal (via l\'e-mail d\'autorisation parentale). Sans elle, tu peux utiliser l\'app mais pas connecter ces appareils.'**
+  String get physiologicalConsentParentRequiredMessage;
+
+  /// No description provided for @physiologicalConsentRequestParentEmail.
+  ///
+  /// In fr, this message translates to:
+  /// **'Envoyer l\'e-mail au parent'**
+  String get physiologicalConsentRequestParentEmail;
 
   /// No description provided for @memberBirthPlace.
   ///
@@ -5054,7 +5210,7 @@ abstract class AppLocalizations {
   /// No description provided for @createPersonalSportTimeRequired.
   ///
   /// In fr, this message translates to:
-  /// **'Indique l'heure de début'**
+  /// **'Indique l\'heure de début'**
   String get createPersonalSportTimeRequired;
 
   /// No description provided for @createPersonalSportManualEntry.

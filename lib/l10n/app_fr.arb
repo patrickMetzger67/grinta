@@ -2,7 +2,7 @@
   "@@locale": "fr",
 
   "appName": "Grinta",
-  "heroTitle": "Le FOOTBALL Amateur passe à la vitesse supérieure",
+  "heroTitle": "Le Football Amateur passe à la vitesse supérieure",
   "heroSubtitle": "Grinta rassemble dans une seule application les informations de ton équipe, l’analyse des matchs et le suivi des performances.\n\nQue tu sois coach ou joueur, Grinta t’aide à mieux comprendre le jeu, à suivre ta progression et à préparer chaque rencontre avec des données concrètes",
   "loginTitle": "Connexion",
   "loginSubtitle": "Connectez-vous pour accéder à votre espace.",
@@ -63,6 +63,16 @@
   "memberPhoneInvalid": "Veuillez saisir un numéro de téléphone valide",
   "memberPhoneRequired": "Le numéro de téléphone est requis pour les invitations",
   "memberEmailRequired": "L'e-mail est requis pour les invitations",
+  "signupEmailRequired": "L'e-mail est obligatoire pour créer ton compte",
+  "signupFlowStartHint": "Tu vas d'abord renseigner ton profil (et éventuellement un code d'invitation). Le mot de passe sera demandé ensuite, avant de créer le compte.",
+  "signupPasswordTitle": "Choisir un mot de passe",
+  "signupPasswordMessage": "Compte : {email}",
+  "@signupPasswordMessage": {
+    "placeholders": {
+      "email": { "type": "String" }
+    }
+  },
+  "signupUseCreateAccountForSocial": "Pour créer un compte avec Google ou Apple, utilise « Créer un compte », puis choisis Google ou Apple après ton profil.",
   "invitationEmailSubject": "Ton coach t'invite à rejoindre {appName}",
   "@invitationEmailSubject": {
     "placeholders": {
@@ -207,6 +217,32 @@
   "resendInvitationFailed": "Impossible d'envoyer l'e-mail d'invitation",
   "memberBirthDate": "Date de naissance",
   "memberBirthDateOptional": "Date de naissance (facultatif)",
+  "memberBirthDateRequired": "La date de naissance est obligatoire",
+  "memberBirthDateAgeHint": "Grinta Performance est réservé aux personnes de 13 ans et plus. Les 13–14 ans nécessitent l'autorisation d'un représentant légal.",
+  "accountAgeBlockedUnderage": "Grinta Performance est réservé aux personnes de 13 ans et plus.",
+  "parentalConsentEmailTitle": "Autorisation parentale",
+  "parentalConsentEmailMessage": "Tu as entre 13 et 14 ans. Pour créer ton compte, indique l'adresse e-mail de ton représentant légal. Il devra autoriser ton accès à Grinta Performance, y compris le traitement de ta fréquence cardiaque et autres données physiologiques si tu connectes un appareil (Polar, Whoop, etc.).",
+  "parentalConsentEmailLabel": "E-mail du représentant légal",
+  "parentalConsentSendError": "Impossible d'envoyer la demande d'autorisation parentale. Réessaie.",
+  "parentalConsentPendingTitle": "En attente d'autorisation",
+  "parentalConsentPendingMessage": "Un e-mail a été envoyé à {parentEmail}. Dès que ton représentant légal aura autorisé ton compte (et le traitement des données physiologiques), tu pourras utiliser Grinta Performance.",
+  "@parentalConsentPendingMessage": {
+    "placeholders": {
+      "parentEmail": { "type": "String" }
+    }
+  },
+  "parentalConsentPendingMessageGeneric": "Un e-mail a été envoyé à ton représentant légal. Dès qu'il aura autorisé ton compte (et le traitement des données physiologiques), tu pourras utiliser Grinta Performance.",
+  "parentalConsentResend": "Renvoyer l'e-mail",
+  "parentalConsentResendSuccess": "E-mail d'autorisation renvoyé.",
+  "parentalConsentResendError": "Impossible de renvoyer l'e-mail. Réessaie.",
+  "physiologicalConsentTitle": "Autoriser l'utilisation de mes données physiologiques",
+  "physiologicalConsentMessage": "J'autorise explicitement Grinta Performance à traiter mes données de fréquence cardiaque et autres données physiologiques provenant de mes appareils connectés afin d'analyser ma performance sportive.",
+  "physiologicalConsentAuthorize": "J'autorise",
+  "physiologicalConsentRefuse": "Je refuse",
+  "physiologicalConsentRefusedHint": "Connexion de l'appareil annulée. Tu peux continuer à utiliser Grinta sans capteur de fréquence cardiaque.",
+  "physiologicalConsentParentRequiredTitle": "Autorisation parentale requise",
+  "physiologicalConsentParentRequiredMessage": "Pour les 13–14 ans, l'autorisation de traiter la fréquence cardiaque et les autres données physiologiques est donnée par le représentant légal (via l'e-mail d'autorisation parentale). Sans elle, tu peux utiliser l'app mais pas connecter ces appareils.",
+  "physiologicalConsentRequestParentEmail": "Envoyer l'e-mail au parent",
   "memberBirthPlace": "Lieu de naissance",
   "memberBirthPlaceOptional": "Lieu de naissance (facultatif)",
   "memberNationality": "Nationalité",

@@ -66,6 +66,16 @@
   "memberPhoneInvalid": "Bitte geben Sie eine gültige Telefonnummer ein",
   "memberPhoneRequired": "Telefonnummer ist für Spielereinladungen erforderlich",
   "memberEmailRequired": "E-Mail ist für Einladungen erforderlich",
+  "signupEmailRequired": "E-Mail ist erforderlich, um dein Konto zu erstellen",
+  "signupFlowStartHint": "Zuerst Profil ausfüllen (optional mit Einladungscode). Danach Passwort, bevor das Konto erstellt wird.",
+  "signupPasswordTitle": "Passwort wählen",
+  "signupPasswordMessage": "Konto: {email}",
+  "@signupPasswordMessage": {
+    "placeholders": {
+      "email": { "type": "String" }
+    }
+  },
+  "signupUseCreateAccountForSocial": "Um ein Konto mit Google oder Apple zu erstellen, tippe auf „Konto erstellen“ und wähle danach Google oder Apple.",
   "invitationEmailSubject": "Dein Coach lädt dich ein, {appName} beizutreten",
   "@invitationEmailSubject": {
     "placeholders": {
@@ -250,6 +260,32 @@
   "resendInvitationFailed": "Einladungs-E-Mail konnte nicht gesendet werden",
   "memberBirthDate": "Geburtsdatum",
   "memberBirthDateOptional": "Geburtsdatum (optional)",
+  "memberBirthDateRequired": "Geburtsdatum ist erforderlich",
+  "memberBirthDateAgeHint": "Grinta Performance ist für Nutzer ab 13 Jahren. 13–14-Jährige benötigen die Freigabe eines gesetzlichen Vertreters.",
+  "accountAgeBlockedUnderage": "Grinta Performance ist für Nutzer ab 13 Jahren.",
+  "parentalConsentEmailTitle": "Elternliche Zustimmung",
+  "parentalConsentEmailMessage": "Du bist 13 oder 14 Jahre alt. Gib die E-Mail-Adresse deines gesetzlichen Vertreters ein. Er muss deinen Zugang zu Grinta Performance freigeben, einschließlich der Verarbeitung von Herzfrequenz- und anderen physiologischen Daten bei Geräteverbindung (Polar, Whoop usw.).",
+  "parentalConsentEmailLabel": "E-Mail des gesetzlichen Vertreters",
+  "parentalConsentSendError": "Die Einwilligungsanfrage konnte nicht gesendet werden. Bitte erneut versuchen.",
+  "parentalConsentPendingTitle": "Warten auf Freigabe",
+  "parentalConsentPendingMessage": "Eine E-Mail wurde an {parentEmail} gesendet. Sobald dein gesetzlicher Vertreter zustimmt, kannst du Grinta Performance nutzen.",
+  "@parentalConsentPendingMessage": {
+    "placeholders": {
+      "parentEmail": { "type": "String" }
+    }
+  },
+  "parentalConsentPendingMessageGeneric": "Eine E-Mail wurde an deinen gesetzlichen Vertreter gesendet. Sobald er zustimmt, kannst du Grinta Performance nutzen.",
+  "parentalConsentResend": "E-Mail erneut senden",
+  "parentalConsentResendSuccess": "Einwilligungs-E-Mail erneut gesendet.",
+  "parentalConsentResendError": "E-Mail konnte nicht erneut gesendet werden. Bitte erneut versuchen.",
+  "physiologicalConsentTitle": "Nutzung meiner physiologischen Daten erlauben",
+  "physiologicalConsentMessage": "Ich ermächtige Grinta Performance ausdrücklich, meine Herzfrequenzdaten und andere physiologische Daten von meinen verbundenen Geräten zu verarbeiten, um meine sportliche Leistung zu analysieren.",
+  "physiologicalConsentAuthorize": "Ich erlaube",
+  "physiologicalConsentRefuse": "Ich lehne ab",
+  "physiologicalConsentRefusedHint": "Geräteverbindung abgebrochen. Du kannst Grinta weiterhin ohne Herzfrequenzsensor nutzen.",
+  "physiologicalConsentParentRequiredTitle": "Elterliche Freigabe erforderlich",
+  "physiologicalConsentParentRequiredMessage": "Für 13–14-Jährige muss ein gesetzlicher Vertreter die Verarbeitung von Herzfrequenz- und anderen physiologischen Daten freigeben (per elterlicher Einwilligungs-E-Mail). Ohne Freigabe kannst du die App nutzen, aber diese Geräte nicht verbinden.",
+  "physiologicalConsentRequestParentEmail": "E-Mail an Eltern senden",
   "memberBirthPlace": "Geburtsort",
   "memberBirthPlaceOptional": "Geburtsort (optional)",
   "memberNationality": "Nationalität",
