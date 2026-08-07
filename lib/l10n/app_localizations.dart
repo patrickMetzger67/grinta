@@ -1123,7 +1123,7 @@ abstract class AppLocalizations {
   /// No description provided for @slide1Title.
   ///
   /// In fr, this message translates to:
-  /// **'TES COMPÉTITIONS AU MÊME ENDROIT'**
+  /// **'Tes compétitions au même endroit'**
   String get slide1Title;
 
   /// No description provided for @slide1Subtitle.
@@ -1135,25 +1135,25 @@ abstract class AppLocalizations {
   /// No description provided for @slide2Title.
   ///
   /// In fr, this message translates to:
-  /// **'Planifiez vos matchs'**
+  /// **'Planifie tes matchs'**
   String get slide2Title;
 
   /// No description provided for @slide2Subtitle.
   ///
   /// In fr, this message translates to:
-  /// **'Créez vos événements, convoquez vos joueurs et suivez facilement les disponibilités.'**
+  /// **'Crée tes événements, convoque tes joueurs et suis facilement les disponibilités.'**
   String get slide2Subtitle;
 
   /// No description provided for @slide3Title.
   ///
   /// In fr, this message translates to:
-  /// **'Suivez vos performances'**
+  /// **'Suis tes performances'**
   String get slide3Title;
 
   /// No description provided for @slide3Subtitle.
   ///
   /// In fr, this message translates to:
-  /// **'Consultez les statistiques, l’activité et les résultats depuis une interface claire.'**
+  /// **'Consulte les statistiques, l’activité et les résultats depuis une interface claire.'**
   String get slide3Subtitle;
 
   /// No description provided for @actionCancel.
