@@ -602,7 +602,7 @@ class AppLocalizationsFr extends AppLocalizations {
   String get createTeamPromptLater => 'Plus tard';
 
   @override
-  String get slide1Title => 'TES COMPÉTITIONS AU MÊME ENDROIT';
+  String get slide1Title => 'Tes compétitions au même endroit';
 
   @override
   String get slide1Subtitle =>

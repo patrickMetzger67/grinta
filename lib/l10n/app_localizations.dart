@@ -1123,7 +1123,7 @@ abstract class AppLocalizations {
   /// No description provided for @slide1Title.
   ///
   /// In fr, this message translates to:
-  /// **'TES COMPÉTITIONS AU MÊME ENDROIT'**
+  /// **'Tes compétitions au même endroit'**
   String get slide1Title;
 
   /// No description provided for @slide1Subtitle.
