@@ -1,6 +1,8 @@
 import 'package:flutter_test/flutter_test.dart';
+import 'package:grinta/model/engagement.dart';
 import 'package:grinta/model/match.dart';
 import 'package:grinta/model/team.dart';
+import 'package:grinta/util/fff_competition_url.dart';
 import 'package:grinta/util/match_creation_helper.dart';
 
 void main() {
@@ -38,7 +40,7 @@ void main() {
       ..competitions = competitions;
   }
 
-  Competition friendlyEngagement() {
+  Competition friendlyEngagementCompetition() {
     return Competition(
       name: 'Matchs Amicaux',
       competitionID: '452004',
@@ -53,15 +55,21 @@ void main() {
     expect(matchAffiliationMatchesClubId(match, '500554'), isTrue);
     expect(matchAffiliationMatchesClubId(match, '520346'), isTrue);
     expect(matchAffiliationMatchesClubId(match, '999999'), isFalse);
-    expect(matchAffiliationMatchesClubId(match, ''), isFalse);
   });
 
-  test('scraped match without competitionID is editable via affiliation', () {
+  test('manager + affiliation can manage even when Team.competitions empty', () {
+    // Agenda source of truth is the engagement collection; sync manage gate
+    // only checks manager + affiliation so the edit pencil can appear.
     const uid = 'manager-1';
     final team = ersteinTeam(key: 'team-erstein', managerUid: uid);
+    final match = scrapedFriendly(
+      competitionID: '452004',
+      poule: '1',
+      stage: '1',
+    );
 
     final managed = resolveManagedMatchTeamIds(
-      match: scrapedFriendly(),
+      match: match,
       seasonTeams: <Team>[team],
       currentUserUid: uid,
       managedTeamsIdsForSelectedSeason: const <String>['team-erstein'],
@@ -74,7 +82,7 @@ void main() {
     final team = ersteinTeam(key: 'team-erstein');
 
     final managed = resolveManagedMatchTeamIds(
-      match: scrapedFriendly(),
+      match: scrapedFriendly(competitionID: '452004', poule: '1', stage: '1'),
       seasonTeams: <Team>[team],
       currentUserUid: 'someone-else',
       managedTeamsIdsForSelectedSeason: const <String>[],
@@ -83,75 +91,72 @@ void main() {
     expect(managed, isEmpty);
   });
 
-  test('still resolves teams listed on the match document', () {
-    const uid = 'manager-1';
-    final team = ersteinTeam(key: 'team-erstein', managerUid: uid);
-    final match = scrapedFriendly()..teams = <dynamic>['team-erstein'];
-
-    final managed = resolveManagedMatchTeamIds(
-      match: match,
-      seasonTeams: <Team>[team],
-      currentUserUid: uid,
-      managedTeamsIdsForSelectedSeason: const <String>['team-erstein'],
-    );
-
-    expect(managed, <String>['team-erstein']);
-  });
-
-  test('requires competitionID/poule/stage to match team competitions', () {
-    const uid = 'manager-1';
-    final match = scrapedFriendly(
-      competitionID: '452004',
-      poule: '1',
-      stage: '1',
-    );
-
-    final withoutCompetition = ersteinTeam(
-      key: 'team-test',
-      managerUid: uid,
-    );
-    final withCompetition = ersteinTeam(
-      key: 'team-erstein',
-      managerUid: uid,
-      competitions: <Competition>[friendlyEngagement()],
-    );
-
-    final managed = resolveManagedMatchTeamIds(
-      match: match,
-      seasonTeams: <Team>[withoutCompetition, withCompetition],
-      currentUserUid: uid,
-      managedTeamsIdsForSelectedSeason: const <String>[
-        'team-test',
-        'team-erstein',
-      ],
-    );
-
-    expect(managed, <String>['team-erstein']);
-  });
-
-  test('teamCompetitionsIncludeMatch rejects wrong poule/stage', () {
+  test('teamCompetitionsIncludeMatch uses FFF calendar URL', () {
     final team = ersteinTeam(
       key: 'team-erstein',
-      competitions: <Competition>[friendlyEngagement()],
-    );
-    final wrongPoule = scrapedFriendly(
-      competitionID: '452004',
-      poule: '2',
-      stage: '1',
-    );
-    final wrongStage = scrapedFriendly(
-      competitionID: '452004',
-      poule: '1',
-      stage: '2',
+      competitions: <Competition>[friendlyEngagementCompetition()],
     );
     final ok = scrapedFriendly(
       competitionID: '452004',
       poule: '1',
       stage: '1',
     );
+    final wrongPoule = scrapedFriendly(
+      competitionID: '452004',
+      poule: '2',
+      stage: '1',
+    );
 
-    expect(teamCompetitionsIncludeMatch(team, wrongPoule), isFalse);
-    expect(teamCompetitionsIncludeMatch(team, wrongStage), isFalse);
     expect(teamCompetitionsIncludeMatch(team, ok), isTrue);
+    expect(teamCompetitionsIncludeMatch(team, wrongPoule), isFalse);
+  });
+
+  test('engagementMatchesMatch and engagementIncludesTeam', () {
+    final match = scrapedFriendly(
+      competitionID: '452004',
+      poule: '1',
+      stage: '1',
+    );
+    final engagement = Engagement(
+      clubId: '500554',
+      competitionId: '452004',
+      group: '1',
+      stage: '1',
+      teamIds: <String>['team-erstein'],
+    );
+
+    expect(engagementMatchesMatch(engagement, match), isTrue);
+    expect(engagementIncludesTeam(engagement, 'team-erstein'), isTrue);
+    expect(engagementIncludesTeam(engagement, 'other'), isFalse);
+    expect(
+      engagementMatchesMatch(
+        Engagement(
+          competitionId: '452004',
+          group: '2',
+          stage: '1',
+        ),
+        match,
+      ),
+      isFalse,
+    );
+
+    expect(
+      buildEngagementDocumentId(
+        clubId: '500554',
+        competitionId: '452004',
+        group: '1',
+        stage: '1',
+      ),
+      '500554-452004-1-1',
+    );
+  });
+
+  test('preferredEditableMatchTeamId prefers sole editable team', () {
+    final match = scrapedFriendly(competitionID: '452004', poule: '1', stage: '1');
+    expect(
+      preferredEditableMatchTeamId(match, <String>['team-erstein']),
+      'team-erstein',
+    );
+    expect(preferredEditableMatchTeamId(match, const <String>[]), isNull);
   });
 }

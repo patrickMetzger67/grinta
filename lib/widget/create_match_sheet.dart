@@ -162,7 +162,8 @@ class _CreateMatchSheetState extends State<CreateMatchSheet> {
     _selectedTime = parsedTime ?? TimeOfDay(hour: now.hour, minute: 0);
     _durationMinutes = match.duration ?? 90;
     _isHome = match.isOwnClub ?? true;
-    _isFriendly = match.chType?.trim() == 'Amical';
+    final String chType = match.chType?.trim().toLowerCase() ?? '';
+    _isFriendly = chType == 'amical' || chType.contains('amicaux');
     _withTracker = match.withTracker == true;
     _selectedOwnerId =
         match.ownerId?.trim().isNotEmpty == true ? match.ownerId : null;
@@ -173,10 +174,7 @@ class _CreateMatchSheetState extends State<CreateMatchSheet> {
     _pendingFieldId = match.fieldId?.trim();
     _pendingFieldName = match.nomDuTerrain?.trim();
 
-    _initTeams();
-    _selectedTeamId =
-        preferredManagedMatchTeamId(match, context.read<AppSession>()) ??
-            _selectedTeamId;
+    await _initTeamsForMatch(match);
 
     final String opponentName = (_isHome ? match.team2 : match.team1)?.trim() ?? '';
     final String opponentAffiliation =
@@ -221,28 +219,13 @@ class _CreateMatchSheetState extends State<CreateMatchSheet> {
 
   void _initTeams() {
     final AppSession session = context.read<AppSession>();
-    List<Team> teams = List<Team>.from(session.managerTeamsForSelectedSeason);
-
-    // In edit mode, only offer teams allowed for this match (manager + club
-    // affiliation + competitionID/poule/stage).
-    final Match? matchToEdit = widget.matchToEdit;
-    if (matchToEdit != null) {
-      final Set<String> allowedIds = resolveManagedMatchTeamIds(
-        match: matchToEdit,
-        seasonTeams: session.teamsForAgendaSelectedSeason,
-        currentUserUid: session.user?.uid,
-        managedTeamsIdsForSelectedSeason:
-            session.managedTeamsIdsForSelectedSeason,
-      ).toSet();
-      teams = teams
-          .where((Team team) => allowedIds.contains(team.keyTeam?.trim()))
-          .toList();
-    }
-
-    teams.sort(
-      (Team a, Team b) =>
-          (a.name ?? '').toLowerCase().compareTo((b.name ?? '').toLowerCase()),
-    );
+    final List<Team> teams =
+        List<Team>.from(session.managerTeamsForSelectedSeason)
+          ..sort(
+            (Team a, Team b) => (a.name ?? '')
+                .toLowerCase()
+                .compareTo((b.name ?? '').toLowerCase()),
+          );
 
     _teams = teams;
     if (teams.length == 1) {
@@ -251,6 +234,38 @@ class _CreateMatchSheetState extends State<CreateMatchSheet> {
     } else if (_selectedTeamId != null &&
         !teams.any((Team t) => t.keyTeam == _selectedTeamId)) {
       _selectedTeamId = null;
+      _ownClub = null;
+    }
+  }
+
+  /// Edit mode: only teams linked to the match engagement
+  /// (`competitionID` / `poule` / `stage`) via Firestore engagements or
+  /// [Team.competitions].
+  Future<void> _initTeamsForMatch(Match match) async {
+    final AppSession session = context.read<AppSession>();
+    final List<String> allowedIds = await editableMatchTeamIds(match, session);
+    final Set<String> allowed = allowedIds.toSet();
+
+    final List<Team> teams = session.managerTeamsForSelectedSeason
+        .where((Team team) => allowed.contains(team.keyTeam?.trim()))
+        .toList()
+      ..sort(
+        (Team a, Team b) =>
+            (a.name ?? '').toLowerCase().compareTo((b.name ?? '').toLowerCase()),
+      );
+
+    if (!mounted) return;
+    _teams = teams;
+    _selectedTeamId = preferredEditableMatchTeamId(match, allowedIds) ??
+        (_teams.length == 1 ? _teams.first.keyTeam : null);
+    if (_selectedTeamId != null &&
+        !_teams.any((Team t) => t.keyTeam == _selectedTeamId)) {
+      _selectedTeamId = _teams.isNotEmpty ? _teams.first.keyTeam : null;
+    }
+    final Team? selected = _selectedTeam;
+    if (selected != null) {
+      await _loadOwnClubForTeam(selected);
+    } else {
       _ownClub = null;
     }
   }
@@ -632,7 +647,7 @@ class _CreateMatchSheetState extends State<CreateMatchSheet> {
     final Match? existingMatch = widget.matchToEdit;
     if (_isEditMode && existingMatch != null) {
       final List<String> allowed =
-          managedMatchTeamIds(existingMatch, session);
+          await editableMatchTeamIds(existingMatch, session);
       final String selectedId = team.keyTeam!.trim();
       if (selectedId.isEmpty || !allowed.contains(selectedId)) {
         AppSnackbar.show(context, context.l10n.editMatchError);
