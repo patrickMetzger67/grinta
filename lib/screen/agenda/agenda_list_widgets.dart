@@ -728,6 +728,85 @@ class _EmptyDayTile extends StatelessWidget {
   }
 }
 
+/// Edit/delete actions when the user may edit via affiliation + engagement.
+class _MatchEditActions extends StatefulWidget {
+  const _MatchEditActions({required this.match});
+
+  final models.Match match;
+
+  @override
+  State<_MatchEditActions> createState() => _MatchEditActionsState();
+}
+
+class _MatchEditActionsState extends State<_MatchEditActions> {
+  Future<bool>? _canEdit;
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    _canEdit ??= canEditMatch(widget.match, context.read<AppSession>());
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = context.appColors;
+    return FutureBuilder<bool>(
+      future: _canEdit,
+      builder: (context, snapshot) {
+        if (snapshot.data != true) {
+          return const SizedBox.shrink();
+        }
+        return Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            IconButton(
+              visualDensity: VisualDensity.compact,
+              padding: EdgeInsets.zero,
+              constraints: const BoxConstraints(
+                minWidth: 32,
+                minHeight: 32,
+              ),
+              tooltip: context.l10n.editMatchTitle,
+              icon: Icon(
+                Icons.edit_outlined,
+                size: 20,
+                color: colors.textPrimary,
+              ),
+              onPressed: () {
+                showCreateMatchSheet(
+                  context,
+                  matchToEdit: widget.match,
+                );
+              },
+            ),
+            IconButton(
+              visualDensity: VisualDensity.compact,
+              padding: EdgeInsets.zero,
+              constraints: const BoxConstraints(
+                minWidth: 32,
+                minHeight: 32,
+              ),
+              tooltip: context.l10n.actionDelete,
+              icon: Icon(
+                Icons.delete_outline_rounded,
+                size: 20,
+                color: colors.textPrimary,
+              ),
+              onPressed: () async {
+                await deleteManagedMatch(
+                  context,
+                  match: widget.match,
+                  session: context.read<AppSession>(),
+                );
+              },
+            ),
+          ],
+        );
+      },
+    );
+  }
+}
+
 class AgendaItemCard extends StatelessWidget {
   final AgendaItem item;
 
@@ -888,49 +967,8 @@ class AgendaItemCard extends StatelessWidget {
                     ],
                   ),
                 ),
-                if (canManageThisMatch) ...[
-                  IconButton(
-                    visualDensity: VisualDensity.compact,
-                    padding: EdgeInsets.zero,
-                    constraints: const BoxConstraints(
-                      minWidth: 32,
-                      minHeight: 32,
-                    ),
-                    tooltip: context.l10n.editMatchTitle,
-                    icon: Icon(
-                      Icons.edit_outlined,
-                      size: 20,
-                      color: colors.textPrimary,
-                    ),
-                    onPressed: () {
-                      showCreateMatchSheet(
-                        context,
-                        matchToEdit: item.match!,
-                      );
-                    },
-                  ),
-                  IconButton(
-                    visualDensity: VisualDensity.compact,
-                    padding: EdgeInsets.zero,
-                    constraints: const BoxConstraints(
-                      minWidth: 32,
-                      minHeight: 32,
-                    ),
-                    tooltip: context.l10n.actionDelete,
-                    icon: Icon(
-                      Icons.delete_outline_rounded,
-                      size: 20,
-                      color: colors.textPrimary,
-                    ),
-                    onPressed: () async {
-                      await deleteManagedMatch(
-                        context,
-                        match: item.match!,
-                        session: context.read<AppSession>(),
-                      );
-                    },
-                  ),
-                ],
+                if (item.match != null)
+                  _MatchEditActions(match: item.match!),
                 if (canManageThisTraining) ...[
                   IconButton(
                     visualDensity: VisualDensity.compact,

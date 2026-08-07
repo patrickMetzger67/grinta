@@ -6,13 +6,17 @@ import 'package:flutter/material.dart';
 import 'package:grinta/core/extensions/l10n_extension.dart';
 import 'package:grinta/navigation/app_navigator.dart';
 import 'package:grinta/provider/appSession.dart';
+import 'package:grinta/services/engagement_service.dart';
 import 'package:grinta/services/matchService.dart';
 import 'package:grinta/util/app_snackbar.dart';
 import 'package:grinta/util/app_theme.dart';
+import 'package:grinta/util/fff_competition_url.dart';
 import 'package:grinta/util/team_deletion_access.dart';
+import 'package:grinta/util/team_stats_competition_filter.dart';
 import 'package:http/http.dart' as http;
 
 import '../model/club.dart';
+import '../model/engagement.dart';
 import '../model/fieldGpsCorners.dart';
 import '../model/match.dart';
 import '../model/season.dart';
@@ -125,13 +129,114 @@ bool matchAffiliationMatchesClubId(Match match, String? clubId) {
   return trimmedClub == a1 || trimmedClub == a2;
 }
 
-/// Team ids the signed-in user can manage for [match].
+/// True when [team.competitions] includes [match]'s engagement (URL or fields).
 ///
-/// Includes:
-/// 1. Teams listed in [Match.teams] that the user manages
-/// 2. Managed teams whose [Team.clubId] matches [Match.affiliationTeam1]
-///    or [Match.affiliationTeam2] (scraped calendar matches often have
-///    `teams: []` but still belong to the user's club)
+/// Secondary to Firestore [Engagement] docs (see [teamLinkedToMatchCompetition]).
+/// Matches without [Match.competitionID] are unconstrained.
+@visibleForTesting
+bool teamCompetitionsIncludeMatch(Team team, Match match) {
+  final String needId = match.competitionID?.trim() ?? '';
+  if (needId.isEmpty) return true;
+
+  for (final Competition competition
+      in team.competitions ?? const <Competition>[]) {
+    final String url = (competition.urlCalendar ?? '').trim();
+    if (url.isNotEmpty) {
+      final filter = competitionFilterFromUrl(url);
+      if (filter != null && matchMatchesCompetitionFilter(match, filter)) {
+        return true;
+      }
+    }
+
+    final String competitionId = competition.competitionID?.trim() ?? '';
+    if (competitionId != needId) continue;
+
+    final String needPoule = match.poule?.trim() ?? '';
+    final String competitionPoule = competition.poule?.trim() ?? '';
+    if (needPoule.isNotEmpty &&
+        competitionPoule.isNotEmpty &&
+        competitionPoule != needPoule) {
+      continue;
+    }
+
+    // Competition docs often omit stage (it lives on engagement / URL).
+    // Accept id (+ poule when both present) when URL did not already decide.
+    if (url.isEmpty || competitionFilterFromUrl(url) == null) {
+      return true;
+    }
+  }
+  return false;
+}
+
+/// True when [engagement] competitionId/group/stage match [match].
+@visibleForTesting
+bool engagementMatchesMatch(Engagement engagement, Match match) {
+  final String needId = match.competitionID?.trim() ?? '';
+  if (needId.isEmpty) return true;
+  if ((engagement.competitionId?.trim() ?? '') != needId) return false;
+
+  final String needPoule = match.poule?.trim() ?? '';
+  if (needPoule.isNotEmpty &&
+      (engagement.group?.trim() ?? '') != needPoule) {
+    return false;
+  }
+
+  final String needStage = match.stage?.trim() ?? '';
+  if (needStage.isNotEmpty &&
+      (engagement.stage?.trim() ?? '') != needStage) {
+    return false;
+  }
+  return true;
+}
+
+/// True when [teamId] is linked on [engagement] (`teamIds` or legacy `teamId`).
+@visibleForTesting
+bool engagementIncludesTeam(Engagement engagement, String teamId) {
+  final String id = teamId.trim();
+  if (id.isEmpty) return false;
+  for (final String raw in engagement.teamIds) {
+    if (raw.trim() == id) return true;
+  }
+  return (engagement.teamId?.trim() ?? '') == id;
+}
+
+/// Whether [team] is linked to [match] via Team.competitions or an engagement
+/// doc `{clubId}-{competitionId}-{poule}-{stage}`.
+Future<bool> teamLinkedToMatchCompetition(
+  Team team,
+  Match match, {
+  EngagementService? engagementService,
+}) async {
+  final String needId = match.competitionID?.trim() ?? '';
+  if (needId.isEmpty) return true;
+  if (teamCompetitionsIncludeMatch(team, match)) return true;
+
+  final String clubId = team.clubId?.trim() ?? '';
+  final String poule = match.poule?.trim() ?? '';
+  final String stage = match.stage?.trim() ?? '';
+  final String teamId = team.keyTeam?.trim() ?? '';
+  if (clubId.isEmpty || poule.isEmpty || stage.isEmpty || teamId.isEmpty) {
+    return false;
+  }
+
+  final String docId = buildEngagementDocumentId(
+    clubId: clubId,
+    competitionId: needId,
+    group: poule,
+    stage: stage,
+  );
+  final EngagementService service =
+      engagementService ?? EngagementService();
+  final Engagement? engagement = await service.getById(docId);
+  if (engagement == null) return false;
+  if (!engagementMatchesMatch(engagement, match)) return false;
+  return engagementIncludesTeam(engagement, teamId);
+}
+
+/// Team ids the user manages for [match] (club affiliation / `teams` only).
+///
+/// Does **not** check competition engagements — use
+/// [resolveEditableMatchTeamIds] before allowing edit/save.
 @visibleForTesting
 List<String> resolveManagedMatchTeamIds({
   required Match match,
@@ -177,6 +282,43 @@ List<String> resolveManagedMatchTeamIds({
   return managedTeamIds.toList(growable: false);
 }
 
+/// Managed team ids that are also linked to [match]'s competition engagement.
+Future<List<String>> resolveEditableMatchTeamIds({
+  required Match match,
+  required Iterable<Team> seasonTeams,
+  required String? currentUserUid,
+  required List<String> managedTeamsIdsForSelectedSeason,
+  EngagementService? engagementService,
+}) async {
+  final List<String> candidates = resolveManagedMatchTeamIds(
+    match: match,
+    seasonTeams: seasonTeams,
+    currentUserUid: currentUserUid,
+    managedTeamsIdsForSelectedSeason: managedTeamsIdsForSelectedSeason,
+  );
+  if (candidates.isEmpty) return const <String>[];
+
+  final Map<String, Team> teamsById = <String, Team>{};
+  for (final Team team in seasonTeams) {
+    final String id = team.keyTeam?.trim() ?? '';
+    if (id.isNotEmpty) teamsById[id] = team;
+  }
+
+  final List<String> editable = <String>[];
+  for (final String teamId in candidates) {
+    final Team? team = teamsById[teamId];
+    if (team == null) continue;
+    if (await teamLinkedToMatchCompetition(
+      team,
+      match,
+      engagementService: engagementService,
+    )) {
+      editable.add(teamId);
+    }
+  }
+  return editable;
+}
+
 /// Team ids from [Match.teams] / club affiliation that the user can manage.
 List<String> managedMatchTeamIds(Match match, AppSession session) {
   return resolveManagedMatchTeamIds(
@@ -187,8 +329,22 @@ List<String> managedMatchTeamIds(Match match, AppSession session) {
   );
 }
 
-/// Best team id to preselect when editing [match] (single managed team, or
-/// the sole id on the document when still managed).
+/// Managed teams allowed to edit [match] (affiliation + competition engagement).
+Future<List<String>> editableMatchTeamIds(
+  Match match,
+  AppSession session, {
+  EngagementService? engagementService,
+}) {
+  return resolveEditableMatchTeamIds(
+    match: match,
+    seasonTeams: session.teamsForAgendaSelectedSeason,
+    currentUserUid: session.user?.uid,
+    managedTeamsIdsForSelectedSeason: session.managedTeamsIdsForSelectedSeason,
+    engagementService: engagementService,
+  );
+}
+
+/// Best team id to preselect when editing [match].
 String? preferredManagedMatchTeamId(Match match, AppSession session) {
   final List<String> managed = managedMatchTeamIds(match, session);
   if (managed.isEmpty) return null;
@@ -199,9 +355,35 @@ String? preferredManagedMatchTeamId(Match match, AppSession session) {
   return managed.first;
 }
 
-/// True when the user can manage this match (linked team or club affiliation).
+/// Preferable team id among [editableTeamIds] for the edit form.
+String? preferredEditableMatchTeamId(
+  Match match,
+  List<String> editableTeamIds,
+) {
+  if (editableTeamIds.isEmpty) return null;
+  if (editableTeamIds.length == 1) return editableTeamIds.first;
+  final String? onDoc = singleManagedMatchTeamId(match);
+  if (onDoc != null && editableTeamIds.contains(onDoc)) return onDoc;
+  return editableTeamIds.first;
+}
+
+/// True when the user manages a club-linked team for [match] (not competition).
 bool canManageMatch(Match match, AppSession session) {
   return managedMatchTeamIds(match, session).isNotEmpty;
+}
+
+/// True when the user may edit [match] (manager + affiliation + engagement).
+Future<bool> canEditMatch(
+  Match match,
+  AppSession session, {
+  EngagementService? engagementService,
+}) async {
+  final List<String> ids = await editableMatchTeamIds(
+    match,
+    session,
+    engagementService: engagementService,
+  );
+  return ids.isNotEmpty;
 }
 
 /// Shows a confirmation dialog before deleting or removing a managed match.
@@ -267,7 +449,7 @@ Future<bool> deleteManagedMatch(
     return false;
   }
 
-  final List<String> managedTeamIds = managedMatchTeamIds(match, session);
+  final List<String> managedTeamIds = await editableMatchTeamIds(match, session);
   if (managedTeamIds.isEmpty) {
     return false;
   }

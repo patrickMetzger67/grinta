@@ -346,7 +346,7 @@ class MatchDetailScreen extends StatelessWidget {
   }
 }
 
-class _TopBar extends StatelessWidget {
+class _TopBar extends StatefulWidget {
   final models.Match match;
 
   const _TopBar({
@@ -354,11 +354,22 @@ class _TopBar extends StatelessWidget {
   });
 
   @override
+  State<_TopBar> createState() => _TopBarState();
+}
+
+class _TopBarState extends State<_TopBar> {
+  Future<bool>? _canEdit;
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    _canEdit ??= canEditMatch(widget.match, context.read<AppSession>());
+  }
+
+  @override
   Widget build(BuildContext context) {
     final colors = context.appColors;
     final session = context.watch<AppSession>();
-    final bool canManageThisMatch = canManageMatch(match, session);
-
     return Container(
       padding: const EdgeInsets.fromLTRB(16, 8, 8, 8),
       decoration: BoxDecoration(
@@ -381,40 +392,51 @@ class _TopBar extends StatelessWidget {
               ),
             ),
           ),
-          if (canManageThisMatch) ...[
-            IconButton(
-              tooltip: context.l10n.editMatchTitle,
-              onPressed: () {
-                showCreateMatchSheet(
-                  context,
-                  matchToEdit: match,
-                );
-              },
-              icon: Icon(
-                Icons.edit_outlined,
-                color: colors.textPrimary,
-              ),
-            ),
-            IconButton(
-              tooltip: context.l10n.actionDelete,
-              onPressed: () async {
-                await deleteManagedMatch(
-                  context,
-                  match: match,
-                  session: session,
-                  onDeleted: () {
-                    if (context.mounted) {
-                      Navigator.of(context).pop();
-                    }
-                  },
-                );
-              },
-              icon: Icon(
-                Icons.delete_outline_rounded,
-                color: colors.danger,
-              ),
-            ),
-          ],
+          FutureBuilder<bool>(
+            future: _canEdit,
+            builder: (context, snapshot) {
+              if (snapshot.data != true) {
+                return const SizedBox.shrink();
+              }
+              return Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  IconButton(
+                    tooltip: context.l10n.editMatchTitle,
+                    onPressed: () {
+                      showCreateMatchSheet(
+                        context,
+                        matchToEdit: widget.match,
+                      );
+                    },
+                    icon: Icon(
+                      Icons.edit_outlined,
+                      color: colors.textPrimary,
+                    ),
+                  ),
+                  IconButton(
+                    tooltip: context.l10n.actionDelete,
+                    onPressed: () async {
+                      await deleteManagedMatch(
+                        context,
+                        match: widget.match,
+                        session: session,
+                        onDeleted: () {
+                          if (context.mounted) {
+                            Navigator.of(context).pop();
+                          }
+                        },
+                      );
+                    },
+                    icon: Icon(
+                      Icons.delete_outline_rounded,
+                      color: colors.danger,
+                    ),
+                  ),
+                ],
+              );
+            },
+          ),
           IconButton(
             tooltip: context.l10n.actionClose,
             onPressed: () => Navigator.of(context).pop(),
