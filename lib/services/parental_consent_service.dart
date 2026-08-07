@@ -44,7 +44,10 @@ class ParentalConsentService {
   static const _functionsRegion = 'europe-west1';
   static const _projectId = 'aserstein-2453e';
 
-  /// Creates / updates the user doc as pending and emails the legal guardian.
+  /// Emails the legal guardian, then creates / updates `users/{uid}` as pending.
+  ///
+  /// The Firestore account document is written only after the email succeeds,
+  /// so a mail failure never leaves an orphan `users/{uid}` row.
   ///
   /// Returns an error message key/code, or `null` on success.
   Future<String?> requestParentalConsent({
@@ -62,18 +65,10 @@ class ParentalConsentService {
     final normalizedParent = parentEmail.trim().toLowerCase();
     if (normalizedParent.isEmpty) return 'emptyParentEmail';
 
+    // Send the guardian email *before* writing `users/{uid}`. If the mail
+    // provider fails, the caller can delete Auth without leaving an orphan
+    // account document (PII + pending token) in Firestore.
     final token = _newToken();
-    await _userService.createAccountIfNeeded(
-      uid: uid,
-      email: accountEmail,
-      firstName: profile.firstName?.trim() ?? '',
-      lastName: profile.lastName?.trim() ?? '',
-      accountStatus: UserAccountStatus.pendingParentalConsent,
-      birthDay: profile.birthDay,
-      parentEmail: normalizedParent,
-      parentalConsentToken: token,
-    );
-
     final approveUrl = _approveUrl(token);
     final config = await InvitationConfig.resolve();
     final subject =
@@ -99,6 +94,17 @@ class ParentalConsentService {
       debugPrint('ParentalConsentService email failed: $error');
       return error;
     }
+
+    await _userService.createAccountIfNeeded(
+      uid: uid,
+      email: accountEmail,
+      firstName: profile.firstName?.trim() ?? '',
+      lastName: profile.lastName?.trim() ?? '',
+      accountStatus: UserAccountStatus.pendingParentalConsent,
+      birthDay: profile.birthDay,
+      parentEmail: normalizedParent,
+      parentalConsentToken: token,
+    );
     return null;
   }
 

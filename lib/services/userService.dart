@@ -203,6 +203,20 @@ class UserService {
     return snap.data();
   }
 
+  /// Deletes `users/{uid}` (and nested client-writable state is left as orphans
+  /// only if subcollections exist — call while still authenticated).
+  ///
+  /// Used when aborting a partially completed signup so Auth deletion does not
+  /// leave a Firestore account document behind.
+  Future<void> deleteAccountDocument(String uid) async {
+    final trimmed = uid.trim();
+    if (trimmed.isEmpty) return;
+    final ref = _collection.doc(trimmed);
+    final snap = await ref.get();
+    if (!snap.exists) return;
+    await ref.delete();
+  }
+
   Future<void> refreshParentalConsentRequest({
     required String uid,
     required String parentEmail,

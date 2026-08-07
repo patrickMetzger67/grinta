@@ -766,14 +766,29 @@ class _LoginScreenState extends State<LoginScreen> {
     await InvitationService().validateInvitation(invitation.id, uid);
   }
 
+  /// Aborts a partially completed signup: Firestore `users/{uid}` (+ members)
+  /// first while still authenticated, then Firebase Auth, then sign-out.
   Future<void> _deleteNewAccountAndSignOut() async {
+    final user = FirebaseAuth.instance.currentUser;
+    final uid = user?.uid.trim() ?? '';
     try {
-      final user = FirebaseAuth.instance.currentUser;
+      if (uid.isNotEmpty) {
+        try {
+          await UserService().deleteAccountDocument(uid);
+        } catch (e) {
+          debugPrint('login: failed to delete users/$uid: $e');
+        }
+        try {
+          await PlayerService().cleanupMembersForAbortedSignup(uid);
+        } catch (e) {
+          debugPrint('login: failed to cleanup members for $uid: $e');
+        }
+      }
       if (user != null) {
         await user.delete();
       }
     } catch (e) {
-      debugPrint('login: failed to delete new account: $e');
+      debugPrint('login: failed to delete new Auth account: $e');
     } finally {
       await FirebaseAuth.instance.signOut();
     }

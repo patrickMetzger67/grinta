@@ -1,5 +1,6 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:flutter/foundation.dart';
 
 import '../model/player.dart';
 import '../util/player_photo_resolver.dart';
@@ -83,6 +84,61 @@ class PlayerService {
       keyPlayerUserID: trimmedUid,
       keyPlayerUsers: FieldValue.arrayUnion([trimmedUid]),
     });
+  }
+
+  /// Detaches [uid] from a member (invitation abort / failed signup cleanup).
+  Future<void> unlinkUserFromMember({
+    required String memberId,
+    required String uid,
+  }) async {
+    final trimmedMemberId = memberId.trim();
+    final trimmedUid = uid.trim();
+    if (trimmedMemberId.isEmpty || trimmedUid.isEmpty) return;
+
+    final updates = <String, dynamic>{
+      keyPlayerUsers: FieldValue.arrayRemove([trimmedUid]),
+    };
+    final existing = await getPlayerById(trimmedMemberId);
+    if (existing?.userID?.trim() == trimmedUid) {
+      updates[keyPlayerUserID] = FieldValue.delete();
+    }
+    await _collection.doc(trimmedMemberId).update(updates);
+  }
+
+  /// Best-effort cleanup of members created/linked during an aborted signup.
+  ///
+  /// - Sole owner (`creatorUserId` + single `users` entry) → delete member.
+  /// - Otherwise → unlink [uid] only (keeps invitation roster members).
+  Future<void> cleanupMembersForAbortedSignup(String uid) async {
+    final trimmedUid = uid.trim();
+    if (trimmedUid.isEmpty) return;
+
+    final linked = await getPlayersByUserId(trimmedUid);
+    for (final player in linked) {
+      final memberId = player.keyMember?.trim().isNotEmpty == true
+          ? player.keyMember!.trim()
+          : (player.id?.trim() ?? '');
+      if (memberId.isEmpty) continue;
+
+      final users = (player.users ?? const <dynamic>[])
+          .map((e) => e.toString().trim())
+          .where((e) => e.isNotEmpty)
+          .toList();
+      final isSoleOwner = player.creatorUserId?.trim() == trimmedUid &&
+          users.length == 1 &&
+          users.first == trimmedUid;
+      try {
+        if (isSoleOwner) {
+          await deletePlayer(memberId);
+        } else {
+          await unlinkUserFromMember(memberId: memberId, uid: trimmedUid);
+        }
+      } catch (e) {
+        debugPrint(
+          'PlayerService: cleanup member $memberId for $trimmedUid failed: $e',
+        );
+      }
+    }
   }
 
   /// Ajouter un joueur avec un id personnalisé
