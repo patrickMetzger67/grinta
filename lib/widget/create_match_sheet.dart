@@ -811,7 +811,7 @@ class _CreateMatchSheetState extends State<CreateMatchSheet> {
                           ),
                         )
                         .toList(),
-                    onChanged: _isEditMode ? null : _onTeamChanged,
+                    onChanged: _onTeamChanged,
                   ),
                 const SizedBox(height: 8),
                 SwitchListTile(
