@@ -62,6 +62,15 @@
   "memberPhoneInvalid": "Please enter a valid phone number",
   "memberPhoneRequired": "Phone number is required for player invitations",
   "memberEmailRequired": "Email is required for member invitations",
+  "signupEmailRequired": "Email is required to create your account",
+  "signupFlowStartHint": "You will first complete your profile (and optionally an invitation code). Your password is asked next, before the account is created.",
+  "signupPasswordTitle": "Choose a password",
+  "signupPasswordMessage": "Account: {email}",
+  "@signupPasswordMessage": {
+    "placeholders": {
+      "email": { "type": "String" }
+    }
+  },
   "invitationEmailSubject": "Your coach invites you to join {appName}",
   "@invitationEmailSubject": {
     "placeholders": {

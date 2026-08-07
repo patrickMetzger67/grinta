@@ -187,6 +187,21 @@ class AppLocalizationsEn extends AppLocalizations {
   String get memberEmailRequired => 'Email is required for member invitations';
 
   @override
+  String get signupEmailRequired => 'Email is required to create your account';
+
+  @override
+  String get signupFlowStartHint =>
+      'You will first complete your profile (and optionally an invitation code). Your password is asked next, before the account is created.';
+
+  @override
+  String get signupPasswordTitle => 'Choose a password';
+
+  @override
+  String signupPasswordMessage(String email) {
+    return 'Account: $email';
+  }
+
+  @override
   String invitationEmailSubject(String appName) {
     return 'Your coach invites you to join $appName';
   }

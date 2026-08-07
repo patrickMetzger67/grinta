@@ -66,6 +66,15 @@
   "memberPhoneInvalid": "Bitte geben Sie eine gültige Telefonnummer ein",
   "memberPhoneRequired": "Telefonnummer ist für Spielereinladungen erforderlich",
   "memberEmailRequired": "E-Mail ist für Einladungen erforderlich",
+  "signupEmailRequired": "E-Mail ist erforderlich, um dein Konto zu erstellen",
+  "signupFlowStartHint": "Zuerst Profil ausfüllen (optional mit Einladungscode). Danach Passwort, bevor das Konto erstellt wird.",
+  "signupPasswordTitle": "Passwort wählen",
+  "signupPasswordMessage": "Konto: {email}",
+  "@signupPasswordMessage": {
+    "placeholders": {
+      "email": { "type": "String" }
+    }
+  },
   "invitationEmailSubject": "Dein Coach lädt dich ein, {appName} beizutreten",
   "@invitationEmailSubject": {
     "placeholders": {

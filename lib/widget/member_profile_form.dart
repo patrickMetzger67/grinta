@@ -25,6 +25,9 @@ class MemberProfileForm extends StatefulWidget {
   final Player? initialProfile;
   final bool showTitle;
 
+  /// When true (email signup), email is mandatory for Firebase Auth.
+  final bool requireEmail;
+
   const MemberProfileForm({
     super.key,
     required this.enabled,
@@ -33,6 +36,7 @@ class MemberProfileForm extends StatefulWidget {
     this.onFormStateCreated,
     this.initialProfile,
     this.showTitle = true,
+    this.requireEmail = false,
   });
 
   @override
@@ -186,14 +190,23 @@ class MemberProfileFormState extends State<MemberProfileForm> {
         _nationalityCountryCode!.trim().isEmpty) {
       return context.l10n.memberNationalityRequired;
     }
+    final email = _emailCtrl.text.trim();
+    if (widget.requireEmail) {
+      if (email.isEmpty) {
+        return context.l10n.signupEmailRequired;
+      }
+      if (!isValidEmailFormat(email)) {
+        return context.l10n.memberEmailInvalid;
+      }
+    }
     final draftProfile = Player(
       email: _trimOrNull(_emailCtrl.text),
       phoneE164: _phoneE164,
     );
-    if (!hasContactInfo(draftProfile)) {
+    if (!widget.requireEmail && !hasContactInfo(draftProfile)) {
       return context.l10n.memberContactRequired;
     }
-    if (!isValidEmailFormat(_emailCtrl.text)) {
+    if (!widget.requireEmail && !isValidEmailFormat(_emailCtrl.text)) {
       return context.l10n.memberEmailInvalid;
     }
     if (!isValidE164Phone(_phoneE164)) {
@@ -346,7 +359,9 @@ class MemberProfileFormState extends State<MemberProfileForm> {
           keyboardType: TextInputType.emailAddress,
           autocorrect: false,
           decoration: InputDecoration(
-            labelText: l10n.memberEmailOptional,
+            labelText: widget.requireEmail
+                ? l10n.memberEmail
+                : l10n.memberEmailOptional,
             prefixIcon: const Icon(Icons.email_outlined),
           ),
           onChanged: (_) => _notifyChanged(),

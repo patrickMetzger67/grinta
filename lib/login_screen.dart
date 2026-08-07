@@ -274,9 +274,9 @@ class _LoginScreenState extends State<LoginScreen> {
         _passwordCtrl.text.trim(),
       );
 
-  Future<void> _signUpWithCredentials(
-    String email,
-    String password, {
+  /// Email signup: invitation? → profile (age rules) → password → THEN
+  /// Firebase Auth + `users/{uid}` + member. Cancel before password creates nothing.
+  Future<void> _startEmailSignup({
     bool manageParentLoading = true,
     BuildContext? snackBarContext,
   }) async {
@@ -299,22 +299,6 @@ class _LoginScreenState extends State<LoginScreen> {
       return;
     }
 
-    if (email.isEmpty || password.isEmpty) {
-      _showSnackBar(
-        l10n.emailAndPasswordRequired,
-        snackBarContext: snackBarContext,
-      );
-      return;
-    }
-
-    if (!_isPasswordValid(password)) {
-      _showSnackBar(
-        l10n.passwordRequirements,
-        snackBarContext: snackBarContext,
-      );
-      return;
-    }
-
     if (manageParentLoading) {
       if (_isLoading) return;
       if (mounted) {
@@ -330,10 +314,74 @@ class _LoginScreenState extends State<LoginScreen> {
             : null);
     if (appSession == null) {
       debugPrint('login: email signup aborted — no AppSession');
+      if (manageParentLoading && mounted) {
+        setState(() => _isLoading = false);
+      }
       return;
     }
 
+    final seedEmail = _emailCtrl.text.trim();
+
+    _dismissLoginBottomSheetIfOpen(sheetContext: snackBarContext);
+    await _waitForBottomSheetDismissal();
+
+    if (manageParentLoading && mounted) {
+      setState(() => _isLoading = false);
+    }
+
+    final coordinator = SocialOnboardingCoordinator.instance;
+    coordinator.beginProfileOnboarding();
+    String? createdUid;
     try {
+      final onboarding = await SignupInvitationOnboarding.run(
+        requireEmail: true,
+        seedEmail: seedEmail.isEmpty ? null : seedEmail,
+      );
+      debugPrint(
+        'login: signup onboarding result='
+        '${onboarding?.profile.firstName ?? 'cancelled'} '
+        'linkedExisting=${onboarding?.linkedExistingMember ?? false}',
+      );
+
+      if (onboarding == null) {
+        // No Auth / users / member created yet.
+        return;
+      }
+
+      final profile = onboarding.profile;
+      final email = profile.email?.trim() ?? '';
+      if (email.isEmpty) {
+        _showSnackBar(l10n.signupEmailRequired, snackBarContext: snackBarContext);
+        return;
+      }
+
+      final gate = classifyPlayerAccountAge(profile);
+      if (gate == AccountAgeGateResult.blockedUnderage) {
+        _showSnackBar(
+          l10n.accountAgeBlockedUnderage,
+          snackBarContext: snackBarContext,
+        );
+        return;
+      }
+      if (gate == AccountAgeGateResult.birthDateRequired) {
+        _showSnackBar(
+          l10n.memberProfileIncomplete,
+          snackBarContext: snackBarContext,
+        );
+        return;
+      }
+
+      final password = await SignupInvitationOnboarding.promptSignupPassword(
+        email: email,
+      );
+      if (password == null || password.isEmpty) {
+        return;
+      }
+
+      if (manageParentLoading && mounted) {
+        setState(() => _isLoading = true);
+      }
+
       final emailExists = await UserService().existsByEmail(email);
       if (emailExists) {
         _showSnackBar(
@@ -343,6 +391,7 @@ class _LoginScreenState extends State<LoginScreen> {
         return;
       }
 
+      // Create Auth + users/{uid} + member only after profile + password OK.
       final credential =
           await FirebaseAuth.instance.createUserWithEmailAndPassword(
         email: email,
@@ -350,95 +399,65 @@ class _LoginScreenState extends State<LoginScreen> {
       );
       final newUserUid = credential.user?.uid;
       debugPrint('signup ok uid=$newUserUid');
-
       if (newUserUid == null) {
         throw Exception('Firebase user uid missing after signup');
       }
+      createdUid = newUserUid;
 
       await AnalyticsService.instance.logLogin(method: 'email');
 
-      if (manageParentLoading && mounted) {
-        setState(() => _isLoading = false);
-      }
-
-      _dismissLoginBottomSheetIfOpen(sheetContext: snackBarContext);
-      await _waitForBottomSheetDismissal();
-
-      final coordinator = SocialOnboardingCoordinator.instance;
-      coordinator.beginProfileOnboarding();
-      SignupMemberOnboardingResult? onboarding;
       try {
-        onboarding = await SignupInvitationOnboarding.run();
-        debugPrint(
-          'login: signup onboarding result='
-          '${onboarding?.profile.firstName ?? 'cancelled'} '
-          'linkedExisting=${onboarding?.linkedExistingMember ?? false}',
-        );
-
-        if (onboarding == null) {
-          await _deleteNewAccountAndSignOut();
-          return;
-        }
-
-        final profile = onboarding.profile;
-
-        if (manageParentLoading && mounted) {
-          setState(() => _isLoading = true);
-        }
-
-        try {
-          final ageHandled = await _completeSignupWithAgeGate(
-            uid: newUserUid,
-            email: email,
-            profile: profile,
-            invitation: onboarding.linkedExistingMember
-                ? onboarding.invitation
-                : null,
-            snackBarContext: snackBarContext,
-          );
-          if (!ageHandled) return;
-          await _refreshSessionAvatars(appSession);
-        } catch (e) {
-          debugPrint('Email signup profile error: $e');
-          await _deleteNewAccountAndSignOut();
-          final message = e is StateError &&
-                  e.message == 'member profile incomplete'
-              ? l10n.memberProfileIncomplete
-              : e is StateError && e.message == 'blockedUnderage'
-                  ? l10n.accountAgeBlockedUnderage
-                  : '${l10n.unexpectedError} : $e';
-          _showSnackBar(message, snackBarContext: snackBarContext);
-          return;
-        }
-
-        await AnalyticsService.instance.logFeatureUsed(
-          feature: AnalyticsFeatures.loginSuccess,
-        );
-
-        // Pending parental consent: AuthGate shows the waiting screen.
-        final status = await UserService().getAccountStatus(newUserUid);
-        if (status == UserAccountStatus.pendingParentalConsent) {
-          return;
-        }
-
-        await _finishOnboardingAfterMemberCreated(
-          appSession,
+        final ageHandled = await _completeSignupWithAgeGate(
+          uid: newUserUid,
+          email: email,
           profile: profile,
-          linkedViaInvitation: onboarding.linkedExistingMember,
+          invitation: onboarding.linkedExistingMember
+              ? onboarding.invitation
+              : null,
+          snackBarContext: snackBarContext,
         );
-      } finally {
-        coordinator.endProfileOnboarding();
+        if (!ageHandled) {
+          createdUid = null; // deleted inside age gate / consent cancel
+          return;
+        }
+        await _refreshSessionAvatars(appSession);
+      } catch (e) {
+        debugPrint('Email signup profile error: $e');
+        await _deleteNewAccountAndSignOut();
+        createdUid = null;
+        final message = e is StateError &&
+                e.message == 'member profile incomplete'
+            ? l10n.memberProfileIncomplete
+            : e is StateError && e.message == 'blockedUnderage'
+                ? l10n.accountAgeBlockedUnderage
+                : '${l10n.unexpectedError} : $e';
+        _showSnackBar(message, snackBarContext: snackBarContext);
+        return;
       }
 
-      // Welcome / tip videos only after profile is created and validated.
-      await YoutubeTopVideoPrompt.maybeShow();
+      await AnalyticsService.instance.logFeatureUsed(
+        feature: AnalyticsFeatures.loginSuccess,
+      );
+
+      final status = await UserService().getAccountStatus(newUserUid);
+      if (status == UserAccountStatus.pendingParentalConsent) {
+        return;
+      }
+
+      await _finishOnboardingAfterMemberCreated(
+        appSession,
+        profile: profile,
+        linkedViaInvitation: onboarding.linkedExistingMember,
+      );
     } on FirebaseAuthException catch (e) {
       debugPrint(
         'Auth error method=signup code=${e.code} message=${e.message}',
       );
+      if (createdUid != null) {
+        await _deleteNewAccountAndSignOut();
+      }
 
       String message = l10n.signInError;
-
       switch (e.code) {
         case 'email-already-in-use':
           message = l10n.emailAlreadyInUse;
@@ -456,20 +475,24 @@ class _LoginScreenState extends State<LoginScreen> {
           message = l10n.signInError;
           break;
       }
-
       _showSnackBar(message, snackBarContext: snackBarContext);
     } catch (e) {
       debugPrint('Auth error method=signup unexpected: $e');
-
+      if (createdUid != null) {
+        await _deleteNewAccountAndSignOut();
+      }
       _showSnackBar(
         '${l10n.unexpectedError} : $e',
         snackBarContext: snackBarContext,
       );
     } finally {
+      coordinator.endProfileOnboarding();
       if (manageParentLoading && mounted) {
         setState(() => _isLoading = false);
       }
     }
+
+    await YoutubeTopVideoPrompt.maybeShow();
   }
 
   Future<bool> _userNeedsInvitationOnboarding(UserCredential credential) async {
@@ -990,7 +1013,7 @@ class _LoginScreenState extends State<LoginScreen> {
 
         return _LoginBottomSheet(
           onSignIn: _submitWithCredentials,
-          onSignUp: _signUpWithCredentials,
+          onSignUp: _startEmailSignup,
           onSocialSignIn: _signInWithSocial,
           onForgotPassword: () => _onForgotPassword(sheetContext),
         );
@@ -1026,10 +1049,7 @@ class _LoginScreenState extends State<LoginScreen> {
           setState(() => _obscurePassword = !_obscurePassword);
         },
         onSignIn: _submit,
-        onSignUp: (email, password) => _signUpWithCredentials(
-          email,
-          password,
-        ),
+        onSignUp: () => _startEmailSignup(),
         onSocialSignIn: _signInWithSocial,
         onForgotPassword: () => _onForgotPassword(),
         onPreviousPage: () => _goPreviousPage(items.length),
@@ -1058,7 +1078,7 @@ class _WebLoginLayout extends StatelessWidget {
   final ValueChanged<int> onPageChanged;
   final VoidCallback onToggleObscure;
   final VoidCallback onSignIn;
-  final Future<void> Function(String email, String password) onSignUp;
+  final Future<void> Function() onSignUp;
   final Future<void> Function(SocialAuthProvider provider) onSocialSignIn;
   final VoidCallback onForgotPassword;
   final VoidCallback onPreviousPage;
@@ -1493,7 +1513,7 @@ class _LoginCard extends StatefulWidget {
   final bool isLoading;
   final VoidCallback onToggleObscure;
   final VoidCallback onSignIn;
-  final Future<void> Function(String email, String password) onSignUp;
+  final Future<void> Function() onSignUp;
   final Future<void> Function(SocialAuthProvider provider) onSocialSignIn;
   final VoidCallback onForgotPassword;
   final ValueChanged<Locale> onLocaleChanged;
@@ -1518,21 +1538,11 @@ class _LoginCard extends StatefulWidget {
 }
 
 class _LoginCardState extends State<_LoginCard> {
-  final TextEditingController _confirmPasswordCtrl = TextEditingController();
-
   bool _isSignUpMode = false;
-  bool _obscureConfirmPassword = true;
-
-  @override
-  void dispose() {
-    _confirmPasswordCtrl.dispose();
-    super.dispose();
-  }
 
   void _toggleMode() {
     setState(() {
       _isSignUpMode = !_isSignUpMode;
-      _confirmPasswordCtrl.clear();
     });
   }
 
@@ -1540,7 +1550,6 @@ class _LoginCardState extends State<_LoginCard> {
     if (_isSignUpMode) {
       setState(() {
         _isSignUpMode = false;
-        _confirmPasswordCtrl.clear();
       });
       return;
     }
@@ -1553,20 +1562,9 @@ class _LoginCardState extends State<_LoginCard> {
   Future<void> _handleSubmit() async {
     if (!mounted) return;
 
-    final email = widget.emailCtrl.text.trim();
-    final password = widget.passwordCtrl.text.trim();
-
     if (_isSignUpMode) {
-      final confirmPassword = _confirmPasswordCtrl.text.trim();
-      if (confirmPassword != password) {
-        if (!mounted) return;
-        showLoginSnackBar(context, context.l10n.passwordsDoNotMatch);
-        return;
-      }
-
-      await widget.onSignUp(email, password);
+      await widget.onSignUp();
     } else {
-      if (!mounted) return;
       widget.onSignIn();
     }
   }
@@ -1618,58 +1616,37 @@ class _LoginCardState extends State<_LoginCard> {
             ),
             const SizedBox(height: 8),
             Text(
-              context.l10n.loginSubtitle,
+              _isSignUpMode
+                  ? context.l10n.signupFlowStartHint
+                  : context.l10n.loginSubtitle,
               style: Theme.of(context).textTheme.bodyLarge?.copyWith(
                 color: colors.textSecondary,
               ),
             ),
             const SizedBox(height: 24),
-            TextField(
-              controller: widget.emailCtrl,
-              keyboardType: TextInputType.emailAddress,
-              decoration: InputDecoration(
-                labelText: context.l10n.email,
-                hintText: context.l10n.emailHint,
-                prefixIcon: const Icon(Icons.mail_outline_rounded),
-              ),
-              onSubmitted: (_) => _handleSubmit(),
-            ),
-            const SizedBox(height: 14),
-            TextField(
-              controller: widget.passwordCtrl,
-              obscureText: widget.obscurePassword,
-              decoration: InputDecoration(
-                labelText: context.l10n.password,
-                hintText: context.l10n.passwordHint,
-                prefixIcon: const Icon(Icons.lock_outline_rounded),
-                suffixIcon: IconButton(
-                  onPressed: widget.onToggleObscure,
-                  icon: Icon(
-                    widget.obscurePassword
-                        ? Icons.visibility_off_outlined
-                        : Icons.visibility_outlined,
-                  ),
+            if (!_isSignUpMode) ...[
+              TextField(
+                controller: widget.emailCtrl,
+                keyboardType: TextInputType.emailAddress,
+                decoration: InputDecoration(
+                  labelText: context.l10n.email,
+                  hintText: context.l10n.emailHint,
+                  prefixIcon: const Icon(Icons.mail_outline_rounded),
                 ),
+                onSubmitted: (_) => _handleSubmit(),
               ),
-              onSubmitted: (_) => _handleSubmit(),
-            ),
-            if (_isSignUpMode) ...[
               const SizedBox(height: 14),
               TextField(
-                controller: _confirmPasswordCtrl,
-                obscureText: _obscureConfirmPassword,
+                controller: widget.passwordCtrl,
+                obscureText: widget.obscurePassword,
                 decoration: InputDecoration(
-                  labelText: context.l10n.confirmPassword,
-                  hintText: context.l10n.confirmPasswordHint,
+                  labelText: context.l10n.password,
+                  hintText: context.l10n.passwordHint,
                   prefixIcon: const Icon(Icons.lock_outline_rounded),
                   suffixIcon: IconButton(
-                    onPressed: () {
-                      setState(
-                        () => _obscureConfirmPassword = !_obscureConfirmPassword,
-                      );
-                    },
+                    onPressed: widget.onToggleObscure,
                     icon: Icon(
-                      _obscureConfirmPassword
+                      widget.obscurePassword
                           ? Icons.visibility_off_outlined
                           : Icons.visibility_outlined,
                     ),
@@ -1677,9 +1654,7 @@ class _LoginCardState extends State<_LoginCard> {
                 ),
                 onSubmitted: (_) => _handleSubmit(),
               ),
-            ],
-            const SizedBox(height: 10),
-            if (!_isSignUpMode)
+              const SizedBox(height: 10),
               Align(
                 alignment: Alignment.centerRight,
                 child: TextButton(
@@ -1687,6 +1662,7 @@ class _LoginCardState extends State<_LoginCard> {
                   child: Text(context.l10n.forgotPassword),
                 ),
               ),
+            ],
             Align(
               alignment: Alignment.centerRight,
               child: Row(
@@ -1784,9 +1760,7 @@ class _LoginBottomSheet extends StatefulWidget {
     bool manageParentLoading,
     BuildContext? snackBarContext,
   }) onSignIn;
-  final Future<void> Function(
-    String email,
-    String password, {
+  final Future<void> Function({
     bool manageParentLoading,
     BuildContext? snackBarContext,
   }) onSignUp;
@@ -1842,17 +1816,12 @@ class _LoginBottomSheetState extends State<_LoginBottomSheet> {
     }
   }
 
-  Future<void> _handleSignUp(
-    String email,
-    String password,
-  ) async {
+  Future<void> _handleSignUp() async {
     if (_isLoading) return;
 
     setState(() => _isLoading = true);
     try {
       await widget.onSignUp(
-        email,
-        password,
         manageParentLoading: false,
         snackBarContext: context,
       );

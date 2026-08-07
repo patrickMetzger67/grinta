@@ -186,6 +186,22 @@ class AppLocalizationsIt extends AppLocalizations {
   String get memberEmailRequired => 'L\'e-mail è obbligatoria per gli inviti';
 
   @override
+  String get signupEmailRequired =>
+      'L\'e-mail è obbligatoria per creare l\'account';
+
+  @override
+  String get signupFlowStartHint =>
+      'Prima completi il profilo (ed eventualmente un codice invito). Poi la password, prima di creare l\'account.';
+
+  @override
+  String get signupPasswordTitle => 'Scegli una password';
+
+  @override
+  String signupPasswordMessage(String email) {
+    return 'Account: $email';
+  }
+
+  @override
   String invitationEmailSubject(String appName) {
     return 'Il tuo allenatore ti invita a unirti a $appName';
   }

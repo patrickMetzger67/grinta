@@ -66,6 +66,15 @@
   "memberPhoneInvalid": "Introduce un número de teléfono válido",
   "memberPhoneRequired": "El número de teléfono es obligatorio para las invitaciones",
   "memberEmailRequired": "El correo electrónico es obligatorio para las invitaciones",
+  "signupEmailRequired": "El correo es obligatorio para crear tu cuenta",
+  "signupFlowStartHint": "Primero completarás tu perfil (y opcionalmente un código de invitación). Luego la contraseña, antes de crear la cuenta.",
+  "signupPasswordTitle": "Elige una contraseña",
+  "signupPasswordMessage": "Cuenta: {email}",
+  "@signupPasswordMessage": {
+    "placeholders": {
+      "email": { "type": "String" }
+    }
+  },
   "invitationEmailSubject": "Tu entrenador te invita a unirte a {appName}",
   "@invitationEmailSubject": {
     "placeholders": {

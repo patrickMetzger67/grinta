@@ -440,6 +440,30 @@ abstract class AppLocalizations {
   /// **'L\'e-mail est requis pour les invitations'**
   String get memberEmailRequired;
 
+  /// No description provided for @signupEmailRequired.
+  ///
+  /// In fr, this message translates to:
+  /// **'L\'e-mail est obligatoire pour créer ton compte'**
+  String get signupEmailRequired;
+
+  /// No description provided for @signupFlowStartHint.
+  ///
+  /// In fr, this message translates to:
+  /// **'Tu vas d\'abord renseigner ton profil (et éventuellement un code d\'invitation). Le mot de passe sera demandé ensuite, avant de créer le compte.'**
+  String get signupFlowStartHint;
+
+  /// No description provided for @signupPasswordTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Choisir un mot de passe'**
+  String get signupPasswordTitle;
+
+  /// No description provided for @signupPasswordMessage.
+  ///
+  /// In fr, this message translates to:
+  /// **'Compte : {email}'**
+  String signupPasswordMessage(String email);
+
   /// No description provided for @invitationEmailSubject.
   ///
   /// In fr, this message translates to:
