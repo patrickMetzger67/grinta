@@ -10,6 +10,21 @@ import 'package:grinta/services/userService.dart';
 import 'package:grinta/util/account_age_gate.dart';
 import 'package:uuid/uuid.dart';
 
+/// Opaque URL-safe token for parental / physio consent links.
+///
+/// Avoids `Random.nextInt(1 << 32)` which throws [RangeError] on web
+/// (JS bitwise `1 << 32` is 0).
+@visibleForTesting
+String newParentalConsentToken({Random? random, Uuid? uuid}) {
+  final rng = random ?? Random.secure();
+  final id = (uuid ?? const Uuid()).v4().replaceAll('-', '');
+  final entropy = List<String>.generate(
+    4,
+    (_) => rng.nextInt(0x10000).toRadixString(16).padLeft(4, '0'),
+  ).join();
+  return '$id$entropy';
+}
+
 /// Handles 13–14 parental consent: token + email + pending account status.
 class ParentalConsentService {
   ParentalConsentService({
@@ -164,11 +179,8 @@ class ParentalConsentService {
     return error;
   }
 
-  String _newToken() {
-    // Opaque URL-safe token (uuid + entropy).
-    final rand = Random.secure().nextInt(1 << 32).toRadixString(16);
-    return '${const Uuid().v4().replaceAll('-', '')}$rand';
-  }
+  String _newToken() => newParentalConsentToken();
+
 
   String _approveUrl(String token) {
     return 'https://$_functionsRegion-$_projectId.cloudfunctions.net/'

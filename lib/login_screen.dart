@@ -433,8 +433,8 @@ class _LoginScreenState extends State<LoginScreen> {
           return;
         }
         await _refreshSessionAvatars(appSession);
-      } catch (e) {
-        debugPrint('Email signup profile error: $e');
+      } catch (e, st) {
+        debugPrint('Email signup profile error: $e\n$st');
         await _deleteNewAccountAndSignOut();
         createdUid = null;
         final message = e is StateError &&
@@ -488,8 +488,8 @@ class _LoginScreenState extends State<LoginScreen> {
           break;
       }
       _showSnackBar(message, snackBarContext: snackBarContext);
-    } catch (e) {
-      debugPrint('Auth error method=signup unexpected: $e');
+    } catch (e, st) {
+      debugPrint('Auth error method=signup unexpected: $e\n$st');
       if (createdUid != null) {
         await _deleteNewAccountAndSignOut();
       }
@@ -1021,8 +1021,8 @@ class _LoginScreenState extends State<LoginScreen> {
         e.message ?? l10n.signInError,
         snackBarContext: sheetContext,
       );
-    } catch (e) {
-      debugPrint('Auth error provider=$methodName unexpected: $e');
+    } catch (e, st) {
+      debugPrint('Auth error provider=$methodName unexpected: $e\n$st');
       if (createdUid != null) {
         await _deleteNewAccountAndSignOut();
       }
