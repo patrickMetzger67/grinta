@@ -320,8 +320,6 @@ class _LoginScreenState extends State<LoginScreen> {
       return;
     }
 
-    final seedEmail = _emailCtrl.text.trim();
-
     _dismissLoginBottomSheetIfOpen(sheetContext: snackBarContext);
     await _waitForBottomSheetDismissal();
 
@@ -333,9 +331,9 @@ class _LoginScreenState extends State<LoginScreen> {
     coordinator.beginProfileOnboarding();
     String? createdUid;
     try {
+      // Do not seed profile email from the login form — start blank.
       final onboarding = await SignupInvitationOnboarding.run(
         requireEmail: true,
-        seedEmail: seedEmail.isEmpty ? null : seedEmail,
       );
       debugPrint(
         'login: signup onboarding result='

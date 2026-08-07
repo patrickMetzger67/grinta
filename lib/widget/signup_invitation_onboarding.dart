@@ -40,7 +40,6 @@ class SignupInvitationOnboarding {
 
   static Future<SignupMemberOnboardingResult?> run({
     bool requireEmail = false,
-    String? seedEmail,
   }) async {
     final rootContext = appNavigatorKey.currentContext;
     if (rootContext == null || !rootContext.mounted) {
@@ -53,12 +52,6 @@ class SignupInvitationOnboarding {
     await WidgetsBinding.instance.endOfFrame;
     if (!rootContext.mounted) return null;
 
-    final seed = seedEmail?.trim();
-    Player? blankSeed;
-    if (seed != null && seed.isNotEmpty) {
-      blankSeed = Player(email: seed);
-    }
-
     final hasInvitationCode = await _promptHasInvitationCode(rootContext);
     if (hasInvitationCode == null) {
       return null;
@@ -67,7 +60,6 @@ class SignupInvitationOnboarding {
     if (!hasInvitationCode) {
       final profile = await _promptMemberProfile(
         rootContext,
-        initialProfile: blankSeed,
         requireEmail: requireEmail,
       );
       if (profile == null) return null;
@@ -85,15 +77,9 @@ class SignupInvitationOnboarding {
         case _InvitationLookupKind.found:
           final invitation = lookup.invitation!;
           final member = lookup.member!;
-          var initial = member.toEditableProfile();
-          if ((initial.email == null || initial.email!.trim().isEmpty) &&
-              seed != null &&
-              seed.isNotEmpty) {
-            initial = initial.copyWith(email: seed);
-          }
           final profile = await _promptMemberProfile(
             rootContext,
-            initialProfile: initial,
+            initialProfile: member.toEditableProfile(),
             subtitle: await _invitationSubtitle(rootContext, invitation),
             requireEmail: requireEmail,
           );
@@ -105,7 +91,6 @@ class SignupInvitationOnboarding {
         case _InvitationLookupKind.continueWithoutInvitation:
           final profile = await _promptMemberProfile(
             rootContext,
-            initialProfile: blankSeed,
             requireEmail: requireEmail,
           );
           if (profile == null) return null;
