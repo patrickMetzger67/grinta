@@ -501,10 +501,34 @@ class _MatchTacticalSchemaBodyState extends State<_MatchTacticalSchemaBody>
 
   String playerIdLabel(BuildContext context) => context.l10n.entityPlayer;
 
+  PlayerCompo? _playerCompoForId(String playerId) {
+    final id = playerId.trim();
+    if (id.isEmpty) return null;
+    for (final PlayerCompo compo in _startersBySlot.values) {
+      if (compo.playerID?.trim() == id) return compo;
+    }
+    for (final PlayerCompo compo in _substitutes) {
+      if (compo.playerID?.trim() == id) return compo;
+    }
+    return null;
+  }
+
+  /// Sensor display name when match uses trackers and one is assigned.
+  String? _sensorLabelForPlayer(String playerId) {
+    if (!_trackerRequiredForMatch) return null;
+    final String? label = _playerCompoForId(playerId)?.customName?.trim();
+    if (label == null || label.isEmpty) return null;
+    return label;
+  }
+
   void _showPlayerInfo(String playerId) {
     final player = _playersById[playerId];
     if (player == null) return;
-    showPlayerInfoBubble(context, player);
+    showPlayerInfoBubble(
+      context,
+      player,
+      sensorLabel: _sensorLabelForPlayer(playerId),
+    );
   }
 
   Future<void> _onPlayerAvatarLongPress(String playerId) async {
@@ -949,6 +973,7 @@ class _MatchTacticalSchemaBodyState extends State<_MatchTacticalSchemaBody>
                         substitutes: _substitutes,
                         playersById: _playersById,
                         readOnly: _readOnly,
+                        showSensor: _trackerRequiredForMatch,
                         onRemove: (index) {
                           setState(() => _substitutes.removeAt(index));
                         },
@@ -1086,12 +1111,14 @@ class _SubstitutesSection extends StatelessWidget {
     required this.playersById,
     required this.readOnly,
     required this.onRemove,
+    this.showSensor = false,
     this.onAdd,
   });
 
   final List<PlayerCompo> substitutes;
   final Map<String, Player> playersById;
   final bool readOnly;
+  final bool showSensor;
   final void Function(int index) onRemove;
   final VoidCallback? onAdd;
 
@@ -1137,6 +1164,7 @@ class _SubstitutesSection extends StatelessWidget {
                   compo: substitutes[i],
                   player: playersById[substitutes[i].playerID ?? ''],
                   readOnly: readOnly,
+                  showSensor: showSensor,
                   onRemove: () => onRemove(i),
                 ),
             ],
@@ -1152,11 +1180,13 @@ class _SubstituteChip extends StatelessWidget {
     required this.player,
     required this.readOnly,
     required this.onRemove,
+    this.showSensor = false,
   });
 
   final PlayerCompo compo;
   final Player? player;
   final bool readOnly;
+  final bool showSensor;
   final VoidCallback onRemove;
 
   @override
@@ -1169,6 +1199,11 @@ class _SubstituteChip extends StatelessWidget {
             player ?? Player(),
             unknownLabel: l10n.entityPlayer,
           );
+    final String? sensorLabel = showSensor
+        ? (compo.customName?.trim().isNotEmpty == true
+            ? compo.customName!.trim()
+            : null)
+        : null;
 
     final content = Row(
       mainAxisSize: MainAxisSize.min,
@@ -1208,7 +1243,11 @@ class _SubstituteChip extends StatelessWidget {
       clipBehavior: Clip.antiAlias,
       child: InkWell(
         onTap: player != null
-            ? () => showPlayerInfoBubble(context, player!)
+            ? () => showPlayerInfoBubble(
+                  context,
+                  player!,
+                  sensorLabel: sensorLabel,
+                )
             : null,
         child: Padding(
           padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),

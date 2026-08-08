@@ -6,8 +6,12 @@ import '../util/app_theme.dart';
 import '../util/player_age.dart';
 import 'playerPhoto.dart';
 
-/// Bulle d'info joueur (nom, prénom, âge) au tap sur l'avatar.
-Future<void> showPlayerInfoBubble(BuildContext context, Player player) {
+/// Bulle d'info joueur (nom, prénom, âge, capteur optionnel) au tap sur l'avatar.
+Future<void> showPlayerInfoBubble(
+  BuildContext context,
+  Player player, {
+  String? sensorLabel,
+}) {
   final colors = context.appColors;
   final l10n = context.l10n;
 
@@ -17,6 +21,9 @@ Future<void> showPlayerInfoBubble(BuildContext context, Player player) {
   final ageLabel = ageYears != null
       ? l10n.playerAgeYears(ageYears)
       : l10n.playerAgeUnknown;
+  final trimmedSensor = sensorLabel?.trim();
+  final bool showSensor =
+      trimmedSensor != null && trimmedSensor.isNotEmpty;
 
   return showDialog<void>(
     context: context,
@@ -79,6 +86,18 @@ Future<void> showPlayerInfoBubble(BuildContext context, Player player) {
                   fontWeight: FontWeight.w600,
                 ),
               ),
+              if (showSensor) ...[
+                const SizedBox(height: 6),
+                Text(
+                  '${l10n.trainingPlayersSelectTracker} $trimmedSensor',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    color: colors.primary,
+                    fontSize: 14,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+              ],
               const SizedBox(height: 14),
               Align(
                 alignment: Alignment.center,
