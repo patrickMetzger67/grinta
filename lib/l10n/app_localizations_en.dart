@@ -6813,7 +6813,7 @@ class AppLocalizationsEn extends AppLocalizations {
       'Sign in to accept this invitation.';
 
   @override
-  String get playerSeasonSummaryTitle => 'Player sheet';
+  String get playerSeasonSummaryTitle => 'Statistics';
 
   @override
   String get playerSeasonSummaryTabUnavailabilities => 'Unavailabilities';

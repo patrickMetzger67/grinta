@@ -11892,7 +11892,7 @@ abstract class AppLocalizations {
   /// No description provided for @playerSeasonSummaryTitle.
   ///
   /// In fr, this message translates to:
-  /// **'Fiche joueur'**
+  /// **'Statistiques'**
   String get playerSeasonSummaryTitle;
 
   /// No description provided for @playerSeasonSummaryTabUnavailabilities.

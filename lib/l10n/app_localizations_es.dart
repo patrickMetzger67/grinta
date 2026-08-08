@@ -6916,7 +6916,7 @@ class AppLocalizationsEs extends AppLocalizations {
       'Inicia sesión para aceptar esta invitación.';
 
   @override
-  String get playerSeasonSummaryTitle => 'Ficha del jugador';
+  String get playerSeasonSummaryTitle => 'Estadísticas';
 
   @override
   String get playerSeasonSummaryTabUnavailabilities => 'Indisponibilidades';

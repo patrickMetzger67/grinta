@@ -441,6 +441,17 @@ class _PlayerSeasonSummaryScreenState extends State<PlayerSeasonSummaryScreen> {
               ),
             ),
           ],
+          if (_summary != null && _summary!.teamNames.isNotEmpty) ...[
+            const SizedBox(height: 6),
+            Wrap(
+              spacing: 6,
+              runSpacing: 4,
+              children: [
+                for (final String teamName in _summary!.teamNames)
+                  _PositionChip(label: teamName),
+              ],
+            ),
+          ],
         ],
       ),
     );
@@ -737,6 +748,8 @@ class _MatchesTab extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final l10n = context.l10n;
+    final colors = context.appColors;
+    final rate = summary.attendanceRate;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
@@ -745,8 +758,15 @@ class _MatchesTab extends StatelessWidget {
           runSpacing: 12,
           children: [
             _SummaryMetricCard(
-              label: l10n.playerSeasonSummaryTeamMatches,
-              value: '${summary.teamMatchCount}',
+              label: l10n.teamStatsTrainingsAttendanceRate,
+              value: rate == null
+                  ? '-'
+                  : l10n.teamStatsTrainingsAttendanceRateValue(
+                      rate.toStringAsFixed(0),
+                    ),
+              valueColor: rate == null
+                  ? null
+                  : (rate >= 50 ? colors.success : colors.danger),
             ),
             _SummaryMetricCard(
               label: l10n.teamStatsPlayersColumnConvocations,
@@ -759,6 +779,20 @@ class _MatchesTab extends StatelessWidget {
             _SummaryMetricCard(
               label: l10n.teamStatsPlayersColumnPlayTime,
               value: l10n.teamStatsPlayersPlayTimeMinutes(summary.minutesPlayed),
+            ),
+            _SummaryMetricCard(
+              label: l10n.highlightTypeYellowCard,
+              value: '${summary.yellowCards}',
+              valueColor: colors.warning,
+            ),
+            _SummaryMetricCard(
+              label: l10n.highlightTypeRedCard,
+              value: '${summary.redCards}',
+              valueColor: colors.danger,
+            ),
+            _SummaryMetricCard(
+              label: l10n.playerSeasonSummaryTeamMatches,
+              value: '${summary.teamMatchCount}',
             ),
           ],
         ),

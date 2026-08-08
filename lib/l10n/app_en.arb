@@ -2757,7 +2757,7 @@
   "pendingInvitationAcceptMessage": "Enter the code from the email to link this invitation to your account.",
   "pendingInvitationAcceptSuccess": "Invitation accepted. The team is now available in your profile.",
   "pendingInvitationAcceptNeedAuth": "Sign in to accept this invitation.",
-  "playerSeasonSummaryTitle": "Player sheet",
+  "playerSeasonSummaryTitle": "Statistics",
   "playerSeasonSummaryTabUnavailabilities": "Unavailabilities",
   "playerSeasonSummaryTeamMatches": "Team matches",
   "playerSeasonSummaryTeamTrainings": "Team trainings",
