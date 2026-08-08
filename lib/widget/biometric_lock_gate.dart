@@ -293,7 +293,7 @@ Future<void> maybePromptBiometricUnlock(BuildContext context) async {
   await service.ensureInitialized();
   await service.refreshAvailability();
 
-  final uid = FirebaseAuth.instance.currentUser?.uid?.trim() ?? '';
+  final uid = FirebaseAuth.instance.currentUser?.uid.trim() ?? '';
   if (uid.isEmpty || !context.mounted) return;
   if (!service.shouldPromptAfterAccountReady(uid: uid)) return;
 
