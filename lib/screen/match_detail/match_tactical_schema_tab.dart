@@ -1068,8 +1068,11 @@ class _MatchTacticalSchemaBodyState extends State<_MatchTacticalSchemaBody>
           builder: (context, constraints) {
             final Size screenSize = MediaQuery.sizeOf(context);
             final bool isPhone = screenSize.shortestSide < 600;
-            final bool isLandscapeTablet =
-                !isPhone && screenSize.width > screenSize.height;
+            // Prefer the tab content box so Flutter web (Chrome on tablet)
+            // matches the native landscape-tablet side-by-side layout.
+            final bool useSideBySideLayout = !isPhone &&
+                constraints.maxWidth >= 700 &&
+                constraints.maxWidth > constraints.maxHeight * 0.9;
             final double sectionGap = isPhone ? 6 : 8;
 
             final Widget compoSelector = showEditor
@@ -1165,7 +1168,7 @@ class _MatchTacticalSchemaBodyState extends State<_MatchTacticalSchemaBody>
                 children: [
                   compoSelector,
                   SizedBox(height: sectionGap),
-                  if (isLandscapeTablet)
+                  if (useSideBySideLayout)
                     Expanded(
                       child: Row(
                         crossAxisAlignment: CrossAxisAlignment.stretch,
