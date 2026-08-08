@@ -153,9 +153,10 @@ class _AddGrintaPlayerSheetState extends State<AddGrintaPlayerSheet> {
 
   String? _validateEmail(String? value) {
     final trimmed = value?.trim() ?? '';
-    final bool requiredForInvite = widget.onSubmit != null;
+    // Email is always optional when adding/convoking a player; invitation is
+    // skipped when empty (see MemberInvitationService.inviteMember).
     if (trimmed.isEmpty) {
-      return requiredForInvite ? context.l10n.memberEmailRequired : null;
+      return null;
     }
     if (!isValidEmailFormat(trimmed)) {
       return context.l10n.memberEmailInvalid;
@@ -477,9 +478,7 @@ class _AddGrintaPlayerSheetState extends State<AddGrintaPlayerSheet> {
                   keyboardType: TextInputType.emailAddress,
                   autocorrect: false,
                   decoration: InputDecoration(
-                    labelText: widget.onSubmit != null
-                        ? l10n.memberEmail
-                        : l10n.memberEmailOptional,
+                    labelText: l10n.memberEmailOptional,
                     prefixIcon: const Icon(Icons.email_outlined),
                     errorText: _emailError,
                   ),
