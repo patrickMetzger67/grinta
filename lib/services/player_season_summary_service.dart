@@ -96,6 +96,7 @@ class PlayerSeasonSummaryService {
     final teamNamesFuture = _loadPlayerTeamNames(
       player: player,
       currentTeam: team,
+      seasonId: normalizedSeasonId,
     );
 
     final matchStatsResult = await matchStatsFuture;
@@ -131,13 +132,33 @@ class PlayerSeasonSummaryService {
     );
   }
 
+  /// Teams where the player is a member, limited to the same club and season.
   Future<List<String>> _loadPlayerTeamNames({
     required Player player,
     required Team currentTeam,
+    required String seasonId,
   }) async {
     final Map<String, String> namesByTeamId = <String, String>{};
+    final String clubId = currentTeam.clubId?.trim() ?? '';
+    final String normalizedSeasonId = seasonId.trim();
+
+    bool matchesClubAndSeason(Team team) {
+      final String teamSeason = team.seasonID?.trim() ?? '';
+      if (normalizedSeasonId.isNotEmpty &&
+          teamSeason.isNotEmpty &&
+          teamSeason != normalizedSeasonId) {
+        return false;
+      }
+      if (clubId.isEmpty) {
+        // No club on context team: still require season match when available.
+        return true;
+      }
+      final String teamClub = team.clubId?.trim() ?? '';
+      return teamClub.isEmpty || teamClub == clubId;
+    }
 
     void addTeam(Team team) {
+      if (!matchesClubAndSeason(team)) return;
       final String teamId = (team.keyTeam ?? team.ref?.id ?? '').trim();
       final String name = team.name?.trim() ?? '';
       if (teamId.isEmpty || name.isEmpty) return;
