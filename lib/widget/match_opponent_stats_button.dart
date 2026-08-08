@@ -15,10 +15,12 @@ class MatchOpponentStatsButton extends StatelessWidget {
     super.key,
     required this.match,
     required this.isManager,
+    this.dense = false,
   });
 
   final models.Match match;
   final bool isManager;
+  final bool dense;
 
   @override
   Widget build(BuildContext context) {
@@ -64,7 +66,7 @@ class MatchOpponentStatsButton extends StatelessWidget {
           ),
           builder: (context, snapshot) {
             return Padding(
-              padding: const EdgeInsets.only(top: 8),
+              padding: EdgeInsets.only(top: dense ? 2 : 8),
               child: Align(
                 alignment: Alignment.centerLeft,
                 child: TextButton.icon(
@@ -80,8 +82,26 @@ class MatchOpponentStatsButton extends StatelessWidget {
                       initialMatchIdForViewTracking: match.id,
                     );
                   },
-                  icon: Icon(Icons.query_stats_rounded, color: colors.primary),
-                  label: Text(l10n.matchDetailOpponentStats),
+                  style: TextButton.styleFrom(
+                    visualDensity: dense
+                        ? VisualDensity.compact
+                        : VisualDensity.standard,
+                    padding: dense
+                        ? const EdgeInsets.symmetric(horizontal: 8)
+                        : null,
+                    tapTargetSize: dense
+                        ? MaterialTapTargetSize.shrinkWrap
+                        : MaterialTapTargetSize.padded,
+                  ),
+                  icon: Icon(
+                    Icons.query_stats_rounded,
+                    color: colors.primary,
+                    size: dense ? 18 : 24,
+                  ),
+                  label: Text(
+                    l10n.matchDetailOpponentStats,
+                    style: TextStyle(fontSize: dense ? 12 : null),
+                  ),
                 ),
               ),
             );

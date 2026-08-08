@@ -1070,16 +1070,20 @@ class _MatchTacticalSchemaBodyState extends State<_MatchTacticalSchemaBody>
             final bool isPhone = screenSize.shortestSide < 600;
             // Prefer the tab content box so Flutter web (Chrome on tablet)
             // matches the native landscape-tablet side-by-side layout.
+            // Slightly looser than a pure landscape check so short web
+            // viewports (header + tabs) still get a readable pitch.
             final bool useSideBySideLayout = !isPhone &&
-                constraints.maxWidth >= 700 &&
-                constraints.maxWidth > constraints.maxHeight * 0.9;
-            final double sectionGap = isPhone ? 6 : 8;
+                constraints.maxWidth >= 640 &&
+                constraints.maxWidth > constraints.maxHeight * 0.75;
+            final bool tightHeight = constraints.maxHeight < 520;
+            final double sectionGap = isPhone ? 6 : (tightHeight ? 4 : 8);
 
             final Widget compoSelector = showEditor
                 ? _CompoTypeSelector(
                     compoTypes: compoTypes,
                     selectedKey:
                         _selectedCompoTypeKey ?? compoTypeKey(selectedType),
+                    compact: tightHeight,
                     onChanged: (key) {
                       final type = compoTypes.firstWhere(
                         (t) => compoTypeKey(t) == key,
@@ -1159,9 +1163,9 @@ class _MatchTacticalSchemaBodyState extends State<_MatchTacticalSchemaBody>
             return Padding(
               padding: EdgeInsets.fromLTRB(
                 isPhone ? 8 : 12,
-                4,
+                tightHeight ? 2 : 4,
                 isPhone ? 8 : 12,
-                isPhone ? 8 : 12,
+                isPhone ? 8 : (tightHeight ? 6 : 12),
               ),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -1173,14 +1177,19 @@ class _MatchTacticalSchemaBodyState extends State<_MatchTacticalSchemaBody>
                       child: Row(
                         crossAxisAlignment: CrossAxisAlignment.stretch,
                         children: [
-                          Expanded(flex: 3, child: pitch),
+                          Expanded(
+                            flex: tightHeight ? 4 : 3,
+                            child: pitch,
+                          ),
                           SizedBox(width: sectionGap + 4),
                           SizedBox(
                             width: () {
-                              final double proposed =
-                                  constraints.maxWidth * 0.30;
-                              if (proposed < 240) return 240.0;
-                              if (proposed > 340) return 340.0;
+                              final double proposed = constraints.maxWidth *
+                                  (tightHeight ? 0.24 : 0.30);
+                              final double minW = tightHeight ? 200.0 : 240.0;
+                              final double maxW = tightHeight ? 280.0 : 340.0;
+                              if (proposed < minW) return minW;
+                              if (proposed > maxW) return maxW;
                               return proposed;
                             }(),
                             child: SingleChildScrollView(
@@ -1195,7 +1204,9 @@ class _MatchTacticalSchemaBodyState extends State<_MatchTacticalSchemaBody>
                     SizedBox(height: sectionGap),
                     ConstrainedBox(
                       constraints: BoxConstraints(
-                        maxHeight: isPhone ? 108 : 140,
+                        maxHeight: isPhone
+                            ? 108
+                            : (tightHeight ? 120 : 140),
                       ),
                       child: SingleChildScrollView(child: substitutes),
                     ),
@@ -1229,11 +1240,13 @@ class _CompoTypeSelector extends StatelessWidget {
     required this.compoTypes,
     required this.selectedKey,
     required this.onChanged,
+    this.compact = false,
   });
 
   final List<CompoType> compoTypes;
   final String selectedKey;
   final ValueChanged<String?> onChanged;
+  final bool compact;
 
   @override
   Widget build(BuildContext context) {
@@ -1244,7 +1257,7 @@ class _CompoTypeSelector extends StatelessWidget {
     return Container(
       padding: EdgeInsets.symmetric(
         horizontal: isPhone ? 10 : 12,
-        vertical: isPhone ? 2 : 4,
+        vertical: compact ? 0 : (isPhone ? 2 : 4),
       ),
       decoration: BoxDecoration(
         color: colors.card,
@@ -1254,9 +1267,14 @@ class _CompoTypeSelector extends StatelessWidget {
       child: DropdownButtonFormField<String>(
         value: selectedKey,
         isExpanded: true,
+        isDense: compact,
         decoration: InputDecoration(
           labelText: context.l10n.hintCompoType,
           border: InputBorder.none,
+          isDense: compact,
+          contentPadding: compact
+              ? const EdgeInsets.symmetric(vertical: 4)
+              : null,
         ),
         items: compoTypes.map((type) {
           final key = compoTypeKey(type);

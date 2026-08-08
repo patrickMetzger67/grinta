@@ -215,12 +215,19 @@ double _slotSizeForPitch({
     }
   }
 
+  // Never exceed nearest-neighbor spacing — a hard minCap used to force
+  // overlap on short web/tablet viewports where the pitch is still readable
+  // but avatars would otherwise collide.
   final double fromSpacing =
-      minDistance.isFinite ? minDistance * 0.68 : pitchRect.width * 0.11;
-  final double fromWidth = pitchRect.width * (isPhone ? 0.105 : 0.11);
+      minDistance.isFinite ? minDistance * 0.72 : pitchRect.width * 0.11;
+  final double fromWidth = pitchRect.width * (isPhone ? 0.105 : 0.12);
   final double maxCap = isPhone ? 52.0 : 84.0;
-  final double minCap = isPhone ? 34.0 : 42.0;
-  return math.min(maxCap, math.max(minCap, math.min(fromSpacing, fromWidth)));
+  final double minCap = isPhone ? 28.0 : 32.0;
+  final double preferred = math.min(fromSpacing, fromWidth);
+  if (!preferred.isFinite || preferred <= 0) {
+    return minCap;
+  }
+  return preferred.clamp(minCap, maxCap);
 }
 
 class CompoFieldPlayer {

@@ -172,6 +172,11 @@ class MatchDetailScreen extends StatelessWidget {
                       ? 10
                       : 0;
 
+                  final Size screenSize = MediaQuery.sizeOf(context);
+                  final bool denseChrome = screenSize.height < 860 ||
+                      (screenSize.shortestSide >= 600 &&
+                          screenSize.width > screenSize.height);
+
                   return Container(
                     width: double.infinity,
                     padding: EdgeInsets.symmetric(
@@ -179,11 +184,20 @@ class MatchDetailScreen extends StatelessWidget {
                     ),
                     child: Column(
                       children: [
-                        _MatchHeader(match: match, isManager: isManager),
+                        _MatchHeader(
+                          match: match,
+                          isManager: isManager,
+                          dense: denseChrome,
+                        ),
                         // Live / Re-sync for noSync kits — visible without
                         // opening Temps forts (and without kick-off highlight).
                         Padding(
-                          padding: const EdgeInsets.fromLTRB(8, 8, 8, 0),
+                          padding: EdgeInsets.fromLTRB(
+                            8,
+                            denseChrome ? 4 : 8,
+                            8,
+                            0,
+                          ),
                           child: MatchIntenseHighlightsActions(
                             match: match,
                             isManager: isManager,
@@ -325,6 +339,7 @@ class MatchDetailScreen extends StatelessWidget {
                                         ),
                                         initialIndex: safeInitialIndex,
                                         matchHasTracker: showStats,
+                                        dense: denseChrome,
                                       );
                                     },
                                   );
@@ -459,6 +474,7 @@ class _MatchDetailTabShell extends StatefulWidget {
   final List<String> featureDiscoveryIds;
   final int initialIndex;
   final bool matchHasTracker;
+  final bool dense;
 
   const _MatchDetailTabShell({
     required this.tabs,
@@ -467,6 +483,7 @@ class _MatchDetailTabShell extends StatefulWidget {
     required this.featureDiscoveryIds,
     required this.initialIndex,
     required this.matchHasTracker,
+    this.dense = false,
   });
 
   @override
@@ -542,13 +559,13 @@ class _MatchDetailTabShellState extends State<_MatchDetailTabShell>
             includeBaseScreens: false,
             matchHasTracker: widget.matchHasTracker,
           ),
-          const SizedBox(height: 6),
+          SizedBox(height: widget.dense ? 2 : 6),
           _TabsContainer(
             tabs: widget.tabs,
             controller: _tabController,
             onTap: _onTabTapped,
           ),
-          const SizedBox(height: 12),
+          SizedBox(height: widget.dense ? 4 : 12),
           Expanded(
             child: TabBarView(
               controller: _tabController,
@@ -665,10 +682,12 @@ class _MatchDetailTab extends StatelessWidget {
 class _MatchHeader extends StatefulWidget {
   final models.Match match;
   final bool isManager;
+  final bool dense;
 
   const _MatchHeader({
     required this.match,
     required this.isManager,
+    this.dense = false,
   });
 
   @override
@@ -807,6 +826,7 @@ class _MatchHeaderState extends State<_MatchHeader> {
 
   Widget _buildHeader(BuildContext context, models.Match match) {
     final colors = context.appColors;
+    final bool dense = widget.dense;
 
     final l10n = context.l10n;
     final String team1 = _clean(match.team1, fallback: l10n.entityTeamWithIndex(1));
@@ -826,11 +846,14 @@ class _MatchHeaderState extends State<_MatchHeader> {
 
     return Container(
       width: double.infinity,
-      margin: const EdgeInsets.fromLTRB(8, 4, 8, 0),
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+      margin: EdgeInsets.fromLTRB(8, dense ? 2 : 4, 8, 0),
+      padding: EdgeInsets.symmetric(
+        horizontal: dense ? 8 : 10,
+        vertical: dense ? 4 : 8,
+      ),
       decoration: BoxDecoration(
         color: colors.card,
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(dense ? 12 : 16),
         border: Border.all(color: colors.border),
       ),
       child: Column(
@@ -840,17 +863,17 @@ class _MatchHeaderState extends State<_MatchHeader> {
             runSpacing: 4,
             alignment: WrapAlignment.center,
             children: [
-              if (_clean(match.chType).isNotEmpty)
+              if (!dense && _clean(match.chType).isNotEmpty)
                 _InfoPill(
                   icon: Icons.emoji_events_outlined,
                   label: match.chType!,
                 ),
-              if ((match.day ?? 0) > 0)
+              if (!dense && (match.day ?? 0) > 0)
                 _InfoPill(
                   icon: Icons.calendar_view_day_rounded,
                   label: l10n.periodMatchDay(match.day.toString()),
                 ),
-              if (_clean(match.tour).isNotEmpty)
+              if (!dense && _clean(match.tour).isNotEmpty)
                 _InfoPill(
                   icon: Icons.flag_outlined,
                   label: match.tour!,
@@ -867,11 +890,11 @@ class _MatchHeaderState extends State<_MatchHeader> {
               ),
             ],
           ),
-          const SizedBox(height: 6),
+          SizedBox(height: dense ? 2 : 6),
 
           LayoutBuilder(
             builder: (context, constraints) {
-              final bool compact = constraints.maxWidth < 360;
+              final bool compact = dense || constraints.maxWidth < 360;
 
               final scoreBlock = isManager
                   ? _EditableScoreBlock(
@@ -890,22 +913,22 @@ class _MatchHeaderState extends State<_MatchHeader> {
                       played: showScore,
                     );
 
-              if (compact) {
+              if (constraints.maxWidth < 360) {
                 return Column(
                   children: [
                     _TeamBlock(
                       name: team1,
                       logoUrl: match.team1UrlLogo,
-                      affiliation: match.affiliationTeam1,
+                      affiliation: dense ? null : match.affiliationTeam1,
                       compact: true,
                     ),
-                    const SizedBox(height: 6),
+                    SizedBox(height: dense ? 4 : 6),
                     scoreBlock,
-                    const SizedBox(height: 6),
+                    SizedBox(height: dense ? 4 : 6),
                     _TeamBlock(
                       name: team2,
                       logoUrl: match.team2UrlLogo,
-                      affiliation: match.affiliationTeam2,
+                      affiliation: dense ? null : match.affiliationTeam2,
                       compact: true,
                     ),
                   ],
@@ -919,18 +942,20 @@ class _MatchHeaderState extends State<_MatchHeader> {
                     child: _TeamBlock(
                       name: team1,
                       logoUrl: match.team1UrlLogo,
-                      affiliation: match.affiliationTeam1,
+                      affiliation: dense ? null : match.affiliationTeam1,
+                      compact: compact,
                     ),
                   ),
                   Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 8),
+                    padding: EdgeInsets.symmetric(horizontal: dense ? 4 : 8),
                     child: scoreBlock,
                   ),
                   Expanded(
                     child: _TeamBlock(
                       name: team2,
                       logoUrl: match.team2UrlLogo,
-                      affiliation: match.affiliationTeam2,
+                      affiliation: dense ? null : match.affiliationTeam2,
+                      compact: compact,
                     ),
                   ),
                 ],
@@ -938,12 +963,12 @@ class _MatchHeaderState extends State<_MatchHeader> {
             },
           ),
 
-          const SizedBox(height: 6),
+          SizedBox(height: dense ? 4 : 6),
           Row(
             children: [
               Icon(
                 Icons.schedule_rounded,
-                size: 15,
+                size: dense ? 13 : 15,
                 color: colors.textSecondary,
               ),
               const SizedBox(width: 6),
@@ -954,7 +979,7 @@ class _MatchHeaderState extends State<_MatchHeader> {
                   overflow: TextOverflow.ellipsis,
                   style: TextStyle(
                     color: colors.textSecondary,
-                    fontSize: 12,
+                    fontSize: dense ? 11 : 12,
                     fontWeight: FontWeight.w600,
                   ),
                 ),
@@ -962,10 +987,10 @@ class _MatchHeaderState extends State<_MatchHeader> {
             ],
           ),
           if (hasVenue) ...[
-            const SizedBox(height: 6),
+            SizedBox(height: dense ? 4 : 6),
             Material(
               color: colors.surface,
-              elevation: 1,
+              elevation: dense ? 0 : 1,
               shadowColor: Colors.black.withValues(alpha: 0.2),
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(10),
@@ -978,26 +1003,26 @@ class _MatchHeaderState extends State<_MatchHeader> {
               child: InkWell(
                 onTap: () => _showVenueSheet(context, match),
                 child: Padding(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 10,
-                    vertical: 8,
+                  padding: EdgeInsets.symmetric(
+                    horizontal: dense ? 8 : 10,
+                    vertical: dense ? 5 : 8,
                   ),
                   child: Row(
                     children: [
                       Icon(
                         Icons.place_rounded,
-                        size: 18,
+                        size: dense ? 16 : 18,
                         color: colors.primary,
                       ),
                       const SizedBox(width: 8),
                       Expanded(
                         child: Text(
                           _venueSummary(match),
-                          maxLines: 2,
+                          maxLines: dense ? 1 : 2,
                           overflow: TextOverflow.ellipsis,
                           style: TextStyle(
                             color: colors.textPrimary,
-                            fontSize: 12,
+                            fontSize: dense ? 11 : 12,
                             fontWeight: FontWeight.w700,
                             height: 1.25,
                           ),
@@ -1006,14 +1031,14 @@ class _MatchHeaderState extends State<_MatchHeader> {
                       if (_hasFieldGps(match)) ...[
                         Icon(
                           Icons.gps_fixed,
-                          size: 18,
+                          size: dense ? 16 : 18,
                           color: colors.primary,
                         ),
                         const SizedBox(width: 6),
                       ],
                       Icon(
                         Icons.info_outline_rounded,
-                        size: 18,
+                        size: dense ? 16 : 18,
                         color: colors.primary,
                       ),
                     ],
@@ -1025,6 +1050,7 @@ class _MatchHeaderState extends State<_MatchHeader> {
           MatchOpponentStatsButton(
             match: match,
             isManager: isManager,
+            dense: dense,
           ),
         ],
       ),
