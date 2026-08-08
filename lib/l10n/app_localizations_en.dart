@@ -3441,6 +3441,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get teamDetailColumnWeight => 'Weight';
 
   @override
+  String get teamDetailFilterPlayerHint => 'Filter by name';
+
+  @override
   String teamDetailHeightCm(int value) {
     return '$value cm';
   }

@@ -103,6 +103,7 @@ class _TeamDetailScreenState extends State<TeamDetailScreen> {
 
   _RosterSortColumn? _sortColumn;
   bool _sortAscending = true;
+  final TextEditingController _playerNameFilterCtrl = TextEditingController();
 
   List<dynamic> rawPlayers = [];
   bool _usesGrintaRoster = false;
@@ -115,6 +116,12 @@ class _TeamDetailScreenState extends State<TeamDetailScreen> {
   bool _isMemberOperationLoading = false;
   String? _resendingInvitationMemberId;
   MemberInvitationResult? _pendingMemberInvitationResult;
+
+  @override
+  void dispose() {
+    _playerNameFilterCtrl.dispose();
+    super.dispose();
+  }
 
   @override
   void initState() {
@@ -1604,6 +1611,25 @@ class _TeamDetailScreenState extends State<TeamDetailScreen> {
     });
   }
 
+  bool _playerNameMatchesFilter(_TeamMemberVm row, AppLocalizations l10n) {
+    final String query = _playerNameFilterCtrl.text.trim().toLowerCase();
+    if (query.isEmpty) return true;
+
+    final Player player = row.player;
+    final List<String> candidates = <String>[
+      _displayName(player, l10n),
+      playerDisplayName(player, unknownLabel: ''),
+      player.firstName ?? '',
+      player.lastName ?? '',
+      '${player.firstName ?? ''} ${player.lastName ?? ''}',
+      '${player.lastName ?? ''} ${player.firstName ?? ''}',
+    ];
+    for (final String candidate in candidates) {
+      if (candidate.toLowerCase().contains(query)) return true;
+    }
+    return false;
+  }
+
   List<_TeamMemberVm> _sortedRosterRows(
     List<_TeamMemberVm> rows,
     AppLocalizations l10n,
@@ -1612,7 +1638,7 @@ class _TeamDetailScreenState extends State<TeamDetailScreen> {
       return r.isGrintaRoster ||
           r.effectives != null ||
           (!_teamUsesGrintaRoster() && _isListedOnTeamRoster(r));
-    }).toList();
+    }).where((r) => _playerNameMatchesFilter(r, l10n)).toList();
 
     final _RosterSortColumn? column = _sortColumn;
 
@@ -2537,6 +2563,15 @@ class _TeamDetailScreenState extends State<TeamDetailScreen> {
                       playerFlex: 4,
                     );
 
+              final int playerFlex = mobileRoster ? rosterLayout.playerFlex : 4;
+              final int trailingFlex = mobileRoster
+                  ? _mobileRosterTrailingFlex(
+                      layout: rosterLayout,
+                      canManageTeam: canManageTeam,
+                      canManageRoster: canManageRoster,
+                    )
+                  : 13;
+
               return Column(
                 children: [
                   mobileRoster
@@ -2545,6 +2580,12 @@ class _TeamDetailScreenState extends State<TeamDetailScreen> {
                           layout: rosterLayout,
                         )
                       : _buildTableHeader(context, mobile: false),
+                  _buildPlayerNameFilterRow(
+                    context,
+                    playerFlex: playerFlex,
+                    trailingFlex: trailingFlex,
+                    horizontalPadding: mobileRoster ? 4 : 12,
+                  ),
                   if (visibleRows.isEmpty)
                     Padding(
                       padding: const EdgeInsets.all(24),
@@ -4358,6 +4399,96 @@ class _TeamDetailScreenState extends State<TeamDetailScreen> {
             ),
           ]
 
+        ],
+      ),
+    );
+  }
+
+  int _mobileRosterTrailingFlex({
+    required _MobileRosterLayout layout,
+    required bool canManageTeam,
+    required bool canManageRoster,
+  }) {
+    int trailing = 1; // App
+    if (layout.showPositionColumn) trailing += 1;
+    trailing += 1; // Tracker
+    trailing += 1; // Manager
+    if (canManageRoster) trailing += 1; // Resend invitation
+    if (canManageTeam) trailing += 1; // Unavailabilities
+    if (canManageRoster && layout.showInlineEditColumn) trailing += 1;
+    trailing += 1; // Season summary / info
+    return trailing;
+  }
+
+  Widget _buildPlayerNameFilterRow(
+    BuildContext context, {
+    required int playerFlex,
+    required int trailingFlex,
+    required double horizontalPadding,
+  }) {
+    final colors = context.appColors;
+    final l10n = context.l10n;
+    final bool hasQuery = _playerNameFilterCtrl.text.trim().isNotEmpty;
+
+    return Container(
+      padding: EdgeInsets.fromLTRB(
+        horizontalPadding,
+        8,
+        horizontalPadding,
+        10,
+      ),
+      decoration: BoxDecoration(
+        color: colors.surface.withValues(alpha: 0.55),
+        border: Border(
+          bottom: BorderSide(color: colors.border),
+        ),
+      ),
+      child: Row(
+        children: [
+          Expanded(
+            flex: playerFlex,
+            child: TextField(
+              controller: _playerNameFilterCtrl,
+              textInputAction: TextInputAction.search,
+              style: Theme.of(context).textTheme.bodyMedium,
+              decoration: InputDecoration(
+                isDense: true,
+                hintText: l10n.teamDetailFilterPlayerHint,
+                prefixIcon: Icon(
+                  Icons.search_rounded,
+                  size: 20,
+                  color: colors.textSecondary,
+                ),
+                suffixIcon: hasQuery
+                    ? IconButton(
+                        tooltip: l10n.actionCancel,
+                        onPressed: () {
+                          _playerNameFilterCtrl.clear();
+                          setState(() {});
+                        },
+                        icon: Icon(
+                          Icons.clear_rounded,
+                          size: 18,
+                          color: colors.textSecondary,
+                        ),
+                      )
+                    : null,
+                contentPadding: const EdgeInsets.symmetric(
+                  horizontal: 12,
+                  vertical: 10,
+                ),
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(10),
+                ),
+              ),
+              onChanged: (_) => setState(() {}),
+            ),
+          ),
+          if (trailingFlex > 0)
+            Expanded(
+              flex: trailingFlex,
+              child: const SizedBox.shrink(),
+            ),
         ],
       ),
     );

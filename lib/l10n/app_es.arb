@@ -1178,6 +1178,7 @@
   "teamDetailPlayerTeamRemoved": "{playerName} ha sido eliminado del equipo.",
   "teamDetailColumnAge": "Edad",
   "teamDetailColumnPosition": "Posición",
+  "teamDetailFilterPlayerHint": "Filtrar por nombre",
   "teamDetailColumnHeight": "Altura",
   "teamDetailColumnWeight": "Peso",
   "teamDetailHeightCm": "{value} cm",

@@ -6042,6 +6042,12 @@ abstract class AppLocalizations {
   /// **'Poids'**
   String get teamDetailColumnWeight;
 
+  /// No description provided for @teamDetailFilterPlayerHint.
+  ///
+  /// In fr, this message translates to:
+  /// **'Filtrer par nom'**
+  String get teamDetailFilterPlayerHint;
+
   /// No description provided for @teamDetailHeightCm.
   ///
   /// In fr, this message translates to:
