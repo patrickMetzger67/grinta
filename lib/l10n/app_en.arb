@@ -1323,6 +1323,7 @@
   "teamDetailPlayerTeamRemoved": "{playerName} has been removed from the team.",
   "teamDetailColumnAge": "Age",
   "teamDetailColumnPosition": "Position",
+  "teamDetailFilterPlayerHint": "Filter by name",
   "teamDetailColumnHeight": "Height",
   "teamDetailColumnWeight": "Weight",
   "teamDetailHeightCm": "{value} cm",

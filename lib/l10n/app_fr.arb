@@ -1576,6 +1576,7 @@
   "teamDetailColumnPosition": "Poste",
   "teamDetailColumnHeight": "Taille",
   "teamDetailColumnWeight": "Poids",
+  "teamDetailFilterPlayerHint": "Filtrer par nom",
   "teamDetailHeightCm": "{value} cm",
   "@teamDetailHeightCm": {
     "placeholders": {
