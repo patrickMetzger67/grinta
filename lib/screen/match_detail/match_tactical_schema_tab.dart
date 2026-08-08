@@ -1097,18 +1097,20 @@ class _MatchTacticalSchemaBodyState extends State<_MatchTacticalSchemaBody>
                   SizedBox(height: sectionGap),
                   if (hasSchema || showEditor)
                     Expanded(
-                      child: Align(
-                        alignment: Alignment.topCenter,
-                        child: HalfPitchCompoWidget(
-                          compoType: selectedType,
-                          selectedPlayers: _displayFieldPlayers,
-                          onSlotTap: showEditor ? _onSlotTap : null,
-                          playerAvatarBuilder: _playerAvatar,
-                          onPlayerAvatarTap: _showPlayerInfo,
-                          onPlayerAvatarLongPress: showEditor
-                              ? _onPlayerAvatarLongPress
-                              : null,
-                        ),
+                      child: LayoutBuilder(
+                        builder: (context, pitchConstraints) {
+                          return HalfPitchCompoWidget(
+                            height: pitchConstraints.maxHeight,
+                            compoType: selectedType,
+                            selectedPlayers: _displayFieldPlayers,
+                            onSlotTap: showEditor ? _onSlotTap : null,
+                            playerAvatarBuilder: _playerAvatar,
+                            onPlayerAvatarTap: _showPlayerInfo,
+                            onPlayerAvatarLongPress: showEditor
+                                ? _onPlayerAvatarLongPress
+                                : null,
+                          );
+                        },
                       ),
                     )
                   else if (!showEditor)
@@ -1121,7 +1123,8 @@ class _MatchTacticalSchemaBodyState extends State<_MatchTacticalSchemaBody>
                   SizedBox(height: sectionGap),
                   ConstrainedBox(
                     constraints: BoxConstraints(
-                      maxHeight: isPhone ? 108 : double.infinity,
+                      // Keep substitutes compact so the pitch keeps height on tablets.
+                      maxHeight: isPhone ? 108 : 150,
                     ),
                     child: SingleChildScrollView(
                       child: _SubstitutesSection(
