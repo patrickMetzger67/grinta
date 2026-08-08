@@ -3,13 +3,16 @@ import 'package:grinta/core/extensions/l10n_extension.dart';
 import 'package:provider/provider.dart';
 
 import '../../model/compoType.dart';
+import '../../model/grinta_player.dart';
 import '../../model/match.dart' as models;
 import '../../model/matchCompo.dart';
 import '../../model/player.dart';
+import '../../model/team.dart';
 import '../../model/tracker/deviceOwner.dart';
 import '../../provider/appSession.dart';
 import '../../services/compoTypeService.dart';
 import '../../services/deviceOwnerService.dart' as device_owner_svc;
+import '../../services/effectivesService.dart';
 import '../../services/matchCompoService.dart';
 import '../../services/playerService.dart';
 import '../../services/teamService.dart';
@@ -194,6 +197,9 @@ class _MatchTacticalSchemaBodyState extends State<_MatchTacticalSchemaBody>
   List<Player> _teamPlayers = [];
   final Map<String, Player> _playersById = {};
 
+  /// Roster sensor assignments: playerId → TRACKER_DeviceOwner doc ids.
+  Map<String, List<String>> _rosterTrackerIdsByPlayerId = {};
+
   MatchCompo? _draftCompo;
   Set<String> _convokedIds = {};
   Map<String, PlayerCompo> _startersBySlot = {};
@@ -266,6 +272,7 @@ class _MatchTacticalSchemaBodyState extends State<_MatchTacticalSchemaBody>
         setState(() {
           _resolvedTeamId = null;
           _teamPlayers = [];
+          _rosterTrackerIdsByPlayerId = {};
           _loadingPlayers = false;
         });
       }
@@ -275,6 +282,10 @@ class _MatchTacticalSchemaBodyState extends State<_MatchTacticalSchemaBody>
     try {
       final team = await _teamService.getTeamById(teamId);
       final players = await _teamPlayersService.loadPlayers(teamId: teamId);
+      final rosterTrackers = await _loadRosterTrackerIdsByPlayer(
+        teamId: teamId,
+        team: team,
+      );
 
       _playersById
         ..clear()
@@ -289,6 +300,7 @@ class _MatchTacticalSchemaBodyState extends State<_MatchTacticalSchemaBody>
           _resolvedTeamId = teamId;
           _teamSoccerType = team?.soccerType;
           _teamPlayers = players;
+          _rosterTrackerIdsByPlayerId = rosterTrackers;
           _loadingPlayers = false;
           _playersLoaded = true;
         });
@@ -302,6 +314,58 @@ class _MatchTacticalSchemaBodyState extends State<_MatchTacticalSchemaBody>
         });
       }
     }
+  }
+
+  /// Loads kit sensor doc ids assigned on the team roster (effectif).
+  ///
+  /// Prefers [Team.grintaPlayers]; falls back to legacy `effectives.trackers`.
+  Future<Map<String, List<String>>> _loadRosterTrackerIdsByPlayer({
+    required String teamId,
+    required Team? team,
+  }) async {
+    final map = <String, List<String>>{};
+    final List<GrintaPlayer> grintaPlayers =
+        team?.grintaPlayers ?? const <GrintaPlayer>[];
+    if (grintaPlayers.isNotEmpty) {
+      for (final GrintaPlayer entry in grintaPlayers) {
+        final String playerId = entry.playerId.trim();
+        if (playerId.isEmpty) continue;
+        final List<String> trackers = entry.trackers
+            .map((String id) => id.trim())
+            .where((String id) => id.isNotEmpty)
+            .toList(growable: false);
+        if (trackers.isNotEmpty) {
+          map[playerId] = trackers;
+        }
+      }
+      return map;
+    }
+
+    final String seasonId = widget.match.seasonID?.trim() ?? '';
+    try {
+      final effectives =
+          await EffectivesService().getEffectivesByTeamId(teamId);
+      for (final effective in effectives) {
+        final String memberId = effective.memberID?.trim() ?? '';
+        if (memberId.isEmpty) continue;
+        if (seasonId.isNotEmpty) {
+          final String effectiveSeason = effective.seasonID?.trim() ?? '';
+          if (effectiveSeason.isNotEmpty && effectiveSeason != seasonId) {
+            continue;
+          }
+        }
+        final List<String> trackers = (effective.trackers ?? const <String>[])
+            .map((String id) => id.trim())
+            .where((String id) => id.isNotEmpty)
+            .toList(growable: false);
+        if (trackers.isNotEmpty) {
+          map[memberId] = trackers;
+        }
+      }
+    } catch (_) {
+      // Roster defaults are best-effort; assignment sheet still works without them.
+    }
+    return map;
   }
 
   Future<void> _hydrateFromMatchCompo(MatchCompo? compo) async {
@@ -681,7 +745,11 @@ class _MatchTacticalSchemaBodyState extends State<_MatchTacticalSchemaBody>
         availableTrackers: availableTrackers,
         availableJerseyNumbers: jerseyNumbers,
         initialNumber: _defaultJerseyNumber(player, existing),
-        initialTracker: _deviceOwnerForCompo(existing, availableTrackers),
+        initialTracker: _defaultTrackerForPlayer(
+          player: player,
+          existing: existing,
+          availableTrackers: availableTrackers,
+        ),
       ),
     );
   }
@@ -694,6 +762,40 @@ class _MatchTacticalSchemaBodyState extends State<_MatchTacticalSchemaBody>
     if (docId == null || docId.isEmpty) return null;
     for (final device in availableTrackers) {
       if (device.id == docId) return device;
+    }
+    return null;
+  }
+
+  /// Prefer an existing match assignment; otherwise the player's roster sensor
+  /// if still free for this composition.
+  DeviceOwner? _defaultTrackerForPlayer({
+    required Player player,
+    PlayerCompo? existing,
+    required List<DeviceOwner> availableTrackers,
+  }) {
+    final DeviceOwner? fromCompo =
+        _deviceOwnerForCompo(existing, availableTrackers);
+    if (fromCompo != null) return fromCompo;
+
+    if (!_trackerRequiredForMatch || availableTrackers.isEmpty) {
+      return null;
+    }
+
+    final String playerId =
+        (effectiveMemberId(player) ?? player.ref?.id ?? '').trim();
+    if (playerId.isEmpty) return null;
+
+    final List<String> rosterIds =
+        _rosterTrackerIdsByPlayerId[playerId] ?? const <String>[];
+    if (rosterIds.isEmpty) return null;
+
+    final Map<String, DeviceOwner> availableById = <String, DeviceOwner>{
+      for (final DeviceOwner device in availableTrackers) device.id: device,
+    };
+
+    for (final String trackerDocId in rosterIds) {
+      final DeviceOwner? device = availableById[trackerDocId];
+      if (device != null) return device;
     }
     return null;
   }
