@@ -4,12 +4,14 @@ import 'package:provider/provider.dart';
 
 import '../../model/compoType.dart';
 import '../../model/grinta_player.dart';
+import '../../model/grinta_player_hw.dart';
 import '../../model/match.dart' as models;
 import '../../model/matchCompo.dart';
 import '../../model/player.dart';
 import '../../model/team.dart';
 import '../../model/tracker/deviceOwner.dart';
 import '../../provider/appSession.dart';
+import '../../screen/player_season_summary/player_season_summary_screen.dart';
 import '../../services/compoTypeService.dart';
 import '../../services/deviceOwnerService.dart' as device_owner_svc;
 import '../../services/effectivesService.dart';
@@ -193,6 +195,7 @@ class _MatchTacticalSchemaBodyState extends State<_MatchTacticalSchemaBody>
   bool _loadingPlayers = true;
   bool _playersLoaded = false;
   String? _resolvedTeamId;
+  Team? _team;
   int? _teamSoccerType;
   List<Player> _teamPlayers = [];
   final Map<String, Player> _playersById = {};
@@ -271,6 +274,7 @@ class _MatchTacticalSchemaBodyState extends State<_MatchTacticalSchemaBody>
       if (mounted) {
         setState(() {
           _resolvedTeamId = null;
+          _team = null;
           _teamPlayers = [];
           _rosterTrackerIdsByPlayerId = {};
           _loadingPlayers = false;
@@ -298,6 +302,7 @@ class _MatchTacticalSchemaBodyState extends State<_MatchTacticalSchemaBody>
       if (mounted) {
         setState(() {
           _resolvedTeamId = teamId;
+          _team = team;
           _teamSoccerType = team?.soccerType;
           _teamPlayers = players;
           _rosterTrackerIdsByPlayerId = rosterTrackers;
@@ -585,6 +590,50 @@ class _MatchTacticalSchemaBodyState extends State<_MatchTacticalSchemaBody>
     return label;
   }
 
+  GrintaPlayer? _grintaPlayerFor(Player player) {
+    final Set<String> lookupIds = playerMemberLookupIds(player);
+    for (final GrintaPlayer entry
+        in _team?.grintaPlayers ?? const <GrintaPlayer>[]) {
+      final String id = entry.playerId.trim();
+      if (id.isNotEmpty && lookupIds.contains(id)) {
+        return entry;
+      }
+    }
+    return null;
+  }
+
+  Future<void> _openPlayerStatistics(Player player) async {
+    final Team? team = _team;
+    final String seasonId = widget.match.seasonID?.trim() ?? '';
+    if (team == null || seasonId.isEmpty || !mounted) return;
+
+    final GrintaPlayer? grintaPlayer = _grintaPlayerFor(player);
+    final GrintaPlayerHW? latestHw = grintaPlayer?.latestHw;
+
+    await openPlayerSeasonSummaryScreen(
+      context,
+      team: team,
+      initialSeasonId: seasonId,
+      isManager: widget.isManager,
+      identity: PlayerSeasonSummaryIdentity(
+        player: player,
+        positionCodes: grintaPlayer == null
+            ? const <int>[]
+            : List<int>.from(grintaPlayer.positions),
+        birthday: grintaPlayer?.birthday ?? Player.parseBirthDay(player.birthDay),
+        heightCm: latestHw != null && latestHw.height > 0
+            ? latestHw.height
+            : null,
+        weightKg: latestHw != null && latestHw.weight > 0
+            ? latestHw.weight
+            : null,
+        hwMeasuredAt: latestHw?.dateTime,
+        preferredFoot: grintaPlayer?.preferredFoot,
+        isGrintaRoster: grintaPlayer != null,
+      ),
+    );
+  }
+
   void _showPlayerInfo(String playerId) {
     final player = _playersById[playerId];
     if (player == null) return;
@@ -592,6 +641,10 @@ class _MatchTacticalSchemaBodyState extends State<_MatchTacticalSchemaBody>
       context,
       player,
       sensorLabel: _sensorLabelForPlayer(playerId),
+      onStatistics: _team != null &&
+              (widget.match.seasonID?.trim().isNotEmpty ?? false)
+          ? () => _openPlayerStatistics(player)
+          : null,
     );
   }
 
@@ -1076,6 +1129,11 @@ class _MatchTacticalSchemaBodyState extends State<_MatchTacticalSchemaBody>
                         playersById: _playersById,
                         readOnly: _readOnly,
                         showSensor: _trackerRequiredForMatch,
+                        onPlayerStatistics: _team != null &&
+                                (widget.match.seasonID?.trim().isNotEmpty ??
+                                    false)
+                            ? _openPlayerStatistics
+                            : null,
                         onRemove: (index) {
                           setState(() => _substitutes.removeAt(index));
                         },
@@ -1214,6 +1272,7 @@ class _SubstitutesSection extends StatelessWidget {
     required this.readOnly,
     required this.onRemove,
     this.showSensor = false,
+    this.onPlayerStatistics,
     this.onAdd,
   });
 
@@ -1221,6 +1280,7 @@ class _SubstitutesSection extends StatelessWidget {
   final Map<String, Player> playersById;
   final bool readOnly;
   final bool showSensor;
+  final Future<void> Function(Player player)? onPlayerStatistics;
   final void Function(int index) onRemove;
   final VoidCallback? onAdd;
 
@@ -1267,6 +1327,7 @@ class _SubstitutesSection extends StatelessWidget {
                   player: playersById[substitutes[i].playerID ?? ''],
                   readOnly: readOnly,
                   showSensor: showSensor,
+                  onStatistics: onPlayerStatistics,
                   onRemove: () => onRemove(i),
                 ),
             ],
@@ -1283,12 +1344,14 @@ class _SubstituteChip extends StatelessWidget {
     required this.readOnly,
     required this.onRemove,
     this.showSensor = false,
+    this.onStatistics,
   });
 
   final PlayerCompo compo;
   final Player? player;
   final bool readOnly;
   final bool showSensor;
+  final Future<void> Function(Player player)? onStatistics;
   final VoidCallback onRemove;
 
   @override
@@ -1349,6 +1412,9 @@ class _SubstituteChip extends StatelessWidget {
                   context,
                   player!,
                   sensorLabel: sensorLabel,
+                  onStatistics: onStatistics == null
+                      ? null
+                      : () => onStatistics!(player!),
                 )
             : null,
         child: Padding(

@@ -11,6 +11,7 @@ Future<void> showPlayerInfoBubble(
   BuildContext context,
   Player player, {
   String? sensorLabel,
+  Future<void> Function()? onStatistics,
 }) {
   final colors = context.appColors;
   final l10n = context.l10n;
@@ -98,7 +99,18 @@ Future<void> showPlayerInfoBubble(
                   ),
                 ),
               ],
-              const SizedBox(height: 14),
+              if (onStatistics != null) ...[
+                const SizedBox(height: 16),
+                FilledButton.icon(
+                  onPressed: () async {
+                    Navigator.of(ctx).pop();
+                    await onStatistics();
+                  },
+                  icon: const Icon(Icons.bar_chart_rounded, size: 18),
+                  label: Text(l10n.playerSeasonSummaryTitle),
+                ),
+              ],
+              const SizedBox(height: 8),
               Align(
                 alignment: Alignment.center,
                 child: TextButton(
