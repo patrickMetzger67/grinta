@@ -639,7 +639,7 @@ class _MatchConvocationsTabState extends State<MatchConvocationsTab>
   }
 }
 
-class _ConvocationsBody extends StatelessWidget {
+class _ConvocationsBody extends StatefulWidget {
   const _ConvocationsBody({
     required this.match,
     required this.players,
@@ -666,30 +666,63 @@ class _ConvocationsBody extends StatelessWidget {
   final Future<void> Function(String playerId, bool selected) onPlayerToggled;
   final Future<void> Function() onAddPlayer;
 
+  @override
+  State<_ConvocationsBody> createState() => _ConvocationsBodyState();
+}
+
+class _ConvocationsBodyState extends State<_ConvocationsBody> {
+  final TextEditingController _nameFilterCtrl = TextEditingController();
+
+  @override
+  void dispose() {
+    _nameFilterCtrl.dispose();
+    super.dispose();
+  }
+
   List<Player> get _convokedPlayers {
-    return players.where((player) {
+    return widget.players.where((player) {
       if (!_isPlayerConvoked(player)) return false;
       return !isPlayerUnavailableOnDate(
         player,
-        seasonId,
-        matchEventDate,
-        managerView: managerView,
+        widget.seasonId,
+        widget.matchEventDate,
+        managerView: widget.managerView,
       );
+    }).toList();
+  }
+
+  List<Player> get _filteredPlayers {
+    final String query = _nameFilterCtrl.text.trim().toLowerCase();
+    if (query.isEmpty) return widget.players;
+
+    return widget.players.where((Player player) {
+      final List<String> candidates = <String>[
+        playerDisplayName(player, unknownLabel: ''),
+        formatPlayerShortName(player, unknownLabel: ''),
+        player.firstName ?? '',
+        player.lastName ?? '',
+        '${player.firstName ?? ''} ${player.lastName ?? ''}',
+        '${player.lastName ?? ''} ${player.firstName ?? ''}',
+      ];
+      for (final String candidate in candidates) {
+        if (candidate.toLowerCase().contains(query)) return true;
+      }
+      return false;
     }).toList();
   }
 
   bool _isPlayerUnavailable(Player player) {
     return isPlayerUnavailableOnDate(
       player,
-      seasonId,
-      matchEventDate,
-      managerView: managerView,
+      widget.seasonId,
+      widget.matchEventDate,
+      managerView: widget.managerView,
     );
   }
 
   bool _isPlayerConvoked(Player player) {
     for (final String id in playerMemberLookupIds(player)) {
-      if (convocationsByPlayerId.containsKey(id)) {
+      if (widget.convocationsByPlayerId.containsKey(id)) {
         return true;
       }
     }
@@ -698,7 +731,7 @@ class _ConvocationsBody extends StatelessWidget {
 
   PlayerConvo? _convoForPlayer(Player player) {
     for (final String id in playerMemberLookupIds(player)) {
-      final PlayerConvo? convo = convocationsByPlayerId[id];
+      final PlayerConvo? convo = widget.convocationsByPlayerId[id];
       if (convo != null) {
         return convo;
       }
@@ -707,11 +740,168 @@ class _ConvocationsBody extends StatelessWidget {
   }
 
   Future<void> _onSendConvocations(BuildContext context) async {
-    if (saving) return;
+    if (widget.saving) return;
     await showSendMatchConvocationsSheet(
       context,
-      match: match,
+      match: widget.match,
       convokedPlayers: _convokedPlayers,
+    );
+  }
+
+  Widget _buildNameFilterField(BuildContext context) {
+    final colors = context.appColors;
+    final l10n = context.l10n;
+    final bool hasQuery = _nameFilterCtrl.text.trim().isNotEmpty;
+
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 12),
+      child: TextField(
+        controller: _nameFilterCtrl,
+        textInputAction: TextInputAction.search,
+        style: Theme.of(context).textTheme.bodyMedium,
+        decoration: InputDecoration(
+          isDense: true,
+          hintText: l10n.teamDetailFilterPlayerHint,
+          prefixIcon: Icon(
+            Icons.search_rounded,
+            size: 20,
+            color: colors.textSecondary,
+          ),
+          suffixIcon: hasQuery
+              ? IconButton(
+                  tooltip: l10n.actionCancel,
+                  onPressed: () {
+                    _nameFilterCtrl.clear();
+                    setState(() {});
+                  },
+                  icon: Icon(
+                    Icons.clear_rounded,
+                    size: 18,
+                    color: colors.textSecondary,
+                  ),
+                )
+              : null,
+          contentPadding: const EdgeInsets.symmetric(
+            horizontal: 12,
+            vertical: 10,
+          ),
+          border: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(10),
+          ),
+        ),
+        onChanged: (_) => setState(() {}),
+      ),
+    );
+  }
+
+  Widget _buildPlayerTile({
+    required BuildContext context,
+    required Player player,
+  }) {
+    final colors = context.appColors;
+    final l10n = context.l10n;
+    final playerId = effectiveMemberId(player) ?? '';
+    final convo = _convoForPlayer(player);
+    final isConvoked = convo != null;
+    final isUnavailable = _isPlayerUnavailable(player);
+    final cardBackground = isUnavailable
+        ? colors.warning.withValues(alpha: 0.12)
+        : convocationCardBackground(colors, convo) ?? colors.card;
+    final titleColor =
+        isUnavailable ? colors.textSecondary : colors.textPrimary;
+
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 8),
+      child: Material(
+        color: cardBackground,
+        clipBehavior: Clip.antiAlias,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(12),
+          side: BorderSide(
+            color: isUnavailable
+                ? colors.warning.withValues(alpha: 0.35)
+                : colors.border,
+          ),
+        ),
+        child: widget.canEdit
+            ? CheckboxListTile(
+                value: isConvoked,
+                activeColor: colors.primary,
+                onChanged: widget.canEdit &&
+                        playerId.isNotEmpty &&
+                        !widget.saving
+                    ? (value) {
+                        if (value == true && isUnavailable) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(
+                              content: Text(
+                                l10n.matchPlayerCannotConvokeUnavailable,
+                              ),
+                            ),
+                          );
+                          return;
+                        }
+                        widget.onPlayerToggled(playerId, value == true);
+                      }
+                    : null,
+                secondary: Opacity(
+                  opacity: isUnavailable ? 0.55 : 1,
+                  child: PlayerPhoto(player: player, radius: 20),
+                ),
+                title: Text(
+                  playerDisplayName(
+                    player,
+                    unknownLabel: l10n.entityPlayer,
+                  ),
+                  style: TextStyle(
+                    color: titleColor,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+                subtitle: _buildSubtitle(
+                  l10n: l10n,
+                  colors: colors,
+                  convo: convo,
+                  isConvoked: isConvoked,
+                  isUnavailable: isUnavailable,
+                ),
+                controlAffinity: ListTileControlAffinity.leading,
+              )
+            : ListTile(
+                leading: Opacity(
+                  opacity: isUnavailable ? 0.55 : 1,
+                  child: PlayerPhoto(player: player, radius: 20),
+                ),
+                title: Text(
+                  playerDisplayName(
+                    player,
+                    unknownLabel: l10n.entityPlayer,
+                  ),
+                  style: TextStyle(
+                    color: titleColor,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+                subtitle: _buildSubtitle(
+                  l10n: l10n,
+                  colors: colors,
+                  convo: convo,
+                  isConvoked: isConvoked,
+                  isUnavailable: isUnavailable,
+                ),
+                trailing: isConvoked
+                    ? Icon(
+                        convo.isPresent == true && convo.asAnswer == true
+                            ? Icons.check_circle_outline
+                            : Icons.schedule_outlined,
+                        color: convo.isPresent == true &&
+                                convo.asAnswer == true
+                            ? colors.success
+                            : colors.warning,
+                      )
+                    : null,
+              ),
+      ),
     );
   }
 
@@ -720,11 +910,11 @@ class _ConvocationsBody extends StatelessWidget {
     final colors = context.appColors;
     final l10n = context.l10n;
 
-    if (players.isEmpty) {
+    if (widget.players.isEmpty) {
       return _ConvocationsEmptyState(
         icon: Icons.groups_outlined,
         message: l10n.emptyNoPlayerForTeam,
-        action: canEdit
+        action: widget.canEdit
             ? ListenableBuilder(
                 listenable: Listenable.merge([
                   SubscriptionService.instance,
@@ -735,7 +925,7 @@ class _ConvocationsBody extends StatelessWidget {
                       !UserTrialService.instance.hasPremiumAccess;
 
                   return FilledButton(
-                    onPressed: saving ? null : onAddPlayer,
+                    onPressed: widget.saving ? null : widget.onAddPlayer,
                     child: Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
@@ -758,9 +948,13 @@ class _ConvocationsBody extends StatelessWidget {
       );
     }
 
+    final List<Player> filteredPlayers = _filteredPlayers;
+    final int headerCount = (widget.canSendConvocations ? 1 : 0) + 1;
+    final bool showEmptyFilterResult = filteredPlayers.isEmpty;
+
     return Scaffold(
       backgroundColor: Colors.transparent,
-      floatingActionButton: canEdit
+      floatingActionButton: widget.canEdit
           ? ListenableBuilder(
               listenable: Listenable.merge([
                 SubscriptionService.instance,
@@ -772,7 +966,7 @@ class _ConvocationsBody extends StatelessWidget {
 
                 return FloatingActionButton(
                   tooltip: l10n.actionAddPlayer,
-                  onPressed: saving ? null : onAddPlayer,
+                  onPressed: widget.saving ? null : widget.onAddPlayer,
                   child: SubscriptionPremiumBadge.withIconOverlay(
                     context: context,
                     colors: colors,
@@ -785,122 +979,42 @@ class _ConvocationsBody extends StatelessWidget {
           : null,
       body: ListView.builder(
         padding: const EdgeInsets.fromLTRB(12, 8, 12, 88),
-        itemCount: players.length + (canSendConvocations ? 1 : 0),
+        itemCount: headerCount +
+            (showEmptyFilterResult ? 1 : filteredPlayers.length),
         itemBuilder: (context, index) {
-          if (canSendConvocations && index == 0) {
+          if (widget.canSendConvocations && index == 0) {
             return Padding(
               padding: const EdgeInsets.only(bottom: 12),
               child: FilledButton.icon(
-                onPressed: saving ? null : () => _onSendConvocations(context),
+                onPressed: widget.saving
+                    ? null
+                    : () => _onSendConvocations(context),
                 icon: const Icon(Icons.send_rounded),
                 label: Text(l10n.matchConvocationsSendAction),
               ),
             );
           }
 
-          final playerIndex = canSendConvocations ? index - 1 : index;
-          final player = players[playerIndex];
-          final playerId = effectiveMemberId(player) ?? '';
-          final convo = _convoForPlayer(player);
-          final isConvoked = convo != null;
-          final isUnavailable = _isPlayerUnavailable(player);
-          final cardBackground = isUnavailable
-              ? colors.warning.withValues(alpha: 0.12)
-              : convocationCardBackground(colors, convo) ?? colors.card;
-          final titleColor = isUnavailable
-              ? colors.textSecondary
-              : colors.textPrimary;
+          final int filterIndex = widget.canSendConvocations ? 1 : 0;
+          if (index == filterIndex) {
+            return _buildNameFilterField(context);
+          }
 
-          return Padding(
-            padding: const EdgeInsets.only(bottom: 8),
-            child: Material(
-              color: cardBackground,
-              clipBehavior: Clip.antiAlias,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12),
-                side: BorderSide(
-                  color: isUnavailable
-                      ? colors.warning.withValues(alpha: 0.35)
-                      : colors.border,
-                ),
+          if (showEmptyFilterResult) {
+            return Padding(
+              padding: const EdgeInsets.symmetric(vertical: 24),
+              child: Text(
+                l10n.emptyNoPlayerForTeam,
+                textAlign: TextAlign.center,
+                style: TextStyle(color: colors.textSecondary),
               ),
-              child: canEdit
-                  ? CheckboxListTile(
-                      value: isConvoked,
-                      activeColor: colors.primary,
-                      onChanged: canEdit && playerId.isNotEmpty && !saving
-                          ? (value) {
-                              if (value == true && isUnavailable) {
-                                ScaffoldMessenger.of(context).showSnackBar(
-                                  SnackBar(
-                                    content: Text(
-                                      l10n.matchPlayerCannotConvokeUnavailable,
-                                    ),
-                                  ),
-                                );
-                                return;
-                              }
-                              onPlayerToggled(playerId, value == true);
-                            }
-                          : null,
-                      secondary: Opacity(
-                        opacity: isUnavailable ? 0.55 : 1,
-                        child: PlayerPhoto(player: player, radius: 20),
-                      ),
-                      title: Text(
-                        playerDisplayName(
-                          player,
-                          unknownLabel: l10n.entityPlayer,
-                        ),
-                        style: TextStyle(
-                          color: titleColor,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                      subtitle: _buildSubtitle(
-                        l10n: l10n,
-                        colors: colors,
-                        convo: convo,
-                        isConvoked: isConvoked,
-                        isUnavailable: isUnavailable,
-                      ),
-                      controlAffinity: ListTileControlAffinity.leading,
-                    )
-                  : ListTile(
-                      leading: Opacity(
-                        opacity: isUnavailable ? 0.55 : 1,
-                        child: PlayerPhoto(player: player, radius: 20),
-                      ),
-                      title: Text(
-                        playerDisplayName(
-                          player,
-                          unknownLabel: l10n.entityPlayer,
-                        ),
-                        style: TextStyle(
-                          color: titleColor,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                      subtitle: _buildSubtitle(
-                        l10n: l10n,
-                        colors: colors,
-                        convo: convo,
-                        isConvoked: isConvoked,
-                        isUnavailable: isUnavailable,
-                      ),
-                      trailing: isConvoked
-                          ? Icon(
-                              convo.isPresent == true && convo.asAnswer == true
-                                  ? Icons.check_circle_outline
-                                  : Icons.schedule_outlined,
-                              color: convo.isPresent == true &&
-                                      convo.asAnswer == true
-                                  ? colors.success
-                                  : colors.warning,
-                            )
-                          : null,
-                    ),
-            ),
+            );
+          }
+
+          final int playerIndex = index - headerCount;
+          return _buildPlayerTile(
+            context: context,
+            player: filteredPlayers[playerIndex],
           );
         },
       ),
