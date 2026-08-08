@@ -100,82 +100,81 @@ class HalfPitchCompoWidget extends StatelessWidget {
         final double availableHeight = height ??
             (hasBoundedHeight ? constraints.maxHeight : fallbackHeight);
 
-        // Fit the half-pitch aspect ratio into the available area (no wide
-        // letterboxed card that shrinks the drawn grass).
-        final double widthFromHeight = availableHeight * ratio;
-        final double boxWidth = math.min(availableWidth, widthFromHeight);
-        final double boxHeight = math.min(availableHeight, boxWidth / ratio);
-
         final EdgeInsets padding = EdgeInsets.all(isPhone ? 4 : 8);
-        final double innerHeight = math.max(0, boxHeight - padding.vertical);
+        final double innerMaxWidth =
+            math.max(0, availableWidth - padding.horizontal);
+        final double innerMaxHeight =
+            math.max(0, availableHeight - padding.vertical);
 
-        final pitchBox = Container(
-          width: boxWidth,
-          padding: padding,
-          decoration: BoxDecoration(
-            color: colors.card,
-            border: Border.all(color: colors.border),
-          ),
-          child: SizedBox(
-            height: innerHeight,
-            child: LayoutBuilder(
-              builder: (context, pitchConstraints) {
-                final size = Size(
-                  pitchConstraints.maxWidth,
-                  pitchConstraints.maxHeight,
-                );
-
-                final pitchRect = _pitchRectForSize(size);
-
-                final slotSize = math.min(
-                  isPhone ? 52.0 : 88.0,
-                  math.max(
-                    isPhone ? 40.0 : 52.0,
-                    pitchRect.width * (isPhone ? 0.11 : 0.12),
-                  ),
-                );
-
-                return Stack(
-                  clipBehavior: Clip.none,
-                  children: [
-                    Positioned.fill(
-                      child: CustomPaint(
-                        painter: _ProHalfPitchPainter(),
-                      ),
-                    ),
-                    for (final slot in slots)
-                      Positioned(
-                        left: pitchRect.left +
-                            (slot.x * pitchRect.width) -
-                            (slotSize / 2),
-                        top: pitchRect.top +
-                            (slot.y * pitchRect.height) -
-                            (slotSize / 2),
-                        child: _PositionButton(
-                          size: slotSize,
-                          slot: slot,
-                          player: selectedPlayers[slot.id],
-                          playerAvatarBuilder: playerAvatarBuilder,
-                          onPlayerAvatarTap: onPlayerAvatarTap,
-                          onPlayerAvatarLongPress: onPlayerAvatarLongPress,
-                          onTap: () {
-                            if (onSlotTap != null) {
-                              onSlotTap!(slot);
-                            }
-                          },
-                        ),
-                      ),
-                  ],
-                );
-              },
-            ),
-          ),
-        );
+        // Largest half-pitch that fits inside the padded area.
+        final double widthFromHeight = innerMaxHeight * ratio;
+        final double pitchWidth = math.min(innerMaxWidth, widthFromHeight);
+        final double pitchHeight = math.min(innerMaxHeight, pitchWidth / ratio);
 
         return SizedBox(
           width: availableWidth,
           height: availableHeight,
-          child: Center(child: pitchBox),
+          child: Container(
+            padding: padding,
+            decoration: BoxDecoration(
+              color: colors.card,
+              border: Border.all(color: colors.border),
+            ),
+            child: Center(
+              child: SizedBox(
+                width: pitchWidth,
+                height: pitchHeight,
+                child: LayoutBuilder(
+                  builder: (context, pitchConstraints) {
+                    final size = Size(
+                      pitchConstraints.maxWidth,
+                      pitchConstraints.maxHeight,
+                    );
+
+                    final pitchRect = _pitchRectForSize(size);
+                    final slotSize = _slotSizeForPitch(
+                      slots: slots,
+                      pitchRect: pitchRect,
+                      isPhone: isPhone,
+                    );
+
+                    return Stack(
+                      clipBehavior: Clip.none,
+                      children: [
+                        Positioned.fill(
+                          child: CustomPaint(
+                            painter: _ProHalfPitchPainter(),
+                          ),
+                        ),
+                        for (final slot in slots)
+                          Positioned(
+                            left: pitchRect.left +
+                                (slot.x * pitchRect.width) -
+                                (slotSize / 2),
+                            top: pitchRect.top +
+                                (slot.y * pitchRect.height) -
+                                (slotSize / 2),
+                            child: _PositionButton(
+                              size: slotSize,
+                              slot: slot,
+                              player: selectedPlayers[slot.id],
+                              playerAvatarBuilder: playerAvatarBuilder,
+                              onPlayerAvatarTap: onPlayerAvatarTap,
+                              onPlayerAvatarLongPress: onPlayerAvatarLongPress,
+                              onTap: () {
+                                if (onSlotTap != null) {
+                                  onSlotTap!(slot);
+                                }
+                              },
+                            ),
+                          ),
+                      ],
+                    );
+                  },
+                ),
+              ),
+            ),
+          ),
         );
       },
     );
@@ -196,6 +195,32 @@ class CompoSlot {
     required this.x,
     required this.y,
   });
+}
+
+/// Avatar diameter that fits the densest pair of slots without heavy overlap.
+double _slotSizeForPitch({
+  required List<CompoSlot> slots,
+  required Rect pitchRect,
+  required bool isPhone,
+}) {
+  double minDistance = double.infinity;
+  for (var i = 0; i < slots.length; i++) {
+    for (var j = i + 1; j < slots.length; j++) {
+      final double dx = (slots[i].x - slots[j].x) * pitchRect.width;
+      final double dy = (slots[i].y - slots[j].y) * pitchRect.height;
+      final double distance = math.sqrt(dx * dx + dy * dy);
+      if (distance > 0 && distance < minDistance) {
+        minDistance = distance;
+      }
+    }
+  }
+
+  final double fromSpacing =
+      minDistance.isFinite ? minDistance * 0.68 : pitchRect.width * 0.11;
+  final double fromWidth = pitchRect.width * (isPhone ? 0.105 : 0.11);
+  final double maxCap = isPhone ? 52.0 : 84.0;
+  final double minCap = isPhone ? 34.0 : 42.0;
+  return math.min(maxCap, math.max(minCap, math.min(fromSpacing, fromWidth)));
 }
 
 class CompoFieldPlayer {
