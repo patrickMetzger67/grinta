@@ -1066,8 +1066,92 @@ class _MatchTacticalSchemaBodyState extends State<_MatchTacticalSchemaBody>
 
         return LayoutBuilder(
           builder: (context, constraints) {
-            final bool isPhone = constraints.maxWidth < 600;
+            final Size screenSize = MediaQuery.sizeOf(context);
+            final bool isPhone = screenSize.shortestSide < 600;
+            final bool isLandscapeTablet =
+                !isPhone && screenSize.width > screenSize.height;
             final double sectionGap = isPhone ? 6 : 8;
+
+            final Widget compoSelector = showEditor
+                ? _CompoTypeSelector(
+                    compoTypes: compoTypes,
+                    selectedKey:
+                        _selectedCompoTypeKey ?? compoTypeKey(selectedType),
+                    onChanged: (key) {
+                      final type = compoTypes.firstWhere(
+                        (t) => compoTypeKey(t) == key,
+                        orElse: () => selectedType,
+                      );
+                      _onCompoTypeChanged(type);
+                    },
+                  )
+                : (selectedType.name != null
+                    ? _ReadOnlyCompoTypeLabel(name: selectedType.name!)
+                    : const SizedBox.shrink());
+
+            final Widget pitch = hasSchema || showEditor
+                ? LayoutBuilder(
+                    builder: (context, pitchConstraints) {
+                      return HalfPitchCompoWidget(
+                        height: pitchConstraints.maxHeight,
+                        compoType: selectedType,
+                        selectedPlayers: _displayFieldPlayers,
+                        onSlotTap: showEditor ? _onSlotTap : null,
+                        playerAvatarBuilder: _playerAvatar,
+                        onPlayerAvatarTap: _showPlayerInfo,
+                        onPlayerAvatarLongPress: showEditor
+                            ? _onPlayerAvatarLongPress
+                            : null,
+                      );
+                    },
+                  )
+                : _TacticalEmptyState(
+                    icon: Icons.grid_view_rounded,
+                    message: l10n.matchTacticalSchemaEmpty,
+                  );
+
+            final Widget substitutes = _SubstitutesSection(
+              substitutes: _substitutes,
+              playersById: _playersById,
+              readOnly: _readOnly,
+              showSensor: _trackerRequiredForMatch,
+              onPlayerStatistics: _team != null &&
+                      (widget.match.seasonID?.trim().isNotEmpty ?? false)
+                  ? _openPlayerStatistics
+                  : null,
+              onRemove: (index) {
+                setState(() => _substitutes.removeAt(index));
+              },
+              onAdd: showEditor
+                  ? () => _pickPlayer(
+                        title: l10n.matchTacticalSchemaAddSubstitute,
+                        forSubstitute: true,
+                      )
+                  : null,
+            );
+
+            final Widget? saveButton = showEditor && _hasUnsavedChanges
+                ? FilledButton.icon(
+                    onPressed:
+                        _saving || _selectedCompoType == null ? null : _save,
+                    icon: _saving
+                        ? SizedBox(
+                            width: 18,
+                            height: 18,
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2,
+                              color: colors.surface,
+                            ),
+                          )
+                        : const Icon(Icons.save_outlined),
+                    label: Text(l10n.actionSave),
+                    style: FilledButton.styleFrom(
+                      backgroundColor: colors.primary,
+                      foregroundColor: Colors.white,
+                      padding: const EdgeInsets.symmetric(vertical: 12),
+                    ),
+                  )
+                : null;
 
             return Padding(
               padding: EdgeInsets.fromLTRB(
@@ -1079,98 +1163,43 @@ class _MatchTacticalSchemaBodyState extends State<_MatchTacticalSchemaBody>
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  if (showEditor)
-                    _CompoTypeSelector(
-                      compoTypes: compoTypes,
-                      selectedKey:
-                          _selectedCompoTypeKey ?? compoTypeKey(selectedType),
-                      onChanged: (key) {
-                        final type = compoTypes.firstWhere(
-                          (t) => compoTypeKey(t) == key,
-                          orElse: () => selectedType,
-                        );
-                        _onCompoTypeChanged(type);
-                      },
-                    )
-                  else if (selectedType.name != null)
-                    _ReadOnlyCompoTypeLabel(name: selectedType.name!),
+                  compoSelector,
                   SizedBox(height: sectionGap),
-                  if (hasSchema || showEditor)
+                  if (isLandscapeTablet)
                     Expanded(
-                      child: LayoutBuilder(
-                        builder: (context, pitchConstraints) {
-                          return HalfPitchCompoWidget(
-                            height: pitchConstraints.maxHeight,
-                            compoType: selectedType,
-                            selectedPlayers: _displayFieldPlayers,
-                            onSlotTap: showEditor ? _onSlotTap : null,
-                            playerAvatarBuilder: _playerAvatar,
-                            onPlayerAvatarTap: _showPlayerInfo,
-                            onPlayerAvatarLongPress: showEditor
-                                ? _onPlayerAvatarLongPress
-                                : null,
-                          );
-                        },
+                      child: Row(
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        children: [
+                          Expanded(flex: 3, child: pitch),
+                          SizedBox(width: sectionGap + 4),
+                          SizedBox(
+                            width: () {
+                              final double proposed =
+                                  constraints.maxWidth * 0.30;
+                              if (proposed < 240) return 240.0;
+                              if (proposed > 340) return 340.0;
+                              return proposed;
+                            }(),
+                            child: SingleChildScrollView(
+                              child: substitutes,
+                            ),
+                          ),
+                        ],
                       ),
                     )
-                  else if (!showEditor)
-                    Expanded(
-                      child: _TacticalEmptyState(
-                        icon: Icons.grid_view_rounded,
-                        message: l10n.matchTacticalSchemaEmpty,
-                      ),
-                    ),
-                  SizedBox(height: sectionGap),
-                  ConstrainedBox(
-                    constraints: BoxConstraints(
-                      // Keep substitutes compact so the pitch keeps height on tablets.
-                      maxHeight: isPhone ? 108 : 150,
-                    ),
-                    child: SingleChildScrollView(
-                      child: _SubstitutesSection(
-                        substitutes: _substitutes,
-                        playersById: _playersById,
-                        readOnly: _readOnly,
-                        showSensor: _trackerRequiredForMatch,
-                        onPlayerStatistics: _team != null &&
-                                (widget.match.seasonID?.trim().isNotEmpty ??
-                                    false)
-                            ? _openPlayerStatistics
-                            : null,
-                        onRemove: (index) {
-                          setState(() => _substitutes.removeAt(index));
-                        },
-                        onAdd: showEditor
-                            ? () => _pickPlayer(
-                                  title: l10n.matchTacticalSchemaAddSubstitute,
-                                  forSubstitute: true,
-                                )
-                            : null,
-                      ),
-                    ),
-                  ),
-                  if (showEditor && _hasUnsavedChanges) ...[
+                  else ...[
+                    Expanded(child: pitch),
                     SizedBox(height: sectionGap),
-                    FilledButton.icon(
-                      onPressed:
-                          _saving || _selectedCompoType == null ? null : _save,
-                      icon: _saving
-                          ? SizedBox(
-                              width: 18,
-                              height: 18,
-                              child: CircularProgressIndicator(
-                                strokeWidth: 2,
-                                color: colors.surface,
-                              ),
-                            )
-                          : const Icon(Icons.save_outlined),
-                      label: Text(l10n.actionSave),
-                      style: FilledButton.styleFrom(
-                        backgroundColor: colors.primary,
-                        foregroundColor: Colors.white,
-                        padding: const EdgeInsets.symmetric(vertical: 12),
+                    ConstrainedBox(
+                      constraints: BoxConstraints(
+                        maxHeight: isPhone ? 108 : 140,
                       ),
+                      child: SingleChildScrollView(child: substitutes),
                     ),
+                  ],
+                  if (saveButton != null) ...[
+                    SizedBox(height: sectionGap),
+                    saveButton,
                   ],
                 ],
               ),
