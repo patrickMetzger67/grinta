@@ -2654,7 +2654,7 @@
   "pendingInvitationAcceptMessage": "Inserisci il codice ricevuto via e-mail per collegare questo invito al tuo account.",
   "pendingInvitationAcceptSuccess": "Invito accettato. La squadra è ora disponibile nel tuo profilo.",
   "pendingInvitationAcceptNeedAuth": "Accedi per accettare questo invito.",
-  "playerSeasonSummaryTitle": "Scheda giocatore",
+  "playerSeasonSummaryTitle": "Statistiche",
   "playerSeasonSummaryTabUnavailabilities": "Indisponibilità",
   "playerSeasonSummaryTeamMatches": "Partite della squadra",
   "playerSeasonSummaryTeamTrainings": "Allenamenti della squadra",

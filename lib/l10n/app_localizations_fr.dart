@@ -6908,7 +6908,7 @@ class AppLocalizationsFr extends AppLocalizations {
       'Connecte-toi pour accepter cette invitation.';
 
   @override
-  String get playerSeasonSummaryTitle => 'Fiche joueur';
+  String get playerSeasonSummaryTitle => 'Statistiques';
 
   @override
   String get playerSeasonSummaryTabUnavailabilities => 'Indisponibilités';

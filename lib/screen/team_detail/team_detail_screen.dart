@@ -4734,7 +4734,7 @@ class _TeamDetailScreenState extends State<TeamDetailScreen> {
               flex: 1,
             ),
           _mobileStaticIconHeaderCell(
-            icon: Icons.info_outline_rounded,
+            icon: Icons.bar_chart_rounded,
             tooltip: l10n.playerSeasonSummaryTitle,
             flex: 1,
           ),
@@ -5187,7 +5187,7 @@ class _TeamDetailScreenState extends State<TeamDetailScreen> {
                 tooltip: l10n.playerSeasonSummaryTitle,
                 onPressed: () => _showPlayerDetailsSheet(context, row),
                 icon: Icon(
-                  Icons.info_outline_rounded,
+                  Icons.bar_chart_rounded,
                   size: 17,
                   color: colors.textSecondary,
                 ),
@@ -5319,7 +5319,8 @@ class _TeamDetailScreenState extends State<TeamDetailScreen> {
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   _CircleGhostButton(
-                    icon: Icons.info_outline_rounded,
+                    icon: Icons.bar_chart_rounded,
+                    tooltip: l10n.playerSeasonSummaryTitle,
                     size: _CircleGhostButton.webTableButtonSize,
                     iconSize: _CircleGhostButton.webTableIconSize,
                     onTap: () => _showPlayerDetailsSheet(context, row),

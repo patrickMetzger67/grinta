@@ -6923,7 +6923,7 @@ class AppLocalizationsDe extends AppLocalizations {
       'Melde dich an, um diese Einladung anzunehmen.';
 
   @override
-  String get playerSeasonSummaryTitle => 'Spielerkarte';
+  String get playerSeasonSummaryTitle => 'Statistiken';
 
   @override
   String get playerSeasonSummaryTabUnavailabilities => 'Ausfälle';

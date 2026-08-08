@@ -3065,7 +3065,7 @@
   "pendingInvitationAcceptMessage": "Saisis le code reçu par e-mail pour rattacher cette invitation à ton compte.",
   "pendingInvitationAcceptSuccess": "Invitation acceptée. L'équipe est maintenant disponible dans ton profil.",
   "pendingInvitationAcceptNeedAuth": "Connecte-toi pour accepter cette invitation.",
-  "playerSeasonSummaryTitle": "Fiche joueur",
+  "playerSeasonSummaryTitle": "Statistiques",
   "playerSeasonSummaryTabUnavailabilities": "Indisponibilités",
   "playerSeasonSummaryTeamMatches": "Matchs équipe",
   "playerSeasonSummaryTeamTrainings": "Entraînements équipe",
