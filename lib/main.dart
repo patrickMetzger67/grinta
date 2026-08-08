@@ -38,7 +38,9 @@ import 'package:grinta/services/polar_deep_link_service.dart';
 import 'package:grinta/services/strava_deep_link_service.dart';
 import 'package:grinta/services/whoop_deep_link_service.dart';
 import 'package:grinta/services/userService.dart';
+import 'package:grinta/services/biometric_unlock_service.dart';
 import 'package:grinta/widget/parental_consent_pending_screen.dart';
+import 'package:grinta/widget/biometric_lock_gate.dart';
 import 'package:grinta/util/account_age_gate.dart';
 import 'package:grinta/util/firebase_auth_ready.dart';
 import 'package:grinta/model/player.dart';
@@ -90,6 +92,7 @@ Future<void> main() async {
       SubscriptionService.instance.ensureInitialized(),
       SubscriptionLimitsService.instance.ensureInitialized(),
       EshopConfigService.instance.ensureInitialized(),
+      BiometricUnlockService.instance.ensureInitialized(),
     ]);
 
     runApp(
@@ -245,6 +248,8 @@ class _AuthGateState extends State<AuthGate> {
   String? _connectedStreamUserId;
   late final Future<void> _authReadyFuture;
   firebase_auth.User? _persistedUser;
+  firebase_auth.User? _previousAuthUser;
+  bool _seenAuthEmission = false;
 
   @override
   void initState() {
@@ -259,6 +264,29 @@ class _AuthGateState extends State<AuthGate> {
         _persistedUser ??= auth.currentUser;
       });
     }
+  }
+
+  void _syncBiometricAuthState(firebase_auth.User? user) {
+    if (!_seenAuthEmission) {
+      _seenAuthEmission = true;
+      _previousAuthUser = user;
+      if (user != null) {
+        unawaited(BiometricUnlockService.instance.bindUser(user.uid));
+      }
+      return;
+    }
+
+    if (user != null && _previousAuthUser == null) {
+      // Fresh sign-in (password / social) — skip lock for this session.
+      BiometricUnlockService.instance.markUnlocked();
+      unawaited(BiometricUnlockService.instance.bindUser(user.uid));
+    } else if (user == null && _previousAuthUser != null) {
+      BiometricUnlockService.instance.onSignedOut();
+    } else if (user != null) {
+      unawaited(BiometricUnlockService.instance.bindUser(user.uid));
+    }
+
+    _previousAuthUser = user;
   }
 
   Future<void> _connectStreamUser(firebase_auth.User firebaseUser) async {
@@ -430,6 +458,8 @@ class _AuthGateState extends State<AuthGate> {
               _authenticatedSessionForUid = null;
             }
 
+            _syncBiometricAuthState(user);
+
             if (user == null) {
               if (!isFirebaseAuthDefinitelySignedOut(auth)) {
                 return const _LoadingScreen();
@@ -590,7 +620,9 @@ class _AccountAccessGate extends StatelessWidget {
           );
         }
 
-        return const WebAppRoot();
+        return const BiometricLockGate(
+          child: WebAppRoot(),
+        );
       },
     );
   }

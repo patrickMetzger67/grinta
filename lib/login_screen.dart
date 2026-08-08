@@ -33,6 +33,7 @@ import 'widget/social_auth_button.dart';
 import 'widget/subscription_paywall.dart';
 import 'widget/parental_consent_pending_screen.dart';
 import 'widget/youtube_top_video_prompt.dart';
+import 'widget/biometric_lock_gate.dart';
 import 'services/parental_consent_service.dart';
 import 'util/account_age_gate.dart';
 
@@ -224,6 +225,10 @@ class _LoginScreenState extends State<LoginScreen> {
       await UserRootService.instance.reload();
 
       // AuthGate réagit à authStateChanges et affiche l'app sans navigation.
+      final unlockContext = appNavigatorKey.currentContext;
+      if (unlockContext != null && unlockContext.mounted) {
+        await maybePromptBiometricUnlock(unlockContext);
+      }
     } on FirebaseAuthException catch (e) {
       debugPrint(
         'Auth error method=email code=${e.code} message=${e.message}',
@@ -611,6 +616,9 @@ class _LoginScreenState extends State<LoginScreen> {
 
     final rootContext = appNavigatorKey.currentContext;
     if (rootContext != null && rootContext.mounted) {
+      // Offer Face ID / biometric unlock right after account creation.
+      await maybePromptBiometricUnlock(rootContext);
+
       if (!UserTrialService.instance.hasPremiumAccess) {
         await SubscriptionPaywall.show(
           rootContext,
@@ -912,6 +920,10 @@ class _LoginScreenState extends State<LoginScreen> {
           await UserRootService.instance.reload();
         }
         await YoutubeTopVideoPrompt.maybeShow();
+        final unlockContext = appNavigatorKey.currentContext ?? rootContext;
+        if (unlockContext != null && unlockContext.mounted) {
+          await maybePromptBiometricUnlock(unlockContext);
+        }
         debugPrint('login: social sign-in complete (existing account)');
         return;
       }

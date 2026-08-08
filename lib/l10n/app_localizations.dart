@@ -12219,6 +12219,78 @@ abstract class AppLocalizations {
   /// In fr, this message translates to:
   /// **'L’envoi du rapport d’analyse adversaire nécessite un abonnement Coach Elite.'**
   String get opponentAnalysisCoachEliteRequiredMessage;
+
+  /// No description provided for @biometricUnlockTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Déverrouiller Grinta'**
+  String get biometricUnlockTitle;
+
+  /// No description provided for @biometricUnlockSubtitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Utilisez Face ID, Touch ID ou votre empreinte pour accéder rapidement à l’application.'**
+  String get biometricUnlockSubtitle;
+
+  /// No description provided for @biometricUnlockAction.
+  ///
+  /// In fr, this message translates to:
+  /// **'Déverrouiller'**
+  String get biometricUnlockAction;
+
+  /// No description provided for @biometricUnlockUsePassword.
+  ///
+  /// In fr, this message translates to:
+  /// **'Utiliser un autre compte'**
+  String get biometricUnlockUsePassword;
+
+  /// No description provided for @biometricUnlockPromptReason.
+  ///
+  /// In fr, this message translates to:
+  /// **'Déverrouillez Grinta'**
+  String get biometricUnlockPromptReason;
+
+  /// No description provided for @biometricUnlockSettingsTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Déverrouillage biométrique'**
+  String get biometricUnlockSettingsTitle;
+
+  /// No description provided for @biometricUnlockSettingsSubtitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Face ID, Touch ID ou empreinte pour ouvrir l’app rapidement.'**
+  String get biometricUnlockSettingsSubtitle;
+
+  /// No description provided for @biometricUnlockUnavailable.
+  ///
+  /// In fr, this message translates to:
+  /// **'La biométrie n’est pas disponible sur cet appareil.'**
+  String get biometricUnlockUnavailable;
+
+  /// No description provided for @biometricUnlockEnableTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Connexion rapide'**
+  String get biometricUnlockEnableTitle;
+
+  /// No description provided for @biometricUnlockEnableMessage.
+  ///
+  /// In fr, this message translates to:
+  /// **'Activez Face ID / empreinte pour ouvrir Grinta rapidement aux prochains lancements. Vos identifiants restent protégés sur l’appareil.'**
+  String get biometricUnlockEnableMessage;
+
+  /// No description provided for @biometricUnlockEnableLater.
+  ///
+  /// In fr, this message translates to:
+  /// **'Plus tard'**
+  String get biometricUnlockEnableLater;
+
+  /// No description provided for @biometricUnlockEnableConfirm.
+  ///
+  /// In fr, this message translates to:
+  /// **'Activer'**
+  String get biometricUnlockEnableConfirm;
 }
 
 class _AppLocalizationsDelegate

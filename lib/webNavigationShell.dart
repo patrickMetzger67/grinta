@@ -24,6 +24,7 @@ import 'screen/my_unavailabilities_screen.dart';
 import 'screen/tips_screen.dart';
 import 'widget/nav_icon_count_badge.dart';
 import 'widget/calendar_sync_toggle.dart';
+import 'widget/biometric_lock_gate.dart';
 import 'widget/devices_settings_section.dart';
 import 'widget/notification_preferences_section.dart';
 import 'widget/app_version_label.dart';
@@ -502,6 +503,12 @@ class _WebNavigationShellState extends State<WebNavigationShell> {
         const Padding(
           padding: EdgeInsets.fromLTRB(12, 0, 12, 0),
           child: CalendarSyncToggle(
+            contentPadding: EdgeInsets.symmetric(horizontal: 2),
+          ),
+        ),
+        const Padding(
+          padding: EdgeInsets.fromLTRB(12, 0, 12, 0),
+          child: BiometricUnlockSettingsTile(
             contentPadding: EdgeInsets.symmetric(horizontal: 2),
           ),
         ),

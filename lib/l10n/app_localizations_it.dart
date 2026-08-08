@@ -7091,4 +7091,44 @@ class AppLocalizationsIt extends AppLocalizations {
   @override
   String get opponentAnalysisCoachEliteRequiredMessage =>
       'Sending the opponent analysis report requires a Coach Elite subscription.';
+
+  @override
+  String get biometricUnlockTitle => 'Sblocca Grinta';
+
+  @override
+  String get biometricUnlockSubtitle =>
+      'Usa Face ID, Touch ID o l’impronta per accedere rapidamente all’app.';
+
+  @override
+  String get biometricUnlockAction => 'Sblocca';
+
+  @override
+  String get biometricUnlockUsePassword => 'Usa un altro account';
+
+  @override
+  String get biometricUnlockPromptReason => 'Sblocca Grinta';
+
+  @override
+  String get biometricUnlockSettingsTitle => 'Sblocco biometrico';
+
+  @override
+  String get biometricUnlockSettingsSubtitle =>
+      'Face ID, Touch ID o impronta per aprire l’app rapidamente.';
+
+  @override
+  String get biometricUnlockUnavailable =>
+      'La biometria non è disponibile su questo dispositivo.';
+
+  @override
+  String get biometricUnlockEnableTitle => 'Sblocco rapido';
+
+  @override
+  String get biometricUnlockEnableMessage =>
+      'Attiva Face ID / impronta per aprire Grinta rapidamente ai prossimi avvii. Le tue credenziali restano protette sul dispositivo.';
+
+  @override
+  String get biometricUnlockEnableLater => 'Più tardi';
+
+  @override
+  String get biometricUnlockEnableConfirm => 'Attiva';
 }

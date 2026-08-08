@@ -3165,5 +3165,17 @@
   "opponentAnalysisReportSendFailed": "Impossible d’envoyer le rapport d’analyse adversaire.",
   "opponentAnalysisSendDetailedReport": "Envoyer le rapport détaillé",
   "opponentAnalysisCoachEliteRequiredTitle": "Rapport d’analyse adversaire",
-  "opponentAnalysisCoachEliteRequiredMessage": "L’envoi du rapport d’analyse adversaire nécessite un abonnement Coach Elite."
+  "opponentAnalysisCoachEliteRequiredMessage": "L’envoi du rapport d’analyse adversaire nécessite un abonnement Coach Elite.",
+  "biometricUnlockTitle": "Déverrouiller Grinta",
+  "biometricUnlockSubtitle": "Utilisez Face ID, Touch ID ou votre empreinte pour accéder rapidement à l’application.",
+  "biometricUnlockAction": "Déverrouiller",
+  "biometricUnlockUsePassword": "Utiliser un autre compte",
+  "biometricUnlockPromptReason": "Déverrouillez Grinta",
+  "biometricUnlockSettingsTitle": "Déverrouillage biométrique",
+  "biometricUnlockSettingsSubtitle": "Face ID, Touch ID ou empreinte pour ouvrir l’app rapidement.",
+  "biometricUnlockUnavailable": "La biométrie n’est pas disponible sur cet appareil.",
+  "biometricUnlockEnableTitle": "Connexion rapide",
+  "biometricUnlockEnableMessage": "Activez Face ID / empreinte pour ouvrir Grinta rapidement aux prochains lancements. Vos identifiants restent protégés sur l’appareil.",
+  "biometricUnlockEnableLater": "Plus tard",
+  "biometricUnlockEnableConfirm": "Activer"
 }
