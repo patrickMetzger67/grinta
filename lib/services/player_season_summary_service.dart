@@ -143,29 +143,27 @@ class PlayerSeasonSummaryService {
     final String normalizedSeasonId = seasonId.trim();
 
     bool matchesClubAndSeason(Team team) {
-      final String teamSeason = team.seasonID?.trim() ?? '';
-      if (normalizedSeasonId.isNotEmpty &&
-          teamSeason.isNotEmpty &&
-          teamSeason != normalizedSeasonId) {
-        return false;
+      if (normalizedSeasonId.isNotEmpty) {
+        final String teamSeason = team.seasonID?.trim() ?? '';
+        if (teamSeason != normalizedSeasonId) return false;
       }
-      if (clubId.isEmpty) {
-        // No club on context team: still require season match when available.
-        return true;
+      if (clubId.isNotEmpty) {
+        final String teamClub = team.clubId?.trim() ?? '';
+        if (teamClub != clubId) return false;
       }
-      final String teamClub = team.clubId?.trim() ?? '';
-      return teamClub.isEmpty || teamClub == clubId;
+      return true;
     }
 
-    void addTeam(Team team) {
-      if (!matchesClubAndSeason(team)) return;
+    void addTeam(Team team, {bool force = false}) {
+      if (!force && !matchesClubAndSeason(team)) return;
       final String teamId = (team.keyTeam ?? team.ref?.id ?? '').trim();
       final String name = team.name?.trim() ?? '';
       if (teamId.isEmpty || name.isEmpty) return;
       namesByTeamId[teamId] = name;
     }
 
-    addTeam(currentTeam);
+    // Always keep the team from which stats were opened.
+    addTeam(currentTeam, force: true);
 
     try {
       final List<Team> grintaTeams =
