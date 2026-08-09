@@ -1018,6 +1018,8 @@
   "matchScoreIncreaseTooltip": "Ein Tor hinzufügen",
   "matchScoreDecreaseTooltip": "Ein Tor entfernen",
   "matchScoreUpdateFailed": "Ergebnis konnte nicht aktualisiert werden.",
+  "matchFinishedPromptTitle": "Spiel beendet?",
+  "matchFinishedPromptMessage": "Ist das Spiel beendet?",
   "matchGoalPickTeamTitle": "Welches Team hat getroffen?",
   "matchGoalPickScorerTitle": "Torschütze",
   "matchGoalPickAssisterTitle": "Vorlagengeber (optional)",

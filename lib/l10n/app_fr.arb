@@ -1079,6 +1079,8 @@
   "matchScoreIncreaseTooltip": "Ajouter un but",
   "matchScoreDecreaseTooltip": "Retirer un but",
   "matchScoreUpdateFailed": "Impossible de mettre à jour le score.",
+  "matchFinishedPromptTitle": "Match terminé ?",
+  "matchFinishedPromptMessage": "Le match est-il terminé ?",
   "matchGoalPickTeamTitle": "Quelle équipe a marqué ?",
   "matchGoalPickScorerTitle": "Buteur",
   "matchGoalPickAssisterTitle": "Passeur décisif (optionnel)",

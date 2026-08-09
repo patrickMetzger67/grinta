@@ -42,7 +42,7 @@ import 'match_detail/match_convocations_tab.dart';
 import 'match_detail/match_grinta_highlights_tab.dart';
 import 'match_detail/match_tactical_schema_tab.dart';
 
-class MatchDetailScreen extends StatelessWidget {
+class MatchDetailScreen extends StatefulWidget {
   final models.Match match;
 
   /// Permet de remplacer le contenu de l’onglet Compo.
@@ -148,19 +148,114 @@ class MatchDetailScreen extends StatelessWidget {
   }
 
   @override
+  State<MatchDetailScreen> createState() => _MatchDetailScreenState();
+}
+
+class _MatchDetailScreenState extends State<MatchDetailScreen> {
+  bool _scoreEdited = false;
+  bool _exitBusy = false;
+
+  models.Match get match => widget.match;
+  bool get isManager => widget.isManager;
+  String? get playerId => widget.playerId;
+  int get initialTabIndex => widget.initialTabIndex;
+  Widget Function(BuildContext context, models.Match match)? get compoBuilder =>
+      widget.compoBuilder;
+  Widget Function(BuildContext context, models.Match match)?
+      get tacticalSchemaBuilder => widget.tacticalSchemaBuilder;
+  Widget Function(BuildContext context, models.Match match)?
+      get highlightsBuilder => widget.highlightsBuilder;
+  Widget Function(BuildContext context, models.Match match)? get statsBuilder =>
+      widget.statsBuilder;
+
+  bool get _shouldAskMatchFinished =>
+      isManager && _scoreEdited && match.isMatchPlayed != true;
+
+  Future<void> _handleClose() async {
+    if (_exitBusy) return;
+
+    if (!_shouldAskMatchFinished) {
+      if (mounted) Navigator.of(context).pop();
+      return;
+    }
+
+    final colors = context.appColors;
+    final l10n = context.l10n;
+    final bool? finished = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) {
+        return AlertDialog(
+          backgroundColor: colors.card,
+          title: Text(l10n.matchFinishedPromptTitle),
+          content: Text(
+            l10n.matchFinishedPromptMessage,
+            style: TextStyle(
+              color: colors.textPrimary,
+              fontSize: 14,
+              height: 1.4,
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(dialogContext).pop(false),
+              child: Text(l10n.actionNo),
+            ),
+            FilledButton(
+              onPressed: () => Navigator.of(dialogContext).pop(true),
+              child: Text(l10n.actionYes),
+            ),
+          ],
+        );
+      },
+    );
+
+    if (!mounted || finished == null) return;
+
+    if (finished) {
+      setState(() => _exitBusy = true);
+      try {
+        final matchId = match.id?.trim() ?? '';
+        if (matchId.isNotEmpty) {
+          await MatchService().markMatchPlayedAfterEndEvent(matchId: matchId);
+          match.isMatchPlayed = true;
+        }
+      } catch (e, st) {
+        debugPrint('mark match played on leave failed: $e\n$st');
+        if (mounted) {
+          AppSnackbar.show(context, context.l10n.matchScoreUpdateFailed);
+        }
+        if (mounted) setState(() => _exitBusy = false);
+        return;
+      }
+      if (mounted) setState(() => _exitBusy = false);
+    }
+
+    if (mounted) Navigator.of(context).pop();
+  }
+
+  @override
   Widget build(BuildContext context) {
     final colors = context.appColors;
     final bool showStats = match.withTracker == true;
 
-    return Scaffold(
-      backgroundColor: colors.background,
-      body: SafeArea(
-        child: Column(
-          children: [
-            _TopBar(match: match),
-            Expanded(
-              child: LayoutBuilder(
-                builder: (context, constraints) {
+    return PopScope(
+      canPop: !_shouldAskMatchFinished,
+      onPopInvokedWithResult: (didPop, _) async {
+        if (didPop) return;
+        await _handleClose();
+      },
+      child: Scaffold(
+        backgroundColor: colors.background,
+        body: SafeArea(
+          child: Column(
+            children: [
+              _TopBar(
+                match: match,
+                onClose: _handleClose,
+              ),
+              Expanded(
+                child: LayoutBuilder(
+                  builder: (context, constraints) {
                   final bool isWebLarge = constraints.maxWidth >= 900;
                   final bool isTablet =
                       constraints.maxWidth >= 600 &&
@@ -188,6 +283,11 @@ class MatchDetailScreen extends StatelessWidget {
                           match: match,
                           isManager: isManager,
                           dense: denseChrome,
+                          onScoreChanged: () {
+                            if (!_scoreEdited) {
+                              setState(() => _scoreEdited = true);
+                            }
+                          },
                         ),
                         // Live / Re-sync for noSync kits — visible without
                         // opening Temps forts (and without kick-off highlight).
@@ -318,7 +418,7 @@ class MatchDetailScreen extends StatelessWidget {
                                       ];
 
                                       final int safeInitialIndex =
-                                          _physicalTabIndex(
+                                          MatchDetailScreen._physicalTabIndex(
                                         logicalIndex: initialTabIndex,
                                         showCompo: showCompo,
                                       ).clamp(0, tabs.length - 1);
@@ -326,13 +426,14 @@ class MatchDetailScreen extends StatelessWidget {
                                       return _MatchDetailTabShell(
                                         tabs: tabs,
                                         views: views,
-                                        tabNames: _tabNamesForMatch(
+                                        tabNames:
+                                            MatchDetailScreen._tabNamesForMatch(
                                           match,
                                           showCompo: showCompo,
                                           showLiveTab: showLiveTab,
                                         ),
-                                        featureDiscoveryIds:
-                                            _featureDiscoveryIdsForMatch(
+                                        featureDiscoveryIds: MatchDetailScreen
+                                            ._featureDiscoveryIdsForMatch(
                                           match,
                                           showCompo: showCompo,
                                           showLiveTab: showLiveTab,
@@ -357,15 +458,18 @@ class MatchDetailScreen extends StatelessWidget {
           ],
         ),
       ),
+    ),
     );
   }
 }
 
 class _TopBar extends StatefulWidget {
   final models.Match match;
+  final VoidCallback onClose;
 
   const _TopBar({
     required this.match,
+    required this.onClose,
   });
 
   @override
@@ -454,7 +558,7 @@ class _TopBarState extends State<_TopBar> {
           ),
           IconButton(
             tooltip: context.l10n.actionClose,
-            onPressed: () => Navigator.of(context).pop(),
+            onPressed: widget.onClose,
             icon: Icon(
               Icons.close_rounded,
               color: colors.textPrimary,
@@ -683,11 +787,13 @@ class _MatchHeader extends StatefulWidget {
   final models.Match match;
   final bool isManager;
   final bool dense;
+  final VoidCallback? onScoreChanged;
 
   const _MatchHeader({
     required this.match,
     required this.isManager,
     this.dense = false,
+    this.onScoreChanged,
   });
 
   @override
@@ -713,6 +819,7 @@ class _MatchHeaderState extends State<_MatchHeader> {
         side: side,
         delta: delta,
       );
+      widget.onScoreChanged?.call();
       if (mounted) setState(() {});
     } catch (e, st) {
       debugPrint('match score adjust failed: $e\n$st');

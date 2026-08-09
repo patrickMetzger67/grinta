@@ -917,6 +917,8 @@
   "matchScoreIncreaseTooltip": "Add one goal",
   "matchScoreDecreaseTooltip": "Remove one goal",
   "matchScoreUpdateFailed": "Could not update the score.",
+  "matchFinishedPromptTitle": "Match finished?",
+  "matchFinishedPromptMessage": "Is the match finished?",
   "matchGoalPickTeamTitle": "Which team scored?",
   "matchGoalPickScorerTitle": "Scorer",
   "matchGoalPickAssisterTitle": "Assister (optional)",

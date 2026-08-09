@@ -1018,6 +1018,8 @@
   "matchScoreIncreaseTooltip": "Añadir un gol",
   "matchScoreDecreaseTooltip": "Quitar un gol",
   "matchScoreUpdateFailed": "No se pudo actualizar el marcador.",
+  "matchFinishedPromptTitle": "¿Partido terminado?",
+  "matchFinishedPromptMessage": "¿El partido ha terminado?",
   "matchGoalPickTeamTitle": "¿Qué equipo marcó?",
   "matchGoalPickScorerTitle": "Goleador",
   "matchGoalPickAssisterTitle": "Asistente (opcional)",

@@ -2406,6 +2406,12 @@ class AppLocalizationsDe extends AppLocalizations {
       'Ergebnis konnte nicht aktualisiert werden.';
 
   @override
+  String get matchFinishedPromptTitle => 'Spiel beendet?';
+
+  @override
+  String get matchFinishedPromptMessage => 'Ist das Spiel beendet?';
+
+  @override
   String get matchGoalPickTeamTitle => 'Welches Team hat getroffen?';
 
   @override

@@ -4211,6 +4211,18 @@ abstract class AppLocalizations {
   /// **'Impossible de mettre à jour le score.'**
   String get matchScoreUpdateFailed;
 
+  /// No description provided for @matchFinishedPromptTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Match terminé ?'**
+  String get matchFinishedPromptTitle;
+
+  /// No description provided for @matchFinishedPromptMessage.
+  ///
+  /// In fr, this message translates to:
+  /// **'Le match est-il terminé ?'**
+  String get matchFinishedPromptMessage;
+
   /// No description provided for @matchGoalPickTeamTitle.
   ///
   /// In fr, this message translates to:

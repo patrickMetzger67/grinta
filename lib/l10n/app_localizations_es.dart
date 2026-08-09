@@ -2398,6 +2398,12 @@ class AppLocalizationsEs extends AppLocalizations {
   String get matchScoreUpdateFailed => 'No se pudo actualizar el marcador.';
 
   @override
+  String get matchFinishedPromptTitle => '¿Partido terminado?';
+
+  @override
+  String get matchFinishedPromptMessage => '¿El partido ha terminado?';
+
+  @override
   String get matchGoalPickTeamTitle => '¿Qué equipo marcó?';
 
   @override
