@@ -8,6 +8,7 @@ import 'package:grinta/model/training.dart';
 import 'package:grinta/services/ownerService.dart';
 import 'package:grinta/util/buildTimestampFromDateAndTime.dart';
 import 'package:grinta/util/highlight_minute_helper.dart';
+import 'package:grinta/util/match_usb_sync_window.dart';
 import 'package:grinta/util/training_creation_helper.dart';
 import 'package:grinta/util/training_finish_helper.dart';
 
@@ -182,16 +183,16 @@ DateTime? matchLiveStartLocal(
   return kickOff?.dateTime?.toDate();
 }
 
-/// Scheduled full-time from kick-off + [Match.duration] (default 90).
+/// Scheduled full-time from kick-off + duration + 15' half-time break.
+///
+/// Same wall-clock slot as sensor sync periods without Temps forts
+/// (`duration/2` + 15' + `duration/2`).
 DateTime? matchIntenseScheduledEndLocal(
   models.Match match,
   DateTime kickOffAt,
 ) {
   final durationMinutes = match.duration ?? 90;
-  if (durationMinutes <= 0) {
-    return kickOffAt.add(const Duration(minutes: 90));
-  }
-  return kickOffAt.add(Duration(minutes: durationMinutes));
+  return matchScheduledSlotEnd(kickOffAt, durationMinutes);
 }
 
 /// Local kick-off for Insiders windows: recorded Temps forts, else schedule.

@@ -2,6 +2,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:grinta/model/highlights.dart';
 import 'package:grinta/model/match.dart' as models;
+import 'package:grinta/model/tracker/trackerData.dart';
 import 'package:grinta/util/match_usb_sync_window.dart';
 
 Highlights _timeEvent(TimeType type, DateTime at) {
@@ -157,6 +158,70 @@ void main() {
         periods[1].end.toDate().toUtc(),
         schedule.add(const Duration(minutes: 95)),
       );
+    });
+
+    test('fallbackStart overrides timestamp for Intense schedule path', () {
+      final timestamp = DateTime.utc(2026, 8, 8, 16, 0);
+      final schedule = DateTime.utc(2026, 8, 8, 17, 0);
+      final match = models.Match(
+        timestamp: Timestamp.fromDate(timestamp),
+        duration: 90,
+      );
+
+      final periods = resolveMatchSensorSyncPeriods(
+        match: match,
+        highlights: const <Highlights>[],
+        fallbackStart: schedule,
+      );
+
+      expect(periods, hasLength(2));
+      expect(periods[0].start.toDate().toUtc(), schedule);
+      expect(
+        periods[1].end.toDate().toUtc(),
+        schedule.add(const Duration(minutes: 105)),
+      );
+    });
+  });
+
+  group('filterSamplesToMatchPeriods / splitSamplesByMatchPeriods', () {
+    test('excludes half-time break samples and splits halves', () {
+      final start = DateTime.utc(2026, 8, 8, 17, 0);
+      final match = models.Match(
+        timestamp: Timestamp.fromDate(start),
+        duration: 90,
+      );
+      final periods = resolveMatchSensorSyncPeriods(
+        match: match,
+        highlights: const <Highlights>[],
+      );
+
+      TrackerRaw sampleAt(int minutes) {
+        return TrackerRaw(
+          trackerId: 't1',
+          timeMs: start.add(Duration(minutes: minutes)).millisecondsSinceEpoch,
+          latitude: 0,
+          longitude: 0,
+          speedMps: 1,
+        );
+      }
+
+      final samples = <TrackerRaw>[
+        sampleAt(10), // H1
+        sampleAt(50), // break
+        sampleAt(70), // H2
+      ];
+
+      final filtered = filterSamplesToMatchPeriods(samples, periods);
+      expect(filtered.map((s) => s.timeMs), [
+        samples[0].timeMs,
+        samples[2].timeMs,
+      ]);
+
+      final halves = splitSamplesByMatchPeriods(filtered, periods);
+      expect(halves.first, hasLength(1));
+      expect(halves.second, hasLength(1));
+      expect(halves.first.first.timeMs, samples[0].timeMs);
+      expect(halves.second.first.timeMs, samples[2].timeMs);
     });
   });
 }
