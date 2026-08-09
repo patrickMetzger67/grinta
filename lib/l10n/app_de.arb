@@ -3142,10 +3142,15 @@
   "biometricUnlockUsePassword": "Anderes Konto verwenden",
   "biometricUnlockPromptReason": "Grinta entsperren",
   "biometricUnlockSettingsTitle": "Biometrische Entsperrung",
-  "biometricUnlockSettingsSubtitle": "Face ID, Touch ID oder Fingerabdruck für den schnellen App-Start.",
+  "biometricUnlockSettingsSubtitle": "Face ID, Touch ID oder Fingerabdruck zum schnellen Öffnen und erneuten Anmelden.",
   "biometricUnlockUnavailable": "Biometrie ist auf diesem Gerät nicht verfügbar.",
   "biometricUnlockEnableTitle": "Schnelle Entsperrung",
-  "biometricUnlockEnableMessage": "Aktivieren Sie Face ID / Fingerabdruck, um Grinta beim nächsten Start schnell zu öffnen. Ihre Zugangsdaten bleiben auf dem Gerät geschützt.",
+  "biometricUnlockEnableMessage": "Aktivieren Sie Face ID / Fingerabdruck, um Grinta zu entsperren und sich nach dem Abmelden schnell wieder anzumelden. E-Mail und Passwort bleiben verschlüsselt auf diesem Gerät.",
   "biometricUnlockEnableLater": "Später",
-  "biometricUnlockEnableConfirm": "Aktivieren"
+  "biometricUnlockEnableConfirm": "Aktivieren",
+  "biometricLoginAction": "Mit Biometrie anmelden",
+  "biometricLoginPromptReason": "Bei Grinta anmelden",
+  "biometricLoginCredentialsInvalid": "Gespeicherte Anmeldedaten sind ungültig. Melden Sie sich mit Ihrem Passwort an.",
+  "biometricLoginSavePasswordTitle": "Passwort bestätigen",
+  "biometricLoginSavePasswordMessage": "Geben Sie Ihr Passwort ein, damit Face ID / Fingerabdruck Sie nach dem Abmelden wieder anmelden kann. Es bleibt verschlüsselt auf diesem Gerät."
 }

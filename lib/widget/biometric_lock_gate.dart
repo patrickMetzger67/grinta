@@ -90,6 +90,8 @@ class _BiometricLockScreenState extends State<BiometricLockScreen> {
   }
 
   Future<void> _usePasswordInstead() async {
+    // Drop vaulted email/password so LoginScreen does not offer the old account.
+    await _service.disableForAnotherAccount();
     await FirebaseAuth.instance.signOut();
   }
 
@@ -202,14 +204,37 @@ class _BiometricUnlockSettingsTileState
   }
 
   Future<void> _onChangedSwitch(bool value) async {
-    final uid = FirebaseAuth.instance.currentUser?.uid.trim() ?? '';
+    final user = FirebaseAuth.instance.currentUser;
+    final uid = user?.uid.trim() ?? '';
     if (uid.isEmpty || _busy) return;
 
     setState(() => _busy = true);
     try {
+      String? email;
+      String? password;
+      if (value) {
+        final hasPasswordProvider = user!.providerData.any(
+          (info) => info.providerId == 'password',
+        );
+        if (hasPasswordProvider) {
+          final vaultPassword = await _promptPasswordToVaultCredentials(
+            context,
+            emailHint: user.email,
+          );
+          if (vaultPassword == null) {
+            // User cancelled password entry — keep toggle off.
+            return;
+          }
+          email = user.email;
+          password = vaultPassword;
+        }
+      }
+
       final ok = await _service.setEnabled(
         value,
         uid: uid,
+        email: email,
+        password: password,
       );
       if (!ok && value && mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -219,6 +244,98 @@ class _BiometricUnlockSettingsTileState
     } finally {
       if (mounted) setState(() => _busy = false);
     }
+  }
+
+  /// Asks for the account password so it can be vaulted for biometric login.
+  Future<String?> _promptPasswordToVaultCredentials(
+    BuildContext context, {
+    String? emailHint,
+  }) async {
+    final colors = context.appColors;
+    final l10n = context.l10n;
+    final controller = TextEditingController();
+    var obscure = true;
+
+    final result = await showDialog<String>(
+      context: context,
+      barrierDismissible: true,
+      builder: (dialogContext) {
+        return StatefulBuilder(
+          builder: (context, setDialogState) {
+            return AlertDialog(
+              backgroundColor: colors.card,
+              title: Text(l10n.biometricLoginSavePasswordTitle),
+              content: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    l10n.biometricLoginSavePasswordMessage,
+                    style: TextStyle(
+                      color: colors.textPrimary,
+                      fontSize: 14,
+                      height: 1.4,
+                    ),
+                  ),
+                  if (emailHint != null && emailHint.trim().isNotEmpty) ...[
+                    const SizedBox(height: 10),
+                    Text(
+                      emailHint.trim(),
+                      style: TextStyle(
+                        color: colors.textSecondary,
+                        fontSize: 13,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ],
+                  const SizedBox(height: 14),
+                  TextField(
+                    controller: controller,
+                    obscureText: obscure,
+                    autofocus: true,
+                    decoration: InputDecoration(
+                      labelText: l10n.password,
+                      suffixIcon: IconButton(
+                        onPressed: () =>
+                            setDialogState(() => obscure = !obscure),
+                        icon: Icon(
+                          obscure
+                              ? Icons.visibility_off_outlined
+                              : Icons.visibility_outlined,
+                        ),
+                      ),
+                    ),
+                    onSubmitted: (value) {
+                      if (value.trim().isEmpty) return;
+                      Navigator.of(dialogContext).pop(value);
+                    },
+                  ),
+                ],
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.of(dialogContext).pop(),
+                  child: Text(l10n.biometricUnlockEnableLater),
+                ),
+                FilledButton(
+                  onPressed: () {
+                    final value = controller.text;
+                    if (value.isEmpty) return;
+                    Navigator.of(dialogContext).pop(value);
+                  },
+                  child: Text(l10n.biometricUnlockEnableConfirm),
+                ),
+              ],
+            );
+          },
+        );
+      },
+    );
+
+    controller.dispose();
+    final trimmed = result?.trim();
+    if (trimmed == null || trimmed.isEmpty) return null;
+    return trimmed;
   }
 
   @override
@@ -286,7 +403,14 @@ IconData _leadingIcon(List<BiometricType> types) {
 }
 
 /// Post-signup / first-login opt-in dialog.
-Future<void> maybePromptBiometricUnlock(BuildContext context) async {
+///
+/// When [email] + [password] are provided (email auth), enabling also vaults
+/// credentials for biometric sign-in on the login screen after logout.
+Future<void> maybePromptBiometricUnlock(
+  BuildContext context, {
+  String? email,
+  String? password,
+}) async {
   if (kIsWeb) return;
 
   final service = BiometricUnlockService.instance;
@@ -295,6 +419,24 @@ Future<void> maybePromptBiometricUnlock(BuildContext context) async {
 
   final uid = FirebaseAuth.instance.currentUser?.uid.trim() ?? '';
   if (uid.isEmpty || !context.mounted) return;
+
+  final trimmedEmail = email?.trim() ?? '';
+  final passwordValue = password;
+  final hasPassword = passwordValue != null && passwordValue.isNotEmpty;
+
+  // Already enabled: refresh vaulted password after a successful email login.
+  if (service.isEnabled &&
+      service.enabledUid == uid &&
+      trimmedEmail.isNotEmpty &&
+      hasPassword) {
+    await service.saveLoginCredentials(
+      uid: uid,
+      email: trimmedEmail,
+      password: passwordValue,
+    );
+    return;
+  }
+
   if (!service.shouldPromptAfterAccountReady(uid: uid)) return;
 
   final colors = context.appColors;
@@ -332,7 +474,12 @@ Future<void> maybePromptBiometricUnlock(BuildContext context) async {
   await service.markPrompted();
   if (enable != true || !context.mounted) return;
 
-  final ok = await service.setEnabled(true, uid: uid);
+  final ok = await service.setEnabled(
+    true,
+    uid: uid,
+    email: trimmedEmail.isNotEmpty ? trimmedEmail : null,
+    password: hasPassword ? passwordValue : null,
+  );
   if (!ok && context.mounted) {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(content: Text(context.l10n.biometricUnlockUnavailable)),

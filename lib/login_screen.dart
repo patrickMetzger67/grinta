@@ -1,7 +1,10 @@
+import 'dart:async';
+
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:grinta/provider/appSession.dart';
+import 'package:local_auth/local_auth.dart';
 import 'util/app_theme.dart';
 import 'util/app_snackbar.dart';
 import 'package:provider/provider.dart';
@@ -34,6 +37,7 @@ import 'widget/subscription_paywall.dart';
 import 'widget/parental_consent_pending_screen.dart';
 import 'widget/youtube_top_video_prompt.dart';
 import 'widget/biometric_lock_gate.dart';
+import 'services/biometric_unlock_service.dart';
 import 'services/parental_consent_service.dart';
 import 'util/account_age_gate.dart';
 
@@ -93,12 +97,44 @@ class _LoginScreenState extends State<LoginScreen> {
     _pageController = PageController(
       viewportFraction: 0.86,
     );
+    BiometricUnlockService.instance.addListener(_onBiometricServiceChanged);
     WidgetsBinding.instance.addPostFrameCallback((_) {
       AnalyticsService.instance.logScreenView(
         screenName: AnalyticsScreenNames.login,
       );
       _showForcedLogoutMessageIfNeeded();
+      unawaited(_prepareBiometricLogin());
     });
+  }
+
+  void _onBiometricServiceChanged() {
+    if (!mounted) return;
+    final hint = BiometricUnlockService.instance.savedLoginEmailHint;
+    if (hint != null &&
+        hint.isNotEmpty &&
+        _emailCtrl.text.trim().isEmpty) {
+      _emailCtrl.text = hint;
+    }
+    setState(() {});
+  }
+
+  Future<void> _prepareBiometricLogin() async {
+    if (kIsWeb) return;
+    final service = BiometricUnlockService.instance;
+    await service.ensureInitialized();
+    await service.refreshAvailability();
+    if (!mounted) return;
+
+    final hint = service.savedLoginEmailHint;
+    if (hint != null && hint.isNotEmpty && _emailCtrl.text.trim().isEmpty) {
+      _emailCtrl.text = hint;
+    }
+    setState(() {});
+
+    // Auto-offer biometric sign-in when vaulted credentials exist.
+    if (service.canOfferBiometricLogin) {
+      await _signInWithBiometrics();
+    }
   }
 
   void _showForcedLogoutMessageIfNeeded() {
@@ -113,6 +149,7 @@ class _LoginScreenState extends State<LoginScreen> {
 
   @override
   void dispose() {
+    BiometricUnlockService.instance.removeListener(_onBiometricServiceChanged);
     _pageController.dispose();
     _emailCtrl.dispose();
     _passwordCtrl.dispose();
@@ -149,11 +186,52 @@ class _LoginScreenState extends State<LoginScreen> {
     showLoginSnackBar(messengerContext, message);
   }
 
+  Future<void> _signInWithBiometrics({BuildContext? snackBarContext}) async {
+    if (kIsWeb || _isLoading) return;
+
+    final service = BiometricUnlockService.instance;
+    await service.ensureInitialized();
+    await service.refreshAvailability();
+    if (!service.canOfferBiometricLogin) return;
+
+    final rootContext = appNavigatorKey.currentContext;
+    final l10n = (mounted ? context.l10n : null) ??
+        (snackBarContext != null && snackBarContext.mounted
+            ? snackBarContext.l10n
+            : null) ??
+        (rootContext != null && rootContext.mounted ? rootContext.l10n : null);
+    if (l10n == null) return;
+
+    if (mounted) {
+      setState(() => _isLoading = true);
+    }
+
+    try {
+      final credentials = await service.authenticateAndReadLoginCredentials(
+        localizedReason: l10n.biometricLoginPromptReason,
+      );
+      if (credentials == null) return;
+
+      await _submitWithCredentials(
+        credentials.email,
+        credentials.password,
+        manageParentLoading: false,
+        snackBarContext: snackBarContext,
+        fromBiometricLogin: true,
+      );
+    } finally {
+      if (mounted) {
+        setState(() => _isLoading = false);
+      }
+    }
+  }
+
   Future<void> _submitWithCredentials(
     String email,
     String password, {
     bool manageParentLoading = true,
     BuildContext? snackBarContext,
+    bool fromBiometricLogin = false,
   }) async {
     if (mounted) {
       FocusScope.of(context).unfocus();
@@ -227,13 +305,25 @@ class _LoginScreenState extends State<LoginScreen> {
       // AuthGate réagit à authStateChanges et affiche l'app sans navigation.
       final unlockContext = appNavigatorKey.currentContext;
       if (unlockContext != null && unlockContext.mounted) {
-        await maybePromptBiometricUnlock(unlockContext);
+        await maybePromptBiometricUnlock(
+          unlockContext,
+          email: email,
+          password: password,
+        );
       }
     } on FirebaseAuthException catch (e) {
       debugPrint(
         'Auth error method=email code=${e.code} message=${e.message}',
       );
       if (!mounted) return;
+
+      if (fromBiometricLogin &&
+          (e.code == 'wrong-password' ||
+              e.code == 'invalid-credential' ||
+              e.code == 'user-not-found' ||
+              e.code == 'user-disabled')) {
+        await BiometricUnlockService.instance.clearSavedLoginCredentials();
+      }
 
       String message = l10n.signInError;
 
@@ -242,13 +332,17 @@ class _LoginScreenState extends State<LoginScreen> {
           message = l10n.userNotFound;
           break;
         case 'wrong-password':
-          message = l10n.wrongPassword;
+          message = fromBiometricLogin
+              ? l10n.biometricLoginCredentialsInvalid
+              : l10n.wrongPassword;
           break;
         case 'invalid-email':
           message = l10n.invalidEmail;
           break;
         case 'invalid-credential':
-          message = l10n.invalidCredential;
+          message = fromBiometricLogin
+              ? l10n.biometricLoginCredentialsInvalid
+              : l10n.invalidCredential;
           break;
         case 'too-many-requests':
           message = l10n.tooManyRequests;
@@ -465,6 +559,8 @@ class _LoginScreenState extends State<LoginScreen> {
         appSession,
         profile: profile,
         linkedViaInvitation: onboarding.linkedExistingMember,
+        email: email,
+        password: password,
       );
     } on FirebaseAuthException catch (e) {
       debugPrint(
@@ -601,6 +697,8 @@ class _LoginScreenState extends State<LoginScreen> {
     AppSession appSession, {
     required Player profile,
     bool linkedViaInvitation = false,
+    String? email,
+    String? password,
   }) async {
     final isEducator = profile.isEducatorOrCoach;
 
@@ -616,8 +714,12 @@ class _LoginScreenState extends State<LoginScreen> {
 
     final rootContext = appNavigatorKey.currentContext;
     if (rootContext != null && rootContext.mounted) {
-      // Offer Face ID / biometric unlock right after account creation.
-      await maybePromptBiometricUnlock(rootContext);
+      // Offer Face ID / biometric unlock (+ vault password when available).
+      await maybePromptBiometricUnlock(
+        rootContext,
+        email: email,
+        password: password,
+      );
 
       if (!UserTrialService.instance.hasPremiumAccess) {
         await SubscriptionPaywall.show(
@@ -1090,6 +1192,9 @@ class _LoginScreenState extends State<LoginScreen> {
           onSignUp: _startEmailSignup,
           onSocialSignIn: _signInWithSocial,
           onForgotPassword: () => _onForgotPassword(sheetContext),
+          onBiometricSignIn: () => _signInWithBiometrics(
+            snackBarContext: sheetContext,
+          ),
         );
       },
     ).whenComplete(coordinator.unregisterLoginSheetCloser);
@@ -1109,6 +1214,9 @@ class _LoginScreenState extends State<LoginScreen> {
     final width = MediaQuery.of(context).size.width;
     final items = _buildItems(context);
 
+    final biometricService = BiometricUnlockService.instance;
+    final showBiometricLogin = biometricService.canOfferBiometricLogin;
+
     if (kIsWeb || width >= 900) {
       return _WebLoginLayout(
         items: items,
@@ -1118,6 +1226,7 @@ class _LoginScreenState extends State<LoginScreen> {
         passwordCtrl: _passwordCtrl,
         obscurePassword: _obscurePassword,
         isLoading: _isLoading,
+        showBiometricLogin: showBiometricLogin,
         onPageChanged: (index) => setState(() => _currentPage = index),
         onToggleObscure: () {
           setState(() => _obscurePassword = !_obscurePassword);
@@ -1127,6 +1236,7 @@ class _LoginScreenState extends State<LoginScreen> {
         onSocialSignIn: (provider, {bool profileFirst = false}) =>
             _signInWithSocial(provider, profileFirst: profileFirst),
         onForgotPassword: () => _onForgotPassword(),
+        onBiometricSignIn: () => _signInWithBiometrics(),
         onPreviousPage: () => _goPreviousPage(items.length),
         onNextPage: () => _goNextPage(items.length),
       );
@@ -1138,6 +1248,9 @@ class _LoginScreenState extends State<LoginScreen> {
       pageController: _pageController,
       onPageChanged: (index) => setState(() => _currentPage = index),
       onLogin: _goToLoginSheet,
+      showBiometricLogin: showBiometricLogin,
+      biometricBusy: _isLoading,
+      onBiometricSignIn: () => _signInWithBiometrics(),
     );
   }
 }
@@ -1150,6 +1263,7 @@ class _WebLoginLayout extends StatelessWidget {
   final TextEditingController passwordCtrl;
   final bool obscurePassword;
   final bool isLoading;
+  final bool showBiometricLogin;
   final ValueChanged<int> onPageChanged;
   final VoidCallback onToggleObscure;
   final VoidCallback onSignIn;
@@ -1159,6 +1273,7 @@ class _WebLoginLayout extends StatelessWidget {
     bool profileFirst,
   }) onSocialSignIn;
   final VoidCallback onForgotPassword;
+  final Future<void> Function() onBiometricSignIn;
   final VoidCallback onPreviousPage;
   final VoidCallback onNextPage;
 
@@ -1170,12 +1285,14 @@ class _WebLoginLayout extends StatelessWidget {
     required this.passwordCtrl,
     required this.obscurePassword,
     required this.isLoading,
+    required this.showBiometricLogin,
     required this.onPageChanged,
     required this.onToggleObscure,
     required this.onSignIn,
     required this.onSignUp,
     required this.onSocialSignIn,
     required this.onForgotPassword,
+    required this.onBiometricSignIn,
     required this.onPreviousPage,
     required this.onNextPage,
   });
@@ -1308,11 +1425,13 @@ class _WebLoginLayout extends StatelessWidget {
                       passwordCtrl: passwordCtrl,
                       obscurePassword: obscurePassword,
                       isLoading: isLoading,
+                      showBiometricLogin: showBiometricLogin,
                       onToggleObscure: onToggleObscure,
                       onSignIn: onSignIn,
                       onSignUp: onSignUp,
                       onSocialSignIn: onSocialSignIn,
                       onForgotPassword: onForgotPassword,
+                      onBiometricSignIn: onBiometricSignIn,
                       onLocaleChanged: (locale) {},
                     ),
                   ),
@@ -1468,6 +1587,9 @@ class _MobileLoginLayout extends StatelessWidget {
   final PageController pageController;
   final ValueChanged<int> onPageChanged;
   final VoidCallback onLogin;
+  final bool showBiometricLogin;
+  final bool biometricBusy;
+  final Future<void> Function() onBiometricSignIn;
 
   const _MobileLoginLayout({
     required this.items,
@@ -1475,6 +1597,9 @@ class _MobileLoginLayout extends StatelessWidget {
     required this.pageController,
     required this.onPageChanged,
     required this.onLogin,
+    required this.showBiometricLogin,
+    required this.biometricBusy,
+    required this.onBiometricSignIn,
   });
 
   @override
@@ -1546,12 +1671,47 @@ class _MobileLoginLayout extends StatelessWidget {
                             ),
                             child: Column(
                               children: [
+                                if (showBiometricLogin) ...[
+                                  SizedBox(
+                                    width: double.infinity,
+                                    child: ElevatedButton.icon(
+                                      onPressed: biometricBusy
+                                          ? null
+                                          : () => unawaited(onBiometricSignIn()),
+                                      icon: biometricBusy
+                                          ? const SizedBox(
+                                              width: 18,
+                                              height: 18,
+                                              child: CircularProgressIndicator(
+                                                strokeWidth: 2,
+                                              ),
+                                            )
+                                          : Icon(
+                                              _biometricLoginIcon(
+                                                BiometricUnlockService
+                                                    .instance
+                                                    .availableBiometrics,
+                                              ),
+                                            ),
+                                      label: Text(
+                                        context.l10n.biometricLoginAction,
+                                      ),
+                                    ),
+                                  ),
+                                  const SizedBox(height: 12),
+                                ],
                                 SizedBox(
                                   width: double.infinity,
-                                  child: ElevatedButton(
-                                    onPressed: onLogin,
-                                    child: Text(context.l10n.signIn),
-                                  ),
+                                  child: showBiometricLogin
+                                      ? OutlinedButton(
+                                          onPressed:
+                                              biometricBusy ? null : onLogin,
+                                          child: Text(context.l10n.signIn),
+                                        )
+                                      : ElevatedButton(
+                                          onPressed: onLogin,
+                                          child: Text(context.l10n.signIn),
+                                        ),
                                 ),
                                 const SizedBox(height: 12),
                                 const LegalLinksFooter(),
@@ -1584,11 +1744,22 @@ class _MobileLoginLayout extends StatelessWidget {
   }
 }
 
+IconData _biometricLoginIcon(List<BiometricType> types) {
+  if (types.contains(BiometricType.face)) {
+    return Icons.face_rounded;
+  }
+  if (types.contains(BiometricType.fingerprint)) {
+    return Icons.fingerprint_rounded;
+  }
+  return Icons.fingerprint_rounded;
+}
+
 class _LoginCard extends StatefulWidget {
   final TextEditingController emailCtrl;
   final TextEditingController passwordCtrl;
   final bool obscurePassword;
   final bool isLoading;
+  final bool showBiometricLogin;
   final VoidCallback onToggleObscure;
   final VoidCallback onSignIn;
   final Future<void> Function() onSignUp;
@@ -1597,6 +1768,7 @@ class _LoginCard extends StatefulWidget {
     bool profileFirst,
   }) onSocialSignIn;
   final VoidCallback onForgotPassword;
+  final Future<void> Function()? onBiometricSignIn;
   final ValueChanged<Locale> onLocaleChanged;
   final VoidCallback? onBack;
 
@@ -1605,11 +1777,13 @@ class _LoginCard extends StatefulWidget {
     required this.passwordCtrl,
     required this.obscurePassword,
     required this.isLoading,
+    this.showBiometricLogin = false,
     required this.onToggleObscure,
     required this.onSignIn,
     required this.onSignUp,
     required this.onSocialSignIn,
     required this.onForgotPassword,
+    this.onBiometricSignIn,
     required this.onLocaleChanged,
     this.onBack,
   });
@@ -1795,6 +1969,25 @@ class _LoginCardState extends State<_LoginCard> {
                 ),
               ),
             ),
+            if (!_isSignUpMode &&
+                widget.showBiometricLogin &&
+                widget.onBiometricSignIn != null) ...[
+              const SizedBox(height: 12),
+              SizedBox(
+                width: double.infinity,
+                child: OutlinedButton.icon(
+                  onPressed: widget.isLoading
+                      ? null
+                      : () => unawaited(widget.onBiometricSignIn!()),
+                  icon: Icon(
+                    _biometricLoginIcon(
+                      BiometricUnlockService.instance.availableBiometrics,
+                    ),
+                  ),
+                  label: Text(context.l10n.biometricLoginAction),
+                ),
+              ),
+            ],
             const SizedBox(height: 22),
             Row(
               children: [
@@ -1858,12 +2051,14 @@ class _LoginBottomSheet extends StatefulWidget {
     bool profileFirst,
   }) onSocialSignIn;
   final VoidCallback onForgotPassword;
+  final Future<void> Function() onBiometricSignIn;
 
   const _LoginBottomSheet({
     required this.onSignIn,
     required this.onSignUp,
     required this.onSocialSignIn,
     required this.onForgotPassword,
+    required this.onBiometricSignIn,
   });
 
   @override
@@ -1873,12 +2068,29 @@ class _LoginBottomSheet extends StatefulWidget {
 class _LoginBottomSheetState extends State<_LoginBottomSheet> {
   final TextEditingController _emailCtrl = TextEditingController();
   final TextEditingController _passwordCtrl = TextEditingController();
+  final BiometricUnlockService _biometricService =
+      BiometricUnlockService.instance;
 
   bool _obscurePassword = true;
   bool _isLoading = false;
 
   @override
+  void initState() {
+    super.initState();
+    _biometricService.addListener(_onBiometricChanged);
+    final hint = _biometricService.savedLoginEmailHint;
+    if (hint != null && hint.isNotEmpty) {
+      _emailCtrl.text = hint;
+    }
+  }
+
+  void _onBiometricChanged() {
+    if (mounted) setState(() {});
+  }
+
+  @override
   void dispose() {
+    _biometricService.removeListener(_onBiometricChanged);
     _emailCtrl.dispose();
     _passwordCtrl.dispose();
     super.dispose();
@@ -1984,6 +2196,7 @@ class _LoginBottomSheetState extends State<_LoginBottomSheet> {
                   passwordCtrl: _passwordCtrl,
                   obscurePassword: _obscurePassword,
                   isLoading: _isLoading,
+                  showBiometricLogin: _biometricService.canOfferBiometricLogin,
                   onToggleObscure: () {
                     setState(() => _obscurePassword = !_obscurePassword);
                   },
@@ -1991,6 +2204,15 @@ class _LoginBottomSheetState extends State<_LoginBottomSheet> {
                   onSignUp: _handleSignUp,
                   onSocialSignIn: _handleSocialSignIn,
                   onForgotPassword: widget.onForgotPassword,
+                  onBiometricSignIn: () async {
+                    if (_isLoading) return;
+                    setState(() => _isLoading = true);
+                    try {
+                      await widget.onBiometricSignIn();
+                    } finally {
+                      if (mounted) setState(() => _isLoading = false);
+                    }
+                  },
                   onLocaleChanged: (_) {},
                   onBack: () {
                     Navigator.of(context, rootNavigator: true).pop();
