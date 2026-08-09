@@ -242,7 +242,7 @@ class _MatchIntenseFinishDialogState extends State<MatchIntenseFinishDialog> {
       try {
         if (widget.resync) {
           // withSyncing=false re-sync: mark uploaded once the calendar slot
-          // (timestamp + duration) is over and every device reached `done`.
+          // (timestamp + duration + 15' break) is over and every device reached `done`.
           await finalizeMatchIntenseResyncSuccess(match: widget.match);
         } else {
           await markMatchTrackerDataUploadedAfterIntenseSync(

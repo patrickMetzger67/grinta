@@ -2,6 +2,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:grinta/model/highlights.dart';
 import 'package:grinta/model/match.dart' as models;
+import 'package:grinta/model/tracker/trackerData.dart';
 import 'package:grinta/util/match_usb_sync_window.dart';
 
 Highlights _timeEvent(TimeType type, DateTime at) {
@@ -14,7 +15,7 @@ Highlights _timeEvent(TimeType type, DateTime at) {
 
 void main() {
   group('resolveMatchUsbSyncPeriods', () {
-    test('without highlights uses timestamp + duration minutes', () {
+    test('without highlights splits into two halves with 15 min break', () {
       final start = DateTime.utc(2026, 8, 8, 17, 0);
       final match = models.Match(
         timestamp: Timestamp.fromDate(start),
@@ -26,11 +27,20 @@ void main() {
         highlights: const <Highlights>[],
       );
 
-      expect(periods, hasLength(1));
-      expect(periods.first.start.toDate().toUtc(), start);
+      // 1ère: [T, T+45] — 2ème: [T+45+15, T+90+15]
+      expect(periods, hasLength(2));
+      expect(periods[0].start.toDate().toUtc(), start);
       expect(
-        periods.first.end.toDate().toUtc(),
-        start.add(const Duration(minutes: 90)),
+        periods[0].end.toDate().toUtc(),
+        start.add(const Duration(minutes: 45)),
+      );
+      expect(
+        periods[1].start.toDate().toUtc(),
+        start.add(const Duration(minutes: 60)),
+      );
+      expect(
+        periods[1].end.toDate().toUtc(),
+        start.add(const Duration(minutes: 105)),
       );
     });
 
@@ -45,10 +55,18 @@ void main() {
         highlights: const <Highlights>[],
       );
 
-      expect(periods, hasLength(1));
+      expect(periods, hasLength(2));
       expect(
-        periods.first.end.toDate().toUtc(),
-        start.add(const Duration(minutes: 90)),
+        periods[0].end.toDate().toUtc(),
+        start.add(const Duration(minutes: 45)),
+      );
+      expect(
+        periods[1].start.toDate().toUtc(),
+        start.add(const Duration(minutes: 60)),
+      );
+      expect(
+        periods[1].end.toDate().toUtc(),
+        start.add(const Duration(minutes: 105)),
       );
     });
 
@@ -111,12 +129,12 @@ void main() {
       expect(periods[1].end.toDate().toUtc(), end);
     });
 
-    test('incomplete highlights fall back to timestamp + duration', () {
+    test('incomplete highlights fall back to scheduled halves', () {
       final schedule = DateTime.utc(2026, 8, 8, 17, 0);
       final kickOffOnly = DateTime.utc(2026, 8, 8, 17, 3);
       final match = models.Match(
         timestamp: Timestamp.fromDate(schedule),
-        duration: 95,
+        duration: 80,
       );
 
       final periods = resolveMatchUsbSyncPeriods(
@@ -126,12 +144,84 @@ void main() {
         ],
       );
 
-      expect(periods, hasLength(1));
-      expect(periods.first.start.toDate().toUtc(), schedule);
+      expect(periods, hasLength(2));
+      expect(periods[0].start.toDate().toUtc(), schedule);
       expect(
-        periods.first.end.toDate().toUtc(),
+        periods[0].end.toDate().toUtc(),
+        schedule.add(const Duration(minutes: 40)),
+      );
+      expect(
+        periods[1].start.toDate().toUtc(),
+        schedule.add(const Duration(minutes: 55)),
+      );
+      expect(
+        periods[1].end.toDate().toUtc(),
         schedule.add(const Duration(minutes: 95)),
       );
+    });
+
+    test('fallbackStart overrides timestamp for Intense schedule path', () {
+      final timestamp = DateTime.utc(2026, 8, 8, 16, 0);
+      final schedule = DateTime.utc(2026, 8, 8, 17, 0);
+      final match = models.Match(
+        timestamp: Timestamp.fromDate(timestamp),
+        duration: 90,
+      );
+
+      final periods = resolveMatchSensorSyncPeriods(
+        match: match,
+        highlights: const <Highlights>[],
+        fallbackStart: schedule,
+      );
+
+      expect(periods, hasLength(2));
+      expect(periods[0].start.toDate().toUtc(), schedule);
+      expect(
+        periods[1].end.toDate().toUtc(),
+        schedule.add(const Duration(minutes: 105)),
+      );
+    });
+  });
+
+  group('filterSamplesToMatchPeriods / splitSamplesByMatchPeriods', () {
+    test('excludes half-time break samples and splits halves', () {
+      final start = DateTime.utc(2026, 8, 8, 17, 0);
+      final match = models.Match(
+        timestamp: Timestamp.fromDate(start),
+        duration: 90,
+      );
+      final periods = resolveMatchSensorSyncPeriods(
+        match: match,
+        highlights: const <Highlights>[],
+      );
+
+      TrackerRaw sampleAt(int minutes) {
+        return TrackerRaw(
+          trackerId: 't1',
+          timeMs: start.add(Duration(minutes: minutes)).millisecondsSinceEpoch,
+          latitude: 0,
+          longitude: 0,
+          speedMps: 1,
+        );
+      }
+
+      final samples = <TrackerRaw>[
+        sampleAt(10), // H1
+        sampleAt(50), // break
+        sampleAt(70), // H2
+      ];
+
+      final filtered = filterSamplesToMatchPeriods(samples, periods);
+      expect(filtered.map((s) => s.timeMs), [
+        samples[0].timeMs,
+        samples[2].timeMs,
+      ]);
+
+      final halves = splitSamplesByMatchPeriods(filtered, periods);
+      expect(halves.first, hasLength(1));
+      expect(halves.second, hasLength(1));
+      expect(halves.first.first.timeMs, samples[0].timeMs);
+      expect(halves.second.first.timeMs, samples[2].timeMs);
     });
   });
 }
