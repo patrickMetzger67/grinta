@@ -9,8 +9,6 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:grinta/core/extensions/l10n_extension.dart';
 import 'package:grinta/model/fieldGpsCorners.dart';
-import 'package:grinta/model/highlights.dart';
-import 'package:grinta/model/match.dart';
 import 'package:grinta/model/tracker/deviceOwner.dart';
 import 'package:grinta/services/deviceService.dart';
 import 'package:grinta/services/event_sync_service.dart';
