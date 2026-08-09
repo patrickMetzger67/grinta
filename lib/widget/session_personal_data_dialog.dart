@@ -40,10 +40,14 @@ class SessionPersonalDataAgendaButton extends StatefulWidget {
     super.key,
     required this.item,
     required this.playerId,
+    this.onPersonalDataSaved,
   });
 
   final AgendaItem item;
   final String playerId;
+
+  /// Called with the agenda event id after a successful GPS / apps attach.
+  final ValueChanged<String>? onPersonalDataSaved;
 
   @override
   State<SessionPersonalDataAgendaButton> createState() =>
@@ -121,8 +125,15 @@ class _SessionPersonalDataAgendaButtonState
           shape: const CircleBorder(),
           child: InkWell(
             customBorder: const CircleBorder(),
-            onTap: () {
-              showSessionPersonalDataDialog(context, item: widget.item);
+            onTap: () async {
+              final saved = await showSessionPersonalDataDialog(
+                context,
+                item: widget.item,
+              );
+              if (!context.mounted || saved != true) return;
+              final eventId = widget.item.id.trim();
+              if (eventId.isEmpty) return;
+              widget.onPersonalDataSaved?.call(eventId);
             },
             child: Padding(
               padding: const EdgeInsets.all(6),
