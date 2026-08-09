@@ -23,7 +23,7 @@ void main() {
       expect(MatchHeatmapService.isFieldGeolocalized(field), isTrue);
     });
 
-    test('null fieldGps marks satellite path for USB/personal sync fallback',
+    test('null fieldGps falls back to relative schematic when satellite fails',
         () async {
       final samples = <TrackerRaw>[
         TrackerRaw(
@@ -58,8 +58,35 @@ void main() {
         persist: false,
       );
 
-      // Routes to satellite even if the static-map fetch fails in tests.
-      expect(bundle.usedSatelliteBackground, isTrue);
+      // Static Maps is unavailable in tests (HTTP 403) → relative schematic.
+      expect(bundle.usedSatelliteBackground, isFalse);
+      expect(bundle.fullMatch, isNotNull);
+      expect(bundle.fullMatch!, contains('#2E7D32'));
+      expect(
+        bundle.fullMatch!,
+        isNot(contains('data-grinta-heatmap="satellite"')),
+      );
+    });
+
+    test('relative heatmap points are used when satellite fails', () async {
+      final points = [
+        HeatmapPoint(xMeters: 20, yMeters: 15, timeMs: 1, intensity: 1),
+        HeatmapPoint(xMeters: 40, yMeters: 30, timeMs: 2, intensity: 2),
+        HeatmapPoint(xMeters: 60, yMeters: 45, timeMs: 3, intensity: 1.5),
+      ];
+
+      final bundle = await MatchHeatmapService.generateAndSaveMatchHeatmaps(
+        trackerId: 't1',
+        eventId: 'e1',
+        fieldGps: null,
+        fullSamples: const [],
+        fullHeatmapPoints: points,
+        persist: false,
+      );
+
+      expect(bundle.usedSatelliteBackground, isFalse);
+      expect(bundle.fullMatch, isNotNull);
+      expect(bundle.fullMatch!, contains('<rect'));
     });
 
     test('geolocalized path never marks satellite background', () async {

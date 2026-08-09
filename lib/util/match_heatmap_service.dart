@@ -1,22 +1,40 @@
 import 'package:flutter/foundation.dart';
 
+import '../model/fieldGpsCorners.dart';
 import '../model/tracker/trackerData.dart';
+import '../services/sensorAnalysisService.dart';
 import '../widget/proPitchView.dart';
 import 'heatmap_svg_generator.dart';
 import 'satellite_heatmap_svg_generator.dart';
 
 /// Generates and optionally persists match heatmaps.
 ///
-/// Strict rule:
-/// - [fieldGps] present → **only** the existing schematic pitch heatmap.
-///   Satellite imagery is never used and never overwrites these SVGs.
-/// - [fieldGps] absent → Google satellite backdrop fitted to GPS samples.
+/// Rules:
+/// - [fieldGps] present with projected heat points → schematic pitch only
+///   (satellite never overwrites a geolocalized schematic).
+/// - [fieldGps] absent (or geolocalized but empty projection) → try Google
+///   satellite from GPS samples; if that fails, fall back to a relative
+///   schematic on a virtual 105×68 pitch so personal GPS / USB still get a
+///   heatmap in `TRACKER_Svg`.
 class MatchHeatmapService {
   MatchHeatmapService._();
+
+  /// Virtual pitch matching [SensorAnalysisService.buildRelativeHeatmapPoints].
+  static const FootballFieldGps relativePitchField = FootballFieldGps(
+    topLeft: FieldCornerGps(latitude: 0, longitude: 0),
+    topRight: FieldCornerGps(latitude: 0, longitude: 0.001),
+    bottomLeft: FieldCornerGps(latitude: -0.0006, longitude: 0),
+    bottomRight: FieldCornerGps(latitude: -0.0006, longitude: 0.001),
+    fieldLengthMeters: 105,
+    fieldWidthMeters: 68,
+  );
 
   /// Returns true when the pitch corners are available (geolocalized field).
   static bool isFieldGeolocalized(FootballFieldGps? fieldGps) =>
       fieldGps != null;
+
+  static bool _hasUsableSvg(String? svg) =>
+      svg != null && svg.trim().isNotEmpty;
 
   static Future<String?> generateSvg({
     required FootballFieldGps? fieldGps,
@@ -29,8 +47,8 @@ class MatchHeatmapService {
     double svgWidth = 1600,
     double svgHeight = 1000,
   }) async {
-    // Geolocalized: keep current schematic heatmap unchanged.
-    if (isFieldGeolocalized(fieldGps)) {
+    // Geolocalized with heat: keep current schematic heatmap unchanged.
+    if (isFieldGeolocalized(fieldGps) && heatmapPoints.isNotEmpty) {
       return HeatmapSvgGenerator.generateSvg(
         field: fieldGps!,
         heatmapPoints: heatmapPoints,
@@ -42,23 +60,35 @@ class MatchHeatmapService {
       );
     }
 
-    // Not geolocalized: satellite fallback from raw GPS only.
-    if (samples.isEmpty) return null;
+    // Prefer satellite when samples exist.
+    if (samples.isNotEmpty) {
+      final satellite = await SatelliteHeatmapSvgGenerator.generateSvg(
+        samples: samples,
+        sprintSegments: sprintSegments,
+        svgWidth: svgWidth.round(),
+        svgHeight: svgHeight.round(),
+      );
+      if (_hasUsableSvg(satellite)) return satellite;
+    }
 
-    return SatelliteHeatmapSvgGenerator.generateSvg(
-      samples: samples,
-      sprintSegments: sprintSegments,
-      svgWidth: svgWidth.round(),
-      svgHeight: svgHeight.round(),
+    // Satellite unavailable: relative schematic from heat points / samples.
+    final points = heatmapPoints.isNotEmpty
+        ? heatmapPoints
+        : SensorAnalysisService.buildRelativeHeatmapPoints(samples);
+    if (points.isEmpty) return null;
+
+    return HeatmapSvgGenerator.generateSvg(
+      field: relativePitchField,
+      heatmapPoints: points,
+      sprintPolylines: sprintPolylines,
+      flipX: flipX,
+      flipY: flipY,
+      svgWidth: svgWidth,
+      svgHeight: svgHeight,
     );
   }
 
   /// Persists full-match (+ halves when provided) heatmaps for a sensor match.
-  ///
-  /// When [fieldGps] is set, behaves like the historical schematic pipeline
-  /// (optional persist via [skipSchematicPersist] for cloud-owned SVGs).
-  /// When [fieldGps] is null, writes satellite SVGs — never touches the
-  /// geolocalized schematic path.
   static Future<MatchHeatmapBundle> generateAndSaveMatchHeatmaps({
     required String trackerId,
     required String eventId,
@@ -79,10 +109,10 @@ class MatchHeatmapService {
     bool skipSchematicPersist = false,
   }) async {
     final geolocalized = isFieldGeolocalized(fieldGps);
+    final hasProjectedHeat = fullHeatmapPoints.isNotEmpty;
 
-    // Geolocalized field: schematic only. Never call satellite generator.
-    // When cloud already persisted schematic SVGs, skip Firestore writes.
-    if (geolocalized) {
+    // Geolocalized field with projected points: schematic only.
+    if (geolocalized && hasProjectedHeat) {
       final shouldPersist = persist && !skipSchematicPersist;
       final bundle = await _generateSchematicBundle(
         fieldGps: fieldGps!,
@@ -107,8 +137,8 @@ class MatchHeatmapService {
       return bundle;
     }
 
-    // Not geolocalized: satellite fallback from GPS samples.
-    final bundle = await _generateSatelliteBundle(
+    // Not geolocalized, or geolocalized but empty projection: satellite first.
+    final satellite = await _generateSatelliteBundle(
       fullSamples: fullSamples,
       fullSprintSegments: fullSprintSegments,
       firstHalfSamples: firstHalfSamples,
@@ -116,19 +146,64 @@ class MatchHeatmapService {
       secondHalfSamples: secondHalfSamples,
       secondHalfSprintSegments: secondHalfSprintSegments,
     );
+    if (_hasUsableSvg(satellite.fullMatch)) {
+      if (persist) {
+        await _persistBundle(
+          trackerId: trackerId,
+          eventId: eventId,
+          bundle: satellite,
+        );
+      }
+      debugPrint(
+        '[MatchHeatmap] satellite '
+        'tracker=$trackerId event=$eventId persist=$persist '
+        'geolocalizedEmptyProjection=${geolocalized && !hasProjectedHeat}',
+      );
+      return satellite;
+    }
+
+    // Satellite failed (API key / Static Maps / network): relative schematic.
+    final fullPoints = fullHeatmapPoints.isNotEmpty
+        ? fullHeatmapPoints
+        : SensorAnalysisService.buildRelativeHeatmapPoints(fullSamples);
+    final firstPoints = firstHalfHeatmapPoints.isNotEmpty
+        ? firstHalfHeatmapPoints
+        : SensorAnalysisService.buildRelativeHeatmapPoints(firstHalfSamples);
+    final secondPoints = secondHalfHeatmapPoints.isNotEmpty
+        ? secondHalfHeatmapPoints
+        : SensorAnalysisService.buildRelativeHeatmapPoints(secondHalfSamples);
+
+    if (fullPoints.isEmpty) {
+      debugPrint(
+        '[MatchHeatmap] no heatmap writable '
+        'tracker=$trackerId event=$eventId '
+        'samples=${fullSamples.length} satellite=failed',
+      );
+      return const MatchHeatmapBundle(usedSatelliteBackground: false);
+    }
+
+    final relative = await _generateSchematicBundle(
+      fieldGps: relativePitchField,
+      fullHeatmapPoints: fullPoints,
+      fullSprintPolylines: const [],
+      firstHalfHeatmapPoints: firstPoints,
+      firstHalfSprintPolylines: const [],
+      secondHalfHeatmapPoints: secondPoints,
+      secondHalfSprintPolylines: const [],
+    );
     if (persist) {
       await _persistBundle(
         trackerId: trackerId,
         eventId: eventId,
-        bundle: bundle,
+        bundle: relative,
       );
     }
     debugPrint(
-      '[MatchHeatmap] satellite (not geolocalized) '
+      '[MatchHeatmap] relative schematic (satellite unavailable) '
       'tracker=$trackerId event=$eventId persist=$persist '
-      'full=${bundle.fullMatch != null}',
+      'points=${fullPoints.length}',
     );
-    return bundle;
+    return relative;
   }
 
   static Future<MatchHeatmapBundle> _generateSchematicBundle({
@@ -230,10 +305,10 @@ class MatchHeatmapService {
     required MatchHeatmapBundle bundle,
   }) async {
     Future<void> save(String suffix, String? svg) async {
-      if (svg == null || svg.isEmpty) return;
+      if (!_hasUsableSvg(svg)) return;
       await HeatmapSvgGenerator.saveSvgToFirestore(
         fileName: '$trackerId-${eventId}_$suffix',
-        svg: svg,
+        svg: svg!,
       );
     }
 

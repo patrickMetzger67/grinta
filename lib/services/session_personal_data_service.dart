@@ -51,7 +51,7 @@ class SessionPersonalDataService {
     return true;
   }
 
-  SessionPersonalDataWindow resolveWindow({
+  static SessionPersonalDataWindow resolveWindow({
     required AgendaItem item,
     DateTime? now,
   }) {
@@ -85,7 +85,8 @@ class SessionPersonalDataService {
     final match = item.match;
     final start = item.startAt;
     final durationMinutes = match?.duration ?? 90;
-    var stop = start.add(Duration(minutes: durationMinutes));
+    // Include the 15' half-time break (same slot as USB / Intense).
+    var stop = matchScheduledSlotEnd(start, durationMinutes);
     if (clock.isBefore(stop)) stop = clock;
     if (!stop.isAfter(start)) {
       stop = start.add(const Duration(minutes: 1));
@@ -120,7 +121,7 @@ class SessionPersonalDataService {
       throw StateError('Event id missing');
     }
 
-    final sessionWindow = resolveWindow(item: item);
+    final sessionWindow = SessionPersonalDataService.resolveWindow(item: item);
     final fieldCorners = await resolveFieldGpsCorners(item);
     final isMatch = item.match != null;
     final intenseWindow = _intenseWindowForItem(
@@ -209,16 +210,11 @@ class SessionPersonalDataService {
     if (playPeriods.isNotEmpty) {
       start = playPeriods.first.start.toDate();
       final lastEnd = playPeriods.last.end.toDate();
-      stop = lastEnd;
-      // In-progress match: resolveWindow capped stop to "now" before the
-      // scheduled slot end (duration + 15' break) — keep that cap.
-      final scheduledSlotEnd = matchScheduledSlotEnd(
-        sessionWindow.start,
-        match.duration ?? 90,
-      );
-      if (sessionWindow.stop.isBefore(scheduledSlotEnd)) {
-        stop = sessionWindow.stop;
-      }
+      // Prefer full play window; shrink only when resolveWindow already
+      // clock-capped an in-progress match (stop < scheduled last period end).
+      stop = sessionWindow.stop.isBefore(lastEnd)
+          ? sessionWindow.stop
+          : lastEnd;
     }
     if (!stop.isAfter(start)) {
       stop = start.add(const Duration(minutes: 1));
