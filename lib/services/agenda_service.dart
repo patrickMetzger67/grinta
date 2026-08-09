@@ -354,9 +354,10 @@ class AgendaService {
     }
 
     return items.map((AgendaItem item) {
-      if (item.withTracker != true ||
-          item.id.isEmpty ||
-          item.teamWorkloadSummary != null) {
+      // Team kit OR personal GPS / apps → show cached workload rings.
+      if (item.id.isEmpty ||
+          item.teamWorkloadSummary != null ||
+          (item.match == null && item.training == null)) {
         return item;
       }
 
@@ -378,7 +379,10 @@ class AgendaService {
 
     final List<AgendaItem> enriched = await Future.wait(
       items.map((AgendaItem item) async {
-        if (item.withTracker != true || item.id.isEmpty) {
+        // Load TRACKER_TeamAnalysis for team kits and for personal GPS / apps
+        // attached to sessions without a team kit (`withTracker != true`).
+        if (item.id.isEmpty ||
+            (item.match == null && item.training == null)) {
           return item;
         }
 
@@ -389,14 +393,18 @@ class AgendaService {
 
         final bool forceRefetch =
             _workloadSummaryForceRefetchIds.contains(item.id);
+        final bool hasTeamKit = item.withTracker == true;
 
         if (!forceRefetch && _workloadSummaryCache.containsKey(item.id)) {
           final TeamWorkloadSummary? cached = _workloadSummaryCache[item.id];
           if (cached != null) {
             return _withTeamWorkloadSummary(item, cached);
           }
-          // Cached miss: retry once trackers are synced / session is done so
-          // finish+upload is not stuck on a pre-sync null entry.
+          // Cached miss (null). Personal GPS sessions wait for an explicit
+          // invalidate after attach; team kits retry once synced/done.
+          if (!hasTeamKit) {
+            return item;
+          }
           final bool shouldRetryNullCache = item.areTrackersSynchronized ||
               item.isDone ||
               item.training?.isFinish == true ||

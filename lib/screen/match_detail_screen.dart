@@ -79,6 +79,7 @@ class MatchDetailScreen extends StatefulWidget {
     models.Match match, {
     required bool showCompo,
     bool showLiveTab = false,
+    bool showStats = false,
   }) {
     final names = <String>[];
     if (showCompo) {
@@ -92,7 +93,7 @@ class MatchDetailScreen extends StatefulWidget {
     if (showLiveTab) {
       names.add(AnalyticsScreenNames.matchDetailTabLive);
     }
-    if (match.withTracker == true) {
+    if (showStats) {
       names.add(AnalyticsScreenNames.matchDetailTabStats);
     }
     return names;
@@ -102,6 +103,7 @@ class MatchDetailScreen extends StatefulWidget {
     models.Match match, {
     required bool showCompo,
     bool showLiveTab = false,
+    bool showStats = false,
   }) {
     final ids = <String>[];
     if (showCompo) {
@@ -115,15 +117,20 @@ class MatchDetailScreen extends StatefulWidget {
     if (showLiveTab) {
       ids.add(FeatureDiscoveryIds.matchDetailTabLive);
     }
-    if (match.withTracker == true) {
+    if (showStats) {
       ids.add(FeatureDiscoveryIds.matchDetailTabStats);
     }
     return ids;
   }
 
   /// Index logique de l’onglet Statistiques (4 si Compo affiché, 3 sinon).
-  static int statsTabIndexFor(models.Match match, {bool showCompo = true}) {
-    if (match.withTracker != true) {
+  static int statsTabIndexFor(
+    models.Match match, {
+    bool showCompo = true,
+    bool? showStats,
+  }) {
+    final bool hasStats = showStats ?? match.withTracker == true;
+    if (!hasStats) {
       return showCompo ? 0 : 0;
     }
     return showCompo ? 4 : 3;
@@ -236,7 +243,7 @@ class _MatchDetailScreenState extends State<MatchDetailScreen> {
   @override
   Widget build(BuildContext context) {
     final colors = context.appColors;
-    final bool showStats = match.withTracker == true;
+    final eventId = match.id?.trim() ?? '';
 
     return PopScope(
       canPop: !_shouldAskMatchFinished,
@@ -304,143 +311,169 @@ class _MatchDetailScreenState extends State<MatchDetailScreen> {
                           ),
                         ),
                         Expanded(
-                          child: StreamBuilder<MatchStats?>(
-                            stream: MatchStatsService()
-                                .streamMatchStatsByMatchId(match.id ?? ''),
-                            builder: (context, snapshot) {
-                              if (snapshot.connectionState ==
-                                  ConnectionState.waiting) {
-                                return const Center(
-                                  child: CircularProgressIndicator(),
-                                );
-                              }
+                          child: StreamBuilder<TeamWorkloadSummary?>(
+                            stream: eventId.isEmpty
+                                ? Stream<TeamWorkloadSummary?>.value(null)
+                                : TeamWorkloadSummaryService()
+                                    .watchByEventId(eventId),
+                            builder: (context, workloadSnapshot) {
+                              final summary = workloadSnapshot.data;
+                              // Team kit OR personal GPS / apps attached to this match.
+                              final bool showStats = match.withTracker == true ||
+                                  (summary != null &&
+                                      summary.playerScores.isNotEmpty);
 
-                              final bool showCompo = snapshot.data != null;
-                              final l10n = context.l10n;
+                              return StreamBuilder<MatchStats?>(
+                                stream: MatchStatsService()
+                                    .streamMatchStatsByMatchId(match.id ?? ''),
+                                builder: (context, snapshot) {
+                                  if (snapshot.connectionState ==
+                                      ConnectionState.waiting) {
+                                    return const Center(
+                                      child: CircularProgressIndicator(),
+                                    );
+                                  }
 
-                              return FutureBuilder<bool>(
-                                future: isIntenseTrackerOwner(match.ownerId),
-                                builder: (context, intenseSnapshot) {
-                                  final isIntenseOwner =
-                                      intenseSnapshot.data == true;
+                                  final bool showCompo = snapshot.data != null;
+                                  final l10n = context.l10n;
 
-                                  return StreamBuilder<List<Highlights>>(
-                                    stream: HighlightsService()
-                                        .streamHighlightsByMatchCalendarId(
-                                      match.id ?? '',
-                                    ),
-                                    builder: (context, highlightsSnapshot) {
-                                      final highlights =
-                                          highlightsSnapshot.data ??
-                                              const <Highlights>[];
-                                      final showLiveTab = isIntenseOwner &&
-                                          isMatchSessionLive(
-                                            match: match,
-                                            highlights: highlights,
-                                          );
-                                      final liveSessionStart =
-                                          intenseLiveMatchStartUtc(
-                                        highlights,
-                                        match: match,
-                                      );
+                                  return FutureBuilder<bool>(
+                                    future:
+                                        isIntenseTrackerOwner(match.ownerId),
+                                    builder: (context, intenseSnapshot) {
+                                      final isIntenseOwner =
+                                          intenseSnapshot.data == true;
 
-                                      final tabs = <Widget>[
-                                        if (showCompo)
-                                          _MatchDetailTab(
-                                            icon: Icons.groups_rounded,
-                                            label: l10n.tabCompo,
-                                            compactLabel: l10n.tabCompo,
-                                          ),
-                                        _MatchDetailTab(
-                                          icon: Icons.event_available_rounded,
-                                          label: l10n.tabConvocations,
-                                          compactLabel:
-                                              l10n.tabConvocationsShort,
+                                      return StreamBuilder<List<Highlights>>(
+                                        stream: HighlightsService()
+                                            .streamHighlightsByMatchCalendarId(
+                                          match.id ?? '',
                                         ),
-                                        _MatchDetailTab(
-                                          icon: Icons.grid_view_rounded,
-                                          label: l10n.tabTacticalSchema,
-                                          compactLabel:
-                                              l10n.tabTacticalSchemaShort,
-                                        ),
-                                        _MatchDetailTab(
-                                          icon: Icons.flash_on_rounded,
-                                          label: l10n.tabHighlights,
-                                          compactLabel: l10n.tabHighlightsShort,
-                                        ),
-                                        if (showLiveTab)
-                                          _MatchDetailTab(
-                                            icon: Icons.sensors_rounded,
-                                            label: l10n.tabLive,
-                                            compactLabel: l10n.tabLiveShort,
-                                          ),
-                                        if (showStats)
-                                          _MatchDetailTab(
-                                            icon: Icons.query_stats_rounded,
-                                            label: l10n.navStatistics,
-                                            compactLabel: l10n.tabStats,
-                                          ),
-                                      ];
-
-                                      final views = <Widget>[
-                                        if (showCompo)
-                                          compoBuilder?.call(context, match) ??
-                                              _CompoTab(match: match),
-                                        MatchConvocationsTab(
-                                          match: match,
-                                          isManager: isManager,
-                                        ),
-                                        tacticalSchemaBuilder?.call(
-                                              context, match) ??
-                                            MatchTacticalSchemaTab(
-                                              match: match,
-                                              isManager: isManager,
-                                            ),
-                                        highlightsBuilder?.call(
-                                              context, match) ??
-                                            _HighlightsTab(
-                                              match: match,
-                                              isManager: isManager,
-                                            ),
-                                        if (showLiveTab &&
-                                            liveSessionStart != null)
-                                          _LiveTab(
-                                            match: match,
-                                            sessionStartUtc: liveSessionStart,
-                                          ),
-                                        if (showStats)
-                                          statsBuilder?.call(context, match) ??
-                                              _StatsTab(
+                                        builder:
+                                            (context, highlightsSnapshot) {
+                                          final highlights =
+                                              highlightsSnapshot.data ??
+                                                  const <Highlights>[];
+                                          final showLiveTab = isIntenseOwner &&
+                                              isMatchSessionLive(
                                                 match: match,
-                                                isManager: isManager,
-                                                playerId: playerId,
+                                                highlights: highlights,
+                                              );
+                                          final liveSessionStart =
+                                              intenseLiveMatchStartUtc(
+                                            highlights,
+                                            match: match,
+                                          );
+
+                                          final tabs = <Widget>[
+                                            if (showCompo)
+                                              _MatchDetailTab(
+                                                icon: Icons.groups_rounded,
+                                                label: l10n.tabCompo,
+                                                compactLabel: l10n.tabCompo,
                                               ),
-                                      ];
+                                            _MatchDetailTab(
+                                              icon: Icons
+                                                  .event_available_rounded,
+                                              label: l10n.tabConvocations,
+                                              compactLabel:
+                                                  l10n.tabConvocationsShort,
+                                            ),
+                                            _MatchDetailTab(
+                                              icon: Icons.grid_view_rounded,
+                                              label: l10n.tabTacticalSchema,
+                                              compactLabel:
+                                                  l10n.tabTacticalSchemaShort,
+                                            ),
+                                            _MatchDetailTab(
+                                              icon: Icons.flash_on_rounded,
+                                              label: l10n.tabHighlights,
+                                              compactLabel:
+                                                  l10n.tabHighlightsShort,
+                                            ),
+                                            if (showLiveTab)
+                                              _MatchDetailTab(
+                                                icon: Icons.sensors_rounded,
+                                                label: l10n.tabLive,
+                                                compactLabel: l10n.tabLiveShort,
+                                              ),
+                                            if (showStats)
+                                              _MatchDetailTab(
+                                                icon:
+                                                    Icons.query_stats_rounded,
+                                                label: l10n.navStatistics,
+                                                compactLabel: l10n.tabStats,
+                                              ),
+                                          ];
 
-                                      final int safeInitialIndex =
-                                          MatchDetailScreen._physicalTabIndex(
-                                        logicalIndex: initialTabIndex,
-                                        showCompo: showCompo,
-                                      ).clamp(0, tabs.length - 1);
+                                          final views = <Widget>[
+                                            if (showCompo)
+                                              compoBuilder?.call(
+                                                    context, match) ??
+                                                  _CompoTab(match: match),
+                                            MatchConvocationsTab(
+                                              match: match,
+                                              isManager: isManager,
+                                            ),
+                                            tacticalSchemaBuilder?.call(
+                                                  context, match) ??
+                                                MatchTacticalSchemaTab(
+                                                  match: match,
+                                                  isManager: isManager,
+                                                ),
+                                            highlightsBuilder?.call(
+                                                  context, match) ??
+                                                _HighlightsTab(
+                                                  match: match,
+                                                  isManager: isManager,
+                                                ),
+                                            if (showLiveTab &&
+                                                liveSessionStart != null)
+                                              _LiveTab(
+                                                match: match,
+                                                sessionStartUtc:
+                                                    liveSessionStart,
+                                              ),
+                                            if (showStats)
+                                              statsBuilder?.call(
+                                                    context, match) ??
+                                                  _StatsTab(
+                                                    match: match,
+                                                    isManager: isManager,
+                                                    playerId: playerId,
+                                                  ),
+                                          ];
 
-                                      return _MatchDetailTabShell(
-                                        tabs: tabs,
-                                        views: views,
-                                        tabNames:
-                                            MatchDetailScreen._tabNamesForMatch(
-                                          match,
-                                          showCompo: showCompo,
-                                          showLiveTab: showLiveTab,
-                                        ),
-                                        featureDiscoveryIds: MatchDetailScreen
-                                            ._featureDiscoveryIdsForMatch(
-                                          match,
-                                          showCompo: showCompo,
-                                          showLiveTab: showLiveTab,
-                                        ),
-                                        initialIndex: safeInitialIndex,
-                                        matchHasTracker: showStats,
-                                        dense: denseChrome,
+                                          final int safeInitialIndex =
+                                              MatchDetailScreen
+                                                  ._physicalTabIndex(
+                                            logicalIndex: initialTabIndex,
+                                            showCompo: showCompo,
+                                          ).clamp(0, tabs.length - 1);
+
+                                          return _MatchDetailTabShell(
+                                            tabs: tabs,
+                                            views: views,
+                                            tabNames: MatchDetailScreen
+                                                ._tabNamesForMatch(
+                                              match,
+                                              showCompo: showCompo,
+                                              showLiveTab: showLiveTab,
+                                              showStats: showStats,
+                                            ),
+                                            featureDiscoveryIds:
+                                                MatchDetailScreen
+                                                    ._featureDiscoveryIdsForMatch(
+                                              match,
+                                              showCompo: showCompo,
+                                              showLiveTab: showLiveTab,
+                                              showStats: showStats,
+                                            ),
+                                            initialIndex: safeInitialIndex,
+                                            matchHasTracker: showStats,
+                                            dense: denseChrome,
+                                          );
+                                        },
                                       );
                                     },
                                   );

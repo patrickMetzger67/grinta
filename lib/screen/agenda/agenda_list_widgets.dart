@@ -1272,6 +1272,12 @@ class AgendaItemCard extends StatelessWidget {
                       SessionPersonalDataAgendaButton(
                         item: item,
                         playerId: currentPlayerId!.trim(),
+                        onPersonalDataSaved: (eventId) {
+                          _notifyAgendaWorkloadUpdated(
+                            context,
+                            eventId: eventId,
+                          );
+                        },
                       ),
                   ],
                 ),
@@ -1301,7 +1307,8 @@ class AgendaItemCard extends StatelessWidget {
               ),
             ],
             // Player rings: personal scores only (not managers/staff).
-            if(!canAccessSessionDetails && item.withTracker == true && teamPlayerMetricScores != null) ... [
+            // Shown for team kits and for personal GPS / apps (summary present).
+            if (!canAccessSessionDetails && teamPlayerMetricScores != null) ...[
               const SizedBox(height: 10),
               InkWell(
                 borderRadius: BorderRadius.circular(12),
@@ -1325,6 +1332,7 @@ class AgendaItemCard extends StatelessWidget {
                           playerId: currentPlayerId,
                           initialTabIndex: MatchDetailScreen.statsTabIndexFor(
                             match,
+                            showStats: true,
                           ),
                         ),
                       ),
@@ -1454,7 +1462,9 @@ class AgendaItemCard extends StatelessWidget {
               ),
             ],
             // Team rings: managers and roster staff (team averages).
-            if(canAccessSessionDetails && item.withTracker == true && item.teamWorkloadSummary != null) ... [
+            // Also when personal GPS / apps produced a workload summary.
+            if (canAccessSessionDetails &&
+                item.teamWorkloadSummary != null) ...[
               const SizedBox(height: 10),
               InkWell(
                 borderRadius: BorderRadius.circular(16),
@@ -1481,6 +1491,7 @@ class AgendaItemCard extends StatelessWidget {
                           playerId: currentPlayerId,
                           initialTabIndex: MatchDetailScreen.statsTabIndexFor(
                             match,
+                            showStats: true,
                           ),
                         ),
                       ),
@@ -2024,14 +2035,18 @@ class _AgendaTrainingPlayersRow extends StatelessWidget {
   }
 }
 
-void _notifyAgendaWorkloadUpdated(BuildContext context, {Training? training}) {
-  final String eventId = training?.docId?.trim() ??
-      training?.trainingId?.trim() ??
-      '';
-  if (eventId.isEmpty) {
+void _notifyAgendaWorkloadUpdated(
+  BuildContext context, {
+  Training? training,
+  String? eventId,
+}) {
+  final String resolvedEventId = eventId?.trim().isNotEmpty == true
+      ? eventId!.trim()
+      : (training?.docId?.trim() ?? training?.trainingId?.trim() ?? '');
+  if (resolvedEventId.isEmpty) {
     return;
   }
-  _AgendaWorkloadRefreshScope.notify(context, eventId);
+  _AgendaWorkloadRefreshScope.notify(context, resolvedEventId);
 }
 
 /// Live + Re-sync on agenda cards for noSync match kits (no Temps forts needed).
