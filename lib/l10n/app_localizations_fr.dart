@@ -2653,7 +2653,7 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get syncFieldGeolocationPromptMessage =>
-      'Les coordonnées GPS du terrain ne sont pas renseignées. Souhaitez-vous les définir avant de télécharger les données tracker ?';
+      'Les coordonnées GPS du terrain ne sont pas renseignées. Souhaitez-vous les définir maintenant ? Cela permet des heatmaps alignées sur le terrain ; sinon elles utiliseront la vue satellite GPS.';
 
   @override
   String get trackerUsbAuthorizeHint =>
@@ -3173,7 +3173,7 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get sessionPersonalDataGpsHint =>
-      'Synchronise ton capteur GPS Intense et génère une heatmap si le terrain est positionné.';
+      'Synchronise ton capteur GPS Intense et génère une heatmap (alignée sur le terrain s’il est géolocalisé, sinon vue satellite).';
 
   @override
   String get sessionPersonalDataGpsSubmit => 'Synchroniser mes données';

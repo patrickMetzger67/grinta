@@ -2670,7 +2670,7 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get syncFieldGeolocationPromptMessage =>
-      'Die GPS-Koordinaten des Spielfelds sind nicht hinterlegt. Möchten Sie sie vor dem Herunterladen der Tracker-Daten festlegen?';
+      'Die GPS-Koordinaten des Spielfelds sind nicht hinterlegt. Möchten Sie sie jetzt festlegen? So entstehen platzgenaue Heatmaps; sonst wird die GPS-Satellitenansicht genutzt.';
 
   @override
   String get trackerUsbAuthorizeHint =>
@@ -3187,7 +3187,7 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get sessionPersonalDataGpsHint =>
-      'Synchronisiere deinen Intense-GPS-Sensor und erzeuge eine Heatmap, wenn das Feld positioniert ist.';
+      'Synchronisiere deinen Intense-GPS-Sensor und erzeuge eine Heatmap (platzgenau bei Geolokalisierung, sonst Satellitenansicht).';
 
   @override
   String get sessionPersonalDataGpsSubmit => 'Meine Daten synchronisieren';

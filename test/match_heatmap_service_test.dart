@@ -23,6 +23,45 @@ void main() {
       expect(MatchHeatmapService.isFieldGeolocalized(field), isTrue);
     });
 
+    test('null fieldGps marks satellite path for USB/personal sync fallback',
+        () async {
+      final samples = <TrackerRaw>[
+        TrackerRaw(
+          trackerId: 't1',
+          timeMs: 1,
+          latitude: 48.4195,
+          longitude: 7.6605,
+          speedMps: 2,
+        ),
+        TrackerRaw(
+          trackerId: 't1',
+          timeMs: 2,
+          latitude: 48.4196,
+          longitude: 7.6606,
+          speedMps: 3,
+        ),
+        TrackerRaw(
+          trackerId: 't1',
+          timeMs: 3,
+          latitude: 48.4197,
+          longitude: 7.6607,
+          speedMps: 2,
+        ),
+      ];
+
+      final bundle = await MatchHeatmapService.generateAndSaveMatchHeatmaps(
+        trackerId: 't1',
+        eventId: 'e1',
+        fieldGps: null,
+        fullSamples: samples,
+        fullHeatmapPoints: const [],
+        persist: false,
+      );
+
+      // Routes to satellite even if the static-map fetch fails in tests.
+      expect(bundle.usedSatelliteBackground, isTrue);
+    });
+
     test('geolocalized path never marks satellite background', () async {
       const field = FootballFieldGps(
         topLeft: FieldCornerGps(latitude: 48.4220, longitude: 7.6610),
