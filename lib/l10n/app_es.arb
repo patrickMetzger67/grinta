@@ -3142,10 +3142,15 @@
   "biometricUnlockUsePassword": "Usar otra cuenta",
   "biometricUnlockPromptReason": "Desbloquea Grinta",
   "biometricUnlockSettingsTitle": "Desbloqueo biométrico",
-  "biometricUnlockSettingsSubtitle": "Face ID, Touch ID o huella para abrir la app rápidamente.",
+  "biometricUnlockSettingsSubtitle": "Face ID, Touch ID o huella para abrir la app y volver a iniciar sesión rápidamente.",
   "biometricUnlockUnavailable": "La biometría no está disponible en este dispositivo.",
   "biometricUnlockEnableTitle": "Desbloqueo rápido",
-  "biometricUnlockEnableMessage": "Activa Face ID / huella para abrir Grinta rápidamente en los próximos inicios. Tus credenciales permanecen protegidas en el dispositivo.",
+  "biometricUnlockEnableMessage": "Activa Face ID / huella para desbloquear Grinta y volver a iniciar sesión rápidamente tras cerrar sesión. Tu email y contraseña permanecen cifrados en este dispositivo.",
   "biometricUnlockEnableLater": "Más tarde",
-  "biometricUnlockEnableConfirm": "Activar"
+  "biometricUnlockEnableConfirm": "Activar",
+  "biometricLoginAction": "Iniciar sesión con biometría",
+  "biometricLoginPromptReason": "Inicia sesión en Grinta",
+  "biometricLoginCredentialsInvalid": "Los datos de acceso guardados ya no son válidos. Inicia sesión con tu contraseña.",
+  "biometricLoginSavePasswordTitle": "Confirma tu contraseña",
+  "biometricLoginSavePasswordMessage": "Introduce tu contraseña para que Face ID / huella pueda volver a iniciar sesión tras cerrar sesión. Permanece cifrada en este dispositivo."
 }

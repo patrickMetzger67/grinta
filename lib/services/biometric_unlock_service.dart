@@ -1,24 +1,36 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter/widgets.dart';
+import 'package:grinta/services/biometric_login_credentials_store.dart';
 import 'package:local_auth/local_auth.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-/// Optional biometric app unlock (Face ID / Touch ID / Android biometrics).
+/// Optional biometric app unlock + email login (Face ID / Touch ID / Android).
 ///
-/// This does **not** replace Firebase Auth. It only gates the UI while a
-/// Firebase session is already persisted on the device.
+/// Unlock gates the UI while a Firebase session is already on device.
+/// When email/password credentials are saved in secure storage, biometrics can
+/// also sign the user back in from [LoginScreen] after logout.
 class BiometricUnlockService extends ChangeNotifier
     with WidgetsBindingObserver {
-  BiometricUnlockService._();
+  BiometricUnlockService._({BiometricLoginCredentialsStore? credentialsStore})
+      : _credentialsStore =
+            credentialsStore ?? BiometricLoginCredentialsStore();
 
   static final BiometricUnlockService instance = BiometricUnlockService._();
+
+  @visibleForTesting
+  factory BiometricUnlockService.forTesting({
+    BiometricLoginCredentialsStore? credentialsStore,
+  }) {
+    return BiometricUnlockService._(credentialsStore: credentialsStore);
+  }
 
   static const String _prefsEnabledKey = 'biometric_unlock_enabled_v1';
   static const String _prefsUidKey = 'biometric_unlock_uid_v1';
   static const String _prefsPromptedKey = 'biometric_unlock_prompted_v1';
 
   final LocalAuthentication _auth = LocalAuthentication();
+  final BiometricLoginCredentialsStore _credentialsStore;
 
   bool _initialized = false;
   bool _enabled = false;
@@ -27,6 +39,8 @@ class BiometricUnlockService extends ChangeNotifier
   bool _unlockedThisSession = false;
   bool _authInProgress = false;
   bool _hardwareAvailable = false;
+  bool _hasSavedLoginCredentials = false;
+  String? _savedLoginEmailHint;
   List<BiometricType> _availableBiometrics = const <BiometricType>[];
 
   bool get isSupportedPlatform =>
@@ -42,6 +56,11 @@ class BiometricUnlockService extends ChangeNotifier
   bool get isLocked =>
       isSupportedPlatform && _enabled && !_unlockedThisSession;
   bool get authInProgress => _authInProgress;
+  bool get hasSavedLoginCredentials =>
+      isSupportedPlatform && _hasSavedLoginCredentials;
+  String? get savedLoginEmailHint => _savedLoginEmailHint;
+  bool get canOfferBiometricLogin =>
+      hasSavedLoginCredentials && _hardwareAvailable && !_authInProgress;
   List<BiometricType> get availableBiometrics => _availableBiometrics;
 
   Future<void> ensureInitialized() async {
@@ -56,6 +75,7 @@ class BiometricUnlockService extends ChangeNotifier
     _prompted = prefs.getBool(_prefsPromptedKey) ?? false;
 
     await refreshAvailability();
+    await _refreshSavedLoginCredentialsState();
 
     WidgetsBinding.instance.addObserver(this);
     _initialized = true;
@@ -117,7 +137,12 @@ class BiometricUnlockService extends ChangeNotifier
     await prefs.setBool(_prefsPromptedKey, true);
   }
 
-  Future<bool> setEnabled(bool enabled, {required String uid}) async {
+  Future<bool> setEnabled(
+    bool enabled, {
+    required String uid,
+    String? email,
+    String? password,
+  }) async {
     if (!isSupportedPlatform) return false;
 
     final trimmed = uid.trim();
@@ -136,9 +161,22 @@ class BiometricUnlockService extends ChangeNotifier
       _enabledUid = trimmed;
       _unlockedThisSession = true;
       _prompted = true;
+
+      final trimmedEmail = email?.trim() ?? '';
+      final passwordValue = password;
+      if (trimmedEmail.isNotEmpty &&
+          passwordValue != null &&
+          passwordValue.isNotEmpty) {
+        await saveLoginCredentials(
+          uid: trimmed,
+          email: trimmedEmail,
+          password: passwordValue,
+        );
+      }
     } else {
       _enabled = false;
       _enabledUid = null;
+      await clearSavedLoginCredentials();
     }
 
     final prefs = await SharedPreferences.getInstance();
@@ -151,6 +189,54 @@ class BiometricUnlockService extends ChangeNotifier
     await prefs.setBool(_prefsPromptedKey, _prompted);
     notifyListeners();
     return true;
+  }
+
+  /// Persists email/password for biometric re-login (Keychain / Keystore).
+  Future<void> saveLoginCredentials({
+    required String uid,
+    required String email,
+    required String password,
+  }) async {
+    if (!isSupportedPlatform) return;
+    await _credentialsStore.save(
+      uid: uid,
+      email: email,
+      password: password,
+    );
+    await _refreshSavedLoginCredentialsState();
+    notifyListeners();
+  }
+
+  Future<void> clearSavedLoginCredentials() async {
+    await _credentialsStore.clear();
+    _hasSavedLoginCredentials = false;
+    _savedLoginEmailHint = null;
+    notifyListeners();
+  }
+
+  /// Disables unlock + clears vault (e.g. "use another account").
+  Future<void> disableForAnotherAccount() async {
+    final uid = _enabledUid?.trim().isNotEmpty == true
+        ? _enabledUid!.trim()
+        : 'unknown';
+    await setEnabled(false, uid: uid);
+  }
+
+  /// Biometric challenge then read vaulted email/password.
+  Future<StoredBiometricLoginCredentials?> authenticateAndReadLoginCredentials({
+    required String localizedReason,
+  }) async {
+    if (!canOfferBiometricLogin && !hasSavedLoginCredentials) return null;
+
+    final ok = await authenticate(localizedReason: localizedReason);
+    if (!ok) return null;
+
+    final credentials = await _credentialsStore.read();
+    if (credentials == null) {
+      await clearSavedLoginCredentials();
+      return null;
+    }
+    return credentials;
   }
 
   Future<bool> authenticate({String? localizedReason, String? reasonFallback}) async {
@@ -200,6 +286,17 @@ class BiometricUnlockService extends ChangeNotifier
   bool shouldPromptAfterAccountReady({required String uid}) {
     if (!shouldOfferEnable(uid: uid)) return false;
     return !_prompted;
+  }
+
+  Future<void> _refreshSavedLoginCredentialsState() async {
+    if (!isSupportedPlatform) {
+      _hasSavedLoginCredentials = false;
+      _savedLoginEmailHint = null;
+      return;
+    }
+    _hasSavedLoginCredentials = await _credentialsStore.hasCredentials();
+    _savedLoginEmailHint =
+        _hasSavedLoginCredentials ? await _credentialsStore.peekEmail() : null;
   }
 
   @override

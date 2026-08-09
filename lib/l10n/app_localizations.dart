@@ -12271,7 +12271,7 @@ abstract class AppLocalizations {
   /// No description provided for @biometricUnlockSettingsSubtitle.
   ///
   /// In fr, this message translates to:
-  /// **'Face ID, Touch ID ou empreinte pour ouvrir l’app rapidement.'**
+  /// **'Face ID, Touch ID ou empreinte pour ouvrir l’app et se reconnecter rapidement.'**
   String get biometricUnlockSettingsSubtitle;
 
   /// No description provided for @biometricUnlockUnavailable.
@@ -12289,7 +12289,7 @@ abstract class AppLocalizations {
   /// No description provided for @biometricUnlockEnableMessage.
   ///
   /// In fr, this message translates to:
-  /// **'Activez Face ID / empreinte pour ouvrir Grinta rapidement aux prochains lancements. Vos identifiants restent protégés sur l’appareil.'**
+  /// **'Activez Face ID / empreinte pour déverrouiller Grinta et vous reconnecter rapidement après une déconnexion. Votre e-mail et mot de passe restent chiffrés sur cet appareil.'**
   String get biometricUnlockEnableMessage;
 
   /// No description provided for @biometricUnlockEnableLater.
@@ -12303,6 +12303,36 @@ abstract class AppLocalizations {
   /// In fr, this message translates to:
   /// **'Activer'**
   String get biometricUnlockEnableConfirm;
+
+  /// No description provided for @biometricLoginAction.
+  ///
+  /// In fr, this message translates to:
+  /// **'Se connecter avec la biométrie'**
+  String get biometricLoginAction;
+
+  /// No description provided for @biometricLoginPromptReason.
+  ///
+  /// In fr, this message translates to:
+  /// **'Connectez-vous à Grinta'**
+  String get biometricLoginPromptReason;
+
+  /// No description provided for @biometricLoginCredentialsInvalid.
+  ///
+  /// In fr, this message translates to:
+  /// **'Les identifiants enregistrés ne sont plus valides. Connectez-vous avec votre mot de passe.'**
+  String get biometricLoginCredentialsInvalid;
+
+  /// No description provided for @biometricLoginSavePasswordTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Confirmez votre mot de passe'**
+  String get biometricLoginSavePasswordTitle;
+
+  /// No description provided for @biometricLoginSavePasswordMessage.
+  ///
+  /// In fr, this message translates to:
+  /// **'Saisissez votre mot de passe pour que Face ID / empreinte puisse vous reconnecter après une déconnexion. Il reste chiffré sur cet appareil.'**
+  String get biometricLoginSavePasswordMessage;
 }
 
 class _AppLocalizationsDelegate

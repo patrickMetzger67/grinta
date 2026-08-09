@@ -50,8 +50,10 @@ dependencies:
   webview_flutter: ^4.10.0
   url_launcher: ^6.3.1
   shared_preferences: ^2.5.3
-  # Face ID / Touch ID / Android biometrics for optional app unlock.
+  # Face ID / Touch ID / Android biometrics for optional app unlock + login.
   local_auth: ^2.3.0
+  # Keychain / Keystore vault for optional biometric email/password re-login.
+  flutter_secure_storage: ^10.3.1
   web: ^1.1.1
   # 4.x uses Android V2 embedding (required since Flutter removed Registrar).
   device_calendar: ^4.3.3

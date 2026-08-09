@@ -7140,7 +7140,7 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get biometricUnlockSettingsSubtitle =>
-      'Face ID, Touch ID o huella para abrir la app rápidamente.';
+      'Face ID, Touch ID o huella para abrir la app y volver a iniciar sesión rápidamente.';
 
   @override
   String get biometricUnlockUnavailable =>
@@ -7151,11 +7151,28 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get biometricUnlockEnableMessage =>
-      'Activa Face ID / huella para abrir Grinta rápidamente en los próximos inicios. Tus credenciales permanecen protegidas en el dispositivo.';
+      'Activa Face ID / huella para desbloquear Grinta y volver a iniciar sesión rápidamente tras cerrar sesión. Tu email y contraseña permanecen cifrados en este dispositivo.';
 
   @override
   String get biometricUnlockEnableLater => 'Más tarde';
 
   @override
   String get biometricUnlockEnableConfirm => 'Activar';
+
+  @override
+  String get biometricLoginAction => 'Iniciar sesión con biometría';
+
+  @override
+  String get biometricLoginPromptReason => 'Inicia sesión en Grinta';
+
+  @override
+  String get biometricLoginCredentialsInvalid =>
+      'Los datos de acceso guardados ya no son válidos. Inicia sesión con tu contraseña.';
+
+  @override
+  String get biometricLoginSavePasswordTitle => 'Confirma tu contraseña';
+
+  @override
+  String get biometricLoginSavePasswordMessage =>
+      'Introduce tu contraseña para que Face ID / huella pueda volver a iniciar sesión tras cerrar sesión. Permanece cifrada en este dispositivo.';
 }
