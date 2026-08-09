@@ -380,7 +380,7 @@ class SensorAnalysisService {
     }
 
     if (shouldBuildRelativeHeatmap) {
-      heatmapPoints.addAll(_buildRelativeHeatmapPoints(samples));
+      heatmapPoints.addAll(buildRelativeHeatmapPoints(samples));
     }
 
     final averageSpeedMps = totalDurationMs > 0
@@ -496,7 +496,10 @@ class SensorAnalysisService {
     );
   }
 
-  static List<HeatmapPoint> _buildRelativeHeatmapPoints(
+  /// Fits GPS samples into a virtual [targetWidthMeters]×[targetHeightMeters]
+  /// pitch (default 105×68). Used when field corners are missing so a
+  /// schematic heatmap can still be drawn if satellite imagery fails.
+  static List<HeatmapPoint> buildRelativeHeatmapPoints(
       List<TrackerRaw> samples, {
         double targetWidthMeters = 105.0,
         double targetHeightMeters = 68.0,

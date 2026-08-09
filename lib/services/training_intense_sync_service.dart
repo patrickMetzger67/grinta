@@ -730,8 +730,9 @@ class TrainingIntenseSyncService {
 
   /// Writes schematic/satellite heatmaps to `TRACKER_Svg` (same as USB hub).
   ///
-  /// When [fieldGps] is null, [MatchHeatmapService] builds a Google satellite
-  /// backdrop from the raw GPS samples (personal GPS / USB / Intense).
+  /// When [fieldGps] is null, [MatchHeatmapService] prefers a Google satellite
+  /// backdrop from GPS samples, then falls back to a relative schematic pitch
+  /// if Static Maps is unavailable (personal GPS / USB / Intense).
   Future<void> persistIntenseHeatmaps({
     required String trackerId,
     required String playerId,
