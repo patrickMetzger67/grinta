@@ -14,7 +14,7 @@ Highlights _timeEvent(TimeType type, DateTime at) {
 
 void main() {
   group('resolveMatchUsbSyncPeriods', () {
-    test('without highlights uses timestamp + duration minutes', () {
+    test('without highlights splits into two halves with 15 min break', () {
       final start = DateTime.utc(2026, 8, 8, 17, 0);
       final match = models.Match(
         timestamp: Timestamp.fromDate(start),
@@ -26,11 +26,20 @@ void main() {
         highlights: const <Highlights>[],
       );
 
-      expect(periods, hasLength(1));
-      expect(periods.first.start.toDate().toUtc(), start);
+      // 1ère: [T, T+45] — 2ème: [T+45+15, T+90+15]
+      expect(periods, hasLength(2));
+      expect(periods[0].start.toDate().toUtc(), start);
       expect(
-        periods.first.end.toDate().toUtc(),
-        start.add(const Duration(minutes: 90)),
+        periods[0].end.toDate().toUtc(),
+        start.add(const Duration(minutes: 45)),
+      );
+      expect(
+        periods[1].start.toDate().toUtc(),
+        start.add(const Duration(minutes: 60)),
+      );
+      expect(
+        periods[1].end.toDate().toUtc(),
+        start.add(const Duration(minutes: 105)),
       );
     });
 
@@ -45,10 +54,18 @@ void main() {
         highlights: const <Highlights>[],
       );
 
-      expect(periods, hasLength(1));
+      expect(periods, hasLength(2));
       expect(
-        periods.first.end.toDate().toUtc(),
-        start.add(const Duration(minutes: 90)),
+        periods[0].end.toDate().toUtc(),
+        start.add(const Duration(minutes: 45)),
+      );
+      expect(
+        periods[1].start.toDate().toUtc(),
+        start.add(const Duration(minutes: 60)),
+      );
+      expect(
+        periods[1].end.toDate().toUtc(),
+        start.add(const Duration(minutes: 105)),
       );
     });
 
@@ -111,12 +128,12 @@ void main() {
       expect(periods[1].end.toDate().toUtc(), end);
     });
 
-    test('incomplete highlights fall back to timestamp + duration', () {
+    test('incomplete highlights fall back to scheduled halves', () {
       final schedule = DateTime.utc(2026, 8, 8, 17, 0);
       final kickOffOnly = DateTime.utc(2026, 8, 8, 17, 3);
       final match = models.Match(
         timestamp: Timestamp.fromDate(schedule),
-        duration: 95,
+        duration: 80,
       );
 
       final periods = resolveMatchUsbSyncPeriods(
@@ -126,10 +143,18 @@ void main() {
         ],
       );
 
-      expect(periods, hasLength(1));
-      expect(periods.first.start.toDate().toUtc(), schedule);
+      expect(periods, hasLength(2));
+      expect(periods[0].start.toDate().toUtc(), schedule);
       expect(
-        periods.first.end.toDate().toUtc(),
+        periods[0].end.toDate().toUtc(),
+        schedule.add(const Duration(minutes: 40)),
+      );
+      expect(
+        periods[1].start.toDate().toUtc(),
+        schedule.add(const Duration(minutes: 55)),
+      );
+      expect(
+        periods[1].end.toDate().toUtc(),
         schedule.add(const Duration(minutes: 95)),
       );
     });

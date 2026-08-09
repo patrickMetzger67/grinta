@@ -161,7 +161,8 @@ class _TrackerHubPageState extends State<TrackerHubPage> {
     if (widget.isMatch) {
       // USB / withSyncing=true:
       // - Temps forts kickOff+end → those bounds (halves when available)
-      // - else Match.timestamp + duration minutes
+      // - else scheduled halves: [timestamp, +duration/2] then
+      //   [+duration/2 + 15min, +duration + 15min]
       // Never use TimeRange(null,null): that collapses to now→now and drops
       // every sample so "Télécharger" spins then resets.
       final match = await MatchService().getMatchById(widget.eventId);
