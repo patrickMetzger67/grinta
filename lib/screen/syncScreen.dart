@@ -302,7 +302,7 @@ class _SyncScreenState extends State<SyncScreen> {
     required match_model.Match match,
     required List<String> trackerIdsToSend,
     required Map<String, String> devicePlayerMap,
-    required FieldGpsCorners fieldGpsCorners,
+    FieldGpsCorners? fieldGpsCorners,
   }) async {
     if (!mounted || trackerIdsToSend.isEmpty) return;
 
@@ -779,11 +779,10 @@ class _SyncScreenState extends State<SyncScreen> {
                                             return;
                                           }
 
+                                          // Null corners → satellite heatmap (same as Intense).
                                           final fieldGpsCorners =
                                               await _ensureMatchFieldGpsCorners(match);
-                                          if (fieldGpsCorners == null || !mounted) {
-                                            return;
-                                          }
+                                          if (!mounted) return;
 
                                           await _openMatchTrackerHub(
                                             match: match,

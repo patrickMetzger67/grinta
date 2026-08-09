@@ -4676,7 +4676,7 @@ abstract class AppLocalizations {
   /// No description provided for @syncFieldGeolocationPromptMessage.
   ///
   /// In fr, this message translates to:
-  /// **'Les coordonnées GPS du terrain ne sont pas renseignées. Souhaitez-vous les définir avant de télécharger les données tracker ?'**
+  /// **'Les coordonnées GPS du terrain ne sont pas renseignées. Souhaitez-vous les définir maintenant ? Cela permet des heatmaps alignées sur le terrain ; sinon elles utiliseront la vue satellite GPS.'**
   String get syncFieldGeolocationPromptMessage;
 
   /// No description provided for @trackerUsbAuthorizeHint.
@@ -5552,7 +5552,7 @@ abstract class AppLocalizations {
   /// No description provided for @sessionPersonalDataGpsHint.
   ///
   /// In fr, this message translates to:
-  /// **'Synchronise ton capteur GPS Intense et génère une heatmap si le terrain est positionné.'**
+  /// **'Synchronise ton capteur GPS Intense et génère une heatmap (alignée sur le terrain s’il est géolocalisé, sinon vue satellite).'**
   String get sessionPersonalDataGpsHint;
 
   /// No description provided for @sessionPersonalDataGpsSubmit.

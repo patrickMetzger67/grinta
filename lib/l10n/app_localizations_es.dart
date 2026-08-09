@@ -2659,7 +2659,7 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get syncFieldGeolocationPromptMessage =>
-      'Las coordenadas GPS del terreno no están definidas. ¿Desea definirlas antes de descargar los datos del tracker?';
+      'Las coordenadas GPS del terreno no están definidas. ¿Desea definirlas ahora? Así obtienes mapas de calor alineados al campo; si no, se usa la vista satélite GPS.';
 
   @override
   String get trackerUsbAuthorizeHint =>
@@ -3178,7 +3178,7 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get sessionPersonalDataGpsHint =>
-      'Sincroniza tu sensor GPS Intense y genera un mapa de calor si el campo está posicionado.';
+      'Sincroniza tu sensor GPS Intense y genera un mapa de calor (alineado al campo si está geolocalizado; si no, vista satélite).';
 
   @override
   String get sessionPersonalDataGpsSubmit => 'Sincronizar mis datos';

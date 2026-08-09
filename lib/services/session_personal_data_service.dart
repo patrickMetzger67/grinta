@@ -1,12 +1,13 @@
 import 'package:flutter/foundation.dart';
 import 'package:grinta/model/agendaItem.dart';
 import 'package:grinta/model/fieldGpsCorners.dart';
+import 'package:grinta/model/highlights.dart';
 import 'package:grinta/model/tracker/trackerData.dart';
 import 'package:grinta/services/personal_gps_sync_service.dart';
 import 'package:grinta/services/trackerDataAnalysisService.dart';
 import 'package:grinta/services/tracker_field_service.dart';
 import 'package:grinta/services/training_intense_sync_service.dart';
-import 'package:grinta/util/heatmap_svg_generator.dart';
+import 'package:grinta/util/match_usb_sync_window.dart';
 import 'package:grinta/util/training_finish_helper.dart';
 
 /// Time window used when attaching personal GPS / app data to a session.
@@ -106,7 +107,8 @@ class SessionPersonalDataService {
 
   /// Syncs personal Intense GPS into [TRACKER_Analysis] for [eventId].
   ///
-  /// Generates a pitch heatmap SVG when field GPS corners are available.
+  /// Always attempts a heatmap: schematic when field GPS corners exist,
+  /// otherwise Google satellite fitted to the collected GPS samples.
   Future<TrackerAnalysisResult?> attachGps({
     required AgendaItem item,
     required String playerId,
@@ -118,9 +120,13 @@ class SessionPersonalDataService {
       throw StateError('Event id missing');
     }
 
-    final window = resolveWindow(item: item);
+    final sessionWindow = resolveWindow(item: item);
     final fieldCorners = await resolveFieldGpsCorners(item);
     final isMatch = item.match != null;
+    final intenseWindow = _intenseWindowForItem(
+      item: item,
+      sessionWindow: sessionWindow,
+    );
 
     final target = IntenseTrainingDeviceTarget(
       playerId: playerId,
@@ -135,16 +141,14 @@ class SessionPersonalDataService {
     debugPrint(
       '[SessionPersonalData] GPS sync → event=$eventId '
       'player=$playerId device=${device.insidersDeviceId} '
-      'start=${window.start.toUtc()} stop=${window.stop.toUtc()} '
-      'hasFieldGps=${fieldCorners != null}',
+      'start=${intenseWindow.start} stop=${intenseWindow.stop} '
+      'hasFieldGps=${fieldCorners != null} '
+      'playPeriods=${intenseWindow.playPeriods.length}',
     );
 
     final outcome = await _intenseSyncService.analyzeDeviceWindow(
       target: target,
-      window: TrainingIntenseTimeWindow(
-        start: window.start.toUtc(),
-        stop: window.stop.toUtc(),
-      ),
+      window: intenseWindow,
       eventId: eventId,
       fieldGpsCorners: fieldCorners,
       treatEmptyAsSuccess: true,
@@ -162,14 +166,16 @@ class SessionPersonalDataService {
       isMatch: isMatch,
     );
 
-    if (fieldCorners != null && result.heatmapPoints.isNotEmpty) {
-      await _saveHeatmapSvgs(
-        eventId: eventId,
-        trackerId: device.trackerId,
-        result: result,
-        fieldCorners: fieldCorners,
-      );
-    }
+    await _intenseSyncService.persistIntenseHeatmaps(
+      trackerId: device.trackerId,
+      playerId: playerId,
+      eventId: eventId,
+      samples: outcome.samples,
+      result: result,
+      fieldGps: outcome.fieldGps,
+      isMatch: isMatch,
+      playPeriods: intenseWindow.playPeriods,
+    );
 
     await computeTeamWorkloadSummaryForEvent(
       eventId: eventId,
@@ -177,6 +183,51 @@ class SessionPersonalDataService {
     );
 
     return result;
+  }
+
+  /// Builds the Insiders window; matches get half play periods (no Temps forts
+  /// on the agenda path → scheduled halves + 15' break).
+  TrainingIntenseTimeWindow _intenseWindowForItem({
+    required AgendaItem item,
+    required SessionPersonalDataWindow sessionWindow,
+  }) {
+    final match = item.match;
+    if (match == null) {
+      return TrainingIntenseTimeWindow(
+        start: sessionWindow.start.toUtc(),
+        stop: sessionWindow.stop.toUtc(),
+      );
+    }
+
+    final playPeriods = resolveMatchSensorSyncPeriods(
+      match: match,
+      highlights: const <Highlights>[],
+      fallbackStart: sessionWindow.start,
+    );
+    var start = sessionWindow.start;
+    var stop = sessionWindow.stop;
+    if (playPeriods.isNotEmpty) {
+      start = playPeriods.first.start.toDate();
+      final lastEnd = playPeriods.last.end.toDate();
+      stop = lastEnd;
+      // In-progress match: resolveWindow capped stop to "now" before the
+      // scheduled slot end (duration + 15' break) — keep that cap.
+      final scheduledSlotEnd = matchScheduledSlotEnd(
+        sessionWindow.start,
+        match.duration ?? 90,
+      );
+      if (sessionWindow.stop.isBefore(scheduledSlotEnd)) {
+        stop = sessionWindow.stop;
+      }
+    }
+    if (!stop.isAfter(start)) {
+      stop = start.add(const Duration(minutes: 1));
+    }
+    return TrainingIntenseTimeWindow(
+      start: start.toUtc(),
+      stop: stop.toUtc(),
+      playPeriods: playPeriods,
+    );
   }
 
   /// Persists connected-app metrics (no heatmap) as [TRACKER_Analysis].
@@ -245,37 +296,5 @@ class SessionPersonalDataService {
     );
 
     return result;
-  }
-
-  Future<void> _saveHeatmapSvgs({
-    required String eventId,
-    required String trackerId,
-    required TrackerAnalysisResult result,
-    required FieldGpsCorners fieldCorners,
-  }) async {
-    FootballFieldGps fieldGps;
-    try {
-      fieldGps = FootballFieldGps.fromFieldGpsCorners(fieldCorners);
-    } catch (e, st) {
-      debugPrint('[SessionPersonalData] field GPS invalid, skip heatmap: $e\n$st');
-      return;
-    }
-
-    final svg = HeatmapSvgGenerator.generateSvg(
-      field: fieldGps,
-      heatmapPoints: result.heatmapPoints,
-      flipX: false,
-      flipY: false,
-      svgWidth: 1600,
-      svgHeight: 1000,
-    );
-    await HeatmapSvgGenerator.saveSvgToFirestore(
-      fileName: '${trackerId}-${eventId}_fullMatch',
-      svg: svg,
-    );
-    debugPrint(
-      '[SessionPersonalData] heatmap saved → '
-      '${trackerId}-${eventId}_fullMatch',
-    );
   }
 }

@@ -2613,7 +2613,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get syncFieldGeolocationPromptMessage =>
-      'The field GPS coordinates are not set. Would you like to define them before downloading tracker data?';
+      'The field GPS coordinates are not set. Would you like to define them now? This enables pitch-aligned heatmaps; otherwise they use the GPS satellite view.';
 
   @override
   String get trackerUsbAuthorizeHint =>
@@ -3124,7 +3124,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get sessionPersonalDataGpsHint =>
-      'Sync your Intense GPS sensor and generate a heatmap when the pitch is positioned.';
+      'Sync your Intense GPS sensor and generate a heatmap (pitch-aligned if the field is geolocated, otherwise satellite view).';
 
   @override
   String get sessionPersonalDataGpsSubmit => 'Sync my data';

@@ -431,7 +431,8 @@ class _SessionPersonalDataDialogState extends State<SessionPersonalDataDialog> {
       return;
     }
 
-    // Match + Intense GPS: ensure pitch corners so heatmap can be generated.
+    // Match + Intense GPS: offer pitch corners for schematic heatmaps.
+    // Declining is fine — attachGps falls back to satellite GPS view.
     final match = widget.item.match;
     if (match != null) {
       await FieldGpsLocalizationHelper.ensureMatchFieldGpsCorners(

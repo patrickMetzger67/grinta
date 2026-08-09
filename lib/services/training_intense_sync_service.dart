@@ -462,7 +462,7 @@ class TrainingIntenseSyncService {
     );
 
     // Training: persist full-session heatmap (schematic or satellite).
-    await _persistIntenseHeatmaps(
+    await persistIntenseHeatmaps(
       trackerId: target.trackerId,
       playerId: target.playerId,
       eventId: trainingId,
@@ -506,7 +506,7 @@ class TrainingIntenseSyncService {
     );
 
     // Match: persist TRACKER_Svg heatmaps (was missing — stats without heatmaps).
-    await _persistIntenseHeatmaps(
+    await persistIntenseHeatmaps(
       trackerId: target.trackerId,
       playerId: target.playerId,
       eventId: eventId,
@@ -729,7 +729,10 @@ class TrainingIntenseSyncService {
   }
 
   /// Writes schematic/satellite heatmaps to `TRACKER_Svg` (same as USB hub).
-  Future<void> _persistIntenseHeatmaps({
+  ///
+  /// When [fieldGps] is null, [MatchHeatmapService] builds a Google satellite
+  /// backdrop from the raw GPS samples (personal GPS / USB / Intense).
+  Future<void> persistIntenseHeatmaps({
     required String trackerId,
     required String playerId,
     required String eventId,

@@ -2653,7 +2653,7 @@ class AppLocalizationsIt extends AppLocalizations {
 
   @override
   String get syncFieldGeolocationPromptMessage =>
-      'Le coordinate GPS del campo non sono impostate. Vuoi definirle prima di scaricare i dati del tracker?';
+      'Le coordinate GPS del campo non sono impostate. Vuoi definirle ora? Così ottieni heatmap allineate al campo; altrimenti useranno la vista satellite GPS.';
 
   @override
   String get trackerUsbAuthorizeHint =>
@@ -3172,7 +3172,7 @@ class AppLocalizationsIt extends AppLocalizations {
 
   @override
   String get sessionPersonalDataGpsHint =>
-      'Sincronizza il sensore GPS Intense e genera una heatmap se il campo è posizionato.';
+      'Sincronizza il sensore GPS Intense e genera una heatmap (allineata al campo se geolocalizzato, altrimenti vista satellite).';
 
   @override
   String get sessionPersonalDataGpsSubmit => 'Sincronizza i miei dati';
