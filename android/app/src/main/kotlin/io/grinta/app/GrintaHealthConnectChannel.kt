@@ -5,7 +5,6 @@ import androidx.health.connect.client.HealthConnectClient
 import androidx.health.connect.client.permission.HealthPermission
 import androidx.health.connect.client.records.DistanceRecord
 import androidx.health.connect.client.records.ExerciseSessionRecord
-import androidx.health.connect.client.records.StepsRecord
 import androidx.health.connect.client.records.TotalCaloriesBurnedRecord
 import androidx.health.connect.client.request.ReadRecordsRequest
 import androidx.health.connect.client.time.TimeRangeFilter
@@ -20,12 +19,12 @@ import java.time.Instant
 /**
  * Direct Health Connect exercise reader.
  *
- * The Flutter [health] plugin enriches every WORKOUT with Distance / TotalCalories /
- * Steps. If any of those reads throws SecurityException, the plugin returns an
+ * The Flutter [health] plugin may enrich WORKOUT with Distance / TotalCalories.
+ * If any of those reads throws SecurityException, the plugin can return an
  * empty list for the whole query — even when Exercise sessions exist.
  *
  * This channel reads [ExerciseSessionRecord] first, then best-effort enriches each
- * session so missing Distance/Calories/Steps permissions never wipe workouts.
+ * session so missing Distance/Calories permissions never wipe workouts.
  */
 object GrintaHealthConnectChannel {
     const val CHANNEL_NAME = "io.grinta.app/health_connect"
@@ -191,9 +190,6 @@ object GrintaHealthConnectChannel {
             ),
             "hasTotalCalories" to granted.contains(
                 HealthPermission.getReadPermission(TotalCaloriesBurnedRecord::class),
-            ),
-            "hasSteps" to granted.contains(
-                HealthPermission.getReadPermission(StepsRecord::class),
             ),
         )
     }
