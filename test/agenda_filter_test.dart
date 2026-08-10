@@ -36,14 +36,29 @@ void main() {
       return Training()..teamId = teamId;
     }
 
-    AgendaItem matchItem(String teamId) {
+    AgendaItem matchItem(
+      String teamId, {
+      bool putInTeams = true,
+      bool putInTeamId = false,
+      List<String>? agendaTeamIds,
+    }) {
+      final match = grinta_match.Match();
+      if (putInTeams) {
+        match.teams = <dynamic>[teamId];
+      } else {
+        match.teams = <dynamic>[];
+      }
+      if (putInTeamId) {
+        match.teamID = teamId;
+      }
       return AgendaItem(
-        id: 'm-$teamId',
+        id: 'm-$teamId-${putInTeams ? 'teams' : 'noteams'}',
         startAt: DateTime(2026, 1, 1),
         endAt: DateTime(2026, 1, 1, 1),
         title: 'Match',
         type: AgendaItemType.match,
-        match: grinta_match.Match()..teams = <dynamic>[teamId],
+        match: match,
+        teamIds: agendaTeamIds ?? const <String>[],
       );
     }
 
@@ -88,7 +103,7 @@ void main() {
         items,
         const AgendaFilter(types: {AgendaItemType.match}),
       );
-      expect(filtered.map((e) => e.id), ['m-t1']);
+      expect(filtered.map((e) => e.id), ['m-t1-teams']);
     });
 
     test('filters by team and keeps unscoped personal items', () {
@@ -102,7 +117,31 @@ void main() {
         items,
         const AgendaFilter(teamIds: {'t1'}),
       );
-      expect(filtered.map((e) => e.id).toSet(), {'m-t1', 'p1'});
+      expect(filtered.map((e) => e.id).toSet(), {'m-t1-teams', 'p1'});
+    });
+
+    test('match with empty teams but teamID still filters by team', () {
+      final items = [
+        matchItem('t1', putInTeams: false, putInTeamId: true),
+        matchItem('t2', putInTeams: false, putInTeamId: true),
+      ];
+      final filtered = applyAgendaFilter(
+        items,
+        const AgendaFilter(teamIds: {'t1'}),
+      );
+      expect(filtered.map((e) => e.id), ['m-t1-noteams']);
+    });
+
+    test('match agendaTeamIds from load context filters scraped calendars', () {
+      final items = [
+        matchItem('t1', putInTeams: false, agendaTeamIds: const ['t1']),
+        matchItem('t2', putInTeams: false, agendaTeamIds: const ['t2']),
+      ];
+      final filtered = applyAgendaFilter(
+        items,
+        const AgendaFilter(teamIds: {'t1'}),
+      );
+      expect(filtered.map((e) => e.id), ['m-t1-noteams']);
     });
 
     test('combines team and type filters', () {
@@ -119,6 +158,21 @@ void main() {
         ),
       );
       expect(filtered.map((e) => e.id), ['t-t1']);
+    });
+  });
+
+  group('agendaItemTeamIds', () {
+    test('prefers AgendaItem.teamIds over empty match.teams', () {
+      final item = AgendaItem(
+        id: 'm1',
+        startAt: DateTime(2026, 10, 17, 18, 30),
+        endAt: DateTime(2026, 10, 17, 20),
+        title: 'Séniors 1',
+        type: AgendaItemType.match,
+        match: grinta_match.Match()..teams = <dynamic>[],
+        teamIds: const ['team-seniors-1'],
+      );
+      expect(agendaItemTeamIds(item), {'team-seniors-1'});
     });
   });
 }

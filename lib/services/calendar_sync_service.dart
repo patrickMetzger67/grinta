@@ -18,6 +18,7 @@ import 'package:grinta/util/buildTimestampFromDateAndTime.dart';
 import 'package:grinta/util/calendar_event_formatter.dart';
 import 'package:grinta/util/calendar_ics_builder.dart';
 import 'package:grinta/util/download_ics.dart';
+import 'package:grinta/util/match_compo_pitch_mapper.dart';
 import 'package:grinta/util/playerDisplayName.dart';
 import 'package:timezone/data/latest.dart' as tz_data;
 
@@ -508,6 +509,7 @@ class CalendarSyncService {
         if (startAt == null || match.id == null) continue;
 
         final endAt = startAt.add(const Duration(minutes: 90));
+        final loadingTeamId = team.keyTeam?.trim() ?? '';
         allItems.add(
           AgendaItem(
             id: match.id!,
@@ -518,6 +520,11 @@ class CalendarSyncService {
             match: match,
             isDone: Timestamp.fromDate(endAt).millisecondsSinceEpoch <
                 timestampNow.millisecondsSinceEpoch,
+            teamIds: <String>{
+              ...normalizeTeamIdList(match.teams ?? const <dynamic>[]),
+              if ((match.teamID?.trim() ?? '').isNotEmpty) match.teamID!.trim(),
+              if (loadingTeamId.isNotEmpty) loadingTeamId,
+            }.toList(),
           ),
         );
       }
@@ -526,6 +533,10 @@ class CalendarSyncService {
         if (training.dateTime == null || training.ref == null) continue;
 
         final endAt = training.dateTime!.toDate().add(const Duration(minutes: 90));
+        final trainingTeamId =
+            (training.teamId?.trim().isNotEmpty == true)
+                ? training.teamId!.trim()
+                : (team.keyTeam?.trim() ?? '');
         allItems.add(
           AgendaItem(
             id: training.ref!.id,
@@ -536,6 +547,9 @@ class CalendarSyncService {
             training: training,
             isDone: Timestamp.fromDate(endAt).millisecondsSinceEpoch <
                 timestampNow.millisecondsSinceEpoch,
+            teamIds: trainingTeamId.isEmpty
+                ? const <String>[]
+                : <String>[trainingTeamId],
           ),
         );
       }

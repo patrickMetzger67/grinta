@@ -116,6 +116,8 @@ Map<int, List<AgendaItemType>> _headerEventTypesByDay(List<AgendaItem> items) {
   final result = <int, List<AgendaItemType>>{};
 
   for (final item in items) {
+    // Use calendar-date arithmetic (not Duration(days: 1)) so DST never shifts
+    // the day-key away from DateUtils.dateOnly lookups in the month grid.
     DateTime day = DateUtils.dateOnly(item.startAt);
     final DateTime last = DateUtils.dateOnly(item.endAt);
     while (!day.isAfter(last)) {
@@ -125,7 +127,7 @@ Map<int, List<AgendaItemType>> _headerEventTypesByDay(List<AgendaItem> items) {
       if (!types.contains(item.type)) {
         types.add(item.type);
       }
-      day = day.add(const Duration(days: 1));
+      day = DateTime(day.year, day.month, day.day + 1);
     }
   }
 
@@ -190,8 +192,9 @@ double _monthGridHeight(DateTime month) {
   final days = _generateMonthGridDays(month);
   final weekCount = (days.length / 7).ceil();
 
-  const rowHeight = 64.0;
-  const rowSpacing = 10.0;
+  // Keep in sync with `_MonthCalendarPage` rowHeight / rowSpacing.
+  const rowHeight = 72.0;
+  const rowSpacing = 8.0;
 
   return (weekCount * rowHeight) + ((weekCount - 1) * rowSpacing);
 }
