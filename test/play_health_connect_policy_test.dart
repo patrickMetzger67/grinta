@@ -6,8 +6,14 @@ void main() {
   test('LegalConfig privacy/terms URLs are https and non-empty', () {
     expect(LegalConfig.privacyPolicyUrl.startsWith('https://'), isTrue);
     expect(LegalConfig.termsOfServiceUrl.startsWith('https://'), isTrue);
-    expect(LegalConfig.privacyPolicyUrl.contains('privacy'), isTrue);
-    expect(LegalConfig.termsOfServiceUrl.contains('terms'), isTrue);
+    expect(
+      LegalConfig.privacyPolicyUrl.contains('politiquedeconfidentialite'),
+      isTrue,
+    );
+    expect(
+      LegalConfig.termsOfServiceUrl.contains('conditionsutilisation'),
+      isTrue,
+    );
   });
 
   test('Google Health coach visibility omits sleep from UI keys', () {

@@ -27,33 +27,26 @@ Fichiers : `android/app/src/main/AndroidManifest.xml`, `lib/services/google_heal
 
 ### Politique de confidentialité (motif 2)
 
-Les URLs `https://grinta.io/privacy` et `https://grinta.io/terms` renvoyaient **404** (Squarespace). Play exige une politique **accessible** qui décrit clairement les données Health Connect.
+`LegalConfig` pointe vers les pages Squarespace live :
 
-Pages ajoutées dans le repo :
+- Privacy : https://www.grinta.io/politiquedeconfidentialite
+- Terms : https://www.grinta.io/conditionsutilisation
 
-- `web/privacy/index.html`
-- `web/terms/index.html`
+Utiliser **exactement** cette URL privacy dans la fiche Play Store.
 
-`LegalConfig` pointe vers :
+> Recommandation : dans la section appareils / services connectés de la politique, nommer explicitement **Android Health Connect / Google Fit** (lecture Exercise, Distance, Calories, FC ; écriture Exercise / Distance pour l’export de séance). Play vérifie souvent que la politique cite Health Connect.
 
-- https://grinta.web.app/privacy/
-- https://grinta.web.app/terms/
+Des copies HTML de secours restent dans `web/privacy/` et `web/terms/` (déployables via Firebase si besoin).
 
 ## Actions obligatoires avant resoumission (Play Console)
 
-### A. Publier les pages légales
+### A. URL privacy dans Play Console
 
-1. Déployer le web app (inclut `/privacy/` et `/terms/`) :
+Play Console → **Présence sur Google Play** → **Préparation de la fiche** → **Politique de confidentialité** :
 
-```bash
-./deploy_web.sh grinta
-```
+`https://www.grinta.io/politiquedeconfidentialite`
 
-2. Vérifier dans un navigateur privé :
-   - https://grinta.web.app/privacy/
-   - https://grinta.web.app/terms/
-3. Play Console → **Présence sur Google Play** → **Préparation de la fiche** → **Politique de confidentialité** : coller `https://grinta.web.app/privacy/`
-4. (Optionnel) Recréer les mêmes pages sur Squarespace (`/privacy`, `/terms`) puis basculer `LegalConfig` vers `https://grinta.io/...`
+Vérifier que la page charge (pas 404) et décrit les données santé / appareils connectés.
 
 ### B. Déclaration Health apps / Health Connect (motif 1 + 3)
 
@@ -98,22 +91,21 @@ Aligner le formulaire **Sécurité des données** avec la politique :
 - Données de santé / fitness collectées : oui (exercices, FC, etc. si l’utilisateur connecte une source)
 - Finalité : fonctionnalités de l’app (pas pub)
 - Partage : selon club/coach / prestataires techniques (Firebase), pas de vente
-- Lien politique = même URL que ci-dessus
+- Lien politique = `https://www.grinta.io/politiquedeconfidentialite`
 
 ### E. Nouveau build Android
 
-Publier un **nouvel AAB** (versionCode incrémenté) qui contient le manifeste réduit. Sans nouveau binaire, Play continue d’évaluer l’ancien paquet avec Sleep/Steps/etc.
+Publier un **nouvel AAB** (`1.0.0+6`) qui contient le manifeste réduit. Sans nouveau binaire, Play continue d’évaluer l’ancien paquet avec Sleep/Steps/etc.
 
 ```bash
-# après bump version dans pubspec.yaml
 flutter build appbundle --release --dart-define-from-file=dart_defines.json
 ```
 
 ## Vérifications rapides
 
 - [ ] `aapt dump permissions` / APK Analyzer : plus de `READ_SLEEP`, `READ_STEPS`, `READ_ACTIVE_CALORIES_BURNED`, `WRITE_TOTAL_CALORIES_BURNED`
-- [ ] https://grinta.web.app/privacy/ charge (pas 404) et mentionne Health Connect
-- [ ] URL privacy dans la fiche Play = URL testée
+- [ ] https://www.grinta.io/politiquedeconfidentialite charge et couvre santé / appareils connectés
+- [ ] URL privacy dans la fiche Play = URL ci-dessus
 - [ ] Déclaration Health Connect = mêmes types que le manifeste
 - [ ] Vidéo / description du parcours utilisateur jointe
 - [ ] Data safety à jour
