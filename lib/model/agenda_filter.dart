@@ -85,10 +85,28 @@ class AgendaFilter {
 }
 
 /// Team ids associated with an agenda item (may be empty for personal events).
+///
+/// For matches, prefer [AgendaItem.teamIds] (built from matchCalendar `teams`,
+/// `teamID`, and the team used to load the agenda). Scraped calendars often
+/// omit `teams: []` even when the rencontre belongs to a Grinta team.
 Set<String> agendaItemTeamIds(AgendaItem item) {
+  if (item.teamIds.isNotEmpty) {
+    return {
+      for (final id in item.teamIds)
+        if (id.trim().isNotEmpty) id.trim(),
+    };
+  }
+
   switch (item.type) {
     case AgendaItemType.match:
-      return normalizeTeamIdList(item.match?.teams ?? const <dynamic>[]).toSet();
+      final ids = normalizeTeamIdList(
+        item.match?.teams ?? const <dynamic>[],
+      ).toSet();
+      final teamId = item.match?.teamID?.trim() ?? '';
+      if (teamId.isNotEmpty) {
+        ids.add(teamId);
+      }
+      return ids;
     case AgendaItemType.entrainement:
       final id = item.training?.teamId?.trim() ?? '';
       return id.isEmpty ? const <String>{} : <String>{id};

@@ -30,6 +30,8 @@ class AgendaItem {
   final bool areTrackersSynchronized;
   final TeamWorkloadSummary? teamWorkloadSummary;
 
+  /// Team ids used for agenda filtering (matchCalendar.teams + teamID + load context).
+  final List<String> teamIds;
 
   const AgendaItem({
     required this.id,
@@ -48,6 +50,7 @@ class AgendaItem {
     this.withTracker,
     this.areTrackersSynchronized = false,
     this.teamWorkloadSummary,
+    this.teamIds = const <String>[],
   });
 }
 

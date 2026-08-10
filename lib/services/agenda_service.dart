@@ -16,6 +16,7 @@ import 'package:grinta/services/teamWorkloadSummaryService.dart';
 import 'package:grinta/services/trainingService.dart';
 import 'package:grinta/util/buildTimestampFromDateAndTime.dart';
 import 'package:grinta/util/intense_live_eligibility.dart';
+import 'package:grinta/util/match_compo_pitch_mapper.dart';
 
 class AgendaService {
   final TrainingService _trainingService;
@@ -446,10 +447,12 @@ class AgendaService {
       match: item.match,
       training: item.training,
       nonSportEvent: item.nonSportEvent,
+      personalSportActivity: item.personalSportActivity,
       activityMetrics: item.activityMetrics,
       withTracker: item.withTracker,
       areTrackersSynchronized: item.areTrackersSynchronized,
       teamWorkloadSummary: summary,
+      teamIds: item.teamIds,
     );
   }
 
@@ -535,6 +538,10 @@ class AgendaService {
       allDay: event.allDay,
       isDone: event.endAt.isBefore(DateTime.now()),
       nonSportEvent: event,
+      teamIds: [
+        for (final id in event.teamIds)
+          if (id.trim().isNotEmpty) id.trim(),
+      ],
     );
   }
 
@@ -560,6 +567,10 @@ class AgendaService {
       type: AgendaItemType.preparationPhysique,
       isDone: activity.endAt.isBefore(DateTime.now()),
       personalSportActivity: activity,
+      teamIds: [
+        for (final id in activity.teamIds)
+          if (id.trim().isNotEmpty) id.trim(),
+      ],
     );
   }
 
@@ -590,6 +601,16 @@ class AgendaService {
     final DateTime endAt = startAt.add(Duration(minutes: durationMinutes));
     final Timestamp timestampNow = Timestamp.now();
 
+    // matchCalendar.teams should contain the Grinta team id. Scraped docs often
+    // leave teams empty — still attach the team used to load this agenda stream
+    // so filters / rencontres resolve against the correct équipe.
+    final String loadingTeamId = team.keyTeam?.trim() ?? '';
+    final Set<String> teamIds = <String>{
+      ...normalizeTeamIdList(match.teams ?? const <dynamic>[]),
+      if ((match.teamID?.trim() ?? '').isNotEmpty) match.teamID!.trim(),
+      if (loadingTeamId.isNotEmpty) loadingTeamId,
+    };
+
     return AgendaItem(
       id: matchId,
       startAt: startAt,
@@ -601,6 +622,7 @@ class AgendaService {
           timestampNow.millisecondsSinceEpoch,
       withTracker: match.withTracker,
       areTrackersSynchronized: match.isTrackerDataUploaded ?? false,
+      teamIds: teamIds.toList(),
     );
   }
 
@@ -623,6 +645,10 @@ class AgendaService {
       Duration(minutes: durationMinutes > 0 ? durationMinutes : 90),
     );
     final Timestamp timestampNow = Timestamp.now();
+    final String teamId =
+        (training.teamId?.trim().isNotEmpty == true)
+            ? training.teamId!.trim()
+            : (team.keyTeam?.trim() ?? '');
 
     return AgendaItem(
       id: trainingId,
@@ -636,6 +662,7 @@ class AgendaService {
               timestampNow.millisecondsSinceEpoch,
       withTracker: training.withTracker,
       areTrackersSynchronized: training.isTrackerDataUploaded,
+      teamIds: teamId.isEmpty ? const <String>[] : <String>[teamId],
     );
   }
 }

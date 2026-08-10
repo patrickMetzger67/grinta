@@ -62,7 +62,7 @@ class _GrintaStyleCalendarHeader extends StatelessWidget {
         ? 86.0
         : isMonth
         ? _monthGridHeight(displayedMonth)
-        : 64.0;
+        : 72.0;
 
     Future<void> goToPreviousHeaderPeriod() async {
       if (isMonth) {
@@ -271,6 +271,10 @@ class _GrintaStyleCalendarHeader extends StatelessWidget {
                       final month = _addMonths(anchorMonth, offset);
 
                       return _MonthCalendarPage(
+                        key: ValueKey<String>(
+                          'month-${month.year}-${month.month}-'
+                          '${eventTypesByDay.length}',
+                        ),
                         month: month,
                         selectedDate: selectedDate,
                         expanded: isMonth,
@@ -425,6 +429,7 @@ class _MonthCalendarPage extends StatelessWidget {
   final ValueChanged<DateTime> onDateTap;
 
   const _MonthCalendarPage({
+    super.key,
     required this.month,
     required this.selectedDate,
     required this.expanded,
@@ -448,8 +453,10 @@ class _MonthCalendarPage extends StatelessWidget {
 
     final safeSelectedWeekIndex = selectedWeekIndex < 0 ? 0 : selectedWeekIndex;
 
-    const rowHeight = 64.0;
-    const rowSpacing = 10.0;
+    // Reserved band for event dots under the day number — must not be clipped.
+    const rowHeight = 72.0;
+    const rowSpacing = 8.0;
+    const dotsBandHeight = 12.0;
 
     final fullHeight =
         (weeks.length * rowHeight) + ((weeks.length - 1) * rowSpacing);
@@ -492,52 +499,55 @@ class _MonthCalendarPage extends StatelessWidget {
                               child: InkWell(
                                 borderRadius: BorderRadius.circular(18),
                                 onTap: () => onDateTap(day),
-                                child: Center(
-                                  child: Column(
-                                    mainAxisAlignment: MainAxisAlignment.center,
-                                    children: [
-                                      Container(
-                                        width: 38,
-                                        height: 38,
-                                        alignment: Alignment.center,
-                                        decoration: BoxDecoration(
-                                          shape: BoxShape.circle,
-                                          color: isSelected
-                                              ? colors.primary
-                                              : isToday
-                                              ? colors.primary.withOpacity(0.10)
-                                              : Colors.transparent,
-                                          border: !isSelected && isToday
-                                              ? Border.all(
-                                            color: colors.primary.withOpacity(0.25),
-                                          )
-                                              : null,
-                                        ),
-                                        child: Text(
-                                          '${day.day}',
-                                          style: Theme.of(context)
-                                              .textTheme
-                                              .titleMedium
-                                              ?.copyWith(
-                                            fontWeight: FontWeight.w800,
+                                child: Column(
+                                  children: [
+                                    Expanded(
+                                      child: Center(
+                                        child: Container(
+                                          width: 36,
+                                          height: 36,
+                                          alignment: Alignment.center,
+                                          decoration: BoxDecoration(
+                                            shape: BoxShape.circle,
                                             color: isSelected
-                                                ? Colors.white
-                                                : isToday
                                                 ? colors.primary
-                                                : isInMonth
-                                                ? colors.textPrimary
-                                                : colors.textSecondary
-                                                .withOpacity(0.45),
+                                                : isToday
+                                                ? colors.primary.withOpacity(0.10)
+                                                : Colors.transparent,
+                                            border: !isSelected && isToday
+                                                ? Border.all(
+                                              color: colors.primary.withOpacity(0.25),
+                                            )
+                                                : null,
+                                          ),
+                                          child: Text(
+                                            '${day.day}',
+                                            style: Theme.of(context)
+                                                .textTheme
+                                                .titleSmall
+                                                ?.copyWith(
+                                              fontWeight: FontWeight.w800,
+                                              color: isSelected
+                                                  ? Colors.white
+                                                  : isToday
+                                                  ? colors.primary
+                                                  : isInMonth
+                                                  ? colors.textPrimary
+                                                  : colors.textSecondary
+                                                  .withOpacity(0.45),
+                                            ),
                                           ),
                                         ),
                                       ),
-                                      const SizedBox(height: 4),
-                                      _AgendaEventDots(
+                                    ),
+                                    SizedBox(
+                                      height: dotsBandHeight,
+                                      child: _AgendaEventDots(
                                         types: dayTypes,
                                         selected: isSelected,
                                       ),
-                                    ],
-                                  ),
+                                    ),
+                                  ],
                                 ),
                               ),
                             );
