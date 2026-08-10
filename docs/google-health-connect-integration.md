@@ -33,19 +33,18 @@ Ensure the athlete has **Google Fit** (or another source app) writing workouts i
 
 ## Data available
 
-On connect (and when listing importable workouts), Grinta requests read access for:
+On connect (and when listing importable workouts), Grinta requests **only** the Health Connect scopes required by shipped features (Play policy — no unused types):
 
 - **Workouts** (`WORKOUT` → Health Connect **Exercise**)
-- **Heart rate** (`HEART_RATE`) — used for average HR on import when available
-- **Active energy** (`ACTIVE_ENERGY_BURNED`)
-- **Sleep** (`SLEEP_ASLEEP`)
-- **Distance** (`DISTANCE_DELTA`) — required by the `health` plugin when enriching workouts
-- **Total calories** (`TOTAL_CALORIES_BURNED`) — same workout enrichment
-- **Steps** (`STEPS`) — same workout enrichment
+- **Heart rate** (`HEART_RATE`) — average HR on import when available
+- **Distance** (`DISTANCE_DELTA`) — distance on imported / exported sessions
+- **Total calories** (`TOTAL_CALORIES_BURNED`) — calories on imported workouts
 
-Without Distance / Total calories / Steps, the Flutter `health` plugin's `getData(WORKOUT)` can fail with a `SecurityException` and return an empty list even after Exercise was granted.
+**Not requested:** Sleep, Steps, Active calories burned, write calories (no user-facing feature yet).
 
-**Mitigation:** Grinta also reads Exercise sessions through a native channel (`io.grinta.app/health_connect`) that never drops workouts when enrichment permissions are missing. Distance / calories remain best-effort.
+**Mitigation for plugin quirks:** Grinta also reads Exercise sessions through a native channel (`io.grinta.app/health_connect`) that never drops workouts when enrichment permissions are missing. Distance / calories remain best-effort.
+
+Play Console resubmission notes: [`docs/play-health-connect-rejection.md`](./play-health-connect-rejection.md).
 
 ## Workout import (Créer → activité sportive personnelle)
 
@@ -77,14 +76,14 @@ After sensor sync, the **Bilan de séance** screen can write the player's tracke
 1. If Google Fit / Health Connect is **already connected** → export automatically.
 2. If **not connected** → dialog *« Souhaites-tu retrouver ces données dans Google Fit ? »* → Yes connects then exports.
 
-Manifest needs `WRITE_EXERCISE` / `WRITE_DISTANCE` (and calories write if requested by the plugin). Dedup uses `TRACKER_Sync/{eventId}.healthExportPlayers.{playerId}`.
+Manifest needs `WRITE_EXERCISE` / `WRITE_DISTANCE`. Dedup uses `TRACKER_Sync/{eventId}.healthExportPlayers.{playerId}`.
 
 ## 1. Android: manifest and MainActivity
 
 The repo includes Health Connect setup in `android/app/src/main/AndroidManifest.xml`:
 
-- Read permissions: `READ_EXERCISE`, `READ_HEART_RATE`, `READ_ACTIVE_CALORIES_BURNED`, `READ_SLEEP`, `READ_DISTANCE`, `READ_TOTAL_CALORIES_BURNED`, `READ_STEPS`
-- Write permissions (session export V1): `WRITE_EXERCISE`, `WRITE_DISTANCE`, `WRITE_TOTAL_CALORIES_BURNED`
+- Read permissions: `READ_EXERCISE`, `READ_HEART_RATE`, `READ_DISTANCE`, `READ_TOTAL_CALORIES_BURNED`, `READ_HEALTH_DATA_HISTORY`
+- Write permissions (session export V1): `WRITE_EXERCISE`, `WRITE_DISTANCE`
 - `ACTIVITY_RECOGNITION` (required for fitness data)
 - `<queries>` for `com.google.android.apps.healthdata`
 - Permissions rationale intent-filter and `ViewPermissionUsageActivity` activity-alias
@@ -126,9 +125,9 @@ flutter pub get
 3. Tap **+**, select **Google Health**.
 4. Tap **Sync**.
 5. Android may ask for **Activity recognition** / **Location** first (needed for workouts).
-6. Then the **Health Connect** permission sheet should open — enable **Exercise** (and heart rate / energy / sleep if offered).
+6. Then the **Health Connect** permission sheet should open — enable **Exercise**, **Distance**, **Total calories**, and **Heart rate**.
 7. Confirm **Grinta** appears under the **Health Connect** app → **App permissions** (not under Google Fit’s “connected apps” list).
-8. Toggle **Coach visibility** (workouts, heart rate, active energy, sleep).
+8. Toggle **Coach visibility** (workouts, heart rate, calories from imported sessions).
 9. Tap **Disconnect** — clears Grinta state only. To fully revoke: **Health Connect → App permissions → Grinta**.
 
 If Sync does **not** show the Health Connect sheet:

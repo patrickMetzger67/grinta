@@ -150,8 +150,9 @@ cp dart_defines.example.json dart_defines.json
 Renseigner au minimum `REVENUECAT_IOS_API_KEY_PROD` (clé publique `appl_…` depuis le dashboard RevenueCat).
 
 - [ ] **Pages légales accessibles :**
-  - Politique de confidentialité : https://grinta.io/privacy
-  - Conditions d'utilisation : https://grinta.io/terms (vérifier que la page est bien en ligne avant soumission)
+  - Politique de confidentialité : https://www.grinta.io/politiquedeconfidentialite
+  - Conditions d'utilisation : https://www.grinta.io/conditionsutilisation
+  - En cas de refus Play Health Connect / privacy : [`docs/play-health-connect-rejection.md`](./play-health-connect-rejection.md)
 - [ ] **Biométrie (Face ID)** : `NSFaceIDUsageDescription` est présent dans `ios/Runner/Info.plist`. Guide store : [`docs/biometric-unlock-store.md`](./biometric-unlock-store.md)
 - [ ] **App Privacy** : ne pas déclarer Face ID / empreinte comme données *collectées* (restent sur l’appareil / Secure Enclave)
 
@@ -324,7 +325,8 @@ storeFile=<chemin absolu vers upload-keystore.jks>
   - **Fiche Play Store** : titre, description courte/longue, icône 512×512, feature graphic
   - **Classification du contenu** (questionnaire)
   - **Public cible** et **Sécurité des données**
-  - **Politique de confidentialité** : https://grinta.io/privacy
+  - **Politique de confidentialité** : https://www.grinta.io/politiquedeconfidentialite
+  - Health Connect : déclarer uniquement Exercise / Distance / Total calories / Heart rate (+ history) — voir [`docs/play-health-connect-rejection.md`](./play-health-connect-rejection.md)
 - [ ] **Biométrie** : permission `USE_BIOMETRIC` déclarée ; dans Data safety, indiquer usage local uniquement (pas de collecte / partage). Détails : [`docs/biometric-unlock-store.md`](./biometric-unlock-store.md)
 - [ ] Ces éléments sont requis même pour le track **test interne** sur un compte Play Developer récent
 
