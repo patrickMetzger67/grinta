@@ -61,7 +61,7 @@ firebase deploy --only firestore:rules
 4. Complete Oura OAuth in the browser.
 5. App returns via `grinta://oura/callback` (or web query) with a success snackbar.
 6. **Créer** → activité personnelle → import → choose an Oura workout → import.
-7. Open the activity: duration, avg/max HR, and zone chart (`hrZoneSeconds` z0…z5).
+7. Open the activity: duration, avg/max HR, zone bars (`hrZoneSeconds` z0…z5), and HR timeline when samples are available.
 
 ## Firestore layout
 
@@ -86,19 +86,29 @@ personalSportActivities/{id}
   externalId: <Oura workout id>
   durationSeconds, averageHeartRateBpm, maxHeartRateBpm
   hrZoneSeconds: { z0…z5 → seconds }
+  hrTimeline: [{ t, avg, min?, max? }, …]   # minutes from workout start
+  hrTimelineBucketMinutes
   hrMaxUsedBpm?
 ```
 
-## How HR zones are computed
+## How HR zones + timeline are computed
 
-Oura workout documents expose duration (or start/end). Detailed zone breakdown is derived on import:
+Oura workout documents expose duration (or start/end) and calories. The public `PublicWorkout` schema does **not** include the dense in-app HR graph. Grinta rebuilds cardio detail on import:
 
 1. `GET /v2/usercollection/workout/{id}`
-2. `GET /v2/usercollection/heart_rate?start_datetime&end_datetime` (prefer `source=workout` samples)
+2. `GET /v2/usercollection/heartrate?start_datetime&end_datetime` (prefer `source=workout` samples; samples are typically ~5 min apart)
 3. Bucket BPM samples into Grinta zones (same %-of-HRmax bands as Whoop; HRmax ≈ `220 − age` from `personal_info` when available)
+4. Persist a Polar-compatible `hrTimeline` for the chart in the activity detail sheet
+
+**Limits vs the Oura mobile app**
+
+- The Oura app can show a denser second-level HR curve with gap markers; the Cloud API usually returns coarser samples.
+- Swimming / water sports often have missing wrist HR (insufficient hand motion) — gaps in the Oura app will also yield sparse or empty API samples.
+- Already-imported activities must be deleted and re-imported after this fix to pick up timeline + zones.
 
 ## What is not in this phase
 
 - Continuous sleep / readiness sync
 - Webhooks
 - Coach roster badges driven by Oura recovery
+- Pixel-perfect clone of Oura’s in-app HR graph density

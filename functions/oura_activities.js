@@ -16,8 +16,12 @@ const MEMBER_COLLECTION = 'member';
 const REGION = 'europe-west1';
 const OURA_TOKEN_URL = 'https://api.ouraring.com/oauth/token';
 const OURA_WORKOUTS_URL = 'https://api.ouraring.com/v2/usercollection/workout';
-const OURA_HEARTRATE_URL =
-  'https://api.ouraring.com/v2/usercollection/heart_rate';
+// Official OpenAPI path is `/heartrate` (no underscore). Keep the legacy
+// `/heart_rate` spelling as a fallback in case Oura aliases it.
+const OURA_HEARTRATE_URLS = [
+  'https://api.ouraring.com/v2/usercollection/heartrate',
+  'https://api.ouraring.com/v2/usercollection/heart_rate',
+];
 const OURA_PERSONAL_INFO_URL =
   'https://api.ouraring.com/v2/usercollection/personal_info';
 
@@ -258,6 +262,14 @@ function mapWorkoutSummary(entry, hrMetrics = null) {
     averageHeartRateBpm,
     maxHeartRateBpm,
     hrZoneSeconds,
+    hrTimeline: Array.isArray(hrMetrics?.hrTimeline)
+      ? hrMetrics.hrTimeline
+      : [],
+    hrTimelineBucketMinutes:
+      Number.isFinite(hrMetrics?.hrTimelineBucketMinutes) &&
+      hrMetrics.hrTimelineBucketMinutes > 0
+        ? Math.round(hrMetrics.hrTimelineBucketMinutes)
+        : 1,
   };
 }
 
@@ -285,9 +297,11 @@ async function fetchOuraHeartRateSamples(accessToken, startIso, endIso) {
   let nextToken = null;
   let pages = 0;
   const maxPages = 6;
+  let baseUrl = OURA_HEARTRATE_URLS[0];
+  let triedFallback = false;
 
   do {
-    const url = new URL(OURA_HEARTRATE_URL);
+    const url = new URL(baseUrl);
     if (startIso) url.searchParams.set('start_datetime', startIso);
     if (endIso) url.searchParams.set('end_datetime', endIso);
     if (nextToken) url.searchParams.set('next_token', nextToken);
@@ -300,7 +314,13 @@ async function fetchOuraHeartRateSamples(accessToken, startIso, endIso) {
     });
     const raw = await response.text();
     if (!response.ok) {
-      console.warn('Oura heart_rate failed', response.status, raw);
+      console.warn('Oura heartrate failed', baseUrl, response.status, raw);
+      // First request only: retry once with the legacy path spelling.
+      if (!triedFallback && pages === 0 && !nextToken) {
+        triedFallback = true;
+        baseUrl = OURA_HEARTRATE_URLS[1];
+        continue;
+      }
       break;
     }
     let parsed;
@@ -383,9 +403,18 @@ async function enrichWorkoutWithHr(accessToken, workout, hrMaxBpm) {
   }
 
   const samples = await fetchOuraHeartRateSamples(accessToken, startIso, endIso);
+  const workoutStartMs = Date.parse(startIso);
   const hrMetrics = extractMetricsFromHrSamples(samples, {
     hrMaxBpm,
     workoutDurationSeconds: summary.durationSeconds,
+    workoutStartMs: Number.isFinite(workoutStartMs) ? workoutStartMs : null,
+  });
+  console.log('oura enrichWorkoutWithHr', {
+    externalId: summary.externalId,
+    samplesFetched: samples.length,
+    samplesUsed: hrMetrics.samplesUsed,
+    timelinePoints: hrMetrics.hrTimeline?.length ?? 0,
+    averageHeartRateBpm: hrMetrics.averageHeartRateBpm,
   });
   return mapWorkoutSummary(workout, hrMetrics);
 }
@@ -622,6 +651,8 @@ function createOuraImportActivity() {
         strain: null,
         altitudeGainMeters: null,
         hrZoneSeconds: summary.hrZoneSeconds ?? {},
+        hrTimeline: Array.isArray(summary.hrTimeline) ? summary.hrTimeline : [],
+        hrTimelineBucketMinutes: summary.hrTimelineBucketMinutes ?? 1,
         hrMaxUsedBpm,
         distanceUnit: 'km',
         paceUnit: '/km',
@@ -636,7 +667,13 @@ function createOuraImportActivity() {
         updatedAt: FieldValue.serverTimestamp(),
       });
 
-      return { id: ref.id, imported: true };
+      return {
+        id: ref.id,
+        imported: true,
+        hrSamplesUsed: Array.isArray(summary.hrTimeline)
+          ? summary.hrTimeline.length
+          : 0,
+      };
     },
   );
 }

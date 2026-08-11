@@ -86,16 +86,96 @@ function mapOuraZoneDurationsToSeconds(raw) {
 }
 
 /**
+ * Build a Polar-compatible HR timeline from timestamped BPM samples.
+ * Oura public samples are typically ~5 min apart; we keep one point per sample.
+ *
+ * @param {Array<{ bpm: number, t: number|null }>} used
+ * @param {{ workoutStartMs?: number|null }} [opts]
+ * @returns {{
+ *   hrTimeline: Array<{ t: number, avg: number, min: number, max: number }>,
+ *   hrTimelineBucketMinutes: number,
+ * }}
+ */
+function buildHrTimelineFromSamples(used, opts = {}) {
+  const empty = { hrTimeline: [], hrTimelineBucketMinutes: 1 };
+  if (!Array.isArray(used) || used.length === 0) return empty;
+
+  const dated = used.filter((s) => s.t != null);
+  if (dated.length === 0) {
+    return {
+      hrTimeline: used.map((s, index) => ({
+        t: index,
+        avg: s.bpm,
+        min: s.bpm,
+        max: s.bpm,
+      })),
+      hrTimelineBucketMinutes: 1,
+    };
+  }
+
+  const startMs =
+    Number.isFinite(opts.workoutStartMs) && opts.workoutStartMs > 0
+      ? opts.workoutStartMs
+      : dated[0].t;
+
+  /** @type {Map<number, number[]>} */
+  const byMinute = new Map();
+  for (const sample of dated) {
+    const offsetMinutes = Math.max(
+      0,
+      Math.floor((sample.t - startMs) / 60_000),
+    );
+    const bucket = byMinute.get(offsetMinutes) ?? [];
+    bucket.push(sample.bpm);
+    byMinute.set(offsetMinutes, bucket);
+  }
+
+  const hrTimeline = [...byMinute.entries()]
+    .sort((a, b) => a[0] - b[0])
+    .map(([t, bpms]) => {
+      const sum = bpms.reduce((acc, n) => acc + n, 0);
+      return {
+        t,
+        avg: Math.round(sum / bpms.length),
+        min: Math.min(...bpms),
+        max: Math.max(...bpms),
+      };
+    });
+
+  // Infer chart bucket from median gap between points (fallback 1 min).
+  let hrTimelineBucketMinutes = 1;
+  if (hrTimeline.length >= 2) {
+    const gaps = [];
+    for (let i = 1; i < hrTimeline.length; i += 1) {
+      gaps.push(hrTimeline[i].t - hrTimeline[i - 1].t);
+    }
+    gaps.sort((a, b) => a - b);
+    const median = gaps[Math.floor(gaps.length / 2)];
+    if (Number.isFinite(median) && median > 0) {
+      hrTimelineBucketMinutes = Math.max(1, Math.min(5, median));
+    }
+  }
+
+  return { hrTimeline, hrTimelineBucketMinutes };
+}
+
+/**
  * Bucket BPM samples into zone seconds using %-of-max (or absolute) bands.
  * Each sample contributes the gap until the next sample (capped at 5 min),
  * or an equal share of [workoutDurationSeconds] when only one sample exists.
  *
  * @param {Array<{ bpm?: number, timestamp?: string, source?: string }>} samples
- * @param {{ hrMaxBpm?: number|null, workoutDurationSeconds?: number|null }} [opts]
+ * @param {{
+ *   hrMaxBpm?: number|null,
+ *   workoutDurationSeconds?: number|null,
+ *   workoutStartMs?: number|null,
+ * }} [opts]
  * @returns {{
  *   averageHeartRateBpm: number|null,
  *   maxHeartRateBpm: number|null,
  *   hrZoneSeconds: Record<string, number>,
+ *   hrTimeline: Array<{ t: number, avg: number, min: number, max: number }>,
+ *   hrTimelineBucketMinutes: number,
  *   samplesUsed: number,
  * }}
  */
@@ -122,6 +202,8 @@ function extractMetricsFromHrSamples(samples, opts = {}) {
       averageHeartRateBpm: null,
       maxHeartRateBpm: null,
       hrZoneSeconds: emptyZones,
+      hrTimeline: [],
+      hrTimelineBucketMinutes: 1,
       samplesUsed: 0,
     };
   }
@@ -171,10 +253,16 @@ function extractMetricsFromHrSamples(samples, opts = {}) {
     }
   }
 
+  const timeline = buildHrTimelineFromSamples(used, {
+    workoutStartMs: opts.workoutStartMs,
+  });
+
   return {
     averageHeartRateBpm,
     maxHeartRateBpm,
     hrZoneSeconds: zones,
+    hrTimeline: timeline.hrTimeline,
+    hrTimelineBucketMinutes: timeline.hrTimelineBucketMinutes,
     samplesUsed: used.length,
   };
 }
@@ -212,6 +300,7 @@ module.exports = {
   ouraHrZoneBandsBpm,
   mapOuraZoneDurationsToSeconds,
   extractMetricsFromHrSamples,
+  buildHrTimelineFromSamples,
   estimateHrMaxFromPersonalInfo,
   bandForBpm,
 };
