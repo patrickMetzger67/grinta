@@ -1322,6 +1322,13 @@ class _CreatePersonalSportActivitySheetState
                           l10n.createPersonalSportWhoopNoImportable,
                       style: TextStyle(color: colors.textSecondary),
                     )
+                  else if (_importSource == WearableDeviceType.oura &&
+                      _ouraActivities.isEmpty)
+                    Text(
+                      _ouraListError ??
+                          l10n.createPersonalSportOuraNoImportable,
+                      style: TextStyle(color: colors.textSecondary),
+                    )
                   else if (_importSource == WearableDeviceType.appleHealth &&
                       _appleActivities.isEmpty)
                     Text(
@@ -1432,161 +1439,6 @@ class _CreatePersonalSportActivitySheetState
                         }
                         setState(() {
                           _selectedWhoop = match;
-                          if (match != null) _typeId = match.typeId;
-                        });
-                      },
-                    )
-                  else if (_importSource == WearableDeviceType.appleHealth)
-                    DropdownButtonFormField<String>(
-                      isExpanded: true,
-                      value: _selectedApple?.externalId,
-                      decoration: InputDecoration(
-                        labelText: l10n.createPersonalSportAppleActivity,
-                      ),
-                      items: [
-                        for (final activity in _appleActivities)
-                          DropdownMenuItem(
-                            value: activity.externalId,
-                            child: Text(
-                              activity.displayLabel,
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                              softWrap: false,
-                            ),
-                          ),
-                      ],
-                      onChanged: (id) {
-                        AppleHealthImportableActivity? match;
-                        for (final activity in _appleActivities) {
-                          if (activity.externalId == id) {
-                            match = activity;
-                            break;
-                          }
-                        }
-                        setState(() {
-                          _selectedApple = match;
-                          if (match != null) _typeId = match.typeId;
-                        });
-                      },
-                    )
-                  else if (_importSource ==
-                      WearableDeviceType.googleHealthConnect)
-                    DropdownButtonFormField<String>(
-                      isExpanded: true,
-                      value: _selectedGoogle?.externalId,
-                      decoration: InputDecoration(
-                        labelText: l10n.createPersonalSportGoogleActivity,
-                      ),
-                      items: [
-                        for (final activity in _googleActivities)
-                          DropdownMenuItem(
-                            value: activity.externalId,
-                            child: Text(
-                              activity.displayLabel,
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                              softWrap: false,
-                            ),
-                          ),
-                      ],
-                      onChanged: (id) {
-                        GoogleHealthImportableActivity? match;
-                        for (final activity in _googleActivities) {
-                          if (activity.externalId == id) {
-                            match = activity;
-                            break;
-                          }
-                        }
-                        setState(() {
-                          _selectedGoogle = match;
-                          if (match != null) _typeId = match.typeId;
-                        });
-                      },
-                    ),
-                  else if (_importSource == WearableDeviceType.oura &&
-                      _ouraActivities.isEmpty)
-                    Text(
-                      _ouraListError ??
-                          l10n.createPersonalSportOuraNoImportable,
-                      style: TextStyle(color: colors.textSecondary),
-                    )
-                  else if (_importSource == WearableDeviceType.appleHealth &&
-                      _appleActivities.isEmpty)
-                    Text(
-                      _appleListError ??
-                          l10n.createPersonalSportAppleNoImportable,
-                      style: TextStyle(color: colors.textSecondary),
-                    )
-                  else if (_importSource ==
-                          WearableDeviceType.googleHealthConnect &&
-                      _googleActivities.isEmpty)
-                    Text(
-                      _googleListError ??
-                          l10n.createPersonalSportGoogleNoImportable,
-                      style: TextStyle(color: colors.textSecondary),
-                    )
-                  else if (_importSource == WearableDeviceType.strava)
-                    DropdownButtonFormField<String>(
-                      isExpanded: true,
-                      value: _selectedStrava?.externalId,
-                      decoration: InputDecoration(
-                        labelText: l10n.createPersonalSportStravaActivity,
-                      ),
-                      items: [
-                        for (final activity in _stravaActivities)
-                          DropdownMenuItem(
-                            value: activity.externalId,
-                            child: Text(
-                              activity.displayLabel,
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                              softWrap: false,
-                            ),
-                          ),
-                      ],
-                      onChanged: (id) {
-                        StravaImportableActivity? match;
-                        for (final activity in _stravaActivities) {
-                          if (activity.externalId == id) {
-                            match = activity;
-                            break;
-                          }
-                        }
-                        setState(() {
-                          _selectedStrava = match;
-                          if (match != null) _typeId = match.typeId;
-                        });
-                      },
-                    )
-                  else if (_importSource == WearableDeviceType.polar)
-                    DropdownButtonFormField<String>(
-                      isExpanded: true,
-                      value: _selectedPolar?.externalId,
-                      decoration: InputDecoration(
-                        labelText: l10n.createPersonalSportPolarActivity,
-                      ),
-                      items: [
-                        for (final activity in _polarActivities)
-                          DropdownMenuItem(
-                            value: activity.externalId,
-                            child: Text(
-                              activity.displayLabel,
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                              softWrap: false,
-                            ),
-                          ),
-                      ],
-                      onChanged: (id) {
-                        PolarImportableActivity? match;
-                        for (final activity in _polarActivities) {
-                          if (activity.externalId == id) {
-                            match = activity;
-                            break;
-                          }
-                        }
-                        setState(() {
-                          _selectedPolar = match;
                           if (match != null) _typeId = match.typeId;
                         });
                       },
