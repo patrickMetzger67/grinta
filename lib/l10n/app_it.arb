@@ -72,7 +72,9 @@
   "signupPasswordMessage": "Account: {email}",
   "@signupPasswordMessage": {
     "placeholders": {
-      "email": { "type": "String" }
+      "email": {
+        "type": "String"
+      }
     }
   },
   "signupUseCreateAccountForSocial": "Per creare un account con Google o Apple, tocca «Crea un account», poi scegli Google o Apple dopo il profilo.",
@@ -271,7 +273,9 @@
   "parentalConsentPendingMessage": "È stata inviata un'email a {parentEmail}. Quando il rappresentante legale autorizzerà l'account, potrai usare Grinta Performance.",
   "@parentalConsentPendingMessage": {
     "placeholders": {
-      "parentEmail": { "type": "String" }
+      "parentEmail": {
+        "type": "String"
+      }
     }
   },
   "parentalConsentPendingMessageGeneric": "È stata inviata un'email al rappresentante legale. Quando autorizzerà l'account, potrai usare Grinta Performance.",
@@ -951,9 +955,15 @@
   "syncUpcomingTrainingsSuccess": "Allenamenti aggiornati: {updated} sessione/i, {added} aggiunti, {removed} rimossi.",
   "@syncUpcomingTrainingsSuccess": {
     "placeholders": {
-      "updated": { "type": "int" },
-      "added": { "type": "int" },
-      "removed": { "type": "int" }
+      "updated": {
+        "type": "int"
+      },
+      "added": {
+        "type": "int"
+      },
+      "removed": {
+        "type": "int"
+      }
     }
   },
   "syncUpcomingTrainingsNothingToDo": "Gli allenamenti futuri sono già allineati all'organico.",
@@ -1151,7 +1161,6 @@
   "entityPersonalSports": "Attività sportive individuali",
   "dashboardPersonalSportsListTitle": "Elenco delle attività sportive",
   "emptyNoPersonalSportToShow": "Nessuna attività sportiva da mostrare",
-
   "periodCustomRange": "dal {start} al {end}",
   "statsPresenceRate": "Tasso di presenza: ({value}) %",
   "statsDoneSingular": "realizzato",
@@ -1474,7 +1483,7 @@
   "createPersonalSportPolarNoImportable": "No Polar Flow training session to import. In Polar Flow, confirm the session is a Training (not only continuous HR), synced after connecting Grinta, then retry.",
   "createPersonalSportStravaActivity": "Strava activity",
   "createPersonalSportNoImportable": "No activities to import",
-  "createPersonalSportNoConnectedApps": "No connected app. Connect Strava, Polar, Whoop, Apple Fitness or Google Health in Devices / Apps.",
+  "createPersonalSportNoConnectedApps": "No connected app. Connect Strava, Polar, Whoop / Oura, Apple Fitness or Google Health in Devices / Apps.",
   "createPersonalSportImportRequired": "Select an activity to import",
   "createPersonalSportNotes": "Note",
   "createPersonalSportVisibility": "Visibility",
@@ -1542,19 +1551,35 @@
   "coachWorkloadActivitiesTitle": "Attività",
   "coachWorkloadMetricSessions": "{count} allenamenti",
   "@coachWorkloadMetricSessions": {
-    "placeholders": { "count": { "type": "int" } }
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
   },
   "coachWorkloadMetricMatches": "{count} partite",
   "@coachWorkloadMetricMatches": {
-    "placeholders": { "count": { "type": "int" } }
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
   },
   "coachWorkloadMetricPersonalSports": "{count} perso",
   "@coachWorkloadMetricPersonalSports": {
-    "placeholders": { "count": { "type": "int" } }
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
   },
   "coachWorkloadMetricKm": "{value} km",
   "@coachWorkloadMetricKm": {
-    "placeholders": { "value": { "type": "String" } }
+    "placeholders": {
+      "value": {
+        "type": "String"
+      }
+    }
   },
   "coachWorkloadReportEmailActionTooltip": "Invia report PDF",
   "coachWorkloadReportEmailDialogTitle": "Invia analisi carico (PDF)",
@@ -1562,45 +1587,77 @@
   "coachWorkloadReportEmailSubject": "Grinta — Analisi carico {team} ({period})",
   "@coachWorkloadReportEmailSubject": {
     "placeholders": {
-      "team": { "type": "String" },
-      "period": { "type": "String" }
+      "team": {
+        "type": "String"
+      },
+      "period": {
+        "type": "String"
+      }
     }
   },
   "coachWorkloadReportEmailGreeting": "Ciao,",
   "coachWorkloadReportEmailIntro": "Ecco l’analisi del carico per {team} nel periodo {period}.",
   "@coachWorkloadReportEmailIntro": {
     "placeholders": {
-      "team": { "type": "String" },
-      "period": { "type": "String" }
+      "team": {
+        "type": "String"
+      },
+      "period": {
+        "type": "String"
+      }
     }
   },
   "coachWorkloadReportEmailDownload": "Scarica PDF",
   "coachWorkloadReportEmailText": "Analisi carico — {team}\nPeriodo: {period}\nPDF: {url}",
   "@coachWorkloadReportEmailText": {
     "placeholders": {
-      "team": { "type": "String" },
-      "period": { "type": "String" },
-      "url": { "type": "String" }
+      "team": {
+        "type": "String"
+      },
+      "period": {
+        "type": "String"
+      },
+      "url": {
+        "type": "String"
+      }
     }
   },
   "coachWorkloadMetricLoad": "Carico {value}",
   "@coachWorkloadMetricLoad": {
-    "placeholders": { "value": { "type": "String" } }
+    "placeholders": {
+      "value": {
+        "type": "String"
+      }
+    }
   },
   "coachWorkloadMetricVolume": "{minutes} min",
   "@coachWorkloadMetricVolume": {
-    "placeholders": { "minutes": { "type": "int" } }
+    "placeholders": {
+      "minutes": {
+        "type": "int"
+      }
+    }
   },
   "coachWorkloadMetricPresence": "Presenza {value}",
   "@coachWorkloadMetricPresence": {
-    "placeholders": { "value": { "type": "String" } }
+    "placeholders": {
+      "value": {
+        "type": "String"
+      }
+    }
   },
   "coachWorkloadBreakdown": "{trainings} allenamenti · {matches} partite · {personal} sport personali",
   "@coachWorkloadBreakdown": {
     "placeholders": {
-      "trainings": { "type": "int" },
-      "matches": { "type": "int" },
-      "personal": { "type": "int" }
+      "trainings": {
+        "type": "int"
+      },
+      "matches": {
+        "type": "int"
+      },
+      "personal": {
+        "type": "int"
+      }
     }
   },
   "agendaCoachPlayersFabTooltip": "Players — personal activities",
@@ -1680,7 +1737,9 @@
   "calendarSyncEnabledMessage": "Matches and trainings are written to the local calendar \"{calendarName}\" on this device (same Android profile as Grinta: personal or work).\n\nThis is not a Google cloud calendar: it will not appear on calendar.google.com or in the other profile.\n\nIn your Calendar app → menu → enable \"{calendarName}\" (often under \"Device calendars\" / Device Calendar).",
   "@calendarSyncEnabledMessage": {
     "placeholders": {
-      "calendarName": { "type": "String" }
+      "calendarName": {
+        "type": "String"
+      }
     }
   },
   "calendarSyncOpenCalendar": "Open calendar",
@@ -2474,7 +2533,9 @@
   "polarAnalysisHrTimelineHint": "Sintesi media ogni {minutes} min",
   "@polarAnalysisHrTimelineHint": {
     "placeholders": {
-      "minutes": { "type": "int" }
+      "minutes": {
+        "type": "int"
+      }
     }
   },
   "polarAnalysisHrTimelineEmpty": "Curva FC non disponibile: reimporta il sensore per generare la sintesi da 5 min.",
@@ -3029,7 +3090,9 @@
   "adminYoutubeDeleteVideoMessage": "Rimuovere « {title} » dall'elenco dei Consigli?",
   "@adminYoutubeDeleteVideoMessage": {
     "placeholders": {
-      "title": { "type": "String" }
+      "title": {
+        "type": "String"
+      }
     }
   },
   "adminYoutubeBadgeTop": "Settimana",
@@ -3057,7 +3120,9 @@
   "settingsVersionLabel": "Versione {version}",
   "@settingsVersionLabel": {
     "placeholders": {
-      "version": { "type": "String" }
+      "version": {
+        "type": "String"
+      }
     }
   },
   "wearableDeviceGpsInsidersIntense": "GPS Insiders Intense",
@@ -3072,7 +3137,6 @@
   "intenseGpsDisconnectFailed": "Disconnessione del tracker GPS non riuscita.",
   "intenseGpsMissingEmail": "Il profilo giocatore deve avere un’email per associare un tracker GPS.",
   "intenseGpsConnectToggleConnectedSubtitle": "GPS Insiders Intense connesso",
-
   "whoopAnalysisTitle": "Analisi Whoop",
   "whoopAnalysisStrain": "Sforzo attività",
   "whoopAnalysisAvgHr": "FC media",
@@ -3085,30 +3149,43 @@
   "whoopAnalysisZoneLabel": "Zona {zone}",
   "@whoopAnalysisZoneLabel": {
     "placeholders": {
-      "zone": { "type": "int" }
+      "zone": {
+        "type": "int"
+      }
     }
   },
   "whoopAnalysisZoneAboveBpm": "+ di {bpm} bpm",
   "@whoopAnalysisZoneAboveBpm": {
     "placeholders": {
-      "bpm": { "type": "int" }
+      "bpm": {
+        "type": "int"
+      }
     }
   },
   "whoopAnalysisZoneBpmRange": "{min} – {max} bpm",
   "@whoopAnalysisZoneBpmRange": {
     "placeholders": {
-      "min": { "type": "int" },
-      "max": { "type": "int" }
+      "min": {
+        "type": "int"
+      },
+      "max": {
+        "type": "int"
+      }
     }
   },
-
   "opponentAnalysisPromptTitle": "Opponent analysis",
   "opponentAnalysisPromptMessage": "You play this {weekday} at {time} against {opponentName}. Would you like an opponent analysis report?",
   "@opponentAnalysisPromptMessage": {
     "placeholders": {
-      "weekday": { "type": "String" },
-      "time": { "type": "String" },
-      "opponentName": { "type": "String" }
+      "weekday": {
+        "type": "String"
+      },
+      "time": {
+        "type": "String"
+      },
+      "opponentName": {
+        "type": "String"
+      }
     }
   },
   "opponentAnalysisPromptYes": "Yes",
@@ -3119,8 +3196,12 @@
   "opponentAnalysisReportEmailIntro": "Here is the analysis report for {opponentName} for your match on {kickoff}.",
   "@opponentAnalysisReportEmailIntro": {
     "placeholders": {
-      "opponentName": { "type": "String" },
-      "kickoff": { "type": "String" }
+      "opponentName": {
+        "type": "String"
+      },
+      "kickoff": {
+        "type": "String"
+      }
     }
   },
   "opponentAnalysisReportEmailIncludes": "The PDF includes trend, W/D/L (season and halves), results, goals, players (call-ups / starts / minutes / cards), typical team and ranking evolution.",
@@ -3128,7 +3209,9 @@
   "opponentAnalysisReportEmailDialogMessage": "The analysis report for {opponentName} will be sent to the addresses below.",
   "@opponentAnalysisReportEmailDialogMessage": {
     "placeholders": {
-      "opponentName": { "type": "String" }
+      "opponentName": {
+        "type": "String"
+      }
     }
   },
   "opponentAnalysisReportEmailRecipientsLabel": "Recipients",
@@ -3152,5 +3235,85 @@
   "biometricLoginPromptReason": "Accedi a Grinta",
   "biometricLoginCredentialsInvalid": "Le credenziali salvate non sono più valide. Accedi con la password.",
   "biometricLoginSavePasswordTitle": "Conferma la password",
-  "biometricLoginSavePasswordMessage": "Inserisci la password così Face ID / impronta può farti accedere di nuovo dopo il logout. Resta crittografata su questo dispositivo."
+  "biometricLoginSavePasswordMessage": "Inserisci la password così Face ID / impronta può farti accedere di nuovo dopo il logout. Resta crittografata su questo dispositivo.",
+  "createPersonalSportOuraActivity": "Oura activity",
+  "createPersonalSportOuraDeployRequired": "Oura import is not deployed yet. Run firebase deploy for ouraListActivities and ouraImportActivity.",
+  "createPersonalSportOuraLoadError": "Could not load Oura activities. Check the connection and try again.",
+  "createPersonalSportOuraNoImportable": "No Oura workouts to import.",
+  "wearableDeviceOura": "Oura",
+  "ouraConnectToggleLabel": "Sinc. Oura",
+  "ouraConnectToggleSubtitle": "Collega il tuo account Oura per importare allenamenti con durata e zone FC",
+  "ouraConnectToggleConnectedSubtitle": "Oura collegato — importa gli allenamenti da Crea",
+  "ouraConnectSuccess": "Account Oura connesso.",
+  "ouraAccountHintGuidance": "La tua email Oura può essere diversa dal tuo account Grinta. Inserisci l'account Oura da usare, poi accedi con quell'account nella pagina Oura.",
+  "ouraAccountHintLabel": "Account Oura",
+  "ouraAccountHintPlaceholder": "email Oura",
+  "ouraAccountHintRequired": "Inserisci il tuo account Oura (email) prima di continuare.",
+  "ouraConnectContinue": "Continua su Oura",
+  "ouraConnectFailed": "Connessione Oura non riuscita. Verifica che le Cloud Functions Oura siano deployate e che i secret OURA_CLIENT_ID / OURA_CLIENT_SECRET siano configurati.",
+  "ouraConnectLaunchFailed": "Impossibile aprire la pagina di accesso Oura.",
+  "ouraConnectAuthRequired": "Accedi a Grinta per collegare Oura.",
+  "ouraDisconnectFailed": "Disconnessione Oura non riuscita.",
+  "ouraCoachVisibilityTitle": "Visibilità per il coach",
+  "ouraCoachVisibilitySubtitle": "Consenti al tuo coach di vedere questo tipo di dato",
+  "ouraCoachVisibilitySaveFailed": "Impossibile salvare le preferenze Oura.",
+  "ouraMetricWorkout": "Allenamenti",
+  "ouraCoachConnectTitle": "Oura",
+  "ouraCoachConnectSubtitle": "Collega Oura per {playerName}",
+  "@ouraCoachConnectSubtitle": {
+    "placeholders": {
+      "playerName": {
+        "type": "String"
+      }
+    }
+  },
+  "ouraCoachConnectAction": "Collega",
+  "ouraCoachConnectConnectedSubtitle": "Oura connesso per {playerName}",
+  "@ouraCoachConnectConnectedSubtitle": {
+    "placeholders": {
+      "playerName": {
+        "type": "String"
+      }
+    }
+  },
+  "ouraAnalysisTitle": "Analisi Oura",
+  "ouraAnalysisStrain": "Intensità",
+  "ouraAnalysisAvgHr": "FC media",
+  "ouraAnalysisMaxHr": "FC max",
+  "ouraAnalysisDuration": "Durata",
+  "ouraAnalysisCalories": "Calorie",
+  "ouraAnalysisAltitude": "Dislivello",
+  "ouraAnalysisHrZonesTitle": "Zone cardiache",
+  "ouraAnalysisNoZones": "Nessuna ripartizione per zone per questa importazione. Reimporta l’attività Oura.",
+  "ouraAnalysisZoneLabel": "Zona {zone}",
+  "@ouraAnalysisZoneLabel": {
+    "placeholders": {
+      "zone": {
+        "type": "int"
+      }
+    }
+  },
+  "ouraAnalysisZoneAboveBpm": "+ di {bpm} bpm",
+  "@ouraAnalysisZoneAboveBpm": {
+    "placeholders": {
+      "bpm": {
+        "type": "int"
+      }
+    }
+  },
+  "ouraAnalysisZoneBpmRange": "{min} – {max} bpm",
+  "@ouraAnalysisZoneBpmRange": {
+    "placeholders": {
+      "min": {
+        "type": "int"
+      },
+      "max": {
+        "type": "int"
+      }
+    }
+  },
+  "ouraMetricHeartrate": "Frequenza cardiaca",
+  "ouraMetricDaily": "Attività / readiness giornaliera",
+  "ouraMetricPersonal": "Dati personali",
+  "ouraMetricEmail": "Email"
 }

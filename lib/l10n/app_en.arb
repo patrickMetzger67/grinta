@@ -43,8 +43,12 @@
   "invitationSentBy": "The invitation was sent to you by {firstName} {lastName}",
   "@invitationSentBy": {
     "placeholders": {
-      "firstName": { "type": "String" },
-      "lastName": { "type": "String" }
+      "firstName": {
+        "type": "String"
+      },
+      "lastName": {
+        "type": "String"
+      }
     }
   },
   "signupWithoutInvitationComingSoon": "Feature coming soon",
@@ -68,20 +72,26 @@
   "signupPasswordMessage": "Account: {email}",
   "@signupPasswordMessage": {
     "placeholders": {
-      "email": { "type": "String" }
+      "email": {
+        "type": "String"
+      }
     }
   },
   "signupUseCreateAccountForSocial": "To create an account with Google or Apple, tap “Create an account”, then choose Google or Apple after your profile.",
   "invitationEmailSubject": "Your coach invites you to join {appName}",
   "@invitationEmailSubject": {
     "placeholders": {
-      "appName": { "type": "String" }
+      "appName": {
+        "type": "String"
+      }
     }
   },
   "invitationEmailIntro": "Your coach invites you to join {appName}",
   "@invitationEmailIntro": {
     "placeholders": {
-      "appName": { "type": "String" }
+      "appName": {
+        "type": "String"
+      }
     }
   },
   "invitationEmailCodeLabel": "Your invitation code",
@@ -90,30 +100,48 @@
   "invitationEmailFooter": "You received this email because a coach added you on {appName}. If you were not expecting this message, you can ignore it.",
   "@invitationEmailFooter": {
     "placeholders": {
-      "appName": { "type": "String" }
+      "appName": {
+        "type": "String"
+      }
     }
   },
   "invitationSmsMessage": "Your coach invites you to join {appName}. Your code: {code}.\niPhone: {appleStoreUrl}\nAndroid: {googlePlayUrl}",
   "@invitationSmsMessage": {
     "placeholders": {
-      "appName": { "type": "String" },
-      "code": { "type": "String" },
-      "appleStoreUrl": { "type": "String" },
-      "googlePlayUrl": { "type": "String" }
+      "appName": {
+        "type": "String"
+      },
+      "code": {
+        "type": "String"
+      },
+      "appleStoreUrl": {
+        "type": "String"
+      },
+      "googlePlayUrl": {
+        "type": "String"
+      }
     }
   },
   "sessionReportEmailSubject": "{appName} — {eventLabel} report: {title}",
   "@sessionReportEmailSubject": {
     "placeholders": {
-      "appName": { "type": "String" },
-      "eventLabel": { "type": "String" },
-      "title": { "type": "String" }
+      "appName": {
+        "type": "String"
+      },
+      "eventLabel": {
+        "type": "String"
+      },
+      "title": {
+        "type": "String"
+      }
     }
   },
   "sessionReportEmailIntro": "Here is your {appName} statistics report",
   "@sessionReportEmailIntro": {
     "placeholders": {
-      "appName": { "type": "String" }
+      "appName": {
+        "type": "String"
+      }
     }
   },
   "sessionReportEmailEventMatch": "match",
@@ -128,19 +156,25 @@
   "sessionReportEmailDateLine": "Date: {date}",
   "@sessionReportEmailDateLine": {
     "placeholders": {
-      "date": { "type": "String" }
+      "date": {
+        "type": "String"
+      }
     }
   },
   "sessionReportEmailTeamLine": "Team: {team}",
   "@sessionReportEmailTeamLine": {
     "placeholders": {
-      "team": { "type": "String" }
+      "team": {
+        "type": "String"
+      }
     }
   },
   "sessionReportEmailPlayersLine": "Players with data: {count}",
   "@sessionReportEmailPlayersLine": {
     "placeholders": {
-      "count": { "type": "int" }
+      "count": {
+        "type": "int"
+      }
     }
   },
   "sessionReportEmailAttachmentHint": "The tracker statistics PDF report is attached to this email.",
@@ -149,7 +183,9 @@
   "sessionReportEmailDownloadLine": "Download the PDF: {url}",
   "@sessionReportEmailDownloadLine": {
     "placeholders": {
-      "url": { "type": "String" }
+      "url": {
+        "type": "String"
+      }
     }
   },
   "sessionReportEmailAskAddress": "Tell me which email address should receive the PDF report.",
@@ -158,7 +194,9 @@
   "sessionReportEmailFooter": "You received this email because a session report was generated from {appName}. If you were not expecting this message, you can ignore it.",
   "@sessionReportEmailFooter": {
     "placeholders": {
-      "appName": { "type": "String" }
+      "appName": {
+        "type": "String"
+      }
     }
   },
   "sessionReportEmailDialogTitle": "Send PDF report",
@@ -171,19 +209,25 @@
   "sessionReportEmailSuccess": "Report sent to {email}",
   "@sessionReportEmailSuccess": {
     "placeholders": {
-      "email": { "type": "String" }
+      "email": {
+        "type": "String"
+      }
     }
   },
   "sessionReportEmailSuccessCount": "Report sent to {count} recipients",
   "@sessionReportEmailSuccessCount": {
     "placeholders": {
-      "count": { "type": "int" }
+      "count": {
+        "type": "int"
+      }
     }
   },
   "sessionReportEmailSelectedCount": "{count} selected",
   "@sessionReportEmailSelectedCount": {
     "placeholders": {
-      "count": { "type": "int" }
+      "count": {
+        "type": "int"
+      }
     }
   },
   "sessionReportEmailSelectAll": "Select all",
@@ -203,7 +247,9 @@
   "memberAddedToTeamNotificationBody": "Your coach added you to {teamName}.",
   "@memberAddedToTeamNotificationBody": {
     "placeholders": {
-      "teamName": { "type": "String" }
+      "teamName": {
+        "type": "String"
+      }
     }
   },
   "invitationAccepted": "Invitation accepted",
@@ -227,7 +273,9 @@
   "parentalConsentPendingMessage": "An email was sent to {parentEmail}. Once your legal guardian approves your account (and physiological data processing), you can use Grinta Performance.",
   "@parentalConsentPendingMessage": {
     "placeholders": {
-      "parentEmail": { "type": "String" }
+      "parentEmail": {
+        "type": "String"
+      }
     }
   },
   "parentalConsentPendingMessageGeneric": "An email was sent to your legal guardian. Once they approve your account (and physiological data processing), you can use Grinta Performance.",
@@ -260,7 +308,9 @@
   "memberProfileUpdateError": "Could not update profile: {error}",
   "@memberProfileUpdateError": {
     "placeholders": {
-      "error": { "type": "String" }
+      "error": {
+        "type": "String"
+      }
     }
   },
   "memberProfileChangePhoto": "Change photo",
@@ -269,7 +319,9 @@
   "memberProfilePhotoUploadError": "Could not update photo: {error}",
   "@memberProfilePhotoUploadError": {
     "placeholders": {
-      "error": { "type": "String" }
+      "error": {
+        "type": "String"
+      }
     }
   },
   "errorEditProfileUnavailable": "No profile available to edit",
@@ -317,13 +369,17 @@
   "teamCreationSelectedClubTeamsCount": "{count, plural, =0{No teams selected} =1{1 team selected} other{{count} teams selected}}",
   "@teamCreationSelectedClubTeamsCount": {
     "placeholders": {
-      "count": { "type": "int" }
+      "count": {
+        "type": "int"
+      }
     }
   },
   "teamCreationClubTeamCompetitionsCount": "{count, plural, =1{1 competition} other{{count} competitions}}",
   "@teamCreationClubTeamCompetitionsCount": {
     "placeholders": {
-      "count": { "type": "int" }
+      "count": {
+        "type": "int"
+      }
     }
   },
   "teamCreationSoccerType": "Football type",
@@ -332,19 +388,25 @@
   "equipeCompetitionsSheetTitle": "Competitions — {teamName}",
   "@equipeCompetitionsSheetTitle": {
     "placeholders": {
-      "teamName": { "type": "String" }
+      "teamName": {
+        "type": "String"
+      }
     }
   },
   "fffCompetitionPhaseLabel": "Phase {phase}",
   "@fffCompetitionPhaseLabel": {
     "placeholders": {
-      "phase": { "type": "int" }
+      "phase": {
+        "type": "int"
+      }
     }
   },
   "fffCompetitionGroupeLabel": "Group {groupe}",
   "@fffCompetitionGroupeLabel": {
     "placeholders": {
-      "groupe": { "type": "int" }
+      "groupe": {
+        "type": "int"
+      }
     }
   },
   "hintSearchClub": "Search for a club",
@@ -427,7 +489,6 @@
   "notificationsConvocationAbsentConfirm": "Confirm",
   "notificationsConvocationAbsentMessageRequired": "Please enter a message.",
   "notificationsConvocationActionError": "Could not respond to the call-up.",
-
   "featureDiscoveryAgendaTitle": "Discover the calendar",
   "featureDiscoveryAgendaMessage": "View upcoming matches and training sessions from the Agenda tab.",
   "featureDiscoveryDiscover": "Discover",
@@ -472,7 +533,9 @@
   "matchConvocationsSendSubtitle": "{count, plural, =1{1 player called up} other{{count} players called up}}",
   "@matchConvocationsSendSubtitle": {
     "placeholders": {
-      "count": { "type": "int" }
+      "count": {
+        "type": "int"
+      }
     }
   },
   "matchConvocationsSendMessage": "Message",
@@ -486,79 +549,111 @@
   "matchConvocationsSendSuccess": "{count, plural, =1{1 call-up sent} other{{count} call-ups sent}}",
   "@matchConvocationsSendSuccess": {
     "placeholders": {
-      "count": { "type": "int" }
+      "count": {
+        "type": "int"
+      }
     }
   },
   "matchConvocationsSendSkippedNoAccount": "{count, plural, =1{1 player without a linked account} other{{count} players without a linked account}}",
   "@matchConvocationsSendSkippedNoAccount": {
     "placeholders": {
-      "count": { "type": "int" }
+      "count": {
+        "type": "int"
+      }
     }
   },
   "matchConvocationsSendSkippedNoPush": "{count, plural, =1{1 player without a push notification} other{{count} players without a push notification}}",
   "@matchConvocationsSendSkippedNoPush": {
     "placeholders": {
-      "count": { "type": "int" }
+      "count": {
+        "type": "int"
+      }
     }
   },
   "matchConvocationsSendNoRecipients": "No called-up player has a linked Grinta account.",
   "matchConvocationsSendError": "Send failed: {error}",
   "@matchConvocationsSendError": {
     "placeholders": {
-      "error": { "type": "String" }
+      "error": {
+        "type": "String"
+      }
     }
   },
   "matchConvocationsSendErrorAuth": "Sign in to send call-ups.",
   "matchConvocationsSendDateTimeValue": "{date} at {time}",
   "@matchConvocationsSendDateTimeValue": {
     "placeholders": {
-      "date": { "type": "String" },
-      "time": { "type": "String" }
+      "date": {
+        "type": "String"
+      },
+      "time": {
+        "type": "String"
+      }
     }
   },
   "matchConvocationsSendMatchLine": "Match: {opponent}",
   "@matchConvocationsSendMatchLine": {
     "placeholders": {
-      "opponent": { "type": "String" }
+      "opponent": {
+        "type": "String"
+      }
     }
   },
   "matchConvocationsSendTimeLine": "Time: {time}",
   "@matchConvocationsSendTimeLine": {
     "placeholders": {
-      "time": { "type": "String" }
+      "time": {
+        "type": "String"
+      }
     }
   },
   "matchConvocationsSendAddressLine": "Address: {address}",
   "@matchConvocationsSendAddressLine": {
     "placeholders": {
-      "address": { "type": "String" }
+      "address": {
+        "type": "String"
+      }
     }
   },
   "matchConvocationNotificationTitle": "Call-up · {opponent}",
   "@matchConvocationNotificationTitle": {
     "placeholders": {
-      "opponent": { "type": "String" }
+      "opponent": {
+        "type": "String"
+      }
     }
   },
   "matchConvocationFeedbackNotificationTitle": "Call-up response · {opponent}",
   "@matchConvocationFeedbackNotificationTitle": {
     "placeholders": {
-      "opponent": { "type": "String" }
+      "opponent": {
+        "type": "String"
+      }
     }
   },
   "matchConvocationNotificationBody": "{opponent} · Meet at {time}",
   "@matchConvocationNotificationBody": {
     "placeholders": {
-      "opponent": { "type": "String" },
-      "time": { "type": "String" }
+      "opponent": {
+        "type": "String"
+      },
+      "time": {
+        "type": "String"
+      }
     }
   },
   "matchConvocationNotificationBodyWithMessage": "{opponent} · Meet at {time} · {message}",
   "@matchConvocationNotificationBodyWithMessage": {
     "placeholders": {
-      "opponent": { "type": "String" },
-      "time": { "type": "String" },
-      "message": { "type": "String" }
+      "opponent": {
+        "type": "String"
+      },
+      "time": {
+        "type": "String"
+      },
+      "message": {
+        "type": "String"
+      }
     }
   },
   "tabTacticalSchema": "Tactical setup",
@@ -827,7 +922,9 @@
   "teamStreamChannelCreateMessage": "Create the Stream group for team {teamName}? Players and staff will be added automatically.",
   "@teamStreamChannelCreateMessage": {
     "placeholders": {
-      "teamName": { "type": "String" }
+      "teamName": {
+        "type": "String"
+      }
     }
   },
   "teamStreamChannelCreateConfirm": "Create",
@@ -835,13 +932,17 @@
   "teamStreamChannelCreateSuccess": "Stream group created for {teamName}.",
   "@teamStreamChannelCreateSuccess": {
     "placeholders": {
-      "teamName": { "type": "String" }
+      "teamName": {
+        "type": "String"
+      }
     }
   },
   "teamStreamChannelCreateError": "Could not create Stream group: {details}",
   "@teamStreamChannelCreateError": {
     "placeholders": {
-      "details": { "type": "String" }
+      "details": {
+        "type": "String"
+      }
     }
   },
   "teamStreamChannelCreateNotManager": "Only managers can create the Stream group.",
@@ -854,9 +955,15 @@
   "syncUpcomingTrainingsSuccess": "Trainings updated: {updated} session(s), {added} added, {removed} removed.",
   "@syncUpcomingTrainingsSuccess": {
     "placeholders": {
-      "updated": { "type": "int" },
-      "added": { "type": "int" },
-      "removed": { "type": "int" }
+      "updated": {
+        "type": "int"
+      },
+      "added": {
+        "type": "int"
+      },
+      "removed": {
+        "type": "int"
+      }
     }
   },
   "syncUpcomingTrainingsNothingToDo": "Upcoming trainings already match the roster.",
@@ -883,7 +990,9 @@
   "playerAgeYears": "{age} years old",
   "@playerAgeYears": {
     "placeholders": {
-      "age": { "type": "int" }
+      "age": {
+        "type": "int"
+      }
     }
   },
   "playerAgeUnknown": "Age not provided",
@@ -909,7 +1018,9 @@
   "matchGrintaHighlightDeleteConfirmMessage": "Are you sure you want to delete \"{highlightLabel}\"? This action is permanent.",
   "@matchGrintaHighlightDeleteConfirmMessage": {
     "placeholders": {
-      "highlightLabel": { "type": "String" }
+      "highlightLabel": {
+        "type": "String"
+      }
     }
   },
   "matchGrintaHighlightDeleted": "Highlight deleted",
@@ -954,7 +1065,9 @@
   "highlightGoalScored": "Goal — {scorer}",
   "@highlightGoalScored": {
     "placeholders": {
-      "scorer": { "type": "String" }
+      "scorer": {
+        "type": "String"
+      }
     }
   },
   "highlightTimeHalfTime": "Half-time",
@@ -967,13 +1080,17 @@
   "highlightYellowCardShown": "Yellow card — {player}",
   "@highlightYellowCardShown": {
     "placeholders": {
-      "player": { "type": "String" }
+      "player": {
+        "type": "String"
+      }
     }
   },
   "highlightRedCardShown": "Red card — {player}",
   "@highlightRedCardShown": {
     "placeholders": {
-      "player": { "type": "String" }
+      "player": {
+        "type": "String"
+      }
     }
   },
   "highlightTypeOwnGoal": "Own goal",
@@ -994,8 +1111,12 @@
   "trackerSyncedProgress": "{synced}/{total} synchronized",
   "@trackerSyncedProgress": {
     "placeholders": {
-      "synced": { "type": "int" },
-      "total": { "type": "int" }
+      "synced": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      }
     }
   },
   "trackerAlreadySyncedTitle": "Synchronization already done",
@@ -1040,7 +1161,6 @@
   "entityPersonalSports": "Individual sports activities",
   "dashboardPersonalSportsListTitle": "Sports activities list",
   "emptyNoPersonalSportToShow": "No sports activities to show",
-
   "periodCustomRange": "from {start} to {end}",
   "statsPresenceRate": "Attendance rate: ({value}) %",
   "statsDoneSingular": "realized",
@@ -1061,7 +1181,6 @@
   "agendaAddEventPersonalSportHint": "Running, preparation, …",
   "agendaAddEventNonSport": "A non-sporting event / activity",
   "agendaAllDayLabel": "All day",
-
   "coachWorkloadAnalysisFabTooltip": "Player workload analysis",
   "coachWorkloadAnalysisTitle": "Workload analysis",
   "coachWorkloadTeaserHeadline": "Compare your players’ workload",
@@ -1076,19 +1195,35 @@
   "coachWorkloadActivitiesTitle": "Activities",
   "coachWorkloadMetricSessions": "{count} trainings",
   "@coachWorkloadMetricSessions": {
-    "placeholders": { "count": { "type": "int" } }
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
   },
   "coachWorkloadMetricMatches": "{count} matches",
   "@coachWorkloadMetricMatches": {
-    "placeholders": { "count": { "type": "int" } }
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
   },
   "coachWorkloadMetricPersonalSports": "{count} personal",
   "@coachWorkloadMetricPersonalSports": {
-    "placeholders": { "count": { "type": "int" } }
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
   },
   "coachWorkloadMetricKm": "{value} km",
   "@coachWorkloadMetricKm": {
-    "placeholders": { "value": { "type": "String" } }
+    "placeholders": {
+      "value": {
+        "type": "String"
+      }
+    }
   },
   "coachWorkloadReportEmailActionTooltip": "Send PDF report",
   "coachWorkloadReportEmailDialogTitle": "Send workload analysis (PDF)",
@@ -1096,45 +1231,77 @@
   "coachWorkloadReportEmailSubject": "Grinta — Workload analysis {team} ({period})",
   "@coachWorkloadReportEmailSubject": {
     "placeholders": {
-      "team": { "type": "String" },
-      "period": { "type": "String" }
+      "team": {
+        "type": "String"
+      },
+      "period": {
+        "type": "String"
+      }
     }
   },
   "coachWorkloadReportEmailGreeting": "Hello,",
   "coachWorkloadReportEmailIntro": "Here is the workload analysis for {team} over {period}.",
   "@coachWorkloadReportEmailIntro": {
     "placeholders": {
-      "team": { "type": "String" },
-      "period": { "type": "String" }
+      "team": {
+        "type": "String"
+      },
+      "period": {
+        "type": "String"
+      }
     }
   },
   "coachWorkloadReportEmailDownload": "Download PDF",
   "coachWorkloadReportEmailText": "Workload analysis — {team}\nPeriod: {period}\nPDF: {url}",
   "@coachWorkloadReportEmailText": {
     "placeholders": {
-      "team": { "type": "String" },
-      "period": { "type": "String" },
-      "url": { "type": "String" }
+      "team": {
+        "type": "String"
+      },
+      "period": {
+        "type": "String"
+      },
+      "url": {
+        "type": "String"
+      }
     }
   },
   "coachWorkloadMetricLoad": "Load {value}",
   "@coachWorkloadMetricLoad": {
-    "placeholders": { "value": { "type": "String" } }
+    "placeholders": {
+      "value": {
+        "type": "String"
+      }
+    }
   },
   "coachWorkloadMetricVolume": "{minutes} min",
   "@coachWorkloadMetricVolume": {
-    "placeholders": { "minutes": { "type": "int" } }
+    "placeholders": {
+      "minutes": {
+        "type": "int"
+      }
+    }
   },
   "coachWorkloadMetricPresence": "Attendance {value}",
   "@coachWorkloadMetricPresence": {
-    "placeholders": { "value": { "type": "String" } }
+    "placeholders": {
+      "value": {
+        "type": "String"
+      }
+    }
   },
   "coachWorkloadBreakdown": "{trainings} workouts · {matches} matches · {personal} personal sports",
   "@coachWorkloadBreakdown": {
     "placeholders": {
-      "trainings": { "type": "int" },
-      "matches": { "type": "int" },
-      "personal": { "type": "int" }
+      "trainings": {
+        "type": "int"
+      },
+      "matches": {
+        "type": "int"
+      },
+      "personal": {
+        "type": "int"
+      }
     }
   },
   "agendaCoachPlayersFabTooltip": "Players — personal activities",
@@ -1160,7 +1327,9 @@
   "agendaEventSummaryNonSport": "{count, plural, =1{1 activity} other{{count} activities}}",
   "@agendaEventSummaryNonSport": {
     "placeholders": {
-      "count": { "type": "int" }
+      "count": {
+        "type": "int"
+      }
     }
   },
   "createPersonalSportTitle": "New sports activity",
@@ -1178,7 +1347,7 @@
   "createPersonalSportTypeRequired": "Choose an activity type",
   "createPersonalSportImportSource": "App / device",
   "createPersonalSportPolarActivity": "Polar activity",
-"createPersonalSportWhoopActivity": "Whoop activity",
+  "createPersonalSportWhoopActivity": "Whoop activity",
   "createPersonalSportWhoopDeployRequired": "Whoop import is not deployed yet. Run firebase deploy for whoopListActivities and whoopImportActivity.",
   "createPersonalSportWhoopLoadError": "Could not load Whoop activities. Check the connection and try again.",
   "createPersonalSportWhoopNoImportable": "No Whoop workouts to import.",
@@ -1193,9 +1362,9 @@
   "createPersonalSportPolarDeployRequired": "Polar import is not deployed yet. Run firebase deploy for polarListActivities and polarImportActivity.",
   "createPersonalSportPolarLoadError": "Could not load Polar activities. Check the connection and try again.",
   "createPersonalSportPolarNoImportable": "No Polar Flow training session to import. In Polar Flow, confirm the session is a Training (not only continuous HR), synced after connecting Grinta, then retry.",
-    "createPersonalSportStravaActivity": "Strava activity",
+  "createPersonalSportStravaActivity": "Strava activity",
   "createPersonalSportNoImportable": "No activities to import",
-  "createPersonalSportNoConnectedApps": "No connected app. Connect Strava, Polar, Whoop, Apple Fitness or Google Health in Devices / Apps.",
+  "createPersonalSportNoConnectedApps": "No connected app. Connect Strava, Polar, Whoop / Oura, Apple Fitness or Google Health in Devices / Apps.",
   "createPersonalSportImportRequired": "Select an activity to import",
   "createPersonalSportNotes": "Note",
   "createPersonalSportVisibility": "Visibility",
@@ -1234,7 +1403,9 @@
   "deletePersonalSportConfirmMessage": "“{title}” will be permanently deleted.",
   "@deletePersonalSportConfirmMessage": {
     "placeholders": {
-      "title": { "type": "String" }
+      "title": {
+        "type": "String"
+      }
     }
   },
   "deletePersonalSportDeleted": "Activity deleted",
@@ -1265,7 +1436,9 @@
   "deleteNonSportEventConfirmMessage": "“{title}” will be permanently deleted, including related notifications.",
   "@deleteNonSportEventConfirmMessage": {
     "placeholders": {
-      "title": { "type": "String" }
+      "title": {
+        "type": "String"
+      }
     }
   },
   "deleteNonSportEventDeleted": "Event deleted",
@@ -1277,7 +1450,9 @@
   "createNonSportEventSelectedMembersCount": "{count, plural, =1{1 member selected} other{{count} members selected}}",
   "@createNonSportEventSelectedMembersCount": {
     "placeholders": {
-      "count": { "type": "int" }
+      "count": {
+        "type": "int"
+      }
     }
   },
   "createNonSportEventNoTeamMembers": "No members in this team.",
@@ -1297,16 +1472,26 @@
   "createNonSportEventNotificationBody": "{title} — {when}",
   "@createNonSportEventNotificationBody": {
     "placeholders": {
-      "title": { "type": "String" },
-      "when": { "type": "String" }
+      "title": {
+        "type": "String"
+      },
+      "when": {
+        "type": "String"
+      }
     }
   },
   "createNonSportEventNotificationBodyWithLocation": "{title} — {when} — {location}",
   "@createNonSportEventNotificationBodyWithLocation": {
     "placeholders": {
-      "title": { "type": "String" },
-      "when": { "type": "String" },
-      "location": { "type": "String" }
+      "title": {
+        "type": "String"
+      },
+      "when": {
+        "type": "String"
+      },
+      "location": {
+        "type": "String"
+      }
     }
   },
   "nonSportEventInviteesTitle": "Invitations",
@@ -1336,7 +1521,9 @@
   "teamDetailTrackerOwnerType": "Type: {type}",
   "@teamDetailTrackerOwnerType": {
     "placeholders": {
-      "type": { "type": "String" }
+      "type": {
+        "type": "String"
+      }
     }
   },
   "teamDetailTrackerOwnersSaved": "Tracker kits updated.",
@@ -1432,7 +1619,6 @@
   "asiHeatmapPointCount": "{count} point(s) - {period}",
   "metricsEvolutionTitle": "Trend - {metric}",
   "trainingOnDate": "Training on {date}",
-
   "subscriptionPaywallTitle": "Upgrade to Grinta Premium",
   "subscriptionPaywallSubtitle": "Unlock all features for tracking your teams and your players.",
   "subscriptionPaywallLater": "Later",
@@ -1465,21 +1651,24 @@
   "subscriptionPromptTitle": "Go Premium",
   "subscriptionPromptMessage": "Access all Grinta features with a plan tailored to your profile.",
   "subscriptionPromptAction": "View plans",
-
   "subscriptionMenu": "Subscription",
   "subscriptionDetailsTitle": "Subscription",
   "subscriptionTier": "Plan",
   "subscriptionRenewalDate": "Renews on {date}",
   "@subscriptionRenewalDate": {
     "placeholders": {
-      "date": { "type": "String" }
+      "date": {
+        "type": "String"
+      }
     }
   },
   "subscriptionNone": "No active subscription",
   "subscriptionTrialEnds": "Trial until {date}. You can subscribe now.",
   "@subscriptionTrialEnds": {
     "placeholders": {
-      "date": { "type": "String" }
+      "date": {
+        "type": "String"
+      }
     }
   },
   "subscriptionPeriodLabel": "Period",
@@ -1487,31 +1676,35 @@
   "subscriptionBillingPeriodMonthly": "Monthly",
   "subscriptionBillingPeriodYearly": "Yearly",
   "subscriptionStatusActive": "Active",
-
   "subscriptionChangePlan": "Change plan",
   "subscriptionChangePlanTitle": "Change your plan",
   "subscriptionChangePlanSubtitle": "Switch between Coach and Player, change tier, or update your billing period.",
   "subscriptionChangePlanConfirm": "Confirm change",
   "subscriptionCurrentPlan": "Current plan",
   "subscriptionPlanChanged": "Your subscription has been updated.",
-
   "subscriptionLimitMaxTeamsReached": "You have reached the maximum number of teams ({max}) for your subscription.",
   "@subscriptionLimitMaxTeamsReached": {
     "placeholders": {
-      "max": { "type": "int" }
+      "max": {
+        "type": "int"
+      }
     }
   },
   "subscriptionLimitMaxPlayersReached": "You have reached the maximum number of players ({max}) for this team.",
   "@subscriptionLimitMaxPlayersReached": {
     "placeholders": {
-      "max": { "type": "int" }
+      "max": {
+        "type": "int"
+      }
     }
   },
   "subscriptionLimitPlayerTierOnlySelf": "Your Player subscription only allows you to add yourself to a team.",
   "subscriptionLimitMaxProfilesReached": "You have reached the maximum number of profiles ({max}) for your subscription.",
   "@subscriptionLimitMaxProfilesReached": {
     "placeholders": {
-      "max": { "type": "int" }
+      "max": {
+        "type": "int"
+      }
     }
   },
   "subscriptionLimitProfileUpgradeTitle": "Additional profiles",
@@ -1526,22 +1719,21 @@
   "subscriptionLimitTeamDetailBlockedTitle": "Team management",
   "subscriptionLimitTeamDetailBlockedMessage": "Upgrade to a Player subscription to access team details and manage your roster.",
   "subscriptionLimitTeamCreatedFreePlayer": "Your team has been created. Upgrade to access team details.",
-
   "trialStatusTitle": "Free trial",
   "trialDaysRemaining": "{days, plural, =1{1 day remaining} other{{days} days remaining}}",
   "@trialDaysRemaining": {
     "placeholders": {
-      "days": { "type": "int" }
+      "days": {
+        "type": "int"
+      }
     }
   },
-
   "shopTitle": "Grinta Shop",
   "shopPromoTitle": "Shop offer",
   "shopPromoCta": "View offer",
   "shopBrowseAll": "Browse shop",
   "shopLoadError": "Unable to load the shop.",
   "shopRetry": "Retry",
-
   "legalPrivacyPolicy": "Privacy Policy",
   "legalTermsOfService": "Terms of Service",
   "actionDeleteAccount": "Delete account",
@@ -1550,7 +1742,9 @@
   "errorDeleteAccount": "Unable to delete account: {details}",
   "@errorDeleteAccount": {
     "placeholders": {
-      "details": { "type": "String" }
+      "details": {
+        "type": "String"
+      }
     }
   },
   "errorDeleteAccountRequiresRecentLogin": "For security, please sign out, sign in again, then retry account deletion.",
@@ -1559,13 +1753,17 @@
   "teamDeleteConfirmMessage": "Are you sure you want to delete \"{teamName}\"? This action is permanent. All team-related data (members, matches, statistics, etc.) will be deleted.",
   "@teamDeleteConfirmMessage": {
     "placeholders": {
-      "teamName": { "type": "String" }
+      "teamName": {
+        "type": "String"
+      }
     }
   },
   "teamDeleteSuccess": "Team \"{teamName}\" has been deleted.",
   "@teamDeleteSuccess": {
     "placeholders": {
-      "teamName": { "type": "String" }
+      "teamName": {
+        "type": "String"
+      }
     }
   },
   "teamEditNameTitle": "Edit team",
@@ -1585,7 +1783,9 @@
   "calendarSyncEnabledMessage": "Matches and trainings are written to the local calendar “{calendarName}” on this device (same Android profile as Grinta: personal or work).\n\nThis is not a Google cloud calendar: it will not appear on calendar.google.com or in the other profile.\n\nIn your Calendar app → menu → enable “{calendarName}” (often under “Device calendars” / Device Calendar).",
   "@calendarSyncEnabledMessage": {
     "placeholders": {
-      "calendarName": { "type": "String" }
+      "calendarName": {
+        "type": "String"
+      }
     }
   },
   "calendarSyncOpenCalendar": "Open calendar",
@@ -1605,7 +1805,9 @@
   "settingsDevicesBadgeLabel": "{count, plural, =0{No connected devices/applications} =1{1 connected device/application} other{{count} connected devices/applications}}",
   "@settingsDevicesBadgeLabel": {
     "placeholders": {
-      "count": { "type": "int" }
+      "count": {
+        "type": "int"
+      }
     }
   },
   "wearableDeviceTypeLabel": "Device/application type",
@@ -1641,14 +1843,18 @@
   "whoopCoachConnectSubtitle": "Connect Whoop for {playerName}",
   "@whoopCoachConnectSubtitle": {
     "placeholders": {
-      "playerName": { "type": "String" }
+      "playerName": {
+        "type": "String"
+      }
     }
   },
   "whoopCoachConnectAction": "Connect",
   "whoopCoachConnectConnectedSubtitle": "Whoop connected for {playerName}",
   "@whoopCoachConnectConnectedSubtitle": {
     "placeholders": {
-      "playerName": { "type": "String" }
+      "playerName": {
+        "type": "String"
+      }
     }
   },
   "stravaConnectToggleSubtitle": "Connect your Strava account to import activities and workouts",
@@ -1669,13 +1875,17 @@
   "stravaCoachConnectSubtitle": "Connect Strava for {playerName}",
   "@stravaCoachConnectSubtitle": {
     "placeholders": {
-      "playerName": { "type": "String" }
+      "playerName": {
+        "type": "String"
+      }
     }
   },
   "stravaCoachConnectConnectedSubtitle": "Strava connected for {playerName}",
   "@stravaCoachConnectConnectedSubtitle": {
     "placeholders": {
-      "playerName": { "type": "String" }
+      "playerName": {
+        "type": "String"
+      }
     }
   },
   "polarConnectToggleSubtitle": "Connect your Polar account to import training, sleep, and heart rate data from Loop or Verity Sense via Polar Flow",
@@ -1701,13 +1911,17 @@
   "polarCoachConnectSubtitle": "Connect Polar for {playerName}",
   "@polarCoachConnectSubtitle": {
     "placeholders": {
-      "playerName": { "type": "String" }
+      "playerName": {
+        "type": "String"
+      }
     }
   },
   "polarCoachConnectConnectedSubtitle": "Polar connected for {playerName}",
   "@polarCoachConnectConnectedSubtitle": {
     "placeholders": {
-      "playerName": { "type": "String" }
+      "playerName": {
+        "type": "String"
+      }
     }
   },
   "fitbitConnectToggleSubtitle": "Connect your Fitbit account to import activity, heart rate, sleep, and weight data from your Fitbit bracelet via Fitbit cloud",
@@ -1728,13 +1942,17 @@
   "fitbitCoachConnectSubtitle": "Connect Fitbit for {playerName}",
   "@fitbitCoachConnectSubtitle": {
     "placeholders": {
-      "playerName": { "type": "String" }
+      "playerName": {
+        "type": "String"
+      }
     }
   },
   "fitbitCoachConnectConnectedSubtitle": "Fitbit connected for {playerName}",
   "@fitbitCoachConnectConnectedSubtitle": {
     "placeholders": {
-      "playerName": { "type": "String" }
+      "playerName": {
+        "type": "String"
+      }
     }
   },
   "appleHealthConnectToggleSubtitle": "Connect Apple Fitness to import workouts, heart rate, and active energy from the Health app (iOS only)",
@@ -1755,13 +1973,17 @@
   "appleHealthCoachConnectSubtitle": "Connect Apple Fitness for {playerName}",
   "@appleHealthCoachConnectSubtitle": {
     "placeholders": {
-      "playerName": { "type": "String" }
+      "playerName": {
+        "type": "String"
+      }
     }
   },
   "appleHealthCoachConnectConnectedSubtitle": "Apple Fitness connected for {playerName}",
   "@appleHealthCoachConnectConnectedSubtitle": {
     "placeholders": {
-      "playerName": { "type": "String" }
+      "playerName": {
+        "type": "String"
+      }
     }
   },
   "googleHealthConnectToggleSubtitle": "Connect Google Health to import workouts, heart rate, and active energy from Health Connect on this phone (Android only)",
@@ -1785,13 +2007,17 @@
   "googleHealthCoachConnectSubtitle": "Connect Google Health for {playerName}",
   "@googleHealthCoachConnectSubtitle": {
     "placeholders": {
-      "playerName": { "type": "String" }
+      "playerName": {
+        "type": "String"
+      }
     }
   },
   "googleHealthCoachConnectConnectedSubtitle": "Google Health connected for {playerName}",
   "@googleHealthCoachConnectConnectedSubtitle": {
     "placeholders": {
-      "playerName": { "type": "String" }
+      "playerName": {
+        "type": "String"
+      }
     }
   },
   "createTrainingTitle": "New training session",
@@ -1803,7 +2029,9 @@
   "createTrainingDurationMinutes": "{minutes} min",
   "@createTrainingDurationMinutes": {
     "placeholders": {
-      "minutes": { "type": "int" }
+      "minutes": {
+        "type": "int"
+      }
     }
   },
   "createTrainingRecurrent": "Recurring",
@@ -1820,7 +2048,9 @@
   "createTrainingSaved": "{count, plural, =1{1 training created} other{{count} trainings created}}",
   "@createTrainingSaved": {
     "placeholders": {
-      "count": { "type": "int" }
+      "count": {
+        "type": "int"
+      }
     }
   },
   "createTrainingError": "Could not create the training. Please try again.",
@@ -1867,7 +2097,9 @@
   "intenseLiveLastUpdate": "Updated at {time}",
   "@intenseLiveLastUpdate": {
     "placeholders": {
-      "time": { "type": "String" }
+      "time": {
+        "type": "String"
+      }
     }
   },
   "tabLive": "Live",
@@ -1883,7 +2115,9 @@
   "createMatchDurationMinutes": "{minutes} min",
   "@createMatchDurationMinutes": {
     "placeholders": {
-      "minutes": { "type": "int" }
+      "minutes": {
+        "type": "int"
+      }
     }
   },
   "createMatchOpponent": "Opponent",
@@ -1934,8 +2168,12 @@
   "manageUnavailabilitiesDateRange": "{from} – {to}",
   "@manageUnavailabilitiesDateRange": {
     "placeholders": {
-      "from": { "type": "String" },
-      "to": { "type": "String" }
+      "from": {
+        "type": "String"
+      },
+      "to": {
+        "type": "String"
+      }
     }
   },
   "manageUnavailabilitiesHidden": "Hidden",
@@ -1954,7 +2192,9 @@
   "teamStatsScreenTitle": "Statistics — {teamName}",
   "@teamStatsScreenTitle": {
     "placeholders": {
-      "teamName": { "type": "String" }
+      "teamName": {
+        "type": "String"
+      }
     }
   },
   "teamStatsTabAnalysis": "Analysis",
@@ -1974,28 +2214,40 @@
   "teamStatsTypicalTeamStartsLabel": "{starts}/{total} starts",
   "@teamStatsTypicalTeamStartsLabel": {
     "placeholders": {
-      "starts": { "type": "int" },
-      "total": { "type": "int" }
+      "starts": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      }
     }
   },
   "teamStatsTypicalTeamSubsLabel": "{subs}/{total} as sub",
   "@teamStatsTypicalTeamSubsLabel": {
     "placeholders": {
-      "subs": { "type": "int" },
-      "total": { "type": "int" }
+      "subs": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      }
     }
   },
   "teamStatsTypicalTeamNoData": "No lineup data available for this opponent",
   "teamStatsTypicalTeamIncompleteStarters": "Only {count} players with starter data",
   "@teamStatsTypicalTeamIncompleteStarters": {
     "placeholders": {
-      "count": { "type": "int" }
+      "count": {
+        "type": "int"
+      }
     }
   },
   "teamStatsTypicalTeamMatchesBasis": "Based on {count, plural, =1{1 match with lineup data} other{{count} matches with lineup data}}",
   "@teamStatsTypicalTeamMatchesBasis": {
     "placeholders": {
-      "count": { "type": "int" }
+      "count": {
+        "type": "int"
+      }
     }
   },
   "teamStatsRankingAtDate": "Current",
@@ -2016,7 +2268,9 @@
   "teamStatsRankingTooltipRank": "Rank {rank}",
   "@teamStatsRankingTooltipRank": {
     "placeholders": {
-      "rank": { "type": "String" }
+      "rank": {
+        "type": "String"
+      }
     }
   },
   "teamStatsAllCompetitions": "All competitions",
@@ -2030,8 +2284,12 @@
   "teamStatsWdlMatchesDialogTitle": "{outcome} — {period}",
   "@teamStatsWdlMatchesDialogTitle": {
     "placeholders": {
-      "outcome": { "type": "String" },
-      "period": { "type": "String" }
+      "outcome": {
+        "type": "String"
+      },
+      "period": {
+        "type": "String"
+      }
     }
   },
   "teamStatsTrendLabel": "Trend",
@@ -2049,14 +2307,18 @@
       "avg": {
         "type": "double",
         "format": "decimalPatternDigits",
-        "optionalParameters": { "decimalDigits": 2 }
+        "optionalParameters": {
+          "decimalDigits": 2
+        }
       }
     }
   },
   "teamStatsGoalsMatchCount": "{count, plural, =1{1 match} other{{count} matches}}",
   "@teamStatsGoalsMatchCount": {
     "placeholders": {
-      "count": { "type": "int" }
+      "count": {
+        "type": "int"
+      }
     }
   },
   "teamStatsAvgPointsPerMatch": "{avg}",
@@ -2065,7 +2327,9 @@
       "avg": {
         "type": "double",
         "format": "decimalPatternDigits",
-        "optionalParameters": { "decimalDigits": 2 }
+        "optionalParameters": {
+          "decimalDigits": 2
+        }
       }
     }
   },
@@ -2078,21 +2342,27 @@
   "teamStatsPlayersPlayTimeMinutes": "{minutes} min",
   "@teamStatsPlayersPlayTimeMinutes": {
     "placeholders": {
-      "minutes": { "type": "int" }
+      "minutes": {
+        "type": "int"
+      }
     }
   },
   "teamStatsAllMonths": "All months",
   "teamStatsTrainingsCount": "{count, plural, =1{1 training session} other{{count} training sessions}}",
   "@teamStatsTrainingsCount": {
     "placeholders": {
-      "count": { "type": "int" }
+      "count": {
+        "type": "int"
+      }
     }
   },
   "teamStatsTrainingsAttendanceRate": "Attendance rate",
   "teamStatsTrainingsAttendanceRateValue": "{value} %",
   "@teamStatsTrainingsAttendanceRateValue": {
     "placeholders": {
-      "value": { "type": "String" }
+      "value": {
+        "type": "String"
+      }
     }
   },
   "teamStatsTrainingsNoData": "No past training sessions in this period",
@@ -2122,7 +2392,9 @@
   "askDiegoSpeechError": "Speech recognition failed: {reason}",
   "@askDiegoSpeechError": {
     "placeholders": {
-      "reason": { "type": "String" }
+      "reason": {
+        "type": "String"
+      }
     }
   },
   "askDiegoEmptyResponse": "I don't have an answer right now.",
@@ -2130,7 +2402,9 @@
   "askDiegoNavigationUnknown": "Unknown navigation: {route}",
   "@askDiegoNavigationUnknown": {
     "placeholders": {
-      "route": { "type": "String" }
+      "route": {
+        "type": "String"
+      }
     }
   },
   "askDiegoNavigationAgendaHint": "Open the Agenda tab to view your calendar.",
@@ -2158,15 +2432,21 @@
   "reminderTrainingBody": "Training today at {time} — tell your coach if you are absent",
   "@reminderTrainingBody": {
     "placeholders": {
-      "time": { "type": "String" }
+      "time": {
+        "type": "String"
+      }
     }
   },
   "reminderMatchOpponentStatsTitle": "Match today",
   "reminderMatchOpponentStatsBody": "Today at {time} you play {opponent} — discover their stats",
   "@reminderMatchOpponentStatsBody": {
     "placeholders": {
-      "time": { "type": "String" },
-      "opponent": { "type": "String" }
+      "time": {
+        "type": "String"
+      },
+      "opponent": {
+        "type": "String"
+      }
     }
   },
   "trainingPresenceConfirmPresent": "I will attend",
@@ -2187,32 +2467,44 @@
   "adminPromoCodeEntitlementLabel": "Entitlement: {entitlement}",
   "@adminPromoCodeEntitlementLabel": {
     "placeholders": {
-      "entitlement": { "type": "String" }
+      "entitlement": {
+        "type": "String"
+      }
     }
   },
   "adminPromoCodeUsageLabel": "Uses: {used} / {max}",
   "@adminPromoCodeUsageLabel": {
     "placeholders": {
-      "used": { "type": "int" },
-      "max": { "type": "int" }
+      "used": {
+        "type": "int"
+      },
+      "max": {
+        "type": "int"
+      }
     }
   },
   "adminPromoCodeDurationLabel": "Duration: {days} days",
   "@adminPromoCodeDurationLabel": {
     "placeholders": {
-      "days": { "type": "int" }
+      "days": {
+        "type": "int"
+      }
     }
   },
   "adminPromoCodeTeamLabel": "Club: {teamId}",
   "@adminPromoCodeTeamLabel": {
     "placeholders": {
-      "teamId": { "type": "String" }
+      "teamId": {
+        "type": "String"
+      }
     }
   },
   "adminPromoCodeExpiresLabel": "Expires: {date}",
   "@adminPromoCodeExpiresLabel": {
     "placeholders": {
-      "date": { "type": "String" }
+      "date": {
+        "type": "String"
+      }
     }
   },
   "adminPromoCodeStatusInactive": "Inactive",
@@ -2241,7 +2533,9 @@
   "adminPromoCodeDeleteConfirmMessage": "Do you really want to delete code {code}? This action is permanent.",
   "@adminPromoCodeDeleteConfirmMessage": {
     "placeholders": {
-      "code": { "type": "String" }
+      "code": {
+        "type": "String"
+      }
     }
   },
   "adminPromoCodeDeleted": "Promo code deleted.",
@@ -2252,7 +2546,9 @@
   "adminPromoCodeFieldMaxUsesBelowUsed": "Maximum uses must be at least {used} (already redeemed).",
   "@adminPromoCodeFieldMaxUsesBelowUsed": {
     "placeholders": {
-      "used": { "type": "int" }
+      "used": {
+        "type": "int"
+      }
     }
   },
   "adminPromoCodeFieldActive": "Active",
@@ -2288,7 +2584,9 @@
   "adminTrackerOwnerDeleteConfirmMessage": "Do you really want to delete {name}? This action is permanent.",
   "@adminTrackerOwnerDeleteConfirmMessage": {
     "placeholders": {
-      "name": { "type": "String" }
+      "name": {
+        "type": "String"
+      }
     }
   },
   "adminTrackerOwnerCreated": "Owner created.",
@@ -2316,7 +2614,9 @@
   "adminTrackerFieldsDeleteConfirmMessage": "Are you sure you want to delete \"{fieldName}\"? This action is permanent.",
   "@adminTrackerFieldsDeleteConfirmMessage": {
     "placeholders": {
-      "fieldName": { "type": "String" }
+      "fieldName": {
+        "type": "String"
+      }
     }
   },
   "adminTrackerFieldsDeleted": "Field deleted.",
@@ -2332,19 +2632,25 @@
   "adminTrackerDevicesSource": "Source: {provider}",
   "@adminTrackerDevicesSource": {
     "placeholders": {
-      "provider": { "type": "String" }
+      "provider": {
+        "type": "String"
+      }
     }
   },
   "adminTrackerDevicesSerial": "Serial: {serial}",
   "@adminTrackerDevicesSerial": {
     "placeholders": {
-      "serial": { "type": "String" }
+      "serial": {
+        "type": "String"
+      }
     }
   },
   "adminTrackerDevicesUpdatedAt": "Updated: {date}",
   "@adminTrackerDevicesUpdatedAt": {
     "placeholders": {
-      "date": { "type": "String" }
+      "date": {
+        "type": "String"
+      }
     }
   },
   "adminTrackerDevicesStatusActive": "Active",
@@ -2362,7 +2668,9 @@
   "adminTrackerDevicesError": "Error: {error}",
   "@adminTrackerDevicesError": {
     "placeholders": {
-      "error": { "type": "String" }
+      "error": {
+        "type": "String"
+      }
     }
   },
   "adminTrackerDevicesSyncInspirit": "Sync Inspirit",
@@ -2385,7 +2693,9 @@
   "adminPolarBleScanConnectError": "Connection failed: {error}",
   "@adminPolarBleScanConnectError": {
     "placeholders": {
-      "error": { "type": "String" }
+      "error": {
+        "type": "String"
+      }
     }
   },
   "polarImportTitle": "Polar import (cardio)",
@@ -2398,9 +2708,15 @@
   "polarImportDeviceLine": "Polar {deviceId} · {deviceType} · {customName}",
   "@polarImportDeviceLine": {
     "placeholders": {
-      "deviceId": { "type": "String" },
-      "deviceType": { "type": "String" },
-      "customName": { "type": "String" }
+      "deviceId": {
+        "type": "String"
+      },
+      "deviceType": {
+        "type": "String"
+      },
+      "customName": {
+        "type": "String"
+      }
     }
   },
   "polarImportBleAction": "Import via Bluetooth",
@@ -2419,15 +2735,21 @@
   "polarImportSuccess": "Import OK — avg HR {avgHr} · {minutes} min",
   "@polarImportSuccess": {
     "placeholders": {
-      "avgHr": { "type": "String" },
-      "minutes": { "type": "String" }
+      "avgHr": {
+        "type": "String"
+      },
+      "minutes": {
+        "type": "String"
+      }
     }
   },
   "polarImportBleTimeoutHint": "Polar BLE connection timed out. Quit Polar Flow, forget the sensor in Settings → Bluetooth if it stays Connected, wake the Verity Sense in sensor mode (blue LED), then retry.",
   "polarImportBleError": "Polar import failed: {error}",
   "@polarImportBleError": {
     "placeholders": {
-      "error": { "type": "String" }
+      "error": {
+        "type": "String"
+      }
     }
   },
   "polarAnalysisEmptyMessage": "No Polar cardio analysis for this player on this session.",
@@ -2436,7 +2758,9 @@
   "polarAnalysisTeamCount": "{count} player(s)",
   "@polarAnalysisTeamCount": {
     "placeholders": {
-      "count": { "type": "int" }
+      "count": {
+        "type": "int"
+      }
     }
   },
   "polarAnalysisColDevice": "Sensor",
@@ -2444,8 +2768,12 @@
   "polarAnalysisDeviceLine": "Polar {deviceId} · {deviceType}",
   "@polarAnalysisDeviceLine": {
     "placeholders": {
-      "deviceId": { "type": "String" },
-      "deviceType": { "type": "String" }
+      "deviceId": {
+        "type": "String"
+      },
+      "deviceType": {
+        "type": "String"
+      }
     }
   },
   "polarAnalysisHrZonesTab": "HR zones",
@@ -2453,8 +2781,12 @@
   "polarAnalysisDurationDetail": "{minutes} min {seconds} s",
   "@polarAnalysisDurationDetail": {
     "placeholders": {
-      "minutes": { "type": "int" },
-      "seconds": { "type": "int" }
+      "minutes": {
+        "type": "int"
+      },
+      "seconds": {
+        "type": "int"
+      }
     }
   },
   "polarAnalysisAvgHr": "Avg HR",
@@ -2469,7 +2801,9 @@
   "polarAnalysisZoneLabel": "{zone}",
   "@polarAnalysisZoneLabel": {
     "placeholders": {
-      "zone": { "type": "String" }
+      "zone": {
+        "type": "String"
+      }
     }
   },
   "polarAnalysisNoZones": "No zone breakdown for this import.",
@@ -2477,7 +2811,9 @@
   "polarAnalysisHrTimelineHint": "Average synthesis every {minutes} min",
   "@polarAnalysisHrTimelineHint": {
     "placeholders": {
-      "minutes": { "type": "int" }
+      "minutes": {
+        "type": "int"
+      }
     }
   },
   "polarAnalysisHrTimelineEmpty": "HR curve unavailable — re-import the sensor to generate the 5-min synthesis.",
@@ -2485,7 +2821,6 @@
   "polarImportMissingSeason": "Season not found to import Polar sensors.",
   "polarImportAgendaAction": "Import Polar data",
   "polarAnalysisAgendaAction": "View Polar analysis",
-
   "adminTrackerDevicesAddPolarTitle": "Add a Polar sensor",
   "adminTrackerDevicesAddPolarDeviceId": "Polar device ID",
   "adminTrackerDevicesAddPolarDeviceIdHint": "Printed on the sensor, or last part of BLE name (e.g. Polar H10 1C709B20 → 1C709B20)",
@@ -2495,8 +2830,12 @@
   "adminTrackerDevicesAddPolarChromeSuccess": "Polar {deviceId} ({deviceType}) added.",
   "@adminTrackerDevicesAddPolarChromeSuccess": {
     "placeholders": {
-      "deviceId": { "type": "String" },
-      "deviceType": { "type": "String" }
+      "deviceId": {
+        "type": "String"
+      },
+      "deviceType": {
+        "type": "String"
+      }
     }
   },
   "adminTrackerDevicesAddPolarDeviceType": "Sensor type",
@@ -2514,13 +2853,17 @@
   "adminTrackerDevicesSyncInspiritSuccess": "Inspirit sync: {count} device(s) updated.",
   "@adminTrackerDevicesSyncInspiritSuccess": {
     "placeholders": {
-      "count": { "type": "int" }
+      "count": {
+        "type": "int"
+      }
     }
   },
   "adminTrackerDevicesSyncInspiritError": "Inspirit sync error: {error}",
   "@adminTrackerDevicesSyncInspiritError": {
     "placeholders": {
-      "error": { "type": "String" }
+      "error": {
+        "type": "String"
+      }
     }
   },
   "adminTrackerDevicesPermissionDenied": "Admin access is required to manage devices.",
@@ -2534,19 +2877,25 @@
   "adminStreamGroupsCid": "CID: {cid}",
   "@adminStreamGroupsCid": {
     "placeholders": {
-      "cid": { "type": "String" }
+      "cid": {
+        "type": "String"
+      }
     }
   },
   "adminStreamGroupsMemberCount": "{count} members",
   "@adminStreamGroupsMemberCount": {
     "placeholders": {
-      "count": { "type": "int" }
+      "count": {
+        "type": "int"
+      }
     }
   },
   "adminStreamGroupsLastMessageAt": "Last message: {date}",
   "@adminStreamGroupsLastMessageAt": {
     "placeholders": {
-      "date": { "type": "String" }
+      "date": {
+        "type": "String"
+      }
     }
   },
   "adminStreamGroupsDelete": "Delete",
@@ -2555,8 +2904,12 @@
   "adminStreamGroupsDeleteConfirmMessage": "Do you really want to delete group {name} ({cid})? This action is permanent.",
   "@adminStreamGroupsDeleteConfirmMessage": {
     "placeholders": {
-      "name": { "type": "String" },
-      "cid": { "type": "String" }
+      "name": {
+        "type": "String"
+      },
+      "cid": {
+        "type": "String"
+      }
     }
   },
   "adminStreamGroupsDeleted": "Group deleted.",
@@ -2579,20 +2932,28 @@
   "adminSeasonDateRange": "{start} – {end}",
   "@adminSeasonDateRange": {
     "placeholders": {
-      "start": { "type": "String" },
-      "end": { "type": "String" }
+      "start": {
+        "type": "String"
+      },
+      "end": {
+        "type": "String"
+      }
     }
   },
   "adminSeasonClubLabel": "Club: {clubName}",
   "@adminSeasonClubLabel": {
     "placeholders": {
-      "clubName": { "type": "String" }
+      "clubName": {
+        "type": "String"
+      }
     }
   },
   "adminSeasonAffiliateLabel": "Affiliate no.: {number}",
   "@adminSeasonAffiliateLabel": {
     "placeholders": {
-      "number": { "type": "String" }
+      "number": {
+        "type": "String"
+      }
     }
   },
   "adminSeasonFieldName": "Name",
@@ -2603,7 +2964,9 @@
   "adminSeasonDateSelected": "Selected: {date}",
   "@adminSeasonDateSelected": {
     "placeholders": {
-      "date": { "type": "String" }
+      "date": {
+        "type": "String"
+      }
     }
   },
   "adminSeasonFieldClubName": "Club name",
@@ -2615,7 +2978,9 @@
   "adminSeasonChangeDefaultMessage": "\"{seasonName}\" is currently the default season. Do you want to replace it?",
   "@adminSeasonChangeDefaultMessage": {
     "placeholders": {
-      "seasonName": { "type": "String" }
+      "seasonName": {
+        "type": "String"
+      }
     }
   },
   "adminSeasonChangeDefaultConfirm": "Change default",
@@ -2660,7 +3025,9 @@
   "adminYoutubeDeleteVideoMessage": "Remove “{title}” from the Tips list?",
   "@adminYoutubeDeleteVideoMessage": {
     "placeholders": {
-      "title": { "type": "String" }
+      "title": {
+        "type": "String"
+      }
     }
   },
   "adminYoutubeBadgeTop": "Week",
@@ -2688,7 +3055,9 @@
   "settingsVersionLabel": "Version {version}",
   "@settingsVersionLabel": {
     "placeholders": {
-      "version": { "type": "String" }
+      "version": {
+        "type": "String"
+      }
     }
   },
   "promoCodeMenuLabel": "Promo code",
@@ -2700,16 +3069,26 @@
   "promoCodeRedeemSuccess": "Promo code applied: {days} days of {entitlement}.",
   "@promoCodeRedeemSuccess": {
     "placeholders": {
-      "days": { "type": "int" },
-      "entitlement": { "type": "String" }
+      "days": {
+        "type": "int"
+      },
+      "entitlement": {
+        "type": "String"
+      }
     }
   },
   "promoCodeRedeemSuccessVerified": "{entitlement} active until {expiresAt} ({days} days granted).",
   "@promoCodeRedeemSuccessVerified": {
     "placeholders": {
-      "entitlement": { "type": "String" },
-      "expiresAt": { "type": "String" },
-      "days": { "type": "int" }
+      "entitlement": {
+        "type": "String"
+      },
+      "expiresAt": {
+        "type": "String"
+      },
+      "days": {
+        "type": "int"
+      }
     }
   },
   "promoCodeRedeemSyncPending": "Code registered on the server, but the subscription is not visible yet. Open Settings → Subscription in a moment, or sign out and back in.",
@@ -2752,7 +3131,9 @@
   "pendingInvitationNotificationBody": "Your coach invited you to {teamName}. Enter the code from the email to join the team.",
   "@pendingInvitationNotificationBody": {
     "placeholders": {
-      "teamName": { "type": "String" }
+      "teamName": {
+        "type": "String"
+      }
     }
   },
   "pendingInvitationAcceptTitle": "Invitation code",
@@ -2768,13 +3149,17 @@
   "playerSeasonSummaryAgeValue": "{age} yrs",
   "@playerSeasonSummaryAgeValue": {
     "placeholders": {
-      "age": { "type": "int" }
+      "age": {
+        "type": "int"
+      }
     }
   },
   "playerSeasonSummaryHwMeasuredAt": "Measurements on {date}",
   "@playerSeasonSummaryHwMeasuredAt": {
     "placeholders": {
-      "date": { "type": "String" }
+      "date": {
+        "type": "String"
+      }
     }
   },
   "preferredFootLabel": "Preferred foot",
@@ -2796,7 +3181,6 @@
   "intenseGpsDisconnectFailed": "GPS tracker disconnect failed.",
   "intenseGpsMissingEmail": "The player profile needs an email to link a GPS tracker.",
   "intenseGpsConnectToggleConnectedSubtitle": "GPS Insiders Intense connected",
-
   "whoopAnalysisTitle": "Whoop analysis",
   "whoopAnalysisStrain": "Activity strain",
   "whoopAnalysisAvgHr": "Avg HR",
@@ -2809,30 +3193,43 @@
   "whoopAnalysisZoneLabel": "Zone {zone}",
   "@whoopAnalysisZoneLabel": {
     "placeholders": {
-      "zone": { "type": "int" }
+      "zone": {
+        "type": "int"
+      }
     }
   },
   "whoopAnalysisZoneAboveBpm": "{bpm}+ bpm",
   "@whoopAnalysisZoneAboveBpm": {
     "placeholders": {
-      "bpm": { "type": "int" }
+      "bpm": {
+        "type": "int"
+      }
     }
   },
   "whoopAnalysisZoneBpmRange": "{min} – {max} bpm",
   "@whoopAnalysisZoneBpmRange": {
     "placeholders": {
-      "min": { "type": "int" },
-      "max": { "type": "int" }
+      "min": {
+        "type": "int"
+      },
+      "max": {
+        "type": "int"
+      }
     }
   },
-
   "opponentAnalysisPromptTitle": "Opponent analysis",
   "opponentAnalysisPromptMessage": "You play this {weekday} at {time} against {opponentName}. Would you like an opponent analysis report?",
   "@opponentAnalysisPromptMessage": {
     "placeholders": {
-      "weekday": { "type": "String" },
-      "time": { "type": "String" },
-      "opponentName": { "type": "String" }
+      "weekday": {
+        "type": "String"
+      },
+      "time": {
+        "type": "String"
+      },
+      "opponentName": {
+        "type": "String"
+      }
     }
   },
   "opponentAnalysisPromptYes": "Yes",
@@ -2843,8 +3240,12 @@
   "opponentAnalysisReportEmailIntro": "Here is the analysis report for {opponentName} for your match on {kickoff}.",
   "@opponentAnalysisReportEmailIntro": {
     "placeholders": {
-      "opponentName": { "type": "String" },
-      "kickoff": { "type": "String" }
+      "opponentName": {
+        "type": "String"
+      },
+      "kickoff": {
+        "type": "String"
+      }
     }
   },
   "opponentAnalysisReportEmailIncludes": "The PDF includes trend, W/D/L (season and halves), results, goals, players (call-ups / starts / minutes / cards), typical team and ranking evolution.",
@@ -2852,7 +3253,9 @@
   "opponentAnalysisReportEmailDialogMessage": "The analysis report for {opponentName} will be sent to the addresses below.",
   "@opponentAnalysisReportEmailDialogMessage": {
     "placeholders": {
-      "opponentName": { "type": "String" }
+      "opponentName": {
+        "type": "String"
+      }
     }
   },
   "opponentAnalysisReportEmailRecipientsLabel": "Recipients",
@@ -2876,5 +3279,85 @@
   "biometricLoginPromptReason": "Sign in to Grinta",
   "biometricLoginCredentialsInvalid": "Saved login details are no longer valid. Sign in with your password.",
   "biometricLoginSavePasswordTitle": "Confirm your password",
-  "biometricLoginSavePasswordMessage": "Enter your password so Face ID / fingerprint can sign you back in after logout. It stays encrypted on this device."
+  "biometricLoginSavePasswordMessage": "Enter your password so Face ID / fingerprint can sign you back in after logout. It stays encrypted on this device.",
+  "createPersonalSportOuraActivity": "Oura activity",
+  "createPersonalSportOuraDeployRequired": "Oura import is not deployed yet. Run firebase deploy for ouraListActivities and ouraImportActivity.",
+  "createPersonalSportOuraLoadError": "Could not load Oura activities. Check the connection and try again.",
+  "createPersonalSportOuraNoImportable": "No Oura workouts to import.",
+  "wearableDeviceOura": "Oura",
+  "ouraConnectToggleLabel": "Oura sync",
+  "ouraConnectToggleSubtitle": "Connect your Oura account to import workouts with duration and heart-rate zones",
+  "ouraConnectToggleConnectedSubtitle": "Oura connected — import workouts from Create",
+  "ouraConnectSuccess": "Oura account connected.",
+  "ouraAccountHintGuidance": "Your Oura email can differ from your Grinta account. Enter the Oura account to use, then sign in with that account on the Oura page.",
+  "ouraAccountHintLabel": "Oura account",
+  "ouraAccountHintPlaceholder": "Oura email",
+  "ouraAccountHintRequired": "Enter your Oura account (email) before continuing.",
+  "ouraConnectContinue": "Continue to Oura",
+  "ouraConnectFailed": "Oura connection failed. Check that Oura Cloud Functions are deployed and OURA_CLIENT_ID / OURA_CLIENT_SECRET secrets are configured.",
+  "ouraConnectLaunchFailed": "Could not open the Oura sign-in page.",
+  "ouraConnectAuthRequired": "Sign in to Grinta to connect Oura.",
+  "ouraDisconnectFailed": "Oura disconnect failed.",
+  "ouraCoachVisibilityTitle": "Coach visibility",
+  "ouraCoachVisibilitySubtitle": "Allow your coach to see this data type",
+  "ouraCoachVisibilitySaveFailed": "Could not save Oura preferences.",
+  "ouraMetricWorkout": "Workouts",
+  "ouraCoachConnectTitle": "Oura",
+  "ouraCoachConnectSubtitle": "Connect Oura for {playerName}",
+  "@ouraCoachConnectSubtitle": {
+    "placeholders": {
+      "playerName": {
+        "type": "String"
+      }
+    }
+  },
+  "ouraCoachConnectAction": "Connect",
+  "ouraCoachConnectConnectedSubtitle": "Oura connected for {playerName}",
+  "@ouraCoachConnectConnectedSubtitle": {
+    "placeholders": {
+      "playerName": {
+        "type": "String"
+      }
+    }
+  },
+  "ouraAnalysisTitle": "Oura analysis",
+  "ouraAnalysisStrain": "Intensity",
+  "ouraAnalysisAvgHr": "Avg HR",
+  "ouraAnalysisMaxHr": "Max HR",
+  "ouraAnalysisDuration": "Duration",
+  "ouraAnalysisCalories": "Calories",
+  "ouraAnalysisAltitude": "Elevation",
+  "ouraAnalysisHrZonesTitle": "Heart rate zones",
+  "ouraAnalysisNoZones": "No zone breakdown for this import. Re-import the Oura activity.",
+  "ouraAnalysisZoneLabel": "Zone {zone}",
+  "@ouraAnalysisZoneLabel": {
+    "placeholders": {
+      "zone": {
+        "type": "int"
+      }
+    }
+  },
+  "ouraAnalysisZoneAboveBpm": "{bpm}+ bpm",
+  "@ouraAnalysisZoneAboveBpm": {
+    "placeholders": {
+      "bpm": {
+        "type": "int"
+      }
+    }
+  },
+  "ouraAnalysisZoneBpmRange": "{min} – {max} bpm",
+  "@ouraAnalysisZoneBpmRange": {
+    "placeholders": {
+      "min": {
+        "type": "int"
+      },
+      "max": {
+        "type": "int"
+      }
+    }
+  },
+  "ouraMetricHeartrate": "Heart rate",
+  "ouraMetricDaily": "Daily readiness / activity",
+  "ouraMetricPersonal": "Personal info",
+  "ouraMetricEmail": "Email"
 }

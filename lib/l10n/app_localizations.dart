@@ -7536,6 +7536,167 @@ abstract class AppLocalizations {
   /// **'Whoop connecté pour {playerName}'**
   String whoopCoachConnectConnectedSubtitle(String playerName);
 
+  /// No description provided for @createPersonalSportOuraActivity.
+  ///
+  /// In fr, this message translates to:
+  /// **'Activité Oura'**
+  String get createPersonalSportOuraActivity;
+  /// No description provided for @createPersonalSportOuraDeployRequired.
+  ///
+  /// In fr, this message translates to:
+  /// **'L’import Oura n’est pas encore déployé. Déploie ouraListActivities et ouraImportActivity avec firebase deploy.'**
+  String get createPersonalSportOuraDeployRequired;
+  /// No description provided for @createPersonalSportOuraLoadError.
+  ///
+  /// In fr, this message translates to:
+  /// **'Impossible de charger les activités Oura. Vérifie la connexion et réessaie.'**
+  String get createPersonalSportOuraLoadError;
+  /// No description provided for @createPersonalSportOuraNoImportable.
+  ///
+  /// In fr, this message translates to:
+  /// **'Aucune séance Oura à importer.'**
+  String get createPersonalSportOuraNoImportable;
+  /// No description provided for @wearableDeviceOura.
+  ///
+  /// In fr, this message translates to:
+  /// **'Oura'**
+  String get wearableDeviceOura;
+
+  /// No description provided for @ouraConnectToggleLabel.
+  ///
+  /// In fr, this message translates to:
+  /// **'Sync. Oura'**
+  String get ouraConnectToggleLabel;
+
+  /// No description provided for @ouraConnectToggleSubtitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Connecte ton compte Oura pour importer récupération, sommeil et entraînements'**
+  String get ouraConnectToggleSubtitle;
+
+  /// No description provided for @ouraConnectToggleConnectedSubtitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Oura connecté — synchronisation des données à venir (Phase 2)'**
+  String get ouraConnectToggleConnectedSubtitle;
+
+  /// No description provided for @ouraConnectSuccess.
+  ///
+  /// In fr, this message translates to:
+  /// **'Compte Oura connecté.'**
+  String get ouraConnectSuccess;
+
+  /// No description provided for @ouraAccountHintGuidance.
+  ///
+  /// In fr, this message translates to:
+  /// **'L\'email Oura peut être différent de ton compte Grinta. Indique le compte Oura à utiliser, puis connecte-toi avec ce compte sur la page Oura.'**
+  String get ouraAccountHintGuidance;
+
+  /// No description provided for @ouraAccountHintLabel.
+  ///
+  /// In fr, this message translates to:
+  /// **'Compte Oura'**
+  String get ouraAccountHintLabel;
+
+  /// No description provided for @ouraAccountHintPlaceholder.
+  ///
+  /// In fr, this message translates to:
+  /// **'email Oura'**
+  String get ouraAccountHintPlaceholder;
+
+  /// No description provided for @ouraAccountHintRequired.
+  ///
+  /// In fr, this message translates to:
+  /// **'Indique ton compte Oura (email) avant de continuer.'**
+  String get ouraAccountHintRequired;
+
+  /// No description provided for @ouraConnectContinue.
+  ///
+  /// In fr, this message translates to:
+  /// **'Continuer vers Oura'**
+  String get ouraConnectContinue;
+
+  /// No description provided for @ouraConnectFailed.
+  ///
+  /// In fr, this message translates to:
+  /// **'La connexion Oura a échoué. Vérifie que les Cloud Functions Oura sont déployées et que les secrets OURA_CLIENT_ID / OURA_CLIENT_SECRET sont configurés.'**
+  String get ouraConnectFailed;
+
+  /// No description provided for @ouraConnectLaunchFailed.
+  ///
+  /// In fr, this message translates to:
+  /// **'Impossible d\'ouvrir la page de connexion Oura.'**
+  String get ouraConnectLaunchFailed;
+
+  /// No description provided for @ouraConnectAuthRequired.
+  ///
+  /// In fr, this message translates to:
+  /// **'Connecte-toi à Grinta pour lier Oura.'**
+  String get ouraConnectAuthRequired;
+
+  /// No description provided for @ouraDisconnectFailed.
+  ///
+  /// In fr, this message translates to:
+  /// **'La déconnexion Oura a échoué.'**
+  String get ouraDisconnectFailed;
+
+  /// No description provided for @ouraCoachVisibilityTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Visibilité coach'**
+  String get ouraCoachVisibilityTitle;
+
+  /// No description provided for @ouraCoachVisibilitySubtitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Autoriser ton coach à voir cette donnée'**
+  String get ouraCoachVisibilitySubtitle;
+
+  /// No description provided for @ouraCoachVisibilitySaveFailed.
+  ///
+  /// In fr, this message translates to:
+  /// **'Impossible d\'enregistrer les préférences Oura.'**
+  String get ouraCoachVisibilitySaveFailed;
+
+
+
+
+  /// No description provided for @ouraMetricWorkout.
+  ///
+  /// In fr, this message translates to:
+  /// **'Entraînements'**
+  String get ouraMetricWorkout;
+  String get ouraMetricHeartrate;
+  String get ouraMetricDaily;
+  String get ouraMetricPersonal;
+  String get ouraMetricEmail;
+
+
+
+  /// No description provided for @ouraCoachConnectTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Oura'**
+  String get ouraCoachConnectTitle;
+
+  /// No description provided for @ouraCoachConnectSubtitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Connecter le compte Oura de {playerName}'**
+  String ouraCoachConnectSubtitle(String playerName);
+
+  /// No description provided for @ouraCoachConnectAction.
+  ///
+  /// In fr, this message translates to:
+  /// **'Connecter'**
+  String get ouraCoachConnectAction;
+
+  /// No description provided for @ouraCoachConnectConnectedSubtitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Oura connecté pour {playerName}'**
+  String ouraCoachConnectConnectedSubtitle(String playerName);
+
   /// No description provided for @stravaConnectToggleSubtitle.
   ///
   /// In fr, this message translates to:
@@ -12134,6 +12295,67 @@ abstract class AppLocalizations {
   /// In fr, this message translates to:
   /// **'{min} – {max} bpm'**
   String whoopAnalysisZoneBpmRange(int min, int max);
+
+  /// No description provided for @ouraAnalysisTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Analyse Oura'**
+  String get ouraAnalysisTitle;
+  /// No description provided for @ouraAnalysisStrain.
+  ///
+  /// In fr, this message translates to:
+  /// **'Effort activité'**
+  String get ouraAnalysisStrain;
+  /// No description provided for @ouraAnalysisAvgHr.
+  ///
+  /// In fr, this message translates to:
+  /// **'FC moyenne'**
+  String get ouraAnalysisAvgHr;
+  /// No description provided for @ouraAnalysisMaxHr.
+  ///
+  /// In fr, this message translates to:
+  /// **'FC max'**
+  String get ouraAnalysisMaxHr;
+  /// No description provided for @ouraAnalysisDuration.
+  ///
+  /// In fr, this message translates to:
+  /// **'Durée'**
+  String get ouraAnalysisDuration;
+  /// No description provided for @ouraAnalysisCalories.
+  ///
+  /// In fr, this message translates to:
+  /// **'Calories'**
+  String get ouraAnalysisCalories;
+  /// No description provided for @ouraAnalysisAltitude.
+  ///
+  /// In fr, this message translates to:
+  /// **'Dénivelé'**
+  String get ouraAnalysisAltitude;
+  /// No description provided for @ouraAnalysisHrZonesTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Zones cardiaques'**
+  String get ouraAnalysisHrZonesTitle;
+  /// No description provided for @ouraAnalysisNoZones.
+  ///
+  /// In fr, this message translates to:
+  /// **'Aucune répartition par zone pour cet import. Réimporte l’activité Oura.'**
+  String get ouraAnalysisNoZones;
+  /// No description provided for @ouraAnalysisZoneLabel.
+  ///
+  /// In fr, this message translates to:
+  /// **'Zone {zone}'**
+  String ouraAnalysisZoneLabel(int zone);
+  /// No description provided for @ouraAnalysisZoneAboveBpm.
+  ///
+  /// In fr, this message translates to:
+  /// **'+ de {bpm} bpm'**
+  String ouraAnalysisZoneAboveBpm(int bpm);
+  /// No description provided for @ouraAnalysisZoneBpmRange.
+  ///
+  /// In fr, this message translates to:
+  /// **'{min} – {max} bpm'**
+  String ouraAnalysisZoneBpmRange(int min, int max);
 
   /// No description provided for @opponentAnalysisPromptTitle.
   ///

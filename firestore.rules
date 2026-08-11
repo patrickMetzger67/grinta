@@ -147,7 +147,9 @@ service cloud.firestore {
           'polar_integrations',
           'polar_oauth_pending',
           'fitbit_integrations',
-          'fitbit_oauth_pending'
+          'fitbit_oauth_pending',
+          'oura_integrations',
+          'oura_oauth_pending'
         ];
     }
 
@@ -221,6 +223,11 @@ service cloud.firestore {
         allow read, write: if canAccessWearableSync(userId, playerId);
       }
 
+      // Oura connection metadata (no tokens — server stores tokens separately).
+      match /ouraSync/{playerId} {
+        allow read, write: if canAccessWearableSync(userId, playerId);
+      }
+
       // Apple Health connection metadata (on-device HealthKit — no OAuth tokens).
       match /appleHealthSync/{playerId} {
         allow read, write: if canAccessWearableSync(userId, playerId);
@@ -280,6 +287,15 @@ service cloud.firestore {
     }
 
     match /fitbit_oauth_pending/{stateId} {
+      allow read, write: if false;
+    }
+
+    // Oura OAuth tokens — Cloud Functions / Admin SDK only.
+    match /oura_integrations/{integrationId} {
+      allow read, write: if false;
+    }
+
+    match /oura_oauth_pending/{stateId} {
       allow read, write: if false;
     }
 

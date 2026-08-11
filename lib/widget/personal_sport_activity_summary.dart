@@ -56,6 +56,13 @@ class PersonalSportSourceLogo extends StatelessWidget {
           height: size,
           fit: BoxFit.contain,
         );
+      case 'oura':
+        tooltip = l10n.wearableDeviceOura;
+        logo = Icon(
+          Icons.nightlight_round,
+          size: size,
+          color: colors.primary,
+        );
       case 'applehealth':
         tooltip = l10n.wearableDeviceAppleHealth;
         logo = SvgPicture.asset(

@@ -37,6 +37,7 @@ import 'package:grinta/services/fitbit_deep_link_service.dart';
 import 'package:grinta/services/polar_deep_link_service.dart';
 import 'package:grinta/services/strava_deep_link_service.dart';
 import 'package:grinta/services/whoop_deep_link_service.dart';
+import 'package:grinta/services/oura_deep_link_service.dart';
 import 'package:grinta/services/userService.dart';
 import 'package:grinta/services/biometric_unlock_service.dart';
 import 'package:grinta/widget/parental_consent_pending_screen.dart';
@@ -67,6 +68,7 @@ Future<void> main() async {
       InternalReminderService.instance.init(),
       CalendarDeepLinkService.instance.init(),
       WhoopDeepLinkService.instance.init(),
+      OuraDeepLinkService.instance.init(),
       StravaDeepLinkService.instance.init(),
       PolarDeepLinkService.instance.init(),
       FitbitDeepLinkService.instance.init(),

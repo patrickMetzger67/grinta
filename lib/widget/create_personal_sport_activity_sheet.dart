@@ -16,6 +16,7 @@ import 'package:grinta/services/google_health_sync_service.dart';
 import 'package:grinta/services/polar_sync_service.dart';
 import 'package:grinta/services/strava_sync_service.dart';
 import 'package:grinta/services/whoop_sync_service.dart';
+import 'package:grinta/services/oura_sync_service.dart';
 import 'package:grinta/util/app_snackbar.dart';
 import 'package:grinta/util/app_theme.dart';
 import 'package:grinta/util/player_photo_resolver.dart';
@@ -23,6 +24,7 @@ import 'package:grinta/widget/player_feeling_faces.dart';
 import 'package:grinta/widget/polar_analysis/polar_hr_zones_chart.dart';
 import 'package:grinta/widget/sport_metric_pickers.dart';
 import 'package:grinta/widget/whoop_analysis/whoop_hr_zones_card.dart';
+import 'package:grinta/widget/oura_analysis/oura_hr_zones_card.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 
@@ -151,6 +153,9 @@ class _CreatePersonalSportActivitySheetState
   List<WhoopImportableActivity> _whoopActivities = const [];
   WhoopImportableActivity? _selectedWhoop;
   String? _whoopListError;
+  List<OuraImportableActivity> _ouraActivities = const [];
+  OuraImportableActivity? _selectedOura;
+  String? _ouraListError;
   List<AppleHealthImportableActivity> _appleActivities = const [];
   AppleHealthImportableActivity? _selectedApple;
   String? _appleListError;
@@ -317,6 +322,9 @@ class _CreatePersonalSportActivitySheetState
     _whoopActivities = const [];
     _selectedWhoop = null;
     _whoopListError = null;
+    _ouraActivities = const [];
+    _selectedOura = null;
+    _ouraListError = null;
     _appleActivities = const [];
     _selectedApple = null;
     _appleListError = null;
@@ -350,6 +358,8 @@ class _CreatePersonalSportActivitySheetState
         PolarSyncService.instance.repository.getConfig(uid, playerId);
     final whoopFuture =
         WhoopSyncService.instance.repository.getConfig(uid, playerId);
+    final ouraFuture =
+        OuraSyncService.instance.repository.getConfig(uid, playerId);
     final appleFuture =
         AppleHealthSyncService.instance.repository.getConfig(uid, playerId);
     final googleFuture =
@@ -357,6 +367,7 @@ class _CreatePersonalSportActivitySheetState
     final stravaConfig = await stravaFuture;
     final polarConfig = await polarFuture;
     final whoopConfig = await whoopFuture;
+    final ouraConfig = await ouraFuture;
     final appleConfig = await appleFuture;
     final googleConfig = await googleFuture;
     if (!mounted) return;
@@ -376,6 +387,9 @@ class _CreatePersonalSportActivitySheetState
     }
     if (whoopConfig?.connected == true) {
       connected.add(WearableDeviceType.whoop);
+    }
+    if (ouraConfig?.connected == true) {
+      connected.add(WearableDeviceType.oura);
     }
     if (appleConfig?.connected == true) {
       connected.add(WearableDeviceType.appleHealth);
@@ -413,6 +427,10 @@ class _CreatePersonalSportActivitySheetState
     }
     if (source == WearableDeviceType.whoop) {
       await _loadWhoopActivities();
+      return;
+    }
+    if (source == WearableDeviceType.oura) {
+      await _loadOuraActivities();
       return;
     }
     if (source == WearableDeviceType.appleHealth) {
@@ -542,6 +560,45 @@ class _CreatePersonalSportActivitySheetState
       );
     }
   }
+  Future<void> _loadOuraActivities() async {
+    final session = context.read<AppSession>();
+    final playerId = session.selectedPlayerId?.trim() ?? '';
+    if (playerId.isEmpty) {
+      if (mounted) setState(() => _loadingImportActivities = false);
+      return;
+    }
+
+    setState(() {
+      _loadingImportActivities = true;
+      _clearImportSelections();
+    });
+
+    final result = await OuraSyncService.instance.listImportableActivities(
+      playerId: playerId,
+    );
+    if (!mounted) return;
+    setState(() {
+      _ouraActivities = result.activities;
+      _loadingImportActivities = false;
+      if (result.hasError) {
+        _ouraListError = result.errorCode == 'not-found' ||
+                result.errorCode == 'unimplemented'
+            ? context.l10n.createPersonalSportOuraDeployRequired
+            : (result.errorMessage?.trim().isNotEmpty == true
+                ? result.errorMessage
+                : context.l10n.createPersonalSportOuraLoadError);
+      } else if (result.activities.isNotEmpty) {
+        _selectedOura = result.activities.first;
+        _typeId = result.activities.first.typeId;
+      }
+    });
+    if (result.hasError && mounted) {
+      AppSnackbar.show(
+        context,
+        _ouraListError ?? context.l10n.createPersonalSportOuraLoadError,
+      );
+    }
+  }
 
   Future<void> _loadAppleHealthActivities() async {
     final session = context.read<AppSession>();
@@ -632,6 +689,8 @@ class _CreatePersonalSportActivitySheetState
         return l10n.wearableDevicePolar;
       case WearableDeviceType.whoop:
         return l10n.wearableDeviceWhoop;
+      case WearableDeviceType.oura:
+        return l10n.wearableDeviceOura;
       case WearableDeviceType.appleHealth:
         return l10n.wearableDeviceAppleHealth;
       case WearableDeviceType.googleHealthConnect:
@@ -699,6 +758,16 @@ class _CreatePersonalSportActivitySheetState
           imported = await WhoopSyncService.instance.importActivity(
             playerId: playerId,
             externalId: _selectedWhoop!.externalId,
+            visibility: _visibility.firestoreValue,
+            feeling: _feeling?.value,
+            notes: _notesController.text.trim(),
+            typeId: _typeId,
+          );
+        } else if (_importSource == WearableDeviceType.oura &&
+            _selectedOura != null) {
+          imported = await OuraSyncService.instance.importActivity(
+            playerId: playerId,
+            externalId: _selectedOura!.externalId,
             visibility: _visibility.firestoreValue,
             feeling: _feeling?.value,
             notes: _notesController.text.trim(),
@@ -1434,6 +1503,194 @@ class _CreatePersonalSportActivitySheetState
                         });
                       },
                     ),
+                  else if (_importSource == WearableDeviceType.oura &&
+                      _ouraActivities.isEmpty)
+                    Text(
+                      _ouraListError ??
+                          l10n.createPersonalSportOuraNoImportable,
+                      style: TextStyle(color: colors.textSecondary),
+                    )
+                  else if (_importSource == WearableDeviceType.appleHealth &&
+                      _appleActivities.isEmpty)
+                    Text(
+                      _appleListError ??
+                          l10n.createPersonalSportAppleNoImportable,
+                      style: TextStyle(color: colors.textSecondary),
+                    )
+                  else if (_importSource ==
+                          WearableDeviceType.googleHealthConnect &&
+                      _googleActivities.isEmpty)
+                    Text(
+                      _googleListError ??
+                          l10n.createPersonalSportGoogleNoImportable,
+                      style: TextStyle(color: colors.textSecondary),
+                    )
+                  else if (_importSource == WearableDeviceType.strava)
+                    DropdownButtonFormField<String>(
+                      isExpanded: true,
+                      value: _selectedStrava?.externalId,
+                      decoration: InputDecoration(
+                        labelText: l10n.createPersonalSportStravaActivity,
+                      ),
+                      items: [
+                        for (final activity in _stravaActivities)
+                          DropdownMenuItem(
+                            value: activity.externalId,
+                            child: Text(
+                              activity.displayLabel,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              softWrap: false,
+                            ),
+                          ),
+                      ],
+                      onChanged: (id) {
+                        StravaImportableActivity? match;
+                        for (final activity in _stravaActivities) {
+                          if (activity.externalId == id) {
+                            match = activity;
+                            break;
+                          }
+                        }
+                        setState(() {
+                          _selectedStrava = match;
+                          if (match != null) _typeId = match.typeId;
+                        });
+                      },
+                    )
+                  else if (_importSource == WearableDeviceType.polar)
+                    DropdownButtonFormField<String>(
+                      isExpanded: true,
+                      value: _selectedPolar?.externalId,
+                      decoration: InputDecoration(
+                        labelText: l10n.createPersonalSportPolarActivity,
+                      ),
+                      items: [
+                        for (final activity in _polarActivities)
+                          DropdownMenuItem(
+                            value: activity.externalId,
+                            child: Text(
+                              activity.displayLabel,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              softWrap: false,
+                            ),
+                          ),
+                      ],
+                      onChanged: (id) {
+                        PolarImportableActivity? match;
+                        for (final activity in _polarActivities) {
+                          if (activity.externalId == id) {
+                            match = activity;
+                            break;
+                          }
+                        }
+                        setState(() {
+                          _selectedPolar = match;
+                          if (match != null) _typeId = match.typeId;
+                        });
+                      },
+                    )
+                  else if (_importSource == WearableDeviceType.oura)
+                    DropdownButtonFormField<String>(
+                      isExpanded: true,
+                      value: _selectedOura?.externalId,
+                      decoration: InputDecoration(
+                        labelText: l10n.createPersonalSportOuraActivity,
+                      ),
+                      items: [
+                        for (final activity in _ouraActivities)
+                          DropdownMenuItem(
+                            value: activity.externalId,
+                            child: Text(
+                              activity.displayLabel,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              softWrap: false,
+                            ),
+                          ),
+                      ],
+                      onChanged: (id) {
+                        OuraImportableActivity? match;
+                        for (final activity in _ouraActivities) {
+                          if (activity.externalId == id) {
+                            match = activity;
+                            break;
+                          }
+                        }
+                        setState(() {
+                          _selectedOura = match;
+                          if (match != null) _typeId = match.typeId;
+                        });
+                      },
+                    )
+                  else if (_importSource == WearableDeviceType.appleHealth)
+                    DropdownButtonFormField<String>(
+                      isExpanded: true,
+                      value: _selectedApple?.externalId,
+                      decoration: InputDecoration(
+                        labelText: l10n.createPersonalSportAppleActivity,
+                      ),
+                      items: [
+                        for (final activity in _appleActivities)
+                          DropdownMenuItem(
+                            value: activity.externalId,
+                            child: Text(
+                              activity.displayLabel,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              softWrap: false,
+                            ),
+                          ),
+                      ],
+                      onChanged: (id) {
+                        AppleHealthImportableActivity? match;
+                        for (final activity in _appleActivities) {
+                          if (activity.externalId == id) {
+                            match = activity;
+                            break;
+                          }
+                        }
+                        setState(() {
+                          _selectedApple = match;
+                          if (match != null) _typeId = match.typeId;
+                        });
+                      },
+                    )
+                  else if (_importSource ==
+                      WearableDeviceType.googleHealthConnect)
+                    DropdownButtonFormField<String>(
+                      isExpanded: true,
+                      value: _selectedGoogle?.externalId,
+                      decoration: InputDecoration(
+                        labelText: l10n.createPersonalSportGoogleActivity,
+                      ),
+                      items: [
+                        for (final activity in _googleActivities)
+                          DropdownMenuItem(
+                            value: activity.externalId,
+                            child: Text(
+                              activity.displayLabel,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              softWrap: false,
+                            ),
+                          ),
+                      ],
+                      onChanged: (id) {
+                        GoogleHealthImportableActivity? match;
+                        for (final activity in _googleActivities) {
+                          if (activity.externalId == id) {
+                            match = activity;
+                            break;
+                          }
+                        }
+                        setState(() {
+                          _selectedGoogle = match;
+                          if (match != null) _typeId = match.typeId;
+                        });
+                      },
+                    ),
                 ],
               ],
               if ((_isEditMode || _readOnly) &&
@@ -1441,6 +1698,11 @@ class _CreatePersonalSportActivitySheetState
                   widget.activityToEdit!.isWhoopImport) ...[
                 const SizedBox(height: 12),
                 WhoopHrZonesCard(activity: widget.activityToEdit!),
+              ] else if ((_isEditMode || _readOnly) &&
+                  widget.activityToEdit != null &&
+                  widget.activityToEdit!.isOuraImport) ...[
+                const SizedBox(height: 12),
+                OuraHrZonesCard(activity: widget.activityToEdit!),
               ] else if (_isEditMode || _readOnly) ...[
                 if (widget.activityToEdit?.averageHeartRateBpm != null) ...[
                   const SizedBox(height: 8),

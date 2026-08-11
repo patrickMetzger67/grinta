@@ -122,6 +122,9 @@ class PersonalSportActivity {
   bool get isWhoopImport =>
       (externalSource ?? '').trim().toLowerCase() == 'whoop';
 
+  bool get isOuraImport =>
+      (externalSource ?? '').trim().toLowerCase() == 'oura';
+
   factory PersonalSportActivity.fromFirestore(
     DocumentSnapshot<Map<String, dynamic>> doc,
   ) {

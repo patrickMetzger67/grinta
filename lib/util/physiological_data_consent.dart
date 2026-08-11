@@ -38,6 +38,7 @@ bool wearableRequiresPhysiologicalConsent(WearableDeviceType type) {
     case WearableDeviceType.whoop:
     case WearableDeviceType.polar:
     case WearableDeviceType.fitbit:
+    case WearableDeviceType.oura:
     case WearableDeviceType.appleHealth:
     case WearableDeviceType.googleHealthConnect:
       return true;

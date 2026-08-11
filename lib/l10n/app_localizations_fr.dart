@@ -3103,7 +3103,7 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get createPersonalSportNoConnectedApps =>
-      'Aucune app connectée. Connecte Strava, Polar, Whoop, Apple Forme ou Google Health dans Appareils / Applications.';
+      'Aucune app connectée. Connecte Strava, Polar, Whoop / Oura, Apple Forme ou Google Health dans Appareils / Applications.';
 
   @override
   String get createPersonalSportImportRequired =>
@@ -7167,4 +7167,135 @@ class AppLocalizationsFr extends AppLocalizations {
   @override
   String get biometricLoginSavePasswordMessage =>
       'Saisissez votre mot de passe pour que Face ID / empreinte puisse vous reconnecter après une déconnexion. Il reste chiffré sur cet appareil.';
+
+  @override
+  String get createPersonalSportOuraActivity => 'Activité Oura';
+
+  @override
+  String get createPersonalSportOuraDeployRequired =>
+      'L’import Oura n’est pas encore déployé. Exécutez firebase deploy pour ouraListActivities et ouraImportActivity.';
+
+  @override
+  String get createPersonalSportOuraLoadError => 'Impossible de charger les activités Oura. Vérifiez la connexion et réessayez.';
+
+  @override
+  String get createPersonalSportOuraNoImportable => 'Aucune séance Oura à importer.';
+
+  @override
+  String get wearableDeviceOura => 'Oura';
+
+  @override
+  String get ouraConnectToggleLabel => 'Sync. Oura';
+
+  @override
+  String get ouraConnectToggleSubtitle =>
+      'Connectez votre compte Oura pour importer vos entraînements (durée et zones de FC)';
+
+  @override
+  String get ouraConnectToggleConnectedSubtitle => 'Oura connecté — importez vos activités depuis Créer';
+
+  @override
+  String get ouraConnectSuccess => 'Compte Oura connecté.';
+
+  @override
+  String get ouraAccountHintGuidance =>
+      'Votre email Oura peut différer de votre compte Grinta. Saisissez le compte Oura à utiliser, puis connectez-vous avec ce compte sur la page Oura.';
+
+  @override
+  String get ouraAccountHintLabel => 'Compte Oura';
+
+  @override
+  String get ouraAccountHintPlaceholder => 'Email Oura';
+
+  @override
+  String get ouraAccountHintRequired => 'Saisissez votre compte Oura (email) avant de continuer.';
+
+  @override
+  String get ouraConnectContinue => 'Continuer vers Oura';
+
+  @override
+  String get ouraConnectFailed =>
+      'Échec de la connexion Oura. Vérifiez que les Cloud Functions Oura sont déployées et que les secrets OURA_CLIENT_ID / OURA_CLIENT_SECRET sont configurés.';
+
+  @override
+  String get ouraConnectLaunchFailed => 'Impossible d’ouvrir la page de connexion Oura.';
+
+  @override
+  String get ouraConnectAuthRequired => 'Connectez-vous à Grinta pour lier Oura.';
+
+  @override
+  String get ouraDisconnectFailed => 'Échec de la déconnexion Oura.';
+
+  @override
+  String get ouraCoachVisibilityTitle => 'Visibilité coach';
+
+  @override
+  String get ouraCoachVisibilitySubtitle => 'Autoriser votre coach à voir ce type de données';
+
+  @override
+  String get ouraCoachVisibilitySaveFailed => 'Impossible d’enregistrer les préférences Oura.';
+
+  @override
+  String get ouraMetricWorkout => 'Entraînements';
+
+  @override
+  String get ouraCoachConnectTitle => 'Oura';
+
+  @override
+  String ouraCoachConnectSubtitle(String playerName) => 'Connecter le compte Oura de $playerName';
+
+  @override
+  String get ouraCoachConnectAction => 'Connecter';
+
+  @override
+  String ouraCoachConnectConnectedSubtitle(String playerName) => 'Oura connecté pour $playerName';
+
+  @override
+  String get ouraAnalysisTitle => 'Analyse Oura';
+
+  @override
+  String get ouraAnalysisStrain => 'Intensité';
+
+  @override
+  String get ouraAnalysisAvgHr => 'FC moyenne';
+
+  @override
+  String get ouraAnalysisMaxHr => 'FC max';
+
+  @override
+  String get ouraAnalysisDuration => 'Durée';
+
+  @override
+  String get ouraAnalysisCalories => 'Calories';
+
+  @override
+  String get ouraAnalysisAltitude => 'Dénivelé';
+
+  @override
+  String get ouraAnalysisHrZonesTitle => 'Zones cardiaques';
+
+  @override
+  String get ouraAnalysisNoZones => 'Pas de détail des zones pour cet import. Réimportez l’activité Oura.';
+
+  @override
+  String ouraAnalysisZoneLabel(int zone) => 'Zone $zone';
+
+  @override
+  String ouraAnalysisZoneAboveBpm(int bpm) => '+ de $bpm bpm';
+
+  @override
+  String ouraAnalysisZoneBpmRange(int min, int max) => '$min – $max bpm';
+
+  @override
+  String get ouraMetricHeartrate => 'Fréquence cardiaque';
+
+  @override
+  String get ouraMetricDaily => 'Activité / readiness quotidienne';
+
+  @override
+  String get ouraMetricPersonal => 'Infos personnelles';
+
+  @override
+  String get ouraMetricEmail => 'Email';
+
 }

@@ -38,6 +38,16 @@ const {
   createFitbitOAuthCallback,
   createFitbitDisconnect,
 } = require('./fitbit_oauth');
+const {
+  createOuraOAuthStart,
+  createOuraOAuthCallback,
+  createOuraDisconnect,
+  createOuraRepairPlayerSync,
+} = require('./oura_oauth');
+const {
+  createOuraListActivities,
+  createOuraImportActivity,
+} = require('./oura_activities');
 const { createSendMailOnCreate } = require('./send_mail');
 const { createSendPasswordResetMail } = require('./password_reset');
 const { createSendPushFCMNotification } = require('./send_push_fcm');
@@ -735,6 +745,20 @@ exports.polarImportActivity = createPolarImportActivity();
 exports.fitbitOAuthStart = createFitbitOAuthStart();
 exports.fitbitOAuthCallback = createFitbitOAuthCallback();
 exports.fitbitDisconnect = createFitbitDisconnect();
+
+/**
+ * Oura OAuth + workout import (duration + HR zones).
+ * Secrets:
+ *   firebase functions:secrets:set OURA_CLIENT_ID
+ *   firebase functions:secrets:set OURA_CLIENT_SECRET
+ *   firebase deploy --only functions:ouraOAuthStart,functions:ouraOAuthCallback,functions:ouraDisconnect,functions:ouraRepairPlayerSync,functions:ouraListActivities,functions:ouraImportActivity
+ */
+exports.ouraOAuthStart = createOuraOAuthStart();
+exports.ouraOAuthCallback = createOuraOAuthCallback();
+exports.ouraDisconnect = createOuraDisconnect();
+exports.ouraRepairPlayerSync = createOuraRepairPlayerSync();
+exports.ouraListActivities = createOuraListActivities();
+exports.ouraImportActivity = createOuraImportActivity();
 
 /**
  * Firestore trigger: send queued mail documents via SendGrid.
