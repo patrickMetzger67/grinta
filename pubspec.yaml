@@ -112,6 +112,7 @@ flutter:
     - assets/images/strava_logo.svg
     - assets/images/polar_logo.png
     - assets/images/whoop_logo.svg
+    - assets/images/oura_logo.svg
     - assets/images/apple_forme_logo.svg
     - assets/images/google_fit_logo.svg
     - assets/images/ask_gio_avatar.png
