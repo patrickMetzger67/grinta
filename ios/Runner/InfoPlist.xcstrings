@@ -1,37 +1,107 @@
 {
   "sourceLanguage" : "fr",
   "strings" : {
+    "NSLocationAlwaysAndWhenInUseUsageDescription" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Grinta nutzt Ihren Standort, um die Karte bei der Spielfeld-Geolokalisierung für GPS-Heatmaps zu zentrieren — zum Beispiel unter Feldlokalisierung. Der Standort wird nur während der App-Nutzung angefragt."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Grinta uses your location to center the map when you set a pitch location for GPS heatmaps — for example, when geolocating your stadium in Field localization. Location is only requested while you use the app."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Grinta utiliza tu ubicación para centrar el mapa al localizar un campo para heatmaps GPS — por ejemplo en Localización del campo. La ubicación solo se solicita mientras usas la app."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Grinta utilise votre position pour centrer la carte lorsque vous localisez un terrain pour les heatmaps GPS — par exemple dans Localisation du terrain. La position n’est demandée que pendant l’utilisation de l’app."
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Grinta utilizza la tua posizione per centrare la mappa quando localizzi un campo per le heatmap GPS — ad esempio in Localizzazione campo. La posizione viene richiesta solo durante l’uso dell’app."
+          }
+        }
+      }
+    },
+    "NSLocationAlwaysUsageDescription" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Grinta nutzt Ihren Standort, um die Karte bei der Spielfeld-Geolokalisierung für GPS-Heatmaps zu zentrieren — zum Beispiel unter Feldlokalisierung. Der Standort wird nur während der App-Nutzung angefragt."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Grinta uses your location to center the map when you set a pitch location for GPS heatmaps — for example, when geolocating your stadium in Field localization. Location is only requested while you use the app."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Grinta utiliza tu ubicación para centrar el mapa al localizar un campo para heatmaps GPS — por ejemplo en Localización del campo. La ubicación solo se solicita mientras usas la app."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Grinta utilise votre position pour centrer la carte lorsque vous localisez un terrain pour les heatmaps GPS — par exemple dans Localisation du terrain. La position n’est demandée que pendant l’utilisation de l’app."
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Grinta utilizza la tua posizione per centrare la mappa quando localizzi un campo per le heatmap GPS — ad esempio in Localizzazione campo. La posizione viene richiesta solo durante l’uso dell’app."
+          }
+        }
+      }
+    },
     "NSLocationWhenInUseUsageDescription" : {
       "extractionState" : "manual",
       "localizations" : {
         "de" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Grinta nutzt Ihren Standort, um die Karte auf das Spielfeld zu zentrieren."
+            "value" : "Grinta nutzt Ihren Standort, um die Karte bei der Spielfeld-Geolokalisierung für GPS-Heatmaps zu zentrieren — zum Beispiel unter Feldlokalisierung."
           }
         },
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Grinta uses your location to center the map on the pitch."
+            "value" : "Grinta uses your location to center the map when you set a pitch location for GPS heatmaps — for example, when geolocating your stadium in Field localization."
           }
         },
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Grinta utiliza tu ubicación para centrar el mapa en el terreno."
+            "value" : "Grinta utiliza tu ubicación para centrar el mapa al localizar un campo para heatmaps GPS — por ejemplo en Localización del campo."
           }
         },
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Grinta utilise votre position pour centrer la carte sur le terrain."
+            "value" : "Grinta utilise votre position pour centrer la carte lorsque vous localisez un terrain pour les heatmaps GPS — par exemple dans Localisation du terrain."
           }
         },
         "it" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Grinta utilizza la tua posizione per centrare la mappa sul campo."
+            "value" : "Grinta utilizza la tua posizione per centrare la mappa quando localizzi un campo per le heatmap GPS — ad esempio in Localizzazione campo."
           }
         }
       }
