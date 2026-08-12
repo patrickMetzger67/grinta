@@ -1735,7 +1735,7 @@
   "shopLoadError": "Unable to load the shop.",
   "shopRetry": "Retry",
   "legalPrivacyPolicy": "Privacy Policy",
-  "legalTermsOfService": "Terms of Service",
+  "legalTermsOfService": "Terms of Use",
   "actionDeleteAccount": "Delete account",
   "actionDeleteAccountConfirmTitle": "Delete account?",
   "actionDeleteAccountConfirmMessage": "This action is permanent. Your account, member profile, and associated data will be deleted.",

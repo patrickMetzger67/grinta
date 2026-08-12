@@ -40,6 +40,9 @@ class SignupInvitationOnboarding {
 
   static Future<SignupMemberOnboardingResult?> run({
     bool requireEmail = false,
+    /// Prefill from Firebase Auth (Apple/Google) so Review Guideline 4
+    /// is satisfied — name/email already provided by the IdP.
+    Player? authSeedProfile,
   }) async {
     final rootContext = appNavigatorKey.currentContext;
     if (rootContext == null || !rootContext.mounted) {
@@ -60,7 +63,9 @@ class SignupInvitationOnboarding {
     if (!hasInvitationCode) {
       final profile = await _promptMemberProfile(
         rootContext,
+        initialProfile: authSeedProfile,
         requireEmail: requireEmail,
+        lockIdentityFromAuth: authSeedProfile != null,
       );
       if (profile == null) return null;
       return SignupMemberOnboardingResult(profile: profile);
@@ -91,7 +96,9 @@ class SignupInvitationOnboarding {
         case _InvitationLookupKind.continueWithoutInvitation:
           final profile = await _promptMemberProfile(
             rootContext,
+            initialProfile: authSeedProfile,
             requireEmail: requireEmail,
+            lockIdentityFromAuth: authSeedProfile != null,
           );
           if (profile == null) return null;
           return SignupMemberOnboardingResult(profile: profile);
@@ -318,6 +325,7 @@ class SignupInvitationOnboarding {
     Player? initialProfile,
     String? subtitle,
     bool requireEmail = false,
+    bool lockIdentityFromAuth = false,
   }) {
     final colors = context.appColors;
 
@@ -330,6 +338,7 @@ class SignupInvitationOnboarding {
           initialProfile: initialProfile,
           subtitle: subtitle,
           requireEmail: requireEmail,
+          lockIdentityFromAuth: lockIdentityFromAuth,
           dialogShape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(16),
             side: BorderSide(color: colors.border),
@@ -380,12 +389,14 @@ class _SignupMemberProfileDialog extends StatefulWidget {
     this.initialProfile,
     this.subtitle,
     this.requireEmail = false,
+    this.lockIdentityFromAuth = false,
     required this.dialogShape,
   });
 
   final Player? initialProfile;
   final String? subtitle;
   final bool requireEmail;
+  final bool lockIdentityFromAuth;
   final ShapeBorder dialogShape;
 
   @override
@@ -476,11 +487,13 @@ class _SignupMemberProfileDialogState extends State<_SignupMemberProfileDialog> 
             ],
             MemberProfileForm(
               key: ValueKey(
-                'signup-member-profile-${widget.initialProfile?.keyMember ?? 'new'}',
+                'signup-member-profile-'
+                '${widget.initialProfile?.keyMember?.trim().isNotEmpty == true ? widget.initialProfile!.keyMember : (widget.initialProfile?.email ?? 'new')}',
               ),
               enabled: true,
               initialProfile: widget.initialProfile,
               requireEmail: widget.requireEmail,
+              lockIdentityFromAuth: widget.lockIdentityFromAuth,
               onFormStateCreated: _onFormStateCreated,
               onChanged: (_) {
                 if (_inlineError != null) {

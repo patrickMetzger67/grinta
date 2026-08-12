@@ -4039,7 +4039,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get legalPrivacyPolicy => 'Privacy Policy';
 
   @override
-  String get legalTermsOfService => 'Terms of Service';
+  String get legalTermsOfService => 'Terms of Use';
 
   @override
   String get actionDeleteAccount => 'Delete account';

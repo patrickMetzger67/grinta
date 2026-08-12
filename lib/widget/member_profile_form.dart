@@ -28,6 +28,10 @@ class MemberProfileForm extends StatefulWidget {
   /// When true (email signup), email is mandatory for Firebase Auth.
   final bool requireEmail;
 
+  /// When true, first/last name and email provided by Sign in with Apple /
+  /// Google are shown read-only (App Store Guideline 4).
+  final bool lockIdentityFromAuth;
+
   const MemberProfileForm({
     super.key,
     required this.enabled,
@@ -37,6 +41,7 @@ class MemberProfileForm extends StatefulWidget {
     this.initialProfile,
     this.showTitle = true,
     this.requireEmail = false,
+    this.lockIdentityFromAuth = false,
   });
 
   @override
@@ -89,11 +94,30 @@ class MemberProfileFormState extends State<MemberProfileForm> {
 
   bool _initialProfileChanged(Player? previous, Player? next) {
     if (identical(previous, next)) return false;
-    return _profileMemberId(previous) != _profileMemberId(next);
+    if (_profileMemberId(previous) != _profileMemberId(next)) return true;
+    // Auth seed profiles often have no member id — compare identity fields.
+    return (previous?.firstName ?? '') != (next?.firstName ?? '') ||
+        (previous?.lastName ?? '') != (next?.lastName ?? '') ||
+        (previous?.email ?? '') != (next?.email ?? '');
   }
 
   String _profileMemberId(Player? profile) =>
       profile?.keyMember?.trim() ?? '';
+
+  bool get _lockFirstName =>
+      widget.lockIdentityFromAuth &&
+      (_firstNameCtrl.text.trim().isNotEmpty ||
+          (widget.initialProfile?.firstName?.trim().isNotEmpty ?? false));
+
+  bool get _lockLastName =>
+      widget.lockIdentityFromAuth &&
+      (_lastNameCtrl.text.trim().isNotEmpty ||
+          (widget.initialProfile?.lastName?.trim().isNotEmpty ?? false));
+
+  bool get _lockEmail =>
+      widget.lockIdentityFromAuth &&
+      (_emailCtrl.text.trim().isNotEmpty ||
+          (widget.initialProfile?.email?.trim().isNotEmpty ?? false));
 
   void _applyInitialProfileIfNeeded() {
     if (_appliedInitialProfile) return;
@@ -333,7 +357,8 @@ class MemberProfileFormState extends State<MemberProfileForm> {
         ],
         TextField(
           controller: _firstNameCtrl,
-          enabled: widget.enabled,
+          enabled: widget.enabled && !_lockFirstName,
+          readOnly: _lockFirstName,
           textCapitalization: TextCapitalization.words,
           decoration: InputDecoration(
             labelText: l10n.memberFirstName,
@@ -344,7 +369,8 @@ class MemberProfileFormState extends State<MemberProfileForm> {
         const SizedBox(height: 12),
         TextField(
           controller: _lastNameCtrl,
-          enabled: widget.enabled,
+          enabled: widget.enabled && !_lockLastName,
+          readOnly: _lockLastName,
           textCapitalization: TextCapitalization.words,
           decoration: InputDecoration(
             labelText: l10n.memberLastName,
@@ -355,7 +381,8 @@ class MemberProfileFormState extends State<MemberProfileForm> {
         const SizedBox(height: 12),
         TextField(
           controller: _emailCtrl,
-          enabled: widget.enabled,
+          enabled: widget.enabled && !_lockEmail,
+          readOnly: _lockEmail,
           keyboardType: TextInputType.emailAddress,
           autocorrect: false,
           decoration: InputDecoration(

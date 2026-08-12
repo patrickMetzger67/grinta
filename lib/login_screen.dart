@@ -21,6 +21,8 @@ import 'services/userService.dart';
 import 'services/user_trial_service.dart';
 import 'services/user_root_service.dart';
 import 'util/team_creation_access.dart';
+import 'util/account_age_gate.dart';
+import 'util/auth_profile_seed.dart';
 import 'util/player_photo_resolver.dart';
 import 'services/active_session_service.dart';
 import 'services/analytics_service.dart';
@@ -39,7 +41,6 @@ import 'widget/youtube_top_video_prompt.dart';
 import 'widget/biometric_lock_gate.dart';
 import 'services/biometric_unlock_service.dart';
 import 'services/parental_consent_service.dart';
-import 'util/account_age_gate.dart';
 
 bool _isPasswordValid(String password) {
   if (password.length < 8) return false;
@@ -1037,8 +1038,13 @@ class _LoginScreenState extends State<LoginScreen> {
       }
 
       coordinator.beginProfileOnboarding();
+      final authSeed = profileSeedFromAuthIdentity(
+        displayName: credential.user?.displayName,
+        email: credential.user?.email,
+      );
       final onboarding = await SignupInvitationOnboarding.run(
         requireEmail: false,
+        authSeedProfile: authSeed,
       );
       if (onboarding == null) {
         await _deleteNewAccountAndSignOut();

@@ -82,15 +82,15 @@
 			<string>remote-notification</string>
 		</array>
 		<key>NSLocationWhenInUseUsageDescription</key>
-		<string>Grinta utilise votre position pour centrer la carte sur le terrain / Grinta uses your location to center the map on the pitch.</string>
+		<string>Grinta uses your location to center the map when you set a pitch location for GPS heatmaps — for example, when geolocating your stadium in Field localization. / Grinta utilise votre position pour centrer la carte lorsque vous localisez un terrain pour les heatmaps GPS — par exemple dans Localisation du terrain.</string>
 		<key>NSMicrophoneUsageDescription</key>
-		<string>Grinta needs microphone access to record voice messages in team chat and for the AI assistant voice input.</string>
+		<string>Grinta needs microphone access to record voice messages in team chat and to ask the AI assistant (Ask Gio) questions by voice. / Grinta a besoin du micro pour les messages vocaux du chat d’équipe et pour poser des questions à Ask Gio à la voix.</string>
 		<key>NSSpeechRecognitionUsageDescription</key>
-		<string>Grinta uses speech recognition so you can ask the AI assistant questions by voice.</string>
+		<string>Grinta uses speech recognition so you can ask the AI assistant (Ask Gio) questions by voice. / Grinta utilise la reconnaissance vocale pour poser des questions à Ask Gio à la voix.</string>
 		<key>NSCameraUsageDescription</key>
-		<string>Grinta needs camera access to take photos for chat attachments.</string>
+		<string>Grinta uses the camera to take a profile photo or attach photos in team chat — for example, when you tap Change photo on Edit profile. / Grinta utilise l’appareil photo pour une photo de profil ou des pièces jointes dans le chat — par exemple via Modifier la photo sur Modifier mon profil.</string>
 		<key>NSPhotoLibraryUsageDescription</key>
-		<string>Grinta needs photo library access to share images in team chat.</string>
+		<string>Grinta uses your photo library to set a profile picture or share images in team chat — for example, when you choose an existing photo on Edit profile. / Grinta utilise votre photothèque pour une photo de profil ou le chat d’équipe — par exemple en choisissant une photo existante sur Modifier mon profil.</string>
 		<key>NSCalendarsUsageDescription</key>
 		<string>Grinta synchronise vos matchs et entraînements avec le calendrier de votre téléphone. / Grinta syncs your matches and training sessions with your phone calendar.</string>
 		<key>NSCalendarsFullAccessUsageDescription</key>
