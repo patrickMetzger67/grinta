@@ -83,6 +83,10 @@
 		</array>
 		<key>NSLocationWhenInUseUsageDescription</key>
 		<string>Grinta uses your location to center the map when you set a pitch location for GPS heatmaps — for example, when geolocating your stadium in Field localization. / Grinta utilise votre position pour centrer la carte lorsque vous localisez un terrain pour les heatmaps GPS — par exemple dans Localisation du terrain.</string>
+		<key>NSLocationAlwaysAndWhenInUseUsageDescription</key>
+		<string>Grinta uses your location to center the map when you set a pitch location for GPS heatmaps — for example, when geolocating your stadium in Field localization. Location is only requested while you use the app. / Grinta utilise votre position pour centrer la carte lorsque vous localisez un terrain pour les heatmaps GPS — par exemple dans Localisation du terrain. La position n’est demandée que pendant l’utilisation de l’app.</string>
+		<key>NSLocationAlwaysUsageDescription</key>
+		<string>Grinta uses your location to center the map when you set a pitch location for GPS heatmaps — for example, when geolocating your stadium in Field localization. Location is only requested while you use the app. / Grinta utilise votre position pour centrer la carte lorsque vous localisez un terrain pour les heatmaps GPS — par exemple dans Localisation du terrain. La position n’est demandée que pendant l’utilisation de l’app.</string>
 		<key>NSMicrophoneUsageDescription</key>
 		<string>Grinta needs microphone access to record voice messages in team chat and to ask the AI assistant (Ask Gio) questions by voice. / Grinta a besoin du micro pour les messages vocaux du chat d’équipe et pour poser des questions à Ask Gio à la voix.</string>
 		<key>NSSpeechRecognitionUsageDescription</key>
