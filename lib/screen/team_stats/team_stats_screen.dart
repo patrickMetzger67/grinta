@@ -155,6 +155,7 @@ class _TeamStatsScreenState extends State<TeamStatsScreen>
                 team: widget.team,
                 isManager: widget.isManager,
                 fallbackSeasonId: widget.fallbackSeasonId,
+                initialCompetitionUrl: widget.initialCompetitionUrl,
               ),
               TeamStatsTrainingsTab(
                 team: widget.team,

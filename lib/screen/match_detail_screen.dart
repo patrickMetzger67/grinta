@@ -33,6 +33,7 @@ import '../util/playerDisplayName.dart';
 import '../widget/match_compo_widget.dart';
 import '../widget/match_highlights_timeline.dart';
 import '../widget/match_opponent_stats_button.dart';
+import '../util/match_team_stats_navigation.dart';
 import '../util/session_tracker_kit.dart';
 import '../widget/session_player_analysis_view.dart';
 import '../widget/session_tracker_stats_view.dart';
@@ -878,6 +879,26 @@ class _MatchHeaderState extends State<_MatchHeader> {
   models.Match get match => _match;
   bool get isManager => widget.isManager;
 
+  Future<void> _onTeamLogoTap(MatchSide side) async {
+    final session = context.read<AppSession>();
+    final team = teamForMatchStats(session, match);
+    if (team == null) return;
+
+    final destination = destinationForMatchSide(
+      match: match,
+      team: team,
+      side: side,
+    );
+    if (destination == null) return;
+
+    await openTeamStatsFromMatch(
+      context: context,
+      match: match,
+      isManager: isManager,
+      destination: destination,
+    );
+  }
+
   static bool _hasVenueInfo(models.Match match) {
     return _clean(match.nomDuTerrain).isNotEmpty ||
         _clean(match.terrainAdresse1).isNotEmpty ||
@@ -1061,6 +1082,7 @@ class _MatchHeaderState extends State<_MatchHeader> {
                       logoUrl: match.team1UrlLogo,
                       affiliation: dense ? null : match.affiliationTeam1,
                       compact: true,
+                      onLogoTap: () => _onTeamLogoTap(MatchSide.team1),
                     ),
                     SizedBox(height: dense ? 4 : 6),
                     scoreBlock,
@@ -1070,6 +1092,7 @@ class _MatchHeaderState extends State<_MatchHeader> {
                       logoUrl: match.team2UrlLogo,
                       affiliation: dense ? null : match.affiliationTeam2,
                       compact: true,
+                      onLogoTap: () => _onTeamLogoTap(MatchSide.team2),
                     ),
                   ],
                 );
@@ -1084,6 +1107,7 @@ class _MatchHeaderState extends State<_MatchHeader> {
                       logoUrl: match.team1UrlLogo,
                       affiliation: dense ? null : match.affiliationTeam1,
                       compact: compact,
+                      onLogoTap: () => _onTeamLogoTap(MatchSide.team1),
                     ),
                   ),
                   Padding(
@@ -1096,6 +1120,7 @@ class _MatchHeaderState extends State<_MatchHeader> {
                       logoUrl: match.team2UrlLogo,
                       affiliation: dense ? null : match.affiliationTeam2,
                       compact: compact,
+                      onLogoTap: () => _onTeamLogoTap(MatchSide.team2),
                     ),
                   ),
                 ],
@@ -1390,25 +1415,38 @@ class _TeamBlock extends StatelessWidget {
   final String? logoUrl;
   final String? affiliation;
   final bool compact;
+  final VoidCallback? onLogoTap;
 
   const _TeamBlock({
     required this.name,
     required this.logoUrl,
     required this.affiliation,
     this.compact = false,
+    this.onLogoTap,
   });
 
   @override
   Widget build(BuildContext context) {
     final colors = context.appColors;
+    final logo = _TeamLogo(
+      logoUrl: logoUrl,
+      size: compact ? 40 : 48,
+      imageSize: compact ? 26 : 32,
+    );
 
     return Column(
       children: [
-        _TeamLogo(
-          logoUrl: logoUrl,
-          size: compact ? 40 : 48,
-          imageSize: compact ? 26 : 32,
-        ),
+        if (onLogoTap == null)
+          logo
+        else
+          Material(
+            color: Colors.transparent,
+            child: InkWell(
+              onTap: onLogoTap,
+              customBorder: const CircleBorder(),
+              child: logo,
+            ),
+          ),
         const SizedBox(height: 4),
         Text(
           name,
