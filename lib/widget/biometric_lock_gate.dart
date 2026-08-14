@@ -262,10 +262,15 @@ class _BiometricUnlockSettingsTileState
       builder: (dialogContext) {
         return StatefulBuilder(
           builder: (context, setDialogState) {
-            return AlertDialog(
+            return Padding(
+              padding: EdgeInsets.only(
+                bottom: MediaQuery.viewInsetsOf(context).bottom,
+              ),
+              child: AlertDialog(
               backgroundColor: colors.card,
               title: Text(l10n.biometricLoginSavePasswordTitle),
-              content: Column(
+              content: SingleChildScrollView(
+                child: Column(
                 mainAxisSize: MainAxisSize.min,
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
@@ -312,6 +317,7 @@ class _BiometricUnlockSettingsTileState
                   ),
                 ],
               ),
+              ),
               actions: [
                 TextButton(
                   onPressed: () => Navigator.of(dialogContext).pop(),
@@ -326,6 +332,7 @@ class _BiometricUnlockSettingsTileState
                   child: Text(l10n.biometricUnlockEnableConfirm),
                 ),
               ],
+            ),
             );
           },
         );
