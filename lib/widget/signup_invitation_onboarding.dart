@@ -43,6 +43,9 @@ class SignupInvitationOnboarding {
     /// Prefill from Firebase Auth (Apple/Google) so Review Guideline 4
     /// is satisfied — name/email already provided by the IdP.
     Player? authSeedProfile,
+    /// When true (social signup), never re-ask name/email even if the seed
+    /// is incomplete — Apple only sends those fields on first authorization.
+    bool lockIdentityFromAuth = false,
   }) async {
     final rootContext = appNavigatorKey.currentContext;
     if (rootContext == null || !rootContext.mounted) {
@@ -65,7 +68,7 @@ class SignupInvitationOnboarding {
         rootContext,
         initialProfile: authSeedProfile,
         requireEmail: requireEmail,
-        lockIdentityFromAuth: authSeedProfile != null,
+        lockIdentityFromAuth: lockIdentityFromAuth,
       );
       if (profile == null) return null;
       return SignupMemberOnboardingResult(profile: profile);
@@ -98,7 +101,7 @@ class SignupInvitationOnboarding {
             rootContext,
             initialProfile: authSeedProfile,
             requireEmail: requireEmail,
-            lockIdentityFromAuth: authSeedProfile != null,
+            lockIdentityFromAuth: lockIdentityFromAuth,
           );
           if (profile == null) return null;
           return SignupMemberOnboardingResult(profile: profile);

@@ -168,6 +168,10 @@ class AppLocalizationsFr extends AppLocalizations {
   String get memberEmailOptional => 'E-mail (facultatif)';
 
   @override
+  String get memberIdentityFromAuthHint =>
+      'Votre nom et votre e-mail fournis par Sign in with Apple ou Google seront utilisés pour votre compte. Vous pourrez les modifier plus tard dans votre profil.';
+
+  @override
   String get memberPhone => 'Téléphone';
 
   @override

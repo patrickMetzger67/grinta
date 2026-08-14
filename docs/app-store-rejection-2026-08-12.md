@@ -8,7 +8,7 @@ Device: iPad Air 11-inch (M3)
 | Guideline | Problème | Où corriger |
 |-----------|----------|-------------|
 | **3.1.2(c)** Subscriptions | Lien **Terms of Use (EULA)** manquant dans les **métadonnées** App Store Connect (description ou champ EULA). Dans l’app, le paywall a déjà Privacy + Terms. | App Store Connect + libellé EN « Terms of Use » (code) |
-| **4** Design / Sign in with Apple | Après Apple, l’app redemandait prénom / nom / email | Code : préremplissage + champs en lecture seule |
+| **4** Design / Sign in with Apple | Après Apple, l’app redemandait prénom / nom / email | Voir le correctif du 14 août : masquer les champs (pas seulement lecture seule) |
 | **5.1.2(i)** Tracking | Privacy labels ASC indiquent du *tracking* (Purchase History, User ID) sans App Tracking Transparency | App Store Connect → App Privacy : **retirer le tracking** si Grinta ne tracke pas pour la pub / data brokers |
 | **5.1.1(ii)** Purpose strings | Camera / location trop vagues ou hors contexte (captures Review) | `ios/Runner/Info.plist` |
 | **2.1** Info Needed | Questions sur l’IA tierce (Ask Gio / Gemini) | Réponse App Review (ci-dessous) |
@@ -87,7 +87,7 @@ Privacy Policy: https://www.grinta.io/politiquedeconfidentialite
 In-app paywall already shows title, duration, price, Privacy Policy and Terms of Use.
 
 === Guideline 4 — Sign in with Apple ===
-Fixed in this build: after Sign in with Apple, first name, last name and email from Authentication Services are prefilled and not re-requested (read-only). The remaining profile fields (birth date, nationality) are app-specific for age gating and are not provided by Apple.
+Fixed in this build: after Sign in with Apple, the app does not ask for name or email. Those values come from Authentication Services (and are stored for later sign-ins, since Apple only sends them on first authorization). The remaining profile fields (birth date, nationality) are app-specific for age gating and are not provided by Apple.
 
 === Guideline 5.1.1 — Purpose strings ===
 Updated camera and location (and related) usage descriptions with clear examples in Info.plist.

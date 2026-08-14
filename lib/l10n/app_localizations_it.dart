@@ -167,6 +167,10 @@ class AppLocalizationsIt extends AppLocalizations {
   String get memberEmailOptional => 'E-mail (facoltativa)';
 
   @override
+  String get memberIdentityFromAuthHint =>
+      'Il nome e l\'e-mail di Accedi con Apple o Google verranno usati per l\'account. Potrai modificarli in seguito nel profilo.';
+
+  @override
   String get memberPhone => 'Telefono';
 
   @override

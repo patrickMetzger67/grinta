@@ -404,6 +404,12 @@ abstract class AppLocalizations {
   /// **'E-mail (facultatif)'**
   String get memberEmailOptional;
 
+  /// No description provided for @memberIdentityFromAuthHint.
+  ///
+  /// In fr, this message translates to:
+  /// **'Votre nom et votre e-mail fournis par Sign in with Apple ou Google seront utilisés pour votre compte. Vous pourrez les modifier plus tard dans votre profil.'**
+  String get memberIdentityFromAuthHint;
+
   /// No description provided for @memberPhone.
   ///
   /// In fr, this message translates to:

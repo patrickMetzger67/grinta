@@ -60,6 +60,7 @@
   "memberLastName": "Nom",
   "memberEmail": "E-mail",
   "memberEmailOptional": "E-mail (facultatif)",
+  "memberIdentityFromAuthHint": "Votre nom et votre e-mail fournis par Sign in with Apple ou Google seront utilisés pour votre compte. Vous pourrez les modifier plus tard dans votre profil.",
   "memberPhone": "Téléphone",
   "memberPhoneOptional": "Téléphone (facultatif)",
   "memberEmailInvalid": "Veuillez saisir une adresse e-mail valide",
