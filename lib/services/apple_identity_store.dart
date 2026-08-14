@@ -59,7 +59,7 @@ class AppleIdentityStore {
 
   final SharedPreferences? _prefsOverride;
 
-  Future<AppleIdentityRecord?> read(String userIdentifier) async {
+  Future<AppleIdentityRecord?> read(String? userIdentifier) async {
     final key = _keyFor(userIdentifier);
     if (key == null) return null;
     try {
@@ -79,7 +79,7 @@ class AppleIdentityStore {
   }
 
   Future<AppleIdentityRecord> save({
-    required String userIdentifier,
+    required String? userIdentifier,
     required AppleIdentityRecord incoming,
   }) async {
     final key = _keyFor(userIdentifier);
@@ -101,8 +101,8 @@ class AppleIdentityStore {
     return _prefsOverride ?? await SharedPreferences.getInstance();
   }
 
-  String? _keyFor(String userIdentifier) {
-    final id = userIdentifier.trim();
+  String? _keyFor(String? userIdentifier) {
+    final id = userIdentifier?.trim() ?? '';
     if (id.isEmpty) return null;
     return '$_keyPrefix$id';
   }
