@@ -971,11 +971,15 @@ class _LoginScreenState extends State<LoginScreen> {
     String? createdUid;
 
     try {
-      final credential = await SocialAuthService.instance.signIn(provider);
+      final authResult = await SocialAuthService.instance.signIn(provider);
+      final credential = authResult.credential;
       final uid = credential.user?.uid;
       debugPrint(
         'login: social auth success uid=$uid provider=$methodName '
-        'photoURL=${credential.user?.photoURL}',
+        'photoURL=${credential.user?.photoURL} '
+        'identityGiven=${authResult.givenName != null} '
+        'identityFamily=${authResult.familyName != null} '
+        'identityEmail=${authResult.email != null}',
       );
       if (uid == null) {
         throw Exception('Firebase user uid missing after social login');
@@ -1039,12 +1043,16 @@ class _LoginScreenState extends State<LoginScreen> {
 
       coordinator.beginProfileOnboarding();
       final authSeed = profileSeedFromAuthIdentity(
-        displayName: credential.user?.displayName,
-        email: credential.user?.email,
+        givenName: authResult.givenName,
+        familyName: authResult.familyName,
+        displayName: authResult.displayName ?? credential.user?.displayName,
+        email: authResult.email ?? credential.user?.email,
+        applyFallbacks: true,
       );
       final onboarding = await SignupInvitationOnboarding.run(
         requireEmail: false,
         authSeedProfile: authSeed,
+        lockIdentityFromAuth: true,
       );
       if (onboarding == null) {
         await _deleteNewAccountAndSignOut();
@@ -1093,7 +1101,9 @@ class _LoginScreenState extends State<LoginScreen> {
         setState(() => _isLoading = true);
       }
 
-      var accountEmail = credential.user?.email?.trim() ?? '';
+      var accountEmail = authResult.email?.trim() ??
+          credential.user?.email?.trim() ??
+          '';
       if (accountEmail.isEmpty) {
         accountEmail = profile.email?.trim() ?? '';
       }

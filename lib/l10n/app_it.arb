@@ -60,6 +60,7 @@
   "memberLastName": "Cognome",
   "memberEmail": "E-mail",
   "memberEmailOptional": "E-mail (facoltativa)",
+  "memberIdentityFromAuthHint": "Il nome e l'e-mail di Accedi con Apple o Google verranno usati per l'account. Potrai modificarli in seguito nel profilo.",
   "memberPhone": "Telefono",
   "memberPhoneOptional": "Telefono (facoltativo)",
   "memberEmailInvalid": "Inserisci un indirizzo e-mail valido",

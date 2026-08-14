@@ -171,6 +171,10 @@ class AppLocalizationsDe extends AppLocalizations {
   String get memberEmailOptional => 'E-Mail (optional)';
 
   @override
+  String get memberIdentityFromAuthHint =>
+      'Ihr Name und Ihre E-Mail von „Mit Apple anmelden“ oder Google werden für Ihr Konto verwendet. Sie können sie später in Ihrem Profil ändern.';
+
+  @override
   String get memberPhone => 'Telefon';
 
   @override

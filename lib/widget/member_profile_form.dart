@@ -28,8 +28,9 @@ class MemberProfileForm extends StatefulWidget {
   /// When true (email signup), email is mandatory for Firebase Auth.
   final bool requireEmail;
 
-  /// When true, first/last name and email provided by Sign in with Apple /
-  /// Google are shown read-only (App Store Guideline 4).
+  /// When true, first/last name and email from Sign in with Apple / Google
+  /// are not shown or requested (App Store Guideline 4). They are taken from
+  /// [initialProfile] instead.
   final bool lockIdentityFromAuth;
 
   const MemberProfileForm({
@@ -104,20 +105,25 @@ class MemberProfileFormState extends State<MemberProfileForm> {
   String _profileMemberId(Player? profile) =>
       profile?.keyMember?.trim() ?? '';
 
-  bool get _lockFirstName =>
-      widget.lockIdentityFromAuth &&
-      (_firstNameCtrl.text.trim().isNotEmpty ||
-          (widget.initialProfile?.firstName?.trim().isNotEmpty ?? false));
+  bool get _hideIdentityFields => widget.lockIdentityFromAuth;
 
-  bool get _lockLastName =>
-      widget.lockIdentityFromAuth &&
-      (_lastNameCtrl.text.trim().isNotEmpty ||
-          (widget.initialProfile?.lastName?.trim().isNotEmpty ?? false));
+  String get _identityFirstName {
+    final typed = _firstNameCtrl.text.trim();
+    if (typed.isNotEmpty) return typed;
+    return widget.initialProfile?.firstName?.trim() ?? '';
+  }
 
-  bool get _lockEmail =>
-      widget.lockIdentityFromAuth &&
-      (_emailCtrl.text.trim().isNotEmpty ||
-          (widget.initialProfile?.email?.trim().isNotEmpty ?? false));
+  String get _identityLastName {
+    final typed = _lastNameCtrl.text.trim();
+    if (typed.isNotEmpty) return typed;
+    return widget.initialProfile?.lastName?.trim() ?? '';
+  }
+
+  String? get _identityEmail {
+    final typed = _trimOrNull(_emailCtrl.text);
+    if (typed != null) return typed;
+    return _trimOrNull(widget.initialProfile?.email ?? '');
+  }
 
   void _applyInitialProfileIfNeeded() {
     if (_appliedInitialProfile) return;
@@ -182,26 +188,42 @@ class MemberProfileFormState extends State<MemberProfileForm> {
 
   Player? buildProfile() {
     final profile = Player(
-      firstName: _firstNameCtrl.text.trim(),
-      lastName: _lastNameCtrl.text.trim(),
+      firstName: _identityFirstName,
+      lastName: _identityLastName,
       birthPlace: _trimOrNull(_birthPlaceCtrl.text),
       nationality: _nationalityCountryCode?.trim() ?? '',
       birthDay: _formatBirthDay(_birthDate),
       positions: _selectedPositionCodes.toList()..sort(),
-      email: _trimOrNull(_emailCtrl.text),
+      email: _identityEmail,
       phoneE164: _phoneE164,
       phoneCountryCode: _phoneCountryCode,
     );
 
+    if (_hideIdentityFields) {
+      final hasIdentity =
+          _identityFirstName.isNotEmpty && _identityLastName.isNotEmpty;
+      final hasBirth = profile.birthDay?.trim().isNotEmpty ?? false;
+      final hasNationality = profile.nationality?.trim().isNotEmpty ?? false;
+      if (hasIdentity &&
+          hasBirth &&
+          hasNationality &&
+          isValidEmailFormat(profile.email) &&
+          isValidE164Phone(profile.phoneE164)) {
+        return profile;
+      }
+      return null;
+    }
     return profile.isProfileAndContactValid ? profile : null;
   }
 
   String? validateAndGetError() {
-    if (_firstNameCtrl.text.trim().isEmpty) {
-      return context.l10n.memberFirstNameRequired;
-    }
-    if (_lastNameCtrl.text.trim().isEmpty) {
-      return context.l10n.memberLastNameRequired;
+    if (!_hideIdentityFields) {
+      if (_identityFirstName.isEmpty) {
+        return context.l10n.memberFirstNameRequired;
+      }
+      if (_identityLastName.isEmpty) {
+        return context.l10n.memberLastNameRequired;
+      }
     }
     if (_birthDate == null) {
       return context.l10n.memberBirthDateRequired;
@@ -214,8 +236,8 @@ class MemberProfileFormState extends State<MemberProfileForm> {
         _nationalityCountryCode!.trim().isEmpty) {
       return context.l10n.memberNationalityRequired;
     }
-    final email = _emailCtrl.text.trim();
-    if (widget.requireEmail) {
+    final email = _identityEmail ?? '';
+    if (widget.requireEmail && !_hideIdentityFields) {
       if (email.isEmpty) {
         return context.l10n.signupEmailRequired;
       }
@@ -224,13 +246,15 @@ class MemberProfileFormState extends State<MemberProfileForm> {
       }
     }
     final draftProfile = Player(
-      email: _trimOrNull(_emailCtrl.text),
+      email: _identityEmail,
       phoneE164: _phoneE164,
     );
-    if (!widget.requireEmail && !hasContactInfo(draftProfile)) {
+    if (!widget.requireEmail &&
+        !_hideIdentityFields &&
+        !hasContactInfo(draftProfile)) {
       return context.l10n.memberContactRequired;
     }
-    if (!widget.requireEmail && !isValidEmailFormat(_emailCtrl.text)) {
+    if (!widget.requireEmail && !isValidEmailFormat(_identityEmail)) {
       return context.l10n.memberEmailInvalid;
     }
     if (!isValidE164Phone(_phoneE164)) {
@@ -355,45 +379,52 @@ class MemberProfileFormState extends State<MemberProfileForm> {
           ),
           const SizedBox(height: 12),
         ],
-        TextField(
-          controller: _firstNameCtrl,
-          enabled: widget.enabled && !_lockFirstName,
-          readOnly: _lockFirstName,
-          textCapitalization: TextCapitalization.words,
-          decoration: InputDecoration(
-            labelText: l10n.memberFirstName,
-            prefixIcon: const Icon(Icons.person_outline_rounded),
+        if (_hideIdentityFields) ...[
+          Text(
+            l10n.memberIdentityFromAuthHint,
+            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                  color: colors.textSecondary,
+                ),
           ),
-          onChanged: (_) => _notifyChanged(),
-        ),
-        const SizedBox(height: 12),
-        TextField(
-          controller: _lastNameCtrl,
-          enabled: widget.enabled && !_lockLastName,
-          readOnly: _lockLastName,
-          textCapitalization: TextCapitalization.words,
-          decoration: InputDecoration(
-            labelText: l10n.memberLastName,
-            prefixIcon: const Icon(Icons.badge_outlined),
+          const SizedBox(height: 12),
+        ] else ...[
+          TextField(
+            controller: _firstNameCtrl,
+            enabled: widget.enabled,
+            textCapitalization: TextCapitalization.words,
+            decoration: InputDecoration(
+              labelText: l10n.memberFirstName,
+              prefixIcon: const Icon(Icons.person_outline_rounded),
+            ),
+            onChanged: (_) => _notifyChanged(),
           ),
-          onChanged: (_) => _notifyChanged(),
-        ),
-        const SizedBox(height: 12),
-        TextField(
-          controller: _emailCtrl,
-          enabled: widget.enabled && !_lockEmail,
-          readOnly: _lockEmail,
-          keyboardType: TextInputType.emailAddress,
-          autocorrect: false,
-          decoration: InputDecoration(
-            labelText: widget.requireEmail
-                ? l10n.memberEmail
-                : l10n.memberEmailOptional,
-            prefixIcon: const Icon(Icons.email_outlined),
+          const SizedBox(height: 12),
+          TextField(
+            controller: _lastNameCtrl,
+            enabled: widget.enabled,
+            textCapitalization: TextCapitalization.words,
+            decoration: InputDecoration(
+              labelText: l10n.memberLastName,
+              prefixIcon: const Icon(Icons.badge_outlined),
+            ),
+            onChanged: (_) => _notifyChanged(),
           ),
-          onChanged: (_) => _notifyChanged(),
-        ),
-        const SizedBox(height: 12),
+          const SizedBox(height: 12),
+          TextField(
+            controller: _emailCtrl,
+            enabled: widget.enabled,
+            keyboardType: TextInputType.emailAddress,
+            autocorrect: false,
+            decoration: InputDecoration(
+              labelText: widget.requireEmail
+                  ? l10n.memberEmail
+                  : l10n.memberEmailOptional,
+              prefixIcon: const Icon(Icons.email_outlined),
+            ),
+            onChanged: (_) => _notifyChanged(),
+          ),
+          const SizedBox(height: 12),
+        ],
         InternationalPhoneField(
           key: _phoneFieldKey,
           enabled: widget.enabled,
