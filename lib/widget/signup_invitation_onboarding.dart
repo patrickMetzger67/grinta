@@ -575,7 +575,11 @@ class _SignupPasswordDialogState extends State<_SignupPasswordDialog> {
     final colors = context.appColors;
     final l10n = context.l10n;
 
-    return AlertDialog(
+    return Padding(
+      padding: EdgeInsets.only(
+        bottom: MediaQuery.viewInsetsOf(context).bottom,
+      ),
+      child: AlertDialog(
       title: Text(l10n.signupPasswordTitle),
       content: SingleChildScrollView(
         child: Column(
@@ -610,6 +614,7 @@ class _SignupPasswordDialogState extends State<_SignupPasswordDialog> {
               controller: _passwordCtrl,
               obscureText: _obscurePassword,
               autofocus: true,
+              scrollPadding: const EdgeInsets.fromLTRB(20, 20, 20, 80),
               decoration: InputDecoration(
                 labelText: l10n.password,
                 prefixIcon: const Icon(Icons.lock_outline_rounded),
@@ -631,6 +636,7 @@ class _SignupPasswordDialogState extends State<_SignupPasswordDialog> {
             TextField(
               controller: _confirmCtrl,
               obscureText: _obscureConfirm,
+              scrollPadding: const EdgeInsets.fromLTRB(20, 20, 20, 80),
               decoration: InputDecoration(
                 labelText: l10n.confirmPassword,
                 prefixIcon: const Icon(Icons.lock_outline_rounded),
@@ -665,6 +671,7 @@ class _SignupPasswordDialogState extends State<_SignupPasswordDialog> {
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(16),
         side: BorderSide(color: colors.border),
+      ),
       ),
     );
   }

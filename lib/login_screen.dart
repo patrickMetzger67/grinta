@@ -1760,6 +1760,20 @@ IconData _biometricLoginIcon(List<BiometricType> types) {
   return Icons.fingerprint_rounded;
 }
 
+const EdgeInsets _kLoginFieldScrollPadding = EdgeInsets.fromLTRB(20, 20, 20, 120);
+
+void _ensureLoginFieldVisible(BuildContext context) {
+  Future<void>.delayed(const Duration(milliseconds: 350), () {
+    if (!context.mounted) return;
+    Scrollable.ensureVisible(
+      context,
+      alignment: 0.2,
+      duration: const Duration(milliseconds: 220),
+      curve: Curves.easeOut,
+    );
+  });
+}
+
 class _LoginCard extends StatefulWidget {
   final TextEditingController emailCtrl;
   final TextEditingController passwordCtrl;
@@ -1886,34 +1900,54 @@ class _LoginCardState extends State<_LoginCard> {
             ),
             const SizedBox(height: 24),
             if (!_isSignUpMode) ...[
-              TextField(
-                controller: widget.emailCtrl,
-                keyboardType: TextInputType.emailAddress,
-                decoration: InputDecoration(
-                  labelText: context.l10n.email,
-                  hintText: context.l10n.emailHint,
-                  prefixIcon: const Icon(Icons.mail_outline_rounded),
-                ),
-                onSubmitted: (_) => _handleSubmit(),
+              Builder(
+                builder: (fieldContext) {
+                  return Focus(
+                    onFocusChange: (hasFocus) {
+                      if (hasFocus) _ensureLoginFieldVisible(fieldContext);
+                    },
+                    child: TextField(
+                      controller: widget.emailCtrl,
+                      keyboardType: TextInputType.emailAddress,
+                      scrollPadding: _kLoginFieldScrollPadding,
+                      decoration: InputDecoration(
+                        labelText: context.l10n.email,
+                        hintText: context.l10n.emailHint,
+                        prefixIcon: const Icon(Icons.mail_outline_rounded),
+                      ),
+                      onSubmitted: (_) => _handleSubmit(),
+                    ),
+                  );
+                },
               ),
               const SizedBox(height: 14),
-              TextField(
-                controller: widget.passwordCtrl,
-                obscureText: widget.obscurePassword,
-                decoration: InputDecoration(
-                  labelText: context.l10n.password,
-                  hintText: context.l10n.passwordHint,
-                  prefixIcon: const Icon(Icons.lock_outline_rounded),
-                  suffixIcon: IconButton(
-                    onPressed: widget.onToggleObscure,
-                    icon: Icon(
-                      widget.obscurePassword
-                          ? Icons.visibility_off_outlined
-                          : Icons.visibility_outlined,
+              Builder(
+                builder: (fieldContext) {
+                  return Focus(
+                    onFocusChange: (hasFocus) {
+                      if (hasFocus) _ensureLoginFieldVisible(fieldContext);
+                    },
+                    child: TextField(
+                      controller: widget.passwordCtrl,
+                      obscureText: widget.obscurePassword,
+                      scrollPadding: _kLoginFieldScrollPadding,
+                      decoration: InputDecoration(
+                        labelText: context.l10n.password,
+                        hintText: context.l10n.passwordHint,
+                        prefixIcon: const Icon(Icons.lock_outline_rounded),
+                        suffixIcon: IconButton(
+                          onPressed: widget.onToggleObscure,
+                          icon: Icon(
+                            widget.obscurePassword
+                                ? Icons.visibility_off_outlined
+                                : Icons.visibility_outlined,
+                          ),
+                        ),
+                      ),
+                      onSubmitted: (_) => _handleSubmit(),
                     ),
-                  ),
-                ),
-                onSubmitted: (_) => _handleSubmit(),
+                  );
+                },
               ),
               const SizedBox(height: 10),
               Align(
@@ -2162,69 +2196,88 @@ class _LoginBottomSheetState extends State<_LoginBottomSheet> {
   @override
   Widget build(BuildContext context) {
     final colors = context.appColors;
-    final bottomInset = MediaQuery.of(context).viewInsets.bottom;
+    final keyboardInset = MediaQuery.viewInsetsOf(context).bottom;
+    final maxHeight = MediaQuery.sizeOf(context).height - keyboardInset;
 
     return Scaffold(
       backgroundColor: Colors.transparent,
-      body: Container(
-        decoration: BoxDecoration(
-          color: colors.surface,
-          borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
-        ),
-        child: Padding(
-          padding: EdgeInsets.fromLTRB(20, 12, 20, bottomInset + 20),
-          child: SingleChildScrollView(
-            child: Column(
-              children: [
-                Row(
-                  children: [
-                    IconButton(
-                      onPressed: _isLoading
-                          ? null
-                          : () => Navigator.of(context).pop(),
-                      icon: const Icon(Icons.arrow_back_rounded),
-                      tooltip: context.l10n.actionBack,
-                    ),
-                    const Spacer(),
-                  ],
-                ),
-                Container(
-                  width: 52,
-                  height: 5,
-                  decoration: BoxDecoration(
-                    color: colors.border,
-                    borderRadius: BorderRadius.circular(999),
+      resizeToAvoidBottomInset: false,
+      body: Padding(
+        padding: EdgeInsets.only(bottom: keyboardInset),
+        child: Align(
+          alignment: Alignment.bottomCenter,
+          child: ConstrainedBox(
+            constraints: BoxConstraints(
+              maxHeight: maxHeight > 120 ? maxHeight : 120,
+            ),
+            child: Material(
+              color: colors.surface,
+              borderRadius: const BorderRadius.vertical(
+                top: Radius.circular(28),
+              ),
+              clipBehavior: Clip.antiAlias,
+              child: SafeArea(
+                top: false,
+                child: SingleChildScrollView(
+                  padding: const EdgeInsets.fromLTRB(20, 12, 20, 20),
+                  keyboardDismissBehavior:
+                      ScrollViewKeyboardDismissBehavior.onDrag,
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Row(
+                        children: [
+                          IconButton(
+                            onPressed: _isLoading
+                                ? null
+                                : () => Navigator.of(context).pop(),
+                            icon: const Icon(Icons.arrow_back_rounded),
+                            tooltip: context.l10n.actionBack,
+                          ),
+                          const Spacer(),
+                        ],
+                      ),
+                      Container(
+                        width: 52,
+                        height: 5,
+                        decoration: BoxDecoration(
+                          color: colors.border,
+                          borderRadius: BorderRadius.circular(999),
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      _LoginCard(
+                        emailCtrl: _emailCtrl,
+                        passwordCtrl: _passwordCtrl,
+                        obscurePassword: _obscurePassword,
+                        isLoading: _isLoading,
+                        showBiometricLogin:
+                            _biometricService.canOfferBiometricLogin,
+                        onToggleObscure: () {
+                          setState(() => _obscurePassword = !_obscurePassword);
+                        },
+                        onSignIn: _handleSignIn,
+                        onSignUp: _handleSignUp,
+                        onSocialSignIn: _handleSocialSignIn,
+                        onForgotPassword: widget.onForgotPassword,
+                        onBiometricSignIn: () async {
+                          if (_isLoading) return;
+                          setState(() => _isLoading = true);
+                          try {
+                            await widget.onBiometricSignIn();
+                          } finally {
+                            if (mounted) setState(() => _isLoading = false);
+                          }
+                        },
+                        onLocaleChanged: (_) {},
+                        onBack: () {
+                          Navigator.of(context, rootNavigator: true).pop();
+                        },
+                      ),
+                    ],
                   ),
                 ),
-                const SizedBox(height: 8),
-                _LoginCard(
-                  emailCtrl: _emailCtrl,
-                  passwordCtrl: _passwordCtrl,
-                  obscurePassword: _obscurePassword,
-                  isLoading: _isLoading,
-                  showBiometricLogin: _biometricService.canOfferBiometricLogin,
-                  onToggleObscure: () {
-                    setState(() => _obscurePassword = !_obscurePassword);
-                  },
-                  onSignIn: _handleSignIn,
-                  onSignUp: _handleSignUp,
-                  onSocialSignIn: _handleSocialSignIn,
-                  onForgotPassword: widget.onForgotPassword,
-                  onBiometricSignIn: () async {
-                    if (_isLoading) return;
-                    setState(() => _isLoading = true);
-                    try {
-                      await widget.onBiometricSignIn();
-                    } finally {
-                      if (mounted) setState(() => _isLoading = false);
-                    }
-                  },
-                  onLocaleChanged: (_) {},
-                  onBack: () {
-                    Navigator.of(context, rootNavigator: true).pop();
-                  },
-                ),
-              ],
+              ),
             ),
           ),
         ),
