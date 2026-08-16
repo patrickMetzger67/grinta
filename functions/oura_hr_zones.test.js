@@ -3,6 +3,7 @@ const assert = require('node:assert/strict');
 const {
   mapOuraZoneDurationsToSeconds,
   extractMetricsFromHrSamples,
+  buildHrTimelineFromSamples,
   estimateHrMaxFromPersonalInfo,
   ouraHrZoneBandsBpm,
 } = require('./oura_hr_zones');
@@ -63,6 +64,44 @@ describe('extractMetricsFromHrSamples', () => {
     });
     assert.equal(metrics.samplesUsed, 1);
     assert.equal(metrics.averageHeartRateBpm, 150);
+  });
+
+  it('builds an hrTimeline anchored on workout start', () => {
+    const start = Date.parse('2026-08-11T17:47:00.000Z');
+    const samples = [
+      {
+        bpm: 100,
+        timestamp: new Date(start).toISOString(),
+        source: 'workout',
+      },
+      {
+        bpm: 121,
+        timestamp: new Date(start + 5 * 60_000).toISOString(),
+        source: 'workout',
+      },
+      {
+        bpm: 110,
+        timestamp: new Date(start + 10 * 60_000).toISOString(),
+        source: 'workout',
+      },
+    ];
+    const metrics = extractMetricsFromHrSamples(samples, {
+      hrMaxBpm: 190,
+      workoutDurationSeconds: 16 * 60,
+      workoutStartMs: start,
+    });
+    assert.equal(metrics.hrTimeline.length, 3);
+    assert.equal(metrics.hrTimeline[0].t, 0);
+    assert.equal(metrics.hrTimeline[1].t, 5);
+    assert.equal(metrics.hrTimeline[1].avg, 121);
+    assert.equal(metrics.hrTimelineBucketMinutes, 5);
+  });
+});
+
+describe('buildHrTimelineFromSamples', () => {
+  it('returns empty timeline for no samples', () => {
+    const result = buildHrTimelineFromSamples([]);
+    assert.deepEqual(result.hrTimeline, []);
   });
 });
 

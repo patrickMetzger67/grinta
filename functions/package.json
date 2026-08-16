@@ -8,7 +8,7 @@
   "scripts": {
     "serve": "firebase emulators:start --only functions",
     "deploy": "firebase deploy --only functions",
-    "test": "node --test promo_code_helpers.test.js polar_hr_timeline.test.js whoop_hr_zones.test.js send_push_fcm.test.js"
+    "test": "node --test promo_code_helpers.test.js polar_hr_timeline.test.js whoop_hr_zones.test.js oura_hr_zones.test.js send_push_fcm.test.js"
   },
   "dependencies": {
     "@google/generative-ai": "^0.24.0",

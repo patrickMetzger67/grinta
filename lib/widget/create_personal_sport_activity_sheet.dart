@@ -1555,6 +1555,15 @@ class _CreatePersonalSportActivitySheetState
                   widget.activityToEdit!.isOuraImport) ...[
                 const SizedBox(height: 12),
                 OuraHrZonesCard(activity: widget.activityToEdit!),
+                if (widget.activityToEdit!.hasHrTimeline) ...[
+                  const SizedBox(height: 12),
+                  PolarHrZonesChart(
+                    timeline: widget.activityToEdit!.hrTimeline,
+                    bucketMinutes:
+                        widget.activityToEdit!.hrTimelineBucketMinutes,
+                    height: 260,
+                  ),
+                ],
               ] else if (_isEditMode || _readOnly) ...[
                 if (widget.activityToEdit?.averageHeartRateBpm != null) ...[
                   const SizedBox(height: 8),
