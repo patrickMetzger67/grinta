@@ -152,6 +152,7 @@ Renseigner au minimum `REVENUECAT_IOS_API_KEY_PROD` (clé publique `appl_…` de
 - [ ] **Pages légales accessibles :**
   - Politique de confidentialité : https://www.grinta.io/politiquedeconfidentialite
   - Conditions d'utilisation : https://www.grinta.io/conditionsutilisation
+  - En cas de refus **3.1.2** (lien EULA manquant dans les métadonnées) : [app-store-rejection-3-1-2-eula.md](./app-store-rejection-3-1-2-eula.md)
   - En cas de refus Play Health Connect / privacy : [`docs/play-health-connect-rejection.md`](./play-health-connect-rejection.md)
 - [ ] **Biométrie (Face ID)** : `NSFaceIDUsageDescription` est présent dans `ios/Runner/Info.plist`. Guide store : [`docs/biometric-unlock-store.md`](./biometric-unlock-store.md)
 - [ ] **App Privacy** : ne pas déclarer Face ID / empreinte comme données *collectées* (restent sur l’appareil / Secure Enclave)
@@ -279,7 +280,7 @@ flutter build ipa \
 | Capture d'écran paywall manquante | Rejet systématique pour les IAP |
 | Politique de confidentialité inaccessible | Rejet App Review |
 | Guideline 2.1 (App Completeness) | L'app doit être fonctionnelle sans crash au lancement ; login testable |
-| Guideline 3.1.2 (Subscriptions) | Lien vers CGU et politique de confidentialité visibles dans l'app avant achat |
+| Guideline 3.1.2 (Subscriptions) | Lien vers CGU et politique de confidentialité visibles dans l'app **et** dans la Description App Store (EULA). Voir [refus 3.1.2 EULA](./app-store-rejection-3-1-2-eula.md) |
 | Build « Missing Compliance » | Répondre à la question export compliance dans ASC (souvent « Non » si pas de chiffrement custom) |
 | Sandbox vs production | En TestFlight, les achats passent par le sandbox Apple si le testeur utilise un compte sandbox ; pas besoin de build debug |
 | Face ID sans usage string | Rejet si `NSFaceIDUsageDescription` manquant — déjà présent dans `Info.plist` |
