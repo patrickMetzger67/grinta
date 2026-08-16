@@ -288,65 +288,91 @@ class MatchCompo {
       withFeedback = false;
     }
 
-    List<dynamic> goalkeeperList = map[keyMatchCompoGoalkeeper];
+    List<dynamic> goalkeeperList =
+        (map[keyMatchCompoGoalkeeper] as List<dynamic>?) ?? const <dynamic>[];
     goalkeeper=[];
     goalkeeperList.forEach((element) {
-      PlayerCompo playerCompo = PlayerCompo.fromMap(element);
+      if (element is! Map) return;
+      PlayerCompo playerCompo =
+          PlayerCompo.fromMap(Map<String, dynamic>.from(element));
       goalkeeper!.add(playerCompo);
     });
 
 
-    List<dynamic> defenderList = map[keyMatchCompoDefender];
+    List<dynamic> defenderList =
+        (map[keyMatchCompoDefender] as List<dynamic>?) ?? const <dynamic>[];
     defender=[];
     defenderList.forEach((element) {
-      PlayerCompo playerCompo = PlayerCompo.fromMap(element);
+      if (element is! Map) return;
+      PlayerCompo playerCompo =
+          PlayerCompo.fromMap(Map<String, dynamic>.from(element));
       defender!.add(playerCompo);
     });
 
 
-    List<dynamic> midfielderList = map[keyMatchCompoMidfielder];
+    List<dynamic> midfielderList =
+        (map[keyMatchCompoMidfielder] as List<dynamic>?) ?? const <dynamic>[];
     midfielder=[];
     midfielderList.forEach((element) {
-      PlayerCompo playerCompo = PlayerCompo.fromMap(element);
+      if (element is! Map) return;
+      PlayerCompo playerCompo =
+          PlayerCompo.fromMap(Map<String, dynamic>.from(element));
       midfielder!.add(playerCompo);
     });
 
 
-    List<dynamic> midfielderAttackingList = map[keyMatchCompoMidfielderAttacking];
+    List<dynamic> midfielderAttackingList =
+        (map[keyMatchCompoMidfielderAttacking] as List<dynamic>?) ??
+            const <dynamic>[];
     midfielderAttaking=[];
     midfielderAttackingList.forEach((element) {
-      PlayerCompo playerCompo = PlayerCompo.fromMap(element);
+      if (element is! Map) return;
+      PlayerCompo playerCompo =
+          PlayerCompo.fromMap(Map<String, dynamic>.from(element));
       midfielderAttaking!.add(playerCompo);
     });
 
 
-    List<dynamic> midfielderDefensiveList = map[keyMatchCompoMidfielderDefensive];
+    List<dynamic> midfielderDefensiveList =
+        (map[keyMatchCompoMidfielderDefensive] as List<dynamic>?) ??
+            const <dynamic>[];
     midfielderDefensive=[];
     midfielderDefensiveList.forEach((element) {
-      PlayerCompo playerCompo = PlayerCompo.fromMap(element);
+      if (element is! Map) return;
+      PlayerCompo playerCompo =
+          PlayerCompo.fromMap(Map<String, dynamic>.from(element));
       midfielderDefensive!.add(playerCompo);
     });
 
 
-    List<dynamic> strickerList = map[keyMatchCompoStrikcer];
+    List<dynamic> strickerList =
+        (map[keyMatchCompoStrikcer] as List<dynamic>?) ?? const <dynamic>[];
     stricker=[];
     strickerList.forEach((element) {
-      PlayerCompo playerCompo = PlayerCompo.fromMap(element);
+      if (element is! Map) return;
+      PlayerCompo playerCompo =
+          PlayerCompo.fromMap(Map<String, dynamic>.from(element));
       stricker!.add(playerCompo);
     });
 
 
-    List<dynamic> substituteList = map[keyMatchCompoSubstitute];
+    List<dynamic> substituteList =
+        (map[keyMatchCompoSubstitute] as List<dynamic>?) ?? const <dynamic>[];
     substitute=[];
     substituteList.forEach((element) {
-      PlayerCompo playerCompo = PlayerCompo.fromMap(element);
+      if (element is! Map) return;
+      PlayerCompo playerCompo =
+          PlayerCompo.fromMap(Map<String, dynamic>.from(element));
       substitute!.add(playerCompo);
     });
 
-    List<dynamic> convocationList = map[keyMatchCompoConvocation];
+    List<dynamic> convocationList =
+        (map[keyMatchCompoConvocation] as List<dynamic>?) ?? const <dynamic>[];
     convocation=[];
     convocationList.forEach((element) {
-      PlayerConvo playerConvo = PlayerConvo.fromMap(element);
+      if (element is! Map) return;
+      PlayerConvo playerConvo =
+          PlayerConvo.fromMap(Map<String, dynamic>.from(element));
       convocation!.add(playerConvo);
     });
 

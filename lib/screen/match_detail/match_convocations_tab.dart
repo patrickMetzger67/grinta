@@ -215,6 +215,23 @@ class _MatchConvocationsTabState extends State<MatchConvocationsTab>
     _ensureConvokedPlayersLoaded();
   }
 
+  /// Copies starters/subs/meta from [remote] without touching convocations.
+  void _syncLineupFromRemote(MatchCompo draft, MatchCompo remote) {
+    draft.goalkeeper = List<PlayerCompo>.from(remote.goalkeeper ?? const []);
+    draft.defender = List<PlayerCompo>.from(remote.defender ?? const []);
+    draft.midfielder = List<PlayerCompo>.from(remote.midfielder ?? const []);
+    draft.midfielderAttaking =
+        List<PlayerCompo>.from(remote.midfielderAttaking ?? const []);
+    draft.midfielderDefensive =
+        List<PlayerCompo>.from(remote.midfielderDefensive ?? const []);
+    draft.stricker = List<PlayerCompo>.from(remote.stricker ?? const []);
+    draft.substitute = List<PlayerCompo>.from(remote.substitute ?? const []);
+    draft.compoTypeID = remote.compoTypeID;
+    draft.seasonID = remote.seasonID ?? draft.seasonID;
+    draft.withFeedback = remote.withFeedback;
+    draft.ref = remote.ref ?? draft.ref;
+  }
+
   /// True when local convocation answers match the Firestore snapshot.
   bool _convocationsMatchRemote(MatchCompo? draft, MatchCompo? remote) {
     if (draft == null || remote == null) {
@@ -286,19 +303,25 @@ class _MatchConvocationsTabState extends State<MatchConvocationsTab>
     setState(() => _saving = true);
 
     try {
+      // Write convocations only. A full MatchCompo.toMap() merge would overwrite
+      // starters/subs with a stale keep-alive draft (e.g. wipe 4-3-3 right-back).
+      await _matchCompoService.saveMatchCompoConvocations(
+        matchId: matchId,
+        teamId: teamId,
+        seasonId: widget.match.seasonID,
+        convocations: convocations,
+      );
+
       final compo = _draftCompo ??
           MatchCompo(
             matchID: matchId,
             teamID: teamId,
             seasonID: widget.match.seasonID,
           );
-
       compo.matchID = matchId;
       compo.teamID = teamId;
       compo.seasonID = widget.match.seasonID;
       compo.convocation = convocations;
-
-      await _matchCompoService.saveMatchCompo(compo);
       _draftCompo = compo;
 
       if (mounted) {
@@ -587,6 +610,11 @@ class _MatchConvocationsTabState extends State<MatchConvocationsTab>
                 _hydrateFromMatchCompo(streamCompo);
               }
             });
+          } else if (!_saving &&
+              streamCompo != null &&
+              _draftCompo != null) {
+            // Keep lineup fields fresh while preserving local convocation edits.
+            _syncLineupFromRemote(_draftCompo!, streamCompo);
           }
         }
 

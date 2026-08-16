@@ -247,11 +247,34 @@ class _MatchTacticalSchemaBodyState extends State<_MatchTacticalSchemaBody>
     final newIds = convokedPlayerIds(
       widget.initialMatchCompo ?? MatchCompo(),
     );
-    if (oldWidget.initialMatchCompo?.ref?.path !=
-            widget.initialMatchCompo?.ref?.path ||
-        oldIds != newIds) {
+    final bool refChanged = oldWidget.initialMatchCompo?.ref?.path !=
+        widget.initialMatchCompo?.ref?.path;
+    final bool lineupChanged = !_lineupEquals(
+      oldWidget.initialMatchCompo,
+      widget.initialMatchCompo,
+    );
+    if (refChanged || oldIds != newIds) {
+      _hydrateFromMatchCompo(widget.initialMatchCompo);
+      return;
+    }
+    // Apply remote lineup updates only when the editor has nothing pending.
+    if (lineupChanged && !_hasUnsavedChanges) {
       _hydrateFromMatchCompo(widget.initialMatchCompo);
     }
+  }
+
+  bool _lineupEquals(MatchCompo? a, MatchCompo? b) {
+    if (identical(a, b)) return true;
+    if (a == null || b == null) return a == b;
+    if ((a.compoTypeID ?? '') != (b.compoTypeID ?? '')) return false;
+    return _startersMapsEqual(
+          startersFromMatchCompo(a),
+          startersFromMatchCompo(b),
+        ) &&
+        _substitutesListsEqual(
+          substitutesFromMatchCompo(a),
+          substitutesFromMatchCompo(b),
+        );
   }
 
   Future<void> _loadTeamPlayers() async {
@@ -1055,7 +1078,7 @@ class _MatchTacticalSchemaBodyState extends State<_MatchTacticalSchemaBody>
         final selectedType = _resolveCompoType(compoTypes);
         if (_selectedCompoType == null) {
           WidgetsBinding.instance.addPostFrameCallback((_) {
-            if (!mounted) return;
+            if (!mounted || _selectedCompoType != null) return;
             _onCompoTypeChanged(selectedType);
             _resetSavedBaseline();
           });
