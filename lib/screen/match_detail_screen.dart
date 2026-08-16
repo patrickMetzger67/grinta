@@ -837,26 +837,52 @@ class _MatchHeader extends StatefulWidget {
 class _MatchHeaderState extends State<_MatchHeader> {
   late models.Match _match;
   bool _scoreBusy = false;
+  Stream<models.Match?>? _matchStream;
+  String? _streamMatchId;
 
   @override
   void initState() {
     super.initState();
     _match = widget.match;
+    _ensureMatchStream();
+  }
+
+  void _ensureMatchStream() {
+    final String matchId = widget.match.id?.trim() ?? '';
+    if (matchId.isEmpty) {
+      _matchStream = null;
+      _streamMatchId = null;
+      return;
+    }
+    if (_streamMatchId == matchId && _matchStream != null) {
+      return;
+    }
+    _streamMatchId = matchId;
+    // Keep a stable stream across rebuilds — recreating it in build() on every
+    // setState (e.g. score busy) resubscribes and races with in-flight writes.
+    _matchStream = MatchService().streamMatchById(matchId);
   }
 
   Future<void> _adjustScore(MatchSide side, int delta) async {
     if (!isManager || _scoreBusy) return;
+    final int? previousHome = _match.homeScore;
+    final int? previousAway = _match.outSideScore;
+    final bool? previousInHighlight = _match.isInHighLight;
     setState(() => _scoreBusy = true);
     try {
       await adjustMatchSideScore(
         match: _match,
         side: side,
         delta: delta,
+        onLocalScoreApplied: () {
+          if (mounted) setState(() {});
+        },
       );
-      widget.onScoreChanged?.call();
-      if (mounted) setState(() {});
     } catch (e, st) {
       debugPrint('match score adjust failed: $e\n$st');
+      _match.homeScore = previousHome;
+      _match.outSideScore = previousAway;
+      _match.isInHighLight = previousInHighlight;
       if (mounted) {
         AppSnackbar.show(
           context,
@@ -864,7 +890,16 @@ class _MatchHeaderState extends State<_MatchHeader> {
         );
       }
     } finally {
-      if (mounted) setState(() => _scoreBusy = false);
+      // Always clear busy before notifying the parent — parent setState must not
+      // run while the header still thinks a write is in flight.
+      if (mounted) {
+        setState(() => _scoreBusy = false);
+      } else {
+        _scoreBusy = false;
+      }
+    }
+    if (mounted) {
+      widget.onScoreChanged?.call();
     }
   }
 
@@ -873,6 +908,7 @@ class _MatchHeaderState extends State<_MatchHeader> {
     super.didUpdateWidget(oldWidget);
     if (oldWidget.match.id != widget.match.id) {
       _match = widget.match;
+      _ensureMatchStream();
     }
   }
 
@@ -968,19 +1004,21 @@ class _MatchHeaderState extends State<_MatchHeader> {
 
   @override
   Widget build(BuildContext context) {
-    final String matchId = widget.match.id?.trim() ?? '';
-    if (matchId.isEmpty) {
+    final Stream<models.Match?>? stream = _matchStream;
+    if (stream == null) {
       return _buildHeader(context, widget.match);
     }
 
     return StreamBuilder<models.Match?>(
-      stream: MatchService().streamMatchById(matchId),
+      stream: stream,
       builder: (context, snapshot) {
         final models.Match liveMatch = snapshot.data ?? _match;
-        if (snapshot.hasData && snapshot.data != null) {
+        // While a local +/- write is in flight, keep the optimistic in-memory
+        // match so a slightly stale snapshot cannot freeze the scoreboard UI.
+        if (!_scoreBusy && snapshot.hasData && snapshot.data != null) {
           _match = snapshot.data!;
         }
-        return _buildHeader(context, liveMatch);
+        return _buildHeader(context, _scoreBusy ? _match : liveMatch);
       },
     );
   }

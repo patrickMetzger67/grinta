@@ -24,6 +24,7 @@ import '../model/agendaItem.dart';
 import '../screen/responsive_chat.dart';
 import '../screen/syncScreen.dart';
 import '../screen/teamDetailScreen.dart';
+import '../util/app_shell_layout.dart';
 import '../util/app_theme.dart';
 import '../core/extensions/l10n_extension.dart';
 import 'mobile_navigation_shell.dart';
@@ -228,8 +229,13 @@ class _WebAppRootState extends State<WebAppRoot> {
     final bool isMobileNative = !kIsWeb &&
         (defaultTargetPlatform == TargetPlatform.iOS ||
             defaultTargetPlatform == TargetPlatform.android);
+    final bool useSidebarShell = useSidebarNavigationShell(
+      isWeb: kIsWeb,
+      isMobileNative: isMobileNative,
+      shortestSide: MediaQuery.sizeOf(context).shortestSide,
+    );
 
-    final Widget shell = kIsWeb
+    final Widget shell = useSidebarShell
         ? StreamBuilder<int>(
             stream: const SyncPendingCountService()
                 .watchPendingEventsCount(managedTeamIds),
