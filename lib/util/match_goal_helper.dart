@@ -142,12 +142,15 @@ bool isManagedSide(
 
 /// Applies a manual ±1 score change for [side] on the match document.
 ///
-/// Clamps at 0. Updates [match.homeScore] / [match.outSideScore] in memory.
+/// Clamps at 0. Updates [match.homeScore] / [match.outSideScore] in memory
+/// before the network write so the UI can refresh immediately via
+/// [onLocalScoreApplied].
 Future<({int homeScore, int outsideScore})> adjustMatchSideScore({
   required models.Match match,
   required MatchSide side,
   required int delta,
   MatchService? matchService,
+  VoidCallback? onLocalScoreApplied,
 }) async {
   final String? matchId = match.id?.trim();
   if (matchId == null || matchId.isEmpty) {
@@ -168,6 +171,15 @@ Future<({int homeScore, int outsideScore})> adjustMatchSideScore({
     away = (away + delta).clamp(0, 99);
   }
 
+  // Optimistic in-memory update first (single Firestore write below).
+  final bool markInHighlight = delta > 0 && match.isInHighLight != true;
+  match.homeScore = home;
+  match.outSideScore = away;
+  if (markInHighlight) {
+    match.isInHighLight = true;
+  }
+  onLocalScoreApplied?.call();
+
   final MatchService mService = matchService ?? MatchService();
   await mService.updateScore(
     matchId: matchId,
@@ -175,17 +187,8 @@ Future<({int homeScore, int outsideScore})> adjustMatchSideScore({
     outsideScore: away,
     tab: match.tab,
     isMatchPlayed: match.isMatchPlayed == true,
+    isInHighLight: markInHighlight ? true : null,
   );
-
-  match.homeScore = home;
-  match.outSideScore = away;
-  if (delta > 0 && match.isInHighLight != true) {
-    await mService.updateHighlightStatus(
-      matchId: matchId,
-      isInHighLight: true,
-    );
-    match.isInHighLight = true;
-  }
 
   return (homeScore: home, outsideScore: away);
 }
@@ -193,11 +196,13 @@ Future<({int homeScore, int outsideScore})> adjustMatchSideScore({
 /// Reloads all Grinta highlights for [match] and writes the derived score.
 ///
 /// Updates [match.homeScore] / [match.outSideScore] in memory to match.
+/// When [isInHighLight] is non-null, it is included in the same score write.
 Future<({int homeScore, int outsideScore})> syncMatchScoreFromGoalHighlights(
   models.Match match, {
   HighlightsService? highlightsService,
   MatchService? matchService,
   List<Highlights>? highlights,
+  bool? isInHighLight,
 }) async {
   final String? matchId = match.id?.trim();
   if (matchId == null || matchId.isEmpty) {
@@ -218,10 +223,14 @@ Future<({int homeScore, int outsideScore})> syncMatchScoreFromGoalHighlights(
     outsideScore: scores.outsideScore,
     tab: match.tab,
     isMatchPlayed: match.isMatchPlayed == true,
+    isInHighLight: isInHighLight,
   );
 
   match.homeScore = scores.homeScore;
   match.outSideScore = scores.outsideScore;
+  if (isInHighLight != null) {
+    match.isInHighLight = isInHighLight;
+  }
   return scores;
 }
 
@@ -415,14 +424,13 @@ Future<void> saveGoalHighlightAndUpdateScore({
   await HighlightsService().addHighlight(highlight);
 
   // Always recompute from all goal highlights — never increment a stale score.
-  await syncMatchScoreFromGoalHighlights(match, matchService: matchService);
-
-  if (match.isInHighLight != true) {
-    await matchService.updateHighlightStatus(
-      matchId: matchId,
-      isInHighLight: true,
-    );
-  }
+  // Fold isInHighLight into the same score write when needed.
+  final bool markInHighlight = match.isInHighLight != true;
+  await syncMatchScoreFromGoalHighlights(
+    match,
+    matchService: matchService,
+    isInHighLight: markInHighlight ? true : null,
+  );
 }
 
 /// Shows a confirmation dialog before deleting a Grinta highlight.
