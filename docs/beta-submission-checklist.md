@@ -150,9 +150,12 @@ cp dart_defines.example.json dart_defines.json
 Renseigner au minimum `REVENUECAT_IOS_API_KEY_PROD` (clé publique `appl_…` depuis le dashboard RevenueCat).
 
 - [ ] **Pages légales accessibles :**
-  - Politique de confidentialité : https://grinta.io/privacy
-  - Conditions d'utilisation : https://grinta.io/terms (vérifier que la page est bien en ligne avant soumission)
+  - Politique de confidentialité : https://www.grinta.io/politiquedeconfidentialite
+  - Conditions d'utilisation : https://www.grinta.io/conditionsutilisation
   - En cas de refus **3.1.2** (lien EULA manquant dans les métadonnées) : [app-store-rejection-3-1-2-eula.md](./app-store-rejection-3-1-2-eula.md)
+  - En cas de refus Play Health Connect / privacy : [`docs/play-health-connect-rejection.md`](./play-health-connect-rejection.md)
+- [ ] **Biométrie (Face ID)** : `NSFaceIDUsageDescription` est présent dans `ios/Runner/Info.plist`. Guide store : [`docs/biometric-unlock-store.md`](./biometric-unlock-store.md)
+- [ ] **App Privacy** : ne pas déclarer Face ID / empreinte comme données *collectées* (restent sur l’appareil / Secure Enclave)
 
 ### Phase 1 — Enregistrer l'app et le bundle ID
 
@@ -280,6 +283,8 @@ flutter build ipa \
 | Guideline 3.1.2 (Subscriptions) | Lien vers CGU et politique de confidentialité visibles dans l'app **et** dans la Description App Store (EULA). Voir [refus 3.1.2 EULA](./app-store-rejection-3-1-2-eula.md) |
 | Build « Missing Compliance » | Répondre à la question export compliance dans ASC (souvent « Non » si pas de chiffrement custom) |
 | Sandbox vs production | En TestFlight, les achats passent par le sandbox Apple si le testeur utilise un compte sandbox ; pas besoin de build debug |
+| Face ID sans usage string | Rejet si `NSFaceIDUsageDescription` manquant — déjà présent dans `Info.plist` |
+| Biométrie déclarée à tort comme collectée | Les templates Face ID / empreinte ne quittent pas l’appareil ; ne pas les cocher comme données collectées |
 
 ---
 
@@ -321,7 +326,9 @@ storeFile=<chemin absolu vers upload-keystore.jks>
   - **Fiche Play Store** : titre, description courte/longue, icône 512×512, feature graphic
   - **Classification du contenu** (questionnaire)
   - **Public cible** et **Sécurité des données**
-  - **Politique de confidentialité** : https://grinta.io/privacy
+  - **Politique de confidentialité** : https://www.grinta.io/politiquedeconfidentialite
+  - Health Connect : déclarer uniquement Exercise / Distance / Total calories / Heart rate (+ history) — voir [`docs/play-health-connect-rejection.md`](./play-health-connect-rejection.md)
+- [ ] **Biométrie** : permission `USE_BIOMETRIC` déclarée ; dans Data safety, indiquer usage local uniquement (pas de collecte / partage). Détails : [`docs/biometric-unlock-store.md`](./biometric-unlock-store.md)
 - [ ] Ces éléments sont requis même pour le track **test interne** sur un compte Play Developer récent
 
 ### Phase 3 — Créer les abonnements

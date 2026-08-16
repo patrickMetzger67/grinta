@@ -6,7 +6,7 @@
   <meta content="IE=Edge" http-equiv="X-UA-Compatible">
   <meta name="description" content="Grinta Performance">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <meta name="theme-color" content="#F95C1B">
+  <meta name="theme-color" content="#111214">
 
   <title>Grinta Performance</title>
   <link rel="manifest" href="manifest.json">
@@ -16,17 +16,21 @@
   <style>
     html, body {
       height: 100%;
+      width: 100%;
       margin: 0;
       padding: 0;
-      background: #F95C1B;
+      /* Match app dark scaffold so no brand-orange gap shows under the canvas. */
+      background: #111214;
+      overflow: hidden;
+      /* Pin to the visual viewport so mobile/tablet Chrome chrome
+         cannot leave a brand-colored strip under the Flutter view. */
+      position: fixed;
+      inset: 0;
     }
-    @media (prefers-color-scheme: dark) {
-      html, body { background: #111214; }
-      #grinta-boot-splash { background: #111214; }
-      #grinta-boot-splash .boot-spinner {
-        border-color: rgba(255, 255, 255, 0.22);
-        border-top-color: #F95C1B;
-      }
+    flt-glass-pane,
+    flutter-view {
+      height: 100% !important;
+      width: 100% !important;
     }
     #grinta-boot-splash {
       position: fixed;
@@ -39,6 +43,13 @@
       gap: 28px;
       background: #F95C1B;
       transition: opacity 220ms ease;
+    }
+    @media (prefers-color-scheme: dark) {
+      #grinta-boot-splash { background: #111214; }
+      #grinta-boot-splash .boot-spinner {
+        border-color: rgba(255, 255, 255, 0.22);
+        border-top-color: #F95C1B;
+      }
     }
     #grinta-boot-splash.boot-hide {
       opacity: 0;

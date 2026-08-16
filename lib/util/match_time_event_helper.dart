@@ -5,6 +5,7 @@ import 'package:grinta/navigation/app_navigator.dart';
 import 'package:grinta/services/matchService.dart';
 import 'package:grinta/services/session_feeling_notification_service.dart';
 import 'package:grinta/util/intense_live_eligibility.dart';
+import 'package:grinta/util/match_usb_sync_window.dart';
 import 'package:grinta/util/training_finish_helper.dart';
 
 /// After a full-time ([TimeType.end]) highlight is saved, marks the match as
@@ -55,6 +56,41 @@ Future<void> updateMatchAfterEndTimeEventHighlight({
   } catch (e, st) {
     debugPrint('updateMatchAfterEndTimeEventHighlight feeling notif: $e\n$st');
   }
+}
+
+/// True when the match calendar slot is over:
+/// [Match.timestamp] + duration + 15' half-time break (default duration 90).
+///
+/// Used after Intense re-sync (`withSyncing == false`) to decide whether
+/// [isTrackerDataUploaded] can be set.
+bool isMatchTheoreticallyFinishedByTimestamp(
+  models.Match match, {
+  DateTime? now,
+}) {
+  final start = match.timestamp?.toDate();
+  if (start == null) return false;
+
+  final minutes = match.duration ?? 90;
+  final end = matchScheduledSlotEnd(start, minutes);
+  final clock = now ?? DateTime.now();
+  return !clock.isBefore(end);
+}
+
+/// After a successful Intense match re-sync: always refresh workload; mark
+/// [isTrackerDataUploaded] when the calendar slot ([timestamp]+[duration]) is over.
+Future<void> finalizeMatchIntenseResyncSuccess({
+  required models.Match match,
+  DateTime? now,
+}) async {
+  final matchId = match.id?.trim() ?? '';
+  if (matchId.isEmpty) return;
+
+  if (isMatchTheoreticallyFinishedByTimestamp(match, now: now)) {
+    await markMatchTrackerDataUploadedAfterIntenseSync(match: match);
+    return;
+  }
+
+  await computeTeamWorkloadSummaryForEvent(eventId: matchId);
 }
 
 /// Marks tracker data uploaded after a successful Intense match sync.

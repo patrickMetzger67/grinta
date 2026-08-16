@@ -944,20 +944,28 @@ class MatchService {
   }
 
   /// UPDATE SCORE
+  ///
+  /// When [isInHighLight] is non-null, it is written in the same update so
+  /// callers do not need a second round-trip (which can leave the UI locked).
   Future<void> updateScore({
     required String matchId,
     required int homeScore,
     required int outsideScore,
     String? tab,
     bool isMatchPlayed = true,
+    bool? isInHighLight,
   }) async {
     try {
-      await _collection.doc(matchId).update({
+      final Map<String, dynamic> data = <String, dynamic>{
         keyMatchHomeScore: homeScore,
         keyMatchOutsideScore: outsideScore,
         keyMatchTab: tab ?? '',
         keyMatchIsMatchPlayed: isMatchPlayed,
-      });
+      };
+      if (isInHighLight != null) {
+        data[keyMatchIsInHighLight] = isInHighLight;
+      }
+      await _collection.doc(matchId).update(data);
     } catch (e) {
       rethrow;
     }

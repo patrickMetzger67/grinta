@@ -23,6 +23,72 @@ void main() {
       expect(MatchHeatmapService.isFieldGeolocalized(field), isTrue);
     });
 
+    test('null fieldGps falls back to relative schematic when satellite fails',
+        () async {
+      final samples = <TrackerRaw>[
+        TrackerRaw(
+          trackerId: 't1',
+          timeMs: 1,
+          latitude: 48.4195,
+          longitude: 7.6605,
+          speedMps: 2,
+        ),
+        TrackerRaw(
+          trackerId: 't1',
+          timeMs: 2,
+          latitude: 48.4196,
+          longitude: 7.6606,
+          speedMps: 3,
+        ),
+        TrackerRaw(
+          trackerId: 't1',
+          timeMs: 3,
+          latitude: 48.4197,
+          longitude: 7.6607,
+          speedMps: 2,
+        ),
+      ];
+
+      final bundle = await MatchHeatmapService.generateAndSaveMatchHeatmaps(
+        trackerId: 't1',
+        eventId: 'e1',
+        fieldGps: null,
+        fullSamples: samples,
+        fullHeatmapPoints: const [],
+        persist: false,
+      );
+
+      // Static Maps is unavailable in tests (HTTP 403) → relative schematic.
+      expect(bundle.usedSatelliteBackground, isFalse);
+      expect(bundle.fullMatch, isNotNull);
+      expect(bundle.fullMatch!, contains('#2E7D32'));
+      expect(
+        bundle.fullMatch!,
+        isNot(contains('data-grinta-heatmap="satellite"')),
+      );
+    });
+
+    test('relative heatmap points are used when satellite fails', () async {
+      final points = [
+        HeatmapPoint(xMeters: 20, yMeters: 15, timeMs: 1, intensity: 1),
+        HeatmapPoint(xMeters: 40, yMeters: 30, timeMs: 2, intensity: 2),
+        HeatmapPoint(xMeters: 60, yMeters: 45, timeMs: 3, intensity: 1.5),
+      ];
+
+      final bundle = await MatchHeatmapService.generateAndSaveMatchHeatmaps(
+        trackerId: 't1',
+        eventId: 'e1',
+        fieldGps: null,
+        fullSamples: const [],
+        fullHeatmapPoints: points,
+        persist: false,
+      );
+
+      expect(bundle.usedSatelliteBackground, isFalse);
+      expect(bundle.fullMatch, isNotNull);
+      expect(bundle.fullMatch!, contains('<rect'));
+    });
+
     test('geolocalized path never marks satellite background', () async {
       const field = FootballFieldGps(
         topLeft: FieldCornerGps(latitude: 48.4220, longitude: 7.6610),

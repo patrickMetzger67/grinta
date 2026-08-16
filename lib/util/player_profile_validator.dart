@@ -21,7 +21,8 @@ bool isValidE164Phone(String? phoneE164) {
 bool isProfileComplete(Player profile) {
   return (profile.firstName?.trim().isNotEmpty ?? false) &&
       (profile.lastName?.trim().isNotEmpty ?? false) &&
-      (profile.nationality?.trim().isNotEmpty ?? false);
+      (profile.nationality?.trim().isNotEmpty ?? false) &&
+      (profile.birthDay?.trim().isNotEmpty ?? false);
 }
 
 bool hasContactInfo(Player profile) {

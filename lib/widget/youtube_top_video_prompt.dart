@@ -6,6 +6,7 @@ import 'package:grinta/provider/appSession.dart';
 import 'package:grinta/screen/tips_screen.dart';
 import 'package:grinta/services/youtube_config_service.dart';
 import 'package:grinta/services/youtube_top_video_seen_service.dart';
+import 'package:grinta/services/social_onboarding_coordinator.dart';
 import 'package:grinta/util/app_theme.dart';
 import 'package:grinta/widget/youtube_embed_player.dart';
 import 'package:provider/provider.dart';
@@ -14,6 +15,9 @@ import 'package:provider/provider.dart';
 ///
 /// Priority: welcome (coach or player) → then [YoutubeConfig.topVideo].
 /// Playback is in-app (embed).
+///
+/// Must not run during signup profile creation — only after the member profile
+/// is created and validated ([AppSession.selectedPlayer] available).
 class YoutubeTopVideoPrompt {
   YoutubeTopVideoPrompt._();
 
@@ -22,15 +26,37 @@ class YoutubeTopVideoPrompt {
   /// Whether the tip/welcome dialog is currently visible (for UI stacking only).
   static bool get isDialogOpen => _dialogOpen;
 
-  /// Call after the main shell is ready. Safe to invoke multiple times.
+  /// Call after the main shell is ready **and** the member profile is validated.
+  /// Safe to invoke multiple times.
   static Future<void> maybeShow() async {
     if (_dialogOpen) return;
+
+    if (SocialOnboardingCoordinator.instance.isProfileOnboardingActive) {
+      debugPrint('youtube_prompt: skip — profile onboarding in progress');
+      return;
+    }
 
     final rootContext = appNavigatorKey.currentContext;
     if (rootContext == null || !rootContext.mounted) return;
 
+    Player? player;
+    try {
+      player = rootContext.read<AppSession>().selectedPlayer;
+    } catch (_) {
+      player = null;
+    }
+    if (player == null) {
+      debugPrint('youtube_prompt: skip — no validated member profile yet');
+      return;
+    }
+
     await YoutubeConfigService.instance.ensureInitialized();
     await YoutubeTopVideoSeenService.instance.ensureInitialized();
+
+    if (SocialOnboardingCoordinator.instance.isProfileOnboardingActive) {
+      return;
+    }
+    if (!rootContext.mounted) return;
 
     final prompt = _resolvePrompt(rootContext);
     if (prompt == null) return;

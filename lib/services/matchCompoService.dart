@@ -66,6 +66,34 @@ class MatchCompoService {
     await docRef.set(matchCompo.toMap(), SetOptions(merge: true));
   }
 
+  /// Persists only convocation data so a stale tab draft cannot wipe starters.
+  Future<void> saveMatchCompoConvocations({
+    required String matchId,
+    required String teamId,
+    String? seasonId,
+    required List<PlayerConvo> convocations,
+  }) async {
+    final trimmedMatchId = matchId.trim();
+    final trimmedTeamId = teamId.trim();
+    if (trimmedMatchId.isEmpty || trimmedTeamId.isEmpty) {
+      throw Exception('matchID et teamID requis pour enregistrer les convocations');
+    }
+
+    final docRef = docRefFor(matchId: trimmedMatchId, teamId: trimmedTeamId);
+    final payload = <String, dynamic>{
+      keyMatchCompoMatchId: trimmedMatchId,
+      keyMatchCompoTeamID: trimmedTeamId,
+      keyMatchCompoConvocation:
+          convocations.map((PlayerConvo c) => c.toMap()).toList(),
+    };
+    final trimmedSeasonId = seasonId?.trim();
+    if (trimmedSeasonId != null && trimmedSeasonId.isNotEmpty) {
+      payload[keyMatchCompoSeasonID] = trimmedSeasonId;
+    }
+
+    await docRef.set(payload, SetOptions(merge: true));
+  }
+
   Future<void> deleteMatchCompo(MatchCompo matchCompo) async {
     if (matchCompo.ref == null) {
       throw Exception("La référence du MatchCompo est nulle");

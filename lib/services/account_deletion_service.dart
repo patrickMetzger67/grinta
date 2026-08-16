@@ -2,6 +2,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 
 import '../model/player.dart';
+import 'biometric_unlock_service.dart';
 import 'playerService.dart';
 
 /// Deletes the signed-in user's Firebase Auth account and related Firestore data.
@@ -27,6 +28,7 @@ class AccountDeletionService {
     await _cleanupMemberDocuments(uid);
     await _deleteUserFirestoreData(uid);
     await user.delete();
+    await BiometricUnlockService.instance.disableForAnotherAccount();
   }
 
   Future<void> _cleanupMemberDocuments(String uid) async {

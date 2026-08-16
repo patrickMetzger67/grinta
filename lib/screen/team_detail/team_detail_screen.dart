@@ -33,6 +33,7 @@ import '../../util/subscription_limits_access.dart';
 import '../../util/team_deletion_access.dart';
 import '../../util/team_name_edit.dart';
 import '../../util/team_tracker_access.dart';
+import '../../util/training_roster_sync_helper.dart';
 import '../../util/player_photo_resolver.dart';
 import '../../util/player_profile_validator.dart';
 
@@ -102,6 +103,7 @@ class _TeamDetailScreenState extends State<TeamDetailScreen> {
 
   _RosterSortColumn? _sortColumn;
   bool _sortAscending = true;
+  final TextEditingController _playerNameFilterCtrl = TextEditingController();
 
   List<dynamic> rawPlayers = [];
   bool _usesGrintaRoster = false;
@@ -114,6 +116,12 @@ class _TeamDetailScreenState extends State<TeamDetailScreen> {
   bool _isMemberOperationLoading = false;
   String? _resendingInvitationMemberId;
   MemberInvitationResult? _pendingMemberInvitationResult;
+
+  @override
+  void dispose() {
+    _playerNameFilterCtrl.dispose();
+    super.dispose();
+  }
 
   @override
   void initState() {
@@ -242,6 +250,96 @@ class _TeamDetailScreenState extends State<TeamDetailScreen> {
       icon: Icons.sensors_rounded,
       onTap: () => _onTrackerOwnersPressed(context),
     );
+  }
+
+  Future<void> _syncUpcomingTrainingsQuietly({
+    String? addedPlayerId,
+    String? removedPlayerId,
+  }) async {
+    final Team team = _serverTeam ?? _team;
+    final String? teamId = team.keyTeam?.trim();
+    if (teamId == null || teamId.isEmpty) return;
+
+    final helper = TrainingRosterSyncHelper();
+    try {
+      if (addedPlayerId != null && addedPlayerId.trim().isNotEmpty) {
+        await helper.addPlayerToUpcomingTrainings(
+          team: team,
+          playerId: addedPlayerId,
+        );
+      } else if (removedPlayerId != null && removedPlayerId.trim().isNotEmpty) {
+        await helper.removePlayerFromUpcomingTrainings(
+          team: team,
+          playerId: removedPlayerId,
+        );
+      }
+    } catch (e, st) {
+      debugPrint('TeamDetailScreen: upcoming training roster sync failed: $e\n$st');
+    }
+  }
+
+  Future<void> _onSyncUpcomingTrainingsPressed(BuildContext context) async {
+    if (!_canManageTeam(context)) return;
+    final l10n = context.l10n;
+    final colors = context.appColors;
+
+    final bool? confirmed = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) {
+        return AlertDialog(
+          backgroundColor: colors.surface,
+          surfaceTintColor: Colors.transparent,
+          title: Text(l10n.syncUpcomingTrainingsConfirmTitle),
+          content: Text(l10n.syncUpcomingTrainingsConfirmMessage),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(dialogContext).pop(false),
+              child: Text(l10n.actionCancel),
+            ),
+            FilledButton(
+              onPressed: () => Navigator.of(dialogContext).pop(true),
+              child: Text(l10n.actionOk),
+            ),
+          ],
+        );
+      },
+    );
+    if (confirmed != true || !context.mounted) return;
+
+    showDialog<void>(
+      context: context,
+      barrierDismissible: false,
+      builder: (_) => const Center(child: CircularProgressIndicator()),
+    );
+
+    try {
+      final result = await TrainingRosterSyncHelper()
+          .syncUpcomingTrainingsWithRoster(team: _serverTeam ?? _team);
+      if (!context.mounted) return;
+      Navigator.of(context, rootNavigator: true).pop();
+      if (!result.hasChanges) {
+        AppSnackbar.show(
+          context,
+          l10n.syncUpcomingTrainingsNothingToDo,
+          isError: false,
+        );
+        return;
+      }
+      AppSnackbar.show(
+        context,
+        l10n.syncUpcomingTrainingsSuccess(
+          result.trainingsUpdated,
+          result.playersAdded,
+          result.playersRemoved,
+        ),
+        isError: false,
+      );
+    } catch (e, st) {
+      debugPrint('TeamDetailScreen: sync upcoming trainings failed: $e\n$st');
+      if (!context.mounted) return;
+      Navigator.of(context, rootNavigator: true).pop();
+      AppSnackbar.show(context, l10n.syncUpcomingTrainingsError);
+    }
   }
 
   /// Managers ([widget.isManager] / session managed teams), Grinta owners
@@ -1513,6 +1611,25 @@ class _TeamDetailScreenState extends State<TeamDetailScreen> {
     });
   }
 
+  bool _playerNameMatchesFilter(_TeamMemberVm row, AppLocalizations l10n) {
+    final String query = _playerNameFilterCtrl.text.trim().toLowerCase();
+    if (query.isEmpty) return true;
+
+    final Player player = row.player;
+    final List<String> candidates = <String>[
+      _displayName(player, l10n),
+      playerDisplayName(player, unknownLabel: ''),
+      player.firstName ?? '',
+      player.lastName ?? '',
+      '${player.firstName ?? ''} ${player.lastName ?? ''}',
+      '${player.lastName ?? ''} ${player.firstName ?? ''}',
+    ];
+    for (final String candidate in candidates) {
+      if (candidate.toLowerCase().contains(query)) return true;
+    }
+    return false;
+  }
+
   List<_TeamMemberVm> _sortedRosterRows(
     List<_TeamMemberVm> rows,
     AppLocalizations l10n,
@@ -1521,7 +1638,7 @@ class _TeamDetailScreenState extends State<TeamDetailScreen> {
       return r.isGrintaRoster ||
           r.effectives != null ||
           (!_teamUsesGrintaRoster() && _isListedOnTeamRoster(r));
-    }).toList();
+    }).where((r) => _playerNameMatchesFilter(r, l10n)).toList();
 
     final _RosterSortColumn? column = _sortColumn;
 
@@ -2128,6 +2245,15 @@ class _TeamDetailScreenState extends State<TeamDetailScreen> {
                     onTap: () => _onEditTeamName(context),
                   ),
                 if (_canManageTeam(context)) const SizedBox(width: 8),
+                if (_canManageTeam(context))
+                  _HeaderSquareIconButton(
+                    size: 40,
+                    iconSize: 20,
+                    icon: Icons.group_add_outlined,
+                    tooltip: context.l10n.syncUpcomingTrainingsTooltip,
+                    onTap: () => _onSyncUpcomingTrainingsPressed(context),
+                  ),
+                if (_canManageTeam(context)) const SizedBox(width: 8),
                 _HeaderSquareIconButton(
                   size: 40,
                   iconSize: 20,
@@ -2285,6 +2411,12 @@ class _TeamDetailScreenState extends State<TeamDetailScreen> {
                             icon: Icons.edit_outlined,
                             onTap: () => _onEditTeamName(context),
                           ),
+                          _HeaderSquareIconButton(
+                            icon: Icons.group_add_outlined,
+                            tooltip: context.l10n.syncUpcomingTrainingsTooltip,
+                            onTap: () =>
+                                _onSyncUpcomingTrainingsPressed(context),
+                          ),
                         ],
                         _HeaderSquareIconButton(
                           icon: Icons.tune_rounded,
@@ -2431,6 +2563,15 @@ class _TeamDetailScreenState extends State<TeamDetailScreen> {
                       playerFlex: 4,
                     );
 
+              final int playerFlex = mobileRoster ? rosterLayout.playerFlex : 4;
+              final int trailingFlex = mobileRoster
+                  ? _mobileRosterTrailingFlex(
+                      layout: rosterLayout,
+                      canManageTeam: canManageTeam,
+                      canManageRoster: canManageRoster,
+                    )
+                  : 13;
+
               return Column(
                 children: [
                   mobileRoster
@@ -2439,6 +2580,12 @@ class _TeamDetailScreenState extends State<TeamDetailScreen> {
                           layout: rosterLayout,
                         )
                       : _buildTableHeader(context, mobile: false),
+                  _buildPlayerNameFilterRow(
+                    context,
+                    playerFlex: playerFlex,
+                    trailingFlex: trailingFlex,
+                    horizontalPadding: mobileRoster ? 4 : 12,
+                  ),
                   if (visibleRows.isEmpty)
                     Padding(
                       padding: const EdgeInsets.all(24),
@@ -3033,6 +3180,7 @@ class _TeamDetailScreenState extends State<TeamDetailScreen> {
       grintaPlayers.add(newPlayer);
     }
     _team.grintaPlayers = grintaPlayers;
+    await _syncUpcomingTrainingsQuietly(addedPlayerId: memberId);
   }
 
   Future<void> _addPlayerToLegacyTeam({
@@ -3062,6 +3210,7 @@ class _TeamDetailScreenState extends State<TeamDetailScreen> {
       players.add(memberId);
     }
     _team.players = players;
+    await _syncUpcomingTrainingsQuietly(addedPlayerId: memberId);
   }
 
   bool _usesGrintaRosterPathFor(Team team) =>
@@ -3370,12 +3519,19 @@ class _TeamDetailScreenState extends State<TeamDetailScreen> {
                         !_isGrintaStaffGrintaPlayer(entry),
                   );
                   _team.grintaPlayers = grintaPlayers;
+                  await _syncUpcomingTrainingsQuietly(removedPlayerId: memberId);
                 } else if (row.effectives != null) {
                   await EffectivesService().deleteEffectives(row.effectives!);
 
                   rawPlayers.remove(player.keyMember);
                   _team.players = rawPlayers;
                   await TeamService().updateTeam(_team);
+                  final String? legacyId = effectiveMemberId(player);
+                  if (legacyId != null && legacyId.isNotEmpty) {
+                    await _syncUpcomingTrainingsQuietly(
+                      removedPlayerId: legacyId,
+                    );
+                  }
                 }
 
                 if (!dialogContext.mounted) return;
@@ -4248,6 +4404,96 @@ class _TeamDetailScreenState extends State<TeamDetailScreen> {
     );
   }
 
+  int _mobileRosterTrailingFlex({
+    required _MobileRosterLayout layout,
+    required bool canManageTeam,
+    required bool canManageRoster,
+  }) {
+    int trailing = 1; // App
+    if (layout.showPositionColumn) trailing += 1;
+    trailing += 1; // Tracker
+    trailing += 1; // Manager
+    if (canManageRoster) trailing += 1; // Resend invitation
+    if (canManageTeam) trailing += 1; // Unavailabilities
+    if (canManageRoster && layout.showInlineEditColumn) trailing += 1;
+    trailing += 1; // Season summary / info
+    return trailing;
+  }
+
+  Widget _buildPlayerNameFilterRow(
+    BuildContext context, {
+    required int playerFlex,
+    required int trailingFlex,
+    required double horizontalPadding,
+  }) {
+    final colors = context.appColors;
+    final l10n = context.l10n;
+    final bool hasQuery = _playerNameFilterCtrl.text.trim().isNotEmpty;
+
+    return Container(
+      padding: EdgeInsets.fromLTRB(
+        horizontalPadding,
+        8,
+        horizontalPadding,
+        10,
+      ),
+      decoration: BoxDecoration(
+        color: colors.surface.withValues(alpha: 0.55),
+        border: Border(
+          bottom: BorderSide(color: colors.border),
+        ),
+      ),
+      child: Row(
+        children: [
+          Expanded(
+            flex: playerFlex,
+            child: TextField(
+              controller: _playerNameFilterCtrl,
+              textInputAction: TextInputAction.search,
+              style: Theme.of(context).textTheme.bodyMedium,
+              decoration: InputDecoration(
+                isDense: true,
+                hintText: l10n.teamDetailFilterPlayerHint,
+                prefixIcon: Icon(
+                  Icons.search_rounded,
+                  size: 20,
+                  color: colors.textSecondary,
+                ),
+                suffixIcon: hasQuery
+                    ? IconButton(
+                        tooltip: l10n.actionCancel,
+                        onPressed: () {
+                          _playerNameFilterCtrl.clear();
+                          setState(() {});
+                        },
+                        icon: Icon(
+                          Icons.clear_rounded,
+                          size: 18,
+                          color: colors.textSecondary,
+                        ),
+                      )
+                    : null,
+                contentPadding: const EdgeInsets.symmetric(
+                  horizontal: 12,
+                  vertical: 10,
+                ),
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(10),
+                ),
+              ),
+              onChanged: (_) => setState(() {}),
+            ),
+          ),
+          if (trailingFlex > 0)
+            Expanded(
+              flex: trailingFlex,
+              child: const SizedBox.shrink(),
+            ),
+        ],
+      ),
+    );
+  }
+
   Widget _buildTableHeader(BuildContext context, {required bool mobile}) {
     if (mobile) {
       final double width = MediaQuery.sizeOf(context).width;
@@ -4488,7 +4734,7 @@ class _TeamDetailScreenState extends State<TeamDetailScreen> {
               flex: 1,
             ),
           _mobileStaticIconHeaderCell(
-            icon: Icons.info_outline_rounded,
+            icon: Icons.bar_chart_rounded,
             tooltip: l10n.playerSeasonSummaryTitle,
             flex: 1,
           ),
@@ -4941,7 +5187,7 @@ class _TeamDetailScreenState extends State<TeamDetailScreen> {
                 tooltip: l10n.playerSeasonSummaryTitle,
                 onPressed: () => _showPlayerDetailsSheet(context, row),
                 icon: Icon(
-                  Icons.info_outline_rounded,
+                  Icons.bar_chart_rounded,
                   size: 17,
                   color: colors.textSecondary,
                 ),
@@ -5073,7 +5319,8 @@ class _TeamDetailScreenState extends State<TeamDetailScreen> {
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   _CircleGhostButton(
-                    icon: Icons.info_outline_rounded,
+                    icon: Icons.bar_chart_rounded,
+                    tooltip: l10n.playerSeasonSummaryTitle,
                     size: _CircleGhostButton.webTableButtonSize,
                     iconSize: _CircleGhostButton.webTableIconSize,
                     onTap: () => _showPlayerDetailsSheet(context, row),

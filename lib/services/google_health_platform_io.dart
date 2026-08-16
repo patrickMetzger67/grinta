@@ -58,29 +58,28 @@ class GoogleHealthPlatformConnectResult {
   }
 }
 
+/// Minimum Health Connect read types for declared Android features.
+///
+/// Keep aligned with `AndroidManifest.xml` health permissions. Do not request
+/// SLEEP / STEPS / ACTIVE_ENERGY here unless a shipped feature uses them —
+/// Play rejects "excessive access" for unused Health Connect scopes.
 const List<HealthDataType> _kGoogleHealthReadTypes = [
   HealthDataType.WORKOUT,
   HealthDataType.HEART_RATE,
-  HealthDataType.ACTIVE_ENERGY_BURNED,
-  HealthDataType.SLEEP_ASLEEP,
-  // health 13.x always enriches WORKOUT with these reads; missing grants make
-  // getData(WORKOUT) throw SecurityException and return an empty list.
   HealthDataType.DISTANCE_DELTA,
   HealthDataType.TOTAL_CALORIES_BURNED,
-  HealthDataType.STEPS,
 ];
 
 const List<HealthDataType> _kGoogleHealthWorkoutEnrichmentTypes = [
   HealthDataType.WORKOUT,
   HealthDataType.DISTANCE_DELTA,
   HealthDataType.TOTAL_CALORIES_BURNED,
-  HealthDataType.STEPS,
 ];
 
 bool get isGoogleHealthConnectSupported => Platform.isAndroid;
 
 Future<void> _requestRuntimePermissions() async {
-  // Workouts / sleep / fitness types require Activity Recognition on Android.
+  // Fitness / exercise types require Activity Recognition on Android.
   // Distance on workouts also needs location (dangerous permission).
   try {
     await Permission.activityRecognition.request();
@@ -153,12 +152,12 @@ Future<bool> _ensureAuthorized(Health health) async {
         ),
       );
       debugPrint(
-        'Google Health Connect hasPermissions(WORKOUT+DISTANCE+CALORIES+STEPS)='
+        'Google Health Connect hasPermissions(WORKOUT+DISTANCE+CALORIES)='
         '$workoutOk',
       );
       if (workoutOk == false) {
         debugPrint(
-          'Google Health Connect: Exercise/Distance/Calories/Steps may be '
+          'Google Health Connect: Exercise/Distance/Calories may be '
           'incomplete — enable them in Health Connect → App permissions → Grinta',
         );
       }
@@ -430,15 +429,19 @@ Future<bool> ensureGoogleWorkoutWriteAuthorized() async {
 
   await _requestRuntimePermissions();
 
+  // Write only what session export uses: Exercise (+ Distance when present).
+  // DISTANCE is already in read types; request READ_WRITE for workout + distance.
   final types = <HealthDataType>[
-    ..._kGoogleHealthReadTypes,
     HealthDataType.WORKOUT,
+    HealthDataType.HEART_RATE,
+    HealthDataType.DISTANCE_DELTA,
+    HealthDataType.TOTAL_CALORIES_BURNED,
   ];
   final permissions = <HealthDataAccess>[
-    for (final type in types)
-      type == HealthDataType.WORKOUT
-          ? HealthDataAccess.READ_WRITE
-          : HealthDataAccess.READ,
+    HealthDataAccess.READ_WRITE, // WORKOUT
+    HealthDataAccess.READ, // HEART_RATE
+    HealthDataAccess.READ_WRITE, // DISTANCE_DELTA
+    HealthDataAccess.READ, // TOTAL_CALORIES_BURNED
   ];
 
   try {

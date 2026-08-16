@@ -95,12 +95,21 @@ void main() {
       );
     });
 
-    test('false after scheduled duration without temps forts', () {
+    test('false after scheduled duration + half-time break without temps forts', () {
+      // Slot = 90' play + 15' break → ends 16:45.
       expect(
         isMatchSessionLive(
           match: _match(dateCh: '02/08/2026', timeCh: '15:00'),
           highlights: const [],
           now: DateTime(2026, 8, 2, 16, 40),
+        ),
+        isTrue,
+      );
+      expect(
+        isMatchSessionLive(
+          match: _match(dateCh: '02/08/2026', timeCh: '15:00'),
+          highlights: const [],
+          now: DateTime(2026, 8, 2, 16, 50),
         ),
         isFalse,
       );
@@ -167,7 +176,7 @@ void main() {
             timeCh: '15:00',
           ),
           highlights: const [],
-          now: DateTime(2026, 8, 2, 16, 40),
+          now: DateTime(2026, 8, 2, 16, 50),
         ),
         isTrue,
       );
@@ -221,7 +230,7 @@ void main() {
       expect(window.stop.toUtc(), end.toUtc());
     });
 
-    test('falls back to schedule + duration when end highlight missing', () {
+    test('falls back to schedule halves + 15 min break when end highlight missing', () {
       final window = resolveMatchIntenseResyncWindow(
         _match(
           isMatchPlayed: true,
@@ -232,7 +241,17 @@ void main() {
       );
       expect(window, isNotNull);
       expect(window!.start.toLocal(), DateTime(2026, 8, 2, 15, 0));
-      expect(window.stop.toLocal(), DateTime(2026, 8, 2, 16, 30));
+      // 90' + 15' break → 16:45; two play periods exclude the break.
+      expect(window.stop.toLocal(), DateTime(2026, 8, 2, 16, 45));
+      expect(window.playPeriods, hasLength(2));
+      expect(
+        window.playPeriods[0].end.toDate().toLocal(),
+        DateTime(2026, 8, 2, 15, 45),
+      );
+      expect(
+        window.playPeriods[1].start.toDate().toLocal(),
+        DateTime(2026, 8, 2, 16, 0),
+      );
     });
 
     test('ignores late-tapped kick-off that collapses the GNSS window', () {
@@ -256,8 +275,9 @@ void main() {
 
       expect(window, isNotNull);
       expect(window!.start.toLocal(), DateTime(2026, 8, 2, 15, 0));
-      expect(window.stop.toLocal(), DateTime(2026, 8, 2, 16, 30));
+      expect(window.stop.toLocal(), DateTime(2026, 8, 2, 16, 45));
       expect(window.stop.isAfter(window.start), isTrue);
+      expect(window.playPeriods, hasLength(2));
     });
 
     test('never returns a zero-width window', () {
@@ -272,7 +292,8 @@ void main() {
         highlights,
       );
       expect(window, isNotNull);
-      expect(window!.stop.difference(window.start), const Duration(minutes: 90));
+      // Invalid end highlight → scheduled slot including 15' break.
+      expect(window!.stop.difference(window.start), const Duration(minutes: 105));
     });
   });
 

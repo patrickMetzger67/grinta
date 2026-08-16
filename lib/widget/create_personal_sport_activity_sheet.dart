@@ -16,6 +16,7 @@ import 'package:grinta/services/google_health_sync_service.dart';
 import 'package:grinta/services/polar_sync_service.dart';
 import 'package:grinta/services/strava_sync_service.dart';
 import 'package:grinta/services/whoop_sync_service.dart';
+import 'package:grinta/services/oura_sync_service.dart';
 import 'package:grinta/util/app_snackbar.dart';
 import 'package:grinta/util/app_theme.dart';
 import 'package:grinta/util/player_photo_resolver.dart';
@@ -23,6 +24,7 @@ import 'package:grinta/widget/player_feeling_faces.dart';
 import 'package:grinta/widget/polar_analysis/polar_hr_zones_chart.dart';
 import 'package:grinta/widget/sport_metric_pickers.dart';
 import 'package:grinta/widget/whoop_analysis/whoop_hr_zones_card.dart';
+import 'package:grinta/widget/oura_analysis/oura_hr_zones_card.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 
@@ -120,9 +122,8 @@ class _CreatePersonalSportActivitySheetState
   final _formKey = GlobalKey<FormState>();
 
   late DateTime _date;
-  late TimeOfDay _time;
+  TimeOfDay? _time;
   bool _manualEntry = true;
-  bool _useMyGps = false;
   bool _submitting = false;
   bool _loadingTypes = true;
   bool _loadingImportActivities = false;
@@ -152,6 +153,9 @@ class _CreatePersonalSportActivitySheetState
   List<WhoopImportableActivity> _whoopActivities = const [];
   WhoopImportableActivity? _selectedWhoop;
   String? _whoopListError;
+  List<OuraImportableActivity> _ouraActivities = const [];
+  OuraImportableActivity? _selectedOura;
+  String? _ouraListError;
   List<AppleHealthImportableActivity> _appleActivities = const [];
   AppleHealthImportableActivity? _selectedApple;
   String? _appleListError;
@@ -194,9 +198,9 @@ class _CreatePersonalSportActivitySheetState
         );
       }
     } else {
-      final now = DateTime.now();
-      _date = DateUtils.dateOnly(widget.initialDate ?? now);
-      _time = widget.initialTime ?? TimeOfDay(hour: now.hour, minute: 0);
+      // No default time: user must pick a start time explicitly.
+      _date = DateUtils.dateOnly(widget.initialDate ?? DateTime.now());
+      _time = widget.initialTime;
     }
     _loadTypes();
     if (!_isEditMode && !_readOnly) {
@@ -250,6 +254,10 @@ class _CreatePersonalSportActivitySheetState
       _gpsAvailability != null &&
       _gpsAvailability!.devices.isNotEmpty;
 
+  bool get _importingFromGps =>
+      !_manualEntry &&
+      _importSource == WearableDeviceType.gpsInsidersIntense;
+
   void _closeWithoutSaving() {
     if (_submitting) return;
     Navigator.of(context).pop();
@@ -291,11 +299,17 @@ class _CreatePersonalSportActivitySheetState
     if (_readOnly) return;
     final picked = await showTimePicker(
       context: context,
-      initialTime: _time,
+      initialTime: _time ?? TimeOfDay.now(),
     );
     if (picked != null && mounted) {
       setState(() => _time = picked);
     }
+  }
+
+  bool _ensureStartTimeSelected() {
+    if (_time != null) return true;
+    AppSnackbar.show(context, context.l10n.createPersonalSportTimeRequired);
+    return false;
   }
 
   void _clearImportSelections() {
@@ -308,6 +322,9 @@ class _CreatePersonalSportActivitySheetState
     _whoopActivities = const [];
     _selectedWhoop = null;
     _whoopListError = null;
+    _ouraActivities = const [];
+    _selectedOura = null;
+    _ouraListError = null;
     _appleActivities = const [];
     _selectedApple = null;
     _appleListError = null;
@@ -341,6 +358,8 @@ class _CreatePersonalSportActivitySheetState
         PolarSyncService.instance.repository.getConfig(uid, playerId);
     final whoopFuture =
         WhoopSyncService.instance.repository.getConfig(uid, playerId);
+    final ouraFuture =
+        OuraSyncService.instance.repository.getConfig(uid, playerId);
     final appleFuture =
         AppleHealthSyncService.instance.repository.getConfig(uid, playerId);
     final googleFuture =
@@ -348,9 +367,16 @@ class _CreatePersonalSportActivitySheetState
     final stravaConfig = await stravaFuture;
     final polarConfig = await polarFuture;
     final whoopConfig = await whoopFuture;
+    final ouraConfig = await ouraFuture;
     final appleConfig = await appleFuture;
     final googleConfig = await googleFuture;
     if (!mounted) return;
+
+    // Ensure personal Intense GPS is resolved before building the source list.
+    if (_gpsAvailability == null) {
+      await _loadGpsOwnerAvailability();
+      if (!mounted) return;
+    }
 
     final connected = <WearableDeviceType>[];
     if (stravaConfig?.connected == true) {
@@ -362,11 +388,17 @@ class _CreatePersonalSportActivitySheetState
     if (whoopConfig?.connected == true) {
       connected.add(WearableDeviceType.whoop);
     }
+    if (ouraConfig?.connected == true) {
+      connected.add(WearableDeviceType.oura);
+    }
     if (appleConfig?.connected == true) {
       connected.add(WearableDeviceType.appleHealth);
     }
     if (googleConfig?.connected == true) {
       connected.add(WearableDeviceType.googleHealthConnect);
+    }
+    if (_canUseMyGps) {
+      connected.add(WearableDeviceType.gpsInsidersIntense);
     }
 
     setState(() {
@@ -397,12 +429,23 @@ class _CreatePersonalSportActivitySheetState
       await _loadWhoopActivities();
       return;
     }
+    if (source == WearableDeviceType.oura) {
+      await _loadOuraActivities();
+      return;
+    }
     if (source == WearableDeviceType.appleHealth) {
       await _loadAppleHealthActivities();
       return;
     }
     if (source == WearableDeviceType.googleHealthConnect) {
       await _loadGoogleHealthActivities();
+      return;
+    }
+    if (source == WearableDeviceType.gpsInsidersIntense) {
+      // Window-based sync (start → now), no discrete activity list.
+      if (mounted) {
+        setState(() => _loadingImportActivities = false);
+      }
       return;
     }
     if (mounted) {
@@ -517,6 +560,45 @@ class _CreatePersonalSportActivitySheetState
       );
     }
   }
+  Future<void> _loadOuraActivities() async {
+    final session = context.read<AppSession>();
+    final playerId = session.selectedPlayerId?.trim() ?? '';
+    if (playerId.isEmpty) {
+      if (mounted) setState(() => _loadingImportActivities = false);
+      return;
+    }
+
+    setState(() {
+      _loadingImportActivities = true;
+      _clearImportSelections();
+    });
+
+    final result = await OuraSyncService.instance.listImportableActivities(
+      playerId: playerId,
+    );
+    if (!mounted) return;
+    setState(() {
+      _ouraActivities = result.activities;
+      _loadingImportActivities = false;
+      if (result.hasError) {
+        _ouraListError = result.errorCode == 'not-found' ||
+                result.errorCode == 'unimplemented'
+            ? context.l10n.createPersonalSportOuraDeployRequired
+            : (result.errorMessage?.trim().isNotEmpty == true
+                ? result.errorMessage
+                : context.l10n.createPersonalSportOuraLoadError);
+      } else if (result.activities.isNotEmpty) {
+        _selectedOura = result.activities.first;
+        _typeId = result.activities.first.typeId;
+      }
+    });
+    if (result.hasError && mounted) {
+      AppSnackbar.show(
+        context,
+        _ouraListError ?? context.l10n.createPersonalSportOuraLoadError,
+      );
+    }
+  }
 
   Future<void> _loadAppleHealthActivities() async {
     final session = context.read<AppSession>();
@@ -607,12 +689,15 @@ class _CreatePersonalSportActivitySheetState
         return l10n.wearableDevicePolar;
       case WearableDeviceType.whoop:
         return l10n.wearableDeviceWhoop;
+      case WearableDeviceType.oura:
+        return l10n.wearableDeviceOura;
       case WearableDeviceType.appleHealth:
         return l10n.wearableDeviceAppleHealth;
       case WearableDeviceType.googleHealthConnect:
         return l10n.wearableDeviceGoogleHealthConnect;
-      case WearableDeviceType.fitbit:
       case WearableDeviceType.gpsInsidersIntense:
+        return l10n.wearableDeviceGpsInsidersIntense;
+      case WearableDeviceType.fitbit:
         return source.label(l10n);
     }
   }
@@ -630,18 +715,23 @@ class _CreatePersonalSportActivitySheetState
       return;
     }
 
+    final needsStartTime = _manualEntry ||
+        _isEditMode ||
+        _importSource == WearableDeviceType.gpsInsidersIntense;
+    if (needsStartTime && !_ensureStartTimeSelected()) return;
+
     setState(() => _submitting = true);
     try {
       final existing = widget.activityToEdit;
-      if (!_isEditMode && _useMyGps) {
-        await _submitFromGps(
-          uid: uid,
-          playerId: playerId,
-          session: session,
-        );
-        return;
-      }
       if (!_isEditMode && !_manualEntry) {
+        if (_importSource == WearableDeviceType.gpsInsidersIntense) {
+          await _submitFromGps(
+            uid: uid,
+            playerId: playerId,
+            session: session,
+          );
+          return;
+        }
         PersonalSportActivity? imported;
         if (_importSource == WearableDeviceType.strava &&
             _selectedStrava != null) {
@@ -668,6 +758,16 @@ class _CreatePersonalSportActivitySheetState
           imported = await WhoopSyncService.instance.importActivity(
             playerId: playerId,
             externalId: _selectedWhoop!.externalId,
+            visibility: _visibility.firestoreValue,
+            feeling: _feeling?.value,
+            notes: _notesController.text.trim(),
+            typeId: _typeId,
+          );
+        } else if (_importSource == WearableDeviceType.oura &&
+            _selectedOura != null) {
+          imported = await OuraSyncService.instance.importActivity(
+            playerId: playerId,
+            externalId: _selectedOura!.externalId,
             visibility: _visibility.firestoreValue,
             feeling: _feeling?.value,
             notes: _notesController.text.trim(),
@@ -715,12 +815,18 @@ class _CreatePersonalSportActivitySheetState
         return;
       }
 
+      final time = _time;
+      if (time == null) {
+        AppSnackbar.show(context, context.l10n.createPersonalSportTimeRequired);
+        return;
+      }
+
       final startAt = DateTime(
         _date.year,
         _date.month,
         _date.day,
-        _time.hour,
-        _time.minute,
+        time.hour,
+        time.minute,
       );
       final durationSeconds = _duration.inSeconds;
       final endAt = startAt.add(
@@ -811,12 +917,18 @@ class _CreatePersonalSportActivitySheetState
       return;
     }
 
+    final time = _time;
+    if (time == null) {
+      AppSnackbar.show(context, context.l10n.createPersonalSportTimeRequired);
+      return;
+    }
+
     final startAt = DateTime(
       _date.year,
       _date.month,
       _date.day,
-      _time.hour,
-      _time.minute,
+      time.hour,
+      time.minute,
     );
     final stopAt = DateTime.now();
     if (!stopAt.isAfter(startAt)) {
@@ -825,25 +937,29 @@ class _CreatePersonalSportActivitySheetState
     }
 
     try {
-      final analysis = await _gpsSyncService.syncWindow(
+      final sync = await _gpsSyncService.syncWindow(
         device: device,
         playerId: playerId,
         startAt: startAt,
         stopAt: stopAt,
       );
       if (!mounted) return;
-      if (analysis == null) {
+      if (sync == null) {
         await _promptGpsNoDataManualEntry();
         return;
       }
 
-      final metrics = PersonalGpsSyncService.metricsFromAnalysis(analysis);
-      if (metrics.durationSeconds <= 0 && metrics.distanceMeters <= 0) {
+      if (sync.durationSeconds <= 0 && sync.distanceMeters <= 0) {
         await _promptGpsNoDataManualEntry();
         return;
       }
 
-      final endAt = startAt.add(Duration(seconds: metrics.durationSeconds));
+      // Persist the real GNSS span (not the search window the user opened).
+      final activityStartAt = sync.firstSampleAt;
+      final activityEndAt = sync.lastSampleAt.isAfter(sync.firstSampleAt)
+          ? sync.lastSampleAt
+          : sync.firstSampleAt
+              .add(Duration(seconds: sync.durationSeconds));
       final typeLabel = ActivityTypesService.instance
               .byId(_typeId!)
               ?.labelForLocale(Localizations.localeOf(context)) ??
@@ -852,8 +968,8 @@ class _CreatePersonalSportActivitySheetState
       final activity = PersonalSportActivity(
         memberId: playerId,
         createdByUserId: uid,
-        startAt: startAt,
-        endAt: endAt,
+        startAt: activityStartAt,
+        endAt: activityEndAt,
         typeId: _typeId!,
         title: typeLabel,
         visibility: _visibility,
@@ -863,10 +979,10 @@ class _CreatePersonalSportActivitySheetState
             : _notesController.text.trim(),
         feeling: _feeling?.value,
         durationSeconds:
-            metrics.durationSeconds > 0 ? metrics.durationSeconds : null,
+            sync.durationSeconds > 0 ? sync.durationSeconds : null,
         distanceMeters:
-            metrics.distanceMeters > 0 ? metrics.distanceMeters : null,
-        paceSecondsPerKm: metrics.paceSecondsPerKm,
+            sync.distanceMeters > 0 ? sync.distanceMeters : null,
+        paceSecondsPerKm: sync.paceSecondsPerKm,
         distanceUnit: 'km',
         paceUnit: '/km',
         externalSource: PersonalGpsSyncService.externalSource,
@@ -910,7 +1026,7 @@ class _CreatePersonalSportActivitySheetState
       useRootNavigator: true,
       builder: (dialogContext) {
         return AlertDialog(
-          title: Text(l10n.createPersonalSportUseMyGps),
+          title: Text(l10n.wearableDeviceGpsInsidersIntense),
           content: Text(
             '${l10n.createPersonalSportGpsNoData}\n\n'
             '${l10n.createPersonalSportGpsManualEntryQuestion}',
@@ -930,8 +1046,8 @@ class _CreatePersonalSportActivitySheetState
     );
     if (!mounted || useManual != true) return;
     setState(() {
-      _useMyGps = false;
       _manualEntry = true;
+      _importSource = null;
     });
   }
 
@@ -941,7 +1057,7 @@ class _CreatePersonalSportActivitySheetState
     final l10n = context.l10n;
     final locale = Localizations.localeOf(context);
     final dateLabel = DateFormat.yMMMEd(locale.toString()).format(_date);
-    final timeLabel = _time.format(context);
+    final timeLabel = _time?.format(context) ?? l10n.createPersonalSportTapToSet;
 
     final media = MediaQuery.of(context);
     return Padding(
@@ -981,7 +1097,15 @@ class _CreatePersonalSportActivitySheetState
               ListTile(
                 contentPadding: EdgeInsets.zero,
                 title: Text(l10n.createPersonalSportTime),
-                subtitle: Text(timeLabel),
+                subtitle: Text(
+                  timeLabel,
+                  style: _time == null
+                      ? TextStyle(
+                          color: colors.textSecondary,
+                          fontStyle: FontStyle.italic,
+                        )
+                      : null,
+                ),
                 trailing:
                     _readOnly ? null : const Icon(Icons.schedule_rounded),
                 onTap: _readOnly ? null : _pickTime,
@@ -1001,110 +1125,15 @@ class _CreatePersonalSportActivitySheetState
                   ),
                   value: _manualEntry,
                   activeColor: colors.primary,
-                  onChanged: _useMyGps
-                      ? null
-                      : (value) {
-                          setState(() {
-                            _manualEntry = value;
-                            if (!value) _useMyGps = false;
-                          });
-                          if (!value) {
-                            _loadConnectedAppsAndActivities();
-                          }
-                        },
-                ),
-              if (_loadingGpsOwner && !_isEditMode)
-                const Padding(
-                  padding: EdgeInsets.symmetric(vertical: 8),
-                  child: Center(child: CircularProgressIndicator()),
-                )
-              else if (_canUseMyGps)
-                SwitchListTile.adaptive(
-                  contentPadding: EdgeInsets.zero,
-                  title: Text(l10n.createPersonalSportUseMyGps),
-                  subtitle: Text(
-                    l10n.createPersonalSportUseMyGpsHint,
-                    style: TextStyle(
-                      color: colors.textSecondary,
-                      fontSize: 13,
-                    ),
-                  ),
-                  value: _useMyGps,
-                  activeColor: colors.primary,
                   onChanged: (value) {
-                    setState(() {
-                      _useMyGps = value;
-                      if (value) {
-                        _manualEntry = true;
-                        _clearImportSelections();
-                        _importSource = null;
-                      }
-                    });
+                    setState(() => _manualEntry = value);
+                    if (!value) {
+                      _loadConnectedAppsAndActivities();
+                    }
                   },
                 ),
-              if (_useMyGps && _canUseMyGps) ...[
-                if (_gpsAvailability!.devices.length > 1) ...[
-                  const SizedBox(height: 8),
-                  DropdownButtonFormField<String>(
-                    value: _selectedGpsDevice?.deviceOwner.id,
-                    decoration: InputDecoration(
-                      labelText: l10n.createPersonalSportGpsDevice,
-                    ),
-                    items: [
-                      for (final device in _gpsAvailability!.devices)
-                        DropdownMenuItem(
-                          value: device.deviceOwner.id,
-                          child: Text(device.label),
-                        ),
-                    ],
-                    onChanged: (id) {
-                      if (id == null) return;
-                      PersonalGpsDeviceOption? match;
-                      for (final device in _gpsAvailability!.devices) {
-                        if (device.deviceOwner.id == id) {
-                          match = device;
-                          break;
-                        }
-                      }
-                      setState(() => _selectedGpsDevice = match);
-                    },
-                  ),
-                ],
-                const SizedBox(height: 8),
-                Text(
-                  l10n.createPersonalSportGpsMetricsHint,
-                  style: TextStyle(
-                    color: colors.textSecondary,
-                    fontSize: 13,
-                  ),
-                ),
-              ],
               const SizedBox(height: 8),
-              if (_useMyGps) ...[
-                if (_loadingTypes)
-                  const Center(child: CircularProgressIndicator())
-                else
-                  DropdownButtonFormField<String>(
-                    value: _typeId,
-                    decoration: InputDecoration(
-                      labelText: l10n.createPersonalSportType,
-                    ),
-                    items: [
-                      for (final type in _types)
-                        DropdownMenuItem(
-                          value: type.id,
-                          child: Text(type.labelForLocale(locale)),
-                        ),
-                    ],
-                    onChanged: _readOnly
-                        ? null
-                        : (value) {
-                            if (value != null) {
-                              setState(() => _typeId = value);
-                            }
-                          },
-                  ),
-              ] else if (_manualEntry || _isEditMode) ...[
+              if (_manualEntry || _isEditMode) ...[
                 _MetricTile(
                   label: l10n.createPersonalSportDuration,
                   value: _duration.inSeconds > 0
@@ -1211,7 +1240,67 @@ class _CreatePersonalSportActivitySheetState
                     },
                   ),
                   const SizedBox(height: 12),
-                  if (_loadingImportActivities)
+                  if (_importingFromGps) ...[
+                    if (_gpsAvailability != null &&
+                        _gpsAvailability!.devices.length > 1) ...[
+                      DropdownButtonFormField<String>(
+                        value: _selectedGpsDevice?.deviceOwner.id,
+                        decoration: InputDecoration(
+                          labelText: l10n.createPersonalSportGpsDevice,
+                        ),
+                        items: [
+                          for (final device in _gpsAvailability!.devices)
+                            DropdownMenuItem(
+                              value: device.deviceOwner.id,
+                              child: Text(device.label),
+                            ),
+                        ],
+                        onChanged: (id) {
+                          if (id == null) return;
+                          PersonalGpsDeviceOption? match;
+                          for (final device in _gpsAvailability!.devices) {
+                            if (device.deviceOwner.id == id) {
+                              match = device;
+                              break;
+                            }
+                          }
+                          setState(() => _selectedGpsDevice = match);
+                        },
+                      ),
+                      const SizedBox(height: 8),
+                    ],
+                    Text(
+                      l10n.createPersonalSportGpsMetricsHint,
+                      style: TextStyle(
+                        color: colors.textSecondary,
+                        fontSize: 13,
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    if (_loadingTypes)
+                      const Center(child: CircularProgressIndicator())
+                    else
+                      DropdownButtonFormField<String>(
+                        value: _typeId,
+                        decoration: InputDecoration(
+                          labelText: l10n.createPersonalSportType,
+                        ),
+                        items: [
+                          for (final type in _types)
+                            DropdownMenuItem(
+                              value: type.id,
+                              child: Text(type.labelForLocale(locale)),
+                            ),
+                        ],
+                        onChanged: _readOnly
+                            ? null
+                            : (value) {
+                                if (value != null) {
+                                  setState(() => _typeId = value);
+                                }
+                              },
+                      ),
+                  ] else if (_loadingImportActivities)
                     const Center(child: CircularProgressIndicator())
                   else if (_importSource == WearableDeviceType.strava &&
                       _stravaActivities.isEmpty)
@@ -1231,6 +1320,13 @@ class _CreatePersonalSportActivitySheetState
                     Text(
                       _whoopListError ??
                           l10n.createPersonalSportWhoopNoImportable,
+                      style: TextStyle(color: colors.textSecondary),
+                    )
+                  else if (_importSource == WearableDeviceType.oura &&
+                      _ouraActivities.isEmpty)
+                    Text(
+                      _ouraListError ??
+                          l10n.createPersonalSportOuraNoImportable,
                       style: TextStyle(color: colors.textSecondary),
                     )
                   else if (_importSource == WearableDeviceType.appleHealth &&
@@ -1347,6 +1443,39 @@ class _CreatePersonalSportActivitySheetState
                         });
                       },
                     )
+                  else if (_importSource == WearableDeviceType.oura)
+                    DropdownButtonFormField<String>(
+                      isExpanded: true,
+                      value: _selectedOura?.externalId,
+                      decoration: InputDecoration(
+                        labelText: l10n.createPersonalSportOuraActivity,
+                      ),
+                      items: [
+                        for (final activity in _ouraActivities)
+                          DropdownMenuItem(
+                            value: activity.externalId,
+                            child: Text(
+                              activity.displayLabel,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              softWrap: false,
+                            ),
+                          ),
+                      ],
+                      onChanged: (id) {
+                        OuraImportableActivity? match;
+                        for (final activity in _ouraActivities) {
+                          if (activity.externalId == id) {
+                            match = activity;
+                            break;
+                          }
+                        }
+                        setState(() {
+                          _selectedOura = match;
+                          if (match != null) _typeId = match.typeId;
+                        });
+                      },
+                    )
                   else if (_importSource == WearableDeviceType.appleHealth)
                     DropdownButtonFormField<String>(
                       isExpanded: true,
@@ -1421,6 +1550,20 @@ class _CreatePersonalSportActivitySheetState
                   widget.activityToEdit!.isWhoopImport) ...[
                 const SizedBox(height: 12),
                 WhoopHrZonesCard(activity: widget.activityToEdit!),
+              ] else if ((_isEditMode || _readOnly) &&
+                  widget.activityToEdit != null &&
+                  widget.activityToEdit!.isOuraImport) ...[
+                const SizedBox(height: 12),
+                OuraHrZonesCard(activity: widget.activityToEdit!),
+                if (widget.activityToEdit!.hasHrTimeline) ...[
+                  const SizedBox(height: 12),
+                  PolarHrZonesChart(
+                    timeline: widget.activityToEdit!.hrTimeline,
+                    bucketMinutes:
+                        widget.activityToEdit!.hrTimelineBucketMinutes,
+                    height: 260,
+                  ),
+                ],
               ] else if (_isEditMode || _readOnly) ...[
                 if (widget.activityToEdit?.averageHeartRateBpm != null) ...[
                   const SizedBox(height: 8),
@@ -1521,7 +1664,7 @@ class _CreatePersonalSportActivitySheetState
                                 ),
                               )
                             : Text(
-                                _useMyGps
+                                _importingFromGps
                                     ? l10n.createPersonalSportGpsSubmit
                                     : _isEditMode
                                         ? l10n.editPersonalSportSubmit

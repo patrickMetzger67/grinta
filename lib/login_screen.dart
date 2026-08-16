@@ -1,7 +1,10 @@
+import 'dart:async';
+
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:grinta/provider/appSession.dart';
+import 'package:local_auth/local_auth.dart';
 import 'util/app_theme.dart';
 import 'util/app_snackbar.dart';
 import 'package:provider/provider.dart';
@@ -18,6 +21,8 @@ import 'services/userService.dart';
 import 'services/user_trial_service.dart';
 import 'services/user_root_service.dart';
 import 'util/team_creation_access.dart';
+import 'util/account_age_gate.dart';
+import 'util/auth_profile_seed.dart';
 import 'util/player_photo_resolver.dart';
 import 'services/active_session_service.dart';
 import 'services/analytics_service.dart';
@@ -31,6 +36,11 @@ import 'widget/signup_invitation_onboarding.dart';
 import 'widget/legal_links_footer.dart';
 import 'widget/social_auth_button.dart';
 import 'widget/subscription_paywall.dart';
+import 'widget/parental_consent_pending_screen.dart';
+import 'widget/youtube_top_video_prompt.dart';
+import 'widget/biometric_lock_gate.dart';
+import 'services/biometric_unlock_service.dart';
+import 'services/parental_consent_service.dart';
 
 bool _isPasswordValid(String password) {
   if (password.length < 8) return false;
@@ -88,12 +98,44 @@ class _LoginScreenState extends State<LoginScreen> {
     _pageController = PageController(
       viewportFraction: 0.86,
     );
+    BiometricUnlockService.instance.addListener(_onBiometricServiceChanged);
     WidgetsBinding.instance.addPostFrameCallback((_) {
       AnalyticsService.instance.logScreenView(
         screenName: AnalyticsScreenNames.login,
       );
       _showForcedLogoutMessageIfNeeded();
+      unawaited(_prepareBiometricLogin());
     });
+  }
+
+  void _onBiometricServiceChanged() {
+    if (!mounted) return;
+    final hint = BiometricUnlockService.instance.savedLoginEmailHint;
+    if (hint != null &&
+        hint.isNotEmpty &&
+        _emailCtrl.text.trim().isEmpty) {
+      _emailCtrl.text = hint;
+    }
+    setState(() {});
+  }
+
+  Future<void> _prepareBiometricLogin() async {
+    if (kIsWeb) return;
+    final service = BiometricUnlockService.instance;
+    await service.ensureInitialized();
+    await service.refreshAvailability();
+    if (!mounted) return;
+
+    final hint = service.savedLoginEmailHint;
+    if (hint != null && hint.isNotEmpty && _emailCtrl.text.trim().isEmpty) {
+      _emailCtrl.text = hint;
+    }
+    setState(() {});
+
+    // Auto-offer biometric sign-in when vaulted credentials exist.
+    if (service.canOfferBiometricLogin) {
+      await _signInWithBiometrics();
+    }
   }
 
   void _showForcedLogoutMessageIfNeeded() {
@@ -108,6 +150,7 @@ class _LoginScreenState extends State<LoginScreen> {
 
   @override
   void dispose() {
+    BiometricUnlockService.instance.removeListener(_onBiometricServiceChanged);
     _pageController.dispose();
     _emailCtrl.dispose();
     _passwordCtrl.dispose();
@@ -144,11 +187,52 @@ class _LoginScreenState extends State<LoginScreen> {
     showLoginSnackBar(messengerContext, message);
   }
 
+  Future<void> _signInWithBiometrics({BuildContext? snackBarContext}) async {
+    if (kIsWeb || _isLoading) return;
+
+    final service = BiometricUnlockService.instance;
+    await service.ensureInitialized();
+    await service.refreshAvailability();
+    if (!service.canOfferBiometricLogin) return;
+
+    final rootContext = appNavigatorKey.currentContext;
+    final l10n = (mounted ? context.l10n : null) ??
+        (snackBarContext != null && snackBarContext.mounted
+            ? snackBarContext.l10n
+            : null) ??
+        (rootContext != null && rootContext.mounted ? rootContext.l10n : null);
+    if (l10n == null) return;
+
+    if (mounted) {
+      setState(() => _isLoading = true);
+    }
+
+    try {
+      final credentials = await service.authenticateAndReadLoginCredentials(
+        localizedReason: l10n.biometricLoginPromptReason,
+      );
+      if (credentials == null) return;
+
+      await _submitWithCredentials(
+        credentials.email,
+        credentials.password,
+        manageParentLoading: false,
+        snackBarContext: snackBarContext,
+        fromBiometricLogin: true,
+      );
+    } finally {
+      if (mounted) {
+        setState(() => _isLoading = false);
+      }
+    }
+  }
+
   Future<void> _submitWithCredentials(
     String email,
     String password, {
     bool manageParentLoading = true,
     BuildContext? snackBarContext,
+    bool fromBiometricLogin = false,
   }) async {
     if (mounted) {
       FocusScope.of(context).unfocus();
@@ -220,11 +304,27 @@ class _LoginScreenState extends State<LoginScreen> {
       await UserRootService.instance.reload();
 
       // AuthGate réagit à authStateChanges et affiche l'app sans navigation.
+      final unlockContext = appNavigatorKey.currentContext;
+      if (unlockContext != null && unlockContext.mounted) {
+        await maybePromptBiometricUnlock(
+          unlockContext,
+          email: email,
+          password: password,
+        );
+      }
     } on FirebaseAuthException catch (e) {
       debugPrint(
         'Auth error method=email code=${e.code} message=${e.message}',
       );
       if (!mounted) return;
+
+      if (fromBiometricLogin &&
+          (e.code == 'wrong-password' ||
+              e.code == 'invalid-credential' ||
+              e.code == 'user-not-found' ||
+              e.code == 'user-disabled')) {
+        await BiometricUnlockService.instance.clearSavedLoginCredentials();
+      }
 
       String message = l10n.signInError;
 
@@ -233,13 +333,17 @@ class _LoginScreenState extends State<LoginScreen> {
           message = l10n.userNotFound;
           break;
         case 'wrong-password':
-          message = l10n.wrongPassword;
+          message = fromBiometricLogin
+              ? l10n.biometricLoginCredentialsInvalid
+              : l10n.wrongPassword;
           break;
         case 'invalid-email':
           message = l10n.invalidEmail;
           break;
         case 'invalid-credential':
-          message = l10n.invalidCredential;
+          message = fromBiometricLogin
+              ? l10n.biometricLoginCredentialsInvalid
+              : l10n.invalidCredential;
           break;
         case 'too-many-requests':
           message = l10n.tooManyRequests;
@@ -270,9 +374,9 @@ class _LoginScreenState extends State<LoginScreen> {
         _passwordCtrl.text.trim(),
       );
 
-  Future<void> _signUpWithCredentials(
-    String email,
-    String password, {
+  /// Email signup: invitation? → profile (age rules) → password → THEN
+  /// Firebase Auth + `users/{uid}` + member. Cancel before password creates nothing.
+  Future<void> _startEmailSignup({
     bool manageParentLoading = true,
     BuildContext? snackBarContext,
   }) async {
@@ -295,22 +399,6 @@ class _LoginScreenState extends State<LoginScreen> {
       return;
     }
 
-    if (email.isEmpty || password.isEmpty) {
-      _showSnackBar(
-        l10n.emailAndPasswordRequired,
-        snackBarContext: snackBarContext,
-      );
-      return;
-    }
-
-    if (!_isPasswordValid(password)) {
-      _showSnackBar(
-        l10n.passwordRequirements,
-        snackBarContext: snackBarContext,
-      );
-      return;
-    }
-
     if (manageParentLoading) {
       if (_isLoading) return;
       if (mounted) {
@@ -326,10 +414,85 @@ class _LoginScreenState extends State<LoginScreen> {
             : null);
     if (appSession == null) {
       debugPrint('login: email signup aborted — no AppSession');
+      if (manageParentLoading && mounted) {
+        setState(() => _isLoading = false);
+      }
       return;
     }
 
+    _dismissLoginBottomSheetIfOpen(sheetContext: snackBarContext);
+    await _waitForBottomSheetDismissal();
+
+    if (manageParentLoading && mounted) {
+      setState(() => _isLoading = false);
+    }
+
+    final coordinator = SocialOnboardingCoordinator.instance;
+    coordinator.beginProfileOnboarding();
+    String? createdUid;
     try {
+      // Do not seed profile email from the login form — start blank.
+      final onboarding = await SignupInvitationOnboarding.run(
+        requireEmail: true,
+      );
+      debugPrint(
+        'login: signup onboarding result='
+        '${onboarding?.profile.firstName ?? 'cancelled'} '
+        'linkedExisting=${onboarding?.linkedExistingMember ?? false}',
+      );
+
+      if (onboarding == null) {
+        // No Auth / users / member created yet.
+        return;
+      }
+
+      final profile = onboarding.profile;
+      final email = profile.email?.trim() ?? '';
+      if (email.isEmpty) {
+        _showSnackBar(l10n.signupEmailRequired, snackBarContext: snackBarContext);
+        return;
+      }
+
+      final gate = classifyPlayerAccountAge(profile);
+      if (gate == AccountAgeGateResult.blockedUnderage) {
+        _showSnackBar(
+          l10n.accountAgeBlockedUnderage,
+          snackBarContext: snackBarContext,
+        );
+        return;
+      }
+      if (gate == AccountAgeGateResult.birthDateRequired) {
+        _showSnackBar(
+          l10n.memberProfileIncomplete,
+          snackBarContext: snackBarContext,
+        );
+        return;
+      }
+
+      // 13–14: parental email BEFORE Auth / users / member.
+      String? parentEmail;
+      if (gate == AccountAgeGateResult.parentalConsentRequired) {
+        final promptContext = appNavigatorKey.currentContext;
+        if (promptContext == null || !promptContext.mounted) {
+          return;
+        }
+        parentEmail = await promptParentalConsentEmail(promptContext);
+        if (parentEmail == null || parentEmail.trim().isEmpty) {
+          return;
+        }
+      }
+
+      final password = await SignupInvitationOnboarding.promptSignupPassword(
+        email: email,
+      );
+      if (password == null || password.isEmpty) {
+        return;
+      }
+
+      if (manageParentLoading && mounted) {
+        setState(() => _isLoading = true);
+      }
+
       final emailExists = await UserService().existsByEmail(email);
       if (emailExists) {
         _showSnackBar(
@@ -339,6 +502,7 @@ class _LoginScreenState extends State<LoginScreen> {
         return;
       }
 
+      // Create Auth + users/{uid} + member only after profile + password OK.
       final credential =
           await FirebaseAuth.instance.createUserWithEmailAndPassword(
         email: email,
@@ -346,61 +510,39 @@ class _LoginScreenState extends State<LoginScreen> {
       );
       final newUserUid = credential.user?.uid;
       debugPrint('signup ok uid=$newUserUid');
-
       if (newUserUid == null) {
         throw Exception('Firebase user uid missing after signup');
       }
+      createdUid = newUserUid;
 
       await AnalyticsService.instance.logLogin(method: 'email');
 
-      if (manageParentLoading && mounted) {
-        setState(() => _isLoading = false);
-      }
-
-      _dismissLoginBottomSheetIfOpen(sheetContext: snackBarContext);
-      await _waitForBottomSheetDismissal();
-
-      final onboarding = await SignupInvitationOnboarding.run();
-      debugPrint(
-        'login: signup onboarding result='
-        '${onboarding?.profile.firstName ?? 'cancelled'} '
-        'linkedExisting=${onboarding?.linkedExistingMember ?? false}',
-      );
-
-      if (onboarding == null) {
-        await _deleteNewAccountAndSignOut();
-        return;
-      }
-
-      final profile = onboarding.profile;
-
-      if (manageParentLoading && mounted) {
-        setState(() => _isLoading = true);
-      }
-
       try {
-        await _createUserAccountDocument(
+        final ageHandled = await _completeSignupWithAgeGate(
           uid: newUserUid,
           email: email,
           profile: profile,
+          invitation: onboarding.linkedExistingMember
+              ? onboarding.invitation
+              : null,
+          snackBarContext: snackBarContext,
+          parentEmail: parentEmail,
         );
-        if (onboarding.linkedExistingMember) {
-          await _completeInvitationOnboarding(
-            uid: newUserUid,
-            profile: profile,
-            invitation: onboarding.invitation!,
-          );
-        } else {
-          await _completeSocialOnboarding(uid: newUserUid, profile: profile);
+        if (!ageHandled) {
+          createdUid = null; // deleted inside age gate / consent cancel
+          return;
         }
         await _refreshSessionAvatars(appSession);
-      } catch (e) {
-        debugPrint('Email signup profile error: $e');
+      } catch (e, st) {
+        debugPrint('Email signup profile error: $e\n$st');
         await _deleteNewAccountAndSignOut();
+        createdUid = null;
         final message = e is StateError &&
                 e.message == 'member profile incomplete'
             ? l10n.memberProfileIncomplete
-            : '${l10n.unexpectedError} : $e';
+            : e is StateError && e.message == 'blockedUnderage'
+                ? l10n.accountAgeBlockedUnderage
+                : '${l10n.unexpectedError} : $e';
         _showSnackBar(message, snackBarContext: snackBarContext);
         return;
       }
@@ -409,18 +551,27 @@ class _LoginScreenState extends State<LoginScreen> {
         feature: AnalyticsFeatures.loginSuccess,
       );
 
+      final status = await UserService().getAccountStatus(newUserUid);
+      if (status == UserAccountStatus.pendingParentalConsent) {
+        return;
+      }
+
       await _finishOnboardingAfterMemberCreated(
         appSession,
         profile: profile,
         linkedViaInvitation: onboarding.linkedExistingMember,
+        email: email,
+        password: password,
       );
     } on FirebaseAuthException catch (e) {
       debugPrint(
         'Auth error method=signup code=${e.code} message=${e.message}',
       );
+      if (createdUid != null) {
+        await _deleteNewAccountAndSignOut();
+      }
 
       String message = l10n.signInError;
-
       switch (e.code) {
         case 'email-already-in-use':
           message = l10n.emailAlreadyInUse;
@@ -438,20 +589,24 @@ class _LoginScreenState extends State<LoginScreen> {
           message = l10n.signInError;
           break;
       }
-
       _showSnackBar(message, snackBarContext: snackBarContext);
-    } catch (e) {
-      debugPrint('Auth error method=signup unexpected: $e');
-
+    } catch (e, st) {
+      debugPrint('Auth error method=signup unexpected: $e\n$st');
+      if (createdUid != null) {
+        await _deleteNewAccountAndSignOut();
+      }
       _showSnackBar(
         '${l10n.unexpectedError} : $e',
         snackBarContext: snackBarContext,
       );
     } finally {
+      coordinator.endProfileOnboarding();
       if (manageParentLoading && mounted) {
         setState(() => _isLoading = false);
       }
     }
+
+    await YoutubeTopVideoPrompt.maybeShow();
   }
 
   Future<bool> _userNeedsInvitationOnboarding(UserCredential credential) async {
@@ -543,6 +698,8 @@ class _LoginScreenState extends State<LoginScreen> {
     AppSession appSession, {
     required Player profile,
     bool linkedViaInvitation = false,
+    String? email,
+    String? password,
   }) async {
     final isEducator = profile.isEducatorOrCoach;
 
@@ -558,6 +715,13 @@ class _LoginScreenState extends State<LoginScreen> {
 
     final rootContext = appNavigatorKey.currentContext;
     if (rootContext != null && rootContext.mounted) {
+      // Offer Face ID / biometric unlock (+ vault password when available).
+      await maybePromptBiometricUnlock(
+        rootContext,
+        email: email,
+        password: password,
+      );
+
       if (!UserTrialService.instance.hasPremiumAccess) {
         await SubscriptionPaywall.show(
           rootContext,
@@ -586,6 +750,94 @@ class _LoginScreenState extends State<LoginScreen> {
     }
     await appSession.init();
     await appSession.refreshPlayerAvatarUrls();
+  }
+
+  /// Age gate + user/member creation. Returns `false` when signup was aborted
+  /// (underage cancel / parent email cancelled). Throws on hard failures.
+  ///
+  /// For 13–14, [parentEmail] must already have been collected **before** Auth
+  /// when possible; otherwise we prompt here as a fallback.
+  Future<bool> _completeSignupWithAgeGate({
+    required String uid,
+    required String email,
+    required Player profile,
+    Invitation? invitation,
+    BuildContext? snackBarContext,
+    String? parentEmail,
+  }) async {
+    final gate = classifyPlayerAccountAge(profile);
+    if (gate == AccountAgeGateResult.birthDateRequired) {
+      throw StateError('member profile incomplete');
+    }
+    if (gate == AccountAgeGateResult.blockedUnderage) {
+      throw StateError('blockedUnderage');
+    }
+
+    if (gate == AccountAgeGateResult.parentalConsentRequired) {
+      var resolvedParent = parentEmail?.trim() ?? '';
+      if (resolvedParent.isEmpty) {
+        final rootContext = appNavigatorKey.currentContext;
+        if (rootContext == null || !rootContext.mounted) {
+          await _deleteNewAccountAndSignOut();
+          return false;
+        }
+        resolvedParent =
+            (await promptParentalConsentEmail(rootContext))?.trim() ?? '';
+      }
+      if (resolvedParent.isEmpty) {
+        await _deleteNewAccountAndSignOut();
+        return false;
+      }
+
+      final childName =
+          '${profile.firstName?.trim() ?? ''} ${profile.lastName?.trim() ?? ''}'
+              .trim();
+      final consentError = await ParentalConsentService().requestParentalConsent(
+        uid: uid,
+        accountEmail: email,
+        profile: profile,
+        parentEmail: resolvedParent,
+        childDisplayName: childName.isEmpty ? 'votre enfant' : childName,
+      );
+      if (consentError != null) {
+        await _deleteNewAccountAndSignOut();
+        final msgContext = snackBarContext ?? appNavigatorKey.currentContext;
+        if (msgContext != null && msgContext.mounted) {
+          _showSnackBar(
+            msgContext.l10n.parentalConsentSendError,
+            snackBarContext: snackBarContext,
+          );
+        }
+        return false;
+      }
+
+      if (invitation != null) {
+        await _completeInvitationOnboarding(
+          uid: uid,
+          profile: profile,
+          invitation: invitation,
+        );
+      } else {
+        await _completeSocialOnboarding(uid: uid, profile: profile);
+      }
+      return true;
+    }
+
+    await _createUserAccountDocument(
+      uid: uid,
+      email: email,
+      profile: profile,
+    );
+    if (invitation != null) {
+      await _completeInvitationOnboarding(
+        uid: uid,
+        profile: profile,
+        invitation: invitation,
+      );
+    } else {
+      await _completeSocialOnboarding(uid: uid, profile: profile);
+    }
+    return true;
   }
 
   Future<void> _completeSocialOnboarding({
@@ -625,14 +877,29 @@ class _LoginScreenState extends State<LoginScreen> {
     await InvitationService().validateInvitation(invitation.id, uid);
   }
 
+  /// Aborts a partially completed signup: Firestore `users/{uid}` (+ members)
+  /// first while still authenticated, then Firebase Auth, then sign-out.
   Future<void> _deleteNewAccountAndSignOut() async {
+    final user = FirebaseAuth.instance.currentUser;
+    final uid = user?.uid.trim() ?? '';
     try {
-      final user = FirebaseAuth.instance.currentUser;
+      if (uid.isNotEmpty) {
+        try {
+          await UserService().deleteAccountDocument(uid);
+        } catch (e) {
+          debugPrint('login: failed to delete users/$uid: $e');
+        }
+        try {
+          await PlayerService().cleanupMembersForAbortedSignup(uid);
+        } catch (e) {
+          debugPrint('login: failed to cleanup members for $uid: $e');
+        }
+      }
       if (user != null) {
         await user.delete();
       }
     } catch (e) {
-      debugPrint('login: failed to delete new account: $e');
+      debugPrint('login: failed to delete new Auth account: $e');
     } finally {
       await FirebaseAuth.instance.signOut();
     }
@@ -642,21 +909,28 @@ class _LoginScreenState extends State<LoginScreen> {
     required String uid,
     required String email,
     required Player profile,
+    String accountStatus = UserAccountStatus.active,
   }) async {
     await UserService().createAccountIfNeeded(
       uid: uid,
       email: email,
       firstName: profile.firstName?.trim() ?? '',
       lastName: profile.lastName?.trim() ?? '',
+      accountStatus: accountStatus,
+      birthDay: profile.birthDay,
     );
     await UserTrialService.instance.reload();
     await UserRootService.instance.reload();
   }
 
+  /// Google / Apple: OAuth first.
+  /// - Existing account (linked member) → login only.
+  /// - New Auth user → profile + age (+ parent email for 13–14) → users/member.
   Future<void> _signInWithSocial(
     SocialAuthProvider provider, {
     bool manageParentLoading = true,
     BuildContext? snackBarContext,
+    bool profileFirst = false, // kept for call-site compat; OAuth always first
   }) async {
     final rootContext = appNavigatorKey.currentContext;
     final sheetContext = snackBarContext;
@@ -693,15 +967,20 @@ class _LoginScreenState extends State<LoginScreen> {
       return;
     }
 
+    final coordinator = SocialOnboardingCoordinator.instance;
+    String? createdUid;
+
     try {
-      final credential =
-          await SocialAuthService.instance.signIn(provider);
+      final authResult = await SocialAuthService.instance.signIn(provider);
+      final credential = authResult.credential;
       final uid = credential.user?.uid;
       debugPrint(
         'login: social auth success uid=$uid provider=$methodName '
-        'photoURL=${credential.user?.photoURL}',
+        'photoURL=${credential.user?.photoURL} '
+        'identityGiven=${authResult.givenName != null} '
+        'identityFamily=${authResult.familyName != null} '
+        'identityEmail=${authResult.email != null}',
       );
-
       if (uid == null) {
         throw Exception('Firebase user uid missing after social login');
       }
@@ -723,98 +1002,18 @@ class _LoginScreenState extends State<LoginScreen> {
 
       await AnalyticsService.instance.logLogin(method: methodName);
 
-      final needsInvitation =
+      final needsOnboarding =
           await _userNeedsInvitationOnboarding(credential);
-      debugPrint('login: needsInvitation=$needsInvitation');
-      var memberJustCreated = false;
-      var linkedViaInvitation = false;
-      Player? createdProfile;
+      debugPrint('login: needsOnboarding=$needsOnboarding');
 
-      if (needsInvitation) {
-        if (manageParentLoading && mounted) {
-          setState(() => _isLoading = false);
-        }
+      _dismissLoginBottomSheetIfOpen(sheetContext: sheetContext);
+      await _waitForBottomSheetDismissal();
 
-        _dismissLoginBottomSheetIfOpen(sheetContext: sheetContext);
-        await _waitForBottomSheetDismissal();
-
-        final onboarding = await SignupInvitationOnboarding.run();
-        debugPrint(
-          'login: signup onboarding result='
-          '${onboarding?.profile.firstName ?? 'cancelled'} '
-          'linkedExisting=${onboarding?.linkedExistingMember ?? false}',
+      // Existing Google/Apple account with a member → enter the app.
+      if (!needsOnboarding) {
+        await AnalyticsService.instance.logFeatureUsed(
+          feature: AnalyticsFeatures.loginSuccess,
         );
-
-        if (onboarding == null) {
-          await _deleteNewAccountAndSignOut();
-          return;
-        }
-
-        final profile = onboarding.profile;
-
-        if (manageParentLoading && mounted) {
-          setState(() => _isLoading = true);
-        }
-
-        try {
-          await _createUserAccountDocument(
-            uid: uid,
-            email: credential.user?.email ?? '',
-            profile: profile,
-          );
-          if (onboarding.linkedExistingMember) {
-            await _completeInvitationOnboarding(
-              uid: uid,
-              profile: profile,
-              invitation: onboarding.invitation!,
-            );
-          } else {
-            await _completeSocialOnboarding(uid: uid, profile: profile);
-          }
-          final refreshSession = (appNavigatorKey.currentContext ?? rootContext)
-                  ?.read<AppSession>() ??
-              (mounted ? context.read<AppSession>() : null);
-          if (refreshSession != null) {
-            await _refreshSessionAvatars(refreshSession);
-          }
-          createdProfile = profile;
-          linkedViaInvitation = onboarding.linkedExistingMember;
-          memberJustCreated = true;
-        } catch (e) {
-          debugPrint('Social onboarding error: $e');
-          await _deleteNewAccountAndSignOut();
-          final message = e is StateError &&
-                  e.message == 'member profile incomplete'
-              ? l10n.memberProfileIncomplete
-              : '${l10n.unexpectedError} : $e';
-          _showSnackBar(message, snackBarContext: sheetContext);
-          return;
-        }
-      } else {
-        _dismissLoginBottomSheetIfOpen(sheetContext: sheetContext);
-        await _waitForBottomSheetDismissal();
-      }
-
-      await AnalyticsService.instance.logFeatureUsed(
-        feature: AnalyticsFeatures.loginSuccess,
-      );
-
-      if (memberJustCreated && createdProfile != null) {
-        final appSession = (appNavigatorKey.currentContext ?? rootContext)
-                ?.read<AppSession>() ??
-            (mounted ? context.read<AppSession>() : null);
-        if (appSession != null) {
-          await _finishOnboardingAfterMemberCreated(
-            appSession,
-            profile: createdProfile,
-            linkedViaInvitation: linkedViaInvitation,
-          );
-        } else {
-          debugPrint(
-            'login: onboarding finish skipped — no AppSession for avatar refresh',
-          );
-        }
-      } else {
         final sessionContext = appNavigatorKey.currentContext ?? rootContext;
         if (sessionContext != null && sessionContext.mounted) {
           final session = sessionContext.read<AppSession>();
@@ -827,8 +1026,132 @@ class _LoginScreenState extends State<LoginScreen> {
           await session.refreshPlayerAvatarUrls();
           await UserRootService.instance.reload();
         }
+        await YoutubeTopVideoPrompt.maybeShow();
+        final unlockContext = appNavigatorKey.currentContext ?? rootContext;
+        if (unlockContext != null && unlockContext.mounted) {
+          await maybePromptBiometricUnlock(unlockContext);
+        }
+        debugPrint('login: social sign-in complete (existing account)');
+        return;
       }
-      debugPrint('login: social sign-in complete, appSession initialized');
+
+      // New social Auth user: profile + age gates (delete Auth if aborted).
+      createdUid = uid;
+      if (manageParentLoading && mounted) {
+        setState(() => _isLoading = false);
+      }
+
+      coordinator.beginProfileOnboarding();
+      final authSeed = profileSeedFromAuthIdentity(
+        givenName: authResult.givenName,
+        familyName: authResult.familyName,
+        displayName: authResult.displayName ?? credential.user?.displayName,
+        email: authResult.email ?? credential.user?.email,
+        applyFallbacks: true,
+      );
+      final onboarding = await SignupInvitationOnboarding.run(
+        requireEmail: false,
+        authSeedProfile: authSeed,
+        lockIdentityFromAuth: true,
+      );
+      if (onboarding == null) {
+        await _deleteNewAccountAndSignOut();
+        createdUid = null;
+        return;
+      }
+
+      final profile = onboarding.profile;
+      final gate = classifyPlayerAccountAge(profile);
+      if (gate == AccountAgeGateResult.blockedUnderage) {
+        await _deleteNewAccountAndSignOut();
+        createdUid = null;
+        _showSnackBar(
+          l10n.accountAgeBlockedUnderage,
+          snackBarContext: sheetContext,
+        );
+        return;
+      }
+      if (gate == AccountAgeGateResult.birthDateRequired) {
+        await _deleteNewAccountAndSignOut();
+        createdUid = null;
+        _showSnackBar(
+          l10n.memberProfileIncomplete,
+          snackBarContext: sheetContext,
+        );
+        return;
+      }
+
+      String? parentEmail;
+      if (gate == AccountAgeGateResult.parentalConsentRequired) {
+        final promptContext = appNavigatorKey.currentContext;
+        if (promptContext == null || !promptContext.mounted) {
+          await _deleteNewAccountAndSignOut();
+          createdUid = null;
+          return;
+        }
+        parentEmail = await promptParentalConsentEmail(promptContext);
+        if (parentEmail == null || parentEmail.trim().isEmpty) {
+          await _deleteNewAccountAndSignOut();
+          createdUid = null;
+          return;
+        }
+      }
+
+      if (manageParentLoading && mounted) {
+        setState(() => _isLoading = true);
+      }
+
+      var accountEmail = authResult.email?.trim() ??
+          credential.user?.email?.trim() ??
+          '';
+      if (accountEmail.isEmpty) {
+        accountEmail = profile.email?.trim() ?? '';
+      }
+      var finalProfile = profile;
+      if ((finalProfile.email == null || finalProfile.email!.trim().isEmpty) &&
+          accountEmail.isNotEmpty) {
+        finalProfile = finalProfile.copyWith(email: accountEmail);
+      }
+
+      final ageHandled = await _completeSignupWithAgeGate(
+        uid: uid,
+        email: accountEmail,
+        profile: finalProfile,
+        invitation: onboarding.linkedExistingMember
+            ? onboarding.invitation
+            : null,
+        snackBarContext: sheetContext,
+        parentEmail: parentEmail,
+      );
+      if (!ageHandled) {
+        createdUid = null;
+        return;
+      }
+
+      final refreshSession = (appNavigatorKey.currentContext ?? rootContext)
+              ?.read<AppSession>() ??
+          (mounted ? context.read<AppSession>() : null);
+      if (refreshSession != null) {
+        await _refreshSessionAvatars(refreshSession);
+      }
+
+      await AnalyticsService.instance.logFeatureUsed(
+        feature: AnalyticsFeatures.loginSuccess,
+      );
+
+      final status = await UserService().getAccountStatus(uid);
+      if (status == UserAccountStatus.pendingParentalConsent) {
+        return;
+      }
+
+      if (refreshSession != null) {
+        await _finishOnboardingAfterMemberCreated(
+          refreshSession,
+          profile: finalProfile,
+          linkedViaInvitation: onboarding.linkedExistingMember,
+        );
+      }
+      await YoutubeTopVideoPrompt.maybeShow();
     } on SocialAuthCancelledException {
       debugPrint('Auth cancelled provider=$methodName');
       return;
@@ -836,19 +1159,24 @@ class _LoginScreenState extends State<LoginScreen> {
       debugPrint(
         'Auth error provider=$methodName code=${e.code} message=${e.message}',
       );
-
+      if (createdUid != null) {
+        await _deleteNewAccountAndSignOut();
+      }
       _showSnackBar(
         e.message ?? l10n.signInError,
         snackBarContext: sheetContext,
       );
-    } catch (e) {
-      debugPrint('Auth error provider=$methodName unexpected: $e');
-
+    } catch (e, st) {
+      debugPrint('Auth error provider=$methodName unexpected: $e\n$st');
+      if (createdUid != null) {
+        await _deleteNewAccountAndSignOut();
+      }
       _showSnackBar(
         '${l10n.unexpectedError} : $e',
         snackBarContext: sheetContext,
       );
     } finally {
+      coordinator.endProfileOnboarding();
       if (manageParentLoading && mounted) {
         setState(() => _isLoading = false);
       }
@@ -877,9 +1205,12 @@ class _LoginScreenState extends State<LoginScreen> {
 
         return _LoginBottomSheet(
           onSignIn: _submitWithCredentials,
-          onSignUp: _signUpWithCredentials,
+          onSignUp: _startEmailSignup,
           onSocialSignIn: _signInWithSocial,
           onForgotPassword: () => _onForgotPassword(sheetContext),
+          onBiometricSignIn: () => _signInWithBiometrics(
+            snackBarContext: sheetContext,
+          ),
         );
       },
     ).whenComplete(coordinator.unregisterLoginSheetCloser);
@@ -899,6 +1230,9 @@ class _LoginScreenState extends State<LoginScreen> {
     final width = MediaQuery.of(context).size.width;
     final items = _buildItems(context);
 
+    final biometricService = BiometricUnlockService.instance;
+    final showBiometricLogin = biometricService.canOfferBiometricLogin;
+
     if (kIsWeb || width >= 900) {
       return _WebLoginLayout(
         items: items,
@@ -908,17 +1242,17 @@ class _LoginScreenState extends State<LoginScreen> {
         passwordCtrl: _passwordCtrl,
         obscurePassword: _obscurePassword,
         isLoading: _isLoading,
+        showBiometricLogin: showBiometricLogin,
         onPageChanged: (index) => setState(() => _currentPage = index),
         onToggleObscure: () {
           setState(() => _obscurePassword = !_obscurePassword);
         },
         onSignIn: _submit,
-        onSignUp: (email, password) => _signUpWithCredentials(
-          email,
-          password,
-        ),
-        onSocialSignIn: _signInWithSocial,
+        onSignUp: () => _startEmailSignup(),
+        onSocialSignIn: (provider, {bool profileFirst = false}) =>
+            _signInWithSocial(provider, profileFirst: profileFirst),
         onForgotPassword: () => _onForgotPassword(),
+        onBiometricSignIn: () => _signInWithBiometrics(),
         onPreviousPage: () => _goPreviousPage(items.length),
         onNextPage: () => _goNextPage(items.length),
       );
@@ -930,6 +1264,9 @@ class _LoginScreenState extends State<LoginScreen> {
       pageController: _pageController,
       onPageChanged: (index) => setState(() => _currentPage = index),
       onLogin: _goToLoginSheet,
+      showBiometricLogin: showBiometricLogin,
+      biometricBusy: _isLoading,
+      onBiometricSignIn: () => _signInWithBiometrics(),
     );
   }
 }
@@ -942,12 +1279,17 @@ class _WebLoginLayout extends StatelessWidget {
   final TextEditingController passwordCtrl;
   final bool obscurePassword;
   final bool isLoading;
+  final bool showBiometricLogin;
   final ValueChanged<int> onPageChanged;
   final VoidCallback onToggleObscure;
   final VoidCallback onSignIn;
-  final Future<void> Function(String email, String password) onSignUp;
-  final Future<void> Function(SocialAuthProvider provider) onSocialSignIn;
+  final Future<void> Function() onSignUp;
+  final Future<void> Function(
+    SocialAuthProvider provider, {
+    bool profileFirst,
+  }) onSocialSignIn;
   final VoidCallback onForgotPassword;
+  final Future<void> Function() onBiometricSignIn;
   final VoidCallback onPreviousPage;
   final VoidCallback onNextPage;
 
@@ -959,12 +1301,14 @@ class _WebLoginLayout extends StatelessWidget {
     required this.passwordCtrl,
     required this.obscurePassword,
     required this.isLoading,
+    required this.showBiometricLogin,
     required this.onPageChanged,
     required this.onToggleObscure,
     required this.onSignIn,
     required this.onSignUp,
     required this.onSocialSignIn,
     required this.onForgotPassword,
+    required this.onBiometricSignIn,
     required this.onPreviousPage,
     required this.onNextPage,
   });
@@ -1097,11 +1441,13 @@ class _WebLoginLayout extends StatelessWidget {
                       passwordCtrl: passwordCtrl,
                       obscurePassword: obscurePassword,
                       isLoading: isLoading,
+                      showBiometricLogin: showBiometricLogin,
                       onToggleObscure: onToggleObscure,
                       onSignIn: onSignIn,
                       onSignUp: onSignUp,
                       onSocialSignIn: onSocialSignIn,
                       onForgotPassword: onForgotPassword,
+                      onBiometricSignIn: onBiometricSignIn,
                       onLocaleChanged: (locale) {},
                     ),
                   ),
@@ -1257,6 +1603,9 @@ class _MobileLoginLayout extends StatelessWidget {
   final PageController pageController;
   final ValueChanged<int> onPageChanged;
   final VoidCallback onLogin;
+  final bool showBiometricLogin;
+  final bool biometricBusy;
+  final Future<void> Function() onBiometricSignIn;
 
   const _MobileLoginLayout({
     required this.items,
@@ -1264,6 +1613,9 @@ class _MobileLoginLayout extends StatelessWidget {
     required this.pageController,
     required this.onPageChanged,
     required this.onLogin,
+    required this.showBiometricLogin,
+    required this.biometricBusy,
+    required this.onBiometricSignIn,
   });
 
   @override
@@ -1335,12 +1687,47 @@ class _MobileLoginLayout extends StatelessWidget {
                             ),
                             child: Column(
                               children: [
+                                if (showBiometricLogin) ...[
+                                  SizedBox(
+                                    width: double.infinity,
+                                    child: ElevatedButton.icon(
+                                      onPressed: biometricBusy
+                                          ? null
+                                          : () => unawaited(onBiometricSignIn()),
+                                      icon: biometricBusy
+                                          ? const SizedBox(
+                                              width: 18,
+                                              height: 18,
+                                              child: CircularProgressIndicator(
+                                                strokeWidth: 2,
+                                              ),
+                                            )
+                                          : Icon(
+                                              _biometricLoginIcon(
+                                                BiometricUnlockService
+                                                    .instance
+                                                    .availableBiometrics,
+                                              ),
+                                            ),
+                                      label: Text(
+                                        context.l10n.biometricLoginAction,
+                                      ),
+                                    ),
+                                  ),
+                                  const SizedBox(height: 12),
+                                ],
                                 SizedBox(
                                   width: double.infinity,
-                                  child: ElevatedButton(
-                                    onPressed: onLogin,
-                                    child: Text(context.l10n.signIn),
-                                  ),
+                                  child: showBiometricLogin
+                                      ? OutlinedButton(
+                                          onPressed:
+                                              biometricBusy ? null : onLogin,
+                                          child: Text(context.l10n.signIn),
+                                        )
+                                      : ElevatedButton(
+                                          onPressed: onLogin,
+                                          child: Text(context.l10n.signIn),
+                                        ),
                                 ),
                                 const SizedBox(height: 12),
                                 const LegalLinksFooter(),
@@ -1373,16 +1760,45 @@ class _MobileLoginLayout extends StatelessWidget {
   }
 }
 
+IconData _biometricLoginIcon(List<BiometricType> types) {
+  if (types.contains(BiometricType.face)) {
+    return Icons.face_rounded;
+  }
+  if (types.contains(BiometricType.fingerprint)) {
+    return Icons.fingerprint_rounded;
+  }
+  return Icons.fingerprint_rounded;
+}
+
+const EdgeInsets _kLoginFieldScrollPadding = EdgeInsets.fromLTRB(20, 20, 20, 120);
+
+void _ensureLoginFieldVisible(BuildContext context) {
+  Future<void>.delayed(const Duration(milliseconds: 350), () {
+    if (!context.mounted) return;
+    Scrollable.ensureVisible(
+      context,
+      alignment: 0.2,
+      duration: const Duration(milliseconds: 220),
+      curve: Curves.easeOut,
+    );
+  });
+}
+
 class _LoginCard extends StatefulWidget {
   final TextEditingController emailCtrl;
   final TextEditingController passwordCtrl;
   final bool obscurePassword;
   final bool isLoading;
+  final bool showBiometricLogin;
   final VoidCallback onToggleObscure;
   final VoidCallback onSignIn;
-  final Future<void> Function(String email, String password) onSignUp;
-  final Future<void> Function(SocialAuthProvider provider) onSocialSignIn;
+  final Future<void> Function() onSignUp;
+  final Future<void> Function(
+    SocialAuthProvider provider, {
+    bool profileFirst,
+  }) onSocialSignIn;
   final VoidCallback onForgotPassword;
+  final Future<void> Function()? onBiometricSignIn;
   final ValueChanged<Locale> onLocaleChanged;
   final VoidCallback? onBack;
 
@@ -1391,11 +1807,13 @@ class _LoginCard extends StatefulWidget {
     required this.passwordCtrl,
     required this.obscurePassword,
     required this.isLoading,
+    this.showBiometricLogin = false,
     required this.onToggleObscure,
     required this.onSignIn,
     required this.onSignUp,
     required this.onSocialSignIn,
     required this.onForgotPassword,
+    this.onBiometricSignIn,
     required this.onLocaleChanged,
     this.onBack,
   });
@@ -1405,21 +1823,11 @@ class _LoginCard extends StatefulWidget {
 }
 
 class _LoginCardState extends State<_LoginCard> {
-  final TextEditingController _confirmPasswordCtrl = TextEditingController();
-
   bool _isSignUpMode = false;
-  bool _obscureConfirmPassword = true;
-
-  @override
-  void dispose() {
-    _confirmPasswordCtrl.dispose();
-    super.dispose();
-  }
 
   void _toggleMode() {
     setState(() {
       _isSignUpMode = !_isSignUpMode;
-      _confirmPasswordCtrl.clear();
     });
   }
 
@@ -1427,7 +1835,6 @@ class _LoginCardState extends State<_LoginCard> {
     if (_isSignUpMode) {
       setState(() {
         _isSignUpMode = false;
-        _confirmPasswordCtrl.clear();
       });
       return;
     }
@@ -1440,20 +1847,9 @@ class _LoginCardState extends State<_LoginCard> {
   Future<void> _handleSubmit() async {
     if (!mounted) return;
 
-    final email = widget.emailCtrl.text.trim();
-    final password = widget.passwordCtrl.text.trim();
-
     if (_isSignUpMode) {
-      final confirmPassword = _confirmPasswordCtrl.text.trim();
-      if (confirmPassword != password) {
-        if (!mounted) return;
-        showLoginSnackBar(context, context.l10n.passwordsDoNotMatch);
-        return;
-      }
-
-      await widget.onSignUp(email, password);
+      await widget.onSignUp();
     } else {
-      if (!mounted) return;
       widget.onSignIn();
     }
   }
@@ -1505,68 +1901,65 @@ class _LoginCardState extends State<_LoginCard> {
             ),
             const SizedBox(height: 8),
             Text(
-              context.l10n.loginSubtitle,
+              _isSignUpMode
+                  ? context.l10n.signupFlowStartHint
+                  : context.l10n.loginSubtitle,
               style: Theme.of(context).textTheme.bodyLarge?.copyWith(
                 color: colors.textSecondary,
               ),
             ),
             const SizedBox(height: 24),
-            TextField(
-              controller: widget.emailCtrl,
-              keyboardType: TextInputType.emailAddress,
-              decoration: InputDecoration(
-                labelText: context.l10n.email,
-                hintText: context.l10n.emailHint,
-                prefixIcon: const Icon(Icons.mail_outline_rounded),
-              ),
-              onSubmitted: (_) => _handleSubmit(),
-            ),
-            const SizedBox(height: 14),
-            TextField(
-              controller: widget.passwordCtrl,
-              obscureText: widget.obscurePassword,
-              decoration: InputDecoration(
-                labelText: context.l10n.password,
-                hintText: context.l10n.passwordHint,
-                prefixIcon: const Icon(Icons.lock_outline_rounded),
-                suffixIcon: IconButton(
-                  onPressed: widget.onToggleObscure,
-                  icon: Icon(
-                    widget.obscurePassword
-                        ? Icons.visibility_off_outlined
-                        : Icons.visibility_outlined,
-                  ),
-                ),
-              ),
-              onSubmitted: (_) => _handleSubmit(),
-            ),
-            if (_isSignUpMode) ...[
-              const SizedBox(height: 14),
-              TextField(
-                controller: _confirmPasswordCtrl,
-                obscureText: _obscureConfirmPassword,
-                decoration: InputDecoration(
-                  labelText: context.l10n.confirmPassword,
-                  hintText: context.l10n.confirmPasswordHint,
-                  prefixIcon: const Icon(Icons.lock_outline_rounded),
-                  suffixIcon: IconButton(
-                    onPressed: () {
-                      setState(
-                        () => _obscureConfirmPassword = !_obscureConfirmPassword,
-                      );
+            if (!_isSignUpMode) ...[
+              Builder(
+                builder: (fieldContext) {
+                  return Focus(
+                    onFocusChange: (hasFocus) {
+                      if (hasFocus) _ensureLoginFieldVisible(fieldContext);
                     },
-                    icon: Icon(
-                      _obscureConfirmPassword
-                          ? Icons.visibility_off_outlined
-                          : Icons.visibility_outlined,
+                    child: TextField(
+                      controller: widget.emailCtrl,
+                      keyboardType: TextInputType.emailAddress,
+                      scrollPadding: _kLoginFieldScrollPadding,
+                      decoration: InputDecoration(
+                        labelText: context.l10n.email,
+                        hintText: context.l10n.emailHint,
+                        prefixIcon: const Icon(Icons.mail_outline_rounded),
+                      ),
+                      onSubmitted: (_) => _handleSubmit(),
                     ),
-                  ),
-                ),
-                onSubmitted: (_) => _handleSubmit(),
+                  );
+                },
               ),
-            ],
-            const SizedBox(height: 10),
-            if (!_isSignUpMode)
+              const SizedBox(height: 14),
+              Builder(
+                builder: (fieldContext) {
+                  return Focus(
+                    onFocusChange: (hasFocus) {
+                      if (hasFocus) _ensureLoginFieldVisible(fieldContext);
+                    },
+                    child: TextField(
+                      controller: widget.passwordCtrl,
+                      obscureText: widget.obscurePassword,
+                      scrollPadding: _kLoginFieldScrollPadding,
+                      decoration: InputDecoration(
+                        labelText: context.l10n.password,
+                        hintText: context.l10n.passwordHint,
+                        prefixIcon: const Icon(Icons.lock_outline_rounded),
+                        suffixIcon: IconButton(
+                          onPressed: widget.onToggleObscure,
+                          icon: Icon(
+                            widget.obscurePassword
+                                ? Icons.visibility_off_outlined
+                                : Icons.visibility_outlined,
+                          ),
+                        ),
+                      ),
+                      onSubmitted: (_) => _handleSubmit(),
+                    ),
+                  );
+                },
+              ),
+              const SizedBox(height: 10),
               Align(
                 alignment: Alignment.centerRight,
                 child: TextButton(
@@ -1574,6 +1967,7 @@ class _LoginCardState extends State<_LoginCard> {
                   child: Text(context.l10n.forgotPassword),
                 ),
               ),
+            ],
             Align(
               alignment: Alignment.centerRight,
               child: Row(
@@ -1625,6 +2019,25 @@ class _LoginCardState extends State<_LoginCard> {
                 ),
               ),
             ),
+            if (!_isSignUpMode &&
+                widget.showBiometricLogin &&
+                widget.onBiometricSignIn != null) ...[
+              const SizedBox(height: 12),
+              SizedBox(
+                width: double.infinity,
+                child: OutlinedButton.icon(
+                  onPressed: widget.isLoading
+                      ? null
+                      : () => unawaited(widget.onBiometricSignIn!()),
+                  icon: Icon(
+                    _biometricLoginIcon(
+                      BiometricUnlockService.instance.availableBiometrics,
+                    ),
+                  ),
+                  label: Text(context.l10n.biometricLoginAction),
+                ),
+              ),
+            ],
             const SizedBox(height: 22),
             Row(
               children: [
@@ -1645,7 +2058,10 @@ class _LoginCardState extends State<_LoginCard> {
               label: context.l10n.continueWithGoogle,
               onPressed: widget.isLoading
                   ? null
-                  : () => widget.onSocialSignIn(SocialAuthProvider.google),
+                  : () => widget.onSocialSignIn(
+                        SocialAuthProvider.google,
+                        profileFirst: _isSignUpMode,
+                      ),
             ),
             const SizedBox(height: 12),
             SocialAuthButton(
@@ -1653,7 +2069,10 @@ class _LoginCardState extends State<_LoginCard> {
               label: context.l10n.continueWithApple,
               onPressed: widget.isLoading
                   ? null
-                  : () => widget.onSocialSignIn(SocialAuthProvider.apple),
+                  : () => widget.onSocialSignIn(
+                        SocialAuthProvider.apple,
+                        profileFirst: _isSignUpMode,
+                      ),
             ),
             const SizedBox(height: 16),
             const LegalLinksFooter(),
@@ -1671,9 +2090,7 @@ class _LoginBottomSheet extends StatefulWidget {
     bool manageParentLoading,
     BuildContext? snackBarContext,
   }) onSignIn;
-  final Future<void> Function(
-    String email,
-    String password, {
+  final Future<void> Function({
     bool manageParentLoading,
     BuildContext? snackBarContext,
   }) onSignUp;
@@ -1681,14 +2098,17 @@ class _LoginBottomSheet extends StatefulWidget {
     SocialAuthProvider provider, {
     bool manageParentLoading,
     BuildContext? snackBarContext,
+    bool profileFirst,
   }) onSocialSignIn;
   final VoidCallback onForgotPassword;
+  final Future<void> Function() onBiometricSignIn;
 
   const _LoginBottomSheet({
     required this.onSignIn,
     required this.onSignUp,
     required this.onSocialSignIn,
     required this.onForgotPassword,
+    required this.onBiometricSignIn,
   });
 
   @override
@@ -1698,12 +2118,29 @@ class _LoginBottomSheet extends StatefulWidget {
 class _LoginBottomSheetState extends State<_LoginBottomSheet> {
   final TextEditingController _emailCtrl = TextEditingController();
   final TextEditingController _passwordCtrl = TextEditingController();
+  final BiometricUnlockService _biometricService =
+      BiometricUnlockService.instance;
 
   bool _obscurePassword = true;
   bool _isLoading = false;
 
   @override
+  void initState() {
+    super.initState();
+    _biometricService.addListener(_onBiometricChanged);
+    final hint = _biometricService.savedLoginEmailHint;
+    if (hint != null && hint.isNotEmpty) {
+      _emailCtrl.text = hint;
+    }
+  }
+
+  void _onBiometricChanged() {
+    if (mounted) setState(() {});
+  }
+
+  @override
   void dispose() {
+    _biometricService.removeListener(_onBiometricChanged);
     _emailCtrl.dispose();
     _passwordCtrl.dispose();
     super.dispose();
@@ -1729,17 +2166,12 @@ class _LoginBottomSheetState extends State<_LoginBottomSheet> {
     }
   }
 
-  Future<void> _handleSignUp(
-    String email,
-    String password,
-  ) async {
+  Future<void> _handleSignUp() async {
     if (_isLoading) return;
 
     setState(() => _isLoading = true);
     try {
       await widget.onSignUp(
-        email,
-        password,
         manageParentLoading: false,
         snackBarContext: context,
       );
@@ -1750,7 +2182,10 @@ class _LoginBottomSheetState extends State<_LoginBottomSheet> {
     }
   }
 
-  Future<void> _handleSocialSignIn(SocialAuthProvider provider) async {
+  Future<void> _handleSocialSignIn(
+    SocialAuthProvider provider, {
+    bool profileFirst = false,
+  }) async {
     if (_isLoading) return;
 
     setState(() => _isLoading = true);
@@ -1759,6 +2194,7 @@ class _LoginBottomSheetState extends State<_LoginBottomSheet> {
         provider,
         manageParentLoading: false,
         snackBarContext: context,
+        profileFirst: profileFirst,
       );
     } finally {
       if (mounted) {
@@ -1770,59 +2206,88 @@ class _LoginBottomSheetState extends State<_LoginBottomSheet> {
   @override
   Widget build(BuildContext context) {
     final colors = context.appColors;
-    final bottomInset = MediaQuery.of(context).viewInsets.bottom;
+    final keyboardInset = MediaQuery.viewInsetsOf(context).bottom;
+    final maxHeight = MediaQuery.sizeOf(context).height - keyboardInset;
 
     return Scaffold(
       backgroundColor: Colors.transparent,
-      body: Container(
-        decoration: BoxDecoration(
-          color: colors.surface,
-          borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
-        ),
-        child: Padding(
-          padding: EdgeInsets.fromLTRB(20, 12, 20, bottomInset + 20),
-          child: SingleChildScrollView(
-            child: Column(
-              children: [
-                Row(
-                  children: [
-                    IconButton(
-                      onPressed: _isLoading
-                          ? null
-                          : () => Navigator.of(context).pop(),
-                      icon: const Icon(Icons.arrow_back_rounded),
-                      tooltip: context.l10n.actionBack,
-                    ),
-                    const Spacer(),
-                  ],
-                ),
-                Container(
-                  width: 52,
-                  height: 5,
-                  decoration: BoxDecoration(
-                    color: colors.border,
-                    borderRadius: BorderRadius.circular(999),
+      resizeToAvoidBottomInset: false,
+      body: Padding(
+        padding: EdgeInsets.only(bottom: keyboardInset),
+        child: Align(
+          alignment: Alignment.bottomCenter,
+          child: ConstrainedBox(
+            constraints: BoxConstraints(
+              maxHeight: maxHeight > 120 ? maxHeight : 120,
+            ),
+            child: Material(
+              color: colors.surface,
+              borderRadius: const BorderRadius.vertical(
+                top: Radius.circular(28),
+              ),
+              clipBehavior: Clip.antiAlias,
+              child: SafeArea(
+                top: false,
+                child: SingleChildScrollView(
+                  padding: const EdgeInsets.fromLTRB(20, 12, 20, 20),
+                  keyboardDismissBehavior:
+                      ScrollViewKeyboardDismissBehavior.onDrag,
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Row(
+                        children: [
+                          IconButton(
+                            onPressed: _isLoading
+                                ? null
+                                : () => Navigator.of(context).pop(),
+                            icon: const Icon(Icons.arrow_back_rounded),
+                            tooltip: context.l10n.actionBack,
+                          ),
+                          const Spacer(),
+                        ],
+                      ),
+                      Container(
+                        width: 52,
+                        height: 5,
+                        decoration: BoxDecoration(
+                          color: colors.border,
+                          borderRadius: BorderRadius.circular(999),
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      _LoginCard(
+                        emailCtrl: _emailCtrl,
+                        passwordCtrl: _passwordCtrl,
+                        obscurePassword: _obscurePassword,
+                        isLoading: _isLoading,
+                        showBiometricLogin:
+                            _biometricService.canOfferBiometricLogin,
+                        onToggleObscure: () {
+                          setState(() => _obscurePassword = !_obscurePassword);
+                        },
+                        onSignIn: _handleSignIn,
+                        onSignUp: _handleSignUp,
+                        onSocialSignIn: _handleSocialSignIn,
+                        onForgotPassword: widget.onForgotPassword,
+                        onBiometricSignIn: () async {
+                          if (_isLoading) return;
+                          setState(() => _isLoading = true);
+                          try {
+                            await widget.onBiometricSignIn();
+                          } finally {
+                            if (mounted) setState(() => _isLoading = false);
+                          }
+                        },
+                        onLocaleChanged: (_) {},
+                        onBack: () {
+                          Navigator.of(context, rootNavigator: true).pop();
+                        },
+                      ),
+                    ],
                   ),
                 ),
-                const SizedBox(height: 8),
-                _LoginCard(
-                  emailCtrl: _emailCtrl,
-                  passwordCtrl: _passwordCtrl,
-                  obscurePassword: _obscurePassword,
-                  isLoading: _isLoading,
-                  onToggleObscure: () {
-                    setState(() => _obscurePassword = !_obscurePassword);
-                  },
-                  onSignIn: _handleSignIn,
-                  onSignUp: _handleSignUp,
-                  onSocialSignIn: _handleSocialSignIn,
-                  onForgotPassword: widget.onForgotPassword,
-                  onLocaleChanged: (_) {},
-                  onBack: () {
-                    Navigator.of(context, rootNavigator: true).pop();
-                  },
-                ),
-              ],
+              ),
             ),
           ),
         ),

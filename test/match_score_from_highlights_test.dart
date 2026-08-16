@@ -37,6 +37,27 @@ models.Match _match({
 }
 
 void main() {
+  group('incrementedScoresForSide / decrementedScoresForSide', () {
+    test('can apply several home goals in a row without clamping early', () {
+      var match = _match(homeScore: 0, outSideScore: 0);
+      for (var i = 1; i <= 3; i++) {
+        final next = incrementedScoresForSide(match, MatchSide.team1);
+        expect(next.homeScore, i);
+        expect(next.outsideScore, 0);
+        match = _match(homeScore: next.homeScore, outSideScore: next.outsideScore);
+      }
+    });
+
+    test('decrement clamps at zero', () {
+      final scores = decrementedScoresForSide(
+        _match(homeScore: 0, outSideScore: 2),
+        MatchSide.team1,
+      );
+      expect(scores.homeScore, 0);
+      expect(scores.outsideScore, 2);
+    });
+  });
+
   group('scoreFromGoalHighlights', () {
     test('counts 3-2 from the Aug 2 match goal affiliations', () {
       final highlights = [

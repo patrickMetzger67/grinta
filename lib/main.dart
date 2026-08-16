@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:cloud_functions/cloud_functions.dart';
 import 'package:firebase_auth/firebase_auth.dart' as firebase_auth;
 import 'package:firebase_core/firebase_core.dart';
@@ -36,7 +37,14 @@ import 'package:grinta/services/fitbit_deep_link_service.dart';
 import 'package:grinta/services/polar_deep_link_service.dart';
 import 'package:grinta/services/strava_deep_link_service.dart';
 import 'package:grinta/services/whoop_deep_link_service.dart';
+import 'package:grinta/services/oura_deep_link_service.dart';
+import 'package:grinta/services/userService.dart';
+import 'package:grinta/services/biometric_unlock_service.dart';
+import 'package:grinta/widget/parental_consent_pending_screen.dart';
+import 'package:grinta/widget/biometric_lock_gate.dart';
+import 'package:grinta/util/account_age_gate.dart';
 import 'package:grinta/util/firebase_auth_ready.dart';
+import 'package:grinta/model/player.dart';
 
 const String kStreamApiKey = 'vg9g2zz7s2fc';
 const Duration _kSessionPrepTimeout = Duration(seconds: 30);
@@ -60,6 +68,7 @@ Future<void> main() async {
       InternalReminderService.instance.init(),
       CalendarDeepLinkService.instance.init(),
       WhoopDeepLinkService.instance.init(),
+      OuraDeepLinkService.instance.init(),
       StravaDeepLinkService.instance.init(),
       PolarDeepLinkService.instance.init(),
       FitbitDeepLinkService.instance.init(),
@@ -85,6 +94,7 @@ Future<void> main() async {
       SubscriptionService.instance.ensureInitialized(),
       SubscriptionLimitsService.instance.ensureInitialized(),
       EshopConfigService.instance.ensureInitialized(),
+      BiometricUnlockService.instance.ensureInitialized(),
     ]);
 
     runApp(
@@ -240,6 +250,8 @@ class _AuthGateState extends State<AuthGate> {
   String? _connectedStreamUserId;
   late final Future<void> _authReadyFuture;
   firebase_auth.User? _persistedUser;
+  firebase_auth.User? _previousAuthUser;
+  bool _seenAuthEmission = false;
 
   @override
   void initState() {
@@ -254,6 +266,29 @@ class _AuthGateState extends State<AuthGate> {
         _persistedUser ??= auth.currentUser;
       });
     }
+  }
+
+  void _syncBiometricAuthState(firebase_auth.User? user) {
+    if (!_seenAuthEmission) {
+      _seenAuthEmission = true;
+      _previousAuthUser = user;
+      if (user != null) {
+        unawaited(BiometricUnlockService.instance.bindUser(user.uid));
+      }
+      return;
+    }
+
+    if (user != null && _previousAuthUser == null) {
+      // Fresh sign-in (password / social) — skip lock for this session.
+      BiometricUnlockService.instance.markUnlocked();
+      unawaited(BiometricUnlockService.instance.bindUser(user.uid));
+    } else if (user == null && _previousAuthUser != null) {
+      BiometricUnlockService.instance.onSignedOut();
+    } else if (user != null) {
+      unawaited(BiometricUnlockService.instance.bindUser(user.uid));
+    }
+
+    _previousAuthUser = user;
   }
 
   Future<void> _connectStreamUser(firebase_auth.User firebaseUser) async {
@@ -425,6 +460,8 @@ class _AuthGateState extends State<AuthGate> {
               _authenticatedSessionForUid = null;
             }
 
+            _syncBiometricAuthState(user);
+
             if (user == null) {
               if (!isFirebaseAuthDefinitelySignedOut(auth)) {
                 return const _LoadingScreen();
@@ -527,12 +564,119 @@ class _AuthGateState extends State<AuthGate> {
                   return const _LoadingScreen();
                 }
 
-                return const WebAppRoot();
+                return _AccountAccessGate(user: confirmedUser);
               },
             );
           },
         );
       },
+    );
+  }
+}
+
+/// Blocks the main shell until parental consent is granted (13–14 accounts).
+class _AccountAccessGate extends StatelessWidget {
+  const _AccountAccessGate({required this.user});
+
+  final firebase_auth.User user;
+
+  @override
+  Widget build(BuildContext context) {
+    return StreamBuilder<DocumentSnapshot<Map<String, dynamic>>>(
+      stream: FirebaseFirestore.instance
+          .collection(UserService.collectionName)
+          .doc(user.uid)
+          .snapshots(),
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting &&
+            !snapshot.hasData) {
+          return const _LoadingScreen();
+        }
+
+        final data = snapshot.data?.data();
+        final status = data?[UserDocumentFields.accountStatus]
+                ?.toString()
+                .trim() ??
+            UserAccountStatus.active;
+
+        final birthRaw = data?[UserDocumentFields.birthDay]?.toString();
+        final birthDate = Player.parseBirthDay(birthRaw);
+        if (birthDate != null) {
+          final ageGate = classifyAccountAge(
+            ageYearsFromBirthDate(birthDate),
+          );
+          if (ageGate == AccountAgeGateResult.blockedUnderage) {
+            return const _UnderageBlockedScreen();
+          }
+        }
+
+        if (status == UserAccountStatus.pendingParentalConsent) {
+          final first = data?[UserDocumentFields.firstName]?.toString() ?? '';
+          final last = data?[UserDocumentFields.lastName]?.toString() ?? '';
+          final name = '$first $last'.trim();
+          return ParentalConsentPendingScreen(
+            uid: user.uid,
+            childDisplayName: name.isEmpty ? null : name,
+            parentEmail:
+                data?[UserDocumentFields.parentEmail]?.toString(),
+          );
+        }
+
+        return const BiometricLockGate(
+          child: WebAppRoot(),
+        );
+      },
+    );
+  }
+}
+
+/// Shown if a session somehow has an under-13 birth date on the user doc.
+class _UnderageBlockedScreen extends StatelessWidget {
+  const _UnderageBlockedScreen();
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = context.appColors;
+    final l10n = context.l10n;
+    return Scaffold(
+      backgroundColor: colors.background,
+      body: SafeArea(
+        child: Center(
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 480),
+            child: Padding(
+              padding: const EdgeInsets.all(24),
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(
+                    Icons.block,
+                    size: 56,
+                    color: colors.danger,
+                  ),
+                  const SizedBox(height: 20),
+                  Text(
+                    l10n.accountAgeBlockedUnderage,
+                    textAlign: TextAlign.center,
+                    style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                          color: colors.textPrimary,
+                          fontWeight: FontWeight.w700,
+                          height: 1.4,
+                        ),
+                  ),
+                  const SizedBox(height: 28),
+                  FilledButton(
+                    onPressed: () async {
+                      await firebase_auth.FirebaseAuth.instance.signOut();
+                    },
+                    child: Text(l10n.actionLogout),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      ),
     );
   }
 }

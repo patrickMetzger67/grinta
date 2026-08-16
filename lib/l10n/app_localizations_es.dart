@@ -171,6 +171,10 @@ class AppLocalizationsEs extends AppLocalizations {
   String get memberEmailOptional => 'Correo electrónico (opcional)';
 
   @override
+  String get memberIdentityFromAuthHint =>
+      'Tu nombre y correo de Iniciar sesión con Apple o Google se usarán para tu cuenta. Podrás modificarlos más tarde en tu perfil.';
+
+  @override
   String get memberPhone => 'Teléfono';
 
   @override
@@ -190,6 +194,26 @@ class AppLocalizationsEs extends AppLocalizations {
   @override
   String get memberEmailRequired =>
       'El correo electrónico es obligatorio para las invitaciones';
+
+  @override
+  String get signupEmailRequired =>
+      'El correo es obligatorio para crear tu cuenta';
+
+  @override
+  String get signupFlowStartHint =>
+      'Primero completarás tu perfil (y opcionalmente un código de invitación). Luego la contraseña, antes de crear la cuenta.';
+
+  @override
+  String get signupPasswordTitle => 'Elige una contraseña';
+
+  @override
+  String signupPasswordMessage(String email) {
+    return 'Cuenta: $email';
+  }
+
+  @override
+  String get signupUseCreateAccountForSocial =>
+      'Para crear una cuenta con Google o Apple, pulsa «Crear una cuenta» y luego elige Google o Apple tras tu perfil.';
 
   @override
   String invitationEmailSubject(String appName) {
@@ -428,6 +452,84 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get memberBirthDateOptional => 'Fecha de nacimiento (opcional)';
+
+  @override
+  String get memberBirthDateRequired => 'La fecha de nacimiento es obligatoria';
+
+  @override
+  String get memberBirthDateAgeHint =>
+      'Grinta Performance es para usuarios de 13 años o más. Los 13–14 años requieren la autorización de un representante legal.';
+
+  @override
+  String get accountAgeBlockedUnderage =>
+      'Grinta Performance es para usuarios de 13 años o más.';
+
+  @override
+  String get parentalConsentEmailTitle => 'Autorización parental';
+
+  @override
+  String get parentalConsentEmailMessage =>
+      'Tienes 13 o 14 años. Indica el correo de tu representante legal. Debe autorizar tu acceso a Grinta Performance, incluido el tratamiento de tu frecuencia cardíaca y otros datos fisiológicos si conectas un dispositivo (Polar, Whoop, etc.).';
+
+  @override
+  String get parentalConsentEmailLabel => 'Correo del representante legal';
+
+  @override
+  String get parentalConsentSendError =>
+      'No se pudo enviar la solicitud de autorización. Inténtalo de nuevo.';
+
+  @override
+  String get parentalConsentPendingTitle => 'Esperando autorización';
+
+  @override
+  String parentalConsentPendingMessage(String parentEmail) {
+    return 'Se envió un correo a $parentEmail. Cuando tu representante legal autorice la cuenta, podrás usar Grinta Performance.';
+  }
+
+  @override
+  String get parentalConsentPendingMessageGeneric =>
+      'Se envió un correo a tu representante legal. Cuando autorice la cuenta, podrás usar Grinta Performance.';
+
+  @override
+  String get parentalConsentResend => 'Reenviar correo';
+
+  @override
+  String get parentalConsentResendSuccess =>
+      'Correo de autorización reenviado.';
+
+  @override
+  String get parentalConsentResendError =>
+      'No se pudo reenviar el correo. Inténtalo de nuevo.';
+
+  @override
+  String get physiologicalConsentTitle =>
+      'Autorizar el uso de mis datos fisiológicos';
+
+  @override
+  String get physiologicalConsentMessage =>
+      'Autorizo explícitamente a Grinta Performance a tratar mis datos de frecuencia cardíaca y otros datos fisiológicos de mis dispositivos conectados para analizar mi rendimiento deportivo.';
+
+  @override
+  String get physiologicalConsentAuthorize => 'Autorizo';
+
+  @override
+  String get physiologicalConsentRefuse => 'Me niego';
+
+  @override
+  String get physiologicalConsentRefusedHint =>
+      'Conexión del dispositivo cancelada. Puedes seguir usando Grinta sin sensor de frecuencia cardíaca.';
+
+  @override
+  String get physiologicalConsentParentRequiredTitle =>
+      'Autorización parental requerida';
+
+  @override
+  String get physiologicalConsentParentRequiredMessage =>
+      'Para usuarios de 13–14 años, la autorización para tratar la frecuencia cardíaca y otros datos fisiológicos la da el representante legal (por el correo de consentimiento parental). Sin ella, puedes usar la app pero no conectar estos dispositivos.';
+
+  @override
+  String get physiologicalConsentRequestParentEmail =>
+      'Enviar correo al padre/madre';
 
   @override
   String get memberBirthPlace => 'Lugar de nacimiento';
@@ -889,6 +991,12 @@ class AppLocalizationsEs extends AppLocalizations {
   @override
   String get notificationsMarkAsReadError =>
       'No se pudo marcar la notificación como leída.';
+
+  @override
+  String get notificationsDismiss => 'No volver a mostrar';
+
+  @override
+  String get notificationsDismissError => 'No se pudo ocultar la notificación.';
 
   @override
   String get notificationsConvocationMatchDetails => 'Detalles del partido';
@@ -2115,6 +2223,31 @@ class AppLocalizationsEs extends AppLocalizations {
   String get syncTrainingsToSync => 'Entrenamientos para sincronizar';
 
   @override
+  String get syncUpcomingTrainingsTooltip =>
+      'Alinear los próximos entrenamientos con la plantilla';
+
+  @override
+  String get syncUpcomingTrainingsConfirmTitle =>
+      '¿Actualizar los próximos entrenamientos?';
+
+  @override
+  String get syncUpcomingTrainingsConfirmMessage =>
+      'Los jugadores de la plantilla se añadirán a los próximos entrenamientos y se eliminarán los que ya no formen parte.';
+
+  @override
+  String syncUpcomingTrainingsSuccess(int updated, int added, int removed) {
+    return 'Entrenamientos actualizados: $updated sesión(es), $added añadidos, $removed eliminados.';
+  }
+
+  @override
+  String get syncUpcomingTrainingsNothingToDo =>
+      'Los próximos entrenamientos ya coinciden con la plantilla.';
+
+  @override
+  String get syncUpcomingTrainingsError =>
+      'No se pudieron actualizar los entrenamientos. Inténtalo de nuevo.';
+
+  @override
   String get chatSelectConversation => 'Seleccione una conversación';
 
   @override
@@ -2267,6 +2400,12 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get matchScoreUpdateFailed => 'No se pudo actualizar el marcador.';
+
+  @override
+  String get matchFinishedPromptTitle => '¿Partido terminado?';
+
+  @override
+  String get matchFinishedPromptMessage => '¿El partido ha terminado?';
 
   @override
   String get matchGoalPickTeamTitle => '¿Qué equipo marcó?';
@@ -2524,7 +2663,7 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get syncFieldGeolocationPromptMessage =>
-      'Las coordenadas GPS del terreno no están definidas. ¿Desea definirlas antes de descargar los datos del tracker?';
+      'Las coordenadas GPS del terreno no están definidas. ¿Desea definirlas ahora? Así obtienes mapas de calor alineados al campo; si no, se usa la vista satélite GPS.';
 
   @override
   String get trackerUsbAuthorizeHint =>
@@ -2871,6 +3010,9 @@ class AppLocalizationsEs extends AppLocalizations {
   String get createPersonalSportTime => 'Time';
 
   @override
+  String get createPersonalSportTimeRequired => 'Choose a start time';
+
+  @override
   String get createPersonalSportManualEntry => 'Manual entry';
 
   @override
@@ -2970,7 +3112,7 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get createPersonalSportNoConnectedApps =>
-      'No connected app. Connect Strava, Polar, Whoop, Apple Fitness or Google Health in Devices / Apps.';
+      'No connected app. Connect Strava, Polar, Whoop / Oura, Apple Fitness or Google Health in Devices / Apps.';
 
   @override
   String get createPersonalSportImportRequired =>
@@ -3040,7 +3182,7 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get sessionPersonalDataGpsHint =>
-      'Sincroniza tu sensor GPS Intense y genera un mapa de calor si el campo está posicionado.';
+      'Sincroniza tu sensor GPS Intense y genera un mapa de calor (alineado al campo si está geolocalizado; si no, vista satélite).';
 
   @override
   String get sessionPersonalDataGpsSubmit => 'Sincronizar mis datos';
@@ -3361,6 +3503,9 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get teamDetailColumnWeight => 'Peso';
+
+  @override
+  String get teamDetailFilterPlayerHint => 'Filtrar por nombre';
 
   @override
   String teamDetailHeightCm(int value) {
@@ -6781,7 +6926,7 @@ class AppLocalizationsEs extends AppLocalizations {
       'Inicia sesión para aceptar esta invitación.';
 
   @override
-  String get playerSeasonSummaryTitle => 'Ficha del jugador';
+  String get playerSeasonSummaryTitle => 'Estadísticas';
 
   @override
   String get playerSeasonSummaryTabUnavailabilities => 'Indisponibilidades';
@@ -6977,4 +7122,192 @@ class AppLocalizationsEs extends AppLocalizations {
   @override
   String get opponentAnalysisCoachEliteRequiredMessage =>
       'Sending the opponent analysis report requires a Coach Elite subscription.';
+
+  @override
+  String get biometricUnlockTitle => 'Desbloquear Grinta';
+
+  @override
+  String get biometricUnlockSubtitle =>
+      'Usa Face ID, Touch ID o tu huella para acceder rápidamente a la app.';
+
+  @override
+  String get biometricUnlockAction => 'Desbloquear';
+
+  @override
+  String get biometricUnlockUsePassword => 'Usar otra cuenta';
+
+  @override
+  String get biometricUnlockPromptReason => 'Desbloquea Grinta';
+
+  @override
+  String get biometricUnlockSettingsTitle => 'Desbloqueo biométrico';
+
+  @override
+  String get biometricUnlockSettingsSubtitle =>
+      'Face ID, Touch ID o huella para abrir la app y volver a iniciar sesión rápidamente.';
+
+  @override
+  String get biometricUnlockUnavailable =>
+      'La biometría no está disponible en este dispositivo.';
+
+  @override
+  String get biometricUnlockEnableTitle => 'Desbloqueo rápido';
+
+  @override
+  String get biometricUnlockEnableMessage =>
+      'Activa Face ID / huella para desbloquear Grinta y volver a iniciar sesión rápidamente tras cerrar sesión. Tu email y contraseña permanecen cifrados en este dispositivo.';
+
+  @override
+  String get biometricUnlockEnableLater => 'Más tarde';
+
+  @override
+  String get biometricUnlockEnableConfirm => 'Activar';
+
+  @override
+  String get biometricLoginAction => 'Iniciar sesión con biometría';
+
+  @override
+  String get biometricLoginPromptReason => 'Inicia sesión en Grinta';
+
+  @override
+  String get biometricLoginCredentialsInvalid =>
+      'Los datos de acceso guardados ya no son válidos. Inicia sesión con tu contraseña.';
+
+  @override
+  String get biometricLoginSavePasswordTitle => 'Confirma tu contraseña';
+
+  @override
+  String get biometricLoginSavePasswordMessage =>
+      'Introduce tu contraseña para que Face ID / huella pueda volver a iniciar sesión tras cerrar sesión. Permanece cifrada en este dispositivo.';
+
+  @override
+  String get createPersonalSportOuraActivity => 'Oura activity';
+
+  @override
+  String get createPersonalSportOuraDeployRequired =>
+      'Oura import is not deployed yet. Run firebase deploy for ouraListActivities and ouraImportActivity.';
+
+  @override
+  String get createPersonalSportOuraLoadError => 'Could not load Oura activities. Check the connection and try again.';
+
+  @override
+  String get createPersonalSportOuraNoImportable => 'No Oura workouts to import.';
+
+  @override
+  String get wearableDeviceOura => 'Oura';
+
+  @override
+  String get ouraConnectToggleLabel => 'Sinc. Oura';
+
+  @override
+  String get ouraConnectToggleSubtitle => 'Conecta tu cuenta Oura para importar entrenamientos con duración y zonas de FC';
+
+  @override
+  String get ouraConnectToggleConnectedSubtitle => 'Oura conectado — importa entrenamientos desde Crear';
+
+  @override
+  String get ouraConnectSuccess => 'Cuenta Oura conectada.';
+
+  @override
+  String get ouraAccountHintGuidance =>
+      'Tu email de Oura puede ser distinta de tu cuenta Grinta. Indica la cuenta Oura a usar y luego inicia sesión con esa cuenta en la página de Oura.';
+
+  @override
+  String get ouraAccountHintLabel => 'Cuenta Oura';
+
+  @override
+  String get ouraAccountHintPlaceholder => 'email Oura';
+
+  @override
+  String get ouraAccountHintRequired => 'Indica tu cuenta Oura (email) antes de continuar.';
+
+  @override
+  String get ouraConnectContinue => 'Continuar a Oura';
+
+  @override
+  String get ouraConnectFailed =>
+      'La conexión Oura ha fallado. Comprueba que las Cloud Functions de Oura estén desplegadas y que los secretos OURA_CLIENT_ID / OURA_CLIENT_SECRET estén configurados.';
+
+  @override
+  String get ouraConnectLaunchFailed => 'No se pudo abrir la página de inicio de sesión de Oura.';
+
+  @override
+  String get ouraConnectAuthRequired => 'Inicia sesión en Grinta para conectar Oura.';
+
+  @override
+  String get ouraDisconnectFailed => 'Error al desconectar Oura.';
+
+  @override
+  String get ouraCoachVisibilityTitle => 'Visibilidad para el entrenador';
+
+  @override
+  String get ouraCoachVisibilitySubtitle => 'Permite a tu entrenador ver este tipo de dato';
+
+  @override
+  String get ouraCoachVisibilitySaveFailed => 'No se pudieron guardar las preferencias de Oura.';
+
+  @override
+  String get ouraMetricWorkout => 'Entrenamientos';
+
+  @override
+  String get ouraCoachConnectTitle => 'Oura';
+
+  @override
+  String ouraCoachConnectSubtitle(String playerName) => 'Conectar Oura para $playerName';
+
+  @override
+  String get ouraCoachConnectAction => 'Conectar';
+
+  @override
+  String ouraCoachConnectConnectedSubtitle(String playerName) => 'Oura conectado para $playerName';
+
+  @override
+  String get ouraAnalysisTitle => 'Análisis Oura';
+
+  @override
+  String get ouraAnalysisStrain => 'Intensidad';
+
+  @override
+  String get ouraAnalysisAvgHr => 'FC media';
+
+  @override
+  String get ouraAnalysisMaxHr => 'FC máx.';
+
+  @override
+  String get ouraAnalysisDuration => 'Duración';
+
+  @override
+  String get ouraAnalysisCalories => 'Calorías';
+
+  @override
+  String get ouraAnalysisAltitude => 'Desnivel';
+
+  @override
+  String get ouraAnalysisHrZonesTitle => 'Zonas cardíacas';
+
+  @override
+  String get ouraAnalysisNoZones =>
+      'Sin desglose por zonas para esta importación. Vuelve a importar la actividad Oura.';
+
+  @override
+  String ouraAnalysisZoneLabel(int zone) => 'Zona $zone';
+
+  @override
+  String ouraAnalysisZoneAboveBpm(int bpm) => '+ de $bpm bpm';
+
+  @override
+  String ouraAnalysisZoneBpmRange(int min, int max) => '$min – $max bpm';
+
+  @override
+  String get ouraMetricHeartrate => 'Frecuencia cardíaca';
+
+  @override
+  String get ouraMetricDaily => 'Actividad / readiness diaria';
+
+  @override
+  String get ouraMetricPersonal => 'Información personal';
+
+  @override
+  String get ouraMetricEmail => 'Email';
+
 }

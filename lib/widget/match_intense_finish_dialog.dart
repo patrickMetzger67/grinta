@@ -13,7 +13,6 @@ import 'package:grinta/util/app_theme.dart';
 import 'package:grinta/util/field_gps_localization_helper.dart';
 import 'package:grinta/util/match_goal_helper.dart';
 import 'package:grinta/util/match_time_event_helper.dart';
-import 'package:grinta/util/training_finish_helper.dart';
 
 /// Dialog for finishing / re-syncing a match with Intense cloud trackers.
 class MatchIntenseFinishDialog extends StatefulWidget {
@@ -242,7 +241,9 @@ class _MatchIntenseFinishDialogState extends State<MatchIntenseFinishDialog> {
     if (_allDone) {
       try {
         if (widget.resync) {
-          await computeTeamWorkloadSummaryForEvent(eventId: matchId);
+          // withSyncing=false re-sync: mark uploaded once the calendar slot
+          // (timestamp + duration + 15' break) is over and every device reached `done`.
+          await finalizeMatchIntenseResyncSuccess(match: widget.match);
         } else {
           await markMatchTrackerDataUploadedAfterIntenseSync(
             match: widget.match,

@@ -34,6 +34,7 @@ import 'package:grinta/screen/tips_screen.dart';
 import 'package:grinta/widget/nav_icon_count_badge.dart';
 import 'package:grinta/widget/stream_chat_nav_unread_badge.dart';
 import 'package:grinta/widget/calendar_sync_toggle.dart';
+import 'package:grinta/widget/biometric_lock_gate.dart';
 import 'package:grinta/widget/devices_settings_section.dart';
 import 'package:grinta/widget/notification_preferences_section.dart';
 import 'package:grinta/widget/subscription_details_sheet.dart';
@@ -376,6 +377,10 @@ class _MobileNavigationShellState extends State<MobileNavigationShell> {
                   padding: EdgeInsets.symmetric(horizontal: 16),
                   child: CalendarSyncToggle(contentPadding: EdgeInsets.zero),
                 ),
+                const Padding(
+                  padding: EdgeInsets.symmetric(horizontal: 16),
+                  child: BiometricUnlockSettingsTile(),
+                ),
                 const DevicesSettingsSection(
                   contentPadding: EdgeInsets.symmetric(horizontal: 16),
                 ),
@@ -507,24 +512,32 @@ class _MobileNavigationShellState extends State<MobileNavigationShell> {
                   },
                 ),
                 ListTile(
-                  leading: _isSigningOut
+                  leading: _isDeletingAccount
                       ? SizedBox(
                           width: 24,
                           height: 24,
                           child: CircularProgressIndicator(
                             strokeWidth: 2.2,
-                            color: colors.primary,
+                            color: colors.warning,
                           ),
                         )
-                      : Icon(Icons.logout_rounded, color: colors.primary),
+                      : Icon(
+                          Icons.delete_forever_outlined,
+                          color: colors.warning,
+                        ),
                   title: Text(
-                    l10n.actionLogout,
-                    style: settingsMenuTitleStyle(sheetContext),
+                    l10n.actionDeleteAccount,
+                    style: settingsMenuTitleStyle(sheetContext).copyWith(
+                      color: colors.warning,
+                    ),
                   ),
                   onTap: _isAccountActionBusy
                       ? null
                       : () {
-                          closeSheetThen(() => _logout(), sheetContext);
+                          closeSheetThen(
+                            () => _deleteAccount(),
+                            sheetContext,
+                          );
                         },
                 ),
                 const AppVersionLabel(),
@@ -654,32 +667,24 @@ class _MobileNavigationShellState extends State<MobileNavigationShell> {
                     ),
                     const Divider(height: 1),
                     ListTile(
-                      leading: _isDeletingAccount
+                      leading: _isSigningOut
                           ? SizedBox(
                               width: 24,
                               height: 24,
                               child: CircularProgressIndicator(
                                 strokeWidth: 2.2,
-                                color: colors.warning,
+                                color: colors.primary,
                               ),
                             )
-                          : Icon(
-                              Icons.delete_forever_outlined,
-                              color: colors.warning,
-                            ),
+                          : Icon(Icons.logout_rounded, color: colors.primary),
                       title: Text(
-                        l10n.actionDeleteAccount,
-                        style: settingsMenuTitleStyle(sheetContext).copyWith(
-                          color: colors.warning,
-                        ),
+                        l10n.actionLogout,
+                        style: settingsMenuTitleStyle(sheetContext),
                       ),
                       onTap: _isAccountActionBusy
                           ? null
                           : () {
-                              closeSheetThen(
-                                () => _deleteAccount(),
-                                sheetContext,
-                              );
+                              closeSheetThen(() => _logout(), sheetContext);
                             },
                     ),
                     const SizedBox(height: 8),

@@ -9,9 +9,11 @@ abstract final class LegalConfig {
   /// Support contact email shown in settings Infos.
   static const String supportEmail = 'info@grinta.io';
 
-  /// Privacy policy on grinta.io — verify page is live before store submission.
-  static const String privacyPolicyUrl = 'https://grinta.io/privacy';
+  /// Privacy policy on grinta.io (Squarespace).
+  static const String privacyPolicyUrl =
+      'https://www.grinta.io/politiquedeconfidentialite';
 
-  /// Terms of service — TODO: confirm URL when page is published on grinta.io.
-  static const String termsOfServiceUrl = 'https://grinta.io/terms';
+  /// Terms of use on grinta.io (Squarespace).
+  static const String termsOfServiceUrl =
+      'https://www.grinta.io/conditionsutilisation';
 }

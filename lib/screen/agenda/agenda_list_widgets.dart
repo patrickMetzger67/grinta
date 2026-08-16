@@ -578,8 +578,8 @@ class _DayContent extends StatelessWidget {
             (item) => Padding(
           padding: const EdgeInsets.only(bottom: 10),
           child: item.allDay && item.type == AgendaItemType.nonSport
-              ? _AllDayNonSportRow(item: item)
-              : AgendaItemCard(item: item),
+              ? _AllDayNonSportRow(key: ValueKey(item.id), item: item)
+              : AgendaItemCard(key: ValueKey(item.id), item: item),
         ),
       )
           .toList(),
@@ -588,7 +588,7 @@ class _DayContent extends StatelessWidget {
 }
 
 class _AllDayNonSportRow extends StatelessWidget {
-  const _AllDayNonSportRow({required this.item});
+  const _AllDayNonSportRow({super.key, required this.item});
 
   final AgendaItem item;
 
@@ -728,6 +728,85 @@ class _EmptyDayTile extends StatelessWidget {
   }
 }
 
+/// Edit/delete actions when the user may edit via affiliation + engagement.
+class _MatchEditActions extends StatefulWidget {
+  const _MatchEditActions({required this.match});
+
+  final models.Match match;
+
+  @override
+  State<_MatchEditActions> createState() => _MatchEditActionsState();
+}
+
+class _MatchEditActionsState extends State<_MatchEditActions> {
+  Future<bool>? _canEdit;
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    _canEdit ??= canEditMatch(widget.match, context.read<AppSession>());
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = context.appColors;
+    return FutureBuilder<bool>(
+      future: _canEdit,
+      builder: (context, snapshot) {
+        if (snapshot.data != true) {
+          return const SizedBox.shrink();
+        }
+        return Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            IconButton(
+              visualDensity: VisualDensity.compact,
+              padding: EdgeInsets.zero,
+              constraints: const BoxConstraints(
+                minWidth: 32,
+                minHeight: 32,
+              ),
+              tooltip: context.l10n.editMatchTitle,
+              icon: Icon(
+                Icons.edit_outlined,
+                size: 20,
+                color: colors.textPrimary,
+              ),
+              onPressed: () {
+                showCreateMatchSheet(
+                  context,
+                  matchToEdit: widget.match,
+                );
+              },
+            ),
+            IconButton(
+              visualDensity: VisualDensity.compact,
+              padding: EdgeInsets.zero,
+              constraints: const BoxConstraints(
+                minWidth: 32,
+                minHeight: 32,
+              ),
+              tooltip: context.l10n.actionDelete,
+              icon: Icon(
+                Icons.delete_outline_rounded,
+                size: 20,
+                color: colors.textPrimary,
+              ),
+              onPressed: () async {
+                await deleteManagedMatch(
+                  context,
+                  match: widget.match,
+                  session: context.read<AppSession>(),
+                );
+              },
+            ),
+          ],
+        );
+      },
+    );
+  }
+}
+
 class AgendaItemCard extends StatelessWidget {
   final AgendaItem item;
 
@@ -765,15 +844,19 @@ class AgendaItemCard extends StatelessWidget {
       canManageThisMatch = canManageMatch(item.match!, session);
       canAccessSessionDetails =
           canAccessMatchSessionDetails(item.match!, session);
-      final String? managedTeamId = singleManagedMatchTeamId(item.match!);
+      final String? managedTeamId =
+          preferredManagedMatchTeamId(item.match!, session);
       if (managedTeamId != null) {
-        isManager = session.managedTeamsIdsForSelectedSeason.contains(managedTeamId);
+        isManager =
+            session.managedTeamsIdsForSelectedSeason.contains(managedTeamId) ||
+                canManageThisMatch;
         teamId = managedTeamId;
       } else {
-        for (var t in item.match!.teams!) {
+        for (final dynamic raw in item.match!.teams ?? const <dynamic>[]) {
+          final String t = raw?.toString() ?? '';
           isManager = managedTeamsIds.contains(t);
           teamId = t;
-          if(isManager) {
+          if (isManager) {
             break;
           }
         }
@@ -884,49 +967,8 @@ class AgendaItemCard extends StatelessWidget {
                     ],
                   ),
                 ),
-                if (canManageThisMatch) ...[
-                  IconButton(
-                    visualDensity: VisualDensity.compact,
-                    padding: EdgeInsets.zero,
-                    constraints: const BoxConstraints(
-                      minWidth: 32,
-                      minHeight: 32,
-                    ),
-                    tooltip: context.l10n.editMatchTitle,
-                    icon: Icon(
-                      Icons.edit_outlined,
-                      size: 20,
-                      color: colors.textPrimary,
-                    ),
-                    onPressed: () {
-                      showCreateMatchSheet(
-                        context,
-                        matchToEdit: item.match!,
-                      );
-                    },
-                  ),
-                  IconButton(
-                    visualDensity: VisualDensity.compact,
-                    padding: EdgeInsets.zero,
-                    constraints: const BoxConstraints(
-                      minWidth: 32,
-                      minHeight: 32,
-                    ),
-                    tooltip: context.l10n.actionDelete,
-                    icon: Icon(
-                      Icons.delete_outline_rounded,
-                      size: 20,
-                      color: colors.textPrimary,
-                    ),
-                    onPressed: () async {
-                      await deleteManagedMatch(
-                        context,
-                        match: item.match!,
-                        session: context.read<AppSession>(),
-                      );
-                    },
-                  ),
-                ],
+                if (item.match != null)
+                  _MatchEditActions(match: item.match!),
                 if (canManageThisTraining) ...[
                   IconButton(
                     visualDensity: VisualDensity.compact,
@@ -1230,6 +1272,12 @@ class AgendaItemCard extends StatelessWidget {
                       SessionPersonalDataAgendaButton(
                         item: item,
                         playerId: currentPlayerId!.trim(),
+                        onPersonalDataSaved: (eventId) {
+                          _notifyAgendaWorkloadUpdated(
+                            context,
+                            eventId: eventId,
+                          );
+                        },
                       ),
                   ],
                 ),
@@ -1259,7 +1307,8 @@ class AgendaItemCard extends StatelessWidget {
               ),
             ],
             // Player rings: personal scores only (not managers/staff).
-            if(!canAccessSessionDetails && item.withTracker == true && teamPlayerMetricScores != null) ... [
+            // Shown for team kits and for personal GPS / apps (summary present).
+            if (!canAccessSessionDetails && teamPlayerMetricScores != null) ...[
               const SizedBox(height: 10),
               InkWell(
                 borderRadius: BorderRadius.circular(12),
@@ -1283,6 +1332,7 @@ class AgendaItemCard extends StatelessWidget {
                           playerId: currentPlayerId,
                           initialTabIndex: MatchDetailScreen.statsTabIndexFor(
                             match,
+                            showStats: true,
                           ),
                         ),
                       ),
@@ -1412,7 +1462,9 @@ class AgendaItemCard extends StatelessWidget {
               ),
             ],
             // Team rings: managers and roster staff (team averages).
-            if(canAccessSessionDetails && item.withTracker == true && item.teamWorkloadSummary != null) ... [
+            // Also when personal GPS / apps produced a workload summary.
+            if (canAccessSessionDetails &&
+                item.teamWorkloadSummary != null) ...[
               const SizedBox(height: 10),
               InkWell(
                 borderRadius: BorderRadius.circular(16),
@@ -1439,6 +1491,7 @@ class AgendaItemCard extends StatelessWidget {
                           playerId: currentPlayerId,
                           initialTabIndex: MatchDetailScreen.statsTabIndexFor(
                             match,
+                            showStats: true,
                           ),
                         ),
                       ),
@@ -1982,14 +2035,18 @@ class _AgendaTrainingPlayersRow extends StatelessWidget {
   }
 }
 
-void _notifyAgendaWorkloadUpdated(BuildContext context, {Training? training}) {
-  final String eventId = training?.docId?.trim() ??
-      training?.trainingId?.trim() ??
-      '';
-  if (eventId.isEmpty) {
+void _notifyAgendaWorkloadUpdated(
+  BuildContext context, {
+  Training? training,
+  String? eventId,
+}) {
+  final String resolvedEventId = eventId?.trim().isNotEmpty == true
+      ? eventId!.trim()
+      : (training?.docId?.trim() ?? training?.trainingId?.trim() ?? '');
+  if (resolvedEventId.isEmpty) {
     return;
   }
-  _AgendaWorkloadRefreshScope.notify(context, eventId);
+  _AgendaWorkloadRefreshScope.notify(context, resolvedEventId);
 }
 
 /// Live + Re-sync on agenda cards for noSync match kits (no Temps forts needed).

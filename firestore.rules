@@ -147,7 +147,9 @@ service cloud.firestore {
           'polar_integrations',
           'polar_oauth_pending',
           'fitbit_integrations',
-          'fitbit_oauth_pending'
+          'fitbit_oauth_pending',
+          'oura_integrations',
+          'oura_oauth_pending'
         ];
     }
 
@@ -170,10 +172,24 @@ service cloud.firestore {
         && !('subscriptionAccess' in request.resource.data);
 
       // isRoot + subscriptionAccess are server/admin only (Cloud Functions).
+      // Once pending parental consent, only the CF may activate the account.
       allow update: if request.auth != null
         && request.auth.uid == userId
         && !request.resource.data.diff(resource.data).affectedKeys()
-          .hasAny(['isRoot', 'subscriptionAccess']);
+          .hasAny(['isRoot', 'subscriptionAccess'])
+        && (
+          resource.data.get('accountStatus', 'active') != 'pendingParentalConsent'
+          || !request.resource.data.diff(resource.data).affectedKeys()
+            .hasAny([
+              'accountStatus',
+              'parentalConsentToken',
+              'parentalConsentAt',
+              'physiologicalDataConsent',
+              'physiologicalDataConsentAt',
+              'physiologicalDataConsentVersion',
+              'physiologicalDataConsentSource',
+            ])
+        );
 
       allow delete: if request.auth != null && request.auth.uid == userId;
 
@@ -204,6 +220,11 @@ service cloud.firestore {
 
       // Fitbit connection metadata (no tokens — server stores tokens separately).
       match /fitbitSync/{playerId} {
+        allow read, write: if canAccessWearableSync(userId, playerId);
+      }
+
+      // Oura connection metadata (no tokens — server stores tokens separately).
+      match /ouraSync/{playerId} {
         allow read, write: if canAccessWearableSync(userId, playerId);
       }
 
@@ -266,6 +287,15 @@ service cloud.firestore {
     }
 
     match /fitbit_oauth_pending/{stateId} {
+      allow read, write: if false;
+    }
+
+    // Oura OAuth tokens — Cloud Functions / Admin SDK only.
+    match /oura_integrations/{integrationId} {
+      allow read, write: if false;
+    }
+
+    match /oura_oauth_pending/{stateId} {
       allow read, write: if false;
     }
 

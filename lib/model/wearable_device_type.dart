@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:grinta/l10n/app_localizations.dart';
+import 'package:grinta/util/physiological_data_consent.dart';
 
 /// Supported wearable device integrations (plus individual Intense GPS claim).
 enum WearableDeviceType {
@@ -7,6 +8,7 @@ enum WearableDeviceType {
   strava,
   polar,
   fitbit,
+  oura,
   appleHealth,
   googleHealthConnect,
   gpsInsidersIntense,
@@ -17,6 +19,7 @@ enum WearableDeviceType {
     WearableDeviceType.whoop,
     WearableDeviceType.strava,
     WearableDeviceType.polar,
+    WearableDeviceType.oura,
     WearableDeviceType.appleHealth,
     WearableDeviceType.googleHealthConnect,
     WearableDeviceType.gpsInsidersIntense,
@@ -38,6 +41,8 @@ enum WearableDeviceType {
         return l10n.wearableDevicePolar;
       case WearableDeviceType.fitbit:
         return l10n.wearableDeviceFitbit;
+      case WearableDeviceType.oura:
+        return l10n.wearableDeviceOura;
       case WearableDeviceType.appleHealth:
         return l10n.wearableDeviceAppleHealth;
       case WearableDeviceType.googleHealthConnect:
@@ -46,6 +51,10 @@ enum WearableDeviceType {
         return l10n.wearableDeviceGpsInsidersIntense;
     }
   }
+
+  /// Whoop / Polar / Fitbit / Apple Health / Google Health Connect.
+  bool get requiresPhysiologicalConsent =>
+      wearableRequiresPhysiologicalConsent(this);
 
   IconData get icon {
     switch (this) {
@@ -57,6 +66,8 @@ enum WearableDeviceType {
         return Icons.favorite_outline;
       case WearableDeviceType.fitbit:
         return Icons.watch_outlined;
+      case WearableDeviceType.oura:
+        return Icons.nightlight_round;
       case WearableDeviceType.appleHealth:
         return Icons.fitness_center_outlined;
       case WearableDeviceType.googleHealthConnect:

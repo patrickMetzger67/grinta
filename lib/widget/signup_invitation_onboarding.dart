@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:grinta/core/extensions/l10n_extension.dart';
 import 'package:grinta/model/invitation.dart';
@@ -26,8 +27,10 @@ class SignupMemberOnboardingResult {
   bool get linkedExistingMember => invitation != null;
 }
 
-/// Runs invitation-code and member-profile steps after a new Firebase account
-/// is created.
+/// Runs invitation-code and member-profile steps.
+///
+/// Email signup: call with [requireEmail] **before** creating Firebase Auth /
+/// `users/{uid}`. Social signup may keep [requireEmail] false.
 class SignupInvitationOnboarding {
   SignupInvitationOnboarding._();
 
@@ -35,7 +38,15 @@ class SignupInvitationOnboarding {
   static final PlayerService _playerService = PlayerService();
   static final UserService _userService = UserService();
 
-  static Future<SignupMemberOnboardingResult?> run() async {
+  static Future<SignupMemberOnboardingResult?> run({
+    bool requireEmail = false,
+    /// Prefill from Firebase Auth (Apple/Google) so Review Guideline 4
+    /// is satisfied — name/email already provided by the IdP.
+    Player? authSeedProfile,
+    /// When true (social signup), never re-ask name/email even if the seed
+    /// is incomplete — Apple only sends those fields on first authorization.
+    bool lockIdentityFromAuth = false,
+  }) async {
     final rootContext = appNavigatorKey.currentContext;
     if (rootContext == null || !rootContext.mounted) {
       debugPrint(
@@ -53,7 +64,12 @@ class SignupInvitationOnboarding {
     }
 
     if (!hasInvitationCode) {
-      final profile = await _promptMemberProfile(rootContext);
+      final profile = await _promptMemberProfile(
+        rootContext,
+        initialProfile: authSeedProfile,
+        requireEmail: requireEmail,
+        lockIdentityFromAuth: lockIdentityFromAuth,
+      );
       if (profile == null) return null;
       return SignupMemberOnboardingResult(profile: profile);
     }
@@ -73,6 +89,7 @@ class SignupInvitationOnboarding {
             rootContext,
             initialProfile: member.toEditableProfile(),
             subtitle: await _invitationSubtitle(rootContext, invitation),
+            requireEmail: requireEmail,
           );
           if (profile == null) return null;
           return SignupMemberOnboardingResult(
@@ -80,7 +97,12 @@ class SignupInvitationOnboarding {
             invitation: invitation,
           );
         case _InvitationLookupKind.continueWithoutInvitation:
-          final profile = await _promptMemberProfile(rootContext);
+          final profile = await _promptMemberProfile(
+            rootContext,
+            initialProfile: authSeedProfile,
+            requireEmail: requireEmail,
+            lockIdentityFromAuth: lockIdentityFromAuth,
+          );
           if (profile == null) return null;
           return SignupMemberOnboardingResult(profile: profile);
         case _InvitationLookupKind.abortSignup:
@@ -91,6 +113,21 @@ class SignupInvitationOnboarding {
     }
 
     return null;
+  }
+
+  /// Password + confirm after profile is validated (email Auth path).
+  static Future<String?> promptSignupPassword({
+    required String email,
+  }) async {
+    final rootContext = appNavigatorKey.currentContext;
+    if (rootContext == null || !rootContext.mounted) return null;
+
+    return showDialog<String>(
+      context: rootContext,
+      useRootNavigator: true,
+      barrierDismissible: false,
+      builder: (ctx) => _SignupPasswordDialog(email: email),
+    );
   }
 
   static Future<String?> _invitationSubtitle(
@@ -290,6 +327,8 @@ class SignupInvitationOnboarding {
     BuildContext context, {
     Player? initialProfile,
     String? subtitle,
+    bool requireEmail = false,
+    bool lockIdentityFromAuth = false,
   }) {
     final colors = context.appColors;
 
@@ -301,6 +340,8 @@ class SignupInvitationOnboarding {
         return _SignupMemberProfileDialog(
           initialProfile: initialProfile,
           subtitle: subtitle,
+          requireEmail: requireEmail,
+          lockIdentityFromAuth: lockIdentityFromAuth,
           dialogShape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(16),
             side: BorderSide(color: colors.border),
@@ -350,11 +391,15 @@ class _SignupMemberProfileDialog extends StatefulWidget {
   const _SignupMemberProfileDialog({
     this.initialProfile,
     this.subtitle,
+    this.requireEmail = false,
+    this.lockIdentityFromAuth = false,
     required this.dialogShape,
   });
 
   final Player? initialProfile;
   final String? subtitle;
+  final bool requireEmail;
+  final bool lockIdentityFromAuth;
   final ShapeBorder dialogShape;
 
   @override
@@ -364,9 +409,14 @@ class _SignupMemberProfileDialog extends StatefulWidget {
 
 class _SignupMemberProfileDialogState extends State<_SignupMemberProfileDialog> {
   MemberProfileFormState? _formState;
+  String? _inlineError;
 
   void _onFormStateCreated(MemberProfileFormState state) {
     _formState = state;
+  }
+
+  void _showError(String message) {
+    setState(() => _inlineError = message);
   }
 
   void _submit() {
@@ -375,13 +425,13 @@ class _SignupMemberProfileDialogState extends State<_SignupMemberProfileDialog> 
 
     final validationError = formState.validateAndGetError();
     if (validationError != null) {
-      AppSnackbar.show(context, validationError);
+      _showError(validationError);
       return;
     }
 
     final profile = formState.buildProfile();
     if (profile == null) {
-      AppSnackbar.show(context, context.l10n.memberProfileIncomplete);
+      _showError(context.l10n.memberProfileIncomplete);
       return;
     }
 
@@ -390,6 +440,7 @@ class _SignupMemberProfileDialogState extends State<_SignupMemberProfileDialog> 
 
   @override
   Widget build(BuildContext context) {
+    final colors = context.appColors;
     return AlertDialog(
       title: Text(context.l10n.memberProfileTitle),
       content: SingleChildScrollView(
@@ -397,22 +448,61 @@ class _SignupMemberProfileDialogState extends State<_SignupMemberProfileDialog> 
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
+            if (_inlineError != null) ...[
+              Material(
+                color: colors.primary.withValues(alpha: 0.12),
+                borderRadius: BorderRadius.circular(12),
+                child: Padding(
+                  padding: const EdgeInsets.all(12),
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Icon(
+                        Icons.error_outline_rounded,
+                        color: colors.primary,
+                        size: 22,
+                      ),
+                      const SizedBox(width: 10),
+                      Expanded(
+                        child: Text(
+                          _inlineError!,
+                          style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                                color: colors.textPrimary,
+                                fontWeight: FontWeight.w600,
+                                height: 1.35,
+                              ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+              const SizedBox(height: 12),
+            ],
             if (widget.subtitle != null) ...[
               Text(
                 widget.subtitle!,
                 style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                      color: context.appColors.textSecondary,
+                      color: colors.textSecondary,
                     ),
               ),
               const SizedBox(height: 12),
             ],
             MemberProfileForm(
               key: ValueKey(
-                'signup-member-profile-${widget.initialProfile?.keyMember ?? 'new'}',
+                'signup-member-profile-'
+                '${widget.initialProfile?.keyMember?.trim().isNotEmpty == true ? widget.initialProfile!.keyMember : (widget.initialProfile?.email ?? 'new')}',
               ),
               enabled: true,
               initialProfile: widget.initialProfile,
+              requireEmail: widget.requireEmail,
+              lockIdentityFromAuth: widget.lockIdentityFromAuth,
               onFormStateCreated: _onFormStateCreated,
+              onChanged: (_) {
+                if (_inlineError != null) {
+                  setState(() => _inlineError = null);
+                }
+              },
             ),
           ],
         ),
@@ -428,6 +518,164 @@ class _SignupMemberProfileDialogState extends State<_SignupMemberProfileDialog> 
         ),
       ],
       shape: widget.dialogShape,
+    );
+  }
+}
+
+bool _isSignupPasswordValid(String password) {
+  if (password.length < 8) return false;
+  if (!RegExp(r'[A-Z]').hasMatch(password)) return false;
+  if (!RegExp(r'[0-9]').hasMatch(password)) return false;
+  if (!RegExp(r'[^a-zA-Z0-9]').hasMatch(password)) return false;
+  return true;
+}
+
+class _SignupPasswordDialog extends StatefulWidget {
+  const _SignupPasswordDialog({required this.email});
+
+  final String email;
+
+  @override
+  State<_SignupPasswordDialog> createState() => _SignupPasswordDialogState();
+}
+
+class _SignupPasswordDialogState extends State<_SignupPasswordDialog> {
+  final _passwordCtrl = TextEditingController();
+  final _confirmCtrl = TextEditingController();
+  bool _obscurePassword = true;
+  bool _obscureConfirm = true;
+  String? _inlineError;
+
+  @override
+  void dispose() {
+    _passwordCtrl.dispose();
+    _confirmCtrl.dispose();
+    super.dispose();
+  }
+
+  void _submit() {
+    final password = _passwordCtrl.text.trim();
+    final confirm = _confirmCtrl.text.trim();
+    final l10n = context.l10n;
+
+    if (password.isEmpty || confirm.isEmpty) {
+      setState(() => _inlineError = l10n.emailAndPasswordRequired);
+      return;
+    }
+    if (password != confirm) {
+      setState(() => _inlineError = l10n.passwordsDoNotMatch);
+      return;
+    }
+    if (!_isSignupPasswordValid(password)) {
+      setState(() => _inlineError = l10n.passwordRequirements);
+      return;
+    }
+    Navigator.of(context).pop(password);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = context.appColors;
+    final l10n = context.l10n;
+
+    return Padding(
+      padding: EdgeInsets.only(
+        bottom: MediaQuery.viewInsetsOf(context).bottom,
+      ),
+      child: AlertDialog(
+      title: Text(l10n.signupPasswordTitle),
+      content: SingleChildScrollView(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Text(
+              l10n.signupPasswordMessage(widget.email),
+              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                    color: colors.textSecondary,
+                  ),
+            ),
+            if (_inlineError != null) ...[
+              const SizedBox(height: 12),
+              Material(
+                color: colors.primary.withValues(alpha: 0.12),
+                borderRadius: BorderRadius.circular(12),
+                child: Padding(
+                  padding: const EdgeInsets.all(12),
+                  child: Text(
+                    _inlineError!,
+                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                          color: colors.textPrimary,
+                          fontWeight: FontWeight.w600,
+                        ),
+                  ),
+                ),
+              ),
+            ],
+            const SizedBox(height: 16),
+            TextField(
+              controller: _passwordCtrl,
+              obscureText: _obscurePassword,
+              autofocus: true,
+              scrollPadding: const EdgeInsets.fromLTRB(20, 20, 20, 80),
+              decoration: InputDecoration(
+                labelText: l10n.password,
+                prefixIcon: const Icon(Icons.lock_outline_rounded),
+                suffixIcon: IconButton(
+                  onPressed: () =>
+                      setState(() => _obscurePassword = !_obscurePassword),
+                  icon: Icon(
+                    _obscurePassword
+                        ? Icons.visibility_off_outlined
+                        : Icons.visibility_outlined,
+                  ),
+                ),
+              ),
+              onChanged: (_) {
+                if (_inlineError != null) setState(() => _inlineError = null);
+              },
+            ),
+            const SizedBox(height: 12),
+            TextField(
+              controller: _confirmCtrl,
+              obscureText: _obscureConfirm,
+              scrollPadding: const EdgeInsets.fromLTRB(20, 20, 20, 80),
+              decoration: InputDecoration(
+                labelText: l10n.confirmPassword,
+                prefixIcon: const Icon(Icons.lock_outline_rounded),
+                suffixIcon: IconButton(
+                  onPressed: () =>
+                      setState(() => _obscureConfirm = !_obscureConfirm),
+                  icon: Icon(
+                    _obscureConfirm
+                        ? Icons.visibility_off_outlined
+                        : Icons.visibility_outlined,
+                  ),
+                ),
+              ),
+              onSubmitted: (_) => _submit(),
+              onChanged: (_) {
+                if (_inlineError != null) setState(() => _inlineError = null);
+              },
+            ),
+          ],
+        ),
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.of(context).pop(null),
+          child: Text(l10n.actionCancel),
+        ),
+        ElevatedButton(
+          onPressed: _submit,
+          child: Text(l10n.createAccount),
+        ),
+      ],
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(16),
+        side: BorderSide(color: colors.border),
+      ),
+      ),
     );
   }
 }

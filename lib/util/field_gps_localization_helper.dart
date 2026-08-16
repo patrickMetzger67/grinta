@@ -26,11 +26,12 @@ class FieldGpsLocalizationHelper {
     return corners;
   }
 
-  /// Ensures [match] has GPS corners for pitch heatmap analysis.
+  /// Ensures [match] has GPS corners for pitch-aligned heatmap analysis.
   ///
   /// Order: match document → `fieldClub` (by [models.Match.fieldId]) →
   /// `TRACKER_Fields` → confirm dialog → localization screen.
-  /// Returns `null` if the user declines or cancels.
+  /// Returns `null` if the user declines or cancels — callers should still
+  /// sync and fall back to the satellite heatmap from GPS samples.
   static Future<FieldGpsCorners?> ensureMatchFieldGpsCorners(
     BuildContext context, {
     required models.Match match,

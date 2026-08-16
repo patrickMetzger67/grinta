@@ -64,6 +64,9 @@ class GoogleHealthSyncConfig {
 }
 
 /// Per-metric coach visibility toggles (player-controlled).
+///
+/// Only metrics that Google Health Connect actually imports today.
+/// Sleep is intentionally omitted — we do not request READ_SLEEP.
 class GoogleHealthCoachVisibility {
   const GoogleHealthCoachVisibility({
     this.activity = false,
@@ -74,14 +77,17 @@ class GoogleHealthCoachVisibility {
 
   final bool activity;
   final bool heartrate;
+
+  /// Calories associated with imported workouts (from Exercise / Total calories).
   final bool activeEnergy;
+
+  /// Kept for Firestore backward compatibility; not shown in UI and not synced.
   final bool sleep;
 
   static const List<String> metricKeys = [
     'activity',
     'heartrate',
     'activeEnergy',
-    'sleep',
   ];
 
   factory GoogleHealthCoachVisibility.fromMap(Map<String, dynamic>? map) {

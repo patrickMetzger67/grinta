@@ -113,7 +113,7 @@ abstract class AppLocalizations {
   /// No description provided for @heroTitle.
   ///
   /// In fr, this message translates to:
-  /// **'Le FOOTBALL Amateur passe à la vitesse supérieure'**
+  /// **'Le Football Amateur passe à la vitesse supérieure'**
   String get heroTitle;
 
   /// No description provided for @heroSubtitle.
@@ -404,6 +404,12 @@ abstract class AppLocalizations {
   /// **'E-mail (facultatif)'**
   String get memberEmailOptional;
 
+  /// No description provided for @memberIdentityFromAuthHint.
+  ///
+  /// In fr, this message translates to:
+  /// **'Votre nom et votre e-mail fournis par Sign in with Apple ou Google seront utilisés pour votre compte. Vous pourrez les modifier plus tard dans votre profil.'**
+  String get memberIdentityFromAuthHint;
+
   /// No description provided for @memberPhone.
   ///
   /// In fr, this message translates to:
@@ -439,6 +445,36 @@ abstract class AppLocalizations {
   /// In fr, this message translates to:
   /// **'L\'e-mail est requis pour les invitations'**
   String get memberEmailRequired;
+
+  /// No description provided for @signupEmailRequired.
+  ///
+  /// In fr, this message translates to:
+  /// **'L\'e-mail est obligatoire pour créer ton compte'**
+  String get signupEmailRequired;
+
+  /// No description provided for @signupFlowStartHint.
+  ///
+  /// In fr, this message translates to:
+  /// **'Tu vas d\'abord renseigner ton profil (et éventuellement un code d\'invitation). Le mot de passe sera demandé ensuite, avant de créer le compte.'**
+  String get signupFlowStartHint;
+
+  /// No description provided for @signupPasswordTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Choisir un mot de passe'**
+  String get signupPasswordTitle;
+
+  /// No description provided for @signupPasswordMessage.
+  ///
+  /// In fr, this message translates to:
+  /// **'Compte : {email}'**
+  String signupPasswordMessage(String email);
+
+  /// No description provided for @signupUseCreateAccountForSocial.
+  ///
+  /// In fr, this message translates to:
+  /// **'Pour créer un compte avec Google ou Apple, utilise « Créer un compte », puis choisis Google ou Apple après ton profil.'**
+  String get signupUseCreateAccountForSocial;
 
   /// No description provided for @invitationEmailSubject.
   ///
@@ -826,6 +862,132 @@ abstract class AppLocalizations {
   /// **'Date de naissance (facultatif)'**
   String get memberBirthDateOptional;
 
+  /// No description provided for @memberBirthDateRequired.
+  ///
+  /// In fr, this message translates to:
+  /// **'La date de naissance est obligatoire'**
+  String get memberBirthDateRequired;
+
+  /// No description provided for @memberBirthDateAgeHint.
+  ///
+  /// In fr, this message translates to:
+  /// **'Grinta Performance est réservé aux personnes de 13 ans et plus. Les 13–14 ans nécessitent l\'autorisation d\'un représentant légal.'**
+  String get memberBirthDateAgeHint;
+
+  /// No description provided for @accountAgeBlockedUnderage.
+  ///
+  /// In fr, this message translates to:
+  /// **'Grinta Performance est réservé aux personnes de 13 ans et plus.'**
+  String get accountAgeBlockedUnderage;
+
+  /// No description provided for @parentalConsentEmailTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Autorisation parentale'**
+  String get parentalConsentEmailTitle;
+
+  /// No description provided for @parentalConsentEmailMessage.
+  ///
+  /// In fr, this message translates to:
+  /// **'Tu as entre 13 et 14 ans. Pour créer ton compte, indique l\'adresse e-mail de ton représentant légal. Il devra autoriser ton accès à Grinta Performance, y compris le traitement de ta fréquence cardiaque et autres données physiologiques si tu connectes un appareil (Polar, Whoop, etc.).'**
+  String get parentalConsentEmailMessage;
+
+  /// No description provided for @parentalConsentEmailLabel.
+  ///
+  /// In fr, this message translates to:
+  /// **'E-mail du représentant légal'**
+  String get parentalConsentEmailLabel;
+
+  /// No description provided for @parentalConsentSendError.
+  ///
+  /// In fr, this message translates to:
+  /// **'Impossible d\'envoyer la demande d\'autorisation parentale. Réessaie.'**
+  String get parentalConsentSendError;
+
+  /// No description provided for @parentalConsentPendingTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'En attente d\'autorisation'**
+  String get parentalConsentPendingTitle;
+
+  /// No description provided for @parentalConsentPendingMessage.
+  ///
+  /// In fr, this message translates to:
+  /// **'Un e-mail a été envoyé à {parentEmail}. Dès que ton représentant légal aura autorisé ton compte (et le traitement des données physiologiques), tu pourras utiliser Grinta Performance.'**
+  String parentalConsentPendingMessage(String parentEmail);
+
+  /// No description provided for @parentalConsentPendingMessageGeneric.
+  ///
+  /// In fr, this message translates to:
+  /// **'Un e-mail a été envoyé à ton représentant légal. Dès qu\'il aura autorisé ton compte (et le traitement des données physiologiques), tu pourras utiliser Grinta Performance.'**
+  String get parentalConsentPendingMessageGeneric;
+
+  /// No description provided for @parentalConsentResend.
+  ///
+  /// In fr, this message translates to:
+  /// **'Renvoyer l\'e-mail'**
+  String get parentalConsentResend;
+
+  /// No description provided for @parentalConsentResendSuccess.
+  ///
+  /// In fr, this message translates to:
+  /// **'E-mail d\'autorisation renvoyé.'**
+  String get parentalConsentResendSuccess;
+
+  /// No description provided for @parentalConsentResendError.
+  ///
+  /// In fr, this message translates to:
+  /// **'Impossible de renvoyer l\'e-mail. Réessaie.'**
+  String get parentalConsentResendError;
+
+  /// No description provided for @physiologicalConsentTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Autoriser l\'utilisation de mes données physiologiques'**
+  String get physiologicalConsentTitle;
+
+  /// No description provided for @physiologicalConsentMessage.
+  ///
+  /// In fr, this message translates to:
+  /// **'J\'autorise explicitement Grinta Performance à traiter mes données de fréquence cardiaque et autres données physiologiques provenant de mes appareils connectés afin d\'analyser ma performance sportive.'**
+  String get physiologicalConsentMessage;
+
+  /// No description provided for @physiologicalConsentAuthorize.
+  ///
+  /// In fr, this message translates to:
+  /// **'J\'autorise'**
+  String get physiologicalConsentAuthorize;
+
+  /// No description provided for @physiologicalConsentRefuse.
+  ///
+  /// In fr, this message translates to:
+  /// **'Je refuse'**
+  String get physiologicalConsentRefuse;
+
+  /// No description provided for @physiologicalConsentRefusedHint.
+  ///
+  /// In fr, this message translates to:
+  /// **'Connexion de l\'appareil annulée. Tu peux continuer à utiliser Grinta sans capteur de fréquence cardiaque.'**
+  String get physiologicalConsentRefusedHint;
+
+  /// No description provided for @physiologicalConsentParentRequiredTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Autorisation parentale requise'**
+  String get physiologicalConsentParentRequiredTitle;
+
+  /// No description provided for @physiologicalConsentParentRequiredMessage.
+  ///
+  /// In fr, this message translates to:
+  /// **'Pour les 13–14 ans, l\'autorisation de traiter la fréquence cardiaque et les autres données physiologiques est donnée par le représentant légal (via l\'e-mail d\'autorisation parentale). Sans elle, tu peux utiliser l\'app mais pas connecter ces appareils.'**
+  String get physiologicalConsentParentRequiredMessage;
+
+  /// No description provided for @physiologicalConsentRequestParentEmail.
+  ///
+  /// In fr, this message translates to:
+  /// **'Envoyer l\'e-mail au parent'**
+  String get physiologicalConsentRequestParentEmail;
+
   /// No description provided for @memberBirthPlace.
   ///
   /// In fr, this message translates to:
@@ -967,7 +1129,7 @@ abstract class AppLocalizations {
   /// No description provided for @slide1Title.
   ///
   /// In fr, this message translates to:
-  /// **'TES COMPÉTITIONS AU MÊME ENDROIT'**
+  /// **'Tes compétitions au même endroit'**
   String get slide1Title;
 
   /// No description provided for @slide1Subtitle.
@@ -979,25 +1141,25 @@ abstract class AppLocalizations {
   /// No description provided for @slide2Title.
   ///
   /// In fr, this message translates to:
-  /// **'Planifiez vos matchs'**
+  /// **'Planifie tes matchs'**
   String get slide2Title;
 
   /// No description provided for @slide2Subtitle.
   ///
   /// In fr, this message translates to:
-  /// **'Créez vos événements, convoquez vos joueurs et suivez facilement les disponibilités.'**
+  /// **'Crée tes événements, convoque tes joueurs et suis facilement les disponibilités.'**
   String get slide2Subtitle;
 
   /// No description provided for @slide3Title.
   ///
   /// In fr, this message translates to:
-  /// **'Suivez vos performances'**
+  /// **'Suis tes performances'**
   String get slide3Title;
 
   /// No description provided for @slide3Subtitle.
   ///
   /// In fr, this message translates to:
-  /// **'Consultez les statistiques, l’activité et les résultats depuis une interface claire.'**
+  /// **'Consulte les statistiques, l’activité et les résultats depuis une interface claire.'**
   String get slide3Subtitle;
 
   /// No description provided for @actionCancel.
@@ -1665,6 +1827,18 @@ abstract class AppLocalizations {
   /// In fr, this message translates to:
   /// **'Impossible de marquer la notification comme lue.'**
   String get notificationsMarkAsReadError;
+
+  /// No description provided for @notificationsDismiss.
+  ///
+  /// In fr, this message translates to:
+  /// **'Ne plus afficher'**
+  String get notificationsDismiss;
+
+  /// No description provided for @notificationsDismissError.
+  ///
+  /// In fr, this message translates to:
+  /// **'Impossible de masquer la notification.'**
+  String get notificationsDismissError;
 
   /// No description provided for @notificationsConvocationMatchDetails.
   ///
@@ -3731,6 +3905,42 @@ abstract class AppLocalizations {
   /// **'Entraînements à synchroniser'**
   String get syncTrainingsToSync;
 
+  /// No description provided for @syncUpcomingTrainingsTooltip.
+  ///
+  /// In fr, this message translates to:
+  /// **'Aligner les entraînements à venir sur l\'effectif'**
+  String get syncUpcomingTrainingsTooltip;
+
+  /// No description provided for @syncUpcomingTrainingsConfirmTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Mettre à jour les entraînements ?'**
+  String get syncUpcomingTrainingsConfirmTitle;
+
+  /// No description provided for @syncUpcomingTrainingsConfirmMessage.
+  ///
+  /// In fr, this message translates to:
+  /// **'Les joueurs de l\'effectif seront ajoutés aux entraînements à venir, et ceux qui n\'en font plus partie seront retirés.'**
+  String get syncUpcomingTrainingsConfirmMessage;
+
+  /// No description provided for @syncUpcomingTrainingsSuccess.
+  ///
+  /// In fr, this message translates to:
+  /// **'Entraînements mis à jour : {updated} séance(s), {added} ajout(s), {removed} retrait(s).'**
+  String syncUpcomingTrainingsSuccess(int updated, int added, int removed);
+
+  /// No description provided for @syncUpcomingTrainingsNothingToDo.
+  ///
+  /// In fr, this message translates to:
+  /// **'Les entraînements à venir sont déjà alignés sur l\'effectif.'**
+  String get syncUpcomingTrainingsNothingToDo;
+
+  /// No description provided for @syncUpcomingTrainingsError.
+  ///
+  /// In fr, this message translates to:
+  /// **'Impossible de mettre à jour les entraînements. Réessayez.'**
+  String get syncUpcomingTrainingsError;
+
   /// No description provided for @chatSelectConversation.
   ///
   /// In fr, this message translates to:
@@ -4006,6 +4216,18 @@ abstract class AppLocalizations {
   /// In fr, this message translates to:
   /// **'Impossible de mettre à jour le score.'**
   String get matchScoreUpdateFailed;
+
+  /// No description provided for @matchFinishedPromptTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Match terminé ?'**
+  String get matchFinishedPromptTitle;
+
+  /// No description provided for @matchFinishedPromptMessage.
+  ///
+  /// In fr, this message translates to:
+  /// **'Le match est-il terminé ?'**
+  String get matchFinishedPromptMessage;
 
   /// No description provided for @matchGoalPickTeamTitle.
   ///
@@ -4460,7 +4682,7 @@ abstract class AppLocalizations {
   /// No description provided for @syncFieldGeolocationPromptMessage.
   ///
   /// In fr, this message translates to:
-  /// **'Les coordonnées GPS du terrain ne sont pas renseignées. Souhaitez-vous les définir avant de télécharger les données tracker ?'**
+  /// **'Les coordonnées GPS du terrain ne sont pas renseignées. Souhaitez-vous les définir maintenant ? Cela permet des heatmaps alignées sur le terrain ; sinon elles utiliseront la vue satellite GPS.'**
   String get syncFieldGeolocationPromptMessage;
 
   /// No description provided for @trackerUsbAuthorizeHint.
@@ -5039,6 +5261,12 @@ abstract class AppLocalizations {
   /// **'Heure'**
   String get createPersonalSportTime;
 
+  /// No description provided for @createPersonalSportTimeRequired.
+  ///
+  /// In fr, this message translates to:
+  /// **'Indique l\'heure de début'**
+  String get createPersonalSportTimeRequired;
+
   /// No description provided for @createPersonalSportManualEntry.
   ///
   /// In fr, this message translates to:
@@ -5330,7 +5558,7 @@ abstract class AppLocalizations {
   /// No description provided for @sessionPersonalDataGpsHint.
   ///
   /// In fr, this message translates to:
-  /// **'Synchronise ton capteur GPS Intense et génère une heatmap si le terrain est positionné.'**
+  /// **'Synchronise ton capteur GPS Intense et génère une heatmap (alignée sur le terrain s’il est géolocalisé, sinon vue satellite).'**
   String get sessionPersonalDataGpsHint;
 
   /// No description provided for @sessionPersonalDataGpsSubmit.
@@ -5831,6 +6059,12 @@ abstract class AppLocalizations {
   /// In fr, this message translates to:
   /// **'Poids'**
   String get teamDetailColumnWeight;
+
+  /// No description provided for @teamDetailFilterPlayerHint.
+  ///
+  /// In fr, this message translates to:
+  /// **'Filtrer par nom'**
+  String get teamDetailFilterPlayerHint;
 
   /// No description provided for @teamDetailHeightCm.
   ///
@@ -7307,6 +7541,167 @@ abstract class AppLocalizations {
   /// In fr, this message translates to:
   /// **'Whoop connecté pour {playerName}'**
   String whoopCoachConnectConnectedSubtitle(String playerName);
+
+  /// No description provided for @createPersonalSportOuraActivity.
+  ///
+  /// In fr, this message translates to:
+  /// **'Activité Oura'**
+  String get createPersonalSportOuraActivity;
+  /// No description provided for @createPersonalSportOuraDeployRequired.
+  ///
+  /// In fr, this message translates to:
+  /// **'L’import Oura n’est pas encore déployé. Déploie ouraListActivities et ouraImportActivity avec firebase deploy.'**
+  String get createPersonalSportOuraDeployRequired;
+  /// No description provided for @createPersonalSportOuraLoadError.
+  ///
+  /// In fr, this message translates to:
+  /// **'Impossible de charger les activités Oura. Vérifie la connexion et réessaie.'**
+  String get createPersonalSportOuraLoadError;
+  /// No description provided for @createPersonalSportOuraNoImportable.
+  ///
+  /// In fr, this message translates to:
+  /// **'Aucune séance Oura à importer.'**
+  String get createPersonalSportOuraNoImportable;
+  /// No description provided for @wearableDeviceOura.
+  ///
+  /// In fr, this message translates to:
+  /// **'Oura'**
+  String get wearableDeviceOura;
+
+  /// No description provided for @ouraConnectToggleLabel.
+  ///
+  /// In fr, this message translates to:
+  /// **'Sync. Oura'**
+  String get ouraConnectToggleLabel;
+
+  /// No description provided for @ouraConnectToggleSubtitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Connecte ton compte Oura pour importer récupération, sommeil et entraînements'**
+  String get ouraConnectToggleSubtitle;
+
+  /// No description provided for @ouraConnectToggleConnectedSubtitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Oura connecté — synchronisation des données à venir (Phase 2)'**
+  String get ouraConnectToggleConnectedSubtitle;
+
+  /// No description provided for @ouraConnectSuccess.
+  ///
+  /// In fr, this message translates to:
+  /// **'Compte Oura connecté.'**
+  String get ouraConnectSuccess;
+
+  /// No description provided for @ouraAccountHintGuidance.
+  ///
+  /// In fr, this message translates to:
+  /// **'L\'email Oura peut être différent de ton compte Grinta. Indique le compte Oura à utiliser, puis connecte-toi avec ce compte sur la page Oura.'**
+  String get ouraAccountHintGuidance;
+
+  /// No description provided for @ouraAccountHintLabel.
+  ///
+  /// In fr, this message translates to:
+  /// **'Compte Oura'**
+  String get ouraAccountHintLabel;
+
+  /// No description provided for @ouraAccountHintPlaceholder.
+  ///
+  /// In fr, this message translates to:
+  /// **'email Oura'**
+  String get ouraAccountHintPlaceholder;
+
+  /// No description provided for @ouraAccountHintRequired.
+  ///
+  /// In fr, this message translates to:
+  /// **'Indique ton compte Oura (email) avant de continuer.'**
+  String get ouraAccountHintRequired;
+
+  /// No description provided for @ouraConnectContinue.
+  ///
+  /// In fr, this message translates to:
+  /// **'Continuer vers Oura'**
+  String get ouraConnectContinue;
+
+  /// No description provided for @ouraConnectFailed.
+  ///
+  /// In fr, this message translates to:
+  /// **'La connexion Oura a échoué. Vérifie que les Cloud Functions Oura sont déployées et que les secrets OURA_CLIENT_ID / OURA_CLIENT_SECRET sont configurés.'**
+  String get ouraConnectFailed;
+
+  /// No description provided for @ouraConnectLaunchFailed.
+  ///
+  /// In fr, this message translates to:
+  /// **'Impossible d\'ouvrir la page de connexion Oura.'**
+  String get ouraConnectLaunchFailed;
+
+  /// No description provided for @ouraConnectAuthRequired.
+  ///
+  /// In fr, this message translates to:
+  /// **'Connecte-toi à Grinta pour lier Oura.'**
+  String get ouraConnectAuthRequired;
+
+  /// No description provided for @ouraDisconnectFailed.
+  ///
+  /// In fr, this message translates to:
+  /// **'La déconnexion Oura a échoué.'**
+  String get ouraDisconnectFailed;
+
+  /// No description provided for @ouraCoachVisibilityTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Visibilité coach'**
+  String get ouraCoachVisibilityTitle;
+
+  /// No description provided for @ouraCoachVisibilitySubtitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Autoriser ton coach à voir cette donnée'**
+  String get ouraCoachVisibilitySubtitle;
+
+  /// No description provided for @ouraCoachVisibilitySaveFailed.
+  ///
+  /// In fr, this message translates to:
+  /// **'Impossible d\'enregistrer les préférences Oura.'**
+  String get ouraCoachVisibilitySaveFailed;
+
+
+
+
+  /// No description provided for @ouraMetricWorkout.
+  ///
+  /// In fr, this message translates to:
+  /// **'Entraînements'**
+  String get ouraMetricWorkout;
+  String get ouraMetricHeartrate;
+  String get ouraMetricDaily;
+  String get ouraMetricPersonal;
+  String get ouraMetricEmail;
+
+
+
+  /// No description provided for @ouraCoachConnectTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Oura'**
+  String get ouraCoachConnectTitle;
+
+  /// No description provided for @ouraCoachConnectSubtitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Connecter le compte Oura de {playerName}'**
+  String ouraCoachConnectSubtitle(String playerName);
+
+  /// No description provided for @ouraCoachConnectAction.
+  ///
+  /// In fr, this message translates to:
+  /// **'Connecter'**
+  String get ouraCoachConnectAction;
+
+  /// No description provided for @ouraCoachConnectConnectedSubtitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Oura connecté pour {playerName}'**
+  String ouraCoachConnectConnectedSubtitle(String playerName);
 
   /// No description provided for @stravaConnectToggleSubtitle.
   ///
@@ -11676,7 +12071,7 @@ abstract class AppLocalizations {
   /// No description provided for @playerSeasonSummaryTitle.
   ///
   /// In fr, this message translates to:
-  /// **'Fiche joueur'**
+  /// **'Statistiques'**
   String get playerSeasonSummaryTitle;
 
   /// No description provided for @playerSeasonSummaryTabUnavailabilities.
@@ -11907,6 +12302,67 @@ abstract class AppLocalizations {
   /// **'{min} – {max} bpm'**
   String whoopAnalysisZoneBpmRange(int min, int max);
 
+  /// No description provided for @ouraAnalysisTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Analyse Oura'**
+  String get ouraAnalysisTitle;
+  /// No description provided for @ouraAnalysisStrain.
+  ///
+  /// In fr, this message translates to:
+  /// **'Effort activité'**
+  String get ouraAnalysisStrain;
+  /// No description provided for @ouraAnalysisAvgHr.
+  ///
+  /// In fr, this message translates to:
+  /// **'FC moyenne'**
+  String get ouraAnalysisAvgHr;
+  /// No description provided for @ouraAnalysisMaxHr.
+  ///
+  /// In fr, this message translates to:
+  /// **'FC max'**
+  String get ouraAnalysisMaxHr;
+  /// No description provided for @ouraAnalysisDuration.
+  ///
+  /// In fr, this message translates to:
+  /// **'Durée'**
+  String get ouraAnalysisDuration;
+  /// No description provided for @ouraAnalysisCalories.
+  ///
+  /// In fr, this message translates to:
+  /// **'Calories'**
+  String get ouraAnalysisCalories;
+  /// No description provided for @ouraAnalysisAltitude.
+  ///
+  /// In fr, this message translates to:
+  /// **'Dénivelé'**
+  String get ouraAnalysisAltitude;
+  /// No description provided for @ouraAnalysisHrZonesTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Zones cardiaques'**
+  String get ouraAnalysisHrZonesTitle;
+  /// No description provided for @ouraAnalysisNoZones.
+  ///
+  /// In fr, this message translates to:
+  /// **'Aucune répartition par zone pour cet import. Réimporte l’activité Oura.'**
+  String get ouraAnalysisNoZones;
+  /// No description provided for @ouraAnalysisZoneLabel.
+  ///
+  /// In fr, this message translates to:
+  /// **'Zone {zone}'**
+  String ouraAnalysisZoneLabel(int zone);
+  /// No description provided for @ouraAnalysisZoneAboveBpm.
+  ///
+  /// In fr, this message translates to:
+  /// **'+ de {bpm} bpm'**
+  String ouraAnalysisZoneAboveBpm(int bpm);
+  /// No description provided for @ouraAnalysisZoneBpmRange.
+  ///
+  /// In fr, this message translates to:
+  /// **'{min} – {max} bpm'**
+  String ouraAnalysisZoneBpmRange(int min, int max);
+
   /// No description provided for @opponentAnalysisPromptTitle.
   ///
   /// In fr, this message translates to:
@@ -12003,6 +12459,108 @@ abstract class AppLocalizations {
   /// In fr, this message translates to:
   /// **'L’envoi du rapport d’analyse adversaire nécessite un abonnement Coach Elite.'**
   String get opponentAnalysisCoachEliteRequiredMessage;
+
+  /// No description provided for @biometricUnlockTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Déverrouiller Grinta'**
+  String get biometricUnlockTitle;
+
+  /// No description provided for @biometricUnlockSubtitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Utilisez Face ID, Touch ID ou votre empreinte pour accéder rapidement à l’application.'**
+  String get biometricUnlockSubtitle;
+
+  /// No description provided for @biometricUnlockAction.
+  ///
+  /// In fr, this message translates to:
+  /// **'Déverrouiller'**
+  String get biometricUnlockAction;
+
+  /// No description provided for @biometricUnlockUsePassword.
+  ///
+  /// In fr, this message translates to:
+  /// **'Utiliser un autre compte'**
+  String get biometricUnlockUsePassword;
+
+  /// No description provided for @biometricUnlockPromptReason.
+  ///
+  /// In fr, this message translates to:
+  /// **'Déverrouillez Grinta'**
+  String get biometricUnlockPromptReason;
+
+  /// No description provided for @biometricUnlockSettingsTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Déverrouillage biométrique'**
+  String get biometricUnlockSettingsTitle;
+
+  /// No description provided for @biometricUnlockSettingsSubtitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Face ID, Touch ID ou empreinte pour ouvrir l’app et se reconnecter rapidement.'**
+  String get biometricUnlockSettingsSubtitle;
+
+  /// No description provided for @biometricUnlockUnavailable.
+  ///
+  /// In fr, this message translates to:
+  /// **'La biométrie n’est pas disponible sur cet appareil.'**
+  String get biometricUnlockUnavailable;
+
+  /// No description provided for @biometricUnlockEnableTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Connexion rapide'**
+  String get biometricUnlockEnableTitle;
+
+  /// No description provided for @biometricUnlockEnableMessage.
+  ///
+  /// In fr, this message translates to:
+  /// **'Activez Face ID / empreinte pour déverrouiller Grinta et vous reconnecter rapidement après une déconnexion. Votre e-mail et mot de passe restent chiffrés sur cet appareil.'**
+  String get biometricUnlockEnableMessage;
+
+  /// No description provided for @biometricUnlockEnableLater.
+  ///
+  /// In fr, this message translates to:
+  /// **'Plus tard'**
+  String get biometricUnlockEnableLater;
+
+  /// No description provided for @biometricUnlockEnableConfirm.
+  ///
+  /// In fr, this message translates to:
+  /// **'Activer'**
+  String get biometricUnlockEnableConfirm;
+
+  /// No description provided for @biometricLoginAction.
+  ///
+  /// In fr, this message translates to:
+  /// **'Se connecter avec la biométrie'**
+  String get biometricLoginAction;
+
+  /// No description provided for @biometricLoginPromptReason.
+  ///
+  /// In fr, this message translates to:
+  /// **'Connectez-vous à Grinta'**
+  String get biometricLoginPromptReason;
+
+  /// No description provided for @biometricLoginCredentialsInvalid.
+  ///
+  /// In fr, this message translates to:
+  /// **'Les identifiants enregistrés ne sont plus valides. Connectez-vous avec votre mot de passe.'**
+  String get biometricLoginCredentialsInvalid;
+
+  /// No description provided for @biometricLoginSavePasswordTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Confirmez votre mot de passe'**
+  String get biometricLoginSavePasswordTitle;
+
+  /// No description provided for @biometricLoginSavePasswordMessage.
+  ///
+  /// In fr, this message translates to:
+  /// **'Saisissez votre mot de passe pour que Face ID / empreinte puisse vous reconnecter après une déconnexion. Il reste chiffré sur cet appareil.'**
+  String get biometricLoginSavePasswordMessage;
 }
 
 class _AppLocalizationsDelegate

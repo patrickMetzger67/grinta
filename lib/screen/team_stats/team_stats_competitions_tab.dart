@@ -25,6 +25,7 @@ class TeamStatsCompetitionsTab extends StatefulWidget {
     required this.team,
     required this.isManager,
     this.fallbackSeasonId,
+    this.initialCompetitionUrl,
     this.initialSubTabIndex = 0,
     TeamsPerClubService? teamsPerClubService,
     TeamCompetitionStatsService? teamCompetitionStatsService,
@@ -36,6 +37,7 @@ class TeamStatsCompetitionsTab extends StatefulWidget {
   final Team team;
   final bool isManager;
   final String? fallbackSeasonId;
+  final String? initialCompetitionUrl;
   final int initialSubTabIndex;
   final TeamsPerClubService? _teamsPerClubService;
   final TeamCompetitionStatsService? _teamCompetitionStatsService;
@@ -108,6 +110,18 @@ class _TeamStatsCompetitionsTabState extends State<TeamStatsCompetitionsTab>
   String? _seasonIdForTeam() =>
       teamStatsSeasonIdForTeam(widget.team, widget.fallbackSeasonId);
 
+  String _resolveCompetitionValue(List<TeamStatsCompetitionOption> options) {
+    final initialUrl = widget.initialCompetitionUrl?.trim() ?? '';
+    if (initialUrl.isNotEmpty) {
+      for (final option in options) {
+        if (option.value == initialUrl || option.url == initialUrl) {
+          return option.value;
+        }
+      }
+    }
+    return kTeamStatsAllCompetitionsValue;
+  }
+
   Future<void> _loadCompetitions() async {
     final options = await loadTeamStatsCompetitionOptions(
       team: widget.team,
@@ -120,7 +134,7 @@ class _TeamStatsCompetitionsTabState extends State<TeamStatsCompetitionsTab>
     setState(() {
       _loading = false;
       _options = options;
-      _selectedValue = kTeamStatsAllCompetitionsValue;
+      _selectedValue = _resolveCompetitionValue(options);
     });
 
     await _loadWdlStats();

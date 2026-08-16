@@ -33,6 +33,7 @@ import '../util/playerDisplayName.dart';
 import '../widget/match_compo_widget.dart';
 import '../widget/match_highlights_timeline.dart';
 import '../widget/match_opponent_stats_button.dart';
+import '../util/match_team_stats_navigation.dart';
 import '../util/session_tracker_kit.dart';
 import '../widget/session_player_analysis_view.dart';
 import '../widget/session_tracker_stats_view.dart';
@@ -42,7 +43,7 @@ import 'match_detail/match_convocations_tab.dart';
 import 'match_detail/match_grinta_highlights_tab.dart';
 import 'match_detail/match_tactical_schema_tab.dart';
 
-class MatchDetailScreen extends StatelessWidget {
+class MatchDetailScreen extends StatefulWidget {
   final models.Match match;
 
   /// Permet de remplacer le contenu de l’onglet Compo.
@@ -79,6 +80,7 @@ class MatchDetailScreen extends StatelessWidget {
     models.Match match, {
     required bool showCompo,
     bool showLiveTab = false,
+    bool showStats = false,
   }) {
     final names = <String>[];
     if (showCompo) {
@@ -92,7 +94,7 @@ class MatchDetailScreen extends StatelessWidget {
     if (showLiveTab) {
       names.add(AnalyticsScreenNames.matchDetailTabLive);
     }
-    if (match.withTracker == true) {
+    if (showStats) {
       names.add(AnalyticsScreenNames.matchDetailTabStats);
     }
     return names;
@@ -102,6 +104,7 @@ class MatchDetailScreen extends StatelessWidget {
     models.Match match, {
     required bool showCompo,
     bool showLiveTab = false,
+    bool showStats = false,
   }) {
     final ids = <String>[];
     if (showCompo) {
@@ -115,15 +118,20 @@ class MatchDetailScreen extends StatelessWidget {
     if (showLiveTab) {
       ids.add(FeatureDiscoveryIds.matchDetailTabLive);
     }
-    if (match.withTracker == true) {
+    if (showStats) {
       ids.add(FeatureDiscoveryIds.matchDetailTabStats);
     }
     return ids;
   }
 
   /// Index logique de l’onglet Statistiques (4 si Compo affiché, 3 sinon).
-  static int statsTabIndexFor(models.Match match, {bool showCompo = true}) {
-    if (match.withTracker != true) {
+  static int statsTabIndexFor(
+    models.Match match, {
+    bool showCompo = true,
+    bool? showStats,
+  }) {
+    final bool hasStats = showStats ?? match.withTracker == true;
+    if (!hasStats) {
       return showCompo ? 0 : 0;
     }
     return showCompo ? 4 : 3;
@@ -148,19 +156,114 @@ class MatchDetailScreen extends StatelessWidget {
   }
 
   @override
+  State<MatchDetailScreen> createState() => _MatchDetailScreenState();
+}
+
+class _MatchDetailScreenState extends State<MatchDetailScreen> {
+  bool _scoreEdited = false;
+  bool _exitBusy = false;
+
+  models.Match get match => widget.match;
+  bool get isManager => widget.isManager;
+  String? get playerId => widget.playerId;
+  int get initialTabIndex => widget.initialTabIndex;
+  Widget Function(BuildContext context, models.Match match)? get compoBuilder =>
+      widget.compoBuilder;
+  Widget Function(BuildContext context, models.Match match)?
+      get tacticalSchemaBuilder => widget.tacticalSchemaBuilder;
+  Widget Function(BuildContext context, models.Match match)?
+      get highlightsBuilder => widget.highlightsBuilder;
+  Widget Function(BuildContext context, models.Match match)? get statsBuilder =>
+      widget.statsBuilder;
+
+  bool get _shouldAskMatchFinished =>
+      isManager && _scoreEdited && match.isMatchPlayed != true;
+
+  Future<void> _handleClose() async {
+    if (_exitBusy) return;
+
+    if (!_shouldAskMatchFinished) {
+      if (mounted) Navigator.of(context).pop();
+      return;
+    }
+
+    final colors = context.appColors;
+    final l10n = context.l10n;
+    final bool? finished = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) {
+        return AlertDialog(
+          backgroundColor: colors.card,
+          title: Text(l10n.matchFinishedPromptTitle),
+          content: Text(
+            l10n.matchFinishedPromptMessage,
+            style: TextStyle(
+              color: colors.textPrimary,
+              fontSize: 14,
+              height: 1.4,
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(dialogContext).pop(false),
+              child: Text(l10n.actionNo),
+            ),
+            FilledButton(
+              onPressed: () => Navigator.of(dialogContext).pop(true),
+              child: Text(l10n.actionYes),
+            ),
+          ],
+        );
+      },
+    );
+
+    if (!mounted || finished == null) return;
+
+    if (finished) {
+      setState(() => _exitBusy = true);
+      try {
+        final matchId = match.id?.trim() ?? '';
+        if (matchId.isNotEmpty) {
+          await MatchService().markMatchPlayedAfterEndEvent(matchId: matchId);
+          match.isMatchPlayed = true;
+        }
+      } catch (e, st) {
+        debugPrint('mark match played on leave failed: $e\n$st');
+        if (mounted) {
+          AppSnackbar.show(context, context.l10n.matchScoreUpdateFailed);
+        }
+        if (mounted) setState(() => _exitBusy = false);
+        return;
+      }
+      if (mounted) setState(() => _exitBusy = false);
+    }
+
+    if (mounted) Navigator.of(context).pop();
+  }
+
+  @override
   Widget build(BuildContext context) {
     final colors = context.appColors;
-    final bool showStats = match.withTracker == true;
+    final eventId = match.id?.trim() ?? '';
 
-    return Scaffold(
-      backgroundColor: colors.background,
-      body: SafeArea(
-        child: Column(
-          children: [
-            _TopBar(match: match),
-            Expanded(
-              child: LayoutBuilder(
-                builder: (context, constraints) {
+    return PopScope(
+      canPop: !_shouldAskMatchFinished,
+      onPopInvokedWithResult: (didPop, _) async {
+        if (didPop) return;
+        await _handleClose();
+      },
+      child: Scaffold(
+        backgroundColor: colors.background,
+        body: SafeArea(
+          child: Column(
+            children: [
+              _TopBar(
+                match: match,
+                onClose: _handleClose,
+              ),
+              Expanded(
+                child: LayoutBuilder(
+                  builder: (context, constraints) {
                   final bool isWebLarge = constraints.maxWidth >= 900;
                   final bool isTablet =
                       constraints.maxWidth >= 600 &&
@@ -172,6 +275,11 @@ class MatchDetailScreen extends StatelessWidget {
                       ? 10
                       : 0;
 
+                  final Size screenSize = MediaQuery.sizeOf(context);
+                  final bool denseChrome = screenSize.height < 860 ||
+                      (screenSize.shortestSide >= 600 &&
+                          screenSize.width > screenSize.height);
+
                   return Container(
                     width: double.infinity,
                     padding: EdgeInsets.symmetric(
@@ -179,152 +287,194 @@ class MatchDetailScreen extends StatelessWidget {
                     ),
                     child: Column(
                       children: [
-                        _MatchHeader(match: match, isManager: isManager),
+                        _MatchHeader(
+                          match: match,
+                          isManager: isManager,
+                          dense: denseChrome,
+                          onScoreChanged: () {
+                            if (!_scoreEdited) {
+                              setState(() => _scoreEdited = true);
+                            }
+                          },
+                        ),
                         // Live / Re-sync for noSync kits — visible without
                         // opening Temps forts (and without kick-off highlight).
                         Padding(
-                          padding: const EdgeInsets.fromLTRB(8, 8, 8, 0),
+                          padding: EdgeInsets.fromLTRB(
+                            8,
+                            denseChrome ? 4 : 8,
+                            8,
+                            0,
+                          ),
                           child: MatchIntenseHighlightsActions(
                             match: match,
                             isManager: isManager,
                           ),
                         ),
                         Expanded(
-                          child: StreamBuilder<MatchStats?>(
-                            stream: MatchStatsService()
-                                .streamMatchStatsByMatchId(match.id ?? ''),
-                            builder: (context, snapshot) {
-                              if (snapshot.connectionState ==
-                                  ConnectionState.waiting) {
-                                return const Center(
-                                  child: CircularProgressIndicator(),
-                                );
-                              }
+                          child: StreamBuilder<TeamWorkloadSummary?>(
+                            stream: eventId.isEmpty
+                                ? Stream<TeamWorkloadSummary?>.value(null)
+                                : TeamWorkloadSummaryService()
+                                    .watchByEventId(eventId),
+                            builder: (context, workloadSnapshot) {
+                              final summary = workloadSnapshot.data;
+                              // Team kit OR personal GPS / apps attached to this match.
+                              final bool showStats = match.withTracker == true ||
+                                  (summary != null &&
+                                      summary.playerScores.isNotEmpty);
 
-                              final bool showCompo = snapshot.data != null;
-                              final l10n = context.l10n;
+                              return StreamBuilder<MatchStats?>(
+                                stream: MatchStatsService()
+                                    .streamMatchStatsByMatchId(match.id ?? ''),
+                                builder: (context, snapshot) {
+                                  if (snapshot.connectionState ==
+                                      ConnectionState.waiting) {
+                                    return const Center(
+                                      child: CircularProgressIndicator(),
+                                    );
+                                  }
 
-                              return FutureBuilder<bool>(
-                                future: isIntenseTrackerOwner(match.ownerId),
-                                builder: (context, intenseSnapshot) {
-                                  final isIntenseOwner =
-                                      intenseSnapshot.data == true;
+                                  final bool showCompo = snapshot.data != null;
+                                  final l10n = context.l10n;
 
-                                  return StreamBuilder<List<Highlights>>(
-                                    stream: HighlightsService()
-                                        .streamHighlightsByMatchCalendarId(
-                                      match.id ?? '',
-                                    ),
-                                    builder: (context, highlightsSnapshot) {
-                                      final highlights =
-                                          highlightsSnapshot.data ??
-                                              const <Highlights>[];
-                                      final showLiveTab = isIntenseOwner &&
-                                          isMatchSessionLive(
-                                            match: match,
-                                            highlights: highlights,
-                                          );
-                                      final liveSessionStart =
-                                          intenseLiveMatchStartUtc(
-                                        highlights,
-                                        match: match,
-                                      );
+                                  return FutureBuilder<bool>(
+                                    future:
+                                        isIntenseTrackerOwner(match.ownerId),
+                                    builder: (context, intenseSnapshot) {
+                                      final isIntenseOwner =
+                                          intenseSnapshot.data == true;
 
-                                      final tabs = <Widget>[
-                                        if (showCompo)
-                                          _MatchDetailTab(
-                                            icon: Icons.groups_rounded,
-                                            label: l10n.tabCompo,
-                                            compactLabel: l10n.tabCompo,
-                                          ),
-                                        _MatchDetailTab(
-                                          icon: Icons.event_available_rounded,
-                                          label: l10n.tabConvocations,
-                                          compactLabel:
-                                              l10n.tabConvocationsShort,
+                                      return StreamBuilder<List<Highlights>>(
+                                        stream: HighlightsService()
+                                            .streamHighlightsByMatchCalendarId(
+                                          match.id ?? '',
                                         ),
-                                        _MatchDetailTab(
-                                          icon: Icons.grid_view_rounded,
-                                          label: l10n.tabTacticalSchema,
-                                          compactLabel:
-                                              l10n.tabTacticalSchemaShort,
-                                        ),
-                                        _MatchDetailTab(
-                                          icon: Icons.flash_on_rounded,
-                                          label: l10n.tabHighlights,
-                                          compactLabel: l10n.tabHighlightsShort,
-                                        ),
-                                        if (showLiveTab)
-                                          _MatchDetailTab(
-                                            icon: Icons.sensors_rounded,
-                                            label: l10n.tabLive,
-                                            compactLabel: l10n.tabLiveShort,
-                                          ),
-                                        if (showStats)
-                                          _MatchDetailTab(
-                                            icon: Icons.query_stats_rounded,
-                                            label: l10n.navStatistics,
-                                            compactLabel: l10n.tabStats,
-                                          ),
-                                      ];
-
-                                      final views = <Widget>[
-                                        if (showCompo)
-                                          compoBuilder?.call(context, match) ??
-                                              _CompoTab(match: match),
-                                        MatchConvocationsTab(
-                                          match: match,
-                                          isManager: isManager,
-                                        ),
-                                        tacticalSchemaBuilder?.call(
-                                              context, match) ??
-                                            MatchTacticalSchemaTab(
-                                              match: match,
-                                              isManager: isManager,
-                                            ),
-                                        highlightsBuilder?.call(
-                                              context, match) ??
-                                            _HighlightsTab(
-                                              match: match,
-                                              isManager: isManager,
-                                            ),
-                                        if (showLiveTab &&
-                                            liveSessionStart != null)
-                                          _LiveTab(
-                                            match: match,
-                                            sessionStartUtc: liveSessionStart,
-                                          ),
-                                        if (showStats)
-                                          statsBuilder?.call(context, match) ??
-                                              _StatsTab(
+                                        builder:
+                                            (context, highlightsSnapshot) {
+                                          final highlights =
+                                              highlightsSnapshot.data ??
+                                                  const <Highlights>[];
+                                          final showLiveTab = isIntenseOwner &&
+                                              isMatchSessionLive(
                                                 match: match,
-                                                isManager: isManager,
-                                                playerId: playerId,
+                                                highlights: highlights,
+                                              );
+                                          final liveSessionStart =
+                                              intenseLiveMatchStartUtc(
+                                            highlights,
+                                            match: match,
+                                          );
+
+                                          final tabs = <Widget>[
+                                            if (showCompo)
+                                              _MatchDetailTab(
+                                                icon: Icons.groups_rounded,
+                                                label: l10n.tabCompo,
+                                                compactLabel: l10n.tabCompo,
                                               ),
-                                      ];
+                                            _MatchDetailTab(
+                                              icon: Icons
+                                                  .event_available_rounded,
+                                              label: l10n.tabConvocations,
+                                              compactLabel:
+                                                  l10n.tabConvocationsShort,
+                                            ),
+                                            _MatchDetailTab(
+                                              icon: Icons.grid_view_rounded,
+                                              label: l10n.tabTacticalSchema,
+                                              compactLabel:
+                                                  l10n.tabTacticalSchemaShort,
+                                            ),
+                                            _MatchDetailTab(
+                                              icon: Icons.flash_on_rounded,
+                                              label: l10n.tabHighlights,
+                                              compactLabel:
+                                                  l10n.tabHighlightsShort,
+                                            ),
+                                            if (showLiveTab)
+                                              _MatchDetailTab(
+                                                icon: Icons.sensors_rounded,
+                                                label: l10n.tabLive,
+                                                compactLabel: l10n.tabLiveShort,
+                                              ),
+                                            if (showStats)
+                                              _MatchDetailTab(
+                                                icon:
+                                                    Icons.query_stats_rounded,
+                                                label: l10n.navStatistics,
+                                                compactLabel: l10n.tabStats,
+                                              ),
+                                          ];
 
-                                      final int safeInitialIndex =
-                                          _physicalTabIndex(
-                                        logicalIndex: initialTabIndex,
-                                        showCompo: showCompo,
-                                      ).clamp(0, tabs.length - 1);
+                                          final views = <Widget>[
+                                            if (showCompo)
+                                              compoBuilder?.call(
+                                                    context, match) ??
+                                                  _CompoTab(match: match),
+                                            MatchConvocationsTab(
+                                              match: match,
+                                              isManager: isManager,
+                                            ),
+                                            tacticalSchemaBuilder?.call(
+                                                  context, match) ??
+                                                MatchTacticalSchemaTab(
+                                                  match: match,
+                                                  isManager: isManager,
+                                                ),
+                                            highlightsBuilder?.call(
+                                                  context, match) ??
+                                                _HighlightsTab(
+                                                  match: match,
+                                                  isManager: isManager,
+                                                ),
+                                            if (showLiveTab &&
+                                                liveSessionStart != null)
+                                              _LiveTab(
+                                                match: match,
+                                                sessionStartUtc:
+                                                    liveSessionStart,
+                                              ),
+                                            if (showStats)
+                                              statsBuilder?.call(
+                                                    context, match) ??
+                                                  _StatsTab(
+                                                    match: match,
+                                                    isManager: isManager,
+                                                    playerId: playerId,
+                                                  ),
+                                          ];
 
-                                      return _MatchDetailTabShell(
-                                        tabs: tabs,
-                                        views: views,
-                                        tabNames: _tabNamesForMatch(
-                                          match,
-                                          showCompo: showCompo,
-                                          showLiveTab: showLiveTab,
-                                        ),
-                                        featureDiscoveryIds:
-                                            _featureDiscoveryIdsForMatch(
-                                          match,
-                                          showCompo: showCompo,
-                                          showLiveTab: showLiveTab,
-                                        ),
-                                        initialIndex: safeInitialIndex,
-                                        matchHasTracker: showStats,
+                                          final int safeInitialIndex =
+                                              MatchDetailScreen
+                                                  ._physicalTabIndex(
+                                            logicalIndex: initialTabIndex,
+                                            showCompo: showCompo,
+                                          ).clamp(0, tabs.length - 1);
+
+                                          return _MatchDetailTabShell(
+                                            tabs: tabs,
+                                            views: views,
+                                            tabNames: MatchDetailScreen
+                                                ._tabNamesForMatch(
+                                              match,
+                                              showCompo: showCompo,
+                                              showLiveTab: showLiveTab,
+                                              showStats: showStats,
+                                            ),
+                                            featureDiscoveryIds:
+                                                MatchDetailScreen
+                                                    ._featureDiscoveryIdsForMatch(
+                                              match,
+                                              showCompo: showCompo,
+                                              showLiveTab: showLiveTab,
+                                              showStats: showStats,
+                                            ),
+                                            initialIndex: safeInitialIndex,
+                                            matchHasTracker: showStats,
+                                            dense: denseChrome,
+                                          );
+                                        },
                                       );
                                     },
                                   );
@@ -342,23 +492,37 @@ class MatchDetailScreen extends StatelessWidget {
           ],
         ),
       ),
+    ),
     );
   }
 }
 
-class _TopBar extends StatelessWidget {
+class _TopBar extends StatefulWidget {
   final models.Match match;
+  final VoidCallback onClose;
 
   const _TopBar({
     required this.match,
+    required this.onClose,
   });
+
+  @override
+  State<_TopBar> createState() => _TopBarState();
+}
+
+class _TopBarState extends State<_TopBar> {
+  Future<bool>? _canEdit;
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    _canEdit ??= canEditMatch(widget.match, context.read<AppSession>());
+  }
 
   @override
   Widget build(BuildContext context) {
     final colors = context.appColors;
     final session = context.watch<AppSession>();
-    final bool canManageThisMatch = canManageMatch(match, session);
-
     return Container(
       padding: const EdgeInsets.fromLTRB(16, 8, 8, 8),
       decoration: BoxDecoration(
@@ -381,43 +545,54 @@ class _TopBar extends StatelessWidget {
               ),
             ),
           ),
-          if (canManageThisMatch) ...[
-            IconButton(
-              tooltip: context.l10n.editMatchTitle,
-              onPressed: () {
-                showCreateMatchSheet(
-                  context,
-                  matchToEdit: match,
-                );
-              },
-              icon: Icon(
-                Icons.edit_outlined,
-                color: colors.textPrimary,
-              ),
-            ),
-            IconButton(
-              tooltip: context.l10n.actionDelete,
-              onPressed: () async {
-                await deleteManagedMatch(
-                  context,
-                  match: match,
-                  session: session,
-                  onDeleted: () {
-                    if (context.mounted) {
-                      Navigator.of(context).pop();
-                    }
-                  },
-                );
-              },
-              icon: Icon(
-                Icons.delete_outline_rounded,
-                color: colors.danger,
-              ),
-            ),
-          ],
+          FutureBuilder<bool>(
+            future: _canEdit,
+            builder: (context, snapshot) {
+              if (snapshot.data != true) {
+                return const SizedBox.shrink();
+              }
+              return Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  IconButton(
+                    tooltip: context.l10n.editMatchTitle,
+                    onPressed: () {
+                      showCreateMatchSheet(
+                        context,
+                        matchToEdit: widget.match,
+                      );
+                    },
+                    icon: Icon(
+                      Icons.edit_outlined,
+                      color: colors.textPrimary,
+                    ),
+                  ),
+                  IconButton(
+                    tooltip: context.l10n.actionDelete,
+                    onPressed: () async {
+                      await deleteManagedMatch(
+                        context,
+                        match: widget.match,
+                        session: session,
+                        onDeleted: () {
+                          if (context.mounted) {
+                            Navigator.of(context).pop();
+                          }
+                        },
+                      );
+                    },
+                    icon: Icon(
+                      Icons.delete_outline_rounded,
+                      color: colors.danger,
+                    ),
+                  ),
+                ],
+              );
+            },
+          ),
           IconButton(
             tooltip: context.l10n.actionClose,
-            onPressed: () => Navigator.of(context).pop(),
+            onPressed: widget.onClose,
             icon: Icon(
               Icons.close_rounded,
               color: colors.textPrimary,
@@ -437,6 +612,7 @@ class _MatchDetailTabShell extends StatefulWidget {
   final List<String> featureDiscoveryIds;
   final int initialIndex;
   final bool matchHasTracker;
+  final bool dense;
 
   const _MatchDetailTabShell({
     required this.tabs,
@@ -445,6 +621,7 @@ class _MatchDetailTabShell extends StatefulWidget {
     required this.featureDiscoveryIds,
     required this.initialIndex,
     required this.matchHasTracker,
+    this.dense = false,
   });
 
   @override
@@ -520,13 +697,13 @@ class _MatchDetailTabShellState extends State<_MatchDetailTabShell>
             includeBaseScreens: false,
             matchHasTracker: widget.matchHasTracker,
           ),
-          const SizedBox(height: 6),
+          SizedBox(height: widget.dense ? 2 : 6),
           _TabsContainer(
             tabs: widget.tabs,
             controller: _tabController,
             onTap: _onTabTapped,
           ),
-          const SizedBox(height: 12),
+          SizedBox(height: widget.dense ? 4 : 12),
           Expanded(
             child: TabBarView(
               controller: _tabController,
@@ -643,10 +820,14 @@ class _MatchDetailTab extends StatelessWidget {
 class _MatchHeader extends StatefulWidget {
   final models.Match match;
   final bool isManager;
+  final bool dense;
+  final VoidCallback? onScoreChanged;
 
   const _MatchHeader({
     required this.match,
     required this.isManager,
+    this.dense = false,
+    this.onScoreChanged,
   });
 
   @override
@@ -656,25 +837,52 @@ class _MatchHeader extends StatefulWidget {
 class _MatchHeaderState extends State<_MatchHeader> {
   late models.Match _match;
   bool _scoreBusy = false;
+  Stream<models.Match?>? _matchStream;
+  String? _streamMatchId;
 
   @override
   void initState() {
     super.initState();
     _match = widget.match;
+    _ensureMatchStream();
+  }
+
+  void _ensureMatchStream() {
+    final String matchId = widget.match.id?.trim() ?? '';
+    if (matchId.isEmpty) {
+      _matchStream = null;
+      _streamMatchId = null;
+      return;
+    }
+    if (_streamMatchId == matchId && _matchStream != null) {
+      return;
+    }
+    _streamMatchId = matchId;
+    // Keep a stable stream across rebuilds — recreating it in build() on every
+    // setState (e.g. score busy) resubscribes and races with in-flight writes.
+    _matchStream = MatchService().streamMatchById(matchId);
   }
 
   Future<void> _adjustScore(MatchSide side, int delta) async {
     if (!isManager || _scoreBusy) return;
+    final int? previousHome = _match.homeScore;
+    final int? previousAway = _match.outSideScore;
+    final bool? previousInHighlight = _match.isInHighLight;
     setState(() => _scoreBusy = true);
     try {
       await adjustMatchSideScore(
         match: _match,
         side: side,
         delta: delta,
+        onLocalScoreApplied: () {
+          if (mounted) setState(() {});
+        },
       );
-      if (mounted) setState(() {});
     } catch (e, st) {
       debugPrint('match score adjust failed: $e\n$st');
+      _match.homeScore = previousHome;
+      _match.outSideScore = previousAway;
+      _match.isInHighLight = previousInHighlight;
       if (mounted) {
         AppSnackbar.show(
           context,
@@ -682,7 +890,16 @@ class _MatchHeaderState extends State<_MatchHeader> {
         );
       }
     } finally {
-      if (mounted) setState(() => _scoreBusy = false);
+      // Always clear busy before notifying the parent — parent setState must not
+      // run while the header still thinks a write is in flight.
+      if (mounted) {
+        setState(() => _scoreBusy = false);
+      } else {
+        _scoreBusy = false;
+      }
+    }
+    if (mounted) {
+      widget.onScoreChanged?.call();
     }
   }
 
@@ -691,11 +908,32 @@ class _MatchHeaderState extends State<_MatchHeader> {
     super.didUpdateWidget(oldWidget);
     if (oldWidget.match.id != widget.match.id) {
       _match = widget.match;
+      _ensureMatchStream();
     }
   }
 
   models.Match get match => _match;
   bool get isManager => widget.isManager;
+
+  Future<void> _onTeamLogoTap(MatchSide side) async {
+    final session = context.read<AppSession>();
+    final team = teamForMatchStats(session, match);
+    if (team == null) return;
+
+    final destination = destinationForMatchSide(
+      match: match,
+      team: team,
+      side: side,
+    );
+    if (destination == null) return;
+
+    await openTeamStatsFromMatch(
+      context: context,
+      match: match,
+      isManager: isManager,
+      destination: destination,
+    );
+  }
 
   static bool _hasVenueInfo(models.Match match) {
     return _clean(match.nomDuTerrain).isNotEmpty ||
@@ -766,25 +1004,28 @@ class _MatchHeaderState extends State<_MatchHeader> {
 
   @override
   Widget build(BuildContext context) {
-    final String matchId = widget.match.id?.trim() ?? '';
-    if (matchId.isEmpty) {
+    final Stream<models.Match?>? stream = _matchStream;
+    if (stream == null) {
       return _buildHeader(context, widget.match);
     }
 
     return StreamBuilder<models.Match?>(
-      stream: MatchService().streamMatchById(matchId),
+      stream: stream,
       builder: (context, snapshot) {
         final models.Match liveMatch = snapshot.data ?? _match;
-        if (snapshot.hasData && snapshot.data != null) {
+        // While a local +/- write is in flight, keep the optimistic in-memory
+        // match so a slightly stale snapshot cannot freeze the scoreboard UI.
+        if (!_scoreBusy && snapshot.hasData && snapshot.data != null) {
           _match = snapshot.data!;
         }
-        return _buildHeader(context, liveMatch);
+        return _buildHeader(context, _scoreBusy ? _match : liveMatch);
       },
     );
   }
 
   Widget _buildHeader(BuildContext context, models.Match match) {
     final colors = context.appColors;
+    final bool dense = widget.dense;
 
     final l10n = context.l10n;
     final String team1 = _clean(match.team1, fallback: l10n.entityTeamWithIndex(1));
@@ -804,11 +1045,14 @@ class _MatchHeaderState extends State<_MatchHeader> {
 
     return Container(
       width: double.infinity,
-      margin: const EdgeInsets.fromLTRB(8, 4, 8, 0),
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+      margin: EdgeInsets.fromLTRB(8, dense ? 2 : 4, 8, 0),
+      padding: EdgeInsets.symmetric(
+        horizontal: dense ? 8 : 10,
+        vertical: dense ? 4 : 8,
+      ),
       decoration: BoxDecoration(
         color: colors.card,
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(dense ? 12 : 16),
         border: Border.all(color: colors.border),
       ),
       child: Column(
@@ -818,17 +1062,17 @@ class _MatchHeaderState extends State<_MatchHeader> {
             runSpacing: 4,
             alignment: WrapAlignment.center,
             children: [
-              if (_clean(match.chType).isNotEmpty)
+              if (!dense && _clean(match.chType).isNotEmpty)
                 _InfoPill(
                   icon: Icons.emoji_events_outlined,
                   label: match.chType!,
                 ),
-              if ((match.day ?? 0) > 0)
+              if (!dense && (match.day ?? 0) > 0)
                 _InfoPill(
                   icon: Icons.calendar_view_day_rounded,
                   label: l10n.periodMatchDay(match.day.toString()),
                 ),
-              if (_clean(match.tour).isNotEmpty)
+              if (!dense && _clean(match.tour).isNotEmpty)
                 _InfoPill(
                   icon: Icons.flag_outlined,
                   label: match.tour!,
@@ -845,11 +1089,11 @@ class _MatchHeaderState extends State<_MatchHeader> {
               ),
             ],
           ),
-          const SizedBox(height: 6),
+          SizedBox(height: dense ? 2 : 6),
 
           LayoutBuilder(
             builder: (context, constraints) {
-              final bool compact = constraints.maxWidth < 360;
+              final bool compact = dense || constraints.maxWidth < 360;
 
               final scoreBlock = isManager
                   ? _EditableScoreBlock(
@@ -868,23 +1112,25 @@ class _MatchHeaderState extends State<_MatchHeader> {
                       played: showScore,
                     );
 
-              if (compact) {
+              if (constraints.maxWidth < 360) {
                 return Column(
                   children: [
                     _TeamBlock(
                       name: team1,
                       logoUrl: match.team1UrlLogo,
-                      affiliation: match.affiliationTeam1,
+                      affiliation: dense ? null : match.affiliationTeam1,
                       compact: true,
+                      onLogoTap: () => _onTeamLogoTap(MatchSide.team1),
                     ),
-                    const SizedBox(height: 6),
+                    SizedBox(height: dense ? 4 : 6),
                     scoreBlock,
-                    const SizedBox(height: 6),
+                    SizedBox(height: dense ? 4 : 6),
                     _TeamBlock(
                       name: team2,
                       logoUrl: match.team2UrlLogo,
-                      affiliation: match.affiliationTeam2,
+                      affiliation: dense ? null : match.affiliationTeam2,
                       compact: true,
+                      onLogoTap: () => _onTeamLogoTap(MatchSide.team2),
                     ),
                   ],
                 );
@@ -897,18 +1143,22 @@ class _MatchHeaderState extends State<_MatchHeader> {
                     child: _TeamBlock(
                       name: team1,
                       logoUrl: match.team1UrlLogo,
-                      affiliation: match.affiliationTeam1,
+                      affiliation: dense ? null : match.affiliationTeam1,
+                      compact: compact,
+                      onLogoTap: () => _onTeamLogoTap(MatchSide.team1),
                     ),
                   ),
                   Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 8),
+                    padding: EdgeInsets.symmetric(horizontal: dense ? 4 : 8),
                     child: scoreBlock,
                   ),
                   Expanded(
                     child: _TeamBlock(
                       name: team2,
                       logoUrl: match.team2UrlLogo,
-                      affiliation: match.affiliationTeam2,
+                      affiliation: dense ? null : match.affiliationTeam2,
+                      compact: compact,
+                      onLogoTap: () => _onTeamLogoTap(MatchSide.team2),
                     ),
                   ),
                 ],
@@ -916,12 +1166,12 @@ class _MatchHeaderState extends State<_MatchHeader> {
             },
           ),
 
-          const SizedBox(height: 6),
+          SizedBox(height: dense ? 4 : 6),
           Row(
             children: [
               Icon(
                 Icons.schedule_rounded,
-                size: 15,
+                size: dense ? 13 : 15,
                 color: colors.textSecondary,
               ),
               const SizedBox(width: 6),
@@ -932,7 +1182,7 @@ class _MatchHeaderState extends State<_MatchHeader> {
                   overflow: TextOverflow.ellipsis,
                   style: TextStyle(
                     color: colors.textSecondary,
-                    fontSize: 12,
+                    fontSize: dense ? 11 : 12,
                     fontWeight: FontWeight.w600,
                   ),
                 ),
@@ -940,10 +1190,10 @@ class _MatchHeaderState extends State<_MatchHeader> {
             ],
           ),
           if (hasVenue) ...[
-            const SizedBox(height: 6),
+            SizedBox(height: dense ? 4 : 6),
             Material(
               color: colors.surface,
-              elevation: 1,
+              elevation: dense ? 0 : 1,
               shadowColor: Colors.black.withValues(alpha: 0.2),
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(10),
@@ -956,26 +1206,26 @@ class _MatchHeaderState extends State<_MatchHeader> {
               child: InkWell(
                 onTap: () => _showVenueSheet(context, match),
                 child: Padding(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 10,
-                    vertical: 8,
+                  padding: EdgeInsets.symmetric(
+                    horizontal: dense ? 8 : 10,
+                    vertical: dense ? 5 : 8,
                   ),
                   child: Row(
                     children: [
                       Icon(
                         Icons.place_rounded,
-                        size: 18,
+                        size: dense ? 16 : 18,
                         color: colors.primary,
                       ),
                       const SizedBox(width: 8),
                       Expanded(
                         child: Text(
                           _venueSummary(match),
-                          maxLines: 2,
+                          maxLines: dense ? 1 : 2,
                           overflow: TextOverflow.ellipsis,
                           style: TextStyle(
                             color: colors.textPrimary,
-                            fontSize: 12,
+                            fontSize: dense ? 11 : 12,
                             fontWeight: FontWeight.w700,
                             height: 1.25,
                           ),
@@ -984,14 +1234,14 @@ class _MatchHeaderState extends State<_MatchHeader> {
                       if (_hasFieldGps(match)) ...[
                         Icon(
                           Icons.gps_fixed,
-                          size: 18,
+                          size: dense ? 16 : 18,
                           color: colors.primary,
                         ),
                         const SizedBox(width: 6),
                       ],
                       Icon(
                         Icons.info_outline_rounded,
-                        size: 18,
+                        size: dense ? 16 : 18,
                         color: colors.primary,
                       ),
                     ],
@@ -1003,6 +1253,7 @@ class _MatchHeaderState extends State<_MatchHeader> {
           MatchOpponentStatsButton(
             match: match,
             isManager: isManager,
+            dense: dense,
           ),
         ],
       ),
@@ -1202,25 +1453,38 @@ class _TeamBlock extends StatelessWidget {
   final String? logoUrl;
   final String? affiliation;
   final bool compact;
+  final VoidCallback? onLogoTap;
 
   const _TeamBlock({
     required this.name,
     required this.logoUrl,
     required this.affiliation,
     this.compact = false,
+    this.onLogoTap,
   });
 
   @override
   Widget build(BuildContext context) {
     final colors = context.appColors;
+    final logo = _TeamLogo(
+      logoUrl: logoUrl,
+      size: compact ? 40 : 48,
+      imageSize: compact ? 26 : 32,
+    );
 
     return Column(
       children: [
-        _TeamLogo(
-          logoUrl: logoUrl,
-          size: compact ? 40 : 48,
-          imageSize: compact ? 26 : 32,
-        ),
+        if (onLogoTap == null)
+          logo
+        else
+          Material(
+            color: Colors.transparent,
+            child: InkWell(
+              onTap: onLogoTap,
+              customBorder: const CircleBorder(),
+              child: logo,
+            ),
+          ),
         const SizedBox(height: 4),
         Text(
           name,
@@ -1295,6 +1559,7 @@ class _TeamLogo extends StatelessWidget {
           )
               : Image.network(
             safeUrl,
+            key: ValueKey(safeUrl),
             fit: BoxFit.contain,
             webHtmlElementStrategy: WebHtmlElementStrategy.prefer,
             errorBuilder: (context, error, stackTrace) {

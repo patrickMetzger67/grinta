@@ -1,0 +1,5 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="30" height="30" viewBox="0 0 30 30" fill="none" role="img" aria-label="Oura">
+  <!-- Partner-style mark: circular badge + ring O (matches Whoop logo card treatment). -->
+  <rect width="30" height="30" rx="15" fill="#151619"/>
+  <circle cx="15" cy="15" r="8" stroke="#FFFFFF" stroke-width="3.25" fill="none"/>
+</svg>

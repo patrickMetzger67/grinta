@@ -10,9 +10,11 @@ import 'package:grinta/model/training.dart';
 import 'package:grinta/services/pitch_heatmap_builder.dart';
 import 'package:grinta/services/sensorAnalysisService.dart';
 import 'package:grinta/services/trackerDataAnalysisService.dart';
+import 'package:grinta/model/timeRange.dart';
 import 'package:grinta/util/highlight_minute_helper.dart';
 import 'package:grinta/util/intense_live_eligibility.dart';
 import 'package:grinta/util/match_heatmap_service.dart';
+import 'package:grinta/util/match_usb_sync_window.dart';
 import 'package:grinta/widget/proPitchView.dart';
 
 /// Retries when Insiders / Cloud Function returns HTTP 429 (finish + live).
@@ -49,10 +51,15 @@ class TrainingIntenseTimeWindow {
   const TrainingIntenseTimeWindow({
     required this.start,
     required this.stop,
+    this.playPeriods = const <TimeRange>[],
   });
 
   final DateTime start;
   final DateTime stop;
+
+  /// Optional 1st/2nd half bounds (excludes half-time break). Used for match
+  /// analysis / heatmaps when Temps forts or scheduled halves are known.
+  final List<TimeRange> playPeriods;
 
   int get startMs => start.toUtc().millisecondsSinceEpoch;
   int get stopMs => stop.toUtc().millisecondsSinceEpoch;
@@ -166,8 +173,8 @@ bool canResyncTrainingIntense(Training training, {DateTime? now}) {
 
 /// Best-effort match end for Intense re-sync eligibility / windows.
 ///
-/// Prefers full-time Temps forts, else scheduled kick-off + duration
-/// (no Temps forts required).
+/// Prefers full-time Temps forts, else scheduled kick-off + duration + 15'
+/// half-time break (no Temps forts required).
 DateTime? matchIntenseEndLocal(
   models.Match match,
   List<Highlights> highlights, {
@@ -219,6 +226,10 @@ bool _isPlausibleMatchEnd(DateTime start, DateTime candidateEnd) {
 /// Prefers the **scheduled** kick-off ([Match.dateCh]/[timeCh]) so a Temps
 /// forts « début » tapped after the match (wall-clock ≠ real kick-off) cannot
 /// collapse the window to `start == stop` and return 0 GNSS samples.
+///
+/// Play periods follow the same half rules as USB (`resolveMatchSensorSyncPeriods`):
+/// with Temps forts when present, otherwise two halves + 15' break. The Insiders
+/// fetch spans first period start → last period end (includes the break gap).
 TrainingIntenseTimeWindow? resolveMatchIntenseFetchWindow(
   models.Match match,
   List<Highlights> highlights, {
@@ -235,26 +246,41 @@ TrainingIntenseTimeWindow? resolveMatchIntenseFetchWindow(
   if (startLocal == null) return null;
 
   final duration = _matchIntenseDuration(match);
-  final fallbackEnd = scheduledEnd ?? startLocal.add(duration);
+  final playPeriods = resolveMatchSensorSyncPeriods(
+    match: match,
+    highlights: highlights,
+    fallbackStart: startLocal,
+  );
 
-  DateTime endLocal = fallbackEnd;
-  final endHighlight =
-      findTimeEventHighlight(highlights, TimeType.end)?.dateTime?.toDate();
-  if (endHighlight != null && _isPlausibleMatchEnd(startLocal, endHighlight)) {
-    endLocal = endHighlight;
+  DateTime windowStart = startLocal;
+  DateTime endLocal =
+      scheduledEnd ?? matchScheduledSlotEnd(startLocal, duration.inMinutes);
+
+  if (playPeriods.isNotEmpty) {
+    windowStart = playPeriods.first.start.toDate();
+    endLocal = playPeriods.last.end.toDate();
+  } else {
+    // Incomplete schedule + a plausible full-time Temps forts only.
+    final endHighlight =
+        findTimeEventHighlight(highlights, TimeType.end)?.dateTime?.toDate();
+    if (endHighlight != null &&
+        _isPlausibleMatchEnd(startLocal, endHighlight)) {
+      endLocal = endHighlight;
+    }
   }
 
   if (stopCap != null && stopCap.isBefore(endLocal)) {
     endLocal = stopCap;
   }
 
-  if (!endLocal.isAfter(startLocal)) {
-    endLocal = startLocal.add(duration);
+  if (!endLocal.isAfter(windowStart)) {
+    endLocal = matchScheduledSlotEnd(windowStart, duration.inMinutes);
   }
 
   return TrainingIntenseTimeWindow(
-    start: startLocal.toUtc(),
+    start: windowStart.toUtc(),
     stop: endLocal.toUtc(),
+    playPeriods: playPeriods,
   );
 }
 
@@ -326,9 +352,10 @@ bool canResyncMatchIntense({
 
 /// GNSS step floor for Intense analysis.
 ///
-/// Must stay **0** to match the Live pipeline ([IntenseLiveDataService]): a
-/// non-zero floor (e.g. 3 m) zeroes distance at typical Insiders sample rates
-/// (sub-second steps are often under 3 m even at running speed).
+/// Kept at **0**: a non-zero floor (e.g. 3 m) zeroes distance at typical
+/// Insiders rates (sub-second steps are often under 3 m even when running).
+/// Anti-jitter for Live / training / match / personal GPS is handled inside
+/// [SensorAnalysisService] via [GpsDistanceSmoother] (median windows + speed gate).
 const double kIntenseMinMeaningfulStepDistanceMeters = 0;
 
 /// Keeps only samples whose timestamps fall within [window] (inclusive).
@@ -343,6 +370,54 @@ List<TrackerRaw> intenseSamplesWithinWindow(
   return samples
       .where((s) => s.timeMs >= startMs && s.timeMs <= stopMs)
       .toList(growable: false);
+}
+
+/// Logs first / last sample timestamps (min/max by timeMs) for console diagnosis.
+void logIntenseSampleTimestampRange(
+  String label,
+  List<TrackerRaw> samples, {
+  TrainingIntenseTimeWindow? window,
+}) {
+  if (samples.isEmpty) {
+    debugPrint('[IntenseSync] $label → 0 samples (no first/last timestamp)');
+    if (window != null) {
+      debugPrint(
+        '[IntenseSync] $label window → '
+        'start=${formatInsidersApiTimestamp(window.start)} '
+        'stop=${formatInsidersApiTimestamp(window.stop)}',
+      );
+    }
+    return;
+  }
+
+  var first = samples.first;
+  var last = samples.first;
+  for (final sample in samples) {
+    if (sample.timeMs < first.timeMs) first = sample;
+    if (sample.timeMs > last.timeMs) last = sample;
+  }
+
+  final firstAt = DateTime.fromMillisecondsSinceEpoch(first.timeMs, isUtc: true);
+  final lastAt = DateTime.fromMillisecondsSinceEpoch(last.timeMs, isUtc: true);
+  final span = Duration(milliseconds: last.timeMs - first.timeMs);
+
+  debugPrint(
+    '[IntenseSync] $label → count=${samples.length} '
+    'firstUtc=${firstAt.toIso8601String()} '
+    'lastUtc=${lastAt.toIso8601String()} '
+    'firstLocal=${firstAt.toLocal().toIso8601String()} '
+    'lastLocal=${lastAt.toLocal().toIso8601String()} '
+    'span=${span.inMinutes}m${span.inSeconds.remainder(60)}s '
+    'firstMs=${first.timeMs} lastMs=${last.timeMs}',
+  );
+  if (window != null) {
+    debugPrint(
+      '[IntenseSync] $label window → '
+      'start=${formatInsidersApiTimestamp(window.start)} '
+      'stop=${formatInsidersApiTimestamp(window.stop)} '
+      'startMs=${window.startMs} stopMs=${window.stopMs}',
+    );
+  }
 }
 
 /// Cloud + optional local fallback for Intense tracker recovery at training finish.
@@ -387,7 +462,7 @@ class TrainingIntenseSyncService {
     );
 
     // Training: persist full-session heatmap (schematic or satellite).
-    await _persistIntenseHeatmaps(
+    await persistIntenseHeatmaps(
       trackerId: target.trackerId,
       playerId: target.playerId,
       eventId: trainingId,
@@ -431,7 +506,7 @@ class TrainingIntenseSyncService {
     );
 
     // Match: persist TRACKER_Svg heatmaps (was missing — stats without heatmaps).
-    await _persistIntenseHeatmaps(
+    await persistIntenseHeatmaps(
       trackerId: target.trackerId,
       playerId: target.playerId,
       eventId: eventId,
@@ -439,6 +514,7 @@ class TrainingIntenseSyncService {
       result: outcome.result,
       fieldGps: outcome.fieldGps,
       isMatch: true,
+      playPeriods: window.playPeriods,
     );
   }
 
@@ -568,7 +644,24 @@ class TrainingIntenseSyncService {
         samples = _samplesFromCsv(csv, trackerId: target.trackerId);
       }
 
+      logIntenseSampleTimestampRange(
+        'samples BEFORE window filter (${target.trackerLabel})',
+        samples,
+        window: window,
+      );
+
       samples = intenseSamplesWithinWindow(samples, window);
+
+      // Match: drop half-time break samples when play periods are known.
+      if (isMatch && window.playPeriods.isNotEmpty) {
+        samples = filterSamplesToMatchPeriods(samples, window.playPeriods);
+      }
+
+      logIntenseSampleTimestampRange(
+        'samples AFTER window filter (${target.trackerLabel})',
+        samples,
+        window: window,
+      );
 
       if (samples.length < _minRequiredSamples) {
         debugPrint(
@@ -609,6 +702,14 @@ class TrainingIntenseSyncService {
         minMeaningfulStepDistanceMeters: kIntenseMinMeaningfulStepDistanceMeters,
       );
 
+      debugPrint(
+        '[IntenseSync] analysis metrics (${target.trackerLabel}) → '
+        'duration=${result.duration.inMinutes}m'
+        '${result.duration.inSeconds.remainder(60)}s '
+        'distanceKm=${result.distanceKm.toStringAsFixed(3)} '
+        'samplesCount=${result.samplesCount}',
+      );
+
       emit(IntenseDeviceSyncStage.done, 1);
       return IntenseDeviceAnalysisOutcome(
         result: result,
@@ -628,7 +729,11 @@ class TrainingIntenseSyncService {
   }
 
   /// Writes schematic/satellite heatmaps to `TRACKER_Svg` (same as USB hub).
-  Future<void> _persistIntenseHeatmaps({
+  ///
+  /// When [fieldGps] is null, [MatchHeatmapService] prefers a Google satellite
+  /// backdrop from GPS samples, then falls back to a relative schematic pitch
+  /// if Static Maps is unavailable (personal GPS / USB / Intense).
+  Future<void> persistIntenseHeatmaps({
     required String trackerId,
     required String playerId,
     required String eventId,
@@ -636,6 +741,7 @@ class TrainingIntenseSyncService {
     required TrackerAnalysisResult result,
     required FootballFieldGps? fieldGps,
     required bool isMatch,
+    List<TimeRange> playPeriods = const <TimeRange>[],
   }) async {
     if (samples.isEmpty) return;
 
@@ -668,7 +774,7 @@ class TrainingIntenseSyncService {
         return;
       }
 
-      final halves = _splitSamplesByMidpoint(samples);
+      final halves = splitSamplesByMatchPeriods(samples, playPeriods);
       TrackerAnalysisResult? firstHalfAnalysis;
       TrackerAnalysisResult? secondHalfAnalysis;
       if (halves.first.isNotEmpty) {
@@ -755,20 +861,6 @@ class TrainingIntenseSyncService {
         'tracker=$trackerId event=$eventId: $e\n$st',
       );
     }
-  }
-
-  ({List<TrackerRaw> first, List<TrackerRaw> second}) _splitSamplesByMidpoint(
-    List<TrackerRaw> samples,
-  ) {
-    if (samples.length < 2) {
-      return (first: samples, second: const <TrackerRaw>[]);
-    }
-    final startMs = samples.first.timeMs;
-    final endMs = samples.last.timeMs;
-    final midMs = startMs + ((endMs - startMs) ~/ 2);
-    final first = samples.where((s) => s.timeMs <= midMs).toList(growable: false);
-    final second = samples.where((s) => s.timeMs > midMs).toList(growable: false);
-    return (first: first, second: second);
   }
 
   List<List<TrackerRaw>> _extractSprintSegments(List<TrackerRaw> samples) {

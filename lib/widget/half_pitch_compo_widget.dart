@@ -85,122 +85,97 @@ class HalfPitchCompoWidget extends StatelessWidget {
 
     return LayoutBuilder(
       builder: (context, constraints) {
-        final screenSize = MediaQuery.sizeOf(context);
-
-        final bool isPhone = constraints.maxWidth < 600;
-        final bool isTablet =
-            constraints.maxWidth >= 600 && constraints.maxWidth < 1000;
-
-        final double maxPitchWidth = isPhone
-            ? constraints.maxWidth
-            : isTablet
-            ? 760
-            : 980;
-
-        final double pitchBoxWidth = math.min(
-          constraints.maxWidth,
-          maxPitchWidth,
-        );
-
+        final Size screenSize = MediaQuery.sizeOf(context);
+        // Prefer device class over parent width (wide phone landscape ≠ tablet).
+        final bool isPhone = screenSize.shortestSide < 600;
         final double ratio = _fieldWidthM / _halfLengthM;
-        final double naturalHeight = pitchBoxWidth / ratio;
 
-        final double maxHeight = isPhone
+        final double availableWidth = constraints.maxWidth;
+        final bool hasBoundedHeight = constraints.hasBoundedHeight &&
+            constraints.maxHeight.isFinite &&
+            constraints.maxHeight > 0;
+        final double fallbackHeight = isPhone
             ? screenSize.height * 0.82
-            : isTablet
-            ? screenSize.height * 0.74
-            : 760;
+            : screenSize.height * 0.72;
+        final double availableHeight = height ??
+            (hasBoundedHeight ? constraints.maxHeight : fallbackHeight);
 
-        final double minHeight = isPhone ? 280 : 520;
+        final EdgeInsets padding = EdgeInsets.all(isPhone ? 4 : 8);
+        final double innerMaxWidth =
+            math.max(0, availableWidth - padding.horizontal);
+        final double innerMaxHeight =
+            math.max(0, availableHeight - padding.vertical);
 
-        final double responsiveHeight = height ??
-            math.max(
-              minHeight,
-              math.min(naturalHeight, maxHeight),
-            );
+        // Largest half-pitch that fits inside the padded area.
+        final double widthFromHeight = innerMaxHeight * ratio;
+        final double pitchWidth = math.min(innerMaxWidth, widthFromHeight);
+        final double pitchHeight = math.min(innerMaxHeight, pitchWidth / ratio);
 
-        final bool fillParent = height != null;
-        final double boxWidth =
-            fillParent ? constraints.maxWidth : pitchBoxWidth;
-        final EdgeInsets padding = EdgeInsets.all(isPhone ? 4 : 10);
-        final double innerHeight = math.max(
-          0,
-          responsiveHeight - padding.vertical,
-        );
+        return SizedBox(
+          width: availableWidth,
+          height: availableHeight,
+          child: Container(
+            padding: padding,
+            decoration: BoxDecoration(
+              color: colors.card,
+              border: Border.all(color: colors.border),
+            ),
+            child: Center(
+              child: SizedBox(
+                width: pitchWidth,
+                height: pitchHeight,
+                child: LayoutBuilder(
+                  builder: (context, pitchConstraints) {
+                    final size = Size(
+                      pitchConstraints.maxWidth,
+                      pitchConstraints.maxHeight,
+                    );
 
-        final pitchBox = Container(
-          width: boxWidth,
-          padding: padding,
-          decoration: BoxDecoration(
-            color: colors.card,
-            border: Border.all(color: colors.border),
-          ),
-          child: SizedBox(
-            height: innerHeight,
-            child: LayoutBuilder(
-                builder: (context, pitchConstraints) {
-                  final size = Size(
-                    pitchConstraints.maxWidth,
-                    pitchConstraints.maxHeight,
-                  );
+                    final pitchRect = _pitchRectForSize(size);
+                    final slotSize = _slotSizeForPitch(
+                      slots: slots,
+                      pitchRect: pitchRect,
+                      isPhone: isPhone,
+                    );
 
-                  final pitchRect = _pitchRectForSize(size);
-
-                  final slotSize = math.min(
-                    isPhone ? 52.0 : 60.0,
-                    math.max(
-                      isPhone ? 40.0 : 46.0,
-                      pitchRect.width * (isPhone ? 0.11 : 0.115),
-                    ),
-                  );
-
-                  return Stack(
-                    clipBehavior: Clip.none,
-                    children: [
-                      Positioned.fill(
-                        child: CustomPaint(
-                          painter: _ProHalfPitchPainter(),
-                        ),
-                      ),
-
-                      for (final slot in slots)
-                        Positioned(
-                          left: pitchRect.left +
-                              (slot.x * pitchRect.width) -
-                              (slotSize / 2),
-                          top: pitchRect.top +
-                              (slot.y * pitchRect.height) -
-                              (slotSize / 2),
-                          child: _PositionButton(
-                            size: slotSize,
-                            slot: slot,
-                            player: selectedPlayers[slot.id],
-                            playerAvatarBuilder: playerAvatarBuilder,
-                            onPlayerAvatarTap: onPlayerAvatarTap,
-                            onPlayerAvatarLongPress: onPlayerAvatarLongPress,
-                            onTap: () {
-                              if (onSlotTap != null) {
-                                onSlotTap!(slot);
-                              }
-                            },
+                    return Stack(
+                      clipBehavior: Clip.none,
+                      children: [
+                        Positioned.fill(
+                          child: CustomPaint(
+                            painter: _ProHalfPitchPainter(),
                           ),
                         ),
-                    ],
-                  );
-                },
+                        for (final slot in slots)
+                          Positioned(
+                            left: pitchRect.left +
+                                (slot.x * pitchRect.width) -
+                                (slotSize / 2),
+                            top: pitchRect.top +
+                                (slot.y * pitchRect.height) -
+                                (slotSize / 2),
+                            child: _PositionButton(
+                              size: slotSize,
+                              slot: slot,
+                              player: selectedPlayers[slot.id],
+                              playerAvatarBuilder: playerAvatarBuilder,
+                              onPlayerAvatarTap: onPlayerAvatarTap,
+                              onPlayerAvatarLongPress: onPlayerAvatarLongPress,
+                              onTap: () {
+                                if (onSlotTap != null) {
+                                  onSlotTap!(slot);
+                                }
+                              },
+                            ),
+                          ),
+                      ],
+                    );
+                  },
+                ),
               ),
             ),
+          ),
         );
-
-        if (fillParent) {
-          return SizedBox(
-            width: constraints.maxWidth,
-            height: responsiveHeight,
-            child: pitchBox,
-          );
-        }
-
-        return Center(child: pitchBox);
       },
     );
   }
@@ -220,6 +195,39 @@ class CompoSlot {
     required this.x,
     required this.y,
   });
+}
+
+/// Avatar diameter that fits the densest pair of slots without heavy overlap.
+double _slotSizeForPitch({
+  required List<CompoSlot> slots,
+  required Rect pitchRect,
+  required bool isPhone,
+}) {
+  double minDistance = double.infinity;
+  for (var i = 0; i < slots.length; i++) {
+    for (var j = i + 1; j < slots.length; j++) {
+      final double dx = (slots[i].x - slots[j].x) * pitchRect.width;
+      final double dy = (slots[i].y - slots[j].y) * pitchRect.height;
+      final double distance = math.sqrt(dx * dx + dy * dy);
+      if (distance > 0 && distance < minDistance) {
+        minDistance = distance;
+      }
+    }
+  }
+
+  // Never exceed nearest-neighbor spacing — a hard minCap used to force
+  // overlap on short web/tablet viewports where the pitch is still readable
+  // but avatars would otherwise collide.
+  final double fromSpacing =
+      minDistance.isFinite ? minDistance * 0.72 : pitchRect.width * 0.11;
+  final double fromWidth = pitchRect.width * (isPhone ? 0.105 : 0.12);
+  final double maxCap = isPhone ? 52.0 : 84.0;
+  final double minCap = isPhone ? 28.0 : 32.0;
+  final double preferred = math.min(fromSpacing, fromWidth);
+  if (!preferred.isFinite || preferred <= 0) {
+    return minCap;
+  }
+  return preferred.clamp(minCap, maxCap);
 }
 
 class CompoFieldPlayer {
@@ -263,9 +271,12 @@ class _PositionButton extends StatelessWidget {
     final photoUrl = player?.photoUrl?.trim() ?? '';
     final shirtNumber = player?.shirtNumber?.trim() ?? '';
 
+    final double badgeOffset = math.max(16.0, size * 0.34);
+    final double badgeFontSize = math.max(10.0, size * 0.22);
+
     return SizedBox(
       width: size,
-      height: size + 22,
+      height: size + badgeOffset + 4,
       child: Stack(
         clipBehavior: Clip.none,
         alignment: Alignment.topCenter,
@@ -274,7 +285,10 @@ class _PositionButton extends StatelessWidget {
             Positioned(
               top: 0,
               child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                padding: EdgeInsets.symmetric(
+                  horizontal: math.max(6.0, size * 0.14),
+                  vertical: math.max(2.0, size * 0.05),
+                ),
                 decoration: BoxDecoration(
                   color: Colors.white,
                   borderRadius: BorderRadius.circular(999),
@@ -293,15 +307,14 @@ class _PositionButton extends StatelessWidget {
                   shirtNumber,
                   style: TextStyle(
                     color: colors.primary,
-                    fontSize: 11,
+                    fontSize: badgeFontSize,
                     fontWeight: FontWeight.w900,
                   ),
                 ),
               ),
             ),
-
           Positioned(
-            top: 17,
+            top: badgeOffset,
             child: Material(
               color: Colors.transparent,
               child: InkWell(
@@ -315,7 +328,7 @@ class _PositionButton extends StatelessWidget {
                     shape: BoxShape.circle,
                     border: Border.all(
                       color: Colors.white,
-                      width: 3,
+                      width: size >= 64 ? 3.5 : 3,
                     ),
                     boxShadow: [
                       BoxShadow(
@@ -402,13 +415,21 @@ class _ButtonContent extends StatelessWidget {
       return _InitialsContent(playerName: player!.name);
     }
 
-    return Container(
-      color: colors.primary,
-      child: Icon(
-        _roleIcon(role),
-        color: Colors.white,
-        size: 24,
-      ),
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final double iconSize = math.max(
+          20.0,
+          math.min(constraints.maxWidth, constraints.maxHeight) * 0.45,
+        );
+        return Container(
+          color: colors.primary,
+          child: Icon(
+            _roleIcon(role),
+            color: Colors.white,
+            size: iconSize,
+          ),
+        );
+      },
     );
   }
 
@@ -443,19 +464,27 @@ class _InitialsContent extends StatelessWidget {
   Widget build(BuildContext context) {
     final colors = context.appColors;
 
-    return Container(
-      color: colors.primary,
-      alignment: Alignment.center,
-      child: Text(
-        _initials(playerName),
-        maxLines: 1,
-        overflow: TextOverflow.ellipsis,
-        style: const TextStyle(
-          color: Colors.white,
-          fontSize: 15,
-          fontWeight: FontWeight.w900,
-        ),
-      ),
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final double fontSize = math.max(
+          12.0,
+          math.min(constraints.maxWidth, constraints.maxHeight) * 0.32,
+        );
+        return Container(
+          color: colors.primary,
+          alignment: Alignment.center,
+          child: Text(
+            _initials(playerName),
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: TextStyle(
+              color: Colors.white,
+              fontSize: fontSize,
+              fontWeight: FontWeight.w900,
+            ),
+          ),
+        );
+      },
     );
   }
 }

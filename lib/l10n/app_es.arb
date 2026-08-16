@@ -60,12 +60,25 @@
   "memberLastName": "Apellido",
   "memberEmail": "Correo electrónico",
   "memberEmailOptional": "Correo electrónico (opcional)",
+  "memberIdentityFromAuthHint": "Tu nombre y correo de Iniciar sesión con Apple o Google se usarán para tu cuenta. Podrás modificarlos más tarde en tu perfil.",
   "memberPhone": "Teléfono",
   "memberPhoneOptional": "Teléfono (opcional)",
   "memberEmailInvalid": "Introduce una dirección de correo electrónico válida",
   "memberPhoneInvalid": "Introduce un número de teléfono válido",
   "memberPhoneRequired": "El número de teléfono es obligatorio para las invitaciones",
   "memberEmailRequired": "El correo electrónico es obligatorio para las invitaciones",
+  "signupEmailRequired": "El correo es obligatorio para crear tu cuenta",
+  "signupFlowStartHint": "Primero completarás tu perfil (y opcionalmente un código de invitación). Luego la contraseña, antes de crear la cuenta.",
+  "signupPasswordTitle": "Elige una contraseña",
+  "signupPasswordMessage": "Cuenta: {email}",
+  "@signupPasswordMessage": {
+    "placeholders": {
+      "email": {
+        "type": "String"
+      }
+    }
+  },
+  "signupUseCreateAccountForSocial": "Para crear una cuenta con Google o Apple, pulsa «Crear una cuenta» y luego elige Google o Apple tras tu perfil.",
   "invitationEmailSubject": "Tu entrenador te invita a unirte a {appName}",
   "@invitationEmailSubject": {
     "placeholders": {
@@ -250,6 +263,34 @@
   "resendInvitationFailed": "No se pudo enviar el correo de invitación",
   "memberBirthDate": "Fecha de nacimiento",
   "memberBirthDateOptional": "Fecha de nacimiento (opcional)",
+  "memberBirthDateRequired": "La fecha de nacimiento es obligatoria",
+  "memberBirthDateAgeHint": "Grinta Performance es para usuarios de 13 años o más. Los 13–14 años requieren la autorización de un representante legal.",
+  "accountAgeBlockedUnderage": "Grinta Performance es para usuarios de 13 años o más.",
+  "parentalConsentEmailTitle": "Autorización parental",
+  "parentalConsentEmailMessage": "Tienes 13 o 14 años. Indica el correo de tu representante legal. Debe autorizar tu acceso a Grinta Performance, incluido el tratamiento de tu frecuencia cardíaca y otros datos fisiológicos si conectas un dispositivo (Polar, Whoop, etc.).",
+  "parentalConsentEmailLabel": "Correo del representante legal",
+  "parentalConsentSendError": "No se pudo enviar la solicitud de autorización. Inténtalo de nuevo.",
+  "parentalConsentPendingTitle": "Esperando autorización",
+  "parentalConsentPendingMessage": "Se envió un correo a {parentEmail}. Cuando tu representante legal autorice la cuenta, podrás usar Grinta Performance.",
+  "@parentalConsentPendingMessage": {
+    "placeholders": {
+      "parentEmail": {
+        "type": "String"
+      }
+    }
+  },
+  "parentalConsentPendingMessageGeneric": "Se envió un correo a tu representante legal. Cuando autorice la cuenta, podrás usar Grinta Performance.",
+  "parentalConsentResend": "Reenviar correo",
+  "parentalConsentResendSuccess": "Correo de autorización reenviado.",
+  "parentalConsentResendError": "No se pudo reenviar el correo. Inténtalo de nuevo.",
+  "physiologicalConsentTitle": "Autorizar el uso de mis datos fisiológicos",
+  "physiologicalConsentMessage": "Autorizo explícitamente a Grinta Performance a tratar mis datos de frecuencia cardíaca y otros datos fisiológicos de mis dispositivos conectados para analizar mi rendimiento deportivo.",
+  "physiologicalConsentAuthorize": "Autorizo",
+  "physiologicalConsentRefuse": "Me niego",
+  "physiologicalConsentRefusedHint": "Conexión del dispositivo cancelada. Puedes seguir usando Grinta sin sensor de frecuencia cardíaca.",
+  "physiologicalConsentParentRequiredTitle": "Autorización parental requerida",
+  "physiologicalConsentParentRequiredMessage": "Para usuarios de 13–14 años, la autorización para tratar la frecuencia cardíaca y otros datos fisiológicos la da el representante legal (por el correo de consentimiento parental). Sin ella, puedes usar la app pero no conectar estos dispositivos.",
+  "physiologicalConsentRequestParentEmail": "Enviar correo al padre/madre",
   "memberBirthPlace": "Lugar de nacimiento",
   "memberBirthPlaceOptional": "Lugar de nacimiento (opcional)",
   "memberNationality": "Nacionalidad",
@@ -444,6 +485,8 @@
   "notificationsEmptyMessage": "No tienes notificaciones sin leer.",
   "notificationsMarkAsRead": "Marcar como leída",
   "notificationsMarkAsReadError": "No se pudo marcar la notificación como leída.",
+  "notificationsDismiss": "No volver a mostrar",
+  "notificationsDismissError": "No se pudo ocultar la notificación.",
   "notificationsConvocationMatchDetails": "Detalles del partido",
   "notificationsConvocationPresent": "Estaré presente",
   "notificationsConvocationAbsent": "No presente",
@@ -907,6 +950,25 @@
   "navHome": "Bienvenido",
   "myTeams": "mis equipos",
   "syncTrainingsToSync": "Entrenamientos para sincronizar",
+  "syncUpcomingTrainingsTooltip": "Alinear los próximos entrenamientos con la plantilla",
+  "syncUpcomingTrainingsConfirmTitle": "¿Actualizar los próximos entrenamientos?",
+  "syncUpcomingTrainingsConfirmMessage": "Los jugadores de la plantilla se añadirán a los próximos entrenamientos y se eliminarán los que ya no formen parte.",
+  "syncUpcomingTrainingsSuccess": "Entrenamientos actualizados: {updated} sesión(es), {added} añadidos, {removed} eliminados.",
+  "@syncUpcomingTrainingsSuccess": {
+    "placeholders": {
+      "updated": {
+        "type": "int"
+      },
+      "added": {
+        "type": "int"
+      },
+      "removed": {
+        "type": "int"
+      }
+    }
+  },
+  "syncUpcomingTrainingsNothingToDo": "Los próximos entrenamientos ya coinciden con la plantilla.",
+  "syncUpcomingTrainingsError": "No se pudieron actualizar los entrenamientos. Inténtalo de nuevo.",
   "chatSelectConversation": "Seleccione una conversación",
   "chatStartNewHint": "Presione \"Nuevo\" para iniciar un chat.",
   "chatTryAnotherName": "Prueba con otro nombre.",
@@ -967,6 +1029,8 @@
   "matchScoreIncreaseTooltip": "Añadir un gol",
   "matchScoreDecreaseTooltip": "Quitar un gol",
   "matchScoreUpdateFailed": "No se pudo actualizar el marcador.",
+  "matchFinishedPromptTitle": "¿Partido terminado?",
+  "matchFinishedPromptMessage": "¿El partido ha terminado?",
   "matchGoalPickTeamTitle": "¿Qué equipo marcó?",
   "matchGoalPickScorerTitle": "Goleador",
   "matchGoalPickAssisterTitle": "Asistente (opcional)",
@@ -1073,7 +1137,7 @@
   "uploadTrackerLoading": "Cargando...",
   "uploadTrackerDownloadData": "Descargar los datos",
   "syncFieldGeolocationPromptTitle": "¿Geolocalizar el terreno?",
-  "syncFieldGeolocationPromptMessage": "Las coordenadas GPS del terreno no están definidas. ¿Desea definirlas antes de descargar los datos del tracker?",
+  "syncFieldGeolocationPromptMessage": "Las coordenadas GPS del terreno no están definidas. ¿Desea definirlas ahora? Así obtienes mapas de calor alineados al campo; si no, se usa la vista satélite GPS.",
   "trackerUsbAuthorizeHint": "Ningún Inspirit autorizado para este sitio. Se abrirá Chrome: elija su Inspirit y pulse «Conectar» — no cierre la ventana.",
   "trackerUsbPopupCancelled": "Ventana de Chrome cerrada o ningún dispositivo elegido. Conecte el tracker, pulse «Conectar» de nuevo y selecciónelo en la lista.",
   "trackerUsbPhysicalReconnect": "Sesión USB caducada (cable desconectado o sensor reiniciado). Vuelva a conectar el tracker si hace falta y pulse «Conectar» — Chrome puede pedir seleccionarlo de nuevo.",
@@ -1098,7 +1162,6 @@
   "entityPersonalSports": "Actividades deportivas individuales",
   "dashboardPersonalSportsListTitle": "Lista de actividades deportivas",
   "emptyNoPersonalSportToShow": "No hay actividades deportivas que mostrar",
-
   "periodCustomRange": "del {start} al {end}",
   "statsPresenceRate": "Tasa de presencia: ({value}) %",
   "statsDoneSingular": "comprendió",
@@ -1127,6 +1190,7 @@
   "teamDetailPlayerTeamRemoved": "{playerName} ha sido eliminado del equipo.",
   "teamDetailColumnAge": "Edad",
   "teamDetailColumnPosition": "Posición",
+  "teamDetailFilterPlayerHint": "Filtrar por nombre",
   "teamDetailColumnHeight": "Altura",
   "teamDetailColumnWeight": "Peso",
   "teamDetailHeightCm": "{value} cm",
@@ -1391,6 +1455,7 @@
   "createPersonalSportTitle": "New sports activity",
   "createPersonalSportDate": "Date",
   "createPersonalSportTime": "Time",
+  "createPersonalSportTimeRequired": "Choose a start time",
   "createPersonalSportManualEntry": "Manual entry",
   "createPersonalSportManualEntryHint": "Enter duration, distance and pace manually",
   "createPersonalSportImportHint": "Import an activity from a connected app",
@@ -1419,7 +1484,7 @@
   "createPersonalSportPolarNoImportable": "No Polar Flow training session to import. In Polar Flow, confirm the session is a Training (not only continuous HR), synced after connecting Grinta, then retry.",
   "createPersonalSportStravaActivity": "Strava activity",
   "createPersonalSportNoImportable": "No activities to import",
-  "createPersonalSportNoConnectedApps": "No connected app. Connect Strava, Polar, Whoop, Apple Fitness or Google Health in Devices / Apps.",
+  "createPersonalSportNoConnectedApps": "No connected app. Connect Strava, Polar, Whoop / Oura, Apple Fitness or Google Health in Devices / Apps.",
   "createPersonalSportImportRequired": "Select an activity to import",
   "createPersonalSportNotes": "Note",
   "createPersonalSportVisibility": "Visibility",
@@ -1439,7 +1504,7 @@
   "createPersonalSportGpsSyncError": "No se pudo sincronizar el GPS. Inténtalo de nuevo.",
   "sessionPersonalDataTitle": "Mis datos",
   "sessionPersonalDataSubtitle": "Asocia tu GPS o una app conectada a esta sesión (sin tracker de equipo asignado).",
-  "sessionPersonalDataGpsHint": "Sincroniza tu sensor GPS Intense y genera un mapa de calor si el campo está posicionado.",
+  "sessionPersonalDataGpsHint": "Sincroniza tu sensor GPS Intense y genera un mapa de calor (alineado al campo si está geolocalizado; si no, vista satélite).",
   "sessionPersonalDataGpsSubmit": "Sincronizar mis datos",
   "sessionPersonalDataAppSubmit": "Asociar actividad",
   "sessionPersonalDataSaved": "Datos asociados a la sesión.",
@@ -1487,19 +1552,35 @@
   "coachWorkloadActivitiesTitle": "Actividades",
   "coachWorkloadMetricSessions": "{count} entrenamientos",
   "@coachWorkloadMetricSessions": {
-    "placeholders": { "count": { "type": "int" } }
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
   },
   "coachWorkloadMetricMatches": "{count} partidos",
   "@coachWorkloadMetricMatches": {
-    "placeholders": { "count": { "type": "int" } }
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
   },
   "coachWorkloadMetricPersonalSports": "{count} perso",
   "@coachWorkloadMetricPersonalSports": {
-    "placeholders": { "count": { "type": "int" } }
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
   },
   "coachWorkloadMetricKm": "{value} km",
   "@coachWorkloadMetricKm": {
-    "placeholders": { "value": { "type": "String" } }
+    "placeholders": {
+      "value": {
+        "type": "String"
+      }
+    }
   },
   "coachWorkloadReportEmailActionTooltip": "Enviar informe PDF",
   "coachWorkloadReportEmailDialogTitle": "Enviar análisis de carga (PDF)",
@@ -1507,45 +1588,77 @@
   "coachWorkloadReportEmailSubject": "Grinta — Análisis de carga {team} ({period})",
   "@coachWorkloadReportEmailSubject": {
     "placeholders": {
-      "team": { "type": "String" },
-      "period": { "type": "String" }
+      "team": {
+        "type": "String"
+      },
+      "period": {
+        "type": "String"
+      }
     }
   },
   "coachWorkloadReportEmailGreeting": "Hola,",
   "coachWorkloadReportEmailIntro": "Aquí tienes el análisis de carga de {team} en el periodo {period}.",
   "@coachWorkloadReportEmailIntro": {
     "placeholders": {
-      "team": { "type": "String" },
-      "period": { "type": "String" }
+      "team": {
+        "type": "String"
+      },
+      "period": {
+        "type": "String"
+      }
     }
   },
   "coachWorkloadReportEmailDownload": "Descargar PDF",
   "coachWorkloadReportEmailText": "Análisis de carga — {team}\nPeriodo: {period}\nPDF: {url}",
   "@coachWorkloadReportEmailText": {
     "placeholders": {
-      "team": { "type": "String" },
-      "period": { "type": "String" },
-      "url": { "type": "String" }
+      "team": {
+        "type": "String"
+      },
+      "period": {
+        "type": "String"
+      },
+      "url": {
+        "type": "String"
+      }
     }
   },
   "coachWorkloadMetricLoad": "Carga {value}",
   "@coachWorkloadMetricLoad": {
-    "placeholders": { "value": { "type": "String" } }
+    "placeholders": {
+      "value": {
+        "type": "String"
+      }
+    }
   },
   "coachWorkloadMetricVolume": "{minutes} min",
   "@coachWorkloadMetricVolume": {
-    "placeholders": { "minutes": { "type": "int" } }
+    "placeholders": {
+      "minutes": {
+        "type": "int"
+      }
+    }
   },
   "coachWorkloadMetricPresence": "Asistencia {value}",
   "@coachWorkloadMetricPresence": {
-    "placeholders": { "value": { "type": "String" } }
+    "placeholders": {
+      "value": {
+        "type": "String"
+      }
+    }
   },
   "coachWorkloadBreakdown": "{trainings} entrenamientos · {matches} partidos · {personal} deporte personal",
   "@coachWorkloadBreakdown": {
     "placeholders": {
-      "trainings": { "type": "int" },
-      "matches": { "type": "int" },
-      "personal": { "type": "int" }
+      "trainings": {
+        "type": "int"
+      },
+      "matches": {
+        "type": "int"
+      },
+      "personal": {
+        "type": "int"
+      }
     }
   },
   "agendaCoachPlayersFabTooltip": "Players — personal activities",
@@ -1625,7 +1738,9 @@
   "calendarSyncEnabledMessage": "Matches and trainings are written to the local calendar \"{calendarName}\" on this device (same Android profile as Grinta: personal or work).\n\nThis is not a Google cloud calendar: it will not appear on calendar.google.com or in the other profile.\n\nIn your Calendar app → menu → enable \"{calendarName}\" (often under \"Device calendars\" / Device Calendar).",
   "@calendarSyncEnabledMessage": {
     "placeholders": {
-      "calendarName": { "type": "String" }
+      "calendarName": {
+        "type": "String"
+      }
     }
   },
   "calendarSyncOpenCalendar": "Open calendar",
@@ -2419,7 +2534,9 @@
   "polarAnalysisHrTimelineHint": "Síntesis media cada {minutes} min",
   "@polarAnalysisHrTimelineHint": {
     "placeholders": {
-      "minutes": { "type": "int" }
+      "minutes": {
+        "type": "int"
+      }
     }
   },
   "polarAnalysisHrTimelineEmpty": "Curva de FC no disponible: vuelve a importar el sensor para generar la síntesis de 5 min.",
@@ -2601,7 +2718,7 @@
   "pendingInvitationAcceptMessage": "Introduce el código del correo para vincular esta invitación a tu cuenta.",
   "pendingInvitationAcceptSuccess": "Invitación aceptada. El equipo ya está disponible en tu perfil.",
   "pendingInvitationAcceptNeedAuth": "Inicia sesión para aceptar esta invitación.",
-  "playerSeasonSummaryTitle": "Ficha del jugador",
+  "playerSeasonSummaryTitle": "Estadísticas",
   "playerSeasonSummaryTabUnavailabilities": "Indisponibilidades",
   "playerSeasonSummaryTeamMatches": "Partidos del equipo",
   "playerSeasonSummaryTeamTrainings": "Entrenamientos del equipo",
@@ -2974,7 +3091,9 @@
   "adminYoutubeDeleteVideoMessage": "¿Quitar « {title} » de la lista de Consejos?",
   "@adminYoutubeDeleteVideoMessage": {
     "placeholders": {
-      "title": { "type": "String" }
+      "title": {
+        "type": "String"
+      }
     }
   },
   "adminYoutubeBadgeTop": "Semana",
@@ -3002,7 +3121,9 @@
   "settingsVersionLabel": "Versión {version}",
   "@settingsVersionLabel": {
     "placeholders": {
-      "version": { "type": "String" }
+      "version": {
+        "type": "String"
+      }
     }
   },
   "wearableDeviceGpsInsidersIntense": "GPS Insiders Intense",
@@ -3017,7 +3138,6 @@
   "intenseGpsDisconnectFailed": "Error al desconectar el tracker GPS.",
   "intenseGpsMissingEmail": "El perfil del jugador necesita un email para asociar un tracker GPS.",
   "intenseGpsConnectToggleConnectedSubtitle": "GPS Insiders Intense conectado",
-
   "whoopAnalysisTitle": "Análisis Whoop",
   "whoopAnalysisStrain": "Esfuerzo de actividad",
   "whoopAnalysisAvgHr": "FC media",
@@ -3030,30 +3150,43 @@
   "whoopAnalysisZoneLabel": "Zona {zone}",
   "@whoopAnalysisZoneLabel": {
     "placeholders": {
-      "zone": { "type": "int" }
+      "zone": {
+        "type": "int"
+      }
     }
   },
   "whoopAnalysisZoneAboveBpm": "+ de {bpm} bpm",
   "@whoopAnalysisZoneAboveBpm": {
     "placeholders": {
-      "bpm": { "type": "int" }
+      "bpm": {
+        "type": "int"
+      }
     }
   },
   "whoopAnalysisZoneBpmRange": "{min} – {max} bpm",
   "@whoopAnalysisZoneBpmRange": {
     "placeholders": {
-      "min": { "type": "int" },
-      "max": { "type": "int" }
+      "min": {
+        "type": "int"
+      },
+      "max": {
+        "type": "int"
+      }
     }
   },
-
   "opponentAnalysisPromptTitle": "Opponent analysis",
   "opponentAnalysisPromptMessage": "You play this {weekday} at {time} against {opponentName}. Would you like an opponent analysis report?",
   "@opponentAnalysisPromptMessage": {
     "placeholders": {
-      "weekday": { "type": "String" },
-      "time": { "type": "String" },
-      "opponentName": { "type": "String" }
+      "weekday": {
+        "type": "String"
+      },
+      "time": {
+        "type": "String"
+      },
+      "opponentName": {
+        "type": "String"
+      }
     }
   },
   "opponentAnalysisPromptYes": "Yes",
@@ -3064,8 +3197,12 @@
   "opponentAnalysisReportEmailIntro": "Here is the analysis report for {opponentName} for your match on {kickoff}.",
   "@opponentAnalysisReportEmailIntro": {
     "placeholders": {
-      "opponentName": { "type": "String" },
-      "kickoff": { "type": "String" }
+      "opponentName": {
+        "type": "String"
+      },
+      "kickoff": {
+        "type": "String"
+      }
     }
   },
   "opponentAnalysisReportEmailIncludes": "The PDF includes trend, W/D/L (season and halves), results, goals, players (call-ups / starts / minutes / cards), typical team and ranking evolution.",
@@ -3073,13 +3210,111 @@
   "opponentAnalysisReportEmailDialogMessage": "The analysis report for {opponentName} will be sent to the addresses below.",
   "@opponentAnalysisReportEmailDialogMessage": {
     "placeholders": {
-      "opponentName": { "type": "String" }
+      "opponentName": {
+        "type": "String"
+      }
     }
   },
   "opponentAnalysisReportEmailRecipientsLabel": "Recipients",
   "opponentAnalysisReportSendFailed": "Could not send the opponent analysis report.",
   "opponentAnalysisSendDetailedReport": "Send detailed report",
   "opponentAnalysisCoachEliteRequiredTitle": "Opponent analysis report",
-  "opponentAnalysisCoachEliteRequiredMessage": "Sending the opponent analysis report requires a Coach Elite subscription."
-
+  "opponentAnalysisCoachEliteRequiredMessage": "Sending the opponent analysis report requires a Coach Elite subscription.",
+  "biometricUnlockTitle": "Desbloquear Grinta",
+  "biometricUnlockSubtitle": "Usa Face ID, Touch ID o tu huella para acceder rápidamente a la app.",
+  "biometricUnlockAction": "Desbloquear",
+  "biometricUnlockUsePassword": "Usar otra cuenta",
+  "biometricUnlockPromptReason": "Desbloquea Grinta",
+  "biometricUnlockSettingsTitle": "Desbloqueo biométrico",
+  "biometricUnlockSettingsSubtitle": "Face ID, Touch ID o huella para abrir la app y volver a iniciar sesión rápidamente.",
+  "biometricUnlockUnavailable": "La biometría no está disponible en este dispositivo.",
+  "biometricUnlockEnableTitle": "Desbloqueo rápido",
+  "biometricUnlockEnableMessage": "Activa Face ID / huella para desbloquear Grinta y volver a iniciar sesión rápidamente tras cerrar sesión. Tu email y contraseña permanecen cifrados en este dispositivo.",
+  "biometricUnlockEnableLater": "Más tarde",
+  "biometricUnlockEnableConfirm": "Activar",
+  "biometricLoginAction": "Iniciar sesión con biometría",
+  "biometricLoginPromptReason": "Inicia sesión en Grinta",
+  "biometricLoginCredentialsInvalid": "Los datos de acceso guardados ya no son válidos. Inicia sesión con tu contraseña.",
+  "biometricLoginSavePasswordTitle": "Confirma tu contraseña",
+  "biometricLoginSavePasswordMessage": "Introduce tu contraseña para que Face ID / huella pueda volver a iniciar sesión tras cerrar sesión. Permanece cifrada en este dispositivo.",
+  "createPersonalSportOuraActivity": "Oura activity",
+  "createPersonalSportOuraDeployRequired": "Oura import is not deployed yet. Run firebase deploy for ouraListActivities and ouraImportActivity.",
+  "createPersonalSportOuraLoadError": "Could not load Oura activities. Check the connection and try again.",
+  "createPersonalSportOuraNoImportable": "No Oura workouts to import.",
+  "wearableDeviceOura": "Oura",
+  "ouraConnectToggleLabel": "Sinc. Oura",
+  "ouraConnectToggleSubtitle": "Conecta tu cuenta Oura para importar entrenamientos con duración y zonas de FC",
+  "ouraConnectToggleConnectedSubtitle": "Oura conectado — importa entrenamientos desde Crear",
+  "ouraConnectSuccess": "Cuenta Oura conectada.",
+  "ouraAccountHintGuidance": "Tu email de Oura puede ser distinta de tu cuenta Grinta. Indica la cuenta Oura a usar y luego inicia sesión con esa cuenta en la página de Oura.",
+  "ouraAccountHintLabel": "Cuenta Oura",
+  "ouraAccountHintPlaceholder": "email Oura",
+  "ouraAccountHintRequired": "Indica tu cuenta Oura (email) antes de continuar.",
+  "ouraConnectContinue": "Continuar a Oura",
+  "ouraConnectFailed": "La conexión Oura ha fallado. Comprueba que las Cloud Functions de Oura estén desplegadas y que los secretos OURA_CLIENT_ID / OURA_CLIENT_SECRET estén configurados.",
+  "ouraConnectLaunchFailed": "No se pudo abrir la página de inicio de sesión de Oura.",
+  "ouraConnectAuthRequired": "Inicia sesión en Grinta para conectar Oura.",
+  "ouraDisconnectFailed": "Error al desconectar Oura.",
+  "ouraCoachVisibilityTitle": "Visibilidad para el entrenador",
+  "ouraCoachVisibilitySubtitle": "Permite a tu entrenador ver este tipo de dato",
+  "ouraCoachVisibilitySaveFailed": "No se pudieron guardar las preferencias de Oura.",
+  "ouraMetricWorkout": "Entrenamientos",
+  "ouraCoachConnectTitle": "Oura",
+  "ouraCoachConnectSubtitle": "Conectar Oura para {playerName}",
+  "@ouraCoachConnectSubtitle": {
+    "placeholders": {
+      "playerName": {
+        "type": "String"
+      }
+    }
+  },
+  "ouraCoachConnectAction": "Conectar",
+  "ouraCoachConnectConnectedSubtitle": "Oura conectado para {playerName}",
+  "@ouraCoachConnectConnectedSubtitle": {
+    "placeholders": {
+      "playerName": {
+        "type": "String"
+      }
+    }
+  },
+  "ouraAnalysisTitle": "Análisis Oura",
+  "ouraAnalysisStrain": "Intensidad",
+  "ouraAnalysisAvgHr": "FC media",
+  "ouraAnalysisMaxHr": "FC máx.",
+  "ouraAnalysisDuration": "Duración",
+  "ouraAnalysisCalories": "Calorías",
+  "ouraAnalysisAltitude": "Desnivel",
+  "ouraAnalysisHrZonesTitle": "Zonas cardíacas",
+  "ouraAnalysisNoZones": "Sin desglose por zonas para esta importación. Vuelve a importar la actividad Oura.",
+  "ouraAnalysisZoneLabel": "Zona {zone}",
+  "@ouraAnalysisZoneLabel": {
+    "placeholders": {
+      "zone": {
+        "type": "int"
+      }
+    }
+  },
+  "ouraAnalysisZoneAboveBpm": "+ de {bpm} bpm",
+  "@ouraAnalysisZoneAboveBpm": {
+    "placeholders": {
+      "bpm": {
+        "type": "int"
+      }
+    }
+  },
+  "ouraAnalysisZoneBpmRange": "{min} – {max} bpm",
+  "@ouraAnalysisZoneBpmRange": {
+    "placeholders": {
+      "min": {
+        "type": "int"
+      },
+      "max": {
+        "type": "int"
+      }
+    }
+  },
+  "ouraMetricHeartrate": "Frecuencia cardíaca",
+  "ouraMetricDaily": "Actividad / readiness diaria",
+  "ouraMetricPersonal": "Información personal",
+  "ouraMetricEmail": "Email"
 }

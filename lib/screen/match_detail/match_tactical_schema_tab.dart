@@ -3,13 +3,18 @@ import 'package:grinta/core/extensions/l10n_extension.dart';
 import 'package:provider/provider.dart';
 
 import '../../model/compoType.dart';
+import '../../model/grinta_player.dart';
+import '../../model/grinta_player_hw.dart';
 import '../../model/match.dart' as models;
 import '../../model/matchCompo.dart';
 import '../../model/player.dart';
+import '../../model/team.dart';
 import '../../model/tracker/deviceOwner.dart';
 import '../../provider/appSession.dart';
+import '../../screen/player_season_summary/player_season_summary_screen.dart';
 import '../../services/compoTypeService.dart';
 import '../../services/deviceOwnerService.dart' as device_owner_svc;
+import '../../services/effectivesService.dart';
 import '../../services/matchCompoService.dart';
 import '../../services/playerService.dart';
 import '../../services/teamService.dart';
@@ -190,9 +195,13 @@ class _MatchTacticalSchemaBodyState extends State<_MatchTacticalSchemaBody>
   bool _loadingPlayers = true;
   bool _playersLoaded = false;
   String? _resolvedTeamId;
+  Team? _team;
   int? _teamSoccerType;
   List<Player> _teamPlayers = [];
   final Map<String, Player> _playersById = {};
+
+  /// Roster sensor assignments: playerId → TRACKER_DeviceOwner doc ids.
+  Map<String, List<String>> _rosterTrackerIdsByPlayerId = {};
 
   MatchCompo? _draftCompo;
   Set<String> _convokedIds = {};
@@ -238,11 +247,34 @@ class _MatchTacticalSchemaBodyState extends State<_MatchTacticalSchemaBody>
     final newIds = convokedPlayerIds(
       widget.initialMatchCompo ?? MatchCompo(),
     );
-    if (oldWidget.initialMatchCompo?.ref?.path !=
-            widget.initialMatchCompo?.ref?.path ||
-        oldIds != newIds) {
+    final bool refChanged = oldWidget.initialMatchCompo?.ref?.path !=
+        widget.initialMatchCompo?.ref?.path;
+    final bool lineupChanged = !_lineupEquals(
+      oldWidget.initialMatchCompo,
+      widget.initialMatchCompo,
+    );
+    if (refChanged || oldIds != newIds) {
+      _hydrateFromMatchCompo(widget.initialMatchCompo);
+      return;
+    }
+    // Apply remote lineup updates only when the editor has nothing pending.
+    if (lineupChanged && !_hasUnsavedChanges) {
       _hydrateFromMatchCompo(widget.initialMatchCompo);
     }
+  }
+
+  bool _lineupEquals(MatchCompo? a, MatchCompo? b) {
+    if (identical(a, b)) return true;
+    if (a == null || b == null) return a == b;
+    if ((a.compoTypeID ?? '') != (b.compoTypeID ?? '')) return false;
+    return _startersMapsEqual(
+          startersFromMatchCompo(a),
+          startersFromMatchCompo(b),
+        ) &&
+        _substitutesListsEqual(
+          substitutesFromMatchCompo(a),
+          substitutesFromMatchCompo(b),
+        );
   }
 
   Future<void> _loadTeamPlayers() async {
@@ -265,7 +297,9 @@ class _MatchTacticalSchemaBodyState extends State<_MatchTacticalSchemaBody>
       if (mounted) {
         setState(() {
           _resolvedTeamId = null;
+          _team = null;
           _teamPlayers = [];
+          _rosterTrackerIdsByPlayerId = {};
           _loadingPlayers = false;
         });
       }
@@ -275,6 +309,10 @@ class _MatchTacticalSchemaBodyState extends State<_MatchTacticalSchemaBody>
     try {
       final team = await _teamService.getTeamById(teamId);
       final players = await _teamPlayersService.loadPlayers(teamId: teamId);
+      final rosterTrackers = await _loadRosterTrackerIdsByPlayer(
+        teamId: teamId,
+        team: team,
+      );
 
       _playersById
         ..clear()
@@ -287,8 +325,10 @@ class _MatchTacticalSchemaBodyState extends State<_MatchTacticalSchemaBody>
       if (mounted) {
         setState(() {
           _resolvedTeamId = teamId;
+          _team = team;
           _teamSoccerType = team?.soccerType;
           _teamPlayers = players;
+          _rosterTrackerIdsByPlayerId = rosterTrackers;
           _loadingPlayers = false;
           _playersLoaded = true;
         });
@@ -302,6 +342,58 @@ class _MatchTacticalSchemaBodyState extends State<_MatchTacticalSchemaBody>
         });
       }
     }
+  }
+
+  /// Loads kit sensor doc ids assigned on the team roster (effectif).
+  ///
+  /// Prefers [Team.grintaPlayers]; falls back to legacy `effectives.trackers`.
+  Future<Map<String, List<String>>> _loadRosterTrackerIdsByPlayer({
+    required String teamId,
+    required Team? team,
+  }) async {
+    final map = <String, List<String>>{};
+    final List<GrintaPlayer> grintaPlayers =
+        team?.grintaPlayers ?? const <GrintaPlayer>[];
+    if (grintaPlayers.isNotEmpty) {
+      for (final GrintaPlayer entry in grintaPlayers) {
+        final String playerId = entry.playerId.trim();
+        if (playerId.isEmpty) continue;
+        final List<String> trackers = entry.trackers
+            .map((String id) => id.trim())
+            .where((String id) => id.isNotEmpty)
+            .toList(growable: false);
+        if (trackers.isNotEmpty) {
+          map[playerId] = trackers;
+        }
+      }
+      return map;
+    }
+
+    final String seasonId = widget.match.seasonID?.trim() ?? '';
+    try {
+      final effectives =
+          await EffectivesService().getEffectivesByTeamId(teamId);
+      for (final effective in effectives) {
+        final String memberId = effective.memberID?.trim() ?? '';
+        if (memberId.isEmpty) continue;
+        if (seasonId.isNotEmpty) {
+          final String effectiveSeason = effective.seasonID?.trim() ?? '';
+          if (effectiveSeason.isNotEmpty && effectiveSeason != seasonId) {
+            continue;
+          }
+        }
+        final List<String> trackers = (effective.trackers ?? const <String>[])
+            .map((String id) => id.trim())
+            .where((String id) => id.isNotEmpty)
+            .toList(growable: false);
+        if (trackers.isNotEmpty) {
+          map[memberId] = trackers;
+        }
+      }
+    } catch (_) {
+      // Roster defaults are best-effort; assignment sheet still works without them.
+    }
+    return map;
   }
 
   Future<void> _hydrateFromMatchCompo(MatchCompo? compo) async {
@@ -501,10 +593,82 @@ class _MatchTacticalSchemaBodyState extends State<_MatchTacticalSchemaBody>
 
   String playerIdLabel(BuildContext context) => context.l10n.entityPlayer;
 
+  PlayerCompo? _playerCompoForId(String playerId) {
+    final id = playerId.trim();
+    if (id.isEmpty) return null;
+    for (final PlayerCompo compo in _startersBySlot.values) {
+      if (compo.playerID?.trim() == id) return compo;
+    }
+    for (final PlayerCompo compo in _substitutes) {
+      if (compo.playerID?.trim() == id) return compo;
+    }
+    return null;
+  }
+
+  /// Sensor display name when match uses trackers and one is assigned.
+  String? _sensorLabelForPlayer(String playerId) {
+    if (!_trackerRequiredForMatch) return null;
+    final String? label = _playerCompoForId(playerId)?.customName?.trim();
+    if (label == null || label.isEmpty) return null;
+    return label;
+  }
+
+  GrintaPlayer? _grintaPlayerFor(Player player) {
+    final Set<String> lookupIds = playerMemberLookupIds(player);
+    for (final GrintaPlayer entry
+        in _team?.grintaPlayers ?? const <GrintaPlayer>[]) {
+      final String id = entry.playerId.trim();
+      if (id.isNotEmpty && lookupIds.contains(id)) {
+        return entry;
+      }
+    }
+    return null;
+  }
+
+  Future<void> _openPlayerStatistics(Player player) async {
+    final Team? team = _team;
+    final String seasonId = widget.match.seasonID?.trim() ?? '';
+    if (team == null || seasonId.isEmpty || !mounted) return;
+
+    final GrintaPlayer? grintaPlayer = _grintaPlayerFor(player);
+    final GrintaPlayerHW? latestHw = grintaPlayer?.latestHw;
+
+    await openPlayerSeasonSummaryScreen(
+      context,
+      team: team,
+      initialSeasonId: seasonId,
+      isManager: widget.isManager,
+      identity: PlayerSeasonSummaryIdentity(
+        player: player,
+        positionCodes: grintaPlayer == null
+            ? const <int>[]
+            : List<int>.from(grintaPlayer.positions),
+        birthday: grintaPlayer?.birthday ?? Player.parseBirthDay(player.birthDay),
+        heightCm: latestHw != null && latestHw.height > 0
+            ? latestHw.height
+            : null,
+        weightKg: latestHw != null && latestHw.weight > 0
+            ? latestHw.weight
+            : null,
+        hwMeasuredAt: latestHw?.dateTime,
+        preferredFoot: grintaPlayer?.preferredFoot,
+        isGrintaRoster: grintaPlayer != null,
+      ),
+    );
+  }
+
   void _showPlayerInfo(String playerId) {
     final player = _playersById[playerId];
     if (player == null) return;
-    showPlayerInfoBubble(context, player);
+    showPlayerInfoBubble(
+      context,
+      player,
+      sensorLabel: _sensorLabelForPlayer(playerId),
+      onStatistics: _team != null &&
+              (widget.match.seasonID?.trim().isNotEmpty ?? false)
+          ? () => _openPlayerStatistics(player)
+          : null,
+    );
   }
 
   Future<void> _onPlayerAvatarLongPress(String playerId) async {
@@ -657,7 +821,11 @@ class _MatchTacticalSchemaBodyState extends State<_MatchTacticalSchemaBody>
         availableTrackers: availableTrackers,
         availableJerseyNumbers: jerseyNumbers,
         initialNumber: _defaultJerseyNumber(player, existing),
-        initialTracker: _deviceOwnerForCompo(existing, availableTrackers),
+        initialTracker: _defaultTrackerForPlayer(
+          player: player,
+          existing: existing,
+          availableTrackers: availableTrackers,
+        ),
       ),
     );
   }
@@ -670,6 +838,40 @@ class _MatchTacticalSchemaBodyState extends State<_MatchTacticalSchemaBody>
     if (docId == null || docId.isEmpty) return null;
     for (final device in availableTrackers) {
       if (device.id == docId) return device;
+    }
+    return null;
+  }
+
+  /// Prefer an existing match assignment; otherwise the player's roster sensor
+  /// if still free for this composition.
+  DeviceOwner? _defaultTrackerForPlayer({
+    required Player player,
+    PlayerCompo? existing,
+    required List<DeviceOwner> availableTrackers,
+  }) {
+    final DeviceOwner? fromCompo =
+        _deviceOwnerForCompo(existing, availableTrackers);
+    if (fromCompo != null) return fromCompo;
+
+    if (!_trackerRequiredForMatch || availableTrackers.isEmpty) {
+      return null;
+    }
+
+    final String playerId =
+        (effectiveMemberId(player) ?? player.ref?.id ?? '').trim();
+    if (playerId.isEmpty) return null;
+
+    final List<String> rosterIds =
+        _rosterTrackerIdsByPlayerId[playerId] ?? const <String>[];
+    if (rosterIds.isEmpty) return null;
+
+    final Map<String, DeviceOwner> availableById = <String, DeviceOwner>{
+      for (final DeviceOwner device in availableTrackers) device.id: device,
+    };
+
+    for (final String trackerDocId in rosterIds) {
+      final DeviceOwner? device = availableById[trackerDocId];
+      if (device != null) return device;
     }
     return null;
   }
@@ -876,7 +1078,7 @@ class _MatchTacticalSchemaBodyState extends State<_MatchTacticalSchemaBody>
         final selectedType = _resolveCompoType(compoTypes);
         if (_selectedCompoType == null) {
           WidgetsBinding.instance.addPostFrameCallback((_) {
-            if (!mounted) return;
+            if (!mounted || _selectedCompoType != null) return;
             _onCompoTypeChanged(selectedType);
             _resetSavedBaseline();
           });
@@ -887,102 +1089,154 @@ class _MatchTacticalSchemaBodyState extends State<_MatchTacticalSchemaBody>
 
         return LayoutBuilder(
           builder: (context, constraints) {
-            final bool isPhone = constraints.maxWidth < 600;
-            final double sectionGap = isPhone ? 6 : 8;
+            final Size screenSize = MediaQuery.sizeOf(context);
+            final bool isPhone = screenSize.shortestSide < 600;
+            // Prefer the tab content box so Flutter web (Chrome on tablet)
+            // matches the native landscape-tablet side-by-side layout.
+            // Slightly looser than a pure landscape check so short web
+            // viewports (header + tabs) still get a readable pitch.
+            final bool useSideBySideLayout = !isPhone &&
+                constraints.maxWidth >= 640 &&
+                constraints.maxWidth > constraints.maxHeight * 0.75;
+            final bool tightHeight = constraints.maxHeight < 520;
+            final double sectionGap = isPhone ? 6 : (tightHeight ? 4 : 8);
+
+            final Widget compoSelector = showEditor
+                ? _CompoTypeSelector(
+                    compoTypes: compoTypes,
+                    selectedKey:
+                        _selectedCompoTypeKey ?? compoTypeKey(selectedType),
+                    compact: tightHeight,
+                    onChanged: (key) {
+                      final type = compoTypes.firstWhere(
+                        (t) => compoTypeKey(t) == key,
+                        orElse: () => selectedType,
+                      );
+                      _onCompoTypeChanged(type);
+                    },
+                  )
+                : (selectedType.name != null
+                    ? _ReadOnlyCompoTypeLabel(name: selectedType.name!)
+                    : const SizedBox.shrink());
+
+            final Widget pitch = hasSchema || showEditor
+                ? LayoutBuilder(
+                    builder: (context, pitchConstraints) {
+                      return HalfPitchCompoWidget(
+                        height: pitchConstraints.maxHeight,
+                        compoType: selectedType,
+                        selectedPlayers: _displayFieldPlayers,
+                        onSlotTap: showEditor ? _onSlotTap : null,
+                        playerAvatarBuilder: _playerAvatar,
+                        onPlayerAvatarTap: _showPlayerInfo,
+                        onPlayerAvatarLongPress: showEditor
+                            ? _onPlayerAvatarLongPress
+                            : null,
+                      );
+                    },
+                  )
+                : _TacticalEmptyState(
+                    icon: Icons.grid_view_rounded,
+                    message: l10n.matchTacticalSchemaEmpty,
+                  );
+
+            final Widget substitutes = _SubstitutesSection(
+              substitutes: _substitutes,
+              playersById: _playersById,
+              readOnly: _readOnly,
+              showSensor: _trackerRequiredForMatch,
+              onPlayerStatistics: _team != null &&
+                      (widget.match.seasonID?.trim().isNotEmpty ?? false)
+                  ? _openPlayerStatistics
+                  : null,
+              onRemove: (index) {
+                setState(() => _substitutes.removeAt(index));
+              },
+              onAdd: showEditor
+                  ? () => _pickPlayer(
+                        title: l10n.matchTacticalSchemaAddSubstitute,
+                        forSubstitute: true,
+                      )
+                  : null,
+            );
+
+            final Widget? saveButton = showEditor && _hasUnsavedChanges
+                ? FilledButton.icon(
+                    onPressed:
+                        _saving || _selectedCompoType == null ? null : _save,
+                    icon: _saving
+                        ? SizedBox(
+                            width: 18,
+                            height: 18,
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2,
+                              color: colors.surface,
+                            ),
+                          )
+                        : const Icon(Icons.save_outlined),
+                    label: Text(l10n.actionSave),
+                    style: FilledButton.styleFrom(
+                      backgroundColor: colors.primary,
+                      foregroundColor: Colors.white,
+                      padding: const EdgeInsets.symmetric(vertical: 12),
+                    ),
+                  )
+                : null;
 
             return Padding(
               padding: EdgeInsets.fromLTRB(
                 isPhone ? 8 : 12,
-                4,
+                tightHeight ? 2 : 4,
                 isPhone ? 8 : 12,
-                isPhone ? 8 : 12,
+                isPhone ? 8 : (tightHeight ? 6 : 12),
               ),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  if (showEditor)
-                    _CompoTypeSelector(
-                      compoTypes: compoTypes,
-                      selectedKey:
-                          _selectedCompoTypeKey ?? compoTypeKey(selectedType),
-                      onChanged: (key) {
-                        final type = compoTypes.firstWhere(
-                          (t) => compoTypeKey(t) == key,
-                          orElse: () => selectedType,
-                        );
-                        _onCompoTypeChanged(type);
-                      },
-                    )
-                  else if (selectedType.name != null)
-                    _ReadOnlyCompoTypeLabel(name: selectedType.name!),
+                  compoSelector,
                   SizedBox(height: sectionGap),
-                  if (hasSchema || showEditor)
+                  if (useSideBySideLayout)
                     Expanded(
-                      child: Align(
-                        alignment: Alignment.topCenter,
-                        child: HalfPitchCompoWidget(
-                          compoType: selectedType,
-                          selectedPlayers: _displayFieldPlayers,
-                          onSlotTap: showEditor ? _onSlotTap : null,
-                          playerAvatarBuilder: _playerAvatar,
-                          onPlayerAvatarTap: _showPlayerInfo,
-                          onPlayerAvatarLongPress: showEditor
-                              ? _onPlayerAvatarLongPress
-                              : null,
-                        ),
+                      child: Row(
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        children: [
+                          Expanded(
+                            flex: tightHeight ? 4 : 3,
+                            child: pitch,
+                          ),
+                          SizedBox(width: sectionGap + 4),
+                          SizedBox(
+                            width: () {
+                              final double proposed = constraints.maxWidth *
+                                  (tightHeight ? 0.24 : 0.30);
+                              final double minW = tightHeight ? 200.0 : 240.0;
+                              final double maxW = tightHeight ? 280.0 : 340.0;
+                              if (proposed < minW) return minW;
+                              if (proposed > maxW) return maxW;
+                              return proposed;
+                            }(),
+                            child: SingleChildScrollView(
+                              child: substitutes,
+                            ),
+                          ),
+                        ],
                       ),
                     )
-                  else if (!showEditor)
-                    Expanded(
-                      child: _TacticalEmptyState(
-                        icon: Icons.grid_view_rounded,
-                        message: l10n.matchTacticalSchemaEmpty,
-                      ),
-                    ),
-                  SizedBox(height: sectionGap),
-                  ConstrainedBox(
-                    constraints: BoxConstraints(
-                      maxHeight: isPhone ? 108 : double.infinity,
-                    ),
-                    child: SingleChildScrollView(
-                      child: _SubstitutesSection(
-                        substitutes: _substitutes,
-                        playersById: _playersById,
-                        readOnly: _readOnly,
-                        onRemove: (index) {
-                          setState(() => _substitutes.removeAt(index));
-                        },
-                        onAdd: showEditor
-                            ? () => _pickPlayer(
-                                  title: l10n.matchTacticalSchemaAddSubstitute,
-                                  forSubstitute: true,
-                                )
-                            : null,
-                      ),
-                    ),
-                  ),
-                  if (showEditor && _hasUnsavedChanges) ...[
+                  else ...[
+                    Expanded(child: pitch),
                     SizedBox(height: sectionGap),
-                    FilledButton.icon(
-                      onPressed:
-                          _saving || _selectedCompoType == null ? null : _save,
-                      icon: _saving
-                          ? SizedBox(
-                              width: 18,
-                              height: 18,
-                              child: CircularProgressIndicator(
-                                strokeWidth: 2,
-                                color: colors.surface,
-                              ),
-                            )
-                          : const Icon(Icons.save_outlined),
-                      label: Text(l10n.actionSave),
-                      style: FilledButton.styleFrom(
-                        backgroundColor: colors.primary,
-                        foregroundColor: Colors.white,
-                        padding: const EdgeInsets.symmetric(vertical: 12),
+                    ConstrainedBox(
+                      constraints: BoxConstraints(
+                        maxHeight: isPhone
+                            ? 108
+                            : (tightHeight ? 120 : 140),
                       ),
+                      child: SingleChildScrollView(child: substitutes),
                     ),
+                  ],
+                  if (saveButton != null) ...[
+                    SizedBox(height: sectionGap),
+                    saveButton,
                   ],
                 ],
               ),
@@ -1009,11 +1263,13 @@ class _CompoTypeSelector extends StatelessWidget {
     required this.compoTypes,
     required this.selectedKey,
     required this.onChanged,
+    this.compact = false,
   });
 
   final List<CompoType> compoTypes;
   final String selectedKey;
   final ValueChanged<String?> onChanged;
+  final bool compact;
 
   @override
   Widget build(BuildContext context) {
@@ -1024,7 +1280,7 @@ class _CompoTypeSelector extends StatelessWidget {
     return Container(
       padding: EdgeInsets.symmetric(
         horizontal: isPhone ? 10 : 12,
-        vertical: isPhone ? 2 : 4,
+        vertical: compact ? 0 : (isPhone ? 2 : 4),
       ),
       decoration: BoxDecoration(
         color: colors.card,
@@ -1034,9 +1290,14 @@ class _CompoTypeSelector extends StatelessWidget {
       child: DropdownButtonFormField<String>(
         value: selectedKey,
         isExpanded: true,
+        isDense: compact,
         decoration: InputDecoration(
           labelText: context.l10n.hintCompoType,
           border: InputBorder.none,
+          isDense: compact,
+          contentPadding: compact
+              ? const EdgeInsets.symmetric(vertical: 4)
+              : null,
         ),
         items: compoTypes.map((type) {
           final key = compoTypeKey(type);
@@ -1086,12 +1347,16 @@ class _SubstitutesSection extends StatelessWidget {
     required this.playersById,
     required this.readOnly,
     required this.onRemove,
+    this.showSensor = false,
+    this.onPlayerStatistics,
     this.onAdd,
   });
 
   final List<PlayerCompo> substitutes;
   final Map<String, Player> playersById;
   final bool readOnly;
+  final bool showSensor;
+  final Future<void> Function(Player player)? onPlayerStatistics;
   final void Function(int index) onRemove;
   final VoidCallback? onAdd;
 
@@ -1137,6 +1402,8 @@ class _SubstitutesSection extends StatelessWidget {
                   compo: substitutes[i],
                   player: playersById[substitutes[i].playerID ?? ''],
                   readOnly: readOnly,
+                  showSensor: showSensor,
+                  onStatistics: onPlayerStatistics,
                   onRemove: () => onRemove(i),
                 ),
             ],
@@ -1152,11 +1419,15 @@ class _SubstituteChip extends StatelessWidget {
     required this.player,
     required this.readOnly,
     required this.onRemove,
+    this.showSensor = false,
+    this.onStatistics,
   });
 
   final PlayerCompo compo;
   final Player? player;
   final bool readOnly;
+  final bool showSensor;
+  final Future<void> Function(Player player)? onStatistics;
   final VoidCallback onRemove;
 
   @override
@@ -1169,6 +1440,11 @@ class _SubstituteChip extends StatelessWidget {
             player ?? Player(),
             unknownLabel: l10n.entityPlayer,
           );
+    final String? sensorLabel = showSensor
+        ? (compo.customName?.trim().isNotEmpty == true
+            ? compo.customName!.trim()
+            : null)
+        : null;
 
     final content = Row(
       mainAxisSize: MainAxisSize.min,
@@ -1208,7 +1484,14 @@ class _SubstituteChip extends StatelessWidget {
       clipBehavior: Clip.antiAlias,
       child: InkWell(
         onTap: player != null
-            ? () => showPlayerInfoBubble(context, player!)
+            ? () => showPlayerInfoBubble(
+                  context,
+                  player!,
+                  sensorLabel: sensorLabel,
+                  onStatistics: onStatistics == null
+                      ? null
+                      : () => onStatistics!(player!),
+                )
             : null,
         child: Padding(
           padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),

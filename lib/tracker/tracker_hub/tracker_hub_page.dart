@@ -9,8 +9,6 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:grinta/core/extensions/l10n_extension.dart';
 import 'package:grinta/model/fieldGpsCorners.dart';
-import 'package:grinta/model/highlights.dart';
-import 'package:grinta/model/match.dart';
 import 'package:grinta/model/tracker/deviceOwner.dart';
 import 'package:grinta/services/deviceService.dart';
 import 'package:grinta/services/event_sync_service.dart';
@@ -39,6 +37,8 @@ import '../../usb/asi_protocol.dart';
 import '../../usb/asi_usb_client.dart';
 import '../../usb/asi_usb_factory.dart';
 import '../../util/app_theme.dart';
+import '../../util/match_usb_sync_window.dart';
+import '../../util/training_usb_sync_window.dart';
 import '../../widget/proPitchView.dart';
 
 part 'tracker_hub_cards.dart';
@@ -156,41 +156,74 @@ class _TrackerHubPageState extends State<TrackerHubPage> {
 
 
   Future<void> getData() async {
+    final List<TimeRange> periods = <TimeRange>[];
 
-    TimeRange firsthalf = TimeRange(start: null, end: null);
-    TimeRange senddHalf = TimeRange(start: null, end: null);
-
-    if(widget.isMatch) {
-      final hls = await HighlightsService().getHighlightsByMatchCalendarId(widget.eventId);
-      for(var hl in hls) {
-        if(hl.actionType == ActionType.timeEvent) {
-          final timeEvent = hl.value as TimeEvent;
-          switch(timeEvent.type) {
-            case  TimeType.kickOff: // début match
-              firsthalf.start = hl.dateTime!;
-              break;
-            case TimeType.startExtraTime:
-              break;
-            case TimeType.halTime: // mi-temps
-              firsthalf.end = hl.dateTime!;
-              break;
-            case TimeType.secondHalf: // debut 2ème mi-temps
-              senddHalf.start = hl.dateTime!;
-              break;
-            case TimeType.end: // fin match
-              senddHalf.end = hl.dateTime!;
-              break;
-            case null:
-              throw UnimplementedError();
-
+    if (widget.isMatch) {
+      // USB / withSyncing=true:
+      // - Temps forts kickOff+end → those bounds (halves when available)
+      // - else scheduled halves: [timestamp, +duration/2] then
+      //   [+duration/2 + 15min, +duration + 15min]
+      // Never use TimeRange(null,null): that collapses to now→now and drops
+      // every sample so "Télécharger" spins then resets.
+      final match = await MatchService().getMatchById(widget.eventId);
+      final hls = await HighlightsService()
+          .getHighlightsByMatchCalendarId(widget.eventId);
+      if (match == null) {
+        debugPrint(
+          '[TrackerHub] match USB sync: match missing '
+          '(eventId=${widget.eventId}) — samples will NOT be time-filtered',
+        );
+      } else {
+        final resolved = resolveMatchUsbSyncPeriods(
+          match: match,
+          highlights: hls,
+        );
+        if (resolved.isEmpty) {
+          debugPrint(
+            '[TrackerHub] match USB sync window missing '
+            '(eventId=${widget.eventId} timestamp=${match.timestamp} '
+            'duration=${match.duration} highlights=${hls.length}) '
+            '— samples will NOT be time-filtered',
+          );
+        } else {
+          for (final p in resolved) {
+            debugPrint(
+              '[TrackerHub] match USB sync window → '
+              'start=${p.start.toDate().toIso8601String()} '
+              'end=${p.end.toDate().toIso8601String()}',
+            );
           }
+          periods.addAll(resolved);
         }
       }
-      matchPeriods.add(firsthalf);
-      matchPeriods.add(senddHalf);
+    } else {
+      // USB / withSyncing=true: keep only samples inside the training slot
+      // [dateTime, dateTime + duration], otherwise previous pod sessions leak in.
+      final training = await TrainingService().getTrainingById(widget.eventId);
+      final resolved = training == null
+          ? const <TimeRange>[]
+          : resolveTrainingUsbSyncPeriods(training);
+      if (resolved.isEmpty) {
+        debugPrint(
+          '[TrackerHub] training USB sync window missing '
+          '(eventId=${widget.eventId} dateTime=${training?.dateTime} '
+          'duration=${training?.duration}) — samples will NOT be time-filtered',
+        );
+      } else {
+        final p = resolved.first;
+        debugPrint(
+          '[TrackerHub] training USB sync window → '
+          'start=${p.start.toDate().toIso8601String()} '
+          'end=${p.end.toDate().toIso8601String()} '
+          '(${training?.duration} min)',
+        );
+        periods.addAll(resolved);
+      }
     }
 
+    if (!mounted) return;
     setState(() {
+      matchPeriods = periods;
       isDataLoaded = true;
     });
   }
