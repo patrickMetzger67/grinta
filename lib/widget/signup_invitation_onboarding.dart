@@ -9,6 +9,7 @@ import 'package:grinta/services/playerService.dart';
 import 'package:grinta/services/userService.dart';
 import 'package:grinta/util/app_snackbar.dart';
 import 'package:grinta/util/app_theme.dart';
+import 'package:grinta/util/auth_profile_seed.dart';
 import 'package:grinta/util/player_photo_resolver.dart';
 import 'package:grinta/widget/member_profile_form.dart';
 
@@ -85,11 +86,17 @@ class SignupInvitationOnboarding {
         case _InvitationLookupKind.found:
           final invitation = lookup.invitation!;
           final member = lookup.member!;
+          // Guideline 4: even when linking an invitation after SIWA/Google,
+          // never re-ask name/email — keep IdP identity locked.
           final profile = await _promptMemberProfile(
             rootContext,
-            initialProfile: member.toEditableProfile(),
+            initialProfile: mergeAuthIdentityOntoMemberProfile(
+              member: member.toEditableProfile(),
+              authSeed: authSeedProfile,
+            ),
             subtitle: await _invitationSubtitle(rootContext, invitation),
             requireEmail: requireEmail,
+            lockIdentityFromAuth: lockIdentityFromAuth,
           );
           if (profile == null) return null;
           return SignupMemberOnboardingResult(

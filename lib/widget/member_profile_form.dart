@@ -200,20 +200,26 @@ class MemberProfileFormState extends State<MemberProfileForm> {
     );
 
     if (_hideIdentityFields) {
-      final hasIdentity =
-          _identityFirstName.isNotEmpty && _identityLastName.isNotEmpty;
-      final hasBirth = profile.birthDay?.trim().isNotEmpty ?? false;
-      final hasNationality = profile.nationality?.trim().isNotEmpty ?? false;
-      if (hasIdentity &&
-          hasBirth &&
-          hasNationality &&
-          isValidEmailFormat(profile.email) &&
-          isValidE164Phone(profile.phoneE164)) {
+      // Guideline 4: identity comes from the IdP. Only app-specific fields
+      // (birth date, nationality) are required to continue.
+      if (_isLockedIdentityFormValid) {
         return profile;
       }
       return null;
     }
     return profile.isProfileAndContactValid ? profile : null;
+  }
+
+  bool get _isLockedIdentityFormValid {
+    final hasIdentity =
+        _identityFirstName.isNotEmpty && _identityLastName.isNotEmpty;
+    final hasBirth = _birthDate != null;
+    final hasNationality = _nationalityCountryCode?.trim().isNotEmpty ?? false;
+    return hasIdentity &&
+        hasBirth &&
+        hasNationality &&
+        isValidEmailFormat(_identityEmail) &&
+        isValidE164Phone(_phoneE164);
   }
 
   String? validateAndGetError() {
@@ -254,7 +260,9 @@ class MemberProfileFormState extends State<MemberProfileForm> {
         !hasContactInfo(draftProfile)) {
       return context.l10n.memberContactRequired;
     }
-    if (!widget.requireEmail && !isValidEmailFormat(_identityEmail)) {
+    if (!_hideIdentityFields &&
+        !widget.requireEmail &&
+        !isValidEmailFormat(_identityEmail)) {
       return context.l10n.memberEmailInvalid;
     }
     if (!isValidE164Phone(_phoneE164)) {
@@ -268,7 +276,9 @@ class MemberProfileFormState extends State<MemberProfileForm> {
     _notifyDebounce = Timer(const Duration(milliseconds: 120), () {
       if (!mounted) return;
       final profile = buildProfile();
-      final isValid = profile?.isProfileAndContactValid == true;
+      final isValid = _hideIdentityFields
+          ? _isLockedIdentityFormValid
+          : profile?.isProfileAndContactValid == true;
       widget.onValidityChanged?.call(isValid);
       widget.onChanged?.call(profile);
     });

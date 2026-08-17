@@ -1,4 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
+import 'package:grinta/model/player.dart';
 import 'package:grinta/services/apple_identity_store.dart';
 import 'package:grinta/util/auth_profile_seed.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -68,6 +69,49 @@ void main() {
       expect(seed!.firstName, 'Player');
       expect(seed.lastName, 'Player');
       expect(seed.email, isNull);
+    });
+  });
+
+  group('mergeAuthIdentityOntoMemberProfile', () {
+    test('prefers Apple/Google identity over invitation member name/email', () {
+      final member = Player(
+        keyMember: 'm1',
+        firstName: 'Roster',
+        lastName: 'Name',
+        email: 'roster@club.test',
+        nationality: 'FR',
+      );
+      final seed = Player(
+        firstName: 'Ada',
+        lastName: 'Lovelace',
+        email: 'ada@privaterelay.appleid.com',
+      );
+
+      final merged = mergeAuthIdentityOntoMemberProfile(
+        member: member,
+        authSeed: seed,
+      );
+
+      expect(merged.firstName, 'Ada');
+      expect(merged.lastName, 'Lovelace');
+      expect(merged.email, 'ada@privaterelay.appleid.com');
+      expect(merged.nationality, 'FR');
+      expect(merged.keyMember, 'm1');
+    });
+
+    test('keeps member identity when auth seed has empty fields', () {
+      final member = Player(
+        firstName: 'Roster',
+        lastName: 'Name',
+        email: 'roster@club.test',
+      );
+      final merged = mergeAuthIdentityOntoMemberProfile(
+        member: member,
+        authSeed: Player(firstName: '', lastName: '', email: null),
+      );
+      expect(merged.firstName, 'Roster');
+      expect(merged.lastName, 'Name');
+      expect(merged.email, 'roster@club.test');
     });
   });
 
