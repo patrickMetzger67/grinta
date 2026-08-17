@@ -1,5 +1,24 @@
 import 'package:grinta/model/player.dart';
 
+/// After Sign in with Apple / Google, prefer IdP name/email on an invitation
+/// member profile so the signup form can lock those fields (Guideline 4).
+Player mergeAuthIdentityOntoMemberProfile({
+  required Player member,
+  Player? authSeed,
+}) {
+  if (authSeed == null) return member;
+
+  final seedFirst = authSeed.firstName?.trim() ?? '';
+  final seedLast = authSeed.lastName?.trim() ?? '';
+  final seedEmail = authSeed.email?.trim() ?? '';
+
+  return member.copyWith(
+    firstName: seedFirst.isNotEmpty ? seedFirst : member.firstName,
+    lastName: seedLast.isNotEmpty ? seedLast : member.lastName,
+    email: seedEmail.isNotEmpty ? seedEmail : member.email,
+  );
+}
+
 /// Builds a [Player] seed from Sign in with Apple / Google identity so the
 /// signup profile form does not re-ask for name/email (App Store Guideline 4).
 ///

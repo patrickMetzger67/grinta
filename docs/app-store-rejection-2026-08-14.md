@@ -4,6 +4,10 @@ Submission ID: `287921bc-b858-4fdc-a7ac-25bc28eaf1da`
 Device: iPad Air 11-inch (M3)  
 Version reviewed: 1.0.0+8 (7)
 
+> **Update 16–17 août 2026 :** Apple a confirmé le même motif Guideline 4 sur
+> le build **1.0.0+8**. Voir `app-store-rejection-2026-08-16-siwa.md` et
+> soumettre **1.0.0+10**.
+
 ## Motif
 
 **Guideline 4 — Design / Sign in with Apple**
