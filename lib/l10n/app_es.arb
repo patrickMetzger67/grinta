@@ -479,6 +479,163 @@
   "navTeams": "equipos",
   "navChat": "Mensajería",
   "navSync": "Sincronización",
+  "navDebugVideo": "Vídeo",
+  "debugVideoTitle": "Vídeo",
+  "debugVideoDropHint": "Suelta un MP4 aquí o elige un archivo",
+  "debugVideoChooseFile": "Elegir un archivo",
+  "debugVideoUploading": "Subiendo…",
+  "debugVideoEmptyList": "Aún no hay vídeos subidos.",
+  "debugVideoInvalidFormat": "Solo se aceptan archivos MP4.",
+  "debugVideoFileTooLarge": "El archivo supera el límite de 200 MB.",
+  "debugVideoUploadError": "Error al subir: {details}",
+  "@debugVideoUploadError": {
+    "placeholders": {
+      "details": {
+        "type": "String"
+      }
+    }
+  },
+  "debugVideoPickError": "No se pudo seleccionar el archivo: {details}",
+  "@debugVideoPickError": {
+    "placeholders": {
+      "details": {
+        "type": "String"
+      }
+    }
+  },
+  "debugVideoLoadError": "No se pudieron cargar los vídeos.",
+  "debugVideoPlaybackSpeed": "Velocidad de reproducción",
+  "debugVideoSkipPrevious": "Inicio",
+  "debugVideoRewind": "Retroceder 5 s",
+  "debugVideoPlay": "Reproducir",
+  "debugVideoPause": "Pausa",
+  "debugVideoStop": "Detener",
+  "debugVideoFastForward": "Avanzar 5 s",
+  "debugVideoSkipNext": "Fin",
+  "debugVideoNoVideo": "Ningún vídeo seleccionado.",
+  "debugVideoLibraryTitle": "Mis vídeos",
+  "debugVideoAuthRequired": "Inicia sesión para subir un vídeo.",
+  "debugVideoAnalyze": "Analizar",
+  "debugVideoStopAnalyze": "Detener análisis",
+  "debugVideoView": "Ver",
+  "debugVideoResetStats": "Reiniciar",
+  "debugVideoAnalyzeNeedPlayers": "Asocia al menos un jugador antes de analizar.",
+  "debugVideoAnalyzeHelp": "Pausa para marcar un instante o enmarcar a un jugador y luego reanuda la reproducción: los datos ya recogidos se conservan. El balón se sigue automáticamente. Pulsa Detener análisis para ver las estadísticas.",
+  "debugVideoAddTag": "Marcar",
+  "debugVideoRemoveTag": "Quitar marca",
+  "debugVideoTeamPlayerProgress": "{team}: {detected} / {total}",
+  "@debugVideoTeamPlayerProgress": {
+    "placeholders": {
+      "team": { "type": "String" },
+      "detected": { "type": "int" },
+      "total": { "type": "int" }
+    }
+  },
+  "debugVideoAnalyzeResultsTitle": "Estadísticas de jugadores",
+  "debugVideoAnalyzeDistance": "{distance} m",
+  "@debugVideoAnalyzeDistance": {
+    "placeholders": {
+      "distance": {
+        "type": "String"
+      }
+    }
+  },
+  "debugVideoAnalyzeBallsPlayed": "Jugados {count}",
+  "@debugVideoAnalyzeBallsPlayed": {
+    "placeholders": {
+      "count": { "type": "int" }
+    }
+  },
+  "debugVideoAnalyzeBallsReceived": "Recibidos {count}",
+  "@debugVideoAnalyzeBallsReceived": {
+    "placeholders": {
+      "count": { "type": "int" }
+    }
+  },
+  "debugVideoAnalyzeBallsGiven": "Dados {count}",
+  "@debugVideoAnalyzeBallsGiven": {
+    "placeholders": {
+      "count": { "type": "int" }
+    }
+  },
+  "debugVideoAnalyzePasses": "Pases {count}",
+  "@debugVideoAnalyzePasses": {
+    "placeholders": {
+      "count": { "type": "int" }
+    }
+  },
+  "debugVideoAnalyzeShots": "Tiros {count}",
+  "@debugVideoAnalyzeShots": {
+    "placeholders": {
+      "count": { "type": "int" }
+    }
+  },
+  "debugVideoAnalyzeNoSamples": "No se pudo medir ningún desplazamiento ni acción de balón.",
+  "debugVideoDetectPlayers": "Detectar jugadores",
+  "debugVideoStopDetection": "Detener detección",
+  "debugVideoDetectionLoading": "Primera descarga de YOLO (unos 15 MB)…",
+  "debugVideoDetectionError": "No se pudo iniciar la detección: {details}",
+  "@debugVideoDetectionError": {
+    "placeholders": {
+      "details": {
+        "type": "String"
+      }
+    }
+  },
+  "debugVideoDetectionUnsupported": "La detección de jugadores aún no está disponible en esta plataforma.",
+  "debugVideoMatchSectionTitle": "Partido",
+  "debugVideoMatchDateLabel": "Fecha",
+  "debugVideoMatchDateHint": "DD/MM/AAAA",
+  "debugVideoMatchDateInvalid": "Fecha no válida. Usa DD/MM/AAAA.",
+  "debugVideoMatchListTitle": "Partidos de tus equipos",
+  "debugVideoMatchEmpty": "No hay partidos ese día para los equipos que gestionas.",
+  "debugVideoMatchNoManagedTeams": "No hay equipos que gestionar en esta temporada.",
+  "debugVideoMatchLoadError": "No se pudieron cargar los partidos.",
+  "debugVideoCompoTitle": "Alineación",
+  "debugVideoCompoEmpty": "Aún no hay alineación guardada.",
+  "debugVideoCompoStarters": "Titulares",
+  "debugVideoCompoSubs": "Suplentes",
+  "debugVideoCompoNoNumber": "Sin n.º",
+  "debugVideoCompoOneTeamHint": "La alineación solo está disponible para equipos Grinta. El rival puede no tenerla.",
+  "debugVideoTeamKitColor": "Camiseta {team}",
+  "@debugVideoTeamKitColor": {
+    "placeholders": {
+      "team": {
+        "type": "String"
+      }
+    }
+  },
+  "debugVideoPickKitColor": "Elegir color",
+  "debugVideoRefereeKitColor": "Camiseta de los árbitros",
+  "debugVideoTeam1Fallback": "Equipo 1",
+  "debugVideoTeam2Fallback": "Equipo 2",
+  "debugVideoManualLabelHint": "Pulsa Enmarcar jugador, luego haz clic en el marco blanco (cruz) y arrástralo.",
+  "debugVideoPlayMode": "Reproducción",
+  "debugVideoDrawMode": "Marco",
+  "debugVideoPlayModeHelp": "Play, pausa y avance siguen disponibles hasta activar el modo marco.",
+  "debugVideoDrawModeHelp": "Haz clic en el marco blanco y arrástralo. Los botones sirven para redimensionarlo y asignar un jugador.",
+  "debugVideoDrawPlayer": "Enmarcar jugador",
+  "debugVideoCancelDraw": "Cancelar",
+  "debugVideoDrawNeedRoster": "Elige primero un partido con alineación para enmarcar a un jugador.",
+  "debugVideoFrameMoveUp": "Subir el marco",
+  "debugVideoFrameMoveDown": "Bajar el marco",
+  "debugVideoFrameMoveLeft": "Mover a la izquierda",
+  "debugVideoFrameMoveRight": "Mover a la derecha",
+  "debugVideoFrameTaller": "Aumentar altura",
+  "debugVideoFrameShorter": "Reducir altura",
+  "debugVideoFrameWider": "Aumentar anchura",
+  "debugVideoFrameNarrower": "Reducir anchura",
+  "debugVideoFrameAssign": "Asignar jugador",
+  "debugVideoAssociatePlayerTitle": "Asociar jugador",
+  "debugVideoSuggestedTeam": "Sugerido: {team}",
+  "@debugVideoSuggestedTeam": {
+    "placeholders": {
+      "team": {
+        "type": "String"
+      }
+    }
+  },
+  "debugVideoNoRosterToAssociate": "No hay jugadores en la alineación para asociar.",
   "navNotifications": "Notificaciones",
   "notificationsTitle": "Notificaciones",
   "notificationsEmptyTitle": "Sin notificaciones",

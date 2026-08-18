@@ -474,6 +474,163 @@
   "navTeams": "teams",
   "navChat": "Messaging",
   "navSync": "Synchronization",
+  "navDebugVideo": "Video",
+  "debugVideoTitle": "Video",
+  "debugVideoDropHint": "Drop an MP4 here or choose a file",
+  "debugVideoChooseFile": "Choose a file",
+  "debugVideoUploading": "Uploading…",
+  "debugVideoEmptyList": "No videos uploaded yet.",
+  "debugVideoInvalidFormat": "Only MP4 files are accepted.",
+  "debugVideoFileTooLarge": "The file exceeds the 200 MB size limit.",
+  "debugVideoUploadError": "Upload failed: {details}",
+  "@debugVideoUploadError": {
+    "placeholders": {
+      "details": {
+        "type": "String"
+      }
+    }
+  },
+  "debugVideoPickError": "Could not select the file: {details}",
+  "@debugVideoPickError": {
+    "placeholders": {
+      "details": {
+        "type": "String"
+      }
+    }
+  },
+  "debugVideoLoadError": "Could not load videos.",
+  "debugVideoPlaybackSpeed": "Playback speed",
+  "debugVideoSkipPrevious": "Start",
+  "debugVideoRewind": "Back 5 seconds",
+  "debugVideoPlay": "Play",
+  "debugVideoPause": "Pause",
+  "debugVideoStop": "Stop",
+  "debugVideoFastForward": "Forward 5 seconds",
+  "debugVideoSkipNext": "End",
+  "debugVideoNoVideo": "No video selected.",
+  "debugVideoLibraryTitle": "My videos",
+  "debugVideoAuthRequired": "Sign in to upload a video.",
+  "debugVideoAnalyze": "Analyze",
+  "debugVideoStopAnalyze": "Stop analysis",
+  "debugVideoView": "View",
+  "debugVideoResetStats": "Reset",
+  "debugVideoAnalyzeNeedPlayers": "Associate at least one player before analyzing.",
+  "debugVideoAnalyzeHelp": "Pause to tag a moment or box a player, then play again — collected data is kept. The ball is tracked automatically. Tap Stop analysis to see the stats.",
+  "debugVideoAddTag": "Tag",
+  "debugVideoRemoveTag": "Remove tag",
+  "debugVideoTeamPlayerProgress": "{team}: {detected} / {total}",
+  "@debugVideoTeamPlayerProgress": {
+    "placeholders": {
+      "team": { "type": "String" },
+      "detected": { "type": "int" },
+      "total": { "type": "int" }
+    }
+  },
+  "debugVideoAnalyzeResultsTitle": "Player stats",
+  "debugVideoAnalyzeDistance": "{distance} m",
+  "@debugVideoAnalyzeDistance": {
+    "placeholders": {
+      "distance": {
+        "type": "String"
+      }
+    }
+  },
+  "debugVideoAnalyzeBallsPlayed": "Played {count}",
+  "@debugVideoAnalyzeBallsPlayed": {
+    "placeholders": {
+      "count": { "type": "int" }
+    }
+  },
+  "debugVideoAnalyzeBallsReceived": "Received {count}",
+  "@debugVideoAnalyzeBallsReceived": {
+    "placeholders": {
+      "count": { "type": "int" }
+    }
+  },
+  "debugVideoAnalyzeBallsGiven": "Given {count}",
+  "@debugVideoAnalyzeBallsGiven": {
+    "placeholders": {
+      "count": { "type": "int" }
+    }
+  },
+  "debugVideoAnalyzePasses": "Passes {count}",
+  "@debugVideoAnalyzePasses": {
+    "placeholders": {
+      "count": { "type": "int" }
+    }
+  },
+  "debugVideoAnalyzeShots": "Shots {count}",
+  "@debugVideoAnalyzeShots": {
+    "placeholders": {
+      "count": { "type": "int" }
+    }
+  },
+  "debugVideoAnalyzeNoSamples": "No movement or ball actions could be measured.",
+  "debugVideoDetectPlayers": "Detect players",
+  "debugVideoStopDetection": "Stop detection",
+  "debugVideoDetectionLoading": "First-time YOLO download (about 15 MB)…",
+  "debugVideoDetectionError": "Could not start detection: {details}",
+  "@debugVideoDetectionError": {
+    "placeholders": {
+      "details": {
+        "type": "String"
+      }
+    }
+  },
+  "debugVideoDetectionUnsupported": "Player detection is not available on this platform yet.",
+  "debugVideoMatchSectionTitle": "Match",
+  "debugVideoMatchDateLabel": "Date",
+  "debugVideoMatchDateHint": "DD/MM/YYYY",
+  "debugVideoMatchDateInvalid": "Invalid date. Use DD/MM/YYYY.",
+  "debugVideoMatchListTitle": "Matches for your teams",
+  "debugVideoMatchEmpty": "No matches on this day for the teams you manage.",
+  "debugVideoMatchNoManagedTeams": "No teams to manage in this season.",
+  "debugVideoMatchLoadError": "Could not load matches.",
+  "debugVideoCompoTitle": "Match sheet",
+  "debugVideoCompoEmpty": "No lineup saved yet.",
+  "debugVideoCompoStarters": "Starters",
+  "debugVideoCompoSubs": "Substitutes",
+  "debugVideoCompoNoNumber": "No #",
+  "debugVideoCompoOneTeamHint": "Lineups are only available for Grinta teams. The opponent may not have one.",
+  "debugVideoTeamKitColor": "{team} kit",
+  "@debugVideoTeamKitColor": {
+    "placeholders": {
+      "team": {
+        "type": "String"
+      }
+    }
+  },
+  "debugVideoPickKitColor": "Choose color",
+  "debugVideoRefereeKitColor": "Referee kit",
+  "debugVideoTeam1Fallback": "Team 1",
+  "debugVideoTeam2Fallback": "Team 2",
+  "debugVideoManualLabelHint": "Tap Box a player, then click the white frame (cross) and drag it.",
+  "debugVideoPlayMode": "Playback",
+  "debugVideoDrawMode": "Box",
+  "debugVideoPlayModeHelp": "Play, pause and scrub stay available until Box mode is on.",
+  "debugVideoDrawModeHelp": "Click the white frame and drag it. Use the buttons to resize it, then assign a player.",
+  "debugVideoDrawPlayer": "Box a player",
+  "debugVideoCancelDraw": "Cancel",
+  "debugVideoDrawNeedRoster": "Pick a match with a lineup first to box a player.",
+  "debugVideoFrameMoveUp": "Move frame up",
+  "debugVideoFrameMoveDown": "Move frame down",
+  "debugVideoFrameMoveLeft": "Move frame left",
+  "debugVideoFrameMoveRight": "Move frame right",
+  "debugVideoFrameTaller": "Increase height",
+  "debugVideoFrameShorter": "Decrease height",
+  "debugVideoFrameWider": "Increase width",
+  "debugVideoFrameNarrower": "Decrease width",
+  "debugVideoFrameAssign": "Assign player",
+  "debugVideoAssociatePlayerTitle": "Associate player",
+  "debugVideoSuggestedTeam": "Suggested: {team}",
+  "@debugVideoSuggestedTeam": {
+    "placeholders": {
+      "team": {
+        "type": "String"
+      }
+    }
+  },
+  "debugVideoNoRosterToAssociate": "No players on the match sheet to associate.",
   "navNotifications": "Notifications",
   "notificationsTitle": "Notifications",
   "notificationsEmptyTitle": "No notifications",

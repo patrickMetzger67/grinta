@@ -963,6 +963,293 @@ class AppLocalizationsEn extends AppLocalizations {
   String get navSync => 'Synchronization';
 
   @override
+  String get navDebugVideo => 'Video';
+
+  @override
+  String get debugVideoTitle => 'Video';
+
+  @override
+  String get debugVideoDropHint => 'Drop an MP4 here or choose a file';
+
+  @override
+  String get debugVideoChooseFile => 'Choose a file';
+
+  @override
+  String get debugVideoUploading => 'Uploading…';
+
+  @override
+  String get debugVideoEmptyList => 'No videos uploaded yet.';
+
+  @override
+  String get debugVideoInvalidFormat => 'Only MP4 files are accepted.';
+
+  @override
+  String get debugVideoFileTooLarge =>
+      'The file exceeds the 200 MB size limit.';
+
+  @override
+  String debugVideoUploadError(String details) {
+    return 'Upload failed: $details';
+  }
+
+  @override
+  String debugVideoPickError(String details) {
+    return 'Could not select the file: $details';
+  }
+
+  @override
+  String get debugVideoLoadError => 'Could not load videos.';
+
+  @override
+  String get debugVideoPlaybackSpeed => 'Playback speed';
+
+  @override
+  String get debugVideoSkipPrevious => 'Start';
+
+  @override
+  String get debugVideoRewind => 'Back 5 seconds';
+
+  @override
+  String get debugVideoPlay => 'Play';
+
+  @override
+  String get debugVideoPause => 'Pause';
+
+  @override
+  String get debugVideoStop => 'Stop';
+
+  @override
+  String get debugVideoFastForward => 'Forward 5 seconds';
+
+  @override
+  String get debugVideoSkipNext => 'End';
+
+  @override
+  String get debugVideoNoVideo => 'No video selected.';
+
+  @override
+  String get debugVideoLibraryTitle => 'My videos';
+
+  @override
+  String get debugVideoAuthRequired => 'Sign in to upload a video.';
+
+  @override
+  String get debugVideoAnalyze => 'Analyze';
+
+  @override
+  String get debugVideoStopAnalyze => 'Stop analysis';
+
+  @override
+  String get debugVideoView => 'View';
+
+  @override
+  String get debugVideoResetStats => 'Reset';
+
+  @override
+  String get debugVideoAnalyzeNeedPlayers =>
+      'Associate at least one player before analyzing.';
+
+  @override
+  String get debugVideoAnalyzeHelp =>
+      'Pause to tag a moment or box a player, then play again — collected data is kept. The ball is tracked automatically. Tap Stop analysis to see the stats.';
+
+  @override
+  String get debugVideoAddTag => 'Tag';
+
+  @override
+  String get debugVideoRemoveTag => 'Remove tag';
+
+  @override
+  String debugVideoTeamPlayerProgress(String team, int detected, int total) {
+    return '$team: $detected / $total';
+  }
+
+  @override
+  String get debugVideoAnalyzeResultsTitle => 'Player stats';
+
+  @override
+  String debugVideoAnalyzeDistance(String distance) {
+    return '$distance m';
+  }
+
+  @override
+  String debugVideoAnalyzeBallsPlayed(int count) {
+    return 'Played $count';
+  }
+
+  @override
+  String debugVideoAnalyzeBallsReceived(int count) {
+    return 'Received $count';
+  }
+
+  @override
+  String debugVideoAnalyzeBallsGiven(int count) {
+    return 'Given $count';
+  }
+
+  @override
+  String debugVideoAnalyzePasses(int count) {
+    return 'Passes $count';
+  }
+
+  @override
+  String debugVideoAnalyzeShots(int count) {
+    return 'Shots $count';
+  }
+
+  @override
+  String get debugVideoAnalyzeNoSamples =>
+      'No movement or ball actions could be measured.';
+
+  @override
+  String get debugVideoDetectPlayers => 'Detect players';
+
+  @override
+  String get debugVideoStopDetection => 'Stop detection';
+
+  @override
+  String get debugVideoDetectionLoading =>
+      'First-time YOLO download (about 15 MB)…';
+
+  @override
+  String debugVideoDetectionError(String details) {
+    return 'Could not start detection: $details';
+  }
+
+  @override
+  String get debugVideoDetectionUnsupported =>
+      'Player detection is not available on this platform yet.';
+
+  @override
+  String get debugVideoMatchSectionTitle => 'Match';
+
+  @override
+  String get debugVideoMatchDateLabel => 'Date';
+
+  @override
+  String get debugVideoMatchDateHint => 'DD/MM/YYYY';
+
+  @override
+  String get debugVideoMatchDateInvalid => 'Invalid date. Use DD/MM/YYYY.';
+
+  @override
+  String get debugVideoMatchListTitle => 'Matches for your teams';
+
+  @override
+  String get debugVideoMatchEmpty =>
+      'No matches on this day for the teams you manage.';
+
+  @override
+  String get debugVideoMatchNoManagedTeams =>
+      'No teams to manage in this season.';
+
+  @override
+  String get debugVideoMatchLoadError => 'Could not load matches.';
+
+  @override
+  String get debugVideoCompoTitle => 'Match sheet';
+
+  @override
+  String get debugVideoCompoEmpty => 'No lineup saved yet.';
+
+  @override
+  String get debugVideoCompoStarters => 'Starters';
+
+  @override
+  String get debugVideoCompoSubs => 'Substitutes';
+
+  @override
+  String get debugVideoCompoNoNumber => 'No #';
+
+  @override
+  String get debugVideoCompoOneTeamHint =>
+      'Lineups are only available for Grinta teams. The opponent may not have one.';
+
+  @override
+  String debugVideoTeamKitColor(String team) {
+    return '$team kit';
+  }
+
+  @override
+  String get debugVideoPickKitColor => 'Choose color';
+
+  @override
+  String get debugVideoRefereeKitColor => 'Referee kit';
+
+  @override
+  String get debugVideoTeam1Fallback => 'Team 1';
+
+  @override
+  String get debugVideoTeam2Fallback => 'Team 2';
+
+  @override
+  String get debugVideoManualLabelHint =>
+      'Tap Box a player, then click the white frame (cross) and drag it.';
+
+  @override
+  String get debugVideoPlayMode => 'Playback';
+
+  @override
+  String get debugVideoDrawMode => 'Box';
+
+  @override
+  String get debugVideoPlayModeHelp =>
+      'Play, pause and scrub stay available until Box mode is on.';
+
+  @override
+  String get debugVideoDrawModeHelp =>
+      'Click the white frame and drag it. Use the buttons to resize it, then assign a player.';
+
+  @override
+  String get debugVideoDrawPlayer => 'Box a player';
+
+  @override
+  String get debugVideoCancelDraw => 'Cancel';
+
+  @override
+  String get debugVideoDrawNeedRoster =>
+      'Pick a match with a lineup first to box a player.';
+
+  @override
+  String get debugVideoFrameMoveUp => 'Move frame up';
+
+  @override
+  String get debugVideoFrameMoveDown => 'Move frame down';
+
+  @override
+  String get debugVideoFrameMoveLeft => 'Move frame left';
+
+  @override
+  String get debugVideoFrameMoveRight => 'Move frame right';
+
+  @override
+  String get debugVideoFrameTaller => 'Increase height';
+
+  @override
+  String get debugVideoFrameShorter => 'Decrease height';
+
+  @override
+  String get debugVideoFrameWider => 'Increase width';
+
+  @override
+  String get debugVideoFrameNarrower => 'Decrease width';
+
+  @override
+  String get debugVideoFrameAssign => 'Assign player';
+
+  @override
+  String get debugVideoAssociatePlayerTitle => 'Associate player';
+
+  @override
+  String debugVideoSuggestedTeam(String team) {
+    return 'Suggested: $team';
+  }
+
+  @override
+  String get debugVideoNoRosterToAssociate =>
+      'No players on the match sheet to associate.';
+
+  @override
   String get navNotifications => 'Notifications';
 
   @override
@@ -7082,10 +7369,12 @@ class AppLocalizationsEn extends AppLocalizations {
       'Oura import is not deployed yet. Run firebase deploy for ouraListActivities and ouraImportActivity.';
 
   @override
-  String get createPersonalSportOuraLoadError => 'Could not load Oura activities. Check the connection and try again.';
+  String get createPersonalSportOuraLoadError =>
+      'Could not load Oura activities. Check the connection and try again.';
 
   @override
-  String get createPersonalSportOuraNoImportable => 'No Oura workouts to import.';
+  String get createPersonalSportOuraNoImportable =>
+      'No Oura workouts to import.';
 
   @override
   String get wearableDeviceOura => 'Oura';
@@ -7098,7 +7387,8 @@ class AppLocalizationsEn extends AppLocalizations {
       'Connect your Oura account to import workouts with duration and heart-rate zones';
 
   @override
-  String get ouraConnectToggleConnectedSubtitle => 'Oura connected — import workouts from Create';
+  String get ouraConnectToggleConnectedSubtitle =>
+      'Oura connected — import workouts from Create';
 
   @override
   String get ouraConnectSuccess => 'Oura account connected.';
@@ -7114,7 +7404,8 @@ class AppLocalizationsEn extends AppLocalizations {
   String get ouraAccountHintPlaceholder => 'Oura email';
 
   @override
-  String get ouraAccountHintRequired => 'Enter your Oura account (email) before continuing.';
+  String get ouraAccountHintRequired =>
+      'Enter your Oura account (email) before continuing.';
 
   @override
   String get ouraConnectContinue => 'Continue to Oura';
@@ -7136,10 +7427,12 @@ class AppLocalizationsEn extends AppLocalizations {
   String get ouraCoachVisibilityTitle => 'Coach visibility';
 
   @override
-  String get ouraCoachVisibilitySubtitle => 'Allow your coach to see this data type';
+  String get ouraCoachVisibilitySubtitle =>
+      'Allow your coach to see this data type';
 
   @override
-  String get ouraCoachVisibilitySaveFailed => 'Could not save Oura preferences.';
+  String get ouraCoachVisibilitySaveFailed =>
+      'Could not save Oura preferences.';
 
   @override
   String get ouraMetricWorkout => 'Workouts';
@@ -7148,13 +7441,17 @@ class AppLocalizationsEn extends AppLocalizations {
   String get ouraCoachConnectTitle => 'Oura';
 
   @override
-  String ouraCoachConnectSubtitle(String playerName) => 'Connect Oura for $playerName';
+  String ouraCoachConnectSubtitle(String playerName) {
+    return 'Connect Oura for $playerName';
+  }
 
   @override
   String get ouraCoachConnectAction => 'Connect';
 
   @override
-  String ouraCoachConnectConnectedSubtitle(String playerName) => 'Oura connected for $playerName';
+  String ouraCoachConnectConnectedSubtitle(String playerName) {
+    return 'Oura connected for $playerName';
+  }
 
   @override
   String get ouraAnalysisTitle => 'Oura analysis';
@@ -7181,16 +7478,23 @@ class AppLocalizationsEn extends AppLocalizations {
   String get ouraAnalysisHrZonesTitle => 'Heart rate zones';
 
   @override
-  String get ouraAnalysisNoZones => 'No zone breakdown for this import. Re-import the Oura activity.';
+  String get ouraAnalysisNoZones =>
+      'No zone breakdown for this import. Re-import the Oura activity.';
 
   @override
-  String ouraAnalysisZoneLabel(int zone) => 'Zone $zone';
+  String ouraAnalysisZoneLabel(int zone) {
+    return 'Zone $zone';
+  }
 
   @override
-  String ouraAnalysisZoneAboveBpm(int bpm) => '$bpm+ bpm';
+  String ouraAnalysisZoneAboveBpm(int bpm) {
+    return '$bpm+ bpm';
+  }
 
   @override
-  String ouraAnalysisZoneBpmRange(int min, int max) => '$min – $max bpm';
+  String ouraAnalysisZoneBpmRange(int min, int max) {
+    return '$min – $max bpm';
+  }
 
   @override
   String get ouraMetricHeartrate => 'Heart rate';
@@ -7203,5 +7507,4 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get ouraMetricEmail => 'Email';
-
 }

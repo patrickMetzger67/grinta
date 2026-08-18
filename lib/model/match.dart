@@ -136,6 +136,8 @@ class Match {
   int? duration;
   bool? isScrapping;
 
+  /// URL de la vidéo d'analyse. Non persistée dans Firestore.
+  String? videoUrl;
 
   DocumentReference? ref;
 
@@ -197,6 +199,7 @@ class Match {
     this.timestamp,
     this.duration,
     this.isScrapping = true,
+    this.videoUrl,
   });
 
 
@@ -563,7 +566,8 @@ class Match {
         'withTracker=$withTracker ' +
         'ownerId=$ownerId ' +
         'fieldGpsCorners=${fieldGpsCorners.toString()} ' +
-        'isTrackerDataUploaded=$isTrackerDataUploaded';
+        'isTrackerDataUploaded=$isTrackerDataUploaded ' +
+        'videoUrl=$videoUrl';
   }
 
 }

@@ -6,6 +6,7 @@ abstract final class AnalyticsScreenNames {
   static const chat = 'chat';
   static const chatBot = 'chat_bot';
   static const sync = 'sync';
+  static const debugVideo = 'debug_video';
   static const teams = 'teams';
   static const fields = 'fields';
   static const compo = 'compo';

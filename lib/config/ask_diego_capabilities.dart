@@ -216,12 +216,16 @@ const List<AskDiegoCapability> kAskDiegoCapabilities = <AskDiegoCapability>[
     id: 'tracker_indicators',
     name: 'Indicateurs synthèse joueur (tracker)',
     description:
-        "Expliquer la signification des indicateurs affichés sur l'écran Synthèse joueur (détail tracker GPS) : distance, vitesses, accélérations, sprints, workload, etc. Réponse texte uniquement — pas de navigation ni de chiffres de séance (connaissances statiques, pas de contexte JSON). Pour le workload / comment il est calculé : utiliser EXACTEMENT la formule documentée dans la section Workload (ne pas inventer une autre formule).",
+        "Expliquer la signification des indicateurs affichés sur l'écran Synthèse joueur (détail tracker GPS) : distance, vitesses, accélérations, sprints, workload, indice de fatigue, etc. Réponse texte uniquement — pas de navigation ni de chiffres de séance (connaissances statiques, pas de contexte JSON). Workload et indice de fatigue sont DEUX indicateurs DISTINCTS : ne jamais les confondre ni donner la formule de l'un pour l'autre. Pour le workload : section Workload uniquement. Pour l'indice de fatigue / fatigue : section Indice de fatigue uniquement (ratio distances 2e/1re moitié — JAMAIS la formule workload).",
     examples: <String>[
       "Peux-tu m'expliquer la signification des indicateurs de la synthèse joueur ?",
       "C'est quoi le workload ?",
       'Comment tu calcules le workload ?',
       'Comment est calculé le workload dans Grinta ?',
+      "C'est quoi l'indice de fatigue ?",
+      "Comment est déterminé ou calculé l'indice de fatigue ?",
+      'Comment tu calcules la fatigue ?',
+      'How is the fatigue index calculated?',
       'Que signifie acc. hautes ?',
       'À quoi correspond la vitesse max ?',
       'Explique-moi les stats du tracker',
@@ -440,6 +444,10 @@ ${_formatCapabilitiesSection()}
 - L'écran **Synthèse joueur** (détail d'une séance tracker GPS) affiche des indicateurs de performance calculés à partir des données GPS du capteur.
 - Les seuils (sprint, accélération haute, vitesse validée, etc.) viennent des paramètres d'analyse de l'équipe (**Param défaut** ou paramètres personnalisés). Ne cite pas de valeurs numériques de seuils sauf si l'utilisateur les mentionne.
 - Réponds en texte clair et pédagogique ; **pas de navigation** ni de chiffres de séance (tu n'as pas le détail de la séance courante dans le contexte).
+- **INTERDICTION ABSOLUE** : `workloadScore` (Workload) et `fatigueIndex` (indice de fatigue / Fatigue) sont **deux indicateurs différents**. Ne jamais dire « l'indice de fatigue, ou Workload ». Ne jamais donner la formule workload pour une question sur la fatigue, et inversement.
+- Routage obligatoire selon les mots de la question :
+  - fatigue / indice de fatigue / fatigue index / Ermüdung / Fatiga / Fatica → section **Indice de fatigue** uniquement.
+  - workload / charge de travail / score composite → section **Workload** uniquement.
 - Indicateurs :
   - **Distance** (`distanceKm`) : distance totale parcourue durant la séance.
   - **Vitesse moy.** (`averageSpeedKmh`) : vitesse moyenne sur toute la durée de la séance.
@@ -448,13 +456,16 @@ ${_formatCapabilitiesSection()}
   - **Sprints** (`sprintCount`) : nombre de phases de sprint au-dessus du seuil sprint pendant une durée minimale.
   - **Acc. hautes** (`highAccelerationCount`) : nombre d'accélérations de haute intensité au-dessus du seuil, maintenues durant le temps minimum requis.
   - **Haute vitesse** (`highSpeedDuration`) : temps cumulé au-dessus du seuil de haute vitesse / sprint.
-  - **Workload** (`workloadScore`) : voir la section dédiée ci-dessous — réponse OBLIGATOIRE avec la formule exacte.
+  - **Workload** (`workloadScore`) : score d'intensité de séance — section Workload. **Ce n'est pas l'indice de fatigue.**
+  - **Fatigue** (`fatigueIndex`) : ratio de distances 2e/1re moitié — section Indice de fatigue. **Ce n'est pas le workload.**
 - Si l'utilisateur demande un indicateur précis, concentre-toi dessus ; s'il demande une vue d'ensemble, résume les principaux indicateurs de façon concise.
 
 ## Workload — formule exacte Grinta (OBLIGATOIRE)
-Quand l'utilisateur demande ce qu'est le workload, comment il est calculé, ou la formule :
+Quand l'utilisateur demande ce qu'est le **workload** (pas la fatigue), comment il est calculé, ou la formule :
+- Cette section s'applique UNIQUEMENT si la question parle de workload / charge de travail. Si elle parle de fatigue / indice de fatigue : ignorer cette section et utiliser **Indice de fatigue**.
 - Réponds **exactement** avec cette explication (tu peux adapter légèrement le ton, mais la formule et les unités doivent rester identiques).
 - Ne dis PAS seulement « score composite » sans la formule.
+- Ne dis JAMAIS que le workload est l'indice de fatigue.
 - Formule utilisée dans Grinta (`SensorAnalysisService`) :
 
 workload = (distance_m / 100) + (temps_haute_vitesse_s / 10) + (sprints × 5) + (acc_max_mps2 × 10)
@@ -468,6 +479,35 @@ avec :
 Puis : workloadScorePerMinute = workload / durée_en_minutes.
 
 Exemple à citer si utile : 8440 m, 7,6 s HV, 2 sprints, 7,9 m/s² → 84,4 + 0,76 + 10 + 79 ≈ **174**.
+
+## Indice de fatigue — formule exacte Grinta (OBLIGATOIRE)
+Quand l'utilisateur demande ce qu'est l'indice de fatigue, la fatigue, comment il est déterminé ou calculé, ou la formule :
+- L'indice de fatigue **n'est PAS le workload**. Ce sont deux tuiles distinctes sur la Synthèse joueur.
+- **INTERDIT** : formules du type `(distance_m / 100) + (temps_haute_vitesse_s / 10) + (sprints × 5) + (acc_max_mps2 × 10)` — c'est le workload, pas la fatigue.
+- **INTERDIT** : commencer par « L'indice de fatigue, ou Workload ».
+- Réponds **exactement** avec cette explication (tu peux adapter légèrement le ton, mais la formule et les définitions doivent rester identiques).
+- Ne dis PAS seulement « indicateur de fatigue » ou « charge de la séance » sans la formule.
+- Formule utilisée dans Grinta (`SensorAnalysisService`) :
+
+fatigueIndex = distance_2e_moitie_m / distance_1ere_moitie_m
+
+Si distance_1ere_moitie_m = 0 : fatigueIndex = 1.0
+
+Les deux « moitiés » sont des **moitiés temporelles de l'enregistrement GPS** (pas les mi-temps officiels 45/45 d'un match) :
+- début = horodatage du premier échantillon GPS
+- fin = horodatage du dernier échantillon GPS
+- milieu = début + (durée totale / 2)
+- 1re moitié : distance parcourue jusqu'au milieu (inclus)
+- 2e moitié : distance parcourue après le milieu
+
+Lecture du ratio :
+- **1.00** : même volume de course sur les deux moitiés
+- **< 1.00** : moins de distance en 2e moitié (baisse de volume, souvent associée à la fatigue)
+- **> 1.00** : plus de distance en 2e moitié
+
+Affichage : 2 décimales (ex. 0.88). Couleurs sur l'écran Synthèse joueur : vert si < 0,95 ; orange si 0,95 à < 1,10 ; rouge si ≥ 1,10.
+
+Exemple à citer si utile : 4 200 m puis 3 700 m → 3700 / 4200 ≈ **0.88**.
 
 ## Surface de jeu (match_surface)
 - Utilise `surfaceDeJeu` sur `nextMatch` ou sur l'entrée match filtrée dans `agenda.items` / `weeklyAgenda.items` (par date, heure, adversaire).

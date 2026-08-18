@@ -1,6 +1,126 @@
 {
   "sourceLanguage" : "fr",
   "strings" : {
+    "CFBundleDisplayName" : {
+      "comment" : "Bundle display name",
+      "extractionState" : "extracted_with_value",
+      "localizations" : {
+        "fr" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "Grinta"
+          }
+        }
+      }
+    },
+    "CFBundleName" : {
+      "comment" : "Bundle name",
+      "extractionState" : "extracted_with_value",
+      "localizations" : {
+        "fr" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "Grinta"
+          }
+        }
+      }
+    },
+    "NSBluetoothAlwaysUsageDescription" : {
+      "comment" : "Privacy - Bluetooth Always Usage Description",
+      "extractionState" : "extracted_with_value",
+      "localizations" : {
+        "fr" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "Grinta utilise le Bluetooth pour détecter et connecter les capteurs Polar du kit équipe. / Grinta uses Bluetooth to discover and connect Polar team-kit sensors."
+          }
+        }
+      }
+    },
+    "NSBluetoothPeripheralUsageDescription" : {
+      "comment" : "Privacy - Bluetooth Peripheral Usage Description",
+      "extractionState" : "extracted_with_value",
+      "localizations" : {
+        "fr" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "Grinta utilise le Bluetooth pour détecter et connecter les capteurs Polar du kit équipe. / Grinta uses Bluetooth to discover and connect Polar team-kit sensors."
+          }
+        }
+      }
+    },
+    "NSCalendarsFullAccessUsageDescription" : {
+      "comment" : "Privacy - Calendars Full Access Usage Description",
+      "extractionState" : "extracted_with_value",
+      "localizations" : {
+        "fr" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "Grinta synchronise vos matchs et entraînements avec le calendrier de votre téléphone. / Grinta syncs your matches and training sessions with your phone calendar."
+          }
+        }
+      }
+    },
+    "NSCalendarsUsageDescription" : {
+      "comment" : "Privacy - Calendars Usage Description",
+      "extractionState" : "extracted_with_value",
+      "localizations" : {
+        "fr" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "Grinta synchronise vos matchs et entraînements avec le calendrier de votre téléphone. / Grinta syncs your matches and training sessions with your phone calendar."
+          }
+        }
+      }
+    },
+    "NSCameraUsageDescription" : {
+      "comment" : "Privacy - Camera Usage Description",
+      "extractionState" : "extracted_with_value",
+      "localizations" : {
+        "fr" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "Grinta uses the camera to take a profile photo or attach photos in team chat — for example, when you tap Change photo on Edit profile. / Grinta utilise l’appareil photo pour une photo de profil ou des pièces jointes dans le chat — par exemple via Modifier la photo sur Modifier mon profil."
+          }
+        }
+      }
+    },
+    "NSFaceIDUsageDescription" : {
+      "comment" : "Privacy - Face ID Usage Description",
+      "extractionState" : "extracted_with_value",
+      "localizations" : {
+        "fr" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "Grinta utilise Face ID pour déverrouiller l'application et vous reconnecter rapidement lorsque vous l'avez activé. / Grinta uses Face ID to unlock the app and sign you back in quickly when you enable it."
+          }
+        }
+      }
+    },
+    "NSHealthShareUsageDescription" : {
+      "comment" : "Privacy - Health Share Usage Description",
+      "extractionState" : "extracted_with_value",
+      "localizations" : {
+        "fr" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "Grinta lit vos entraînements Apple Forme / Santé (durée, distance, calories, fréquence cardiaque) pour les importer dans votre agenda et, si vous l'autorisez, les partager avec votre coach. / Grinta reads your Apple Fitness / Health workouts (duration, distance, calories, heart rate) to import them into your agenda and, when you allow it, share them with your coach."
+          }
+        }
+      }
+    },
+    "NSHealthUpdateUsageDescription" : {
+      "comment" : "Privacy - Health Update Usage Description",
+      "extractionState" : "extracted_with_value",
+      "localizations" : {
+        "fr" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "Grinta peut enregistrer vos séances d'entraînement et matchs (durée, distance) dans Apple Santé / Forme lorsque vous l'autorisez après une synchronisation. / Grinta can save your training and match sessions (duration, distance) to Apple Health / Fitness when you allow it after a sync."
+          }
+        }
+      }
+    },
     "NSLocationAlwaysAndWhenInUseUsageDescription" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -102,6 +222,42 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Grinta utilizza la tua posizione per centrare la mappa quando localizzi un campo per le heatmap GPS — ad esempio in Localizzazione campo."
+          }
+        }
+      }
+    },
+    "NSMicrophoneUsageDescription" : {
+      "comment" : "Privacy - Microphone Usage Description",
+      "extractionState" : "extracted_with_value",
+      "localizations" : {
+        "fr" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "Grinta needs microphone access to record voice messages in team chat and to ask the AI assistant (Ask Gio) questions by voice. / Grinta a besoin du micro pour les messages vocaux du chat d’équipe et pour poser des questions à Ask Gio à la voix."
+          }
+        }
+      }
+    },
+    "NSPhotoLibraryUsageDescription" : {
+      "comment" : "Privacy - Photo Library Usage Description",
+      "extractionState" : "extracted_with_value",
+      "localizations" : {
+        "fr" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "Grinta uses your photo library to set a profile picture or share images in team chat — for example, when you choose an existing photo on Edit profile. / Grinta utilise votre photothèque pour une photo de profil ou le chat d’équipe — par exemple en choisissant une photo existante sur Modifier mon profil."
+          }
+        }
+      }
+    },
+    "NSSpeechRecognitionUsageDescription" : {
+      "comment" : "Privacy - Speech Recognition Usage Description",
+      "extractionState" : "extracted_with_value",
+      "localizations" : {
+        "fr" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "Grinta uses speech recognition so you can ask the AI assistant (Ask Gio) questions by voice. / Grinta utilise la reconnaissance vocale pour poser des questions à Ask Gio à la voix."
           }
         }
       }

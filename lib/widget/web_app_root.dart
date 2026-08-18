@@ -21,6 +21,7 @@ import 'package:grinta/widget/app_session_player_season_selector.dart';
 import 'package:provider/provider.dart';
 
 import '../model/agendaItem.dart';
+import '../screen/analyze_video/analyze_video_screen.dart';
 import '../screen/responsive_chat.dart';
 import '../screen/syncScreen.dart';
 import '../screen/teamDetailScreen.dart';
@@ -314,6 +315,13 @@ class _WebAppRootState extends State<WebAppRoot> {
                         screenName: AnalyticsScreenNames.sync,
                         featureId: FeatureDiscoveryIds.tabSync,
                       ),
+                      if (kDebugMode)
+                        WebShellItem(
+                          label: l10n.navDebugVideo,
+                          icon: Icons.videocam_outlined,
+                          page: const DebugVideoScreen(),
+                          screenName: AnalyticsScreenNames.debugVideo,
+                        ),
                     ],
                   );
                 },

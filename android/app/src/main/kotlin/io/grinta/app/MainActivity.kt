@@ -141,6 +141,7 @@ class MainActivity : FlutterFragmentActivity() {
             }
 
         GrintaCalendarChannel.register(flutterEngine, this)
+        PlayerDetectionChannel.register(flutterEngine)
         GrintaHealthConnectChannel.register(flutterEngine, this)
     }
 

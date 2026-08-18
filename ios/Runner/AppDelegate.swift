@@ -35,5 +35,8 @@ import app_links
 
   func didInitializeImplicitFlutterEngine(_ engineBridge: FlutterImplicitEngineBridge) {
     GeneratedPluginRegistrant.register(with: engineBridge.pluginRegistry)
+    PlayerDetectionChannel.register(
+      binaryMessenger: engineBridge.applicationRegistrar.messenger()
+    )
   }
 }

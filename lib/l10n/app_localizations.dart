@@ -1792,6 +1792,504 @@ abstract class AppLocalizations {
   /// **'Synchronisation'**
   String get navSync;
 
+  /// No description provided for @navDebugVideo.
+  ///
+  /// In fr, this message translates to:
+  /// **'Vidéo'**
+  String get navDebugVideo;
+
+  /// No description provided for @debugVideoTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Vidéo'**
+  String get debugVideoTitle;
+
+  /// No description provided for @debugVideoDropHint.
+  ///
+  /// In fr, this message translates to:
+  /// **'Déposez un fichier MP4 ici ou choisissez un fichier'**
+  String get debugVideoDropHint;
+
+  /// No description provided for @debugVideoChooseFile.
+  ///
+  /// In fr, this message translates to:
+  /// **'Choisir un fichier'**
+  String get debugVideoChooseFile;
+
+  /// No description provided for @debugVideoUploading.
+  ///
+  /// In fr, this message translates to:
+  /// **'Téléversement en cours…'**
+  String get debugVideoUploading;
+
+  /// No description provided for @debugVideoEmptyList.
+  ///
+  /// In fr, this message translates to:
+  /// **'Aucune vidéo téléversée pour le moment.'**
+  String get debugVideoEmptyList;
+
+  /// No description provided for @debugVideoInvalidFormat.
+  ///
+  /// In fr, this message translates to:
+  /// **'Seuls les fichiers MP4 sont acceptés.'**
+  String get debugVideoInvalidFormat;
+
+  /// No description provided for @debugVideoFileTooLarge.
+  ///
+  /// In fr, this message translates to:
+  /// **'Le fichier dépasse la taille maximale de 200 Mo.'**
+  String get debugVideoFileTooLarge;
+
+  /// No description provided for @debugVideoUploadError.
+  ///
+  /// In fr, this message translates to:
+  /// **'Échec du téléversement : {details}'**
+  String debugVideoUploadError(String details);
+
+  /// No description provided for @debugVideoPickError.
+  ///
+  /// In fr, this message translates to:
+  /// **'Impossible de sélectionner le fichier : {details}'**
+  String debugVideoPickError(String details);
+
+  /// No description provided for @debugVideoLoadError.
+  ///
+  /// In fr, this message translates to:
+  /// **'Impossible de charger les vidéos.'**
+  String get debugVideoLoadError;
+
+  /// No description provided for @debugVideoPlaybackSpeed.
+  ///
+  /// In fr, this message translates to:
+  /// **'Vitesse de lecture'**
+  String get debugVideoPlaybackSpeed;
+
+  /// No description provided for @debugVideoSkipPrevious.
+  ///
+  /// In fr, this message translates to:
+  /// **'Début'**
+  String get debugVideoSkipPrevious;
+
+  /// No description provided for @debugVideoRewind.
+  ///
+  /// In fr, this message translates to:
+  /// **'Reculer de 5 s'**
+  String get debugVideoRewind;
+
+  /// No description provided for @debugVideoPlay.
+  ///
+  /// In fr, this message translates to:
+  /// **'Lecture'**
+  String get debugVideoPlay;
+
+  /// No description provided for @debugVideoPause.
+  ///
+  /// In fr, this message translates to:
+  /// **'Pause'**
+  String get debugVideoPause;
+
+  /// No description provided for @debugVideoStop.
+  ///
+  /// In fr, this message translates to:
+  /// **'Arrêt'**
+  String get debugVideoStop;
+
+  /// No description provided for @debugVideoFastForward.
+  ///
+  /// In fr, this message translates to:
+  /// **'Avancer de 5 s'**
+  String get debugVideoFastForward;
+
+  /// No description provided for @debugVideoSkipNext.
+  ///
+  /// In fr, this message translates to:
+  /// **'Fin'**
+  String get debugVideoSkipNext;
+
+  /// No description provided for @debugVideoNoVideo.
+  ///
+  /// In fr, this message translates to:
+  /// **'Aucune vidéo sélectionnée.'**
+  String get debugVideoNoVideo;
+
+  /// No description provided for @debugVideoLibraryTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Mes vidéos'**
+  String get debugVideoLibraryTitle;
+
+  /// No description provided for @debugVideoAuthRequired.
+  ///
+  /// In fr, this message translates to:
+  /// **'Connectez-vous pour téléverser une vidéo.'**
+  String get debugVideoAuthRequired;
+
+  /// No description provided for @debugVideoAnalyze.
+  ///
+  /// In fr, this message translates to:
+  /// **'Analyser'**
+  String get debugVideoAnalyze;
+
+  /// No description provided for @debugVideoStopAnalyze.
+  ///
+  /// In fr, this message translates to:
+  /// **'Arrêter l\'analyse'**
+  String get debugVideoStopAnalyze;
+
+  /// No description provided for @debugVideoView.
+  ///
+  /// In fr, this message translates to:
+  /// **'Voir'**
+  String get debugVideoView;
+
+  /// No description provided for @debugVideoResetStats.
+  ///
+  /// In fr, this message translates to:
+  /// **'Réinitialiser'**
+  String get debugVideoResetStats;
+
+  /// No description provided for @debugVideoAnalyzeNeedPlayers.
+  ///
+  /// In fr, this message translates to:
+  /// **'Associez au moins un joueur avant d’analyser.'**
+  String get debugVideoAnalyzeNeedPlayers;
+
+  /// No description provided for @debugVideoAnalyzeHelp.
+  ///
+  /// In fr, this message translates to:
+  /// **'Mettez en pause pour marquer un instant ou encadrer un joueur, puis relancez la lecture : les données déjà collectées sont conservées. Le ballon est suivi automatiquement. Cliquez sur Arrêter l’analyse pour voir les statistiques.'**
+  String get debugVideoAnalyzeHelp;
+
+  /// No description provided for @debugVideoAddTag.
+  ///
+  /// In fr, this message translates to:
+  /// **'Marquer'**
+  String get debugVideoAddTag;
+
+  /// No description provided for @debugVideoRemoveTag.
+  ///
+  /// In fr, this message translates to:
+  /// **'Supprimer le marqueur'**
+  String get debugVideoRemoveTag;
+
+  /// No description provided for @debugVideoTeamPlayerProgress.
+  ///
+  /// In fr, this message translates to:
+  /// **'{team} : {detected} / {total}'**
+  String debugVideoTeamPlayerProgress(String team, int detected, int total);
+
+  /// No description provided for @debugVideoAnalyzeResultsTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Statistiques des joueurs'**
+  String get debugVideoAnalyzeResultsTitle;
+
+  /// No description provided for @debugVideoAnalyzeDistance.
+  ///
+  /// In fr, this message translates to:
+  /// **'{distance} m'**
+  String debugVideoAnalyzeDistance(String distance);
+
+  /// No description provided for @debugVideoAnalyzeBallsPlayed.
+  ///
+  /// In fr, this message translates to:
+  /// **'Joués {count}'**
+  String debugVideoAnalyzeBallsPlayed(int count);
+
+  /// No description provided for @debugVideoAnalyzeBallsReceived.
+  ///
+  /// In fr, this message translates to:
+  /// **'Reçus {count}'**
+  String debugVideoAnalyzeBallsReceived(int count);
+
+  /// No description provided for @debugVideoAnalyzeBallsGiven.
+  ///
+  /// In fr, this message translates to:
+  /// **'Donnés {count}'**
+  String debugVideoAnalyzeBallsGiven(int count);
+
+  /// No description provided for @debugVideoAnalyzePasses.
+  ///
+  /// In fr, this message translates to:
+  /// **'Passes {count}'**
+  String debugVideoAnalyzePasses(int count);
+
+  /// No description provided for @debugVideoAnalyzeShots.
+  ///
+  /// In fr, this message translates to:
+  /// **'Tirs {count}'**
+  String debugVideoAnalyzeShots(int count);
+
+  /// No description provided for @debugVideoAnalyzeNoSamples.
+  ///
+  /// In fr, this message translates to:
+  /// **'Aucun déplacement ni action de balle n’a pu être mesuré.'**
+  String get debugVideoAnalyzeNoSamples;
+
+  /// No description provided for @debugVideoDetectPlayers.
+  ///
+  /// In fr, this message translates to:
+  /// **'Détecter les joueurs'**
+  String get debugVideoDetectPlayers;
+
+  /// No description provided for @debugVideoStopDetection.
+  ///
+  /// In fr, this message translates to:
+  /// **'Arrêter la détection'**
+  String get debugVideoStopDetection;
+
+  /// No description provided for @debugVideoDetectionLoading.
+  ///
+  /// In fr, this message translates to:
+  /// **'Premier chargement de YOLO (une quinzaine de Mo)…'**
+  String get debugVideoDetectionLoading;
+
+  /// No description provided for @debugVideoDetectionError.
+  ///
+  /// In fr, this message translates to:
+  /// **'Impossible de lancer la détection : {details}'**
+  String debugVideoDetectionError(String details);
+
+  /// No description provided for @debugVideoDetectionUnsupported.
+  ///
+  /// In fr, this message translates to:
+  /// **'La détection des joueurs n\'est pas encore disponible sur cette plateforme.'**
+  String get debugVideoDetectionUnsupported;
+
+  /// No description provided for @debugVideoMatchSectionTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Rencontre'**
+  String get debugVideoMatchSectionTitle;
+
+  /// No description provided for @debugVideoMatchDateLabel.
+  ///
+  /// In fr, this message translates to:
+  /// **'Date'**
+  String get debugVideoMatchDateLabel;
+
+  /// No description provided for @debugVideoMatchDateHint.
+  ///
+  /// In fr, this message translates to:
+  /// **'JJ/MM/AAAA'**
+  String get debugVideoMatchDateHint;
+
+  /// No description provided for @debugVideoMatchDateInvalid.
+  ///
+  /// In fr, this message translates to:
+  /// **'Date invalide. Utilisez JJ/MM/AAAA.'**
+  String get debugVideoMatchDateInvalid;
+
+  /// No description provided for @debugVideoMatchListTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Rencontres de vos équipes'**
+  String get debugVideoMatchListTitle;
+
+  /// No description provided for @debugVideoMatchEmpty.
+  ///
+  /// In fr, this message translates to:
+  /// **'Aucune rencontre ce jour-là pour les équipes que vous gérez.'**
+  String get debugVideoMatchEmpty;
+
+  /// No description provided for @debugVideoMatchNoManagedTeams.
+  ///
+  /// In fr, this message translates to:
+  /// **'Aucune équipe à gérer sur cette saison.'**
+  String get debugVideoMatchNoManagedTeams;
+
+  /// No description provided for @debugVideoMatchLoadError.
+  ///
+  /// In fr, this message translates to:
+  /// **'Impossible de charger les rencontres.'**
+  String get debugVideoMatchLoadError;
+
+  /// No description provided for @debugVideoCompoTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Feuille de match'**
+  String get debugVideoCompoTitle;
+
+  /// No description provided for @debugVideoCompoEmpty.
+  ///
+  /// In fr, this message translates to:
+  /// **'Pas de compo enregistrée pour le moment.'**
+  String get debugVideoCompoEmpty;
+
+  /// No description provided for @debugVideoCompoStarters.
+  ///
+  /// In fr, this message translates to:
+  /// **'Titulaires'**
+  String get debugVideoCompoStarters;
+
+  /// No description provided for @debugVideoCompoSubs.
+  ///
+  /// In fr, this message translates to:
+  /// **'Remplaçants'**
+  String get debugVideoCompoSubs;
+
+  /// No description provided for @debugVideoCompoNoNumber.
+  ///
+  /// In fr, this message translates to:
+  /// **'Sans n°'**
+  String get debugVideoCompoNoNumber;
+
+  /// No description provided for @debugVideoCompoOneTeamHint.
+  ///
+  /// In fr, this message translates to:
+  /// **'La compo n’est disponible que pour les équipes Grinta. L’adversaire peut ne pas en avoir.'**
+  String get debugVideoCompoOneTeamHint;
+
+  /// No description provided for @debugVideoTeamKitColor.
+  ///
+  /// In fr, this message translates to:
+  /// **'Maillot {team}'**
+  String debugVideoTeamKitColor(String team);
+
+  /// No description provided for @debugVideoPickKitColor.
+  ///
+  /// In fr, this message translates to:
+  /// **'Choisir la couleur'**
+  String get debugVideoPickKitColor;
+
+  /// No description provided for @debugVideoRefereeKitColor.
+  ///
+  /// In fr, this message translates to:
+  /// **'Maillot des arbitres'**
+  String get debugVideoRefereeKitColor;
+
+  /// No description provided for @debugVideoTeam1Fallback.
+  ///
+  /// In fr, this message translates to:
+  /// **'Équipe 1'**
+  String get debugVideoTeam1Fallback;
+
+  /// No description provided for @debugVideoTeam2Fallback.
+  ///
+  /// In fr, this message translates to:
+  /// **'Équipe 2'**
+  String get debugVideoTeam2Fallback;
+
+  /// No description provided for @debugVideoManualLabelHint.
+  ///
+  /// In fr, this message translates to:
+  /// **'Appuyez sur Encadrer un joueur, puis cliquez sur le cadre blanc (croix) et faites-le glisser.'**
+  String get debugVideoManualLabelHint;
+
+  /// No description provided for @debugVideoPlayMode.
+  ///
+  /// In fr, this message translates to:
+  /// **'Lecture'**
+  String get debugVideoPlayMode;
+
+  /// No description provided for @debugVideoDrawMode.
+  ///
+  /// In fr, this message translates to:
+  /// **'Cadre'**
+  String get debugVideoDrawMode;
+
+  /// No description provided for @debugVideoPlayModeHelp.
+  ///
+  /// In fr, this message translates to:
+  /// **'Play, pause et avance restent disponibles tant que le mode cadre n’est pas activé.'**
+  String get debugVideoPlayModeHelp;
+
+  /// No description provided for @debugVideoDrawModeHelp.
+  ///
+  /// In fr, this message translates to:
+  /// **'Cliquez sur le cadre blanc et faites-le glisser. Les boutons servent à le redimensionner, puis à affecter un joueur.'**
+  String get debugVideoDrawModeHelp;
+
+  /// No description provided for @debugVideoDrawPlayer.
+  ///
+  /// In fr, this message translates to:
+  /// **'Encadrer un joueur'**
+  String get debugVideoDrawPlayer;
+
+  /// No description provided for @debugVideoCancelDraw.
+  ///
+  /// In fr, this message translates to:
+  /// **'Annuler'**
+  String get debugVideoCancelDraw;
+
+  /// No description provided for @debugVideoDrawNeedRoster.
+  ///
+  /// In fr, this message translates to:
+  /// **'Choisissez d’abord un match avec une feuille de match pour encadrer un joueur.'**
+  String get debugVideoDrawNeedRoster;
+
+  /// No description provided for @debugVideoFrameMoveUp.
+  ///
+  /// In fr, this message translates to:
+  /// **'Monter le cadre'**
+  String get debugVideoFrameMoveUp;
+
+  /// No description provided for @debugVideoFrameMoveDown.
+  ///
+  /// In fr, this message translates to:
+  /// **'Descendre le cadre'**
+  String get debugVideoFrameMoveDown;
+
+  /// No description provided for @debugVideoFrameMoveLeft.
+  ///
+  /// In fr, this message translates to:
+  /// **'Décaler à gauche'**
+  String get debugVideoFrameMoveLeft;
+
+  /// No description provided for @debugVideoFrameMoveRight.
+  ///
+  /// In fr, this message translates to:
+  /// **'Décaler à droite'**
+  String get debugVideoFrameMoveRight;
+
+  /// No description provided for @debugVideoFrameTaller.
+  ///
+  /// In fr, this message translates to:
+  /// **'Agrandir en hauteur'**
+  String get debugVideoFrameTaller;
+
+  /// No description provided for @debugVideoFrameShorter.
+  ///
+  /// In fr, this message translates to:
+  /// **'Réduire en hauteur'**
+  String get debugVideoFrameShorter;
+
+  /// No description provided for @debugVideoFrameWider.
+  ///
+  /// In fr, this message translates to:
+  /// **'Agrandir en largeur'**
+  String get debugVideoFrameWider;
+
+  /// No description provided for @debugVideoFrameNarrower.
+  ///
+  /// In fr, this message translates to:
+  /// **'Réduire en largeur'**
+  String get debugVideoFrameNarrower;
+
+  /// No description provided for @debugVideoFrameAssign.
+  ///
+  /// In fr, this message translates to:
+  /// **'Affecter un joueur'**
+  String get debugVideoFrameAssign;
+
+  /// No description provided for @debugVideoAssociatePlayerTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Associer un joueur'**
+  String get debugVideoAssociatePlayerTitle;
+
+  /// No description provided for @debugVideoSuggestedTeam.
+  ///
+  /// In fr, this message translates to:
+  /// **'Suggéré : {team}'**
+  String debugVideoSuggestedTeam(String team);
+
+  /// No description provided for @debugVideoNoRosterToAssociate.
+  ///
+  /// In fr, this message translates to:
+  /// **'Aucun joueur de feuille de match à associer.'**
+  String get debugVideoNoRosterToAssociate;
+
   /// No description provided for @navNotifications.
   ///
   /// In fr, this message translates to:
@@ -5438,7 +5936,7 @@ abstract class AppLocalizations {
   /// No description provided for @createPersonalSportNoConnectedApps.
   ///
   /// In fr, this message translates to:
-  /// **'Aucune app connectée. Connecte Strava, Polar, Whoop, Apple Forme ou Google Health dans Appareils / Applications.'**
+  /// **'Aucune app connectée. Connecte Strava, Polar, Whoop / Oura, Apple Forme ou Google Health dans Appareils / Applications.'**
   String get createPersonalSportNoConnectedApps;
 
   /// No description provided for @createPersonalSportImportRequired.
@@ -7541,167 +8039,6 @@ abstract class AppLocalizations {
   /// In fr, this message translates to:
   /// **'Whoop connecté pour {playerName}'**
   String whoopCoachConnectConnectedSubtitle(String playerName);
-
-  /// No description provided for @createPersonalSportOuraActivity.
-  ///
-  /// In fr, this message translates to:
-  /// **'Activité Oura'**
-  String get createPersonalSportOuraActivity;
-  /// No description provided for @createPersonalSportOuraDeployRequired.
-  ///
-  /// In fr, this message translates to:
-  /// **'L’import Oura n’est pas encore déployé. Déploie ouraListActivities et ouraImportActivity avec firebase deploy.'**
-  String get createPersonalSportOuraDeployRequired;
-  /// No description provided for @createPersonalSportOuraLoadError.
-  ///
-  /// In fr, this message translates to:
-  /// **'Impossible de charger les activités Oura. Vérifie la connexion et réessaie.'**
-  String get createPersonalSportOuraLoadError;
-  /// No description provided for @createPersonalSportOuraNoImportable.
-  ///
-  /// In fr, this message translates to:
-  /// **'Aucune séance Oura à importer.'**
-  String get createPersonalSportOuraNoImportable;
-  /// No description provided for @wearableDeviceOura.
-  ///
-  /// In fr, this message translates to:
-  /// **'Oura'**
-  String get wearableDeviceOura;
-
-  /// No description provided for @ouraConnectToggleLabel.
-  ///
-  /// In fr, this message translates to:
-  /// **'Sync. Oura'**
-  String get ouraConnectToggleLabel;
-
-  /// No description provided for @ouraConnectToggleSubtitle.
-  ///
-  /// In fr, this message translates to:
-  /// **'Connecte ton compte Oura pour importer récupération, sommeil et entraînements'**
-  String get ouraConnectToggleSubtitle;
-
-  /// No description provided for @ouraConnectToggleConnectedSubtitle.
-  ///
-  /// In fr, this message translates to:
-  /// **'Oura connecté — synchronisation des données à venir (Phase 2)'**
-  String get ouraConnectToggleConnectedSubtitle;
-
-  /// No description provided for @ouraConnectSuccess.
-  ///
-  /// In fr, this message translates to:
-  /// **'Compte Oura connecté.'**
-  String get ouraConnectSuccess;
-
-  /// No description provided for @ouraAccountHintGuidance.
-  ///
-  /// In fr, this message translates to:
-  /// **'L\'email Oura peut être différent de ton compte Grinta. Indique le compte Oura à utiliser, puis connecte-toi avec ce compte sur la page Oura.'**
-  String get ouraAccountHintGuidance;
-
-  /// No description provided for @ouraAccountHintLabel.
-  ///
-  /// In fr, this message translates to:
-  /// **'Compte Oura'**
-  String get ouraAccountHintLabel;
-
-  /// No description provided for @ouraAccountHintPlaceholder.
-  ///
-  /// In fr, this message translates to:
-  /// **'email Oura'**
-  String get ouraAccountHintPlaceholder;
-
-  /// No description provided for @ouraAccountHintRequired.
-  ///
-  /// In fr, this message translates to:
-  /// **'Indique ton compte Oura (email) avant de continuer.'**
-  String get ouraAccountHintRequired;
-
-  /// No description provided for @ouraConnectContinue.
-  ///
-  /// In fr, this message translates to:
-  /// **'Continuer vers Oura'**
-  String get ouraConnectContinue;
-
-  /// No description provided for @ouraConnectFailed.
-  ///
-  /// In fr, this message translates to:
-  /// **'La connexion Oura a échoué. Vérifie que les Cloud Functions Oura sont déployées et que les secrets OURA_CLIENT_ID / OURA_CLIENT_SECRET sont configurés.'**
-  String get ouraConnectFailed;
-
-  /// No description provided for @ouraConnectLaunchFailed.
-  ///
-  /// In fr, this message translates to:
-  /// **'Impossible d\'ouvrir la page de connexion Oura.'**
-  String get ouraConnectLaunchFailed;
-
-  /// No description provided for @ouraConnectAuthRequired.
-  ///
-  /// In fr, this message translates to:
-  /// **'Connecte-toi à Grinta pour lier Oura.'**
-  String get ouraConnectAuthRequired;
-
-  /// No description provided for @ouraDisconnectFailed.
-  ///
-  /// In fr, this message translates to:
-  /// **'La déconnexion Oura a échoué.'**
-  String get ouraDisconnectFailed;
-
-  /// No description provided for @ouraCoachVisibilityTitle.
-  ///
-  /// In fr, this message translates to:
-  /// **'Visibilité coach'**
-  String get ouraCoachVisibilityTitle;
-
-  /// No description provided for @ouraCoachVisibilitySubtitle.
-  ///
-  /// In fr, this message translates to:
-  /// **'Autoriser ton coach à voir cette donnée'**
-  String get ouraCoachVisibilitySubtitle;
-
-  /// No description provided for @ouraCoachVisibilitySaveFailed.
-  ///
-  /// In fr, this message translates to:
-  /// **'Impossible d\'enregistrer les préférences Oura.'**
-  String get ouraCoachVisibilitySaveFailed;
-
-
-
-
-  /// No description provided for @ouraMetricWorkout.
-  ///
-  /// In fr, this message translates to:
-  /// **'Entraînements'**
-  String get ouraMetricWorkout;
-  String get ouraMetricHeartrate;
-  String get ouraMetricDaily;
-  String get ouraMetricPersonal;
-  String get ouraMetricEmail;
-
-
-
-  /// No description provided for @ouraCoachConnectTitle.
-  ///
-  /// In fr, this message translates to:
-  /// **'Oura'**
-  String get ouraCoachConnectTitle;
-
-  /// No description provided for @ouraCoachConnectSubtitle.
-  ///
-  /// In fr, this message translates to:
-  /// **'Connecter le compte Oura de {playerName}'**
-  String ouraCoachConnectSubtitle(String playerName);
-
-  /// No description provided for @ouraCoachConnectAction.
-  ///
-  /// In fr, this message translates to:
-  /// **'Connecter'**
-  String get ouraCoachConnectAction;
-
-  /// No description provided for @ouraCoachConnectConnectedSubtitle.
-  ///
-  /// In fr, this message translates to:
-  /// **'Oura connecté pour {playerName}'**
-  String ouraCoachConnectConnectedSubtitle(String playerName);
 
   /// No description provided for @stravaConnectToggleSubtitle.
   ///
@@ -12302,67 +12639,6 @@ abstract class AppLocalizations {
   /// **'{min} – {max} bpm'**
   String whoopAnalysisZoneBpmRange(int min, int max);
 
-  /// No description provided for @ouraAnalysisTitle.
-  ///
-  /// In fr, this message translates to:
-  /// **'Analyse Oura'**
-  String get ouraAnalysisTitle;
-  /// No description provided for @ouraAnalysisStrain.
-  ///
-  /// In fr, this message translates to:
-  /// **'Effort activité'**
-  String get ouraAnalysisStrain;
-  /// No description provided for @ouraAnalysisAvgHr.
-  ///
-  /// In fr, this message translates to:
-  /// **'FC moyenne'**
-  String get ouraAnalysisAvgHr;
-  /// No description provided for @ouraAnalysisMaxHr.
-  ///
-  /// In fr, this message translates to:
-  /// **'FC max'**
-  String get ouraAnalysisMaxHr;
-  /// No description provided for @ouraAnalysisDuration.
-  ///
-  /// In fr, this message translates to:
-  /// **'Durée'**
-  String get ouraAnalysisDuration;
-  /// No description provided for @ouraAnalysisCalories.
-  ///
-  /// In fr, this message translates to:
-  /// **'Calories'**
-  String get ouraAnalysisCalories;
-  /// No description provided for @ouraAnalysisAltitude.
-  ///
-  /// In fr, this message translates to:
-  /// **'Dénivelé'**
-  String get ouraAnalysisAltitude;
-  /// No description provided for @ouraAnalysisHrZonesTitle.
-  ///
-  /// In fr, this message translates to:
-  /// **'Zones cardiaques'**
-  String get ouraAnalysisHrZonesTitle;
-  /// No description provided for @ouraAnalysisNoZones.
-  ///
-  /// In fr, this message translates to:
-  /// **'Aucune répartition par zone pour cet import. Réimporte l’activité Oura.'**
-  String get ouraAnalysisNoZones;
-  /// No description provided for @ouraAnalysisZoneLabel.
-  ///
-  /// In fr, this message translates to:
-  /// **'Zone {zone}'**
-  String ouraAnalysisZoneLabel(int zone);
-  /// No description provided for @ouraAnalysisZoneAboveBpm.
-  ///
-  /// In fr, this message translates to:
-  /// **'+ de {bpm} bpm'**
-  String ouraAnalysisZoneAboveBpm(int bpm);
-  /// No description provided for @ouraAnalysisZoneBpmRange.
-  ///
-  /// In fr, this message translates to:
-  /// **'{min} – {max} bpm'**
-  String ouraAnalysisZoneBpmRange(int min, int max);
-
   /// No description provided for @opponentAnalysisPromptTitle.
   ///
   /// In fr, this message translates to:
@@ -12561,6 +12837,258 @@ abstract class AppLocalizations {
   /// In fr, this message translates to:
   /// **'Saisissez votre mot de passe pour que Face ID / empreinte puisse vous reconnecter après une déconnexion. Il reste chiffré sur cet appareil.'**
   String get biometricLoginSavePasswordMessage;
+
+  /// No description provided for @createPersonalSportOuraActivity.
+  ///
+  /// In fr, this message translates to:
+  /// **'Activité Oura'**
+  String get createPersonalSportOuraActivity;
+
+  /// No description provided for @createPersonalSportOuraDeployRequired.
+  ///
+  /// In fr, this message translates to:
+  /// **'L’import Oura n’est pas encore déployé. Exécutez firebase deploy pour ouraListActivities et ouraImportActivity.'**
+  String get createPersonalSportOuraDeployRequired;
+
+  /// No description provided for @createPersonalSportOuraLoadError.
+  ///
+  /// In fr, this message translates to:
+  /// **'Impossible de charger les activités Oura. Vérifiez la connexion et réessayez.'**
+  String get createPersonalSportOuraLoadError;
+
+  /// No description provided for @createPersonalSportOuraNoImportable.
+  ///
+  /// In fr, this message translates to:
+  /// **'Aucune séance Oura à importer.'**
+  String get createPersonalSportOuraNoImportable;
+
+  /// No description provided for @wearableDeviceOura.
+  ///
+  /// In fr, this message translates to:
+  /// **'Oura'**
+  String get wearableDeviceOura;
+
+  /// No description provided for @ouraConnectToggleLabel.
+  ///
+  /// In fr, this message translates to:
+  /// **'Sync. Oura'**
+  String get ouraConnectToggleLabel;
+
+  /// No description provided for @ouraConnectToggleSubtitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Connectez votre compte Oura pour importer vos entraînements (durée et zones de FC)'**
+  String get ouraConnectToggleSubtitle;
+
+  /// No description provided for @ouraConnectToggleConnectedSubtitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Oura connecté — importez vos activités depuis Créer'**
+  String get ouraConnectToggleConnectedSubtitle;
+
+  /// No description provided for @ouraConnectSuccess.
+  ///
+  /// In fr, this message translates to:
+  /// **'Compte Oura connecté.'**
+  String get ouraConnectSuccess;
+
+  /// No description provided for @ouraAccountHintGuidance.
+  ///
+  /// In fr, this message translates to:
+  /// **'Votre email Oura peut différer de votre compte Grinta. Saisissez le compte Oura à utiliser, puis connectez-vous avec ce compte sur la page Oura.'**
+  String get ouraAccountHintGuidance;
+
+  /// No description provided for @ouraAccountHintLabel.
+  ///
+  /// In fr, this message translates to:
+  /// **'Compte Oura'**
+  String get ouraAccountHintLabel;
+
+  /// No description provided for @ouraAccountHintPlaceholder.
+  ///
+  /// In fr, this message translates to:
+  /// **'Email Oura'**
+  String get ouraAccountHintPlaceholder;
+
+  /// No description provided for @ouraAccountHintRequired.
+  ///
+  /// In fr, this message translates to:
+  /// **'Saisissez votre compte Oura (email) avant de continuer.'**
+  String get ouraAccountHintRequired;
+
+  /// No description provided for @ouraConnectContinue.
+  ///
+  /// In fr, this message translates to:
+  /// **'Continuer vers Oura'**
+  String get ouraConnectContinue;
+
+  /// No description provided for @ouraConnectFailed.
+  ///
+  /// In fr, this message translates to:
+  /// **'Échec de la connexion Oura. Vérifiez que les Cloud Functions Oura sont déployées et que les secrets OURA_CLIENT_ID / OURA_CLIENT_SECRET sont configurés.'**
+  String get ouraConnectFailed;
+
+  /// No description provided for @ouraConnectLaunchFailed.
+  ///
+  /// In fr, this message translates to:
+  /// **'Impossible d’ouvrir la page de connexion Oura.'**
+  String get ouraConnectLaunchFailed;
+
+  /// No description provided for @ouraConnectAuthRequired.
+  ///
+  /// In fr, this message translates to:
+  /// **'Connectez-vous à Grinta pour lier Oura.'**
+  String get ouraConnectAuthRequired;
+
+  /// No description provided for @ouraDisconnectFailed.
+  ///
+  /// In fr, this message translates to:
+  /// **'Échec de la déconnexion Oura.'**
+  String get ouraDisconnectFailed;
+
+  /// No description provided for @ouraCoachVisibilityTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Visibilité coach'**
+  String get ouraCoachVisibilityTitle;
+
+  /// No description provided for @ouraCoachVisibilitySubtitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Autoriser votre coach à voir ce type de données'**
+  String get ouraCoachVisibilitySubtitle;
+
+  /// No description provided for @ouraCoachVisibilitySaveFailed.
+  ///
+  /// In fr, this message translates to:
+  /// **'Impossible d’enregistrer les préférences Oura.'**
+  String get ouraCoachVisibilitySaveFailed;
+
+  /// No description provided for @ouraMetricWorkout.
+  ///
+  /// In fr, this message translates to:
+  /// **'Entraînements'**
+  String get ouraMetricWorkout;
+
+  /// No description provided for @ouraCoachConnectTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Oura'**
+  String get ouraCoachConnectTitle;
+
+  /// No description provided for @ouraCoachConnectSubtitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Connecter le compte Oura de {playerName}'**
+  String ouraCoachConnectSubtitle(String playerName);
+
+  /// No description provided for @ouraCoachConnectAction.
+  ///
+  /// In fr, this message translates to:
+  /// **'Connecter'**
+  String get ouraCoachConnectAction;
+
+  /// No description provided for @ouraCoachConnectConnectedSubtitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Oura connecté pour {playerName}'**
+  String ouraCoachConnectConnectedSubtitle(String playerName);
+
+  /// No description provided for @ouraAnalysisTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Analyse Oura'**
+  String get ouraAnalysisTitle;
+
+  /// No description provided for @ouraAnalysisStrain.
+  ///
+  /// In fr, this message translates to:
+  /// **'Intensité'**
+  String get ouraAnalysisStrain;
+
+  /// No description provided for @ouraAnalysisAvgHr.
+  ///
+  /// In fr, this message translates to:
+  /// **'FC moyenne'**
+  String get ouraAnalysisAvgHr;
+
+  /// No description provided for @ouraAnalysisMaxHr.
+  ///
+  /// In fr, this message translates to:
+  /// **'FC max'**
+  String get ouraAnalysisMaxHr;
+
+  /// No description provided for @ouraAnalysisDuration.
+  ///
+  /// In fr, this message translates to:
+  /// **'Durée'**
+  String get ouraAnalysisDuration;
+
+  /// No description provided for @ouraAnalysisCalories.
+  ///
+  /// In fr, this message translates to:
+  /// **'Calories'**
+  String get ouraAnalysisCalories;
+
+  /// No description provided for @ouraAnalysisAltitude.
+  ///
+  /// In fr, this message translates to:
+  /// **'Dénivelé'**
+  String get ouraAnalysisAltitude;
+
+  /// No description provided for @ouraAnalysisHrZonesTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Zones cardiaques'**
+  String get ouraAnalysisHrZonesTitle;
+
+  /// No description provided for @ouraAnalysisNoZones.
+  ///
+  /// In fr, this message translates to:
+  /// **'Pas de détail des zones pour cet import. Réimportez l’activité Oura.'**
+  String get ouraAnalysisNoZones;
+
+  /// No description provided for @ouraAnalysisZoneLabel.
+  ///
+  /// In fr, this message translates to:
+  /// **'Zone {zone}'**
+  String ouraAnalysisZoneLabel(int zone);
+
+  /// No description provided for @ouraAnalysisZoneAboveBpm.
+  ///
+  /// In fr, this message translates to:
+  /// **'+ de {bpm} bpm'**
+  String ouraAnalysisZoneAboveBpm(int bpm);
+
+  /// No description provided for @ouraAnalysisZoneBpmRange.
+  ///
+  /// In fr, this message translates to:
+  /// **'{min} – {max} bpm'**
+  String ouraAnalysisZoneBpmRange(int min, int max);
+
+  /// No description provided for @ouraMetricHeartrate.
+  ///
+  /// In fr, this message translates to:
+  /// **'Fréquence cardiaque'**
+  String get ouraMetricHeartrate;
+
+  /// No description provided for @ouraMetricDaily.
+  ///
+  /// In fr, this message translates to:
+  /// **'Activité / readiness quotidienne'**
+  String get ouraMetricDaily;
+
+  /// No description provided for @ouraMetricPersonal.
+  ///
+  /// In fr, this message translates to:
+  /// **'Infos personnelles'**
+  String get ouraMetricPersonal;
+
+  /// No description provided for @ouraMetricEmail.
+  ///
+  /// In fr, this message translates to:
+  /// **'Email'**
+  String get ouraMetricEmail;
 }
 
 class _AppLocalizationsDelegate
