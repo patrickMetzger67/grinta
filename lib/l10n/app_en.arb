@@ -513,6 +513,19 @@
   "debugVideoAnalyze": "Analyze",
   "debugVideoStopAnalyze": "Stop analysis",
   "debugVideoView": "View",
+  "debugVideoView2d": "View in 2D",
+  "debugVideoTacticsTitle": "2D match",
+  "debugVideoTacticsHelp": "Tactical replay of framed players. The video is not required.",
+  "debugVideoTacticsEmpty": "Analyze a clip to record 2D movement.",
+  "debugVideoTacticsSaved": "2D movement saved for this match.",
+  "debugVideoTacticsSaveError": "Could not save 2D movement: {details}",
+  "@debugVideoTacticsSaveError": {
+    "placeholders": {
+      "details": {
+        "type": "String"
+      }
+    }
+  },
   "debugVideoResetStats": "Reset",
   "debugVideoAnalyzeNeedPlayers": "Associate at least one player before analyzing.",
   "debugVideoAnalyzeHelp": "Pause to tag a moment or box a player, then play again — collected data is kept. The ball is tracked automatically. Tap Stop analysis to see the stats.",

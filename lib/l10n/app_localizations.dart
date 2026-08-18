@@ -1942,6 +1942,42 @@ abstract class AppLocalizations {
   /// **'Voir'**
   String get debugVideoView;
 
+  /// No description provided for @debugVideoView2d.
+  ///
+  /// In fr, this message translates to:
+  /// **'Voir en 2D'**
+  String get debugVideoView2d;
+
+  /// No description provided for @debugVideoTacticsTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Match en 2D'**
+  String get debugVideoTacticsTitle;
+
+  /// No description provided for @debugVideoTacticsHelp.
+  ///
+  /// In fr, this message translates to:
+  /// **'Lecture tactique des joueurs encadrés. La vidéo n’est pas nécessaire.'**
+  String get debugVideoTacticsHelp;
+
+  /// No description provided for @debugVideoTacticsEmpty.
+  ///
+  /// In fr, this message translates to:
+  /// **'Analysez un extrait pour enregistrer les déplacements 2D.'**
+  String get debugVideoTacticsEmpty;
+
+  /// No description provided for @debugVideoTacticsSaved.
+  ///
+  /// In fr, this message translates to:
+  /// **'Déplacements 2D enregistrés pour ce match.'**
+  String get debugVideoTacticsSaved;
+
+  /// No description provided for @debugVideoTacticsSaveError.
+  ///
+  /// In fr, this message translates to:
+  /// **'Impossible d’enregistrer les déplacements 2D : {details}'**
+  String debugVideoTacticsSaveError(String details);
+
   /// No description provided for @debugVideoResetStats.
   ///
   /// In fr, this message translates to:

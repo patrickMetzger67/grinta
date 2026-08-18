@@ -255,6 +255,7 @@ class _DebugMp4PlayerState extends State<DebugMp4Player> {
                                 rosterTeamByPlayerId:
                                     widget.rosterTeamByPlayerId,
                                 width: insetWidth,
+                                showTrails: widget.analysisSamples.isNotEmpty,
                               );
                             },
                           ),

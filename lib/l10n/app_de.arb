@@ -518,6 +518,19 @@
   "debugVideoAnalyze": "Analysieren",
   "debugVideoStopAnalyze": "Analyse stoppen",
   "debugVideoView": "Ansehen",
+  "debugVideoView2d": "In 2D ansehen",
+  "debugVideoTacticsTitle": "2D-Spiel",
+  "debugVideoTacticsHelp": "Taktische Wiedergabe der markierten Spieler. Das Video ist nicht nötig.",
+  "debugVideoTacticsEmpty": "Analysieren Sie einen Ausschnitt, um 2D-Bewegungen zu speichern.",
+  "debugVideoTacticsSaved": "2D-Bewegungen für dieses Spiel gespeichert.",
+  "debugVideoTacticsSaveError": "2D-Bewegungen konnten nicht gespeichert werden: {details}",
+  "@debugVideoTacticsSaveError": {
+    "placeholders": {
+      "details": {
+        "type": "String"
+      }
+    }
+  },
   "debugVideoResetStats": "Zurücksetzen",
   "debugVideoAnalyzeNeedPlayers": "Ordnen Sie vor der Analyse mindestens einen Spieler zu.",
   "debugVideoAnalyzeHelp": "Pausieren Sie, um einen Zeitpunkt zu markieren oder einen Spieler einzurahmen, und spielen Sie dann weiter — bereits erfasste Daten bleiben erhalten. Der Ball wird automatisch verfolgt. Tippen Sie auf Analyse stoppen, um die Statistiken zu sehen.",
