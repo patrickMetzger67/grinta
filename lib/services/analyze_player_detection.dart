@@ -232,6 +232,233 @@ class PitchRegion {
   int get hashCode => Object.hash(top, bottom, left, right);
 }
 
+/// Convex image quad of the grass (0–1), for a perspective map to the
+/// 105×68 m pitch. Far = top of the green, near = bottom (sideline camera).
+class PitchQuad {
+  const PitchQuad({
+    required this.farLeft,
+    required this.farRight,
+    required this.nearLeft,
+    required this.nearRight,
+  });
+
+  final ({double x, double y}) farLeft;
+  final ({double x, double y}) farRight;
+  final ({double x, double y}) nearLeft;
+  final ({double x, double y}) nearRight;
+
+  PitchRegion get bounds {
+    final xs = <double>[farLeft.x, farRight.x, nearLeft.x, nearRight.x];
+    final ys = <double>[farLeft.y, farRight.y, nearLeft.y, nearRight.y];
+    xs.sort();
+    ys.sort();
+    return PitchRegion(
+      top: ys.first,
+      bottom: ys.last,
+      left: xs.first,
+      right: xs.last,
+    );
+  }
+
+  bool get isUsable {
+    final box = bounds;
+    final farW = (farRight.x - farLeft.x).abs();
+    final nearW = (nearRight.x - nearLeft.x).abs();
+    final height = (nearLeft.y + nearRight.y) / 2 - (farLeft.y + farRight.y) / 2;
+    return farW >= 0.12 &&
+        nearW >= 0.18 &&
+        height >= 0.16 &&
+        farLeft.x < farRight.x - 0.08 &&
+        nearLeft.x < nearRight.x - 0.08 &&
+        (box.right - box.left) >= 0.20 &&
+        (box.bottom - box.top) >= 0.18;
+  }
+
+  @override
+  bool operator ==(Object other) {
+    return other is PitchQuad &&
+        other.farLeft == farLeft &&
+        other.farRight == farRight &&
+        other.nearLeft == nearLeft &&
+        other.nearRight == nearRight;
+  }
+
+  @override
+  int get hashCode => Object.hash(farLeft, farRight, nearLeft, nearRight);
+}
+
+PitchQuad pitchQuadFromRegion(PitchRegion pitch) {
+  return PitchQuad(
+    farLeft: (x: pitch.left, y: pitch.top),
+    farRight: (x: pitch.right, y: pitch.top),
+    nearLeft: (x: pitch.left, y: pitch.bottom),
+    nearRight: (x: pitch.right, y: pitch.bottom),
+  );
+}
+
+double _cross2d(double ax, double ay, double bx, double by) => ax * by - ay * bx;
+
+/// Maps an image point (0–1) into pitch UV (0–1 length, 0–1 width).
+/// Inverse bilinear interpolation of the grass quad.
+({double u, double v})? imagePointToPitchUv({
+  required double x,
+  required double y,
+  required PitchQuad quad,
+}) {
+  final ax = quad.farLeft.x;
+  final ay = quad.farLeft.y;
+  final ex = quad.farRight.x - ax;
+  final ey = quad.farRight.y - ay;
+  final fx = quad.nearLeft.x - ax;
+  final fy = quad.nearLeft.y - ay;
+  final gx = ax - quad.farRight.x + quad.nearRight.x - quad.nearLeft.x;
+  final gy = ay - quad.farRight.y + quad.nearRight.y - quad.nearLeft.y;
+  final hx = x - ax;
+  final hy = y - ay;
+
+  final k2 = _cross2d(gx, gy, fx, fy);
+  final k1 = _cross2d(ex, ey, fx, fy) + _cross2d(hx, hy, gx, gy);
+  final k0 = _cross2d(hx, hy, ex, ey);
+
+  final candidates = <double>[];
+  if (k2.abs() < 1e-8) {
+    if (k1.abs() < 1e-8) return null;
+    candidates.add(-k0 / k1);
+  } else {
+    final disc = k1 * k1 - 4 * k2 * k0;
+    if (disc < 0) return null;
+    final root = math.sqrt(disc);
+    candidates.add((-k1 - root) / (2 * k2));
+    candidates.add((-k1 + root) / (2 * k2));
+  }
+
+  ({double u, double v})? best;
+  var bestPenalty = 1e9;
+  for (final v in candidates) {
+    final denomX = ex + gx * v;
+    final denomY = ey + gy * v;
+    final u = denomX.abs() >= denomY.abs() && denomX.abs() > 1e-8
+        ? (hx - fx * v) / denomX
+        : denomY.abs() > 1e-8
+            ? (hy - fy * v) / denomY
+            : null;
+    if (u == null) continue;
+    final inside = u >= -0.08 && u <= 1.08 && v >= -0.08 && v <= 1.08;
+    final penalty = (u < 0 ? -u : 0) +
+        (u > 1 ? u - 1 : 0) +
+        (v < 0 ? -v : 0) +
+        (v > 1 ? v - 1 : 0);
+    if (!inside && penalty > 0.2) continue;
+    if (penalty < bestPenalty) {
+      bestPenalty = penalty;
+      best = (u: u.clamp(0.0, 1.0), v: v.clamp(0.0, 1.0));
+    }
+  }
+  return best;
+}
+
+/// Least-squares line `x = a + b*y` for grass left/right edges.
+({double a, double b})? fitImageLineXOfY(List<double> ys, List<double> xs) {
+  final n = ys.length;
+  if (n < 2 || n != xs.length) return null;
+  var sumY = 0.0;
+  var sumX = 0.0;
+  var sumYy = 0.0;
+  var sumYx = 0.0;
+  for (var i = 0; i < n; i++) {
+    sumY += ys[i];
+    sumX += xs[i];
+    sumYy += ys[i] * ys[i];
+    sumYx += ys[i] * xs[i];
+  }
+  final denom = n * sumYy - sumY * sumY;
+  if (denom.abs() < 1e-10) {
+    return (a: sumX / n, b: 0);
+  }
+  final b = (n * sumYx - sumY * sumX) / denom;
+  final a = (sumX - b * sumY) / n;
+  return (a: a, b: b);
+}
+
+double _lineXAtY(({double a, double b}) line, double y) => line.a + line.b * y;
+
+/// Grass quad from the green silhouette: left/right touchlines are fitted
+/// across the band (perspective taper), not the axis-aligned green AABB.
+PitchQuad? estimatePitchQuad({
+  required List<int> rgba,
+  required int width,
+  required int height,
+}) {
+  final region = estimatePitchRegion(
+    rgba: rgba,
+    width: width,
+    height: height,
+  );
+  if (region == null) return null;
+
+  final y0 = (region.top * height).floor().clamp(0, height - 1);
+  final y1 = ((region.bottom * height).ceil() - 1).clamp(0, height - 1);
+  final step = math.max(1, ((y1 - y0) / 28).round());
+  final leftXs = <double>[];
+  final rightXs = <double>[];
+  final ys = <double>[];
+  for (var y = y0; y <= y1; y += step) {
+    var left = -1;
+    var right = -1;
+    for (var x = 0; x < width; x++) {
+      final o = (y * width + x) * 4;
+      if (!isFieldGreenPixel(rgba[o], rgba[o + 1], rgba[o + 2])) continue;
+      if (left < 0) left = x;
+      right = x;
+    }
+    if (left < 0 || right - left < width * 0.08) continue;
+    leftXs.add(left / width);
+    rightXs.add((right + 1) / width);
+    ys.add((y + 0.5) / height);
+  }
+
+  PitchQuad fallback() {
+    final rect = pitchQuadFromRegion(region);
+    return rect;
+  }
+
+  if (ys.length < 4) {
+    final rect = fallback();
+    return rect.isUsable ? rect : null;
+  }
+
+  final leftLine = fitImageLineXOfY(ys, leftXs);
+  final rightLine = fitImageLineXOfY(ys, rightXs);
+  if (leftLine == null || rightLine == null) {
+    final rect = fallback();
+    return rect.isUsable ? rect : null;
+  }
+
+  final farY = ys.first;
+  final nearY = ys.last;
+  final quad = PitchQuad(
+    farLeft: (
+      x: _lineXAtY(leftLine, farY).clamp(0.0, 1.0),
+      y: farY,
+    ),
+    farRight: (
+      x: _lineXAtY(rightLine, farY).clamp(0.0, 1.0),
+      y: farY,
+    ),
+    nearLeft: (
+      x: _lineXAtY(leftLine, nearY).clamp(0.0, 1.0),
+      y: nearY,
+    ),
+    nearRight: (
+      x: _lineXAtY(rightLine, nearY).clamp(0.0, 1.0),
+      y: nearY,
+    ),
+  );
+  if (quad.isUsable) return quad;
+  final rect = fallback();
+  return rect.isUsable ? rect : null;
+}
+
 PitchRegion? estimatePitchRegion({
   required List<int> rgba,
   required int width,

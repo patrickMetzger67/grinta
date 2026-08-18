@@ -36,6 +36,8 @@ class DebugPlayerDetector {
 
   PitchRegion? get lastPitchRegion => null;
 
+  PitchQuad? get lastPitchQuad => null;
+
   void setAnalyzePlayback(bool enabled) {}
 
   void notifySeek() {}

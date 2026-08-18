@@ -40,6 +40,33 @@ void main() {
       );
     });
 
+    test('keeps the frozen grass quad for mapping', () {
+      const frozenQuad = PitchQuad(
+        farLeft: (x: 0.30, y: 0.22),
+        farRight: (x: 0.70, y: 0.22),
+        nearLeft: (x: 0.08, y: 0.88),
+        nearRight: (x: 0.92, y: 0.88),
+      );
+      const latestQuad = PitchQuad(
+        farLeft: (x: 0.20, y: 0.10),
+        farRight: (x: 0.80, y: 0.10),
+        nearLeft: (x: 0.00, y: 0.98),
+        nearRight: (x: 1.00, y: 0.98),
+      );
+      expect(
+        analysisMappingQuad(
+          analyzing: true,
+          frozenQuad: frozenQuad,
+          latestQuad: latestQuad,
+        ),
+        frozenQuad,
+      );
+      expect(
+        freezeAnalysisQuad(frozenQuad: frozenQuad, latestQuad: latestQuad),
+        frozenQuad,
+      );
+    });
+
     test('does not freeze the full-frame fallback', () {
       expect(isUsablePitchRegion(kFullFramePitchRegion), isFalse);
       expect(isUsablePitchRegion(frozen), isTrue);
@@ -70,6 +97,42 @@ void main() {
         ),
         latest,
       );
+    });
+  });
+
+  group('imagePointToPitchUv', () {
+    const trap = PitchQuad(
+      farLeft: (x: 0.30, y: 0.20),
+      farRight: (x: 0.70, y: 0.20),
+      nearLeft: (x: 0.10, y: 0.80),
+      nearRight: (x: 0.90, y: 0.80),
+    );
+
+    test('maps trapezoid corners onto the 105x68 pitch', () {
+      final farLeft = pitchPointToMeters(nx: 0.30, ny: 0.20, quad: trap);
+      final farRight = pitchPointToMeters(nx: 0.70, ny: 0.20, quad: trap);
+      final nearLeft = pitchPointToMeters(nx: 0.10, ny: 0.80, quad: trap);
+      final nearRight = pitchPointToMeters(nx: 0.90, ny: 0.80, quad: trap);
+      final farCenter = pitchPointToMeters(nx: 0.50, ny: 0.20, quad: trap);
+      expect(farLeft.x, closeTo(0, 0.05));
+      expect(farLeft.y, closeTo(0, 0.05));
+      expect(farRight.x, closeTo(105, 0.05));
+      expect(farRight.y, closeTo(0, 0.05));
+      expect(nearLeft.x, closeTo(0, 0.05));
+      expect(nearLeft.y, closeTo(68, 0.05));
+      expect(nearRight.x, closeTo(105, 0.05));
+      expect(nearRight.y, closeTo(68, 0.05));
+      expect(farCenter.x, closeTo(52.5, 0.2));
+      expect(farCenter.y, closeTo(0, 0.05));
+    });
+
+    test('does not use the green AABB for a far-sideline point', () {
+      final aabb = trap.bounds;
+      final viaQuad = pitchPointToMeters(nx: 0.30, ny: 0.20, quad: trap);
+      final viaBox = pitchPointToMeters(nx: 0.30, ny: 0.20, pitch: aabb);
+      expect(viaQuad.x, closeTo(0, 0.05));
+      expect(viaBox.x, closeTo(26.25, 0.4));
+      expect(viaBox.x, isNot(closeTo(viaQuad.x, 10)));
     });
   });
 
@@ -347,7 +410,7 @@ void main() {
       expect(pathDistanceMeters(samples), greaterThan(10));
     });
 
-    test('resamples to at most one point per 200ms before summing', () {
+    test('keeps at most one raw point per requested interval', () {
       const dense = <PlayerDistanceSample>[
         PlayerDistanceSample(playerId: 'a', x: 0, y: 0, atMs: 0),
         PlayerDistanceSample(playerId: 'a', x: 0.2, y: 0, atMs: 80),
@@ -355,9 +418,82 @@ void main() {
         PlayerDistanceSample(playerId: 'a', x: 2.1, y: 0, atMs: 260),
         PlayerDistanceSample(playerId: 'a', x: 4, y: 0, atMs: 400),
       ];
-      final kept = resamplePlayerSamples(dense);
+      final kept = resamplePlayerSamples(dense, minIntervalMs: 200);
       expect(kept.map((sample) => sample.atMs), [0, 200, 400]);
       expect(pathDistanceMeters(dense), closeTo(4, 0.01));
+    });
+
+    test('the same motion at two YOLO cadences yields the same distance', () {
+      PlayerDistanceSample at(int atMs) {
+        return PlayerDistanceSample(
+          playerId: 'a',
+          x: 20 * (atMs / 4000),
+          y: 10,
+          atMs: atMs,
+        );
+      }
+
+      final dense = [for (var t = 0; t <= 4000; t += 180) at(t)];
+      final sparse = [for (var t = 0; t <= 4000; t += 320) at(t)];
+      if (dense.last.atMs != 4000) dense.add(at(4000));
+      if (sparse.last.atMs != 4000) sparse.add(at(4000));
+      expect(pathDistanceMeters(dense), closeTo(20, 0.25));
+      expect(
+        pathDistanceMeters(dense),
+        closeTo(pathDistanceMeters(sparse), 0.25),
+      );
+    });
+
+    test('remaps stored image feet through the frozen quad, not stale meters', () {
+      const trap = PitchQuad(
+        farLeft: (x: 0.30, y: 0.20),
+        farRight: (x: 0.70, y: 0.20),
+        nearLeft: (x: 0.10, y: 0.80),
+        nearRight: (x: 0.90, y: 0.80),
+      );
+      const startBox = PlayerDetectionBox(
+        left: 0.46,
+        top: 0.12,
+        width: 0.08,
+        height: 0.10,
+        playerId: 'p1',
+        jerseyNumber: 2,
+      );
+      const endBox = PlayerDetectionBox(
+        left: 0.66,
+        top: 0.12,
+        width: 0.08,
+        height: 0.10,
+        playerId: 'p1',
+        jerseyNumber: 2,
+      );
+      final good = [
+        sampleAssociatedPlayer(box: startBox, atMs: 0, quad: trap)!,
+        sampleAssociatedPlayer(box: endBox, atMs: 2000, quad: trap)!,
+      ];
+      final stale = [
+        PlayerDistanceSample(
+          playerId: good.first.playerId,
+          x: 3,
+          y: 3,
+          atMs: 0,
+          nx: good.first.nx,
+          ny: good.first.ny,
+        ),
+        PlayerDistanceSample(
+          playerId: good.last.playerId,
+          x: 90,
+          y: 40,
+          atMs: 2000,
+          nx: good.last.nx,
+          ny: good.last.ny,
+        ),
+      ];
+      expect(
+        pathDistanceMeters(stale, quad: trap),
+        closeTo(pathDistanceMeters(good, quad: trap), 0.01),
+      );
+      expect(remapSampleToMeters(stale.first).x, 3);
     });
   });
 

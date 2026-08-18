@@ -86,6 +86,7 @@ class DebugVideoPitchMinimap extends StatelessWidget {
     this.atMs = 0,
     this.preferLiveDetections = false,
     this.pitch,
+    this.quad,
     this.team1Id,
     this.team2Id,
     this.team1KitColor,
@@ -100,6 +101,7 @@ class DebugVideoPitchMinimap extends StatelessWidget {
   final int atMs;
   final bool preferLiveDetections;
   final PitchRegion? pitch;
+  final PitchQuad? quad;
   final String? team1Id;
   final String? team2Id;
   final int? team1KitColor;
@@ -146,6 +148,7 @@ class DebugVideoPitchMinimap extends StatelessWidget {
                     atMs: atMs,
                     detections: detections,
                     pitch: pitch,
+                    quad: quad,
                     preferLiveDetections: preferLiveDetections,
                     rosterJerseyByPlayerId: rosterJerseyByPlayerId,
                     rosterTeamByPlayerId: rosterTeamByPlayerId,

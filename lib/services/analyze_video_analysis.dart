@@ -12,9 +12,10 @@ const PitchRegion kFullFramePitchRegion = PitchRegion(
   right: 1,
 );
 const double kAnalysisMaxSpeedMetersPerSecond = 12;
-const double kAnalysisMinStepMeters = 0.4;
-const int kAnalysisSampleDedupMs = 150;
-const int kAnalysisSampleMinIntervalMs = 200;
+const double kAnalysisMinStepMeters = 0.25;
+const int kAnalysisSampleDedupMs = 250;
+const int kAnalysisSampleMinIntervalMs = 250;
+const int kAnalysisPathGridMs = 250;
 const int kAnalysisPathSmoothWindow = 3;
 const double kBallPossessionRadiusMeters = 3.2;
 const double kBallHolderKeepRadiusMeters = 3.8;
@@ -92,7 +93,7 @@ bool shouldRecordAnalysisSamples({
   return isPlaying || !hasExistingSamples;
 }
 
-/// A green-band estimate we can freeze for the video. The full-frame
+/// A grass estimate we can freeze for the video. The full-frame
 /// fallback is not a real pitch and must not lock the meter scale.
 bool isUsablePitchRegion(PitchRegion? pitch) {
   if (pitch == null || pitch == kFullFramePitchRegion) return false;
@@ -101,18 +102,24 @@ bool isUsablePitchRegion(PitchRegion? pitch) {
   return width >= 0.20 && height >= 0.18;
 }
 
+bool isUsablePitchQuad(PitchQuad? quad) => quad != null && quad.isUsable;
+
 class PlayerDistanceSample {
   const PlayerDistanceSample({
     required this.playerId,
     required this.x,
     required this.y,
     required this.atMs,
+    this.nx,
+    this.ny,
   });
 
   final String playerId;
   final double x;
   final double y;
   final int atMs;
+  final double? nx;
+  final double? ny;
 }
 
 class PlayerDistanceResult {
@@ -174,18 +181,50 @@ PitchRegion? freezeAnalysisPitch({
   return frozenPitch ?? latestPitch;
 }
 
+PitchQuad? freezeAnalysisQuad({
+  PitchQuad? frozenQuad,
+  PitchQuad? latestQuad,
+}) {
+  if (isUsablePitchQuad(frozenQuad)) return frozenQuad;
+  if (isUsablePitchQuad(latestQuad)) return latestQuad;
+  return frozenQuad ?? latestQuad;
+}
+
+/// Same freeze rule as [analysisMappingPitch], for the perspective quad.
+PitchQuad? analysisMappingQuad({
+  required bool analyzing,
+  PitchQuad? frozenQuad,
+  PitchQuad? latestQuad,
+}) {
+  final locked = isUsablePitchQuad(frozenQuad) ? frozenQuad : null;
+  final latest = isUsablePitchQuad(latestQuad) ? latestQuad : null;
+  return locked ?? latest ?? frozenQuad ?? latestQuad;
+}
+
 /// Image (nx, ny) are 0–1 of the **video frame** (same space as detection
 /// boxes). Sideline camera convention, matching [GpsFieldWidget] /
 /// heatmap meters:
 /// - image X (left → right) → pitch **length** (0 = left goal, 105 m)
 /// - image Y (top → bottom) → pitch **width** (0 = far sideline, 68 m)
-/// No Y flip. [PitchRegion] is an axis-aligned green-band box, not a
-/// homography, so perspective footage is only approximately placed.
+/// No Y flip. Prefer [PitchQuad] (inverse bilinear). [PitchRegion] is
+/// only the AABB fallback when no grass quad was estimated.
 ({double x, double y}) pitchPointToMeters({
   required double nx,
   required double ny,
   PitchRegion? pitch,
+  PitchQuad? quad,
 }) {
+  final mapping = quad ??
+      (pitch == null ? null : pitchQuadFromRegion(pitch));
+  if (mapping != null) {
+    final uv = imagePointToPitchUv(x: nx, y: ny, quad: mapping);
+    if (uv != null) {
+      return (
+        x: uv.u * kAnalysisPitchLengthMeters,
+        y: uv.v * kAnalysisPitchWidthMeters,
+      );
+    }
+  }
   final left = pitch?.left ?? 0;
   final right = pitch?.right ?? 1;
   final top = pitch?.top ?? 0;
@@ -205,12 +244,14 @@ PitchRegion? freezeAnalysisPitch({
 ({double x, double y}) minimapPointFromBox(
   PlayerDetectionBox box, {
   PitchRegion? pitch,
+  PitchQuad? quad,
 }) {
   final ground = playerGroundPoint(box);
   final meters = pitchPointToMeters(
     nx: ground.x,
     ny: ground.y,
     pitch: pitch ?? kFullFramePitchRegion,
+    quad: quad,
   );
   return (
     x: (meters.x / kAnalysisPitchLengthMeters).clamp(0.0, 1.0),
@@ -219,7 +260,23 @@ PitchRegion? freezeAnalysisPitch({
 }
 
 /// Normalized 2D pitch coordinates (0–1) from a stored meter sample.
-({double x, double y}) minimapPointFromSample(PlayerDistanceSample sample) {
+({double x, double y}) minimapPointFromSample(
+  PlayerDistanceSample sample, {
+  PitchRegion? pitch,
+  PitchQuad? quad,
+}) {
+  if (sample.nx != null && sample.ny != null) {
+    final meters = pitchPointToMeters(
+      nx: sample.nx!,
+      ny: sample.ny!,
+      pitch: pitch,
+      quad: quad,
+    );
+    return (
+      x: (meters.x / kAnalysisPitchLengthMeters).clamp(0.0, 1.0),
+      y: (meters.y / kAnalysisPitchWidthMeters).clamp(0.0, 1.0),
+    );
+  }
   return (
     x: (sample.x / kAnalysisPitchLengthMeters).clamp(0.0, 1.0),
     y: (sample.y / kAnalysisPitchWidthMeters).clamp(0.0, 1.0),
@@ -291,6 +348,7 @@ List<MinimapPlayerMarker> minimapMarkersAt({
   required int atMs,
   required List<PlayerDetectionBox> detections,
   PitchRegion? pitch,
+  PitchQuad? quad,
   Map<String, int> rosterJerseyByPlayerId = const <String, int>{},
   Map<String, String> rosterTeamByPlayerId = const <String, String>{},
   int maxSampleDeltaMs = kAnalysisMinimapSampleMaxDeltaMs,
@@ -312,9 +370,9 @@ List<MinimapPlayerMarker> minimapMarkersAt({
         sample != null && (sample.atMs - atMs).abs() <= maxSampleDeltaMs;
     final useLiveBox = box != null && (preferLiveDetections || !sampleIsClose);
     final ({double x, double y})? point = useLiveBox
-        ? minimapPointFromBox(box, pitch: pitch)
+        ? minimapPointFromBox(box, pitch: pitch, quad: quad)
         : sampleIsClose
-            ? minimapPointFromSample(sample)
+            ? minimapPointFromSample(sample, pitch: pitch, quad: quad)
             : null;
     if (point == null) continue;
     markers.add(
@@ -424,6 +482,7 @@ PlayerDistanceSample? sampleAssociatedPlayer({
   required PlayerDetectionBox box,
   required int atMs,
   PitchRegion? pitch,
+  PitchQuad? quad,
 }) {
   final playerId = box.playerId?.trim() ?? '';
   if (playerId.isEmpty || box.kind != PlayerDetectionKind.person) {
@@ -434,12 +493,15 @@ PlayerDistanceSample? sampleAssociatedPlayer({
     nx: ground.x,
     ny: ground.y,
     pitch: pitch,
+    quad: quad,
   );
   return PlayerDistanceSample(
     playerId: playerId,
     x: meters.x,
     y: meters.y,
     atMs: atMs,
+    nx: ground.x,
+    ny: ground.y,
   );
 }
 
@@ -447,6 +509,7 @@ List<PlayerDistanceSample> samplesFromBoxes({
   required List<PlayerDetectionBox> boxes,
   required int atMs,
   PitchRegion? pitch,
+  PitchQuad? quad,
 }) {
   final samples = <PlayerDistanceSample>[];
   for (final box in boxes) {
@@ -454,39 +517,139 @@ List<PlayerDistanceSample> samplesFromBoxes({
       box: box,
       atMs: atMs,
       pitch: pitch,
+      quad: quad,
     );
     if (sample != null) samples.add(sample);
   }
   return samples;
 }
 
+PlayerDistanceSample remapSampleToMeters(
+  PlayerDistanceSample sample, {
+  PitchRegion? pitch,
+  PitchQuad? quad,
+}) {
+  if (sample.nx == null || sample.ny == null) return sample;
+  if (!isUsablePitchQuad(quad) && !isUsablePitchRegion(pitch)) {
+    return sample;
+  }
+  final meters = pitchPointToMeters(
+    nx: sample.nx!,
+    ny: sample.ny!,
+    pitch: pitch,
+    quad: quad,
+  );
+  return PlayerDistanceSample(
+    playerId: sample.playerId,
+    x: meters.x,
+    y: meters.y,
+    atMs: sample.atMs,
+    nx: sample.nx,
+    ny: sample.ny,
+  );
+}
+
+/// Linear interpolation onto a fixed time grid so two YOLO cadences
+/// of the same motion produce the same path length.
+List<PlayerDistanceSample> interpolateOnTimeGrid(
+  List<PlayerDistanceSample> samples, {
+  int intervalMs = kAnalysisPathGridMs,
+}) {
+  if (samples.length < 2 || intervalMs <= 0) return samples;
+  final points = [...samples]..sort((a, b) => a.atMs.compareTo(b.atMs));
+  final start = points.first.atMs;
+  final end = points.last.atMs;
+  if (end <= start) return points;
+  final grid = <PlayerDistanceSample>[];
+  var index = 0;
+  for (var t = start; t <= end; t += intervalMs) {
+    while (index < points.length - 2 && points[index + 1].atMs < t) {
+      index++;
+    }
+    final a = points[index];
+    final b = points[math.min(index + 1, points.length - 1)];
+    final span = b.atMs - a.atMs;
+    final w = span <= 0 ? 0.0 : ((t - a.atMs) / span).clamp(0.0, 1.0);
+    grid.add(
+      PlayerDistanceSample(
+        playerId: a.playerId,
+        x: a.x + (b.x - a.x) * w,
+        y: a.y + (b.y - a.y) * w,
+        atMs: t,
+        nx: a.nx == null || b.nx == null ? a.nx : a.nx! + (b.nx! - a.nx!) * w,
+        ny: a.ny == null || b.ny == null ? a.ny : a.ny! + (b.ny! - a.ny!) * w,
+      ),
+    );
+  }
+  if (grid.isEmpty || grid.last.atMs != end) {
+    grid.add(points.last);
+  }
+  return grid;
+}
+
 double pathDistanceMeters(
   List<PlayerDistanceSample> samples, {
   double maxSpeedMetersPerSecond = kAnalysisMaxSpeedMetersPerSecond,
   double minStepMeters = kAnalysisMinStepMeters,
+  PitchRegion? pitch,
+  PitchQuad? quad,
 }) {
   if (samples.length < 2) return 0;
-  final points = smoothPlayerPath(resamplePlayerSamples(samples));
+  final remapped = [
+    for (final sample in samples)
+      remapSampleToMeters(sample, pitch: pitch, quad: quad),
+  ];
+  final cleaned = dropTeleportSamples(
+    remapped,
+    maxSpeedMetersPerSecond: maxSpeedMetersPerSecond,
+  );
+  final points = smoothPlayerPath(interpolateOnTimeGrid(cleaned));
   var distance = 0.0;
   var last = points.first;
   for (var i = 1; i < points.length; i++) {
     final next = points[i];
     final dt = (next.atMs - last.atMs) / 1000;
-    if (dt <= 0) continue;
+    if (dt <= 0) {
+      last = next;
+      continue;
+    }
     final step = math.sqrt(
       math.pow(next.x - last.x, 2) + math.pow(next.y - last.y, 2),
     );
+    last = next;
     if (step < minStepMeters) continue;
     if (step / dt > maxSpeedMetersPerSecond) continue;
     distance += step;
-    last = next;
   }
   return distance;
+}
+
+List<PlayerDistanceSample> dropTeleportSamples(
+  List<PlayerDistanceSample> samples, {
+  double maxSpeedMetersPerSecond = kAnalysisMaxSpeedMetersPerSecond,
+}) {
+  if (samples.length < 2) return samples;
+  final points = [...samples]..sort((a, b) => a.atMs.compareTo(b.atMs));
+  final kept = <PlayerDistanceSample>[points.first];
+  for (var i = 1; i < points.length; i++) {
+    final previous = kept.last;
+    final next = points[i];
+    final dt = (next.atMs - previous.atMs) / 1000;
+    if (dt <= 0) continue;
+    final step = math.sqrt(
+      math.pow(next.x - previous.x, 2) + math.pow(next.y - previous.y, 2),
+    );
+    if (step / dt > maxSpeedMetersPerSecond) continue;
+    kept.add(next);
+  }
+  return kept;
 }
 
 List<PlayerDistanceResult> summarizePlayerDistances({
   required List<PlayerDistanceSample> samples,
   required List<DebugVideoRosterPlayer> roster,
+  PitchRegion? pitch,
+  PitchQuad? quad,
 }) {
   final byPlayer = <String, List<PlayerDistanceSample>>{};
   for (final sample in samples) {
@@ -508,7 +671,7 @@ List<PlayerDistanceResult> summarizePlayerDistances({
         playerId: entry.key,
         displayName: player?.displayName ?? entry.key,
         number: player?.number,
-        meters: pathDistanceMeters(entry.value),
+        meters: pathDistanceMeters(entry.value, pitch: pitch, quad: quad),
         sampleCount: entry.value.length,
       ),
     );
@@ -587,12 +750,14 @@ BallSample? sampleBall({
   required PlayerDetectionBox box,
   required int atMs,
   PitchRegion? pitch,
+  PitchQuad? quad,
 }) {
   if (box.kind != PlayerDetectionKind.ball) return null;
   final meters = pitchPointToMeters(
     nx: (box.left + box.width / 2).clamp(0.0, 1.0),
     ny: detectionAnchorY(box).clamp(0.0, 1.0),
     pitch: pitch,
+    quad: quad,
   );
   return BallSample(x: meters.x, y: meters.y, atMs: atMs);
 }
@@ -601,10 +766,11 @@ List<BallSample> ballSamplesFromBoxes({
   required List<PlayerDetectionBox> boxes,
   required int atMs,
   PitchRegion? pitch,
+  PitchQuad? quad,
 }) {
   final samples = <BallSample>[];
   for (final box in boxes) {
-    final sample = sampleBall(box: box, atMs: atMs, pitch: pitch);
+    final sample = sampleBall(box: box, atMs: atMs, pitch: pitch, quad: quad);
     if (sample != null) samples.add(sample);
   }
   return samples;
@@ -776,8 +942,15 @@ List<PlayerDistanceResult> summarizePlayerAnalysis({
   required List<PlayerDistanceSample> samples,
   required List<BallSample> balls,
   required List<DebugVideoRosterPlayer> roster,
+  PitchRegion? pitch,
+  PitchQuad? quad,
 }) {
-  final distances = summarizePlayerDistances(samples: samples, roster: roster);
+  final distances = summarizePlayerDistances(
+    samples: samples,
+    roster: roster,
+    pitch: pitch,
+    quad: quad,
+  );
   final ballStats = detectPlayerBallStats(
     players: samples,
     balls: balls,

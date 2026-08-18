@@ -80,6 +80,7 @@ class _DebugVideoScreenState extends State<DebugVideoScreen> {
   PlayerDetectionBox? _frameBox;
   Uint8List? _stillFrameBytes;
   PitchRegion? _analysisPitch;
+  PitchQuad? _analysisQuad;
   final List<PlayerDistanceSample> _analysisSamples = <PlayerDistanceSample>[];
   final List<BallSample> _analysisBallSamples = <BallSample>[];
   final List<DebugVideoTag> _analysisTags = <DebugVideoTag>[];
@@ -341,12 +342,22 @@ class _DebugVideoScreenState extends State<DebugVideoScreen> {
     )) {
       return;
     }
+    _analysisQuad = freezeAnalysisQuad(
+      frozenQuad: _analysisQuad,
+      latestQuad: DebugPlayerDetector.instance.lastPitchQuad,
+    );
     _analysisPitch = freezeAnalysisPitch(
-      frozenPitch: _analysisPitch,
+      frozenPitch: _analysisPitch ?? _analysisQuad?.bounds,
       latestPitch: DebugPlayerDetector.instance.lastPitchRegion,
     );
-    if (!isUsablePitchRegion(_analysisPitch)) return;
-    final pitch = _analysisPitch!;
+    if (isUsablePitchQuad(_analysisQuad)) {
+      _analysisPitch = _analysisQuad!.bounds;
+    }
+    if (!isUsablePitchRegion(_analysisPitch) &&
+        !isUsablePitchQuad(_analysisQuad)) {
+      return;
+    }
+    final pitch = _analysisPitch;
     final atMs = _controller?.value.position.inMilliseconds ?? 0;
     mergeAnalysisSamples(
       _analysisSamples,
@@ -354,6 +365,7 @@ class _DebugVideoScreenState extends State<DebugVideoScreen> {
         boxes: boxes,
         atMs: atMs,
         pitch: pitch,
+        quad: _analysisQuad,
       ),
     );
     mergeBallSamples(
@@ -362,15 +374,26 @@ class _DebugVideoScreenState extends State<DebugVideoScreen> {
         boxes: boxes,
         atMs: atMs,
         pitch: pitch,
+        quad: _analysisQuad,
       ),
     );
   }
 
   PitchRegion get _pitchForDisplay {
+    final quad = _quadForDisplay;
+    if (isUsablePitchQuad(quad)) return quad!.bounds;
     return analysisMappingPitch(
       analyzing: _analyzing,
       frozenPitch: _analysisPitch,
       latestPitch: DebugPlayerDetector.instance.lastPitchRegion,
+    );
+  }
+
+  PitchQuad? get _quadForDisplay {
+    return analysisMappingQuad(
+      analyzing: _analyzing,
+      frozenQuad: _analysisQuad,
+      latestQuad: DebugPlayerDetector.instance.lastPitchQuad,
     );
   }
 
@@ -910,8 +933,12 @@ class _DebugVideoScreenState extends State<DebugVideoScreen> {
       _analysisSamples.clear();
       _analysisBallSamples.clear();
     }
+    _analysisQuad = freezeAnalysisQuad(
+      frozenQuad: _analysisQuad,
+      latestQuad: DebugPlayerDetector.instance.lastPitchQuad,
+    );
     _analysisPitch = freezeAnalysisPitch(
-      frozenPitch: _analysisPitch,
+      frozenPitch: _analysisPitch ?? _analysisQuad?.bounds,
       latestPitch: DebugPlayerDetector.instance.lastPitchRegion,
     );
     _recordAnalysisSamples(_manualBoxes);
@@ -954,6 +981,8 @@ class _DebugVideoScreenState extends State<DebugVideoScreen> {
       samples: List<PlayerDistanceSample>.from(_analysisSamples),
       balls: List<BallSample>.from(_analysisBallSamples),
       roster: _rosterPlayers,
+      pitch: _analysisPitch,
+      quad: _analysisQuad,
     );
     await showDebugVideoAnalysisResults(
       context: context,
@@ -1004,6 +1033,7 @@ class _DebugVideoScreenState extends State<DebugVideoScreen> {
     _analysisBallSamples.clear();
     _analysisTags.clear();
     _analysisPitch = null;
+    _analysisQuad = null;
     _frameBox = null;
     _stillFrameBytes = null;
     DebugPlayerDetector.instance.clearAssociations();
@@ -1066,6 +1096,7 @@ class _DebugVideoScreenState extends State<DebugVideoScreen> {
             onSeek: _onVideoSeek,
             analysisSamples: _analysisSamples,
             pitch: _pitchForDisplay,
+            quad: _quadForDisplay,
             team1Id: _matchVideo.team1.teamId,
             team2Id: _matchVideo.team2.teamId,
             team1KitColor: _matchVideo.team1KitColor,
@@ -1142,6 +1173,7 @@ class _DebugVideoScreenState extends State<DebugVideoScreen> {
                           onSeek: _onVideoSeek,
                           analysisSamples: _analysisSamples,
                           pitch: _pitchForDisplay,
+                          quad: _quadForDisplay,
                           team1Id: _matchVideo.team1.teamId,
                           team2Id: _matchVideo.team2.teamId,
                           team1KitColor: _matchVideo.team1KitColor,

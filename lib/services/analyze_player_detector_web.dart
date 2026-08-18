@@ -76,6 +76,7 @@ class DebugPlayerDetector {
   List<PlayerDetectionBox> _lastBallBoxes = const <PlayerDetectionBox>[];
   _SampledFrame? _lastSample;
   PitchRegion? _lastPitch;
+  PitchQuad? _lastQuad;
   bool _analyzePlayback = false;
   double? _lastStillTime;
   PlayerDetectionBox? _draftFrame;
@@ -101,6 +102,8 @@ class DebugPlayerDetector {
   bool get isRunning => _running;
 
   PitchRegion? get lastPitchRegion => _lastPitch;
+
+  PitchQuad? get lastPitchQuad => _lastQuad;
 
   void setAnalyzePlayback(bool enabled) {
     _analyzePlayback = enabled;
@@ -203,6 +206,7 @@ class DebugPlayerDetector {
     if (srcHint.trim().isEmpty) return;
     if (_srcHint.isNotEmpty && _srcHint != srcHint) {
       _lastPitch = null;
+      _lastQuad = null;
     }
     _srcHint = srcHint;
   }
@@ -768,7 +772,16 @@ class DebugPlayerDetector {
                       width: sampled.width,
                       height: sampled.height,
                     );
-              if (_lastPitch == null && pitch != null) _lastPitch = pitch;
+              if (sampled != null && _lastQuad == null) {
+                _lastQuad = estimatePitchQuad(
+                  rgba: sampled.pixels,
+                  width: sampled.width,
+                  height: sampled.height,
+                );
+              }
+              if (_lastPitch == null) {
+                _lastPitch = _lastQuad?.bounds ?? pitch;
+              }
               var people = keepMatchSheetDetections(
                 boxes: yoloPeople,
                 pitch: pitch,
