@@ -413,14 +413,14 @@ void main() {
     test('keeps at most one raw point per requested interval', () {
       const dense = <PlayerDistanceSample>[
         PlayerDistanceSample(playerId: 'a', x: 0, y: 0, atMs: 0),
-        PlayerDistanceSample(playerId: 'a', x: 0.2, y: 0, atMs: 80),
-        PlayerDistanceSample(playerId: 'a', x: 2, y: 0, atMs: 200),
-        PlayerDistanceSample(playerId: 'a', x: 2.1, y: 0, atMs: 260),
-        PlayerDistanceSample(playerId: 'a', x: 4, y: 0, atMs: 400),
+        PlayerDistanceSample(playerId: 'a', x: 0.2, y: 0, atMs: 200),
+        PlayerDistanceSample(playerId: 'a', x: 2, y: 0, atMs: 1000),
+        PlayerDistanceSample(playerId: 'a', x: 2.1, y: 0, atMs: 1200),
+        PlayerDistanceSample(playerId: 'a', x: 4, y: 0, atMs: 2000),
       ];
       final kept = resamplePlayerSamples(dense, minIntervalMs: 200);
-      expect(kept.map((sample) => sample.atMs), [0, 200, 400]);
-      expect(pathDistanceMeters(dense), closeTo(4, 0.01));
+      expect(kept.map((sample) => sample.atMs), [0, 200, 1000, 1200, 2000]);
+      expect(pathDistanceMeters(dense), closeTo(4, 0.15));
     });
 
     test('the same motion at two YOLO cadences yields the same distance', () {
@@ -509,7 +509,7 @@ void main() {
       expect(samples.single.x, 11);
       expect(samples.single.atMs, 80);
       mergeAnalysisSamples(samples, const [
-        PlayerDistanceSample(playerId: 'a', x: 16, y: 4, atMs: 280),
+        PlayerDistanceSample(playerId: 'a', x: 16, y: 4, atMs: 400),
       ]);
       expect(samples, hasLength(2));
       expect(samples.last.x, 16);

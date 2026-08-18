@@ -344,10 +344,10 @@ double _cross2d(double ax, double ay, double bx, double by) => ax * by - ay * bx
             : null;
     if (u == null) continue;
     final inside = u >= -0.08 && u <= 1.08 && v >= -0.08 && v <= 1.08;
-    final penalty = (u < 0 ? -u : 0) +
-        (u > 1 ? u - 1 : 0) +
-        (v < 0 ? -v : 0) +
-        (v > 1 ? v - 1 : 0);
+    final penalty = (u < 0 ? -u : 0.0) +
+        (u > 1 ? u - 1 : 0.0) +
+        (v < 0 ? -v : 0.0) +
+        (v > 1 ? v - 1 : 0.0);
     if (!inside && penalty > 0.2) continue;
     if (penalty < bestPenalty) {
       bestPenalty = penalty;

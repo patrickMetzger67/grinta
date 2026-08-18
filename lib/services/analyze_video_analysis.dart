@@ -560,9 +560,9 @@ List<PlayerDistanceSample> interpolateOnTimeGrid(
   final start = points.first.atMs;
   final end = points.last.atMs;
   if (end <= start) return points;
-  final grid = <PlayerDistanceSample>[];
-  var index = 0;
-  for (var t = start; t <= end; t += intervalMs) {
+
+  PlayerDistanceSample at(int t) {
+    var index = 0;
     while (index < points.length - 2 && points[index + 1].atMs < t) {
       index++;
     }
@@ -570,20 +570,22 @@ List<PlayerDistanceSample> interpolateOnTimeGrid(
     final b = points[math.min(index + 1, points.length - 1)];
     final span = b.atMs - a.atMs;
     final w = span <= 0 ? 0.0 : ((t - a.atMs) / span).clamp(0.0, 1.0);
-    grid.add(
-      PlayerDistanceSample(
-        playerId: a.playerId,
-        x: a.x + (b.x - a.x) * w,
-        y: a.y + (b.y - a.y) * w,
-        atMs: t,
-        nx: a.nx == null || b.nx == null ? a.nx : a.nx! + (b.nx! - a.nx!) * w,
-        ny: a.ny == null || b.ny == null ? a.ny : a.ny! + (b.ny! - a.ny!) * w,
-      ),
+    return PlayerDistanceSample(
+      playerId: a.playerId,
+      x: a.x + (b.x - a.x) * w,
+      y: a.y + (b.y - a.y) * w,
+      atMs: t,
+      nx: a.nx == null || b.nx == null ? a.nx : a.nx! + (b.nx! - a.nx!) * w,
+      ny: a.ny == null || b.ny == null ? a.ny : a.ny! + (b.ny! - a.ny!) * w,
     );
   }
-  if (grid.isEmpty || grid.last.atMs != end) {
-    grid.add(points.last);
+
+  final grid = <PlayerDistanceSample>[at(start)];
+  for (var t = start + intervalMs; t < end; t += intervalMs) {
+    if (end - t < intervalMs / 2) break;
+    grid.add(at(t));
   }
+  grid.add(at(end));
   return grid;
 }
 
