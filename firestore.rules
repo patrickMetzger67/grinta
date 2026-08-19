@@ -416,6 +416,29 @@ service cloud.firestore {
       }
     }
 
+    function teamListHasAuth(fieldName) {
+      return resource.data.get(fieldName, []) is list
+        && request.auth.uid in resource.data.get(fieldName, []);
+    }
+
+    // Owner, listed manager, owner-kit, or linked user may update a team.
+    function canManageTeamDoc() {
+      return request.auth != null
+        && (
+          resource.data.get('uid', '') == request.auth.uid
+          || teamListHasAuth('managers')
+          || teamListHasAuth('owners')
+          || teamListHasAuth('users')
+        );
+    }
+
+    // Roster / staff mutations (remove player, etc.). Additive with catch-all.
+    match /team/{teamId} {
+      allow read: if true;
+      allow create: if request.auth != null;
+      allow update, delete: if canManageTeamDoc();
+    }
+
     // Catch-all for the rest of the app (matches deployed prod behavior).
     // Excludes paths above so dedicated rules are enforced (Firestore ORs allows).
     match /{document=**} {

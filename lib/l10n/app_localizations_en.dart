@@ -1986,6 +1986,10 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
+  String get errorDeletePermissionDenied =>
+      'Deletion refused: insufficient permissions. Make sure you are signed in as a team manager, then try again.';
+
+  @override
   String get errorLoadingTitle => 'Loading error';
 
   @override

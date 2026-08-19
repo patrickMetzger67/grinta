@@ -2009,6 +2009,10 @@ class AppLocalizationsFr extends AppLocalizations {
   }
 
   @override
+  String get errorDeletePermissionDenied =>
+      'Suppression refusée : droits insuffisants. Vérifiez que vous êtes connecté en tant que responsable de l\'équipe, puis réessayez.';
+
+  @override
   String get errorLoadingTitle => 'Erreur de chargement';
 
   @override

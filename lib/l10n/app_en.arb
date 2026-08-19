@@ -962,6 +962,7 @@
   "errorTeamParamsLoad": "Error loading settings: {details}",
   "errorSaveTeamIdEmpty": "Unable to save: empty teamId.",
   "errorDeleteFailed": "Error while deleting: {details}",
+  "errorDeletePermissionDenied": "Deletion refused: insufficient permissions. Make sure you are signed in as a team manager, then try again.",
   "errorLoadingTitle": "Loading error",
   "errorCompositionTitle": "Composition error",
   "errorPlayerTitle": "Player error",
