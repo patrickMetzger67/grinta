@@ -9,7 +9,6 @@ const {
   parseNotificationPreferences,
   isQuietAt,
   evaluatePushPermission,
-  shouldBypassPreferenceFilter,
   BRAND_GRINTA,
   BRAND_ASERSTEIN,
   GRINTA_ICON_192,
@@ -171,11 +170,6 @@ describe('notification preferences', () => {
     assert.ok(sendAfter);
     assert.equal(sendAfter.getUTCHours(), 7);
     assert.equal(evaluatePushPermission(prefs, sendAfter).allowed, true);
-  });
-
-  it('bypasses reminder/quiet filters for chat messages', () => {
-    assert.equal(shouldBypassPreferenceFilter('chat'), true);
-    assert.equal(shouldBypassPreferenceFilter('convocation'), false);
   });
 
   it('computeSendAfter returns null when reminders disabled', () => {

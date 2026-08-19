@@ -5,7 +5,6 @@ const {
   normalizeTokenList,
   normalizeUserIdList,
   filterTokensByRecipientPreferences,
-  shouldBypassPreferenceFilter,
   resolveBrand,
   resolveBrandAssets,
   BRAND_GRINTA,
@@ -65,7 +64,6 @@ function createSendPushFCMNotification() {
       recipientUserIds,
       fcmTokens: requestedTokens,
       brand,
-      bypassPreferenceFilter: shouldBypassPreferenceFilter(type),
     });
 
     const deferredCount = await enqueueQuietDeferredPushes({

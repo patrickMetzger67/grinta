@@ -148,11 +148,6 @@ function evaluatePushPermission(prefs, date = new Date()) {
   return { allowed: true };
 }
 
-/** Chat messages are conversations, not agenda reminders. */
-function shouldBypassPreferenceFilter(type) {
-  return readNonEmptyString(type) === 'chat';
-}
-
 /**
  * Resolve push brand. Grinta app always sends `brand: "grinta"` and uses
  * platform clubId `"0"`. Prefer explicit brand; fall back to clubId `"0"` →
@@ -331,7 +326,6 @@ async function filterTokensByRecipientPreferences({
   fcmTokens,
   brand = BRAND_GRINTA,
   now = new Date(),
-  bypassPreferenceFilter = false,
 }) {
   const userIds = normalizeUserIdList(recipientUserIds);
   const requestedTokens = new Set(normalizeTokenList(fcmTokens));
@@ -365,9 +359,7 @@ async function filterTokensByRecipientPreferences({
     const prefs = parseNotificationPreferences(
       prefSnap.exists ? prefSnap.data() : null,
     );
-    const decision = bypassPreferenceFilter
-      ? {allowed: true}
-      : evaluatePushPermission(prefs, now);
+    const decision = evaluatePushPermission(prefs, now);
     const userTokens = await loadUserFcmTokens(
       db,
       userId,
@@ -418,7 +410,6 @@ module.exports = {
   getZonedWeekdayAndHour,
   isQuietAt,
   evaluatePushPermission,
-  shouldBypassPreferenceFilter,
   computeSendAfter,
   filterTokensByRecipientPreferences,
   loadUserFcmTokens,
