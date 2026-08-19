@@ -2659,6 +2659,91 @@ class AppLocalizationsFr extends AppLocalizations {
   }
 
   @override
+  String get chatPollCreate => 'Créer un sondage';
+
+  @override
+  String get chatPollQuestionLabel => 'Question';
+
+  @override
+  String get chatPollQuestionHint => 'Pose ta question';
+
+  @override
+  String get chatPollQuestionRequired => 'La question est obligatoire.';
+
+  @override
+  String get chatPollOptionsLabel => 'Options';
+
+  @override
+  String chatPollOptionHint(int index) {
+    return 'Option $index';
+  }
+
+  @override
+  String get chatPollOptionAdd => 'Ajouter une option';
+
+  @override
+  String get chatPollOptionRemove => 'Supprimer l\'option';
+
+  @override
+  String get chatPollOptionImage => 'Image';
+
+  @override
+  String get chatPollOptionPickImage => 'Choisir une image';
+
+  @override
+  String get chatPollOptionsMin =>
+      'Ajoute au moins deux options (texte ou image).';
+
+  @override
+  String get chatPollAllowMultiple => 'Plusieurs réponses possibles';
+
+  @override
+  String get chatPollMultipleHint => 'Tu peux choisir plusieurs options';
+
+  @override
+  String get chatPollSingleHint => 'Un seul choix';
+
+  @override
+  String get chatPollResultsVisibleGroup =>
+      'Résultats visibles par les membres';
+
+  @override
+  String get chatPollResultsVisibleDirect =>
+      'Résultats visibles par le correspondant';
+
+  @override
+  String get chatPollResultsVisibleHint =>
+      'Les participants voient les résultats sous le sondage.';
+
+  @override
+  String get chatPollResultsHidden => 'Seul l’auteur voit les résultats';
+
+  @override
+  String get chatPollSend => 'Envoyer';
+
+  @override
+  String chatPollSendError(String error) {
+    return 'Impossible d’envoyer le sondage : $error';
+  }
+
+  @override
+  String chatPollVoteError(String error) {
+    return 'Impossible d’enregistrer le vote : $error';
+  }
+
+  @override
+  String chatPollVotesCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count votes',
+      one: '1 vote',
+      zero: 'Aucun vote',
+    );
+    return '$_temp0';
+  }
+
+  @override
   String get matchDetailTitle => 'Détail du match';
 
   @override

@@ -1148,7 +1148,7 @@ class _FcmChatChannelPage extends StatelessWidget {
                 messages,
                 defaultWidget,
               ) {
-                return decorateStreamMessageForReadReceipts(
+                return decorateStreamChatMessage(
                   defaultWidget: defaultWidget,
                   isMyMessage: details.isMyMessage,
                 );

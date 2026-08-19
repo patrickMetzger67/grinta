@@ -1205,6 +1205,56 @@
       }
     }
   },
+  "chatPollCreate": "Crear una encuesta",
+  "chatPollQuestionLabel": "Pregunta",
+  "chatPollQuestionHint": "Haz una pregunta",
+  "chatPollQuestionRequired": "La pregunta es obligatoria.",
+  "chatPollOptionsLabel": "Opciones",
+  "chatPollOptionHint": "Opción {index}",
+  "@chatPollOptionHint": {
+    "placeholders": {
+      "index": {
+        "type": "int"
+      }
+    }
+  },
+  "chatPollOptionAdd": "Añadir una opción",
+  "chatPollOptionRemove": "Eliminar opción",
+  "chatPollOptionImage": "Imagen",
+  "chatPollOptionPickImage": "Elegir una imagen",
+  "chatPollOptionsMin": "Añade al menos dos opciones (texto o imagen).",
+  "chatPollAllowMultiple": "Varias respuestas posibles",
+  "chatPollMultipleHint": "Puedes elegir varias opciones",
+  "chatPollSingleHint": "Una sola elección",
+  "chatPollResultsVisibleGroup": "Resultados visibles para los miembros",
+  "chatPollResultsVisibleDirect": "Resultados visibles para el destinatario",
+  "chatPollResultsVisibleHint": "Los participantes ven los resultados bajo la encuesta.",
+  "chatPollResultsHidden": "Solo el autor ve los resultados",
+  "chatPollSend": "Enviar",
+  "chatPollSendError": "No se pudo enviar la encuesta: {error}",
+  "@chatPollSendError": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "chatPollVoteError": "No se pudo guardar el voto: {error}",
+  "@chatPollVoteError": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "chatPollVotesCount": "{count, plural, =0{Ningún voto} =1{1 voto} other{{count} votos}}",
+  "@chatPollVotesCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "matchDetailTitle": "Detalles del partido",
   "matchDetailVenueTitle": "Lugar del partido",
   "matchVenueFieldGpsView": "Campo geolocalizado — ver el trazado",

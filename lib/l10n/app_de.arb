@@ -1205,6 +1205,56 @@
       }
     }
   },
+  "chatPollCreate": "Umfrage erstellen",
+  "chatPollQuestionLabel": "Frage",
+  "chatPollQuestionHint": "Stelle eine Frage",
+  "chatPollQuestionRequired": "Die Frage ist erforderlich.",
+  "chatPollOptionsLabel": "Optionen",
+  "chatPollOptionHint": "Option {index}",
+  "@chatPollOptionHint": {
+    "placeholders": {
+      "index": {
+        "type": "int"
+      }
+    }
+  },
+  "chatPollOptionAdd": "Option hinzufügen",
+  "chatPollOptionRemove": "Option entfernen",
+  "chatPollOptionImage": "Bild",
+  "chatPollOptionPickImage": "Bild wählen",
+  "chatPollOptionsMin": "Füge mindestens zwei Optionen hinzu (Text oder Bild).",
+  "chatPollAllowMultiple": "Mehrere Antworten möglich",
+  "chatPollMultipleHint": "Du kannst mehrere Optionen wählen",
+  "chatPollSingleHint": "Nur eine Wahl",
+  "chatPollResultsVisibleGroup": "Ergebnisse für Mitglieder sichtbar",
+  "chatPollResultsVisibleDirect": "Ergebnisse für den Chatpartner sichtbar",
+  "chatPollResultsVisibleHint": "Teilnehmer sehen die Ergebnisse unter der Umfrage.",
+  "chatPollResultsHidden": "Nur der Autor sieht die Ergebnisse",
+  "chatPollSend": "Senden",
+  "chatPollSendError": "Umfrage konnte nicht gesendet werden: {error}",
+  "@chatPollSendError": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "chatPollVoteError": "Stimme konnte nicht gespeichert werden: {error}",
+  "@chatPollVoteError": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "chatPollVotesCount": "{count, plural, =0{Keine Stimmen} =1{1 Stimme} other{{count} Stimmen}}",
+  "@chatPollVotesCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "matchDetailTitle": "Spieldetails",
   "matchDetailVenueTitle": "Spielort",
   "matchVenueFieldGpsView": "Platz geolokalisiert — Umriss anzeigen",

@@ -2622,6 +2622,89 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
+  String get chatPollCreate => 'Create a poll';
+
+  @override
+  String get chatPollQuestionLabel => 'Question';
+
+  @override
+  String get chatPollQuestionHint => 'Ask a question';
+
+  @override
+  String get chatPollQuestionRequired => 'The question is required.';
+
+  @override
+  String get chatPollOptionsLabel => 'Options';
+
+  @override
+  String chatPollOptionHint(int index) {
+    return 'Option $index';
+  }
+
+  @override
+  String get chatPollOptionAdd => 'Add an option';
+
+  @override
+  String get chatPollOptionRemove => 'Remove option';
+
+  @override
+  String get chatPollOptionImage => 'Image';
+
+  @override
+  String get chatPollOptionPickImage => 'Choose an image';
+
+  @override
+  String get chatPollOptionsMin => 'Add at least two options (text or image).';
+
+  @override
+  String get chatPollAllowMultiple => 'Allow multiple answers';
+
+  @override
+  String get chatPollMultipleHint => 'You can choose several options';
+
+  @override
+  String get chatPollSingleHint => 'Single choice';
+
+  @override
+  String get chatPollResultsVisibleGroup => 'Results visible to members';
+
+  @override
+  String get chatPollResultsVisibleDirect =>
+      'Results visible to the other person';
+
+  @override
+  String get chatPollResultsVisibleHint =>
+      'Participants see the results under the poll.';
+
+  @override
+  String get chatPollResultsHidden => 'Only the author can see the results';
+
+  @override
+  String get chatPollSend => 'Send';
+
+  @override
+  String chatPollSendError(String error) {
+    return 'Could not send the poll: $error';
+  }
+
+  @override
+  String chatPollVoteError(String error) {
+    return 'Could not save the vote: $error';
+  }
+
+  @override
+  String chatPollVotesCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count votes',
+      one: '1 vote',
+      zero: 'No votes',
+    );
+    return '$_temp0';
+  }
+
+  @override
   String get matchDetailTitle => 'Match details';
 
   @override

@@ -2675,6 +2675,91 @@ class AppLocalizationsDe extends AppLocalizations {
   }
 
   @override
+  String get chatPollCreate => 'Umfrage erstellen';
+
+  @override
+  String get chatPollQuestionLabel => 'Frage';
+
+  @override
+  String get chatPollQuestionHint => 'Stelle eine Frage';
+
+  @override
+  String get chatPollQuestionRequired => 'Die Frage ist erforderlich.';
+
+  @override
+  String get chatPollOptionsLabel => 'Optionen';
+
+  @override
+  String chatPollOptionHint(int index) {
+    return 'Option $index';
+  }
+
+  @override
+  String get chatPollOptionAdd => 'Option hinzufügen';
+
+  @override
+  String get chatPollOptionRemove => 'Option entfernen';
+
+  @override
+  String get chatPollOptionImage => 'Bild';
+
+  @override
+  String get chatPollOptionPickImage => 'Bild wählen';
+
+  @override
+  String get chatPollOptionsMin =>
+      'Füge mindestens zwei Optionen hinzu (Text oder Bild).';
+
+  @override
+  String get chatPollAllowMultiple => 'Mehrere Antworten möglich';
+
+  @override
+  String get chatPollMultipleHint => 'Du kannst mehrere Optionen wählen';
+
+  @override
+  String get chatPollSingleHint => 'Nur eine Wahl';
+
+  @override
+  String get chatPollResultsVisibleGroup =>
+      'Ergebnisse für Mitglieder sichtbar';
+
+  @override
+  String get chatPollResultsVisibleDirect =>
+      'Ergebnisse für den Chatpartner sichtbar';
+
+  @override
+  String get chatPollResultsVisibleHint =>
+      'Teilnehmer sehen die Ergebnisse unter der Umfrage.';
+
+  @override
+  String get chatPollResultsHidden => 'Nur der Autor sieht die Ergebnisse';
+
+  @override
+  String get chatPollSend => 'Senden';
+
+  @override
+  String chatPollSendError(String error) {
+    return 'Umfrage konnte nicht gesendet werden: $error';
+  }
+
+  @override
+  String chatPollVoteError(String error) {
+    return 'Stimme konnte nicht gespeichert werden: $error';
+  }
+
+  @override
+  String chatPollVotesCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count Stimmen',
+      one: '1 Stimme',
+      zero: 'Keine Stimmen',
+    );
+    return '$_temp0';
+  }
+
+  @override
   String get matchDetailTitle => 'Spieldetails';
 
   @override

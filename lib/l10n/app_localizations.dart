@@ -4661,6 +4661,138 @@ abstract class AppLocalizations {
   /// **'Impossible de supprimer le groupe : {error}'**
   String chatGroupDeleteError(String error);
 
+  /// No description provided for @chatPollCreate.
+  ///
+  /// In fr, this message translates to:
+  /// **'Créer un sondage'**
+  String get chatPollCreate;
+
+  /// No description provided for @chatPollQuestionLabel.
+  ///
+  /// In fr, this message translates to:
+  /// **'Question'**
+  String get chatPollQuestionLabel;
+
+  /// No description provided for @chatPollQuestionHint.
+  ///
+  /// In fr, this message translates to:
+  /// **'Pose ta question'**
+  String get chatPollQuestionHint;
+
+  /// No description provided for @chatPollQuestionRequired.
+  ///
+  /// In fr, this message translates to:
+  /// **'La question est obligatoire.'**
+  String get chatPollQuestionRequired;
+
+  /// No description provided for @chatPollOptionsLabel.
+  ///
+  /// In fr, this message translates to:
+  /// **'Options'**
+  String get chatPollOptionsLabel;
+
+  /// No description provided for @chatPollOptionHint.
+  ///
+  /// In fr, this message translates to:
+  /// **'Option {index}'**
+  String chatPollOptionHint(int index);
+
+  /// No description provided for @chatPollOptionAdd.
+  ///
+  /// In fr, this message translates to:
+  /// **'Ajouter une option'**
+  String get chatPollOptionAdd;
+
+  /// No description provided for @chatPollOptionRemove.
+  ///
+  /// In fr, this message translates to:
+  /// **'Supprimer l\'option'**
+  String get chatPollOptionRemove;
+
+  /// No description provided for @chatPollOptionImage.
+  ///
+  /// In fr, this message translates to:
+  /// **'Image'**
+  String get chatPollOptionImage;
+
+  /// No description provided for @chatPollOptionPickImage.
+  ///
+  /// In fr, this message translates to:
+  /// **'Choisir une image'**
+  String get chatPollOptionPickImage;
+
+  /// No description provided for @chatPollOptionsMin.
+  ///
+  /// In fr, this message translates to:
+  /// **'Ajoute au moins deux options (texte ou image).'**
+  String get chatPollOptionsMin;
+
+  /// No description provided for @chatPollAllowMultiple.
+  ///
+  /// In fr, this message translates to:
+  /// **'Plusieurs réponses possibles'**
+  String get chatPollAllowMultiple;
+
+  /// No description provided for @chatPollMultipleHint.
+  ///
+  /// In fr, this message translates to:
+  /// **'Tu peux choisir plusieurs options'**
+  String get chatPollMultipleHint;
+
+  /// No description provided for @chatPollSingleHint.
+  ///
+  /// In fr, this message translates to:
+  /// **'Un seul choix'**
+  String get chatPollSingleHint;
+
+  /// No description provided for @chatPollResultsVisibleGroup.
+  ///
+  /// In fr, this message translates to:
+  /// **'Résultats visibles par les membres'**
+  String get chatPollResultsVisibleGroup;
+
+  /// No description provided for @chatPollResultsVisibleDirect.
+  ///
+  /// In fr, this message translates to:
+  /// **'Résultats visibles par le correspondant'**
+  String get chatPollResultsVisibleDirect;
+
+  /// No description provided for @chatPollResultsVisibleHint.
+  ///
+  /// In fr, this message translates to:
+  /// **'Les participants voient les résultats sous le sondage.'**
+  String get chatPollResultsVisibleHint;
+
+  /// No description provided for @chatPollResultsHidden.
+  ///
+  /// In fr, this message translates to:
+  /// **'Seul l’auteur voit les résultats'**
+  String get chatPollResultsHidden;
+
+  /// No description provided for @chatPollSend.
+  ///
+  /// In fr, this message translates to:
+  /// **'Envoyer'**
+  String get chatPollSend;
+
+  /// No description provided for @chatPollSendError.
+  ///
+  /// In fr, this message translates to:
+  /// **'Impossible d’envoyer le sondage : {error}'**
+  String chatPollSendError(String error);
+
+  /// No description provided for @chatPollVoteError.
+  ///
+  /// In fr, this message translates to:
+  /// **'Impossible d’enregistrer le vote : {error}'**
+  String chatPollVoteError(String error);
+
+  /// No description provided for @chatPollVotesCount.
+  ///
+  /// In fr, this message translates to:
+  /// **'{count, plural, =0{Aucun vote} =1{1 vote} other{{count} votes}}'**
+  String chatPollVotesCount(int count);
+
   /// No description provided for @matchDetailTitle.
   ///
   /// In fr, this message translates to:

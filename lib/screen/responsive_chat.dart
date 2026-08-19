@@ -559,7 +559,7 @@ class _ChatChannelPageState extends State<_ChatChannelPage> {
                       ),
                     );
                   },
-                  child: decorateStreamMessageForReadReceipts(
+                  child: decorateStreamChatMessage(
                     defaultWidget: defaultWidget,
                     isMyMessage: isMyMessage,
                     onReplyTap: _reply,
@@ -606,7 +606,7 @@ class _ThreadPage extends StatelessWidget {
                 messages,
                 defaultWidget,
               ) {
-                return decorateStreamMessageForReadReceipts(
+                return decorateStreamChatMessage(
                   defaultWidget: defaultWidget,
                   isMyMessage: details.isMyMessage,
                 );
