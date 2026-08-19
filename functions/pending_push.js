@@ -11,6 +11,7 @@ const {
   resolveBrand,
   resolveBrandAssets,
   buildDataPayload,
+  buildMulticastMessage,
   isInvalidTokenError,
   BRAND_GRINTA,
   PENDING_PUSH_COLLECTION,
@@ -19,56 +20,6 @@ const {
 
 const REGION = 'europe-west1';
 const DRAIN_BATCH_SIZE = 50;
-
-function buildMulticastMessage({
-  tokens,
-  title,
-  body,
-  brand,
-  assets,
-  dataPayload,
-}) {
-  return {
-    tokens,
-    notification: {
-      title: title || 'Grinta',
-      body: body || '',
-      ...(brand === BRAND_GRINTA ? { imageUrl: assets.image } : {}),
-    },
-    data: dataPayload,
-    android: {
-      priority: 'high',
-      notification: {
-        imageUrl: assets.image,
-      },
-    },
-    apns: {
-      payload: {
-        aps: {
-          sound: 'default',
-          'content-available': 1,
-        },
-      },
-      fcmOptions: {
-        imageUrl: assets.image,
-      },
-    },
-    webpush: {
-      headers: {
-        Urgency: 'high',
-      },
-      notification: {
-        title: title || 'Grinta',
-        body: body || '',
-        icon: assets.icon,
-        image: assets.image,
-      },
-      fcmOptions: {
-        link: '/',
-      },
-    },
-  };
-}
 
 async function sendFcmToTokens({
   tokens,

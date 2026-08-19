@@ -123,8 +123,6 @@ class NotificationFCMService {
   }
 
   static Future<void> _initNative() async {
-    FirebaseMessaging.onBackgroundMessage(firebaseMessagingBackgroundHandler);
-
     await _requestPermissions();
     await _createAndroidChannelIfNeeded();
     await _initializeLocalNotifications();
@@ -1096,9 +1094,11 @@ Future<void> firebaseMessagingBackgroundHandler(RemoteMessage message) async {
   await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
   debugPrint('[FCM background] ${message.notification?.title}');
   debugPrint('[FCM background data] ${message.data}');
-  // A `notification` payload is already shown by Android/iOS. Data-only
-  // Stream / Grinta chat pushes must be displayed here.
+  // A `notification` payload is already shown by Android/iOS when the
+  // process is alive. Data-only Stream / Grinta chat pushes, and killed-app
+  // deliveries that only carry `data`, must be displayed here.
   if (message.notification != null) return;
+  await NotificationFCMService.ensureLocalNotificationsReady();
   await NotificationFCMService.showRemoteMessageAsLocalNotification(message);
 }
 
