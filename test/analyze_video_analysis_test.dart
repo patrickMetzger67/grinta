@@ -865,5 +865,29 @@ void main() {
         isFalse,
       );
     });
+
+    test('reset also applies when only a saved 2D capture remains', () {
+      expect(
+        canResetDebugVideoAnalysis(
+          hasLiveSamples: false,
+          hasStoredTactics: true,
+        ),
+        isTrue,
+      );
+      expect(
+        canResetDebugVideoAnalysis(
+          hasLiveSamples: true,
+          hasStoredTactics: false,
+        ),
+        isTrue,
+      );
+      expect(
+        canResetDebugVideoAnalysis(
+          hasLiveSamples: false,
+          hasStoredTactics: false,
+        ),
+        isFalse,
+      );
+    });
   });
 }

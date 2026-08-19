@@ -1068,12 +1068,23 @@ class _DebugVideoScreenState extends State<DebugVideoScreen> {
   bool get _hasAnalysisData =>
       _analysisSamples.isNotEmpty || _analysisBallSamples.isNotEmpty;
 
+  bool get _canResetAnalysis => canResetDebugVideoAnalysis(
+        hasLiveSamples: _hasAnalysisData,
+        hasStoredTactics: _storedTactics != null && !_storedTactics!.isEmpty,
+      );
+
   void _resetAnalysisStats() {
-    if (!_hasAnalysisData) return;
+    if (!_canResetAnalysis) return;
     setState(() {
       _analysisSamples.clear();
       _analysisBallSamples.clear();
+      _storedTactics = null;
+      _lastTacticsSaveAt = null;
     });
+    final path = _selected?.storagePath ?? _matchVideo.storagePath ?? '';
+    if (path.trim().isNotEmpty) {
+      unawaited(_storage.deleteTacticsRecording(path));
+    }
   }
 
   Future<void> _showAnalysisResults() async {
@@ -1372,7 +1383,7 @@ class _DebugVideoScreenState extends State<DebugVideoScreen> {
                   ),
                   const SizedBox(height: 8),
                   OutlinedButton.icon(
-                    onPressed: !videoReady || !_hasAnalysisData
+                    onPressed: !videoReady || !_canResetAnalysis
                         ? null
                         : _resetAnalysisStats,
                     icon: const Icon(Icons.restart_alt),

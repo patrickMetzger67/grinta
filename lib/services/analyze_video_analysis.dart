@@ -82,6 +82,14 @@ bool shouldClearDebugVideoAnalysisSamples({required bool alreadyAnalyzing}) {
   return !alreadyAnalyzing;
 }
 
+/// Reset clears live stats and the saved 2D capture.
+bool canResetDebugVideoAnalysis({
+  required bool hasLiveSamples,
+  required bool hasStoredTactics,
+}) {
+  return hasLiveSamples || hasStoredTactics;
+}
+
 /// Record while playing. The first point of a run may be taken while still
 /// paused so the path has a start sample.
 bool shouldRecordAnalysisSamples({

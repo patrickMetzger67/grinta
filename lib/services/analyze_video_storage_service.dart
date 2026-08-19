@@ -283,6 +283,14 @@ class DebugVideoStorageService {
     }
   }
 
+  Future<void> deleteTacticsRecording(String videoStoragePath) async {
+    final path = tacticsStoragePathForVideo(videoStoragePath);
+    if (path.isEmpty) return;
+    try {
+      await _storage.ref().child(path).delete();
+    } catch (_) {}
+  }
+
   Future<AnalyzeTacticsRecording?> loadTacticsRecording(
     String videoStoragePath,
   ) async {
