@@ -31,6 +31,7 @@ import 'package:grinta/analytics/analytics_route_aware.dart';
 import 'package:grinta/services/analytics_service.dart';
 import 'package:grinta/widget/web_app_root.dart';
 import 'package:grinta/services/notification_fcm_service.dart';
+import 'package:grinta/services/stream_chat_push_service.dart';
 import 'package:grinta/services/internal_reminder_service.dart';
 import 'package:grinta/services/calendar_deep_link_service.dart';
 import 'package:grinta/services/fitbit_deep_link_service.dart';
@@ -297,10 +298,12 @@ class _AuthGateState extends State<AuthGate> {
     // Hot restart / navigation : état AuthGate perdu, client Stream encore connecté.
     if (widget.client.state.currentUser?.id == streamUserId) {
       _connectedStreamUserId = streamUserId;
+      await _startChatPush();
       return;
     }
 
     if (_connectedStreamUserId == streamUserId) {
+      await _startChatPush();
       return;
     }
 
@@ -326,12 +329,21 @@ class _AuthGateState extends State<AuthGate> {
     } on StreamChatError catch (e) {
       if (widget.client.state.currentUser?.id == streamUserId) {
         _connectedStreamUserId = streamUserId;
+        await _startChatPush();
         return;
       }
       debugPrint('Stream connectUser failed: ${e.message}');
       rethrow;
     }
     _connectedStreamUserId = streamUserId;
+    await _startChatPush();
+  }
+
+  Future<void> _startChatPush() async {
+    await StreamChatPushService.instance.start(
+      widget.client,
+      fallbackTitle: mounted ? context.l10n.navChat : null,
+    );
   }
 
   Future<void> _disconnectStreamUserIfNeeded() async {
@@ -340,6 +352,7 @@ class _AuthGateState extends State<AuthGate> {
       return;
     }
 
+    await StreamChatPushService.instance.stop();
     await widget.client.disconnectUser();
     _connectedStreamUserId = null;
     _authenticatedSessionFuture = null;

@@ -33,6 +33,7 @@ import 'package:permission_handler/permission_handler.dart';
 import 'package:provider/provider.dart';
 import 'package:grinta/screen/chat/stream_channel_ui_helpers.dart';
 import 'package:grinta/util/app_theme.dart';
+import 'package:grinta/util/chat_fcm_notification.dart';
 import 'package:grinta/util/staff_session_access.dart';
 import 'package:grinta/widget/grinta_stream_message_input.dart';
 import 'package:stream_chat_flutter/stream_chat_flutter.dart';
@@ -69,11 +70,17 @@ class NotificationFCMService {
   static FlutterLocalNotificationsPlugin get localNotificationsPlugin =>
       _localNotificationsPlugin;
 
-  static const String _androidChannelId = 'fcm_channel';
+  static const String androidChannelId = 'fcm_channel';
+  static const String _androidChannelId = androidChannelId;
   static const String _androidChannelName = 'Notifications';
 
   static bool _initialized = false;
+  static bool _localNotificationsReady = false;
   static Timer? _iosFcmTokenRetryTimer;
+  static StreamChatClient? _streamClient;
+
+  /// Conversation currently on screen — suppress duplicate chat alerts.
+  static String? activeChatChannelCid;
 
   /// Call from [main] after [Firebase.initializeApp].
   static Future<void> init() async {
@@ -147,7 +154,9 @@ class NotificationFCMService {
         sound: true,
       );
     } else if (NotificationFcmPlatform.isAndroid) {
-      if (await Permission.notification.isDenied) {
+      await _messaging.requestPermission(alert: true, badge: true, sound: true);
+      if (await Permission.notification.isDenied ||
+          await Permission.notification.isRestricted) {
         await Permission.notification.request();
       }
     }
@@ -157,7 +166,7 @@ class NotificationFCMService {
     if (kIsWeb || !NotificationFcmPlatform.isAndroid) return;
 
     const channel = AndroidNotificationChannel(
-      _androidChannelId,
+      androidChannelId,
       _androidChannelName,
       description: 'Canal principal FCM',
       importance: Importance.max,
@@ -184,6 +193,8 @@ class NotificationFCMService {
       iOS: iosSettings,
     );
 
+    if (_localNotificationsReady) return;
+
     await _localNotificationsPlugin.initialize(
       initSettings,
       onDidReceiveNotificationResponse: (response) {
@@ -209,6 +220,111 @@ class NotificationFCMService {
           debugPrint('Local notif tap parse error: $e\n$st');
         }
       },
+    );
+    _localNotificationsReady = true;
+  }
+
+  /// Safe to call from the FCM background isolate (re-inits the plugin).
+  static Future<void> ensureLocalNotificationsReady() async {
+    if (kIsWeb) return;
+    await _createAndroidChannelIfNeeded();
+    await _initializeLocalNotifications();
+  }
+
+  static void bindStreamClient(StreamChatClient? client) {
+    _streamClient = client;
+  }
+
+  /// Registers the current FCM token with Stream Chat for offline/background
+  /// delivery when the Stream dashboard has Firebase push configured.
+  static Future<void> registerTokenWithStream([
+    StreamChatClient? client,
+  ]) async {
+    final streamClient = client ?? _streamClient;
+    if (streamClient == null || streamClient.state.currentUser == null) {
+      return;
+    }
+    try {
+      final token = await _getFcmToken();
+      if (token == null || token.isEmpty) return;
+      await streamClient.addDevice(token, PushProvider.firebase);
+    } catch (e, st) {
+      debugPrint('NotificationFCMService: Stream addDevice failed: $e\n$st');
+    }
+  }
+
+  /// Foreground / background local chat alert (Android + iOS).
+  static Future<void> showIncomingChatNotification({
+    required String title,
+    required String body,
+    Map<String, dynamic>? payload,
+    String? notificationKey,
+  }) async {
+    final trimmedTitle = title.trim();
+    if (trimmedTitle.isEmpty) return;
+    final trimmedBody = body.trim();
+
+    if (kIsWeb) {
+      await showWebForegroundNotification(
+        title: trimmedTitle,
+        body: trimmedBody,
+      );
+      return;
+    }
+
+    try {
+      await ensureLocalNotificationsReady();
+      await _localNotificationsPlugin.show(
+        notificationIdForKey(notificationKey ?? trimmedTitle),
+        trimmedTitle,
+        trimmedBody,
+        const NotificationDetails(
+          android: AndroidNotificationDetails(
+            androidChannelId,
+            _androidChannelName,
+            icon: kFcmAndroidNotificationIcon,
+            importance: Importance.max,
+            priority: Priority.high,
+          ),
+          iOS: DarwinNotificationDetails(
+            presentAlert: true,
+            presentBadge: true,
+            presentSound: true,
+          ),
+        ),
+        payload: payload == null ? null : jsonEncode(payload),
+      );
+    } catch (e, st) {
+      debugPrint(
+        'NotificationFCMService: local chat notification failed: $e\n$st',
+      );
+    }
+  }
+
+  static Future<void> showRemoteMessageAsLocalNotification(
+    RemoteMessage message,
+  ) async {
+    if (kIsWeb) return;
+    final parsed = parseChatFcmNotification(
+      notificationTitle: message.notification?.title,
+      notificationBody: message.notification?.body,
+      data: message.data,
+    );
+    if (parsed == null) return;
+
+    final cid = firstNonEmptyText([
+      parsed.payload['cid']?.toString(),
+      parsed.payload['id']?.toString(),
+      parsed.payload['channel_id']?.toString(),
+    ]);
+    final active = activeChatChannelCid?.trim() ?? '';
+    if (cid != null && active.isNotEmpty && cid == active) return;
+
+    await showIncomingChatNotification(
+      title: parsed.title,
+      body: parsed.body,
+      payload: parsed.payload,
+      notificationKey: cid ?? parsed.title,
     );
   }
 
@@ -304,6 +420,7 @@ class NotificationFCMService {
       if (uid != null) {
         unawaited(saveTokenToFirestore(uid));
       }
+      unawaited(registerTokenWithStream());
     });
   }
 
@@ -319,7 +436,13 @@ class NotificationFCMService {
       }
 
       final notification = message.notification;
-      if (notification == null) return;
+      if (notification == null) {
+        if (looksLikeStreamChatPush(message.data) ||
+            message.data['type']?.toString() == 'chat') {
+          await showRemoteMessageAsLocalNotification(message);
+        }
+        return;
+      }
 
       if (kIsWeb) {
         await showWebForegroundNotification(
@@ -327,6 +450,16 @@ class NotificationFCMService {
           body: notification.body,
           icon: _foregroundIconFromMessage(message),
         );
+        return;
+      }
+
+      final parsed = parseChatFcmNotification(
+        notificationTitle: notification.title,
+        notificationBody: notification.body,
+        data: message.data,
+      );
+      if (parsed != null) {
+        await showRemoteMessageAsLocalNotification(message);
         return;
       }
 
@@ -437,7 +570,14 @@ class NotificationFCMService {
 
         case 'chat':
         case 'chatGroup':
-          await _openChatChannel(context, channelId: id);
+        case 'message.new':
+        case 'notification.message_new':
+          await _openChatChannel(
+            context,
+            channelId: id ??
+                data['cid']?.toString() ??
+                data['channel_id']?.toString(),
+          );
           break;
 
         case 'payment':
@@ -956,6 +1096,10 @@ Future<void> firebaseMessagingBackgroundHandler(RemoteMessage message) async {
   await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
   debugPrint('[FCM background] ${message.notification?.title}');
   debugPrint('[FCM background data] ${message.data}');
+  // A `notification` payload is already shown by Android/iOS. Data-only
+  // Stream / Grinta chat pushes must be displayed here.
+  if (message.notification != null) return;
+  await NotificationFCMService.showRemoteMessageAsLocalNotification(message);
 }
 
 /// Minimal chat channel view for notification deep links.
