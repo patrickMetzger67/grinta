@@ -1150,9 +1150,9 @@
   "navHome": "Benvenuto",
   "myTeams": "Le mie squadre",
   "syncTrainingsToSync": "Allenamenti da sincronizzare",
-  "syncUpcomingTrainingsTooltip": "Allinea gli allenamenti futuri all'organico",
+  "syncUpcomingTrainingsTooltip": "Allinea gli allenamenti futuri all'organico e ai GPS",
   "syncUpcomingTrainingsConfirmTitle": "Aggiornare gli allenamenti futuri?",
-  "syncUpcomingTrainingsConfirmMessage": "I giocatori dell'organico saranno aggiunti agli allenamenti futuri e quelli non più in rosa saranno rimossi.",
+  "syncUpcomingTrainingsConfirmMessage": "I giocatori dell'organico saranno aggiunti agli allenamenti futuri, quelli non più in rosa saranno rimossi e i GPS assegnati o rimossi saranno riportati su queste sessioni.",
   "syncUpcomingTrainingsSuccess": "Allenamenti aggiornati: {updated} sessione/i, {added} aggiunti, {removed} rimossi.",
   "@syncUpcomingTrainingsSuccess": {
     "placeholders": {

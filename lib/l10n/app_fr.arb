@@ -1338,9 +1338,9 @@
   "navHome": "Accueil",
   "myTeams": "Mes équipes",
   "syncTrainingsToSync": "Entraînements à synchroniser",
-  "syncUpcomingTrainingsTooltip": "Aligner les entraînements à venir sur l'effectif",
+  "syncUpcomingTrainingsTooltip": "Aligner les entraînements à venir sur l'effectif et les GPS",
   "syncUpcomingTrainingsConfirmTitle": "Mettre à jour les entraînements ?",
-  "syncUpcomingTrainingsConfirmMessage": "Les joueurs de l'effectif seront ajoutés aux entraînements à venir, et ceux qui n'en font plus partie seront retirés.",
+  "syncUpcomingTrainingsConfirmMessage": "Les joueurs de l'effectif seront ajoutés aux entraînements à venir, ceux qui n'en font plus partie seront retirés, et les GPS attribués ou retirés seront reportés sur ces séances.",
   "syncUpcomingTrainingsSuccess": "Entraînements mis à jour : {updated} séance(s), {added} ajout(s), {removed} retrait(s).",
   "@syncUpcomingTrainingsSuccess": {
     "placeholders": {

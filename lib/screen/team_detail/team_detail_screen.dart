@@ -253,9 +253,73 @@ class _TeamDetailScreenState extends State<TeamDetailScreen> {
     );
   }
 
+  TrainingTrackerAssignment? _trackerAssignmentFromDevice(DeviceOwner device) {
+    final String docId = device.id.trim();
+    if (docId.isEmpty) return null;
+    final String custom = device.customName?.trim() ?? '';
+    return TrainingTrackerAssignment(
+      deviceOwnerDocId: docId,
+      customName: custom.isNotEmpty ? custom : device.deviceId,
+    );
+  }
+
+  Future<Map<String, TrainingTrackerAssignment?>>
+      _rosterTrackerAssignments() async {
+    final Team team = _serverTeam ?? _team;
+    final Set<String> rosterIds = fieldPlayerIdsFromTeam(team);
+    final Map<String, TrainingTrackerAssignment?> assignments =
+        <String, TrainingTrackerAssignment?>{
+      for (final String id in rosterIds) id: null,
+    };
+
+    for (final GrintaPlayer player
+        in team.grintaPlayers ?? const <GrintaPlayer>[]) {
+      final String playerId = player.playerId.trim();
+      if (!rosterIds.contains(playerId)) continue;
+      final String trackerId = player.trackers
+          .map((String id) => id.trim())
+          .firstWhere((String id) => id.isNotEmpty, orElse: () => '');
+      if (trackerId.isEmpty) continue;
+      final DeviceOwner? device = await _resolveDeviceOwnerByTrackerId(trackerId);
+      assignments[playerId] = device == null
+          ? TrainingTrackerAssignment(
+              deviceOwnerDocId: trackerId,
+              customName: trackerId,
+            )
+          : _trackerAssignmentFromDevice(device);
+    }
+
+    try {
+      final List<_TeamMemberVm> members = await _future;
+      for (final _TeamMemberVm row in members) {
+        final String? playerId = effectiveMemberId(row.player)?.trim();
+        if (playerId == null ||
+            playerId.isEmpty ||
+            !rosterIds.contains(playerId)) {
+          continue;
+        }
+        if (row.trackers.isEmpty) continue;
+        final _TrackerChipVm tracker = row.trackers.first;
+        final String trackerId = tracker.id.trim();
+        if (trackerId.isEmpty) continue;
+        assignments[playerId] = TrainingTrackerAssignment(
+          deviceOwnerDocId: trackerId,
+          customName: tracker.label.trim().isNotEmpty ? tracker.label : trackerId,
+        );
+      }
+    } catch (e, st) {
+      debugPrint('TeamDetailScreen: roster tracker map failed: $e\n$st');
+    }
+
+    return assignments;
+  }
+
   Future<void> _syncUpcomingTrainingsQuietly({
     String? addedPlayerId,
     String? removedPlayerId,
+    String? trackerPlayerId,
+    TrainingTrackerAssignment? assignedTracker,
+    String? removedTrackerDocId,
   }) async {
     final Team team = _serverTeam ?? _team;
     final String? teamId = team.keyTeam?.trim();
@@ -273,6 +337,24 @@ class _TeamDetailScreenState extends State<TeamDetailScreen> {
           team: team,
           playerId: removedPlayerId,
         );
+      }
+
+      final String? gpsPlayerId = trackerPlayerId?.trim();
+      if (gpsPlayerId != null && gpsPlayerId.isNotEmpty) {
+        if (assignedTracker != null) {
+          await helper.assignTrackerToUpcomingTrainings(
+            team: team,
+            playerId: gpsPlayerId,
+            assignment: assignedTracker,
+          );
+        } else if (removedTrackerDocId != null &&
+            removedTrackerDocId.trim().isNotEmpty) {
+          await helper.removeTrackerFromUpcomingTrainings(
+            team: team,
+            playerId: gpsPlayerId,
+            deviceOwnerDocId: removedTrackerDocId,
+          );
+        }
       }
     } catch (e, st) {
       debugPrint('TeamDetailScreen: upcoming training roster sync failed: $e\n$st');
@@ -315,7 +397,10 @@ class _TeamDetailScreenState extends State<TeamDetailScreen> {
 
     try {
       final result = await TrainingRosterSyncHelper()
-          .syncUpcomingTrainingsWithRoster(team: _serverTeam ?? _team);
+          .syncUpcomingTrainingsWithRoster(
+        team: _serverTeam ?? _team,
+        rosterTrackers: await _rosterTrackerAssignments(),
+      );
       if (!context.mounted) return;
       Navigator.of(context, rootNavigator: true).pop();
       if (!result.hasChanges) {
@@ -2250,7 +2335,7 @@ class _TeamDetailScreenState extends State<TeamDetailScreen> {
                   _HeaderSquareIconButton(
                     size: 40,
                     iconSize: 20,
-                    icon: Icons.group_add_outlined,
+                    icon: Icons.sync,
                     tooltip: context.l10n.syncUpcomingTrainingsTooltip,
                     onTap: () => _onSyncUpcomingTrainingsPressed(context),
                   ),
@@ -2413,7 +2498,7 @@ class _TeamDetailScreenState extends State<TeamDetailScreen> {
                             onTap: () => _onEditTeamName(context),
                           ),
                           _HeaderSquareIconButton(
-                            icon: Icons.group_add_outlined,
+                            icon: Icons.sync,
                             tooltip: context.l10n.syncUpcomingTrainingsTooltip,
                             onTap: () =>
                                 _onSyncUpcomingTrainingsPressed(context),
@@ -5374,6 +5459,15 @@ class _TeamDetailScreenState extends State<TeamDetailScreen> {
         deviceOwnerDocId: selected.id,
         add: true,
       );
+      final String? playerId = effectiveMemberId(row.player)?.trim();
+      final TrainingTrackerAssignment? assignment =
+          _trackerAssignmentFromDevice(selected);
+      if (playerId != null && playerId.isNotEmpty && assignment != null) {
+        await _syncUpcomingTrainingsQuietly(
+          trackerPlayerId: playerId,
+          assignedTracker: assignment,
+        );
+      }
       if (!context.mounted) {
         return;
       }
@@ -5450,6 +5544,13 @@ class _TeamDetailScreenState extends State<TeamDetailScreen> {
         deviceOwnerDocId: tracker.id,
         add: false,
       );
+      final String? playerId = effectiveMemberId(row.player)?.trim();
+      if (playerId != null && playerId.isNotEmpty) {
+        await _syncUpcomingTrainingsQuietly(
+          trackerPlayerId: playerId,
+          removedTrackerDocId: tracker.id,
+        );
+      }
       if (!context.mounted) {
         return;
       }

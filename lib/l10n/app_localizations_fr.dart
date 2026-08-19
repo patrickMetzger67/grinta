@@ -2566,7 +2566,7 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get syncUpcomingTrainingsTooltip =>
-      'Aligner les entraînements à venir sur l\'effectif';
+      'Aligner les entraînements à venir sur l\'effectif et les GPS';
 
   @override
   String get syncUpcomingTrainingsConfirmTitle =>
@@ -2574,7 +2574,7 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get syncUpcomingTrainingsConfirmMessage =>
-      'Les joueurs de l\'effectif seront ajoutés aux entraînements à venir, et ceux qui n\'en font plus partie seront retirés.';
+      'Les joueurs de l\'effectif seront ajoutés aux entraînements à venir, ceux qui n\'en font plus partie seront retirés, et les GPS attribués ou retirés seront reportés sur ces séances.';
 
   @override
   String syncUpcomingTrainingsSuccess(int updated, int added, int removed) {

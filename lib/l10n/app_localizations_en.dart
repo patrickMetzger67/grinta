@@ -2529,14 +2529,14 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get syncUpcomingTrainingsTooltip =>
-      'Align upcoming trainings with roster';
+      'Align upcoming trainings with roster and GPS';
 
   @override
   String get syncUpcomingTrainingsConfirmTitle => 'Update upcoming trainings?';
 
   @override
   String get syncUpcomingTrainingsConfirmMessage =>
-      'Roster players will be added to upcoming trainings, and players no longer on the roster will be removed.';
+      'Roster players will be added to upcoming trainings, players no longer on the roster will be removed, and assigned or removed GPS units will be copied to those sessions.';
 
   @override
   String syncUpcomingTrainingsSuccess(int updated, int added, int removed) {

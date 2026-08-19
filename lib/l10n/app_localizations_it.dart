@@ -2558,7 +2558,7 @@ class AppLocalizationsIt extends AppLocalizations {
 
   @override
   String get syncUpcomingTrainingsTooltip =>
-      'Allinea gli allenamenti futuri all\'organico';
+      'Allinea gli allenamenti futuri all\'organico e ai GPS';
 
   @override
   String get syncUpcomingTrainingsConfirmTitle =>
@@ -2566,7 +2566,7 @@ class AppLocalizationsIt extends AppLocalizations {
 
   @override
   String get syncUpcomingTrainingsConfirmMessage =>
-      'I giocatori dell\'organico saranno aggiunti agli allenamenti futuri e quelli non più in rosa saranno rimossi.';
+      'I giocatori dell\'organico saranno aggiunti agli allenamenti futuri, quelli non più in rosa saranno rimossi e i GPS assegnati o rimossi saranno riportati su queste sessioni.';
 
   @override
   String syncUpcomingTrainingsSuccess(int updated, int added, int removed) {

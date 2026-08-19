@@ -2581,7 +2581,7 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get syncUpcomingTrainingsTooltip =>
-      'Kommende Trainings an den Kader anpassen';
+      'Kommende Trainings an Kader und GPS anpassen';
 
   @override
   String get syncUpcomingTrainingsConfirmTitle =>
@@ -2589,7 +2589,7 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get syncUpcomingTrainingsConfirmMessage =>
-      'Kaderspieler werden zu kommenden Trainings hinzugefügt und nicht mehr im Kader befindliche Spieler entfernt.';
+      'Kaderspieler werden zu kommenden Trainings hinzugefügt, nicht mehr im Kader befindliche Spieler entfernt, und zugewiesene oder entfernte GPS-Geräte werden auf diese Einheiten übernommen.';
 
   @override
   String syncUpcomingTrainingsSuccess(int updated, int added, int removed) {

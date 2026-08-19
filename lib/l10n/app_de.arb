@@ -1150,9 +1150,9 @@
   "navHome": "Willkommen",
   "myTeams": "Meine Teams",
   "syncTrainingsToSync": "Trainings zum Synchronisieren",
-  "syncUpcomingTrainingsTooltip": "Kommende Trainings an den Kader anpassen",
+  "syncUpcomingTrainingsTooltip": "Kommende Trainings an Kader und GPS anpassen",
   "syncUpcomingTrainingsConfirmTitle": "Kommende Trainings aktualisieren?",
-  "syncUpcomingTrainingsConfirmMessage": "Kaderspieler werden zu kommenden Trainings hinzugefügt und nicht mehr im Kader befindliche Spieler entfernt.",
+  "syncUpcomingTrainingsConfirmMessage": "Kaderspieler werden zu kommenden Trainings hinzugefügt, nicht mehr im Kader befindliche Spieler entfernt, und zugewiesene oder entfernte GPS-Geräte werden auf diese Einheiten übernommen.",
   "syncUpcomingTrainingsSuccess": "Trainings aktualisiert: {updated} Einheit(en), {added} hinzugefügt, {removed} entfernt.",
   "@syncUpcomingTrainingsSuccess": {
     "placeholders": {

@@ -14,19 +14,34 @@ class TrainingRosterSyncResult {
     this.trainingsUpdated = 0,
     this.playersAdded = 0,
     this.playersRemoved = 0,
+    this.trackersUpdated = 0,
   });
 
   final int trainingsScanned;
   final int trainingsUpdated;
   final int playersAdded;
   final int playersRemoved;
+  final int trackersUpdated;
 
   bool get hasChanges =>
-      trainingsUpdated > 0 || playersAdded > 0 || playersRemoved > 0;
+      trainingsUpdated > 0 ||
+      playersAdded > 0 ||
+      playersRemoved > 0 ||
+      trackersUpdated > 0;
+}
+
+/// GPS assigned to a roster player (`PlayerTraining.deviceId` = DeviceOwner doc id).
+class TrainingTrackerAssignment {
+  const TrainingTrackerAssignment({
+    required this.deviceOwnerDocId,
+    required this.customName,
+  });
+
+  final String deviceOwnerDocId;
+  final String customName;
 }
 
 /// Field-player member ids currently on [team] (staff excluded).
-@visibleForTesting
 Set<String> fieldPlayerIdsFromTeam(Team team) {
   final Set<String> managerIds = managerIdsFromTeam(team);
   final Set<String> ids = <String>{};
@@ -89,8 +104,6 @@ Set<String> fieldPlayerIdsFromTeam(Team team) {
   var added = 0;
   for (final String playerId in rosterIds) {
     if (present.contains(playerId)) continue;
-    // Tracker assignment needs DeviceOwner lookup — left empty so managers
-    // can assign on the training players screen.
     kept.add(
       PlayerTraining(
         playerId: playerId,
@@ -118,6 +131,166 @@ List<TrainingGroup> prunePlayerFromTrainingGroups({
         ),
       )
       .toList();
+}
+
+String _trimmedOrEmpty(String? value) => value?.trim() ?? '';
+
+bool _hasTracker(PlayerTraining row) {
+  return _trimmedOrEmpty(row.deviceId).isNotEmpty ||
+      _trimmedOrEmpty(row.customName).isNotEmpty;
+}
+
+void _clearTracker(PlayerTraining row) {
+  row.deviceId = '';
+  row.customName = '';
+}
+
+void _setTracker(PlayerTraining row, TrainingTrackerAssignment assignment) {
+  row.deviceId = assignment.deviceOwnerDocId;
+  row.customName = assignment.customName;
+}
+
+/// Assigns [assignment] to [playerId] and frees that GPS from any other row.
+@visibleForTesting
+({
+  List<PlayerTraining> next,
+  bool changed,
+  bool addedPlayer,
+}) assignTrackerOnPlayerTraining({
+  required List<PlayerTraining> current,
+  required String playerId,
+  required TrainingTrackerAssignment assignment,
+}) {
+  final String memberId = playerId.trim();
+  final String deviceId = assignment.deviceOwnerDocId.trim();
+  if (memberId.isEmpty || deviceId.isEmpty) {
+    return (next: current, changed: false, addedPlayer: false);
+  }
+
+  final List<PlayerTraining> next = List<PlayerTraining>.from(current);
+  var changed = false;
+  var addedPlayer = false;
+
+  PlayerTraining? target;
+  for (final PlayerTraining row in next) {
+    if (_trimmedOrEmpty(row.playerId) == memberId) {
+      target = row;
+      break;
+    }
+  }
+  if (target == null) {
+    target = PlayerTraining(
+      playerId: memberId,
+      presenceType: PresenceType.present,
+    );
+    next.add(target);
+    addedPlayer = true;
+    changed = true;
+  }
+
+  if (_trimmedOrEmpty(target.deviceId) != deviceId ||
+      _trimmedOrEmpty(target.customName) != assignment.customName.trim()) {
+    _setTracker(target, assignment);
+    changed = true;
+  }
+
+  for (final PlayerTraining row in next) {
+    if (identical(row, target)) continue;
+    if (_trimmedOrEmpty(row.deviceId) != deviceId) continue;
+    _clearTracker(row);
+    changed = true;
+  }
+
+  return (next: next, changed: changed, addedPlayer: addedPlayer);
+}
+
+/// Clears [deviceOwnerDocId] from [playerId] when that GPS is still assigned.
+@visibleForTesting
+({
+  List<PlayerTraining> next,
+  bool changed,
+}) clearTrackerOnPlayerTraining({
+  required List<PlayerTraining> current,
+  required String playerId,
+  required String deviceOwnerDocId,
+}) {
+  final String memberId = playerId.trim();
+  final String deviceId = deviceOwnerDocId.trim();
+  if (memberId.isEmpty || deviceId.isEmpty) {
+    return (next: current, changed: false);
+  }
+
+  var changed = false;
+  for (final PlayerTraining row in current) {
+    if (_trimmedOrEmpty(row.playerId) != memberId) continue;
+    if (_trimmedOrEmpty(row.deviceId) != deviceId) continue;
+    _clearTracker(row);
+    changed = true;
+  }
+  return (next: current, changed: changed);
+}
+
+/// Aligns each training row's GPS with [rosterTrackers] (null = no GPS).
+@visibleForTesting
+({
+  List<PlayerTraining> next,
+  bool changed,
+}) alignTrackersWithRoster({
+  required List<PlayerTraining> current,
+  required Map<String, TrainingTrackerAssignment?> rosterTrackers,
+}) {
+  if (rosterTrackers.isEmpty) {
+    return (next: current, changed: false);
+  }
+
+  var changed = false;
+  final Set<String> claimed = <String>{};
+
+  for (final PlayerTraining row in current) {
+    final String id = _trimmedOrEmpty(row.playerId);
+    if (id.isEmpty || !rosterTrackers.containsKey(id)) continue;
+
+    final TrainingTrackerAssignment? assignment = rosterTrackers[id];
+    if (assignment == null || assignment.deviceOwnerDocId.trim().isEmpty) {
+      if (_hasTracker(row)) {
+        _clearTracker(row);
+        changed = true;
+      }
+      continue;
+    }
+
+    final String deviceId = assignment.deviceOwnerDocId.trim();
+    if (claimed.contains(deviceId)) {
+      if (_trimmedOrEmpty(row.deviceId) == deviceId || _hasTracker(row)) {
+        _clearTracker(row);
+        changed = true;
+      }
+      continue;
+    }
+
+    claimed.add(deviceId);
+    if (_trimmedOrEmpty(row.deviceId) != deviceId ||
+        _trimmedOrEmpty(row.customName) != assignment.customName.trim()) {
+      _setTracker(row, assignment);
+      changed = true;
+    }
+  }
+
+  for (final PlayerTraining row in current) {
+    final String id = _trimmedOrEmpty(row.playerId);
+    final String device = _trimmedOrEmpty(row.deviceId);
+    if (device.isEmpty) continue;
+    final TrainingTrackerAssignment? assignment = rosterTrackers[id];
+    if (assignment != null && assignment.deviceOwnerDocId.trim() == device) {
+      continue;
+    }
+    if (claimed.contains(device)) {
+      _clearTracker(row);
+      changed = true;
+    }
+  }
+
+  return (next: current, changed: changed);
 }
 
 class TrainingRosterSyncHelper {
@@ -159,9 +332,10 @@ class TrainingRosterSyncHelper {
     return null;
   }
 
-  /// Full align: add missing roster players, remove players no longer on roster.
+  /// Full align: add/remove roster players and apply GPS assignments.
   Future<TrainingRosterSyncResult> syncUpcomingTrainingsWithRoster({
     required Team team,
+    Map<String, TrainingTrackerAssignment?>? rosterTrackers,
   }) async {
     final String? teamId = team.keyTeam?.trim();
     if (teamId == null || teamId.isEmpty) {
@@ -174,6 +348,7 @@ class TrainingRosterSyncHelper {
     var trainingsUpdated = 0;
     var playersAdded = 0;
     var playersRemoved = 0;
+    var trackersUpdated = 0;
 
     for (final Training training in trainings) {
       final String? docId = _trainingDocId(training);
@@ -183,7 +358,17 @@ class TrainingRosterSyncHelper {
         current: List<PlayerTraining>.from(training.playerTraining),
         rosterIds: rosterIds,
       );
-      if (diff.added == 0 && diff.removed == 0) continue;
+      var next = diff.next;
+      var trackerChanged = false;
+      if (rosterTrackers != null && rosterTrackers.isNotEmpty) {
+        final aligned = alignTrackersWithRoster(
+          current: next,
+          rosterTrackers: rosterTrackers,
+        );
+        next = aligned.next;
+        trackerChanged = aligned.changed;
+      }
+      if (diff.added == 0 && diff.removed == 0 && !trackerChanged) continue;
 
       List<TrainingGroup> groups = training.trainingGroup;
       if (diff.removed > 0) {
@@ -204,7 +389,7 @@ class TrainingRosterSyncHelper {
 
       await _trainingService.updatePlayerTraining(
         trainingId: docId,
-        playerTraining: diff.next,
+        playerTraining: next,
       );
       if (diff.removed > 0) {
         await _trainingService.updateTrainingGroups(
@@ -216,6 +401,7 @@ class TrainingRosterSyncHelper {
       trainingsUpdated++;
       playersAdded += diff.added;
       playersRemoved += diff.removed;
+      if (trackerChanged) trackersUpdated++;
     }
 
     return TrainingRosterSyncResult(
@@ -223,6 +409,7 @@ class TrainingRosterSyncHelper {
       trainingsUpdated: trainingsUpdated,
       playersAdded: playersAdded,
       playersRemoved: playersRemoved,
+      trackersUpdated: trackersUpdated,
     );
   }
 
@@ -329,6 +516,97 @@ class TrainingRosterSyncHelper {
       trainingsScanned: trainings.length,
       trainingsUpdated: trainingsUpdated,
       playersRemoved: playersRemoved,
+    );
+  }
+
+  /// Copies [assignment] onto [playerId] for every upcoming unfinished training.
+  Future<TrainingRosterSyncResult> assignTrackerToUpcomingTrainings({
+    required Team team,
+    required String playerId,
+    required TrainingTrackerAssignment assignment,
+  }) async {
+    final String memberId = playerId.trim();
+    final String? teamId = team.keyTeam?.trim();
+    if (memberId.isEmpty ||
+        teamId == null ||
+        teamId.isEmpty ||
+        assignment.deviceOwnerDocId.trim().isEmpty) {
+      return const TrainingRosterSyncResult();
+    }
+
+    final List<Training> trainings = await _loadUpcomingTrainings(teamId);
+    var trainingsUpdated = 0;
+    var playersAdded = 0;
+    var trackersUpdated = 0;
+
+    for (final Training training in trainings) {
+      final String? docId = _trainingDocId(training);
+      if (docId == null) continue;
+
+      final result = assignTrackerOnPlayerTraining(
+        current: List<PlayerTraining>.from(training.playerTraining),
+        playerId: memberId,
+        assignment: assignment,
+      );
+      if (!result.changed) continue;
+
+      await _trainingService.updatePlayerTraining(
+        trainingId: docId,
+        playerTraining: result.next,
+      );
+      trainingsUpdated++;
+      trackersUpdated++;
+      if (result.addedPlayer) playersAdded++;
+    }
+
+    return TrainingRosterSyncResult(
+      trainingsScanned: trainings.length,
+      trainingsUpdated: trainingsUpdated,
+      playersAdded: playersAdded,
+      trackersUpdated: trackersUpdated,
+    );
+  }
+
+  /// Removes [deviceOwnerDocId] from [playerId] on upcoming unfinished trainings.
+  Future<TrainingRosterSyncResult> removeTrackerFromUpcomingTrainings({
+    required Team team,
+    required String playerId,
+    required String deviceOwnerDocId,
+  }) async {
+    final String memberId = playerId.trim();
+    final String deviceId = deviceOwnerDocId.trim();
+    final String? teamId = team.keyTeam?.trim();
+    if (memberId.isEmpty || deviceId.isEmpty || teamId == null || teamId.isEmpty) {
+      return const TrainingRosterSyncResult();
+    }
+
+    final List<Training> trainings = await _loadUpcomingTrainings(teamId);
+    var trainingsUpdated = 0;
+    var trackersUpdated = 0;
+
+    for (final Training training in trainings) {
+      final String? docId = _trainingDocId(training);
+      if (docId == null) continue;
+
+      final result = clearTrackerOnPlayerTraining(
+        current: List<PlayerTraining>.from(training.playerTraining),
+        playerId: memberId,
+        deviceOwnerDocId: deviceId,
+      );
+      if (!result.changed) continue;
+
+      await _trainingService.updatePlayerTraining(
+        trainingId: docId,
+        playerTraining: result.next,
+      );
+      trainingsUpdated++;
+      trackersUpdated++;
+    }
+
+    return TrainingRosterSyncResult(
+      trainingsScanned: trainings.length,
+      trainingsUpdated: trainingsUpdated,
+      trackersUpdated: trackersUpdated,
     );
   }
 }

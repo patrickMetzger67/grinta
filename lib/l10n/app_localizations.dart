@@ -4496,7 +4496,7 @@ abstract class AppLocalizations {
   /// No description provided for @syncUpcomingTrainingsTooltip.
   ///
   /// In fr, this message translates to:
-  /// **'Aligner les entraînements à venir sur l\'effectif'**
+  /// **'Aligner les entraînements à venir sur l\'effectif et les GPS'**
   String get syncUpcomingTrainingsTooltip;
 
   /// No description provided for @syncUpcomingTrainingsConfirmTitle.
@@ -4508,7 +4508,7 @@ abstract class AppLocalizations {
   /// No description provided for @syncUpcomingTrainingsConfirmMessage.
   ///
   /// In fr, this message translates to:
-  /// **'Les joueurs de l\'effectif seront ajoutés aux entraînements à venir, et ceux qui n\'en font plus partie seront retirés.'**
+  /// **'Les joueurs de l\'effectif seront ajoutés aux entraînements à venir, ceux qui n\'en font plus partie seront retirés, et les GPS attribués ou retirés seront reportés sur ces séances.'**
   String get syncUpcomingTrainingsConfirmMessage;
 
   /// No description provided for @syncUpcomingTrainingsSuccess.
