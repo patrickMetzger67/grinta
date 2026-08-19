@@ -357,6 +357,35 @@
   "myUnavailabilitiesNoPlayer": "No player profile linked to your account.",
   "myUnavailabilitiesNoSeason": "No season selected. Choose a season from the account menu.",
   "actionCreateNewProfile": "Create a new profile",
+  "settingsManageProfiles": "Manage profiles",
+  "settingsManageProfilesHint": "You must keep at least one profile. Leaving a profile removes your account from it without deleting the profile.",
+  "settingsManageProfilesCurrentBadge": "Current profile",
+  "actionUnsubscribeFromProfile": "Leave profile",
+  "actionUnsubscribeFromProfileConfirmTitle": "Leave this profile?",
+  "actionUnsubscribeFromProfileConfirmMessage": "Do you really want to leave the profile “{name}”? You will no longer have access to it. The profile itself is not deleted.",
+  "@actionUnsubscribeFromProfileConfirmMessage": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "successUnsubscribedFromProfile": "You have left the profile “{name}”.",
+  "@successUnsubscribedFromProfile": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "errorUnsubscribeFromProfile": "Could not leave the profile: {error}",
+  "@errorUnsubscribeFromProfile": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
   "actionLogout": "Disconnect",
   "actionLogoutConfirmTitle": "Disconnect",
   "actionLogoutConfirmMessage": "Do you really want to log out?",

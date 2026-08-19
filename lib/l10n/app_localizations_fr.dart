@@ -698,6 +698,38 @@ class AppLocalizationsFr extends AppLocalizations {
   String get actionCreateNewProfile => 'Créer un nouveau profil';
 
   @override
+  String get settingsManageProfiles => 'Gestion des profils';
+
+  @override
+  String get settingsManageProfilesHint =>
+      'Tu dois conserver au moins un profil. Te désinscrire retire ton compte du profil, sans le supprimer.';
+
+  @override
+  String get settingsManageProfilesCurrentBadge => 'Profil actuel';
+
+  @override
+  String get actionUnsubscribeFromProfile => 'Se désinscrire';
+
+  @override
+  String get actionUnsubscribeFromProfileConfirmTitle =>
+      'Se désinscrire de ce profil ?';
+
+  @override
+  String actionUnsubscribeFromProfileConfirmMessage(String name) {
+    return 'Souhaites-tu vraiment te désinscrire du profil « $name » ? Tu ne pourras plus y accéder. Le profil n\'est pas supprimé.';
+  }
+
+  @override
+  String successUnsubscribedFromProfile(String name) {
+    return 'Tu as été désinscrit du profil « $name ».';
+  }
+
+  @override
+  String errorUnsubscribeFromProfile(String error) {
+    return 'Impossible de se désinscrire : $error';
+  }
+
+  @override
   String get actionLogout => 'Déconnexion';
 
   @override

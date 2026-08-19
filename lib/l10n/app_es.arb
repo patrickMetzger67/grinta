@@ -357,6 +357,35 @@
   "myUnavailabilitiesNoPlayer": "Ningún perfil de jugador vinculado a tu cuenta.",
   "myUnavailabilitiesNoSeason": "Ninguna temporada seleccionada. Elige una temporada en el menú de cuenta.",
   "actionCreateNewProfile": "Crear un nuevo perfil",
+  "settingsManageProfiles": "Gestión de perfiles",
+  "settingsManageProfilesHint": "Debes conservar al menos un perfil. Darte de baja quita tu cuenta del perfil, sin eliminarlo.",
+  "settingsManageProfilesCurrentBadge": "Perfil actual",
+  "actionUnsubscribeFromProfile": "Darse de baja",
+  "actionUnsubscribeFromProfileConfirmTitle": "¿Darse de baja de este perfil?",
+  "actionUnsubscribeFromProfileConfirmMessage": "¿Seguro que quieres darte de baja del perfil « {name} »? Ya no podrás acceder a él. El perfil no se elimina.",
+  "@actionUnsubscribeFromProfileConfirmMessage": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "successUnsubscribedFromProfile": "Te has dado de baja del perfil « {name} ».",
+  "@successUnsubscribedFromProfile": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "errorUnsubscribeFromProfile": "No se ha podido dar de baja: {error}",
+  "@errorUnsubscribeFromProfile": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
   "actionLogout": "Desconectar",
   "actionLogoutConfirmTitle": "Desconectar",
   "actionLogoutConfirmMessage": "¿Realmente quieres cerrar sesión?",

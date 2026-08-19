@@ -357,6 +357,35 @@
   "myUnavailabilitiesNoPlayer": "Nessun profilo giocatore collegato al tuo account.",
   "myUnavailabilitiesNoSeason": "Nessuna stagione selezionata. Scegli una stagione dal menu account.",
   "actionCreateNewProfile": "Crea un nuovo profilo",
+  "settingsManageProfiles": "Gestione dei profili",
+  "settingsManageProfilesHint": "Devi conservare almeno un profilo. Disiscriverti rimuove il tuo account dal profilo, senza eliminarlo.",
+  "settingsManageProfilesCurrentBadge": "Profilo attuale",
+  "actionUnsubscribeFromProfile": "Disiscriviti",
+  "actionUnsubscribeFromProfileConfirmTitle": "Disiscriversi da questo profilo?",
+  "actionUnsubscribeFromProfileConfirmMessage": "Vuoi davvero disiscriverti dal profilo « {name} »? Non potrai più accedervi. Il profilo non viene eliminato.",
+  "@actionUnsubscribeFromProfileConfirmMessage": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "successUnsubscribedFromProfile": "Ti sei disiscritto dal profilo « {name} ».",
+  "@successUnsubscribedFromProfile": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "errorUnsubscribeFromProfile": "Impossibile disiscriversi: {error}",
+  "@errorUnsubscribeFromProfile": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
   "actionLogout": "Disconnetti",
   "actionLogoutConfirmTitle": "Disconnetti",
   "actionLogoutConfirmMessage": "Vuoi davvero disconnetterti?",

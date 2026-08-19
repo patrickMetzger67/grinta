@@ -690,6 +690,37 @@ class AppLocalizationsEn extends AppLocalizations {
   String get actionCreateNewProfile => 'Create a new profile';
 
   @override
+  String get settingsManageProfiles => 'Manage profiles';
+
+  @override
+  String get settingsManageProfilesHint =>
+      'You must keep at least one profile. Leaving a profile removes your account from it without deleting the profile.';
+
+  @override
+  String get settingsManageProfilesCurrentBadge => 'Current profile';
+
+  @override
+  String get actionUnsubscribeFromProfile => 'Leave profile';
+
+  @override
+  String get actionUnsubscribeFromProfileConfirmTitle => 'Leave this profile?';
+
+  @override
+  String actionUnsubscribeFromProfileConfirmMessage(String name) {
+    return 'Do you really want to leave the profile “$name”? You will no longer have access to it. The profile itself is not deleted.';
+  }
+
+  @override
+  String successUnsubscribedFromProfile(String name) {
+    return 'You have left the profile “$name”.';
+  }
+
+  @override
+  String errorUnsubscribeFromProfile(String error) {
+    return 'Could not leave the profile: $error';
+  }
+
+  @override
   String get actionLogout => 'Disconnect';
 
   @override

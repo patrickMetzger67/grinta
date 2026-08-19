@@ -3,6 +3,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/foundation.dart';
 
 import '../model/player.dart';
+import '../util/member_unsubscribe.dart';
 import '../util/player_photo_resolver.dart';
 
 class PlayerService {
@@ -506,6 +507,51 @@ class PlayerService {
     await _collection.doc(playerId).update({
       keyPlayerUsers: FieldValue.arrayRemove([userId]),
     });
+  }
+
+  /// Unsubscribes [uid] from a member profile (`users` + [userID] if needed).
+  ///
+  /// No-op when [uid] is not linked. Does not delete the member document.
+  Future<void> unsubscribeUserFromMember({
+    required String memberId,
+    required String uid,
+  }) async {
+    final trimmedMemberId = memberId.trim();
+    final trimmedUid = uid.trim();
+    if (trimmedMemberId.isEmpty) {
+      throw ArgumentError.value(memberId, 'memberId', 'must not be empty');
+    }
+    if (trimmedUid.isEmpty) {
+      throw ArgumentError.value(uid, 'uid', 'must not be empty');
+    }
+
+    final existing = await getPlayerById(trimmedMemberId);
+    if (existing == null) {
+      throw StateError('Member not found: $trimmedMemberId');
+    }
+
+    final plan = planMemberUnsubscribe(
+      users: existing.users,
+      userID: existing.userID,
+      uid: trimmedUid,
+    );
+    if (plan == null) return;
+
+    final updates = <String, dynamic>{
+      keyPlayerUsers: FieldValue.arrayRemove([trimmedUid]),
+    };
+    switch (plan.userIdAction) {
+      case MemberUserIdUnsubscribeAction.keep:
+        break;
+      case MemberUserIdUnsubscribeAction.reassign:
+        updates[keyPlayerUserID] = plan.nextUserId;
+        break;
+      case MemberUserIdUnsubscribeAction.clear:
+        updates[keyPlayerUserID] = FieldValue.delete();
+        break;
+    }
+
+    await _collection.doc(trimmedMemberId).update(updates);
   }
 
   /// Ajouter un like
