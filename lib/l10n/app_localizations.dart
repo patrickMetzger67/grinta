@@ -3533,6 +3533,12 @@ abstract class AppLocalizations {
   /// **'Erreur lors de la suppression : {details}'**
   String errorDeleteFailed(String details);
 
+  /// No description provided for @errorDeletePermissionDenied.
+  ///
+  /// In fr, this message translates to:
+  /// **'Suppression refusée : droits insuffisants. Vérifiez que vous êtes connecté en tant que responsable de l\'équipe, puis réessayez.'**
+  String get errorDeletePermissionDenied;
+
   /// No description provided for @errorLoadingTitle.
   ///
   /// In fr, this message translates to:

@@ -2020,6 +2020,10 @@ class AppLocalizationsDe extends AppLocalizations {
   }
 
   @override
+  String get errorDeletePermissionDenied =>
+      'Löschen verweigert: unzureichende Berechtigungen. Melden Sie sich als Teamverantwortlicher an und versuchen Sie es erneut.';
+
+  @override
   String get errorLoadingTitle => 'Fehler beim Laden';
 
   @override

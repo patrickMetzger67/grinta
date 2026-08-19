@@ -189,10 +189,17 @@ class TeamService {
 
       final Map<String, dynamic> data = doc.data()!;
       final Team team = Team.fromDocumentSnapshot(doc);
-      await backfillGrintaPlayerMemberIdsIfMissing(
-        team,
-        rawMemberIds: data[keyTeamGrintaPlayerMemberIds],
-      );
+      try {
+        await backfillGrintaPlayerMemberIdsIfMissing(
+          team,
+          rawMemberIds: data[keyTeamGrintaPlayerMemberIds],
+        );
+      } catch (e) {
+        debugPrint(
+          'TeamService.getTeamById: backfill grintaPlayerMemberIds '
+          'failed for $teamId: $e',
+        );
+      }
       return team;
     } catch (e) {
       rethrow;
@@ -557,6 +564,16 @@ class TeamService {
           grintaPlayers.map((GrintaPlayer entry) => entry.toMap()).toList();
       update[keyTeamGrintaPlayerMemberIds] =
           grintaPlayerMemberIdsFromGrintaPlayers(grintaPlayers);
+    }
+
+    final List<dynamic> players =
+        List<dynamic>.from(team.players ?? const <dynamic>[]);
+    final int playersBefore = players.length;
+    players.removeWhere(
+      (dynamic raw) => raw?.toString().trim() == trimmedPlayerId,
+    );
+    if (players.length != playersBefore) {
+      update[keyTeamPlayers] = players;
     }
 
     if (removeFromManagers) {

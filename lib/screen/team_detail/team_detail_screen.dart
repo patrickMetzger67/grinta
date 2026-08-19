@@ -46,6 +46,7 @@ import '../../services/ownerService.dart';
 import '../../services/userService.dart';
 import '../../services/player_positions_service.dart';
 import '../../widget/add_grinta_player_sheet.dart';
+import '../../widget/confirm_delete_dialog.dart';
 import '../../widget/team_tracker_owners_sheet.dart';
 import '../../widget/add_grinta_staff_sheet.dart';
 import '../../widget/manage_unavailabilities_sheet.dart';
@@ -3482,142 +3483,60 @@ class _TeamDetailScreenState extends State<TeamDetailScreen> {
     final Player player = row.player;
     final String playerName = _displayName(player, l10n);
 
-    final bool? confirm = await showDialog<bool>(
+    final bool? confirm = await showConfirmDeleteDialog(
       context: context,
-      barrierDismissible: true,
-      builder: (BuildContext dialogContext) {
-        final dialogL10n = dialogContext.l10n;
-        bool isDeleting = false;
+      title: l10n.teamDetailConfirmDeleteTitle,
+      message: l10n.teamDetailConfirmRemovePlayerTeam(playerName),
+      onConfirm: () async {
+        if (row.isGrintaRoster) {
+          final String? memberId = effectiveMemberId(player);
+          final String? teamId = _team.keyTeam?.trim();
+          if (memberId == null ||
+              memberId.isEmpty ||
+              teamId == null ||
+              teamId.isEmpty) {
+            throw StateError('Missing member or team id');
+          }
 
-        return StatefulBuilder(
-          builder: (context, setDialogState) {
-            Future<void> onDeletePressed() async {
-              if (isDeleting) return;
-              setDialogState(() => isDeleting = true);
+          await TeamService().removeGrintaPlayer(
+            teamId: teamId,
+            playerId: memberId,
+          );
 
-              try {
-                if (row.isGrintaRoster) {
-                  final String? memberId = effectiveMemberId(player);
-                  final String? teamId = _team.keyTeam?.trim();
-                  if (memberId == null ||
-                      memberId.isEmpty ||
-                      teamId == null ||
-                      teamId.isEmpty) {
-                    throw StateError('Missing member or team id');
-                  }
+          final List<GrintaPlayer> grintaPlayers = List<GrintaPlayer>.from(
+              _team.grintaPlayers ?? const <GrintaPlayer>[]);
+          grintaPlayers.removeWhere(
+            (GrintaPlayer entry) =>
+                entry.playerId.trim() == memberId.trim() &&
+                !_isGrintaStaffGrintaPlayer(entry),
+          );
+          _team.grintaPlayers = grintaPlayers;
+          await _syncUpcomingTrainingsQuietly(removedPlayerId: memberId);
+        } else if (row.effectives != null) {
+          await EffectivesService().deleteEffectives(row.effectives!);
 
-                  await TeamService().removeGrintaPlayer(
-                    teamId: teamId,
-                    playerId: memberId,
-                  );
-
-                  final List<GrintaPlayer> grintaPlayers = List<GrintaPlayer>.from(
-                      _team.grintaPlayers ?? const <GrintaPlayer>[]);
-                  grintaPlayers.removeWhere(
-                    (GrintaPlayer entry) =>
-                        entry.playerId.trim() == memberId.trim() &&
-                        !_isGrintaStaffGrintaPlayer(entry),
-                  );
-                  _team.grintaPlayers = grintaPlayers;
-                  await _syncUpcomingTrainingsQuietly(removedPlayerId: memberId);
-                } else if (row.effectives != null) {
-                  await EffectivesService().deleteEffectives(row.effectives!);
-
-                  rawPlayers.remove(player.keyMember);
-                  _team.players = rawPlayers;
-                  await TeamService().updateTeam(_team);
-                  final String? legacyId = effectiveMemberId(player);
-                  if (legacyId != null && legacyId.isNotEmpty) {
-                    await _syncUpcomingTrainingsQuietly(
-                      removedPlayerId: legacyId,
-                    );
-                  }
-                }
-
-                if (!dialogContext.mounted) return;
-                Navigator.of(dialogContext).pop(true);
-              } catch (e) {
-                if (!dialogContext.mounted) return;
-                setDialogState(() => isDeleting = false);
-                ScaffoldMessenger.of(dialogContext).showSnackBar(
-                  SnackBar(
-                    content: Text(
-                      dialogL10n.errorDeleteFailed(e.toString()),
-                    ),
-                    backgroundColor: appColors.danger,
-                  ),
-                );
-              }
-            }
-
-            return AlertDialog(
-              backgroundColor: appColors.surface,
-              surfaceTintColor: Colors.transparent,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(20),
-                side: BorderSide(color: appColors.border),
-              ),
-              title: Row(
-                children: [
-                  Icon(
-                    Icons.warning_amber_rounded,
-                    color: appColors.danger,
-                  ),
-                  const SizedBox(width: 10),
-                  Expanded(
-                    child: Text(
-                      dialogL10n.teamDetailConfirmDeleteTitle,
-                      style: TextStyle(
-                        color: appColors.textPrimary,
-                        fontWeight: FontWeight.w700,
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-              content: Text(
-                dialogL10n.teamDetailConfirmRemovePlayerTeam(playerName),
-                style: TextStyle(
-                  color: appColors.textSecondary,
-                  fontSize: 15,
-                ),
-              ),
-              actionsPadding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
-              actions: [
-                OutlinedButton(
-                  onPressed: isDeleting
-                      ? null
-                      : () {
-                          Navigator.of(dialogContext).pop(false);
-                        },
-                  style: OutlinedButton.styleFrom(
-                    foregroundColor: appColors.textSecondary,
-                    side: BorderSide(color: appColors.border),
-                  ),
-                  child: Text(dialogL10n.actionCancel),
-                ),
-                FilledButton.icon(
-                  onPressed: isDeleting ? null : onDeletePressed,
-                  style: FilledButton.styleFrom(
-                    backgroundColor: appColors.danger,
-                    foregroundColor: Colors.white,
-                  ),
-                  icon: isDeleting
-                      ? SizedBox(
-                          width: 18,
-                          height: 18,
-                          child: CircularProgressIndicator(
-                            strokeWidth: 2,
-                            color: Colors.white,
-                          ),
-                        )
-                      : const Icon(Icons.delete_outline_rounded),
-                  label: Text(dialogL10n.actionDelete),
-                ),
-              ],
+          rawPlayers.remove(player.keyMember);
+          _team.players = rawPlayers;
+          final String? teamId = _team.keyTeam?.trim();
+          final String? legacyPlayerId = player.keyMember?.trim();
+          if (teamId != null &&
+              teamId.isNotEmpty &&
+              legacyPlayerId != null &&
+              legacyPlayerId.isNotEmpty) {
+            await TeamService().removePlayer(
+              teamId: teamId,
+              playerId: legacyPlayerId,
             );
-          },
-        );
+          } else {
+            await TeamService().updateTeam(_team);
+          }
+          final String? legacyId = effectiveMemberId(player);
+          if (legacyId != null && legacyId.isNotEmpty) {
+            await _syncUpcomingTrainingsQuietly(
+              removedPlayerId: legacyId,
+            );
+          }
+        }
       },
     );
 
@@ -4017,167 +3936,72 @@ class _TeamDetailScreenState extends State<TeamDetailScreen> {
     final Player player = row.player;
     final String playerName = _displayName(player, l10n);
 
-    final bool? confirm = await showDialog<bool>(
+    final bool? confirm = await showConfirmDeleteDialog(
       context: context,
-      barrierDismissible: true,
-      builder: (BuildContext dialogContext) {
-        final dialogL10n = dialogContext.l10n;
-        bool isDeleting = false;
+      title: l10n.teamDetailConfirmDeleteTitle,
+      message: l10n.teamDetailConfirmRemoveStaff(playerName),
+      onConfirm: () async {
+        if (row.isGrintaRoster) {
+          final String? memberId = effectiveMemberId(player);
+          final String? teamId = _team.keyTeam?.trim();
+          if (memberId == null ||
+              memberId.isEmpty ||
+              teamId == null ||
+              teamId.isEmpty) {
+            throw StateError('Missing member or team id');
+          }
 
-        return StatefulBuilder(
-          builder: (context, setDialogState) {
-            Future<void> onDeletePressed() async {
-              if (isDeleting) return;
-              setDialogState(() => isDeleting = true);
+          final Set<String> managerUserIds = playerFirebaseUserIds(player);
 
-              try {
-                if (row.isGrintaRoster) {
-                  final String? memberId = effectiveMemberId(player);
-                  final String? teamId = _team.keyTeam?.trim();
-                  if (memberId == null ||
-                      memberId.isEmpty ||
-                      teamId == null ||
-                      teamId.isEmpty) {
-                    throw StateError('Missing member or team id');
-                  }
+          await TeamService().removeGrintaStaff(
+            teamId: teamId,
+            playerId: memberId,
+            extraManagerIds: managerUserIds,
+          );
 
-                  final Set<String> managerUserIds = playerFirebaseUserIds(player);
+          final List<GrintaPlayer> grintaPlayers = List<GrintaPlayer>.from(
+              _team.grintaPlayers ?? const <GrintaPlayer>[]);
+          grintaPlayers.removeWhere(
+            (GrintaPlayer entry) =>
+                entry.playerId.trim() == memberId.trim() &&
+                _isGrintaStaffGrintaPlayer(entry),
+          );
+          _team.grintaPlayers = grintaPlayers;
+          _team.grintaPlayerMemberIds =
+              grintaPlayerMemberIdsFromGrintaPlayers(grintaPlayers);
 
-                  await TeamService().removeGrintaStaff(
-                    teamId: teamId,
-                    playerId: memberId,
-                    extraManagerIds: managerUserIds,
-                  );
+          _syncLocalManagersForPlayer(
+            player: player,
+            grant: false,
+            legacyMemberId: memberId,
+          );
+        } else {
+          final String? teamId = _team.keyTeam?.trim();
+          if (teamId == null || teamId.isEmpty) {
+            throw StateError('Missing team id');
+          }
 
-                  final List<GrintaPlayer> grintaPlayers =
-                      List<GrintaPlayer>.from(
-                          _team.grintaPlayers ?? const <GrintaPlayer>[]);
-                  grintaPlayers.removeWhere(
-                    (GrintaPlayer entry) =>
-                        entry.playerId.trim() == memberId.trim() &&
-                        _isGrintaStaffGrintaPlayer(entry),
-                  );
-                  _team.grintaPlayers = grintaPlayers;
-                  _team.grintaPlayerMemberIds =
-                      grintaPlayerMemberIdsFromGrintaPlayers(grintaPlayers);
+          if (row.effectives != null) {
+            await EffectivesService().deleteEffectives(row.effectives!);
+          }
 
-                  _syncLocalManagersForPlayer(
-                    player: player,
-                    grant: false,
-                    legacyMemberId: memberId,
-                  );
-                } else {
-                  final String? teamId = _team.keyTeam?.trim();
-                  if (teamId == null || teamId.isEmpty) {
-                    throw StateError('Missing team id');
-                  }
+          final String? memberId = effectiveMemberId(player);
+          if (memberId == null || memberId.isEmpty) {
+            throw StateError('Missing member id');
+          }
 
-                  if (row.effectives != null) {
-                    await EffectivesService().deleteEffectives(row.effectives!);
-                  }
-
-                  final String? memberId = effectiveMemberId(player);
-                  if (memberId == null || memberId.isEmpty) {
-                    throw StateError('Missing member id');
-                  }
-
-                  await _persistManagerRightsForPlayer(
-                    teamId: teamId,
-                    player: player,
-                    grant: false,
-                    legacyMemberId: memberId,
-                  );
-                  _syncLocalManagersForPlayer(
-                    player: player,
-                    grant: false,
-                    legacyMemberId: memberId,
-                  );
-                }
-
-                if (!dialogContext.mounted) return;
-                Navigator.of(dialogContext).pop(true);
-              } catch (e) {
-                if (!dialogContext.mounted) return;
-                setDialogState(() => isDeleting = false);
-                ScaffoldMessenger.of(dialogContext).showSnackBar(
-                  SnackBar(
-                    content: Text(
-                      dialogL10n.errorDeleteFailed(e.toString()),
-                    ),
-                    backgroundColor: appColors.danger,
-                  ),
-                );
-              }
-            }
-
-            return AlertDialog(
-              backgroundColor: appColors.surface,
-              surfaceTintColor: Colors.transparent,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(20),
-                side: BorderSide(color: appColors.border),
-              ),
-              title: Row(
-                children: [
-                  Icon(
-                    Icons.warning_amber_rounded,
-                    color: appColors.danger,
-                  ),
-                  const SizedBox(width: 10),
-                  Expanded(
-                    child: Text(
-                      dialogL10n.teamDetailConfirmDeleteTitle,
-                      style: TextStyle(
-                        color: appColors.textPrimary,
-                        fontWeight: FontWeight.w700,
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-              content: Text(
-                dialogL10n.teamDetailConfirmRemoveStaff(playerName),
-                style: TextStyle(
-                  color: appColors.textSecondary,
-                  fontSize: 15,
-                ),
-              ),
-              actionsPadding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
-              actions: [
-                OutlinedButton(
-                  onPressed: isDeleting
-                      ? null
-                      : () {
-                          Navigator.of(dialogContext).pop(false);
-                        },
-                  style: OutlinedButton.styleFrom(
-                    foregroundColor: appColors.textSecondary,
-                    side: BorderSide(color: appColors.border),
-                  ),
-                  child: Text(dialogL10n.actionCancel),
-                ),
-                FilledButton.icon(
-                  onPressed: isDeleting ? null : onDeletePressed,
-                  style: FilledButton.styleFrom(
-                    backgroundColor: appColors.danger,
-                    foregroundColor: Colors.white,
-                  ),
-                  icon: isDeleting
-                      ? SizedBox(
-                          width: 18,
-                          height: 18,
-                          child: CircularProgressIndicator(
-                            strokeWidth: 2,
-                            color: Colors.white,
-                          ),
-                        )
-                      : const Icon(Icons.delete_outline_rounded),
-                  label: Text(dialogL10n.actionDelete),
-                ),
-              ],
-            );
-          },
-        );
+          await _persistManagerRightsForPlayer(
+            teamId: teamId,
+            player: player,
+            grant: false,
+            legacyMemberId: memberId,
+          );
+          _syncLocalManagersForPlayer(
+            player: player,
+            grant: false,
+            legacyMemberId: memberId,
+          );
+        }
       },
     );
 

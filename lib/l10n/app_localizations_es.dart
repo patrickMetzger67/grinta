@@ -2010,6 +2010,10 @@ class AppLocalizationsEs extends AppLocalizations {
   }
 
   @override
+  String get errorDeletePermissionDenied =>
+      'Eliminación rechazada: permisos insuficientes. Compruebe que ha iniciado sesión como responsable del equipo e inténtelo de nuevo.';
+
+  @override
   String get errorLoadingTitle => 'Error de carga';
 
   @override

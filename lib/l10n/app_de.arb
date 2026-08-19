@@ -962,6 +962,7 @@
   "errorTeamParamsLoad": "Fehler beim Laden der Einstellungen: {details}",
   "errorSaveTeamIdEmpty": "Speichern nicht möglich: leere Team-ID.",
   "errorDeleteFailed": "Fehler beim Löschen: {details}",
+  "errorDeletePermissionDenied": "Löschen verweigert: unzureichende Berechtigungen. Melden Sie sich als Teamverantwortlicher an und versuchen Sie es erneut.",
   "errorLoadingTitle": "Fehler beim Laden",
   "errorCompositionTitle": "Kompositionsfehler",
   "errorPlayerTitle": "Spielerfehler",

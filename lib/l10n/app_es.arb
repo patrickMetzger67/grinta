@@ -962,6 +962,7 @@
   "errorTeamParamsLoad": "Error al cargar los parámetros: {details}",
   "errorSaveTeamIdEmpty": "No se puede guardar: teamId vacío.",
   "errorDeleteFailed": "Error al eliminar: {details}",
+  "errorDeletePermissionDenied": "Eliminación rechazada: permisos insuficientes. Compruebe que ha iniciado sesión como responsable del equipo e inténtelo de nuevo.",
   "errorLoadingTitle": "Error de carga",
   "errorCompositionTitle": "error de composición",
   "errorPlayerTitle": "error del jugador",

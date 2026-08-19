@@ -2000,6 +2000,10 @@ class AppLocalizationsIt extends AppLocalizations {
   }
 
   @override
+  String get errorDeletePermissionDenied =>
+      'Eliminazione rifiutata: autorizzazioni insufficienti. Accedi come responsabile della squadra e riprova.';
+
+  @override
   String get errorLoadingTitle => 'Errore di caricamento';
 
   @override
