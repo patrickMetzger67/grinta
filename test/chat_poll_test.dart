@@ -143,7 +143,7 @@ void main() {
 
   group('reorderChatPollOptions', () {
     test('moves an option down and up', () {
-      expect(reorderChatPollOptions(['a', 'b', 'c'], 0, 1), ['b', 'a', 'c']);
+      expect(reorderChatPollOptions(['a', 'b', 'c'], 0, 2), ['b', 'a', 'c']);
       expect(reorderChatPollOptions(['a', 'b', 'c'], 2, 0), ['c', 'a', 'b']);
     });
   });

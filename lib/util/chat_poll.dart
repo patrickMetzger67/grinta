@@ -236,16 +236,17 @@ List<String> normalizePollVote({
   return [toggled];
 }
 
-/// Reorder helper for [ReorderableListView.onReorderItem] (already adjusted).
+/// Reorder helper for [ReorderableListView.onReorder] (newIndex is unadjusted).
 List<T> reorderChatPollOptions<T>(
   List<T> items,
   int oldIndex,
   int newIndex,
 ) {
   if (oldIndex < 0 || oldIndex >= items.length) return List<T>.from(items);
+  var target = newIndex;
+  if (oldIndex < target) target -= 1;
   final next = List<T>.from(items);
   final item = next.removeAt(oldIndex);
-  var target = newIndex;
   if (target < 0) target = 0;
   if (target > next.length) target = next.length;
   next.insert(target, item);

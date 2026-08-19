@@ -270,7 +270,7 @@ class _ChatPollCreatorSheetState extends State<ChatPollCreatorSheet> {
                     shrinkWrap: true,
                     physics: const NeverScrollableScrollPhysics(),
                     itemCount: _options.length,
-                    onReorderItem: _saving ? (_, __) {} : _onReorder,
+                    onReorder: _saving ? (_, __) {} : _onReorder,
                     itemBuilder: (context, index) {
                       final option = _options[index];
                       return _PollOptionEditor(
