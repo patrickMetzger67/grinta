@@ -1,4 +1,6 @@
+import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:grinta/util/app_theme.dart';
 import 'package:grinta/util/chat_group_channel.dart';
 
 void main() {
@@ -10,6 +12,12 @@ void main() {
     test('returns null for invalid values', () {
       expect(parseChatGroupColor(''), isNull);
       expect(parseChatGroupColor('nope'), isNull);
+    });
+
+    test('round-trips any RGB color to #RRGGBB', () {
+      const color = Color(0xFF1A2B3C);
+      expect(colorToCssHex(color), '#1A2B3C');
+      expect(parseChatGroupColor(colorToCssHex(color))?.toARGB32(), 0xFF1A2B3C);
     });
   });
 

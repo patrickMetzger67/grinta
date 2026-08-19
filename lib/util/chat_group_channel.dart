@@ -6,16 +6,7 @@ const String kChatGroupExtraFlag = 'grinta_group';
 const String kChatGroupCreatedByKey = 'grinta_created_by';
 const String kChatGroupAvatarColorKey = 'grinta_avatar_color';
 
-const List<String> kChatGroupAvatarColorHexes = [
-  '#E67E22',
-  '#2980B9',
-  '#27AE60',
-  '#8E44AD',
-  '#C0392B',
-  '#16A085',
-  '#2C3E50',
-  '#D35400',
-];
+const String kChatGroupDefaultAvatarColorHex = '#F95C1B';
 
 bool isGrintaUserGroupExtra(Map<String, Object?> extraData) {
   final flag = extraData[kChatGroupExtraFlag];

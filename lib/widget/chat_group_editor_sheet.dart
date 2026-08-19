@@ -9,6 +9,7 @@ import 'package:grinta/services/chat_group_service.dart';
 import 'package:grinta/util/app_snackbar.dart';
 import 'package:grinta/util/app_theme.dart';
 import 'package:grinta/util/chat_group_channel.dart';
+import 'package:grinta/widget/chat_group_color_picker.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:stream_chat_flutter/stream_chat_flutter.dart';
 
@@ -100,7 +101,7 @@ class _ChatGroupEditorSheetState extends State<ChatGroupEditorSheet> {
         );
       }
     }
-    _colorHex ??= kChatGroupAvatarColorHexes.first;
+    _colorHex ??= kChatGroupDefaultAvatarColorHex;
   }
 
   @override
@@ -448,32 +449,14 @@ class _ChatGroupEditorSheetState extends State<ChatGroupEditorSheet> {
                     ),
                   ),
                   const SizedBox(height: 8),
-                  Wrap(
-                    spacing: 8,
-                    runSpacing: 8,
-                    children: [
-                      for (final hex in kChatGroupAvatarColorHexes)
-                        InkWell(
-                          onTap: _saving
-                              ? null
-                              : () => setState(() => _colorHex = hex),
-                          borderRadius: BorderRadius.circular(20),
-                          child: Container(
-                            width: 32,
-                            height: 32,
-                            decoration: BoxDecoration(
-                              color: parseChatGroupColor(hex),
-                              shape: BoxShape.circle,
-                              border: Border.all(
-                                color: _colorHex == hex
-                                    ? colors.textPrimary
-                                    : colors.border,
-                                width: _colorHex == hex ? 3 : 1,
-                              ),
-                            ),
-                          ),
-                        ),
-                    ],
+                  ChatGroupColorPicker(
+                    color: color ?? parseChatGroupColor(
+                          kChatGroupDefaultAvatarColorHex,
+                        )!,
+                    enabled: !_saving,
+                    onColorChanged: (picked) {
+                      setState(() => _colorHex = colorToCssHex(picked));
+                    },
                   ),
                   const SizedBox(height: 20),
                   TextField(
