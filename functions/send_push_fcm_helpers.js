@@ -260,7 +260,7 @@ function buildMulticastMessage({
     android: {
       priority: 'high',
       // No imageUrl: when the app process is dead, a failed image fetch can
-      // drop the entire system-tray notification on Android.
+      // drop the entire system-tray notification on Android (every type).
       notification: {
         channelId: ANDROID_FCM_CHANNEL_ID,
         icon: 'ic_notification',
@@ -269,6 +269,8 @@ function buildMulticastMessage({
         visibility: 'public',
       },
     },
+    // Visible APNs alert for every Grinta push (convocation, RPE, invite,
+    // chat…). A silent content-available wake is dropped when iOS is killed.
     apns: {
       headers: {
         'apns-priority': '10',
@@ -282,6 +284,7 @@ function buildMulticastMessage({
           },
           sound: 'default',
           badge: 1,
+          'interruption-level': 'active',
         },
       },
     },

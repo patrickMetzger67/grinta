@@ -50,6 +50,38 @@ import FirebaseMessaging
     super.application(application, didRegisterForRemoteNotificationsWithDeviceToken: deviceToken)
   }
 
+  // Show every remote notification (convocation, RPE, invite, chat…) while the
+  // app is in the foreground. Closed-app delivery uses the APNs alert payload.
+  override func userNotificationCenter(
+    _ center: UNUserNotificationCenter,
+    willPresent notification: UNNotification,
+    withCompletionHandler completionHandler: @escaping (UNNotificationPresentationOptions) -> Void
+  ) {
+    #if canImport(FirebaseMessaging)
+    Messaging.messaging().appDidReceiveMessage(notification.request.content.userInfo)
+    #endif
+    if #available(iOS 14.0, *) {
+      completionHandler([.banner, .list, .sound, .badge])
+    } else {
+      completionHandler([.alert, .sound, .badge])
+    }
+  }
+
+  override func userNotificationCenter(
+    _ center: UNUserNotificationCenter,
+    didReceive response: UNNotificationResponse,
+    withCompletionHandler completionHandler: @escaping () -> Void
+  ) {
+    #if canImport(FirebaseMessaging)
+    Messaging.messaging().appDidReceiveMessage(response.notification.request.content.userInfo)
+    #endif
+    super.userNotificationCenter(
+      center,
+      didReceive: response,
+      withCompletionHandler: completionHandler
+    )
+  }
+
   func didInitializeImplicitFlutterEngine(_ engineBridge: FlutterImplicitEngineBridge) {
     GeneratedPluginRegistrant.register(with: engineBridge.pluginRegistry)
     PlayerDetectionChannel.register(

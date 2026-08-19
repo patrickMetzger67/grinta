@@ -260,8 +260,8 @@ class NotificationFCMService {
     }
   }
 
-  /// Foreground / background local chat alert (Android + iOS).
-  static Future<void> showIncomingChatNotification({
+  /// Foreground / background local alert for any FCM type (Android + iOS).
+  static Future<void> showLocalPushNotification({
     required String title,
     required String body,
     Map<String, dynamic>? payload,
@@ -303,35 +303,57 @@ class NotificationFCMService {
       );
     } catch (e, st) {
       debugPrint(
-        'NotificationFCMService: local chat notification failed: $e\n$st',
+        'NotificationFCMService: local push notification failed: $e\n$st',
       );
     }
+  }
+
+  /// Chat-originated local banner (Stream events while the app is open).
+  static Future<void> showIncomingChatNotification({
+    required String title,
+    required String body,
+    Map<String, dynamic>? payload,
+    String? notificationKey,
+  }) {
+    return showLocalPushNotification(
+      title: title,
+      body: body,
+      payload: payload,
+      notificationKey: notificationKey,
+    );
   }
 
   static Future<void> showRemoteMessageAsLocalNotification(
     RemoteMessage message,
   ) async {
     if (kIsWeb) return;
-    final parsed = parseChatFcmNotification(
+    if (!shouldDisplayRemoteFcm(
+      data: message.data,
+      activeChatChannelCid: activeChatChannelCid,
+    )) {
+      return;
+    }
+
+    final parsed = parseFcmNotification(
       notificationTitle: message.notification?.title,
       notificationBody: message.notification?.body,
       data: message.data,
     );
     if (parsed == null) return;
 
-    final cid = firstNonEmptyText([
+    final key = firstNonEmptyText([
       parsed.payload['cid']?.toString(),
       parsed.payload['id']?.toString(),
       parsed.payload['channel_id']?.toString(),
+      parsed.payload['type']?.toString(),
+      parsed.title,
     ]);
-    final active = activeChatChannelCid?.trim() ?? '';
-    if (cid != null && active.isNotEmpty && cid == active) return;
 
-    await showIncomingChatNotification(
+    await showLocalPushNotification(
       title: parsed.title,
       body: parsed.body,
       payload: parsed.payload,
-      notificationKey: cid ?? parsed.title,
+      notificationKey: key,
     );
   }
 
@@ -444,10 +466,18 @@ class NotificationFCMService {
 
       final notification = message.notification;
       if (notification == null) {
-        if (looksLikeStreamChatPush(message.data) ||
-            message.data['type']?.toString() == 'chat') {
-          await showRemoteMessageAsLocalNotification(message);
+        if (kIsWeb) {
+          final parsed = parseFcmNotification(data: message.data);
+          if (parsed != null) {
+            await showWebForegroundNotification(
+              title: parsed.title,
+              body: parsed.body,
+              icon: _foregroundIconFromMessage(message),
+            );
+          }
+          return;
         }
+        await showRemoteMessageAsLocalNotification(message);
         return;
       }
 
@@ -460,36 +490,13 @@ class NotificationFCMService {
         return;
       }
 
-      final parsed = parseChatFcmNotification(
-        notificationTitle: notification.title,
-        notificationBody: notification.body,
-        data: message.data,
-      );
-      if (parsed != null) {
-        await showRemoteMessageAsLocalNotification(message);
+      // iOS already presents the APNs alert (all types) via
+      // setForegroundNotificationPresentationOptions + AppDelegate.willPresent.
+      if (NotificationFcmPlatform.isIOS) {
         return;
       }
 
-      await _localNotificationsPlugin.show(
-        notification.hashCode,
-        notification.title,
-        notification.body,
-        NotificationDetails(
-          android: const AndroidNotificationDetails(
-            _androidChannelId,
-            _androidChannelName,
-            icon: kFcmAndroidNotificationIcon,
-            importance: Importance.max,
-            priority: Priority.high,
-          ),
-          iOS: const DarwinNotificationDetails(
-            presentAlert: true,
-            presentBadge: true,
-            presentSound: true,
-          ),
-        ),
-        payload: jsonEncode(message.data),
-      );
+      await showRemoteMessageAsLocalNotification(message);
     });
 
     FirebaseMessaging.onMessageOpenedApp.listen((message) {
@@ -1103,9 +1110,9 @@ Future<void> firebaseMessagingBackgroundHandler(RemoteMessage message) async {
   await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
   debugPrint('[FCM background] ${message.notification?.title}');
   debugPrint('[FCM background data] ${message.data}');
-  // A `notification` payload is already shown by Android/iOS when the
-  // process is alive. Data-only Stream / Grinta chat pushes, and killed-app
-  // deliveries that only carry `data`, must be displayed here.
+  // A `notification` + APNs alert / Android channel payload is already shown
+  // by the OS for every type (convocation, RPE, invite, chat…). Data-only
+  // deliveries still need a local notification here.
   if (message.notification != null) return;
   await NotificationFCMService.ensureLocalNotificationsReady();
   await NotificationFCMService.showRemoteMessageAsLocalNotification(message);

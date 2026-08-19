@@ -1,4 +1,4 @@
-/// Parsing and policy for chat / Stream FCM payloads.
+/// Parsing and policy for FCM payloads (chat, convocations, RPE, invitations…).
 class ChatFcmNotification {
   const ChatFcmNotification({
     required this.title,
@@ -11,6 +11,9 @@ class ChatFcmNotification {
   final String body;
   final Map<String, dynamic> payload;
   final bool isStreamChat;
+
+  bool get isChat =>
+      isStreamChat || isChatNotificationType(payload['type']?.toString());
 }
 
 bool looksLikeStreamChatPush(Map<String, dynamic> data) {
@@ -19,6 +22,23 @@ bool looksLikeStreamChatPush(Map<String, dynamic> data) {
   return sender == 'stream.chat' ||
       type == 'message.new' ||
       type == 'notification.message_new';
+}
+
+bool isChatNotificationType(String? type) {
+  switch ((type ?? '').trim().toLowerCase()) {
+    case 'chat':
+    case 'chatgroup':
+    case 'message.new':
+    case 'notification.message_new':
+      return true;
+    default:
+      return false;
+  }
+}
+
+bool isChatFcmData(Map<String, dynamic> data) {
+  return looksLikeStreamChatPush(data) ||
+      isChatNotificationType(data['type']?.toString());
 }
 
 String? firstNonEmptyText(Iterable<String?> values) {
@@ -30,28 +50,44 @@ String? firstNonEmptyText(Iterable<String?> values) {
 }
 
 /// Builds a local-notification model from an FCM `notification` + `data` pair.
-ChatFcmNotification? parseChatFcmNotification({
+///
+/// Works for every Grinta push type (convocation, RPE, team invite, chat…).
+ChatFcmNotification? parseFcmNotification({
   String? notificationTitle,
   String? notificationBody,
   required Map<String, dynamic> data,
-  String fallbackTitle = 'Messagerie',
-  String fallbackBody = 'Nouveau message',
+  String chatFallbackTitle = 'Messagerie',
+  String chatFallbackBody = 'Nouveau message',
+  String genericFallbackTitle = 'Grinta',
 }) {
   final isStream = looksLikeStreamChatPush(data);
-  final title = firstNonEmptyText([
-        notificationTitle,
-        data['title']?.toString(),
-        data['channel_name']?.toString(),
-      ]) ??
-      (isStream ? fallbackTitle : null);
-  if (title == null) return null;
+  final type = data['type']?.toString().trim() ?? '';
+  final isChat = isStream || isChatNotificationType(type);
 
-  final body = firstNonEmptyText([
+  var title = firstNonEmptyText([
+    notificationTitle,
+    data['title']?.toString(),
+    data['channel_name']?.toString(),
+  ]);
+  var body = firstNonEmptyText([
         notificationBody,
         data['body']?.toString(),
         data['message']?.toString(),
       ]) ??
-      (isStream ? fallbackBody : '');
+      '';
+
+  if (title == null) {
+    if (isChat) {
+      title = chatFallbackTitle;
+      if (body.isEmpty) body = chatFallbackBody;
+    } else if (body.isNotEmpty || type.isNotEmpty) {
+      title = genericFallbackTitle;
+    } else {
+      return null;
+    }
+  } else if (isChat && body.isEmpty) {
+    body = chatFallbackBody;
+  }
 
   final payload = Map<String, dynamic>.from(data);
   if (isStream && (payload['type']?.toString().trim().isEmpty ?? true)) {
@@ -69,6 +105,44 @@ ChatFcmNotification? parseChatFcmNotification({
     payload: payload,
     isStreamChat: isStream,
   );
+}
+
+/// Alias kept for existing call sites / tests.
+ChatFcmNotification? parseChatFcmNotification({
+  String? notificationTitle,
+  String? notificationBody,
+  required Map<String, dynamic> data,
+  String fallbackTitle = 'Messagerie',
+  String fallbackBody = 'Nouveau message',
+}) {
+  return parseFcmNotification(
+    notificationTitle: notificationTitle,
+    notificationBody: notificationBody,
+    data: data,
+    chatFallbackTitle: fallbackTitle,
+    chatFallbackBody: fallbackBody,
+  );
+}
+
+/// Whether a remote FCM should raise a local banner.
+///
+/// Non-chat types always display. Chat is suppressed only when that
+/// conversation is already on screen.
+bool shouldDisplayRemoteFcm({
+  required Map<String, dynamic> data,
+  String? activeChatChannelCid,
+}) {
+  if (!isChatFcmData(data)) return true;
+  final cid = firstNonEmptyText([
+    data['cid']?.toString(),
+    data['id']?.toString(),
+    data['channel_id']?.toString(),
+  ]);
+  final active = activeChatChannelCid?.trim() ?? '';
+  if (cid != null && active.isNotEmpty && cid == active) {
+    return false;
+  }
+  return true;
 }
 
 bool shouldNotifyIncomingChatMessage({

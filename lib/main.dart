@@ -67,7 +67,7 @@ Future<void> main() async {
     );
 
     // Must be registered before runApp so the background isolate can display
-    // data-only FCM (Stream / chat) when Android has killed the UI process.
+    // data-only FCM (all types) when the OS has killed the UI process.
     if (!kIsWeb) {
       FirebaseMessaging.onBackgroundMessage(firebaseMessagingBackgroundHandler);
     }
