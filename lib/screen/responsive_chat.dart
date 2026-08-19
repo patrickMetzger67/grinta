@@ -16,6 +16,7 @@ import '../util/app_theme.dart';
 import '../widget/feature_discovery_random_banner.dart';
 import '../widget/alternating_monetization_banner.dart';
 import '../widget/ask_diego/ask_diego_speed_dial.dart';
+import '../widget/direct_chat_channel_title.dart';
 import '../widget/grinta_stream_message_input.dart';
 
 
@@ -263,6 +264,9 @@ class _ChannelListPageState extends State<_ChannelListPage> {
               ),
               child: defaultWidget.copyWith(
                 selected: isSelected,
+                title: isDirectChatChannel(channel)
+                    ? DirectChatChannelTitle(channel: channel)
+                    : null,
               ),
             );
           },
@@ -567,6 +571,11 @@ class _ChatChannelPageState extends State<_ChatChannelPage> {
         showBackButton: widget.showBackButton,
         onBackPressed: widget.onBackPressed != null
             ? () => widget.onBackPressed!(context)
+            : null,
+        title: isDirectChatChannel(StreamChannel.of(context).channel)
+            ? DirectChatChannelHeaderTitle(
+                channel: StreamChannel.of(context).channel,
+              )
             : null,
         onTitleTap: () => openStreamChannelInfo(
           context,
