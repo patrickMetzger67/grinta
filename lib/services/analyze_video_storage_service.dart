@@ -1,7 +1,10 @@
+import 'dart:convert';
+
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter/foundation.dart';
 import 'package:grinta/services/analyze_video_match_selection.dart';
+import 'package:grinta/services/analyze_video_tactics.dart';
 
 const int kDebugVideoMaxBytes = 200 * 1024 * 1024;
 const String kDebugVideoFolder = 'video';
@@ -249,6 +252,61 @@ class DebugVideoStorageService {
     }
     items.sort((a, b) => b.name.compareTo(a.name));
     return items;
+  }
+
+  Future<void> saveTacticsRecording({
+    required String videoStoragePath,
+    required AnalyzeTacticsRecording recording,
+  }) async {
+    final uid = _uid;
+    if (uid == null) {
+      throw const DebugVideoStorageException(DebugVideoStorageError.notSignedIn);
+    }
+    final path = tacticsStoragePathForVideo(videoStoragePath);
+    if (path.isEmpty) {
+      throw const DebugVideoStorageException(DebugVideoStorageError.emptyFile);
+    }
+    final bytes = Uint8List.fromList(
+      utf8.encode(jsonEncode(recording.toJson())),
+    );
+    try {
+      await _storage.ref().child(path).putData(
+        bytes,
+        SettableMetadata(contentType: 'application/json'),
+      );
+    } catch (error, stackTrace) {
+      debugPrint('DebugVideoStorageService: tactics save failed: $error\n$stackTrace');
+      throw DebugVideoStorageException(
+        DebugVideoStorageError.uploadFailed,
+        error,
+      );
+    }
+  }
+
+  Future<void> deleteTacticsRecording(String videoStoragePath) async {
+    final path = tacticsStoragePathForVideo(videoStoragePath);
+    if (path.isEmpty) return;
+    try {
+      await _storage.ref().child(path).delete();
+    } catch (_) {}
+  }
+
+  Future<AnalyzeTacticsRecording?> loadTacticsRecording(
+    String videoStoragePath,
+  ) async {
+    final path = tacticsStoragePathForVideo(videoStoragePath);
+    if (path.isEmpty) return null;
+    try {
+      final data = await _storage.ref().child(path).getData(8 * 1024 * 1024);
+      if (data == null || data.isEmpty) return null;
+      final decoded = jsonDecode(utf8.decode(data));
+      if (decoded is! Map) return null;
+      return AnalyzeTacticsRecording.fromJson(
+        Map<String, dynamic>.from(decoded),
+      );
+    } catch (_) {
+      return null;
+    }
   }
 
   Future<Uint8List> downloadVideoBytes(String storagePath) async {

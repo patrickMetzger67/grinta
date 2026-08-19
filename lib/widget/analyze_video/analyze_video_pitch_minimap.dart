@@ -5,6 +5,7 @@ import 'package:grinta/model/fieldGpsCorners.dart';
 import 'package:grinta/model/tracker/trackerData.dart';
 import 'package:grinta/services/analyze_player_detection.dart';
 import 'package:grinta/services/analyze_video_analysis.dart';
+import 'package:grinta/services/analyze_video_tactics.dart';
 import 'package:grinta/widget/gps_field.dart';
 
 const double kDebugVideoPitchMinimapAspect = 105 / 68;
@@ -86,6 +87,7 @@ class DebugVideoPitchMinimap extends StatelessWidget {
     this.atMs = 0,
     this.preferLiveDetections = false,
     this.pitch,
+    this.quad,
     this.team1Id,
     this.team2Id,
     this.team1KitColor,
@@ -93,6 +95,7 @@ class DebugVideoPitchMinimap extends StatelessWidget {
     this.rosterJerseyByPlayerId = const <String, int>{},
     this.rosterTeamByPlayerId = const <String, String>{},
     this.width = 208,
+    this.showTrails = false,
   });
 
   final List<PlayerDetectionBox> detections;
@@ -100,6 +103,7 @@ class DebugVideoPitchMinimap extends StatelessWidget {
   final int atMs;
   final bool preferLiveDetections;
   final PitchRegion? pitch;
+  final PitchQuad? quad;
   final String? team1Id;
   final String? team2Id;
   final int? team1KitColor;
@@ -107,6 +111,7 @@ class DebugVideoPitchMinimap extends StatelessWidget {
   final Map<String, int> rosterJerseyByPlayerId;
   final Map<String, String> rosterTeamByPlayerId;
   final double width;
+  final bool showTrails;
 
   @override
   Widget build(BuildContext context) {
@@ -146,10 +151,20 @@ class DebugVideoPitchMinimap extends StatelessWidget {
                     atMs: atMs,
                     detections: detections,
                     pitch: pitch,
+                    quad: quad,
                     preferLiveDetections: preferLiveDetections,
                     rosterJerseyByPlayerId: rosterJerseyByPlayerId,
                     rosterTeamByPlayerId: rosterTeamByPlayerId,
                   ),
+                  trails: showTrails
+                      ? tacticsTrailsAt(
+                          samples: analysisSamples,
+                          atMs: atMs,
+                          pitch: pitch,
+                          quad: quad,
+                          rosterTeamByPlayerId: rosterTeamByPlayerId,
+                        )
+                      : const <TacticsPlayerTrail>[],
                   team1Id: team1Id,
                   team2Id: team2Id,
                   team1KitColor: team1KitColor,
@@ -167,6 +182,8 @@ class DebugVideoPitchMinimap extends StatelessWidget {
 class DebugVideoPitchMinimapPainter extends CustomPainter {
   const DebugVideoPitchMinimapPainter({
     required this.markers,
+    this.trails = const <TacticsPlayerTrail>[],
+    this.ball,
     this.team1Id,
     this.team2Id,
     this.team1KitColor,
@@ -174,6 +191,8 @@ class DebugVideoPitchMinimapPainter extends CustomPainter {
   });
 
   final List<MinimapPlayerMarker> markers;
+  final List<TacticsPlayerTrail> trails;
+  final ({double x, double y})? ball;
   final String? team1Id;
   final String? team2Id;
   final int? team1KitColor;
@@ -185,14 +204,58 @@ class DebugVideoPitchMinimapPainter extends CustomPainter {
     final field = debugVideoMinimapFieldRect(size);
     if (field.isEmpty) return;
 
+    Offset onField(double x, double y) {
+      return Offset(
+        field.left + x * field.width,
+        field.top + y * field.height,
+      );
+    }
+
+    for (final trail in trails) {
+      if (trail.points.length < 2) continue;
+      final path = Path()
+        ..moveTo(
+          onField(trail.points.first.x, trail.points.first.y).dx,
+          onField(trail.points.first.x, trail.points.first.y).dy,
+        );
+      for (var i = 1; i < trail.points.length; i++) {
+        final point = onField(trail.points[i].x, trail.points[i].y);
+        path.lineTo(point.dx, point.dy);
+      }
+      canvas.drawPath(
+        path,
+        Paint()
+          ..color = debugVideoTeamColor(
+            teamId: trail.teamId,
+            team1Id: team1Id,
+            team2Id: team2Id,
+            team1KitColor: team1KitColor,
+            team2KitColor: team2KitColor,
+          ).withValues(alpha: 0.55)
+          ..style = PaintingStyle.stroke
+          ..strokeWidth = math.max(2.0, field.shortestSide * 0.012)
+          ..strokeCap = StrokeCap.round
+          ..strokeJoin = StrokeJoin.round,
+      );
+    }
+
+    final ballPoint = ball;
+    if (ballPoint != null) {
+      final center = onField(ballPoint.x, ballPoint.y);
+      final r = (field.shortestSide * 0.018).clamp(3.0, 7.0);
+      canvas.drawCircle(center, r + 1.2, Paint()..color = const Color(0xCC000000));
+      canvas.drawCircle(center, r, Paint()..color = const Color(0xFFF5F5F5));
+    }
+
     // marker.x / marker.y are 0–1 along heatmap length / width:
     // x = 0 left goal, y = 0 far sideline (top of GpsFieldWidget).
     for (final marker in markers) {
-      final offset = Offset(
-        field.left + marker.x * field.width,
-        field.top + marker.y * field.height,
+      _paintPlayer(
+        canvas,
+        onField(marker.x, marker.y),
+        marker,
+        field.shortestSide * 0.055,
       );
-      _paintPlayer(canvas, offset, marker, field.shortestSide * 0.055);
     }
   }
 
@@ -202,7 +265,13 @@ class DebugVideoPitchMinimapPainter extends CustomPainter {
     MinimapPlayerMarker marker,
     double radius,
   ) {
-    final color = _colorForTeam(marker.teamId);
+    final color = debugVideoTeamColor(
+      teamId: marker.teamId,
+      team1Id: team1Id,
+      team2Id: team2Id,
+      team1KitColor: team1KitColor,
+      team2KitColor: team2KitColor,
+    );
     final r = radius.clamp(6.0, 11.0);
     canvas.drawCircle(
       center,
@@ -236,31 +305,40 @@ class DebugVideoPitchMinimapPainter extends CustomPainter {
     );
   }
 
-  Color _colorForTeam(String? teamId) {
-    final id = teamId?.trim() ?? '';
-    final team1 = team1Id?.trim() ?? '';
-    final team2 = team2Id?.trim() ?? '';
-    if (id.isNotEmpty && id == team1) {
-      return team1KitColor == null
-          ? kDebugVideoPitchMinimapTeam1Fallback
-          : Color(team1KitColor!);
-    }
-    if (id.isNotEmpty && id == team2) {
-      return team2KitColor == null
-          ? kDebugVideoPitchMinimapTeam2Fallback
-          : Color(team2KitColor!);
-    }
-    return kDebugVideoPitchMinimapUnknownTeam;
-  }
-
   @override
   bool shouldRepaint(covariant DebugVideoPitchMinimapPainter oldDelegate) {
     return !_sameMinimapMarkers(oldDelegate.markers, markers) ||
+        !_sameTacticsTrails(oldDelegate.trails, trails) ||
+        oldDelegate.ball?.x != ball?.x ||
+        oldDelegate.ball?.y != ball?.y ||
         oldDelegate.team1Id != team1Id ||
         oldDelegate.team2Id != team2Id ||
         oldDelegate.team1KitColor != team1KitColor ||
         oldDelegate.team2KitColor != team2KitColor;
   }
+}
+
+Color debugVideoTeamColor({
+  required String? teamId,
+  String? team1Id,
+  String? team2Id,
+  int? team1KitColor,
+  int? team2KitColor,
+}) {
+  final id = teamId?.trim() ?? '';
+  final team1 = team1Id?.trim() ?? '';
+  final team2 = team2Id?.trim() ?? '';
+  if (id.isNotEmpty && id == team1) {
+    return team1KitColor == null
+        ? kDebugVideoPitchMinimapTeam1Fallback
+        : Color(team1KitColor);
+  }
+  if (id.isNotEmpty && id == team2) {
+    return team2KitColor == null
+        ? kDebugVideoPitchMinimapTeam2Fallback
+        : Color(team2KitColor);
+  }
+  return kDebugVideoPitchMinimapUnknownTeam;
 }
 
 bool _sameMinimapMarkers(
@@ -278,6 +356,28 @@ bool _sameMinimapMarkers(
         left.teamId != right.teamId ||
         left.jerseyNumber != right.jerseyNumber) {
       return false;
+    }
+  }
+  return true;
+}
+
+bool _sameTacticsTrails(
+  List<TacticsPlayerTrail> a,
+  List<TacticsPlayerTrail> b,
+) {
+  if (identical(a, b)) return true;
+  if (a.length != b.length) return false;
+  for (var i = 0; i < a.length; i++) {
+    if (a[i].playerId != b[i].playerId ||
+        a[i].teamId != b[i].teamId ||
+        a[i].points.length != b[i].points.length) {
+      return false;
+    }
+    for (var p = 0; p < a[i].points.length; p++) {
+      if (a[i].points[p].x != b[i].points[p].x ||
+          a[i].points[p].y != b[i].points[p].y) {
+        return false;
+      }
     }
   }
   return true;

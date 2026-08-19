@@ -547,6 +547,19 @@
   "debugVideoAnalyze": "Analizza",
   "debugVideoStopAnalyze": "Interrompi analisi",
   "debugVideoView": "Vedi",
+  "debugVideoView2d": "Vedi in 2D",
+  "debugVideoTacticsTitle": "Partita in 2D",
+  "debugVideoTacticsHelp": "Replay tattico dei giocatori inquadrati. Il video non è necessario.",
+  "debugVideoTacticsEmpty": "Analizza un estratto per registrare i movimenti 2D.",
+  "debugVideoTacticsSaved": "Movimenti 2D salvati per questa partita.",
+  "debugVideoTacticsSaveError": "Impossibile salvare i movimenti 2D: {details}",
+  "@debugVideoTacticsSaveError": {
+    "placeholders": {
+      "details": {
+        "type": "String"
+      }
+    }
+  },
   "debugVideoResetStats": "Reimposta",
   "debugVideoAnalyzeNeedPlayers": "Associa almeno un giocatore prima di analizzare.",
   "debugVideoAnalyzeHelp": "Metti in pausa per segnare un istante o inquadrare un giocatore, poi riprendi la riproduzione: i dati già raccolti restano. Il pallone viene seguito automaticamente. Tocca Interrompi analisi per vedere le statistiche.",

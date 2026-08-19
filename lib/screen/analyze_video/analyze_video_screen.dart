@@ -17,6 +17,7 @@ import 'package:grinta/services/analyze_video_analysis.dart';
 import 'package:grinta/services/analyze_video_match_selection.dart';
 import 'package:grinta/services/analyze_video_match_service.dart';
 import 'package:grinta/services/analyze_video_storage_service.dart';
+import 'package:grinta/services/analyze_video_tactics.dart';
 import 'package:grinta/util/app_theme.dart';
 import 'package:grinta/util/match_compo_pitch_mapper.dart';
 import 'package:grinta/util/match_creation_helper.dart';
@@ -27,6 +28,7 @@ import 'package:grinta/widget/analyze_video/analyze_video_drop_zone.dart';
 import 'package:grinta/widget/analyze_video/analyze_video_frame_controls.dart';
 import 'package:grinta/widget/analyze_video/analyze_video_match_picker.dart';
 import 'package:grinta/widget/analyze_video/analyze_video_player_association.dart';
+import 'package:grinta/widget/analyze_video/analyze_video_tactics_replay.dart';
 import 'package:provider/provider.dart';
 import 'package:video_player/video_player.dart';
 
@@ -80,9 +82,12 @@ class _DebugVideoScreenState extends State<DebugVideoScreen> {
   PlayerDetectionBox? _frameBox;
   Uint8List? _stillFrameBytes;
   PitchRegion? _analysisPitch;
+  PitchQuad? _analysisQuad;
   final List<PlayerDistanceSample> _analysisSamples = <PlayerDistanceSample>[];
   final List<BallSample> _analysisBallSamples = <BallSample>[];
   final List<DebugVideoTag> _analysisTags = <DebugVideoTag>[];
+  AnalyzeTacticsRecording? _storedTactics;
+  DateTime? _lastTacticsSaveAt;
   int _nextTagSeq = 0;
 
   @override
@@ -341,12 +346,22 @@ class _DebugVideoScreenState extends State<DebugVideoScreen> {
     )) {
       return;
     }
+    _analysisQuad = freezeAnalysisQuad(
+      frozenQuad: _analysisQuad,
+      latestQuad: DebugPlayerDetector.instance.lastPitchQuad,
+    );
     _analysisPitch = freezeAnalysisPitch(
-      frozenPitch: _analysisPitch,
+      frozenPitch: _analysisPitch ?? _analysisQuad?.bounds,
       latestPitch: DebugPlayerDetector.instance.lastPitchRegion,
     );
-    if (!isUsablePitchRegion(_analysisPitch)) return;
-    final pitch = _analysisPitch!;
+    if (isUsablePitchQuad(_analysisQuad)) {
+      _analysisPitch = _analysisQuad!.bounds;
+    }
+    if (!isUsablePitchRegion(_analysisPitch) &&
+        !isUsablePitchQuad(_analysisQuad)) {
+      return;
+    }
+    final pitch = _analysisPitch;
     final atMs = _controller?.value.position.inMilliseconds ?? 0;
     mergeAnalysisSamples(
       _analysisSamples,
@@ -354,6 +369,7 @@ class _DebugVideoScreenState extends State<DebugVideoScreen> {
         boxes: boxes,
         atMs: atMs,
         pitch: pitch,
+        quad: _analysisQuad,
       ),
     );
     mergeBallSamples(
@@ -362,15 +378,122 @@ class _DebugVideoScreenState extends State<DebugVideoScreen> {
         boxes: boxes,
         atMs: atMs,
         pitch: pitch,
+        quad: _analysisQuad,
       ),
+    );
+    _maybeAutosaveTactics();
+  }
+
+  AnalyzeTacticsRecording _buildCurrentTactics() {
+    return buildTacticsRecording(
+      samples: _analysisSamples,
+      balls: _analysisBallSamples,
+      pitch: _analysisPitch,
+      quad: _analysisQuad,
+      videoStoragePath: _selected?.storagePath ?? _matchVideo.storagePath,
+      matchId: _matchVideo.matchId,
+    );
+  }
+
+  AnalyzeTacticsRecording? get _tacticsForReplay {
+    if (_analysisSamples.isNotEmpty) return _buildCurrentTactics();
+    if (_storedTactics != null && !_storedTactics!.isEmpty) {
+      return _storedTactics;
+    }
+    return null;
+  }
+
+  List<PlayerDistanceSample> get _playbackSamples {
+    if (_analysisSamples.isNotEmpty) return _analysisSamples;
+    return _storedTactics?.players ?? const <PlayerDistanceSample>[];
+  }
+
+  bool get _hasTacticsReplay {
+    final recording = _tacticsForReplay;
+    return recording != null && !recording.isEmpty;
+  }
+
+  void _maybeAutosaveTactics() {
+    if (_analysisSamples.isEmpty) return;
+    final now = DateTime.now();
+    if (_lastTacticsSaveAt != null &&
+        now.difference(_lastTacticsSaveAt!) < const Duration(seconds: 12)) {
+      return;
+    }
+    _lastTacticsSaveAt = now;
+    unawaited(_persistTactics(silent: true));
+  }
+
+  Future<void> _persistTactics({bool silent = false}) async {
+    final path = _selected?.storagePath ?? _matchVideo.storagePath ?? '';
+    if (path.trim().isEmpty || _analysisSamples.isEmpty) return;
+    final recording = _buildCurrentTactics();
+    _storedTactics = recording;
+    try {
+      await _storage.saveTacticsRecording(
+        videoStoragePath: path,
+        recording: recording,
+      );
+      if (!silent && mounted) {
+        _showMessage(context.l10n.debugVideoTacticsSaved);
+      }
+    } catch (error) {
+      if (!silent && mounted) {
+        _showMessage(
+          context.l10n.debugVideoTacticsSaveError('$error'),
+        );
+      }
+    }
+  }
+
+  Future<void> _loadTacticsForVideo(DebugVideoItem item) async {
+    final loaded = await _storage.loadTacticsRecording(item.storagePath);
+    if (!mounted || _selected?.storagePath != item.storagePath) return;
+    setState(() {
+      _storedTactics = loaded;
+      if (loaded != null) {
+        _analysisQuad ??= loaded.quad;
+        _analysisPitch ??= loaded.pitch ?? loaded.quad?.bounds;
+      }
+    });
+  }
+
+  Future<void> _openTacticsReplay() async {
+    final recording = _tacticsForReplay;
+    if (recording == null || recording.isEmpty) {
+      _showMessage(context.l10n.debugVideoTacticsEmpty);
+      return;
+    }
+    if (_analysisSamples.isNotEmpty) {
+      unawaited(_persistTactics(silent: true));
+    }
+    await showAnalyzeVideoTacticsReplay(
+      context: context,
+      recording: recording,
+      team1Id: _matchVideo.team1.teamId,
+      team2Id: _matchVideo.team2.teamId,
+      team1KitColor: _matchVideo.team1KitColor,
+      team2KitColor: _matchVideo.team2KitColor,
+      rosterJerseyByPlayerId: _rosterJerseyByPlayerId,
+      rosterTeamByPlayerId: _rosterTeamByPlayerId,
     );
   }
 
   PitchRegion get _pitchForDisplay {
+    final quad = _quadForDisplay;
+    if (isUsablePitchQuad(quad)) return quad!.bounds;
     return analysisMappingPitch(
       analyzing: _analyzing,
       frozenPitch: _analysisPitch,
       latestPitch: DebugPlayerDetector.instance.lastPitchRegion,
+    );
+  }
+
+  PitchQuad? get _quadForDisplay {
+    return analysisMappingQuad(
+      analyzing: _analyzing,
+      frozenQuad: _analysisQuad,
+      latestQuad: DebugPlayerDetector.instance.lastPitchQuad,
     );
   }
 
@@ -910,8 +1033,12 @@ class _DebugVideoScreenState extends State<DebugVideoScreen> {
       _analysisSamples.clear();
       _analysisBallSamples.clear();
     }
+    _analysisQuad = freezeAnalysisQuad(
+      frozenQuad: _analysisQuad,
+      latestQuad: DebugPlayerDetector.instance.lastPitchQuad,
+    );
     _analysisPitch = freezeAnalysisPitch(
-      frozenPitch: _analysisPitch,
+      frozenPitch: _analysisPitch ?? _analysisQuad?.bounds,
       latestPitch: DebugPlayerDetector.instance.lastPitchRegion,
     );
     _recordAnalysisSamples(_manualBoxes);
@@ -930,6 +1057,7 @@ class _DebugVideoScreenState extends State<DebugVideoScreen> {
     }
     _analyzing = false;
     _stopDetection();
+    await _persistTactics();
     if (mounted) {
       setState(() {});
       await _showAnalysisResults();
@@ -940,12 +1068,23 @@ class _DebugVideoScreenState extends State<DebugVideoScreen> {
   bool get _hasAnalysisData =>
       _analysisSamples.isNotEmpty || _analysisBallSamples.isNotEmpty;
 
+  bool get _canResetAnalysis => canResetDebugVideoAnalysis(
+        hasLiveSamples: _hasAnalysisData,
+        hasStoredTactics: _storedTactics != null && !_storedTactics!.isEmpty,
+      );
+
   void _resetAnalysisStats() {
-    if (!_hasAnalysisData) return;
+    if (!_canResetAnalysis) return;
     setState(() {
       _analysisSamples.clear();
       _analysisBallSamples.clear();
+      _storedTactics = null;
+      _lastTacticsSaveAt = null;
     });
+    final path = _selected?.storagePath ?? _matchVideo.storagePath ?? '';
+    if (path.trim().isNotEmpty) {
+      unawaited(_storage.deleteTacticsRecording(path));
+    }
   }
 
   Future<void> _showAnalysisResults() async {
@@ -954,6 +1093,8 @@ class _DebugVideoScreenState extends State<DebugVideoScreen> {
       samples: List<PlayerDistanceSample>.from(_analysisSamples),
       balls: List<BallSample>.from(_analysisBallSamples),
       roster: _rosterPlayers,
+      pitch: _analysisPitch,
+      quad: _analysisQuad,
     );
     await showDebugVideoAnalysisResults(
       context: context,
@@ -1003,7 +1144,10 @@ class _DebugVideoScreenState extends State<DebugVideoScreen> {
     _analysisSamples.clear();
     _analysisBallSamples.clear();
     _analysisTags.clear();
+    _storedTactics = null;
+    _lastTacticsSaveAt = null;
     _analysisPitch = null;
+    _analysisQuad = null;
     _frameBox = null;
     _stillFrameBytes = null;
     DebugPlayerDetector.instance.clearAssociations();
@@ -1043,6 +1187,7 @@ class _DebugVideoScreenState extends State<DebugVideoScreen> {
     if (mounted) {
       _syncManualLabeling();
       setState(() {});
+      unawaited(_loadTacticsForVideo(item));
     }
   }
 
@@ -1064,8 +1209,9 @@ class _DebugVideoScreenState extends State<DebugVideoScreen> {
             videoBoundaryKey: kIsWeb ? null : _videoBoundaryKey,
             draftBox: _frameBox,
             onSeek: _onVideoSeek,
-            analysisSamples: _analysisSamples,
+            analysisSamples: _playbackSamples,
             pitch: _pitchForDisplay,
+            quad: _quadForDisplay,
             team1Id: _matchVideo.team1.teamId,
             team2Id: _matchVideo.team2.teamId,
             team1KitColor: _matchVideo.team1KitColor,
@@ -1140,8 +1286,9 @@ class _DebugVideoScreenState extends State<DebugVideoScreen> {
                           stillFrameBytes: _stillFrameBytes,
                           onBeforePlay: _onBeforeVideoPlay,
                           onSeek: _onVideoSeek,
-                          analysisSamples: _analysisSamples,
+                          analysisSamples: _playbackSamples,
                           pitch: _pitchForDisplay,
+                          quad: _quadForDisplay,
                           team1Id: _matchVideo.team1.teamId,
                           team2Id: _matchVideo.team2.teamId,
                           team1KitColor: _matchVideo.team1KitColor,
@@ -1228,7 +1375,15 @@ class _DebugVideoScreenState extends State<DebugVideoScreen> {
                   ),
                   const SizedBox(height: 8),
                   OutlinedButton.icon(
-                    onPressed: !videoReady || !_hasAnalysisData
+                    onPressed: !videoReady || !_hasTacticsReplay
+                        ? null
+                        : () => unawaited(_openTacticsReplay()),
+                    icon: const Icon(Icons.map_outlined),
+                    label: Text(l10n.debugVideoView2d),
+                  ),
+                  const SizedBox(height: 8),
+                  OutlinedButton.icon(
+                    onPressed: !videoReady || !_canResetAnalysis
                         ? null
                         : _resetAnalysisStats,
                     icon: const Icon(Icons.restart_alt),

@@ -1078,6 +1078,29 @@ class AppLocalizationsIt extends AppLocalizations {
   String get debugVideoView => 'Vedi';
 
   @override
+  String get debugVideoView2d => 'Vedi in 2D';
+
+  @override
+  String get debugVideoTacticsTitle => 'Partita in 2D';
+
+  @override
+  String get debugVideoTacticsHelp =>
+      'Replay tattico dei giocatori inquadrati. Il video non è necessario.';
+
+  @override
+  String get debugVideoTacticsEmpty =>
+      'Analizza un estratto per registrare i movimenti 2D.';
+
+  @override
+  String get debugVideoTacticsSaved =>
+      'Movimenti 2D salvati per questa partita.';
+
+  @override
+  String debugVideoTacticsSaveError(String details) {
+    return 'Impossibile salvare i movimenti 2D: $details';
+  }
+
+  @override
   String get debugVideoResetStats => 'Reimposta';
 
   @override

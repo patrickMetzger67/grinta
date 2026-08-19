@@ -40,6 +40,7 @@ class DebugMp4Player extends StatefulWidget {
     this.onSeek,
     this.analysisSamples = const <PlayerDistanceSample>[],
     this.pitch,
+    this.quad,
     this.team1Id,
     this.team2Id,
     this.team1KitColor,
@@ -66,6 +67,7 @@ class DebugMp4Player extends StatefulWidget {
   final VoidCallback? onSeek;
   final List<PlayerDistanceSample> analysisSamples;
   final PitchRegion? pitch;
+  final PitchQuad? quad;
   final String? team1Id;
   final String? team2Id;
   final int? team1KitColor;
@@ -243,6 +245,7 @@ class _DebugMp4PlayerState extends State<DebugMp4Player> {
                                 atMs: value.position.inMilliseconds,
                                 preferLiveDetections: value.isPlaying,
                                 pitch: widget.pitch,
+                                quad: widget.quad,
                                 team1Id: widget.team1Id,
                                 team2Id: widget.team2Id,
                                 team1KitColor: widget.team1KitColor,
@@ -252,6 +255,7 @@ class _DebugMp4PlayerState extends State<DebugMp4Player> {
                                 rosterTeamByPlayerId:
                                     widget.rosterTeamByPlayerId,
                                 width: insetWidth,
+                                showTrails: widget.analysisSamples.isNotEmpty,
                               );
                             },
                           ),
@@ -536,6 +540,7 @@ class DebugMp4FullscreenPage extends StatefulWidget {
     this.onSeek,
     this.analysisSamples = const <PlayerDistanceSample>[],
     this.pitch,
+    this.quad,
     this.team1Id,
     this.team2Id,
     this.team1KitColor,
@@ -556,6 +561,7 @@ class DebugMp4FullscreenPage extends StatefulWidget {
   final VoidCallback? onSeek;
   final List<PlayerDistanceSample> analysisSamples;
   final PitchRegion? pitch;
+  final PitchQuad? quad;
   final String? team1Id;
   final String? team2Id;
   final int? team1KitColor;
@@ -605,6 +611,7 @@ class _DebugMp4FullscreenPageState extends State<DebugMp4FullscreenPage> {
                   onSeek: widget.onSeek,
                   analysisSamples: widget.analysisSamples,
                   pitch: widget.pitch,
+                  quad: widget.quad,
                   team1Id: widget.team1Id,
                   team2Id: widget.team2Id,
                   team1KitColor: widget.team1KitColor,
@@ -629,6 +636,7 @@ class _DebugMp4FullscreenPageState extends State<DebugMp4FullscreenPage> {
                       onSeek: widget.onSeek,
                       analysisSamples: widget.analysisSamples,
                       pitch: widget.pitch,
+                      quad: widget.quad,
                       team1Id: widget.team1Id,
                       team2Id: widget.team2Id,
                       team1KitColor: widget.team1KitColor,

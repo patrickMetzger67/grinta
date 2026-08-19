@@ -1,5 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:grinta/services/analyze_video_storage_service.dart';
+import 'package:grinta/services/analyze_video_tactics.dart';
 import 'package:grinta/widget/analyze_video/analyze_mp4_player.dart';
 
 void main() {
@@ -46,6 +47,21 @@ void main() {
       expect(isDebugVideoWithinSizeLimit(kDebugVideoMaxBytes), isTrue);
       expect(isDebugVideoWithinSizeLimit(kDebugVideoMaxBytes + 1), isFalse);
       expect(isDebugVideoWithinSizeLimit(0), isFalse);
+    });
+  });
+
+  group('tacticsStoragePathForVideo', () {
+    test('sits next to the mp4 in the same folder', () {
+      expect(
+        tacticsStoragePathForVideo(
+          buildDebugVideoStoragePath(
+            uid: 'user-1',
+            originalName: 'My Clip.mp4',
+            timestampMs: 1700000000000,
+          ),
+        ),
+        'video/user-1/1700000000000_My_Clip.tactics.json',
+      );
     });
   });
 

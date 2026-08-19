@@ -424,6 +424,50 @@ void main() {
       expect(pitch.bottom, greaterThan(0.9));
     });
 
+    test('estimatePitchQuad fits a tapering grass trap, not the AABB', () {
+      const width = 160;
+      const height = 120;
+      const farLeft = 0.28;
+      const farRight = 0.72;
+      const nearLeft = 0.08;
+      const nearRight = 0.92;
+      const top = 0.22;
+      const bottom = 0.90;
+      final rgba = List<int>.filled(width * height * 4, 0);
+      for (var y = 0; y < height; y++) {
+        final ny = (y + 0.5) / height;
+        final v = (ny - top) / (bottom - top);
+        final left = v < 0 || v > 1
+            ? -1.0
+            : farLeft + (nearLeft - farLeft) * v;
+        final right = v < 0 || v > 1
+            ? -1.0
+            : farRight + (nearRight - farRight) * v;
+        for (var x = 0; x < width; x++) {
+          final o = (y * width + x) * 4;
+          final nx = (x + 0.5) / width;
+          final onPitch = left >= 0 && nx >= left && nx <= right;
+          rgba[o] = onPitch ? 40 : 90;
+          rgba[o + 1] = onPitch ? 140 : 75;
+          rgba[o + 2] = onPitch ? 50 : 70;
+          rgba[o + 3] = 255;
+        }
+      }
+      final quad = estimatePitchQuad(
+        rgba: rgba,
+        width: width,
+        height: height,
+      );
+      expect(quad, isNotNull);
+      expect(quad!.isUsable, isTrue);
+      final farW = quad.farRight.x - quad.farLeft.x;
+      final nearW = quad.nearRight.x - quad.nearLeft.x;
+      expect(farW, lessThan(nearW - 0.08));
+      expect(quad.farLeft.x, greaterThan(quad.nearLeft.x + 0.06));
+      expect(quad.farRight.x, lessThan(quad.nearRight.x - 0.06));
+      expect(quad.farLeft.x, isNot(closeTo(quad.bounds.left, 0.04)));
+    });
+
     test('keepMatchSheetDetections drops stand people and keeps pitch players', () {
       const width = 80;
       const height = 100;

@@ -1074,6 +1074,27 @@ class AppLocalizationsEn extends AppLocalizations {
   String get debugVideoView => 'View';
 
   @override
+  String get debugVideoView2d => 'View in 2D';
+
+  @override
+  String get debugVideoTacticsTitle => '2D match';
+
+  @override
+  String get debugVideoTacticsHelp =>
+      'Tactical replay of framed players. The video is not required.';
+
+  @override
+  String get debugVideoTacticsEmpty => 'Analyze a clip to record 2D movement.';
+
+  @override
+  String get debugVideoTacticsSaved => '2D movement saved for this match.';
+
+  @override
+  String debugVideoTacticsSaveError(String details) {
+    return 'Could not save 2D movement: $details';
+  }
+
+  @override
   String get debugVideoResetStats => 'Reset';
 
   @override
