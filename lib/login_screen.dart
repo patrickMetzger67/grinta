@@ -41,6 +41,7 @@ import 'widget/youtube_top_video_prompt.dart';
 import 'widget/biometric_lock_gate.dart';
 import 'services/biometric_unlock_service.dart';
 import 'services/parental_consent_service.dart';
+import 'services/auth_display_name_sync.dart';
 
 bool _isPasswordValid(String password) {
   if (password.length < 8) return false;
@@ -514,6 +515,10 @@ class _LoginScreenState extends State<LoginScreen> {
         throw Exception('Firebase user uid missing after signup');
       }
       createdUid = newUserUid;
+      await AuthDisplayNameSync.instance.persistFromMember(
+        profile,
+        email: email,
+      );
 
       await AnalyticsService.instance.logLogin(method: 'email');
 
@@ -820,6 +825,10 @@ class _LoginScreenState extends State<LoginScreen> {
       } else {
         await _completeSocialOnboarding(uid: uid, profile: profile);
       }
+      await AuthDisplayNameSync.instance.persistFromMember(
+        profile,
+        email: email,
+      );
       return true;
     }
 
@@ -837,6 +846,10 @@ class _LoginScreenState extends State<LoginScreen> {
     } else {
       await _completeSocialOnboarding(uid: uid, profile: profile);
     }
+    await AuthDisplayNameSync.instance.persistFromMember(
+      profile,
+      email: email,
+    );
     return true;
   }
 
