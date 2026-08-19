@@ -2585,6 +2585,80 @@ class AppLocalizationsFr extends AppLocalizations {
   String get chatMessageNotReadYet => 'Pas encore lu';
 
   @override
+  String get chatCreateGroup => 'Créer un groupe';
+
+  @override
+  String get chatGroupRequiredSubscription =>
+      'Vous devez être abonné pour créer un groupe.';
+
+  @override
+  String get chatGroupOpenSubscription => 'Voir l\'abonnement';
+
+  @override
+  String get chatGroupNameLabel => 'Nom du groupe';
+
+  @override
+  String get chatGroupNameHint => 'Nom';
+
+  @override
+  String get chatGroupNameRequired => 'Le nom du groupe est obligatoire.';
+
+  @override
+  String get chatGroupMembersTitle => 'Membres';
+
+  @override
+  String get chatGroupAddMember => 'Ajouter un membre';
+
+  @override
+  String get chatGroupAddMemberHint => 'Appuie sur + pour ajouter un membre.';
+
+  @override
+  String get chatGroupRemoveMember => 'Retirer';
+
+  @override
+  String get chatGroupPickPhoto => 'Ajouter une photo';
+
+  @override
+  String get chatGroupRemovePhoto => 'Retirer la photo';
+
+  @override
+  String get chatGroupPickColor => 'Couleur de l\'avatar';
+
+  @override
+  String get chatGroupCreateAction => 'Créer';
+
+  @override
+  String get chatGroupSaveAction => 'Enregistrer';
+
+  @override
+  String get chatGroupEditTitle => 'Modifier le groupe';
+
+  @override
+  String get chatGroupDeleteAction => 'Supprimer le groupe';
+
+  @override
+  String get chatGroupDeleteConfirmTitle => 'Supprimer ce groupe ?';
+
+  @override
+  String get chatGroupDeleteConfirmMessage =>
+      'Cette action est définitive. Les messages du groupe seront perdus.';
+
+  @override
+  String chatGroupCreateError(String error) {
+    return 'Impossible de créer le groupe : $error';
+  }
+
+  @override
+  String chatGroupUpdateError(String error) {
+    return 'Impossible de mettre à jour le groupe : $error';
+  }
+
+  @override
+  String chatGroupDeleteError(String error) {
+    return 'Impossible de supprimer le groupe : $error';
+  }
+
+  @override
   String get matchDetailTitle => 'Détail du match';
 
   @override

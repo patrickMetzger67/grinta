@@ -2600,6 +2600,81 @@ class AppLocalizationsDe extends AppLocalizations {
   String get chatMessageNotReadYet => 'Noch nicht gelesen';
 
   @override
+  String get chatCreateGroup => 'Gruppe erstellen';
+
+  @override
+  String get chatGroupRequiredSubscription =>
+      'Sie müssen abonniert sein, um eine Gruppe zu erstellen.';
+
+  @override
+  String get chatGroupOpenSubscription => 'Abo ansehen';
+
+  @override
+  String get chatGroupNameLabel => 'Gruppenname';
+
+  @override
+  String get chatGroupNameHint => 'Name';
+
+  @override
+  String get chatGroupNameRequired => 'Der Gruppenname ist erforderlich.';
+
+  @override
+  String get chatGroupMembersTitle => 'Mitglieder';
+
+  @override
+  String get chatGroupAddMember => 'Mitglied hinzufügen';
+
+  @override
+  String get chatGroupAddMemberHint =>
+      'Tippe auf +, um ein Mitglied hinzuzufügen.';
+
+  @override
+  String get chatGroupRemoveMember => 'Entfernen';
+
+  @override
+  String get chatGroupPickPhoto => 'Foto hinzufügen';
+
+  @override
+  String get chatGroupRemovePhoto => 'Foto entfernen';
+
+  @override
+  String get chatGroupPickColor => 'Avatarfarbe';
+
+  @override
+  String get chatGroupCreateAction => 'Erstellen';
+
+  @override
+  String get chatGroupSaveAction => 'Speichern';
+
+  @override
+  String get chatGroupEditTitle => 'Gruppe bearbeiten';
+
+  @override
+  String get chatGroupDeleteAction => 'Gruppe löschen';
+
+  @override
+  String get chatGroupDeleteConfirmTitle => 'Diese Gruppe löschen?';
+
+  @override
+  String get chatGroupDeleteConfirmMessage =>
+      'Diese Aktion ist endgültig. Die Gruppennachrichten gehen verloren.';
+
+  @override
+  String chatGroupCreateError(String error) {
+    return 'Gruppe konnte nicht erstellt werden: $error';
+  }
+
+  @override
+  String chatGroupUpdateError(String error) {
+    return 'Gruppe konnte nicht aktualisiert werden: $error';
+  }
+
+  @override
+  String chatGroupDeleteError(String error) {
+    return 'Gruppe konnte nicht gelöscht werden: $error';
+  }
+
+  @override
   String get matchDetailTitle => 'Spieldetails';
 
   @override

@@ -2576,6 +2576,80 @@ class AppLocalizationsIt extends AppLocalizations {
   String get chatMessageNotReadYet => 'Non ancora letto';
 
   @override
+  String get chatCreateGroup => 'Crea un gruppo';
+
+  @override
+  String get chatGroupRequiredSubscription =>
+      'Devi essere abbonato per creare un gruppo.';
+
+  @override
+  String get chatGroupOpenSubscription => 'Vedi abbonamento';
+
+  @override
+  String get chatGroupNameLabel => 'Nome del gruppo';
+
+  @override
+  String get chatGroupNameHint => 'Nome';
+
+  @override
+  String get chatGroupNameRequired => 'Il nome del gruppo è obbligatorio.';
+
+  @override
+  String get chatGroupMembersTitle => 'Membri';
+
+  @override
+  String get chatGroupAddMember => 'Aggiungi un membro';
+
+  @override
+  String get chatGroupAddMemberHint => 'Tocca + per aggiungere un membro.';
+
+  @override
+  String get chatGroupRemoveMember => 'Rimuovi';
+
+  @override
+  String get chatGroupPickPhoto => 'Aggiungi una foto';
+
+  @override
+  String get chatGroupRemovePhoto => 'Rimuovi la foto';
+
+  @override
+  String get chatGroupPickColor => 'Colore dell\'avatar';
+
+  @override
+  String get chatGroupCreateAction => 'Crea';
+
+  @override
+  String get chatGroupSaveAction => 'Salva';
+
+  @override
+  String get chatGroupEditTitle => 'Modifica gruppo';
+
+  @override
+  String get chatGroupDeleteAction => 'Elimina gruppo';
+
+  @override
+  String get chatGroupDeleteConfirmTitle => 'Eliminare questo gruppo?';
+
+  @override
+  String get chatGroupDeleteConfirmMessage =>
+      'Questa azione è definitiva. I messaggi del gruppo andranno persi.';
+
+  @override
+  String chatGroupCreateError(String error) {
+    return 'Impossibile creare il gruppo: $error';
+  }
+
+  @override
+  String chatGroupUpdateError(String error) {
+    return 'Impossibile aggiornare il gruppo: $error';
+  }
+
+  @override
+  String chatGroupDeleteError(String error) {
+    return 'Impossibile eliminare il gruppo: $error';
+  }
+
+  @override
   String get matchDetailTitle => 'Dettagli della partita';
 
   @override

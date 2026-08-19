@@ -2548,6 +2548,80 @@ class AppLocalizationsEn extends AppLocalizations {
   String get chatMessageNotReadYet => 'Not read yet';
 
   @override
+  String get chatCreateGroup => 'Create a group';
+
+  @override
+  String get chatGroupRequiredSubscription =>
+      'You must be subscribed to create a group.';
+
+  @override
+  String get chatGroupOpenSubscription => 'View subscription';
+
+  @override
+  String get chatGroupNameLabel => 'Group name';
+
+  @override
+  String get chatGroupNameHint => 'Name';
+
+  @override
+  String get chatGroupNameRequired => 'The group name is required.';
+
+  @override
+  String get chatGroupMembersTitle => 'Members';
+
+  @override
+  String get chatGroupAddMember => 'Add a member';
+
+  @override
+  String get chatGroupAddMemberHint => 'Tap + to add a member.';
+
+  @override
+  String get chatGroupRemoveMember => 'Remove';
+
+  @override
+  String get chatGroupPickPhoto => 'Add a photo';
+
+  @override
+  String get chatGroupRemovePhoto => 'Remove photo';
+
+  @override
+  String get chatGroupPickColor => 'Avatar color';
+
+  @override
+  String get chatGroupCreateAction => 'Create';
+
+  @override
+  String get chatGroupSaveAction => 'Save';
+
+  @override
+  String get chatGroupEditTitle => 'Edit group';
+
+  @override
+  String get chatGroupDeleteAction => 'Delete group';
+
+  @override
+  String get chatGroupDeleteConfirmTitle => 'Delete this group?';
+
+  @override
+  String get chatGroupDeleteConfirmMessage =>
+      'This cannot be undone. Group messages will be lost.';
+
+  @override
+  String chatGroupCreateError(String error) {
+    return 'Could not create the group: $error';
+  }
+
+  @override
+  String chatGroupUpdateError(String error) {
+    return 'Could not update the group: $error';
+  }
+
+  @override
+  String chatGroupDeleteError(String error) {
+    return 'Could not delete the group: $error';
+  }
+
+  @override
   String get matchDetailTitle => 'Match details';
 
   @override

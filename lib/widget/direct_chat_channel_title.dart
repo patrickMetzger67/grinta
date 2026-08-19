@@ -2,10 +2,12 @@ import 'package:flutter/material.dart';
 import 'package:stream_chat_flutter/stream_chat_flutter.dart';
 
 import '../services/direct_chat_peer_directory.dart';
+import '../util/chat_group_channel.dart';
 import '../util/direct_chat_identity.dart';
 
 /// Whether this channel should use first name + last name + email (not groups).
 bool isDirectChatChannel(Channel channel) {
+  if (isGrintaUserGroupChannel(channel)) return false;
   final currentId = channel.client.state.currentUser?.id;
   final members = channel.state?.members ?? const <Member>[];
   final otherMemberCount =

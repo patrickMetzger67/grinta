@@ -1162,6 +1162,49 @@
   "chatChannelMembersTitle": "Members",
   "chatMessageReadByTitle": "Read by",
   "chatMessageNotReadYet": "Not read yet",
+  "chatCreateGroup": "Create a group",
+  "chatGroupRequiredSubscription": "You must be subscribed to create a group.",
+  "chatGroupOpenSubscription": "View subscription",
+  "chatGroupNameLabel": "Group name",
+  "chatGroupNameHint": "Name",
+  "chatGroupNameRequired": "The group name is required.",
+  "chatGroupMembersTitle": "Members",
+  "chatGroupAddMember": "Add a member",
+  "chatGroupAddMemberHint": "Tap + to add a member.",
+  "chatGroupRemoveMember": "Remove",
+  "chatGroupPickPhoto": "Add a photo",
+  "chatGroupRemovePhoto": "Remove photo",
+  "chatGroupPickColor": "Avatar color",
+  "chatGroupCreateAction": "Create",
+  "chatGroupSaveAction": "Save",
+  "chatGroupEditTitle": "Edit group",
+  "chatGroupDeleteAction": "Delete group",
+  "chatGroupDeleteConfirmTitle": "Delete this group?",
+  "chatGroupDeleteConfirmMessage": "This cannot be undone. Group messages will be lost.",
+  "chatGroupCreateError": "Could not create the group: {error}",
+  "@chatGroupCreateError": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "chatGroupUpdateError": "Could not update the group: {error}",
+  "@chatGroupUpdateError": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "chatGroupDeleteError": "Could not delete the group: {error}",
+  "@chatGroupDeleteError": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
   "matchDetailTitle": "Match details",
   "matchDetailVenueTitle": "Match venue",
   "matchVenueFieldGpsView": "Field geolocated — view outline",

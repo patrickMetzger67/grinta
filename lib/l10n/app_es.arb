@@ -1162,6 +1162,49 @@
   "chatChannelMembersTitle": "Miembros",
   "chatMessageReadByTitle": "Leído por",
   "chatMessageNotReadYet": "Aún no leído",
+  "chatCreateGroup": "Crear un grupo",
+  "chatGroupRequiredSubscription": "Debes estar suscrito para crear un grupo.",
+  "chatGroupOpenSubscription": "Ver suscripción",
+  "chatGroupNameLabel": "Nombre del grupo",
+  "chatGroupNameHint": "Nombre",
+  "chatGroupNameRequired": "El nombre del grupo es obligatorio.",
+  "chatGroupMembersTitle": "Miembros",
+  "chatGroupAddMember": "Añadir un miembro",
+  "chatGroupAddMemberHint": "Pulsa + para añadir un miembro.",
+  "chatGroupRemoveMember": "Quitar",
+  "chatGroupPickPhoto": "Añadir una foto",
+  "chatGroupRemovePhoto": "Quitar la foto",
+  "chatGroupPickColor": "Color del avatar",
+  "chatGroupCreateAction": "Crear",
+  "chatGroupSaveAction": "Guardar",
+  "chatGroupEditTitle": "Editar grupo",
+  "chatGroupDeleteAction": "Eliminar grupo",
+  "chatGroupDeleteConfirmTitle": "¿Eliminar este grupo?",
+  "chatGroupDeleteConfirmMessage": "Esta acción es definitiva. Se perderán los mensajes del grupo.",
+  "chatGroupCreateError": "No se pudo crear el grupo: {error}",
+  "@chatGroupCreateError": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "chatGroupUpdateError": "No se pudo actualizar el grupo: {error}",
+  "@chatGroupUpdateError": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "chatGroupDeleteError": "No se pudo eliminar el grupo: {error}",
+  "@chatGroupDeleteError": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
   "matchDetailTitle": "Detalles del partido",
   "matchDetailVenueTitle": "Lugar del partido",
   "matchVenueFieldGpsView": "Campo geolocalizado — ver el trazado",

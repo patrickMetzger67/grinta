@@ -2587,6 +2587,80 @@ class AppLocalizationsEs extends AppLocalizations {
   String get chatMessageNotReadYet => 'Aún no leído';
 
   @override
+  String get chatCreateGroup => 'Crear un grupo';
+
+  @override
+  String get chatGroupRequiredSubscription =>
+      'Debes estar suscrito para crear un grupo.';
+
+  @override
+  String get chatGroupOpenSubscription => 'Ver suscripción';
+
+  @override
+  String get chatGroupNameLabel => 'Nombre del grupo';
+
+  @override
+  String get chatGroupNameHint => 'Nombre';
+
+  @override
+  String get chatGroupNameRequired => 'El nombre del grupo es obligatorio.';
+
+  @override
+  String get chatGroupMembersTitle => 'Miembros';
+
+  @override
+  String get chatGroupAddMember => 'Añadir un miembro';
+
+  @override
+  String get chatGroupAddMemberHint => 'Pulsa + para añadir un miembro.';
+
+  @override
+  String get chatGroupRemoveMember => 'Quitar';
+
+  @override
+  String get chatGroupPickPhoto => 'Añadir una foto';
+
+  @override
+  String get chatGroupRemovePhoto => 'Quitar la foto';
+
+  @override
+  String get chatGroupPickColor => 'Color del avatar';
+
+  @override
+  String get chatGroupCreateAction => 'Crear';
+
+  @override
+  String get chatGroupSaveAction => 'Guardar';
+
+  @override
+  String get chatGroupEditTitle => 'Editar grupo';
+
+  @override
+  String get chatGroupDeleteAction => 'Eliminar grupo';
+
+  @override
+  String get chatGroupDeleteConfirmTitle => '¿Eliminar este grupo?';
+
+  @override
+  String get chatGroupDeleteConfirmMessage =>
+      'Esta acción es definitiva. Se perderán los mensajes del grupo.';
+
+  @override
+  String chatGroupCreateError(String error) {
+    return 'No se pudo crear el grupo: $error';
+  }
+
+  @override
+  String chatGroupUpdateError(String error) {
+    return 'No se pudo actualizar el grupo: $error';
+  }
+
+  @override
+  String chatGroupDeleteError(String error) {
+    return 'No se pudo eliminar el grupo: $error';
+  }
+
+  @override
   String get matchDetailTitle => 'Detalles del partido';
 
   @override
