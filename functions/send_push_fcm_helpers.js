@@ -270,14 +270,19 @@ function buildMulticastMessage({
       },
     },
     apns: {
+      headers: {
+        'apns-priority': '10',
+        'apns-push-type': 'alert',
+      },
       payload: {
         aps: {
+          alert: {
+            title: title || 'Grinta',
+            body: body || '',
+          },
           sound: 'default',
-          'content-available': 1,
+          badge: 1,
         },
-      },
-      fcmOptions: {
-        imageUrl: assets.image,
       },
     },
     webpush: {

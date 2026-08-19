@@ -145,7 +145,16 @@ class NotificationFCMService {
     }
 
     if (NotificationFcmPlatform.isIOS) {
-      await _messaging.requestPermission(alert: true, badge: true, sound: true);
+      await _messaging.setAutoInitEnabled(true);
+      await _messaging.requestPermission(
+        alert: true,
+        badge: true,
+        sound: true,
+        announcement: false,
+        carPlay: false,
+        criticalAlert: false,
+        provisional: false,
+      );
       await _messaging.setForegroundNotificationPresentationOptions(
         alert: true,
         badge: true,
