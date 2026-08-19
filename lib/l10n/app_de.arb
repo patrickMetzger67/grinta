@@ -1162,6 +1162,99 @@
   "chatChannelMembersTitle": "Mitglieder",
   "chatMessageReadByTitle": "Gelesen von",
   "chatMessageNotReadYet": "Noch nicht gelesen",
+  "chatCreateGroup": "Gruppe erstellen",
+  "chatGroupRequiredSubscription": "Sie müssen abonniert sein, um eine Gruppe zu erstellen.",
+  "chatGroupOpenSubscription": "Abo ansehen",
+  "chatGroupNameLabel": "Gruppenname",
+  "chatGroupNameHint": "Name",
+  "chatGroupNameRequired": "Der Gruppenname ist erforderlich.",
+  "chatGroupMembersTitle": "Mitglieder",
+  "chatGroupAddMember": "Mitglied hinzufügen",
+  "chatGroupAddMemberHint": "Tippe auf +, um ein Mitglied hinzuzufügen.",
+  "chatGroupRemoveMember": "Entfernen",
+  "chatGroupPickPhoto": "Foto hinzufügen",
+  "chatGroupRemovePhoto": "Foto entfernen",
+  "chatGroupPickColor": "Avatarfarbe",
+  "chatGroupCreateAction": "Erstellen",
+  "chatGroupSaveAction": "Speichern",
+  "chatGroupEditTitle": "Gruppe bearbeiten",
+  "chatGroupDeleteAction": "Gruppe löschen",
+  "chatGroupDeleteConfirmTitle": "Diese Gruppe löschen?",
+  "chatGroupDeleteConfirmMessage": "Diese Aktion ist endgültig. Die Gruppennachrichten gehen verloren.",
+  "chatGroupCreateError": "Gruppe konnte nicht erstellt werden: {error}",
+  "@chatGroupCreateError": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "chatGroupUpdateError": "Gruppe konnte nicht aktualisiert werden: {error}",
+  "@chatGroupUpdateError": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "chatGroupDeleteError": "Gruppe konnte nicht gelöscht werden: {error}",
+  "@chatGroupDeleteError": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "chatPollCreate": "Umfrage erstellen",
+  "chatPollQuestionLabel": "Frage",
+  "chatPollQuestionHint": "Stelle eine Frage",
+  "chatPollQuestionRequired": "Die Frage ist erforderlich.",
+  "chatPollOptionsLabel": "Optionen",
+  "chatPollOptionHint": "Option {index}",
+  "@chatPollOptionHint": {
+    "placeholders": {
+      "index": {
+        "type": "int"
+      }
+    }
+  },
+  "chatPollOptionAdd": "Option hinzufügen",
+  "chatPollOptionRemove": "Option entfernen",
+  "chatPollOptionImage": "Bild",
+  "chatPollOptionPickImage": "Bild wählen",
+  "chatPollOptionsMin": "Füge mindestens zwei Optionen hinzu (Text oder Bild).",
+  "chatPollAllowMultiple": "Mehrere Antworten möglich",
+  "chatPollMultipleHint": "Du kannst mehrere Optionen wählen",
+  "chatPollSingleHint": "Nur eine Wahl",
+  "chatPollResultsVisibleGroup": "Ergebnisse für Mitglieder sichtbar",
+  "chatPollResultsVisibleDirect": "Ergebnisse für den Chatpartner sichtbar",
+  "chatPollResultsVisibleHint": "Teilnehmer sehen die Ergebnisse unter der Umfrage.",
+  "chatPollResultsHidden": "Nur der Autor sieht die Ergebnisse",
+  "chatPollSend": "Senden",
+  "chatPollSendError": "Umfrage konnte nicht gesendet werden: {error}",
+  "@chatPollSendError": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "chatPollVoteError": "Stimme konnte nicht gespeichert werden: {error}",
+  "@chatPollVoteError": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "chatPollVotesCount": "{count, plural, =0{Keine Stimmen} =1{1 Stimme} other{{count} Stimmen}}",
+  "@chatPollVotesCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "matchDetailTitle": "Spieldetails",
   "matchDetailVenueTitle": "Spielort",
   "matchVenueFieldGpsView": "Platz geolokalisiert — Umriss anzeigen",

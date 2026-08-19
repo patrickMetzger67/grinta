@@ -7,6 +7,7 @@ import 'package:sign_in_with_apple/sign_in_with_apple.dart';
 
 import '../config/social_auth_config.dart';
 import 'apple_identity_store.dart';
+import 'auth_display_name_sync.dart';
 
 enum SocialAuthProvider { google, apple }
 
@@ -164,15 +165,12 @@ class SocialAuthService {
     ].whereType<String>().where((part) => part.isNotEmpty).join(' ');
 
     final user = userCredential.user;
-    if (displayName.isNotEmpty &&
-        user != null &&
-        (user.displayName == null || user.displayName!.trim().isEmpty)) {
-      try {
-        await user.updateDisplayName(displayName);
-        await user.reload();
-      } catch (e) {
-        debugPrint('social auth: failed to persist Apple displayName: $e');
-      }
+    if (displayName.isNotEmpty) {
+      await AuthDisplayNameSync.instance.persistFromProfile(
+        firstName: givenName ?? '',
+        lastName: familyName ?? '',
+        email: identity.email,
+      );
     }
 
     final resolvedUser = FirebaseAuth.instance.currentUser ?? user;

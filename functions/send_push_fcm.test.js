@@ -9,6 +9,8 @@ const {
   parseNotificationPreferences,
   isQuietAt,
   evaluatePushPermission,
+  buildMulticastMessage,
+  ANDROID_FCM_CHANNEL_ID,
   BRAND_GRINTA,
   BRAND_ASERSTEIN,
   GRINTA_ICON_192,
@@ -179,5 +181,47 @@ describe('notification preferences', () => {
       computeSendAfter(prefs, new Date('2026-08-03T23:00:00Z')),
       null,
     );
+  });
+});
+
+describe('buildMulticastMessage', () => {
+  it('targets the Android fcm_channel without a tray imageUrl', () => {
+    const message = buildMulticastMessage({
+      tokens: ['tok'],
+      title: 'Alice',
+      body: 'Salut',
+      brand: BRAND_GRINTA,
+      assets: { icon: GRINTA_ICON_192, image: GRINTA_ICON_512 },
+      dataPayload: { type: 'chat', title: 'Alice', body: 'Salut' },
+    });
+
+    assert.equal(message.android.priority, 'high');
+    assert.equal(message.android.notification.channelId, ANDROID_FCM_CHANNEL_ID);
+    assert.equal(message.android.notification.icon, 'ic_notification');
+    assert.equal(message.android.notification.imageUrl, undefined);
+    assert.equal(message.notification.imageUrl, undefined);
+    assert.equal(message.notification.title, 'Alice');
+  });
+
+  it('sends an iOS alert push for every type, not a silent content-available', () => {
+    for (const type of ['convocation', 'RPEAfter', 'teamDetail', 'chat']) {
+      const message = buildMulticastMessage({
+        tokens: ['tok'],
+        title: 'Titre',
+        body: 'Corps',
+        brand: BRAND_GRINTA,
+        assets: { icon: GRINTA_ICON_192, image: GRINTA_ICON_512 },
+        dataPayload: { type, title: 'Titre', body: 'Corps' },
+      });
+
+      assert.equal(message.apns.headers['apns-priority'], '10');
+      assert.equal(message.apns.headers['apns-push-type'], 'alert');
+      assert.equal(message.apns.payload.aps.alert.title, 'Titre');
+      assert.equal(message.apns.payload.aps.alert.body, 'Corps');
+      assert.equal(message.apns.payload.aps.sound, 'default');
+      assert.equal(message.apns.payload.aps['interruption-level'], 'active');
+      assert.equal(message.apns.payload.aps['content-available'], undefined);
+      assert.equal(message.apns.fcmOptions, undefined);
+    }
   });
 });

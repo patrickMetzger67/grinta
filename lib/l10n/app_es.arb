@@ -1162,6 +1162,99 @@
   "chatChannelMembersTitle": "Miembros",
   "chatMessageReadByTitle": "Leído por",
   "chatMessageNotReadYet": "Aún no leído",
+  "chatCreateGroup": "Crear un grupo",
+  "chatGroupRequiredSubscription": "Debes estar suscrito para crear un grupo.",
+  "chatGroupOpenSubscription": "Ver suscripción",
+  "chatGroupNameLabel": "Nombre del grupo",
+  "chatGroupNameHint": "Nombre",
+  "chatGroupNameRequired": "El nombre del grupo es obligatorio.",
+  "chatGroupMembersTitle": "Miembros",
+  "chatGroupAddMember": "Añadir un miembro",
+  "chatGroupAddMemberHint": "Pulsa + para añadir un miembro.",
+  "chatGroupRemoveMember": "Quitar",
+  "chatGroupPickPhoto": "Añadir una foto",
+  "chatGroupRemovePhoto": "Quitar la foto",
+  "chatGroupPickColor": "Color del avatar",
+  "chatGroupCreateAction": "Crear",
+  "chatGroupSaveAction": "Guardar",
+  "chatGroupEditTitle": "Editar grupo",
+  "chatGroupDeleteAction": "Eliminar grupo",
+  "chatGroupDeleteConfirmTitle": "¿Eliminar este grupo?",
+  "chatGroupDeleteConfirmMessage": "Esta acción es definitiva. Se perderán los mensajes del grupo.",
+  "chatGroupCreateError": "No se pudo crear el grupo: {error}",
+  "@chatGroupCreateError": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "chatGroupUpdateError": "No se pudo actualizar el grupo: {error}",
+  "@chatGroupUpdateError": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "chatGroupDeleteError": "No se pudo eliminar el grupo: {error}",
+  "@chatGroupDeleteError": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "chatPollCreate": "Crear una encuesta",
+  "chatPollQuestionLabel": "Pregunta",
+  "chatPollQuestionHint": "Haz una pregunta",
+  "chatPollQuestionRequired": "La pregunta es obligatoria.",
+  "chatPollOptionsLabel": "Opciones",
+  "chatPollOptionHint": "Opción {index}",
+  "@chatPollOptionHint": {
+    "placeholders": {
+      "index": {
+        "type": "int"
+      }
+    }
+  },
+  "chatPollOptionAdd": "Añadir una opción",
+  "chatPollOptionRemove": "Eliminar opción",
+  "chatPollOptionImage": "Imagen",
+  "chatPollOptionPickImage": "Elegir una imagen",
+  "chatPollOptionsMin": "Añade al menos dos opciones (texto o imagen).",
+  "chatPollAllowMultiple": "Varias respuestas posibles",
+  "chatPollMultipleHint": "Puedes elegir varias opciones",
+  "chatPollSingleHint": "Una sola elección",
+  "chatPollResultsVisibleGroup": "Resultados visibles para los miembros",
+  "chatPollResultsVisibleDirect": "Resultados visibles para el destinatario",
+  "chatPollResultsVisibleHint": "Los participantes ven los resultados bajo la encuesta.",
+  "chatPollResultsHidden": "Solo el autor ve los resultados",
+  "chatPollSend": "Enviar",
+  "chatPollSendError": "No se pudo enviar la encuesta: {error}",
+  "@chatPollSendError": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "chatPollVoteError": "No se pudo guardar el voto: {error}",
+  "@chatPollVoteError": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "chatPollVotesCount": "{count, plural, =0{Ningún voto} =1{1 voto} other{{count} votos}}",
+  "@chatPollVotesCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "matchDetailTitle": "Detalles del partido",
   "matchDetailVenueTitle": "Lugar del partido",
   "matchVenueFieldGpsView": "Campo geolocalizado — ver el trazado",

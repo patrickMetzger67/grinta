@@ -13,6 +13,7 @@ import '../provider/appSession.dart';
 import '../services/member_photo_service.dart';
 import '../services/playerService.dart';
 import '../services/subscription_service.dart';
+import '../services/auth_display_name_sync.dart';
 import '../services/userService.dart';
 import '../util/app_snackbar.dart';
 import '../util/app_theme.dart';
@@ -192,6 +193,7 @@ class _EditMemberProfileBodyState extends State<_EditMemberProfileBody> {
           firstName: profile.firstName?.trim() ?? '',
           lastName: profile.lastName?.trim() ?? '',
         );
+        await AuthDisplayNameSync.instance.persistFromMember(profile);
       }
 
       if (!mounted) return;

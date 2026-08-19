@@ -76,6 +76,8 @@
 		<string>Grinta utilise le Bluetooth pour détecter et connecter les capteurs Polar du kit équipe. / Grinta uses Bluetooth to discover and connect Polar team-kit sensors.</string>
 		<key>NSBluetoothPeripheralUsageDescription</key>
 		<string>Grinta utilise le Bluetooth pour détecter et connecter les capteurs Polar du kit équipe. / Grinta uses Bluetooth to discover and connect Polar team-kit sensors.</string>
+		<key>FirebaseAppDelegateProxyEnabled</key>
+		<true/>
 		<key>UIBackgroundModes</key>
 		<array>
 			<string>bluetooth-central</string>

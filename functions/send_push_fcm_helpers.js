@@ -242,6 +242,69 @@ function buildDataPayload({
   return data;
 }
 
+function buildMulticastMessage({
+  tokens,
+  title,
+  body,
+  brand,
+  assets,
+  dataPayload,
+}) {
+  return {
+    tokens,
+    notification: {
+      title: title || 'Grinta',
+      body: body || '',
+    },
+    data: dataPayload,
+    android: {
+      priority: 'high',
+      // No imageUrl: when the app process is dead, a failed image fetch can
+      // drop the entire system-tray notification on Android (every type).
+      notification: {
+        channelId: ANDROID_FCM_CHANNEL_ID,
+        icon: 'ic_notification',
+        sound: 'default',
+        defaultSound: true,
+        visibility: 'public',
+      },
+    },
+    // Visible APNs alert for every Grinta push (convocation, RPE, invite,
+    // chat…). A silent content-available wake is dropped when iOS is killed.
+    apns: {
+      headers: {
+        'apns-priority': '10',
+        'apns-push-type': 'alert',
+      },
+      payload: {
+        aps: {
+          alert: {
+            title: title || 'Grinta',
+            body: body || '',
+          },
+          sound: 'default',
+          badge: 1,
+          'interruption-level': 'active',
+        },
+      },
+    },
+    webpush: {
+      headers: {
+        Urgency: 'high',
+      },
+      notification: {
+        title: title || 'Grinta',
+        body: body || '',
+        icon: assets.icon,
+        image: assets.image,
+      },
+      fcmOptions: {
+        link: '/',
+      },
+    },
+  };
+}
+
 function isInvalidTokenError(error) {
   const code = (error?.code ?? '').toString();
   return (
@@ -252,6 +315,8 @@ function isInvalidTokenError(error) {
 }
 
 const PENDING_PUSH_COLLECTION = 'pending_push';
+/** Must match Flutter [NotificationFCMService.androidChannelId]. */
+const ANDROID_FCM_CHANNEL_ID = 'fcm_channel';
 /** Max deferral window when quiet (ms). */
 const PENDING_PUSH_MAX_DEFER_MS = 48 * 60 * 60 * 1000;
 /** Step used to find the next non-quiet instant. */
@@ -417,6 +482,8 @@ module.exports = {
   resolveBrandAssets,
   isGrintaAssetUrl,
   buildDataPayload,
+  buildMulticastMessage,
+  ANDROID_FCM_CHANNEL_ID,
   isInvalidTokenError,
   BRAND_GRINTA,
   BRAND_ASERSTEIN,

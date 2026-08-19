@@ -1162,6 +1162,99 @@
   "chatChannelMembersTitle": "Members",
   "chatMessageReadByTitle": "Read by",
   "chatMessageNotReadYet": "Not read yet",
+  "chatCreateGroup": "Create a group",
+  "chatGroupRequiredSubscription": "You must be subscribed to create a group.",
+  "chatGroupOpenSubscription": "View subscription",
+  "chatGroupNameLabel": "Group name",
+  "chatGroupNameHint": "Name",
+  "chatGroupNameRequired": "The group name is required.",
+  "chatGroupMembersTitle": "Members",
+  "chatGroupAddMember": "Add a member",
+  "chatGroupAddMemberHint": "Tap + to add a member.",
+  "chatGroupRemoveMember": "Remove",
+  "chatGroupPickPhoto": "Add a photo",
+  "chatGroupRemovePhoto": "Remove photo",
+  "chatGroupPickColor": "Avatar color",
+  "chatGroupCreateAction": "Create",
+  "chatGroupSaveAction": "Save",
+  "chatGroupEditTitle": "Edit group",
+  "chatGroupDeleteAction": "Delete group",
+  "chatGroupDeleteConfirmTitle": "Delete this group?",
+  "chatGroupDeleteConfirmMessage": "This cannot be undone. Group messages will be lost.",
+  "chatGroupCreateError": "Could not create the group: {error}",
+  "@chatGroupCreateError": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "chatGroupUpdateError": "Could not update the group: {error}",
+  "@chatGroupUpdateError": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "chatGroupDeleteError": "Could not delete the group: {error}",
+  "@chatGroupDeleteError": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "chatPollCreate": "Create a poll",
+  "chatPollQuestionLabel": "Question",
+  "chatPollQuestionHint": "Ask a question",
+  "chatPollQuestionRequired": "The question is required.",
+  "chatPollOptionsLabel": "Options",
+  "chatPollOptionHint": "Option {index}",
+  "@chatPollOptionHint": {
+    "placeholders": {
+      "index": {
+        "type": "int"
+      }
+    }
+  },
+  "chatPollOptionAdd": "Add an option",
+  "chatPollOptionRemove": "Remove option",
+  "chatPollOptionImage": "Image",
+  "chatPollOptionPickImage": "Choose an image",
+  "chatPollOptionsMin": "Add at least two options (text or image).",
+  "chatPollAllowMultiple": "Allow multiple answers",
+  "chatPollMultipleHint": "You can choose several options",
+  "chatPollSingleHint": "Single choice",
+  "chatPollResultsVisibleGroup": "Results visible to members",
+  "chatPollResultsVisibleDirect": "Results visible to the other person",
+  "chatPollResultsVisibleHint": "Participants see the results under the poll.",
+  "chatPollResultsHidden": "Only the author can see the results",
+  "chatPollSend": "Send",
+  "chatPollSendError": "Could not send the poll: {error}",
+  "@chatPollSendError": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "chatPollVoteError": "Could not save the vote: {error}",
+  "@chatPollVoteError": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "chatPollVotesCount": "{count, plural, =0{No votes} =1{1 vote} other{{count} votes}}",
+  "@chatPollVotesCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "matchDetailTitle": "Match details",
   "matchDetailVenueTitle": "Match venue",
   "matchVenueFieldGpsView": "Field geolocated — view outline",

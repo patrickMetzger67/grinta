@@ -2576,6 +2576,164 @@ class AppLocalizationsIt extends AppLocalizations {
   String get chatMessageNotReadYet => 'Non ancora letto';
 
   @override
+  String get chatCreateGroup => 'Crea un gruppo';
+
+  @override
+  String get chatGroupRequiredSubscription =>
+      'Devi essere abbonato per creare un gruppo.';
+
+  @override
+  String get chatGroupOpenSubscription => 'Vedi abbonamento';
+
+  @override
+  String get chatGroupNameLabel => 'Nome del gruppo';
+
+  @override
+  String get chatGroupNameHint => 'Nome';
+
+  @override
+  String get chatGroupNameRequired => 'Il nome del gruppo è obbligatorio.';
+
+  @override
+  String get chatGroupMembersTitle => 'Membri';
+
+  @override
+  String get chatGroupAddMember => 'Aggiungi un membro';
+
+  @override
+  String get chatGroupAddMemberHint => 'Tocca + per aggiungere un membro.';
+
+  @override
+  String get chatGroupRemoveMember => 'Rimuovi';
+
+  @override
+  String get chatGroupPickPhoto => 'Aggiungi una foto';
+
+  @override
+  String get chatGroupRemovePhoto => 'Rimuovi la foto';
+
+  @override
+  String get chatGroupPickColor => 'Colore dell\'avatar';
+
+  @override
+  String get chatGroupCreateAction => 'Crea';
+
+  @override
+  String get chatGroupSaveAction => 'Salva';
+
+  @override
+  String get chatGroupEditTitle => 'Modifica gruppo';
+
+  @override
+  String get chatGroupDeleteAction => 'Elimina gruppo';
+
+  @override
+  String get chatGroupDeleteConfirmTitle => 'Eliminare questo gruppo?';
+
+  @override
+  String get chatGroupDeleteConfirmMessage =>
+      'Questa azione è definitiva. I messaggi del gruppo andranno persi.';
+
+  @override
+  String chatGroupCreateError(String error) {
+    return 'Impossibile creare il gruppo: $error';
+  }
+
+  @override
+  String chatGroupUpdateError(String error) {
+    return 'Impossibile aggiornare il gruppo: $error';
+  }
+
+  @override
+  String chatGroupDeleteError(String error) {
+    return 'Impossibile eliminare il gruppo: $error';
+  }
+
+  @override
+  String get chatPollCreate => 'Crea un sondaggio';
+
+  @override
+  String get chatPollQuestionLabel => 'Domanda';
+
+  @override
+  String get chatPollQuestionHint => 'Fai una domanda';
+
+  @override
+  String get chatPollQuestionRequired => 'La domanda è obbligatoria.';
+
+  @override
+  String get chatPollOptionsLabel => 'Opzioni';
+
+  @override
+  String chatPollOptionHint(int index) {
+    return 'Opzione $index';
+  }
+
+  @override
+  String get chatPollOptionAdd => 'Aggiungi un\'opzione';
+
+  @override
+  String get chatPollOptionRemove => 'Rimuovi opzione';
+
+  @override
+  String get chatPollOptionImage => 'Immagine';
+
+  @override
+  String get chatPollOptionPickImage => 'Scegli un\'immagine';
+
+  @override
+  String get chatPollOptionsMin =>
+      'Aggiungi almeno due opzioni (testo o immagine).';
+
+  @override
+  String get chatPollAllowMultiple => 'Più risposte possibili';
+
+  @override
+  String get chatPollMultipleHint => 'Puoi scegliere più opzioni';
+
+  @override
+  String get chatPollSingleHint => 'Una sola scelta';
+
+  @override
+  String get chatPollResultsVisibleGroup => 'Risultati visibili ai membri';
+
+  @override
+  String get chatPollResultsVisibleDirect =>
+      'Risultati visibili al destinatario';
+
+  @override
+  String get chatPollResultsVisibleHint =>
+      'I partecipanti vedono i risultati sotto il sondaggio.';
+
+  @override
+  String get chatPollResultsHidden => 'Solo l\'autore vede i risultati';
+
+  @override
+  String get chatPollSend => 'Invia';
+
+  @override
+  String chatPollSendError(String error) {
+    return 'Impossibile inviare il sondaggio: $error';
+  }
+
+  @override
+  String chatPollVoteError(String error) {
+    return 'Impossibile salvare il voto: $error';
+  }
+
+  @override
+  String chatPollVotesCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count voti',
+      one: '1 voto',
+      zero: 'Nessun voto',
+    );
+    return '$_temp0';
+  }
+
+  @override
   String get matchDetailTitle => 'Dettagli della partita';
 
   @override

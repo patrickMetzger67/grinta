@@ -4529,6 +4529,270 @@ abstract class AppLocalizations {
   /// **'Pas encore lu'**
   String get chatMessageNotReadYet;
 
+  /// No description provided for @chatCreateGroup.
+  ///
+  /// In fr, this message translates to:
+  /// **'Créer un groupe'**
+  String get chatCreateGroup;
+
+  /// No description provided for @chatGroupRequiredSubscription.
+  ///
+  /// In fr, this message translates to:
+  /// **'Vous devez être abonné pour créer un groupe.'**
+  String get chatGroupRequiredSubscription;
+
+  /// No description provided for @chatGroupOpenSubscription.
+  ///
+  /// In fr, this message translates to:
+  /// **'Voir l\'abonnement'**
+  String get chatGroupOpenSubscription;
+
+  /// No description provided for @chatGroupNameLabel.
+  ///
+  /// In fr, this message translates to:
+  /// **'Nom du groupe'**
+  String get chatGroupNameLabel;
+
+  /// No description provided for @chatGroupNameHint.
+  ///
+  /// In fr, this message translates to:
+  /// **'Nom'**
+  String get chatGroupNameHint;
+
+  /// No description provided for @chatGroupNameRequired.
+  ///
+  /// In fr, this message translates to:
+  /// **'Le nom du groupe est obligatoire.'**
+  String get chatGroupNameRequired;
+
+  /// No description provided for @chatGroupMembersTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Membres'**
+  String get chatGroupMembersTitle;
+
+  /// No description provided for @chatGroupAddMember.
+  ///
+  /// In fr, this message translates to:
+  /// **'Ajouter un membre'**
+  String get chatGroupAddMember;
+
+  /// No description provided for @chatGroupAddMemberHint.
+  ///
+  /// In fr, this message translates to:
+  /// **'Appuie sur + pour ajouter un membre.'**
+  String get chatGroupAddMemberHint;
+
+  /// No description provided for @chatGroupRemoveMember.
+  ///
+  /// In fr, this message translates to:
+  /// **'Retirer'**
+  String get chatGroupRemoveMember;
+
+  /// No description provided for @chatGroupPickPhoto.
+  ///
+  /// In fr, this message translates to:
+  /// **'Ajouter une photo'**
+  String get chatGroupPickPhoto;
+
+  /// No description provided for @chatGroupRemovePhoto.
+  ///
+  /// In fr, this message translates to:
+  /// **'Retirer la photo'**
+  String get chatGroupRemovePhoto;
+
+  /// No description provided for @chatGroupPickColor.
+  ///
+  /// In fr, this message translates to:
+  /// **'Couleur de l\'avatar'**
+  String get chatGroupPickColor;
+
+  /// No description provided for @chatGroupCreateAction.
+  ///
+  /// In fr, this message translates to:
+  /// **'Créer'**
+  String get chatGroupCreateAction;
+
+  /// No description provided for @chatGroupSaveAction.
+  ///
+  /// In fr, this message translates to:
+  /// **'Enregistrer'**
+  String get chatGroupSaveAction;
+
+  /// No description provided for @chatGroupEditTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Modifier le groupe'**
+  String get chatGroupEditTitle;
+
+  /// No description provided for @chatGroupDeleteAction.
+  ///
+  /// In fr, this message translates to:
+  /// **'Supprimer le groupe'**
+  String get chatGroupDeleteAction;
+
+  /// No description provided for @chatGroupDeleteConfirmTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Supprimer ce groupe ?'**
+  String get chatGroupDeleteConfirmTitle;
+
+  /// No description provided for @chatGroupDeleteConfirmMessage.
+  ///
+  /// In fr, this message translates to:
+  /// **'Cette action est définitive. Les messages du groupe seront perdus.'**
+  String get chatGroupDeleteConfirmMessage;
+
+  /// No description provided for @chatGroupCreateError.
+  ///
+  /// In fr, this message translates to:
+  /// **'Impossible de créer le groupe : {error}'**
+  String chatGroupCreateError(String error);
+
+  /// No description provided for @chatGroupUpdateError.
+  ///
+  /// In fr, this message translates to:
+  /// **'Impossible de mettre à jour le groupe : {error}'**
+  String chatGroupUpdateError(String error);
+
+  /// No description provided for @chatGroupDeleteError.
+  ///
+  /// In fr, this message translates to:
+  /// **'Impossible de supprimer le groupe : {error}'**
+  String chatGroupDeleteError(String error);
+
+  /// No description provided for @chatPollCreate.
+  ///
+  /// In fr, this message translates to:
+  /// **'Créer un sondage'**
+  String get chatPollCreate;
+
+  /// No description provided for @chatPollQuestionLabel.
+  ///
+  /// In fr, this message translates to:
+  /// **'Question'**
+  String get chatPollQuestionLabel;
+
+  /// No description provided for @chatPollQuestionHint.
+  ///
+  /// In fr, this message translates to:
+  /// **'Pose ta question'**
+  String get chatPollQuestionHint;
+
+  /// No description provided for @chatPollQuestionRequired.
+  ///
+  /// In fr, this message translates to:
+  /// **'La question est obligatoire.'**
+  String get chatPollQuestionRequired;
+
+  /// No description provided for @chatPollOptionsLabel.
+  ///
+  /// In fr, this message translates to:
+  /// **'Options'**
+  String get chatPollOptionsLabel;
+
+  /// No description provided for @chatPollOptionHint.
+  ///
+  /// In fr, this message translates to:
+  /// **'Option {index}'**
+  String chatPollOptionHint(int index);
+
+  /// No description provided for @chatPollOptionAdd.
+  ///
+  /// In fr, this message translates to:
+  /// **'Ajouter une option'**
+  String get chatPollOptionAdd;
+
+  /// No description provided for @chatPollOptionRemove.
+  ///
+  /// In fr, this message translates to:
+  /// **'Supprimer l\'option'**
+  String get chatPollOptionRemove;
+
+  /// No description provided for @chatPollOptionImage.
+  ///
+  /// In fr, this message translates to:
+  /// **'Image'**
+  String get chatPollOptionImage;
+
+  /// No description provided for @chatPollOptionPickImage.
+  ///
+  /// In fr, this message translates to:
+  /// **'Choisir une image'**
+  String get chatPollOptionPickImage;
+
+  /// No description provided for @chatPollOptionsMin.
+  ///
+  /// In fr, this message translates to:
+  /// **'Ajoute au moins deux options (texte ou image).'**
+  String get chatPollOptionsMin;
+
+  /// No description provided for @chatPollAllowMultiple.
+  ///
+  /// In fr, this message translates to:
+  /// **'Plusieurs réponses possibles'**
+  String get chatPollAllowMultiple;
+
+  /// No description provided for @chatPollMultipleHint.
+  ///
+  /// In fr, this message translates to:
+  /// **'Tu peux choisir plusieurs options'**
+  String get chatPollMultipleHint;
+
+  /// No description provided for @chatPollSingleHint.
+  ///
+  /// In fr, this message translates to:
+  /// **'Un seul choix'**
+  String get chatPollSingleHint;
+
+  /// No description provided for @chatPollResultsVisibleGroup.
+  ///
+  /// In fr, this message translates to:
+  /// **'Résultats visibles par les membres'**
+  String get chatPollResultsVisibleGroup;
+
+  /// No description provided for @chatPollResultsVisibleDirect.
+  ///
+  /// In fr, this message translates to:
+  /// **'Résultats visibles par le correspondant'**
+  String get chatPollResultsVisibleDirect;
+
+  /// No description provided for @chatPollResultsVisibleHint.
+  ///
+  /// In fr, this message translates to:
+  /// **'Les participants voient les résultats sous le sondage.'**
+  String get chatPollResultsVisibleHint;
+
+  /// No description provided for @chatPollResultsHidden.
+  ///
+  /// In fr, this message translates to:
+  /// **'Seul l’auteur voit les résultats'**
+  String get chatPollResultsHidden;
+
+  /// No description provided for @chatPollSend.
+  ///
+  /// In fr, this message translates to:
+  /// **'Envoyer'**
+  String get chatPollSend;
+
+  /// No description provided for @chatPollSendError.
+  ///
+  /// In fr, this message translates to:
+  /// **'Impossible d’envoyer le sondage : {error}'**
+  String chatPollSendError(String error);
+
+  /// No description provided for @chatPollVoteError.
+  ///
+  /// In fr, this message translates to:
+  /// **'Impossible d’enregistrer le vote : {error}'**
+  String chatPollVoteError(String error);
+
+  /// No description provided for @chatPollVotesCount.
+  ///
+  /// In fr, this message translates to:
+  /// **'{count, plural, =0{Aucun vote} =1{1 vote} other{{count} votes}}'**
+  String chatPollVotesCount(int count);
+
   /// No description provided for @matchDetailTitle.
   ///
   /// In fr, this message translates to:

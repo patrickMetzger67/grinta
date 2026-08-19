@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:grinta/core/extensions/l10n_extension.dart';
 import 'package:grinta/util/app_theme.dart';
+import 'package:grinta/util/chat_poll.dart';
+import 'package:grinta/widget/chat_poll_message.dart';
 import 'package:stream_chat_flutter/stream_chat_flutter.dart';
 
 /// Opens the Stream channel info bottom sheet (member avatars + actions).
@@ -181,6 +183,25 @@ String _formatReadTime(DateTime dateTime) {
   final time =
       '${local.hour.toString().padLeft(2, '0')}:${local.minute.toString().padLeft(2, '0')}';
   return time;
+}
+
+/// Poll card + read-receipts for channel / thread / FCM message rows.
+StreamMessageWidget decorateStreamChatMessage({
+  required StreamMessageWidget defaultWidget,
+  required bool isMyMessage,
+  void Function(Message message)? onReplyTap,
+}) {
+  var widget = defaultWidget;
+  if (isGrintaPollMessage(defaultWidget.message.extraData)) {
+    widget = widget.copyWith(
+      textBuilder: (context, message) => ChatPollMessageCard(message: message),
+    );
+  }
+  return decorateStreamMessageForReadReceipts(
+    defaultWidget: widget,
+    isMyMessage: isMyMessage,
+    onReplyTap: onReplyTap,
+  );
 }
 
 /// Wraps a [StreamMessageWidget] with read-receipt tap handling for sent messages.

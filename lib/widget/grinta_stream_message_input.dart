@@ -1,7 +1,12 @@
+import 'dart:async' show unawaited;
+
 import 'package:emoji_picker_flutter/emoji_picker_flutter.dart';
 import 'package:flutter/material.dart';
+import 'package:grinta/core/extensions/l10n_extension.dart';
 import 'package:grinta/util/app_theme.dart';
 import 'package:grinta/util/stream_chat_theme.dart';
+import 'package:grinta/widget/chat_poll_creator_sheet.dart';
+import 'package:grinta/widget/direct_chat_channel_title.dart';
 import 'package:stream_chat_flutter/stream_chat_flutter.dart';
 
 /// Stream message input with a Grinta-themed emoji picker button.
@@ -95,11 +100,38 @@ class _GrintaStreamMessageInputState extends State<GrintaStreamMessageInput> {
           enableActionAnimation: false,
           showCommandsButton: true,
           disableAttachments: false,
-          onQuotedMessageCleared: widget.onQuotedMessageCleared,
-          actionsBuilder: (context, defaultActions) => [
-            ...defaultActions,
-            _buildEmojiButton(messageInputTheme),
+          allowedAttachmentPickerTypes: const [
+            AttachmentPickerType.images,
+            AttachmentPickerType.videos,
+            AttachmentPickerType.audios,
+            AttachmentPickerType.files,
           ],
+          onQuotedMessageCleared: widget.onQuotedMessageCleared,
+          actionsBuilder: (context, defaultActions) {
+            final channel = StreamChannel.maybeOf(context)?.channel;
+            final inThread = _controller.message.parentId != null;
+            return [
+              if (!inThread && channel != null)
+                IconButton(
+                  tooltip: context.l10n.chatPollCreate,
+                  icon: const Icon(Icons.poll_outlined),
+                  color: messageInputTheme.actionButtonIdleColor,
+                  onPressed: () => unawaited(
+                    showChatPollCreatorSheet(
+                      context,
+                      channel: channel,
+                      isDirectChat: isDirectChatChannel(channel),
+                    ),
+                  ),
+                  style: const ButtonStyle(
+                    tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                    minimumSize: WidgetStatePropertyAll(Size.square(32)),
+                  ),
+                ),
+              ...defaultActions,
+              _buildEmojiButton(messageInputTheme),
+            ];
+          },
         ),
         if (_showEmojiPicker)
           DecoratedBox(

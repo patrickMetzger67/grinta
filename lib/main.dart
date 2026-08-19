@@ -4,6 +4,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:cloud_functions/cloud_functions.dart';
 import 'package:firebase_auth/firebase_auth.dart' as firebase_auth;
 import 'package:firebase_core/firebase_core.dart';
+import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_native_splash/flutter_native_splash.dart';
@@ -31,6 +32,7 @@ import 'package:grinta/analytics/analytics_route_aware.dart';
 import 'package:grinta/services/analytics_service.dart';
 import 'package:grinta/widget/web_app_root.dart';
 import 'package:grinta/services/notification_fcm_service.dart';
+import 'package:grinta/services/stream_chat_push_service.dart';
 import 'package:grinta/services/internal_reminder_service.dart';
 import 'package:grinta/services/calendar_deep_link_service.dart';
 import 'package:grinta/services/fitbit_deep_link_service.dart';
@@ -38,7 +40,9 @@ import 'package:grinta/services/polar_deep_link_service.dart';
 import 'package:grinta/services/strava_deep_link_service.dart';
 import 'package:grinta/services/whoop_deep_link_service.dart';
 import 'package:grinta/services/oura_deep_link_service.dart';
+import 'package:grinta/services/auth_display_name_sync.dart';
 import 'package:grinta/services/userService.dart';
+import 'package:grinta/util/auth_display_name.dart';
 import 'package:grinta/services/biometric_unlock_service.dart';
 import 'package:grinta/widget/parental_consent_pending_screen.dart';
 import 'package:grinta/widget/biometric_lock_gate.dart';
@@ -61,6 +65,12 @@ Future<void> main() async {
     await Firebase.initializeApp(
       options: DefaultFirebaseOptions.currentPlatform,
     );
+
+    // Must be registered before runApp so the background isolate can display
+    // data-only FCM (all types) when the OS has killed the UI process.
+    if (!kIsWeb) {
+      FirebaseMessaging.onBackgroundMessage(firebaseMessagingBackgroundHandler);
+    }
 
     // Independent bootstraps after Firebase — run in parallel to shorten web blank time.
     await Future.wait<void>([
@@ -291,21 +301,73 @@ class _AuthGateState extends State<AuthGate> {
     _previousAuthUser = user;
   }
 
+  Future<ResolvedAuthDisplayName> _resolveStreamDisplayName(
+    firebase_auth.User firebaseUser,
+  ) async {
+    Player? member;
+    if (mounted) {
+      final session = context.read<AppSession>();
+      member = session.selectedPlayer;
+      final memberName = composeAuthDisplayName(
+        firstName: member?.firstName,
+        lastName: member?.lastName,
+      );
+      if (memberName.isEmpty) {
+        for (final player in session.currentUserPlayers.values) {
+          final name = composeAuthDisplayName(
+            firstName: player.firstName,
+            lastName: player.lastName,
+          );
+          if (name.isNotEmpty) {
+            member = player;
+            break;
+          }
+        }
+      }
+    }
+
+    UserProfile? account;
+    try {
+      account = await UserService().getById(firebaseUser.uid);
+    } catch (e, st) {
+      debugPrint('AuthGate: users/${firebaseUser.uid} name lookup failed: $e\n$st');
+    }
+
+    return resolveAuthDisplayName(
+      memberFirstName: member?.firstName,
+      memberLastName: member?.lastName,
+      accountFirstName: account?.firstName,
+      accountLastName: account?.lastName,
+      authDisplayName: firebaseUser.displayName,
+      email: firebaseUser.email ?? account?.email,
+    );
+  }
+
   Future<void> _connectStreamUser(firebase_auth.User firebaseUser) async {
     final streamUserId = firebaseUser.uid;
+    AuthDisplayNameSync.instance.bindStreamClient(widget.client);
+
+    final resolved = await _resolveStreamDisplayName(firebaseUser);
+    await AuthDisplayNameSync.instance.persistResolved(
+      resolved,
+      photoUrl: firebaseUser.photoURL,
+    );
 
     // Hot restart / navigation : état AuthGate perdu, client Stream encore connecté.
     if (widget.client.state.currentUser?.id == streamUserId) {
       _connectedStreamUserId = streamUserId;
+      await _startChatPush();
       return;
     }
 
     if (_connectedStreamUserId == streamUserId) {
+      await _startChatPush();
       return;
     }
 
     if (_connectedStreamUserId != null &&
         _connectedStreamUserId != streamUserId) {
+      await StreamChatPushService.instance.stop();
       await widget.client.disconnectUser();
       _connectedStreamUserId = null;
     }
@@ -314,11 +376,10 @@ class _AuthGateState extends State<AuthGate> {
 
     final streamUser = User(
       id: streamUserId,
-      extraData: {
-        'name': firebaseUser.displayName ?? firebaseUser.email ?? 'Utilisateur',
-        if (firebaseUser.photoURL != null) 'image': firebaseUser.photoURL!,
-        if (firebaseUser.email != null) 'email': firebaseUser.email!,
-      },
+      extraData: AuthDisplayNameSync.instance.streamExtraData(
+        resolved: resolved,
+        photoUrl: firebaseUser.photoURL,
+      ),
     );
 
     try {
@@ -326,12 +387,26 @@ class _AuthGateState extends State<AuthGate> {
     } on StreamChatError catch (e) {
       if (widget.client.state.currentUser?.id == streamUserId) {
         _connectedStreamUserId = streamUserId;
+        await AuthDisplayNameSync.instance.syncStreamUser(
+          uid: streamUserId,
+          resolved: resolved,
+          photoUrl: firebaseUser.photoURL,
+        );
+        await _startChatPush();
         return;
       }
       debugPrint('Stream connectUser failed: ${e.message}');
       rethrow;
     }
     _connectedStreamUserId = streamUserId;
+    await _startChatPush();
+  }
+
+  Future<void> _startChatPush() async {
+    await StreamChatPushService.instance.start(
+      widget.client,
+      fallbackTitle: mounted ? context.l10n.navChat : null,
+    );
   }
 
   Future<void> _disconnectStreamUserIfNeeded() async {
@@ -340,7 +415,9 @@ class _AuthGateState extends State<AuthGate> {
       return;
     }
 
+    await StreamChatPushService.instance.stop();
     await widget.client.disconnectUser();
+    AuthDisplayNameSync.instance.bindStreamClient(null);
     _connectedStreamUserId = null;
     _authenticatedSessionFuture = null;
     _authenticatedSessionForUid = null;
