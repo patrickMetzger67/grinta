@@ -1,4 +1,4 @@
-import 'package:firebase_auth/firebase_auth.dart';
+import 'package:firebase_auth/firebase_auth.dart' as firebase_auth;
 import 'package:flutter/foundation.dart';
 import 'package:stream_chat_flutter/stream_chat_flutter.dart';
 
@@ -49,7 +49,7 @@ class AuthDisplayNameSync {
     ResolvedAuthDisplayName resolved, {
     String? photoUrl,
   }) async {
-    final user = FirebaseAuth.instance.currentUser;
+    final user = firebase_auth.FirebaseAuth.instance.currentUser;
     if (user == null) return;
 
     if (shouldWriteAuthDisplayName(user.displayName, resolved.name)) {

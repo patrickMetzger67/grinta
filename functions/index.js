@@ -785,3 +785,26 @@ exports.approveParentalConsent = createApproveParentalConsent();
  */
 exports.sendPushFCMNotification = createSendPushFCMNotification();
 exports.drainPendingPushNotifications = createDrainPendingPushNotifications();
+
+/**
+ * User-created Messagerie groups (Stream Chat, server-side).
+ *
+ * Secrets:
+ *   firebase functions:secrets:set STREAM_API_SECRET
+ *   firebase functions:secrets:set REVENUECAT_API_KEY
+ *
+ * Deploy:
+ *   firebase deploy --only functions:createChatGroup,functions:updateChatGroup,functions:addChatGroupMember,functions:removeChatGroupMember,functions:deleteChatGroup
+ */
+const {
+  createCreateChatGroup,
+  createUpdateChatGroup,
+  createAddChatGroupMember,
+  createRemoveChatGroupMember,
+  createDeleteChatGroup,
+} = require('./chat_group');
+exports.createChatGroup = createCreateChatGroup();
+exports.updateChatGroup = createUpdateChatGroup();
+exports.addChatGroupMember = createAddChatGroupMember();
+exports.removeChatGroupMember = createRemoveChatGroupMember();
+exports.deleteChatGroup = createDeleteChatGroup();
