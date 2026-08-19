@@ -2566,6 +2566,9 @@ class AppLocalizationsFr extends AppLocalizations {
   String get chatSelectConversation => 'Sélectionne une conversation';
 
   @override
+  String get chatIncomingMessageFallback => 'Nouveau message';
+
+  @override
   String get chatStartNewHint =>
       'Appuie sur \"Nouveau\" pour démarrer un chat.';
 

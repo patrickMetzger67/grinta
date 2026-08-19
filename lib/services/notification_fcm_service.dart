@@ -268,6 +268,71 @@ class NotificationFCMService {
     });
   }
 
+  /// Registers the current FCM token with Stream Chat so offline/background
+  /// messages can be delivered when the Stream dashboard has Firebase push.
+  static Future<void> registerTokenWithStream(StreamChatClient client) async {
+    if (client.state.currentUser == null) return;
+    try {
+      final token = await _getFcmToken();
+      if (token == null || token.isEmpty) return;
+      await client.addDevice(token, PushProvider.firebase);
+    } catch (e, st) {
+      debugPrint('NotificationFCMService: Stream addDevice failed: $e\n$st');
+    }
+  }
+
+  /// Foreground chat alert (browser Notification on web, local notif native).
+  static Future<void> showIncomingChatNotification({
+    required String title,
+    required String body,
+  }) async {
+    final trimmedTitle = title.trim();
+    if (trimmedTitle.isEmpty) return;
+    final trimmedBody = body.trim();
+
+    if (kIsWeb) {
+      await showWebForegroundNotification(
+        title: trimmedTitle,
+        body: trimmedBody,
+      );
+      return;
+    }
+
+    try {
+      await _localNotificationsPlugin.show(
+        DateTime.now().millisecondsSinceEpoch.remainder(1 << 31),
+        trimmedTitle,
+        trimmedBody,
+        const NotificationDetails(
+          android: AndroidNotificationDetails(
+            _androidChannelId,
+            _androidChannelName,
+            icon: kFcmAndroidNotificationIcon,
+            importance: Importance.max,
+            priority: Priority.high,
+          ),
+          iOS: DarwinNotificationDetails(
+            presentAlert: true,
+            presentBadge: true,
+            presentSound: true,
+          ),
+        ),
+      );
+    } catch (e, st) {
+      debugPrint(
+        'NotificationFCMService: local chat notification failed: $e\n$st',
+      );
+    }
+  }
+
+  static bool _looksLikeStreamChatPush(Map<String, dynamic> data) {
+    final sender = data['sender']?.toString().trim().toLowerCase() ?? '';
+    final type = data['type']?.toString().trim().toLowerCase() ?? '';
+    return sender == 'stream.chat' ||
+        type == 'message.new' ||
+        type == 'notification.message_new';
+  }
+
   static Future<void> _registerFCMToken() async {
     try {
       final token = await _getFcmToken();
@@ -319,7 +384,21 @@ class NotificationFCMService {
       }
 
       final notification = message.notification;
-      if (notification == null) return;
+      if (notification == null) {
+        if (_looksLikeStreamChatPush(message.data)) {
+          final title = message.data['title']?.toString() ??
+              message.data['channel_name']?.toString();
+          final body = message.data['body']?.toString() ??
+              message.data['message']?.toString();
+          await showIncomingChatNotification(
+            title: (title == null || title.trim().isEmpty)
+                ? 'Messagerie'
+                : title,
+            body: body ?? '',
+          );
+        }
+        return;
+      }
 
       if (kIsWeb) {
         await showWebForegroundNotification(

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:grinta/services/stream_chat_inbox_service.dart';
 import 'package:grinta/widget/nav_icon_count_badge.dart';
 import 'package:stream_chat_flutter/stream_chat_flutter.dart';
 
@@ -13,18 +14,37 @@ class StreamChatUnreadCountBuilder extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final streamChat = StreamChat.maybeOf(context);
-    final client = streamChat?.client;
+    final inbox = StreamChatInboxService.instance;
+    if (inbox.isActive) {
+      return StreamBuilder<int>(
+        stream: inbox.unreadCountStream,
+        initialData: inbox.unreadCount,
+        builder: (context, snapshot) {
+          return builder(context, snapshot.data ?? inbox.unreadCount);
+        },
+      );
+    }
 
-    if (client == null || client.state.currentUser == null) {
+    final client = StreamChat.maybeOf(context)?.client;
+    if (client == null) {
       return builder(context, 0);
     }
 
-    return StreamBuilder<int>(
-      stream: client.state.totalUnreadCountStream,
-      initialData: client.state.totalUnreadCount,
-      builder: (context, snapshot) {
-        return builder(context, snapshot.data ?? 0);
+    return StreamBuilder<OwnUser?>(
+      stream: client.state.currentUserStream,
+      initialData: client.state.currentUser,
+      builder: (context, userSnapshot) {
+        if (userSnapshot.data == null) {
+          return builder(context, 0);
+        }
+
+        return StreamBuilder<int>(
+          stream: client.state.totalUnreadCountStream,
+          initialData: client.state.totalUnreadCount,
+          builder: (context, snapshot) {
+            return builder(context, snapshot.data ?? 0);
+          },
+        );
       },
     );
   }

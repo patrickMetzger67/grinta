@@ -31,6 +31,7 @@ import 'package:grinta/analytics/analytics_route_aware.dart';
 import 'package:grinta/services/analytics_service.dart';
 import 'package:grinta/widget/web_app_root.dart';
 import 'package:grinta/services/notification_fcm_service.dart';
+import 'package:grinta/services/stream_chat_inbox_service.dart';
 import 'package:grinta/services/internal_reminder_service.dart';
 import 'package:grinta/services/calendar_deep_link_service.dart';
 import 'package:grinta/services/fitbit_deep_link_service.dart';
@@ -297,15 +298,18 @@ class _AuthGateState extends State<AuthGate> {
     // Hot restart / navigation : état AuthGate perdu, client Stream encore connecté.
     if (widget.client.state.currentUser?.id == streamUserId) {
       _connectedStreamUserId = streamUserId;
+      await _startStreamInbox();
       return;
     }
 
     if (_connectedStreamUserId == streamUserId) {
+      await _startStreamInbox();
       return;
     }
 
     if (_connectedStreamUserId != null &&
         _connectedStreamUserId != streamUserId) {
+      await StreamChatInboxService.instance.stop();
       await widget.client.disconnectUser();
       _connectedStreamUserId = null;
     }
@@ -326,12 +330,29 @@ class _AuthGateState extends State<AuthGate> {
     } on StreamChatError catch (e) {
       if (widget.client.state.currentUser?.id == streamUserId) {
         _connectedStreamUserId = streamUserId;
+        await _startStreamInbox();
         return;
       }
       debugPrint('Stream connectUser failed: ${e.message}');
       rethrow;
     }
     _connectedStreamUserId = streamUserId;
+    await _startStreamInbox();
+  }
+
+  Future<void> _startStreamInbox() async {
+    String? fallbackTitle;
+    String? fallbackBody;
+    if (mounted) {
+      final l10n = context.l10n;
+      fallbackTitle = l10n.navChat;
+      fallbackBody = l10n.chatIncomingMessageFallback;
+    }
+    await StreamChatInboxService.instance.start(
+      widget.client,
+      fallbackTitle: fallbackTitle,
+      fallbackBody: fallbackBody,
+    );
   }
 
   Future<void> _disconnectStreamUserIfNeeded() async {
@@ -340,6 +361,7 @@ class _AuthGateState extends State<AuthGate> {
       return;
     }
 
+    await StreamChatInboxService.instance.stop();
     await widget.client.disconnectUser();
     _connectedStreamUserId = null;
     _authenticatedSessionFuture = null;

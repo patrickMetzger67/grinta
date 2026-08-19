@@ -1156,6 +1156,7 @@
   "syncUpcomingTrainingsNothingToDo": "Gli allenamenti futuri sono già allineati all'organico.",
   "syncUpcomingTrainingsError": "Impossibile aggiornare gli allenamenti. Riprova.",
   "chatSelectConversation": "Seleziona una conversazione",
+  "chatIncomingMessageFallback": "Nuovo messaggio",
   "chatStartNewHint": "Premi \"Nuovo\" per avviare una chat.",
   "chatTryAnotherName": "Prova un altro nome.",
   "chatUsersAppearHere": "Gli altri utenti appariranno qui.",

@@ -4493,6 +4493,12 @@ abstract class AppLocalizations {
   /// **'Sélectionne une conversation'**
   String get chatSelectConversation;
 
+  /// No description provided for @chatIncomingMessageFallback.
+  ///
+  /// In fr, this message translates to:
+  /// **'Nouveau message'**
+  String get chatIncomingMessageFallback;
+
   /// No description provided for @chatStartNewHint.
   ///
   /// In fr, this message translates to:

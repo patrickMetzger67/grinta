@@ -1156,6 +1156,7 @@
   "syncUpcomingTrainingsNothingToDo": "Los próximos entrenamientos ya coinciden con la plantilla.",
   "syncUpcomingTrainingsError": "No se pudieron actualizar los entrenamientos. Inténtalo de nuevo.",
   "chatSelectConversation": "Seleccione una conversación",
+  "chatIncomingMessageFallback": "Nuevo mensaje",
   "chatStartNewHint": "Presione \"Nuevo\" para iniciar un chat.",
   "chatTryAnotherName": "Prueba con otro nombre.",
   "chatUsersAppearHere": "Otros usuarios aparecerán aquí.",

@@ -17,6 +17,7 @@ import '../widget/feature_discovery_random_banner.dart';
 import '../widget/alternating_monetization_banner.dart';
 import '../widget/ask_diego/ask_diego_speed_dial.dart';
 import '../widget/grinta_stream_message_input.dart';
+import '../services/stream_chat_inbox_service.dart';
 
 
 class ResponsiveChat extends StatelessWidget {
@@ -542,7 +543,15 @@ class _ChatChannelPageState extends State<_ChatChannelPage> {
   }
 
   @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    final cid = StreamChannel.of(context).channel.cid;
+    StreamChatInboxService.instance.setActiveChannelCid(cid);
+  }
+
+  @override
   void dispose() {
+    StreamChatInboxService.instance.setActiveChannelCid(null);
     _focusNode.dispose();
     _messageInputController.dispose();
     super.dispose();
