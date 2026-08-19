@@ -38,7 +38,9 @@ import 'package:grinta/services/polar_deep_link_service.dart';
 import 'package:grinta/services/strava_deep_link_service.dart';
 import 'package:grinta/services/whoop_deep_link_service.dart';
 import 'package:grinta/services/oura_deep_link_service.dart';
+import 'package:grinta/services/auth_display_name_sync.dart';
 import 'package:grinta/services/userService.dart';
+import 'package:grinta/util/auth_display_name.dart';
 import 'package:grinta/services/biometric_unlock_service.dart';
 import 'package:grinta/widget/parental_consent_pending_screen.dart';
 import 'package:grinta/widget/biometric_lock_gate.dart';
@@ -291,8 +293,57 @@ class _AuthGateState extends State<AuthGate> {
     _previousAuthUser = user;
   }
 
+  Future<ResolvedAuthDisplayName> _resolveStreamDisplayName(
+    firebase_auth.User firebaseUser,
+  ) async {
+    Player? member;
+    if (mounted) {
+      final session = context.read<AppSession>();
+      member = session.selectedPlayer;
+      final memberName = composeAuthDisplayName(
+        firstName: member?.firstName,
+        lastName: member?.lastName,
+      );
+      if (memberName.isEmpty) {
+        for (final player in session.currentUserPlayers.values) {
+          final name = composeAuthDisplayName(
+            firstName: player.firstName,
+            lastName: player.lastName,
+          );
+          if (name.isNotEmpty) {
+            member = player;
+            break;
+          }
+        }
+      }
+    }
+
+    UserProfile? account;
+    try {
+      account = await UserService().getById(firebaseUser.uid);
+    } catch (e, st) {
+      debugPrint('AuthGate: users/${firebaseUser.uid} name lookup failed: $e\n$st');
+    }
+
+    return resolveAuthDisplayName(
+      memberFirstName: member?.firstName,
+      memberLastName: member?.lastName,
+      accountFirstName: account?.firstName,
+      accountLastName: account?.lastName,
+      authDisplayName: firebaseUser.displayName,
+      email: firebaseUser.email ?? account?.email,
+    );
+  }
+
   Future<void> _connectStreamUser(firebase_auth.User firebaseUser) async {
     final streamUserId = firebaseUser.uid;
+    AuthDisplayNameSync.instance.bindStreamClient(widget.client);
+
+    final resolved = await _resolveStreamDisplayName(firebaseUser);
+    await AuthDisplayNameSync.instance.persistResolved(
+      resolved,
+      photoUrl: firebaseUser.photoURL,
+    );
 
     // Hot restart / navigation : état AuthGate perdu, client Stream encore connecté.
     if (widget.client.state.currentUser?.id == streamUserId) {
@@ -314,11 +365,10 @@ class _AuthGateState extends State<AuthGate> {
 
     final streamUser = User(
       id: streamUserId,
-      extraData: {
-        'name': firebaseUser.displayName ?? firebaseUser.email ?? 'Utilisateur',
-        if (firebaseUser.photoURL != null) 'image': firebaseUser.photoURL!,
-        if (firebaseUser.email != null) 'email': firebaseUser.email!,
-      },
+      extraData: AuthDisplayNameSync.instance.streamExtraData(
+        resolved: resolved,
+        photoUrl: firebaseUser.photoURL,
+      ),
     );
 
     try {
@@ -326,6 +376,11 @@ class _AuthGateState extends State<AuthGate> {
     } on StreamChatError catch (e) {
       if (widget.client.state.currentUser?.id == streamUserId) {
         _connectedStreamUserId = streamUserId;
+        await AuthDisplayNameSync.instance.syncStreamUser(
+          uid: streamUserId,
+          resolved: resolved,
+          photoUrl: firebaseUser.photoURL,
+        );
         return;
       }
       debugPrint('Stream connectUser failed: ${e.message}');
@@ -341,6 +396,7 @@ class _AuthGateState extends State<AuthGate> {
     }
 
     await widget.client.disconnectUser();
+    AuthDisplayNameSync.instance.bindStreamClient(null);
     _connectedStreamUserId = null;
     _authenticatedSessionFuture = null;
     _authenticatedSessionForUid = null;
