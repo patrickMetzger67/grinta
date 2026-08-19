@@ -20,6 +20,7 @@ import 'widget/app_language_dropdown.dart';
 import 'widget/app_logo.dart';
 import 'widget/account_create_profile_entry.dart';
 import 'widget/edit_member_profile.dart';
+import 'widget/manage_profiles_settings_entry.dart';
 import 'screen/my_unavailabilities_screen.dart';
 import 'screen/tips_screen.dart';
 import 'widget/nav_icon_count_badge.dart';
@@ -547,6 +548,10 @@ class _WebNavigationShellState extends State<WebNavigationShell> {
         AccountCreateProfileSidebarButton(
           collapsed: _settingsContentCollapsed,
           onTap: () => openAccountCreateProfileFlow(context),
+        ),
+        ManageProfilesSidebarButton(
+          collapsed: _settingsContentCollapsed,
+          onTap: () => openManageProfilesSettings(context),
         ),
         _buildInfosButton(context),
         _buildDeleteAccountButton(context),

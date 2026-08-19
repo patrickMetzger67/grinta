@@ -6,6 +6,7 @@ abstract final class AnalyticsFeatures {
   static const logout = 'logout';
   static const deleteAccount = 'delete_account';
   static const editProfile = 'edit_profile';
+  static const unsubscribeFromProfile = 'unsubscribe_from_profile';
 
   // Navigation / opens
   static const openMatchDetail = 'open_match_detail';

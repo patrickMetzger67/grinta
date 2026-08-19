@@ -702,6 +702,38 @@ class AppLocalizationsDe extends AppLocalizations {
   String get actionCreateNewProfile => 'Neues Profil erstellen';
 
   @override
+  String get settingsManageProfiles => 'Profilverwaltung';
+
+  @override
+  String get settingsManageProfilesHint =>
+      'Du musst mindestens ein Profil behalten. Wenn du ein Profil verlässt, wird dein Konto daraus entfernt, das Profil selbst bleibt erhalten.';
+
+  @override
+  String get settingsManageProfilesCurrentBadge => 'Aktuelles Profil';
+
+  @override
+  String get actionUnsubscribeFromProfile => 'Profil verlassen';
+
+  @override
+  String get actionUnsubscribeFromProfileConfirmTitle =>
+      'Dieses Profil verlassen?';
+
+  @override
+  String actionUnsubscribeFromProfileConfirmMessage(String name) {
+    return 'Möchtest du das Profil „$name“ wirklich verlassen? Du hast danach keinen Zugriff mehr darauf. Das Profil selbst wird nicht gelöscht.';
+  }
+
+  @override
+  String successUnsubscribedFromProfile(String name) {
+    return 'Du hast das Profil „$name“ verlassen.';
+  }
+
+  @override
+  String errorUnsubscribeFromProfile(String error) {
+    return 'Profil konnte nicht verlassen werden: $error';
+  }
+
+  @override
   String get actionLogout => 'Trennen';
 
   @override

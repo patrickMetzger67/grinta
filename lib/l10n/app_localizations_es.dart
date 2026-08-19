@@ -701,6 +701,38 @@ class AppLocalizationsEs extends AppLocalizations {
   String get actionCreateNewProfile => 'Crear un nuevo perfil';
 
   @override
+  String get settingsManageProfiles => 'Gestión de perfiles';
+
+  @override
+  String get settingsManageProfilesHint =>
+      'Debes conservar al menos un perfil. Darte de baja quita tu cuenta del perfil, sin eliminarlo.';
+
+  @override
+  String get settingsManageProfilesCurrentBadge => 'Perfil actual';
+
+  @override
+  String get actionUnsubscribeFromProfile => 'Darse de baja';
+
+  @override
+  String get actionUnsubscribeFromProfileConfirmTitle =>
+      '¿Darse de baja de este perfil?';
+
+  @override
+  String actionUnsubscribeFromProfileConfirmMessage(String name) {
+    return '¿Seguro que quieres darte de baja del perfil « $name »? Ya no podrás acceder a él. El perfil no se elimina.';
+  }
+
+  @override
+  String successUnsubscribedFromProfile(String name) {
+    return 'Te has dado de baja del perfil « $name ».';
+  }
+
+  @override
+  String errorUnsubscribeFromProfile(String error) {
+    return 'No se ha podido dar de baja: $error';
+  }
+
+  @override
   String get actionLogout => 'Desconectar';
 
   @override

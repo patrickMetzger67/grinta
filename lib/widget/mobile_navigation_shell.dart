@@ -29,6 +29,7 @@ import 'package:grinta/services/feature_discovery_service.dart';
 import 'package:grinta/widget/app_shell_scope.dart';
 import 'package:grinta/widget/account_create_profile_entry.dart';
 import 'package:grinta/widget/edit_member_profile.dart';
+import 'package:grinta/widget/manage_profiles_settings_entry.dart';
 import 'package:grinta/screen/my_unavailabilities_screen.dart';
 import 'package:grinta/screen/tips_screen.dart';
 import 'package:grinta/widget/nav_icon_count_badge.dart';
@@ -491,6 +492,14 @@ class _MobileNavigationShellState extends State<MobileNavigationShell> {
                   onTap: () {
                     closeSheetThen(
                       () => openAccountCreateProfileFlow(context),
+                      sheetContext,
+                    );
+                  },
+                ),
+                ManageProfilesListTile(
+                  onTap: () {
+                    closeSheetThen(
+                      () => openManageProfilesSettings(context),
                       sheetContext,
                     );
                   },

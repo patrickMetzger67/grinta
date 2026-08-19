@@ -357,6 +357,35 @@
   "myUnavailabilitiesNoPlayer": "Kein Spielerprofil mit deinem Konto verknüpft.",
   "myUnavailabilitiesNoSeason": "Keine Saison ausgewählt. Wähle eine Saison im Kontomenü.",
   "actionCreateNewProfile": "Neues Profil erstellen",
+  "settingsManageProfiles": "Profilverwaltung",
+  "settingsManageProfilesHint": "Du musst mindestens ein Profil behalten. Wenn du ein Profil verlässt, wird dein Konto daraus entfernt, das Profil selbst bleibt erhalten.",
+  "settingsManageProfilesCurrentBadge": "Aktuelles Profil",
+  "actionUnsubscribeFromProfile": "Profil verlassen",
+  "actionUnsubscribeFromProfileConfirmTitle": "Dieses Profil verlassen?",
+  "actionUnsubscribeFromProfileConfirmMessage": "Möchtest du das Profil „{name}“ wirklich verlassen? Du hast danach keinen Zugriff mehr darauf. Das Profil selbst wird nicht gelöscht.",
+  "@actionUnsubscribeFromProfileConfirmMessage": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "successUnsubscribedFromProfile": "Du hast das Profil „{name}“ verlassen.",
+  "@successUnsubscribedFromProfile": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "errorUnsubscribeFromProfile": "Profil konnte nicht verlassen werden: {error}",
+  "@errorUnsubscribeFromProfile": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
   "actionLogout": "Trennen",
   "actionLogoutConfirmTitle": "Trennen",
   "actionLogoutConfirmMessage": "Möchten Sie sich wirklich abmelden?",

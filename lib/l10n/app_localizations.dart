@@ -1300,6 +1300,54 @@ abstract class AppLocalizations {
   /// **'Créer un nouveau profil'**
   String get actionCreateNewProfile;
 
+  /// No description provided for @settingsManageProfiles.
+  ///
+  /// In fr, this message translates to:
+  /// **'Gestion des profils'**
+  String get settingsManageProfiles;
+
+  /// No description provided for @settingsManageProfilesHint.
+  ///
+  /// In fr, this message translates to:
+  /// **'Tu dois conserver au moins un profil. Te désinscrire retire ton compte du profil, sans le supprimer.'**
+  String get settingsManageProfilesHint;
+
+  /// No description provided for @settingsManageProfilesCurrentBadge.
+  ///
+  /// In fr, this message translates to:
+  /// **'Profil actuel'**
+  String get settingsManageProfilesCurrentBadge;
+
+  /// No description provided for @actionUnsubscribeFromProfile.
+  ///
+  /// In fr, this message translates to:
+  /// **'Se désinscrire'**
+  String get actionUnsubscribeFromProfile;
+
+  /// No description provided for @actionUnsubscribeFromProfileConfirmTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Se désinscrire de ce profil ?'**
+  String get actionUnsubscribeFromProfileConfirmTitle;
+
+  /// No description provided for @actionUnsubscribeFromProfileConfirmMessage.
+  ///
+  /// In fr, this message translates to:
+  /// **'Souhaites-tu vraiment te désinscrire du profil « {name} » ? Tu ne pourras plus y accéder. Le profil n\'est pas supprimé.'**
+  String actionUnsubscribeFromProfileConfirmMessage(String name);
+
+  /// No description provided for @successUnsubscribedFromProfile.
+  ///
+  /// In fr, this message translates to:
+  /// **'Tu as été désinscrit du profil « {name} ».'**
+  String successUnsubscribedFromProfile(String name);
+
+  /// No description provided for @errorUnsubscribeFromProfile.
+  ///
+  /// In fr, this message translates to:
+  /// **'Impossible de se désinscrire : {error}'**
+  String errorUnsubscribeFromProfile(String error);
+
   /// No description provided for @actionLogout.
   ///
   /// In fr, this message translates to:

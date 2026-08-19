@@ -694,6 +694,38 @@ class AppLocalizationsIt extends AppLocalizations {
   String get actionCreateNewProfile => 'Crea un nuovo profilo';
 
   @override
+  String get settingsManageProfiles => 'Gestione dei profili';
+
+  @override
+  String get settingsManageProfilesHint =>
+      'Devi conservare almeno un profilo. Disiscriverti rimuove il tuo account dal profilo, senza eliminarlo.';
+
+  @override
+  String get settingsManageProfilesCurrentBadge => 'Profilo attuale';
+
+  @override
+  String get actionUnsubscribeFromProfile => 'Disiscriviti';
+
+  @override
+  String get actionUnsubscribeFromProfileConfirmTitle =>
+      'Disiscriversi da questo profilo?';
+
+  @override
+  String actionUnsubscribeFromProfileConfirmMessage(String name) {
+    return 'Vuoi davvero disiscriverti dal profilo « $name »? Non potrai più accedervi. Il profilo non viene eliminato.';
+  }
+
+  @override
+  String successUnsubscribedFromProfile(String name) {
+    return 'Ti sei disiscritto dal profilo « $name ».';
+  }
+
+  @override
+  String errorUnsubscribeFromProfile(String error) {
+    return 'Impossibile disiscriversi: $error';
+  }
+
+  @override
   String get actionLogout => 'Disconnetti';
 
   @override
