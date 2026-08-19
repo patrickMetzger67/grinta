@@ -1345,6 +1345,7 @@
   "syncUpcomingTrainingsNothingToDo": "Les entraînements à venir sont déjà alignés sur l'effectif.",
   "syncUpcomingTrainingsError": "Impossible de mettre à jour les entraînements. Réessayez.",
   "chatSelectConversation": "Sélectionne une conversation",
+  "chatIncomingMessageFallback": "Nouveau message",
   "chatStartNewHint": "Appuie sur \"Nouveau\" pour démarrer un chat.",
   "chatTryAnotherName": "Essaie avec un autre nom.",
   "chatUsersAppearHere": "Les autres utilisateurs apparaîtront ici.",

@@ -26,6 +26,7 @@ import '../widget/ask_diego/ask_diego_speed_dial.dart';
 import '../widget/direct_chat_channel_title.dart';
 import '../widget/grinta_stream_message_input.dart';
 import '../services/chat_group_service.dart';
+import '../services/stream_chat_inbox_service.dart';
 import '../services/stream_chat_push_service.dart';
 
 
@@ -417,11 +418,13 @@ class _ChatChannelPageState extends State<_ChatChannelPage> {
     super.didChangeDependencies();
     final cid = StreamChannel.of(context).channel.cid;
     StreamChatPushService.instance.setActiveChannelCid(cid);
+    StreamChatInboxService.instance.setActiveChannelCid(cid);
   }
 
   @override
   void dispose() {
     StreamChatPushService.instance.setActiveChannelCid(null);
+    StreamChatInboxService.instance.setActiveChannelCid(null);
     _focusNode.dispose();
     _messageInputController.dispose();
     super.dispose();

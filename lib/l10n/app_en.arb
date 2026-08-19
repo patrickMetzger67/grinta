@@ -1157,6 +1157,7 @@
   "syncUpcomingTrainingsNothingToDo": "Upcoming trainings already match the roster.",
   "syncUpcomingTrainingsError": "Could not update trainings. Please try again.",
   "chatSelectConversation": "Select a conversation",
+  "chatIncomingMessageFallback": "New message",
   "chatStartNewHint": "Press \"New\" to start a chat.",
   "chatTryAnotherName": "Try another name.",
   "chatUsersAppearHere": "Other users will appear here.",
