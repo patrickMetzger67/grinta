@@ -89,7 +89,7 @@ class _AdminUserPlayersScreenState extends State<AdminUserPlayersScreen> {
           backgroundColor: colors.background,
           appBar: AppBar(
             title: Text(
-              l10n.adminUsersPlayersTitle,
+              l10n.adminUsersPlayersTitle(user.displayName),
               style: textTheme.titleLarge?.copyWith(
                 color: colors.textPrimary,
                 fontWeight: FontWeight.w700,

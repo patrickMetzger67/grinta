@@ -2488,7 +2488,14 @@
       }
     }
   },
-  "adminUsersPlayersTitle": "Jugadores asociados",
+  "adminUsersPlayersTitle": "Lista de jugadores asociados al usuario {name}",
+  "@adminUsersPlayersTitle": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
   "adminUsersPlayersLoadError": "No se pudieron cargar los jugadores asociados.",
   "adminUsersPlayersEmpty": "Ningún jugador asociado a este usuario.",
   "adminUsersAssociatePlayerFab": "Asociar un jugador",
@@ -2526,7 +2533,14 @@
       }
     }
   },
-  "adminPlayersUsersTitle": "Usuarios asociados",
+  "adminPlayersUsersTitle": "Lista de usuarios asociados al jugador {name}",
+  "@adminPlayersUsersTitle": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
   "adminPlayersUsersLoadError": "No se pudieron cargar los usuarios asociados.",
   "adminPlayersUsersEmpty": "Ningún usuario asociado a este jugador.",
   "adminPlayersAddUserFab": "Añadir un usuario",

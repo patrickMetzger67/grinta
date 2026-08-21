@@ -2766,7 +2766,14 @@
       }
     }
   },
-  "adminUsersPlayersTitle": "Associated players",
+  "adminUsersPlayersTitle": "Players linked to user {name}",
+  "@adminUsersPlayersTitle": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
   "adminUsersPlayersLoadError": "Unable to load associated players.",
   "adminUsersPlayersEmpty": "No players associated with this user.",
   "adminUsersAssociatePlayerFab": "Associate a player",
@@ -2804,7 +2811,14 @@
       }
     }
   },
-  "adminPlayersUsersTitle": "Associated users",
+  "adminPlayersUsersTitle": "Users linked to player {name}",
+  "@adminPlayersUsersTitle": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
   "adminPlayersUsersLoadError": "Unable to load associated users.",
   "adminPlayersUsersEmpty": "No users associated with this player.",
   "adminPlayersAddUserFab": "Add a user",
