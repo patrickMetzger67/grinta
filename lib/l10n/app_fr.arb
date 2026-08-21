@@ -3157,6 +3157,66 @@
   "matchDetailOpponentStats": "Stats adversaire",
   "adminTitle": "Admin",
   "adminSubtitle": "Outils d'administration de la plateforme.",
+  "adminUsersSection": "Utilisateurs",
+  "adminUsersSectionDesc": "Lister les comptes, consulter et associer des joueurs.",
+  "adminUsersTitle": "Utilisateurs",
+  "adminUsersSearchHint": "Rechercher (email, prénom, nom)",
+  "adminUsersLoadError": "Impossible de charger les utilisateurs.",
+  "adminUsersEmpty": "Aucun utilisateur pour le moment.",
+  "adminUsersSearchEmpty": "Aucun utilisateur ne correspond à la recherche.",
+  "adminUsersPlayerCount": "{count, plural, =0{Aucun joueur} =1{1 joueur} other{{count} joueurs}}",
+  "@adminUsersPlayerCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "adminUsersPlayersTitle": "Joueurs associés",
+  "adminUsersPlayersLoadError": "Impossible de charger les joueurs associés.",
+  "adminUsersPlayersEmpty": "Aucun joueur associé à cet utilisateur.",
+  "adminUsersAssociatePlayerFab": "Associer un joueur",
+  "adminUsersAssociatePlayerTitle": "Associer un joueur",
+  "adminUsersAssociateSuccess": "Joueur associé.",
+  "adminUsersAssociateFailed": "Impossible d'associer le joueur.",
+  "adminUsersPasswordResetTooltip": "Renouveler le mot de passe",
+  "adminUsersPasswordResetConfirmTitle": "Renouveler le mot de passe ?",
+  "adminUsersPasswordResetConfirmMessage": "Un e-mail de réinitialisation sera envoyé à {email}.",
+  "@adminUsersPasswordResetConfirmMessage": {
+    "placeholders": {
+      "email": {
+        "type": "String"
+      }
+    }
+  },
+  "adminUsersPasswordResetConfirmAction": "Envoyer",
+  "adminUsersPasswordResetSent": "E-mail de réinitialisation envoyé.",
+  "adminUsersPasswordResetNoEmail": "Cet utilisateur n'a pas d'adresse e-mail.",
+  "adminUsersPasswordResetInvalidEmail": "Adresse e-mail invalide.",
+  "adminUsersPasswordResetUserNotFound": "Aucun compte Auth trouvé pour cet e-mail.",
+  "adminUsersPasswordResetFailed": "Impossible d'envoyer l'e-mail de réinitialisation.",
+  "adminPlayersSection": "Joueurs",
+  "adminPlayersSectionDesc": "Lister les joueurs, consulter et associer des utilisateurs.",
+  "adminPlayersTitle": "Joueurs",
+  "adminPlayersSearchHint": "Rechercher (prénom, nom, email)",
+  "adminPlayersLoadError": "Impossible de charger les joueurs.",
+  "adminPlayersEmpty": "Aucun joueur pour le moment.",
+  "adminPlayersSearchEmpty": "Aucun joueur ne correspond à la recherche.",
+  "adminPlayersUserCount": "{count, plural, =0{Aucun utilisateur} =1{1 utilisateur} other{{count} utilisateurs}}",
+  "@adminPlayersUserCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "adminPlayersUsersTitle": "Utilisateurs associés",
+  "adminPlayersUsersLoadError": "Impossible de charger les utilisateurs associés.",
+  "adminPlayersUsersEmpty": "Aucun utilisateur associé à ce joueur.",
+  "adminPlayersAddUserFab": "Ajouter un utilisateur",
+  "adminPlayersAddUserTitle": "Ajouter un utilisateur",
+  "adminPlayersAssociateSuccess": "Utilisateur associé.",
+  "adminPlayersAssociateFailed": "Impossible d'associer l'utilisateur.",
   "adminPromoCodesSection": "Codes promo",
   "adminPromoCodesSectionDesc": "Créer et gérer les codes promo d'abonnement.",
   "adminPromoCodesTitle": "Codes promo",

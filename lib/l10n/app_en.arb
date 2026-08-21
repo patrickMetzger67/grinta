@@ -2751,6 +2751,66 @@
   "matchDetailOpponentStats": "Opponent stats",
   "adminTitle": "Admin",
   "adminSubtitle": "Platform administration tools.",
+  "adminUsersSection": "Users",
+  "adminUsersSectionDesc": "List accounts, view and associate players.",
+  "adminUsersTitle": "Users",
+  "adminUsersSearchHint": "Search (email, first name, last name)",
+  "adminUsersLoadError": "Unable to load users.",
+  "adminUsersEmpty": "No users yet.",
+  "adminUsersSearchEmpty": "No users match this search.",
+  "adminUsersPlayerCount": "{count, plural, =0{No players} =1{1 player} other{{count} players}}",
+  "@adminUsersPlayerCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "adminUsersPlayersTitle": "Associated players",
+  "adminUsersPlayersLoadError": "Unable to load associated players.",
+  "adminUsersPlayersEmpty": "No players associated with this user.",
+  "adminUsersAssociatePlayerFab": "Associate a player",
+  "adminUsersAssociatePlayerTitle": "Associate a player",
+  "adminUsersAssociateSuccess": "Player associated.",
+  "adminUsersAssociateFailed": "Unable to associate the player.",
+  "adminUsersPasswordResetTooltip": "Renew password",
+  "adminUsersPasswordResetConfirmTitle": "Renew password?",
+  "adminUsersPasswordResetConfirmMessage": "A reset email will be sent to {email}.",
+  "@adminUsersPasswordResetConfirmMessage": {
+    "placeholders": {
+      "email": {
+        "type": "String"
+      }
+    }
+  },
+  "adminUsersPasswordResetConfirmAction": "Send",
+  "adminUsersPasswordResetSent": "Password reset email sent.",
+  "adminUsersPasswordResetNoEmail": "This user has no email address.",
+  "adminUsersPasswordResetInvalidEmail": "Invalid email address.",
+  "adminUsersPasswordResetUserNotFound": "No Auth account found for this email.",
+  "adminUsersPasswordResetFailed": "Unable to send the password reset email.",
+  "adminPlayersSection": "Players",
+  "adminPlayersSectionDesc": "List players, view and associate users.",
+  "adminPlayersTitle": "Players",
+  "adminPlayersSearchHint": "Search (first name, last name, email)",
+  "adminPlayersLoadError": "Unable to load players.",
+  "adminPlayersEmpty": "No players yet.",
+  "adminPlayersSearchEmpty": "No players match this search.",
+  "adminPlayersUserCount": "{count, plural, =0{No users} =1{1 user} other{{count} users}}",
+  "@adminPlayersUserCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "adminPlayersUsersTitle": "Associated users",
+  "adminPlayersUsersLoadError": "Unable to load associated users.",
+  "adminPlayersUsersEmpty": "No users associated with this player.",
+  "adminPlayersAddUserFab": "Add a user",
+  "adminPlayersAddUserTitle": "Add a user",
+  "adminPlayersAssociateSuccess": "User associated.",
+  "adminPlayersAssociateFailed": "Unable to associate the user.",
   "adminPromoCodesSection": "Promo codes",
   "adminPromoCodesSectionDesc": "Create and manage subscription promo codes.",
   "adminPromoCodesTitle": "Promo codes",

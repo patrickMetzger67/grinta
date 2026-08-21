@@ -6134,6 +6134,157 @@ class AppLocalizationsDe extends AppLocalizations {
   String get adminSubtitle => 'Plattform-Verwaltungstools.';
 
   @override
+  String get adminUsersSection => 'Benutzer';
+
+  @override
+  String get adminUsersSectionDesc =>
+      'Konten auflisten, Spieler anzeigen und zuordnen.';
+
+  @override
+  String get adminUsersTitle => 'Benutzer';
+
+  @override
+  String get adminUsersSearchHint => 'Suchen (E-Mail, Vorname, Nachname)';
+
+  @override
+  String get adminUsersLoadError => 'Benutzer konnten nicht geladen werden.';
+
+  @override
+  String get adminUsersEmpty => 'Noch keine Benutzer.';
+
+  @override
+  String get adminUsersSearchEmpty =>
+      'Keine Benutzer entsprechen der Suche.';
+
+  @override
+  String adminUsersPlayerCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      zero: 'Keine Spieler',
+      one: '1 Spieler',
+      other: '$count Spieler',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get adminUsersPlayersTitle => 'Zugeordnete Spieler';
+
+  @override
+  String get adminUsersPlayersLoadError =>
+      'Zugeordnete Spieler konnten nicht geladen werden.';
+
+  @override
+  String get adminUsersPlayersEmpty =>
+      'Keine Spieler mit diesem Benutzer verknüpft.';
+
+  @override
+  String get adminUsersAssociatePlayerFab => 'Spieler zuordnen';
+
+  @override
+  String get adminUsersAssociatePlayerTitle => 'Spieler zuordnen';
+
+  @override
+  String get adminUsersAssociateSuccess => 'Spieler zugeordnet.';
+
+  @override
+  String get adminUsersAssociateFailed =>
+      'Spieler konnte nicht zugeordnet werden.';
+
+  @override
+  String get adminUsersPasswordResetTooltip => 'Passwort erneuern';
+
+  @override
+  String get adminUsersPasswordResetConfirmTitle => 'Passwort erneuern?';
+
+  @override
+  String adminUsersPasswordResetConfirmMessage(String email) {
+    return 'Eine Zurücksetzungs-E-Mail wird an $email gesendet.';
+  }
+
+  @override
+  String get adminUsersPasswordResetConfirmAction => 'Senden';
+
+  @override
+  String get adminUsersPasswordResetSent => 'Zurücksetzungs-E-Mail gesendet.';
+
+  @override
+  String get adminUsersPasswordResetNoEmail =>
+      'Dieser Benutzer hat keine E-Mail-Adresse.';
+
+  @override
+  String get adminUsersPasswordResetInvalidEmail =>
+      'Ungültige E-Mail-Adresse.';
+
+  @override
+  String get adminUsersPasswordResetUserNotFound =>
+      'Kein Auth-Konto für diese E-Mail gefunden.';
+
+  @override
+  String get adminUsersPasswordResetFailed =>
+      'Zurücksetzungs-E-Mail konnte nicht gesendet werden.';
+
+  @override
+  String get adminPlayersSection => 'Spieler';
+
+  @override
+  String get adminPlayersSectionDesc =>
+      'Spieler auflisten, Benutzer anzeigen und zuordnen.';
+
+  @override
+  String get adminPlayersTitle => 'Spieler';
+
+  @override
+  String get adminPlayersSearchHint => 'Suchen (Vorname, Nachname, E-Mail)';
+
+  @override
+  String get adminPlayersLoadError => 'Spieler konnten nicht geladen werden.';
+
+  @override
+  String get adminPlayersEmpty => 'Noch keine Spieler.';
+
+  @override
+  String get adminPlayersSearchEmpty =>
+      'Keine Spieler entsprechen der Suche.';
+
+  @override
+  String adminPlayersUserCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      zero: 'Keine Benutzer',
+      one: '1 Benutzer',
+      other: '$count Benutzer',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get adminPlayersUsersTitle => 'Zugeordnete Benutzer';
+
+  @override
+  String get adminPlayersUsersLoadError =>
+      'Zugeordnete Benutzer konnten nicht geladen werden.';
+
+  @override
+  String get adminPlayersUsersEmpty =>
+      'Keine Benutzer mit diesem Spieler verknüpft.';
+
+  @override
+  String get adminPlayersAddUserFab => 'Benutzer hinzufügen';
+
+  @override
+  String get adminPlayersAddUserTitle => 'Benutzer hinzufügen';
+
+  @override
+  String get adminPlayersAssociateSuccess => 'Benutzer zugeordnet.';
+
+  @override
+  String get adminPlayersAssociateFailed =>
+      'Benutzer konnte nicht zugeordnet werden.';
+
+  @override
   String get adminPromoCodesSection => 'Promo-Codes';
 
   @override

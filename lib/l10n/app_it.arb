@@ -2473,6 +2473,66 @@
   "matchDetailOpponentStats": "Stats avversario",
   "adminTitle": "Admin",
   "adminSubtitle": "Strumenti di amministrazione della piattaforma.",
+  "adminUsersSection": "Utenti",
+  "adminUsersSectionDesc": "Elenca gli account, consulta e associa i giocatori.",
+  "adminUsersTitle": "Utenti",
+  "adminUsersSearchHint": "Cerca (email, nome, cognome)",
+  "adminUsersLoadError": "Impossibile caricare gli utenti.",
+  "adminUsersEmpty": "Nessun utente al momento.",
+  "adminUsersSearchEmpty": "Nessun utente corrisponde alla ricerca.",
+  "adminUsersPlayerCount": "{count, plural, =0{Nessun giocatore} =1{1 giocatore} other{{count} giocatori}}",
+  "@adminUsersPlayerCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "adminUsersPlayersTitle": "Giocatori associati",
+  "adminUsersPlayersLoadError": "Impossibile caricare i giocatori associati.",
+  "adminUsersPlayersEmpty": "Nessun giocatore associato a questo utente.",
+  "adminUsersAssociatePlayerFab": "Associa un giocatore",
+  "adminUsersAssociatePlayerTitle": "Associa un giocatore",
+  "adminUsersAssociateSuccess": "Giocatore associato.",
+  "adminUsersAssociateFailed": "Impossibile associare il giocatore.",
+  "adminUsersPasswordResetTooltip": "Rinnova la password",
+  "adminUsersPasswordResetConfirmTitle": "Rinnovare la password?",
+  "adminUsersPasswordResetConfirmMessage": "Verrà inviata un'email di reimpostazione a {email}.",
+  "@adminUsersPasswordResetConfirmMessage": {
+    "placeholders": {
+      "email": {
+        "type": "String"
+      }
+    }
+  },
+  "adminUsersPasswordResetConfirmAction": "Invia",
+  "adminUsersPasswordResetSent": "Email di reimpostazione inviata.",
+  "adminUsersPasswordResetNoEmail": "Questo utente non ha un indirizzo email.",
+  "adminUsersPasswordResetInvalidEmail": "Indirizzo email non valido.",
+  "adminUsersPasswordResetUserNotFound": "Nessun account Auth trovato per questa email.",
+  "adminUsersPasswordResetFailed": "Impossibile inviare l'email di reimpostazione.",
+  "adminPlayersSection": "Giocatori",
+  "adminPlayersSectionDesc": "Elenca i giocatori, consulta e associa gli utenti.",
+  "adminPlayersTitle": "Giocatori",
+  "adminPlayersSearchHint": "Cerca (nome, cognome, email)",
+  "adminPlayersLoadError": "Impossibile caricare i giocatori.",
+  "adminPlayersEmpty": "Nessun giocatore al momento.",
+  "adminPlayersSearchEmpty": "Nessun giocatore corrisponde alla ricerca.",
+  "adminPlayersUserCount": "{count, plural, =0{Nessun utente} =1{1 utente} other{{count} utenti}}",
+  "@adminPlayersUserCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "adminPlayersUsersTitle": "Utenti associati",
+  "adminPlayersUsersLoadError": "Impossibile caricare gli utenti associati.",
+  "adminPlayersUsersEmpty": "Nessun utente associato a questo giocatore.",
+  "adminPlayersAddUserFab": "Aggiungi un utente",
+  "adminPlayersAddUserTitle": "Aggiungi un utente",
+  "adminPlayersAssociateSuccess": "Utente associato.",
+  "adminPlayersAssociateFailed": "Impossibile associare l'utente.",
   "adminPromoCodesSection": "Codici promo",
   "adminPromoCodesSectionDesc": "Crea e gestisci i codici promo per gli abbonamenti.",
   "adminPromoCodesTitle": "Codici promo",

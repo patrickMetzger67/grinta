@@ -2,12 +2,14 @@ import 'package:flutter/material.dart';
 import 'package:grinta/analytics/analytics_routes.dart';
 import 'package:grinta/analytics/analytics_screen_names.dart';
 import 'package:grinta/core/extensions/l10n_extension.dart';
+import 'package:grinta/screen/admin/admin_players_screen.dart';
 import 'package:grinta/screen/admin/admin_promo_codes_screen.dart';
 import 'package:grinta/screen/admin/admin_seasons_screen.dart';
 import 'package:grinta/screen/admin/admin_stream_groups_screen.dart';
 import 'package:grinta/screen/admin/admin_tracker_devices_screen.dart';
 import 'package:grinta/screen/admin/admin_tracker_fields_screen.dart';
 import 'package:grinta/screen/admin/admin_tracker_owners_screen.dart';
+import 'package:grinta/screen/admin/admin_users_screen.dart';
 import 'package:grinta/screen/admin/admin_youtube_screen.dart';
 import 'package:grinta/util/app_theme.dart';
 
@@ -48,6 +50,34 @@ class AdminScreen extends StatelessWidget {
             style: textTheme.bodyMedium?.copyWith(color: colors.textSecondary),
           ),
           const SizedBox(height: 20),
+          _AdminSectionCard(
+            icon: Icons.people_outline,
+            title: l10n.adminUsersSection,
+            subtitle: l10n.adminUsersSectionDesc,
+            onTap: () {
+              Navigator.of(context).push(
+                analyticsMaterialRoute<void>(
+                  screenName: AnalyticsScreenNames.adminUsers,
+                  builder: (_) => const AdminUsersScreen(),
+                ),
+              );
+            },
+          ),
+          const SizedBox(height: 12),
+          _AdminSectionCard(
+            icon: Icons.sports_soccer_outlined,
+            title: l10n.adminPlayersSection,
+            subtitle: l10n.adminPlayersSectionDesc,
+            onTap: () {
+              Navigator.of(context).push(
+                analyticsMaterialRoute<void>(
+                  screenName: AnalyticsScreenNames.adminPlayers,
+                  builder: (_) => const AdminPlayersScreen(),
+                ),
+              );
+            },
+          ),
+          const SizedBox(height: 12),
           _AdminSectionCard(
             icon: Icons.local_offer_outlined,
             title: l10n.adminPromoCodesSection,

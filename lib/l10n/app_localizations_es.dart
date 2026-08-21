@@ -6127,6 +6127,156 @@ class AppLocalizationsEs extends AppLocalizations {
       'Herramientas de administración de la plataforma.';
 
   @override
+  String get adminUsersSection => 'Usuarios';
+
+  @override
+  String get adminUsersSectionDesc =>
+      'Listar cuentas, ver y asociar jugadores.';
+
+  @override
+  String get adminUsersTitle => 'Usuarios';
+
+  @override
+  String get adminUsersSearchHint => 'Buscar (email, nombre, apellido)';
+
+  @override
+  String get adminUsersLoadError => 'No se pudieron cargar los usuarios.';
+
+  @override
+  String get adminUsersEmpty => 'Aún no hay usuarios.';
+
+  @override
+  String get adminUsersSearchEmpty =>
+      'Ningún usuario coincide con la búsqueda.';
+
+  @override
+  String adminUsersPlayerCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      zero: 'Ningún jugador',
+      one: '1 jugador',
+      other: '$count jugadores',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get adminUsersPlayersTitle => 'Jugadores asociados';
+
+  @override
+  String get adminUsersPlayersLoadError =>
+      'No se pudieron cargar los jugadores asociados.';
+
+  @override
+  String get adminUsersPlayersEmpty =>
+      'Ningún jugador asociado a este usuario.';
+
+  @override
+  String get adminUsersAssociatePlayerFab => 'Asociar un jugador';
+
+  @override
+  String get adminUsersAssociatePlayerTitle => 'Asociar un jugador';
+
+  @override
+  String get adminUsersAssociateSuccess => 'Jugador asociado.';
+
+  @override
+  String get adminUsersAssociateFailed => 'No se pudo asociar el jugador.';
+
+  @override
+  String get adminUsersPasswordResetTooltip => 'Renovar la contraseña';
+
+  @override
+  String get adminUsersPasswordResetConfirmTitle => '¿Renovar la contraseña?';
+
+  @override
+  String adminUsersPasswordResetConfirmMessage(String email) {
+    return 'Se enviará un correo de restablecimiento a $email.';
+  }
+
+  @override
+  String get adminUsersPasswordResetConfirmAction => 'Enviar';
+
+  @override
+  String get adminUsersPasswordResetSent =>
+      'Correo de restablecimiento enviado.';
+
+  @override
+  String get adminUsersPasswordResetNoEmail =>
+      'Este usuario no tiene dirección de correo.';
+
+  @override
+  String get adminUsersPasswordResetInvalidEmail =>
+      'Dirección de correo no válida.';
+
+  @override
+  String get adminUsersPasswordResetUserNotFound =>
+      'No se encontró cuenta Auth para este correo.';
+
+  @override
+  String get adminUsersPasswordResetFailed =>
+      'No se pudo enviar el correo de restablecimiento.';
+
+  @override
+  String get adminPlayersSection => 'Jugadores';
+
+  @override
+  String get adminPlayersSectionDesc =>
+      'Listar jugadores, ver y asociar usuarios.';
+
+  @override
+  String get adminPlayersTitle => 'Jugadores';
+
+  @override
+  String get adminPlayersSearchHint => 'Buscar (nombre, apellido, email)';
+
+  @override
+  String get adminPlayersLoadError => 'No se pudieron cargar los jugadores.';
+
+  @override
+  String get adminPlayersEmpty => 'Aún no hay jugadores.';
+
+  @override
+  String get adminPlayersSearchEmpty =>
+      'Ningún jugador coincide con la búsqueda.';
+
+  @override
+  String adminPlayersUserCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      zero: 'Ningún usuario',
+      one: '1 usuario',
+      other: '$count usuarios',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get adminPlayersUsersTitle => 'Usuarios asociados';
+
+  @override
+  String get adminPlayersUsersLoadError =>
+      'No se pudieron cargar los usuarios asociados.';
+
+  @override
+  String get adminPlayersUsersEmpty =>
+      'Ningún usuario asociado a este jugador.';
+
+  @override
+  String get adminPlayersAddUserFab => 'Añadir un usuario';
+
+  @override
+  String get adminPlayersAddUserTitle => 'Añadir un usuario';
+
+  @override
+  String get adminPlayersAssociateSuccess => 'Usuario asociado.';
+
+  @override
+  String get adminPlayersAssociateFailed => 'No se pudo asociar el usuario.';
+
+  @override
   String get adminPromoCodesSection => 'Códigos promo';
 
   @override

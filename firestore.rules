@@ -356,36 +356,45 @@ service cloud.firestore {
         && request.resource.data.users is list
         && request.auth.uid in request.resource.data.users;
 
-      allow read: if request.auth != null
-        && resource.data.users is list
-        && request.auth.uid in resource.data.users;
+      allow read: if isRootUser()
+        || (
+          request.auth != null
+          && resource.data.users is list
+          && request.auth.uid in resource.data.users
+        );
 
-      allow delete: if request.auth != null
-        && resource.data.creatorUserId == request.auth.uid
-        && resource.data.users is list
-        && resource.data.users.size() == 1
-        && request.auth.uid in resource.data.users;
+      allow delete: if isRootUser()
+        || (
+          request.auth != null
+          && resource.data.creatorUserId == request.auth.uid
+          && resource.data.users is list
+          && resource.data.users.size() == 1
+          && request.auth.uid in resource.data.users
+        );
 
-      allow update: if request.auth != null
-        && (
-          (resource.data.users is list && request.auth.uid in resource.data.users)
-          || (
-            request.resource.data.diff(resource.data).affectedKeys().hasOnly(['users'])
-            && request.resource.data.users is list
-            && request.auth.uid in request.resource.data.users
-            && !(request.auth.uid in resource.data.get('users', []))
-          )
-          || (
-            request.resource.data.diff(resource.data).affectedKeys().hasOnly(['keyMember'])
-            && resource.data.users is list
-            && request.auth.uid in resource.data.users
-          )
-          || (
-            request.resource.data.diff(resource.data).affectedKeys().hasOnly(['users', 'userID'])
-            && resource.data.users is list
-            && request.auth.uid in resource.data.users
-            && request.resource.data.users is list
-            && !(request.auth.uid in request.resource.data.users)
+      allow update: if isRootUser()
+        || (
+          request.auth != null
+          && (
+            (resource.data.users is list && request.auth.uid in resource.data.users)
+            || (
+              request.resource.data.diff(resource.data).affectedKeys().hasOnly(['users'])
+              && request.resource.data.users is list
+              && request.auth.uid in request.resource.data.users
+              && !(request.auth.uid in resource.data.get('users', []))
+            )
+            || (
+              request.resource.data.diff(resource.data).affectedKeys().hasOnly(['keyMember'])
+              && resource.data.users is list
+              && request.auth.uid in resource.data.users
+            )
+            || (
+              request.resource.data.diff(resource.data).affectedKeys().hasOnly(['users', 'userID'])
+              && resource.data.users is list
+              && request.auth.uid in resource.data.users
+              && request.resource.data.users is list
+              && !(request.auth.uid in request.resource.data.users)
+            )
           )
         );
     }

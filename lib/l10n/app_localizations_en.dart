@@ -6045,6 +6045,153 @@ class AppLocalizationsEn extends AppLocalizations {
   String get adminSubtitle => 'Platform administration tools.';
 
   @override
+  String get adminUsersSection => 'Users';
+
+  @override
+  String get adminUsersSectionDesc =>
+      'List accounts, view and associate players.';
+
+  @override
+  String get adminUsersTitle => 'Users';
+
+  @override
+  String get adminUsersSearchHint => 'Search (email, first name, last name)';
+
+  @override
+  String get adminUsersLoadError => 'Unable to load users.';
+
+  @override
+  String get adminUsersEmpty => 'No users yet.';
+
+  @override
+  String get adminUsersSearchEmpty => 'No users match this search.';
+
+  @override
+  String adminUsersPlayerCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      zero: 'No players',
+      one: '1 player',
+      other: '$count players',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get adminUsersPlayersTitle => 'Associated players';
+
+  @override
+  String get adminUsersPlayersLoadError =>
+      'Unable to load associated players.';
+
+  @override
+  String get adminUsersPlayersEmpty =>
+      'No players associated with this user.';
+
+  @override
+  String get adminUsersAssociatePlayerFab => 'Associate a player';
+
+  @override
+  String get adminUsersAssociatePlayerTitle => 'Associate a player';
+
+  @override
+  String get adminUsersAssociateSuccess => 'Player associated.';
+
+  @override
+  String get adminUsersAssociateFailed => 'Unable to associate the player.';
+
+  @override
+  String get adminUsersPasswordResetTooltip => 'Renew password';
+
+  @override
+  String get adminUsersPasswordResetConfirmTitle => 'Renew password?';
+
+  @override
+  String adminUsersPasswordResetConfirmMessage(String email) {
+    return 'A reset email will be sent to $email.';
+  }
+
+  @override
+  String get adminUsersPasswordResetConfirmAction => 'Send';
+
+  @override
+  String get adminUsersPasswordResetSent => 'Password reset email sent.';
+
+  @override
+  String get adminUsersPasswordResetNoEmail =>
+      'This user has no email address.';
+
+  @override
+  String get adminUsersPasswordResetInvalidEmail => 'Invalid email address.';
+
+  @override
+  String get adminUsersPasswordResetUserNotFound =>
+      'No Auth account found for this email.';
+
+  @override
+  String get adminUsersPasswordResetFailed =>
+      'Unable to send the password reset email.';
+
+  @override
+  String get adminPlayersSection => 'Players';
+
+  @override
+  String get adminPlayersSectionDesc =>
+      'List players, view and associate users.';
+
+  @override
+  String get adminPlayersTitle => 'Players';
+
+  @override
+  String get adminPlayersSearchHint =>
+      'Search (first name, last name, email)';
+
+  @override
+  String get adminPlayersLoadError => 'Unable to load players.';
+
+  @override
+  String get adminPlayersEmpty => 'No players yet.';
+
+  @override
+  String get adminPlayersSearchEmpty => 'No players match this search.';
+
+  @override
+  String adminPlayersUserCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      zero: 'No users',
+      one: '1 user',
+      other: '$count users',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get adminPlayersUsersTitle => 'Associated users';
+
+  @override
+  String get adminPlayersUsersLoadError =>
+      'Unable to load associated users.';
+
+  @override
+  String get adminPlayersUsersEmpty =>
+      'No users associated with this player.';
+
+  @override
+  String get adminPlayersAddUserFab => 'Add a user';
+
+  @override
+  String get adminPlayersAddUserTitle => 'Add a user';
+
+  @override
+  String get adminPlayersAssociateSuccess => 'User associated.';
+
+  @override
+  String get adminPlayersAssociateFailed => 'Unable to associate the user.';
+
+  @override
   String get adminPromoCodesSection => 'Promo codes';
 
   @override
