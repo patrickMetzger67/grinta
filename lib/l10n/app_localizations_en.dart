@@ -6104,6 +6104,12 @@ class AppLocalizationsEn extends AppLocalizations {
   String get adminUsersAssociateFailed => 'Unable to associate the player.';
 
   @override
+  String get adminUsersEntityLabel => 'User';
+
+  @override
+  String get adminPlayersEntityLabel => 'Player';
+
+  @override
   String get adminUsersPasswordResetTooltip => 'Renew password';
 
   @override

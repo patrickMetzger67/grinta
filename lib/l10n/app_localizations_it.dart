@@ -6169,6 +6169,12 @@ class AppLocalizationsIt extends AppLocalizations {
       'Impossibile associare il giocatore.';
 
   @override
+  String get adminUsersEntityLabel => 'Utente';
+
+  @override
+  String get adminPlayersEntityLabel => 'Giocatore';
+
+  @override
   String get adminUsersPasswordResetTooltip => 'Rinnova la password';
 
   @override

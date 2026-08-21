@@ -6195,6 +6195,12 @@ class AppLocalizationsDe extends AppLocalizations {
       'Spieler konnte nicht zugeordnet werden.';
 
   @override
+  String get adminUsersEntityLabel => 'Benutzer';
+
+  @override
+  String get adminPlayersEntityLabel => 'Spieler';
+
+  @override
   String get adminUsersPasswordResetTooltip => 'Passwort erneuern';
 
   @override

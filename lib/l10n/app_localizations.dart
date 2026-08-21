@@ -10602,6 +10602,18 @@ abstract class AppLocalizations {
   /// **'Impossible d\'associer le joueur.'**
   String get adminUsersAssociateFailed;
 
+  /// No description provided for @adminUsersEntityLabel.
+  ///
+  /// In fr, this message translates to:
+  /// **'Utilisateur'**
+  String get adminUsersEntityLabel;
+
+  /// No description provided for @adminPlayersEntityLabel.
+  ///
+  /// In fr, this message translates to:
+  /// **'Joueur'**
+  String get adminPlayersEntityLabel;
+
   /// No description provided for @adminUsersPasswordResetTooltip.
   ///
   /// In fr, this message translates to:
