@@ -10563,8 +10563,8 @@ abstract class AppLocalizations {
   /// No description provided for @adminUsersPlayersTitle.
   ///
   /// In fr, this message translates to:
-  /// **'Joueurs associés'**
-  String get adminUsersPlayersTitle;
+  /// **'Liste des joueurs associés à l\'utilisateur {name}'**
+  String adminUsersPlayersTitle(String name);
 
   /// No description provided for @adminUsersPlayersLoadError.
   ///
@@ -10707,8 +10707,8 @@ abstract class AppLocalizations {
   /// No description provided for @adminPlayersUsersTitle.
   ///
   /// In fr, this message translates to:
-  /// **'Utilisateurs associés'**
-  String get adminPlayersUsersTitle;
+  /// **'Liste des utilisateurs associés au joueur {name}'**
+  String adminPlayersUsersTitle(String name);
 
   /// No description provided for @adminPlayersUsersLoadError.
   ///

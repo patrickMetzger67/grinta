@@ -6161,7 +6161,9 @@ class AppLocalizationsFr extends AppLocalizations {
   }
 
   @override
-  String get adminUsersPlayersTitle => 'Joueurs associés';
+  String adminUsersPlayersTitle(String name) {
+    return 'Liste des joueurs associés à l\'utilisateur $name';
+  }
 
   @override
   String get adminUsersPlayersLoadError =>
@@ -6254,7 +6256,9 @@ class AppLocalizationsFr extends AppLocalizations {
   }
 
   @override
-  String get adminPlayersUsersTitle => 'Utilisateurs associés';
+  String adminPlayersUsersTitle(String name) {
+    return 'Liste des utilisateurs associés au joueur $name';
+  }
 
   @override
   String get adminPlayersUsersLoadError =>

@@ -2488,7 +2488,14 @@
       }
     }
   },
-  "adminUsersPlayersTitle": "Zugeordnete Spieler",
+  "adminUsersPlayersTitle": "Spieler verknüpft mit Benutzer {name}",
+  "@adminUsersPlayersTitle": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
   "adminUsersPlayersLoadError": "Zugeordnete Spieler konnten nicht geladen werden.",
   "adminUsersPlayersEmpty": "Keine Spieler mit diesem Benutzer verknüpft.",
   "adminUsersAssociatePlayerFab": "Spieler zuordnen",
@@ -2526,7 +2533,14 @@
       }
     }
   },
-  "adminPlayersUsersTitle": "Zugeordnete Benutzer",
+  "adminPlayersUsersTitle": "Benutzer verknüpft mit Spieler {name}",
+  "@adminPlayersUsersTitle": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
   "adminPlayersUsersLoadError": "Zugeordnete Benutzer konnten nicht geladen werden.",
   "adminPlayersUsersEmpty": "Keine Benutzer mit diesem Spieler verknüpft.",
   "adminPlayersAddUserFab": "Benutzer hinzufügen",

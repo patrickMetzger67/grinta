@@ -3172,7 +3172,14 @@
       }
     }
   },
-  "adminUsersPlayersTitle": "Joueurs associés",
+  "adminUsersPlayersTitle": "Liste des joueurs associés à l'utilisateur {name}",
+  "@adminUsersPlayersTitle": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
   "adminUsersPlayersLoadError": "Impossible de charger les joueurs associés.",
   "adminUsersPlayersEmpty": "Aucun joueur associé à cet utilisateur.",
   "adminUsersAssociatePlayerFab": "Associer un joueur",
@@ -3210,7 +3217,14 @@
       }
     }
   },
-  "adminPlayersUsersTitle": "Utilisateurs associés",
+  "adminPlayersUsersTitle": "Liste des utilisateurs associés au joueur {name}",
+  "@adminPlayersUsersTitle": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
   "adminPlayersUsersLoadError": "Impossible de charger les utilisateurs associés.",
   "adminPlayersUsersEmpty": "Aucun utilisateur associé à ce joueur.",
   "adminPlayersAddUserFab": "Ajouter un utilisateur",
