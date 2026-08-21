@@ -3205,6 +3205,11 @@ class _TeamDetailScreenState extends State<TeamDetailScreen> {
     return Tooltip(
       message: _resendInvitationTooltip(l10n, row),
       child: OutlinedButton.icon(
+        style: OutlinedButton.styleFrom(
+          visualDensity: VisualDensity.compact,
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+          tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+        ),
         onPressed:
             enabled ? () => _onResendInvitationPressed(context, row) : null,
         icon: loading
@@ -3217,7 +3222,11 @@ class _TeamDetailScreenState extends State<TeamDetailScreen> {
                 ),
               )
             : const Icon(Icons.mail_outline_rounded, size: 18),
-        label: Text(l10n.resendInvitationAction),
+        label: Text(
+          l10n.resendInvitationAction,
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+        ),
       ),
     );
   }
