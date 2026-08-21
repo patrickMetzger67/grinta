@@ -118,10 +118,13 @@ class _AdminPlayerUsersScreenState extends State<AdminPlayerUsersScreen> {
               Padding(
                 padding: const EdgeInsets.fromLTRB(16, 8, 16, 12),
                 child: Material(
-                  color: colors.card,
+                  color: colors.primary.withValues(alpha: 0.16),
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(16),
-                    side: BorderSide(color: colors.border),
+                    side: BorderSide(
+                      color: colors.primary.withValues(alpha: 0.55),
+                      width: 1.5,
+                    ),
                   ),
                   child: Padding(
                     padding: const EdgeInsets.all(16),
@@ -133,6 +136,14 @@ class _AdminPlayerUsersScreenState extends State<AdminPlayerUsersScreen> {
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
+                              Text(
+                                l10n.adminPlayersEntityLabel,
+                                style: textTheme.labelMedium?.copyWith(
+                                  color: colors.primary,
+                                  fontWeight: FontWeight.w700,
+                                ),
+                              ),
+                              const SizedBox(height: 2),
                               Text(
                                 playerDisplayName(
                                   current,

@@ -2502,6 +2502,8 @@
   "adminUsersAssociatePlayerTitle": "Spieler zuordnen",
   "adminUsersAssociateSuccess": "Spieler zugeordnet.",
   "adminUsersAssociateFailed": "Spieler konnte nicht zugeordnet werden.",
+  "adminUsersEntityLabel": "Benutzer",
+  "adminPlayersEntityLabel": "Spieler",
   "adminUsersPasswordResetTooltip": "Passwort erneuern",
   "adminUsersPasswordResetConfirmTitle": "Passwort erneuern?",
   "adminUsersPasswordResetConfirmMessage": "Eine Zurücksetzungs-E-Mail wird an {email} gesendet.",

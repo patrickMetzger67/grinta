@@ -3186,6 +3186,8 @@
   "adminUsersAssociatePlayerTitle": "Associer un joueur",
   "adminUsersAssociateSuccess": "Joueur associé.",
   "adminUsersAssociateFailed": "Impossible d'associer le joueur.",
+  "adminUsersEntityLabel": "Utilisateur",
+  "adminPlayersEntityLabel": "Joueur",
   "adminUsersPasswordResetTooltip": "Renouveler le mot de passe",
   "adminUsersPasswordResetConfirmTitle": "Renouveler le mot de passe ?",
   "adminUsersPasswordResetConfirmMessage": "Un e-mail de réinitialisation sera envoyé à {email}.",

@@ -2502,6 +2502,8 @@
   "adminUsersAssociatePlayerTitle": "Associa un giocatore",
   "adminUsersAssociateSuccess": "Giocatore associato.",
   "adminUsersAssociateFailed": "Impossibile associare il giocatore.",
+  "adminUsersEntityLabel": "Utente",
+  "adminPlayersEntityLabel": "Giocatore",
   "adminUsersPasswordResetTooltip": "Rinnova la password",
   "adminUsersPasswordResetConfirmTitle": "Rinnovare la password?",
   "adminUsersPasswordResetConfirmMessage": "Verrà inviata un'email di reimpostazione a {email}.",

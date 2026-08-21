@@ -2780,6 +2780,8 @@
   "adminUsersAssociatePlayerTitle": "Associate a player",
   "adminUsersAssociateSuccess": "Player associated.",
   "adminUsersAssociateFailed": "Unable to associate the player.",
+  "adminUsersEntityLabel": "User",
+  "adminPlayersEntityLabel": "Player",
   "adminUsersPasswordResetTooltip": "Renew password",
   "adminUsersPasswordResetConfirmTitle": "Renew password?",
   "adminUsersPasswordResetConfirmMessage": "A reset email will be sent to {email}.",
