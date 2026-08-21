@@ -6,6 +6,7 @@ import 'package:grinta/analytics/analytics_screen_names.dart';
 import 'package:grinta/core/extensions/l10n_extension.dart';
 import 'package:grinta/model/player.dart';
 import 'package:grinta/screen/admin/admin_user_players_screen.dart';
+import 'package:grinta/services/password_reset_service.dart';
 import 'package:grinta/services/playerService.dart';
 import 'package:grinta/services/userService.dart';
 import 'package:grinta/util/app_theme.dart';
@@ -22,9 +23,11 @@ class AdminUsersScreen extends StatefulWidget {
 class _AdminUsersScreenState extends State<AdminUsersScreen> {
   final UserService _userService = UserService();
   final PlayerService _playerService = PlayerService();
+  final PasswordResetService _passwordResetService = PasswordResetService();
   final TextEditingController _searchController = TextEditingController();
   Timer? _debounce;
   String _query = '';
+  String? _resettingUid;
 
   @override
   void initState() {
@@ -64,6 +67,65 @@ class _AdminUsersScreenState extends State<AdminUsersScreen> {
         builder: (_) => AdminUserPlayersScreen(user: user),
       ),
     );
+  }
+
+  Future<void> _renewPassword(UserProfile user) async {
+    final email = user.email.trim();
+    if (email.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(context.l10n.adminUsersPasswordResetNoEmail)),
+      );
+      return;
+    }
+
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) {
+        final l10n = dialogContext.l10n;
+        return AlertDialog(
+          title: Text(l10n.adminUsersPasswordResetConfirmTitle),
+          content: Text(l10n.adminUsersPasswordResetConfirmMessage(email)),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(dialogContext, false),
+              child: Text(l10n.actionCancel),
+            ),
+            FilledButton(
+              onPressed: () => Navigator.pop(dialogContext, true),
+              child: Text(l10n.adminUsersPasswordResetConfirmAction),
+            ),
+          ],
+        );
+      },
+    );
+    if (confirmed != true || !mounted) return;
+
+    setState(() => _resettingUid = user.uid);
+    try {
+      final locale = Localizations.localeOf(context).languageCode;
+      final result = await _passwordResetService.sendResetEmail(
+        email: email,
+        locale: locale,
+      );
+      if (!mounted) return;
+
+      final message = switch (result) {
+        PasswordResetResult.sent => context.l10n.adminUsersPasswordResetSent,
+        PasswordResetResult.invalidEmail =>
+          context.l10n.adminUsersPasswordResetInvalidEmail,
+        PasswordResetResult.userNotFound =>
+          context.l10n.adminUsersPasswordResetUserNotFound,
+        PasswordResetResult.failed =>
+          context.l10n.adminUsersPasswordResetFailed,
+      };
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(message)),
+      );
+    } finally {
+      if (mounted) {
+        setState(() => _resettingUid = null);
+      }
+    }
   }
 
   @override
@@ -171,7 +233,9 @@ class _AdminUsersScreenState extends State<AdminUsersScreen> {
                         return _AdminUserCard(
                           user: user,
                           playerCount: counts[user.uid] ?? 0,
+                          isResetting: _resettingUid == user.uid,
                           onTap: () => _openUserPlayers(user),
+                          onRenewPassword: () => _renewPassword(user),
                         );
                       },
                     );
@@ -190,12 +254,16 @@ class _AdminUserCard extends StatelessWidget {
   const _AdminUserCard({
     required this.user,
     required this.playerCount,
+    required this.isResetting,
     required this.onTap,
+    required this.onRenewPassword,
   });
 
   final UserProfile user;
   final int playerCount;
+  final bool isResetting;
   final VoidCallback onTap;
+  final VoidCallback onRenewPassword;
 
   @override
   Widget build(BuildContext context) {
@@ -252,6 +320,23 @@ class _AdminUserCard extends StatelessWidget {
                     ),
                   ],
                 ),
+              ),
+              IconButton(
+                tooltip: l10n.adminUsersPasswordResetTooltip,
+                onPressed: isResetting ? null : onRenewPassword,
+                icon: isResetting
+                    ? SizedBox(
+                        width: 20,
+                        height: 20,
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2,
+                          color: colors.primary,
+                        ),
+                      )
+                    : Icon(
+                        Icons.lock_reset_outlined,
+                        color: colors.primary,
+                      ),
               ),
               Icon(Icons.chevron_right_rounded, color: colors.textSecondary),
             ],

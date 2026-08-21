@@ -6167,6 +6167,99 @@ class AppLocalizationsIt extends AppLocalizations {
       'Impossibile associare il giocatore.';
 
   @override
+  String get adminUsersPasswordResetTooltip => 'Rinnova la password';
+
+  @override
+  String get adminUsersPasswordResetConfirmTitle => 'Rinnovare la password?';
+
+  @override
+  String adminUsersPasswordResetConfirmMessage(String email) {
+    return 'Verrà inviata un\'email di reimpostazione a $email.';
+  }
+
+  @override
+  String get adminUsersPasswordResetConfirmAction => 'Invia';
+
+  @override
+  String get adminUsersPasswordResetSent =>
+      'Email di reimpostazione inviata.';
+
+  @override
+  String get adminUsersPasswordResetNoEmail =>
+      'Questo utente non ha un indirizzo email.';
+
+  @override
+  String get adminUsersPasswordResetInvalidEmail =>
+      'Indirizzo email non valido.';
+
+  @override
+  String get adminUsersPasswordResetUserNotFound =>
+      'Nessun account Auth trovato per questa email.';
+
+  @override
+  String get adminUsersPasswordResetFailed =>
+      'Impossibile inviare l\'email di reimpostazione.';
+
+  @override
+  String get adminPlayersSection => 'Giocatori';
+
+  @override
+  String get adminPlayersSectionDesc =>
+      'Elenca i giocatori, consulta e associa gli utenti.';
+
+  @override
+  String get adminPlayersTitle => 'Giocatori';
+
+  @override
+  String get adminPlayersSearchHint => 'Cerca (nome, cognome, email)';
+
+  @override
+  String get adminPlayersLoadError => 'Impossibile caricare i giocatori.';
+
+  @override
+  String get adminPlayersEmpty => 'Nessun giocatore al momento.';
+
+  @override
+  String get adminPlayersSearchEmpty =>
+      'Nessun giocatore corrisponde alla ricerca.';
+
+  @override
+  String adminPlayersUserCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      zero: 'Nessun utente',
+      one: '1 utente',
+      other: '$count utenti',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get adminPlayersUsersTitle => 'Utenti associati';
+
+  @override
+  String get adminPlayersUsersLoadError =>
+      'Impossibile caricare gli utenti associati.';
+
+  @override
+  String get adminPlayersUsersEmpty =>
+      'Nessun utente associato a questo giocatore.';
+
+  @override
+  String get adminPlayersAddUserFab => 'Aggiungi un utente';
+
+  @override
+  String get adminPlayersAddUserTitle => 'Aggiungi un utente';
+
+  @override
+  String get adminPlayersAssociateSuccess => 'Utente associato.';
+
+  @override
+  String get adminPlayersAssociateFailed =>
+      'Impossibile associare l\'utente.';
+
+  @override
   String get adminPromoCodesSection => 'Codici promo';
 
   @override

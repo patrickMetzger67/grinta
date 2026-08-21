@@ -59,6 +59,8 @@ abstract final class AnalyticsScreenNames {
   static const admin = 'admin';
   static const adminUsers = 'admin_users';
   static const adminUserPlayers = 'admin_user_players';
+  static const adminPlayers = 'admin_players';
+  static const adminPlayerUsers = 'admin_player_users';
   static const adminPromoCodes = 'admin_promo_codes';
   static const adminTrackerOwners = 'admin_tracker_owners';
   static const adminTrackerDevices = 'admin_tracker_devices';

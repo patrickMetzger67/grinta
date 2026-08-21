@@ -3179,6 +3179,44 @@
   "adminUsersAssociatePlayerTitle": "Associer un joueur",
   "adminUsersAssociateSuccess": "Joueur associé.",
   "adminUsersAssociateFailed": "Impossible d'associer le joueur.",
+  "adminUsersPasswordResetTooltip": "Renouveler le mot de passe",
+  "adminUsersPasswordResetConfirmTitle": "Renouveler le mot de passe ?",
+  "adminUsersPasswordResetConfirmMessage": "Un e-mail de réinitialisation sera envoyé à {email}.",
+  "@adminUsersPasswordResetConfirmMessage": {
+    "placeholders": {
+      "email": {
+        "type": "String"
+      }
+    }
+  },
+  "adminUsersPasswordResetConfirmAction": "Envoyer",
+  "adminUsersPasswordResetSent": "E-mail de réinitialisation envoyé.",
+  "adminUsersPasswordResetNoEmail": "Cet utilisateur n'a pas d'adresse e-mail.",
+  "adminUsersPasswordResetInvalidEmail": "Adresse e-mail invalide.",
+  "adminUsersPasswordResetUserNotFound": "Aucun compte Auth trouvé pour cet e-mail.",
+  "adminUsersPasswordResetFailed": "Impossible d'envoyer l'e-mail de réinitialisation.",
+  "adminPlayersSection": "Joueurs",
+  "adminPlayersSectionDesc": "Lister les joueurs, consulter et associer des utilisateurs.",
+  "adminPlayersTitle": "Joueurs",
+  "adminPlayersSearchHint": "Rechercher (prénom, nom, email)",
+  "adminPlayersLoadError": "Impossible de charger les joueurs.",
+  "adminPlayersEmpty": "Aucun joueur pour le moment.",
+  "adminPlayersSearchEmpty": "Aucun joueur ne correspond à la recherche.",
+  "adminPlayersUserCount": "{count, plural, =0{Aucun utilisateur} =1{1 utilisateur} other{{count} utilisateurs}}",
+  "@adminPlayersUserCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "adminPlayersUsersTitle": "Utilisateurs associés",
+  "adminPlayersUsersLoadError": "Impossible de charger les utilisateurs associés.",
+  "adminPlayersUsersEmpty": "Aucun utilisateur associé à ce joueur.",
+  "adminPlayersAddUserFab": "Ajouter un utilisateur",
+  "adminPlayersAddUserTitle": "Ajouter un utilisateur",
+  "adminPlayersAssociateSuccess": "Utilisateur associé.",
+  "adminPlayersAssociateFailed": "Impossible d'associer l'utilisateur.",
   "adminPromoCodesSection": "Codes promo",
   "adminPromoCodesSectionDesc": "Créer et gérer les codes promo d'abonnement.",
   "adminPromoCodesTitle": "Codes promo",

@@ -10602,6 +10602,150 @@ abstract class AppLocalizations {
   /// **'Impossible d\'associer le joueur.'**
   String get adminUsersAssociateFailed;
 
+  /// No description provided for @adminUsersPasswordResetTooltip.
+  ///
+  /// In fr, this message translates to:
+  /// **'Renouveler le mot de passe'**
+  String get adminUsersPasswordResetTooltip;
+
+  /// No description provided for @adminUsersPasswordResetConfirmTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Renouveler le mot de passe ?'**
+  String get adminUsersPasswordResetConfirmTitle;
+
+  /// No description provided for @adminUsersPasswordResetConfirmMessage.
+  ///
+  /// In fr, this message translates to:
+  /// **'Un e-mail de réinitialisation sera envoyé à {email}.'**
+  String adminUsersPasswordResetConfirmMessage(String email);
+
+  /// No description provided for @adminUsersPasswordResetConfirmAction.
+  ///
+  /// In fr, this message translates to:
+  /// **'Envoyer'**
+  String get adminUsersPasswordResetConfirmAction;
+
+  /// No description provided for @adminUsersPasswordResetSent.
+  ///
+  /// In fr, this message translates to:
+  /// **'E-mail de réinitialisation envoyé.'**
+  String get adminUsersPasswordResetSent;
+
+  /// No description provided for @adminUsersPasswordResetNoEmail.
+  ///
+  /// In fr, this message translates to:
+  /// **'Cet utilisateur n\'a pas d\'adresse e-mail.'**
+  String get adminUsersPasswordResetNoEmail;
+
+  /// No description provided for @adminUsersPasswordResetInvalidEmail.
+  ///
+  /// In fr, this message translates to:
+  /// **'Adresse e-mail invalide.'**
+  String get adminUsersPasswordResetInvalidEmail;
+
+  /// No description provided for @adminUsersPasswordResetUserNotFound.
+  ///
+  /// In fr, this message translates to:
+  /// **'Aucun compte Auth trouvé pour cet e-mail.'**
+  String get adminUsersPasswordResetUserNotFound;
+
+  /// No description provided for @adminUsersPasswordResetFailed.
+  ///
+  /// In fr, this message translates to:
+  /// **'Impossible d\'envoyer l\'e-mail de réinitialisation.'**
+  String get adminUsersPasswordResetFailed;
+
+  /// No description provided for @adminPlayersSection.
+  ///
+  /// In fr, this message translates to:
+  /// **'Joueurs'**
+  String get adminPlayersSection;
+
+  /// No description provided for @adminPlayersSectionDesc.
+  ///
+  /// In fr, this message translates to:
+  /// **'Lister les joueurs, consulter et associer des utilisateurs.'**
+  String get adminPlayersSectionDesc;
+
+  /// No description provided for @adminPlayersTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Joueurs'**
+  String get adminPlayersTitle;
+
+  /// No description provided for @adminPlayersSearchHint.
+  ///
+  /// In fr, this message translates to:
+  /// **'Rechercher (prénom, nom, email)'**
+  String get adminPlayersSearchHint;
+
+  /// No description provided for @adminPlayersLoadError.
+  ///
+  /// In fr, this message translates to:
+  /// **'Impossible de charger les joueurs.'**
+  String get adminPlayersLoadError;
+
+  /// No description provided for @adminPlayersEmpty.
+  ///
+  /// In fr, this message translates to:
+  /// **'Aucun joueur pour le moment.'**
+  String get adminPlayersEmpty;
+
+  /// No description provided for @adminPlayersSearchEmpty.
+  ///
+  /// In fr, this message translates to:
+  /// **'Aucun joueur ne correspond à la recherche.'**
+  String get adminPlayersSearchEmpty;
+
+  /// No description provided for @adminPlayersUserCount.
+  ///
+  /// In fr, this message translates to:
+  /// **'{count, plural, =0{Aucun utilisateur} =1{1 utilisateur} other{{count} utilisateurs}}'**
+  String adminPlayersUserCount(int count);
+
+  /// No description provided for @adminPlayersUsersTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Utilisateurs associés'**
+  String get adminPlayersUsersTitle;
+
+  /// No description provided for @adminPlayersUsersLoadError.
+  ///
+  /// In fr, this message translates to:
+  /// **'Impossible de charger les utilisateurs associés.'**
+  String get adminPlayersUsersLoadError;
+
+  /// No description provided for @adminPlayersUsersEmpty.
+  ///
+  /// In fr, this message translates to:
+  /// **'Aucun utilisateur associé à ce joueur.'**
+  String get adminPlayersUsersEmpty;
+
+  /// No description provided for @adminPlayersAddUserFab.
+  ///
+  /// In fr, this message translates to:
+  /// **'Ajouter un utilisateur'**
+  String get adminPlayersAddUserFab;
+
+  /// No description provided for @adminPlayersAddUserTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Ajouter un utilisateur'**
+  String get adminPlayersAddUserTitle;
+
+  /// No description provided for @adminPlayersAssociateSuccess.
+  ///
+  /// In fr, this message translates to:
+  /// **'Utilisateur associé.'**
+  String get adminPlayersAssociateSuccess;
+
+  /// No description provided for @adminPlayersAssociateFailed.
+  ///
+  /// In fr, this message translates to:
+  /// **'Impossible d\'associer l\'utilisateur.'**
+  String get adminPlayersAssociateFailed;
+
   /// No description provided for @adminPromoCodesSection.
   ///
   /// In fr, this message translates to:

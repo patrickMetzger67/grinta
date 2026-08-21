@@ -2495,6 +2495,44 @@
   "adminUsersAssociatePlayerTitle": "Spieler zuordnen",
   "adminUsersAssociateSuccess": "Spieler zugeordnet.",
   "adminUsersAssociateFailed": "Spieler konnte nicht zugeordnet werden.",
+  "adminUsersPasswordResetTooltip": "Passwort erneuern",
+  "adminUsersPasswordResetConfirmTitle": "Passwort erneuern?",
+  "adminUsersPasswordResetConfirmMessage": "Eine Zurücksetzungs-E-Mail wird an {email} gesendet.",
+  "@adminUsersPasswordResetConfirmMessage": {
+    "placeholders": {
+      "email": {
+        "type": "String"
+      }
+    }
+  },
+  "adminUsersPasswordResetConfirmAction": "Senden",
+  "adminUsersPasswordResetSent": "Zurücksetzungs-E-Mail gesendet.",
+  "adminUsersPasswordResetNoEmail": "Dieser Benutzer hat keine E-Mail-Adresse.",
+  "adminUsersPasswordResetInvalidEmail": "Ungültige E-Mail-Adresse.",
+  "adminUsersPasswordResetUserNotFound": "Kein Auth-Konto für diese E-Mail gefunden.",
+  "adminUsersPasswordResetFailed": "Zurücksetzungs-E-Mail konnte nicht gesendet werden.",
+  "adminPlayersSection": "Spieler",
+  "adminPlayersSectionDesc": "Spieler auflisten, Benutzer anzeigen und zuordnen.",
+  "adminPlayersTitle": "Spieler",
+  "adminPlayersSearchHint": "Suchen (Vorname, Nachname, E-Mail)",
+  "adminPlayersLoadError": "Spieler konnten nicht geladen werden.",
+  "adminPlayersEmpty": "Noch keine Spieler.",
+  "adminPlayersSearchEmpty": "Keine Spieler entsprechen der Suche.",
+  "adminPlayersUserCount": "{count, plural, =0{Keine Benutzer} =1{1 Benutzer} other{{count} Benutzer}}",
+  "@adminPlayersUserCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "adminPlayersUsersTitle": "Zugeordnete Benutzer",
+  "adminPlayersUsersLoadError": "Zugeordnete Benutzer konnten nicht geladen werden.",
+  "adminPlayersUsersEmpty": "Keine Benutzer mit diesem Spieler verknüpft.",
+  "adminPlayersAddUserFab": "Benutzer hinzufügen",
+  "adminPlayersAddUserTitle": "Benutzer hinzufügen",
+  "adminPlayersAssociateSuccess": "Benutzer zugeordnet.",
+  "adminPlayersAssociateFailed": "Benutzer konnte nicht zugeordnet werden.",
   "adminPromoCodesSection": "Promo-Codes",
   "adminPromoCodesSectionDesc": "Abonnement-Promo-Codes erstellen und verwalten.",
   "adminPromoCodesTitle": "Promo-Codes",
