@@ -2473,6 +2473,28 @@
   "matchDetailOpponentStats": "Stats avversario",
   "adminTitle": "Admin",
   "adminSubtitle": "Strumenti di amministrazione della piattaforma.",
+  "adminUsersSection": "Utenti",
+  "adminUsersSectionDesc": "Elenca gli account, consulta e associa i giocatori.",
+  "adminUsersTitle": "Utenti",
+  "adminUsersSearchHint": "Cerca (email, nome, cognome)",
+  "adminUsersLoadError": "Impossibile caricare gli utenti.",
+  "adminUsersEmpty": "Nessun utente al momento.",
+  "adminUsersSearchEmpty": "Nessun utente corrisponde alla ricerca.",
+  "adminUsersPlayerCount": "{count, plural, =0{Nessun giocatore} =1{1 giocatore} other{{count} giocatori}}",
+  "@adminUsersPlayerCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "adminUsersPlayersTitle": "Giocatori associati",
+  "adminUsersPlayersLoadError": "Impossibile caricare i giocatori associati.",
+  "adminUsersPlayersEmpty": "Nessun giocatore associato a questo utente.",
+  "adminUsersAssociatePlayerFab": "Associa un giocatore",
+  "adminUsersAssociatePlayerTitle": "Associa un giocatore",
+  "adminUsersAssociateSuccess": "Giocatore associato.",
+  "adminUsersAssociateFailed": "Impossibile associare il giocatore.",
   "adminPromoCodesSection": "Codici promo",
   "adminPromoCodesSectionDesc": "Crea e gestisci i codici promo per gli abbonamenti.",
   "adminPromoCodesTitle": "Codici promo",

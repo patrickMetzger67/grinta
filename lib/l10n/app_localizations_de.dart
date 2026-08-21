@@ -6134,6 +6134,65 @@ class AppLocalizationsDe extends AppLocalizations {
   String get adminSubtitle => 'Plattform-Verwaltungstools.';
 
   @override
+  String get adminUsersSection => 'Benutzer';
+
+  @override
+  String get adminUsersSectionDesc =>
+      'Konten auflisten, Spieler anzeigen und zuordnen.';
+
+  @override
+  String get adminUsersTitle => 'Benutzer';
+
+  @override
+  String get adminUsersSearchHint => 'Suchen (E-Mail, Vorname, Nachname)';
+
+  @override
+  String get adminUsersLoadError => 'Benutzer konnten nicht geladen werden.';
+
+  @override
+  String get adminUsersEmpty => 'Noch keine Benutzer.';
+
+  @override
+  String get adminUsersSearchEmpty =>
+      'Keine Benutzer entsprechen der Suche.';
+
+  @override
+  String adminUsersPlayerCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      zero: 'Keine Spieler',
+      one: '1 Spieler',
+      other: '$count Spieler',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get adminUsersPlayersTitle => 'Zugeordnete Spieler';
+
+  @override
+  String get adminUsersPlayersLoadError =>
+      'Zugeordnete Spieler konnten nicht geladen werden.';
+
+  @override
+  String get adminUsersPlayersEmpty =>
+      'Keine Spieler mit diesem Benutzer verknüpft.';
+
+  @override
+  String get adminUsersAssociatePlayerFab => 'Spieler zuordnen';
+
+  @override
+  String get adminUsersAssociatePlayerTitle => 'Spieler zuordnen';
+
+  @override
+  String get adminUsersAssociateSuccess => 'Spieler zugeordnet.';
+
+  @override
+  String get adminUsersAssociateFailed =>
+      'Spieler konnte nicht zugeordnet werden.';
+
+  @override
   String get adminPromoCodesSection => 'Promo-Codes';
 
   @override

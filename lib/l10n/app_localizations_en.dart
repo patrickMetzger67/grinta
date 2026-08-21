@@ -6045,6 +6045,63 @@ class AppLocalizationsEn extends AppLocalizations {
   String get adminSubtitle => 'Platform administration tools.';
 
   @override
+  String get adminUsersSection => 'Users';
+
+  @override
+  String get adminUsersSectionDesc =>
+      'List accounts, view and associate players.';
+
+  @override
+  String get adminUsersTitle => 'Users';
+
+  @override
+  String get adminUsersSearchHint => 'Search (email, first name, last name)';
+
+  @override
+  String get adminUsersLoadError => 'Unable to load users.';
+
+  @override
+  String get adminUsersEmpty => 'No users yet.';
+
+  @override
+  String get adminUsersSearchEmpty => 'No users match this search.';
+
+  @override
+  String adminUsersPlayerCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      zero: 'No players',
+      one: '1 player',
+      other: '$count players',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get adminUsersPlayersTitle => 'Associated players';
+
+  @override
+  String get adminUsersPlayersLoadError =>
+      'Unable to load associated players.';
+
+  @override
+  String get adminUsersPlayersEmpty =>
+      'No players associated with this user.';
+
+  @override
+  String get adminUsersAssociatePlayerFab => 'Associate a player';
+
+  @override
+  String get adminUsersAssociatePlayerTitle => 'Associate a player';
+
+  @override
+  String get adminUsersAssociateSuccess => 'Player associated.';
+
+  @override
+  String get adminUsersAssociateFailed => 'Unable to associate the player.';
+
+  @override
   String get adminPromoCodesSection => 'Promo codes';
 
   @override

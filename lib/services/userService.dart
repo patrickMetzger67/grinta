@@ -44,6 +44,7 @@ class UserProfile {
   final String firstName;
   final String lastName;
   final String email;
+  final String photoURL;
   final bool isRoot;
 
   const UserProfile({
@@ -51,8 +52,58 @@ class UserProfile {
     required this.firstName,
     required this.lastName,
     required this.email,
+    this.photoURL = '',
     this.isRoot = false,
   });
+
+  String get displayFirstName {
+    if (firstName.trim().isNotEmpty) return firstName.trim();
+    if (lastName.trim().isNotEmpty) return lastName.trim();
+    if (email.trim().isNotEmpty) return email.trim();
+    return uid;
+  }
+
+  String get displayName {
+    final first = firstName.trim();
+    final last = lastName.trim();
+    if (first.isNotEmpty && last.isNotEmpty) return '$first $last';
+    if (first.isNotEmpty) return first;
+    if (last.isNotEmpty) return last;
+    if (email.trim().isNotEmpty) return email.trim();
+    return uid;
+  }
+
+  String get initials {
+    final first = firstName.trim();
+    final last = lastName.trim();
+    if (first.isNotEmpty && last.isNotEmpty) {
+      return '${first[0]}${last[0]}'.toUpperCase();
+    }
+    final fallback = displayFirstName;
+    if (fallback.isEmpty) return '?';
+    return fallback.substring(0, 1).toUpperCase();
+  }
+
+  bool matchesSearch(String query) {
+    final tokens = query
+        .trim()
+        .toLowerCase()
+        .split(RegExp(r'\s+'))
+        .where((token) => token.isNotEmpty)
+        .toList();
+    if (tokens.isEmpty) return true;
+
+    final haystacks = <String>[
+      email.trim().toLowerCase(),
+      firstName.trim().toLowerCase(),
+      lastName.trim().toLowerCase(),
+      displayName.toLowerCase(),
+    ].where((value) => value.isNotEmpty);
+
+    return tokens.every(
+      (token) => haystacks.any((value) => value.contains(token)),
+    );
+  }
 }
 
 class UserService {
@@ -92,15 +143,50 @@ class UserService {
   Future<UserProfile?> getById(String uid) async {
     final doc = await _collection.doc(uid).get();
     if (!doc.exists) return null;
+    return userProfileFromSnapshot(doc);
+  }
 
+  /// Live list of all app accounts (`users/{uid}`).
+  Stream<List<UserProfile>> streamUsers() {
+    return _collection.snapshots().map((snapshot) {
+      final users = snapshot.docs
+          .map(userProfileFromSnapshot)
+          .toList(growable: false);
+      users.sort((a, b) {
+        final byLast = a.lastName.toLowerCase().compareTo(
+          b.lastName.toLowerCase(),
+        );
+        if (byLast != 0) return byLast;
+        final byFirst = a.firstName.toLowerCase().compareTo(
+          b.firstName.toLowerCase(),
+        );
+        if (byFirst != 0) return byFirst;
+        return a.email.toLowerCase().compareTo(b.email.toLowerCase());
+      });
+      return users;
+    });
+  }
+
+  UserProfile userProfileFromSnapshot(
+    DocumentSnapshot<Map<String, dynamic>> doc,
+  ) {
     final data = doc.data() ?? {};
     return UserProfile(
-      uid: uid,
+      uid: doc.id,
       firstName: _readNameField(data, 'firstName', 'firstname'),
       lastName: _readNameField(data, 'lastName', 'lastname'),
-      email: data['email']?.toString() ?? '',
+      email: data[UserDocumentFields.email]?.toString() ?? '',
+      photoURL: _readPhotoUrl(data),
       isRoot: data[UserDocumentFields.isRoot] == true,
     );
+  }
+
+  String _readPhotoUrl(Map<String, dynamic> data) {
+    for (final key in ['photoURL', 'photo', 'image']) {
+      final value = data[key]?.toString().trim();
+      if (value != null && value.isNotEmpty) return value;
+    }
+    return '';
   }
 
   String _readNameField(

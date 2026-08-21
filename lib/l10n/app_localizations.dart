@@ -10512,6 +10512,96 @@ abstract class AppLocalizations {
   /// **'Outils d\'administration de la plateforme.'**
   String get adminSubtitle;
 
+  /// No description provided for @adminUsersSection.
+  ///
+  /// In fr, this message translates to:
+  /// **'Utilisateurs'**
+  String get adminUsersSection;
+
+  /// No description provided for @adminUsersSectionDesc.
+  ///
+  /// In fr, this message translates to:
+  /// **'Lister les comptes, consulter et associer des joueurs.'**
+  String get adminUsersSectionDesc;
+
+  /// No description provided for @adminUsersTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Utilisateurs'**
+  String get adminUsersTitle;
+
+  /// No description provided for @adminUsersSearchHint.
+  ///
+  /// In fr, this message translates to:
+  /// **'Rechercher (email, prénom, nom)'**
+  String get adminUsersSearchHint;
+
+  /// No description provided for @adminUsersLoadError.
+  ///
+  /// In fr, this message translates to:
+  /// **'Impossible de charger les utilisateurs.'**
+  String get adminUsersLoadError;
+
+  /// No description provided for @adminUsersEmpty.
+  ///
+  /// In fr, this message translates to:
+  /// **'Aucun utilisateur pour le moment.'**
+  String get adminUsersEmpty;
+
+  /// No description provided for @adminUsersSearchEmpty.
+  ///
+  /// In fr, this message translates to:
+  /// **'Aucun utilisateur ne correspond à la recherche.'**
+  String get adminUsersSearchEmpty;
+
+  /// No description provided for @adminUsersPlayerCount.
+  ///
+  /// In fr, this message translates to:
+  /// **'{count, plural, =0{Aucun joueur} =1{1 joueur} other{{count} joueurs}}'**
+  String adminUsersPlayerCount(int count);
+
+  /// No description provided for @adminUsersPlayersTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Joueurs associés'**
+  String get adminUsersPlayersTitle;
+
+  /// No description provided for @adminUsersPlayersLoadError.
+  ///
+  /// In fr, this message translates to:
+  /// **'Impossible de charger les joueurs associés.'**
+  String get adminUsersPlayersLoadError;
+
+  /// No description provided for @adminUsersPlayersEmpty.
+  ///
+  /// In fr, this message translates to:
+  /// **'Aucun joueur associé à cet utilisateur.'**
+  String get adminUsersPlayersEmpty;
+
+  /// No description provided for @adminUsersAssociatePlayerFab.
+  ///
+  /// In fr, this message translates to:
+  /// **'Associer un joueur'**
+  String get adminUsersAssociatePlayerFab;
+
+  /// No description provided for @adminUsersAssociatePlayerTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Associer un joueur'**
+  String get adminUsersAssociatePlayerTitle;
+
+  /// No description provided for @adminUsersAssociateSuccess.
+  ///
+  /// In fr, this message translates to:
+  /// **'Joueur associé.'**
+  String get adminUsersAssociateSuccess;
+
+  /// No description provided for @adminUsersAssociateFailed.
+  ///
+  /// In fr, this message translates to:
+  /// **'Impossible d\'associer le joueur.'**
+  String get adminUsersAssociateFailed;
+
   /// No description provided for @adminPromoCodesSection.
   ///
   /// In fr, this message translates to:

@@ -2751,6 +2751,28 @@
   "matchDetailOpponentStats": "Opponent stats",
   "adminTitle": "Admin",
   "adminSubtitle": "Platform administration tools.",
+  "adminUsersSection": "Users",
+  "adminUsersSectionDesc": "List accounts, view and associate players.",
+  "adminUsersTitle": "Users",
+  "adminUsersSearchHint": "Search (email, first name, last name)",
+  "adminUsersLoadError": "Unable to load users.",
+  "adminUsersEmpty": "No users yet.",
+  "adminUsersSearchEmpty": "No users match this search.",
+  "adminUsersPlayerCount": "{count, plural, =0{No players} =1{1 player} other{{count} players}}",
+  "@adminUsersPlayerCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "adminUsersPlayersTitle": "Associated players",
+  "adminUsersPlayersLoadError": "Unable to load associated players.",
+  "adminUsersPlayersEmpty": "No players associated with this user.",
+  "adminUsersAssociatePlayerFab": "Associate a player",
+  "adminUsersAssociatePlayerTitle": "Associate a player",
+  "adminUsersAssociateSuccess": "Player associated.",
+  "adminUsersAssociateFailed": "Unable to associate the player.",
   "adminPromoCodesSection": "Promo codes",
   "adminPromoCodesSectionDesc": "Create and manage subscription promo codes.",
   "adminPromoCodesTitle": "Promo codes",

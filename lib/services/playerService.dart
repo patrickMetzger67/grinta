@@ -5,6 +5,7 @@ import 'package:flutter/foundation.dart';
 import '../model/player.dart';
 import '../util/member_unsubscribe.dart';
 import '../util/player_photo_resolver.dart';
+import 'user_root_service.dart';
 
 class PlayerService {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
@@ -496,6 +497,51 @@ class PlayerService {
   }) async {
     await _collection.doc(playerId).update({
       keyPlayerUsers: FieldValue.arrayUnion([userId]),
+    });
+  }
+
+  /// Admin: associate [uid] with a member (`users` arrayUnion; set `userID`
+  /// when the member has no primary link yet).
+  Future<void> adminAssociateUserToMember({
+    required String memberId,
+    required String uid,
+  }) async {
+    await UserRootService.instance.reload();
+    if (!UserRootService.instance.isRoot) {
+      throw StateError('permission-denied');
+    }
+
+    final trimmedMemberId = memberId.trim();
+    final trimmedUid = uid.trim();
+    if (trimmedMemberId.isEmpty) {
+      throw ArgumentError.value(memberId, 'memberId', 'must not be empty');
+    }
+    if (trimmedUid.isEmpty) {
+      throw ArgumentError.value(uid, 'uid', 'must not be empty');
+    }
+
+    final existing = await getPlayerById(trimmedMemberId);
+    if (existing == null) {
+      throw StateError('member-not-found');
+    }
+
+    final updates = <String, dynamic>{
+      keyPlayerUsers: FieldValue.arrayUnion([trimmedUid]),
+    };
+    final currentPrimary = existing.userID?.trim() ?? '';
+    if (currentPrimary.isEmpty) {
+      updates[keyPlayerUserID] = trimmedUid;
+    }
+
+    await _collection.doc(trimmedMemberId).update(updates);
+  }
+
+  /// Stream of all members (admin tools — client filters / aggregates).
+  Stream<List<Player>> streamAllMembers() {
+    return _collection.snapshots().map((snapshot) {
+      return snapshot.docs
+          .map((doc) => Player.fromDocumentsnapshot(doc))
+          .toList(growable: false);
     });
   }
 

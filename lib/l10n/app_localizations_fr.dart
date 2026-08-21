@@ -6125,6 +6125,66 @@ class AppLocalizationsFr extends AppLocalizations {
   String get adminSubtitle => 'Outils d\'administration de la plateforme.';
 
   @override
+  String get adminUsersSection => 'Utilisateurs';
+
+  @override
+  String get adminUsersSectionDesc =>
+      'Lister les comptes, consulter et associer des joueurs.';
+
+  @override
+  String get adminUsersTitle => 'Utilisateurs';
+
+  @override
+  String get adminUsersSearchHint => 'Rechercher (email, prénom, nom)';
+
+  @override
+  String get adminUsersLoadError =>
+      'Impossible de charger les utilisateurs.';
+
+  @override
+  String get adminUsersEmpty => 'Aucun utilisateur pour le moment.';
+
+  @override
+  String get adminUsersSearchEmpty =>
+      'Aucun utilisateur ne correspond à la recherche.';
+
+  @override
+  String adminUsersPlayerCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      zero: 'Aucun joueur',
+      one: '1 joueur',
+      other: '$count joueurs',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get adminUsersPlayersTitle => 'Joueurs associés';
+
+  @override
+  String get adminUsersPlayersLoadError =>
+      'Impossible de charger les joueurs associés.';
+
+  @override
+  String get adminUsersPlayersEmpty =>
+      'Aucun joueur associé à cet utilisateur.';
+
+  @override
+  String get adminUsersAssociatePlayerFab => 'Associer un joueur';
+
+  @override
+  String get adminUsersAssociatePlayerTitle => 'Associer un joueur';
+
+  @override
+  String get adminUsersAssociateSuccess => 'Joueur associé.';
+
+  @override
+  String get adminUsersAssociateFailed =>
+      'Impossible d\'associer le joueur.';
+
+  @override
   String get adminPromoCodesSection => 'Codes promo';
 
   @override
