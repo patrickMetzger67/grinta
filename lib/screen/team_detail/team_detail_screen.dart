@@ -3205,6 +3205,11 @@ class _TeamDetailScreenState extends State<TeamDetailScreen> {
     return Tooltip(
       message: _resendInvitationTooltip(l10n, row),
       child: OutlinedButton.icon(
+        style: OutlinedButton.styleFrom(
+          visualDensity: VisualDensity.compact,
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+          tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+        ),
         onPressed:
             enabled ? () => _onResendInvitationPressed(context, row) : null,
         icon: loading
@@ -3217,7 +3222,11 @@ class _TeamDetailScreenState extends State<TeamDetailScreen> {
                 ),
               )
             : const Icon(Icons.mail_outline_rounded, size: 18),
-        label: Text(l10n.resendInvitationAction),
+        label: Text(
+          l10n.resendInvitationAction,
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+        ),
       ),
     );
   }
@@ -4220,6 +4229,9 @@ class _TeamDetailScreenState extends State<TeamDetailScreen> {
     final l10n = context.l10n;
     final String name = _displayName(player, l10n);
     final String role = _buildStaffRoleForRow(row, l10n);
+    final bool canManageRoster = _canManageRoster(context);
+    final bool showResendInvitation =
+        canManageRoster && _shouldShowResendInvitation(context, row);
 
     return Container(
       padding: const EdgeInsets.all(18),
@@ -4230,40 +4242,45 @@ class _TeamDetailScreenState extends State<TeamDetailScreen> {
           color: colors.border.withValues(alpha: 0.75),
         ),
       ),
+      // Keep name/contact/role above the labeled resend CTA: putting
+      // OutlinedButton.icon in the same Row crushed the Expanded column
+      // on narrow mobile widths (name disappeared entirely).
       child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           PlayerPhoto(
             player: player,
           ),
           const SizedBox(width: 16),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Row(
-                        children: [
-                          Flexible(
-                            child: Text(
-                              name,
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                              style: textTheme.labelSmall?.copyWith(
-                                fontWeight: FontWeight.w800,
-                              ),
-                            ),
-                          ),
-                          ..._buildMemberStatusIcons(context, row)
-                              .expand((icon) => [const SizedBox(width: 6), icon]),
-                        ],
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    Flexible(
+                      child: Text(
+                        name,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: textTheme.labelSmall?.copyWith(
+                          fontWeight: FontWeight.w800,
+                        ),
                       ),
-                      PlayerContactLines(
-                        player: player,
-                        emailOverride:
-                            row.isGrintaRoster ? row.grintaEmail : null,
-                        phoneE164Override:
-                            row.isGrintaRoster ? row.grintaPhoneE164 : null,
-                      ),
-                      const SizedBox(height: 10),
+                    ),
+                    ..._buildMemberStatusIcons(context, row).expand(
+                      (icon) => [const SizedBox(width: 6), icon],
+                    ),
+                  ],
+                ),
+                PlayerContactLines(
+                  player: player,
+                  emailOverride:
+                      row.isGrintaRoster ? row.grintaEmail : null,
+                  phoneE164Override:
+                      row.isGrintaRoster ? row.grintaPhoneE164 : null,
+                ),
+                const SizedBox(height: 10),
                 Container(
                   padding: const EdgeInsets.symmetric(
                     horizontal: 12,
@@ -4286,15 +4303,15 @@ class _TeamDetailScreenState extends State<TeamDetailScreen> {
                     ),
                   ),
                 ),
+                if (showResendInvitation) ...[
+                  const SizedBox(height: 10),
+                  _buildStaffResendInvitationButton(context, row),
+                ],
               ],
             ),
           ),
-          const SizedBox(width: 12),
-          if (_canManageRoster(context)) ...[
-            if (_shouldShowResendInvitation(context, row)) ...[
-              _buildStaffResendInvitationButton(context, row),
-              const SizedBox(width: 6),
-            ],
+          if (canManageRoster) ...[
+            const SizedBox(width: 12),
             if (row.isGrintaRoster) ...[
               _CircleGhostButton(
                 icon: Icons.edit_outlined,
@@ -4306,8 +4323,7 @@ class _TeamDetailScreenState extends State<TeamDetailScreen> {
               icon: Icons.delete_outline_rounded,
               onTap: () => _onDeleteStaffPressed(context, row),
             ),
-          ]
-
+          ],
         ],
       ),
     );
