@@ -1,3 +1,30 @@
+/// Case variants used for Firestore prefix / array-contains lookups.
+///
+/// Firestore string comparisons are case-sensitive; legacy member documents may
+/// store uppercase names or search tokens (e.g. `ETIENNE`).
+Iterable<String> searchTokenCaseVariants(String token) sync* {
+  final trimmed = token.trim();
+  if (trimmed.isEmpty) {
+    return;
+  }
+
+  final variants = <String>{
+    trimmed,
+    trimmed.toLowerCase(),
+    trimmed.toUpperCase(),
+  };
+
+  if (trimmed.length == 1) {
+    yield* variants;
+    return;
+  }
+
+  final lower = trimmed.toLowerCase();
+  variants.add('${lower[0].toUpperCase()}${lower.substring(1)}');
+
+  yield* variants;
+}
+
 List<String> generateSearchOptions(String? value) {
   final searchOptions = <String>[];
   if (value == null || value.trim().isEmpty) {

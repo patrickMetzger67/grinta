@@ -2,6 +2,22 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:grinta/util/search_options.dart';
 
 void main() {
+  group('searchTokenCaseVariants', () {
+    test('includes lowercase, uppercase, and title-case variants', () {
+      expect(
+        searchTokenCaseVariants('etienne').toList(),
+        containsAll(<String>['etienne', 'ETIENNE', 'Etienne']),
+      );
+    });
+
+    test('keeps single-character tokens', () {
+      expect(
+        searchTokenCaseVariants('e').toList(),
+        containsAll(<String>['e', 'E']),
+      );
+    });
+  });
+
   group('buildPlayerSearchOptions', () {
     test('indexes first name and last name prefixes', () {
       final options = buildPlayerSearchOptions(

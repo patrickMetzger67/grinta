@@ -5,6 +5,7 @@ import 'package:flutter/foundation.dart';
 import '../model/player.dart';
 import '../util/member_unsubscribe.dart';
 import '../util/player_photo_resolver.dart';
+import '../util/search_options.dart';
 import 'user_root_service.dart';
 
 class PlayerService {
@@ -304,56 +305,67 @@ class PlayerService {
       return const <Player>[];
     }
 
-    final QuerySnapshot<Map<String, dynamic>> snapshot = await _collection
-        .where(keyPlayerSearchOptions, arrayContains: firstToken)
-        .limit(50)
-        .get();
-
-    final byOptions = _mapActivePlayers(snapshot);
+    final byOptions = await _searchMembersBySearchOptionsToken(firstToken);
+    final byName = await _searchMembersByNamePrefix(firstToken);
+    final merged = _mergePlayersByDocId(byOptions, byName);
 
     if (!normalizedQuery.contains('@')) {
-      return byOptions;
+      return merged;
     }
 
     final byEmail = await _getActiveMembersByEmailQuery(
       normalizedEmail: normalizedQuery,
       rawEmail: trimmedQuery,
     );
-    return _mergePlayersByDocId(byOptions, byEmail);
+    return _mergePlayersByDocId(merged, byEmail);
   }
 
   /// Stream variant of [searchMembersBySearchOptions].
   Stream<List<Player>> streamMembersBySearchOptions(String query) {
-    final String trimmedQuery = query.trim();
-    final String normalizedQuery = trimmedQuery.toLowerCase();
-    if (normalizedQuery.isEmpty) {
-      return Stream<List<Player>>.value(const <Player>[]);
+    return Stream.fromFuture(searchMembersBySearchOptions(query));
+  }
+
+  Future<List<Player>> _searchMembersBySearchOptionsToken(String token) async {
+    final Map<String, Player> byId = <String, Player>{};
+
+    for (final variant in searchTokenCaseVariants(token)) {
+      final QuerySnapshot<Map<String, dynamic>> snapshot = await _collection
+          .where(keyPlayerSearchOptions, arrayContains: variant)
+          .limit(50)
+          .get();
+
+      for (final player in _mapActivePlayers(snapshot)) {
+        final id = effectiveMemberId(player) ?? player.keyMember?.trim();
+        if (id != null && id.isNotEmpty) {
+          byId[id] = player;
+        }
+      }
     }
 
-    final String firstToken = normalizedQuery
-        .split(RegExp(r'\s+'))
-        .firstWhere((token) => token.isNotEmpty, orElse: () => '');
-    if (firstToken.isEmpty) {
-      return Stream<List<Player>>.value(const <Player>[]);
+    return byId.values.toList(growable: false);
+  }
+
+  Future<List<Player>> _searchMembersByNamePrefix(String token) async {
+    final Map<String, Player> byId = <String, Player>{};
+
+    for (final variant in searchTokenCaseVariants(token)) {
+      for (final field in <String>[keyPlayerFirstName, keyPlayerLastName]) {
+        final QuerySnapshot<Map<String, dynamic>> snapshot = await _collection
+            .where(field, isGreaterThanOrEqualTo: variant)
+            .where(field, isLessThanOrEqualTo: '$variant\uf8ff')
+            .limit(25)
+            .get();
+
+        for (final player in _mapActivePlayers(snapshot)) {
+          final id = effectiveMemberId(player) ?? player.keyMember?.trim();
+          if (id != null && id.isNotEmpty) {
+            byId[id] = player;
+          }
+        }
+      }
     }
 
-    final searchStream = _collection
-        .where(keyPlayerSearchOptions, arrayContains: firstToken)
-        .limit(50)
-        .snapshots();
-
-    if (!normalizedQuery.contains('@')) {
-      return searchStream.map(_mapActivePlayers);
-    }
-
-    return searchStream.asyncMap((snapshot) async {
-      final byOptions = _mapActivePlayers(snapshot);
-      final byEmail = await _getActiveMembersByEmailQuery(
-        normalizedEmail: normalizedQuery,
-        rawEmail: trimmedQuery,
-      );
-      return _mergePlayersByDocId(byOptions, byEmail);
-    });
+    return byId.values.toList(growable: false);
   }
 
   List<Player> _mapActivePlayers(

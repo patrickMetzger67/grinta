@@ -779,45 +779,48 @@ class _ConvocationsBodyState extends State<_ConvocationsBody> {
   Widget _buildNameFilterField(BuildContext context) {
     final colors = context.appColors;
     final l10n = context.l10n;
-    final bool hasQuery = _nameFilterCtrl.text.trim().isNotEmpty;
 
     return Padding(
       padding: const EdgeInsets.only(bottom: 12),
-      child: TextField(
-        controller: _nameFilterCtrl,
-        textInputAction: TextInputAction.search,
-        style: Theme.of(context).textTheme.bodyMedium,
-        decoration: InputDecoration(
-          isDense: true,
-          hintText: l10n.teamDetailFilterPlayerHint,
-          prefixIcon: Icon(
-            Icons.search_rounded,
-            size: 20,
-            color: colors.textSecondary,
-          ),
-          suffixIcon: hasQuery
-              ? IconButton(
-                  tooltip: l10n.actionCancel,
-                  onPressed: () {
-                    _nameFilterCtrl.clear();
-                    setState(() {});
-                  },
-                  icon: Icon(
-                    Icons.clear_rounded,
-                    size: 18,
-                    color: colors.textSecondary,
-                  ),
-                )
-              : null,
-          contentPadding: const EdgeInsets.symmetric(
-            horizontal: 12,
-            vertical: 10,
-          ),
-          border: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(10),
-          ),
-        ),
-        onChanged: (_) => setState(() {}),
+      child: ValueListenableBuilder<TextEditingValue>(
+        valueListenable: _nameFilterCtrl,
+        builder: (context, value, _) {
+          final bool hasQuery = value.text.trim().isNotEmpty;
+
+          return TextField(
+            key: const ValueKey('match-convocations-name-filter'),
+            controller: _nameFilterCtrl,
+            textInputAction: TextInputAction.search,
+            style: Theme.of(context).textTheme.bodyMedium,
+            decoration: InputDecoration(
+              isDense: true,
+              hintText: l10n.teamDetailFilterPlayerHint,
+              prefixIcon: Icon(
+                Icons.search_rounded,
+                size: 20,
+                color: colors.textSecondary,
+              ),
+              suffixIcon: hasQuery
+                  ? IconButton(
+                      tooltip: l10n.actionCancel,
+                      onPressed: _nameFilterCtrl.clear,
+                      icon: Icon(
+                        Icons.clear_rounded,
+                        size: 18,
+                        color: colors.textSecondary,
+                      ),
+                    )
+                  : null,
+              contentPadding: const EdgeInsets.symmetric(
+                horizontal: 12,
+                vertical: 10,
+              ),
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(10),
+              ),
+            ),
+          );
+        },
       ),
     );
   }
@@ -976,10 +979,6 @@ class _ConvocationsBodyState extends State<_ConvocationsBody> {
       );
     }
 
-    final List<Player> filteredPlayers = _filteredPlayers;
-    final int headerCount = (widget.canSendConvocations ? 1 : 0) + 1;
-    final bool showEmptyFilterResult = filteredPlayers.isEmpty;
-
     return Scaffold(
       backgroundColor: Colors.transparent,
       floatingActionButton: widget.canEdit
@@ -1005,46 +1004,65 @@ class _ConvocationsBodyState extends State<_ConvocationsBody> {
               },
             )
           : null,
-      body: ListView.builder(
-        padding: const EdgeInsets.fromLTRB(12, 8, 12, 88),
-        itemCount: headerCount +
-            (showEmptyFilterResult ? 1 : filteredPlayers.length),
-        itemBuilder: (context, index) {
-          if (widget.canSendConvocations && index == 0) {
-            return Padding(
-              padding: const EdgeInsets.only(bottom: 12),
-              child: FilledButton.icon(
-                onPressed: widget.saving
-                    ? null
-                    : () => _onSendConvocations(context),
-                icon: const Icon(Icons.send_rounded),
-                label: Text(l10n.matchConvocationsSendAction),
-              ),
-            );
-          }
+      body: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Padding(
+            padding: const EdgeInsets.fromLTRB(12, 8, 12, 0),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                if (widget.canSendConvocations)
+                  Padding(
+                    padding: const EdgeInsets.only(bottom: 12),
+                    child: FilledButton.icon(
+                      onPressed: widget.saving
+                          ? null
+                          : () => _onSendConvocations(context),
+                      icon: const Icon(Icons.send_rounded),
+                      label: Text(l10n.matchConvocationsSendAction),
+                    ),
+                  ),
+                _buildNameFilterField(context),
+              ],
+            ),
+          ),
+          Expanded(
+            child: ValueListenableBuilder<TextEditingValue>(
+              valueListenable: _nameFilterCtrl,
+              builder: (context, _, __) {
+                final List<Player> filteredPlayers = _filteredPlayers;
+                final bool showEmptyFilterResult = filteredPlayers.isEmpty;
 
-          final int filterIndex = widget.canSendConvocations ? 1 : 0;
-          if (index == filterIndex) {
-            return _buildNameFilterField(context);
-          }
+                if (showEmptyFilterResult) {
+                  return Center(
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 12),
+                      child: Text(
+                        l10n.emptyNoPlayerForTeam,
+                        textAlign: TextAlign.center,
+                        style: TextStyle(color: colors.textSecondary),
+                      ),
+                    ),
+                  );
+                }
 
-          if (showEmptyFilterResult) {
-            return Padding(
-              padding: const EdgeInsets.symmetric(vertical: 24),
-              child: Text(
-                l10n.emptyNoPlayerForTeam,
-                textAlign: TextAlign.center,
-                style: TextStyle(color: colors.textSecondary),
-              ),
-            );
-          }
-
-          final int playerIndex = index - headerCount;
-          return _buildPlayerTile(
-            context: context,
-            player: filteredPlayers[playerIndex],
-          );
-        },
+                return ListView.builder(
+                  padding: const EdgeInsets.fromLTRB(12, 0, 12, 88),
+                  keyboardDismissBehavior:
+                      ScrollViewKeyboardDismissBehavior.manual,
+                  itemCount: filteredPlayers.length,
+                  itemBuilder: (context, index) {
+                    return _buildPlayerTile(
+                      context: context,
+                      player: filteredPlayers[index],
+                    );
+                  },
+                );
+              },
+            ),
+          ),
+        ],
       ),
     );
   }
