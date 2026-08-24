@@ -253,13 +253,43 @@ class _MatchTacticalSchemaBodyState extends State<_MatchTacticalSchemaBody>
       oldWidget.initialMatchCompo,
       widget.initialMatchCompo,
     );
-    if (refChanged || oldIds != newIds) {
+    if (refChanged) {
       _hydrateFromMatchCompo(widget.initialMatchCompo);
+      return;
+    }
+    if (oldIds != newIds) {
+      // Convocation-only remote changes must not wipe unsaved pitch edits
+      // (e.g. a freshly placed 4-3-3 right-back still waiting for Save).
+      if (_hasUnsavedChanges) {
+        _syncConvocationsFromRemote(widget.initialMatchCompo);
+      } else {
+        _hydrateFromMatchCompo(widget.initialMatchCompo);
+      }
       return;
     }
     // Apply remote lineup updates only when the editor has nothing pending.
     if (lineupChanged && !_hasUnsavedChanges) {
       _hydrateFromMatchCompo(widget.initialMatchCompo);
+    }
+  }
+
+  /// Updates convocation membership from [remote] without touching starters.
+  void _syncConvocationsFromRemote(MatchCompo? remote) {
+    if (remote == null) return;
+    final draft = _draftCompo ??
+        MatchCompo(
+          matchID: widget.match.id,
+          teamID: _resolvedTeamId,
+          seasonID: widget.match.seasonID,
+        );
+    draft.convocation =
+        List<PlayerConvo>.from(remote.convocation ?? const <PlayerConvo>[]);
+    draft.ref = remote.ref ?? draft.ref;
+    _draftCompo = draft;
+    _convokedIds = convokedPlayerIds(remote);
+    if (mounted) {
+      setState(() {});
+      _ensureConvokedPlayersLoaded();
     }
   }
 
@@ -996,7 +1026,9 @@ class _MatchTacticalSchemaBodyState extends State<_MatchTacticalSchemaBody>
         substitutes: _substitutes,
       );
 
-      await _matchCompoService.saveMatchCompo(compo);
+      // Lineup only — a full toMap() merge would overwrite convocations from a
+      // stale keep-alive draft (symmetric of the 4-3-3 right-back wipe).
+      await _matchCompoService.saveMatchCompoLineup(compo);
       _draftCompo = compo;
       _resetSavedBaseline();
 

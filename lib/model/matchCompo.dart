@@ -192,74 +192,67 @@ class MatchCompo {
 
   }
 
-  Map<String, dynamic> toMap() {
-
-    List<dynamic> goalkeeperStr=[];
+  /// Lineup + meta only — never includes convocations.
+  ///
+  /// Use this (or [saveMatchCompoLineup]) from keep-alive editors so a stale
+  /// tab draft cannot wipe the other tab's data on merge.
+  Map<String, dynamic> lineupToMap() {
+    List<dynamic> goalkeeperStr = [];
     goalkeeper!.forEach((element) {
-      PlayerCompo playerCompo = element;
-      goalkeeperStr.add(playerCompo.toMap());
+      goalkeeperStr.add(element.toMap());
     });
 
-    List<dynamic> defenderListStr=[];
+    List<dynamic> defenderListStr = [];
     defender!.forEach((element) {
-      PlayerCompo playerCompo = element;
-      defenderListStr.add(playerCompo.toMap());
+      defenderListStr.add(element.toMap());
     });
 
-    List<dynamic> midfielderListStr=[];
+    List<dynamic> midfielderListStr = [];
     midfielder!.forEach((element) {
-      PlayerCompo playerCompo = element;
-      midfielderListStr.add(playerCompo.toMap());
+      midfielderListStr.add(element.toMap());
     });
 
-    List<dynamic> midfielderAttackingListStr=[];
+    List<dynamic> midfielderAttackingListStr = [];
     midfielderAttaking!.forEach((element) {
-      PlayerCompo playerCompo = element;
-      midfielderAttackingListStr.add(playerCompo.toMap());
+      midfielderAttackingListStr.add(element.toMap());
     });
 
-    List<dynamic> midfielderDefensiveListStr=[];
+    List<dynamic> midfielderDefensiveListStr = [];
     midfielderDefensive!.forEach((element) {
-      PlayerCompo playerCompo = element;
-      midfielderDefensiveListStr.add(playerCompo.toMap());
+      midfielderDefensiveListStr.add(element.toMap());
     });
 
-    List<dynamic> strickerListStr=[];
+    List<dynamic> strickerListStr = [];
     stricker!.forEach((element) {
-      PlayerCompo playerCompo = element;
-      strickerListStr.add(playerCompo.toMap());
+      strickerListStr.add(element.toMap());
     });
 
-    List<dynamic> substiuteListStr=[];
+    List<dynamic> substiuteListStr = [];
     substitute!.forEach((element) {
-      PlayerCompo playerCompo = element;
-      if(playerCompo.playerID != null) substiuteListStr.add(playerCompo.toMap());
+      if (element.playerID != null) substiuteListStr.add(element.toMap());
     });
 
-    List<dynamic> convocationListStr=[];
-
-    convocation!.forEach((element) {
-      PlayerConvo playerConvo = element;
-      convocationListStr.add(playerConvo.toMap());
-    });
-
-    Map<String, dynamic> map = {
-      keyMatchCompoMatchId:matchID,
-      keyMatchCompoCompoTypeId:compoTypeID,
-      keyMatchCompoSeasonID:seasonID,
-      keyMatchCompoTeamID:teamID,
-      keyMatchCompoGoalkeeper:goalkeeperStr,
-      keyMatchCompoDefender:defenderListStr,
-      keyMatchCompoMidfielder:midfielderListStr,
+    return <String, dynamic>{
+      keyMatchCompoMatchId: matchID,
+      keyMatchCompoCompoTypeId: compoTypeID,
+      keyMatchCompoSeasonID: seasonID,
+      keyMatchCompoTeamID: teamID,
+      keyMatchCompoGoalkeeper: goalkeeperStr,
+      keyMatchCompoDefender: defenderListStr,
+      keyMatchCompoMidfielder: midfielderListStr,
       keyMatchCompoMidfielderAttacking: midfielderAttackingListStr,
       keyMatchCompoMidfielderDefensive: midfielderDefensiveListStr,
-      keyMatchCompoStrikcer:strickerListStr,
+      keyMatchCompoStrikcer: strickerListStr,
       keyMatchCompoSubstitute: substiuteListStr,
-      keyMatchCompoConvocation: convocationListStr,
-      keyMatchCompoFeedback:withFeedback,
+      keyMatchCompoFeedback: withFeedback,
     };
-    return map;
+  }
 
+  Map<String, dynamic> toMap() {
+    final map = lineupToMap();
+    map[keyMatchCompoConvocation] =
+        convocation!.map((PlayerConvo c) => c.toMap()).toList();
+    return map;
   }
 
 

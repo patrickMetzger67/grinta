@@ -66,6 +66,20 @@ class MatchCompoService {
     await docRef.set(matchCompo.toMap(), SetOptions(merge: true));
   }
 
+  /// Persists lineup + meta only so a stale tactical draft cannot wipe
+  /// convocations (and so tabs never cross-overwrite via full [toMap]).
+  Future<void> saveMatchCompoLineup(MatchCompo matchCompo) async {
+    final matchId = matchCompo.matchID?.trim() ?? '';
+    final teamId = matchCompo.teamID?.trim() ?? '';
+    if (matchId.isEmpty || teamId.isEmpty) {
+      throw Exception('matchID et teamID requis pour enregistrer la composition');
+    }
+
+    final docRef = docRefFor(matchId: matchId, teamId: teamId);
+    matchCompo.ref = docRef;
+    await docRef.set(matchCompo.lineupToMap(), SetOptions(merge: true));
+  }
+
   /// Persists only convocation data so a stale tab draft cannot wipe starters.
   Future<void> saveMatchCompoConvocations({
     required String matchId,
