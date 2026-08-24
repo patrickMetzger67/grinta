@@ -12,6 +12,7 @@ const {
   resolveBrandAssets,
   buildDataPayload,
   buildMulticastMessage,
+  buildCollapseId,
   isInvalidTokenError,
   BRAND_GRINTA,
   PENDING_PUSH_COLLECTION,
@@ -54,6 +55,10 @@ async function sendFcmToTokens({
     clubId,
   });
 
+  const objectId =
+    payload && typeof payload === 'object'
+      ? payload.id ?? payload.objectId
+      : undefined;
   const message = buildMulticastMessage({
     tokens: fcmTokens,
     title,
@@ -61,6 +66,7 @@ async function sendFcmToTokens({
     brand,
     assets,
     dataPayload,
+    collapseId: buildCollapseId({ type, objectId }),
   });
 
   const response = await getMessaging().sendEachForMulticast(message);

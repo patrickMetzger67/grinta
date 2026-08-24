@@ -10,6 +10,11 @@ const {
   isQuietAt,
   evaluatePushPermission,
   buildMulticastMessage,
+  buildCollapseId,
+  normalizeNotifType,
+  shouldHonorReminderPreferences,
+  collectLinkedUserIdsFromMemberData,
+  filterTokensByRecipientPreferences,
   ANDROID_FCM_CHANNEL_ID,
   BRAND_GRINTA,
   BRAND_ASERSTEIN,
@@ -223,5 +228,185 @@ describe('buildMulticastMessage', () => {
       assert.equal(message.apns.payload.aps['content-available'], undefined);
       assert.equal(message.apns.fcmOptions, undefined);
     }
+  });
+
+  it('attaches collapse key and Android tag when provided', () => {
+    const message = buildMulticastMessage({
+      tokens: ['tok'],
+      title: 'Titre',
+      body: 'Corps',
+      brand: BRAND_GRINTA,
+      assets: { icon: GRINTA_ICON_192, image: GRINTA_ICON_512 },
+      dataPayload: { type: 'RPEAfter' },
+      collapseId: 'RPEAfter_event1',
+    });
+    assert.equal(message.android.collapseKey, 'RPEAfter_event1');
+    assert.equal(message.android.notification.tag, 'RPEAfter_event1');
+    assert.equal(message.apns.headers['apns-collapse-id'], 'RPEAfter_event1');
+    assert.equal(message.webpush.notification.tag, 'RPEAfter_event1');
+  });
+});
+
+describe('normalizeNotifType / reminder prefs', () => {
+  it('strips NotifType. prefix', () => {
+    assert.equal(normalizeNotifType('NotifType.RPEAfter'), 'RPEAfter');
+    assert.equal(normalizeNotifType('RPEAfter'), 'RPEAfter');
+  });
+
+  it('honours quiet hours only for reminder types', () => {
+    assert.equal(shouldHonorReminderPreferences('trainingReminder'), true);
+    assert.equal(shouldHonorReminderPreferences('NotifType.RPEBefore'), true);
+    assert.equal(shouldHonorReminderPreferences('RPEAfter'), false);
+    assert.equal(shouldHonorReminderPreferences('NotifType.RPEAfter'), false);
+    assert.equal(shouldHonorReminderPreferences('convocation'), false);
+    assert.equal(shouldHonorReminderPreferences('event'), false);
+    assert.equal(shouldHonorReminderPreferences('chat'), false);
+  });
+
+  it('builds a short collapse id', () => {
+    assert.equal(
+      buildCollapseId({ type: 'NotifType.RPEAfter', objectId: 'evt-1' }),
+      'RPEAfter_evt-1',
+    );
+    assert.ok(buildCollapseId({ type: 'x', objectId: 'y'.repeat(80) }).length <= 64);
+  });
+});
+
+describe('collectLinkedUserIdsFromMemberData', () => {
+  it('reads userID and users[] including path-like values', () => {
+    assert.deepEqual(
+      collectLinkedUserIdsFromMemberData({
+        userID: ' uid-a ',
+        users: ['users/uid-b', { uid: 'uid-c' }, 'uid-a'],
+      }).sort(),
+      ['uid-a', 'uid-b', 'uid-c'],
+    );
+  });
+
+  it('keeps a userID that equals the member id (may be an Auth uid)', () => {
+    assert.deepEqual(
+      collectLinkedUserIdsFromMemberData({ userID: 'member-1' }),
+      ['member-1'],
+    );
+  });
+});
+
+function fakeDb({ prefsByUser = {}, tokensByUser = {} }) {
+  return {
+    collection(name) {
+      if (name !== 'users') {
+        throw new Error(`unexpected collection ${name}`);
+      }
+      return {
+        doc(userId) {
+          return {
+            collection(sub) {
+              if (sub === 'app_state') {
+                return {
+                  doc() {
+                    return {
+                      async get() {
+                        const data = prefsByUser[userId];
+                        return {
+                          exists: data != null,
+                          data: () => data,
+                        };
+                      },
+                    };
+                  },
+                };
+              }
+              if (sub === 'fcmTokens') {
+                const raw = tokensByUser[userId] ?? [];
+                const docs = raw.map((entry) => {
+                  if (typeof entry === 'string') {
+                    return { id: entry, data: () => ({ app: 'grinta' }) };
+                  }
+                  return {
+                    id: entry.id,
+                    data: () => entry.data ?? { app: 'grinta' },
+                  };
+                });
+                return {
+                  where(_field, _op, value) {
+                    return {
+                      async get() {
+                        const branded = docs.filter(
+                          (doc) => (doc.data()?.app ?? '') === value,
+                        );
+                        return { empty: branded.length === 0, docs: branded };
+                      },
+                    };
+                  },
+                  async get() {
+                    return { empty: docs.length === 0, docs };
+                  },
+                };
+              }
+              throw new Error(`unexpected subcollection ${sub}`);
+            },
+          };
+        },
+      };
+    },
+  };
+}
+
+describe('filterTokensByRecipientPreferences', () => {
+  const quietPrefs = {
+    remindersEnabled: true,
+    quietHoursStart: 22,
+    quietHoursEnd: 7,
+    quietDays: [],
+    timezone: 'UTC',
+  };
+  const duringQuiet = new Date('2026-08-03T23:00:00Z');
+
+  it('sends RPEAfter immediately during quiet hours', async () => {
+    const db = fakeDb({
+      prefsByUser: { u1: quietPrefs },
+      tokensByUser: { u1: ['tok-1'] },
+    });
+    const result = await filterTokensByRecipientPreferences({
+      db,
+      recipientUserIds: ['u1'],
+      fcmTokens: [],
+      type: 'RPEAfter',
+      now: duringQuiet,
+    });
+    assert.deepEqual(result.tokens, ['tok-1']);
+    assert.equal(result.skippedQuiet, 0);
+    assert.equal(result.quietDeferred.length, 0);
+  });
+
+  it('defers trainingReminder during quiet hours', async () => {
+    const db = fakeDb({
+      prefsByUser: { u1: quietPrefs },
+      tokensByUser: { u1: ['tok-1'] },
+    });
+    const result = await filterTokensByRecipientPreferences({
+      db,
+      recipientUserIds: ['u1'],
+      fcmTokens: [],
+      type: 'trainingReminder',
+      now: duringQuiet,
+    });
+    assert.deepEqual(result.tokens, []);
+    assert.equal(result.skippedQuiet, 1);
+    assert.equal(result.quietDeferred.length, 1);
+    assert.deepEqual(result.quietDeferred[0].tokens, ['tok-1']);
+  });
+
+  it('loads tokens from Firestore when the client sent none', async () => {
+    const db = fakeDb({
+      tokensByUser: { u1: ['tok-a'], u2: ['tok-b'] },
+    });
+    const result = await filterTokensByRecipientPreferences({
+      db,
+      recipientUserIds: ['u1', 'u2'],
+      fcmTokens: [],
+      type: 'convocation',
+    });
+    assert.deepEqual(result.tokens.sort(), ['tok-a', 'tok-b']);
   });
 });

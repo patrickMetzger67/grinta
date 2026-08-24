@@ -130,11 +130,10 @@ class MatchConvocationService {
           await NotificationFCMService.fetchFcmTokensForUsers(linkedUids);
       if (tokens.isEmpty) {
         debugPrint(
-          'MatchConvocationService.sendConvocations skipped push '
-          'memberId=$memberId linkedUids=$linkedUids: noFcmTokens',
+          'MatchConvocationService.sendConvocations no client fcmTokens '
+          'memberId=$memberId linkedUids=$linkedUids — CF/trigger will load '
+          'users/{uid}/fcmTokens',
         );
-        skippedNoFcmToken++;
-        continue;
       }
 
       final pushSent = await NotificationFCMService.instance.postNotification(

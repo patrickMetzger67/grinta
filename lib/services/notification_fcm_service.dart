@@ -985,11 +985,10 @@ class NotificationFCMService {
   /// `invalid-argument: clubId requis` otherwise). Callers may omit it; we
   /// default to `'0'` (Grinta / InvitationConfig.grintaInvitationClubId).
   ///
-  /// Pass [recipientUserIds] (Firebase Auth uids) so the CF can honour each
-  /// recipient's `notification_preferences` (`remindersEnabled`, quiet days /
-  /// hours). Without it, prefs are not applied.
+  /// Pass [recipientUserIds] so the CF can load `users/{uid}/fcmTokens` when
+  /// [tokens] is empty, and apply quiet-hours prefs only to reminder types.
   /// Returns `true` when the Cloud Function call succeeds (including when all
-  /// recipients were skipped by prefs — check CF summary logs).
+  /// reminder recipients were skipped by prefs — check CF summary logs).
   Future<bool> postNotification({
     required List<String> tokens,
     required String title,
@@ -999,8 +998,14 @@ class NotificationFCMService {
     String? clubId,
     List<String>? recipientUserIds,
   }) async {
-    if (tokens.isEmpty) {
-      debugPrint('postNotification: no tokens provided');
+    final recipients = (recipientUserIds ?? const <String>[])
+        .map((id) => id.trim())
+        .where((id) => id.isNotEmpty)
+        .toSet()
+        .toList();
+
+    if (tokens.isEmpty && recipients.isEmpty) {
+      debugPrint('postNotification: no tokens or recipients');
       return false;
     }
 
@@ -1013,11 +1018,6 @@ class NotificationFCMService {
     final resolvedClubId = (clubId ?? '').trim().isNotEmpty
         ? clubId!.trim()
         : '0';
-    final recipients = (recipientUserIds ?? const <String>[])
-        .map((id) => id.trim())
-        .where((id) => id.isNotEmpty)
-        .toSet()
-        .toList();
 
     try {
       final functions = FirebaseFunctions.instanceFor(region: 'europe-west1');
