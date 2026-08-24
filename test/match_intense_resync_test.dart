@@ -25,6 +25,7 @@ models.Match _match({
   String? dateCh,
   String? timeCh,
   int? duration = 90,
+  DateTime? timestamp,
 }) {
   return models.Match(
     withTracker: withTracker,
@@ -33,6 +34,7 @@ models.Match _match({
     timeCh: timeCh,
     ownerId: 'owner1',
     duration: duration,
+    timestamp: timestamp == null ? null : Timestamp.fromDate(timestamp),
   );
 }
 
@@ -254,6 +256,77 @@ void main() {
       );
     });
 
+    test(
+      'uses Match.timestamp halves + 15 min break when no temps forts '
+      'and no dateCh/timeCh',
+      () {
+        // Mobile Intense (withSyncing=false): without Temps forts, build the
+        // Insiders window from the field-linked match timestamp.
+        final kickOff = DateTime(2026, 8, 2, 15, 0);
+        final window = resolveMatchIntenseResyncWindow(
+          _match(
+            isMatchPlayed: true,
+            timestamp: kickOff,
+          ),
+          const [],
+        );
+
+        expect(window, isNotNull);
+        expect(window!.start.toLocal(), kickOff);
+        // T+45, pause 15', T+45 → stop at T+105.
+        expect(window.stop.toLocal(), kickOff.add(const Duration(minutes: 105)));
+        expect(window.playPeriods, hasLength(2));
+        expect(
+          window.playPeriods[0].start.toDate().toLocal(),
+          kickOff,
+        );
+        expect(
+          window.playPeriods[0].end.toDate().toLocal(),
+          kickOff.add(const Duration(minutes: 45)),
+        );
+        expect(
+          window.playPeriods[1].start.toDate().toLocal(),
+          kickOff.add(const Duration(minutes: 60)),
+        );
+        expect(
+          window.playPeriods[1].end.toDate().toLocal(),
+          kickOff.add(const Duration(minutes: 105)),
+        );
+      },
+    );
+
+    test('Live is open during timestamp-built slot without temps forts', () {
+      final kickOff = DateTime(2026, 8, 2, 15, 0);
+      expect(
+        isMatchSessionLive(
+          match: _match(timestamp: kickOff),
+          highlights: const [],
+          now: kickOff.add(const Duration(minutes: 70)),
+        ),
+        isTrue,
+      );
+      expect(
+        isMatchSessionLive(
+          match: _match(timestamp: kickOff),
+          highlights: const [],
+          now: kickOff.add(const Duration(minutes: 110)),
+        ),
+        isFalse,
+      );
+    });
+
+    test('can re-sync after timestamp slot ends without temps forts', () {
+      final kickOff = DateTime(2026, 8, 2, 15, 0);
+      expect(
+        canResyncMatchIntense(
+          match: _match(timestamp: kickOff),
+          highlights: const [],
+          now: kickOff.add(const Duration(minutes: 110)),
+        ),
+        isTrue,
+      );
+    });
+
     test('ignores late-tapped kick-off that collapses the GNSS window', () {
       // Real bug: kick-off Temps forts tapped after the match (15:46 UTC wall
       // clock) while the fixture was scheduled 15:00 → start==stop → 0 samples.
@@ -304,6 +377,15 @@ void main() {
         match: _match(dateCh: '02/08/2026', timeCh: '15:00'),
       );
       expect(start?.toLocal(), DateTime(2026, 8, 2, 15, 0));
+    });
+
+    test('uses Match.timestamp when dateCh/timeCh missing', () {
+      final kickOff = DateTime(2026, 8, 2, 15, 0);
+      final start = intenseLiveMatchStartUtc(
+        const [],
+        match: _match(timestamp: kickOff),
+      );
+      expect(start?.toLocal(), kickOff);
     });
   });
 }
