@@ -245,10 +245,10 @@ class MemberInvitationService {
         await NotificationFCMService.fetchFcmTokensForUsers(linkedUids);
     if (tokens.isEmpty) {
       debugPrint(
-        'MemberInvitationService.notifyMemberAddedToTeam skipped: noFcmTokens '
-        'memberId=$memberId linkedUids=$linkedUids',
+        'MemberInvitationService.notifyMemberAddedToTeam no client fcmTokens '
+        'memberId=$memberId linkedUids=$linkedUids — CF will load '
+        'users/{uid}/fcmTokens',
       );
-      return MemberInvitationResult.skipped('noFcmTokens');
     }
 
     final String displayTeamName =

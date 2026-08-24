@@ -242,10 +242,9 @@ class SessionFeelingNotificationService {
           await NotificationFCMService.fetchFcmTokensForUsers(linkedUids);
       if (tokens.isEmpty) {
         debugPrint(
-          'SessionFeelingNotificationService: in-app created, push skipped '
-          'memberId=$memberId (no fcmTokens)',
+          'SessionFeelingNotificationService: no client fcmTokens for '
+          'memberId=$memberId — CF/trigger will load users/{uid}/fcmTokens',
         );
-        continue;
       }
 
       final pushSent = await NotificationFCMService.instance.postNotification(

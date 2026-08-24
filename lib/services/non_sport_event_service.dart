@@ -630,24 +630,28 @@ class NonSportEventService {
 
         final List<String> tokens =
             await NotificationFCMService.fetchFcmTokensForUsers(linkedUids);
-        if (tokens.isNotEmpty) {
-          final bool pushSent =
-              await NotificationFCMService.instance.postNotification(
-            tokens: tokens,
-            title: pushTitle,
-            body: pushBody,
-            type: 'event',
-            payload: <String, dynamic>{
-              'id': eventId,
-              'type': 'event',
-              'body': pushBody,
-            },
-            clubId: event.clubId,
-            recipientUserIds: linkedUids,
+        if (tokens.isEmpty) {
+          debugPrint(
+            'NonSportEventService: no client fcmTokens for '
+            'memberId=$memberId — CF/trigger will load users/{uid}/fcmTokens',
           );
-          if (pushSent) {
-            pushNotificationsSent++;
-          }
+        }
+        final bool pushSent =
+            await NotificationFCMService.instance.postNotification(
+          tokens: tokens,
+          title: pushTitle,
+          body: pushBody,
+          type: 'event',
+          payload: <String, dynamic>{
+            'id': eventId,
+            'type': 'event',
+            'body': pushBody,
+          },
+          clubId: event.clubId,
+          recipientUserIds: linkedUids,
+        );
+        if (pushSent) {
+          pushNotificationsSent++;
         }
 
         updatedInvitees.add(

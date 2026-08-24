@@ -21,12 +21,11 @@ const REGION = 'europe-west1';
 /**
  * Callable: sendPushFCMNotification (europe-west1)
  *
- * Recipient prefs (`users/{uid}/app_state/notification_preferences`):
- * - remindersEnabled === false → skip (no queue)
- * - quiet days / quiet hours → enqueue `pending_push` until sendAfter
+ * Recipient prefs (`remindersEnabled`, quiet days / hours) apply to every
+ * type. Quiet recipients are stored with `sendAfter` and drained hourly.
  *
  * Deploy:
- *   firebase deploy --only functions:sendPushFCMNotification,functions:drainPendingPushNotifications
+ *   firebase deploy --only functions:sendPushFCMNotification,functions:drainPendingPushNotifications,functions:sendPushOnNotificationCreated
  */
 function createSendPushFCMNotification() {
   return onCall({ region: REGION, timeoutSeconds: 60 }, async (request) => {
@@ -64,6 +63,7 @@ function createSendPushFCMNotification() {
       recipientUserIds,
       fcmTokens: requestedTokens,
       brand,
+      type,
     });
 
     const deferredCount = await enqueueQuietDeferredPushes({

@@ -40,6 +40,14 @@
         { "fieldPath": "status", "order": "ASCENDING" },
         { "fieldPath": "sendAfter", "order": "ASCENDING" }
       ]
+    },
+    {
+      "collectionGroup": "notification",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "pushDispatch.status", "order": "ASCENDING" },
+        { "fieldPath": "pushDispatch.sendAfter", "order": "ASCENDING" }
+      ]
     }
   ],
   "fieldOverrides": []

@@ -1,9 +1,43 @@
 # Push notifications (FCM)
 
-Grinta sends phone/web pushes via the callable Cloud Function
-`sendPushFCMNotification` (`europe-west1`).
+Grinta delivers phone/web pushes in two ways (`europe-west1`):
 
-## Contract (Grinta)
+1. **Firestore trigger** `sendPushOnNotificationCreated` — fires when a document
+   is created in `notification`. If the user can receive push now, FCM is sent
+   immediately (with the Grinta logo). If not, the same document is kept with
+   `pushDispatch.sendAfter`.
+2. **Callable** `sendPushFCMNotification` — fallback for chat / member-added
+   (no `notification` doc). Quiet recipients go to `pending_push`.
+
+## User preferences
+
+Document: `users/{uid}/app_state/notification_preferences`
+
+| Setting | Effect on OS/web push |
+|---|---|
+| `remindersEnabled === false` | **Skip** (no queue) |
+| Quiet day / quiet hours | **Store** the notification with `sendAfter` = next allowed instant (from those settings, timezone included) |
+| Allowed window | Send immediately |
+
+`sendAfter` is written on `notification.pushDispatch.sendAfter` (and on
+`pending_push.sendAfter` for callable-only sends).
+
+`drainPendingPushNotifications` runs **every hour** (`0 * * * *`,
+`Europe/Paris`) and sends every due item.
+
+Local agenda reminders (`trainingReminder`, `matchOpponentStatsReminder`,
+`RPEBefore`) stay on `InternalReminderService` + the OS scheduler — the trigger
+does not FCM them.
+
+## Logo
+
+Every FCM payload includes the Grinta icons:
+
+- Small / web: `https://grinta.web.app/icons/Icon-192.png`
+- Large / Android + iOS image: `https://grinta.web.app/icons/Icon-512.png`
+- Android status-bar: `@drawable/ic_notification` (white silhouette required by the OS)
+
+## Contract (callable)
 
 ```json
 {
@@ -21,36 +55,20 @@ Grinta sends phone/web pushes via the callable Cloud Function
 ```
 
 - **`clubId`**: always `"0"` for the Grinta platform club (required by the CF).
-- **`brand`**: always `"grinta"` from the Flutter client — forces Grinta icons
-  (never Aserstein `/favicon.png`).
-- **`recipientUserIds`**: Auth uids of recipients. The CF loads each user's
-  `users/{uid}/app_state/notification_preferences` and:
-  - `remindersEnabled === false` → **skip** (no queue)
-  - quiet days / quiet hours → **enqueue** `pending_push` until `sendAfter`
-    (drained by `drainPendingPushNotifications` every 5 minutes; max defer 48h)
+- **`brand`**: always `"grinta"` from the Flutter client.
+- **`recipientUserIds`**: Auth uids. The CF loads `users/{uid}/fcmTokens` when
+  `fcmTokens` is empty.
 - Tokens live in `users/{uid}/fcmTokens/{token}` with `app: "grinta"`.
 
-In-app cloche notifications are still created by the app even when push is
-skipped or deferred.
+`pushDispatch` on the `notification` document:
+`sending` / `sent` / `skipped` / `deferred` / `failed`, plus `sendAfter` when deferred.
 
 ## Deploy
 
 ```bash
-firebase deploy --only functions:sendPushFCMNotification,functions:drainPendingPushNotifications,firestore:rules,firestore:indexes
+firebase deploy --only functions:sendPushFCMNotification,functions:drainPendingPushNotifications,functions:sendPushOnNotificationCreated,firestore:indexes
 ```
 
 Source: [`functions/send_push_fcm.js`](../functions/send_push_fcm.js),
-[`functions/pending_push.js`](../functions/pending_push.js).
-
-## Client checklist
-
-| Platform | Requirement |
-|----------|-------------|
-| **iOS** | Push capability (`aps-environment`), `UIBackgroundModes` → `remote-notification`, APNs key in Firebase Console |
-| **Android** | `POST_NOTIFICATIONS`, `google-services.json` for `io.grinta.app` |
-| **Web** | Build with `--dart-define=FCM_WEB_VAPID_KEY=…` (Firebase → Cloud Messaging → Web Push certificates) |
-
-## Triggers (app)
-
-Convocations, feeling post-sync, member added to team, non-sport events — all go through
-`NotificationFCMService.postNotification` → CF above.
+[`functions/pending_push.js`](../functions/pending_push.js),
+[`functions/notify_on_create.js`](../functions/notify_on_create.js).

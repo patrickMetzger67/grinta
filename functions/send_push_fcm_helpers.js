@@ -51,6 +51,88 @@ function normalizeUserIdList(raw) {
   ];
 }
 
+/** `NotifType.RPEAfter` / `RPEAfter` → `RPEAfter`. */
+function normalizeNotifType(raw) {
+  let value = (raw ?? '').toString().trim();
+  if (value.startsWith('NotifType.')) {
+    value = value.slice('NotifType.'.length);
+  }
+  return value;
+}
+
+/**
+ * Agenda reminders already use InternalReminderService + the OS scheduler.
+ * The Firestore trigger must not also FCM those docs (duplicate banners).
+ * Every other type respects user prefs: send now, or store `sendAfter`.
+ */
+const LOCAL_REMINDER_PUSH_TYPES = new Set([
+  'trainingReminder',
+  'matchOpponentStatsReminder',
+  'RPEBefore',
+]);
+
+function isLocalReminderNotificationType(type) {
+  return LOCAL_REMINDER_PUSH_TYPES.has(normalizeNotifType(type));
+}
+
+/** @deprecated Use [isLocalReminderNotificationType]. */
+function shouldHonorReminderPreferences(type) {
+  return isLocalReminderNotificationType(type);
+}
+
+function normalizeLinkedUserId(entry) {
+  if (entry == null) return null;
+  if (typeof entry === 'string') {
+    const trimmed = entry.trim();
+    if (!trimmed) return null;
+    if (trimmed.includes('/')) {
+      const segment = trimmed.split('/').pop().trim();
+      return segment || null;
+    }
+    return trimmed;
+  }
+  if (typeof entry === 'object') {
+    const refId = readNonEmptyString(entry.id);
+    if (refId) return refId;
+    const path = readNonEmptyString(entry.path);
+    if (path) {
+      const segment = path.split('/').pop().trim();
+      return segment || null;
+    }
+    for (const key of ['uid', 'id', 'userId', 'userID']) {
+      const nested = normalizeLinkedUserId(entry[key]);
+      if (nested) return nested;
+    }
+  }
+  const asString = `${entry}`.trim();
+  return asString || null;
+}
+
+function collectLinkedUserIdsFromMemberData(data) {
+  const ids = new Set();
+  if (!data || typeof data !== 'object') return [];
+  const add = (raw) => {
+    const id = normalizeLinkedUserId(raw);
+    if (id) ids.add(id);
+  };
+  add(data.userID);
+  if (Array.isArray(data.users)) {
+    for (const entry of data.users) add(entry);
+  }
+  return [...ids];
+}
+
+/** APNs collapse-id / Android tag, max 64 bytes. Per-device so shared keys are OK. */
+function buildCollapseId({ type, objectId, userId } = {}) {
+  const parts = [
+    normalizeNotifType(type) || 'grinta',
+    readNonEmptyString(objectId) || '',
+    readNonEmptyString(userId) || '',
+  ].filter((part) => part.length > 0);
+  const raw = parts.join('_').replace(/[^A-Za-z0-9._-]/g, '_');
+  return raw.slice(0, 64) || 'grinta';
+}
+
 function clampHour(value, fallback) {
   const parsed = Number.parseInt(`${value}`, 10);
   if (!Number.isFinite(parsed)) return fallback;
@@ -249,24 +331,31 @@ function buildMulticastMessage({
   brand,
   assets,
   dataPayload,
+  collapseId,
 }) {
+  const collapse = readNonEmptyString(collapseId);
+  const logo = readNonEmptyString(assets?.image) ?? GRINTA_ICON_512;
+  const icon = readNonEmptyString(assets?.icon) ?? GRINTA_ICON_192;
   return {
     tokens,
     notification: {
       title: title || 'Grinta',
       body: body || '',
+      imageUrl: logo,
     },
     data: dataPayload,
     android: {
       priority: 'high',
-      // No imageUrl: when the app process is dead, a failed image fetch can
-      // drop the entire system-tray notification on Android (every type).
+      ...(collapse ? { collapseKey: collapse } : {}),
       notification: {
         channelId: ANDROID_FCM_CHANNEL_ID,
         icon: 'ic_notification',
+        imageUrl: logo,
+        color: '#F95C1B',
         sound: 'default',
         defaultSound: true,
         visibility: 'public',
+        ...(collapse ? { tag: collapse } : {}),
       },
     },
     // Visible APNs alert for every Grinta push (convocation, RPE, invite,
@@ -275,6 +364,10 @@ function buildMulticastMessage({
       headers: {
         'apns-priority': '10',
         'apns-push-type': 'alert',
+        ...(collapse ? { 'apns-collapse-id': collapse } : {}),
+      },
+      fcmOptions: {
+        imageUrl: logo,
       },
       payload: {
         aps: {
@@ -284,6 +377,7 @@ function buildMulticastMessage({
           },
           sound: 'default',
           badge: 1,
+          'mutable-content': 1,
           'interruption-level': 'active',
         },
       },
@@ -295,8 +389,9 @@ function buildMulticastMessage({
       notification: {
         title: title || 'Grinta',
         body: body || '',
-        icon: assets.icon,
-        image: assets.image,
+        icon,
+        image: logo,
+        ...(collapse ? { tag: collapse, renotify: true } : {}),
       },
       fcmOptions: {
         link: '/',
@@ -391,6 +486,7 @@ async function filterTokensByRecipientPreferences({
   fcmTokens,
   brand = BRAND_GRINTA,
   now = new Date(),
+  type,
 }) {
   const userIds = normalizeUserIdList(recipientUserIds);
   const requestedTokens = new Set(normalizeTokenList(fcmTokens));
@@ -415,6 +511,13 @@ async function filterTokensByRecipientPreferences({
   const allowedTokens = new Set();
 
   for (const userId of userIds) {
+    const userTokens = await loadUserFcmTokens(
+      db,
+      userId,
+      brand,
+      requestedTokens,
+    );
+
     const prefSnap = await db
       .collection('users')
       .doc(userId)
@@ -425,12 +528,6 @@ async function filterTokensByRecipientPreferences({
       prefSnap.exists ? prefSnap.data() : null,
     );
     const decision = evaluatePushPermission(prefs, now);
-    const userTokens = await loadUserFcmTokens(
-      db,
-      userId,
-      brand,
-      requestedTokens,
-    );
 
     if (!decision.allowed) {
       skippedUserIds.push(userId);
@@ -440,13 +537,12 @@ async function filterTokensByRecipientPreferences({
       }
       if (decision.reason === 'quiet') {
         skippedQuiet += 1;
-        if (userTokens.length > 0) {
-          quietDeferred.push({
-            userId,
-            prefs,
-            tokens: userTokens,
-          });
-        }
+        // Queue even without tokens — the hourly drain reloads fcmTokens.
+        quietDeferred.push({
+          userId,
+          prefs,
+          tokens: userTokens,
+        });
       }
       continue;
     }
@@ -471,6 +567,14 @@ module.exports = {
   readNonEmptyString,
   normalizeTokenList,
   normalizeUserIdList,
+  normalizeNotifType,
+  normalizeLinkedUserId,
+  collectLinkedUserIdsFromMemberData,
+  shouldHonorReminderPreferences,
+  isLocalReminderNotificationType,
+  buildCollapseId,
+  LOCAL_REMINDER_PUSH_TYPES,
+  REMINDER_PUSH_TYPES: LOCAL_REMINDER_PUSH_TYPES,
   parseNotificationPreferences,
   getZonedWeekdayAndHour,
   isQuietAt,
