@@ -136,10 +136,10 @@ bool isTrainingSessionLive({
 
 /// Match Live window for noSync / Intense cloud kits.
 ///
-/// Does **not** require a Temps forts kick-off highlight. Uses the scheduled
-/// kick-off ([Match.dateCh]/[Match.timeCh] or [scheduledStart]) first, then a
-/// recorded kick-off only as fallback. Ends at full-time highlight, else
-/// schedule + duration (or [scheduledEnd]).
+/// Does **not** require a Temps forts kick-off highlight. Uses the calendar
+/// kick-off ([Match.dateCh]/[Match.timeCh], [scheduledStart], or field-linked
+/// [Match.timestamp]) first, then a recorded kick-off only as fallback. Ends at
+/// full-time highlight, else schedule + duration + 15' break (or [scheduledEnd]).
 bool isMatchSessionLive({
   required models.Match match,
   required List<Highlights> highlights,
@@ -170,13 +170,29 @@ bool isMatchSessionLive({
   return clock.isBefore(endAt);
 }
 
-/// Live kick-off: **scheduled first** (no Temps forts required), then recorded.
+/// Calendar kick-off when Temps forts are missing.
+///
+/// Order: [Match.dateCh]/[timeCh] → [scheduledStart] → field-linked
+/// [Match.timestamp].
+DateTime? matchCalendarKickoffLocal(
+  models.Match match, {
+  DateTime? scheduledStart,
+}) {
+  return matchKickoffDateTime(match) ??
+      scheduledStart ??
+      match.timestamp?.toDate();
+}
+
+/// Live kick-off: **calendar first** (no Temps forts required), then recorded.
 DateTime? matchLiveStartLocal(
   models.Match match,
   List<Highlights> highlights, {
   DateTime? scheduledStart,
 }) {
-  final scheduled = matchKickoffDateTime(match) ?? scheduledStart;
+  final scheduled = matchCalendarKickoffLocal(
+    match,
+    scheduledStart: scheduledStart,
+  );
   if (scheduled != null) return scheduled;
 
   final kickOff = findTimeEventHighlight(highlights, TimeType.kickOff);
@@ -195,7 +211,7 @@ DateTime? matchIntenseScheduledEndLocal(
   return matchScheduledSlotEnd(kickOffAt, durationMinutes);
 }
 
-/// Local kick-off for Insiders windows: recorded Temps forts, else schedule.
+/// Local kick-off for Insiders windows: recorded Temps forts, else calendar.
 DateTime? matchSessionStartLocal(
   models.Match match,
   List<Highlights> highlights,
@@ -203,7 +219,7 @@ DateTime? matchSessionStartLocal(
   final kickOff = findTimeEventHighlight(highlights, TimeType.kickOff);
   final recorded = kickOff?.dateTime?.toDate();
   if (recorded != null) return recorded;
-  return matchKickoffDateTime(match);
+  return matchCalendarKickoffLocal(match);
 }
 
 /// Session start for Insiders fetch (UTC).
@@ -214,8 +230,9 @@ DateTime intenseLiveTrainingStartUtc(Training training) {
 
 /// Session start for Live / Insiders fetch (UTC).
 ///
-/// Prefers the scheduled kick-off so Live works without a Temps forts
-/// « début de match ». Falls back to a recorded kick-off when present.
+/// Prefers the calendar kick-off (date/time, agenda, or [Match.timestamp]) so
+/// Live / re-sync work without a Temps forts « début de match ». Falls back to
+/// a recorded kick-off when present.
 DateTime? intenseLiveMatchStartUtc(
   List<Highlights> highlights, {
   models.Match? match,
