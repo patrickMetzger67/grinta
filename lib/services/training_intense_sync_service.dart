@@ -173,9 +173,8 @@ bool canResyncTrainingIntense(Training training, {DateTime? now}) {
 
 /// Best-effort match end for Intense re-sync eligibility / windows.
 ///
-/// Prefers full-time Temps forts, else calendar kick-off + duration + 15'
-/// half-time break (no Temps forts required). Calendar = date/time, agenda, or
-/// field-linked [Match.timestamp].
+/// Prefers full-time Temps forts, else [Match.timestamp] + duration + 15'
+/// half-time break (no Temps forts required). Never uses dateCh/timeCh.
 DateTime? matchIntenseEndLocal(
   models.Match match,
   List<Highlights> highlights, {
@@ -224,14 +223,13 @@ bool _isPlausibleMatchEnd(DateTime start, DateTime candidateEnd) {
 
 /// Insiders fetch window for a match.
 ///
-/// Prefers the **calendar** kick-off ([Match.dateCh]/[timeCh], agenda, or
-/// field-linked [Match.timestamp]) so a Temps forts « début » tapped after the
-/// match (wall-clock ≠ real kick-off) cannot collapse the window to
-/// `start == stop` and return 0 GNSS samples.
+/// Prefers field-linked [Match.timestamp] so a Temps forts « début » tapped
+/// after the match (wall-clock ≠ real kick-off) cannot collapse the window to
+/// `start == stop` and return 0 GNSS samples. Never uses dateCh/timeCh.
 ///
 /// Play periods follow the same half rules as USB (`resolveMatchSensorSyncPeriods`):
 /// with Temps forts when present, otherwise two halves + 15' break built from
-/// that calendar start (`[T, T+45]` then `[T+60, T+105]` for a 90' match). The
+/// [Match.timestamp] (`[T, T+45]` then `[T+60, T+105]` for a 90' match). The
 /// Insiders fetch spans first period start → last period end (includes the
 /// break gap so samples are available; play filtering excludes the break).
 TrainingIntenseTimeWindow? resolveMatchIntenseFetchWindow(

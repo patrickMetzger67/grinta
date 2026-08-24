@@ -136,10 +136,10 @@ bool isTrainingSessionLive({
 
 /// Match Live window for noSync / Intense cloud kits.
 ///
-/// Does **not** require a Temps forts kick-off highlight. Uses the calendar
-/// kick-off ([Match.dateCh]/[Match.timeCh], [scheduledStart], or field-linked
-/// [Match.timestamp]) first, then a recorded kick-off only as fallback. Ends at
-/// full-time highlight, else schedule + duration + 15' break (or [scheduledEnd]).
+/// Does **not** require a Temps forts kick-off highlight. Kick-off comes from
+/// field-linked [Match.timestamp] only (never [Match.dateCh]/[Match.timeCh]).
+/// Ends at full-time highlight, else timestamp + duration + 15' break
+/// (or [scheduledEnd]).
 bool isMatchSessionLive({
   required models.Match match,
   required List<Highlights> highlights,
@@ -170,30 +170,30 @@ bool isMatchSessionLive({
   return clock.isBefore(endAt);
 }
 
-/// Calendar kick-off when Temps forts are missing.
+/// Intense kick-off from the field-linked [Match.timestamp] only.
 ///
-/// Order: [Match.dateCh]/[timeCh] → [scheduledStart] → field-linked
-/// [Match.timestamp].
+/// Do **not** use [Match.dateCh] / [Match.timeCh] for Live / Insiders windows.
+DateTime? matchTimestampKickoffLocal(models.Match match) {
+  return match.timestamp?.toDate();
+}
+
+/// @Deprecated Use [matchTimestampKickoffLocal]. Kept as an alias for callers.
 DateTime? matchCalendarKickoffLocal(
   models.Match match, {
   DateTime? scheduledStart,
 }) {
-  return matchKickoffDateTime(match) ??
-      scheduledStart ??
-      match.timestamp?.toDate();
+  return matchTimestampKickoffLocal(match);
 }
 
-/// Live kick-off: **calendar first** (no Temps forts required), then recorded.
+/// Live kick-off: **[Match.timestamp] first** (no Temps forts / dateCh required),
+/// then a recorded kick-off only if timestamp is missing.
 DateTime? matchLiveStartLocal(
   models.Match match,
   List<Highlights> highlights, {
   DateTime? scheduledStart,
 }) {
-  final scheduled = matchCalendarKickoffLocal(
-    match,
-    scheduledStart: scheduledStart,
-  );
-  if (scheduled != null) return scheduled;
+  final fromTimestamp = matchTimestampKickoffLocal(match);
+  if (fromTimestamp != null) return fromTimestamp;
 
   final kickOff = findTimeEventHighlight(highlights, TimeType.kickOff);
   return kickOff?.dateTime?.toDate();
@@ -211,7 +211,8 @@ DateTime? matchIntenseScheduledEndLocal(
   return matchScheduledSlotEnd(kickOffAt, durationMinutes);
 }
 
-/// Local kick-off for Insiders windows: recorded Temps forts, else calendar.
+/// Local kick-off for Insiders windows: recorded Temps forts, else
+/// [Match.timestamp] (never dateCh/timeCh).
 DateTime? matchSessionStartLocal(
   models.Match match,
   List<Highlights> highlights,
@@ -219,7 +220,7 @@ DateTime? matchSessionStartLocal(
   final kickOff = findTimeEventHighlight(highlights, TimeType.kickOff);
   final recorded = kickOff?.dateTime?.toDate();
   if (recorded != null) return recorded;
-  return matchCalendarKickoffLocal(match);
+  return matchTimestampKickoffLocal(match);
 }
 
 /// Session start for Insiders fetch (UTC).
@@ -230,9 +231,9 @@ DateTime intenseLiveTrainingStartUtc(Training training) {
 
 /// Session start for Live / Insiders fetch (UTC).
 ///
-/// Prefers the calendar kick-off (date/time, agenda, or [Match.timestamp]) so
-/// Live / re-sync work without a Temps forts « début de match ». Falls back to
-/// a recorded kick-off when present.
+/// Uses [Match.timestamp] so Live / re-sync work without Temps forts and
+/// without relying on dateCh/timeCh. Falls back to a recorded kick-off only
+/// when timestamp is missing.
 DateTime? intenseLiveMatchStartUtc(
   List<Highlights> highlights, {
   models.Match? match,
