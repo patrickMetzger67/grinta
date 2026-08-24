@@ -286,7 +286,7 @@ TrainingIntenseTimeWindow? resolveMatchIntenseFetchWindow(
   );
 }
 
-/// Full match window for re-sync: schedule (preferred) → full-time / duration.
+/// Full match window for re-sync: [Match.timestamp] → full-time / halves.
 TrainingIntenseTimeWindow? resolveMatchIntenseResyncWindow(
   models.Match match,
   List<Highlights> highlights, {
@@ -302,7 +302,7 @@ TrainingIntenseTimeWindow? resolveMatchIntenseResyncWindow(
   );
 }
 
-/// Finish window: schedule (preferred) → min(now, plausible full-time).
+/// Finish window: [Match.timestamp] → min(now, plausible full-time).
 TrainingIntenseTimeWindow? resolveMatchIntenseFinishWindow(
   models.Match match,
   List<Highlights> highlights, {

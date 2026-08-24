@@ -1,7 +1,7 @@
 name: grinta
 description: A new Flutter application.
 
-version: 1.0.0+13
+version: 1.0.0+14
 
 environment:
   sdk: ">=3.6.0 <4.0.0"
