@@ -61,18 +61,23 @@ function normalizeNotifType(raw) {
 }
 
 /**
- * Quiet hours / `remindersEnabled` are for *local* agenda reminders only
- * (`settingsRemindersSubtitle`). Transactional FCM (sensor sync, convocation,
- * chat, …) must still reach the lock screen.
+ * Agenda reminders already use InternalReminderService + the OS scheduler.
+ * The Firestore trigger must not also FCM those docs (duplicate banners).
+ * Every other type respects user prefs: send now, or store `sendAfter`.
  */
-const REMINDER_PUSH_TYPES = new Set([
+const LOCAL_REMINDER_PUSH_TYPES = new Set([
   'trainingReminder',
   'matchOpponentStatsReminder',
   'RPEBefore',
 ]);
 
+function isLocalReminderNotificationType(type) {
+  return LOCAL_REMINDER_PUSH_TYPES.has(normalizeNotifType(type));
+}
+
+/** @deprecated Use [isLocalReminderNotificationType]. */
 function shouldHonorReminderPreferences(type) {
-  return REMINDER_PUSH_TYPES.has(normalizeNotifType(type));
+  return isLocalReminderNotificationType(type);
 }
 
 function normalizeLinkedUserId(entry) {
@@ -329,21 +334,24 @@ function buildMulticastMessage({
   collapseId,
 }) {
   const collapse = readNonEmptyString(collapseId);
+  const logo = readNonEmptyString(assets?.image) ?? GRINTA_ICON_512;
+  const icon = readNonEmptyString(assets?.icon) ?? GRINTA_ICON_192;
   return {
     tokens,
     notification: {
       title: title || 'Grinta',
       body: body || '',
+      imageUrl: logo,
     },
     data: dataPayload,
     android: {
       priority: 'high',
       ...(collapse ? { collapseKey: collapse } : {}),
-      // No imageUrl: when the app process is dead, a failed image fetch can
-      // drop the entire system-tray notification on Android (every type).
       notification: {
         channelId: ANDROID_FCM_CHANNEL_ID,
         icon: 'ic_notification',
+        imageUrl: logo,
+        color: '#F95C1B',
         sound: 'default',
         defaultSound: true,
         visibility: 'public',
@@ -358,6 +366,9 @@ function buildMulticastMessage({
         'apns-push-type': 'alert',
         ...(collapse ? { 'apns-collapse-id': collapse } : {}),
       },
+      fcmOptions: {
+        imageUrl: logo,
+      },
       payload: {
         aps: {
           alert: {
@@ -366,6 +377,7 @@ function buildMulticastMessage({
           },
           sound: 'default',
           badge: 1,
+          'mutable-content': 1,
           'interruption-level': 'active',
         },
       },
@@ -377,8 +389,8 @@ function buildMulticastMessage({
       notification: {
         title: title || 'Grinta',
         body: body || '',
-        icon: assets.icon,
-        image: assets.image,
+        icon,
+        image: logo,
         ...(collapse ? { tag: collapse, renotify: true } : {}),
       },
       fcmOptions: {
@@ -478,7 +490,6 @@ async function filterTokensByRecipientPreferences({
 }) {
   const userIds = normalizeUserIdList(recipientUserIds);
   const requestedTokens = new Set(normalizeTokenList(fcmTokens));
-  const honorPrefs = shouldHonorReminderPreferences(type);
 
   if (userIds.length === 0) {
     // Legacy callers without recipientUserIds: keep previous behaviour.
@@ -507,14 +518,6 @@ async function filterTokensByRecipientPreferences({
       requestedTokens,
     );
 
-    if (!honorPrefs) {
-      allowedUserIds.push(userId);
-      for (const token of userTokens) {
-        allowedTokens.add(token);
-      }
-      continue;
-    }
-
     const prefSnap = await db
       .collection('users')
       .doc(userId)
@@ -534,13 +537,12 @@ async function filterTokensByRecipientPreferences({
       }
       if (decision.reason === 'quiet') {
         skippedQuiet += 1;
-        if (userTokens.length > 0) {
-          quietDeferred.push({
-            userId,
-            prefs,
-            tokens: userTokens,
-          });
-        }
+        // Queue even without tokens — the hourly drain reloads fcmTokens.
+        quietDeferred.push({
+          userId,
+          prefs,
+          tokens: userTokens,
+        });
       }
       continue;
     }
@@ -569,8 +571,10 @@ module.exports = {
   normalizeLinkedUserId,
   collectLinkedUserIdsFromMemberData,
   shouldHonorReminderPreferences,
+  isLocalReminderNotificationType,
   buildCollapseId,
-  REMINDER_PUSH_TYPES,
+  LOCAL_REMINDER_PUSH_TYPES,
+  REMINDER_PUSH_TYPES: LOCAL_REMINDER_PUSH_TYPES,
   parseNotificationPreferences,
   getZonedWeekdayAndHour,
   isQuietAt,

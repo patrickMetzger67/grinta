@@ -1,19 +1,17 @@
 const { onDocumentCreated } = require('firebase-functions/v2/firestore');
-const { FieldValue, getFirestore } = require('firebase-admin/firestore');
+const { FieldValue, Timestamp, getFirestore } = require('firebase-admin/firestore');
 const {
   readNonEmptyString,
   normalizeNotifType,
   collectLinkedUserIdsFromMemberData,
   filterTokensByRecipientPreferences,
-  shouldHonorReminderPreferences,
+  isLocalReminderNotificationType,
+  computeSendAfter,
   resolveBrand,
   resolveBrandAssets,
   BRAND_GRINTA,
 } = require('./send_push_fcm_helpers');
-const {
-  enqueueQuietDeferredPushes,
-  sendFcmToTokens,
-} = require('./pending_push');
+const { sendFcmToTokens } = require('./pending_push');
 
 const REGION = 'europe-west1';
 const MEMBER_COLLECTION = 'member';
@@ -111,7 +109,7 @@ async function dispatchNotificationPush({ db, snap }) {
   const type = normalizeNotifType(data.type);
   // Local agenda reminders already use InternalReminderService + the OS
   // scheduler. Do not also FCM them from this trigger.
-  if (shouldHonorReminderPreferences(type)) {
+  if (isLocalReminderNotificationType(type)) {
     await markDispatch(snap, { status: 'skipped', reason: 'local_reminder' });
     return { skipped: true, reason: 'local_reminder' };
   }
@@ -151,33 +149,24 @@ async function dispatchNotificationPush({ db, snap }) {
     type,
   });
 
-  const deferredCount = await enqueueQuietDeferredPushes({
-    db,
-    quietDeferred: filtered.quietDeferred ?? [],
-    clubId,
-    brand,
-    title,
-    body,
-    type,
-    payload: {
-      id: objectId,
-      type,
-      playerId: data.playerId ?? '',
-      body,
-    },
-    icon: assets.icon,
-    image: assets.image,
+  const deferred = await persistQuietDeferral({
+    snap,
+    filtered,
+    recipientUserIds,
+    assets,
   });
+  if (deferred) {
+    return deferred;
+  }
 
   if (filtered.tokens.length === 0) {
-    const status = deferredCount > 0 ? 'deferred' : 'skipped';
-    const reason = deferredCount > 0 ? 'quiet' : 'no_tokens';
+    const reason =
+      filtered.skippedDisabled > 0 ? 'disabled' : 'no_tokens';
     await markDispatch(snap, {
-      status,
+      status: 'skipped',
       reason,
       skippedDisabled: filtered.skippedDisabled,
       skippedQuiet: filtered.skippedQuiet,
-      deferredCount,
     });
     console.log(
       '[sendPushOnNotificationCreated] no immediate tokens',
@@ -187,10 +176,10 @@ async function dispatchNotificationPush({ db, snap }) {
         recipients: recipientUserIds.length,
         skippedDisabled: filtered.skippedDisabled,
         skippedQuiet: filtered.skippedQuiet,
-        deferredCount,
+        reason,
       }),
     );
-    return { skipped: true, reason, deferredCount };
+    return { skipped: true, reason };
   }
 
   try {
@@ -248,9 +237,165 @@ async function dispatchNotificationPush({ db, snap }) {
   }
 }
 
+async function persistQuietDeferral({
+  snap,
+  filtered,
+  recipientUserIds,
+  assets,
+  now = new Date(),
+}) {
+  const quiet = filtered.quietDeferred ?? [];
+  if (quiet.length === 0) return null;
+
+  const entry = quiet[0];
+  const sendAfter = computeSendAfter(entry.prefs, now);
+  if (!sendAfter) {
+    await markDispatch(snap, {
+      status: 'skipped',
+      reason: 'quiet_window_exceeded',
+      recipientUserId: entry.userId,
+    });
+    return { skipped: true, reason: 'quiet_window_exceeded' };
+  }
+
+  await markDispatch(snap, {
+    status: 'deferred',
+    reason: 'quiet',
+    sendAfter: Timestamp.fromDate(sendAfter),
+    recipientUserId: entry.userId,
+    recipientUserIds,
+    icon: assets?.icon ?? null,
+    image: assets?.image ?? null,
+    skippedQuiet: filtered.skippedQuiet,
+  });
+
+  console.log(
+    '[sendPushOnNotificationCreated] deferred until',
+    sendAfter.toISOString(),
+    JSON.stringify({ id: snap.id, userId: entry.userId }),
+  );
+
+  return {
+    skipped: true,
+    reason: 'quiet',
+    sendAfter,
+    deferredCount: quiet.length,
+  };
+}
+
+async function processDeferredNotificationDoc(db, snap, now = new Date()) {
+  const data = snap.data() ?? {};
+  if ((data.pushDispatch?.status ?? '') !== 'deferred') {
+    return 'skipped';
+  }
+
+  const type = normalizeNotifType(data.type);
+  if (isLocalReminderNotificationType(type)) {
+    await markDispatch(snap, { status: 'skipped', reason: 'local_reminder' });
+    return 'skipped';
+  }
+
+  const storedRecipient = readNonEmptyString(data.pushDispatch?.recipientUserId);
+  const recipientUserIds = storedRecipient
+    ? [storedRecipient]
+    : await resolveRecipientUserIds({
+        db,
+        userId: data.userId,
+        playerId: data.playerId,
+      });
+
+  if (recipientUserIds.length === 0) {
+    await markDispatch(snap, { status: 'skipped', reason: 'no_recipient' });
+    return 'cancelled';
+  }
+
+  const title = readNonEmptyString(data.title) ?? '';
+  const body = readNonEmptyString(data.body) ?? '';
+  const clubId = readNonEmptyString(data.clubId) || '0';
+  const objectId = readNonEmptyString(data.objectId) ?? snap.id;
+  const brand = resolveBrand(BRAND_GRINTA, clubId);
+  const assets = resolveBrandAssets(brand, {
+    icon: data.pushDispatch?.icon,
+    image: data.pushDispatch?.image,
+  });
+
+  const filtered = await filterTokensByRecipientPreferences({
+    db,
+    recipientUserIds,
+    fcmTokens: [],
+    brand,
+    type,
+    now,
+  });
+
+  if (filtered.skippedDisabled > 0 && filtered.tokens.length === 0) {
+    await markDispatch(snap, { status: 'skipped', reason: 'disabled' });
+    return 'cancelled';
+  }
+
+  const deferred = await persistQuietDeferral({
+    snap,
+    filtered,
+    recipientUserIds,
+    assets,
+    now,
+  });
+  if (deferred) {
+    return 'rescheduled';
+  }
+
+  if (filtered.tokens.length === 0) {
+    await markDispatch(snap, { status: 'skipped', reason: 'no_tokens' });
+    return 'cancelled';
+  }
+
+  try {
+    const result = await sendFcmToTokens({
+      tokens: filtered.tokens,
+      title,
+      body,
+      type,
+      payload: {
+        id: objectId,
+        type,
+        playerId: data.playerId ?? '',
+        body,
+      },
+      brand,
+      clubId,
+      icon: assets.icon,
+      image: assets.image,
+    });
+
+    await markDispatch(snap, {
+      status: 'sent',
+      reason: null,
+      sentAt: FieldValue.serverTimestamp(),
+      total: result.total,
+      successCount: result.successCount,
+      failureCount: result.failureCount,
+    });
+    return 'sent';
+  } catch (error) {
+    console.error(
+      '[drainPendingPush] deferred notification failed',
+      snap.id,
+      error,
+    );
+    await markDispatch(snap, {
+      status: 'deferred',
+      reason: 'send_error',
+      error: error?.message ?? String(error),
+    });
+    return 'error';
+  }
+}
+
 module.exports = {
   createSendPushOnNotificationCreated,
   dispatchNotificationPush,
+  processDeferredNotificationDoc,
+  persistQuietDeferral,
   resolveRecipientUserIds,
   collectLinkedUserIdsFromMemberData,
   isPushChannel,

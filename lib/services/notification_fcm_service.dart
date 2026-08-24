@@ -986,9 +986,10 @@ class NotificationFCMService {
   /// default to `'0'` (Grinta / InvitationConfig.grintaInvitationClubId).
   ///
   /// Pass [recipientUserIds] so the CF can load `users/{uid}/fcmTokens` when
-  /// [tokens] is empty, and apply quiet-hours prefs only to reminder types.
+  /// [tokens] is empty, and honour each recipient's notification preferences
+  /// (quiet hours → `sendAfter` on the server, drained hourly).
   /// Returns `true` when the Cloud Function call succeeds (including when all
-  /// reminder recipients were skipped by prefs — check CF summary logs).
+  /// recipients were deferred or skipped by prefs — check CF summary logs).
   Future<bool> postNotification({
     required List<String> tokens,
     required String title,

@@ -778,7 +778,8 @@ exports.approveParentalConsent = createApproveParentalConsent();
  * FCM push (Grinta + Aserstein dual-brand, shared project).
  *
  * Grinta clients always pass `brand: "grinta"` and typically `clubId: "0"`.
- * Quiet-hours recipients are deferred to `pending_push` and drained by
+ * Quiet-hours recipients are stored with `sendAfter` (on the notification
+ * doc and/or `pending_push`) and drained hourly by
  * `drainPendingPushNotifications`.
  *
  * Deploy:

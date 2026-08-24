@@ -114,7 +114,7 @@ async function enqueueQuietDeferredPushes({
   for (const entry of quietDeferred) {
     const userId = readNonEmptyString(entry.userId);
     const tokens = normalizeTokenList(entry.tokens);
-    if (!userId || tokens.length === 0) continue;
+    if (!userId) continue;
 
     const sendAfter = computeSendAfter(entry.prefs, now);
     if (!sendAfter) continue;
@@ -269,7 +269,11 @@ async function processPendingPushDoc(db, doc) {
 }
 
 /**
- * Scheduled: drain due pending_push docs every 5 minutes.
+ * Scheduled: drain due deferred pushes every hour (Europe/Paris).
+ *
+ * Reads:
+ * - `pending_push` (callable / chat path)
+ * - `notification` docs with `pushDispatch.status == deferred`
  *
  * Deploy:
  *   firebase deploy --only functions:drainPendingPushNotifications
@@ -277,14 +281,24 @@ async function processPendingPushDoc(db, doc) {
 function createDrainPendingPushNotifications() {
   return onSchedule(
     {
-      schedule: 'every 5 minutes',
+      schedule: '0 * * * *',
+      timeZone: 'Europe/Paris',
       region: REGION,
       timeoutSeconds: 120,
     },
     async () => {
       const db = getFirestore();
       const now = Timestamp.now();
-      const snap = await db
+      const counts = {
+        sent: 0,
+        cancelled: 0,
+        expired: 0,
+        rescheduled: 0,
+        error: 0,
+        skipped: 0,
+      };
+
+      const pendingSnap = await db
         .collection(PENDING_PUSH_COLLECTION)
         .where('status', '==', 'pending')
         .where('sendAfter', '<=', now)
@@ -292,22 +306,28 @@ function createDrainPendingPushNotifications() {
         .limit(DRAIN_BATCH_SIZE)
         .get();
 
-      if (snap.empty) {
-        console.log('[drainPendingPush] nothing due');
-        return;
-      }
-
-      const counts = {
-        sent: 0,
-        cancelled: 0,
-        expired: 0,
-        rescheduled: 0,
-        error: 0,
-      };
-
-      for (const doc of snap.docs) {
+      for (const doc of pendingSnap.docs) {
         const outcome = await processPendingPushDoc(db, doc);
         counts[outcome] = (counts[outcome] ?? 0) + 1;
+      }
+
+      const { processDeferredNotificationDoc } = require('./notify_on_create');
+      const deferredSnap = await db
+        .collection('notification')
+        .where('pushDispatch.status', '==', 'deferred')
+        .where('pushDispatch.sendAfter', '<=', now)
+        .orderBy('pushDispatch.sendAfter', 'asc')
+        .limit(DRAIN_BATCH_SIZE)
+        .get();
+
+      for (const doc of deferredSnap.docs) {
+        const outcome = await processDeferredNotificationDoc(db, doc);
+        counts[outcome] = (counts[outcome] ?? 0) + 1;
+      }
+
+      if (pendingSnap.empty && deferredSnap.empty) {
+        console.log('[drainPendingPush] nothing due');
+        return;
       }
 
       console.log('[drainPendingPush] done', JSON.stringify(counts));

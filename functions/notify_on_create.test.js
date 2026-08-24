@@ -1,9 +1,12 @@
 const { describe, it } = require('node:test');
 const assert = require('node:assert/strict');
 
+const { Timestamp } = require('firebase-admin/firestore');
+
 const {
   isPushChannel,
   resolveRecipientUserIds,
+  persistQuietDeferral,
 } = require('./notify_on_create');
 
 describe('isPushChannel', () => {
@@ -106,5 +109,45 @@ describe('resolveRecipientUserIds', () => {
       playerId: 'alias-1',
     });
     assert.deepEqual(ids, ['auth-from-alias']);
+  });
+});
+
+describe('persistQuietDeferral', () => {
+  it('stores sendAfter from user quiet-hours prefs', async () => {
+    const written = {};
+    const snap = {
+      id: 'notif-1',
+      ref: {
+        async update(fields) {
+          Object.assign(written, fields);
+        },
+      },
+    };
+    const prefs = {
+      remindersEnabled: true,
+      quietDays: [],
+      quietHoursStart: 22,
+      quietHoursEnd: 7,
+      timezone: 'UTC',
+    };
+    const result = await persistQuietDeferral({
+      snap,
+      filtered: {
+        skippedQuiet: 1,
+        quietDeferred: [
+          { userId: 'u1', prefs, tokens: ['tok'] },
+        ],
+      },
+      recipientUserIds: ['u1'],
+      assets: { icon: 'https://grinta.web.app/icons/Icon-192.png' },
+      now: new Date('2026-08-03T23:00:00Z'),
+    });
+
+    assert.equal(result.reason, 'quiet');
+    assert.equal(written['pushDispatch.status'], 'deferred');
+    assert.equal(written['pushDispatch.reason'], 'quiet');
+    assert.equal(written['pushDispatch.recipientUserId'], 'u1');
+    assert.ok(written['pushDispatch.sendAfter'] instanceof Timestamp);
+    assert.equal(written['pushDispatch.sendAfter'].toDate().getUTCHours(), 7);
   });
 });

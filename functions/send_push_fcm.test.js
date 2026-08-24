@@ -13,6 +13,7 @@ const {
   buildCollapseId,
   normalizeNotifType,
   shouldHonorReminderPreferences,
+  isLocalReminderNotificationType,
   collectLinkedUserIdsFromMemberData,
   filterTokensByRecipientPreferences,
   ANDROID_FCM_CHANNEL_ID,
@@ -190,7 +191,7 @@ describe('notification preferences', () => {
 });
 
 describe('buildMulticastMessage', () => {
-  it('targets the Android fcm_channel without a tray imageUrl', () => {
+  it('targets the Android fcm_channel with the Grinta logo', () => {
     const message = buildMulticastMessage({
       tokens: ['tok'],
       title: 'Alice',
@@ -203,9 +204,12 @@ describe('buildMulticastMessage', () => {
     assert.equal(message.android.priority, 'high');
     assert.equal(message.android.notification.channelId, ANDROID_FCM_CHANNEL_ID);
     assert.equal(message.android.notification.icon, 'ic_notification');
-    assert.equal(message.android.notification.imageUrl, undefined);
-    assert.equal(message.notification.imageUrl, undefined);
+    assert.equal(message.android.notification.imageUrl, GRINTA_ICON_512);
+    assert.equal(message.android.notification.color, '#F95C1B');
+    assert.equal(message.notification.imageUrl, GRINTA_ICON_512);
     assert.equal(message.notification.title, 'Alice');
+    assert.equal(message.webpush.notification.icon, GRINTA_ICON_192);
+    assert.equal(message.apns.fcmOptions.imageUrl, GRINTA_ICON_512);
   });
 
   it('sends an iOS alert push for every type, not a silent content-available', () => {
@@ -226,7 +230,8 @@ describe('buildMulticastMessage', () => {
       assert.equal(message.apns.payload.aps.sound, 'default');
       assert.equal(message.apns.payload.aps['interruption-level'], 'active');
       assert.equal(message.apns.payload.aps['content-available'], undefined);
-      assert.equal(message.apns.fcmOptions, undefined);
+      assert.equal(message.apns.fcmOptions.imageUrl, GRINTA_ICON_512);
+      assert.equal(message.apns.payload.aps['mutable-content'], 1);
     }
   });
 
@@ -253,14 +258,13 @@ describe('normalizeNotifType / reminder prefs', () => {
     assert.equal(normalizeNotifType('RPEAfter'), 'RPEAfter');
   });
 
-  it('honours quiet hours only for reminder types', () => {
-    assert.equal(shouldHonorReminderPreferences('trainingReminder'), true);
+  it('marks only agenda types as local reminders (no FCM from trigger)', () => {
+    assert.equal(isLocalReminderNotificationType('trainingReminder'), true);
     assert.equal(shouldHonorReminderPreferences('NotifType.RPEBefore'), true);
-    assert.equal(shouldHonorReminderPreferences('RPEAfter'), false);
-    assert.equal(shouldHonorReminderPreferences('NotifType.RPEAfter'), false);
-    assert.equal(shouldHonorReminderPreferences('convocation'), false);
-    assert.equal(shouldHonorReminderPreferences('event'), false);
-    assert.equal(shouldHonorReminderPreferences('chat'), false);
+    assert.equal(isLocalReminderNotificationType('RPEAfter'), false);
+    assert.equal(isLocalReminderNotificationType('convocation'), false);
+    assert.equal(isLocalReminderNotificationType('event'), false);
+    assert.equal(isLocalReminderNotificationType('chat'), false);
   });
 
   it('builds a short collapse id', () => {
@@ -362,7 +366,7 @@ describe('filterTokensByRecipientPreferences', () => {
   };
   const duringQuiet = new Date('2026-08-03T23:00:00Z');
 
-  it('sends RPEAfter immediately during quiet hours', async () => {
+  it('defers RPEAfter during quiet hours so the hourly job can send later', async () => {
     const db = fakeDb({
       prefsByUser: { u1: quietPrefs },
       tokensByUser: { u1: ['tok-1'] },
@@ -374,9 +378,26 @@ describe('filterTokensByRecipientPreferences', () => {
       type: 'RPEAfter',
       now: duringQuiet,
     });
-    assert.deepEqual(result.tokens, ['tok-1']);
-    assert.equal(result.skippedQuiet, 0);
-    assert.equal(result.quietDeferred.length, 0);
+    assert.deepEqual(result.tokens, []);
+    assert.equal(result.skippedQuiet, 1);
+    assert.equal(result.quietDeferred.length, 1);
+    assert.equal(result.quietDeferred[0].userId, 'u1');
+  });
+
+  it('queues a quiet recipient even when no FCM token is stored yet', async () => {
+    const db = fakeDb({
+      prefsByUser: { u1: quietPrefs },
+      tokensByUser: { u1: [] },
+    });
+    const result = await filterTokensByRecipientPreferences({
+      db,
+      recipientUserIds: ['u1'],
+      fcmTokens: [],
+      type: 'convocation',
+      now: duringQuiet,
+    });
+    assert.equal(result.quietDeferred.length, 1);
+    assert.deepEqual(result.quietDeferred[0].tokens, []);
   });
 
   it('defers trainingReminder during quiet hours', async () => {
@@ -406,6 +427,7 @@ describe('filterTokensByRecipientPreferences', () => {
       recipientUserIds: ['u1', 'u2'],
       fcmTokens: [],
       type: 'convocation',
+      now: new Date('2026-08-03T10:00:00Z'),
     });
     assert.deepEqual(result.tokens.sort(), ['tok-a', 'tok-b']);
   });

@@ -21,9 +21,8 @@ const REGION = 'europe-west1';
 /**
  * Callable: sendPushFCMNotification (europe-west1)
  *
- * Recipient prefs apply only to reminder types (trainingReminder,
- * matchOpponentStatsReminder, RPEBefore). Transactional types (RPEAfter,
- * convocation, chat, …) are sent immediately.
+ * Recipient prefs (`remindersEnabled`, quiet days / hours) apply to every
+ * type. Quiet recipients are stored with `sendAfter` and drained hourly.
  *
  * Deploy:
  *   firebase deploy --only functions:sendPushFCMNotification,functions:drainPendingPushNotifications,functions:sendPushOnNotificationCreated
