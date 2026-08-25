@@ -811,3 +811,13 @@ exports.updateChatGroup = createUpdateChatGroup();
 exports.addChatGroupMember = createAddChatGroupMember();
 exports.removeChatGroupMember = createRemoveChatGroupMember();
 exports.deleteChatGroup = createDeleteChatGroup();
+
+/**
+ * Intense cloud auto-sync (owners with withSyncing=false).
+ * Match windows follow the in-app manual sync (timestamp + mi-temps / Temps forts).
+ *
+ * Deploy:
+ *   firebase deploy --only functions:insidersScheduledIntenseSync
+ */
+const { insidersScheduledIntenseSync } = require('./intenseScheduledSync');
+exports.insidersScheduledIntenseSync = insidersScheduledIntenseSync;

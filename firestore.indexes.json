@@ -48,6 +48,22 @@
         { "fieldPath": "pushDispatch.status", "order": "ASCENDING" },
         { "fieldPath": "pushDispatch.sendAfter", "order": "ASCENDING" }
       ]
+    },
+    {
+      "collectionGroup": "training",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "ownerId", "order": "ASCENDING" },
+        { "fieldPath": "withTracker", "order": "ASCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "matchCalendar",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "ownerId", "order": "ASCENDING" },
+        { "fieldPath": "withTracker", "order": "ASCENDING" }
+      ]
     }
   ],
   "fieldOverrides": []
