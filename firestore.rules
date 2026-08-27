@@ -72,6 +72,7 @@ service cloud.firestore {
           || request.path[4] == 'member'
           || request.path[4] == 'chat_polls'
           || request.path[4] == 'ads'
+          || request.path[3] == 'ads'
           || (request.path[4] == 'users' && request.path.size() == 5)
         );
     }
@@ -138,9 +139,11 @@ service cloud.firestore {
         && !('delivery' in request.resource.data);
     }
 
-    // Shop ads: authenticated read only (not the public catch-all).
-    function isAuthOnlyReadCollection() {
-      return request.path.size() >= 5 && request.path[4] == 'ads';
+    // Shop ads collection only. request.path[3] is the first collection
+    // (/databases/(default)/documents/{collection}/…). Do NOT use path[4]
+    // (document id) — that would deny catch-all reads for any doc named "ads".
+    function isAdsCollection() {
+      return request.path.size() >= 4 && request.path[3] == 'ads';
     }
 
     function isValidAdCounterIncrement() {
@@ -479,8 +482,10 @@ service cloud.firestore {
 
     // Catch-all for the rest of the app (matches deployed prod behavior).
     // Excludes paths above so dedicated rules are enforced (Firestore ORs allows).
+    // Ads are excluded from public catch-all read so match /ads/{adId} applies.
+    // Team / club / member / season reads stay on the same allow as before.
     match /{document=**} {
-      allow read: if !isServerOnlyCollection() && !isAuthOnlyReadCollection();
+      allow read: if !isServerOnlyCollection() && !isAdsCollection();
       allow write: if request.auth != null && !isCatchAllWritePath();
     }
   }

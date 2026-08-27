@@ -82,8 +82,13 @@ class ShopAdsPreferencesService extends ChangeNotifier {
     }
 
     try {
-      final snap = await _userRef(uid).get();
-      if (FirebaseAuth.instance.currentUser?.uid != uid) return;
+      final snap = await _userRef(uid).get().timeout(
+        const Duration(seconds: 8),
+      );
+      if (FirebaseAuth.instance.currentUser?.uid != uid) {
+        _initialized = true;
+        return;
+      }
       _applyMap(snap.data());
       _loadedUid = uid;
       _initialized = true;

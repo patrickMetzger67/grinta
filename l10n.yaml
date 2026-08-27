@@ -1,5 +1,8 @@
 # Generated Dart is gitignored; ARB files are the committed source of truth.
+# After git pull: `flutter pub get` (or `flutter gen-l10n`) recreates
+# lib/l10n/app_localizations*.dart next to these ARB files.
 arb-dir: lib/l10n
 template-arb-file: app_fr.arb
 output-localization-file: app_localizations.dart
 output-class: AppLocalizations
+output-dir: lib/l10n

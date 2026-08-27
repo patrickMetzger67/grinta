@@ -30,8 +30,12 @@ class ShopAdAudienceResolver {
         uid.isNotEmpty &&
         playerId != null &&
         playerId.isNotEmpty) {
-      hasIndividualTracker =
-          await _wearableRepository.hasAnyConnected(uid, playerId);
+      try {
+        hasIndividualTracker =
+            await _wearableRepository.hasAnyConnected(uid, playerId);
+      } catch (_) {
+        hasIndividualTracker = false;
+      }
     }
 
     return resolveShopAdAudience(

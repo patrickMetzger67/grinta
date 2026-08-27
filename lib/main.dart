@@ -106,9 +106,10 @@ Future<void> main() async {
       SubscriptionService.instance.ensureInitialized(),
       SubscriptionLimitsService.instance.ensureInitialized(),
       EshopConfigService.instance.ensureInitialized(),
-      ShopAdsPreferencesService.instance.ensureInitialized(),
       BiometricUnlockService.instance.ensureInitialized(),
     ]);
+    // Ads prefs are optional UX — never block first frame / team load.
+    unawaited(ShopAdsPreferencesService.instance.ensureInitialized());
 
     runApp(
       MultiProvider(

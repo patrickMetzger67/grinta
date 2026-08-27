@@ -36,10 +36,15 @@ class ShopAdsService {
   }
 
   Future<List<ShopAd>> fetchAll() async {
-    final snapshot = await _col.get();
-    return snapshot.docs
-        .map((doc) => ShopAd.fromDoc(doc.id, doc.data()))
-        .toList(growable: false);
+    try {
+      final snapshot = await _col.get();
+      return snapshot.docs
+          .map((doc) => ShopAd.fromDoc(doc.id, doc.data()))
+          .toList(growable: false);
+    } catch (e, st) {
+      debugPrint('ShopAdsService.fetchAll failed: $e\n$st');
+      return const <ShopAd>[];
+    }
   }
 
   Future<ShopAd?> fetchById(String id) async {
@@ -141,28 +146,36 @@ class ShopAdsService {
   }
 
   /// Picks a random current ad for [session], or null when none should show.
+  ///
+  /// Never throws — a missing `config/eshop` doc, permission-denied on `ads`,
+  /// or wearable lookup failure must not block home / teams.
   Future<ShopAd?> pickAdToShow(
     AppSession session, {
     DateTime? now,
     Random? random,
   }) async {
-    await EshopConfigService.instance.ensureInitialized();
-    if (!EshopConfigService.instance.shopAdsEnabled) return null;
+    try {
+      await EshopConfigService.instance.ensureInitialized();
+      if (!EshopConfigService.instance.shopAdsEnabled) return null;
 
-    final prefs = ShopAdsPreferencesService.instance;
-    await prefs.ensureInitialized();
-    if (!prefs.eshopAds) return null;
-    if (prefs.alreadyShownToday(now: now)) return null;
+      final prefs = ShopAdsPreferencesService.instance;
+      await prefs.ensureInitialized();
+      if (!prefs.eshopAds) return null;
+      if (prefs.alreadyShownToday(now: now)) return null;
 
-    final ads = await fetchAll();
-    if (ads.isEmpty) return null;
+      final ads = await fetchAll();
+      if (ads.isEmpty) return null;
 
-    final audience = await _audienceResolver.resolve(session);
-    final eligible = selectEligibleShopAds(
-      ads: ads,
-      audience: audience,
-      now: now ?? DateTime.now(),
-    );
-    return pickRandomItem(eligible, random: random);
+      final audience = await _audienceResolver.resolve(session);
+      final eligible = selectEligibleShopAds(
+        ads: ads,
+        audience: audience,
+        now: now ?? DateTime.now(),
+      );
+      return pickRandomItem(eligible, random: random);
+    } catch (e, st) {
+      debugPrint('ShopAdsService.pickAdToShow failed: $e\n$st');
+      return null;
+    }
   }
 }

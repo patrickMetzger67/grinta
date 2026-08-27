@@ -613,7 +613,7 @@ class _LoginScreenState extends State<LoginScreen> {
     }
 
     await YoutubeTopVideoPrompt.maybeShow();
-    await ShopAdPrompt.maybeShow();
+    unawaited(ShopAdPrompt.maybeShow());
   }
 
   Future<bool> _userNeedsInvitationOnboarding(UserCredential credential) async {
@@ -1042,7 +1042,7 @@ class _LoginScreenState extends State<LoginScreen> {
           await UserRootService.instance.reload();
         }
         await YoutubeTopVideoPrompt.maybeShow();
-    await ShopAdPrompt.maybeShow();
+        unawaited(ShopAdPrompt.maybeShow());
         final unlockContext = appNavigatorKey.currentContext ?? rootContext;
         if (unlockContext != null && unlockContext.mounted) {
           await maybePromptBiometricUnlock(unlockContext);
@@ -1168,7 +1168,7 @@ class _LoginScreenState extends State<LoginScreen> {
         );
       }
       await YoutubeTopVideoPrompt.maybeShow();
-    await ShopAdPrompt.maybeShow();
+      unawaited(ShopAdPrompt.maybeShow());
     } on SocialAuthCancelledException {
       debugPrint('Auth cancelled provider=$methodName');
       return;

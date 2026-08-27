@@ -1,4 +1,5 @@
 import 'package:cached_network_image/cached_network_image.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:grinta/core/extensions/l10n_extension.dart';
 import 'package:grinta/model/shop_ad.dart';
@@ -28,7 +29,18 @@ class ShopAdPrompt {
   /// Safe to invoke multiple times. No-ops when a dialog is already visible,
   /// the user opted out, the global kill switch is off, or an ad was already
   /// shown today.
+  ///
+  /// Never throws: ads must not abort login, home, or team loading.
   static Future<void> maybeShow({bool fromFeatureChange = false}) async {
+    try {
+      await _maybeShowBody(fromFeatureChange: fromFeatureChange);
+    } catch (e, st) {
+      debugPrint('ShopAdPrompt.maybeShow failed: $e\n$st');
+      _dialogOpen = false;
+    }
+  }
+
+  static Future<void> _maybeShowBody({required bool fromFeatureChange}) async {
     if (_dialogOpen) return;
 
     if (fromFeatureChange) {
@@ -102,22 +114,32 @@ class _ShopAdDialogState extends State<ShopAdDialog> {
   Future<void> _openShop() async {
     if (_busy) return;
     setState(() => _busy = true);
-    final url = widget.ad.url.trim();
-    await ShopAdsService.instance.incrementClicks(widget.ad.id);
-    final uri = Uri.tryParse(url);
-    var launched = false;
-    if (uri != null && (uri.isScheme('http') || uri.isScheme('https'))) {
-      launched = await launchUrl(uri, mode: LaunchMode.externalApplication);
-    }
-    if (!mounted) return;
-    if (!launched) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(context.l10n.shopAdOpenFailed)),
-      );
-    }
-    setState(() => _busy = false);
-    if (mounted) {
-      Navigator.of(context, rootNavigator: true).pop();
+    try {
+      final url = widget.ad.url.trim();
+      await ShopAdsService.instance.incrementClicks(widget.ad.id);
+      final uri = Uri.tryParse(url);
+      var launched = false;
+      if (uri != null && (uri.isScheme('http') || uri.isScheme('https'))) {
+        launched = await launchUrl(uri, mode: LaunchMode.externalApplication);
+      }
+      if (!mounted) return;
+      if (!launched) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(context.l10n.shopAdOpenFailed)),
+        );
+      }
+    } catch (e, st) {
+      debugPrint('ShopAdDialog._openShop failed: $e\n$st');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(context.l10n.shopAdOpenFailed)),
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() => _busy = false);
+        Navigator.of(context, rootNavigator: true).pop();
+      }
     }
   }
 

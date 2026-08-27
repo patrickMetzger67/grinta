@@ -88,26 +88,44 @@ class WearableDevicesRepository {
   /// True when any wearable or individual Intense GPS is connected.
   ///
   /// Used by shop-ad targeting (`playerWithoutTracker`): conservative —
-  /// a missing sync doc is treated as not connected.
+  /// a missing sync doc or a permission error is treated as not connected.
+  /// Never throws: ads targeting must not abort home / teams.
   Future<bool> hasAnyConnected(String uid, String playerId) async {
     if (uid.isEmpty || playerId.isEmpty) return false;
 
-    final whoop = await _whoopRepository.getConfig(uid, playerId);
-    if (whoop?.connected == true) return true;
-    final strava = await _stravaRepository.getConfig(uid, playerId);
-    if (strava?.connected == true) return true;
-    final polar = await _polarRepository.getConfig(uid, playerId);
-    if (polar?.connected == true) return true;
-    final fitbit = await _fitbitRepository.getConfig(uid, playerId);
-    if (fitbit?.connected == true) return true;
-    final oura = await _ouraRepository.getConfig(uid, playerId);
-    if (oura?.connected == true) return true;
-    final appleHealth = await _appleHealthRepository.getConfig(uid, playerId);
-    if (appleHealth?.connected == true) return true;
-    final googleHealth = await _googleHealthRepository.getConfig(uid, playerId);
-    if (googleHealth?.connected == true) return true;
-    final intenseGps = await _intenseGpsRepository.getConfig(uid, playerId);
-    return intenseGps?.connected == true;
+    Future<bool> connected(
+      Future<dynamic> Function() load,
+    ) async {
+      try {
+        final config = await load();
+        return config?.connected == true;
+      } catch (_) {
+        return false;
+      }
+    }
+
+    if (await connected(() => _whoopRepository.getConfig(uid, playerId))) {
+      return true;
+    }
+    if (await connected(() => _stravaRepository.getConfig(uid, playerId))) {
+      return true;
+    }
+    if (await connected(() => _polarRepository.getConfig(uid, playerId))) {
+      return true;
+    }
+    if (await connected(() => _fitbitRepository.getConfig(uid, playerId))) {
+      return true;
+    }
+    if (await connected(() => _ouraRepository.getConfig(uid, playerId))) {
+      return true;
+    }
+    if (await connected(() => _appleHealthRepository.getConfig(uid, playerId))) {
+      return true;
+    }
+    if (await connected(() => _googleHealthRepository.getConfig(uid, playerId))) {
+      return true;
+    }
+    return connected(() => _intenseGpsRepository.getConfig(uid, playerId));
   }
 
   bool isTypeConnected({
