@@ -227,6 +227,30 @@ class _WebAppRootState extends State<WebAppRoot> {
       },
     );
 
+    final teamsPage = TeamsListScreen(
+      key: ValueKey('teams-$localeCode'),
+      managedTeamsIds: getManagedTeamsIds,
+      onTeamTap: (context, team, isManager) {
+        AnalyticsInteractions.logFeature(
+          AnalyticsFeatures.openTeamDetail,
+          parameters: <String, Object>{
+            'is_manager': isManager,
+            'source': 'teams_list',
+          },
+        );
+        Navigator.of(context).push(
+          analyticsMaterialRoute<void>(
+            screenName: AnalyticsScreenNames.teamDetail,
+            builder: (_) => TeamDetailScreen(
+              team: team,
+              seasonId: context.read<AppSession>().selectedSeason?.ref?.id,
+              isManager: isManager,
+            ),
+          ),
+        );
+      },
+    );
+
     final bool isMobileNative = !kIsWeb &&
         (defaultTargetPlatform == TargetPlatform.iOS ||
             defaultTargetPlatform == TargetPlatform.android);
@@ -272,32 +296,7 @@ class _WebAppRootState extends State<WebAppRoot> {
                         badgeCount: selectedTeamCount,
                         screenName: AnalyticsScreenNames.teams,
                         featureId: FeatureDiscoveryIds.tabTeams,
-                        page: TeamsListScreen(
-                          managedTeamsIds: getManagedTeamsIds,
-                          onTeamTap: (context, team, isManager) {
-                            AnalyticsInteractions.logFeature(
-                              AnalyticsFeatures.openTeamDetail,
-                              parameters: <String, Object>{
-                                'is_manager': isManager,
-                                'source': 'teams_list',
-                              },
-                            );
-                            Navigator.of(context).push(
-                              analyticsMaterialRoute<void>(
-                                screenName: AnalyticsScreenNames.teamDetail,
-                                builder: (_) => TeamDetailScreen(
-                                  team: team,
-                                  seasonId: context
-                                      .read<AppSession>()
-                                      .selectedSeason
-                                      ?.ref
-                                      ?.id,
-                                  isManager: isManager,
-                                ),
-                              ),
-                            );
-                          },
-                        ),
+                        page: teamsPage,
                       ),
                       WebShellItem(
                         label: l10n.navChat,
@@ -334,6 +333,7 @@ class _WebAppRootState extends State<WebAppRoot> {
                 dashboardPage: DashboardScreen(
                   key: ValueKey('dashboard-$localeCode'),
                 ),
+                teamsPage: teamsPage,
                 chatPage: ResponsiveChat(
                   key: ValueKey('chat-$localeCode'),
                 ),

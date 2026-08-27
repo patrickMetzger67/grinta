@@ -16,10 +16,13 @@ import 'package:grinta/services/stream_channel_service.dart';
 import 'package:grinta/util/team_stream_channel_access.dart';
 import 'package:grinta/screen/team_stats/team_stats_screen.dart';
 import 'package:grinta/util/team_equipe_lookup.dart';
+import 'package:grinta/model/feature_discovery_ids.dart';
 import 'package:grinta/widget/account_create_profile_entry.dart';
+import 'package:grinta/widget/app_shell_scope.dart';
 import 'package:grinta/widget/club_picker_sheet.dart';
 import 'package:grinta/widget/equipe_competitions_count_label.dart';
 import 'package:grinta/widget/equipe_competitions_sheet.dart';
+import 'package:grinta/widget/feature_discovery_random_banner.dart';
 import 'package:grinta/widget/subscription_paywall.dart';
 import '../core/extensions/l10n_extension.dart';
 import '../util/app_theme.dart';
@@ -195,128 +198,87 @@ class _TeamsListScreenState extends State<TeamsListScreen> {
               competitionSubtitle.contains(query);
         }).toList();
 
-        return Scaffold(
-          appBar: AppBar(
-            title: Text(widget.title ?? l10n.entityTeams),
-            actions: [
-              ListenableBuilder(
-                listenable: Listenable.merge([
-                  SubscriptionService.instance,
-                  UserTrialService.instance,
-                ]),
-                builder: (context, _) {
-                  final String? userId =
-                      appSession.user?.uid ??
-                      FirebaseAuth.instance.currentUser?.uid;
-                  final seasonId = appSession.selectedSeason?.ref?.id.trim();
-                  final gate = _resolveTeamCreationGate(
-                    appSession: appSession,
-                    userId: userId,
-                    seasonId: seasonId,
-                  );
-                  final showPremiumBadge =
-                      gate == TeamCreationGate.needsUpgrade;
+        final bool hideAppBar = AppShellScope.hidesChildAppBar(context);
+        final createTeamButton = _CreateTeamHeaderButton(
+          onTap: () => _onCreateTeam(context),
+        );
 
-                  return Padding(
-                    padding: const EdgeInsets.only(right: 8, top: 4, bottom: 4),
-                    child: Tooltip(
-                      message: l10n.actionCreateTeam,
-                      child: Material(
-                        color: Colors.transparent,
-                        child: InkWell(
-                          borderRadius: BorderRadius.circular(18),
-                          onTap: () => _onCreateTeam(context),
-                          child: Container(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 12,
-                              vertical: 8,
-                            ),
-                            decoration: BoxDecoration(
-                              color: colors.card,
-                              borderRadius: BorderRadius.circular(18),
-                              border: Border.all(color: colors.border),
-                            ),
-                            child: Row(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                Icon(
-                                  Icons.add_rounded,
-                                  color: colors.primary,
-                                  size: 22,
-                                ),
-                                if (showPremiumBadge) ...[
-                                  const SizedBox(width: 8),
-                                  SubscriptionPremiumBadge(
-                                    colors: colors,
-                                    compact: true,
-                                  ),
-                                ],
-                              ],
-                            ),
+        return Scaffold(
+          appBar: hideAppBar
+              ? null
+              : AppBar(
+                  title: Text(widget.title ?? l10n.entityTeams),
+                  actions: [createTeamButton],
+                ),
+          body: SafeArea(
+            child: Column(
+              children: [
+                const FeatureDiscoveryRandomBanner(
+                  parentScreenId: FeatureDiscoveryIds.tabTeams,
+                  excludeCurrentBaseScreen: true,
+                ),
+                if (hideAppBar)
+                  Align(
+                    alignment: Alignment.centerRight,
+                    child: createTeamButton,
+                  ),
+                if (allTeams.isNotEmpty) ...[
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
+                    child: TextField(
+                      controller: _searchController,
+                      onChanged: (value) {
+                        setState(() {
+                          _search = value;
+                        });
+                      },
+                      decoration: InputDecoration(
+                        hintText: l10n.hintSearchTeam,
+                        prefixIcon: Icon(
+                          Icons.search_rounded,
+                          color: colors.textSecondary,
+                        ),
+                        suffixIcon: _search.isEmpty
+                            ? null
+                            : IconButton(
+                          onPressed: () {
+                            _searchController.clear();
+                            setState(() {
+                              _search = '';
+                            });
+                          },
+                          icon: Icon(
+                            Icons.close_rounded,
+                            color: colors.textSecondary,
                           ),
                         ),
                       ),
                     ),
-                  );
-                },
-              ),
-            ],
-          ),
-          body: SafeArea(
-            child: Column(
-              children: [
-                Padding(
-                  padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
-                  child: TextField(
-                    controller: _searchController,
-                    onChanged: (value) {
-                      setState(() {
-                        _search = value;
-                      });
-                    },
-                    decoration: InputDecoration(
-                      hintText: l10n.hintSearchTeam,
-                      prefixIcon: Icon(
-                        Icons.search_rounded,
-                        color: colors.textSecondary,
-                      ),
-                      suffixIcon: _search.isEmpty
-                          ? null
-                          : IconButton(
-                        onPressed: () {
-                          _searchController.clear();
-                          setState(() {
-                            _search = '';
-                          });
-                        },
-                        icon: Icon(
-                          Icons.close_rounded,
-                          color: colors.textSecondary,
+                  ),
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(16, 4, 16, 8),
+                    child: Row(
+                      children: [
+                        Chip(
+                          label: Text(
+                            _search.isEmpty
+                                ? l10n.teamsListCount(allTeams.length)
+                                : l10n.teamsListCountFiltered(
+                                    filteredTeams.length,
+                                    allTeams.length,
+                                  ),
+                          ),
                         ),
-                      ),
+                      ],
                     ),
                   ),
-                ),
-                Padding(
-                  padding: const EdgeInsets.fromLTRB(16, 4, 16, 8),
-                  child: Row(
-                    children: [
-                      Chip(
-                        label: Text(
-                          _search.isEmpty
-                              ? l10n.teamsListCount(allTeams.length)
-                              : l10n.teamsListCountFiltered(
-                                  filteredTeams.length,
-                                  allTeams.length,
-                                ),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
+                ],
                 Expanded(
                   child: filteredTeams.isEmpty
-                      ? _EmptyTeamsState(search: _search)
+                      ? _EmptyTeamsState(
+                          search: _search,
+                          onCreateTeam: () => _onCreateTeam(context),
+                        )
                       : ListView.separated(
                     padding: const EdgeInsets.fromLTRB(8, 4, 8, 16),
                     itemCount: filteredTeams.length,
@@ -685,17 +647,93 @@ class _TeamAvatarLoading extends StatelessWidget {
   }
 }
 
+class _CreateTeamHeaderButton extends StatelessWidget {
+  const _CreateTeamHeaderButton({required this.onTap});
+
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = context.appColors;
+    final l10n = context.l10n;
+    final appSession = context.watch<AppSession>();
+
+    return ListenableBuilder(
+      listenable: Listenable.merge([
+        SubscriptionService.instance,
+        UserTrialService.instance,
+      ]),
+      builder: (context, _) {
+        final String? userId =
+            appSession.user?.uid ?? FirebaseAuth.instance.currentUser?.uid;
+        final seasonId = appSession.selectedSeason?.ref?.id.trim();
+        final gate = _resolveTeamCreationGate(
+          appSession: appSession,
+          userId: userId,
+          seasonId: seasonId,
+        );
+        final showPremiumBadge = gate == TeamCreationGate.needsUpgrade;
+
+        return Padding(
+          padding: const EdgeInsets.only(right: 8, top: 4, bottom: 4),
+          child: Tooltip(
+            message: l10n.actionCreateTeam,
+            child: Material(
+              color: Colors.transparent,
+              child: InkWell(
+                borderRadius: BorderRadius.circular(18),
+                onTap: onTap,
+                child: Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 12,
+                    vertical: 8,
+                  ),
+                  decoration: BoxDecoration(
+                    color: colors.card,
+                    borderRadius: BorderRadius.circular(18),
+                    border: Border.all(color: colors.border),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(
+                        Icons.add_rounded,
+                        color: colors.primary,
+                        size: 22,
+                      ),
+                      if (showPremiumBadge) ...[
+                        const SizedBox(width: 8),
+                        SubscriptionPremiumBadge(
+                          colors: colors,
+                          compact: true,
+                        ),
+                      ],
+                    ],
+                  ),
+                ),
+              ),
+            ),
+          ),
+        );
+      },
+    );
+  }
+}
+
 class _EmptyTeamsState extends StatelessWidget {
   const _EmptyTeamsState({
     required this.search,
+    required this.onCreateTeam,
   });
 
   final String search;
+  final VoidCallback onCreateTeam;
 
   @override
   Widget build(BuildContext context) {
     final colors = context.appColors;
     final textTheme = Theme.of(context).textTheme;
+    final l10n = context.l10n;
     final bool isSearching = search.trim().isNotEmpty;
 
     return Center(
@@ -712,23 +750,29 @@ class _EmptyTeamsState extends StatelessWidget {
             const SizedBox(height: 12),
             Text(
               isSearching
-                  ? context.l10n.teamsListNoResults
-                  : context.l10n.teamsListNoTeams,
+                  ? l10n.teamsListNoResults
+                  : l10n.teamsListCreateTeamPrompt,
               style: textTheme.titleMedium?.copyWith(
                 fontWeight: FontWeight.w600,
               ),
               textAlign: TextAlign.center,
             ),
-            const SizedBox(height: 6),
-            Text(
-              isSearching
-                  ? 'Essaie avec un autre mot-clé.'
-                  : 'Les équipes apparaîtront ici dès qu’elles seront chargées.',
-              style: textTheme.bodyMedium?.copyWith(
-                color: colors.textSecondary,
+            if (isSearching) ...[
+              const SizedBox(height: 6),
+              Text(
+                l10n.teamsListNoResultsHint,
+                style: textTheme.bodyMedium?.copyWith(
+                  color: colors.textSecondary,
+                ),
+                textAlign: TextAlign.center,
               ),
-              textAlign: TextAlign.center,
-            ),
+            ] else ...[
+              const SizedBox(height: 16),
+              ElevatedButton(
+                onPressed: onCreateTeam,
+                child: Text(l10n.actionYes),
+              ),
+            ],
           ],
         ),
       ),

@@ -106,7 +106,6 @@ const Set<String> _shellTabIds = <String>{
 
 const Set<String> _mobileOffShellIds = <String>{
   FeatureDiscoveryIds.tabSync,
-  FeatureDiscoveryIds.tabTeams,
   FeatureDiscoveryIds.tabFields,
   FeatureDiscoveryIds.tabCompo,
 };
@@ -147,8 +146,6 @@ abstract final class FeatureDiscoveryCatalog {
     FeatureDiscoveryEntry(
       id: FeatureDiscoveryIds.tabTeams,
       scope: FeatureDiscoveryBannerScope.baseScreens,
-      requiresManager: true,
-      requiresWebShellTab: true,
       copyBuilder: _teamsCopy,
     ),
     FeatureDiscoveryEntry(
@@ -186,6 +183,12 @@ abstract final class FeatureDiscoveryCatalog {
       parentScreenId: FeatureDiscoveryIds.tabDashboard,
       copyBuilder: _chatCopy,
     ),
+    FeatureDiscoveryEntry(
+      id: FeatureDiscoveryIds.tabTeams,
+      scope: FeatureDiscoveryBannerScope.relatedFeatures,
+      parentScreenId: FeatureDiscoveryIds.tabDashboard,
+      copyBuilder: _teamsCopy,
+    ),
 
     FeatureDiscoveryEntry(
       id: FeatureDiscoveryIds.tabDashboard,
@@ -206,6 +209,12 @@ abstract final class FeatureDiscoveryCatalog {
       parentScreenId: FeatureDiscoveryIds.tabAgenda,
       copyBuilder: _chatCopy,
     ),
+    FeatureDiscoveryEntry(
+      id: FeatureDiscoveryIds.tabTeams,
+      scope: FeatureDiscoveryBannerScope.relatedFeatures,
+      parentScreenId: FeatureDiscoveryIds.tabAgenda,
+      copyBuilder: _teamsCopy,
+    ),
 
     FeatureDiscoveryEntry(
       id: FeatureDiscoveryIds.tabAgenda,
@@ -218,6 +227,31 @@ abstract final class FeatureDiscoveryCatalog {
       scope: FeatureDiscoveryBannerScope.relatedFeatures,
       parentScreenId: FeatureDiscoveryIds.tabChat,
       copyBuilder: _dashboardCopy,
+    ),
+    FeatureDiscoveryEntry(
+      id: FeatureDiscoveryIds.tabTeams,
+      scope: FeatureDiscoveryBannerScope.relatedFeatures,
+      parentScreenId: FeatureDiscoveryIds.tabChat,
+      copyBuilder: _teamsCopy,
+    ),
+
+    FeatureDiscoveryEntry(
+      id: FeatureDiscoveryIds.tabAgenda,
+      scope: FeatureDiscoveryBannerScope.relatedFeatures,
+      parentScreenId: FeatureDiscoveryIds.tabTeams,
+      copyBuilder: _agendaCopy,
+    ),
+    FeatureDiscoveryEntry(
+      id: FeatureDiscoveryIds.tabDashboard,
+      scope: FeatureDiscoveryBannerScope.relatedFeatures,
+      parentScreenId: FeatureDiscoveryIds.tabTeams,
+      copyBuilder: _dashboardCopy,
+    ),
+    FeatureDiscoveryEntry(
+      id: FeatureDiscoveryIds.tabChat,
+      scope: FeatureDiscoveryBannerScope.relatedFeatures,
+      parentScreenId: FeatureDiscoveryIds.tabTeams,
+      copyBuilder: _chatCopy,
     ),
 
     FeatureDiscoveryEntry(

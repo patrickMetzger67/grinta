@@ -6,8 +6,6 @@ import 'package:grinta/core/extensions/l10n_extension.dart';
 import 'package:grinta/main.dart';
 import 'package:grinta/model/player.dart';
 import 'package:grinta/provider/appSession.dart';
-import 'package:grinta/screen/teamDetailScreen.dart';
-import 'package:grinta/screen/teamsListScreen.dart';
 import 'package:grinta/util/app_theme.dart';
 import 'package:grinta/widget/app_language_dropdown.dart';
 import 'package:grinta/widget/app_session_player_avatar.dart';
@@ -15,7 +13,6 @@ import 'package:grinta/widget/app_session_player_season_selector.dart';
 import 'package:grinta/widget/app_logo.dart';
 import 'package:grinta/analytics/analytics_features.dart';
 import 'package:grinta/analytics/analytics_interactions.dart';
-import 'package:grinta/analytics/analytics_routes.dart';
 import 'package:grinta/analytics/analytics_screen_names.dart';
 import 'package:grinta/analytics/shell_tab_analytics.dart';
 import 'package:grinta/feature_discovery/shell_navigation_scope.dart';
@@ -49,12 +46,14 @@ import 'package:provider/provider.dart';
 const List<String> _kMobileTabFeatureIds = <String>[
   FeatureDiscoveryIds.tabAgenda,
   FeatureDiscoveryIds.tabDashboard,
+  FeatureDiscoveryIds.tabTeams,
   FeatureDiscoveryIds.tabChat,
 ];
 
 const List<String> _kMobileTabScreenNames = <String>[
   AnalyticsScreenNames.agenda,
   AnalyticsScreenNames.dashboard,
+  AnalyticsScreenNames.teams,
   AnalyticsScreenNames.chat,
 ];
 
@@ -63,11 +62,13 @@ class MobileNavigationShell extends StatefulWidget {
     super.key,
     required this.agendaPage,
     required this.dashboardPage,
+    required this.teamsPage,
     required this.chatPage,
   });
 
   final Widget agendaPage;
   final Widget dashboardPage;
+  final Widget teamsPage;
   final Widget chatPage;
 
   @override
@@ -563,7 +564,6 @@ class _MobileNavigationShellState extends State<MobileNavigationShell> {
 
     final l10n = context.l10n;
     final colors = context.appColors;
-    final navigator = Navigator.of(context, rootNavigator: true);
 
     void closeSheetThen(void Function() action, BuildContext sheetContext) {
       Navigator.of(sheetContext).pop();
@@ -581,127 +581,74 @@ class _MobileNavigationShellState extends State<MobileNavigationShell> {
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
       builder: (sheetContext) {
-        return Consumer<AppSession>(
-          builder: (context, appSession, _) {
-            final managedTeamsIds =
-                appSession.managedTeamsIdsForSelectedSeason;
-            final teamCount = appSession.selectedTeams.length;
-
-            return SafeArea(
-              child: SingleChildScrollView(
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    const SizedBox(height: 12),
-                    Container(
-                      width: 40,
-                      height: 4,
-                      decoration: BoxDecoration(
-                        color: colors.border,
-                        borderRadius: BorderRadius.circular(999),
-                      ),
-                    ),
-                    const SizedBox(height: 16),
-                    const Padding(
-                      padding: EdgeInsets.symmetric(horizontal: 16),
-                      child: AppSessionPlayerSeasonSelector(),
-                    ),
-                    const SizedBox(height: 12),
-                    const Divider(height: 1),
-                    ListTile(
-                      leading: NavIconCountBadge(
-                        icon: Icons.groups_rounded,
-                        count: teamCount,
-                        iconColor: colors.primary,
-                      ),
-                      title: Text(l10n.navTeams),
-                      onTap: () {
-                        closeSheetThen(
-                          () => navigator.push(
-                            analyticsMaterialRoute<void>(
-                              screenName: AnalyticsScreenNames.teamsList,
-                              builder: (_) => TeamsListScreen(
-                                managedTeamsIds: managedTeamsIds,
-                                onTeamTap: (ctx, team, isManager) {
-                                  AnalyticsInteractions.logFeature(
-                                    AnalyticsFeatures.openTeamDetail,
-                                    parameters: <String, Object>{
-                                      'is_manager': isManager,
-                                      'source': 'teams_list',
-                                    },
-                                  );
-                                  Navigator.of(ctx).push(
-                                    analyticsMaterialRoute<void>(
-                                      screenName:
-                                          AnalyticsScreenNames.teamDetail,
-                                      builder: (_) => TeamDetailScreen(
-                                        team: team,
-                                        seasonId: appSession
-                                            .selectedSeason
-                                            ?.ref
-                                            ?.id,
-                                        isManager: isManager,
-                                      ),
-                                    ),
-                                  );
-                                },
-                              ),
-                            ),
-                          ),
-                          sheetContext,
-                        );
-                      },
-                    ),
-                    const Divider(height: 1),
-                    ListTile(
-                      leading: Icon(
-                        Icons.settings_outlined,
-                        color: colors.primary,
-                      ),
-                      title: Text(
-                        l10n.navSettings,
-                        style: settingsMenuTitleStyle(sheetContext),
-                      ),
-                      trailing: Icon(
-                        Icons.chevron_right_rounded,
-                        color: colors.textSecondary,
-                      ),
-                      onTap: () {
-                        Navigator.of(sheetContext).pop();
-                        WidgetsBinding.instance.addPostFrameCallback((_) {
-                          if (!mounted) return;
-                          _openSettingsSheet(context);
-                        });
-                      },
-                    ),
-                    const Divider(height: 1),
-                    ListTile(
-                      leading: _isSigningOut
-                          ? SizedBox(
-                              width: 24,
-                              height: 24,
-                              child: CircularProgressIndicator(
-                                strokeWidth: 2.2,
-                                color: colors.primary,
-                              ),
-                            )
-                          : Icon(Icons.logout_rounded, color: colors.primary),
-                      title: Text(
-                        l10n.actionLogout,
-                        style: settingsMenuTitleStyle(sheetContext),
-                      ),
-                      onTap: _isAccountActionBusy
-                          ? null
-                          : () {
-                              closeSheetThen(() => _logout(), sheetContext);
-                            },
-                    ),
-                    const SizedBox(height: 8),
-                  ],
+        return SafeArea(
+          child: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const SizedBox(height: 12),
+                Container(
+                  width: 40,
+                  height: 4,
+                  decoration: BoxDecoration(
+                    color: colors.border,
+                    borderRadius: BorderRadius.circular(999),
+                  ),
                 ),
-              ),
-            );
-          },
+                const SizedBox(height: 16),
+                const Padding(
+                  padding: EdgeInsets.symmetric(horizontal: 16),
+                  child: AppSessionPlayerSeasonSelector(),
+                ),
+                const SizedBox(height: 12),
+                const Divider(height: 1),
+                ListTile(
+                  leading: Icon(
+                    Icons.settings_outlined,
+                    color: colors.primary,
+                  ),
+                  title: Text(
+                    l10n.navSettings,
+                    style: settingsMenuTitleStyle(sheetContext),
+                  ),
+                  trailing: Icon(
+                    Icons.chevron_right_rounded,
+                    color: colors.textSecondary,
+                  ),
+                  onTap: () {
+                    Navigator.of(sheetContext).pop();
+                    WidgetsBinding.instance.addPostFrameCallback((_) {
+                      if (!mounted) return;
+                      _openSettingsSheet(context);
+                    });
+                  },
+                ),
+                const Divider(height: 1),
+                ListTile(
+                  leading: _isSigningOut
+                      ? SizedBox(
+                          width: 24,
+                          height: 24,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2.2,
+                            color: colors.primary,
+                          ),
+                        )
+                      : Icon(Icons.logout_rounded, color: colors.primary),
+                  title: Text(
+                    l10n.actionLogout,
+                    style: settingsMenuTitleStyle(sheetContext),
+                  ),
+                  onTap: _isAccountActionBusy
+                      ? null
+                      : () {
+                          closeSheetThen(() => _logout(), sheetContext);
+                        },
+                ),
+                const SizedBox(height: 8),
+              ],
+            ),
+          ),
         );
       },
     );
@@ -716,6 +663,7 @@ class _MobileNavigationShellState extends State<MobileNavigationShell> {
     final pages = <Widget>[
       widget.agendaPage,
       widget.dashboardPage,
+      widget.teamsPage,
       widget.chatPage,
     ];
 
@@ -763,41 +711,65 @@ class _MobileNavigationShellState extends State<MobileNavigationShell> {
         ),
         bottomNavigationBar: StreamChatUnreadCountBuilder(
           builder: (context, unreadChatCount) {
-            return NavigationBar(
-              selectedIndex: _selectedIndex,
-              onDestinationSelected: (index) {
-                if (index == _selectedIndex) return;
-                setState(() => _selectedIndex = index);
-                _markTabFeatureVisited(index);
-                _logTabScreen(index);
+            return Consumer<AppSession>(
+              builder: (context, appSession, _) {
+                final teamCount = appSession.selectedTeams.length;
+                return NavigationBar(
+                  selectedIndex: _selectedIndex,
+                  onDestinationSelected: (index) {
+                    if (index == _selectedIndex) return;
+                    setState(() => _selectedIndex = index);
+                    _markTabFeatureVisited(index);
+                    _logTabScreen(index);
+                  },
+                  backgroundColor: colors.surface,
+                  indicatorColor: colors.primary.withValues(alpha: 0.15),
+                  destinations: [
+                    NavigationDestination(
+                      icon: const Icon(Icons.calendar_month_outlined),
+                      selectedIcon: Icon(
+                        Icons.calendar_month,
+                        color: colors.primary,
+                      ),
+                      label: l10n.navAgenda,
+                    ),
+                    NavigationDestination(
+                      icon: const Icon(Icons.bar_chart_outlined),
+                      selectedIcon: Icon(
+                        Icons.bar_chart,
+                        color: colors.primary,
+                      ),
+                      label: l10n.navDashboard,
+                    ),
+                    NavigationDestination(
+                      icon: NavIconCountBadge(
+                        icon: Icons.groups_outlined,
+                        count: teamCount,
+                        iconColor: colors.textSecondary,
+                      ),
+                      selectedIcon: NavIconCountBadge(
+                        icon: Icons.groups_rounded,
+                        count: teamCount,
+                        iconColor: colors.primary,
+                      ),
+                      label: l10n.navTeams,
+                    ),
+                    NavigationDestination(
+                      icon: NavIconCountBadge(
+                        icon: Icons.chat_bubble_outline_rounded,
+                        count: unreadChatCount,
+                        iconColor: colors.textSecondary,
+                      ),
+                      selectedIcon: NavIconCountBadge(
+                        icon: Icons.chat_bubble_rounded,
+                        count: unreadChatCount,
+                        iconColor: colors.primary,
+                      ),
+                      label: l10n.navChat,
+                    ),
+                  ],
+                );
               },
-              backgroundColor: colors.surface,
-              indicatorColor: colors.primary.withValues(alpha: 0.15),
-              destinations: [
-                NavigationDestination(
-                  icon: const Icon(Icons.calendar_month_outlined),
-                  selectedIcon: Icon(Icons.calendar_month, color: colors.primary),
-                  label: l10n.navAgenda,
-                ),
-                NavigationDestination(
-                  icon: const Icon(Icons.bar_chart_outlined),
-                  selectedIcon: Icon(Icons.bar_chart, color: colors.primary),
-                  label: l10n.navDashboard,
-                ),
-                NavigationDestination(
-                  icon: NavIconCountBadge(
-                    icon: Icons.chat_bubble_outline_rounded,
-                    count: unreadChatCount,
-                    iconColor: colors.textSecondary,
-                  ),
-                  selectedIcon: NavIconCountBadge(
-                    icon: Icons.chat_bubble_rounded,
-                    count: unreadChatCount,
-                    iconColor: colors.primary,
-                  ),
-                  label: l10n.navChat,
-                ),
-              ],
             );
           },
         ),

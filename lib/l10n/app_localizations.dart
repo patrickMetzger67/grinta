@@ -4421,6 +4421,18 @@ abstract class AppLocalizations {
   /// **'Aucune équipe disponible'**
   String get teamsListNoTeams;
 
+  /// No description provided for @teamsListCreateTeamPrompt.
+  ///
+  /// In fr, this message translates to:
+  /// **'Tu n\'as pas créé d\'équipe, souhaites-tu en créer une ?'**
+  String get teamsListCreateTeamPrompt;
+
+  /// No description provided for @teamsListNoResultsHint.
+  ///
+  /// In fr, this message translates to:
+  /// **'Essaie avec un autre mot-clé.'**
+  String get teamsListNoResultsHint;
+
   /// No description provided for @teamStreamChannelSynced.
   ///
   /// In fr, this message translates to:

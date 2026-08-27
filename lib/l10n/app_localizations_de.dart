@@ -2536,6 +2536,14 @@ class AppLocalizationsDe extends AppLocalizations {
   String get teamsListNoTeams => 'Keine Teams verfügbar';
 
   @override
+  String get teamsListCreateTeamPrompt =>
+      'Du hast noch kein Team erstellt. Möchtest du eines erstellen?';
+
+  @override
+  String get teamsListNoResultsHint =>
+      'Versuche es mit einem anderen Suchbegriff.';
+
+  @override
   String get teamStreamChannelSynced => 'Stream-Gruppe aktiv';
 
   @override

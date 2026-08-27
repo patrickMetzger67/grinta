@@ -1305,6 +1305,8 @@
   },
   "teamsListNoResults": "Aucune équipe trouvée",
   "teamsListNoTeams": "Aucune équipe disponible",
+  "teamsListCreateTeamPrompt": "Tu n'as pas créé d'équipe, souhaites-tu en créer une ?",
+  "teamsListNoResultsHint": "Essaie avec un autre mot-clé.",
   "teamStreamChannelSynced": "Groupe Stream actif",
   "teamStreamChannelPending": "Groupe Stream non synchronisé",
   "teamStreamChannelCreateTitle": "Créer le groupe Stream ?",
