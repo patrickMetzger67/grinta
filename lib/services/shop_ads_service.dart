@@ -129,8 +129,11 @@ class ShopAdsService {
     final id = adId.trim();
     if (id.isEmpty) return;
     try {
+      // Always touch both counters so rules can require int fields even when
+      // an older document omitted one of them (increment treats missing as 0).
       await _col.doc(id).update(<String, dynamic>{
-        field: FieldValue.increment(1),
+        'nbDisplay': FieldValue.increment(field == 'nbDisplay' ? 1 : 0),
+        'nbClicks': FieldValue.increment(field == 'nbClicks' ? 1 : 0),
       });
     } catch (e, st) {
       debugPrint('ShopAdsService $field increment failed: $e\n$st');
