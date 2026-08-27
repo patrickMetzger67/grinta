@@ -1,5 +1,4 @@
 import 'dart:async' show unawaited;
-import 'dart:typed_data';
 
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:file_picker/file_picker.dart';
@@ -517,8 +516,8 @@ class _AdFormSheetState extends State<_AdFormSheet> {
         ),
       );
       if (!mounted) return;
-      Navigator.of(context).pop();
       AppSnackbar.show(context, l10n.adminAdsSaved, isError: false);
+      Navigator.of(context).pop();
     } catch (e) {
       if (!mounted) return;
       final message = e.toString().contains('permission-denied')
