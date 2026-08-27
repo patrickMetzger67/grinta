@@ -29,6 +29,7 @@ import 'widget/biometric_lock_gate.dart';
 import 'widget/devices_settings_section.dart';
 import 'widget/notification_preferences_section.dart';
 import 'widget/app_version_label.dart';
+import 'widget/settings_close_button.dart';
 import 'widget/settings_infos_sheet.dart';
 import 'widget/settings_menu_style.dart';
 import 'widget/subscription_details_sheet.dart';
@@ -560,6 +561,10 @@ class _WebNavigationShellState extends State<WebNavigationShell> {
           const AppVersionLabel(
             padding: EdgeInsets.fromLTRB(12, 0, 12, 12),
           ),
+        SettingsCloseButton(
+          fullWidth: true,
+          onPressed: _closeSettingsPanel,
+        ),
       ],
     );
   }
@@ -603,13 +608,7 @@ class _WebNavigationShellState extends State<WebNavigationShell> {
                     ),
                   ),
                 ),
-                TextButton(
-                  onPressed: _closeSettingsPanel,
-                  style: TextButton.styleFrom(
-                    foregroundColor: colors.primary,
-                  ),
-                  child: Text(l10n.actionClose),
-                ),
+                SettingsCloseButton(onPressed: _closeSettingsPanel),
               ],
             ),
           ),

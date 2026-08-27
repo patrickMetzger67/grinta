@@ -39,6 +39,7 @@ import 'package:grinta/widget/subscription_details_sheet.dart';
 import 'package:grinta/widget/notifications_sheet.dart';
 import 'package:grinta/widget/promo_code_redeem_section.dart';
 import 'package:grinta/widget/app_version_label.dart';
+import 'package:grinta/widget/settings_close_button.dart';
 import 'package:grinta/widget/settings_infos_sheet.dart';
 import 'package:grinta/widget/settings_menu_style.dart';
 import 'package:provider/provider.dart';
@@ -305,9 +306,11 @@ class _MobileNavigationShellState extends State<MobileNavigationShell> {
         final app = MyApp.of(sheetContext);
 
         return SafeArea(
-          child: SingleChildScrollView(
+          child: ConstrainedBox(
+            constraints: BoxConstraints(
+              maxHeight: MediaQuery.sizeOf(sheetContext).height * 0.92,
+            ),
             child: Column(
-              mainAxisSize: MainAxisSize.min,
               children: [
                 const SizedBox(height: 12),
                 Container(
@@ -334,17 +337,18 @@ class _MobileNavigationShellState extends State<MobileNavigationShell> {
                           style: settingsMenuTitleStyle(sheetContext),
                         ),
                       ),
-                      TextButton(
+                      SettingsCloseButton(
                         onPressed: () => Navigator.of(sheetContext).pop(),
-                        style: TextButton.styleFrom(
-                          foregroundColor: colors.primary,
-                        ),
-                        child: Text(l10n.actionClose),
                       ),
                     ],
                   ),
                 ),
                 const Divider(height: 1),
+                Expanded(
+                  child: SingleChildScrollView(
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
                 const Padding(
                   padding: EdgeInsets.fromLTRB(16, 12, 16, 0),
                   child: AppLanguageSidebarTile(),
@@ -551,6 +555,14 @@ class _MobileNavigationShellState extends State<MobileNavigationShell> {
                         },
                 ),
                 const AppVersionLabel(),
+                        SettingsCloseButton(
+                          fullWidth: true,
+                          onPressed: () => Navigator.of(sheetContext).pop(),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
               ],
             ),
           ),

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:grinta/config/legal_config.dart';
 import 'package:grinta/core/extensions/l10n_extension.dart';
 import 'package:grinta/util/app_theme.dart';
+import 'package:grinta/widget/settings_close_button.dart';
 import 'package:grinta/widget/settings_menu_style.dart';
 import 'package:url_launcher/url_launcher.dart';
 
@@ -46,12 +47,8 @@ Future<void> showSettingsInfosSheet(BuildContext context) {
                         style: settingsMenuTitleStyle(sheetContext),
                       ),
                     ),
-                    TextButton(
+                    SettingsCloseButton(
                       onPressed: () => Navigator.of(sheetContext).pop(),
-                      style: TextButton.styleFrom(
-                        foregroundColor: colors.primary,
-                      ),
-                      child: Text(l10n.actionClose),
                     ),
                   ],
                 ),
@@ -81,7 +78,10 @@ Future<void> showSettingsInfosSheet(BuildContext context) {
                 onTap: () =>
                     _openUrl(sheetContext, LegalConfig.termsOfServiceUrl),
               ),
-              const SizedBox(height: 12),
+              SettingsCloseButton(
+                fullWidth: true,
+                onPressed: () => Navigator.of(sheetContext).pop(),
+              ),
             ],
           ),
         ),
