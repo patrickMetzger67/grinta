@@ -4400,6 +4400,17 @@ class AppLocalizationsFr extends AppLocalizations {
       'Suivez vos performances, stats personnelles et progression.';
 
   @override
+  String get subscriptionTierPlayerGps => 'Joueur GPS';
+
+  @override
+  String get subscriptionTierPlayerGpsDesc =>
+      'Nécessaire pour connecter votre propre GPS Insiders Intense. Inclut le suivi de vos performances, stats personnelles et progression.';
+
+  @override
+  String get intenseGpsRequiresPlayerGps =>
+      'Un abonnement Joueur GPS est nécessaire pour connecter votre propre GPS Insiders Intense.';
+
+  @override
   String get subscriptionPerMonth => '/mois';
 
   @override

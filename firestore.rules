@@ -28,7 +28,7 @@ service cloud.firestore {
     }
 
     function isValidEntitlement(value) {
-      return value in ['player', 'coach_basic', 'coach_elite', 'coach_pro'];
+      return value in ['player', 'player_gps', 'coach_basic', 'coach_elite', 'coach_pro'];
     }
 
     function isValidPromoCodeCreate(codeId) {

@@ -38,7 +38,7 @@ Vérifier ensuite dans la Firebase Console → Functions que `redeemPromoCode` e
 
 1. App connectée en compte **root** → Admin → Codes promo  
 2. Créer un code simple, ex. `DEMO2026` (le serveur accepte aussi `DEMO-2026`)  
-3. Entitlement + durée + `maxUses` suffisant  
+3. Entitlement (`player`, `player_gps`, `coach_basic`, `coach_elite`, `coach_pro`) + durée + `maxUses` suffisant  
 4. Tester le redeem **avant** la démo client
 
 ## Tests locaux anti-régression

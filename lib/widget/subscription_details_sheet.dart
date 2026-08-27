@@ -111,6 +111,9 @@ class _SubscriptionDetailsBodyState extends State<_SubscriptionDetailsBody> {
         CoachTier.pro => l10n.subscriptionTierCoachPro,
       };
     }
+    if (service.hasPlayerGpsSubscription) {
+      return l10n.subscriptionTierPlayerGps;
+    }
     if (service.hasPlayerSubscription) {
       return l10n.subscriptionTierPlayer;
     }
@@ -133,11 +136,15 @@ class _SubscriptionDetailsBodyState extends State<_SubscriptionDetailsBody> {
     final initialKind = subscription.hasPlayerSubscription
         ? SubscriptionOfferingKind.player
         : SubscriptionOfferingKind.coach;
+    final initialPlayerTier = subscription.hasPlayerGpsSubscription
+        ? PlayerSubscriptionTier.gps
+        : PlayerSubscriptionTier.standard;
 
     final changed = await SubscriptionPaywall.show(
       context,
       changePlanMode: true,
       initialKind: initialKind,
+      initialPlayerTier: initialPlayerTier,
     );
 
     if (!context.mounted) return;

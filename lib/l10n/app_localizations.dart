@@ -7608,6 +7608,24 @@ abstract class AppLocalizations {
   /// **'Suivez vos performances, stats personnelles et progression.'**
   String get subscriptionTierPlayerDesc;
 
+  /// No description provided for @subscriptionTierPlayerGps.
+  ///
+  /// In fr, this message translates to:
+  /// **'Joueur GPS'**
+  String get subscriptionTierPlayerGps;
+
+  /// No description provided for @subscriptionTierPlayerGpsDesc.
+  ///
+  /// In fr, this message translates to:
+  /// **'Nécessaire pour connecter votre propre GPS Insiders Intense. Inclut le suivi de vos performances, stats personnelles et progression.'**
+  String get subscriptionTierPlayerGpsDesc;
+
+  /// No description provided for @intenseGpsRequiresPlayerGps.
+  ///
+  /// In fr, this message translates to:
+  /// **'Un abonnement Joueur GPS est nécessaire pour connecter votre propre GPS Insiders Intense.'**
+  String get intenseGpsRequiresPlayerGps;
+
   /// No description provided for @subscriptionPerMonth.
   ///
   /// In fr, this message translates to:

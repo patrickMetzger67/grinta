@@ -44,6 +44,32 @@ enum CoachTier {
   bool satisfies(CoachTier required) => rank >= required.rank;
 }
 
+/// Player catalog in the paywall: standard Joueur vs Joueur GPS.
+enum PlayerSubscriptionTier {
+  standard,
+  gps;
+
+  static PlayerSubscriptionTier? fromEntitlementId(String id) {
+    switch (id) {
+      case SubscriptionEntitlementIds.playerGps:
+        return PlayerSubscriptionTier.gps;
+      case SubscriptionEntitlementIds.player:
+        return PlayerSubscriptionTier.standard;
+      default:
+        return null;
+    }
+  }
+
+  String get entitlementId {
+    switch (this) {
+      case PlayerSubscriptionTier.standard:
+        return SubscriptionEntitlementIds.player;
+      case PlayerSubscriptionTier.gps:
+        return SubscriptionEntitlementIds.playerGps;
+    }
+  }
+}
+
 /// Immutable snapshot of the user's subscription status from RevenueCat.
 class SubscriptionState {
   const SubscriptionState({
@@ -52,6 +78,7 @@ class SubscriptionState {
     this.activeEntitlements = const <String>{},
     this.coachTier,
     this.hasPlayerSubscription = false,
+    this.hasPlayerGpsSubscription = false,
     this.activeProductId,
     this.billingPeriod,
     this.subscriptionExpiresAt,
@@ -64,6 +91,7 @@ class SubscriptionState {
   final Set<String> activeEntitlements;
   final CoachTier? coachTier;
   final bool hasPlayerSubscription;
+  final bool hasPlayerGpsSubscription;
   final String? activeProductId;
   final SubscriptionBillingPeriod? billingPeriod;
   final DateTime? subscriptionExpiresAt;
@@ -90,6 +118,7 @@ class SubscriptionState {
     CoachTier? coachTier,
     bool clearCoachTier = false,
     bool? hasPlayerSubscription,
+    bool? hasPlayerGpsSubscription,
     String? activeProductId,
     bool clearActiveProductId = false,
     SubscriptionBillingPeriod? billingPeriod,
@@ -108,6 +137,8 @@ class SubscriptionState {
       coachTier: clearCoachTier ? null : (coachTier ?? this.coachTier),
       hasPlayerSubscription:
           hasPlayerSubscription ?? this.hasPlayerSubscription,
+      hasPlayerGpsSubscription:
+          hasPlayerGpsSubscription ?? this.hasPlayerGpsSubscription,
       activeProductId: clearActiveProductId
           ? null
           : (activeProductId ?? this.activeProductId),

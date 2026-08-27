@@ -262,10 +262,7 @@ class PromoCodeService {
   }
 
   bool _isValidEntitlement(String entitlement) {
-    return entitlement == SubscriptionEntitlementIds.player ||
-        entitlement == SubscriptionEntitlementIds.coachBasic ||
-        entitlement == SubscriptionEntitlementIds.coachElite ||
-        entitlement == SubscriptionEntitlementIds.coachPro;
+    return SubscriptionEntitlementIds.isKnown(entitlement);
   }
 
   static String formatFirestoreError(FirebaseException e) {

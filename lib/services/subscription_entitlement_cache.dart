@@ -50,7 +50,9 @@ class SubscriptionEntitlementCache {
         entitlements: entitlements,
         coachTier: _coachTierFromEntitlements(entitlements),
         hasPlayerSubscription:
-            entitlements.contains(SubscriptionEntitlementIds.player),
+            SubscriptionEntitlementIds.grantsPlayerAccess(entitlements),
+        hasPlayerGpsSubscription:
+            entitlements.contains(SubscriptionEntitlementIds.playerGps),
         activeProductId: decoded['productId']?.toString(),
         expiresAt: expiresAt,
       );
@@ -123,6 +125,7 @@ class CachedSubscriptionEntitlements {
     required this.entitlements,
     required this.coachTier,
     required this.hasPlayerSubscription,
+    this.hasPlayerGpsSubscription = false,
     this.activeProductId,
     this.expiresAt,
   });
@@ -131,6 +134,7 @@ class CachedSubscriptionEntitlements {
   final Set<String> entitlements;
   final CoachTier? coachTier;
   final bool hasPlayerSubscription;
+  final bool hasPlayerGpsSubscription;
   final String? activeProductId;
   final DateTime? expiresAt;
 

@@ -35,11 +35,13 @@ class SubscriptionPaywall extends StatefulWidget {
   const SubscriptionPaywall({
     super.key,
     this.initialKind = SubscriptionOfferingKind.player,
+    this.initialPlayerTier = PlayerSubscriptionTier.standard,
     this.allowSkip = true,
     this.changePlanMode = false,
   });
 
   final SubscriptionOfferingKind initialKind;
+  final PlayerSubscriptionTier initialPlayerTier;
   final bool allowSkip;
 
   /// Existing subscribers changing tier or billing period.
@@ -49,6 +51,7 @@ class SubscriptionPaywall extends StatefulWidget {
   static Future<bool?> show(
     BuildContext context, {
     SubscriptionOfferingKind? initialKind,
+    PlayerSubscriptionTier initialPlayerTier = PlayerSubscriptionTier.standard,
     bool allowSkip = true,
     bool changePlanMode = false,
   }) {
@@ -60,6 +63,7 @@ class SubscriptionPaywall extends StatefulWidget {
             : SubscriptionOfferingKind.player);
     final child = SubscriptionPaywall(
       initialKind: resolvedKind,
+      initialPlayerTier: initialPlayerTier,
       allowSkip: effectiveAllowSkip,
       changePlanMode: changePlanMode,
     );
@@ -105,6 +109,7 @@ class SubscriptionPaywall extends StatefulWidget {
 class _SubscriptionPaywallState extends State<SubscriptionPaywall> {
   late SubscriptionOfferingKind _kind = widget.initialKind;
   CoachTier _selectedCoachTier = CoachTier.elite;
+  late PlayerSubscriptionTier _selectedPlayerTier = widget.initialPlayerTier;
   SubscriptionBillingPeriod _billingPeriod = SubscriptionBillingPeriod.yearly;
   bool _busy = false;
 
@@ -136,15 +141,24 @@ class _SubscriptionPaywallState extends State<SubscriptionPaywall> {
   bool _isCurrentlyActivePlan({
     required SubscriptionOfferingKind kind,
     CoachTier? coachTier,
+    PlayerSubscriptionTier? playerTier,
   }) {
     if (!_service.hasActivePaidSubscription) return false;
-    return _isExactActivePlan(kind: kind, coachTier: coachTier);
+    return _isExactActivePlan(
+      kind: kind,
+      coachTier: coachTier,
+      playerTier: playerTier,
+    );
   }
 
   void _applyCurrentSubscriptionSelection() {
     final state = _service.state;
-    if (state.hasPlayerSubscription) {
+    if (state.hasPlayerGpsSubscription) {
       _kind = SubscriptionOfferingKind.player;
+      _selectedPlayerTier = PlayerSubscriptionTier.gps;
+    } else if (state.hasPlayerSubscription) {
+      _kind = SubscriptionOfferingKind.player;
+      _selectedPlayerTier = PlayerSubscriptionTier.standard;
     } else if (state.coachTier != null) {
       _kind = SubscriptionOfferingKind.coach;
       _selectedCoachTier = state.coachTier!;
@@ -158,12 +172,16 @@ class _SubscriptionPaywallState extends State<SubscriptionPaywall> {
   bool _isExactActivePlan({
     required SubscriptionOfferingKind kind,
     CoachTier? coachTier,
+    PlayerSubscriptionTier? playerTier,
   }) {
     final state = _service.state;
     if (!state.isSubscribed) return false;
     if (state.billingPeriod != _billingPeriod) return false;
     if (kind == SubscriptionOfferingKind.player) {
-      return state.hasPlayerSubscription;
+      if (playerTier == PlayerSubscriptionTier.gps) {
+        return state.hasPlayerGpsSubscription;
+      }
+      return state.hasPlayerSubscription && !state.hasPlayerGpsSubscription;
     }
     return state.coachTier == coachTier;
   }
@@ -276,7 +294,7 @@ class _SubscriptionPaywallState extends State<SubscriptionPaywall> {
               if (_kind == SubscriptionOfferingKind.coach)
                 ..._coachTierCards(context, offerings, state)
               else
-                _playerCard(context, offerings, state),
+                ..._playerTierCards(context, offerings, state),
               const SizedBox(height: 16),
               const PromoCodePaywallLink(),
               const SizedBox(height: 16),
@@ -413,36 +431,68 @@ class _SubscriptionPaywallState extends State<SubscriptionPaywall> {
         .toList();
   }
 
-  Widget _playerCard(
+  List<Widget> _playerTierCards(
     BuildContext context,
     Offerings? offerings,
     SubscriptionState state,
   ) {
     final l10n = context.l10n;
-    return _TierCard(
-      title: l10n.subscriptionTierPlayer,
-      description: l10n.subscriptionTierPlayerDesc,
-      price: _priceForBillingPeriod(
-            offerings,
-            _billingPeriod,
-            SubscriptionProductIds.playerMonthly,
-            SubscriptionProductIds.playerYearly,
-          ) ??
-          (_billingPeriod == SubscriptionBillingPeriod.monthly
-              ? SubscriptionFallbackPrices.player
-              : SubscriptionFallbackPrices.playerYearly),
-      priceSuffix: _billingPeriod == SubscriptionBillingPeriod.monthly
-          ? l10n.subscriptionPerMonth
-          : l10n.subscriptionPerYear,
-      showAnnualSavings: _billingPeriod == SubscriptionBillingPeriod.yearly,
-      annualSavingsLabel: l10n.subscriptionAnnualSavings,
-      selected: true,
-      active: _isCurrentlyActivePlan(kind: SubscriptionOfferingKind.player),
-      busy: _busy,
-      changePlanMode: widget.changePlanMode,
-      onSelect: () {},
-      onPurchase: () => _purchasePlayer(offerings),
-    );
+    final tiers = [
+      (
+        PlayerSubscriptionTier.standard,
+        l10n.subscriptionTierPlayer,
+        l10n.subscriptionTierPlayerDesc,
+        SubscriptionFallbackPrices.player,
+        SubscriptionFallbackPrices.playerYearly,
+        SubscriptionProductIds.playerMonthly,
+        SubscriptionProductIds.playerYearly,
+      ),
+      (
+        PlayerSubscriptionTier.gps,
+        l10n.subscriptionTierPlayerGps,
+        l10n.subscriptionTierPlayerGpsDesc,
+        SubscriptionFallbackPrices.playerGps,
+        SubscriptionFallbackPrices.playerGpsYearly,
+        SubscriptionProductIds.playerGpsMonthly,
+        SubscriptionProductIds.playerGpsYearly,
+      ),
+    ];
+
+    return tiers
+        .map(
+          (t) => Padding(
+            padding: const EdgeInsets.only(bottom: 10),
+            child: _TierCard(
+              title: t.$2,
+              description: t.$3,
+              price: _priceForBillingPeriod(
+                    offerings,
+                    _billingPeriod,
+                    t.$6,
+                    t.$7,
+                  ) ??
+                  (_billingPeriod == SubscriptionBillingPeriod.monthly
+                      ? t.$4
+                      : t.$5),
+              priceSuffix: _billingPeriod == SubscriptionBillingPeriod.monthly
+                  ? l10n.subscriptionPerMonth
+                  : l10n.subscriptionPerYear,
+              showAnnualSavings:
+                  _billingPeriod == SubscriptionBillingPeriod.yearly,
+              annualSavingsLabel: l10n.subscriptionAnnualSavings,
+              selected: _selectedPlayerTier == t.$1,
+              active: _isCurrentlyActivePlan(
+                kind: SubscriptionOfferingKind.player,
+                playerTier: t.$1,
+              ),
+              busy: _busy,
+              changePlanMode: widget.changePlanMode,
+              onSelect: () => setState(() => _selectedPlayerTier = t.$1),
+              onPurchase: () => _purchasePlayer(t.$1, offerings),
+            ),
+          ),
+        )
+        .toList();
   }
 
   String? _priceForBillingPeriod(
@@ -501,10 +551,20 @@ class _SubscriptionPaywallState extends State<SubscriptionPaywall> {
     await _purchase(productId, offerings);
   }
 
-  Future<void> _purchasePlayer(Offerings? offerings) async {
-    final productId = _billingPeriod == SubscriptionBillingPeriod.monthly
-        ? SubscriptionProductIds.playerMonthly
-        : SubscriptionProductIds.playerYearly;
+  Future<void> _purchasePlayer(
+    PlayerSubscriptionTier tier,
+    Offerings? offerings,
+  ) async {
+    final productId = switch (tier) {
+      PlayerSubscriptionTier.standard =>
+        _billingPeriod == SubscriptionBillingPeriod.monthly
+            ? SubscriptionProductIds.playerMonthly
+            : SubscriptionProductIds.playerYearly,
+      PlayerSubscriptionTier.gps =>
+        _billingPeriod == SubscriptionBillingPeriod.monthly
+            ? SubscriptionProductIds.playerGpsMonthly
+            : SubscriptionProductIds.playerGpsYearly,
+    };
     await _purchase(productId, offerings);
   }
 
