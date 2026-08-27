@@ -75,6 +75,14 @@ void main() {
       );
       expect(SubscriptionEntitlementIds.isKnown('player'), isTrue);
       expect(SubscriptionEntitlementIds.isKnown('unknown'), isFalse);
+      expect(
+        SubscriptionEntitlementIds.hasPlayerGpsEntitlement({'playerGPS'}),
+        isTrue,
+      );
+      expect(
+        SubscriptionEntitlementIds.canonicalize({'playerGPS'}),
+        contains(SubscriptionEntitlementIds.playerGps),
+      );
     });
 
     test('player_gps grants player access and own Intense GPS', () {

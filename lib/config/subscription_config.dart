@@ -343,10 +343,28 @@ abstract final class SubscriptionEntitlementIds {
     player,
   ];
 
+  /// RevenueCat dashboard IDs that should unlock Joueur GPS.
+  static const playerGpsAliases = <String>{
+    playerGps,
+    'playerGPS',
+    'playerGps',
+  };
+
   static bool isKnown(String entitlementId) => all.contains(entitlementId);
 
+  static bool hasPlayerGpsEntitlement(Set<String> entitlements) =>
+      entitlements.any(playerGpsAliases.contains);
+
+  static Set<String> canonicalize(Set<String> entitlements) {
+    if (!hasPlayerGpsEntitlement(entitlements) ||
+        entitlements.contains(playerGps)) {
+      return entitlements;
+    }
+    return {...entitlements, playerGps};
+  }
+
   static bool grantsPlayerAccess(Set<String> entitlements) =>
-      entitlements.contains(player) || entitlements.contains(playerGps);
+      entitlements.contains(player) || hasPlayerGpsEntitlement(entitlements);
 
   static bool grantsOwnIntenseGpsAccess({
     required Set<String> entitlements,
@@ -355,7 +373,7 @@ abstract final class SubscriptionEntitlementIds {
   }) {
     if (isRoot) return true;
     if (initiatedBy == 'coach') return true;
-    return entitlements.contains(playerGps);
+    return hasPlayerGpsEntitlement(entitlements);
   }
 }
 

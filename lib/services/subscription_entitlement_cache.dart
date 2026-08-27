@@ -44,15 +44,16 @@ class SubscriptionEntitlementCache {
         }
       }
       if (entitlements.isEmpty) return null;
+      final normalized = SubscriptionEntitlementIds.canonicalize(entitlements);
 
       return CachedSubscriptionEntitlements(
         uid: trimmed,
-        entitlements: entitlements,
-        coachTier: _coachTierFromEntitlements(entitlements),
+        entitlements: normalized,
+        coachTier: _coachTierFromEntitlements(normalized),
         hasPlayerSubscription:
-            SubscriptionEntitlementIds.grantsPlayerAccess(entitlements),
+            SubscriptionEntitlementIds.grantsPlayerAccess(normalized),
         hasPlayerGpsSubscription:
-            entitlements.contains(SubscriptionEntitlementIds.playerGps),
+            normalized.contains(SubscriptionEntitlementIds.playerGps),
         activeProductId: decoded['productId']?.toString(),
         expiresAt: expiresAt,
       );

@@ -686,6 +686,8 @@ class SubscriptionService extends ChangeNotifier {
         }
       }
       if (entitlements.isEmpty) return null;
+      final normalizedEntitlements =
+          SubscriptionEntitlementIds.canonicalize(entitlements);
 
       DateTime? expiresAt;
       final expiresRaw = raw['expiresAt'];
@@ -710,12 +712,12 @@ class SubscriptionService extends ChangeNotifier {
 
       return CachedSubscriptionEntitlements(
         uid: uid,
-        entitlements: entitlements,
+        entitlements: normalizedEntitlements,
         coachTier: coachTier,
         hasPlayerSubscription:
-            SubscriptionEntitlementIds.grantsPlayerAccess(entitlements),
+            SubscriptionEntitlementIds.grantsPlayerAccess(normalizedEntitlements),
         hasPlayerGpsSubscription:
-            entitlements.contains(SubscriptionEntitlementIds.playerGps),
+            normalizedEntitlements.contains(SubscriptionEntitlementIds.playerGps),
         activeProductId: raw['productId']?.toString(),
         expiresAt: expiresAt,
       );
@@ -737,6 +739,26 @@ class SubscriptionService extends ChangeNotifier {
       }
       // Promotional grants can appear in `all` before `active` syncs locally.
       _addEntitlementIfValid(active, id, info.entitlements.all[id]);
+    }
+
+    if (!active.contains(SubscriptionEntitlementIds.playerGps)) {
+      for (final alias in SubscriptionEntitlementIds.playerGpsAliases) {
+        if (alias == SubscriptionEntitlementIds.playerGps) continue;
+        if (_addEntitlementIfValid(
+          active,
+          SubscriptionEntitlementIds.playerGps,
+          info.entitlements.active[alias],
+        )) {
+          break;
+        }
+        if (_addEntitlementIfValid(
+          active,
+          SubscriptionEntitlementIds.playerGps,
+          info.entitlements.all[alias],
+        )) {
+          break;
+        }
+      }
     }
     return active;
   }
