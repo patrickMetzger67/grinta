@@ -2525,6 +2525,13 @@ class AppLocalizationsEs extends AppLocalizations {
   String get teamsListNoTeams => 'No hay equipos disponibles';
 
   @override
+  String get teamsListCreateTeamPrompt =>
+      'No has creado un equipo. ¿Quieres crear uno?';
+
+  @override
+  String get teamsListNoResultsHint => 'Prueba con otra palabra clave.';
+
+  @override
   String get teamStreamChannelSynced => 'Grupo de Stream activo';
 
   @override

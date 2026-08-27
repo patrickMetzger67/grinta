@@ -71,6 +71,7 @@ class _FeatureDiscoveryRandomBannerState
           const <String>{
             FeatureDiscoveryIds.tabAgenda,
             FeatureDiscoveryIds.tabDashboard,
+            FeatureDiscoveryIds.tabTeams,
             FeatureDiscoveryIds.tabChat,
           },
       currentParentScreenId: widget.parentScreenId,

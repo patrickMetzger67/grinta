@@ -1117,6 +1117,8 @@
   "teamsListCountFiltered": "{filtered} / {total}",
   "teamsListNoResults": "No teams found",
   "teamsListNoTeams": "No teams available",
+  "teamsListCreateTeamPrompt": "You haven't created a team. Would you like to create one?",
+  "teamsListNoResultsHint": "Try a different keyword.",
   "teamStreamChannelSynced": "Stream group active",
   "teamStreamChannelPending": "Stream group not synced yet",
   "teamStreamChannelCreateTitle": "Create Stream group?",

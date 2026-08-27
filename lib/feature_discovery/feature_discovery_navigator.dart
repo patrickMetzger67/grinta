@@ -45,7 +45,6 @@ bool _pushOffShellRoute(BuildContext context, String featureId) {
       );
       return true;
     case FeatureDiscoveryIds.tabTeams:
-      if (managedTeamsIds.isEmpty) return false;
       navigator.push(
         analyticsMaterialRoute<void>(
           screenName: AnalyticsScreenNames.teamsList,
