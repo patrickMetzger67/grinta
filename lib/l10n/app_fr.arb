@@ -4141,5 +4141,65 @@
   "ouraMetricHeartrate": "Fréquence cardiaque",
   "ouraMetricDaily": "Activité / readiness quotidienne",
   "ouraMetricPersonal": "Infos personnelles",
-  "ouraMetricEmail": "Email"
+  "ouraMetricEmail": "Email",
+  "settingsShopAdsLabel": "Annonces boutique",
+  "shopAdCta": "Voir le produit",
+  "shopAdOpenFailed": "Impossible d'ouvrir le lien boutique.",
+  "shopAdsSaveFailed": "Impossible d'enregistrer la préférence d'annonces.",
+  "adminAdsSection": "Annonces boutique",
+  "adminAdsSectionDesc": "Activer ou désactiver les publicités boutique et gérer les visuels.",
+  "adminAdsTitle": "Annonces boutique",
+  "adminAdsSubtitle": "Kill switch global (config/eshop.shopAdsEnabled) et collection Firestore ads/.",
+  "adminAdsEnabledLabel": "Afficher les annonces boutique",
+  "adminAdsEnabledSubtitle": "Lorsque c'est désactivé, aucune annonce n'est affichée, même si l'utilisateur les autorise.",
+  "adminAdsListEmpty": "Aucune annonce pour le moment.",
+  "adminAdsAdd": "Ajouter",
+  "adminAdsAddTitle": "Nouvelle annonce",
+  "adminAdsEdit": "Modifier",
+  "adminAdsEditTitle": "Modifier l'annonce",
+  "adminAdsUpdate": "Mettre à jour",
+  "adminAdsDelete": "Supprimer",
+  "adminAdsDeleteTitle": "Supprimer l'annonce ?",
+  "adminAdsDeleteMessage": "Supprimer « {name} » ?",
+  "@adminAdsDeleteMessage": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "adminAdsFieldName": "Nom",
+  "adminAdsFieldUrl": "URL produit",
+  "adminAdsFieldStartDate": "Date de début",
+  "adminAdsFieldEndDate": "Date de fin",
+  "adminAdsFieldTarget": "Cible",
+  "adminAdsUploadVisual": "Téléverser le visuel",
+  "adminAdsSave": "Enregistrer",
+  "adminAdsSaved": "Annonces enregistrées.",
+  "adminAdsSaveFailed": "Impossible d'enregistrer les annonces.",
+  "adminAdsPermissionDenied": "Un accès administrateur est requis pour gérer les annonces.",
+  "adminAdsLoadError": "Impossible de charger les annonces.",
+  "adminAdsRetry": "Réessayer",
+  "adminAdsNameRequired": "Le nom est obligatoire.",
+  "adminAdsUrlRequired": "L'URL est obligatoire.",
+  "adminAdsDatesInvalid": "La date de fin doit être après la date de début.",
+  "adminAdsTargetAll": "Tous",
+  "adminAdsTargetCoach": "Coach",
+  "adminAdsTargetPlayer": "Joueur",
+  "adminAdsTargetCoachWithoutTracker": "Coach sans tracker",
+  "adminAdsTargetPlayerWithoutTracker": "Joueur sans tracker",
+  "adminAdsStats": "{displays} affichages · {clicks} clics",
+  "@adminAdsStats": {
+    "placeholders": {
+      "displays": {
+        "type": "int"
+      },
+      "clicks": {
+        "type": "int"
+      }
+    }
+  },
+  "adminAdsCurrentBadge": "En cours",
+  "adminAdsExpiredBadge": "Terminée",
+  "adminAdsUpcomingBadge": "À venir"
 }

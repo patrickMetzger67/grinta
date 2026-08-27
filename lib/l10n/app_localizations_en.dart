@@ -6089,9 +6089,9 @@ class AppLocalizationsEn extends AppLocalizations {
     String _temp0 = intl.Intl.pluralLogic(
       count,
       locale: localeName,
-      zero: 'No players',
-      one: '1 player',
       other: '$count players',
+      one: '1 player',
+      zero: 'No players',
     );
     return '$_temp0';
   }
@@ -6102,12 +6102,10 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
-  String get adminUsersPlayersLoadError =>
-      'Unable to load associated players.';
+  String get adminUsersPlayersLoadError => 'Unable to load associated players.';
 
   @override
-  String get adminUsersPlayersEmpty =>
-      'No players associated with this user.';
+  String get adminUsersPlayersEmpty => 'No players associated with this user.';
 
   @override
   String get adminUsersAssociatePlayerFab => 'Associate a player';
@@ -6170,8 +6168,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get adminPlayersTitle => 'Players';
 
   @override
-  String get adminPlayersSearchHint =>
-      'Search (first name, last name, email)';
+  String get adminPlayersSearchHint => 'Search (first name, last name, email)';
 
   @override
   String get adminPlayersLoadError => 'Unable to load players.';
@@ -6187,9 +6184,9 @@ class AppLocalizationsEn extends AppLocalizations {
     String _temp0 = intl.Intl.pluralLogic(
       count,
       locale: localeName,
-      zero: 'No users',
-      one: '1 user',
       other: '$count users',
+      one: '1 user',
+      zero: 'No users',
     );
     return '$_temp0';
   }
@@ -6200,12 +6197,10 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
-  String get adminPlayersUsersLoadError =>
-      'Unable to load associated users.';
+  String get adminPlayersUsersLoadError => 'Unable to load associated users.';
 
   @override
-  String get adminPlayersUsersEmpty =>
-      'No users associated with this player.';
+  String get adminPlayersUsersEmpty => 'No users associated with this player.';
 
   @override
   String get adminPlayersAddUserFab => 'Add a user';
@@ -7898,4 +7893,140 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get ouraMetricEmail => 'Email';
+
+  @override
+  String get settingsShopAdsLabel => 'Shop ads';
+
+  @override
+  String get shopAdCta => 'View product';
+
+  @override
+  String get shopAdOpenFailed => 'Could not open the shop link.';
+
+  @override
+  String get shopAdsSaveFailed => 'Could not save the shop ads preference.';
+
+  @override
+  String get adminAdsSection => 'Shop ads';
+
+  @override
+  String get adminAdsSectionDesc => 'Toggle shop ads and manage creatives.';
+
+  @override
+  String get adminAdsTitle => 'Shop ads';
+
+  @override
+  String get adminAdsSubtitle =>
+      'Global kill switch (config/eshop.shopAdsEnabled) and Firestore ads/ collection.';
+
+  @override
+  String get adminAdsEnabledLabel => 'Show shop ads';
+
+  @override
+  String get adminAdsEnabledSubtitle =>
+      'When off, no ads are shown even if the user allows them.';
+
+  @override
+  String get adminAdsListEmpty => 'No ads yet.';
+
+  @override
+  String get adminAdsAdd => 'Add';
+
+  @override
+  String get adminAdsAddTitle => 'New ad';
+
+  @override
+  String get adminAdsEdit => 'Edit';
+
+  @override
+  String get adminAdsEditTitle => 'Edit ad';
+
+  @override
+  String get adminAdsUpdate => 'Update';
+
+  @override
+  String get adminAdsDelete => 'Delete';
+
+  @override
+  String get adminAdsDeleteTitle => 'Delete this ad?';
+
+  @override
+  String adminAdsDeleteMessage(String name) {
+    return 'Delete “$name”?';
+  }
+
+  @override
+  String get adminAdsFieldName => 'Name';
+
+  @override
+  String get adminAdsFieldUrl => 'Product URL';
+
+  @override
+  String get adminAdsFieldStartDate => 'Start date';
+
+  @override
+  String get adminAdsFieldEndDate => 'End date';
+
+  @override
+  String get adminAdsFieldTarget => 'Target';
+
+  @override
+  String get adminAdsUploadVisual => 'Upload visual';
+
+  @override
+  String get adminAdsSave => 'Save';
+
+  @override
+  String get adminAdsSaved => 'Ads saved.';
+
+  @override
+  String get adminAdsSaveFailed => 'Could not save ads.';
+
+  @override
+  String get adminAdsPermissionDenied =>
+      'Admin access is required to manage ads.';
+
+  @override
+  String get adminAdsLoadError => 'Could not load ads.';
+
+  @override
+  String get adminAdsRetry => 'Retry';
+
+  @override
+  String get adminAdsNameRequired => 'Name is required.';
+
+  @override
+  String get adminAdsUrlRequired => 'URL is required.';
+
+  @override
+  String get adminAdsDatesInvalid => 'End date must be after start date.';
+
+  @override
+  String get adminAdsTargetAll => 'Everyone';
+
+  @override
+  String get adminAdsTargetCoach => 'Coach';
+
+  @override
+  String get adminAdsTargetPlayer => 'Player';
+
+  @override
+  String get adminAdsTargetCoachWithoutTracker => 'Coach without tracker';
+
+  @override
+  String get adminAdsTargetPlayerWithoutTracker => 'Player without tracker';
+
+  @override
+  String adminAdsStats(int displays, int clicks) {
+    return '$displays impressions · $clicks clicks';
+  }
+
+  @override
+  String get adminAdsCurrentBadge => 'Current';
+
+  @override
+  String get adminAdsExpiredBadge => 'Ended';
+
+  @override
+  String get adminAdsUpcomingBadge => 'Upcoming';
 }

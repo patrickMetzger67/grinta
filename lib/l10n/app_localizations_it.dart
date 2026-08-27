@@ -6145,17 +6145,16 @@ class AppLocalizationsIt extends AppLocalizations {
   String get adminUsersEmpty => 'Nessun utente al momento.';
 
   @override
-  String get adminUsersSearchEmpty =>
-      'Nessun utente corrisponde alla ricerca.';
+  String get adminUsersSearchEmpty => 'Nessun utente corrisponde alla ricerca.';
 
   @override
   String adminUsersPlayerCount(int count) {
     String _temp0 = intl.Intl.pluralLogic(
       count,
       locale: localeName,
-      zero: 'Nessun giocatore',
-      one: '1 giocatore',
       other: '$count giocatori',
+      one: '1 giocatore',
+      zero: 'Nessun giocatore',
     );
     return '$_temp0';
   }
@@ -6183,8 +6182,7 @@ class AppLocalizationsIt extends AppLocalizations {
   String get adminUsersAssociateSuccess => 'Giocatore associato.';
 
   @override
-  String get adminUsersAssociateFailed =>
-      'Impossibile associare il giocatore.';
+  String get adminUsersAssociateFailed => 'Impossibile associare il giocatore.';
 
   @override
   String get adminUsersEntityLabel => 'Utente';
@@ -6207,8 +6205,7 @@ class AppLocalizationsIt extends AppLocalizations {
   String get adminUsersPasswordResetConfirmAction => 'Invia';
 
   @override
-  String get adminUsersPasswordResetSent =>
-      'Email di reimpostazione inviata.';
+  String get adminUsersPasswordResetSent => 'Email di reimpostazione inviata.';
 
   @override
   String get adminUsersPasswordResetNoEmail =>
@@ -6254,9 +6251,9 @@ class AppLocalizationsIt extends AppLocalizations {
     String _temp0 = intl.Intl.pluralLogic(
       count,
       locale: localeName,
-      zero: 'Nessun utente',
-      one: '1 utente',
       other: '$count utenti',
+      one: '1 utente',
+      zero: 'Nessun utente',
     );
     return '$_temp0';
   }
@@ -6284,8 +6281,7 @@ class AppLocalizationsIt extends AppLocalizations {
   String get adminPlayersAssociateSuccess => 'Utente associato.';
 
   @override
-  String get adminPlayersAssociateFailed =>
-      'Impossibile associare l\'utente.';
+  String get adminPlayersAssociateFailed => 'Impossibile associare l\'utente.';
 
   @override
   String get adminPromoCodesSection => 'Codici promo';
@@ -7992,4 +7988,143 @@ class AppLocalizationsIt extends AppLocalizations {
 
   @override
   String get ouraMetricEmail => 'Email';
+
+  @override
+  String get settingsShopAdsLabel => 'Annunci negozio';
+
+  @override
+  String get shopAdCta => 'Vedi il prodotto';
+
+  @override
+  String get shopAdOpenFailed => 'Impossibile aprire il link del negozio.';
+
+  @override
+  String get shopAdsSaveFailed =>
+      'Impossibile salvare la preferenza degli annunci.';
+
+  @override
+  String get adminAdsSection => 'Annunci negozio';
+
+  @override
+  String get adminAdsSectionDesc =>
+      'Attiva o disattiva gli annunci del negozio e gestisci i visual.';
+
+  @override
+  String get adminAdsTitle => 'Annunci negozio';
+
+  @override
+  String get adminAdsSubtitle =>
+      'Kill switch globale (config/eshop.shopAdsEnabled) e collection Firestore ads/.';
+
+  @override
+  String get adminAdsEnabledLabel => 'Mostra gli annunci negozio';
+
+  @override
+  String get adminAdsEnabledSubtitle =>
+      'Se disattivato, nessun annuncio viene mostrato anche se l\'utente li consente.';
+
+  @override
+  String get adminAdsListEmpty => 'Nessun annuncio al momento.';
+
+  @override
+  String get adminAdsAdd => 'Aggiungi';
+
+  @override
+  String get adminAdsAddTitle => 'Nuovo annuncio';
+
+  @override
+  String get adminAdsEdit => 'Modifica';
+
+  @override
+  String get adminAdsEditTitle => 'Modifica annuncio';
+
+  @override
+  String get adminAdsUpdate => 'Aggiorna';
+
+  @override
+  String get adminAdsDelete => 'Elimina';
+
+  @override
+  String get adminAdsDeleteTitle => 'Eliminare questo annuncio?';
+
+  @override
+  String adminAdsDeleteMessage(String name) {
+    return 'Eliminare « $name »?';
+  }
+
+  @override
+  String get adminAdsFieldName => 'Nome';
+
+  @override
+  String get adminAdsFieldUrl => 'URL prodotto';
+
+  @override
+  String get adminAdsFieldStartDate => 'Data di inizio';
+
+  @override
+  String get adminAdsFieldEndDate => 'Data di fine';
+
+  @override
+  String get adminAdsFieldTarget => 'Destinatario';
+
+  @override
+  String get adminAdsUploadVisual => 'Carica visual';
+
+  @override
+  String get adminAdsSave => 'Salva';
+
+  @override
+  String get adminAdsSaved => 'Annunci salvati.';
+
+  @override
+  String get adminAdsSaveFailed => 'Impossibile salvare gli annunci.';
+
+  @override
+  String get adminAdsPermissionDenied =>
+      'Per gestire gli annunci è necessario l\'accesso amministratore.';
+
+  @override
+  String get adminAdsLoadError => 'Impossibile caricare gli annunci.';
+
+  @override
+  String get adminAdsRetry => 'Riprova';
+
+  @override
+  String get adminAdsNameRequired => 'Il nome è obbligatorio.';
+
+  @override
+  String get adminAdsUrlRequired => 'L\'URL è obbligatorio.';
+
+  @override
+  String get adminAdsDatesInvalid =>
+      'La data di fine deve essere successiva alla data di inizio.';
+
+  @override
+  String get adminAdsTargetAll => 'Tutti';
+
+  @override
+  String get adminAdsTargetCoach => 'Allenatore';
+
+  @override
+  String get adminAdsTargetPlayer => 'Giocatore';
+
+  @override
+  String get adminAdsTargetCoachWithoutTracker => 'Allenatore senza tracker';
+
+  @override
+  String get adminAdsTargetPlayerWithoutTracker => 'Giocatore senza tracker';
+
+  @override
+  String adminAdsStats(int displays, int clicks) {
+    return '$displays impressioni · $clicks clic';
+  }
+
+  @override
+  String get adminAdsCurrentBadge => 'In corso';
+
+  @override
+  String get adminAdsExpiredBadge => 'Terminato';
+
+  @override
+  String get adminAdsUpcomingBadge => 'In arrivo';
 }

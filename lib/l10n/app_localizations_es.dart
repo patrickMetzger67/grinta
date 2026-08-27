@@ -6172,9 +6172,9 @@ class AppLocalizationsEs extends AppLocalizations {
     String _temp0 = intl.Intl.pluralLogic(
       count,
       locale: localeName,
-      zero: 'Ningún jugador',
-      one: '1 jugador',
       other: '$count jugadores',
+      one: '1 jugador',
+      zero: 'Ningún jugador',
     );
     return '$_temp0';
   }
@@ -6272,9 +6272,9 @@ class AppLocalizationsEs extends AppLocalizations {
     String _temp0 = intl.Intl.pluralLogic(
       count,
       locale: localeName,
-      zero: 'Ningún usuario',
-      one: '1 usuario',
       other: '$count usuarios',
+      one: '1 usuario',
+      zero: 'Ningún usuario',
     );
     return '$_temp0';
   }
@@ -8013,4 +8013,143 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get ouraMetricEmail => 'Email';
+
+  @override
+  String get settingsShopAdsLabel => 'Anuncios de la tienda';
+
+  @override
+  String get shopAdCta => 'Ver producto';
+
+  @override
+  String get shopAdOpenFailed => 'No se pudo abrir el enlace de la tienda.';
+
+  @override
+  String get shopAdsSaveFailed =>
+      'No se pudo guardar la preferencia de anuncios.';
+
+  @override
+  String get adminAdsSection => 'Anuncios de la tienda';
+
+  @override
+  String get adminAdsSectionDesc =>
+      'Activar o desactivar los anuncios de la tienda y gestionar los visuales.';
+
+  @override
+  String get adminAdsTitle => 'Anuncios de la tienda';
+
+  @override
+  String get adminAdsSubtitle =>
+      'Interruptor global (config/eshop.shopAdsEnabled) y colección Firestore ads/.';
+
+  @override
+  String get adminAdsEnabledLabel => 'Mostrar anuncios de la tienda';
+
+  @override
+  String get adminAdsEnabledSubtitle =>
+      'Si está desactivado, no se muestra ningún anuncio aunque el usuario los permita.';
+
+  @override
+  String get adminAdsListEmpty => 'Todavía no hay anuncios.';
+
+  @override
+  String get adminAdsAdd => 'Añadir';
+
+  @override
+  String get adminAdsAddTitle => 'Nuevo anuncio';
+
+  @override
+  String get adminAdsEdit => 'Editar';
+
+  @override
+  String get adminAdsEditTitle => 'Editar anuncio';
+
+  @override
+  String get adminAdsUpdate => 'Actualizar';
+
+  @override
+  String get adminAdsDelete => 'Eliminar';
+
+  @override
+  String get adminAdsDeleteTitle => '¿Eliminar este anuncio?';
+
+  @override
+  String adminAdsDeleteMessage(String name) {
+    return '¿Eliminar « $name »?';
+  }
+
+  @override
+  String get adminAdsFieldName => 'Nombre';
+
+  @override
+  String get adminAdsFieldUrl => 'URL del producto';
+
+  @override
+  String get adminAdsFieldStartDate => 'Fecha de inicio';
+
+  @override
+  String get adminAdsFieldEndDate => 'Fecha de fin';
+
+  @override
+  String get adminAdsFieldTarget => 'Destinatario';
+
+  @override
+  String get adminAdsUploadVisual => 'Subir visual';
+
+  @override
+  String get adminAdsSave => 'Guardar';
+
+  @override
+  String get adminAdsSaved => 'Anuncios guardados.';
+
+  @override
+  String get adminAdsSaveFailed => 'No se pudieron guardar los anuncios.';
+
+  @override
+  String get adminAdsPermissionDenied =>
+      'Se requiere acceso de administrador para gestionar los anuncios.';
+
+  @override
+  String get adminAdsLoadError => 'No se pudieron cargar los anuncios.';
+
+  @override
+  String get adminAdsRetry => 'Reintentar';
+
+  @override
+  String get adminAdsNameRequired => 'El nombre es obligatorio.';
+
+  @override
+  String get adminAdsUrlRequired => 'La URL es obligatoria.';
+
+  @override
+  String get adminAdsDatesInvalid =>
+      'La fecha de fin debe ser posterior a la de inicio.';
+
+  @override
+  String get adminAdsTargetAll => 'Todos';
+
+  @override
+  String get adminAdsTargetCoach => 'Entrenador';
+
+  @override
+  String get adminAdsTargetPlayer => 'Jugador';
+
+  @override
+  String get adminAdsTargetCoachWithoutTracker => 'Entrenador sin tracker';
+
+  @override
+  String get adminAdsTargetPlayerWithoutTracker => 'Jugador sin tracker';
+
+  @override
+  String adminAdsStats(int displays, int clicks) {
+    return '$displays impresiones · $clicks clics';
+  }
+
+  @override
+  String get adminAdsCurrentBadge => 'En curso';
+
+  @override
+  String get adminAdsExpiredBadge => 'Finalizado';
+
+  @override
+  String get adminAdsUpcomingBadge => 'Próximo';
 }

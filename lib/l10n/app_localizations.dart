@@ -13725,6 +13725,264 @@ abstract class AppLocalizations {
   /// In fr, this message translates to:
   /// **'Email'**
   String get ouraMetricEmail;
+
+  /// No description provided for @settingsShopAdsLabel.
+  ///
+  /// In fr, this message translates to:
+  /// **'Annonces boutique'**
+  String get settingsShopAdsLabel;
+
+  /// No description provided for @shopAdCta.
+  ///
+  /// In fr, this message translates to:
+  /// **'Voir le produit'**
+  String get shopAdCta;
+
+  /// No description provided for @shopAdOpenFailed.
+  ///
+  /// In fr, this message translates to:
+  /// **'Impossible d\'ouvrir le lien boutique.'**
+  String get shopAdOpenFailed;
+
+  /// No description provided for @shopAdsSaveFailed.
+  ///
+  /// In fr, this message translates to:
+  /// **'Impossible d\'enregistrer la préférence d\'annonces.'**
+  String get shopAdsSaveFailed;
+
+  /// No description provided for @adminAdsSection.
+  ///
+  /// In fr, this message translates to:
+  /// **'Annonces boutique'**
+  String get adminAdsSection;
+
+  /// No description provided for @adminAdsSectionDesc.
+  ///
+  /// In fr, this message translates to:
+  /// **'Activer ou désactiver les publicités boutique et gérer les visuels.'**
+  String get adminAdsSectionDesc;
+
+  /// No description provided for @adminAdsTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Annonces boutique'**
+  String get adminAdsTitle;
+
+  /// No description provided for @adminAdsSubtitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Kill switch global (config/eshop.shopAdsEnabled) et collection Firestore ads/.'**
+  String get adminAdsSubtitle;
+
+  /// No description provided for @adminAdsEnabledLabel.
+  ///
+  /// In fr, this message translates to:
+  /// **'Afficher les annonces boutique'**
+  String get adminAdsEnabledLabel;
+
+  /// No description provided for @adminAdsEnabledSubtitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Lorsque c\'est désactivé, aucune annonce n\'est affichée, même si l\'utilisateur les autorise.'**
+  String get adminAdsEnabledSubtitle;
+
+  /// No description provided for @adminAdsListEmpty.
+  ///
+  /// In fr, this message translates to:
+  /// **'Aucune annonce pour le moment.'**
+  String get adminAdsListEmpty;
+
+  /// No description provided for @adminAdsAdd.
+  ///
+  /// In fr, this message translates to:
+  /// **'Ajouter'**
+  String get adminAdsAdd;
+
+  /// No description provided for @adminAdsAddTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Nouvelle annonce'**
+  String get adminAdsAddTitle;
+
+  /// No description provided for @adminAdsEdit.
+  ///
+  /// In fr, this message translates to:
+  /// **'Modifier'**
+  String get adminAdsEdit;
+
+  /// No description provided for @adminAdsEditTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Modifier l\'annonce'**
+  String get adminAdsEditTitle;
+
+  /// No description provided for @adminAdsUpdate.
+  ///
+  /// In fr, this message translates to:
+  /// **'Mettre à jour'**
+  String get adminAdsUpdate;
+
+  /// No description provided for @adminAdsDelete.
+  ///
+  /// In fr, this message translates to:
+  /// **'Supprimer'**
+  String get adminAdsDelete;
+
+  /// No description provided for @adminAdsDeleteTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Supprimer l\'annonce ?'**
+  String get adminAdsDeleteTitle;
+
+  /// No description provided for @adminAdsDeleteMessage.
+  ///
+  /// In fr, this message translates to:
+  /// **'Supprimer « {name} » ?'**
+  String adminAdsDeleteMessage(String name);
+
+  /// No description provided for @adminAdsFieldName.
+  ///
+  /// In fr, this message translates to:
+  /// **'Nom'**
+  String get adminAdsFieldName;
+
+  /// No description provided for @adminAdsFieldUrl.
+  ///
+  /// In fr, this message translates to:
+  /// **'URL produit'**
+  String get adminAdsFieldUrl;
+
+  /// No description provided for @adminAdsFieldStartDate.
+  ///
+  /// In fr, this message translates to:
+  /// **'Date de début'**
+  String get adminAdsFieldStartDate;
+
+  /// No description provided for @adminAdsFieldEndDate.
+  ///
+  /// In fr, this message translates to:
+  /// **'Date de fin'**
+  String get adminAdsFieldEndDate;
+
+  /// No description provided for @adminAdsFieldTarget.
+  ///
+  /// In fr, this message translates to:
+  /// **'Cible'**
+  String get adminAdsFieldTarget;
+
+  /// No description provided for @adminAdsUploadVisual.
+  ///
+  /// In fr, this message translates to:
+  /// **'Téléverser le visuel'**
+  String get adminAdsUploadVisual;
+
+  /// No description provided for @adminAdsSave.
+  ///
+  /// In fr, this message translates to:
+  /// **'Enregistrer'**
+  String get adminAdsSave;
+
+  /// No description provided for @adminAdsSaved.
+  ///
+  /// In fr, this message translates to:
+  /// **'Annonces enregistrées.'**
+  String get adminAdsSaved;
+
+  /// No description provided for @adminAdsSaveFailed.
+  ///
+  /// In fr, this message translates to:
+  /// **'Impossible d\'enregistrer les annonces.'**
+  String get adminAdsSaveFailed;
+
+  /// No description provided for @adminAdsPermissionDenied.
+  ///
+  /// In fr, this message translates to:
+  /// **'Un accès administrateur est requis pour gérer les annonces.'**
+  String get adminAdsPermissionDenied;
+
+  /// No description provided for @adminAdsLoadError.
+  ///
+  /// In fr, this message translates to:
+  /// **'Impossible de charger les annonces.'**
+  String get adminAdsLoadError;
+
+  /// No description provided for @adminAdsRetry.
+  ///
+  /// In fr, this message translates to:
+  /// **'Réessayer'**
+  String get adminAdsRetry;
+
+  /// No description provided for @adminAdsNameRequired.
+  ///
+  /// In fr, this message translates to:
+  /// **'Le nom est obligatoire.'**
+  String get adminAdsNameRequired;
+
+  /// No description provided for @adminAdsUrlRequired.
+  ///
+  /// In fr, this message translates to:
+  /// **'L\'URL est obligatoire.'**
+  String get adminAdsUrlRequired;
+
+  /// No description provided for @adminAdsDatesInvalid.
+  ///
+  /// In fr, this message translates to:
+  /// **'La date de fin doit être après la date de début.'**
+  String get adminAdsDatesInvalid;
+
+  /// No description provided for @adminAdsTargetAll.
+  ///
+  /// In fr, this message translates to:
+  /// **'Tous'**
+  String get adminAdsTargetAll;
+
+  /// No description provided for @adminAdsTargetCoach.
+  ///
+  /// In fr, this message translates to:
+  /// **'Coach'**
+  String get adminAdsTargetCoach;
+
+  /// No description provided for @adminAdsTargetPlayer.
+  ///
+  /// In fr, this message translates to:
+  /// **'Joueur'**
+  String get adminAdsTargetPlayer;
+
+  /// No description provided for @adminAdsTargetCoachWithoutTracker.
+  ///
+  /// In fr, this message translates to:
+  /// **'Coach sans tracker'**
+  String get adminAdsTargetCoachWithoutTracker;
+
+  /// No description provided for @adminAdsTargetPlayerWithoutTracker.
+  ///
+  /// In fr, this message translates to:
+  /// **'Joueur sans tracker'**
+  String get adminAdsTargetPlayerWithoutTracker;
+
+  /// No description provided for @adminAdsStats.
+  ///
+  /// In fr, this message translates to:
+  /// **'{displays} affichages · {clicks} clics'**
+  String adminAdsStats(int displays, int clicks);
+
+  /// No description provided for @adminAdsCurrentBadge.
+  ///
+  /// In fr, this message translates to:
+  /// **'En cours'**
+  String get adminAdsCurrentBadge;
+
+  /// No description provided for @adminAdsExpiredBadge.
+  ///
+  /// In fr, this message translates to:
+  /// **'Terminée'**
+  String get adminAdsExpiredBadge;
+
+  /// No description provided for @adminAdsUpcomingBadge.
+  ///
+  /// In fr, this message translates to:
+  /// **'À venir'**
+  String get adminAdsUpcomingBadge;
 }
 
 class _AppLocalizationsDelegate

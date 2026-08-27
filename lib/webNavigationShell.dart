@@ -31,6 +31,8 @@ import 'widget/notification_preferences_section.dart';
 import 'widget/app_version_label.dart';
 import 'widget/settings_infos_sheet.dart';
 import 'widget/settings_menu_style.dart';
+import 'widget/shop_ad_prompt.dart';
+import 'widget/shop_ads_settings_tile.dart';
 import 'widget/subscription_details_sheet.dart';
 import 'widget/notifications_sheet.dart';
 import 'widget/ask_diego/ask_diego_sidebar_entry.dart';
@@ -136,6 +138,7 @@ class _WebNavigationShellState extends State<WebNavigationShell> {
     if (index < 0) return false;
     if (index == _selectedIndex) return true;
     setState(() => _selectedIndex = index);
+    unawaited(ShopAdPrompt.maybeShow(fromFeatureChange: true));
     _markTabFeatureVisited(index);
     _logTabScreen(index);
     return true;
@@ -472,6 +475,7 @@ class _WebNavigationShellState extends State<WebNavigationShell> {
               });
               _markTabFeatureVisited(index);
               _logTabScreen(index);
+              unawaited(ShopAdPrompt.maybeShow(fromFeatureChange: true));
             },
           ),
         );
@@ -519,6 +523,9 @@ class _WebNavigationShellState extends State<WebNavigationShell> {
         ),
         const NotificationPreferencesSection(
           contentPadding: EdgeInsets.zero,
+          webCardStyle: true,
+        ),
+        const ShopAdsSettingsTile(
           webCardStyle: true,
         ),
         ListenableBuilder(

@@ -41,6 +41,8 @@ import 'package:grinta/widget/promo_code_redeem_section.dart';
 import 'package:grinta/widget/app_version_label.dart';
 import 'package:grinta/widget/settings_infos_sheet.dart';
 import 'package:grinta/widget/settings_menu_style.dart';
+import 'package:grinta/widget/shop_ad_prompt.dart';
+import 'package:grinta/widget/shop_ads_settings_tile.dart';
 import 'package:provider/provider.dart';
 
 const List<String> _kMobileTabFeatureIds = <String>[
@@ -120,6 +122,7 @@ class _MobileNavigationShellState extends State<MobileNavigationShell> {
     setState(() => _selectedIndex = index);
     _markTabFeatureVisited(index);
     _logTabScreen(index);
+    unawaited(ShopAdPrompt.maybeShow(fromFeatureChange: true));
     return true;
   }
 
@@ -387,6 +390,7 @@ class _MobileNavigationShellState extends State<MobileNavigationShell> {
                   contentPadding: EdgeInsets.symmetric(horizontal: 16),
                 ),
                 const NotificationPreferencesSection(),
+                const ShopAdsSettingsTile(),
                 const Divider(height: 1),
                 ListenableBuilder(
                   listenable: UserRootService.instance,
@@ -721,6 +725,7 @@ class _MobileNavigationShellState extends State<MobileNavigationShell> {
                     setState(() => _selectedIndex = index);
                     _markTabFeatureVisited(index);
                     _logTabScreen(index);
+                    unawaited(ShopAdPrompt.maybeShow(fromFeatureChange: true));
                   },
                   backgroundColor: colors.surface,
                   indicatorColor: colors.primary.withValues(alpha: 0.15),
