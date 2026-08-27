@@ -1,6 +1,20 @@
 rules_version = '2';
 service firebase.storage {
   match /b/{bucket}/o {
+    function isRootUser() {
+      return request.auth != null
+        && firestore.exists(/databases/(default)/documents/users/$(request.auth.uid))
+        && firestore.get(/databases/(default)/documents/users/$(request.auth.uid)).data.get('isRoot', false) == true;
+    }
+
+    // Shop ad visuals. Authenticated clients read; only isRoot may upload.
+    match /ads/{allPaths=**} {
+      allow read: if request.auth != null;
+      allow write: if isRootUser()
+        && request.resource.size < 8 * 1024 * 1024
+        && request.resource.contentType.matches('image/.*');
+    }
+
     // Club logos used in invitation HTML emails (email clients cannot authenticate).
     match /logoClubs/{allPaths=**} {
       allow read: if true;

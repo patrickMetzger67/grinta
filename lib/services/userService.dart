@@ -28,6 +28,15 @@ abstract final class UserDocumentFields {
   /// `self` | `parent` — see [PhysiologicalDataConsentSource].
   static const physiologicalDataConsentSource =
       'physiologicalDataConsentSource';
+
+  /// Shop ads opt-out. Missing field is treated as `true` (ads on).
+  static const eshopAds = 'eshopAds';
+
+  /// Last time a shop ad overlay was shown (Timestamp).
+  static const eshopAdsLastShownAt = 'eshopAdsLastShownAt';
+
+  /// Local calendar day (`YYYY-MM-DD`) of the last shop ad impression.
+  static const eshopAdsLastShownDate = 'eshopAdsLastShownDate';
 }
 
 /// Account lifecycle for age / parental consent.

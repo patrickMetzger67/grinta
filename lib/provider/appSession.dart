@@ -1626,6 +1626,60 @@ class AppSession extends ChangeNotifier {
     return merged.values.toList();
   }
 
+  /// Teams the selected player manages or owns, across every season in cache.
+  List<Team> get allManagedTeams {
+    final String? playerId = selectedPlayerId;
+    if (playerId == null) return const <Team>[];
+
+    final Map<String, Team> merged = <String, Team>{};
+    final String? currentUserUid = user?.uid;
+
+    void absorbSeasonMap(Map<String, Map<String, Team>>? bySeason) {
+      if (bySeason == null) return;
+      for (final Map<String, Team> seasonTeams in bySeason.values) {
+        merged.addAll(seasonTeams);
+      }
+    }
+
+    absorbSeasonMap(_teamsAsManagerData[playerId]);
+    absorbSeasonMap(_teamsAsOwnerData[playerId]);
+
+    final Map<String, Map<String, Team>>? allSeasons = teams[playerId];
+    if (allSeasons != null) {
+      for (final Map<String, Team> seasonTeams in allSeasons.values) {
+        for (final Team team in seasonTeams.values) {
+          final String teamId = team.keyTeam?.trim() ?? '';
+          if (teamId.isEmpty || merged.containsKey(teamId)) continue;
+          if (canManageTeam(team, currentUserUid)) {
+            merged[teamId] = team;
+          }
+        }
+      }
+    }
+
+    return merged.values.toList();
+  }
+
+  /// Roster / Grinta-member teams for the selected player, any cached season.
+  List<Team> get allMemberTeams {
+    final String? playerId = selectedPlayerId;
+    if (playerId == null) return const <Team>[];
+
+    final Map<String, Team> merged = <String, Team>{};
+
+    void absorb(Map<String, Map<String, Map<String, Team>>> source) {
+      final Map<String, Map<String, Team>>? bySeason = source[playerId];
+      if (bySeason == null) return;
+      for (final Map<String, Team> seasonTeams in bySeason.values) {
+        merged.addAll(seasonTeams);
+      }
+    }
+
+    absorb(_teamsAsPlayerData);
+    absorb(_teamsAsGrintaPlayerData);
+    return merged.values.toList();
+  }
+
   /// Stable key fragment for agenda reload when team membership changes.
   String get agendaTeamsKey {
     final List<String> teamIds = teamsForAgendaSelectedSeason
