@@ -138,7 +138,6 @@ service cloud.firestore {
         && !('delivery' in request.resource.data);
     }
 
-    // Server-only OAuth / token collections (Phase 1 Whoop / Strava).
     // Shop ads: authenticated read only (not the public catch-all).
     function isAuthOnlyReadCollection() {
       return request.path.size() >= 5 && request.path[4] == 'ads';
@@ -160,6 +159,7 @@ service cloud.firestore {
         );
     }
 
+    // Server-only OAuth / token collections (Phase 1 Whoop / Strava).
     function isServerOnlyCollection() {
       return request.path.size() >= 2
         && request.path[0] in [
