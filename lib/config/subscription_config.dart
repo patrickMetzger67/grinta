@@ -20,7 +20,7 @@
 /// 1. Projet sur https://app.revenuecat.com
 /// 2. Apps iOS (`io.grinta.app`) et Android (même package)
 /// 3. Lier App Store Connect et Google Play Console
-/// 4. Entitlements : `coach_basic`, `coach_elite`, `coach_pro`, `player`
+/// 4. Entitlements : `coach_basic`, `coach_elite`, `coach_pro`, `player`, `player_gps`
 /// 5. Produits store (mensuel / annuel) mappés aux entitlements
 /// 6. Offering (ex. `default`) avec packages
 /// 7. Clés publiques iOS (`appl_…`) et Android (`goog_…`) → `dart_defines.json`
@@ -212,17 +212,20 @@ abstract final class SubscriptionProductIds {
   static const coachEliteMonthly = 'io.grinta.app.coach.elite.monthly';
   static const coachProMonthly = 'io.grinta.app.coach.pro.monthly';
   static const playerMonthly = 'io.grinta.app.player.monthly';
+  static const playerGpsMonthly = 'io.grinta.app.playerGPS.monthly';
 
   static const coachBasicYearly = 'io.grinta.app.coach.basic.yearly';
   static const coachEliteYearly = 'io.grinta.app.coach.elite.yearly';
   static const coachProYearly = 'io.grinta.app.coach.pro.yearly';
   static const playerYearly = 'io.grinta.app.player.yearly';
+  static const playerGpsYearly = 'io.grinta.app.playerGPS.yearly';
 
   static const monthly = <String>[
     coachBasicMonthly,
     coachEliteMonthly,
     coachProMonthly,
     playerMonthly,
+    playerGpsMonthly,
   ];
 
   static const yearly = <String>[
@@ -230,6 +233,7 @@ abstract final class SubscriptionProductIds {
     coachEliteYearly,
     coachProYearly,
     playerYearly,
+    playerGpsYearly,
   ];
 
   static const all = <String>[
@@ -285,6 +289,10 @@ abstract final class SubscriptionProductLookup {
     if (normalized.contains('coachbasic') || normalized.contains('basiccoach')) {
       return 'coach_basic';
     }
+    // Check player GPS before generic `player` — `playergps` contains `player`.
+    if (normalized.contains('playergps') || normalized.contains('gpsplayer')) {
+      return 'player_gps';
+    }
     if (normalized.contains('player')) return 'player';
     return null;
   }
@@ -298,6 +306,8 @@ abstract final class SubscriptionProductLookup {
       'coach_pro_monthly' || 'coach_pro_yearly' =>
         SubscriptionEntitlementIds.coachPro,
       'player_monthly' || 'player_yearly' => SubscriptionEntitlementIds.player,
+      'player_gps_monthly' || 'player_gps_yearly' =>
+        SubscriptionEntitlementIds.playerGps,
       _ => null,
     };
   }
@@ -319,12 +329,52 @@ abstract final class SubscriptionEntitlementIds {
   static const coachElite = 'coach_elite';
   static const coachPro = 'coach_pro';
   static const player = 'player';
+  static const playerGps = 'player_gps';
 
   static const coachTiersOrdered = <String>[
     coachPro,
     coachElite,
     coachBasic,
   ];
+
+  static const all = <String>[
+    ...coachTiersOrdered,
+    playerGps,
+    player,
+  ];
+
+  /// RevenueCat dashboard IDs that should unlock Joueur GPS.
+  static const playerGpsAliases = <String>{
+    playerGps,
+    'playerGPS',
+    'playerGps',
+  };
+
+  static bool isKnown(String entitlementId) => all.contains(entitlementId);
+
+  static bool hasPlayerGpsEntitlement(Set<String> entitlements) =>
+      entitlements.any(playerGpsAliases.contains);
+
+  static Set<String> canonicalize(Set<String> entitlements) {
+    if (!hasPlayerGpsEntitlement(entitlements) ||
+        entitlements.contains(playerGps)) {
+      return entitlements;
+    }
+    return {...entitlements, playerGps};
+  }
+
+  static bool grantsPlayerAccess(Set<String> entitlements) =>
+      entitlements.contains(player) || hasPlayerGpsEntitlement(entitlements);
+
+  static bool grantsOwnIntenseGpsAccess({
+    required Set<String> entitlements,
+    required bool isRoot,
+    String initiatedBy = 'player',
+  }) {
+    if (isRoot) return true;
+    if (initiatedBy == 'coach') return true;
+    return hasPlayerGpsEntitlement(entitlements);
+  }
 }
 
 /// FCM / local reminder payload `type` values gated by
@@ -374,10 +424,12 @@ abstract final class SubscriptionFallbackPrices {
   static const coachElite = '14,99 €';
   static const coachPro = '24,99 €';
   static const player = '2,49 €';
+  static const playerGps = '19,99 €';
 
   /// Annual list prices (marketing: 2 months free vs monthly × 12).
   static const coachBasicYearly = '99,99 €';
   static const coachEliteYearly = '149,99 €';
   static const coachProYearly = '249,99 €';
   static const playerYearly = '24,99 €';
+  static const playerGpsYearly = '199,99 €';
 }

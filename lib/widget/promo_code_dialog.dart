@@ -155,6 +155,7 @@ class _PromoCodeDialogContentState extends State<PromoCodeDialogContent> {
     final l10n = context.l10n;
     return switch (entitlement) {
       'player' => l10n.subscriptionOfferingPlayer,
+      'player_gps' => l10n.subscriptionTierPlayerGps,
       'coach_basic' => l10n.subscriptionTierCoachBasic,
       'coach_elite' => l10n.subscriptionTierCoachElite,
       'coach_pro' => l10n.subscriptionTierCoachPro,

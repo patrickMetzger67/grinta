@@ -41,7 +41,7 @@ L’app Flutter n’a **pas** besoin de connaître cette différence : elle appe
 
 - [ ] Compte [RevenueCat](https://app.revenuecat.com) avec le projet Grinta
 - [ ] Apps **iOS** (`io.grinta.app`) et **Android** (`io.grinta.app`) déjà créées (même si le focus est web — pour l’accès cross-platform)
-- [ ] **4 entitlements** créés avec les IDs exacts :
+- [ ] **5 entitlements** créés avec les IDs exacts :
 
 | Entitlement | ID |
 |-------------|-----|
@@ -49,6 +49,7 @@ L’app Flutter n’a **pas** besoin de connaître cette différence : elle appe
 | Coach Elite | `coach_elite` |
 | Coach Pro | `coach_pro` |
 | Player | `player` |
+| Player GPS | `player_gps` |
 
 - [ ] Compte **Stripe** (mode Test + mode Live)
 - [ ] Compte **Apple Developer** (pour Apple Pay en live ; le Merchant ID est géré via Stripe / RC)
@@ -79,7 +80,7 @@ L’app Flutter n’a **pas** besoin de connaître cette différence : elle appe
 
 ## Partie 3 — Catalogue web (produits, essai, offering)
 
-Les product IDs **web / Stripe** peuvent différer des IDs App Store / Play. L’app matche aussi par **tier + période** (`SubscriptionProductLookup.semanticKey`) — gardez des noms explicites contenant `coach_basic|elite|pro`, `player`, `monthly|yearly`.
+Les product IDs **web / Stripe** peuvent différer des IDs App Store / Play. L’app matche aussi par **tier + période** (`SubscriptionProductLookup.semanticKey`) — gardez des noms explicites contenant `coach_basic|elite|pro`, `player`, `playerGPS` / `player_gps`, `monthly|yearly`.
 
 ### Phase 1 — Créer les 8 plans web
 

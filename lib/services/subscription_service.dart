@@ -79,6 +79,8 @@ class SubscriptionService extends ChangeNotifier {
       UserRootService.instance.isRoot ? CoachTier.pro : _state.coachTier;
   bool get hasPlayerSubscription =>
       UserRootService.instance.isRoot || _state.hasPlayerSubscription;
+  bool get hasPlayerGpsSubscription =>
+      UserRootService.instance.isRoot || _state.hasPlayerGpsSubscription;
   String? get activeProductId => _state.activeProductId;
   SubscriptionBillingPeriod? get billingPeriod => _state.billingPeriod;
   DateTime? get subscriptionExpiresAt => _state.subscriptionExpiresAt;
@@ -533,7 +535,8 @@ class SubscriptionService extends ChangeNotifier {
     }
 
     final coachTier = _resolveCoachTier(active);
-    final hasPlayer = active.contains(SubscriptionEntitlementIds.player);
+    final hasPlayerGps = active.contains(SubscriptionEntitlementIds.playerGps);
+    final hasPlayer = SubscriptionEntitlementIds.grantsPlayerAccess(active);
     final primaryEntitlement = _primaryEntitlement(info, active);
     final productId = primaryEntitlement?.productIdentifier;
     final billingPeriod = _resolveBillingPeriod(productId);
@@ -549,6 +552,7 @@ class SubscriptionService extends ChangeNotifier {
       activeEntitlements: active,
       coachTier: coachTier,
       hasPlayerSubscription: hasPlayer,
+      hasPlayerGpsSubscription: hasPlayerGps,
       activeProductId: productId,
       billingPeriod: billingPeriod,
       subscriptionExpiresAt: expiresAt,
@@ -648,6 +652,7 @@ class SubscriptionService extends ChangeNotifier {
       activeEntitlements: cached.entitlements,
       coachTier: cached.coachTier,
       hasPlayerSubscription: cached.hasPlayerSubscription,
+      hasPlayerGpsSubscription: cached.hasPlayerGpsSubscription,
       activeProductId: cached.activeProductId,
       subscriptionExpiresAt: cached.expiresAt,
     );
@@ -681,6 +686,8 @@ class SubscriptionService extends ChangeNotifier {
         }
       }
       if (entitlements.isEmpty) return null;
+      final normalizedEntitlements =
+          SubscriptionEntitlementIds.canonicalize(entitlements);
 
       DateTime? expiresAt;
       final expiresRaw = raw['expiresAt'];
@@ -705,10 +712,12 @@ class SubscriptionService extends ChangeNotifier {
 
       return CachedSubscriptionEntitlements(
         uid: uid,
-        entitlements: entitlements,
+        entitlements: normalizedEntitlements,
         coachTier: coachTier,
         hasPlayerSubscription:
-            entitlements.contains(SubscriptionEntitlementIds.player),
+            SubscriptionEntitlementIds.grantsPlayerAccess(normalizedEntitlements),
+        hasPlayerGpsSubscription:
+            normalizedEntitlements.contains(SubscriptionEntitlementIds.playerGps),
         activeProductId: raw['productId']?.toString(),
         expiresAt: expiresAt,
       );
@@ -722,10 +731,7 @@ class SubscriptionService extends ChangeNotifier {
 
   Set<String> _extractActiveEntitlements(CustomerInfo info) {
     final Set<String> active = <String>{};
-    const knownIds = <String>[
-      ...SubscriptionEntitlementIds.coachTiersOrdered,
-      SubscriptionEntitlementIds.player,
-    ];
+    const knownIds = SubscriptionEntitlementIds.all;
 
     for (final id in knownIds) {
       if (_addEntitlementIfValid(active, id, info.entitlements.active[id])) {
@@ -733,6 +739,26 @@ class SubscriptionService extends ChangeNotifier {
       }
       // Promotional grants can appear in `all` before `active` syncs locally.
       _addEntitlementIfValid(active, id, info.entitlements.all[id]);
+    }
+
+    if (!active.contains(SubscriptionEntitlementIds.playerGps)) {
+      for (final alias in SubscriptionEntitlementIds.playerGpsAliases) {
+        if (alias == SubscriptionEntitlementIds.playerGps) continue;
+        if (_addEntitlementIfValid(
+          active,
+          SubscriptionEntitlementIds.playerGps,
+          info.entitlements.active[alias],
+        )) {
+          break;
+        }
+        if (_addEntitlementIfValid(
+          active,
+          SubscriptionEntitlementIds.playerGps,
+          info.entitlements.all[alias],
+        )) {
+          break;
+        }
+      }
     }
     return active;
   }
@@ -775,6 +801,9 @@ class SubscriptionService extends ChangeNotifier {
       if (active.contains(id)) {
         return info.entitlements.active[id];
       }
+    }
+    if (active.contains(SubscriptionEntitlementIds.playerGps)) {
+      return info.entitlements.active[SubscriptionEntitlementIds.playerGps];
     }
     if (active.contains(SubscriptionEntitlementIds.player)) {
       return info.entitlements.active[SubscriptionEntitlementIds.player];

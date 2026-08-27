@@ -24,10 +24,12 @@
 | Coach Elite — mensuel | `io.grinta.app.coach.elite.monthly` |
 | Coach Pro — mensuel | `io.grinta.app.coach.pro.monthly` |
 | Player — mensuel | `io.grinta.app.player.monthly` |
+| Player GPS — mensuel | `io.grinta.app.playerGPS.monthly` |
 | Coach Basic — annuel | `io.grinta.app.coach.basic.yearly` |
 | Coach Elite — annuel | `io.grinta.app.coach.elite.yearly` |
 | Coach Pro — annuel | `io.grinta.app.coach.pro.yearly` |
 | Player — annuel | `io.grinta.app.player.yearly` |
+| Player GPS — annuel | `io.grinta.app.playerGPS.yearly` |
 
 ### Entitlements RevenueCat (dashboard)
 
@@ -37,6 +39,7 @@
 | Coach Elite | `coach_elite` |
 | Coach Pro | `coach_pro` |
 | Player | `player` |
+| Player GPS | `player_gps` |
 
 ### Prix indicatifs (référence marketing dans le code)
 
@@ -46,6 +49,7 @@
 | Coach Elite | 14,99 € | 149,99 € |
 | Coach Pro | 24,99 € | 249,99 € |
 | Player | 2,49 € | 24,99 € |
+| Player GPS | 19,99 € | 199,99 € |
 
 ### Clés à renseigner dans `dart_defines.json`
 
@@ -79,7 +83,7 @@
 
 ### Phase 3 — Entitlements
 
-- [ ] Créer **4 entitlements** (IDs exacts) :
+- [ ] Créer **5 entitlements** (IDs exacts) :
 
 | Entitlement ID | Produits associés |
 |----------------|-------------------|
@@ -87,12 +91,13 @@
 | `coach_elite` | `io.grinta.app.coach.elite.monthly` + `.yearly` |
 | `coach_pro` | `io.grinta.app.coach.pro.monthly` + `.yearly` |
 | `player` | `io.grinta.app.player.monthly` + `.yearly` |
+| `player_gps` | `io.grinta.app.playerGPS.monthly` + `.yearly` |
 
 - [ ] Chaque produit store (iOS + Android) rattaché au bon entitlement
 
 ### Phase 4 — Products (catalogue)
 
-- [ ] Vérifier que les **8 product IDs** apparaissent dans RevenueCat (importés depuis ASC / Play)
+- [ ] Vérifier que les **10 product IDs** apparaissent dans RevenueCat (importés depuis ASC / Play)
 - [ ] Si un produit manque : le créer d'abord dans ASC/Play, puis **Refresh** dans RevenueCat ou attendre la sync automatique
 
 ### Phase 5 — Offerings et packages
@@ -121,8 +126,8 @@
 
 ### Phase 8 — Validation finale avant envoi aux testeurs
 
-- [ ] 8 produits créés et actifs dans ASC **et** Play Console
-- [ ] 4 entitlements configurés dans RevenueCat avec bons mappings
+- [ ] 10 produits créés et actifs dans ASC **et** Play Console
+- [ ] 5 entitlements configurés dans RevenueCat avec bons mappings
 - [ ] Offering `default` = Current, avec packages
 - [ ] Clés `appl_` et `goog_` dans `dart_defines.json`
 - [ ] Build release iOS uploadée sur TestFlight
@@ -173,7 +178,7 @@ Renseigner au minimum `REVENUECAT_IOS_API_KEY_PROD` (clé publique `appl_…` de
 
 - [ ] Dans App Store Connect → votre app → **Fonctionnalités** → **Abonnements**
 - [ ] Créer un **groupe d'abonnements** (ex. « Grinta Premium »)
-- [ ] Créer **8 abonnements auto-renouvelables** avec les IDs **exactement** comme ci-dessous :
+- [ ] Créer **10 abonnements auto-renouvelables** avec les IDs **exactement** comme ci-dessous :
 
 | # | Product ID | Période | Prix suggéré |
 |---|-----------|---------|--------------|
@@ -181,10 +186,12 @@ Renseigner au minimum `REVENUECAT_IOS_API_KEY_PROD` (clé publique `appl_…` de
 | 2 | `io.grinta.app.coach.elite.monthly` | 1 mois | 14,99 € |
 | 3 | `io.grinta.app.coach.pro.monthly` | 1 mois | 24,99 € |
 | 4 | `io.grinta.app.player.monthly` | 1 mois | 2,49 € |
-| 5 | `io.grinta.app.coach.basic.yearly` | 1 an | 99,99 € |
-| 6 | `io.grinta.app.coach.elite.yearly` | 1 an | 149,99 € |
-| 7 | `io.grinta.app.coach.pro.yearly` | 1 an | 249,99 € |
-| 8 | `io.grinta.app.player.yearly` | 1 an | 24,99 € |
+| 5 | `io.grinta.app.playerGPS.monthly` | 1 mois | 19,99 € |
+| 6 | `io.grinta.app.coach.basic.yearly` | 1 an | 99,99 € |
+| 7 | `io.grinta.app.coach.elite.yearly` | 1 an | 149,99 € |
+| 8 | `io.grinta.app.coach.pro.yearly` | 1 an | 249,99 € |
+| 9 | `io.grinta.app.player.yearly` | 1 an | 24,99 € |
+| 10 | `io.grinta.app.playerGPS.yearly` | 1 an | 199,99 € |
 
 - [ ] Pour chaque abonnement, remplir :
   - Nom d'affichage et description (localisés FR/EN minimum)
@@ -205,8 +212,8 @@ Renseigner au minimum `REVENUECAT_IOS_API_KEY_PROD` (clé publique `appl_…` de
 - [ ] Se connecter à [app.revenuecat.com](https://app.revenuecat.com) → votre projet Grinta
 - [ ] Vérifier l'app iOS avec bundle ID `io.grinta.app`
 - [ ] **Project Settings → App Store Connect** : lier le compte ASC (clé API `.p8` ou connexion OAuth)
-- [ ] Importer / associer les 8 product IDs listés ci-dessus
-- [ ] Vérifier les 4 entitlements : `coach_basic`, `coach_elite`, `coach_pro`, `player`
+- [ ] Importer / associer les 10 product IDs listés ci-dessus
+- [ ] Vérifier les 5 entitlements : `coach_basic`, `coach_elite`, `coach_pro`, `player`, `player_gps`
 - [ ] Vérifier l'offering **`default`** (utilisée par l'app) contient des packages pour chaque produit
 - [ ] Copier la **clé publique iOS** (`appl_…`) dans `dart_defines.json` → `REVENUECAT_IOS_API_KEY_PROD`
 
@@ -334,7 +341,7 @@ storeFile=<chemin absolu vers upload-keystore.jks>
 ### Phase 3 — Créer les abonnements
 
 - [ ] Play Console → votre app → **Monétisation** → **Produits** → **Abonnements**
-- [ ] Créer **8 abonnements** avec les IDs **exactement** identiques à iOS :
+- [ ] Créer **10 abonnements** avec les IDs **exactement** identiques à iOS :
 
 | # | Product ID | Période | Prix suggéré |
 |---|-----------|---------|--------------|
@@ -342,10 +349,12 @@ storeFile=<chemin absolu vers upload-keystore.jks>
 | 2 | `io.grinta.app.coach.elite.monthly` | Mensuel | 14,99 € |
 | 3 | `io.grinta.app.coach.pro.monthly` | Mensuel | 24,99 € |
 | 4 | `io.grinta.app.player.monthly` | Mensuel | 2,49 € |
-| 5 | `io.grinta.app.coach.basic.yearly` | Annuel | 99,99 € |
-| 6 | `io.grinta.app.coach.elite.yearly` | Annuel | 149,99 € |
-| 7 | `io.grinta.app.coach.pro.yearly` | Annuel | 249,99 € |
-| 8 | `io.grinta.app.player.yearly` | Annuel | 24,99 € |
+| 5 | `io.grinta.app.playerGPS.monthly` | Mensuel | 19,99 € |
+| 6 | `io.grinta.app.coach.basic.yearly` | Annuel | 99,99 € |
+| 7 | `io.grinta.app.coach.elite.yearly` | Annuel | 149,99 € |
+| 8 | `io.grinta.app.coach.pro.yearly` | Annuel | 249,99 € |
+| 9 | `io.grinta.app.player.yearly` | Annuel | 24,99 € |
+| 10 | `io.grinta.app.playerGPS.yearly` | Annuel | 199,99 € |
 
 - [ ] Pour chaque abonnement : titre, description, prix, période d'essai gratuite (optionnel), grace period
 - [ ] **Activer** chaque abonnement (statut « Actif »)
@@ -360,8 +369,8 @@ storeFile=<chemin absolu vers upload-keystore.jks>
 
 - [ ] Dashboard RevenueCat → app Android, package `io.grinta.app`
 - [ ] **Project Settings → Google Play** : lier le compte (Service Account JSON depuis Google Cloud Console, rôle dans Play Console)
-- [ ] Importer les 8 product IDs
-- [ ] Vérifier entitlements (`coach_basic`, `coach_elite`, `coach_pro`, `player`) et offering **`default`**
+- [ ] Importer les 10 product IDs
+- [ ] Vérifier entitlements (`coach_basic`, `coach_elite`, `coach_pro`, `player`, `player_gps`) et offering **`default`**
 - [ ] Copier la clé publique Android (`goog_…`) → `REVENUECAT_ANDROID_API_KEY_PROD` dans `dart_defines.json`
 
 ### Phase 6 — Construire l'App Bundle

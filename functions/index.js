@@ -67,6 +67,7 @@ const revenueCatApiKey = defineSecret('REVENUECAT_API_KEY');
 
 const VALID_ENTITLEMENTS = new Set([
   'player',
+  'player_gps',
   'coach_basic',
   'coach_elite',
   'coach_pro',

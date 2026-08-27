@@ -337,6 +337,7 @@ class _PromoCodeCard extends StatelessWidget {
   String _entitlementLabel(dynamic l10n, String entitlement) {
     return switch (entitlement) {
       SubscriptionEntitlementIds.player => l10n.subscriptionOfferingPlayer,
+      SubscriptionEntitlementIds.playerGps => l10n.subscriptionTierPlayerGps,
       SubscriptionEntitlementIds.coachBasic => l10n.subscriptionTierCoachBasic,
       SubscriptionEntitlementIds.coachElite => l10n.subscriptionTierCoachElite,
       SubscriptionEntitlementIds.coachPro => l10n.subscriptionTierCoachPro,
@@ -472,6 +473,10 @@ class _PromoCodeFormSheetState extends State<_PromoCodeFormSheet> {
                     DropdownMenuItem(
                       value: SubscriptionEntitlementIds.player,
                       child: Text(l10n.subscriptionOfferingPlayer),
+                    ),
+                    DropdownMenuItem(
+                      value: SubscriptionEntitlementIds.playerGps,
+                      child: Text(l10n.subscriptionTierPlayerGps),
                     ),
                     DropdownMenuItem(
                       value: SubscriptionEntitlementIds.coachBasic,
