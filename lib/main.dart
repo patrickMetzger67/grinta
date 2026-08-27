@@ -23,6 +23,7 @@ import 'package:grinta/provider/appSession.dart';
 import 'package:grinta/services/active_session_service.dart';
 import 'package:grinta/services/feature_discovery_service.dart';
 import 'package:grinta/services/eshop_config_service.dart';
+import 'package:grinta/services/shop_ads_preferences_service.dart';
 import 'package:grinta/services/subscription_limits_service.dart';
 import 'package:grinta/services/subscription_service.dart';
 import 'package:grinta/services/user_trial_service.dart';
@@ -105,6 +106,7 @@ Future<void> main() async {
       SubscriptionService.instance.ensureInitialized(),
       SubscriptionLimitsService.instance.ensureInitialized(),
       EshopConfigService.instance.ensureInitialized(),
+      ShopAdsPreferencesService.instance.ensureInitialized(),
       BiometricUnlockService.instance.ensureInitialized(),
     ]);
 

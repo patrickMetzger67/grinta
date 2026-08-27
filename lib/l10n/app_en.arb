@@ -3735,5 +3735,65 @@
   "ouraMetricHeartrate": "Heart rate",
   "ouraMetricDaily": "Daily readiness / activity",
   "ouraMetricPersonal": "Personal info",
-  "ouraMetricEmail": "Email"
+  "ouraMetricEmail": "Email",
+  "settingsShopAdsLabel": "Shop ads",
+  "shopAdCta": "View product",
+  "shopAdOpenFailed": "Could not open the shop link.",
+  "shopAdsSaveFailed": "Could not save the shop ads preference.",
+  "adminAdsSection": "Shop ads",
+  "adminAdsSectionDesc": "Toggle shop ads and manage creatives.",
+  "adminAdsTitle": "Shop ads",
+  "adminAdsSubtitle": "Global kill switch (config/eshop.shopAdsEnabled) and Firestore ads/ collection.",
+  "adminAdsEnabledLabel": "Show shop ads",
+  "adminAdsEnabledSubtitle": "When off, no ads are shown even if the user allows them.",
+  "adminAdsListEmpty": "No ads yet.",
+  "adminAdsAdd": "Add",
+  "adminAdsAddTitle": "New ad",
+  "adminAdsEdit": "Edit",
+  "adminAdsEditTitle": "Edit ad",
+  "adminAdsUpdate": "Update",
+  "adminAdsDelete": "Delete",
+  "adminAdsDeleteTitle": "Delete this ad?",
+  "adminAdsDeleteMessage": "Delete “{name}”?",
+  "@adminAdsDeleteMessage": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "adminAdsFieldName": "Name",
+  "adminAdsFieldUrl": "Product URL",
+  "adminAdsFieldStartDate": "Start date",
+  "adminAdsFieldEndDate": "End date",
+  "adminAdsFieldTarget": "Target",
+  "adminAdsUploadVisual": "Upload visual",
+  "adminAdsSave": "Save",
+  "adminAdsSaved": "Ads saved.",
+  "adminAdsSaveFailed": "Could not save ads.",
+  "adminAdsPermissionDenied": "Admin access is required to manage ads.",
+  "adminAdsLoadError": "Could not load ads.",
+  "adminAdsRetry": "Retry",
+  "adminAdsNameRequired": "Name is required.",
+  "adminAdsUrlRequired": "URL is required.",
+  "adminAdsDatesInvalid": "End date must be after start date.",
+  "adminAdsTargetAll": "Everyone",
+  "adminAdsTargetCoach": "Coach",
+  "adminAdsTargetPlayer": "Player",
+  "adminAdsTargetCoachWithoutTracker": "Coach without tracker",
+  "adminAdsTargetPlayerWithoutTracker": "Player without tracker",
+  "adminAdsStats": "{displays} impressions · {clicks} clicks",
+  "@adminAdsStats": {
+    "placeholders": {
+      "displays": {
+        "type": "int"
+      },
+      "clicks": {
+        "type": "int"
+      }
+    }
+  },
+  "adminAdsCurrentBadge": "Current",
+  "adminAdsExpiredBadge": "Ended",
+  "adminAdsUpcomingBadge": "Upcoming"
 }

@@ -3691,5 +3691,65 @@
   "ouraMetricHeartrate": "Herzfrequenz",
   "ouraMetricDaily": "Tägliche Aktivität / Readiness",
   "ouraMetricPersonal": "Persönliche Daten",
-  "ouraMetricEmail": "E-Mail"
+  "ouraMetricEmail": "E-Mail",
+  "settingsShopAdsLabel": "Shop-Anzeigen",
+  "shopAdCta": "Produkt ansehen",
+  "shopAdOpenFailed": "Der Shop-Link konnte nicht geöffnet werden.",
+  "shopAdsSaveFailed": "Die Anzeigen-Einstellung konnte nicht gespeichert werden.",
+  "adminAdsSection": "Shop-Anzeigen",
+  "adminAdsSectionDesc": "Shop-Anzeigen ein- oder ausschalten und Motive verwalten.",
+  "adminAdsTitle": "Shop-Anzeigen",
+  "adminAdsSubtitle": "Globaler Kill-Switch (config/eshop.shopAdsEnabled) und Firestore-Collection ads/.",
+  "adminAdsEnabledLabel": "Shop-Anzeigen anzeigen",
+  "adminAdsEnabledSubtitle": "Wenn aus, werden keine Anzeigen gezeigt, auch wenn der Nutzer sie erlaubt.",
+  "adminAdsListEmpty": "Noch keine Anzeigen.",
+  "adminAdsAdd": "Hinzufügen",
+  "adminAdsAddTitle": "Neue Anzeige",
+  "adminAdsEdit": "Bearbeiten",
+  "adminAdsEditTitle": "Anzeige bearbeiten",
+  "adminAdsUpdate": "Aktualisieren",
+  "adminAdsDelete": "Löschen",
+  "adminAdsDeleteTitle": "Anzeige löschen?",
+  "adminAdsDeleteMessage": "„{name}“ löschen?",
+  "@adminAdsDeleteMessage": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "adminAdsFieldName": "Name",
+  "adminAdsFieldUrl": "Produkt-URL",
+  "adminAdsFieldStartDate": "Startdatum",
+  "adminAdsFieldEndDate": "Enddatum",
+  "adminAdsFieldTarget": "Zielgruppe",
+  "adminAdsUploadVisual": "Motiv hochladen",
+  "adminAdsSave": "Speichern",
+  "adminAdsSaved": "Anzeigen gespeichert.",
+  "adminAdsSaveFailed": "Anzeigen konnten nicht gespeichert werden.",
+  "adminAdsPermissionDenied": "Für die Anzeigenverwaltung ist ein Admin-Zugang erforderlich.",
+  "adminAdsLoadError": "Anzeigen konnten nicht geladen werden.",
+  "adminAdsRetry": "Erneut versuchen",
+  "adminAdsNameRequired": "Name ist erforderlich.",
+  "adminAdsUrlRequired": "URL ist erforderlich.",
+  "adminAdsDatesInvalid": "Das Enddatum muss nach dem Startdatum liegen.",
+  "adminAdsTargetAll": "Alle",
+  "adminAdsTargetCoach": "Trainer",
+  "adminAdsTargetPlayer": "Spieler",
+  "adminAdsTargetCoachWithoutTracker": "Trainer ohne Tracker",
+  "adminAdsTargetPlayerWithoutTracker": "Spieler ohne Tracker",
+  "adminAdsStats": "{displays} Impressionen · {clicks} Klicks",
+  "@adminAdsStats": {
+    "placeholders": {
+      "displays": {
+        "type": "int"
+      },
+      "clicks": {
+        "type": "int"
+      }
+    }
+  },
+  "adminAdsCurrentBadge": "Aktiv",
+  "adminAdsExpiredBadge": "Beendet",
+  "adminAdsUpcomingBadge": "Geplant"
 }

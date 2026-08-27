@@ -38,6 +38,7 @@ import 'widget/social_auth_button.dart';
 import 'widget/subscription_paywall.dart';
 import 'widget/parental_consent_pending_screen.dart';
 import 'widget/youtube_top_video_prompt.dart';
+import 'widget/shop_ad_prompt.dart';
 import 'widget/biometric_lock_gate.dart';
 import 'services/biometric_unlock_service.dart';
 import 'services/parental_consent_service.dart';
@@ -612,6 +613,7 @@ class _LoginScreenState extends State<LoginScreen> {
     }
 
     await YoutubeTopVideoPrompt.maybeShow();
+    await ShopAdPrompt.maybeShow();
   }
 
   Future<bool> _userNeedsInvitationOnboarding(UserCredential credential) async {
@@ -1040,6 +1042,7 @@ class _LoginScreenState extends State<LoginScreen> {
           await UserRootService.instance.reload();
         }
         await YoutubeTopVideoPrompt.maybeShow();
+    await ShopAdPrompt.maybeShow();
         final unlockContext = appNavigatorKey.currentContext ?? rootContext;
         if (unlockContext != null && unlockContext.mounted) {
           await maybePromptBiometricUnlock(unlockContext);
@@ -1165,6 +1168,7 @@ class _LoginScreenState extends State<LoginScreen> {
         );
       }
       await YoutubeTopVideoPrompt.maybeShow();
+    await ShopAdPrompt.maybeShow();
     } on SocialAuthCancelledException {
       debugPrint('Auth cancelled provider=$methodName');
       return;

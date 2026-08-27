@@ -68,4 +68,5 @@ abstract final class AnalyticsScreenNames {
   static const adminStreamGroups = 'admin_stream_groups';
   static const adminSeasons = 'admin_seasons';
   static const adminYoutube = 'admin_youtube';
+  static const adminAds = 'admin_ads';
 }

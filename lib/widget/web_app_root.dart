@@ -31,6 +31,7 @@ import '../core/extensions/l10n_extension.dart';
 import 'mobile_navigation_shell.dart';
 import 'stream_chat_nav_unread_badge.dart';
 import 'youtube_top_video_prompt.dart';
+import 'shop_ad_prompt.dart';
 import 'opponent_analysis_report_prompt.dart';
 import '../webNavigationShell.dart';
 
@@ -130,6 +131,7 @@ class _WebAppRootState extends State<WebAppRoot> {
       _tipVideoPromptScheduled = true;
       _clearTipVideoListeners();
       unawaited(YoutubeTopVideoPrompt.maybeShow());
+      unawaited(ShopAdPrompt.maybeShow());
       return true;
     }
 

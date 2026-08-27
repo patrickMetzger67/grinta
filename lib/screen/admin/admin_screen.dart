@@ -10,6 +10,7 @@ import 'package:grinta/screen/admin/admin_tracker_devices_screen.dart';
 import 'package:grinta/screen/admin/admin_tracker_fields_screen.dart';
 import 'package:grinta/screen/admin/admin_tracker_owners_screen.dart';
 import 'package:grinta/screen/admin/admin_users_screen.dart';
+import 'package:grinta/screen/admin/admin_ads_screen.dart';
 import 'package:grinta/screen/admin/admin_youtube_screen.dart';
 import 'package:grinta/util/app_theme.dart';
 
@@ -171,6 +172,20 @@ class AdminScreen extends StatelessWidget {
                 analyticsMaterialRoute<void>(
                   screenName: AnalyticsScreenNames.adminYoutube,
                   builder: (_) => const AdminYoutubeScreen(),
+                ),
+              );
+            },
+          ),
+          const SizedBox(height: 12),
+          _AdminSectionCard(
+            icon: Icons.storefront_outlined,
+            title: l10n.adminAdsSection,
+            subtitle: l10n.adminAdsSectionDesc,
+            onTap: () {
+              Navigator.of(context).push(
+                analyticsMaterialRoute<void>(
+                  screenName: AnalyticsScreenNames.adminAds,
+                  builder: (_) => const AdminAdsScreen(),
                 ),
               );
             },

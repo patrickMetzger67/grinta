@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/foundation.dart';
+import 'package:grinta/services/user_root_service.dart';
 
 /// Remote e-shop feature flags from Firestore `config/eshop`.
 ///
@@ -10,25 +11,36 @@ import 'package:flutter/foundation.dart';
 /// ```json
 /// {
 ///   "isOpen": false,
-///   "commerceNotificationsEnabled": false
+///   "commerceNotificationsEnabled": false,
+///   "shopAdsEnabled": true
 /// }
 /// ```
 ///
-/// Edit this document in the Firebase console to change shop visibility and
-/// commerce notifications without redeploying the app.
+/// Edit this document in the Firebase console or Admin → Annonces boutique
+/// to change shop visibility, commerce notifications, and the global shop-ads
+/// kill switch without redeploying the app.
+///
+/// [shopAdsEnabled] defaults to `true` when the field is missing so ads
+/// can run once documents exist in `ads/`. Set it to `false` to hide ads
+/// for every user, including those with `users/{uid}.eshopAds == true`.
 class EshopConfig {
   const EshopConfig({
     required this.isOpen,
     required this.commerceNotificationsEnabled,
+    required this.shopAdsEnabled,
   });
 
   static const EshopConfig defaults = EshopConfig(
     isOpen: false,
     commerceNotificationsEnabled: false,
+    shopAdsEnabled: true,
   );
 
   final bool isOpen;
   final bool commerceNotificationsEnabled;
+
+  /// Global kill switch for shop ads. Missing field is treated as `true`.
+  final bool shopAdsEnabled;
 
   factory EshopConfig.fromMap(Map<String, dynamic>? data) {
     if (data == null || data.isEmpty) return defaults;
@@ -36,12 +48,26 @@ class EshopConfig {
       isOpen: _readBool(data['isOpen']),
       commerceNotificationsEnabled:
           _readBool(data['commerceNotificationsEnabled']),
+      shopAdsEnabled: _readBool(data['shopAdsEnabled'], defaultValue: true),
     );
   }
 
-  static bool _readBool(dynamic value) {
+  EshopConfig copyWith({
+    bool? isOpen,
+    bool? commerceNotificationsEnabled,
+    bool? shopAdsEnabled,
+  }) {
+    return EshopConfig(
+      isOpen: isOpen ?? this.isOpen,
+      commerceNotificationsEnabled:
+          commerceNotificationsEnabled ?? this.commerceNotificationsEnabled,
+      shopAdsEnabled: shopAdsEnabled ?? this.shopAdsEnabled,
+    );
+  }
+
+  static bool _readBool(dynamic value, {bool defaultValue = false}) {
     if (value is bool) return value;
-    return false;
+    return defaultValue;
   }
 }
 
@@ -70,6 +96,9 @@ class EshopConfigService extends ChangeNotifier {
   bool get commerceNotificationsEnabled =>
       _config.commerceNotificationsEnabled;
 
+  /// Whether shop ads may be shown (global kill switch).
+  bool get shopAdsEnabled => _config.shopAdsEnabled;
+
   EshopConfig get config => _config;
 
   bool get isInitialized => _initialized;
@@ -90,6 +119,19 @@ class EshopConfigService extends ChangeNotifier {
     _initFuture = null;
     await ensureInitialized();
     notifyListeners();
+  }
+
+  /// Root-only update of the global shop-ads kill switch.
+  Future<void> saveShopAdsEnabled(bool enabled) async {
+    await UserRootService.instance.reload();
+    if (!UserRootService.instance.isRoot) {
+      throw StateError('permission-denied');
+    }
+    await _firestore.collection(collectionName).doc(documentId).set(
+      <String, dynamic>{'shopAdsEnabled': enabled},
+      SetOptions(merge: true),
+    );
+    _applyConfig(_config.copyWith(shopAdsEnabled: enabled));
   }
 
   Future<void> _load() async {
@@ -130,7 +172,8 @@ class EshopConfigService extends ChangeNotifier {
   void _applyConfig(EshopConfig next, {bool notify = true}) {
     if (_config.isOpen == next.isOpen &&
         _config.commerceNotificationsEnabled ==
-            next.commerceNotificationsEnabled) {
+            next.commerceNotificationsEnabled &&
+        _config.shopAdsEnabled == next.shopAdsEnabled) {
       return;
     }
     _config = next;
@@ -145,7 +188,8 @@ class EshopConfigService extends ChangeNotifier {
     if (!kDebugMode) return;
     debugPrint(
       'EshopConfigService: isOpen=$isOpen, '
-      'commerceNotificationsEnabled=$commerceNotificationsEnabled',
+      'commerceNotificationsEnabled=$commerceNotificationsEnabled, '
+      'shopAdsEnabled=$shopAdsEnabled',
     );
   }
 }
