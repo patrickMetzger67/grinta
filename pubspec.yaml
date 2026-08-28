@@ -1,7 +1,7 @@
 name: grinta
 description: A new Flutter application.
 
-version: 1.0.2+15
+version: 1.0.2+16
 
 environment:
   sdk: ">=3.6.0 <4.0.0"
@@ -72,8 +72,11 @@ dependencies:
   package_info_plus: ^9.0.1
 
 # device_calendar 4.3.3 pins timezone ^0.9.0; flutter_local_notifications needs ^0.10.
+# path_provider_foundation 2.6+ pulls objective_c 9.3 native assets, which
+# embed an x86_64 / IOSSIMULATOR slice and fail App Store validation (409).
 dependency_overrides:
   timezone: ^0.10.1
+  path_provider_foundation: 2.5.1
 
 dev_dependencies:
   flutter_test:

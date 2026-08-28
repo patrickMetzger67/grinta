@@ -155,6 +155,7 @@
 				97C146EC1CF9000F007C117D /* Resources */,
 				9705A1C41CF9048500538489 /* Embed Frameworks */,
 				3B06AD1E1E4923F5004D2608 /* Thin Binary */,
+				F4A91B2C7D3E4F5A6B7C8D9E /* Strip Simulator Slices */,
 				728BB5C4FAEEAFFE7C07F0C5 /* [CP] Embed Pods Frameworks */,
 				5E7DC952CB4738249118ED22 /* [CP] Copy Pods Resources */,
 			);
@@ -237,6 +238,21 @@
 			runOnlyForDeploymentPostprocessing = 0;
 			shellPath = /bin/sh;
 			shellScript = "/bin/sh \"$FLUTTER_ROOT/packages/flutter_tools/bin/xcode_backend.sh\" embed_and_thin";
+		};
+		F4A91B2C7D3E4F5A6B7C8D9E /* Strip Simulator Slices */ = {
+			isa = PBXShellScriptBuildPhase;
+			alwaysOutOfDate = 1;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputPaths = (
+			);
+			name = "Strip Simulator Slices";
+			outputPaths = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "/bin/sh \"${SRCROOT}/scripts/strip_simulator_slices.sh\"\n";
 		};
 		5E7DC952CB4738249118ED22 /* [CP] Copy Pods Resources */ = {
 			isa = PBXShellScriptBuildPhase;
