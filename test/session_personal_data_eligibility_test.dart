@@ -2,6 +2,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:grinta/model/agendaItem.dart';
 import 'package:grinta/model/match.dart' as models;
 import 'package:grinta/services/session_personal_data_service.dart';
+import 'package:grinta/util/match_usb_sync_window.dart';
 
 void main() {
   group('SessionPersonalDataService.isEligibleAgendaItem', () {
@@ -33,12 +34,46 @@ void main() {
   });
 
   group('SessionPersonalDataService.resolveWindow', () {
-    test('finished match includes half-time break (duration + 15)', () {
-      final start = DateTime(2026, 8, 1, 15);
+    test('finished match uses lead 15 + slot + trail 60 for individual live GPS',
+        () {
+      final kickOff = DateTime(2026, 8, 1, 15);
       final item = AgendaItem(
         id: 'm1',
-        startAt: start,
-        endAt: start.add(const Duration(minutes: 90)),
+        startAt: kickOff,
+        endAt: kickOff.add(const Duration(minutes: 90)),
+        title: 'Match',
+        type: AgendaItemType.match,
+        match: models.Match(withTracker: false, duration: 90),
+        withTracker: false,
+      );
+      // Slot end = kickOff + 90 + 15 half-time = 16:45; +60 trail = 17:45.
+      final window = SessionPersonalDataService.resolveWindow(
+        item: item,
+        now: kickOff.add(const Duration(hours: 4)),
+      );
+      expect(
+        window.start,
+        kickOff.subtract(const Duration(minutes: kPersonalMatchGpsLeadMinutes)),
+      );
+      expect(
+        window.stop,
+        kickOff.add(
+          Duration(
+            minutes: 90 +
+                kMatchUsbSyncHalftimeBreakMinutes +
+                kPersonalMatchGpsTrailMinutes,
+          ),
+        ),
+      );
+    });
+
+    test('in-progress match caps stop at now but keeps lead-in', () {
+      final kickOff = DateTime(2026, 8, 1, 15);
+      final now = kickOff.add(const Duration(minutes: 30));
+      final item = AgendaItem(
+        id: 'm1',
+        startAt: kickOff,
+        endAt: kickOff.add(const Duration(minutes: 90)),
         title: 'Match',
         type: AgendaItemType.match,
         match: models.Match(withTracker: false, duration: 90),
@@ -46,10 +81,13 @@ void main() {
       );
       final window = SessionPersonalDataService.resolveWindow(
         item: item,
-        now: start.add(const Duration(hours: 3)),
+        now: now,
       );
-      expect(window.start, start);
-      expect(window.stop, start.add(const Duration(minutes: 105)));
+      expect(
+        window.start,
+        kickOff.subtract(const Duration(minutes: kPersonalMatchGpsLeadMinutes)),
+      );
+      expect(window.stop, now);
     });
   });
 }
