@@ -94,6 +94,49 @@ void main() {
       expect(restored['defender_4']?.playerID, 'rb');
     });
 
+    test(
+      'default formation selection must not prune 4-3-3 right-back '
+      '(hydrate race with types.first)',
+      () {
+        final starters = <String, PlayerCompo>{
+          'defender_1': PlayerCompo(playerID: 'lb', number: 3),
+          'defender_2': PlayerCompo(playerID: 'lcb', number: 4),
+          'defender_3': PlayerCompo(playerID: 'rcb', number: 5),
+          'defender_4': PlayerCompo(playerID: 'rb', number: 2),
+        };
+
+        // Simulate types.first being a 3-defender formation while hydrate
+        // still owns a saved 4-3-3 lineup.
+        final threeAtBack = CompoType(
+          name: '3-5-2',
+          defender: 3,
+          midfielder: 5,
+          midfielderDefensive: 0,
+          midfielderAttacking: 0,
+          stricker: 2,
+          isDiamond: false,
+          soccerType: 11,
+        );
+
+        final kept = startersAfterCompoTypeChange(
+          starters: starters,
+          type: threeAtBack,
+          pruneIncompatibleSlots: false,
+        );
+        expect(kept['defender_4']?.playerID, 'rb');
+        expect(kept.length, 4);
+
+        final pruned = startersAfterCompoTypeChange(
+          starters: starters,
+          type: threeAtBack,
+          pruneIncompatibleSlots: true,
+        );
+        expect(pruned.containsKey('defender_4'), isFalse);
+        expect(pruned['defender_1']?.playerID, 'lb');
+        expect(pruned['defender_3']?.playerID, 'rcb');
+      },
+    );
+
     test('toMap keeps four defenders including right-back', () {
       final starters = <String, PlayerCompo>{
         'defender_1': PlayerCompo(playerID: 'lb', number: 3),

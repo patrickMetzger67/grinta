@@ -68,11 +68,23 @@ class _MatchConvocationsTabState extends State<MatchConvocationsTab>
   MatchCompo? _draftCompo;
   bool _saving = false;
 
+  /// Owned by the keep-alive tab so StreamBuilder rebuilds / body remounts
+  /// cannot dispose the filter mid-typing (mobile focus regression).
+  final TextEditingController _nameFilterCtrl = TextEditingController();
+  final FocusNode _nameFilterFocus = FocusNode();
+
   @override
   bool get wantKeepAlive => true;
 
   bool get _canEdit =>
       widget.isManager && widget.match.isMatchPlayed != true;
+
+  @override
+  void dispose() {
+    _nameFilterCtrl.dispose();
+    _nameFilterFocus.dispose();
+    super.dispose();
+  }
 
   @override
   void didChangeDependencies() {
@@ -649,6 +661,7 @@ class _MatchConvocationsTabState extends State<MatchConvocationsTab>
         }
 
         return _ConvocationsBody(
+          key: const ValueKey('match-convocations-body'),
           match: widget.match,
           players: _teamPlayers,
           convocationsByPlayerId: _convocationsByPlayerId,
@@ -659,6 +672,8 @@ class _MatchConvocationsTabState extends State<MatchConvocationsTab>
           canSendConvocations:
               widget.isManager && _convocationsByPlayerId.isNotEmpty,
           saving: _saving,
+          nameFilterCtrl: _nameFilterCtrl,
+          nameFilterFocus: _nameFilterFocus,
           onPlayerToggled: _onPlayerToggled,
           onAddPlayer: _onAddPlayerPressed,
         );
@@ -669,6 +684,7 @@ class _MatchConvocationsTabState extends State<MatchConvocationsTab>
 
 class _ConvocationsBody extends StatefulWidget {
   const _ConvocationsBody({
+    super.key,
     required this.match,
     required this.players,
     required this.convocationsByPlayerId,
@@ -678,6 +694,8 @@ class _ConvocationsBody extends StatefulWidget {
     required this.canEdit,
     required this.canSendConvocations,
     required this.saving,
+    required this.nameFilterCtrl,
+    required this.nameFilterFocus,
     required this.onPlayerToggled,
     required this.onAddPlayer,
   });
@@ -691,6 +709,8 @@ class _ConvocationsBody extends StatefulWidget {
   final bool canEdit;
   final bool canSendConvocations;
   final bool saving;
+  final TextEditingController nameFilterCtrl;
+  final FocusNode nameFilterFocus;
   final Future<void> Function(String playerId, bool selected) onPlayerToggled;
   final Future<void> Function() onAddPlayer;
 
@@ -699,14 +719,6 @@ class _ConvocationsBody extends StatefulWidget {
 }
 
 class _ConvocationsBodyState extends State<_ConvocationsBody> {
-  final TextEditingController _nameFilterCtrl = TextEditingController();
-
-  @override
-  void dispose() {
-    _nameFilterCtrl.dispose();
-    super.dispose();
-  }
-
   List<Player> get _convokedPlayers {
     return widget.players.where((player) {
       if (!_isPlayerConvoked(player)) return false;
@@ -720,7 +732,7 @@ class _ConvocationsBodyState extends State<_ConvocationsBody> {
   }
 
   List<Player> get _filteredPlayers {
-    final String query = _nameFilterCtrl.text.trim().toLowerCase();
+    final String query = widget.nameFilterCtrl.text.trim().toLowerCase();
     if (query.isEmpty) return widget.players;
 
     return widget.players.where((Player player) {
@@ -780,47 +792,57 @@ class _ConvocationsBodyState extends State<_ConvocationsBody> {
     final colors = context.appColors;
     final l10n = context.l10n;
 
+    // Keep the TextField itself stable across keystrokes. Rebuilding it inside
+    // a ValueListenableBuilder (especially when suffixIcon appears/disappears)
+    // drops focus on mobile and makes the filter unusable again.
     return Padding(
       padding: const EdgeInsets.only(bottom: 12),
-      child: ValueListenableBuilder<TextEditingValue>(
-        valueListenable: _nameFilterCtrl,
-        builder: (context, value, _) {
-          final bool hasQuery = value.text.trim().isNotEmpty;
-
-          return TextField(
-            key: const ValueKey('match-convocations-name-filter'),
-            controller: _nameFilterCtrl,
-            textInputAction: TextInputAction.search,
-            style: Theme.of(context).textTheme.bodyMedium,
-            decoration: InputDecoration(
-              isDense: true,
-              hintText: l10n.teamDetailFilterPlayerHint,
-              prefixIcon: Icon(
-                Icons.search_rounded,
-                size: 20,
-                color: colors.textSecondary,
-              ),
-              suffixIcon: hasQuery
-                  ? IconButton(
-                      tooltip: l10n.actionCancel,
-                      onPressed: _nameFilterCtrl.clear,
-                      icon: Icon(
-                        Icons.clear_rounded,
-                        size: 18,
-                        color: colors.textSecondary,
-                      ),
-                    )
-                  : null,
-              contentPadding: const EdgeInsets.symmetric(
-                horizontal: 12,
-                vertical: 10,
-              ),
-              border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(10),
-              ),
-            ),
-          );
-        },
+      child: TextField(
+        key: const ValueKey('match-convocations-name-filter'),
+        controller: widget.nameFilterCtrl,
+        focusNode: widget.nameFilterFocus,
+        textInputAction: TextInputAction.search,
+        style: Theme.of(context).textTheme.bodyMedium,
+        decoration: InputDecoration(
+          isDense: true,
+          hintText: l10n.teamDetailFilterPlayerHint,
+          prefixIcon: Icon(
+            Icons.search_rounded,
+            size: 20,
+            color: colors.textSecondary,
+          ),
+          // Always reserve the suffix slot so the first typed character does
+          // not change the InputDecorator layout and steal focus.
+          suffixIcon: ValueListenableBuilder<TextEditingValue>(
+            valueListenable: widget.nameFilterCtrl,
+            builder: (context, value, _) {
+              final bool hasQuery = value.text.trim().isNotEmpty;
+              return IconButton(
+                tooltip: l10n.actionCancel,
+                onPressed: hasQuery
+                    ? () {
+                        widget.nameFilterCtrl.clear();
+                        widget.nameFilterFocus.requestFocus();
+                      }
+                    : null,
+                icon: Icon(
+                  Icons.clear_rounded,
+                  size: 18,
+                  color: hasQuery
+                      ? colors.textSecondary
+                      : colors.textSecondary.withValues(alpha: 0),
+                ),
+              );
+            },
+          ),
+          contentPadding: const EdgeInsets.symmetric(
+            horizontal: 12,
+            vertical: 10,
+          ),
+          border: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(10),
+          ),
+        ),
       ),
     );
   }
@@ -1029,7 +1051,7 @@ class _ConvocationsBodyState extends State<_ConvocationsBody> {
           ),
           Expanded(
             child: ValueListenableBuilder<TextEditingValue>(
-              valueListenable: _nameFilterCtrl,
+              valueListenable: widget.nameFilterCtrl,
               builder: (context, _, __) {
                 final List<Player> filteredPlayers = _filteredPlayers;
                 final bool showEmptyFilterResult = filteredPlayers.isEmpty;

@@ -144,6 +144,27 @@ Map<String, PlayerCompo> startersFromMatchCompo(MatchCompo compo) {
   return map;
 }
 
+/// Applies a formation change to an in-memory starters map.
+///
+/// When [pruneIncompatibleSlots] is false, placements are left untouched.
+/// That mode is required for the *initial* default formation selection while
+/// an async hydrate is still loading the saved CompoType: pruning against
+/// `types.first` (e.g. a 3-defender formation) would otherwise drop a saved
+/// 4-3-3 right-back (`defender_4`) before the real type arrives.
+Map<String, PlayerCompo> startersAfterCompoTypeChange({
+  required Map<String, PlayerCompo> starters,
+  required CompoType type,
+  required bool pruneIncompatibleSlots,
+}) {
+  if (!pruneIncompatibleSlots) {
+    return Map<String, PlayerCompo>.of(starters);
+  }
+  final validSlotIds = buildCompoSlots(type).map((s) => s.id).toSet();
+  return Map<String, PlayerCompo>.fromEntries(
+    starters.entries.where((entry) => validSlotIds.contains(entry.key)),
+  );
+}
+
 List<PlayerCompo> substitutesFromMatchCompo(MatchCompo compo) {
   return (compo.substitute ?? <PlayerCompo>[])
       .where((p) => (p.playerID?.trim() ?? '').isNotEmpty)

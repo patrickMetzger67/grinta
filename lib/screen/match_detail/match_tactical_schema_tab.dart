@@ -212,6 +212,11 @@ class _MatchTacticalSchemaBodyState extends State<_MatchTacticalSchemaBody>
   String? _selectedCompoTypeKey;
   bool _saving = false;
 
+  /// Bumps on each hydrate so a stale async completion cannot overwrite a
+  /// newer draft (and so the default-type callback cannot race a hydrate).
+  int _hydrateGeneration = 0;
+  bool _hydrateInFlight = false;
+
   Map<String, PlayerCompo> _baselineStartersBySlot = {};
   List<PlayerCompo> _baselineSubstitutes = [];
   String? _baselineCompoTypeKey;
@@ -427,7 +432,13 @@ class _MatchTacticalSchemaBodyState extends State<_MatchTacticalSchemaBody>
   }
 
   Future<void> _hydrateFromMatchCompo(MatchCompo? compo) async {
+    final int generation = ++_hydrateGeneration;
+    _hydrateInFlight = true;
+
     if (compo == null) {
+      if (!mounted || generation != _hydrateGeneration) {
+        return;
+      }
       setState(() {
         _draftCompo = null;
         _convokedIds = {};
@@ -435,30 +446,41 @@ class _MatchTacticalSchemaBodyState extends State<_MatchTacticalSchemaBody>
         _substitutes = [];
         _selectedCompoType = null;
         _selectedCompoTypeKey = null;
+        _hydrateInFlight = false;
       });
+      _resetSavedBaseline();
       return;
     }
 
-    _draftCompo = compo;
-    _convokedIds = convokedPlayerIds(compo);
-    _startersBySlot = startersFromMatchCompo(compo);
-    _substitutes = substitutesFromMatchCompo(compo);
+    // Capture starters before any await so a concurrent default-type callback
+    // cannot prune defender_4 against the wrong formation mid-hydrate.
+    final starters = startersFromMatchCompo(compo);
+    final substitutes = substitutesFromMatchCompo(compo);
+    final convoked = convokedPlayerIds(compo);
 
+    CompoType? loadedType;
     final compoTypeId = resolveCompoTypeDocumentId(compo.compoTypeID);
     if (compoTypeId != null) {
-      final type = await _compoTypeService.getCompoTypeById(compoTypeId);
-      if (mounted && type != null) {
-        setState(() {
-          _selectedCompoType = type;
-          _selectedCompoTypeKey = compoTypeKey(type);
-        });
+      loadedType = await _compoTypeService.getCompoTypeById(compoTypeId);
+    }
+
+    if (!mounted || generation != _hydrateGeneration) {
+      return;
+    }
+
+    setState(() {
+      _draftCompo = compo;
+      _convokedIds = convoked;
+      _startersBySlot = starters;
+      _substitutes = substitutes;
+      if (loadedType != null) {
+        _selectedCompoType = loadedType;
+        _selectedCompoTypeKey = compoTypeKey(loadedType);
       }
-    }
-    if (mounted) {
-      setState(() {});
-      _resetSavedBaseline();
-      await _ensureConvokedPlayersLoaded();
-    }
+      _hydrateInFlight = false;
+    });
+    _resetSavedBaseline();
+    await _ensureConvokedPlayersLoaded();
   }
 
   void _resetSavedBaseline() {
@@ -979,14 +1001,32 @@ class _MatchTacticalSchemaBodyState extends State<_MatchTacticalSchemaBody>
     setState(() => _startersBySlot[slot.id] = compo);
   }
 
+  /// User-driven formation change: drop slots that no longer exist.
   void _onCompoTypeChanged(CompoType type) {
-    final validSlotIds =
-        buildCompoSlots(type).map((s) => s.id).toSet();
+    _applyCompoType(type, pruneIncompatibleSlots: true);
+  }
 
+  /// Initial / default formation selection must not prune placements.
+  ///
+  /// While hydrate awaits the saved CompoType, the build method may pick
+  /// `types.first` as a temporary default. Pruning against that default is
+  /// what made the 4-3-3 right-back (`defender_4`) disappear again.
+  void _selectCompoTypeWithoutPruning(CompoType type) {
+    _applyCompoType(type, pruneIncompatibleSlots: false);
+  }
+
+  void _applyCompoType(
+    CompoType type, {
+    required bool pruneIncompatibleSlots,
+  }) {
     setState(() {
       _selectedCompoType = type;
       _selectedCompoTypeKey = compoTypeKey(type);
-      _startersBySlot.removeWhere((key, _) => !validSlotIds.contains(key));
+      _startersBySlot = startersAfterCompoTypeChange(
+        starters: _startersBySlot,
+        type: type,
+        pruneIncompatibleSlots: pruneIncompatibleSlots,
+      );
     });
   }
 
@@ -1108,10 +1148,13 @@ class _MatchTacticalSchemaBodyState extends State<_MatchTacticalSchemaBody>
         }
 
         final selectedType = _resolveCompoType(compoTypes);
-        if (_selectedCompoType == null) {
+        if (_selectedCompoType == null && !_hydrateInFlight) {
           WidgetsBinding.instance.addPostFrameCallback((_) {
-            if (!mounted || _selectedCompoType != null) return;
-            _onCompoTypeChanged(selectedType);
+            if (!mounted || _selectedCompoType != null || _hydrateInFlight) {
+              return;
+            }
+            // Never prune here — hydrate may still own the real 4-3-3 lineup.
+            _selectCompoTypeWithoutPruning(selectedType);
             _resetSavedBaseline();
           });
         }
