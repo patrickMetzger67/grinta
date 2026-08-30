@@ -2,6 +2,7 @@ import 'package:flutter/foundation.dart';
 import 'package:grinta/model/agendaItem.dart';
 import 'package:grinta/model/fieldGpsCorners.dart';
 import 'package:grinta/model/highlights.dart';
+import 'package:grinta/model/timeRange.dart';
 import 'package:grinta/model/tracker/trackerData.dart';
 import 'package:grinta/services/personal_gps_sync_service.dart';
 import 'package:grinta/services/trackerDataAnalysisService.dart';
@@ -9,6 +10,17 @@ import 'package:grinta/services/tracker_field_service.dart';
 import 'package:grinta/services/training_intense_sync_service.dart';
 import 'package:grinta/util/match_usb_sync_window.dart';
 import 'package:grinta/util/training_finish_helper.dart';
+
+/// Lead-in before kick-off when syncing an individual live GPS to a match.
+///
+/// Captures warm-up / arrival on pitch before the scheduled rencontre start.
+const int kPersonalMatchGpsLeadMinutes = 15;
+
+/// Trail after the scheduled match slot when syncing an individual live GPS.
+///
+/// Extends past full-time (duration + half-time break) so cooldown / late
+/// whistle samples are still fetched from Insiders.
+const int kPersonalMatchGpsTrailMinutes = 60;
 
 /// Time window used when attaching personal GPS / app data to a session.
 class SessionPersonalDataWindow {
@@ -83,10 +95,17 @@ class SessionPersonalDataService {
     }
 
     final match = item.match;
-    final start = item.startAt;
+    final kickOff = item.startAt;
     final durationMinutes = match?.duration ?? 90;
-    // Include the 15' half-time break (same slot as USB / Intense).
-    var stop = matchScheduledSlotEnd(start, durationMinutes);
+    // Scheduled slot = play + 15' half-time break (same as USB / Intense).
+    final scheduledEnd = matchScheduledSlotEnd(kickOff, durationMinutes);
+    // Individual live GPS: wider Insiders plage around the rencontre.
+    final start = kickOff.subtract(
+      const Duration(minutes: kPersonalMatchGpsLeadMinutes),
+    );
+    var stop = scheduledEnd.add(
+      const Duration(minutes: kPersonalMatchGpsTrailMinutes),
+    );
     if (clock.isBefore(stop)) stop = clock;
     if (!stop.isAfter(start)) {
       stop = start.add(const Duration(minutes: 1));
@@ -124,10 +143,8 @@ class SessionPersonalDataService {
     final sessionWindow = SessionPersonalDataService.resolveWindow(item: item);
     final fieldCorners = await resolveFieldGpsCorners(item);
     final isMatch = item.match != null;
-    final intenseWindow = _intenseWindowForItem(
-      item: item,
-      sessionWindow: sessionWindow,
-    );
+    final intenseWindow = _intenseWindowForItem(sessionWindow: sessionWindow);
+    final heatmapPlayPeriods = _matchPlayPeriodsForHeatmaps(item: item);
 
     final target = IntenseTrainingDeviceTarget(
       playerId: playerId,
@@ -144,7 +161,7 @@ class SessionPersonalDataService {
       'player=$playerId device=${device.insidersDeviceId} '
       'start=${intenseWindow.start} stop=${intenseWindow.stop} '
       'hasFieldGps=${fieldCorners != null} '
-      'playPeriods=${intenseWindow.playPeriods.length}',
+      'heatmapPlayPeriods=${heatmapPlayPeriods.length}',
     );
 
     final outcome = await _intenseSyncService.analyzeDeviceWindow(
@@ -175,7 +192,7 @@ class SessionPersonalDataService {
       result: result,
       fieldGps: outcome.fieldGps,
       isMatch: isMatch,
-      playPeriods: intenseWindow.playPeriods,
+      playPeriods: heatmapPlayPeriods,
     );
 
     await computeTeamWorkloadSummaryForEvent(
@@ -186,43 +203,38 @@ class SessionPersonalDataService {
     return result;
   }
 
-  /// Builds the Insiders window; matches get half play periods (no Temps forts
-  /// on the agenda path → scheduled halves + 15' break).
+  /// Builds the Insiders window for personal GPS.
+  ///
+  /// Matches use the expanded session plage ([kPersonalMatchGpsLeadMinutes]
+  /// before kick-off → [kPersonalMatchGpsTrailMinutes] after the scheduled
+  /// slot). Play periods are omitted here so warm-up / half-time / cooldown
+  /// samples stay in overall analysis; H1/H2 heatmaps use
+  /// [_matchPlayPeriodsForHeatmaps] separately.
   TrainingIntenseTimeWindow _intenseWindowForItem({
-    required AgendaItem item,
     required SessionPersonalDataWindow sessionWindow,
   }) {
-    final match = item.match;
-    if (match == null) {
-      return TrainingIntenseTimeWindow(
-        start: sessionWindow.start.toUtc(),
-        stop: sessionWindow.stop.toUtc(),
-      );
-    }
-
-    final playPeriods = resolveMatchSensorSyncPeriods(
-      match: match,
-      highlights: const <Highlights>[],
-      fallbackStart: sessionWindow.start,
-    );
     var start = sessionWindow.start;
     var stop = sessionWindow.stop;
-    if (playPeriods.isNotEmpty) {
-      start = playPeriods.first.start.toDate();
-      final lastEnd = playPeriods.last.end.toDate();
-      // Prefer full play window; shrink only when resolveWindow already
-      // clock-capped an in-progress match (stop < scheduled last period end).
-      stop = sessionWindow.stop.isBefore(lastEnd)
-          ? sessionWindow.stop
-          : lastEnd;
-    }
     if (!stop.isAfter(start)) {
       stop = start.add(const Duration(minutes: 1));
     }
     return TrainingIntenseTimeWindow(
       start: start.toUtc(),
       stop: stop.toUtc(),
-      playPeriods: playPeriods,
+    );
+  }
+
+  /// Scheduled 1st/2nd half bounds for match heatmaps (excludes lead/trail).
+  List<TimeRange> _matchPlayPeriodsForHeatmaps({
+    required AgendaItem item,
+  }) {
+    final match = item.match;
+    if (match == null) return const <TimeRange>[];
+
+    return resolveMatchSensorSyncPeriods(
+      match: match,
+      highlights: const <Highlights>[],
+      fallbackStart: item.startAt,
     );
   }
 
