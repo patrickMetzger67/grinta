@@ -24,6 +24,7 @@ import '../../model/training.dart';
 import '../../model/season.dart';
 import '../../model/tracker/team_workload_summary.dart';
 import '../../provider/appSession.dart';
+import '../../util/agenda_calendar_date.dart';
 import '../../util/app_theme.dart';
 import '../../util/playerDisplayName.dart';
 import '../../widget/activity_rings_card.dart';
@@ -480,12 +481,8 @@ class _AgendaScreenState extends State<AgendaScreen> {
   Future<void> _handleMonthPageChanged(int page) async {
     final monthOffset = page - _initialMonthPage;
     final newMonth = _addMonths(_monthPagerAnchor, monthOffset);
-
-    final daysInMonth = DateTime(newMonth.year, newMonth.month + 1, 0).day;
-    final safeDay = _selectedDate.day.clamp(1, daysInMonth);
-    final newSelectedDate = DateUtils.dateOnly(
-      DateTime(newMonth.year, newMonth.month, safeDay),
-    );
+    // Same day-of-month on the target month when possible (31 Aug → 30 Sep).
+    final newSelectedDate = clampDateToMonth(_selectedDate, newMonth);
     final newSelectedWeek = _startOfWeek(newSelectedDate);
 
     setState(() {
@@ -498,6 +495,26 @@ class _AgendaScreenState extends State<AgendaScreen> {
       newMonth,
       scrollToSelection: _calendarMode == AgendaCalendarMode.month,
     );
+  }
+
+  /// Horizontal swipe on the events area (calendar header has its own handler).
+  Future<void> _handleHorizontalPeriodSwipe({required bool goNext}) async {
+    switch (_calendarMode) {
+      case AgendaCalendarMode.day:
+      case AgendaCalendarMode.week:
+        // Full-week jump (same weekday): Mon 31 Aug → Mon 7 Sep.
+        if (goNext) {
+          await _goToNextWeek();
+        } else {
+          await _goToPreviousWeek();
+        }
+      case AgendaCalendarMode.month:
+        if (goNext) {
+          await _goToNextMonthFromHeader();
+        } else {
+          await _goToPreviousMonthFromHeader();
+        }
+    }
   }
 
   Future<void> _selectDate(DateTime date) async {
@@ -1029,12 +1046,27 @@ class _AgendaScreenState extends State<AgendaScreen> {
               ] else
                 const SizedBox(height: 12),
               Expanded(
-                child: Container(
-                  key: _weeksViewportKey,
-                  child: _buildAgendaContent(
-                    weeks: weeks,
-                    groupedByWeek: groupedByWeek,
-                    compact: compact,
+                child: GestureDetector(
+                  // Swipe on the events list too (not only the calendar header).
+                  onHorizontalDragEnd: (details) {
+                    final velocity = details.primaryVelocity ?? 0;
+                    if (velocity < -180) {
+                      unawaited(
+                        _handleHorizontalPeriodSwipe(goNext: true),
+                      );
+                    } else if (velocity > 180) {
+                      unawaited(
+                        _handleHorizontalPeriodSwipe(goNext: false),
+                      );
+                    }
+                  },
+                  child: Container(
+                    key: _weeksViewportKey,
+                    child: _buildAgendaContent(
+                      weeks: weeks,
+                      groupedByWeek: groupedByWeek,
+                      compact: compact,
+                    ),
                   ),
                 ),
               ),
