@@ -3,6 +3,7 @@ part of 'agenda_screen.dart';
 class _GrintaStyleCalendarHeader extends StatelessWidget {
   final PageController pageController;
   final int initialPage;
+  final int pagerRemountToken;
   final DateTime anchorMonth;
   final DateTime displayedMonth;
   final DateTime selectedDate;
@@ -16,12 +17,14 @@ class _GrintaStyleCalendarHeader extends StatelessWidget {
   final Future<void> Function() onPreviousDay;
   final Future<void> Function() onNextDay;
   final VoidCallback onTodayTap;
+  final VoidCallback onHeaderDateTap;
   final ValueChanged<int> onPageChanged;
   final ValueChanged<DateTime> onDateTap;
 
   const _GrintaStyleCalendarHeader({
     required this.pageController,
     required this.initialPage,
+    required this.pagerRemountToken,
     required this.anchorMonth,
     required this.displayedMonth,
     required this.selectedDate,
@@ -35,6 +38,7 @@ class _GrintaStyleCalendarHeader extends StatelessWidget {
     required this.onPreviousDay,
     required this.onNextDay,
     required this.onTodayTap,
+    required this.onHeaderDateTap,
     required this.onPageChanged,
     required this.onDateTap,
   });
@@ -105,8 +109,9 @@ class _GrintaStyleCalendarHeader extends StatelessWidget {
         message: tooltip,
         child: InkWell(
           borderRadius: BorderRadius.circular(10),
-          onTap: () async {
-            await onTap();
+          // Fire-and-forget: a second tap must not wait on the previous nav.
+          onTap: () {
+            unawaited(onTap());
           },
           child: Padding(
             padding: const EdgeInsets.symmetric(
@@ -136,6 +141,19 @@ class _GrintaStyleCalendarHeader extends StatelessWidget {
           onModeChanged(AgendaCalendarMode.week);
         }
       },
+      // Month uses PageView horizontal scroll. Day/week: swipe by full week.
+      onHorizontalDragEnd: isMonth
+          ? null
+          : (details) {
+              final velocity = details.primaryVelocity ?? 0;
+              if (velocity < -180) {
+                // Right → left: next period.
+                onNextWeek();
+              } else if (velocity > 180) {
+                // Left → right: previous period.
+                onPreviousWeek();
+              }
+            },
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 220),
         curve: Curves.easeOut,
@@ -167,15 +185,28 @@ class _GrintaStyleCalendarHeader extends StatelessWidget {
                         ),
                         Expanded(
                           child: Center(
-                            child: Text(
-                              headerTitle,
-                              textAlign: TextAlign.center,
-                              style: Theme.of(context)
-                                  .textTheme
-                                  .titleSmall
-                                  ?.copyWith(
-                                fontWeight: FontWeight.w800,
-                                color: colors.textPrimary,
+                            child: Tooltip(
+                              message: l10n.actionChooseDate,
+                              child: InkWell(
+                                borderRadius: BorderRadius.circular(10),
+                                onTap: onHeaderDateTap,
+                                child: Padding(
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 8,
+                                    vertical: 6,
+                                  ),
+                                  child: Text(
+                                    headerTitle,
+                                    textAlign: TextAlign.center,
+                                    style: Theme.of(context)
+                                        .textTheme
+                                        .titleSmall
+                                        ?.copyWith(
+                                      fontWeight: FontWeight.w800,
+                                      color: colors.textPrimary,
+                                    ),
+                                  ),
+                                ),
                               ),
                             ),
                           ),
@@ -249,8 +280,12 @@ class _GrintaStyleCalendarHeader extends StatelessWidget {
                 ),
                 const SizedBox(height: 8),
               ],
+              // Week↔month must jump height instantly. Animating size reveals the
+              // clipped month grid row-by-row (an "expanded week" flash).
               AnimatedSize(
-                duration: const Duration(milliseconds: 220),
+                duration: (isMonth || isWeek)
+                    ? Duration.zero
+                    : const Duration(milliseconds: 220),
                 curve: Curves.easeOut,
                 child: SizedBox(
                   height: calendarHeight,
@@ -261,7 +296,9 @@ class _GrintaStyleCalendarHeader extends StatelessWidget {
                     onDateTap: onDateTap,
                   )
                       : PageView.builder(
+                    key: ValueKey<int>(pagerRemountToken),
                     controller: pageController,
+                    allowImplicitScrolling: true,
                     physics: isMonth
                         ? const PageScrollPhysics()
                         : const NeverScrollableScrollPhysics(),
@@ -270,16 +307,18 @@ class _GrintaStyleCalendarHeader extends StatelessWidget {
                       final offset = index - initialPage;
                       final month = _addMonths(anchorMonth, offset);
 
-                      return _MonthCalendarPage(
-                        key: ValueKey<String>(
-                          'month-${month.year}-${month.month}-'
-                          '${eventTypesByDay.length}',
+                      return RepaintBoundary(
+                        child: _MonthCalendarPage(
+                          key: ValueKey<String>(
+                            'month-${month.year}-${month.month}-'
+                            '${isMonth ? 'full' : 'week'}',
+                          ),
+                          month: month,
+                          selectedDate: selectedDate,
+                          expanded: isMonth,
+                          eventTypesByDay: eventTypesByDay,
+                          onDateTap: onDateTap,
                         ),
-                        month: month,
-                        selectedDate: selectedDate,
-                        expanded: isMonth,
-                        eventTypesByDay: eventTypesByDay,
-                        onDateTap: onDateTap,
                       );
                     },
                   ),

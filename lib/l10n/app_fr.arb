@@ -347,6 +347,7 @@
   "actionBack": "Retour",
   "actionNew": "Nouveau",
   "actionChoosePeriod": "Choisir une période",
+  "actionChooseDate": "Choisir une date",
   "actionWeekPrevious": "Semaine -",
   "actionWeekNext": "Semaine +",
   "actionLoadBefore": "Charger avant",
