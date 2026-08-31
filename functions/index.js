@@ -681,12 +681,27 @@ exports.redeemPromoCode = onCall(
       existingEntitlements,
       entitlement,
     );
+    // Idempotent success when this code was already redeemed *and* the mirror
+    // already has the granted entitlement (e.g. player_gps). Returning success
+    // lets the client re-hydrate instead of showing ALREADY_REDEEMED while the
+    // UI still displays the prior tier. A prior redeem that left only `player`
+    // falls through to the upgrade-retry path below.
     if (redemptionSnap.exists && alreadyHasGranted) {
-      throwPromoError(
-        'failed-precondition',
-        'ALREADY_REDEEMED',
-        'You have already redeemed this promo code.',
-      );
+      const mirroredExpiresAt = readTimestamp(existingAccess.expiresAt);
+      console.log('redeemPromoCode: idempotent already-redeemed success', {
+        uid,
+        code,
+        entitlement,
+        entitlements: existingEntitlements,
+      });
+      return {
+        entitlement,
+        durationDays,
+        expiresAt: mirroredExpiresAt
+          ? mirroredExpiresAt.toISOString()
+          : null,
+        alreadyRedeemed: true,
+      };
     }
 
     // Prior redemption without the granted entitlement: complete the upgrade

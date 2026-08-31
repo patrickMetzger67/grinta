@@ -18,7 +18,7 @@ Deux messages trompeurs historiques (souvent combinés) :
 | **Functions** | Entitlements alias (`playerGPS` / `JOUEURGPS` / `joueur_gps` → `player_gps`) — pas de faux `PROMO_INVALID` |
 | **Functions** | Grant RC : retry sur aliases Joueur GPS si 404 |
 | **Functions** | Miroir `subscriptionAccess` **hors** transaction (merge entitlements via `mergePromoMirrorEntitlements` ; un échec user doc ne rollback pas le redeem) |
-| **Functions** | `ALREADY_REDEEMED` seulement si le miroir a **déjà** l’entitlement accordé (`entitlementsIncludeGranted`) — un ancien redeem resté sur `player` peut retry l’upgrade `player_gps` sans reconsommer un use |
+| **Functions** | Redeem déjà fait **et** miroir a l’entitlement → succès idempotent (pas d’erreur `ALREADY_REDEEMED`) pour re-hydrater le client. Redeem déjà fait mais miroir sans l’upgrade (ex. seulement `player`) → retry grant `player_gps` sans reconsommer un use |
 | **Functions** | Échecs grant RC → `errorCode` (`PROMO_RC_*` / `PROMO_GRANT_FAILED`) |
 | **Client** | Normalise `# JOUEURGPS` → `JOUEURGPS` (`replaceFirst`, pas le `.replace` JS) |
 | **Client** | Après redeem : vérifie le miroir pour l’entitlement **attendu** (`player_gps`), pas seulement `player` déjà actif |
