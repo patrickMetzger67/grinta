@@ -9,6 +9,7 @@ import 'package:grinta/util/session_report_access.dart';
 import 'package:grinta/widget/playerPhoto.dart';
 import 'package:grinta/widget/session_report_email_dialog.dart';
 import 'package:grinta/widget/tracker_player_analysis_widget.dart';
+import 'package:grinta/services/session_player_synthesis_share_service.dart';
 import 'package:provider/provider.dart';
 
 import '../model/player.dart';
@@ -616,6 +617,11 @@ class _TrackerStatsTableContent extends StatelessWidget {
                               playerName: row.playerName,
                               player: row.player,
                               isMatch: isMatch,
+                              shareMatchContext: reportMatch == null
+                                  ? null
+                                  : SessionShareMatchContext.fromMatch(
+                                      reportMatch!,
+                                    ),
                             ),
                           ],
                         );

@@ -1120,6 +1120,8 @@
   "asiAnalysisFailed": "Analisi impossibile",
   "playerSynthesisTitle": "Riepilogo del giocatore",
   "playerSynthesisTabTitle": "Riepilogo",
+  "sessionSynthesisShareTooltip": "Condividi il riepilogo",
+  "sessionSynthesisShareFailed": "Impossibile condividere il riepilogo",
   "teamsListCount": "{count} squadra/e",
   "teamsListCountFiltered": "{filtered} / {total}",
   "teamsListNoResults": "Nessuna squadra trovata",

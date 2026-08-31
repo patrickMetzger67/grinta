@@ -36,6 +36,7 @@ import '../widget/match_opponent_stats_button.dart';
 import '../util/match_team_stats_navigation.dart';
 import '../util/session_tracker_kit.dart';
 import '../widget/session_player_analysis_view.dart';
+import '../services/session_player_synthesis_share_service.dart';
 import '../widget/session_tracker_stats_view.dart';
 import '../widget/tracker_kit_icon_pill.dart';
 import 'intense_live/intense_live_session_screen.dart';
@@ -2210,6 +2211,8 @@ class _StatsTabState extends State<_StatsTab> {
                     ),
                     player: player,
                     isMatch: true,
+                    shareMatchContext:
+                        SessionShareMatchContext.fromMatch(widget.match),
                   );
                 }
 
@@ -2283,6 +2286,8 @@ class _StatsTabState extends State<_StatsTab> {
                       ),
                       player: player,
                       isMatch: true,
+                      shareMatchContext:
+                          SessionShareMatchContext.fromMatch(widget.match),
                     );
                   },
                 );

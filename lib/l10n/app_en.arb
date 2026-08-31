@@ -1120,6 +1120,8 @@
   "asiAnalysisFailed": "Analysis not possible",
   "playerSynthesisTitle": "Player summary",
   "playerSynthesisTabTitle": "Summary",
+  "sessionSynthesisShareTooltip": "Share my summary",
+  "sessionSynthesisShareFailed": "Could not share the summary",
   "teamsListCount": "{count} team(s)",
   "teamsListCountFiltered": "{filtered} / {total}",
   "teamsListNoResults": "No teams found",

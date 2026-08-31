@@ -1291,6 +1291,8 @@
   "asiAnalysisFailed": "Analyse impossible",
   "playerSynthesisTitle": "Synthèse joueur",
   "playerSynthesisTabTitle": "Synthèse",
+  "sessionSynthesisShareTooltip": "Partager ma synthèse",
+  "sessionSynthesisShareFailed": "Impossible de partager la synthèse",
   "teamsListCount": "{count} équipe(s)",
   "@teamsListCount": {
     "placeholders": {

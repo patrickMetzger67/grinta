@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/svg.dart';
 import 'package:grinta/analytics/analytics_features.dart';
@@ -5,6 +6,8 @@ import 'package:grinta/analytics/analytics_interactions.dart';
 import 'package:grinta/analytics/analytics_screen_names.dart';
 import 'package:grinta/core/extensions/l10n_extension.dart';
 import 'package:grinta/l10n/app_localizations.dart';
+import 'package:grinta/services/session_player_synthesis_share_service.dart';
+import 'package:grinta/util/app_snackbar.dart';
 import 'package:grinta/widget/playerPhoto.dart';
 
 import '../../model/player.dart';
@@ -41,6 +44,10 @@ class TrackerPlayerAnalysisWidget extends StatefulWidget {
   final bool isMatch;
   final Player? player;
 
+  /// When set for a match with [SessionShareMatchContext.isStatApplied], the
+  /// share card includes logos, team names and score.
+  final SessionShareMatchContext? shareMatchContext;
+
   const TrackerPlayerAnalysisWidget({
     super.key,
     this.analysis,
@@ -51,6 +58,7 @@ class TrackerPlayerAnalysisWidget extends StatefulWidget {
     this.showDistanceTimeline = true,
     this.isMatch = true,
     required this.player,
+    this.shareMatchContext,
   });
 
   @override
@@ -141,6 +149,7 @@ class _TrackerPlayerAnalysisWidgetState
           showDistanceTimeline: widget.showDistanceTimeline,
           isMatch: widget.isMatch,
           player: widget.player,
+          shareMatchContext: widget.shareMatchContext,
         );
       },
     );
@@ -155,6 +164,7 @@ class _TrackerPlayerAnalysisContent extends StatefulWidget {
   final bool showDistanceTimeline;
   final bool isMatch;
   final Player? player;
+  final SessionShareMatchContext? shareMatchContext;
 
   const _TrackerPlayerAnalysisContent({
     required this.analysis,
@@ -164,6 +174,7 @@ class _TrackerPlayerAnalysisContent extends StatefulWidget {
     required this.showDistanceTimeline,
     required this.isMatch,
     required this.player,
+    this.shareMatchContext,
   });
 
   @override
@@ -175,6 +186,7 @@ class _TrackerPlayerAnalysisContentState
     extends State<_TrackerPlayerAnalysisContent> {
   int _selectedIndex = 0;
   int _lastLoggedTabIndex = -1;
+  bool _sharing = false;
 
   void _logTabIfNeeded(int index, List<_PlayerAnalysisTabDef> tabs) {
     if (index == _lastLoggedTabIndex) return;
@@ -184,6 +196,42 @@ class _TrackerPlayerAnalysisContentState
       screen: AnalyticsScreenNames.playerAnalysis,
       tab: tabs[index].analyticsTabId,
     );
+  }
+
+  Future<void> _shareSynthesis(BuildContext context) async {
+    if (_sharing) return;
+    final l10n = context.l10n;
+    final playerName = (widget.playerName ?? '').trim().isNotEmpty
+        ? widget.playerName!.trim()
+        : l10n.entityPlayer;
+
+    final box = context.findRenderObject() as RenderBox?;
+    final origin = box == null
+        ? null
+        : box.localToGlobal(Offset.zero) & box.size;
+
+    setState(() => _sharing = true);
+    try {
+      await const SessionPlayerSynthesisShareService().share(
+        l10n: l10n,
+        playerName: playerName,
+        analysis: widget.analysis,
+        matchContext: widget.shareMatchContext,
+        isMatch: widget.isMatch,
+        sharePositionOrigin: origin,
+      );
+    } catch (e) {
+      if (context.mounted) {
+        AppSnackbar.show(
+          context,
+          l10n.sessionSynthesisShareFailed,
+          isError: true,
+        );
+      }
+      debugPrint('Session synthesis share failed: $e');
+    } finally {
+      if (mounted) setState(() => _sharing = false);
+    }
   }
 
   @override
@@ -370,6 +418,20 @@ class _TrackerPlayerAnalysisContentState
     return _SectionCard(
       title: l10n.playerSynthesisTitle,
       icon: Icons.query_stats_rounded,
+      trailing: IconButton(
+        tooltip: l10n.sessionSynthesisShareTooltip,
+        onPressed: _sharing ? null : () => _shareSynthesis(context),
+        icon: _sharing
+            ? SizedBox(
+                width: 18,
+                height: 18,
+                child: CircularProgressIndicator(
+                  strokeWidth: 2,
+                  color: colors.primary,
+                ),
+              )
+            : Icon(Icons.ios_share_outlined, color: colors.primary),
+      ),
       child: GridView.count(
         crossAxisCount: metricColumns,
         shrinkWrap: true,
