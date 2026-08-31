@@ -65,6 +65,7 @@ void main() {
       ),
     );
 
+    expect(text, contains('Grinta Performance'));
     expect(text, contains('Léa Martin'));
     expect(text, contains('AS Exemple'));
     expect(text, contains('2'));

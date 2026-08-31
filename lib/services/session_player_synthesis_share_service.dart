@@ -3,6 +3,7 @@ import 'dart:ui' as ui;
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:grinta/l10n/app_localizations.dart';
 import 'package:grinta/model/match.dart' as models;
 import 'package:grinta/model/tracker/trackerData.dart';
@@ -62,8 +63,13 @@ class _ShareMetric {
 }
 
 /// Dark-themed share card for GPS session synthesis (match / training).
+///
+/// Matches in-app synthesis tiles: same Material icons, SF Pro typography,
+/// and Grinta logo asset (`logoFondBlanc.png`).
 class SessionPlayerSynthesisShareService {
   const SessionPlayerSynthesisShareService();
+
+  static const String _grintaLogoAsset = 'assets/images/logoFondBlanc.png';
 
   String buildShareText({
     required AppLocalizations l10n,
@@ -73,6 +79,7 @@ class SessionPlayerSynthesisShareService {
     required bool isMatch,
   }) {
     final buffer = StringBuffer();
+    buffer.writeln('Grinta Performance');
     buffer.writeln(playerName);
     if (matchContext != null &&
         matchContext.showMatchHeader &&
@@ -169,19 +176,33 @@ class SessionPlayerSynthesisShareService {
         Paint()..color = colors.background,
       );
 
-      double y = 56;
+      double y = 48;
 
-      // Brand strip
-      _paintText(
-        canvas,
-        'Grinta Performance',
-        offset: Offset(64, y),
-        color: colors.primary,
-        fontSize: 28,
-        fontWeight: FontWeight.w700,
-        maxWidth: width - 128,
-      );
-      y += 48;
+      // Grinta logo (same asset as dark-mode AppLogo).
+      final grintaLogo = await _loadAssetImage(_grintaLogoAsset);
+      if (grintaLogo != null) {
+        const logoH = 72.0;
+        final logoW = logoH * grintaLogo.width / grintaLogo.height;
+        paintImage(
+          canvas: canvas,
+          rect: Rect.fromLTWH(64, y, logoW, logoH),
+          image: grintaLogo,
+          fit: BoxFit.contain,
+          filterQuality: FilterQuality.high,
+        );
+        y += logoH + 28;
+      } else {
+        _paintText(
+          canvas,
+          'Grinta Performance',
+          offset: Offset(64, y),
+          color: colors.primary,
+          fontSize: 28,
+          fontWeight: FontWeight.w700,
+          maxWidth: width - 128,
+        );
+        y += 48;
+      }
 
       final showMatchHeader =
           isMatch && matchContext != null && matchContext.showMatchHeader;
@@ -203,12 +224,11 @@ class SessionPlayerSynthesisShareService {
         offset: Offset(64, y),
         color: colors.textPrimary,
         fontSize: 52,
-        fontWeight: FontWeight.w800,
+        fontWeight: FontWeight.w700,
         maxWidth: width - 128,
       );
       y += 72;
 
-      // Section title with accent bar
       canvas.drawRRect(
         RRect.fromRectAndRadius(
           Rect.fromLTWH(64, y + 6, 8, 28),
@@ -257,6 +277,7 @@ class SessionPlayerSynthesisShareService {
     }
   }
 
+  /// Same icons / colors as synthesis MetricTiles in tracker analysis.
   List<_ShareMetric> _metrics(
     AppLocalizations l10n,
     TrackerAnalysisResult analysis,
@@ -368,7 +389,7 @@ class SessionPlayerSynthesisShareService {
       offset: Offset(0, y + 52),
       color: colors.textPrimary,
       fontSize: 56,
-      fontWeight: FontWeight.w900,
+      fontWeight: FontWeight.w700,
       maxWidth: width,
       alignCenter: true,
     );
@@ -379,7 +400,7 @@ class SessionPlayerSynthesisShareService {
       offset: Offset(64, y + 140),
       color: colors.textSecondary,
       fontSize: 26,
-      fontWeight: FontWeight.w700,
+      fontWeight: FontWeight.w600,
       maxWidth: width / 2 - 80,
       alignCenter: true,
       centerInWidth: width / 2 - 32,
@@ -392,7 +413,7 @@ class SessionPlayerSynthesisShareService {
       offset: Offset(width / 2 + 16, y + 140),
       color: colors.textSecondary,
       fontSize: 26,
-      fontWeight: FontWeight.w700,
+      fontWeight: FontWeight.w600,
       maxWidth: width / 2 - 80,
       alignCenter: true,
       centerInWidth: width / 2 - 32,
@@ -434,9 +455,10 @@ class SessionPlayerSynthesisShareService {
           TextSpan(
             text: metric.value,
             style: TextStyle(
+              fontFamily: AppTheme.fontFamily,
               color: colors.textPrimary,
               fontSize: 44,
-              fontWeight: FontWeight.w900,
+              fontWeight: FontWeight.w700,
               height: 1.05,
             ),
           ),
@@ -444,9 +466,10 @@ class SessionPlayerSynthesisShareService {
             TextSpan(
               text: ' ${metric.unit}',
               style: TextStyle(
+                fontFamily: AppTheme.fontFamily,
                 color: colors.textSecondary,
                 fontSize: 22,
-                fontWeight: FontWeight.w700,
+                fontWeight: FontWeight.w600,
               ),
             ),
         ],
@@ -463,9 +486,10 @@ class SessionPlayerSynthesisShareService {
       text: TextSpan(
         text: metric.label,
         style: TextStyle(
+          fontFamily: AppTheme.fontFamily,
           color: colors.textSecondary,
           fontSize: 24,
-          fontWeight: FontWeight.w700,
+          fontWeight: FontWeight.w600,
         ),
       ),
       textDirection: TextDirection.ltr,
@@ -520,6 +544,7 @@ class SessionPlayerSynthesisShareService {
       text: TextSpan(
         text: text,
         style: TextStyle(
+          fontFamily: AppTheme.fontFamily,
           color: color,
           fontSize: fontSize,
           fontWeight: fontWeight,
@@ -577,6 +602,18 @@ class SessionPlayerSynthesisShareService {
         ..style = PaintingStyle.stroke
         ..strokeWidth = 2,
     );
+  }
+
+  Future<ui.Image?> _loadAssetImage(String assetPath) async {
+    try {
+      final data = await rootBundle.load(assetPath);
+      final codec = await ui.instantiateImageCodec(data.buffer.asUint8List());
+      final frame = await codec.getNextFrame();
+      return frame.image;
+    } catch (e) {
+      debugPrint('Session share asset load failed ($assetPath): $e');
+      return null;
+    }
   }
 
   Future<ui.Image?> _loadNetworkImage(String? url) async {
