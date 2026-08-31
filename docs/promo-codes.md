@@ -17,9 +17,11 @@ Deux messages trompeurs historiques (souvent combinés) :
 | **Functions** | Lookup tolérant (casse, tirets, `#`, `codeCompact`, scan `admin_promo_codes`) |
 | **Functions** | Entitlements alias (`playerGPS` / `playerGps` → `player_gps`) — pas de faux `PROMO_INVALID` |
 | **Functions** | Grant RC : retry sur aliases Joueur GPS si 404 |
-| **Functions** | Miroir `subscriptionAccess` **hors** transaction (merge entitlements ; un échec user doc ne rollback pas le redeem) |
+| **Functions** | Miroir `subscriptionAccess` **hors** transaction (merge entitlements via `mergePromoMirrorEntitlements` ; un échec user doc ne rollback pas le redeem) |
 | **Functions** | Échecs grant RC → `errorCode` (`PROMO_RC_*` / `PROMO_GRANT_FAILED`) |
-| **Client** | Normalise `# JOUEURGPS` → `JOUEURGPS` |
+| **Client** | Normalise `# JOUEURGPS` → `JOUEURGPS` (`replaceFirst`, pas le `.replace` JS) |
+| **Client** | Après redeem : vérifie le miroir pour l’entitlement **attendu** (`player_gps`), pas seulement `player` déjà actif |
+| **Client** | Apply RC : conserve un grant durable `player_gps` si RC ne remonte encore que `player` |
 | **Client** | Abonnement déjà actif : bouton **Code promo** pour upgrade (ex. Joueur → Joueur GPS) |
 | **Client** | `not-found` Firebase ≠ « introuvable » sauf `PROMO_NOT_FOUND` |
 | **Client** | `failed-precondition` ≠ « n’est plus valide » sauf `PROMO_INVALID` |

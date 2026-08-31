@@ -246,7 +246,10 @@ class PromoCodeService {
       throw StateError('Invalid redeem response.');
     }
 
-    final entitlement = data['entitlement']?.toString() ?? '';
+    final entitlementRaw = data['entitlement']?.toString() ?? '';
+    final entitlement =
+        SubscriptionEntitlementIds.canonicalizeOne(entitlementRaw) ??
+            entitlementRaw;
     final durationDays = PromoCode.readInt(data['durationDays'], fallback: 0);
     if (entitlement.isEmpty || durationDays < 1) {
       throw StateError('Invalid redeem response.');

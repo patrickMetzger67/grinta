@@ -7,6 +7,7 @@ const {
   promoCodesMatch,
   canonicalizePromoEntitlement,
   revenueCatGrantEntitlementIds,
+  mergePromoMirrorEntitlements,
 } = require('./promo_code_helpers');
 
 describe('normalizePromoCode', () => {
@@ -105,5 +106,36 @@ describe('revenueCatGrantEntitlementIds', () => {
 
   it('returns a single id for other entitlements', () => {
     assert.deepEqual(revenueCatGrantEntitlementIds('player'), ['player']);
+  });
+});
+
+describe('mergePromoMirrorEntitlements', () => {
+  it('adds player_gps beside existing player (Joueur → Joueur GPS)', () => {
+    assert.deepEqual(
+      mergePromoMirrorEntitlements(['player'], 'player_gps').sort(),
+      ['player', 'player_gps'],
+    );
+  });
+
+  it('canonicalizes aliases when merging', () => {
+    assert.deepEqual(
+      mergePromoMirrorEntitlements(['playerGPS'], 'playerGps').sort(),
+      ['player_gps'],
+    );
+    assert.deepEqual(
+      mergePromoMirrorEntitlements(['player'], 'playerGPS').sort(),
+      ['player', 'player_gps'],
+    );
+  });
+
+  it('returns null for unknown granted entitlement', () => {
+    assert.equal(mergePromoMirrorEntitlements(['player'], 'gold'), null);
+  });
+
+  it('works with empty existing list', () => {
+    assert.deepEqual(mergePromoMirrorEntitlements([], 'player_gps'), [
+      'player_gps',
+    ]);
+    assert.deepEqual(mergePromoMirrorEntitlements(null, 'player'), ['player']);
   });
 });

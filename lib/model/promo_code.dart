@@ -94,9 +94,10 @@ class PromoCode {
 
   static String normalizeCode(String raw) {
     // Tag icon in the redeem UI often leads users to type "# JOUEURGPS".
+    // Dart: use replaceFirst/replaceAll — String has no JS-style .replace.
     return raw
         .trim()
-        .replace(RegExp(r'^#+'), '')
+        .replaceFirst(RegExp(r'^#+'), '')
         .trim()
         .toUpperCase()
         .replaceAll(RegExp(r'\s+'), '');

@@ -60,6 +60,7 @@ const {
   promoCodesMatch,
   canonicalizePromoEntitlement,
   revenueCatGrantEntitlementIds,
+  mergePromoMirrorEntitlements,
   CANONICAL_ENTITLEMENTS,
 } = require('./promo_code_helpers');
 
@@ -698,21 +699,23 @@ exports.redeemPromoCode = onCall(
     // Mirror access outside the promo transaction so a user-doc write failure
     // never blocks / rolls back a successful redeem.
     // Merge with any existing mirror entitlements so a Joueur → Joueur GPS
-    // upgrade keeps prior durable access if present.
+    // upgrade keeps prior durable access and attaches `player_gps`.
     try {
       const userRef = db.collection('users').doc(uid);
       const userSnap = await userRef.get();
       const existingAccess = userSnap.data()?.subscriptionAccess ?? {};
       const existingEntitlements = Array.isArray(existingAccess.entitlements)
-        ? existingAccess.entitlements.map((e) => String(e).trim()).filter(Boolean)
+        ? existingAccess.entitlements
         : [];
-      const mergedEntitlements = [
-        ...new Set(
-          [...existingEntitlements, entitlement]
-            .map((e) => canonicalizePromoEntitlement(e) || e)
-            .filter(Boolean),
-        ),
-      ];
+      const mergedEntitlements = mergePromoMirrorEntitlements(
+        existingEntitlements,
+        entitlement,
+      );
+      if (!mergedEntitlements || !mergedEntitlements.includes(entitlement)) {
+        throw new Error(
+          `mirror merge failed for entitlement "${entitlement}"`,
+        );
+      }
       const access = {
         entitlements: mergedEntitlements,
         productId: existingAccess.productId ?? null,
@@ -721,12 +724,21 @@ exports.redeemPromoCode = onCall(
         expiresAt: grant.expiresAt
           ? Timestamp.fromDate(new Date(grant.expiresAt))
           : null,
+        // Record the entitlement this redeem attached (client verifies this).
+        lastPromoEntitlement: entitlement,
       };
       await userRef.set({subscriptionAccess: access}, {merge: true});
+      console.log('redeemPromoCode: subscriptionAccess mirrored', {
+        uid,
+        code,
+        entitlement,
+        entitlements: mergedEntitlements,
+      });
     } catch (mirrorError) {
       console.error('redeemPromoCode: subscriptionAccess mirror failed', {
         uid,
         code,
+        entitlement,
         mirrorError,
       });
     }

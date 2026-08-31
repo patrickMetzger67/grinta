@@ -110,6 +110,26 @@ function revenueCatGrantEntitlementIds(canonicalEntitlement) {
   return [...new Set(aliases)];
 }
 
+/**
+ * Merge existing subscriptionAccess.entitlements with a newly granted promo
+ * entitlement. Always includes the granted id (canonical). Used so a
+ * Joueur → Joueur GPS upgrade keeps `player` and adds `player_gps`.
+ */
+function mergePromoMirrorEntitlements(existingEntitlements, grantedEntitlement) {
+  const granted = canonicalizePromoEntitlement(grantedEntitlement);
+  if (!granted) return null;
+
+  const merged = new Set();
+  const list = Array.isArray(existingEntitlements) ? existingEntitlements : [];
+  for (const entry of list) {
+    const raw = (entry ?? '').toString().trim();
+    if (!raw) continue;
+    merged.add(canonicalizePromoEntitlement(raw) || raw);
+  }
+  merged.add(granted);
+  return [...merged];
+}
+
 module.exports = {
   CANONICAL_ENTITLEMENTS,
   normalizePromoCode,
@@ -118,4 +138,5 @@ module.exports = {
   promoCodesMatch,
   canonicalizePromoEntitlement,
   revenueCatGrantEntitlementIds,
+  mergePromoMirrorEntitlements,
 };
