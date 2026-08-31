@@ -142,6 +142,8 @@ List<DateTime> planAgendaPrefetchMonths({
 /// Debounces load-side work while [LatestWinsGate] keeps UI clicks instant.
 ///
 /// Only the latest scheduled token runs; older timers are cancelled.
+/// Use a longer [delay] for month PageView settle-after-idle so burst flings
+/// do not hydrate intermediate months.
 class DebouncedLatestAction {
   DebouncedLatestAction({
     this.delay = const Duration(milliseconds: 90),
@@ -149,24 +151,40 @@ class DebouncedLatestAction {
 
   final Duration delay;
   Timer? _timer;
+  LatestWinsToken? _pendingToken;
+
+  bool get hasPending => _timer != null;
+
+  LatestWinsToken? get pendingToken => _pendingToken;
 
   void schedule(
     LatestWinsToken token,
     void Function(LatestWinsToken token) action,
   ) {
     _timer?.cancel();
+    _pendingToken = token;
     _timer = Timer(delay, () {
-      if (!token.isCurrent) return;
-      action(token);
+      _timer = null;
+      final LatestWinsToken? scheduled = _pendingToken;
+      _pendingToken = null;
+      if (scheduled == null || !scheduled.isCurrent) return;
+      action(scheduled);
     });
   }
 
   void cancel() {
     _timer?.cancel();
     _timer = null;
+    _pendingToken = null;
   }
 
   void dispose() => cancel();
+}
+
+/// Whether a PageView [page] value has settled on an integer page.
+bool agendaPageViewNearInteger(double? page, {double epsilon = 0.001}) {
+  if (page == null) return true;
+  return (page - page.round()).abs() <= epsilon;
 }
 
 /// Collapses rapid stream emissions into a single paint callback per frame.
@@ -176,13 +194,29 @@ class AgendaPaintCoalescer<T> {
   final void Function(T value) onPaint;
   T? _pending;
   bool _scheduled = false;
+  bool _paused = false;
+
+  /// When true, submits are kept but not flushed (month pager mid-fling).
+  bool get isPaused => _paused;
+
+  void setPaused(bool paused) {
+    _paused = paused;
+    if (!_paused && _pending != null && !_scheduled) {
+      _scheduleFlush();
+    }
+  }
 
   void submit(T value) {
     _pending = value;
-    if (_scheduled) return;
+    if (_paused || _scheduled) return;
+    _scheduleFlush();
+  }
+
+  void _scheduleFlush() {
     _scheduled = true;
     SchedulerBinding.instance.scheduleFrameCallback((_) {
       _scheduled = false;
+      if (_paused) return;
       final T? next = _pending;
       _pending = null;
       if (next != null) {
@@ -192,9 +226,15 @@ class AgendaPaintCoalescer<T> {
     SchedulerBinding.instance.scheduleFrame();
   }
 
+  /// Drops any queued paint without invoking [onPaint] (stale mid-fling).
+  void discardPending() {
+    _pending = null;
+  }
+
   void dispose() {
     _pending = null;
     _scheduled = false;
+    _paused = false;
   }
 }
 

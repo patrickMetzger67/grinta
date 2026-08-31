@@ -108,6 +108,99 @@ int _agendaMonthSpan(DateTime rangeStart, DateTime rangeEnd) {
   return (end.year - start.year) * 12 + (end.month - start.month) + 1;
 }
 
+/// Focus after a month PageView landing (preferred day is never overwritten).
+@immutable
+class AgendaMonthSwipeFocus {
+  const AgendaMonthSwipeFocus({
+    required this.displayedMonth,
+    required this.selectedDate,
+    required this.preferredDayOfMonth,
+  });
+
+  final DateTime displayedMonth;
+  final DateTime selectedDate;
+  final int preferredDayOfMonth;
+}
+
+/// Applies one month-pager landing without mutating [preferredDayOfMonth].
+///
+/// Used by the UI and by burst-swipe regression tests so Aug 31 → … → Aug
+/// still restores day 31 even when intermediate months clamp to 30.
+AgendaMonthSwipeFocus applyMonthPageLanding({
+  required DateTime targetMonth,
+  required int preferredDayOfMonth,
+}) {
+  final DateTime month = DateTime(targetMonth.year, targetMonth.month, 1);
+  return AgendaMonthSwipeFocus(
+    displayedMonth: month,
+    selectedDate: monthPageSelectedDate(
+      targetMonth: month,
+      preferredDayOfMonth: preferredDayOfMonth,
+    ),
+    preferredDayOfMonth: preferredDayOfMonth,
+  );
+}
+
+/// Pure burst simulator: rapid month landings + deferred latest-wins hydrate.
+///
+/// Mimics PageView `onPageChanged` storms where only the final settle may
+/// hydrate; intermediate generations must be ignored.
+class AgendaMonthSwipeBurstSimulator {
+  AgendaMonthSwipeBurstSimulator({
+    required DateTime initialMonth,
+    required this.preferredDayOfMonth,
+  })  : displayedMonth = DateTime(initialMonth.year, initialMonth.month, 1),
+        selectedDate = monthPageSelectedDate(
+          targetMonth: initialMonth,
+          preferredDayOfMonth: preferredDayOfMonth,
+        );
+
+  int preferredDayOfMonth;
+  DateTime displayedMonth;
+  DateTime selectedDate;
+
+  final LatestWinsGate hydrationGate = LatestWinsGate();
+  LatestWinsToken? pendingHydrateToken;
+  final List<int> appliedHydrationIds = <int>[];
+  final List<int> ignoredStaleHydrationIds = <int>[];
+
+  /// One PageView landing: update focus immediately, bump latest-wins.
+  LatestWinsToken landOnMonth(DateTime targetMonth) {
+    final AgendaMonthSwipeFocus focus = applyMonthPageLanding(
+      targetMonth: targetMonth,
+      preferredDayOfMonth: preferredDayOfMonth,
+    );
+    displayedMonth = focus.displayedMonth;
+    selectedDate = focus.selectedDate;
+    // Preferred day stays sticky across clamps (do not take selectedDate.day).
+    preferredDayOfMonth = focus.preferredDayOfMonth;
+
+    final LatestWinsToken token = hydrationGate.begin();
+    pendingHydrateToken = token;
+    return token;
+  }
+
+  /// Attempts to apply a deferred hydrate for [token] (no-op if superseded).
+  bool tryApplyHydration(LatestWinsToken token) {
+    if (!token.isCurrent) {
+      ignoredStaleHydrationIds.add(token.id);
+      return false;
+    }
+    appliedHydrationIds.add(token.id);
+    return true;
+  }
+
+  /// Runs a burst of landings then hydrates every token in order (stale drop).
+  void runBurstAndFlush(List<DateTime> months) {
+    final List<LatestWinsToken> tokens = <LatestWinsToken>[
+      for (final DateTime m in months) landOnMonth(m),
+    ];
+    for (final LatestWinsToken token in tokens) {
+      tryApplyHydration(token);
+    }
+  }
+}
+
 /// Decides how to expand/shrink the cached agenda range for [focusMonth].
 ///
 /// Pure helper so navigation can update the pager first, then hydrate using

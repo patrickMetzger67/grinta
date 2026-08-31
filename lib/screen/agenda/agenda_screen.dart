@@ -160,8 +160,9 @@ class _AgendaScreenState extends State<AgendaScreen> {
   static const int _maxLoadedMonths = 4;
   /// Warm M±2 into the paint cache after the gesture settles.
   static const int _prefetchRadiusMonths = 2;
-  static const Duration _hydrateDebounce = Duration(milliseconds: 90);
-  static const Duration _prefetchSettle = Duration(milliseconds: 220);
+  /// Idle after last month page landing before Firestore hydrate (burst flings).
+  static const Duration _hydrateDebounce = Duration(milliseconds: 180);
+  static const Duration _prefetchSettle = Duration(milliseconds: 280);
 
   final ScrollController _scrollController = ScrollController();
   final GlobalKey _weeksViewportKey = GlobalKey();
@@ -182,6 +183,9 @@ class _AgendaScreenState extends State<AgendaScreen> {
   bool _suppressNextMonthPageChange = false;
   /// Ignores list-scroll selection sync while the month pager / ensureVisible runs.
   bool _suppressScrollSelectionSync = false;
+  /// True while the month PageView is flinging / not settled on an integer page,
+  /// or until deferred hydrate after the last landing. Blocks list sync + paints.
+  bool _monthPagerBusy = false;
 
   final Map<int, GlobalKey> _weekKeys = <int, GlobalKey>{};
 
@@ -273,6 +277,7 @@ class _AgendaScreenState extends State<AgendaScreen> {
     _monthPagerAnchor = focusMonth;
     _displayedMonth = focusMonth;
     _monthPageController = PageController(initialPage: _initialMonthPage);
+    _monthPageController.addListener(_onMonthPagerScrollActivity);
 
     _itemsPaintCoalescer = AgendaPaintCoalescer<List<AgendaItem>>(_paintItems);
 
@@ -362,13 +367,66 @@ class _AgendaScreenState extends State<AgendaScreen> {
     _itemsSub = null;
     _scrollController.removeListener(_handleScroll);
     _scrollController.dispose();
+    _monthPageController.removeListener(_onMonthPagerScrollActivity);
     _monthPageController.dispose();
     super.dispose();
   }
 
+  /// Tracks fractional PageView motion so list sync / paints stay off mid-fling.
+  void _onMonthPagerScrollActivity() {
+    if (_calendarMode != AgendaCalendarMode.month) return;
+    if (!_monthPageController.hasClients) return;
+
+    final bool nearInteger =
+        agendaPageViewNearInteger(_monthPageController.page);
+    if (!nearInteger) {
+      _setMonthPagerBusy(true);
+      return;
+    }
+    // Near an integer page: stay busy until hydrate idle debounce drains so a
+    // burst of landings does not hydrate / paint intermediates.
+    if (_hydrateDebouncer.hasPending) {
+      _setMonthPagerBusy(true);
+    }
+  }
+
+  void _setMonthPagerBusy(bool busy) {
+    if (_monthPagerBusy == busy) {
+      if (busy) {
+        _suppressScrollSelectionSync = true;
+        _itemsPaintCoalescer.setPaused(true);
+      }
+      return;
+    }
+    _monthPagerBusy = busy;
+    if (busy) {
+      _suppressScrollSelectionSync = true;
+      _itemsPaintCoalescer.setPaused(true);
+    } else {
+      _itemsPaintCoalescer.setPaused(false);
+      // Keep list sync suppressed one frame after settle so ensureVisible /
+      // layout from hydrate cannot re-drive preferred day.
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!mounted || _monthPagerBusy) return;
+        if (_hydrateDebouncer.hasPending) return;
+        _suppressScrollSelectionSync = false;
+      });
+    }
+  }
+
+  /// Drops queued mid-fling paints / prefetch so a superseded slide cannot
+  /// jump the UI. Does not cancel the live items watch or bump its generation
+  /// (that would orphan emissions until the next subscribe).
+  void _discardInFlightHydrationPaint() {
+    _prefetchGeneration++;
+    _itemsPaintCoalescer.discardPending();
+    unawaited(_prefetchSub?.cancel());
+    _prefetchSub = null;
+  }
+
   void _handleScroll() {
     if (_calendarMode != AgendaCalendarMode.month) return;
-    if (_suppressScrollSelectionSync) return;
+    if (_suppressScrollSelectionSync || _monthPagerBusy) return;
 
     final focusedWeek = _computeFocusedWeek();
     if (focusedWeek == null) return;
@@ -387,9 +445,10 @@ class _AgendaScreenState extends State<AgendaScreen> {
     if (!mounted) return;
 
     // Scroll sync must stay cheap: update selection without Scaffold setState.
+    // Do not overwrite preferred day from list focus while in month mode —
+    // pager landings own preferredDay (31 Aug ↔ 30 Sep ↔ 31 Aug).
     _selectedWeekStart = focusedWeek;
     _selectedDate = nextSelectedDate;
-    _preferredDayOfMonth = nextSelectedDate.day;
     _bumpAgendaPaint();
   }
 
@@ -481,6 +540,12 @@ class _AgendaScreenState extends State<AgendaScreen> {
     unawaited(_prefetchSub?.cancel());
     _prefetchSub = null;
 
+    // While a month-mode hydrate is pending, keep pager-busy so burst swipes
+    // never let list sync / Firestore paints jump the PageView.
+    if (_calendarMode == AgendaCalendarMode.month) {
+      _setMonthPagerBusy(true);
+    }
+
     _hydrateDebouncer.schedule(navToken, (LatestWinsToken t) {
       if (!mounted || !t.isCurrent) return;
       unawaited(
@@ -502,6 +567,22 @@ class _AgendaScreenState extends State<AgendaScreen> {
   }) async {
     if (!token.isCurrent || !mounted) return;
 
+    // If the pager is still mid-fling, wait for the next debounce settle.
+    if (_calendarMode == AgendaCalendarMode.month &&
+        _monthPageController.hasClients &&
+        !agendaPageViewNearInteger(_monthPageController.page)) {
+      _scheduleWindowHydration(
+        month,
+        scrollToSelection: scrollToSelection,
+        token: token,
+      );
+      return;
+    }
+
+    // Settled: allow THIS hydrate's paints while keeping list-sync suppressed
+    // until the end of the method (_setMonthPagerBusy(false)).
+    _itemsPaintCoalescer.setPaused(false);
+
     final AgendaWindowHydrationPlan plan = planAgendaWindowHydration(
       focusMonth: month,
       currentRangeStart: _rangeStart,
@@ -518,7 +599,12 @@ class _AgendaScreenState extends State<AgendaScreen> {
           token.isCurrent) {
         await _scrollToSelectedWeek(navigationToken: token);
       }
-      _scheduleAdjacentPrefetch(month, token);
+      if (token.isCurrent && mounted) {
+        _scheduleAdjacentPrefetch(month, token);
+        if (_calendarMode == AgendaCalendarMode.month) {
+          _setMonthPagerBusy(false);
+        }
+      }
       return;
     }
 
@@ -549,6 +635,9 @@ class _AgendaScreenState extends State<AgendaScreen> {
 
     if (token.isCurrent && mounted) {
       _scheduleAdjacentPrefetch(month, token);
+      if (_calendarMode == AgendaCalendarMode.month) {
+        _setMonthPagerBusy(false);
+      }
     }
   }
 
@@ -629,6 +718,16 @@ class _AgendaScreenState extends State<AgendaScreen> {
     required bool isRefreshing,
     bool force = false,
   }) {
+    // Mid-fling: keep SWR cache warm but do not rebuild the pager/list.
+    if (_monthPagerBusy && !force) {
+      _paintCache.storeRange(
+        rangeStart: _rangeStart,
+        rangeEnd: _rangeEnd,
+        items: loadedItems,
+      );
+      return;
+    }
+
     final String fingerprint = agendaItemsPaintFingerprint(loadedItems);
     if (!force &&
         fingerprint == _itemsPaintFingerprint &&
@@ -677,24 +776,26 @@ class _AgendaScreenState extends State<AgendaScreen> {
     final newMonth = _addMonths(_monthPagerAnchor, monthOffset);
 
     // Keep preferred day across shorter months (31 → 30 Sep → back to 31 Aug).
-    final newSelectedDate = monthPageSelectedDate(
+    final AgendaMonthSwipeFocus focus = applyMonthPageLanding(
       targetMonth: newMonth,
       preferredDayOfMonth: _preferredDayOfMonth,
     );
+    final newSelectedDate = focus.selectedDate;
     final newSelectedWeek = _startOfWeek(newSelectedDate);
 
     // Invalidate stale hydrates/scrolls before updating selection.
     final LatestWinsToken token = _hydrationGate.begin();
+    // Drop in-flight Firestore immediately so burst flings never apply stale
+    // paints that rebuild/jump the pager.
+    _discardInFlightHydrationPaint();
 
-    // Update pager selection immediately; hydrate in the background.
-    _suppressScrollSelectionSync = true;
-    _displayedMonth = newMonth;
+    // Update pager selection immediately; hydrate only after settle+idle.
+    _setMonthPagerBusy(true);
+    _displayedMonth = focus.displayedMonth;
     _selectedDate = newSelectedDate;
     _selectedWeekStart = newSelectedWeek;
+    // preferredDayOfMonth stays sticky (focus.preferredDayOfMonth).
     _bumpAgendaPaint();
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      _suppressScrollSelectionSync = false;
-    });
 
     _scheduleWindowHydration(
       newMonth,
@@ -776,6 +877,12 @@ class _AgendaScreenState extends State<AgendaScreen> {
         if (!mounted || generation != _subscriptionGeneration) {
           return;
         }
+        // Mid-fling: queue silently; discardPending on the next landing drops
+        // stale emits so they never rebuild the pager.
+        if (_monthPagerBusy &&
+            (navigationToken == null || !navigationToken.isCurrent)) {
+          return;
+        }
 
         // Coalesce progressive Firestore/enrichment emits to one paint/frame.
         _itemsPaintCoalescer.submit(List<AgendaItem>.from(loadedItems));
@@ -791,6 +898,11 @@ class _AgendaScreenState extends State<AgendaScreen> {
           if (navigationToken != null && !navigationToken.isCurrent) {
             return;
           }
+          if (_monthPagerBusy &&
+              navigationToken != null &&
+              !navigationToken.isCurrent) {
+            return;
+          }
 
           if (scrollToSelection && _calendarMode == AgendaCalendarMode.month) {
             await _scrollToSelectedWeek(
@@ -799,7 +911,9 @@ class _AgendaScreenState extends State<AgendaScreen> {
             );
           } else if (navigationToken == null || navigationToken.isCurrent) {
             // Never let a stale load re-drive selection from list position.
-            _handleScroll();
+            if (!_monthPagerBusy) {
+              _handleScroll();
+            }
           }
         });
       },

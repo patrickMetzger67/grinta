@@ -175,6 +175,46 @@ void main() {
     });
   });
 
+  group('AgendaPaintCoalescer pause/discard', () {
+    test('paused mid-fling holds paints; discard drops stale queue', () {
+      final painted = <int>[];
+      final coalescer = AgendaPaintCoalescer<int>(painted.add);
+
+      coalescer.setPaused(true);
+      coalescer.submit(1);
+      coalescer.submit(2);
+      SchedulerBinding.instance.handleBeginFrame(Duration.zero);
+      SchedulerBinding.instance.handleDrawFrame();
+      expect(painted, isEmpty);
+
+      coalescer.discardPending();
+      coalescer.setPaused(false);
+      SchedulerBinding.instance.handleBeginFrame(
+        const Duration(milliseconds: 16),
+      );
+      SchedulerBinding.instance.handleDrawFrame();
+      expect(painted, isEmpty);
+
+      coalescer.submit(9);
+      SchedulerBinding.instance.handleBeginFrame(
+        const Duration(milliseconds: 32),
+      );
+      SchedulerBinding.instance.handleDrawFrame();
+      expect(painted, [9]);
+      coalescer.dispose();
+    });
+  });
+
+  group('agendaPageViewNearInteger', () {
+    test('detects settled vs mid-fling page offsets', () {
+      expect(agendaPageViewNearInteger(null), isTrue);
+      expect(agendaPageViewNearInteger(3.0), isTrue);
+      expect(agendaPageViewNearInteger(3.0004), isTrue);
+      expect(agendaPageViewNearInteger(3.2), isFalse);
+      expect(agendaPageViewNearInteger(2.5), isFalse);
+    });
+  });
+
   group('agendaItemsPaintFingerprint', () {
     test('same items share fingerprint; different ids diverge', () {
       final a = [
