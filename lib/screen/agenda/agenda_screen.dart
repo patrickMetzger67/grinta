@@ -171,8 +171,12 @@ class _AgendaScreenState extends State<AgendaScreen> {
   late final PageController _monthPageController;
 
   late DateTime _displayedMonth;
+  /// Day-of-month remembered across month pager moves (31 Aug → 30 Sep → 31 Aug).
+  late int _preferredDayOfMonth;
   AgendaCalendarMode _calendarMode = AgendaCalendarMode.day;
   bool _suppressNextMonthPageChange = false;
+  /// Ignores list-scroll selection sync while the month pager / ensureVisible runs.
+  bool _suppressScrollSelectionSync = false;
 
   final Map<int, GlobalKey> _weekKeys = <int, GlobalKey>{};
 
@@ -208,6 +212,7 @@ class _AgendaScreenState extends State<AgendaScreen> {
     final now = DateUtils.dateOnly(widget.initialDate ?? DateTime.now());
 
     _selectedDate = now;
+    _preferredDayOfMonth = now.day;
     _selectedWeekStart = _startOfWeek(now);
     _selectedWeekEnd = _endOfWeek(now);
     final DateTime focusMonth = DateTime(now.year, now.month, 1);
@@ -295,26 +300,29 @@ class _AgendaScreenState extends State<AgendaScreen> {
 
   void _handleScroll() {
     if (_calendarMode != AgendaCalendarMode.month) return;
+    if (_suppressScrollSelectionSync) return;
 
     final focusedWeek = _computeFocusedWeek();
     if (focusedWeek == null) return;
 
-    if (focusedWeek.millisecondsSinceEpoch !=
+    if (focusedWeek.millisecondsSinceEpoch ==
         _selectedWeekStart.millisecondsSinceEpoch) {
-      final nextSelectedDate = _dateInWeekWithSameWeekday(focusedWeek);
-      final nextDisplayedMonth =
-      DateTime(nextSelectedDate.year, nextSelectedDate.month, 1);
-
-      if (!mounted) return;
-
-      setState(() {
-        _selectedWeekStart = focusedWeek;
-        _selectedDate = nextSelectedDate;
-        _displayedMonth = nextDisplayedMonth;
-      });
-
-      _jumpMonthPagerToDisplayedMonth();
+      return;
     }
+
+    // Month PageView owns the displayed month. List scroll may refine the
+    // selected day only when the focused week still overlaps that month —
+    // never jump the pager back to "today" (or another month) mid-swipe.
+    if (!weekOverlapsMonth(focusedWeek, _displayedMonth)) return;
+
+    final nextSelectedDate = _dateInWeekWithSameWeekday(focusedWeek);
+    if (!mounted) return;
+
+    setState(() {
+      _selectedWeekStart = focusedWeek;
+      _selectedDate = nextSelectedDate;
+      _preferredDayOfMonth = nextSelectedDate.day;
+    });
   }
 
   DateTime? _computeFocusedWeek() {
@@ -481,20 +489,35 @@ class _AgendaScreenState extends State<AgendaScreen> {
   Future<void> _handleMonthPageChanged(int page) async {
     final monthOffset = page - _initialMonthPage;
     final newMonth = _addMonths(_monthPagerAnchor, monthOffset);
-    // Same day-of-month on the target month when possible (31 Aug → 30 Sep).
-    final newSelectedDate = clampDateToMonth(_selectedDate, newMonth);
+
+    // Keep preferred day across shorter months (31 → 30 Sep → back to 31 Aug).
+    final newSelectedDate = monthPageSelectedDate(
+      targetMonth: newMonth,
+      preferredDayOfMonth: _preferredDayOfMonth,
+    );
     final newSelectedWeek = _startOfWeek(newSelectedDate);
 
+    _suppressScrollSelectionSync = true;
     setState(() {
       _displayedMonth = newMonth;
       _selectedDate = newSelectedDate;
       _selectedWeekStart = newSelectedWeek;
     });
 
-    await _ensureWindowForMonth(
-      newMonth,
-      scrollToSelection: _calendarMode == AgendaCalendarMode.month,
-    );
+    try {
+      await _ensureWindowForMonth(
+        newMonth,
+        scrollToSelection: _calendarMode == AgendaCalendarMode.month,
+      );
+    } finally {
+      if (mounted) {
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          _suppressScrollSelectionSync = false;
+        });
+      } else {
+        _suppressScrollSelectionSync = false;
+      }
+    }
   }
 
   /// Horizontal swipe on the events area (calendar header has its own handler).
@@ -524,6 +547,7 @@ class _AgendaScreenState extends State<AgendaScreen> {
 
     setState(() {
       _selectedDate = normalizedDate;
+      _preferredDayOfMonth = normalizedDate.day;
       _selectedWeekStart = targetWeek;
       _displayedMonth = targetMonth;
     });
@@ -599,11 +623,14 @@ class _AgendaScreenState extends State<AgendaScreen> {
 
   Future<void> _goToPreviousWeek() async {
     final previousWeek = _selectedWeekStart.subtract(const Duration(days: 7));
+    final nextSelectedDate = _dateInWeekWithSameWeekday(previousWeek);
 
     setState(() {
       _selectedWeekStart = previousWeek;
-      _selectedDate = _dateInWeekWithSameWeekday(previousWeek);
-      _displayedMonth = DateTime(_selectedDate.year, _selectedDate.month, 1);
+      _selectedDate = nextSelectedDate;
+      _preferredDayOfMonth = nextSelectedDate.day;
+      _displayedMonth =
+          DateTime(nextSelectedDate.year, nextSelectedDate.month, 1);
     });
 
     _jumpMonthPagerToDisplayedMonth();
@@ -616,11 +643,14 @@ class _AgendaScreenState extends State<AgendaScreen> {
 
   Future<void> _goToNextWeek() async {
     final nextWeek = _selectedWeekStart.add(const Duration(days: 7));
+    final nextSelectedDate = _dateInWeekWithSameWeekday(nextWeek);
 
     setState(() {
       _selectedWeekStart = nextWeek;
-      _selectedDate = _dateInWeekWithSameWeekday(nextWeek);
-      _displayedMonth = DateTime(_selectedDate.year, _selectedDate.month, 1);
+      _selectedDate = nextSelectedDate;
+      _preferredDayOfMonth = nextSelectedDate.day;
+      _displayedMonth =
+          DateTime(nextSelectedDate.year, nextSelectedDate.month, 1);
     });
 
     _jumpMonthPagerToDisplayedMonth();
@@ -656,6 +686,7 @@ class _AgendaScreenState extends State<AgendaScreen> {
 
     setState(() {
       _selectedDate = now;
+      _preferredDayOfMonth = now.day;
       _selectedWeekStart = todayWeek;
       _displayedMonth = todayMonth;
     });
@@ -686,12 +717,14 @@ class _AgendaScreenState extends State<AgendaScreen> {
     final newRangeStart = _startOfWeek(pickedRange.start);
     final newRangeEnd = _endOfWeek(pickedRange.end);
 
+    final pickedStart = DateUtils.dateOnly(pickedRange.start);
     setState(() {
       _rangeStart = newRangeStart;
       _rangeEnd = newRangeEnd;
-      _selectedDate = DateUtils.dateOnly(pickedRange.start);
+      _selectedDate = pickedStart;
+      _preferredDayOfMonth = pickedStart.day;
       _selectedWeekStart = _startOfWeek(pickedRange.start);
-      _displayedMonth = DateTime(_selectedDate.year, _selectedDate.month, 1);
+      _displayedMonth = DateTime(pickedStart.year, pickedStart.month, 1);
     });
 
     _jumpMonthPagerToDisplayedMonth();
@@ -725,17 +758,25 @@ class _AgendaScreenState extends State<AgendaScreen> {
 
     if (targetContext == null) return;
 
-    await Scrollable.ensureVisible(
-      targetContext,
-      duration: animated ? const Duration(milliseconds: 280) : Duration.zero,
-      curve: Curves.easeOut,
-      alignment: 0.02,
-    );
-
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (!mounted) return;
-      _handleScroll();
-    });
+    // Programmatic scroll must not let the scroll listener re-drive selection
+    // (that was snapping month view back to "today").
+    _suppressScrollSelectionSync = true;
+    try {
+      await Scrollable.ensureVisible(
+        targetContext,
+        duration: animated ? const Duration(milliseconds: 280) : Duration.zero,
+        curve: Curves.easeOut,
+        alignment: 0.02,
+      );
+    } finally {
+      if (mounted) {
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          _suppressScrollSelectionSync = false;
+        });
+      } else {
+        _suppressScrollSelectionSync = false;
+      }
+    }
   }
 
   GlobalKey _keyForWeek(DateTime weekStart) {
@@ -1180,10 +1221,13 @@ class _AgendaScreenState extends State<AgendaScreen> {
         selectedDate: selectedDate,
         keyBuilder: _keyForWeek,
         onWeekTap: (weekStart) async {
+          final nextSelectedDate = _dateInWeekWithSameWeekday(weekStart);
           setState(() {
             _selectedWeekStart = weekStart;
-            _selectedDate = _dateInWeekWithSameWeekday(weekStart);
-            _displayedMonth = DateTime(_selectedDate.year, _selectedDate.month, 1);
+            _selectedDate = nextSelectedDate;
+            _preferredDayOfMonth = nextSelectedDate.day;
+            _displayedMonth =
+                DateTime(nextSelectedDate.year, nextSelectedDate.month, 1);
           });
 
           _jumpMonthPagerToDisplayedMonth();
