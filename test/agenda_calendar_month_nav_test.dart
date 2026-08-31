@@ -74,4 +74,40 @@ void main() {
       );
     });
   });
+
+  group('LatestWinsGate', () {
+    test('newer begin() makes previous token stale', () {
+      final gate = LatestWinsGate();
+      final first = gate.begin();
+      expect(first.isCurrent, isTrue);
+
+      final second = gate.begin();
+      expect(first.isCurrent, isFalse);
+      expect(second.isCurrent, isTrue);
+    });
+  });
+
+  group('planAgendaWindowHydration', () {
+    test('returns alreadyFullyCovered when M±1 is loaded', () {
+      final plan = planAgendaWindowHydration(
+        focusMonth: DateTime(2026, 8, 1),
+        currentRangeStart: DateTime(2026, 7, 1),
+        currentRangeEnd: DateTime(2026, 9, 30),
+      );
+      expect(plan.alreadyFullyCovered, isTrue);
+      expect(plan.needsReload, isFalse);
+    });
+
+    test('plans reload when focus month is outside range', () {
+      final plan = planAgendaWindowHydration(
+        focusMonth: DateTime(2026, 11, 1),
+        currentRangeStart: DateTime(2026, 7, 1),
+        currentRangeEnd: DateTime(2026, 9, 30),
+      );
+      expect(plan.needsReload, isTrue);
+      expect(plan.alreadyFullyCovered, isFalse);
+      expect(plan.rangeStart, DateTime(2026, 10, 1));
+      expect(plan.rangeEnd, DateTime(2026, 12, 31));
+    });
+  });
 }
