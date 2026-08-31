@@ -608,11 +608,47 @@ class SubscriptionService extends ChangeNotifier {
   }
 
   /// Restores access from device cache then Firestore `subscriptionAccess`.
+  ///
+  /// Always merges a Firestore promo upgrade (e.g. `player_gps`) even when
+  /// local/RC state already has a lower tier like `player` — otherwise a
+  /// hydrated `player` grant would hide Joueur GPS forever.
   Future<void> _hydrateFromDurableSources(String uid) async {
-    if (_state.activeEntitlements.isNotEmpty) return;
-
     final cached = await SubscriptionEntitlementCache.loadForUid(uid);
     final fromFirestore = await _loadFirestoreSubscriptionAccess(uid);
+
+    if (_state.activeEntitlements.isNotEmpty) {
+      if (fromFirestore == null || fromFirestore.isExpired) return;
+
+      final current = SubscriptionEntitlementIds.canonicalize(
+        _state.activeEntitlements,
+      );
+      final union = SubscriptionEntitlementIds.canonicalize({
+        ...current,
+        ...fromFirestore.entitlements,
+      });
+      final gainsNew = union.any((id) => !current.contains(id));
+      if (!gainsNew) return;
+
+      final best = CachedSubscriptionEntitlements(
+        uid: uid,
+        entitlements: union,
+        coachTier: _resolveCoachTier(union) ?? _state.coachTier,
+        hasPlayerSubscription:
+            SubscriptionEntitlementIds.grantsPlayerAccess(union),
+        hasPlayerGpsSubscription:
+            SubscriptionEntitlementIds.hasPlayerGpsEntitlement(union),
+        activeProductId: _state.activeProductId ?? fromFirestore.activeProductId,
+        expiresAt: _laterDate(_state.subscriptionExpiresAt, fromFirestore.expiresAt),
+      );
+      _applyDurableEntitlements(best, source: 'firestore-upgrade-merge');
+      await SubscriptionEntitlementCache.saveForUid(
+        uid: uid,
+        entitlements: best.entitlements,
+        productId: best.activeProductId,
+        expiresAt: best.expiresAt,
+      );
+      return;
+    }
 
     CachedSubscriptionEntitlements? best;
     String source = 'durable';
