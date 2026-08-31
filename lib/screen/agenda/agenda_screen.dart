@@ -379,6 +379,10 @@ class _AgendaScreenState extends State<AgendaScreen> {
   void _setCalendarMode(AgendaCalendarMode mode) {
     if (_calendarMode == mode) return;
 
+    // Format change is sync so the header jumps immediately (week→month with
+    // no intermediate expanded-week animation — see AnimatedSize duration).
+    final LatestWinsToken token = _hydrationGate.begin();
+
     setState(() {
       _calendarMode = mode;
       _displayedMonth = DateTime(_selectedDate.year, _selectedDate.month, 1);
@@ -387,24 +391,35 @@ class _AgendaScreenState extends State<AgendaScreen> {
     _jumpMonthPagerToDisplayedMonth();
 
     if (mode == AgendaCalendarMode.month) {
-      _ensureRangeCoversMonth(_displayedMonth);
+      _scheduleWindowHydration(
+        _displayedMonth,
+        token: token,
+      );
     }
+    // Leaving month: token already invalidated in-flight month hydrates/scrolls.
   }
 
-  /// Slide/pager first: schedule hydration without blocking the gesture.
-  /// A newer slide bumps [LatestWinsGate] so stale loads are ignored.
+  /// Slide/pager first: paint the new selection, then hydrate after the frame.
+  /// A newer slide bumps [LatestWinsGate] so stale loads/scrolls are ignored.
+  ///
+  /// Pass [token] when the caller already called [_hydrationGate.begin] so
+  /// in-flight work is invalidated before setState (not only at hydrate time).
   void _scheduleWindowHydration(
     DateTime month, {
     bool scrollToSelection = true,
+    LatestWinsToken? token,
   }) {
-    final LatestWinsToken token = _hydrationGate.begin();
-    unawaited(
-      _hydrateWindowForMonth(
-        month,
-        token: token,
-        scrollToSelection: scrollToSelection,
-      ),
-    );
+    final LatestWinsToken navToken = token ?? _hydrationGate.begin();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted || !navToken.isCurrent) return;
+      unawaited(
+        _hydrateWindowForMonth(
+          month,
+          token: navToken,
+          scrollToSelection: scrollToSelection,
+        ),
+      );
+    });
   }
 
   /// Ensures [month] (and ideally M±1) is loaded. Avoids tearing down the stream
@@ -430,7 +445,7 @@ class _AgendaScreenState extends State<AgendaScreen> {
       if (scrollToSelection &&
           _calendarMode == AgendaCalendarMode.month &&
           token.isCurrent) {
-        await _scrollToSelectedWeek();
+        await _scrollToSelectedWeek(navigationToken: token);
       }
       return;
     }
@@ -444,16 +459,6 @@ class _AgendaScreenState extends State<AgendaScreen> {
     await _subscribeItems(
       scrollToSelection: scrollToSelection,
       navigationToken: token,
-    );
-  }
-
-  void _ensureRangeCoversMonth(
-    DateTime month, {
-    bool scrollToSelection = true,
-  }) {
-    _scheduleWindowHydration(
-      month,
-      scrollToSelection: scrollToSelection,
     );
   }
 
@@ -489,6 +494,9 @@ class _AgendaScreenState extends State<AgendaScreen> {
     );
     final newSelectedWeek = _startOfWeek(newSelectedDate);
 
+    // Invalidate stale hydrates/scrolls before updating selection.
+    final LatestWinsToken token = _hydrationGate.begin();
+
     // Update pager selection immediately; hydrate in the background.
     _suppressScrollSelectionSync = true;
     setState(() {
@@ -503,25 +511,27 @@ class _AgendaScreenState extends State<AgendaScreen> {
     _scheduleWindowHydration(
       newMonth,
       scrollToSelection: _calendarMode == AgendaCalendarMode.month,
+      token: token,
     );
   }
 
   /// Horizontal swipe on the events area (calendar header has its own handler).
-  Future<void> _handleHorizontalPeriodSwipe({required bool goNext}) async {
+  /// Never awaits — a second swipe must win immediately.
+  void _handleHorizontalPeriodSwipe({required bool goNext}) {
     switch (_calendarMode) {
       case AgendaCalendarMode.day:
       case AgendaCalendarMode.week:
         // Full-week jump (same weekday): Mon 31 Aug → Mon 7 Sep.
         if (goNext) {
-          await _goToNextWeek();
+          unawaited(_goToNextWeek());
         } else {
-          await _goToPreviousWeek();
+          unawaited(_goToPreviousWeek());
         }
       case AgendaCalendarMode.month:
         if (goNext) {
-          await _goToNextMonthFromHeader();
+          unawaited(_goToNextMonthFromHeader());
         } else {
-          await _goToPreviousMonthFromHeader();
+          unawaited(_goToPreviousMonthFromHeader());
         }
     }
   }
@@ -530,6 +540,8 @@ class _AgendaScreenState extends State<AgendaScreen> {
     final normalizedDate = DateUtils.dateOnly(date);
     final targetWeek = _startOfWeek(normalizedDate);
     final targetMonth = DateTime(normalizedDate.year, normalizedDate.month, 1);
+
+    final LatestWinsToken token = _hydrationGate.begin();
 
     setState(() {
       _selectedDate = normalizedDate;
@@ -543,6 +555,7 @@ class _AgendaScreenState extends State<AgendaScreen> {
     _scheduleWindowHydration(
       targetMonth,
       scrollToSelection: _calendarMode == AgendaCalendarMode.month,
+      token: token,
     );
   }
 
@@ -594,8 +607,12 @@ class _AgendaScreenState extends State<AgendaScreen> {
           }
 
           if (scrollToSelection && _calendarMode == AgendaCalendarMode.month) {
-            await _scrollToSelectedWeek(animated: false);
-          } else {
+            await _scrollToSelectedWeek(
+              animated: false,
+              navigationToken: navigationToken,
+            );
+          } else if (navigationToken == null || navigationToken.isCurrent) {
+            // Never let a stale load re-drive selection from list position.
             _handleScroll();
           }
         });
@@ -617,6 +634,7 @@ class _AgendaScreenState extends State<AgendaScreen> {
   Future<void> _goToPreviousWeek() async {
     final previousWeek = _selectedWeekStart.subtract(const Duration(days: 7));
     final nextSelectedDate = _dateInWeekWithSameWeekday(previousWeek);
+    final LatestWinsToken token = _hydrationGate.begin();
 
     setState(() {
       _selectedWeekStart = previousWeek;
@@ -631,12 +649,14 @@ class _AgendaScreenState extends State<AgendaScreen> {
     _scheduleWindowHydration(
       _displayedMonth,
       scrollToSelection: _calendarMode == AgendaCalendarMode.month,
+      token: token,
     );
   }
 
   Future<void> _goToNextWeek() async {
     final nextWeek = _selectedWeekStart.add(const Duration(days: 7));
     final nextSelectedDate = _dateInWeekWithSameWeekday(nextWeek);
+    final LatestWinsToken token = _hydrationGate.begin();
 
     setState(() {
       _selectedWeekStart = nextWeek;
@@ -651,24 +671,30 @@ class _AgendaScreenState extends State<AgendaScreen> {
     _scheduleWindowHydration(
       _displayedMonth,
       scrollToSelection: _calendarMode == AgendaCalendarMode.month,
+      token: token,
     );
   }
 
   Future<void> _goToPreviousMonthFromHeader() async {
     if (!_monthPageController.hasClients) return;
 
-    await _monthPageController.previousPage(
-      duration: const Duration(milliseconds: 220),
-      curve: Curves.easeOut,
+    // Don't await the page animation — a second swipe must not wait.
+    unawaited(
+      _monthPageController.previousPage(
+        duration: const Duration(milliseconds: 220),
+        curve: Curves.easeOut,
+      ),
     );
   }
 
   Future<void> _goToNextMonthFromHeader() async {
     if (!_monthPageController.hasClients) return;
 
-    await _monthPageController.nextPage(
-      duration: const Duration(milliseconds: 220),
-      curve: Curves.easeOut,
+    unawaited(
+      _monthPageController.nextPage(
+        duration: const Duration(milliseconds: 220),
+        curve: Curves.easeOut,
+      ),
     );
   }
 
@@ -676,6 +702,7 @@ class _AgendaScreenState extends State<AgendaScreen> {
     final now = DateUtils.dateOnly(DateTime.now());
     final todayWeek = _startOfWeek(now);
     final todayMonth = DateTime(now.year, now.month, 1);
+    final LatestWinsToken token = _hydrationGate.begin();
 
     setState(() {
       _selectedDate = now;
@@ -689,6 +716,7 @@ class _AgendaScreenState extends State<AgendaScreen> {
     _scheduleWindowHydration(
       todayMonth,
       scrollToSelection: _calendarMode == AgendaCalendarMode.month,
+      token: token,
     );
   }
 
@@ -741,15 +769,20 @@ class _AgendaScreenState extends State<AgendaScreen> {
     await _subscribeItems(scrollToSelection: false);
   }
 
-  Future<void> _scrollToSelectedWeek({bool animated = true}) async {
+  Future<void> _scrollToSelectedWeek({
+    bool animated = true,
+    LatestWinsToken? navigationToken,
+  }) async {
     await Future<void>.delayed(Duration.zero);
 
     if (!mounted) return;
+    if (navigationToken != null && !navigationToken.isCurrent) return;
 
     final key = _weekKeys[_selectedWeekStart.millisecondsSinceEpoch];
     final targetContext = key?.currentContext;
 
     if (targetContext == null) return;
+    if (navigationToken != null && !navigationToken.isCurrent) return;
 
     // Programmatic scroll must not let the scroll listener re-drive selection
     // (that was snapping month view back to "today").
@@ -762,8 +795,13 @@ class _AgendaScreenState extends State<AgendaScreen> {
         alignment: 0.02,
       );
     } finally {
+      // A newer navigation owns suppress; don't clear it out from under them.
+      if (navigationToken != null && !navigationToken.isCurrent) {
+        return;
+      }
       if (mounted) {
         WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (navigationToken != null && !navigationToken.isCurrent) return;
           _suppressScrollSelectionSync = false;
         });
       } else {
@@ -1054,12 +1092,12 @@ class _AgendaScreenState extends State<AgendaScreen> {
                     _selectedDate.add(const Duration(days: 1)),
                   );
                 },
-                onTodayTap: () async {
-                  await _jumpToToday();
+                onTodayTap: () {
+                  unawaited(_jumpToToday());
                 },
                 onPageChanged: _onMonthPageChanged,
-                onDateTap: (date) async {
-                  await _selectDate(date);
+                onDateTap: (date) {
+                  unawaited(_selectDate(date));
                 },
               ),
               if (filterActive) ...[
@@ -1089,13 +1127,9 @@ class _AgendaScreenState extends State<AgendaScreen> {
                   onHorizontalDragEnd: (details) {
                     final velocity = details.primaryVelocity ?? 0;
                     if (velocity < -180) {
-                      unawaited(
-                        _handleHorizontalPeriodSwipe(goNext: true),
-                      );
+                      _handleHorizontalPeriodSwipe(goNext: true);
                     } else if (velocity > 180) {
-                      unawaited(
-                        _handleHorizontalPeriodSwipe(goNext: false),
-                      );
+                      _handleHorizontalPeriodSwipe(goNext: false);
                     }
                   },
                   child: Container(
@@ -1219,6 +1253,7 @@ class _AgendaScreenState extends State<AgendaScreen> {
         keyBuilder: _keyForWeek,
         onWeekTap: (weekStart) async {
           final nextSelectedDate = _dateInWeekWithSameWeekday(weekStart);
+          final LatestWinsToken token = _hydrationGate.begin();
           setState(() {
             _selectedWeekStart = weekStart;
             _selectedDate = nextSelectedDate;
@@ -1228,7 +1263,7 @@ class _AgendaScreenState extends State<AgendaScreen> {
           });
 
           _jumpMonthPagerToDisplayedMonth();
-          await _scrollToSelectedWeek();
+          await _scrollToSelectedWeek(navigationToken: token);
         },
       ),
     );

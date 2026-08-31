@@ -105,8 +105,9 @@ class _GrintaStyleCalendarHeader extends StatelessWidget {
         message: tooltip,
         child: InkWell(
           borderRadius: BorderRadius.circular(10),
-          onTap: () async {
-            await onTap();
+          // Fire-and-forget: a second tap must not wait on the previous nav.
+          onTap: () {
+            unawaited(onTap());
           },
           child: Padding(
             padding: const EdgeInsets.symmetric(
