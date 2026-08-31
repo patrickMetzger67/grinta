@@ -16,6 +16,7 @@ class _GrintaStyleCalendarHeader extends StatelessWidget {
   final Future<void> Function() onPreviousDay;
   final Future<void> Function() onNextDay;
   final VoidCallback onTodayTap;
+  final VoidCallback onHeaderDateTap;
   final ValueChanged<int> onPageChanged;
   final ValueChanged<DateTime> onDateTap;
 
@@ -35,6 +36,7 @@ class _GrintaStyleCalendarHeader extends StatelessWidget {
     required this.onPreviousDay,
     required this.onNextDay,
     required this.onTodayTap,
+    required this.onHeaderDateTap,
     required this.onPageChanged,
     required this.onDateTap,
   });
@@ -181,15 +183,28 @@ class _GrintaStyleCalendarHeader extends StatelessWidget {
                         ),
                         Expanded(
                           child: Center(
-                            child: Text(
-                              headerTitle,
-                              textAlign: TextAlign.center,
-                              style: Theme.of(context)
-                                  .textTheme
-                                  .titleSmall
-                                  ?.copyWith(
-                                fontWeight: FontWeight.w800,
-                                color: colors.textPrimary,
+                            child: Tooltip(
+                              message: l10n.actionChooseDate,
+                              child: InkWell(
+                                borderRadius: BorderRadius.circular(10),
+                                onTap: onHeaderDateTap,
+                                child: Padding(
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 8,
+                                    vertical: 6,
+                                  ),
+                                  child: Text(
+                                    headerTitle,
+                                    textAlign: TextAlign.center,
+                                    style: Theme.of(context)
+                                        .textTheme
+                                        .titleSmall
+                                        ?.copyWith(
+                                      fontWeight: FontWeight.w800,
+                                      color: colors.textPrimary,
+                                    ),
+                                  ),
+                                ),
                               ),
                             ),
                           ),

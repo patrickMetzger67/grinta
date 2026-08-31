@@ -902,6 +902,22 @@ class _AgendaScreenState extends State<AgendaScreen> {
     );
   }
 
+  /// Opens a date picker from the header title between the chevrons.
+  /// UI focus updates immediately via [_selectDate]; hydrate is latest-wins.
+  Future<void> _pickHeaderDate() async {
+    final DateTime? picked = await showDatePicker(
+      context: context,
+      initialDate: _selectedDate,
+      firstDate: DateTime(2020),
+      lastDate: DateTime(2100),
+      helpText: context.l10n.actionChooseDate,
+      cancelText: context.l10n.actionCancel,
+      confirmText: context.l10n.actionValidate,
+    );
+    if (picked == null || !mounted) return;
+    await _selectDate(picked);
+  }
+
   Future<void> _pickPeriod() async {
     final pickedRange = await showDateRangePicker(
       context: context,
@@ -1309,6 +1325,9 @@ class _AgendaScreenState extends State<AgendaScreen> {
                             },
                             onTodayTap: () {
                               unawaited(_jumpToToday());
+                            },
+                            onHeaderDateTap: () {
+                              unawaited(_pickHeaderDate());
                             },
                             onPageChanged: _onMonthPageChanged,
                             onDateTap: (date) {
