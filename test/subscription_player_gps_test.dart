@@ -92,6 +92,29 @@ void main() {
         SubscriptionEntitlementIds.canonicalizeOne('player-gps'),
         SubscriptionEntitlementIds.playerGps,
       );
+      expect(
+        SubscriptionEntitlementIds.canonicalizeOne('JOUEURGPS'),
+        SubscriptionEntitlementIds.playerGps,
+      );
+      expect(
+        SubscriptionEntitlementIds.canonicalizeOne('joueur_gps'),
+        SubscriptionEntitlementIds.playerGps,
+      );
+      expect(
+        SubscriptionEntitlementIds.canonicalizeOne('Joueur GPS'),
+        SubscriptionEntitlementIds.playerGps,
+      );
+      expect(
+        SubscriptionEntitlementIds.canonicalize({'player', 'JOUEURGPS'}),
+        <String>{
+          SubscriptionEntitlementIds.player,
+          SubscriptionEntitlementIds.playerGps,
+        },
+      );
+      expect(
+        SubscriptionEntitlementIds.hasPlayerGpsEntitlement({'JOUEURGPS'}),
+        isTrue,
+      );
     });
 
     test('admin promo options are canonical and Joueur GPS is player_gps', () {
@@ -120,8 +143,16 @@ void main() {
           reason: 'admin create/edit must persist only canonical entitlement ids',
         );
       }
-      // Create/update path: RC aliases normalize before Firestore write.
-      for (final alias in ['playerGPS', 'playerGps', 'player-gps', 'Player_GPS']) {
+      // Create/update path: RC / French aliases normalize before Firestore write.
+      for (final alias in [
+        'playerGPS',
+        'playerGps',
+        'player-gps',
+        'Player_GPS',
+        'JOUEURGPS',
+        'joueur_gps',
+        'Joueur GPS',
+      ]) {
         expect(
           SubscriptionEntitlementIds.canonicalizeOne(alias) ?? alias,
           SubscriptionEntitlementIds.playerGps,

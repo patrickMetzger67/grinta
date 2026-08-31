@@ -353,36 +353,48 @@ abstract final class SubscriptionEntitlementIds {
     coachPro,
   ];
 
-  /// RevenueCat dashboard IDs that should unlock Joueur GPS.
+  /// RevenueCat / console / French display IDs that should unlock Joueur GPS.
   static const playerGpsAliases = <String>{
     playerGps,
     'playerGPS',
     'playerGps',
+    'JOUEURGPS',
+    'joueurGPS',
+    'joueur_gps',
+    'joueur-gps',
   };
 
   static bool isKnown(String entitlementId) =>
-      all.contains(entitlementId) || playerGpsAliases.contains(entitlementId);
+      all.contains(entitlementId) ||
+      playerGpsAliases.contains(entitlementId) ||
+      canonicalizeOne(entitlementId) != null;
 
-  /// Map RC / console aliases to the canonical entitlement id.
+  /// Map RC / console / French aliases to the canonical entitlement id.
   static String? canonicalizeOne(String entitlementId) {
     final trimmed = entitlementId.trim();
     if (trimmed.isEmpty) return null;
     if (all.contains(trimmed)) return trimmed;
     if (playerGpsAliases.contains(trimmed)) return playerGps;
     final compact = trimmed.toLowerCase().replaceAll(RegExp(r'[-_.\s]'), '');
-    if (compact == 'playergps') return playerGps;
+    if (compact == 'playergps' || compact == 'joueurgps') return playerGps;
     return null;
   }
 
   static bool hasPlayerGpsEntitlement(Set<String> entitlements) =>
-      entitlements.any(playerGpsAliases.contains);
+      entitlements.any(
+        (id) =>
+            playerGpsAliases.contains(id) || canonicalizeOne(id) == playerGps,
+      );
 
+  /// Map every id to its canonical form (aliases → `player_gps`, etc.).
   static Set<String> canonicalize(Set<String> entitlements) {
-    if (!hasPlayerGpsEntitlement(entitlements) ||
-        entitlements.contains(playerGps)) {
-      return entitlements;
+    final out = <String>{};
+    for (final id in entitlements) {
+      final trimmed = id.trim();
+      if (trimmed.isEmpty) continue;
+      out.add(canonicalizeOne(trimmed) ?? trimmed);
     }
-    return {...entitlements, playerGps};
+    return out;
   }
 
   static bool grantsPlayerAccess(Set<String> entitlements) =>

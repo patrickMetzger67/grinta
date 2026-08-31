@@ -83,10 +83,28 @@ describe('canonicalizePromoEntitlement', () => {
     assert.equal(canonicalizePromoEntitlement('player-gps'), 'player_gps');
   });
 
+  it('accepts JOUEURGPS / French product-name aliases as player_gps', () => {
+    assert.equal(canonicalizePromoEntitlement('JOUEURGPS'), 'player_gps');
+    assert.equal(canonicalizePromoEntitlement('joueurGPS'), 'player_gps');
+    assert.equal(canonicalizePromoEntitlement('joueur_gps'), 'player_gps');
+    assert.equal(canonicalizePromoEntitlement('joueur-gps'), 'player_gps');
+    assert.equal(canonicalizePromoEntitlement('Joueur GPS'), 'player_gps');
+  });
+
   it('rejects unknown entitlements', () => {
     assert.equal(canonicalizePromoEntitlement(''), null);
     assert.equal(canonicalizePromoEntitlement('gold'), null);
-    assert.equal(canonicalizePromoEntitlement('joueur_gps'), null);
+    assert.equal(canonicalizePromoEntitlement('joueur_pro'), null);
+  });
+});
+
+describe('revenueCatGrantEntitlementIds from JOUEURGPS alias', () => {
+  it('maps JOUEURGPS to player_gps RC grant ids', () => {
+    assert.deepEqual(revenueCatGrantEntitlementIds('JOUEURGPS'), [
+      'player_gps',
+      'playerGPS',
+      'playerGps',
+    ]);
   });
 });
 
@@ -124,6 +142,10 @@ describe('mergePromoMirrorEntitlements', () => {
     );
     assert.deepEqual(
       mergePromoMirrorEntitlements(['player'], 'playerGPS').sort(),
+      ['player', 'player_gps'],
+    );
+    assert.deepEqual(
+      mergePromoMirrorEntitlements(['player'], 'JOUEURGPS').sort(),
       ['player', 'player_gps'],
     );
   });

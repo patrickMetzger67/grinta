@@ -14,12 +14,17 @@ const CANONICAL_ENTITLEMENTS = new Set([
   'coach_pro',
 ]);
 
-/** RevenueCat / console aliases → canonical Firestore / app ids. */
+/** RevenueCat / console / French display aliases → canonical Firestore / app ids. */
 const ENTITLEMENT_ALIAS_TO_CANONICAL = new Map([
   ['player', 'player'],
   ['player_gps', 'player_gps'],
   ['playergps', 'player_gps'],
   ['player-gps', 'player_gps'],
+  // Demo / admin docs sometimes store the promo code or French product name
+  // as the entitlement field (JOUEURGPS) instead of player_gps.
+  ['joueurgps', 'player_gps'],
+  ['joueur_gps', 'player_gps'],
+  ['joueur-gps', 'player_gps'],
   ['coach_basic', 'coach_basic'],
   ['coachbasic', 'coach_basic'],
   ['coach-basic', 'coach_basic'],
@@ -77,8 +82,9 @@ function promoCodesMatch(storedRaw, typedNormalized) {
  * Map admin / console / RC entitlement strings to the canonical id used by
  * the app and VALID_ENTITLEMENTS. Returns null when unknown.
  *
- * Accepts `playerGPS` / `playerGps` so a promo created against the RC
- * dashboard naming is not rejected as PROMO_INVALID.
+ * Accepts `playerGPS` / `playerGps` / `JOUEURGPS` so a promo created against
+ * RC dashboard naming or the French product label is not rejected as
+ * PROMO_INVALID.
  */
 function canonicalizePromoEntitlement(raw) {
   const value = (raw ?? '').toString().trim();

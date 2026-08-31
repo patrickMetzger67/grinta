@@ -15,7 +15,7 @@ Deux messages trompeurs historiques (souvent combinés) :
 | Couche | Comportement |
 |--------|----------------|
 | **Functions** | Lookup tolérant (casse, tirets, `#`, `codeCompact`, scan `admin_promo_codes`) |
-| **Functions** | Entitlements alias (`playerGPS` / `playerGps` → `player_gps`) — pas de faux `PROMO_INVALID` |
+| **Functions** | Entitlements alias (`playerGPS` / `JOUEURGPS` / `joueur_gps` → `player_gps`) — pas de faux `PROMO_INVALID` |
 | **Functions** | Grant RC : retry sur aliases Joueur GPS si 404 |
 | **Functions** | Miroir `subscriptionAccess` **hors** transaction (merge entitlements via `mergePromoMirrorEntitlements` ; un échec user doc ne rollback pas le redeem) |
 | **Functions** | Échecs grant RC → `errorCode` (`PROMO_RC_*` / `PROMO_GRANT_FAILED`) |
@@ -48,7 +48,7 @@ Vérifier ensuite dans la Firebase Console → Functions que `redeemPromoCode` e
 3. Entitlement : pour un code type **JOUEURGPS**, choisir **Joueur GPS** (`player_gps` — jamais l’alias RC `playerGPS`) + durée + `maxUses` suffisant  
 4. Tester le redeem **avant** la démo client
 
-> La création admin était déjà sûre (dropdown + `canonicalizeOne` à l’écriture). Le bug « code n’est plus valide » venait du **redeem** face à d’anciens docs Firestore / console avec `playerGPS`. Le redeem canonicalize désormais ces alias ; un cleanup one-shot n’est pas requis, mais une édition admin d’un vieux code réécrit l’id canonique.
+> La création admin était déjà sûre (dropdown + `canonicalizeOne` à l’écriture). Le bug « code n’est plus valide » / `PROMO_INVALID` venait du **redeem** face à d’anciens docs Firestore / console avec `playerGPS` **ou** le libellé / code `JOUEURGPS` stocké dans le champ entitlement. Le redeem canonicalize désormais ces alias vers `player_gps` ; un cleanup one-shot n’est pas requis, mais une édition admin d’un vieux code réécrit l’id canonique.
 
 ## Tests locaux anti-régression
 

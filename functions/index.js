@@ -346,8 +346,9 @@ function validatePromoData(data) {
     );
   }
 
-  // Accept RC / console aliases (playerGPS) so upgrade promos are not
-  // rejected as PROMO_INVALID when the Firestore field uses dashboard naming.
+  // Accept RC / console / French aliases (playerGPS, JOUEURGPS) so upgrade
+  // promos are not rejected as PROMO_INVALID when the Firestore field uses
+  // dashboard or product naming instead of the canonical id.
   const entitlement = canonicalizePromoEntitlement(data.entitlement);
   if (!entitlement || !VALID_ENTITLEMENTS.has(entitlement)) {
     throwPromoError(
