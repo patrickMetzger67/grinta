@@ -726,17 +726,20 @@ class _WearableDevicesDialogContentState
     required bool syncDisabled,
     TextInputType keyboardType = TextInputType.emailAddress,
   }) {
+    final trimmedGuidance = guidance.trim();
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        const SizedBox(height: 12),
-        Text(
-          guidance,
-          style: TextStyle(
-            color: colors.textSecondary,
-            fontSize: 13,
+        if (trimmedGuidance.isNotEmpty) ...[
+          const SizedBox(height: 12),
+          Text(
+            trimmedGuidance,
+            style: TextStyle(
+              color: colors.textSecondary,
+              fontSize: 13,
+            ),
           ),
-        ),
+        ],
         const SizedBox(height: 12),
         TextField(
           controller: controller,
@@ -1302,17 +1305,19 @@ class _WearableDevicesDialogContentState
               placeholder: l10n.polarAccountHintPlaceholder,
               syncDisabled: syncDisabled,
             ),
+          // Always show the serial field so players can type it even before
+          // unlocking Joueur GPS (paywall still gates the connect action).
+          // Guidance is already in [_connectSubtitle] — avoid duplicating it.
           if (!selectedConnected &&
-              selectedType == WearableDeviceType.gpsInsidersIntense &&
-              !gpsRequiresPlayerGps)
+              selectedType == WearableDeviceType.gpsInsidersIntense)
             _buildAccountHintField(
               colors: colors,
               l10n: l10n,
               controller: _intenseGpsSerialController,
-              guidance: l10n.intenseGpsSerialGuidance,
+              guidance: '',
               label: l10n.intenseGpsSerialLabel,
               placeholder: l10n.intenseGpsSerialPlaceholder,
-              syncDisabled: syncDisabled,
+              syncDisabled: false,
               keyboardType: TextInputType.text,
             ),
           if (gpsRequiresPlayerGps) ...[
@@ -1360,6 +1365,16 @@ class _WearableDevicesDialogContentState
                   ? null
                   : () async {
                       await showPlayerGpsPaywall(context);
+                      if (!mounted) return;
+                      // Refresh so the serial field can be submitted via Connect
+                      // once Joueur GPS (or a promo) is active.
+                      setState(() {});
+                      if (canConnectOwnIntenseGps(
+                            initiatedBy: widget.initiatedBy,
+                          ) &&
+                          _intenseGpsSerialController.text.trim().isNotEmpty) {
+                        await _syncSelectedType();
+                      }
                     },
               icon: const Icon(Icons.workspace_premium_outlined, size: 20),
               label: Text(l10n.subscriptionTierPlayerGps),
