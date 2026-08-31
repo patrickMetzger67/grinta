@@ -1609,8 +1609,8 @@
   "subscriptionTierPlayer": "Spieler",
   "subscriptionTierPlayerDesc": "Verfolgen Sie Ihre Leistung, persönliche Stats und Fortschritt.",
   "subscriptionTierPlayerGps": "Spieler GPS",
-  "subscriptionTierPlayerGpsDesc": "Erforderlich, um Ihr eigenes Insiders Intense GPS zu verbinden. Enthält Leistungs-Tracking, persönliche Stats und Fortschritt.",
-  "intenseGpsRequiresPlayerGps": "Ein Spieler-GPS-Abo ist erforderlich, um Ihr eigenes Insiders Intense GPS zu verbinden.",
+  "subscriptionTierPlayerGpsDesc": "Erforderlich, um Ihr Insiders Intense GPS zu synchronisieren. Enthält Leistungs-Tracking, persönliche Stats und Fortschritt.",
+  "intenseGpsRequiresPlayerGps": "Ein Spieler-GPS-Abo ist erforderlich, um Ihr Insiders Intense GPS zu synchronisieren.",
   "subscriptionPerMonth": "/Monat",
   "subscriptionPerYear": "/Jahr",
   "subscriptionBillingMonthly": "Monatlich",
@@ -1810,6 +1810,26 @@
   "sessionPersonalDataError": "Daten konnten nicht verknüpft werden. Bitte erneut versuchen.",
   "sessionPersonalDataAuthRequired": "Melde dich mit einem Spielerprofil an, um Daten zu verknüpfen.",
   "sessionPersonalDataSwitchToAppsQuestion": "Möchtest du eine verbundene App / ein Gerät wählen?",
+  "sessionPersonalDataMatchStartedOnTimeQuestion": "Hat dein Spiel pünktlich begonnen?",
+  "sessionPersonalDataMatchScheduledKickOff": "Geplanter Anstoß um {time}.",
+  "@sessionPersonalDataMatchScheduledKickOff": {
+    "placeholders": {
+      "time": {
+        "type": "String"
+      }
+    }
+  },
+  "sessionPersonalDataMatchActualKickOff": "Tatsächliche Anstoßzeit",
+  "sessionPersonalDataMatchActualKickOffValue": "Anstoß um {time}",
+  "@sessionPersonalDataMatchActualKickOffValue": {
+    "placeholders": {
+      "time": {
+        "type": "String"
+      }
+    }
+  },
+  "sessionPersonalDataMatchKickOffAnswerRequired": "Gib an, ob dein Spiel pünktlich begonnen hat.",
+  "sessionPersonalDataMatchActualKickOffRequired": "Wähle die tatsächliche Anstoßzeit.",
   "createPersonalSportSaved": "Activity created",
   "createPersonalSportError": "Could not create the activity. Please try again.",
   "createPersonalSportAuthRequired": "Sign in to create an activity.",

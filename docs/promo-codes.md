@@ -14,12 +14,21 @@ Deux messages trompeurs historiques (souvent combinés) :
 
 | Couche | Comportement |
 |--------|----------------|
-| **Functions** | Lookup tolérant (casse, tirets, `codeCompact`, scan `admin_promo_codes`) |
-| **Functions** | Miroir `subscriptionAccess` **hors** transaction (un échec user doc ne rollback pas le redeem) |
+| **Functions** | Lookup tolérant (casse, tirets, `#`, `codeCompact`, scan `admin_promo_codes`) |
+| **Functions** | Entitlements alias (`playerGPS` / `JOUEURGPS` / `joueur_gps` → `player_gps`) — pas de faux `PROMO_INVALID` |
+| **Functions** | Grant RC : retry sur aliases Joueur GPS si 404 |
+| **Functions** | Miroir `subscriptionAccess` **hors** transaction (merge entitlements via `mergePromoMirrorEntitlements` ; un échec user doc ne rollback pas le redeem) |
+| **Functions** | Redeem déjà fait **et** miroir a l’entitlement → succès idempotent (pas d’erreur `ALREADY_REDEEMED`) pour re-hydrater le client. Redeem déjà fait mais miroir sans l’upgrade (ex. seulement `player`) → retry grant `player_gps` sans reconsommer un use |
 | **Functions** | Échecs grant RC → `errorCode` (`PROMO_RC_*` / `PROMO_GRANT_FAILED`) |
+| **Client** | Normalise `# JOUEURGPS` → `JOUEURGPS` (`replaceFirst`, pas le `.replace` JS) |
+| **Client** | Après redeem : vérifie le miroir pour l’entitlement **attendu** (`player_gps`), pas seulement `player` déjà actif |
+| **Client** | Hydrate : merge Firestore `player_gps` même si l’état local a déjà `player` |
+| **Client** | Apply RC : conserve un grant durable `player_gps` si RC ne remonte encore que `player` |
+| **Client** | Abonnement déjà actif : bouton **Code promo** pour upgrade (ex. Joueur → Joueur GPS) |
 | **Client** | `not-found` Firebase ≠ « introuvable » sauf `PROMO_NOT_FOUND` |
 | **Client** | `failed-precondition` ≠ « n’est plus valide » sauf `PROMO_INVALID` |
 | **Admin UI** | Écrit `codeCompact` à la création / édition pour accélérer le lookup |
+| **Admin UI** | Dropdown + create/update persistent **uniquement** les ids canoniques (`player_gps`, jamais `playerGPS`) |
 | **Tests** | `test/promo_redeem_errors_test.dart` + `functions/promo_code_helpers.test.js` |
 
 ## Déployer avant une démo (obligatoire)
@@ -38,8 +47,10 @@ Vérifier ensuite dans la Firebase Console → Functions que `redeemPromoCode` e
 
 1. App connectée en compte **root** → Admin → Codes promo  
 2. Créer un code simple, ex. `DEMO2026` (le serveur accepte aussi `DEMO-2026`)  
-3. Entitlement (`player`, `player_gps`, `coach_basic`, `coach_elite`, `coach_pro`) + durée + `maxUses` suffisant  
+3. Entitlement : pour un code type **JOUEURGPS**, choisir **Joueur GPS** (`player_gps` — jamais l’alias RC `playerGPS`) + durée + `maxUses` suffisant  
 4. Tester le redeem **avant** la démo client
+
+> La création admin était déjà sûre (dropdown + `canonicalizeOne` à l’écriture). Le bug « code n’est plus valide » / `PROMO_INVALID` venait du **redeem** face à d’anciens docs Firestore / console avec `playerGPS` **ou** le libellé / code `JOUEURGPS` stocké dans le champ entitlement. Le redeem canonicalize désormais ces alias vers `player_gps` ; un cleanup one-shot n’est pas requis, mais une édition admin d’un vieux code réécrit l’id canonique.
 
 ## Tests locaux anti-régression
 

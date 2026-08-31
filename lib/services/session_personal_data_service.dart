@@ -11,16 +11,24 @@ import 'package:grinta/services/training_intense_sync_service.dart';
 import 'package:grinta/util/match_usb_sync_window.dart';
 import 'package:grinta/util/training_finish_helper.dart';
 
-/// Lead-in before kick-off when syncing an individual live GPS to a match.
-///
-/// Captures warm-up / arrival on pitch before the scheduled rencontre start.
-const int kPersonalMatchGpsLeadMinutes = 15;
+/// First half duration for individual live GPS match sync (minutes).
+const int kPersonalMatchGpsFirstHalfMinutes = 45;
 
-/// Trail after the scheduled match slot when syncing an individual live GPS.
-///
-/// Extends past full-time (duration + half-time break) so cooldown / late
-/// whistle samples are still fetched from Insiders.
-const int kPersonalMatchGpsTrailMinutes = 60;
+/// Half-time break for individual live GPS match sync (minutes).
+const int kPersonalMatchGpsHalftimeBreakMinutes = 15;
+
+/// Second half duration for individual live GPS match sync (minutes).
+const int kPersonalMatchGpsSecondHalfMinutes = 45;
+
+/// Extra tolerance after full-time for injury / added time (minutes).
+const int kPersonalMatchGpsInjuryTimeToleranceMinutes = 10;
+
+/// Total Insiders fetch span from confirmed kick-off for a 90' match.
+const int kPersonalMatchGpsTotalSpanMinutes =
+    kPersonalMatchGpsFirstHalfMinutes +
+    kPersonalMatchGpsHalftimeBreakMinutes +
+    kPersonalMatchGpsSecondHalfMinutes +
+    kPersonalMatchGpsInjuryTimeToleranceMinutes;
 
 /// Time window used when attaching personal GPS / app data to a session.
 class SessionPersonalDataWindow {
@@ -63,8 +71,29 @@ class SessionPersonalDataService {
     return true;
   }
 
+  /// Builds the Insiders window for an individual match GPS sync.
+  ///
+  /// Span from [kickOff]: 45' + 15' break + 45' + 10' added-time tolerance.
+  /// [now] caps the stop when the match is still in progress.
+  static SessionPersonalDataWindow resolveMatchGpsWindow({
+    required DateTime kickOff,
+    DateTime? now,
+  }) {
+    final clock = (now ?? DateTime.now()).toLocal();
+    final start = kickOff.toLocal();
+    var stop = start.add(
+      const Duration(minutes: kPersonalMatchGpsTotalSpanMinutes),
+    );
+    if (clock.isBefore(stop)) stop = clock;
+    if (!stop.isAfter(start)) {
+      stop = start.add(const Duration(minutes: 1));
+    }
+    return SessionPersonalDataWindow(start: start, stop: stop);
+  }
+
   static SessionPersonalDataWindow resolveWindow({
     required AgendaItem item,
+    DateTime? matchKickOff,
     DateTime? now,
   }) {
     final clock = now ?? DateTime.now();
@@ -94,23 +123,8 @@ class SessionPersonalDataService {
       );
     }
 
-    final match = item.match;
-    final kickOff = item.startAt;
-    final durationMinutes = match?.duration ?? 90;
-    // Scheduled slot = play + 15' half-time break (same as USB / Intense).
-    final scheduledEnd = matchScheduledSlotEnd(kickOff, durationMinutes);
-    // Individual live GPS: wider Insiders plage around the rencontre.
-    final start = kickOff.subtract(
-      const Duration(minutes: kPersonalMatchGpsLeadMinutes),
-    );
-    var stop = scheduledEnd.add(
-      const Duration(minutes: kPersonalMatchGpsTrailMinutes),
-    );
-    if (clock.isBefore(stop)) stop = clock;
-    if (!stop.isAfter(start)) {
-      stop = start.add(const Duration(minutes: 1));
-    }
-    return SessionPersonalDataWindow(start: start, stop: stop);
+    final kickOff = matchKickOff ?? item.startAt;
+    return resolveMatchGpsWindow(kickOff: kickOff, now: clock);
   }
 
   Future<FieldGpsCorners?> resolveFieldGpsCorners(AgendaItem item) async {
@@ -133,6 +147,7 @@ class SessionPersonalDataService {
     required AgendaItem item,
     required String playerId,
     required PersonalGpsDeviceOption device,
+    DateTime? matchKickOff,
     void Function(IntenseDeviceSyncStage stage)? onStage,
   }) async {
     final eventId = item.id.trim();
@@ -140,11 +155,17 @@ class SessionPersonalDataService {
       throw StateError('Event id missing');
     }
 
-    final sessionWindow = SessionPersonalDataService.resolveWindow(item: item);
-    final fieldCorners = await resolveFieldGpsCorners(item);
     final isMatch = item.match != null;
+    final sessionWindow = SessionPersonalDataService.resolveWindow(
+      item: item,
+      matchKickOff: isMatch ? matchKickOff : null,
+    );
+    final fieldCorners = await resolveFieldGpsCorners(item);
     final intenseWindow = _intenseWindowForItem(sessionWindow: sessionWindow);
-    final heatmapPlayPeriods = _matchPlayPeriodsForHeatmaps(item: item);
+    final heatmapPlayPeriods = _matchPlayPeriodsForHeatmaps(
+      item: item,
+      matchKickOff: matchKickOff,
+    );
 
     final target = IntenseTrainingDeviceTarget(
       playerId: playerId,
@@ -205,11 +226,9 @@ class SessionPersonalDataService {
 
   /// Builds the Insiders window for personal GPS.
   ///
-  /// Matches use the expanded session plage ([kPersonalMatchGpsLeadMinutes]
-  /// before kick-off → [kPersonalMatchGpsTrailMinutes] after the scheduled
-  /// slot). Play periods are omitted here so warm-up / half-time / cooldown
-  /// samples stay in overall analysis; H1/H2 heatmaps use
-  /// [_matchPlayPeriodsForHeatmaps] separately.
+  /// Matches use the player-confirmed kick-off plage (45' + 15' + 45' + 10').
+  /// Play periods are omitted here so half-time samples stay in overall
+  /// analysis; H1/H2 heatmaps use [_matchPlayPeriodsForHeatmaps] separately.
   TrainingIntenseTimeWindow _intenseWindowForItem({
     required SessionPersonalDataWindow sessionWindow,
   }) {
@@ -227,6 +246,7 @@ class SessionPersonalDataService {
   /// Scheduled 1st/2nd half bounds for match heatmaps (excludes lead/trail).
   List<TimeRange> _matchPlayPeriodsForHeatmaps({
     required AgendaItem item,
+    DateTime? matchKickOff,
   }) {
     final match = item.match;
     if (match == null) return const <TimeRange>[];
@@ -234,7 +254,7 @@ class SessionPersonalDataService {
     return resolveMatchSensorSyncPeriods(
       match: match,
       highlights: const <Highlights>[],
-      fallbackStart: item.startAt,
+      fallbackStart: matchKickOff ?? item.startAt,
     );
   }
 

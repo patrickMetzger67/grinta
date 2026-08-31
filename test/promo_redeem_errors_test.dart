@@ -9,6 +9,12 @@ void main() {
       expect(PromoCode.compactCode(' demo_2026 '), 'DEMO2026');
       expect(PromoCode.normalizeCode('demo 2026'), 'DEMO2026');
     });
+
+    test('strips leading hash from tag-icon UX', () {
+      expect(PromoCode.normalizeCode('# JOUEURGPS'), 'JOUEURGPS');
+      expect(PromoCode.normalizeCode('#JOUEURGPS'), 'JOUEURGPS');
+      expect(PromoCode.compactCode('# joueur-gps'), 'JOUEURGPS');
+    });
   });
 
   group('PromoRedeemErrors — demo regression guards', () {

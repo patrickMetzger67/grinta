@@ -17,6 +17,7 @@ import 'package:grinta/services/whoop_sync_service.dart';
 import 'package:grinta/util/app_snackbar.dart';
 import 'package:grinta/util/app_theme.dart';
 import 'package:grinta/util/field_gps_localization_helper.dart';
+import 'package:grinta/util/player_gps_access.dart';
 import 'package:grinta/util/player_photo_resolver.dart';
 import 'package:provider/provider.dart';
 
@@ -171,6 +172,12 @@ class _SessionPersonalDataDialogState extends State<SessionPersonalDataDialog> {
   PersonalGpsOwnerAvailability? _gpsAvailability;
   PersonalGpsDeviceOption? _selectedGpsDevice;
 
+  /// Match GPS: whether kick-off was on schedule (`true`) or delayed (`false`).
+  bool? _matchStartedOnTime;
+
+  /// Actual kick-off time when [_matchStartedOnTime] is false.
+  TimeOfDay? _actualMatchKickOffTime;
+
   final List<WearableDeviceType> _connectedSources = [];
   WearableDeviceType? _importSource;
   bool _loadingImportActivities = false;
@@ -248,6 +255,176 @@ class _SessionPersonalDataDialogState extends State<SessionPersonalDataDialog> {
 
   bool get _canUseMyGps =>
       _gpsAvailability != null && _gpsAvailability!.devices.isNotEmpty;
+
+  bool get _isMatchGpsSync =>
+      widget.item.match != null &&
+      _importSource == WearableDeviceType.gpsInsidersIntense;
+
+  Future<void> _pickActualMatchKickOff() async {
+    final scheduled = widget.item.startAt.toLocal();
+    final picked = await showTimePicker(
+      context: context,
+      initialTime: _actualMatchKickOffTime ??
+          TimeOfDay(hour: scheduled.hour, minute: scheduled.minute),
+    );
+    if (picked != null && mounted) {
+      setState(() => _actualMatchKickOffTime = picked);
+    }
+  }
+
+  DateTime? _resolveMatchKickOff() {
+    if (widget.item.match == null) return null;
+    if (_matchStartedOnTime == true) {
+      return widget.item.startAt.toLocal();
+    }
+    if (_matchStartedOnTime == false && _actualMatchKickOffTime != null) {
+      final scheduled = widget.item.startAt.toLocal();
+      final time = _actualMatchKickOffTime!;
+      return DateTime(
+        scheduled.year,
+        scheduled.month,
+        scheduled.day,
+        time.hour,
+        time.minute,
+      );
+    }
+    return null;
+  }
+
+  String _formatTimeOfDay(TimeOfDay time) {
+    final hour = time.hour.toString().padLeft(2, '0');
+    final minute = time.minute.toString().padLeft(2, '0');
+    return '$hour:$minute';
+  }
+
+  bool _validateMatchKickOff() {
+    if (!_isMatchGpsSync) return true;
+    final l10n = context.l10n;
+    if (_matchStartedOnTime == null) {
+      AppSnackbar.show(
+        context,
+        l10n.sessionPersonalDataMatchKickOffAnswerRequired,
+      );
+      return false;
+    }
+    if (_matchStartedOnTime == false && _actualMatchKickOffTime == null) {
+      AppSnackbar.show(
+        context,
+        l10n.sessionPersonalDataMatchActualKickOffRequired,
+      );
+      return false;
+    }
+    final kickOff = _resolveMatchKickOff();
+    if (kickOff == null) {
+      AppSnackbar.show(
+        context,
+        l10n.sessionPersonalDataMatchActualKickOffRequired,
+      );
+      return false;
+    }
+    if (!kickOff.isBefore(DateTime.now())) {
+      AppSnackbar.show(context, l10n.createPersonalSportGpsStartInFuture);
+      return false;
+    }
+    return true;
+  }
+
+  Widget _buildMatchKickOffSection() {
+    final l10n = context.l10n;
+    final colors = context.appColors;
+    final scheduled = widget.item.startAt.toLocal();
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Text(
+          l10n.sessionPersonalDataMatchStartedOnTimeQuestion,
+          style: TextStyle(
+            color: colors.textPrimary,
+            fontWeight: FontWeight.w600,
+            fontSize: 13,
+          ),
+        ),
+        const SizedBox(height: 8),
+        Row(
+          children: [
+            Expanded(
+              child: OutlinedButton(
+                onPressed: _submitting
+                    ? null
+                    : () => setState(() {
+                          _matchStartedOnTime = true;
+                          _actualMatchKickOffTime = null;
+                        }),
+                style: OutlinedButton.styleFrom(
+                  backgroundColor: _matchStartedOnTime == true
+                      ? colors.primary.withValues(alpha: 0.12)
+                      : null,
+                  side: BorderSide(
+                    color: _matchStartedOnTime == true
+                        ? colors.primary
+                        : colors.border,
+                  ),
+                ),
+                child: Text(l10n.actionYes),
+              ),
+            ),
+            const SizedBox(width: 8),
+            Expanded(
+              child: OutlinedButton(
+                onPressed: _submitting
+                    ? null
+                    : () => setState(() {
+                          _matchStartedOnTime = false;
+                          _actualMatchKickOffTime ??= TimeOfDay(
+                            hour: scheduled.hour,
+                            minute: scheduled.minute,
+                          );
+                        }),
+                style: OutlinedButton.styleFrom(
+                  backgroundColor: _matchStartedOnTime == false
+                      ? colors.primary.withValues(alpha: 0.12)
+                      : null,
+                  side: BorderSide(
+                    color: _matchStartedOnTime == false
+                        ? colors.primary
+                        : colors.border,
+                  ),
+                ),
+                child: Text(l10n.actionNo),
+              ),
+            ),
+          ],
+        ),
+        if (_matchStartedOnTime == true) ...[
+          const SizedBox(height: 8),
+          Text(
+            l10n.sessionPersonalDataMatchScheduledKickOff(
+              _formatTimeOfDay(
+                TimeOfDay(hour: scheduled.hour, minute: scheduled.minute),
+              ),
+            ),
+            style: TextStyle(color: colors.textSecondary, fontSize: 13),
+          ),
+        ],
+        if (_matchStartedOnTime == false) ...[
+          const SizedBox(height: 8),
+          OutlinedButton.icon(
+            onPressed: _submitting ? null : _pickActualMatchKickOff,
+            icon: const Icon(Icons.access_time),
+            label: Text(
+              _actualMatchKickOffTime == null
+                  ? l10n.sessionPersonalDataMatchActualKickOff
+                  : l10n.sessionPersonalDataMatchActualKickOffValue(
+                      _formatTimeOfDay(_actualMatchKickOffTime!),
+                    ),
+            ),
+          ),
+        ],
+        const SizedBox(height: 12),
+      ],
+    );
+  }
 
   Future<void> _loadConnectedAppsAndActivities() async {
     final uid = FirebaseAuth.instance.currentUser?.uid;
@@ -453,6 +630,16 @@ class _SessionPersonalDataDialogState extends State<SessionPersonalDataDialog> {
       return;
     }
 
+    // Sensor setup is free; Joueur GPS is required only when syncing data.
+    if (!await ensurePlayerGpsForIntenseUse(context)) {
+      if (!mounted) return;
+      AppSnackbar.show(context, context.l10n.intenseGpsRequiresPlayerGps);
+      return;
+    }
+    if (!mounted) return;
+
+    if (!_validateMatchKickOff()) return;
+
     // Match + Intense GPS: offer pitch corners for schematic heatmaps.
     // Declining is fine — attachGps falls back to satellite GPS view.
     final match = widget.item.match;
@@ -468,6 +655,7 @@ class _SessionPersonalDataDialogState extends State<SessionPersonalDataDialog> {
       item: widget.item,
       playerId: playerId,
       device: device,
+      matchKickOff: _resolveMatchKickOff(),
     );
     if (!mounted) return;
     if (result == null) {
@@ -682,6 +870,7 @@ class _SessionPersonalDataDialogState extends State<SessionPersonalDataDialog> {
                       const SizedBox(height: 12),
                       if (_importSource ==
                           WearableDeviceType.gpsInsidersIntense) ...[
+                        if (widget.item.match != null) _buildMatchKickOffSection(),
                         if (_gpsAvailability != null &&
                             _gpsAvailability!.devices.length > 1) ...[
                           DropdownButtonFormField<String>(

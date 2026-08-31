@@ -74,6 +74,7 @@ void main() {
         isTrue,
       );
       expect(SubscriptionEntitlementIds.isKnown('player'), isTrue);
+      expect(SubscriptionEntitlementIds.isKnown('playerGPS'), isTrue);
       expect(SubscriptionEntitlementIds.isKnown('unknown'), isFalse);
       expect(
         SubscriptionEntitlementIds.hasPlayerGpsEntitlement({'playerGPS'}),
@@ -83,6 +84,80 @@ void main() {
         SubscriptionEntitlementIds.canonicalize({'playerGPS'}),
         contains(SubscriptionEntitlementIds.playerGps),
       );
+      expect(
+        SubscriptionEntitlementIds.canonicalizeOne('playerGPS'),
+        SubscriptionEntitlementIds.playerGps,
+      );
+      expect(
+        SubscriptionEntitlementIds.canonicalizeOne('player-gps'),
+        SubscriptionEntitlementIds.playerGps,
+      );
+      expect(
+        SubscriptionEntitlementIds.canonicalizeOne('JOUEURGPS'),
+        SubscriptionEntitlementIds.playerGps,
+      );
+      expect(
+        SubscriptionEntitlementIds.canonicalizeOne('joueur_gps'),
+        SubscriptionEntitlementIds.playerGps,
+      );
+      expect(
+        SubscriptionEntitlementIds.canonicalizeOne('Joueur GPS'),
+        SubscriptionEntitlementIds.playerGps,
+      );
+      expect(
+        SubscriptionEntitlementIds.canonicalize({'player', 'JOUEURGPS'}),
+        <String>{
+          SubscriptionEntitlementIds.player,
+          SubscriptionEntitlementIds.playerGps,
+        },
+      );
+      expect(
+        SubscriptionEntitlementIds.hasPlayerGpsEntitlement({'JOUEURGPS'}),
+        isTrue,
+      );
+    });
+
+    test('admin promo options are canonical and Joueur GPS is player_gps', () {
+      expect(
+        SubscriptionEntitlementIds.promoAdminOptions,
+        containsAll(<String>[
+          SubscriptionEntitlementIds.player,
+          SubscriptionEntitlementIds.playerGps,
+          SubscriptionEntitlementIds.coachBasic,
+          SubscriptionEntitlementIds.coachElite,
+          SubscriptionEntitlementIds.coachPro,
+        ]),
+      );
+      expect(
+        SubscriptionEntitlementIds.promoAdminOptions,
+        isNot(contains('playerGPS')),
+      );
+      expect(
+        SubscriptionEntitlementIds.promoAdminOptions,
+        isNot(contains('playerGps')),
+      );
+      for (final id in SubscriptionEntitlementIds.promoAdminOptions) {
+        expect(
+          SubscriptionEntitlementIds.canonicalizeOne(id),
+          id,
+          reason: 'admin create/edit must persist only canonical entitlement ids',
+        );
+      }
+      // Create/update path: RC / French aliases normalize before Firestore write.
+      for (final alias in [
+        'playerGPS',
+        'playerGps',
+        'player-gps',
+        'Player_GPS',
+        'JOUEURGPS',
+        'joueur_gps',
+        'Joueur GPS',
+      ]) {
+        expect(
+          SubscriptionEntitlementIds.canonicalizeOne(alias) ?? alias,
+          SubscriptionEntitlementIds.playerGps,
+        );
+      }
     });
 
     test('player_gps grants player access and own Intense GPS', () {

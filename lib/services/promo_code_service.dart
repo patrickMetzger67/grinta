@@ -66,7 +66,9 @@ class PromoCodeService {
     if (!PromoCode.isValidDocumentId(normalized)) {
       throw StateError('invalid-document-id');
     }
-    if (!_isValidEntitlement(entitlement)) {
+    final canonicalEntitlement =
+        SubscriptionEntitlementIds.canonicalizeOne(entitlement) ?? entitlement;
+    if (!_isValidEntitlement(canonicalEntitlement)) {
       throw ArgumentError('Invalid entitlement.');
     }
     if (maxUses < 1) {
@@ -87,7 +89,7 @@ class PromoCodeService {
         code: normalized,
         maxUses: maxUses,
         usedCount: 0,
-        entitlement: entitlement,
+        entitlement: canonicalEntitlement,
         durationDays: durationDays,
         expiresAt: expiresAt,
         teamId: teamId?.trim().isNotEmpty == true ? teamId!.trim() : null,
@@ -123,7 +125,9 @@ class PromoCodeService {
     if (!UserRootService.instance.isRoot) {
       throw StateError('permission-denied');
     }
-    if (!_isValidEntitlement(entitlement)) {
+    final canonicalEntitlement =
+        SubscriptionEntitlementIds.canonicalizeOne(entitlement) ?? entitlement;
+    if (!_isValidEntitlement(canonicalEntitlement)) {
       throw ArgumentError('Invalid entitlement.');
     }
     if (maxUses < 1) {
@@ -151,7 +155,7 @@ class PromoCodeService {
         codeId;
     final updates = <String, dynamic>{
       PromoCodeDocumentFields.maxUses: maxUses,
-      PromoCodeDocumentFields.entitlement: entitlement,
+      PromoCodeDocumentFields.entitlement: canonicalEntitlement,
       PromoCodeDocumentFields.durationDays: durationDays,
       PromoCodeDocumentFields.active: active,
       // Backfill compact key so redeem lookup stays indexable for older docs.
@@ -242,7 +246,10 @@ class PromoCodeService {
       throw StateError('Invalid redeem response.');
     }
 
-    final entitlement = data['entitlement']?.toString() ?? '';
+    final entitlementRaw = data['entitlement']?.toString() ?? '';
+    final entitlement =
+        SubscriptionEntitlementIds.canonicalizeOne(entitlementRaw) ??
+            entitlementRaw;
     final durationDays = PromoCode.readInt(data['durationDays'], fallback: 0);
     if (entitlement.isEmpty || durationDays < 1) {
       throw StateError('Invalid redeem response.');
@@ -262,7 +269,8 @@ class PromoCodeService {
   }
 
   bool _isValidEntitlement(String entitlement) {
-    return SubscriptionEntitlementIds.isKnown(entitlement);
+    return SubscriptionEntitlementIds.canonicalizeOne(entitlement) != null ||
+        SubscriptionEntitlementIds.isKnown(entitlement);
   }
 
   static String formatFirestoreError(FirebaseException e) {

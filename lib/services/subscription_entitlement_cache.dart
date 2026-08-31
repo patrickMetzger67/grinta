@@ -53,7 +53,7 @@ class SubscriptionEntitlementCache {
         hasPlayerSubscription:
             SubscriptionEntitlementIds.grantsPlayerAccess(normalized),
         hasPlayerGpsSubscription:
-            normalized.contains(SubscriptionEntitlementIds.playerGps),
+            SubscriptionEntitlementIds.hasPlayerGpsEntitlement(normalized),
         activeProductId: decoded['productId']?.toString(),
         expiresAt: expiresAt,
       );

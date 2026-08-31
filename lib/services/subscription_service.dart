@@ -517,10 +517,10 @@ class SubscriptionService extends ChangeNotifier {
       return;
     }
 
-    final active = _extractActiveEntitlements(info);
+    final rcActive = _extractActiveEntitlements(info);
 
     // Empty RC must not wipe a durable grant (promo / prior purchase cache).
-    if (active.isEmpty) {
+    if (rcActive.isEmpty) {
       if (firebaseUid != null) {
         unawaited(_handleEmptyRevenueCatEntitlements(firebaseUid));
         return;
@@ -534,8 +534,13 @@ class SubscriptionService extends ChangeNotifier {
       return;
     }
 
+    // Joueur → Joueur GPS promo: RC may still only report `player` briefly (or
+    // if the SDK lags). Keep a non-expired local/mirror `player_gps` grant.
+    final active = _mergeRcWithDurablePromoEntitlements(rcActive);
+
     final coachTier = _resolveCoachTier(active);
-    final hasPlayerGps = active.contains(SubscriptionEntitlementIds.playerGps);
+    final hasPlayerGps =
+        SubscriptionEntitlementIds.hasPlayerGpsEntitlement(active);
     final hasPlayer = SubscriptionEntitlementIds.grantsPlayerAccess(active);
     final primaryEntitlement = _primaryEntitlement(info, active);
     final productId = primaryEntitlement?.productIdentifier;
@@ -571,11 +576,11 @@ class SubscriptionService extends ChangeNotifier {
     }
 
     if (kDebugMode) {
-      final rcActive = info.entitlements.active.keys.toList();
+      final rcActiveKeys = info.entitlements.active.keys.toList();
       debugPrint(
         'SubscriptionService: applied CustomerInfo '
         'rcOriginalAppUserId=${info.originalAppUserId} '
-        'rcActiveKeys=${rcActive.isEmpty ? '(none)' : rcActive.join(', ')} '
+        'rcActiveKeys=${rcActiveKeys.isEmpty ? '(none)' : rcActiveKeys.join(', ')} '
         'recognized=${active.isEmpty ? '(none)' : active.join(', ')} '
         'hasActivePaidSubscription=${active.isNotEmpty}',
       );
@@ -584,26 +589,124 @@ class SubscriptionService extends ChangeNotifier {
     notifyListeners();
   }
 
-  /// Restores access from device cache then Firestore `subscriptionAccess`.
-  Future<void> _hydrateFromDurableSources(String uid) async {
-    if (_state.activeEntitlements.isNotEmpty) return;
+  /// Keeps durable promo upgrades (notably `player_gps`) when RC still only
+  /// reports the prior tier (`player`).
+  Set<String> _mergeRcWithDurablePromoEntitlements(Set<String> rcActive) {
+    final merged = {...rcActive};
+    final expiresAt = _state.subscriptionExpiresAt;
+    final durableStillValid =
+        expiresAt == null || expiresAt.isAfter(DateTime.now());
+    if (!durableStillValid) return merged;
 
+    if (SubscriptionEntitlementIds.hasPlayerGpsEntitlement(
+          _state.activeEntitlements,
+        ) &&
+        !SubscriptionEntitlementIds.hasPlayerGpsEntitlement(merged)) {
+      merged.add(SubscriptionEntitlementIds.playerGps);
+    }
+    return merged;
+  }
+
+  /// Restores access from device cache then Firestore `subscriptionAccess`.
+  ///
+  /// Always merges a Firestore promo upgrade (e.g. `player_gps`) even when
+  /// local/RC state already has a lower tier like `player` — otherwise a
+  /// hydrated `player` grant would hide Joueur GPS forever.
+  Future<void> _hydrateFromDurableSources(String uid) async {
     final cached = await SubscriptionEntitlementCache.loadForUid(uid);
-    if (cached != null && !cached.isExpired) {
-      _applyDurableEntitlements(cached, source: 'local-cache');
+    final fromFirestore = await _loadFirestoreSubscriptionAccess(uid);
+
+    if (_state.activeEntitlements.isNotEmpty) {
+      if (fromFirestore == null || fromFirestore.isExpired) return;
+
+      final current = SubscriptionEntitlementIds.canonicalize(
+        _state.activeEntitlements,
+      );
+      final union = SubscriptionEntitlementIds.canonicalize({
+        ...current,
+        ...fromFirestore.entitlements,
+      });
+      final gainsNew = union.any((id) => !current.contains(id));
+      if (!gainsNew) return;
+
+      final best = CachedSubscriptionEntitlements(
+        uid: uid,
+        entitlements: union,
+        coachTier: _resolveCoachTier(union) ?? _state.coachTier,
+        hasPlayerSubscription:
+            SubscriptionEntitlementIds.grantsPlayerAccess(union),
+        hasPlayerGpsSubscription:
+            SubscriptionEntitlementIds.hasPlayerGpsEntitlement(union),
+        activeProductId: _state.activeProductId ?? fromFirestore.activeProductId,
+        expiresAt: _laterDate(_state.subscriptionExpiresAt, fromFirestore.expiresAt),
+      );
+      _applyDurableEntitlements(best, source: 'firestore-upgrade-merge');
+      await SubscriptionEntitlementCache.saveForUid(
+        uid: uid,
+        entitlements: best.entitlements,
+        productId: best.activeProductId,
+        expiresAt: best.expiresAt,
+      );
       return;
     }
 
-    final fromFirestore = await _loadFirestoreSubscriptionAccess(uid);
-    if (fromFirestore != null && !fromFirestore.isExpired) {
-      _applyDurableEntitlements(fromFirestore, source: 'firestore');
-      await SubscriptionEntitlementCache.saveForUid(
-        uid: uid,
-        entitlements: fromFirestore.entitlements,
-        productId: fromFirestore.activeProductId,
-        expiresAt: fromFirestore.expiresAt,
-      );
+    CachedSubscriptionEntitlements? best;
+    String source = 'durable';
+
+    if (cached != null && !cached.isExpired) {
+      best = cached;
+      source = 'local-cache';
     }
+
+    if (fromFirestore != null && !fromFirestore.isExpired) {
+      if (best == null) {
+        best = fromFirestore;
+        source = 'firestore';
+      } else {
+        // Union so a stale cache that only has `player` cannot hide a
+        // Firestore `player_gps` promo upgrade.
+        final union = <String>{
+          ...best.entitlements,
+          ...fromFirestore.entitlements,
+        };
+        final normalized = SubscriptionEntitlementIds.canonicalize(union);
+        if (normalized.length > best.entitlements.length ||
+            (SubscriptionEntitlementIds.hasPlayerGpsEntitlement(normalized) &&
+                !SubscriptionEntitlementIds.hasPlayerGpsEntitlement(
+                  best.entitlements,
+                ))) {
+          best = CachedSubscriptionEntitlements(
+            uid: uid,
+            entitlements: normalized,
+            coachTier: _resolveCoachTier(normalized) ?? best.coachTier,
+            hasPlayerSubscription:
+                SubscriptionEntitlementIds.grantsPlayerAccess(normalized),
+            hasPlayerGpsSubscription:
+                SubscriptionEntitlementIds.hasPlayerGpsEntitlement(normalized),
+            activeProductId:
+                best.activeProductId ?? fromFirestore.activeProductId,
+            expiresAt: _laterDate(best.expiresAt, fromFirestore.expiresAt),
+          );
+          source = 'cache+firestore';
+        }
+      }
+    }
+
+    if (best == null) return;
+
+    _applyDurableEntitlements(best, source: source);
+    await SubscriptionEntitlementCache.saveForUid(
+      uid: uid,
+      entitlements: best.entitlements,
+      productId: best.activeProductId,
+      expiresAt: best.expiresAt,
+    );
+  }
+
+  DateTime? _laterDate(DateTime? a, DateTime? b) {
+    if (a == null) return b;
+    if (b == null) return a;
+    return a.isAfter(b) ? a : b;
   }
 
   Future<void> _handleEmptyRevenueCatEntitlements(String uid) async {
@@ -717,7 +820,9 @@ class SubscriptionService extends ChangeNotifier {
         hasPlayerSubscription:
             SubscriptionEntitlementIds.grantsPlayerAccess(normalizedEntitlements),
         hasPlayerGpsSubscription:
-            normalizedEntitlements.contains(SubscriptionEntitlementIds.playerGps),
+            SubscriptionEntitlementIds.hasPlayerGpsEntitlement(
+              normalizedEntitlements,
+            ),
         activeProductId: raw['productId']?.toString(),
         expiresAt: expiresAt,
       );
@@ -942,15 +1047,31 @@ class SubscriptionService extends ChangeNotifier {
 
   /// Refreshes access after a promotional grant.
   ///
-  /// Returns true when [expectedEntitlement] is active locally. Prefers
-  /// RevenueCat when configured; on web/desktop without store keys, falls back
-  /// to the Firestore `subscriptionAccess` mirror written by `redeemPromoCode`
-  /// (demo-critical: IAP unavailable must not block a successful promo).
+  /// Returns true when [expectedEntitlement] is active locally. Prefers the
+  /// Firestore `subscriptionAccess` mirror written by `redeemPromoCode` so a
+  /// Joueur → Joueur GPS upgrade is verified against `player_gps` (not the
+  /// pre-existing `player` entitlement from RevenueCat). Falls back to RC
+  /// when the mirror is still lagging.
   Future<bool> refreshAfterPromoRedeem({
     required String expectedEntitlement,
   }) async {
     final uid = FirebaseAuth.instance.currentUser?.uid;
     if (uid == null) return false;
+
+    final expected =
+        SubscriptionEntitlementIds.canonicalizeOne(expectedEntitlement) ??
+            expectedEntitlement.trim();
+    if (expected.isEmpty) return false;
+
+    // Mirror first: authoritative for what redeemPromoCode just wrote.
+    final mirrored = await _verifyPromoViaDurableMirror(expected);
+    if (mirrored) {
+      if (isPurchaseAvailable) {
+        // Best-effort RC sync; durable merge keeps player_gps if RC lags.
+        unawaited(_syncRevenueCatAfterPromo(uid));
+      }
+      return true;
+    }
 
     if (isPurchaseAvailable) {
       await ensureInitialized();
@@ -975,13 +1096,19 @@ class SubscriptionService extends ChangeNotifier {
           await _logInRevenueCat(uid);
           await _fetchCustomerInfo();
 
-          if (hasEntitlement(expectedEntitlement)) {
+          if (hasEntitlement(expected)) {
             if (kDebugMode) {
               debugPrint(
                 'SubscriptionService: promo entitlement verified via RC '
-                '($expectedEntitlement, attempt=${attempt + 1})',
+                '($expected, attempt=${attempt + 1}) '
+                'active=${_state.activeEntitlements.join(', ')}',
               );
             }
+            return true;
+          }
+
+          // Mirror may land while we wait on RC.
+          if (await _verifyPromoViaDurableMirror(expected)) {
             return true;
           }
 
@@ -993,26 +1120,47 @@ class SubscriptionService extends ChangeNotifier {
     } else if (kDebugMode) {
       debugPrint(
         'SubscriptionService: refreshAfterPromoRedeem — RevenueCat not '
-        'configured; verifying via Firestore subscriptionAccess mirror.',
+        'configured; Firestore mirror did not yet show "$expected".',
       );
     }
 
-    final mirrored = await _verifyPromoViaDurableMirror(expectedEntitlement);
-    if (!mirrored && kDebugMode) {
+    if (kDebugMode) {
       debugPrint(
         'SubscriptionService: promo entitlement NOT visible after refresh '
-        '(expected=$expectedEntitlement firebaseUid=$uid '
+        '(expected=$expected firebaseUid=$uid '
         'active=${_state.activeEntitlements.join(', ')} '
         'purchaseAvailable=$isPurchaseAvailable)',
       );
     }
-    return mirrored;
+    return false;
+  }
+
+  Future<void> _syncRevenueCatAfterPromo(String uid) async {
+    try {
+      await ensureInitialized();
+      if (!_sdkConfigured) return;
+      _loggedInUid = null;
+      try {
+        await Purchases.invalidateCustomerInfoCache();
+      } catch (_) {}
+      await _logInRevenueCat(uid);
+      await _fetchCustomerInfo();
+    } catch (e, st) {
+      debugPrint(
+        'SubscriptionService: post-promo RC sync failed: $e\n$st',
+      );
+    }
   }
 
   /// Polls Firestore `users/{uid}.subscriptionAccess` written by redeemPromoCode.
   Future<bool> _verifyPromoViaDurableMirror(String expectedEntitlement) async {
     final uid = FirebaseAuth.instance.currentUser?.uid;
     if (uid == null) return false;
+
+    final expected =
+        SubscriptionEntitlementIds.canonicalizeOne(expectedEntitlement) ??
+            expectedEntitlement.trim();
+    if (expected.isEmpty) return false;
 
     const maxAttempts = 6;
     const retryDelay = Duration(milliseconds: 500);
@@ -1023,6 +1171,24 @@ class SubscriptionService extends ChangeNotifier {
 
       final fromFirestore = await _loadFirestoreSubscriptionAccess(uid);
       if (fromFirestore == null || fromFirestore.isExpired) continue;
+
+      // Must contain the redeemed entitlement — having only `player` must not
+      // count as verifying a `player_gps` upgrade.
+      if (!fromFirestore.entitlements.contains(expected) &&
+          !(expected == SubscriptionEntitlementIds.playerGps &&
+              SubscriptionEntitlementIds.hasPlayerGpsEntitlement(
+                fromFirestore.entitlements,
+              ))) {
+        if (kDebugMode) {
+          debugPrint(
+            'SubscriptionService: mirror present but missing expected '
+            'entitlement (expected=$expected '
+            'mirror=${fromFirestore.entitlements.join(', ')}, '
+            'attempt=${attempt + 1})',
+          );
+        }
+        continue;
+      }
 
       _applyDurableEntitlements(
         fromFirestore,
@@ -1035,11 +1201,12 @@ class SubscriptionService extends ChangeNotifier {
         expiresAt: fromFirestore.expiresAt,
       );
 
-      if (hasEntitlement(expectedEntitlement)) {
+      if (hasEntitlement(expected)) {
         if (kDebugMode) {
           debugPrint(
             'SubscriptionService: promo entitlement verified via mirror '
-            '($expectedEntitlement, attempt=${attempt + 1})',
+            '($expected, attempt=${attempt + 1}) '
+            'active=${_state.activeEntitlements.join(', ')}',
           );
         }
         return true;
