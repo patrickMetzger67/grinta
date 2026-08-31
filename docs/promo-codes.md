@@ -24,6 +24,7 @@ Deux messages trompeurs historiques (souvent combinés) :
 | **Client** | `not-found` Firebase ≠ « introuvable » sauf `PROMO_NOT_FOUND` |
 | **Client** | `failed-precondition` ≠ « n’est plus valide » sauf `PROMO_INVALID` |
 | **Admin UI** | Écrit `codeCompact` à la création / édition pour accélérer le lookup |
+| **Admin UI** | Dropdown + create/update persistent **uniquement** les ids canoniques (`player_gps`, jamais `playerGPS`) |
 | **Tests** | `test/promo_redeem_errors_test.dart` + `functions/promo_code_helpers.test.js` |
 
 ## Déployer avant une démo (obligatoire)
@@ -42,8 +43,10 @@ Vérifier ensuite dans la Firebase Console → Functions que `redeemPromoCode` e
 
 1. App connectée en compte **root** → Admin → Codes promo  
 2. Créer un code simple, ex. `DEMO2026` (le serveur accepte aussi `DEMO-2026`)  
-3. Entitlement (`player`, `player_gps`, `coach_basic`, `coach_elite`, `coach_pro`) + durée + `maxUses` suffisant  
+3. Entitlement : pour un code type **JOUEURGPS**, choisir **Joueur GPS** (`player_gps` — jamais l’alias RC `playerGPS`) + durée + `maxUses` suffisant  
 4. Tester le redeem **avant** la démo client
+
+> La création admin était déjà sûre (dropdown + `canonicalizeOne` à l’écriture). Le bug « code n’est plus valide » venait du **redeem** face à d’anciens docs Firestore / console avec `playerGPS`. Le redeem canonicalize désormais ces alias ; un cleanup one-shot n’est pas requis, mais une édition admin d’un vieux code réécrit l’id canonique.
 
 ## Tests locaux anti-régression
 

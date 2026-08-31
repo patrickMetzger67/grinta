@@ -193,6 +193,19 @@ class _AdminPromoCodesScreenState extends State<AdminPromoCodesScreen> {
 
 enum _PromoCodeCardAction { edit, delete }
 
+String _entitlementOptionLabel(dynamic l10n, String entitlement) {
+  final canonical =
+      SubscriptionEntitlementIds.canonicalizeOne(entitlement) ?? entitlement;
+  return switch (canonical) {
+    SubscriptionEntitlementIds.player => l10n.subscriptionOfferingPlayer,
+    SubscriptionEntitlementIds.playerGps => l10n.subscriptionTierPlayerGps,
+    SubscriptionEntitlementIds.coachBasic => l10n.subscriptionTierCoachBasic,
+    SubscriptionEntitlementIds.coachElite => l10n.subscriptionTierCoachElite,
+    SubscriptionEntitlementIds.coachPro => l10n.subscriptionTierCoachPro,
+    _ => entitlement,
+  };
+}
+
 class _PromoCodeCard extends StatelessWidget {
   const _PromoCodeCard({
     required this.promo,
@@ -335,14 +348,7 @@ class _PromoCodeCard extends StatelessWidget {
   }
 
   String _entitlementLabel(dynamic l10n, String entitlement) {
-    return switch (entitlement) {
-      SubscriptionEntitlementIds.player => l10n.subscriptionOfferingPlayer,
-      SubscriptionEntitlementIds.playerGps => l10n.subscriptionTierPlayerGps,
-      SubscriptionEntitlementIds.coachBasic => l10n.subscriptionTierCoachBasic,
-      SubscriptionEntitlementIds.coachElite => l10n.subscriptionTierCoachElite,
-      SubscriptionEntitlementIds.coachPro => l10n.subscriptionTierCoachPro,
-      _ => entitlement,
-    };
+    return _entitlementOptionLabel(l10n, entitlement);
   }
 
   String _statusLabel(dynamic l10n, PromoCode promo) {
@@ -393,7 +399,16 @@ class _PromoCodeFormSheetState extends State<_PromoCodeFormSheet> {
       text: existing?.durationDays.toString() ?? '30',
     );
     _teamIdController = TextEditingController(text: existing?.teamId ?? '');
-    _entitlement = existing?.entitlement ?? SubscriptionEntitlementIds.player;
+    // Legacy Firestore docs may store RC aliases (playerGPS); map to canonical
+    // so the dropdown initialValue matches an item and save writes player_gps.
+    final rawEntitlement =
+        existing?.entitlement ?? SubscriptionEntitlementIds.player;
+    _entitlement =
+        SubscriptionEntitlementIds.canonicalizeOne(rawEntitlement) ??
+            rawEntitlement;
+    if (!SubscriptionEntitlementIds.promoAdminOptions.contains(_entitlement)) {
+      _entitlement = SubscriptionEntitlementIds.player;
+    }
     _expiresAt = existing?.expiresAt;
     _active = existing?.active ?? true;
   }
@@ -470,26 +485,11 @@ class _PromoCodeFormSheetState extends State<_PromoCodeFormSheet> {
                     labelText: l10n.adminPromoCodeFieldEntitlement,
                   ),
                   items: [
-                    DropdownMenuItem(
-                      value: SubscriptionEntitlementIds.player,
-                      child: Text(l10n.subscriptionOfferingPlayer),
-                    ),
-                    DropdownMenuItem(
-                      value: SubscriptionEntitlementIds.playerGps,
-                      child: Text(l10n.subscriptionTierPlayerGps),
-                    ),
-                    DropdownMenuItem(
-                      value: SubscriptionEntitlementIds.coachBasic,
-                      child: Text(l10n.subscriptionTierCoachBasic),
-                    ),
-                    DropdownMenuItem(
-                      value: SubscriptionEntitlementIds.coachElite,
-                      child: Text(l10n.subscriptionTierCoachElite),
-                    ),
-                    DropdownMenuItem(
-                      value: SubscriptionEntitlementIds.coachPro,
-                      child: Text(l10n.subscriptionTierCoachPro),
-                    ),
+                    for (final id in SubscriptionEntitlementIds.promoAdminOptions)
+                      DropdownMenuItem(
+                        value: id,
+                        child: Text(_entitlementOptionLabel(l10n, id)),
+                      ),
                   ],
                   onChanged: _busy
                       ? null

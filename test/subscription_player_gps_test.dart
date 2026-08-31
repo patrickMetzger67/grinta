@@ -94,6 +94,41 @@ void main() {
       );
     });
 
+    test('admin promo options are canonical and Joueur GPS is player_gps', () {
+      expect(
+        SubscriptionEntitlementIds.promoAdminOptions,
+        containsAll(<String>[
+          SubscriptionEntitlementIds.player,
+          SubscriptionEntitlementIds.playerGps,
+          SubscriptionEntitlementIds.coachBasic,
+          SubscriptionEntitlementIds.coachElite,
+          SubscriptionEntitlementIds.coachPro,
+        ]),
+      );
+      expect(
+        SubscriptionEntitlementIds.promoAdminOptions,
+        isNot(contains('playerGPS')),
+      );
+      expect(
+        SubscriptionEntitlementIds.promoAdminOptions,
+        isNot(contains('playerGps')),
+      );
+      for (final id in SubscriptionEntitlementIds.promoAdminOptions) {
+        expect(
+          SubscriptionEntitlementIds.canonicalizeOne(id),
+          id,
+          reason: 'admin create/edit must persist only canonical entitlement ids',
+        );
+      }
+      // Create/update path: RC aliases normalize before Firestore write.
+      for (final alias in ['playerGPS', 'playerGps', 'player-gps', 'Player_GPS']) {
+        expect(
+          SubscriptionEntitlementIds.canonicalizeOne(alias) ?? alias,
+          SubscriptionEntitlementIds.playerGps,
+        );
+      }
+    });
+
     test('player_gps grants player access and own Intense GPS', () {
       expect(
         SubscriptionEntitlementIds.grantsPlayerAccess({

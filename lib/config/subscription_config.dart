@@ -343,6 +343,16 @@ abstract final class SubscriptionEntitlementIds {
     player,
   ];
 
+  /// Entitlement ids offered in Admin → Codes promo create/edit.
+  /// Always persist these canonical values (never RC aliases like `playerGPS`).
+  static const promoAdminOptions = <String>[
+    player,
+    playerGps,
+    coachBasic,
+    coachElite,
+    coachPro,
+  ];
+
   /// RevenueCat dashboard IDs that should unlock Joueur GPS.
   static const playerGpsAliases = <String>{
     playerGps,
