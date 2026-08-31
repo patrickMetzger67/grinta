@@ -25,6 +25,7 @@ import '../../model/season.dart';
 import '../../model/tracker/team_workload_summary.dart';
 import '../../provider/appSession.dart';
 import '../../util/agenda_calendar_date.dart';
+import '../../util/agenda_paint_perf.dart';
 import '../../util/app_theme.dart';
 import '../../util/playerDisplayName.dart';
 import '../../widget/activity_rings_card.dart';
@@ -157,6 +158,10 @@ class _AgendaScreenState extends State<AgendaScreen> {
   /// stays instant inside that window.
   static const int _windowRadiusMonths = 1;
   static const int _maxLoadedMonths = 4;
+  /// Warm M±2 into the paint cache after the gesture settles.
+  static const int _prefetchRadiusMonths = 2;
+  static const Duration _hydrateDebounce = Duration(milliseconds: 90);
+  static const Duration _prefetchSettle = Duration(milliseconds: 220);
 
   final ScrollController _scrollController = ScrollController();
   final GlobalKey _weeksViewportKey = GlobalKey();
@@ -185,9 +190,31 @@ class _AgendaScreenState extends State<AgendaScreen> {
   bool _isRefreshing = false;
   String? _error;
   StreamSubscription<List<AgendaItem>>? _itemsSub;
+  StreamSubscription<List<AgendaItem>>? _prefetchSub;
   int _subscriptionGeneration = 0;
+  int _prefetchGeneration = 0;
   /// Latest-wins gate: a newer week/month slide supersedes in-flight hydrations.
   final LatestWinsGate _hydrationGate = LatestWinsGate();
+  final DebouncedLatestAction _hydrateDebouncer =
+      DebouncedLatestAction(delay: _hydrateDebounce);
+  final DebouncedLatestAction _prefetchDebouncer =
+      DebouncedLatestAction(delay: _prefetchSettle);
+  final AgendaMonthPaintCache _paintCache = AgendaMonthPaintCache(maxMonths: 8);
+  late final AgendaPaintCoalescer<List<AgendaItem>> _itemsPaintCoalescer;
+  String _itemsPaintFingerprint = '';
+
+  /// Selective rebuild tick for calendar + list (avoids full Scaffold setState
+  /// on every scroll sync / hydration emit).
+  final ValueNotifier<int> _agendaPaintTick = ValueNotifier<int>(0);
+
+  /// Cached derived maps — recomputed only when items/filter/range change.
+  List<AgendaItem> _cachedFilteredItems = const <AgendaItem>[];
+  Map<int, List<AgendaItemType>> _cachedEventTypesByDay =
+      const <int, List<AgendaItemType>>{};
+  Map<DateTime, List<AgendaItem>> _cachedGroupedByWeek =
+      const <DateTime, List<AgendaItem>>{};
+  List<DateTime> _cachedWeeks = const <DateTime>[];
+  String? _derivedCacheKey;
 
   String? _coachViewTeamId;
   Map<String, Player> _coachViewPlayersByMemberId = <String, Player>{};
@@ -195,7 +222,29 @@ class _AgendaScreenState extends State<AgendaScreen> {
   AgendaFilter _filter = AgendaFilter.none;
   String? _filterScopeKey;
 
-  List<AgendaItem> get _filteredItems => applyAgendaFilter(_items, _filter);
+  List<AgendaItem> get _filteredItems {
+    _ensureDerivedCaches();
+    return _cachedFilteredItems;
+  }
+
+  void _bumpAgendaPaint() {
+    _agendaPaintTick.value++;
+  }
+
+  void _ensureDerivedCaches() {
+    final String filterKey =
+        '${_filter.teamIds.join(",")}|${_filter.types.map((t) => t.name).join(",")}';
+    final String key =
+        '$_itemsPaintFingerprint|$filterKey|'
+        '${_rangeStart.millisecondsSinceEpoch}|'
+        '${_rangeEnd.millisecondsSinceEpoch}';
+    if (_derivedCacheKey == key) return;
+    _derivedCacheKey = key;
+    _cachedFilteredItems = applyAgendaFilter(_items, _filter);
+    _cachedEventTypesByDay = _headerEventTypesByDay(_cachedFilteredItems);
+    _cachedGroupedByWeek = _groupItemsByWeek(_cachedFilteredItems);
+    _cachedWeeks = _generateWeeks(_rangeStart, _rangeEnd);
+  }
 
   @override
   void initState() {
@@ -225,6 +274,8 @@ class _AgendaScreenState extends State<AgendaScreen> {
     _displayedMonth = focusMonth;
     _monthPageController = PageController(initialPage: _initialMonthPage);
 
+    _itemsPaintCoalescer = AgendaPaintCoalescer<List<AgendaItem>>(_paintItems);
+
     _scrollController.addListener(_handleScroll);
 
     _subscribeItems();
@@ -251,7 +302,10 @@ class _AgendaScreenState extends State<AgendaScreen> {
       seasonId: seasonId,
     );
     if (!mounted || _filterScopeKey != scopeKey) return;
-    setState(() => _filter = loaded);
+    setState(() {
+      _filter = loaded;
+      _derivedCacheKey = null;
+    });
   }
 
   Future<void> _openAgendaFilter() async {
@@ -267,7 +321,10 @@ class _AgendaScreenState extends State<AgendaScreen> {
     final uid = FirebaseAuth.instance.currentUser?.uid ?? '';
     final playerId = session.selectedPlayerId ?? '';
     final seasonId = session.selectedSeason?.ref?.id ?? '';
-    setState(() => _filter = result);
+    setState(() {
+      _filter = result;
+      _derivedCacheKey = null;
+    });
     await AgendaFilterPrefs.instance.save(
       uid: uid,
       playerId: playerId,
@@ -281,7 +338,10 @@ class _AgendaScreenState extends State<AgendaScreen> {
     final uid = FirebaseAuth.instance.currentUser?.uid ?? '';
     final playerId = session.selectedPlayerId ?? '';
     final seasonId = session.selectedSeason?.ref?.id ?? '';
-    setState(() => _filter = AgendaFilter.none);
+    setState(() {
+      _filter = AgendaFilter.none;
+      _derivedCacheKey = null;
+    });
     await AgendaFilterPrefs.instance.save(
       uid: uid,
       playerId: playerId,
@@ -292,6 +352,12 @@ class _AgendaScreenState extends State<AgendaScreen> {
 
   @override
   void dispose() {
+    _hydrateDebouncer.dispose();
+    _prefetchDebouncer.dispose();
+    _itemsPaintCoalescer.dispose();
+    _agendaPaintTick.dispose();
+    unawaited(_prefetchSub?.cancel());
+    _prefetchSub = null;
     unawaited(_itemsSub?.cancel());
     _itemsSub = null;
     _scrollController.removeListener(_handleScroll);
@@ -320,11 +386,11 @@ class _AgendaScreenState extends State<AgendaScreen> {
     final nextSelectedDate = _dateInWeekWithSameWeekday(focusedWeek);
     if (!mounted) return;
 
-    setState(() {
-      _selectedWeekStart = focusedWeek;
-      _selectedDate = nextSelectedDate;
-      _preferredDayOfMonth = nextSelectedDate.day;
-    });
+    // Scroll sync must stay cheap: update selection without Scaffold setState.
+    _selectedWeekStart = focusedWeek;
+    _selectedDate = nextSelectedDate;
+    _preferredDayOfMonth = nextSelectedDate.day;
+    _bumpAgendaPaint();
   }
 
   DateTime? _computeFocusedWeek() {
@@ -383,10 +449,9 @@ class _AgendaScreenState extends State<AgendaScreen> {
     // no intermediate expanded-week animation — see AnimatedSize duration).
     final LatestWinsToken token = _hydrationGate.begin();
 
-    setState(() {
-      _calendarMode = mode;
-      _displayedMonth = DateTime(_selectedDate.year, _selectedDate.month, 1);
-    });
+    _calendarMode = mode;
+    _displayedMonth = DateTime(_selectedDate.year, _selectedDate.month, 1);
+    _bumpAgendaPaint();
 
     _jumpMonthPagerToDisplayedMonth();
 
@@ -399,23 +464,29 @@ class _AgendaScreenState extends State<AgendaScreen> {
     // Leaving month: token already invalidated in-flight month hydrates/scrolls.
   }
 
-  /// Slide/pager first: paint the new selection, then hydrate after the frame.
-  /// A newer slide bumps [LatestWinsGate] so stale loads/scrolls are ignored.
+  /// Slide/pager first: paint the new selection, then hydrate after settle.
+  /// Loads are debounced; UI never waits. A newer slide bumps [LatestWinsGate]
+  /// so stale loads/scrolls are ignored.
   ///
   /// Pass [token] when the caller already called [_hydrationGate.begin] so
-  /// in-flight work is invalidated before setState (not only at hydrate time).
+  /// in-flight work is invalidated before paint (not only at hydrate time).
   void _scheduleWindowHydration(
     DateTime month, {
     bool scrollToSelection = true,
     LatestWinsToken? token,
   }) {
     final LatestWinsToken navToken = token ?? _hydrationGate.begin();
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (!mounted || !navToken.isCurrent) return;
+    // Cancel pending prefetch from a previous settle — a new gesture owns IO.
+    _prefetchDebouncer.cancel();
+    unawaited(_prefetchSub?.cancel());
+    _prefetchSub = null;
+
+    _hydrateDebouncer.schedule(navToken, (LatestWinsToken t) {
+      if (!mounted || !t.isCurrent) return;
       unawaited(
         _hydrateWindowForMonth(
           month,
-          token: navToken,
+          token: t,
           scrollToSelection: scrollToSelection,
         ),
       );
@@ -447,6 +518,7 @@ class _AgendaScreenState extends State<AgendaScreen> {
           token.isCurrent) {
         await _scrollToSelectedWeek(navigationToken: token);
       }
+      _scheduleAdjacentPrefetch(month, token);
       return;
     }
 
@@ -455,11 +527,128 @@ class _AgendaScreenState extends State<AgendaScreen> {
 
     _rangeStart = plan.rangeStart;
     _rangeEnd = plan.rangeEnd;
+    _derivedCacheKey = null;
+
+    // Stale-while-revalidate: paint cached months instantly if we have them.
+    final List<AgendaItem>? cachedPaint = _paintCache.tryPaintRange(
+      rangeStart: plan.rangeStart,
+      rangeEnd: plan.rangeEnd,
+    );
+    if (cachedPaint != null && mounted && token.isCurrent) {
+      _applyPaintedItems(
+        cachedPaint,
+        isRefreshing: true,
+        force: true,
+      );
+    }
 
     await _subscribeItems(
       scrollToSelection: scrollToSelection,
       navigationToken: token,
     );
+
+    if (token.isCurrent && mounted) {
+      _scheduleAdjacentPrefetch(month, token);
+    }
+  }
+
+  /// After settle, silently warm adjacent months into [_paintCache] (no UI jank).
+  void _scheduleAdjacentPrefetch(DateTime focusMonth, LatestWinsToken token) {
+    _prefetchDebouncer.schedule(token, (LatestWinsToken t) {
+      if (!mounted || !t.isCurrent) return;
+      unawaited(_prefetchAdjacentMonths(focusMonth, t));
+    });
+  }
+
+  Future<void> _prefetchAdjacentMonths(
+    DateTime focusMonth,
+    LatestWinsToken token,
+  ) async {
+    if (!token.isCurrent || !mounted) return;
+
+    final List<DateTime> targets = planAgendaPrefetchMonths(
+      focusMonth: focusMonth,
+      isCached: _paintCache.coversMonth,
+      windowRadiusMonths: _windowRadiusMonths,
+      prefetchRadiusMonths: _prefetchRadiusMonths,
+    );
+    if (targets.isEmpty) return;
+
+    // One combined silent watch for the outermost missing span.
+    DateTime prefetchStart = targets.first;
+    DateTime prefetchEnd = targets.first;
+    for (final DateTime m in targets) {
+      if (m.isBefore(prefetchStart)) prefetchStart = m;
+      if (m.isAfter(prefetchEnd)) prefetchEnd = m;
+    }
+    final DateTime rangeStart = _startOfMonth(prefetchStart);
+    final DateTime rangeEnd = _endOfMonth(prefetchEnd);
+
+    final int generation = ++_prefetchGeneration;
+    await _prefetchSub?.cancel();
+    _prefetchSub = null;
+
+    _prefetchSub = widget
+        .watchItems(
+          start: DateUtils.dateOnly(rangeStart),
+          end: _endOfDay(rangeEnd),
+          coachVisibleMemberIds:
+              _coachViewPlayersByMemberId.keys.toList(growable: false),
+        )
+        .listen(
+      (List<AgendaItem> loadedItems) {
+        if (!mounted ||
+            generation != _prefetchGeneration ||
+            !token.isCurrent) {
+          return;
+        }
+        _paintCache.storeRange(
+          rangeStart: rangeStart,
+          rangeEnd: rangeEnd,
+          items: loadedItems,
+        );
+        // First useful emit is enough for SWR; cancel to free Firestore watchers.
+        unawaited(() async {
+          await _prefetchSub?.cancel();
+          _prefetchSub = null;
+        }());
+      },
+      onError: (_) {
+        // Prefetch is best-effort — never surface errors to the UI.
+      },
+    );
+  }
+
+  void _paintItems(List<AgendaItem> loadedItems) {
+    if (!mounted) return;
+    _applyPaintedItems(loadedItems, isRefreshing: false);
+  }
+
+  void _applyPaintedItems(
+    List<AgendaItem> loadedItems, {
+    required bool isRefreshing,
+    bool force = false,
+  }) {
+    final String fingerprint = agendaItemsPaintFingerprint(loadedItems);
+    if (!force &&
+        fingerprint == _itemsPaintFingerprint &&
+        !_isLoading &&
+        _isRefreshing == isRefreshing) {
+      return;
+    }
+
+    _items = List<AgendaItem>.from(loadedItems)..sort(_compareAgendaItems);
+    _itemsPaintFingerprint = fingerprint;
+    _isLoading = false;
+    _isRefreshing = isRefreshing;
+    _error = null;
+    _derivedCacheKey = null;
+    _paintCache.storeRange(
+      rangeStart: _rangeStart,
+      rangeEnd: _rangeEnd,
+      items: _items,
+    );
+    _bumpAgendaPaint();
   }
 
   void _jumpMonthPagerToDisplayedMonth() {
@@ -499,11 +688,10 @@ class _AgendaScreenState extends State<AgendaScreen> {
 
     // Update pager selection immediately; hydrate in the background.
     _suppressScrollSelectionSync = true;
-    setState(() {
-      _displayedMonth = newMonth;
-      _selectedDate = newSelectedDate;
-      _selectedWeekStart = newSelectedWeek;
-    });
+    _displayedMonth = newMonth;
+    _selectedDate = newSelectedDate;
+    _selectedWeekStart = newSelectedWeek;
+    _bumpAgendaPaint();
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _suppressScrollSelectionSync = false;
     });
@@ -543,12 +731,11 @@ class _AgendaScreenState extends State<AgendaScreen> {
 
     final LatestWinsToken token = _hydrationGate.begin();
 
-    setState(() {
-      _selectedDate = normalizedDate;
-      _preferredDayOfMonth = normalizedDate.day;
-      _selectedWeekStart = targetWeek;
-      _displayedMonth = targetMonth;
-    });
+    _selectedDate = normalizedDate;
+    _preferredDayOfMonth = normalizedDate.day;
+    _selectedWeekStart = targetWeek;
+    _displayedMonth = targetMonth;
+    _bumpAgendaPaint();
 
     _jumpMonthPagerToDisplayedMonth();
 
@@ -568,13 +755,14 @@ class _AgendaScreenState extends State<AgendaScreen> {
     _itemsSub = null;
 
     if (mounted) {
-      setState(() {
-        // Keep previous items visible while the new window loads.
-        _isLoading = _items.isEmpty;
-        _isRefreshing = _items.isNotEmpty;
-        _error = null;
-      });
+      // Keep previous items visible while the new window loads.
+      _isLoading = _items.isEmpty;
+      _isRefreshing = _items.isNotEmpty;
+      _error = null;
+      _bumpAgendaPaint();
     }
+
+    bool pendingScroll = scrollToSelection;
 
     _itemsSub = widget
         .watchItems(
@@ -589,13 +777,11 @@ class _AgendaScreenState extends State<AgendaScreen> {
           return;
         }
 
-        setState(() {
-          _items = List<AgendaItem>.from(loadedItems)
-            ..sort(_compareAgendaItems);
-          _isLoading = false;
-          _isRefreshing = false;
-          _error = null;
-        });
+        // Coalesce progressive Firestore/enrichment emits to one paint/frame.
+        _itemsPaintCoalescer.submit(List<AgendaItem>.from(loadedItems));
+
+        if (!pendingScroll) return;
+        pendingScroll = false;
 
         WidgetsBinding.instance.addPostFrameCallback((_) async {
           if (!mounted || generation != _subscriptionGeneration) {
@@ -622,11 +808,10 @@ class _AgendaScreenState extends State<AgendaScreen> {
           return;
         }
 
-        setState(() {
-          _isLoading = false;
-          _isRefreshing = false;
-          _error = error.toString();
-        });
+        _isLoading = false;
+        _isRefreshing = false;
+        _error = error.toString();
+        _bumpAgendaPaint();
       },
     );
   }
@@ -636,13 +821,12 @@ class _AgendaScreenState extends State<AgendaScreen> {
     final nextSelectedDate = _dateInWeekWithSameWeekday(previousWeek);
     final LatestWinsToken token = _hydrationGate.begin();
 
-    setState(() {
-      _selectedWeekStart = previousWeek;
-      _selectedDate = nextSelectedDate;
-      _preferredDayOfMonth = nextSelectedDate.day;
-      _displayedMonth =
-          DateTime(nextSelectedDate.year, nextSelectedDate.month, 1);
-    });
+    _selectedWeekStart = previousWeek;
+    _selectedDate = nextSelectedDate;
+    _preferredDayOfMonth = nextSelectedDate.day;
+    _displayedMonth =
+        DateTime(nextSelectedDate.year, nextSelectedDate.month, 1);
+    _bumpAgendaPaint();
 
     _jumpMonthPagerToDisplayedMonth();
 
@@ -658,13 +842,12 @@ class _AgendaScreenState extends State<AgendaScreen> {
     final nextSelectedDate = _dateInWeekWithSameWeekday(nextWeek);
     final LatestWinsToken token = _hydrationGate.begin();
 
-    setState(() {
-      _selectedWeekStart = nextWeek;
-      _selectedDate = nextSelectedDate;
-      _preferredDayOfMonth = nextSelectedDate.day;
-      _displayedMonth =
-          DateTime(nextSelectedDate.year, nextSelectedDate.month, 1);
-    });
+    _selectedWeekStart = nextWeek;
+    _selectedDate = nextSelectedDate;
+    _preferredDayOfMonth = nextSelectedDate.day;
+    _displayedMonth =
+        DateTime(nextSelectedDate.year, nextSelectedDate.month, 1);
+    _bumpAgendaPaint();
 
     _jumpMonthPagerToDisplayedMonth();
 
@@ -704,12 +887,11 @@ class _AgendaScreenState extends State<AgendaScreen> {
     final todayMonth = DateTime(now.year, now.month, 1);
     final LatestWinsToken token = _hydrationGate.begin();
 
-    setState(() {
-      _selectedDate = now;
-      _preferredDayOfMonth = now.day;
-      _selectedWeekStart = todayWeek;
-      _displayedMonth = todayMonth;
-    });
+    _selectedDate = now;
+    _preferredDayOfMonth = now.day;
+    _selectedWeekStart = todayWeek;
+    _displayedMonth = todayMonth;
+    _bumpAgendaPaint();
 
     _jumpMonthPagerToDisplayedMonth();
 
@@ -739,14 +921,14 @@ class _AgendaScreenState extends State<AgendaScreen> {
     final newRangeEnd = _endOfWeek(pickedRange.end);
 
     final pickedStart = DateUtils.dateOnly(pickedRange.start);
-    setState(() {
-      _rangeStart = newRangeStart;
-      _rangeEnd = newRangeEnd;
-      _selectedDate = pickedStart;
-      _preferredDayOfMonth = pickedStart.day;
-      _selectedWeekStart = _startOfWeek(pickedRange.start);
-      _displayedMonth = DateTime(pickedStart.year, pickedStart.month, 1);
-    });
+    _rangeStart = newRangeStart;
+    _rangeEnd = newRangeEnd;
+    _selectedDate = pickedStart;
+    _preferredDayOfMonth = pickedStart.day;
+    _selectedWeekStart = _startOfWeek(pickedRange.start);
+    _displayedMonth = DateTime(pickedStart.year, pickedStart.month, 1);
+    _derivedCacheKey = null;
+    _bumpAgendaPaint();
 
     _jumpMonthPagerToDisplayedMonth();
 
@@ -754,17 +936,17 @@ class _AgendaScreenState extends State<AgendaScreen> {
   }
 
   Future<void> _extendBefore() async {
-    setState(() {
-      _rangeStart = _rangeStart.subtract(const Duration(days: 28));
-    });
+    _rangeStart = _rangeStart.subtract(const Duration(days: 28));
+    _derivedCacheKey = null;
+    _bumpAgendaPaint();
 
     await _subscribeItems(scrollToSelection: false);
   }
 
   Future<void> _extendAfter() async {
-    setState(() {
-      _rangeEnd = _endOfWeek(_rangeEnd.add(const Duration(days: 28)));
-    });
+    _rangeEnd = _endOfWeek(_rangeEnd.add(const Duration(days: 28)));
+    _derivedCacheKey = null;
+    _bumpAgendaPaint();
 
     await _subscribeItems(scrollToSelection: false);
   }
@@ -777,6 +959,29 @@ class _AgendaScreenState extends State<AgendaScreen> {
 
     if (!mounted) return;
     if (navigationToken != null && !navigationToken.isCurrent) return;
+
+    // With ListView.builder, off-screen weeks may not be mounted yet — jump
+    // near the target index first so the GlobalKey can attach.
+    _ensureDerivedCaches();
+    final int weekIndex = _cachedWeeks.indexWhere(
+      (DateTime w) =>
+          w.millisecondsSinceEpoch ==
+          _selectedWeekStart.millisecondsSinceEpoch,
+    );
+    if (weekIndex >= 0 && _scrollController.hasClients) {
+      final ScrollPosition position = _scrollController.position;
+      if (position.hasContentDimensions && _cachedWeeks.isNotEmpty) {
+        final double extent = position.maxScrollExtent;
+        final double estimate =
+            (weekIndex / _cachedWeeks.length) * extent;
+        if ((position.pixels - estimate).abs() > 120) {
+          _scrollController.jumpTo(estimate.clamp(0.0, extent));
+          await Future<void>.delayed(Duration.zero);
+          if (!mounted) return;
+          if (navigationToken != null && !navigationToken.isCurrent) return;
+        }
+      }
+    }
 
     final key = _weekKeys[_selectedWeekStart.millisecondsSinceEpoch];
     final targetContext = key?.currentContext;
@@ -1005,11 +1210,7 @@ class _AgendaScreenState extends State<AgendaScreen> {
   @override
   Widget build(BuildContext context) {
     final colors = context.appColors;
-    final visibleItems = _filteredItems;
-    final weeks = _generateWeeks(_rangeStart, _rangeEnd);
-    final groupedByWeek = _groupItemsByWeek(visibleItems);
     final compact = MediaQuery.of(context).size.width < 700;
-    final headerEventTypesByDay = _headerEventTypesByDay(visibleItems);
 
     final l10n = context.l10n;
     final bool hideAppBar = AppShellScope.hidesChildAppBar(context);
@@ -1061,85 +1262,108 @@ class _AgendaScreenState extends State<AgendaScreen> {
                 ),
                 const SizedBox(height: 4),
               ],
-              _GrintaStyleCalendarHeader(
-                pageController: _monthPageController,
-                initialPage: _initialMonthPage,
-                anchorMonth: _monthPagerAnchor,
-                displayedMonth: _displayedMonth,
-                selectedDate: _selectedDate,
-                mode: _calendarMode,
-                eventTypesByDay: headerEventTypesByDay,
-                onModeChanged: _setCalendarMode,
-                onPreviousMonth: () async {
-                  await _goToPreviousMonthFromHeader();
-                },
-                onNextMonth: () async {
-                  await _goToNextMonthFromHeader();
-                },
-                onPreviousWeek: () async {
-                  await _goToPreviousWeek();
-                },
-                onNextWeek: () async {
-                  await _goToNextWeek();
-                },
-                onPreviousDay: () async {
-                  await _selectDate(
-                    _selectedDate.subtract(const Duration(days: 1)),
-                  );
-                },
-                onNextDay: () async {
-                  await _selectDate(
-                    _selectedDate.add(const Duration(days: 1)),
-                  );
-                },
-                onTodayTap: () {
-                  unawaited(_jumpToToday());
-                },
-                onPageChanged: _onMonthPageChanged,
-                onDateTap: (date) {
-                  unawaited(_selectDate(date));
-                },
-              ),
-              if (filterActive) ...[
-                const SizedBox(height: 8),
-                _buildActiveFilterBanner(context),
-              ],
-              SizedBox(
-                height: 12,
-                child: _isRefreshing
-                    ? Padding(
-                        padding: const EdgeInsets.symmetric(vertical: 4.5),
-                        child: ClipRRect(
-                          borderRadius: BorderRadius.circular(999),
-                          child: LinearProgressIndicator(
-                            minHeight: 2.5,
-                            backgroundColor:
-                                colors.border.withValues(alpha: 0.35),
-                            color: colors.primary,
+              // Selective rebuild: calendar + list listen to paint ticks so
+              // scroll sync / hydration do not rebuild Scaffold chrome.
+              Expanded(
+                child: ValueListenableBuilder<int>(
+                  valueListenable: _agendaPaintTick,
+                  builder: (context, _, __) {
+                    _ensureDerivedCaches();
+                    final headerEventTypesByDay = _cachedEventTypesByDay;
+                    final weeks = _cachedWeeks;
+                    final groupedByWeek = _cachedGroupedByWeek;
+
+                    return Column(
+                      children: [
+                        RepaintBoundary(
+                          child: _GrintaStyleCalendarHeader(
+                            pageController: _monthPageController,
+                            initialPage: _initialMonthPage,
+                            anchorMonth: _monthPagerAnchor,
+                            displayedMonth: _displayedMonth,
+                            selectedDate: _selectedDate,
+                            mode: _calendarMode,
+                            eventTypesByDay: headerEventTypesByDay,
+                            onModeChanged: _setCalendarMode,
+                            onPreviousMonth: () async {
+                              await _goToPreviousMonthFromHeader();
+                            },
+                            onNextMonth: () async {
+                              await _goToNextMonthFromHeader();
+                            },
+                            onPreviousWeek: () async {
+                              await _goToPreviousWeek();
+                            },
+                            onNextWeek: () async {
+                              await _goToNextWeek();
+                            },
+                            onPreviousDay: () async {
+                              await _selectDate(
+                                _selectedDate.subtract(const Duration(days: 1)),
+                              );
+                            },
+                            onNextDay: () async {
+                              await _selectDate(
+                                _selectedDate.add(const Duration(days: 1)),
+                              );
+                            },
+                            onTodayTap: () {
+                              unawaited(_jumpToToday());
+                            },
+                            onPageChanged: _onMonthPageChanged,
+                            onDateTap: (date) {
+                              unawaited(_selectDate(date));
+                            },
                           ),
                         ),
-                      )
-                    : null,
-              ),
-              Expanded(
-                child: GestureDetector(
-                  // Swipe on the events list too (not only the calendar header).
-                  onHorizontalDragEnd: (details) {
-                    final velocity = details.primaryVelocity ?? 0;
-                    if (velocity < -180) {
-                      _handleHorizontalPeriodSwipe(goNext: true);
-                    } else if (velocity > 180) {
-                      _handleHorizontalPeriodSwipe(goNext: false);
-                    }
+                        if (filterActive) ...[
+                          const SizedBox(height: 8),
+                          _buildActiveFilterBanner(context),
+                        ],
+                        SizedBox(
+                          height: 12,
+                          child: _isRefreshing
+                              ? Padding(
+                                  padding:
+                                      const EdgeInsets.symmetric(vertical: 4.5),
+                                  child: ClipRRect(
+                                    borderRadius: BorderRadius.circular(999),
+                                    child: LinearProgressIndicator(
+                                      minHeight: 2.5,
+                                      backgroundColor: colors.border
+                                          .withValues(alpha: 0.35),
+                                      color: colors.primary,
+                                    ),
+                                  ),
+                                )
+                              : null,
+                        ),
+                        Expanded(
+                          child: GestureDetector(
+                            // Swipe on the events list too (not only the calendar header).
+                            onHorizontalDragEnd: (details) {
+                              final velocity = details.primaryVelocity ?? 0;
+                              if (velocity < -180) {
+                                _handleHorizontalPeriodSwipe(goNext: true);
+                              } else if (velocity > 180) {
+                                _handleHorizontalPeriodSwipe(goNext: false);
+                              }
+                            },
+                            child: RepaintBoundary(
+                              child: Container(
+                                key: _weeksViewportKey,
+                                child: _buildAgendaContent(
+                                  weeks: weeks,
+                                  groupedByWeek: groupedByWeek,
+                                  compact: compact,
+                                ),
+                              ),
+                            ),
+                          ),
+                        ),
+                      ],
+                    );
                   },
-                  child: Container(
-                    key: _weeksViewportKey,
-                    child: _buildAgendaContent(
-                      weeks: weeks,
-                      groupedByWeek: groupedByWeek,
-                      compact: compact,
-                    ),
-                  ),
                 ),
               ),
             ],
@@ -1254,13 +1478,12 @@ class _AgendaScreenState extends State<AgendaScreen> {
         onWeekTap: (weekStart) async {
           final nextSelectedDate = _dateInWeekWithSameWeekday(weekStart);
           final LatestWinsToken token = _hydrationGate.begin();
-          setState(() {
-            _selectedWeekStart = weekStart;
-            _selectedDate = nextSelectedDate;
-            _preferredDayOfMonth = nextSelectedDate.day;
-            _displayedMonth =
-                DateTime(nextSelectedDate.year, nextSelectedDate.month, 1);
-          });
+          _selectedWeekStart = weekStart;
+          _selectedDate = nextSelectedDate;
+          _preferredDayOfMonth = nextSelectedDate.day;
+          _displayedMonth =
+              DateTime(nextSelectedDate.year, nextSelectedDate.month, 1);
+          _bumpAgendaPaint();
 
           _jumpMonthPagerToDisplayedMonth();
           await _scrollToSelectedWeek(navigationToken: token);

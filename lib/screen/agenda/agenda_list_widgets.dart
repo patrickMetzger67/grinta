@@ -288,42 +288,41 @@ class _AgendaWeeksList extends StatelessWidget {
     return Scrollbar(
       controller: controller,
       thumbVisibility: true,
-      child: SingleChildScrollView(
+      child: ListView.builder(
         controller: controller,
         physics: const AlwaysScrollableScrollPhysics(),
-        child: Padding(
-          padding: const EdgeInsets.only(bottom: 8),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: List.generate(weeks.length, (index) {
-              final weekStart = weeks[index];
-              final weekItems = <AgendaItem>[
-                ...(groupedByWeek[weekStart] ?? <AgendaItem>[]),
-              ]..sort(_compareAgendaItems);
+        cacheExtent: 1400,
+        padding: const EdgeInsets.only(bottom: 8),
+        itemCount: weeks.length,
+        itemBuilder: (context, index) {
+          final weekStart = weeks[index];
+          final weekItems = <AgendaItem>[
+            ...(groupedByWeek[weekStart] ?? <AgendaItem>[]),
+          ]..sort(_compareAgendaItems);
 
-              final isSelected =
-                  weekStart.millisecondsSinceEpoch ==
-                      selectedWeekStart.millisecondsSinceEpoch;
+          final isSelected =
+              weekStart.millisecondsSinceEpoch ==
+                  selectedWeekStart.millisecondsSinceEpoch;
 
-              return Padding(
-                padding: EdgeInsets.only(
-                  bottom: index == weeks.length - 1 ? 0 : 14,
+          return Padding(
+            padding: EdgeInsets.only(
+              bottom: index == weeks.length - 1 ? 0 : 14,
+            ),
+            child: RepaintBoundary(
+              child: Container(
+                key: keyBuilder(weekStart),
+                child: _WeekCard(
+                  weekStart: weekStart,
+                  items: weekItems,
+                  compact: compact,
+                  isSelected: isSelected,
+                  selectedDate: selectedDate,
+                  onTap: () => onWeekTap(weekStart),
                 ),
-                child: Container(
-                  key: keyBuilder(weekStart),
-                  child: _WeekCard(
-                    weekStart: weekStart,
-                    items: weekItems,
-                    compact: compact,
-                    isSelected: isSelected,
-                    selectedDate: selectedDate,
-                    onTap: () => onWeekTap(weekStart),
-                  ),
-                ),
-              );
-            }),
-          ),
-        ),
+              ),
+            ),
+          );
+        },
       ),
     );
   }

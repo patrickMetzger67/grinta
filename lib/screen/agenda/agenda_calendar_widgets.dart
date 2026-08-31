@@ -280,6 +280,7 @@ class _GrintaStyleCalendarHeader extends StatelessWidget {
                   )
                       : PageView.builder(
                     controller: pageController,
+                    allowImplicitScrolling: true,
                     physics: isMonth
                         ? const PageScrollPhysics()
                         : const NeverScrollableScrollPhysics(),
@@ -288,17 +289,18 @@ class _GrintaStyleCalendarHeader extends StatelessWidget {
                       final offset = index - initialPage;
                       final month = _addMonths(anchorMonth, offset);
 
-                      return _MonthCalendarPage(
-                        key: ValueKey<String>(
-                          'month-${month.year}-${month.month}-'
-                          '${isMonth ? 'full' : 'week'}-'
-                          '${eventTypesByDay.length}',
+                      return RepaintBoundary(
+                        child: _MonthCalendarPage(
+                          key: ValueKey<String>(
+                            'month-${month.year}-${month.month}-'
+                            '${isMonth ? 'full' : 'week'}',
+                          ),
+                          month: month,
+                          selectedDate: selectedDate,
+                          expanded: isMonth,
+                          eventTypesByDay: eventTypesByDay,
+                          onDateTap: onDateTap,
                         ),
-                        month: month,
-                        selectedDate: selectedDate,
-                        expanded: isMonth,
-                        eventTypesByDay: eventTypesByDay,
-                        onDateTap: onDateTap,
                       );
                     },
                   ),
