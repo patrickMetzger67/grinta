@@ -1688,6 +1688,26 @@
   "sessionPersonalDataError": "Unable to attach data. Please try again.",
   "sessionPersonalDataAuthRequired": "Sign in with a player profile to attach data.",
   "sessionPersonalDataSwitchToAppsQuestion": "Would you like to choose a connected app / device?",
+  "sessionPersonalDataMatchStartedOnTimeQuestion": "Did your match start on time?",
+  "sessionPersonalDataMatchScheduledKickOff": "Scheduled kick-off at {time}.",
+  "@sessionPersonalDataMatchScheduledKickOff": {
+    "placeholders": {
+      "time": {
+        "type": "String"
+      }
+    }
+  },
+  "sessionPersonalDataMatchActualKickOff": "Actual kick-off time",
+  "sessionPersonalDataMatchActualKickOffValue": "Kick-off at {time}",
+  "@sessionPersonalDataMatchActualKickOffValue": {
+    "placeholders": {
+      "time": {
+        "type": "String"
+      }
+    }
+  },
+  "sessionPersonalDataMatchKickOffAnswerRequired": "Please indicate whether your match started on time.",
+  "sessionPersonalDataMatchActualKickOffRequired": "Select the actual kick-off time.",
   "createPersonalSportSaved": "Activity created",
   "createPersonalSportError": "Could not create the activity. Please try again.",
   "createPersonalSportAuthRequired": "Sign in to create an activity.",

@@ -1810,6 +1810,26 @@
   "sessionPersonalDataError": "Impossibile associare i dati. Riprova.",
   "sessionPersonalDataAuthRequired": "Accedi con un profilo giocatore per associare i dati.",
   "sessionPersonalDataSwitchToAppsQuestion": "Vuoi scegliere un’app / un dispositivo connesso?",
+  "sessionPersonalDataMatchStartedOnTimeQuestion": "La tua partita è iniziata in orario?",
+  "sessionPersonalDataMatchScheduledKickOff": "Calcio d'inizio previsto alle {time}.",
+  "@sessionPersonalDataMatchScheduledKickOff": {
+    "placeholders": {
+      "time": {
+        "type": "String"
+      }
+    }
+  },
+  "sessionPersonalDataMatchActualKickOff": "Ora reale del calcio d'inizio",
+  "sessionPersonalDataMatchActualKickOffValue": "Calcio d'inizio alle {time}",
+  "@sessionPersonalDataMatchActualKickOffValue": {
+    "placeholders": {
+      "time": {
+        "type": "String"
+      }
+    }
+  },
+  "sessionPersonalDataMatchKickOffAnswerRequired": "Indica se la tua partita è iniziata in orario.",
+  "sessionPersonalDataMatchActualKickOffRequired": "Seleziona l'ora reale del calcio d'inizio.",
   "createPersonalSportSaved": "Activity created",
   "createPersonalSportError": "Could not create the activity. Please try again.",
   "createPersonalSportAuthRequired": "Sign in to create an activity.",

@@ -1948,6 +1948,26 @@
   "sessionPersonalDataError": "Impossible d’associer les données. Réessaie.",
   "sessionPersonalDataAuthRequired": "Connecte-toi avec un profil joueur pour associer des données.",
   "sessionPersonalDataSwitchToAppsQuestion": "Souhaites-tu choisir une app / un appareil connecté ?",
+  "sessionPersonalDataMatchStartedOnTimeQuestion": "Ton match a-t-il démarré à l'heure ?",
+  "sessionPersonalDataMatchScheduledKickOff": "Coup d'envoi prévu à {time}.",
+  "@sessionPersonalDataMatchScheduledKickOff": {
+    "placeholders": {
+      "time": {
+        "type": "String"
+      }
+    }
+  },
+  "sessionPersonalDataMatchActualKickOff": "Heure réelle du coup d'envoi",
+  "sessionPersonalDataMatchActualKickOffValue": "Coup d'envoi à {time}",
+  "@sessionPersonalDataMatchActualKickOffValue": {
+    "placeholders": {
+      "time": {
+        "type": "String"
+      }
+    }
+  },
+  "sessionPersonalDataMatchKickOffAnswerRequired": "Indique si ton match a démarré à l'heure.",
+  "sessionPersonalDataMatchActualKickOffRequired": "Sélectionne l'heure réelle du coup d'envoi.",
   "createPersonalSportSaved": "Activité créée",
   "createPersonalSportError": "Impossible de créer l'activité. Réessayez.",
   "createPersonalSportAuthRequired": "Connecte-toi pour créer une activité.",
