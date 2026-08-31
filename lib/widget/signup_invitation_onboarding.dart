@@ -5,6 +5,7 @@ import 'package:grinta/model/invitation.dart';
 import 'package:grinta/model/player.dart';
 import 'package:grinta/navigation/app_navigator.dart';
 import 'package:grinta/services/invitationService.dart';
+import 'package:grinta/services/invitation_deep_link_service.dart';
 import 'package:grinta/services/playerService.dart';
 import 'package:grinta/services/userService.dart';
 import 'package:grinta/util/app_snackbar.dart';
@@ -65,6 +66,8 @@ class SignupInvitationOnboarding {
     }
 
     if (!hasInvitationCode) {
+      // Drop any deep-link code the user chose not to use.
+      await InvitationDeepLinkService.instance.takePendingCode();
       final profile = await _promptMemberProfile(
         rootContext,
         initialProfile: authSeedProfile,
@@ -75,8 +78,17 @@ class SignupInvitationOnboarding {
       return SignupMemberOnboardingResult(profile: profile);
     }
 
+    String? seedCode =
+        await InvitationDeepLinkService.instance.takePendingCode();
+
     while (rootContext.mounted) {
-      final code = await _promptInvitationCode(rootContext);
+      final String? code;
+      if (seedCode != null && seedCode.isNotEmpty) {
+        code = seedCode;
+        seedCode = null;
+      } else {
+        code = await _promptInvitationCode(rootContext);
+      }
       if (code == null) {
         return null;
       }

@@ -139,6 +139,31 @@ service cloud.firestore {
         && !('delivery' in request.resource.data);
     }
 
+    function isValidWhatsAppCreate() {
+      return request.resource.data.keys().hasAll(['to', 'templateName', 'languageCode'])
+        && request.resource.data.to is string
+        && request.resource.data.to.size() > 0
+        && request.resource.data.to.size() < 32
+        && request.resource.data.templateName is string
+        && request.resource.data.templateName.size() > 0
+        && request.resource.data.templateName.size() < 128
+        && request.resource.data.languageCode is string
+        && request.resource.data.languageCode.size() > 0
+        && request.resource.data.languageCode.size() < 16
+        && (!('bodyParameters' in request.resource.data)
+          || (request.resource.data.bodyParameters is list
+            && request.resource.data.bodyParameters.size() <= 10))
+        && (!('clubId' in request.resource.data)
+          || request.resource.data.clubId is string)
+        && (!('kind' in request.resource.data)
+          || request.resource.data.kind is string)
+        && (!('invitationId' in request.resource.data)
+          || request.resource.data.invitationId is string)
+        && (!('invitationCode' in request.resource.data)
+          || request.resource.data.invitationCode is string)
+        && !('delivery' in request.resource.data);
+    }
+
     // Shop ads collection only. request.path[3] is the first collection
     // (/databases/(default)/documents/{collection}/…). Do NOT use path[4]
     // (document id) — that would deny catch-all reads for any doc named "ads".
@@ -435,6 +460,17 @@ service cloud.firestore {
     match /mail/{mailId} {
       allow create: if request.auth != null && isValidMailCreate();
       allow read, update, delete: if false;
+    }
+
+    // WhatsApp template messages (sendWhatsAppOnCreate / Meta Cloud API).
+    match /whatsapp_messages/{messageId} {
+      allow create: if request.auth != null && isValidWhatsAppCreate();
+      allow read, update, delete: if false;
+    }
+
+    // Meta WhatsApp webhook raw events — Cloud Functions / Admin SDK only.
+    match /whatsapp_webhook_events/{eventId} {
+      allow read, write: if false;
     }
 
     // Deferred FCM pushes (quiet hours) — Cloud Functions / Admin SDK only.

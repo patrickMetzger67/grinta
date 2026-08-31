@@ -2729,6 +2729,7 @@ class _TeamDetailScreenState extends State<TeamDetailScreen> {
       member: selected,
       memberId: memberId,
       email: details.email ?? '',
+      phoneE164: details.phoneE164,
       teamId: teamId,
       seasonId: widget.seasonId,
       teamName: _team.name ?? '',
@@ -2767,6 +2768,7 @@ class _TeamDetailScreenState extends State<TeamDetailScreen> {
       member: selected,
       memberId: memberId,
       email: details.email ?? '',
+      phoneE164: details.phoneE164,
       teamId: teamId,
       seasonId: widget.seasonId,
       teamName: _team.name ?? '',
@@ -2921,10 +2923,26 @@ class _TeamDetailScreenState extends State<TeamDetailScreen> {
     if (result == null || result.skipped) {
       return;
     }
+    if (result.emailSent && result.whatsappSent) {
+      AppSnackbar.show(
+        context,
+        l10n.memberInvitationChannelsSent,
+        isError: false,
+      );
+      return;
+    }
     if (result.emailSent) {
       AppSnackbar.show(
         context,
         l10n.memberInvitationEmailSent,
+        isError: false,
+      );
+      return;
+    }
+    if (result.whatsappSent) {
+      AppSnackbar.show(
+        context,
+        l10n.memberInvitationWhatsAppSent,
         isError: false,
       );
       return;
@@ -2937,13 +2955,13 @@ class _TeamDetailScreenState extends State<TeamDetailScreen> {
     }
     final error = result.error?.trim();
     if (error != null && error.isNotEmpty) {
-      debugPrint('TeamDetailScreen member invitation email failed: $error');
+      debugPrint('TeamDetailScreen member invitation send failed: $error');
     }
     AppSnackbar.show(
       context,
       kDebugMode && error != null && error.isNotEmpty
           ? l10n.errorGeneric(error)
-          : l10n.memberInvitationEmailFailed,
+          : l10n.memberInvitationSendFailed,
       isError: true,
     );
   }
@@ -2960,7 +2978,10 @@ class _TeamDetailScreenState extends State<TeamDetailScreen> {
 
   bool _isResendInvitationEnabled(_TeamMemberVm row) {
     final String email = row.grintaEmail?.trim() ?? '';
-    return email.isNotEmpty && isValidEmailFormat(email);
+    final String phone = row.grintaPhoneE164?.trim() ?? '';
+    final bool hasEmail = email.isNotEmpty && isValidEmailFormat(email);
+    final bool hasPhone = phone.isNotEmpty && isValidE164Phone(phone);
+    return hasEmail || hasPhone;
   }
 
   String _resendInvitationTooltip(AppLocalizations l10n, _TeamMemberVm row) {
@@ -3043,6 +3064,7 @@ class _TeamDetailScreenState extends State<TeamDetailScreen> {
 
     final AppLocalizations l10n = context.l10n;
     final String email = row.grintaEmail?.trim() ?? '';
+    final String phone = row.grintaPhoneE164?.trim() ?? '';
     final bool staff = _isStaffMember(row);
 
     setState(() => _resendingInvitationMemberId = memberId);
@@ -3052,6 +3074,7 @@ class _TeamDetailScreenState extends State<TeamDetailScreen> {
         l10n: l10n,
         memberId: memberId,
         email: email,
+        phoneE164: phone,
         teamId: teamId,
         seasonId: widget.seasonId,
         teamName: _team.name ?? '',
@@ -3061,7 +3084,7 @@ class _TeamDetailScreenState extends State<TeamDetailScreen> {
         return;
       }
 
-      if (result.success && result.emailSent) {
+      if (result.success && (result.emailSent || result.whatsappSent)) {
         final String? invitationId = result.invitationId?.trim();
         if (invitationId != null && invitationId.isNotEmpty) {
           await _persistGrintaInvitationId(
@@ -3430,6 +3453,7 @@ class _TeamDetailScreenState extends State<TeamDetailScreen> {
           member: row.player,
           memberId: memberId,
           email: details.email ?? '',
+          phoneE164: details.phoneE164,
           teamId: teamId,
           seasonId: widget.seasonId,
           teamName: _team.name ?? '',
@@ -3458,6 +3482,7 @@ class _TeamDetailScreenState extends State<TeamDetailScreen> {
             member: row.player,
             memberId: memberId,
             email: details.email ?? '',
+            phoneE164: details.phoneE164,
             teamId: teamId,
             seasonId: widget.seasonId,
             teamName: _team.name ?? '',
@@ -3817,6 +3842,7 @@ class _TeamDetailScreenState extends State<TeamDetailScreen> {
               member: selected,
               memberId: memberId,
               email: staffDetails.email ?? '',
+              phoneE164: staffDetails.phoneE164,
               teamId: teamId,
               seasonId: widget.seasonId,
               teamName: _team.name ?? '',
@@ -3923,6 +3949,7 @@ class _TeamDetailScreenState extends State<TeamDetailScreen> {
                     member: row.player,
                     memberId: memberId,
                     email: staffDetails.email ?? '',
+                    phoneE164: staffDetails.phoneE164,
                     teamId: teamId,
                     seasonId: widget.seasonId,
                     teamName: _team.name ?? '',

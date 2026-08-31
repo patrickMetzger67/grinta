@@ -98,6 +98,7 @@
   "invitationEmailCodeLabel": "Tu código de invitación",
   "invitationEmailDownloadIos": "Descargar en iPhone",
   "invitationEmailDownloadAndroid": "Descargar en Android",
+  "invitationEmailOpenInvite": "Abrir invitación",
   "invitationEmailFooter": "Has recibido este correo porque un entrenador te ha añadido en {appName}. Si no esperabas este mensaje, puedes ignorarlo.",
   "@invitationEmailFooter": {
     "placeholders": {
@@ -106,13 +107,16 @@
       }
     }
   },
-  "invitationSmsMessage": "Tu entrenador te invita a unirte a {appName}. Tu código: {code}.\niPhone: {appleStoreUrl}\nAndroid: {googlePlayUrl}",
+  "invitationSmsMessage": "Tu entrenador te invita a unirte a {appName}. Tu código: {code}.\nEnlace: {inviteUrl}\niPhone: {appleStoreUrl}\nAndroid: {googlePlayUrl}",
   "@invitationSmsMessage": {
     "placeholders": {
       "appName": {
         "type": "String"
       },
       "code": {
+        "type": "String"
+      },
+      "inviteUrl": {
         "type": "String"
       },
       "appleStoreUrl": {
@@ -244,6 +248,9 @@
   "sessionReportEmailInvalid": "Dirección de correo no válida.",
   "memberInvitationEmailFailed": "Miembro añadido, pero no se pudo enviar el correo de invitación.",
   "memberInvitationEmailSent": "Correo de invitación enviado",
+  "memberInvitationWhatsAppSent": "Invitación de WhatsApp enviada",
+  "memberInvitationChannelsSent": "Invitación enviada (correo y WhatsApp)",
+  "memberInvitationSendFailed": "Miembro añadido, pero no se pudo enviar la invitación.",
   "memberAddedToTeamNotificationTitle": "Actualización del equipo",
   "memberAddedToTeamNotificationBody": "Tu entrenador te ha añadido a {teamName}.",
   "@memberAddedToTeamNotificationBody": {
@@ -256,11 +263,11 @@
   "invitationAccepted": "Invitación aceptada",
   "invitationPending": "Invitación pendiente",
   "memberAppAccountLinked": "Cuenta de la app vinculada",
-  "resendInvitationTooltip": "Reenviar correo de invitación",
+  "resendInvitationTooltip": "Reenviar invitación",
   "resendInvitationAction": "Reenviar invitación",
-  "resendInvitationNoEmailTooltip": "Añade un correo para enviar una invitación",
-  "resendInvitationSuccess": "Correo de invitación enviado",
-  "resendInvitationFailed": "No se pudo enviar el correo de invitación",
+  "resendInvitationNoEmailTooltip": "Añade un correo o teléfono para enviar una invitación",
+  "resendInvitationSuccess": "Invitación reenviada",
+  "resendInvitationFailed": "No se pudo enviar la invitación",
   "memberBirthDate": "Fecha de nacimiento",
   "memberBirthDateOptional": "Fecha de nacimiento (opcional)",
   "memberBirthDateRequired": "La fecha de nacimiento es obligatoria",
@@ -3122,6 +3129,27 @@
   "preferredFootRight": "Derecho",
   "preferredFootBoth": "Ambos",
   "playerSeasonSummaryPreferredFootSaved": "Pie dominante actualizado.",
+  "playerSeasonSummaryShareAction": "Compartir",
+  "playerSeasonSummaryShareTooltip": "Compartir mi ficha de rendimiento",
+  "playerSeasonSummaryShareFailed": "No se pudo compartir la ficha de rendimiento",
+  "playerSeasonSummaryShareText": "{playerName} · {teamName} · {seasonLabel}\nConvocatorias: {convocations}\nTitularidades: {starts}\nMinutos: {minutes}\nPresencias entrenamiento: {present}\nAsistencia: {attendance}\n#GrintaPerformance",
+  "@playerSeasonSummaryShareText": {
+    "placeholders": {
+      "playerName": { "type": "String" },
+      "teamName": { "type": "String" },
+      "seasonLabel": { "type": "String" },
+      "convocations": { "type": "int" },
+      "starts": { "type": "int" },
+      "minutes": { "type": "int" },
+      "present": { "type": "int" },
+      "attendance": { "type": "String" }
+    }
+  },
+  "playerSeasonSummaryShareStatConvocations": "Convocatorias",
+  "playerSeasonSummaryShareStatStarts": "Titularidades",
+  "playerSeasonSummaryShareStatMinutes": "Minutos jugados",
+  "playerSeasonSummaryShareStatPresent": "Presencias",
+  "playerSeasonSummaryShareStatAttendance": "Asistencia",
   "teamEditNameTitle": "Editar equipo",
   "teamEditNameSuccess": "Equipo actualizado.",
   "settingsDevicesSection": "Dispositivos/Aplicaciones",

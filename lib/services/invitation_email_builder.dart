@@ -1,5 +1,6 @@
 import 'package:grinta/config/invitation_config.dart';
 import 'package:grinta/l10n/app_localizations.dart';
+import 'package:grinta/services/invitation_link_builder.dart';
 import 'package:grinta/util/app_theme.dart';
 
 /// Grinta brand colors for HTML invitation emails (derived from [AppColors.light]).
@@ -48,17 +49,25 @@ abstract final class InvitationEmailBuilder {
     required AppLocalizations l10n,
     required InvitationRuntimeConfig config,
     required String invitationCode,
+    String? inviteUrl,
   }) {
     final String appName = config.appDisplayName.trim();
     final String code = invitationCode.trim();
     final String appleUrl = config.appleStoreUrl.trim();
     final String playUrl = config.googlePlayUrl.trim();
     final String logoUrl = config.logoUrl.trim();
+    final String resolvedInviteUrl = (inviteUrl?.trim().isNotEmpty ?? false)
+        ? inviteUrl!.trim()
+        : InvitationLinkBuilder.inviteUrl(
+            config: config,
+            invitationCode: code,
+          );
 
     final String subject = l10n.invitationEmailSubject(appName);
     final String text = l10n.invitationSmsMessage(
       appName,
       code,
+      resolvedInviteUrl,
       appleUrl,
       playUrl,
     );
@@ -66,6 +75,7 @@ abstract final class InvitationEmailBuilder {
       l10n: l10n,
       appName: appName,
       code: code,
+      inviteUrl: resolvedInviteUrl,
       appleUrl: appleUrl,
       playUrl: playUrl,
       logoUrl: logoUrl,
@@ -82,17 +92,20 @@ abstract final class InvitationEmailBuilder {
     required AppLocalizations l10n,
     required String appName,
     required String code,
+    required String inviteUrl,
     required String appleUrl,
     required String playUrl,
     required String logoUrl,
   }) {
     final String intro = _escapeHtml(l10n.invitationEmailIntro(appName));
     final String codeLabel = _escapeHtml(l10n.invitationEmailCodeLabel);
+    final String inviteCta = _escapeHtml(l10n.invitationEmailOpenInvite);
     final String iosLabel = _escapeHtml(l10n.invitationEmailDownloadIos);
     final String androidLabel =
         _escapeHtml(l10n.invitationEmailDownloadAndroid);
     final String footer = _escapeHtml(l10n.invitationEmailFooter(appName));
     final String safeCode = _escapeHtml(code);
+    final String safeInviteUrl = _escapeHtml(inviteUrl);
     final String safeAppleUrl = _escapeHtml(appleUrl);
     final String safePlayUrl = _escapeHtml(playUrl);
     final String safeLogoUrl = _escapeHtml(logoUrl);
@@ -121,6 +134,11 @@ abstract final class InvitationEmailBuilder {
               <p style="margin:0 0 16px;color:${InvitationEmailBrand.textSecondary};font-size:14px;line-height:1.5;text-transform:uppercase;letter-spacing:0.08em;font-weight:600;">$codeLabel</p>
               <p style="margin:0 0 28px;color:${InvitationEmailBrand.primary};font-size:36px;font-weight:700;letter-spacing:0.12em;line-height:1.2;">$safeCode</p>
               <table role="presentation" cellspacing="0" cellpadding="0" style="margin:0 0 8px;">
+                <tr>
+                  <td style="padding-right:12px;padding-bottom:12px;">
+                    <a href="$safeInviteUrl" style="display:inline-block;background-color:${InvitationEmailBrand.primary};color:#FFFFFF;text-decoration:none;font-size:14px;font-weight:600;padding:12px 20px;border-radius:999px;">$inviteCta</a>
+                  </td>
+                </tr>
                 <tr>
                   <td style="padding-right:12px;padding-bottom:12px;">
                     <a href="$safeAppleUrl" style="display:inline-block;background-color:${InvitationEmailBrand.primary};color:#FFFFFF;text-decoration:none;font-size:14px;font-weight:600;padding:12px 20px;border-radius:999px;">$iosLabel</a>

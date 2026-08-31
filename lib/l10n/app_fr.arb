@@ -98,6 +98,7 @@
   "invitationEmailCodeLabel": "Ton code d'invitation",
   "invitationEmailDownloadIos": "Télécharger sur iPhone",
   "invitationEmailDownloadAndroid": "Télécharger sur Android",
+  "invitationEmailOpenInvite": "Ouvrir l'invitation",
   "invitationEmailFooter": "Tu as reçu cet e-mail parce qu'un coach t'a ajouté sur {appName}. Si tu n'attendais pas ce message, tu peux l'ignorer.",
   "@invitationEmailFooter": {
     "placeholders": {
@@ -106,13 +107,16 @@
       }
     }
   },
-  "invitationSmsMessage": "Ton coach t'invite à rejoindre {appName}. Ton code : {code}.\niPhone : {appleStoreUrl}\nAndroid : {googlePlayUrl}",
+  "invitationSmsMessage": "Ton coach t'invite à rejoindre {appName}. Ton code : {code}.\nLien : {inviteUrl}\niPhone : {appleStoreUrl}\nAndroid : {googlePlayUrl}",
   "@invitationSmsMessage": {
     "placeholders": {
       "appName": {
         "type": "String"
       },
       "code": {
+        "type": "String"
+      },
+      "inviteUrl": {
         "type": "String"
       },
       "appleStoreUrl": {
@@ -244,6 +248,9 @@
   "sessionReportEmailInvalid": "Adresse e-mail invalide.",
   "memberInvitationEmailFailed": "Membre ajouté, mais l'envoi de l'e-mail d'invitation a échoué.",
   "memberInvitationEmailSent": "E-mail d'invitation envoyé",
+  "memberInvitationWhatsAppSent": "Invitation WhatsApp envoyée",
+  "memberInvitationChannelsSent": "Invitation envoyée (e-mail et WhatsApp)",
+  "memberInvitationSendFailed": "Membre ajouté, mais l'envoi de l'invitation a échoué.",
   "memberAddedToTeamNotificationTitle": "Mise à jour d'équipe",
   "memberAddedToTeamNotificationBody": "Ton coach t'a ajouté à {teamName}.",
   "@memberAddedToTeamNotificationBody": {
@@ -256,11 +263,11 @@
   "invitationAccepted": "Invitation acceptée",
   "invitationPending": "Invitation en attente",
   "memberAppAccountLinked": "Compte application lié",
-  "resendInvitationTooltip": "Renvoyer l'e-mail d'invitation",
+  "resendInvitationTooltip": "Renvoyer l'invitation",
   "resendInvitationAction": "Renvoyer l'invitation",
-  "resendInvitationNoEmailTooltip": "Ajoutez une adresse e-mail pour envoyer une invitation",
-  "resendInvitationSuccess": "E-mail d'invitation envoyé",
-  "resendInvitationFailed": "Impossible d'envoyer l'e-mail d'invitation",
+  "resendInvitationNoEmailTooltip": "Ajoutez un e-mail ou un téléphone pour envoyer une invitation",
+  "resendInvitationSuccess": "Invitation renvoyée",
+  "resendInvitationFailed": "Impossible d'envoyer l'invitation",
   "memberBirthDate": "Date de naissance",
   "memberBirthDateOptional": "Date de naissance (facultatif)",
   "memberBirthDateRequired": "La date de naissance est obligatoire",
@@ -3951,6 +3958,27 @@
   "preferredFootRight": "Droit",
   "preferredFootBoth": "Les deux",
   "playerSeasonSummaryPreferredFootSaved": "Pied fort mis à jour.",
+  "playerSeasonSummaryShareAction": "Partager",
+  "playerSeasonSummaryShareTooltip": "Partager ma fiche performance",
+  "playerSeasonSummaryShareFailed": "Impossible de partager la fiche performance",
+  "playerSeasonSummaryShareText": "{playerName} · {teamName} · {seasonLabel}\nConvocations : {convocations}\nTitularisations : {starts}\nMinutes : {minutes}\nPrésences entraînement : {present}\nAssiduité : {attendance}\n#GrintaPerformance",
+  "@playerSeasonSummaryShareText": {
+    "placeholders": {
+      "playerName": { "type": "String" },
+      "teamName": { "type": "String" },
+      "seasonLabel": { "type": "String" },
+      "convocations": { "type": "int" },
+      "starts": { "type": "int" },
+      "minutes": { "type": "int" },
+      "present": { "type": "int" },
+      "attendance": { "type": "String" }
+    }
+  },
+  "playerSeasonSummaryShareStatConvocations": "Convocations",
+  "playerSeasonSummaryShareStatStarts": "Titularisations",
+  "playerSeasonSummaryShareStatMinutes": "Minutes jouées",
+  "playerSeasonSummaryShareStatPresent": "Présences",
+  "playerSeasonSummaryShareStatAttendance": "Assiduité",
   "wearableDeviceGpsInsidersIntense": "GPS Insiders Intense",
   "intenseGpsSerialGuidance": "Saisis le numéro de série imprimé sur le tracker GPS Insiders Intense.",
   "intenseGpsSerialLabel": "Numéro de série",

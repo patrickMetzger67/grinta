@@ -98,6 +98,7 @@
   "invitationEmailCodeLabel": "Il tuo codice di invito",
   "invitationEmailDownloadIos": "Scarica su iPhone",
   "invitationEmailDownloadAndroid": "Scarica su Android",
+  "invitationEmailOpenInvite": "Apri l'invito",
   "invitationEmailFooter": "Hai ricevuto questa e-mail perché un allenatore ti ha aggiunto su {appName}. Se non ti aspettavi questo messaggio, puoi ignorarlo.",
   "@invitationEmailFooter": {
     "placeholders": {
@@ -106,13 +107,16 @@
       }
     }
   },
-  "invitationSmsMessage": "Il tuo allenatore ti invita a unirti a {appName}. Il tuo codice: {code}.\niPhone: {appleStoreUrl}\nAndroid: {googlePlayUrl}",
+  "invitationSmsMessage": "Il tuo allenatore ti invita a unirti a {appName}. Il tuo codice: {code}.\nLink: {inviteUrl}\niPhone: {appleStoreUrl}\nAndroid: {googlePlayUrl}",
   "@invitationSmsMessage": {
     "placeholders": {
       "appName": {
         "type": "String"
       },
       "code": {
+        "type": "String"
+      },
+      "inviteUrl": {
         "type": "String"
       },
       "appleStoreUrl": {
@@ -244,6 +248,9 @@
   "sessionReportEmailInvalid": "Indirizzo e-mail non valido.",
   "memberInvitationEmailFailed": "Membro aggiunto, ma non è stato possibile inviare l'e-mail di invito.",
   "memberInvitationEmailSent": "E-mail di invito inviata",
+  "memberInvitationWhatsAppSent": "Invito WhatsApp inviato",
+  "memberInvitationChannelsSent": "Invito inviato (e-mail e WhatsApp)",
+  "memberInvitationSendFailed": "Membro aggiunto, ma non è stato possibile inviare l'invito.",
   "memberAddedToTeamNotificationTitle": "Aggiornamento squadra",
   "memberAddedToTeamNotificationBody": "Il tuo allenatore ti ha aggiunto a {teamName}.",
   "@memberAddedToTeamNotificationBody": {
@@ -256,11 +263,11 @@
   "invitationAccepted": "Invito accettato",
   "invitationPending": "Invito in attesa",
   "memberAppAccountLinked": "Account app collegato",
-  "resendInvitationTooltip": "Reinvia e-mail di invito",
+  "resendInvitationTooltip": "Reinvia invito",
   "resendInvitationAction": "Reinvia invito",
-  "resendInvitationNoEmailTooltip": "Aggiungi un'e-mail per inviare un invito",
-  "resendInvitationSuccess": "E-mail di invito inviata",
-  "resendInvitationFailed": "Impossibile inviare l'e-mail di invito",
+  "resendInvitationNoEmailTooltip": "Aggiungi un'e-mail o un telefono per inviare un invito",
+  "resendInvitationSuccess": "Invito reinviato",
+  "resendInvitationFailed": "Impossibile inviare l'invito",
   "memberBirthDate": "Data di nascita",
   "memberBirthDateOptional": "Data di nascita (facoltativa)",
   "memberBirthDateRequired": "La data di nascita è obbligatoria",
@@ -3122,6 +3129,27 @@
   "preferredFootRight": "Destro",
   "preferredFootBoth": "Entrambi",
   "playerSeasonSummaryPreferredFootSaved": "Piede forte aggiornato.",
+  "playerSeasonSummaryShareAction": "Condividi",
+  "playerSeasonSummaryShareTooltip": "Condividi la mia scheda performance",
+  "playerSeasonSummaryShareFailed": "Impossibile condividere la scheda performance",
+  "playerSeasonSummaryShareText": "{playerName} · {teamName} · {seasonLabel}\nConvocazioni: {convocations}\nTitolari: {starts}\nMinuti: {minutes}\nPresenze allenamento: {present}\nFrequenza: {attendance}\n#GrintaPerformance",
+  "@playerSeasonSummaryShareText": {
+    "placeholders": {
+      "playerName": { "type": "String" },
+      "teamName": { "type": "String" },
+      "seasonLabel": { "type": "String" },
+      "convocations": { "type": "int" },
+      "starts": { "type": "int" },
+      "minutes": { "type": "int" },
+      "present": { "type": "int" },
+      "attendance": { "type": "String" }
+    }
+  },
+  "playerSeasonSummaryShareStatConvocations": "Convocazioni",
+  "playerSeasonSummaryShareStatStarts": "Titolari",
+  "playerSeasonSummaryShareStatMinutes": "Minuti giocati",
+  "playerSeasonSummaryShareStatPresent": "Presenze",
+  "playerSeasonSummaryShareStatAttendance": "Frequenza",
   "teamEditNameTitle": "Modifica squadra",
   "teamEditNameSuccess": "Squadra aggiornata.",
   "settingsDevicesSection": "Dispositivi/Applicazioni",

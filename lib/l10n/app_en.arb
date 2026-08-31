@@ -98,6 +98,7 @@
   "invitationEmailCodeLabel": "Your invitation code",
   "invitationEmailDownloadIos": "Download on iPhone",
   "invitationEmailDownloadAndroid": "Download on Android",
+  "invitationEmailOpenInvite": "Open invitation",
   "invitationEmailFooter": "You received this email because a coach added you on {appName}. If you were not expecting this message, you can ignore it.",
   "@invitationEmailFooter": {
     "placeholders": {
@@ -106,13 +107,16 @@
       }
     }
   },
-  "invitationSmsMessage": "Your coach invites you to join {appName}. Your code: {code}.\niPhone: {appleStoreUrl}\nAndroid: {googlePlayUrl}",
+  "invitationSmsMessage": "Your coach invites you to join {appName}. Your code: {code}.\nLink: {inviteUrl}\niPhone: {appleStoreUrl}\nAndroid: {googlePlayUrl}",
   "@invitationSmsMessage": {
     "placeholders": {
       "appName": {
         "type": "String"
       },
       "code": {
+        "type": "String"
+      },
+      "inviteUrl": {
         "type": "String"
       },
       "appleStoreUrl": {
@@ -244,6 +248,9 @@
   "sessionReportEmailInvalid": "Invalid email address.",
   "memberInvitationEmailFailed": "Member added, but the invitation email could not be sent.",
   "memberInvitationEmailSent": "Invitation email sent",
+  "memberInvitationWhatsAppSent": "WhatsApp invitation sent",
+  "memberInvitationChannelsSent": "Invitation sent (email and WhatsApp)",
+  "memberInvitationSendFailed": "Member added, but the invitation could not be sent.",
   "memberAddedToTeamNotificationTitle": "Team update",
   "memberAddedToTeamNotificationBody": "Your coach added you to {teamName}.",
   "@memberAddedToTeamNotificationBody": {
@@ -256,11 +263,11 @@
   "invitationAccepted": "Invitation accepted",
   "invitationPending": "Invitation pending",
   "memberAppAccountLinked": "App account linked",
-  "resendInvitationTooltip": "Resend invitation email",
+  "resendInvitationTooltip": "Resend invitation",
   "resendInvitationAction": "Resend invitation",
-  "resendInvitationNoEmailTooltip": "Add an email address to send an invitation",
-  "resendInvitationSuccess": "Invitation email sent",
-  "resendInvitationFailed": "Could not send the invitation email",
+  "resendInvitationNoEmailTooltip": "Add an email or phone number to send an invitation",
+  "resendInvitationSuccess": "Invitation resent",
+  "resendInvitationFailed": "Could not send the invitation",
   "memberBirthDate": "Date of birth",
   "memberBirthDateOptional": "Date of birth (optional)",
   "memberBirthDateRequired": "Date of birth is required",
@@ -3545,6 +3552,27 @@
   "preferredFootRight": "Right",
   "preferredFootBoth": "Both",
   "playerSeasonSummaryPreferredFootSaved": "Preferred foot updated.",
+  "playerSeasonSummaryShareAction": "Share",
+  "playerSeasonSummaryShareTooltip": "Share my performance sheet",
+  "playerSeasonSummaryShareFailed": "Could not share the performance sheet",
+  "playerSeasonSummaryShareText": "{playerName} · {teamName} · {seasonLabel}\nCall-ups: {convocations}\nStarts: {starts}\nMinutes: {minutes}\nTraining present: {present}\nAttendance: {attendance}\n#GrintaPerformance",
+  "@playerSeasonSummaryShareText": {
+    "placeholders": {
+      "playerName": { "type": "String" },
+      "teamName": { "type": "String" },
+      "seasonLabel": { "type": "String" },
+      "convocations": { "type": "int" },
+      "starts": { "type": "int" },
+      "minutes": { "type": "int" },
+      "present": { "type": "int" },
+      "attendance": { "type": "String" }
+    }
+  },
+  "playerSeasonSummaryShareStatConvocations": "Call-ups",
+  "playerSeasonSummaryShareStatStarts": "Starts",
+  "playerSeasonSummaryShareStatMinutes": "Minutes played",
+  "playerSeasonSummaryShareStatPresent": "Present",
+  "playerSeasonSummaryShareStatAttendance": "Attendance",
   "wearableDeviceGpsInsidersIntense": "GPS Insiders Intense",
   "intenseGpsSerialGuidance": "Enter the serial number printed on the GPS Insiders Intense tracker.",
   "intenseGpsSerialLabel": "Serial number",

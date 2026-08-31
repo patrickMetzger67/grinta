@@ -14,6 +14,7 @@ import 'package:grinta/provider/appSession.dart';
 import 'package:grinta/services/effectivesService.dart';
 import 'package:grinta/services/player_positions_service.dart';
 import 'package:grinta/services/player_season_summary_service.dart';
+import 'package:grinta/services/player_season_summary_share_service.dart';
 import 'package:grinta/services/teamService.dart';
 import 'package:grinta/util/app_snackbar.dart';
 import 'package:grinta/util/app_theme.dart';
@@ -168,6 +169,55 @@ class _PlayerSeasonSummaryScreenState extends State<PlayerSeasonSummaryScreen> {
     }
   }
 
+  Future<void> _shareSummary(BuildContext context) async {
+    final summary = _summary;
+    if (summary == null) return;
+
+    final l10n = context.l10n;
+    final playerName = playerDisplayName(
+      widget.identity.player,
+      unknownLabel: l10n.entityPlayerUnknown,
+    );
+    final teamName = (widget.team.name?.trim().isNotEmpty ?? false)
+        ? widget.team.name!.trim()
+        : l10n.entityTeam;
+
+    final session = context.read<AppSession>();
+    final seasons = _seasonOptions(session);
+    String seasonLabel = _selectedSeasonId;
+    for (final season in seasons) {
+      final id = season.ref?.id?.trim() ?? '';
+      if (id == _selectedSeasonId) {
+        seasonLabel = _seasonLabel(context, season);
+        break;
+      }
+    }
+
+    final box = context.findRenderObject() as RenderBox?;
+    final origin = box == null
+        ? null
+        : box.localToGlobal(Offset.zero) & box.size;
+
+    try {
+      await const PlayerSeasonSummaryShareService().share(
+        l10n: l10n,
+        playerName: playerName,
+        teamName: teamName,
+        seasonLabel: seasonLabel,
+        summary: summary,
+        sharePositionOrigin: origin,
+      );
+    } catch (e) {
+      if (!context.mounted) return;
+      AppSnackbar.show(
+        context,
+        l10n.playerSeasonSummaryShareFailed,
+        isError: true,
+      );
+      debugPrint('PlayerSeasonSummary share failed: $e');
+    }
+  }
+
   List<Season> _seasonOptions(AppSession session) {
     final seasons = session.getSeasonsForPlayer(
       session.selectedPlayerId ?? '',
@@ -251,6 +301,14 @@ class _PlayerSeasonSummaryScreenState extends State<PlayerSeasonSummaryScreen> {
             fontWeight: FontWeight.w700,
           ),
         ),
+        actions: [
+          if (_summary != null && !_loading)
+            IconButton(
+              tooltip: l10n.playerSeasonSummaryShareTooltip,
+              onPressed: () => _shareSummary(context),
+              icon: const Icon(Icons.ios_share_outlined),
+            ),
+        ],
       ),
       body: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,

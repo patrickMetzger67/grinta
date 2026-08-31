@@ -49,6 +49,10 @@ const {
   createOuraImportActivity,
 } = require('./oura_activities');
 const { createSendMailOnCreate } = require('./send_mail');
+const {
+  createSendWhatsAppOnCreate,
+  createWhatsAppWebhook,
+} = require('./send_whatsapp');
 const { createSendPasswordResetMail } = require('./password_reset');
 const { createSendPushFCMNotification } = require('./send_push_fcm');
 const { createDrainPendingPushNotifications } = require('./pending_push');
@@ -770,6 +774,8 @@ exports.ouraImportActivity = createOuraImportActivity();
  *   firebase deploy --only functions:sendMailOnCreate
  */
 exports.sendMailOnCreate = createSendMailOnCreate();
+exports.sendWhatsAppOnCreate = createSendWhatsAppOnCreate();
+exports.whatsappWebhook = createWhatsAppWebhook();
 exports.sendPasswordResetMail = createSendPasswordResetMail();
 
 const { createApproveParentalConsent } = require('./parental_consent');

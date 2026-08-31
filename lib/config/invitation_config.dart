@@ -11,6 +11,9 @@ class InvitationRuntimeConfig {
     required this.logoUrl,
     required this.fromEmail,
     required this.replyToEmail,
+    required this.inviteBaseUrl,
+    required this.whatsappTemplateName,
+    required this.whatsappTemplateLanguage,
   });
 
   final String contactPrefixCode;
@@ -20,6 +23,15 @@ class InvitationRuntimeConfig {
   final String logoUrl;
   final String fromEmail;
   final String replyToEmail;
+
+  /// Public HTTPS landing page for invite links (`…/invite?code=`).
+  final String inviteBaseUrl;
+
+  /// Meta-approved WhatsApp template name for member invitations.
+  final String whatsappTemplateName;
+
+  /// Template language code (e.g. `fr`, `en`).
+  final String whatsappTemplateLanguage;
 }
 
 /// Invitation codes and store links for member onboarding emails.
@@ -41,6 +53,9 @@ class InvitationRuntimeConfig {
 /// |                     |                      | Must be publicly readable (`logoClubs/`).  |
 /// | `fromEmail`         | `noreply@grinta.io`  | Sender address on queued invitation emails   |
 /// | `replyToEmail`      | `contact@grinta.io`  | Reply-to address on queued invitation emails |
+/// | `inviteBaseUrl`     | `https://grinta.io/invite` | Public invite landing URL             |
+/// | `whatsappTemplateName` | `member_invitation` | Meta WhatsApp template name             |
+/// | `whatsappTemplateLanguage` | `fr`           | Meta WhatsApp template language         |
 ///
 /// Legacy field `shortClubName` is accepted as an alias for `appDisplayName`.
 ///
@@ -66,6 +81,12 @@ abstract final class InvitationConfig {
 
   static const String replyToEmail = 'contact@grinta.io';
 
+  static const String inviteBaseUrl = 'https://grinta.io/invite';
+
+  static const String whatsappTemplateName = 'member_invitation';
+
+  static const String whatsappTemplateLanguage = 'fr';
+
   static const String _firestoreDocumentPath = 'config/invitation';
 
   static InvitationRuntimeConfig? _cached;
@@ -79,6 +100,9 @@ abstract final class InvitationConfig {
         logoUrl: logoUrl,
         fromEmail: fromEmail,
         replyToEmail: replyToEmail,
+        inviteBaseUrl: inviteBaseUrl,
+        whatsappTemplateName: whatsappTemplateName,
+        whatsappTemplateLanguage: whatsappTemplateLanguage,
       );
 
   /// Returns cached config, loading Firestore overrides once when available.
@@ -135,6 +159,17 @@ abstract final class InvitationConfig {
         replyToEmail: _readString(map['replyToEmail'],
                 fallback: replyToEmail) ??
             replyToEmail,
+        inviteBaseUrl: _readString(map['inviteBaseUrl'],
+                fallback: inviteBaseUrl) ??
+            inviteBaseUrl,
+        whatsappTemplateName: _readString(map['whatsappTemplateName'],
+                fallback: whatsappTemplateName) ??
+            whatsappTemplateName,
+        whatsappTemplateLanguage: _readString(
+              map['whatsappTemplateLanguage'],
+              fallback: whatsappTemplateLanguage,
+            ) ??
+            whatsappTemplateLanguage,
       );
     } catch (e, st) {
       debugPrint('InvitationConfig.resolve failed: $e\n$st');
