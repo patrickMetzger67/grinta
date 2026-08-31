@@ -50,7 +50,7 @@ class PlayerSeasonSummaryShareService {
       summary: summary,
     );
 
-    final Uint8List? pngBytes = await _renderShareCardPng(
+    final Uint8List? pngBytes = await renderShareCardPng(
       l10n: l10n,
       playerName: playerName,
       teamName: teamName,
@@ -83,7 +83,8 @@ class PlayerSeasonSummaryShareService {
     );
   }
 
-  Future<Uint8List?> _renderShareCardPng({
+  /// Renders the shareable season summary card (1080×1350 PNG).
+  Future<Uint8List?> renderShareCardPng({
     required AppLocalizations l10n,
     required String playerName,
     required String teamName,
