@@ -136,6 +136,20 @@ function mergePromoMirrorEntitlements(existingEntitlements, grantedEntitlement) 
   return [...merged];
 }
 
+/**
+ * Whether the mirror/list already includes the granted entitlement (aliases OK).
+ * Used so ALREADY_REDEEMED only blocks when the upgrade is truly complete —
+ * a prior redeem that left only `player` must not block attaching `player_gps`.
+ */
+function entitlementsIncludeGranted(existingEntitlements, grantedEntitlement) {
+  const granted = canonicalizePromoEntitlement(grantedEntitlement);
+  if (!granted) return false;
+  const list = Array.isArray(existingEntitlements) ? existingEntitlements : [];
+  return list.some(
+    (entry) => canonicalizePromoEntitlement(entry) === granted,
+  );
+}
+
 module.exports = {
   CANONICAL_ENTITLEMENTS,
   normalizePromoCode,
@@ -145,4 +159,5 @@ module.exports = {
   canonicalizePromoEntitlement,
   revenueCatGrantEntitlementIds,
   mergePromoMirrorEntitlements,
+  entitlementsIncludeGranted,
 };

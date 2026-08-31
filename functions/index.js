@@ -61,6 +61,7 @@ const {
   canonicalizePromoEntitlement,
   revenueCatGrantEntitlementIds,
   mergePromoMirrorEntitlements,
+  entitlementsIncludeGranted,
   CANONICAL_ENTITLEMENTS,
 } = require('./promo_code_helpers');
 
@@ -657,7 +658,30 @@ exports.redeemPromoCode = onCall(
 
     const redemptionRef = promoRef.collection('redemptions').doc(uid);
     const redemptionSnap = await redemptionRef.get();
-    if (redemptionSnap.exists) {
+
+    // Read mirror first: ALREADY_REDEEMED must not block a Joueur → Joueur GPS
+    // upgrade when a prior redeem left only `player` (or mirror write failed).
+    const userRef = db.collection('users').doc(uid);
+    let existingAccess = {};
+    let existingEntitlements = [];
+    try {
+      const userSnap = await userRef.get();
+      existingAccess = userSnap.data()?.subscriptionAccess ?? {};
+      existingEntitlements = Array.isArray(existingAccess.entitlements)
+        ? existingAccess.entitlements
+        : [];
+    } catch (readError) {
+      console.warn('redeemPromoCode: subscriptionAccess pre-read failed', {
+        uid,
+        readError,
+      });
+    }
+
+    const alreadyHasGranted = entitlementsIncludeGranted(
+      existingEntitlements,
+      entitlement,
+    );
+    if (redemptionSnap.exists && alreadyHasGranted) {
       throwPromoError(
         'failed-precondition',
         'ALREADY_REDEEMED',
@@ -665,49 +689,71 @@ exports.redeemPromoCode = onCall(
       );
     }
 
+    // Prior redemption without the granted entitlement: complete the upgrade
+    // (re-grant + mirror) without consuming another use.
+    const isUpgradeRetry = redemptionSnap.exists && !alreadyHasGranted;
+
     const grant = await grantPromotionalEntitlement(uid, entitlement, durationDays);
 
-    await db.runTransaction(async (transaction) => {
-      const latestPromoSnap = await transaction.get(promoRef);
-      if (!latestPromoSnap.exists) {
-        throwPromoError(
-          'not-found',
-          'PROMO_NOT_FOUND',
-          `Promo code "${code}" not found.`,
-        );
-      }
-
-      validatePromoData(latestPromoSnap.data() ?? {});
-
-      const latestRedemptionSnap = await transaction.get(redemptionRef);
-      if (latestRedemptionSnap.exists) {
-        throwPromoError(
-          'failed-precondition',
-          'ALREADY_REDEEMED',
-          'You have already redeemed this promo code.',
-        );
-      }
-
-      transaction.update(promoRef, {
-        usedCount: FieldValue.increment(1),
-      });
-      transaction.set(redemptionRef, {
+    if (isUpgradeRetry) {
+      await redemptionRef.set(
+        {
+          uid,
+          redeemedAt: FieldValue.serverTimestamp(),
+          upgradeRetryAt: FieldValue.serverTimestamp(),
+          entitlement,
+        },
+        {merge: true},
+      );
+      console.log('redeemPromoCode: upgrade retry (no usedCount increment)', {
         uid,
-        redeemedAt: FieldValue.serverTimestamp(),
+        code,
+        entitlement,
+        existingEntitlements,
       });
-    });
+    } else {
+      await db.runTransaction(async (transaction) => {
+        const latestPromoSnap = await transaction.get(promoRef);
+        if (!latestPromoSnap.exists) {
+          throwPromoError(
+            'not-found',
+            'PROMO_NOT_FOUND',
+            `Promo code "${code}" not found.`,
+          );
+        }
+
+        validatePromoData(latestPromoSnap.data() ?? {});
+
+        const latestRedemptionSnap = await transaction.get(redemptionRef);
+        if (latestRedemptionSnap.exists) {
+          // Race: another request finished (or is finishing) while we granted.
+          // Do not throw ALREADY_REDEEMED after a successful RC grant — mirror
+          // merge below still attaches player_gps if missing. Skip usedCount.
+          return;
+        }
+
+        transaction.update(promoRef, {
+          usedCount: FieldValue.increment(1),
+        });
+        transaction.set(redemptionRef, {
+          uid,
+          redeemedAt: FieldValue.serverTimestamp(),
+          entitlement,
+        });
+      });
+    }
 
     // Mirror access outside the promo transaction so a user-doc write failure
     // never blocks / rolls back a successful redeem.
     // Merge with any existing mirror entitlements so a Joueur → Joueur GPS
     // upgrade keeps prior durable access and attaches `player_gps`.
     try {
-      const userRef = db.collection('users').doc(uid);
+      // Re-read in case another writer updated entitlements during grant.
       const userSnap = await userRef.get();
-      const existingAccess = userSnap.data()?.subscriptionAccess ?? {};
-      const existingEntitlements = Array.isArray(existingAccess.entitlements)
+      existingAccess = userSnap.data()?.subscriptionAccess ?? existingAccess;
+      existingEntitlements = Array.isArray(existingAccess.entitlements)
         ? existingAccess.entitlements
-        : [];
+        : existingEntitlements;
       const mergedEntitlements = mergePromoMirrorEntitlements(
         existingEntitlements,
         entitlement,
@@ -734,6 +780,7 @@ exports.redeemPromoCode = onCall(
         code,
         entitlement,
         entitlements: mergedEntitlements,
+        upgradeRetry: isUpgradeRetry,
       });
     } catch (mirrorError) {
       console.error('redeemPromoCode: subscriptionAccess mirror failed', {

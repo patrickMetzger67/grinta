@@ -8,6 +8,7 @@ const {
   canonicalizePromoEntitlement,
   revenueCatGrantEntitlementIds,
   mergePromoMirrorEntitlements,
+  entitlementsIncludeGranted,
 } = require('./promo_code_helpers');
 
 describe('normalizePromoCode', () => {
@@ -159,5 +160,33 @@ describe('mergePromoMirrorEntitlements', () => {
       'player_gps',
     ]);
     assert.deepEqual(mergePromoMirrorEntitlements(null, 'player'), ['player']);
+  });
+});
+
+describe('entitlementsIncludeGranted', () => {
+  it('is false when only player is present for a player_gps upgrade', () => {
+    assert.equal(
+      entitlementsIncludeGranted(['player'], 'player_gps'),
+      false,
+    );
+    assert.equal(
+      entitlementsIncludeGranted(['player'], 'JOUEURGPS'),
+      false,
+    );
+  });
+
+  it('is true when player_gps (or alias) is already mirrored', () => {
+    assert.equal(
+      entitlementsIncludeGranted(['player', 'player_gps'], 'player_gps'),
+      true,
+    );
+    assert.equal(
+      entitlementsIncludeGranted(['playerGPS'], 'JOUEURGPS'),
+      true,
+    );
+  });
+
+  it('rejects unknown granted entitlements', () => {
+    assert.equal(entitlementsIncludeGranted(['player'], 'gold'), false);
   });
 });
