@@ -22,6 +22,7 @@ Deux messages trompeurs historiques (souvent combinés) :
 | **Functions** | Échecs grant RC → `errorCode` (`PROMO_RC_*` / `PROMO_GRANT_FAILED`) |
 | **Client** | Normalise `# JOUEURGPS` → `JOUEURGPS` (`replaceFirst`, pas le `.replace` JS) |
 | **Client** | Après redeem : vérifie le miroir pour l’entitlement **attendu** (`player_gps`), pas seulement `player` déjà actif |
+| **Client** | Hydrate : merge Firestore `player_gps` même si l’état local a déjà `player` |
 | **Client** | Apply RC : conserve un grant durable `player_gps` si RC ne remonte encore que `player` |
 | **Client** | Abonnement déjà actif : bouton **Code promo** pour upgrade (ex. Joueur → Joueur GPS) |
 | **Client** | `not-found` Firebase ≠ « introuvable » sauf `PROMO_NOT_FOUND` |
