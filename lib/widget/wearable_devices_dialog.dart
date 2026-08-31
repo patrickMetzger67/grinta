@@ -36,7 +36,6 @@ import 'package:grinta/services/oura_sync_repository.dart';
 import 'package:grinta/services/oura_sync_service.dart';
 import 'package:grinta/util/app_theme.dart';
 import 'package:grinta/util/physiological_data_consent.dart';
-import 'package:grinta/util/player_gps_access.dart';
 import 'package:grinta/util/wearable_sync_owner.dart';
 import 'package:grinta/widget/apple_health_coach_visibility_section.dart';
 import 'package:grinta/widget/fitbit_coach_visibility_section.dart';
@@ -298,12 +297,6 @@ class _WearableDevicesDialogContentState
       _showConnectError(context.l10n.polarAccountHintRequired);
       return;
     }
-    if (_selectedType == WearableDeviceType.gpsInsidersIntense &&
-        !canConnectOwnIntenseGps(initiatedBy: widget.initiatedBy)) {
-      await showPlayerGpsPaywall(context);
-      return;
-    }
-
     if (_selectedType == WearableDeviceType.gpsInsidersIntense &&
         _intenseGpsSerialController.text.trim().isEmpty) {
       _showConnectError(context.l10n.intenseGpsSerialRequired);
@@ -1231,12 +1224,9 @@ class _WearableDevicesDialogContentState
         : googleHealthAndroidOnly
             ? l10n.googleHealthAndroidOnlyMessage
             : null;
-    final gpsRequiresPlayerGps = selectedType ==
-            WearableDeviceType.gpsInsidersIntense &&
-        !selectedConnected &&
-        !canConnectOwnIntenseGps(initiatedBy: widget.initiatedBy);
-    final syncDisabled =
-        appleHealthIosOnly || googleHealthAndroidOnly || gpsRequiresPlayerGps;
+    // Joueur GPS is required to *sync* personal GPS later, not to claim the
+    // serial in Réglages — so connect stays available without entitlement.
+    final syncDisabled = appleHealthIosOnly || googleHealthAndroidOnly;
     final disconnectBusy = _disconnectingType == selectedType.name;
 
     return SingleChildScrollView(
@@ -1305,8 +1295,6 @@ class _WearableDevicesDialogContentState
               placeholder: l10n.polarAccountHintPlaceholder,
               syncDisabled: syncDisabled,
             ),
-          // Always show the serial field so players can type it even before
-          // unlocking Joueur GPS (paywall still gates the connect action).
           // Guidance is already in [_connectSubtitle] — avoid duplicating it.
           if (!selectedConnected &&
               selectedType == WearableDeviceType.gpsInsidersIntense)
@@ -1317,20 +1305,9 @@ class _WearableDevicesDialogContentState
               guidance: '',
               label: l10n.intenseGpsSerialLabel,
               placeholder: l10n.intenseGpsSerialPlaceholder,
-              syncDisabled: false,
+              syncDisabled: syncDisabled,
               keyboardType: TextInputType.text,
             ),
-          if (gpsRequiresPlayerGps) ...[
-            const SizedBox(height: 10),
-            Text(
-              l10n.intenseGpsRequiresPlayerGps,
-              style: TextStyle(
-                color: colors.textSecondary,
-                fontSize: 13,
-                height: 1.35,
-              ),
-            ),
-          ],
           if (!selectedConnected && platformOnlyMessage != null) ...[
             const SizedBox(height: 10),
             Text(
@@ -1358,26 +1335,6 @@ class _WearableDevicesDialogContentState
                     )
                   : Icon(Icons.link_off_rounded, size: 20, color: colors.primary),
               label: Text(l10n.settingsDevicesDisconnect),
-            )
-          else if (gpsRequiresPlayerGps)
-            ElevatedButton.icon(
-              onPressed: _syncBusy
-                  ? null
-                  : () async {
-                      await showPlayerGpsPaywall(context);
-                      if (!mounted) return;
-                      // Refresh so the serial field can be submitted via Connect
-                      // once Joueur GPS (or a promo) is active.
-                      setState(() {});
-                      if (canConnectOwnIntenseGps(
-                            initiatedBy: widget.initiatedBy,
-                          ) &&
-                          _intenseGpsSerialController.text.trim().isNotEmpty) {
-                        await _syncSelectedType();
-                      }
-                    },
-              icon: const Icon(Icons.workspace_premium_outlined, size: 20),
-              label: Text(l10n.subscriptionTierPlayerGps),
             )
           else
             ElevatedButton.icon(

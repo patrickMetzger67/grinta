@@ -366,6 +366,10 @@ abstract final class SubscriptionEntitlementIds {
   static bool grantsPlayerAccess(Set<String> entitlements) =>
       entitlements.contains(player) || hasPlayerGpsEntitlement(entitlements);
 
+  /// Whether [entitlements] allow using own Intense GPS after sensor setup.
+  ///
+  /// Coach-initiated flows stay available. Players need `player_gps` (or root)
+  /// when syncing personal GPS — claiming a serial in settings does not use this.
   static bool grantsOwnIntenseGpsAccess({
     required Set<String> entitlements,
     required bool isRoot,

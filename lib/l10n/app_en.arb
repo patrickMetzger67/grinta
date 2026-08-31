@@ -1951,7 +1951,7 @@
   "subscriptionTierPlayerDesc": "Track your performance, personal stats, and progress.",
   "subscriptionTierPlayerGps": "Player GPS",
   "subscriptionTierPlayerGpsDesc": "Required to connect your own Insiders Intense GPS. Includes performance tracking, personal stats, and progress.",
-  "intenseGpsRequiresPlayerGps": "A Player GPS subscription is required to connect your own Insiders Intense GPS.",
+  "intenseGpsRequiresPlayerGps": "A Player GPS subscription is required to sync your Insiders Intense GPS.",
   "subscriptionPerMonth": "/month",
   "subscriptionPerYear": "/year",
   "subscriptionBillingMonthly": "Monthly",

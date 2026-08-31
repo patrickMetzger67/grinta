@@ -19,6 +19,7 @@ import 'package:grinta/services/whoop_sync_service.dart';
 import 'package:grinta/services/oura_sync_service.dart';
 import 'package:grinta/util/app_snackbar.dart';
 import 'package:grinta/util/app_theme.dart';
+import 'package:grinta/util/player_gps_access.dart';
 import 'package:grinta/util/player_photo_resolver.dart';
 import 'package:grinta/widget/player_feeling_faces.dart';
 import 'package:grinta/widget/polar_analysis/polar_hr_zones_chart.dart';
@@ -912,6 +913,15 @@ class _CreatePersonalSportActivitySheetState
       AppSnackbar.show(context, context.l10n.createPersonalSportGpsDeviceRequired);
       return;
     }
+
+    // Sensor setup is free; Joueur GPS is required only when syncing data.
+    if (!await ensurePlayerGpsForIntenseUse(context)) {
+      if (!mounted) return;
+      AppSnackbar.show(context, context.l10n.intenseGpsRequiresPlayerGps);
+      return;
+    }
+    if (!mounted) return;
+
     if (_typeId == null || _typeId!.isEmpty) {
       AppSnackbar.show(context, context.l10n.createPersonalSportTypeRequired);
       return;

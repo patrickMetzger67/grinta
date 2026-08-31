@@ -1610,7 +1610,7 @@
   "subscriptionTierPlayerDesc": "Sigue tu rendimiento, estadísticas personales y progreso.",
   "subscriptionTierPlayerGps": "Jugador GPS",
   "subscriptionTierPlayerGpsDesc": "Necesario para conectar tu propio GPS Insiders Intense. Incluye el seguimiento de tu rendimiento, estadísticas personales y progreso.",
-  "intenseGpsRequiresPlayerGps": "Se necesita una suscripción Jugador GPS para conectar tu propio GPS Insiders Intense.",
+  "intenseGpsRequiresPlayerGps": "Se necesita una suscripción Jugador GPS para sincronizar tu GPS Insiders Intense.",
   "subscriptionPerMonth": "/mes",
   "subscriptionPerYear": "/año",
   "subscriptionBillingMonthly": "Mensual",
