@@ -110,4 +110,120 @@ void main() {
       expect(plan.rangeEnd, DateTime(2026, 12, 31));
     });
   });
+
+  group('week date-pick → month pager sync', () {
+    test(
+      'pick Dec 21 in week then open month → page is December, not August',
+      () {
+        const int initialPage = 1200;
+        final DateTime anchor = DateTime(2026, 8, 1); // today month
+        final DateTime picked = DateTime(2026, 12, 21);
+
+        // Reproduce stale controller still on August after the picker.
+        int controllerPage = initialPage;
+
+        final AgendaMonthSwipeFocus focus = focusAfterDatePickForMonth(
+          pickedDate: picked,
+        );
+        expect(focus.displayedMonth, DateTime(2026, 12, 1));
+        expect(focus.selectedDate, DateTime(2026, 12, 21));
+        expect(focus.preferredDayOfMonth, 21);
+
+        // Format change to month must jump the pager to the focused month.
+        controllerPage = agendaMonthPageIndex(
+          anchorMonth: anchor,
+          month: focus.displayedMonth,
+          initialPage: initialPage,
+        );
+        expect(
+          agendaMonthForPageIndex(
+            anchorMonth: anchor,
+            page: controllerPage,
+            initialPage: initialPage,
+          ),
+          DateTime(2026, 12, 1),
+        );
+        expect(controllerPage, isNot(initialPage));
+      },
+    );
+
+    test(
+      'prev chevron uses displayed month (Dec→Nov), not stale August page',
+      () {
+        const int initialPage = 1200;
+        final DateTime anchor = DateTime(2026, 8, 1);
+        final DateTime displayed = DateTime(2026, 12, 1);
+
+        // Stale controller still on August (the bug).
+        final int stalePage = initialPage;
+        expect(
+          agendaMonthForPageIndex(
+            anchorMonth: anchor,
+            page: stalePage,
+            initialPage: initialPage,
+          ),
+          DateTime(2026, 8, 1),
+        );
+
+        // Wrong: previousPage from stale August → July.
+        final int wrongPrev = stalePage - 1;
+        expect(
+          agendaMonthForPageIndex(
+            anchorMonth: anchor,
+            page: wrongPrev,
+            initialPage: initialPage,
+          ),
+          DateTime(2026, 7, 1),
+        );
+
+        // Correct: chevron derived from focused/displayed December → November.
+        final int correctPrev = agendaAdjacentMonthPageFromFocus(
+          displayedMonth: displayed,
+          anchorMonth: anchor,
+          initialPage: initialPage,
+          monthDelta: -1,
+        );
+        expect(
+          agendaMonthForPageIndex(
+            anchorMonth: anchor,
+            page: correctPrev,
+            initialPage: initialPage,
+          ),
+          DateTime(2026, 11, 1),
+        );
+        expect(correctPrev, isNot(wrongPrev));
+
+        final AgendaMonthSwipeFocus novFocus = applyMonthPageLanding(
+          targetMonth: DateTime(2026, 11, 1),
+          preferredDayOfMonth: 21,
+        );
+        expect(novFocus.selectedDate, DateTime(2026, 11, 21));
+      },
+    );
+
+    test('agendaMonthPageIndex is symmetric with agendaMonthForPageIndex', () {
+      const int initialPage = 1200;
+      final DateTime anchor = DateTime(2026, 8, 1);
+      for (final DateTime month in <DateTime>[
+        DateTime(2026, 8, 1),
+        DateTime(2026, 12, 1),
+        DateTime(2027, 1, 1),
+        DateTime(2025, 11, 1),
+      ]) {
+        final int page = agendaMonthPageIndex(
+          anchorMonth: anchor,
+          month: month,
+          initialPage: initialPage,
+        );
+        expect(
+          agendaMonthForPageIndex(
+            anchorMonth: anchor,
+            page: page,
+            initialPage: initialPage,
+          ),
+          month,
+        );
+      }
+    });
+  });
 }

@@ -174,7 +174,11 @@ class _AgendaScreenState extends State<AgendaScreen> {
   late DateTime _rangeEnd;
 
   late final DateTime _monthPagerAnchor;
-  late final PageController _monthPageController;
+  late PageController _monthPageController;
+  /// Bumped when the month PageView must remount on the focused page (e.g.
+  /// after a date-picker jump while the controller was stuck on today).
+  int _monthPagerRemountToken = 0;
+  int _monthPagerControllerInitialPage = _initialMonthPage;
 
   late DateTime _displayedMonth;
   /// Day-of-month remembered across month pager moves (31 Aug → 30 Sep → 31 Aug).
@@ -512,7 +516,9 @@ class _AgendaScreenState extends State<AgendaScreen> {
     _displayedMonth = DateTime(_selectedDate.year, _selectedDate.month, 1);
     _bumpAgendaPaint();
 
-    _jumpMonthPagerToDisplayedMonth();
+    // Sync pager to focused month (after date-picker jumps the controller may
+    // still sit on the initial today page while selection is far away).
+    _jumpMonthPagerToDisplayedMonth(forceAfterFrame: true);
 
     if (mode == AgendaCalendarMode.month) {
       _scheduleWindowHydration(
@@ -750,18 +756,81 @@ class _AgendaScreenState extends State<AgendaScreen> {
     _bumpAgendaPaint();
   }
 
-  void _jumpMonthPagerToDisplayedMonth() {
-    if (!_monthPageController.hasClients) return;
+  void _jumpMonthPagerToDisplayedMonth({bool forceAfterFrame = false}) {
+    final int targetPage = agendaMonthPageIndex(
+      anchorMonth: _monthPagerAnchor,
+      month: _displayedMonth,
+      initialPage: _initialMonthPage,
+    );
 
-    final targetPage =
-        _initialMonthPage + _monthDiff(_monthPagerAnchor, _displayedMonth);
+    void doJump() {
+      if (!mounted) return;
 
-    final currentPage = _monthPageController.page?.round();
-    if (currentPage == targetPage) return;
+      if (!_monthPageController.hasClients) {
+        // PageView not attached yet (day mode, or mid-rebuild). Recreate the
+        // controller so the next attach opens on the focused month instead of
+        // the original today page.
+        if (_monthPagerControllerInitialPage != targetPage) {
+          _replaceMonthPageController(initialPage: targetPage);
+        }
+        return;
+      }
 
+      final currentPage = _monthPageController.page?.round();
+      if (currentPage == targetPage) return;
+
+      _suppressNextMonthPageChange = true;
+      _monthPageController.jumpToPage(targetPage);
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!mounted) return;
+        _suppressNextMonthPageChange = false;
+        // If jumpToPage did not stick (viewport resize / physics), remount.
+        if (_monthPageController.hasClients &&
+            _monthPageController.page?.round() != targetPage) {
+          _remountMonthPagerAt(targetPage);
+        }
+      });
+    }
+
+    if (_monthPageController.hasClients ||
+        _monthPagerControllerInitialPage != targetPage) {
+      doJump();
+    }
+
+    // PageView may attach / resize on the next frame (day→week/month, or
+    // week→month height change). Always retry so a date-picker jump is not
+    // lost when hasClients was false, and so format switches re-sync.
+    if (forceAfterFrame || !_monthPageController.hasClients) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        doJump();
+      });
+    }
+  }
+
+  void _replaceMonthPageController({required int initialPage}) {
+    assert(!_monthPageController.hasClients,
+        'Replace only when PageView is detached');
+    _monthPageController.removeListener(_onMonthPagerScrollActivity);
+    _monthPageController.dispose();
+    _monthPagerControllerInitialPage = initialPage;
+    _monthPageController = PageController(initialPage: initialPage);
+    _monthPageController.addListener(_onMonthPagerScrollActivity);
+  }
+
+  void _remountMonthPagerAt(int targetPage) {
+    // Swap controller first, remount PageView via token, dispose old after
+    // detach — never dispose while still attached.
+    final PageController oldController = _monthPageController;
+    oldController.removeListener(_onMonthPagerScrollActivity);
+    _monthPagerControllerInitialPage = targetPage;
+    _monthPageController = PageController(initialPage: targetPage);
+    _monthPageController.addListener(_onMonthPagerScrollActivity);
+    _monthPagerRemountToken++;
     _suppressNextMonthPageChange = true;
-    _monthPageController.jumpToPage(targetPage);
+    _bumpAgendaPaint();
     WidgetsBinding.instance.addPostFrameCallback((_) {
+      oldController.dispose();
+      if (!mounted) return;
       _suppressNextMonthPageChange = false;
     });
   }
@@ -772,8 +841,11 @@ class _AgendaScreenState extends State<AgendaScreen> {
   }
 
   void _handleMonthPageChanged(int page) {
-    final monthOffset = page - _initialMonthPage;
-    final newMonth = _addMonths(_monthPagerAnchor, monthOffset);
+    final DateTime newMonth = agendaMonthForPageIndex(
+      anchorMonth: _monthPagerAnchor,
+      page: page,
+      initialPage: _initialMonthPage,
+    );
 
     // Keep preferred day across shorter months (31 → 30 Sep → back to 31 Aug).
     final AgendaMonthSwipeFocus focus = applyMonthPageLanding(
@@ -838,7 +910,9 @@ class _AgendaScreenState extends State<AgendaScreen> {
     _displayedMonth = targetMonth;
     _bumpAgendaPaint();
 
-    _jumpMonthPagerToDisplayedMonth();
+    // After a far jump, force a post-frame pager sync so week→month does not
+    // keep painting the initial today month.
+    _jumpMonthPagerToDisplayedMonth(forceAfterFrame: true);
 
     _scheduleWindowHydration(
       targetMonth,
@@ -973,22 +1047,44 @@ class _AgendaScreenState extends State<AgendaScreen> {
   }
 
   Future<void> _goToPreviousMonthFromHeader() async {
-    if (!_monthPageController.hasClients) return;
-
-    // Don't await the page animation — a second swipe must not wait.
-    unawaited(
-      _monthPageController.previousPage(
-        duration: const Duration(milliseconds: 220),
-        curve: Curves.easeOut,
-      ),
+    // Drive from focused/displayed month — never PageController.previousPage
+    // alone (controller may still sit on the initial today page after a
+    // week-mode date-picker jump, which would land on the wrong month).
+    final int targetPage = agendaAdjacentMonthPageFromFocus(
+      displayedMonth: _displayedMonth,
+      anchorMonth: _monthPagerAnchor,
+      initialPage: _initialMonthPage,
+      monthDelta: -1,
     );
+    await _animateMonthPagerToPage(targetPage);
   }
 
   Future<void> _goToNextMonthFromHeader() async {
-    if (!_monthPageController.hasClients) return;
+    final int targetPage = agendaAdjacentMonthPageFromFocus(
+      displayedMonth: _displayedMonth,
+      anchorMonth: _monthPagerAnchor,
+      initialPage: _initialMonthPage,
+      monthDelta: 1,
+    );
+    await _animateMonthPagerToPage(targetPage);
+  }
 
+  Future<void> _animateMonthPagerToPage(int targetPage) async {
+    if (!_monthPageController.hasClients) {
+      // Pager not mounted (e.g. day mode) — apply landing from focus math.
+      _handleMonthPageChanged(targetPage);
+      return;
+    }
+
+    final int? currentPage = _monthPageController.page?.round();
+    if (currentPage == targetPage) return;
+
+    // If the controller is far from the focused month, snap to the adjacent
+    // target directly so chevrons never step from a stale August page to July
+    // while the UI focus is December.
     unawaited(
-      _monthPageController.nextPage(
+      _monthPageController.animateToPage(
+        targetPage,
         duration: const Duration(milliseconds: 220),
         curve: Curves.easeOut,
       ),
@@ -1007,7 +1103,7 @@ class _AgendaScreenState extends State<AgendaScreen> {
     _displayedMonth = todayMonth;
     _bumpAgendaPaint();
 
-    _jumpMonthPagerToDisplayedMonth();
+    _jumpMonthPagerToDisplayedMonth(forceAfterFrame: true);
 
     _scheduleWindowHydration(
       todayMonth,
@@ -1409,6 +1505,7 @@ class _AgendaScreenState extends State<AgendaScreen> {
                           child: _GrintaStyleCalendarHeader(
                             pageController: _monthPageController,
                             initialPage: _initialMonthPage,
+                            pagerRemountToken: _monthPagerRemountToken,
                             anchorMonth: _monthPagerAnchor,
                             displayedMonth: _displayedMonth,
                             selectedDate: _selectedDate,

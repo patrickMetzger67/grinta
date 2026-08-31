@@ -3,6 +3,7 @@ part of 'agenda_screen.dart';
 class _GrintaStyleCalendarHeader extends StatelessWidget {
   final PageController pageController;
   final int initialPage;
+  final int pagerRemountToken;
   final DateTime anchorMonth;
   final DateTime displayedMonth;
   final DateTime selectedDate;
@@ -23,6 +24,7 @@ class _GrintaStyleCalendarHeader extends StatelessWidget {
   const _GrintaStyleCalendarHeader({
     required this.pageController,
     required this.initialPage,
+    required this.pagerRemountToken,
     required this.anchorMonth,
     required this.displayedMonth,
     required this.selectedDate,
@@ -294,6 +296,7 @@ class _GrintaStyleCalendarHeader extends StatelessWidget {
                     onDateTap: onDateTap,
                   )
                       : PageView.builder(
+                    key: ValueKey<int>(pagerRemountToken),
                     controller: pageController,
                     allowImplicitScrolling: true,
                     physics: isMonth

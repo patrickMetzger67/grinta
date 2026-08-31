@@ -41,6 +41,64 @@ DateTime monthPageSelectedDate({
   return dateInMonthWithDay(targetMonth, preferredDayOfMonth);
 }
 
+/// Page index for [month] relative to [anchorMonth] at [initialPage].
+///
+/// Used so week→month / date-picker jumps land on the focused month instead
+/// of leaving the PageController on the initial (today) page.
+int agendaMonthPageIndex({
+  required DateTime anchorMonth,
+  required DateTime month,
+  required int initialPage,
+}) {
+  final DateTime from = DateTime(anchorMonth.year, anchorMonth.month, 1);
+  final DateTime to = DateTime(month.year, month.month, 1);
+  final int diff =
+      (to.year - from.year) * 12 + to.month - from.month;
+  return initialPage + diff;
+}
+
+/// Calendar month shown at [page] for a pager anchored on [anchorMonth].
+DateTime agendaMonthForPageIndex({
+  required DateTime anchorMonth,
+  required int page,
+  required int initialPage,
+}) {
+  final int offset = page - initialPage;
+  return DateTime(anchorMonth.year, anchorMonth.month + offset, 1);
+}
+
+/// Focus after picking [pickedDate] (e.g. in week mode) then opening month.
+///
+/// The month pager must sync to this month — not stay on the initial today
+/// page — otherwise the grid still shows August while selection is December.
+AgendaMonthSwipeFocus focusAfterDatePickForMonth({
+  required DateTime pickedDate,
+}) {
+  final DateTime day = DateUtils.dateOnly(pickedDate);
+  return AgendaMonthSwipeFocus(
+    displayedMonth: DateTime(day.year, day.month, 1),
+    selectedDate: day,
+    preferredDayOfMonth: day.day,
+  );
+}
+
+/// Previous-month page derived from [displayedMonth], never from a stale
+/// PageController index (e.g. still on August after a far date-picker jump).
+int agendaAdjacentMonthPageFromFocus({
+  required DateTime displayedMonth,
+  required DateTime anchorMonth,
+  required int initialPage,
+  required int monthDelta,
+}) {
+  final DateTime target =
+      DateTime(displayedMonth.year, displayedMonth.month + monthDelta, 1);
+  return agendaMonthPageIndex(
+    anchorMonth: anchorMonth,
+    month: target,
+    initialPage: initialPage,
+  );
+}
+
 /// Whether [weekStart] (Mon–Sun) overlaps the calendar month of [month].
 bool weekOverlapsMonth(DateTime weekStart, DateTime month) {
   final DateTime monthStart = DateTime(month.year, month.month, 1);
