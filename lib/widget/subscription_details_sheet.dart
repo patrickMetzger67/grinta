@@ -266,6 +266,17 @@ class _SubscriptionDetailsBodyState extends State<_SubscriptionDetailsBody> {
                                 label: Text(l10n.subscriptionChangePlan),
                               ),
                             ],
+                            // Always offer promo redeem while subscribed so a
+                            // Joueur user can upgrade to Joueur GPS via code
+                            // without depending on store / Change plan alone.
+                            const SizedBox(height: 12),
+                            OutlinedButton.icon(
+                              onPressed: () => _openPromoCode(context),
+                              icon: const Icon(
+                                Icons.confirmation_number_outlined,
+                              ),
+                              label: Text(l10n.promoCodeMenuLabel),
+                            ),
                           ],
                         )
                       : Column(

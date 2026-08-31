@@ -93,12 +93,18 @@ class PromoCode {
   }
 
   static String normalizeCode(String raw) {
-    return raw.trim().toUpperCase().replaceAll(RegExp(r'\s+'), '');
+    // Tag icon in the redeem UI often leads users to type "# JOUEURGPS".
+    return raw
+        .trim()
+        .replace(RegExp(r'^#+'), '')
+        .trim()
+        .toUpperCase()
+        .replaceAll(RegExp(r'\s+'), '');
   }
 
   /// Separator-free form used by Cloud Function lookup (DEMO-2026 → DEMO2026).
   static String compactCode(String raw) {
-    return normalizeCode(raw).replaceAll(RegExp(r'[-_.]'), '');
+    return normalizeCode(raw).replaceAll(RegExp(r'[-_.#]'), '');
   }
 
   /// Firestore document IDs cannot contain `/` or match reserved patterns.

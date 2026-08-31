@@ -74,6 +74,7 @@ void main() {
         isTrue,
       );
       expect(SubscriptionEntitlementIds.isKnown('player'), isTrue);
+      expect(SubscriptionEntitlementIds.isKnown('playerGPS'), isTrue);
       expect(SubscriptionEntitlementIds.isKnown('unknown'), isFalse);
       expect(
         SubscriptionEntitlementIds.hasPlayerGpsEntitlement({'playerGPS'}),
@@ -82,6 +83,14 @@ void main() {
       expect(
         SubscriptionEntitlementIds.canonicalize({'playerGPS'}),
         contains(SubscriptionEntitlementIds.playerGps),
+      );
+      expect(
+        SubscriptionEntitlementIds.canonicalizeOne('playerGPS'),
+        SubscriptionEntitlementIds.playerGps,
+      );
+      expect(
+        SubscriptionEntitlementIds.canonicalizeOne('player-gps'),
+        SubscriptionEntitlementIds.playerGps,
       );
     });
 

@@ -100,8 +100,17 @@ class SubscriptionState {
 
   bool get isSubscribed => activeEntitlements.isNotEmpty;
 
-  bool hasEntitlement(String entitlementId) =>
-      activeEntitlements.contains(entitlementId);
+  bool hasEntitlement(String entitlementId) {
+    if (activeEntitlements.contains(entitlementId)) return true;
+    // Promo / RC payloads may use playerGPS aliases.
+    if (SubscriptionEntitlementIds.playerGpsAliases.contains(entitlementId) ||
+        entitlementId == SubscriptionEntitlementIds.playerGps) {
+      return SubscriptionEntitlementIds.hasPlayerGpsEntitlement(
+        activeEntitlements,
+      );
+    }
+    return false;
+  }
 
   factory SubscriptionState.initial() => const SubscriptionState(isLoading: true);
 

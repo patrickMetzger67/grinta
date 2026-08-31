@@ -350,7 +350,19 @@ abstract final class SubscriptionEntitlementIds {
     'playerGps',
   };
 
-  static bool isKnown(String entitlementId) => all.contains(entitlementId);
+  static bool isKnown(String entitlementId) =>
+      all.contains(entitlementId) || playerGpsAliases.contains(entitlementId);
+
+  /// Map RC / console aliases to the canonical entitlement id.
+  static String? canonicalizeOne(String entitlementId) {
+    final trimmed = entitlementId.trim();
+    if (trimmed.isEmpty) return null;
+    if (all.contains(trimmed)) return trimmed;
+    if (playerGpsAliases.contains(trimmed)) return playerGps;
+    final compact = trimmed.toLowerCase().replaceAll(RegExp(r'[-_.\s]'), '');
+    if (compact == 'playergps') return playerGps;
+    return null;
+  }
 
   static bool hasPlayerGpsEntitlement(Set<String> entitlements) =>
       entitlements.any(playerGpsAliases.contains);

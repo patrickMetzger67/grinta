@@ -58,6 +58,9 @@ const {
   compactPromoCode,
   promoCodeLookupCandidates,
   promoCodesMatch,
+  canonicalizePromoEntitlement,
+  revenueCatGrantEntitlementIds,
+  CANONICAL_ENTITLEMENTS,
 } = require('./promo_code_helpers');
 
 initializeApp();
@@ -65,13 +68,7 @@ initializeApp();
 const geminiApiKey = defineSecret('GEMINI_API_KEY');
 const revenueCatApiKey = defineSecret('REVENUECAT_API_KEY');
 
-const VALID_ENTITLEMENTS = new Set([
-  'player',
-  'player_gps',
-  'coach_basic',
-  'coach_elite',
-  'coach_pro',
-]);
+const VALID_ENTITLEMENTS = CANONICAL_ENTITLEMENTS;
 
 const PROMO_CODES_COLLECTION = 'admin_promo_codes';
 const REVENUECAT_API_BASE = 'https://api.revenuecat.com/v1';
@@ -348,8 +345,10 @@ function validatePromoData(data) {
     );
   }
 
-  const entitlement = (data.entitlement ?? '').toString();
-  if (!VALID_ENTITLEMENTS.has(entitlement)) {
+  // Accept RC / console aliases (playerGPS) so upgrade promos are not
+  // rejected as PROMO_INVALID when the Firestore field uses dashboard naming.
+  const entitlement = canonicalizePromoEntitlement(data.entitlement);
+  if (!entitlement || !VALID_ENTITLEMENTS.has(entitlement)) {
     throwPromoError(
       'failed-precondition',
       'PROMO_INVALID',
@@ -445,6 +444,29 @@ function extractGrantedEntitlement(subscriber, entitlementId) {
   return entitlements[entitlementId] ?? null;
 }
 
+function parseRevenueCatErrorDetail(body) {
+  const trimmed = (body ?? '').toString().trim();
+  try {
+    const parsed = JSON.parse(trimmed);
+    return (
+      parsed?.message ??
+      parsed?.error?.message ??
+      parsed?.error ??
+      trimmed
+    );
+  } catch (_) {
+    return trimmed;
+  }
+}
+
+function extractGrantedEntitlementWithAliases(subscriber, entitlementIds) {
+  for (const id of entitlementIds) {
+    const granted = extractGrantedEntitlement(subscriber, id);
+    if (granted) return { granted, grantedId: id };
+  }
+  return { granted: null, grantedId: null };
+}
+
 async function grantPromotionalEntitlement(appUserId, entitlementId, durationDays) {
   const apiKey = revenueCatApiKey.value();
   if (!apiKey) {
@@ -457,71 +479,104 @@ async function grantPromotionalEntitlement(appUserId, entitlementId, durationDay
   }
 
   const endTimeMs = Date.now() + durationDays * 24 * 60 * 60 * 1000;
-  const url = `${REVENUECAT_API_BASE}/subscribers/${encodeURIComponent(appUserId)}/entitlements/${encodeURIComponent(entitlementId)}/promotional`;
-
-  const response = await fetch(url, {
-    method: 'POST',
-    headers: {
-      Authorization: `Bearer ${apiKey}`,
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify({ end_time_ms: endTimeMs }),
-  });
-
-  const body = await response.text();
-
-  if (!response.ok) {
-    console.error('RevenueCat promotional grant failed', response.status, body);
-    let detail = body.trim();
-    try {
-      const parsed = JSON.parse(body);
-      detail =
-        parsed?.message ??
-        parsed?.error?.message ??
-        parsed?.error ??
-        detail;
-    } catch (_) {
-      // Keep raw body.
-    }
-
-    if (response.status === 401 || response.status === 403) {
-      throwPromoError(
-        'failed-precondition',
-        'PROMO_RC_KEY_REJECTED',
-        `RevenueCat API key rejected (${response.status}). Check REVENUECAT_API_KEY secret matches the same RC project as the app SDK keys.`,
-      );
-    }
-    if (response.status === 404) {
-      throwPromoError(
-        'failed-precondition',
-        'PROMO_RC_ENTITLEMENT_MISSING',
-        `RevenueCat entitlement "${entitlementId}" was not found. Check RevenueCat dashboard identifiers.`,
-      );
-    }
-
+  const idsToTry = revenueCatGrantEntitlementIds(entitlementId);
+  if (idsToTry.length === 0) {
     throwPromoError(
-      'internal',
-      'PROMO_GRANT_FAILED',
-      `RevenueCat grant failed (${response.status}): ${detail || 'unknown error'}`,
+      'failed-precondition',
+      'PROMO_INVALID',
+      'Invalid promo entitlement.',
     );
   }
 
-  let parsed;
-  try {
-    parsed = body ? JSON.parse(body) : null;
-  } catch (_) {
-    parsed = null;
+  let lastNotFoundDetail = '';
+  let lastFailure = null;
+
+  for (const grantId of idsToTry) {
+    const url = `${REVENUECAT_API_BASE}/subscribers/${encodeURIComponent(appUserId)}/entitlements/${encodeURIComponent(grantId)}/promotional`;
+
+    const response = await fetch(url, {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${apiKey}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ end_time_ms: endTimeMs }),
+    });
+
+    const body = await response.text();
+
+    if (!response.ok) {
+      const detail = parseRevenueCatErrorDetail(body);
+      console.error(
+        'RevenueCat promotional grant failed',
+        { status: response.status, grantId, detail },
+      );
+
+      if (response.status === 401 || response.status === 403) {
+        throwPromoError(
+          'failed-precondition',
+          'PROMO_RC_KEY_REJECTED',
+          `RevenueCat API key rejected (${response.status}). Check REVENUECAT_API_KEY secret matches the same RC project as the app SDK keys.`,
+        );
+      }
+      if (response.status === 404) {
+        // Try alias ids (player_gps ↔ playerGPS) before failing.
+        lastNotFoundDetail = detail;
+        continue;
+      }
+
+      throwPromoError(
+        'internal',
+        'PROMO_GRANT_FAILED',
+        `RevenueCat grant failed (${response.status}): ${detail || 'unknown error'}`,
+      );
+    }
+
+    let parsed;
+    try {
+      parsed = body ? JSON.parse(body) : null;
+    } catch (_) {
+      parsed = null;
+    }
+
+    const subscriber = parsed?.subscriber ?? parsed;
+    const { granted, grantedId } = extractGrantedEntitlementWithAliases(
+      subscriber,
+      idsToTry,
+    );
+    const expiresAt = readRevenueCatEntitlementExpiry(granted);
+
+    if (!granted) {
+      console.error(
+        'RevenueCat grant HTTP OK but entitlement missing in response',
+        { appUserId, entitlementId, grantId, body },
+      );
+      lastFailure = grantId;
+      continue;
+    }
+
+    if (expiresAt && expiresAt.getTime() <= Date.now()) {
+      throwPromoError(
+        'internal',
+        'PROMO_GRANT_FAILED',
+        `RevenueCat grant returned an already-expired entitlement "${grantedId || grantId}".`,
+      );
+    }
+
+    console.log('RevenueCat promotional grant OK', {
+      appUserId,
+      entitlementId,
+      grantId: grantedId || grantId,
+      durationDays,
+      expiresAt: expiresAt ? expiresAt.toISOString() : null,
+    });
+
+    return {
+      expiresAt: expiresAt ? expiresAt.toISOString() : null,
+    };
   }
 
-  const subscriber = parsed?.subscriber ?? parsed;
-  const granted = extractGrantedEntitlement(subscriber, entitlementId);
-  const expiresAt = readRevenueCatEntitlementExpiry(granted);
-
-  if (!granted) {
-    console.error(
-      'RevenueCat grant HTTP OK but entitlement missing in response',
-      { appUserId, entitlementId, body },
-    );
+  if (lastFailure) {
     throwPromoError(
       'internal',
       'PROMO_GRANT_FAILED',
@@ -529,24 +584,11 @@ async function grantPromotionalEntitlement(appUserId, entitlementId, durationDay
     );
   }
 
-  if (expiresAt && expiresAt.getTime() <= Date.now()) {
-    throwPromoError(
-      'internal',
-      'PROMO_GRANT_FAILED',
-      `RevenueCat grant returned an already-expired entitlement "${entitlementId}".`,
-    );
-  }
-
-  console.log('RevenueCat promotional grant OK', {
-    appUserId,
-    entitlementId,
-    durationDays,
-    expiresAt: expiresAt ? expiresAt.toISOString() : null,
-  });
-
-  return {
-    expiresAt: expiresAt ? expiresAt.toISOString() : null,
-  };
+  throwPromoError(
+    'failed-precondition',
+    'PROMO_RC_ENTITLEMENT_MISSING',
+    `RevenueCat entitlement "${entitlementId}" was not found (tried: ${idsToTry.join(', ')}). Check RevenueCat dashboard identifiers.${lastNotFoundDetail ? ` Detail: ${lastNotFoundDetail}` : ''}`,
+  );
 }
 
 /**
@@ -655,20 +697,32 @@ exports.redeemPromoCode = onCall(
 
     // Mirror access outside the promo transaction so a user-doc write failure
     // never blocks / rolls back a successful redeem.
+    // Merge with any existing mirror entitlements so a Joueur → Joueur GPS
+    // upgrade keeps prior durable access if present.
     try {
+      const userRef = db.collection('users').doc(uid);
+      const userSnap = await userRef.get();
+      const existingAccess = userSnap.data()?.subscriptionAccess ?? {};
+      const existingEntitlements = Array.isArray(existingAccess.entitlements)
+        ? existingAccess.entitlements.map((e) => String(e).trim()).filter(Boolean)
+        : [];
+      const mergedEntitlements = [
+        ...new Set(
+          [...existingEntitlements, entitlement]
+            .map((e) => canonicalizePromoEntitlement(e) || e)
+            .filter(Boolean),
+        ),
+      ];
       const access = {
-        entitlements: [entitlement],
-        productId: null,
+        entitlements: mergedEntitlements,
+        productId: existingAccess.productId ?? null,
         source: 'promo',
         updatedAt: FieldValue.serverTimestamp(),
         expiresAt: grant.expiresAt
           ? Timestamp.fromDate(new Date(grant.expiresAt))
           : null,
       };
-      await db.collection('users').doc(uid).set(
-        {subscriptionAccess: access},
-        {merge: true},
-      );
+      await userRef.set({subscriptionAccess: access}, {merge: true});
     } catch (mirrorError) {
       console.error('redeemPromoCode: subscriptionAccess mirror failed', {
         uid,

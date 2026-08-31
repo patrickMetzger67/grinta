@@ -14,9 +14,13 @@ Deux messages trompeurs historiques (souvent combinés) :
 
 | Couche | Comportement |
 |--------|----------------|
-| **Functions** | Lookup tolérant (casse, tirets, `codeCompact`, scan `admin_promo_codes`) |
-| **Functions** | Miroir `subscriptionAccess` **hors** transaction (un échec user doc ne rollback pas le redeem) |
+| **Functions** | Lookup tolérant (casse, tirets, `#`, `codeCompact`, scan `admin_promo_codes`) |
+| **Functions** | Entitlements alias (`playerGPS` / `playerGps` → `player_gps`) — pas de faux `PROMO_INVALID` |
+| **Functions** | Grant RC : retry sur aliases Joueur GPS si 404 |
+| **Functions** | Miroir `subscriptionAccess` **hors** transaction (merge entitlements ; un échec user doc ne rollback pas le redeem) |
 | **Functions** | Échecs grant RC → `errorCode` (`PROMO_RC_*` / `PROMO_GRANT_FAILED`) |
+| **Client** | Normalise `# JOUEURGPS` → `JOUEURGPS` |
+| **Client** | Abonnement déjà actif : bouton **Code promo** pour upgrade (ex. Joueur → Joueur GPS) |
 | **Client** | `not-found` Firebase ≠ « introuvable » sauf `PROMO_NOT_FOUND` |
 | **Client** | `failed-precondition` ≠ « n’est plus valide » sauf `PROMO_INVALID` |
 | **Admin UI** | Écrit `codeCompact` à la création / édition pour accélérer le lookup |
