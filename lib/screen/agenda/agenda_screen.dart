@@ -186,6 +186,8 @@ class _AgendaScreenState extends State<AgendaScreen> {
   String? _error;
   StreamSubscription<List<AgendaItem>>? _itemsSub;
   int _subscriptionGeneration = 0;
+  /// Latest-wins gate: a newer week/month slide supersedes in-flight hydrations.
+  final LatestWinsGate _hydrationGate = LatestWinsGate();
 
   String? _coachViewTeamId;
   Map<String, Player> _coachViewPlayersByMemberId = <String, Player>{};
@@ -389,77 +391,67 @@ class _AgendaScreenState extends State<AgendaScreen> {
     }
   }
 
-  bool _rangeCovers(DateTime start, DateTime end) {
-    return !_rangeStart.isAfter(start) && !_rangeEnd.isBefore(end);
-  }
-
-  bool _monthIsCoveredByRange(DateTime month) {
-    return _rangeCovers(_startOfMonth(month), _endOfMonth(month));
-  }
-
-  int _loadedMonthSpan() {
-    return _monthDiff(_startOfMonth(_rangeStart), _startOfMonth(_rangeEnd)) + 1;
+  /// Slide/pager first: schedule hydration without blocking the gesture.
+  /// A newer slide bumps [LatestWinsGate] so stale loads are ignored.
+  void _scheduleWindowHydration(
+    DateTime month, {
+    bool scrollToSelection = true,
+  }) {
+    final LatestWinsToken token = _hydrationGate.begin();
+    unawaited(
+      _hydrateWindowForMonth(
+        month,
+        token: token,
+        scrollToSelection: scrollToSelection,
+      ),
+    );
   }
 
   /// Ensures [month] (and ideally M±1) is loaded. Avoids tearing down the stream
   /// when the target is already in the cached window.
-  Future<void> _ensureWindowForMonth(
+  Future<void> _hydrateWindowForMonth(
     DateTime month, {
+    required LatestWinsToken token,
     bool scrollToSelection = true,
   }) async {
-    final DateTime focus = DateTime(month.year, month.month, 1);
-    final DateTime desiredStart =
-        _startOfMonth(_addMonths(focus, -_windowRadiusMonths));
-    final DateTime desiredEnd =
-        _endOfMonth(_addMonths(focus, _windowRadiusMonths));
+    if (!token.isCurrent || !mounted) return;
 
-    final bool monthCovered = _monthIsCoveredByRange(focus);
-    final bool windowCovered = _rangeCovers(desiredStart, desiredEnd);
+    final AgendaWindowHydrationPlan plan = planAgendaWindowHydration(
+      focusMonth: month,
+      currentRangeStart: _rangeStart,
+      currentRangeEnd: _rangeEnd,
+      windowRadiusMonths: _windowRadiusMonths,
+      maxLoadedMonths: _maxLoadedMonths,
+    );
 
-    if (monthCovered && windowCovered) {
-      if (scrollToSelection && _calendarMode == AgendaCalendarMode.month) {
+    if (!token.isCurrent || !mounted) return;
+
+    if (plan.alreadyFullyCovered || !plan.needsReload) {
+      if (scrollToSelection &&
+          _calendarMode == AgendaCalendarMode.month &&
+          token.isCurrent) {
         await _scrollToSelectedWeek();
       }
       return;
     }
 
-    var needsReload = false;
+    // Only the latest slide may rewrite the loaded range / start a subscribe.
+    if (!token.isCurrent) return;
 
-    if (monthCovered) {
-      if (_rangeStart.isAfter(desiredStart)) {
-        _rangeStart = desiredStart;
-        needsReload = true;
-      }
-      if (_rangeEnd.isBefore(desiredEnd)) {
-        _rangeEnd = desiredEnd;
-        needsReload = true;
-      }
-      if (_loadedMonthSpan() > _maxLoadedMonths) {
-        _rangeStart = desiredStart;
-        _rangeEnd = desiredEnd;
-        needsReload = true;
-      }
-    } else {
-      _rangeStart = desiredStart;
-      _rangeEnd = desiredEnd;
-      needsReload = true;
-    }
+    _rangeStart = plan.rangeStart;
+    _rangeEnd = plan.rangeEnd;
 
-    if (!needsReload) {
-      if (scrollToSelection && _calendarMode == AgendaCalendarMode.month) {
-        await _scrollToSelectedWeek();
-      }
-      return;
-    }
-
-    await _subscribeItems(scrollToSelection: scrollToSelection);
+    await _subscribeItems(
+      scrollToSelection: scrollToSelection,
+      navigationToken: token,
+    );
   }
 
-  Future<void> _ensureRangeCoversMonth(
+  void _ensureRangeCoversMonth(
     DateTime month, {
     bool scrollToSelection = true,
   }) {
-    return _ensureWindowForMonth(
+    _scheduleWindowHydration(
       month,
       scrollToSelection: scrollToSelection,
     );
@@ -486,7 +478,7 @@ class _AgendaScreenState extends State<AgendaScreen> {
     _handleMonthPageChanged(page);
   }
 
-  Future<void> _handleMonthPageChanged(int page) async {
+  void _handleMonthPageChanged(int page) {
     final monthOffset = page - _initialMonthPage;
     final newMonth = _addMonths(_monthPagerAnchor, monthOffset);
 
@@ -497,27 +489,21 @@ class _AgendaScreenState extends State<AgendaScreen> {
     );
     final newSelectedWeek = _startOfWeek(newSelectedDate);
 
+    // Update pager selection immediately; hydrate in the background.
     _suppressScrollSelectionSync = true;
     setState(() {
       _displayedMonth = newMonth;
       _selectedDate = newSelectedDate;
       _selectedWeekStart = newSelectedWeek;
     });
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _suppressScrollSelectionSync = false;
+    });
 
-    try {
-      await _ensureWindowForMonth(
-        newMonth,
-        scrollToSelection: _calendarMode == AgendaCalendarMode.month,
-      );
-    } finally {
-      if (mounted) {
-        WidgetsBinding.instance.addPostFrameCallback((_) {
-          _suppressScrollSelectionSync = false;
-        });
-      } else {
-        _suppressScrollSelectionSync = false;
-      }
-    }
+    _scheduleWindowHydration(
+      newMonth,
+      scrollToSelection: _calendarMode == AgendaCalendarMode.month,
+    );
   }
 
   /// Horizontal swipe on the events area (calendar header has its own handler).
@@ -554,13 +540,16 @@ class _AgendaScreenState extends State<AgendaScreen> {
 
     _jumpMonthPagerToDisplayedMonth();
 
-    await _ensureWindowForMonth(
+    _scheduleWindowHydration(
       targetMonth,
       scrollToSelection: _calendarMode == AgendaCalendarMode.month,
     );
   }
 
-  Future<void> _subscribeItems({bool scrollToSelection = true}) async {
+  Future<void> _subscribeItems({
+    bool scrollToSelection = true,
+    LatestWinsToken? navigationToken,
+  }) async {
     final int generation = ++_subscriptionGeneration;
     await _itemsSub?.cancel();
     _itemsSub = null;
@@ -599,6 +588,10 @@ class _AgendaScreenState extends State<AgendaScreen> {
           if (!mounted || generation != _subscriptionGeneration) {
             return;
           }
+          // Skip scroll if a newer slide already moved the selection.
+          if (navigationToken != null && !navigationToken.isCurrent) {
+            return;
+          }
 
           if (scrollToSelection && _calendarMode == AgendaCalendarMode.month) {
             await _scrollToSelectedWeek(animated: false);
@@ -635,7 +628,7 @@ class _AgendaScreenState extends State<AgendaScreen> {
 
     _jumpMonthPagerToDisplayedMonth();
 
-    await _ensureWindowForMonth(
+    _scheduleWindowHydration(
       _displayedMonth,
       scrollToSelection: _calendarMode == AgendaCalendarMode.month,
     );
@@ -655,7 +648,7 @@ class _AgendaScreenState extends State<AgendaScreen> {
 
     _jumpMonthPagerToDisplayedMonth();
 
-    await _ensureWindowForMonth(
+    _scheduleWindowHydration(
       _displayedMonth,
       scrollToSelection: _calendarMode == AgendaCalendarMode.month,
     );
@@ -693,7 +686,7 @@ class _AgendaScreenState extends State<AgendaScreen> {
 
     _jumpMonthPagerToDisplayedMonth();
 
-    await _ensureWindowForMonth(
+    _scheduleWindowHydration(
       todayMonth,
       scrollToSelection: _calendarMode == AgendaCalendarMode.month,
     );
@@ -1073,19 +1066,23 @@ class _AgendaScreenState extends State<AgendaScreen> {
                 const SizedBox(height: 8),
                 _buildActiveFilterBanner(context),
               ],
-              if (_isRefreshing) ...[
-                const SizedBox(height: 8),
-                ClipRRect(
-                  borderRadius: BorderRadius.circular(999),
-                  child: LinearProgressIndicator(
-                    minHeight: 2.5,
-                    backgroundColor: colors.border.withValues(alpha: 0.35),
-                    color: colors.primary,
-                  ),
-                ),
-                const SizedBox(height: 8),
-              ] else
-                const SizedBox(height: 12),
+              SizedBox(
+                height: 12,
+                child: _isRefreshing
+                    ? Padding(
+                        padding: const EdgeInsets.symmetric(vertical: 4.5),
+                        child: ClipRRect(
+                          borderRadius: BorderRadius.circular(999),
+                          child: LinearProgressIndicator(
+                            minHeight: 2.5,
+                            backgroundColor:
+                                colors.border.withValues(alpha: 0.35),
+                            color: colors.primary,
+                          ),
+                        ),
+                      )
+                    : null,
+              ),
               Expanded(
                 child: GestureDetector(
                   // Swipe on the events list too (not only the calendar header).

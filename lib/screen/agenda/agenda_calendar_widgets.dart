@@ -262,8 +262,12 @@ class _GrintaStyleCalendarHeader extends StatelessWidget {
                 ),
                 const SizedBox(height: 8),
               ],
+              // Week↔month must jump height instantly. Animating size reveals the
+              // clipped month grid row-by-row (an "expanded week" flash).
               AnimatedSize(
-                duration: const Duration(milliseconds: 220),
+                duration: (isMonth || isWeek)
+                    ? Duration.zero
+                    : const Duration(milliseconds: 220),
                 curve: Curves.easeOut,
                 child: SizedBox(
                   height: calendarHeight,
@@ -286,6 +290,7 @@ class _GrintaStyleCalendarHeader extends StatelessWidget {
                       return _MonthCalendarPage(
                         key: ValueKey<String>(
                           'month-${month.year}-${month.month}-'
+                          '${isMonth ? 'full' : 'week'}-'
                           '${eventTypesByDay.length}',
                         ),
                         month: month,
