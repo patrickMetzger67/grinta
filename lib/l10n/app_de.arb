@@ -1609,7 +1609,7 @@
   "subscriptionTierPlayer": "Spieler",
   "subscriptionTierPlayerDesc": "Verfolgen Sie Ihre Leistung, persönliche Stats und Fortschritt.",
   "subscriptionTierPlayerGps": "Spieler GPS",
-  "subscriptionTierPlayerGpsDesc": "Erforderlich, um Ihr eigenes Insiders Intense GPS zu verbinden. Enthält Leistungs-Tracking, persönliche Stats und Fortschritt.",
+  "subscriptionTierPlayerGpsDesc": "Erforderlich, um Ihr Insiders Intense GPS zu synchronisieren. Enthält Leistungs-Tracking, persönliche Stats und Fortschritt.",
   "intenseGpsRequiresPlayerGps": "Ein Spieler-GPS-Abo ist erforderlich, um Ihr Insiders Intense GPS zu synchronisieren.",
   "subscriptionPerMonth": "/Monat",
   "subscriptionPerYear": "/Jahr",
