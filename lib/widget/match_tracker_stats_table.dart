@@ -6,9 +6,12 @@ import 'package:grinta/l10n/app_localizations.dart';
 import 'package:grinta/model/match.dart' as grinta_match;
 import 'package:grinta/provider/appSession.dart';
 import 'package:grinta/util/session_report_access.dart';
+import 'package:grinta/util/share_player_access.dart';
 import 'package:grinta/widget/playerPhoto.dart';
+import 'package:grinta/widget/session_averages_share_button.dart';
 import 'package:grinta/widget/session_report_email_dialog.dart';
 import 'package:grinta/widget/tracker_player_analysis_widget.dart';
+import 'package:grinta/services/session_player_synthesis_share_service.dart';
 import 'package:provider/provider.dart';
 
 import '../model/player.dart';
@@ -236,6 +239,10 @@ class _MatchTrackerStatsTableState extends State<MatchTrackerStatsTable> {
               session: session,
               teamId: widget.teamId,
             );
+        final bool showAveragesShare = isShareManagerOfTeam(
+          managedTeamIds: session.managedTeamsIdsForSelectedSeason,
+          teamId: widget.teamId,
+        );
 
         return _TrackerStatsTableContent(
           summary: summary,
@@ -253,6 +260,7 @@ class _MatchTrackerStatsTableState extends State<MatchTrackerStatsTable> {
           reportEventDate: widget.reportEventDate,
           reportMatch: widget.reportMatch,
           showEmailReport: showEmailReport,
+          showAveragesShare: showAveragesShare,
         );
       },
     );
@@ -348,6 +356,7 @@ class _TrackerStatsTableContent extends StatelessWidget {
   final DateTime? reportEventDate;
   final grinta_match.Match? reportMatch;
   final bool showEmailReport;
+  final bool showAveragesShare;
 
   const _TrackerStatsTableContent({
     required this.summary,
@@ -365,6 +374,7 @@ class _TrackerStatsTableContent extends StatelessWidget {
     this.reportEventDate,
     this.reportMatch,
     this.showEmailReport = false,
+    this.showAveragesShare = false,
   });
 
   @override
@@ -513,6 +523,18 @@ class _TrackerStatsTableContent extends StatelessWidget {
                           );
                         }
                       : null,
+                  averagesShare: showAveragesShare
+                      ? SessionAveragesShareButton(
+                          summary: summary,
+                          isMatch: isMatch,
+                          heading: reportTitle ?? reportTeamName,
+                          matchContext: reportMatch == null
+                              ? null
+                              : SessionShareMatchContext.fromMatch(
+                                  reportMatch!,
+                                ),
+                        )
+                      : null,
                 ),
 
                 Divider(
@@ -616,6 +638,11 @@ class _TrackerStatsTableContent extends StatelessWidget {
                               playerName: row.playerName,
                               player: row.player,
                               isMatch: isMatch,
+                              shareMatchContext: reportMatch == null
+                                  ? null
+                                  : SessionShareMatchContext.fromMatch(
+                                      reportMatch!,
+                                    ),
                             ),
                           ],
                         );
@@ -635,10 +662,12 @@ class _TrackerStatsTableContent extends StatelessWidget {
 class _StatsHeader extends StatelessWidget {
   final TeamWorkloadSummary summary;
   final VoidCallback? onEmailReport;
+  final Widget? averagesShare;
 
   const _StatsHeader({
     required this.summary,
     this.onEmailReport,
+    this.averagesShare,
   });
 
   @override
@@ -701,6 +730,7 @@ class _StatsHeader extends StatelessWidget {
                 label: Text(context.l10n.sessionReportEmailActionLabel),
               ),
             ),
+          if (averagesShare != null) averagesShare!,
         ],
       ),
     );

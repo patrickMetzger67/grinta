@@ -519,6 +519,7 @@ class _MatchConvocationsTabState extends State<MatchConvocationsTab>
               member: selected,
               memberId: memberId,
               email: playerDetails.email ?? '',
+              phoneE164: playerDetails.phoneE164,
               teamId: teamId,
               seasonId: widget.match.seasonID,
               teamName: team.name ?? '',

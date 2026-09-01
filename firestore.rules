@@ -72,7 +72,11 @@ service cloud.firestore {
           || request.path[4] == 'member'
           || request.path[4] == 'chat_polls'
           || request.path[4] == 'ads'
+          || request.path[4] == 'share'
+          || request.path[4] == 'shareScore'
           || request.path[3] == 'ads'
+          || request.path[3] == 'share'
+          || request.path[3] == 'shareScore'
           || (request.path[4] == 'users' && request.path.size() == 5)
         );
     }
@@ -139,6 +143,31 @@ service cloud.firestore {
         && !('delivery' in request.resource.data);
     }
 
+    function isValidWhatsAppCreate() {
+      return request.resource.data.keys().hasAll(['to', 'templateName', 'languageCode'])
+        && request.resource.data.to is string
+        && request.resource.data.to.size() > 0
+        && request.resource.data.to.size() < 32
+        && request.resource.data.templateName is string
+        && request.resource.data.templateName.size() > 0
+        && request.resource.data.templateName.size() < 128
+        && request.resource.data.languageCode is string
+        && request.resource.data.languageCode.size() > 0
+        && request.resource.data.languageCode.size() < 16
+        && (!('bodyParameters' in request.resource.data)
+          || (request.resource.data.bodyParameters is list
+            && request.resource.data.bodyParameters.size() <= 10))
+        && (!('clubId' in request.resource.data)
+          || request.resource.data.clubId is string)
+        && (!('kind' in request.resource.data)
+          || request.resource.data.kind is string)
+        && (!('invitationId' in request.resource.data)
+          || request.resource.data.invitationId is string)
+        && (!('invitationCode' in request.resource.data)
+          || request.resource.data.invitationCode is string)
+        && !('delivery' in request.resource.data);
+    }
+
     // Shop ads collection only. request.path[3] is the first collection
     // (/databases/(default)/documents/{collection}/…). Do NOT use path[4]
     // (document id) — that would deny catch-all reads for any doc named "ads".
@@ -175,7 +204,9 @@ service cloud.firestore {
           'fitbit_integrations',
           'fitbit_oauth_pending',
           'oura_integrations',
-          'oura_oauth_pending'
+          'oura_oauth_pending',
+          'meta_integrations',
+          'meta_oauth_pending'
         ];
     }
 
@@ -254,6 +285,12 @@ service cloud.firestore {
         allow read, write: if canAccessWearableSync(userId, playerId);
       }
 
+      // Meta (IG/FB) connection metadata (no tokens — server stores tokens).
+      match /metaSync/{docId} {
+        allow read: if request.auth != null && request.auth.uid == userId;
+        allow write: if false;
+      }
+
       // Apple Health connection metadata (on-device HealthKit — no OAuth tokens).
       match /appleHealthSync/{playerId} {
         allow read, write: if canAccessWearableSync(userId, playerId);
@@ -322,6 +359,15 @@ service cloud.firestore {
     }
 
     match /oura_oauth_pending/{stateId} {
+      allow read, write: if false;
+    }
+
+    // Meta Graph tokens — Cloud Functions / Admin SDK only.
+    match /meta_integrations/{integrationId} {
+      allow read, write: if false;
+    }
+
+    match /meta_oauth_pending/{stateId} {
       allow read, write: if false;
     }
 
@@ -435,6 +481,76 @@ service cloud.firestore {
     match /mail/{mailId} {
       allow create: if request.auth != null && isValidMailCreate();
       allow read, update, delete: if false;
+    }
+
+    // WhatsApp template messages (sendWhatsAppOnCreate / Meta Cloud API).
+    match /whatsapp_messages/{messageId} {
+      allow create: if request.auth != null && isValidWhatsAppCreate();
+      allow read, update, delete: if false;
+    }
+
+    // Meta WhatsApp webhook raw events — Cloud Functions / Admin SDK only.
+    match /whatsapp_webhook_events/{eventId} {
+      allow read, write: if false;
+    }
+
+    function isValidShareCreate() {
+      return request.auth != null
+        && request.resource.data.userId == request.auth.uid
+        && request.resource.data.shareAt is timestamp
+        && request.resource.data.statId is string
+        && request.resource.data.statId.size() > 0
+        && request.resource.data.statId.size() < 256
+        && request.resource.data.statType is string
+        && request.resource.data.statType.size() > 0
+        && request.resource.data.statType.size() < 64
+        && request.resource.data.where is string
+        && request.resource.data.where.size() > 0
+        && request.resource.data.where.size() < 64
+        && request.resource.data.get('views', 0) == 0
+        && request.resource.data.get('interactions', 0) == 0
+        && !('lastSyncedAt' in request.resource.data);
+    }
+
+    function isValidShareScoreCreate(scoreUserId) {
+      return request.auth != null
+        && request.auth.uid == scoreUserId
+        && request.resource.data.userId == request.auth.uid
+        && request.resource.data.shareCount == 1
+        && request.resource.data.sharePoints == 10
+        && request.resource.data.totalPoints == 10
+        && request.resource.data.get('views', 0) == 0
+        && request.resource.data.get('interactions', 0) == 0
+        && request.resource.data.get('viewPoints', 0) == 0
+        && request.resource.data.get('interactionPoints', 0) == 0;
+    }
+
+    function isValidShareScoreShareIncrement(scoreUserId) {
+      return request.auth != null
+        && request.auth.uid == scoreUserId
+        && request.resource.data.diff(resource.data).affectedKeys()
+          .hasOnly(['shareCount', 'sharePoints', 'totalPoints', 'updatedAt'])
+        && request.resource.data.shareCount == resource.data.shareCount + 1
+        && request.resource.data.sharePoints == resource.data.sharePoints + 10
+        && request.resource.data.totalPoints == resource.data.totalPoints + 10;
+    }
+
+    // Native share receipts (synthèse / fiche performance). Singular `share`
+    // matches team / season / ranking. views / interactions / lastSyncedAt
+    // are reserved for the Node batch (Admin SDK).
+    match /share/{shareId} {
+      allow read: if request.auth != null
+        && resource.data.userId == request.auth.uid;
+      allow create: if isValidShareCreate();
+      allow update, delete: if false;
+    }
+
+    // Per-user share ranking totals. views / interactions are batch-only.
+    match /shareScore/{userId} {
+      allow read: if request.auth != null && request.auth.uid == userId;
+      allow create: if isValidShareScoreCreate(userId);
+      allow update: if isValidShareScoreShareIncrement(userId);
+      allow delete: if false;
     }
 
     // Deferred FCM pushes (quiet hours) — Cloud Functions / Admin SDK only.

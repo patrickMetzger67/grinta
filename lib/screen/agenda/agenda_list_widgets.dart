@@ -1678,30 +1678,13 @@ class AgendaItemCard extends StatelessWidget {
                       canManageThisTraining || canManageThisMatch,
                 )) ...[
               const SizedBox(height: 10),
-              SizedBox(
-                width: double.infinity,
-                child: FilledButton.icon(
-                  onPressed: () {
-                    showSessionReportEmailDialog(
-                      context: context,
-                      eventId: item.id,
-                      isMatch: item.match != null,
-                      summary: item.teamWorkloadSummary,
-                      title: item.title,
-                      subtitle: item.subtitle,
-                      teamId: teamId.isEmpty ? null : teamId,
-                      eventDate: item.startAt,
-                      match: item.match,
-                    );
-                  },
-                  icon: const Icon(Icons.picture_as_pdf_outlined, size: 18),
-                  label: Text(context.l10n.sessionReportEmailActionLabel),
-                  style: FilledButton.styleFrom(
-                    backgroundColor: colors.card.withValues(alpha: 0.92),
-                    foregroundColor: colors.textPrimary,
-                    side: BorderSide(color: colors.border),
-                    padding: const EdgeInsets.symmetric(vertical: 12),
-                  ),
+              _AgendaPdfAndShareRow(
+                item: item,
+                teamId: teamId,
+                canShareAverages: isShareManagerOfTeam(
+                  managedTeamIds: managedTeamsIds,
+                  teamId: teamId,
+                  isManager: canManageThisMatch || canManageThisTraining,
                 ),
               ),
             ],
@@ -1780,7 +1763,6 @@ class AgendaItemCard extends StatelessWidget {
       ),
     );
   }
-
 
   Widget personalSportMetrics({
     required BuildContext context,
@@ -1983,6 +1965,74 @@ class AgendaItemCard extends StatelessWidget {
           ),
         ],
       ),
+    );
+  }
+}
+
+class _AgendaPdfAndShareRow extends StatelessWidget {
+  const _AgendaPdfAndShareRow({
+    required this.item,
+    required this.teamId,
+    required this.canShareAverages,
+  });
+
+  final AgendaItem item;
+  final String teamId;
+  final bool canShareAverages;
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = context.appColors;
+    final pdfButton = FilledButton.icon(
+      onPressed: () {
+        showSessionReportEmailDialog(
+          context: context,
+          eventId: item.id,
+          isMatch: item.match != null,
+          summary: item.teamWorkloadSummary,
+          title: item.title,
+          subtitle: item.subtitle,
+          teamId: teamId.isEmpty ? null : teamId,
+          eventDate: item.startAt,
+          match: item.match,
+        );
+      },
+      icon: const Icon(Icons.picture_as_pdf_outlined, size: 18),
+      label: Text(context.l10n.sessionReportEmailActionLabel),
+      style: FilledButton.styleFrom(
+        backgroundColor: colors.card.withValues(alpha: 0.92),
+        foregroundColor: colors.textPrimary,
+        side: BorderSide(color: colors.border),
+        padding: const EdgeInsets.symmetric(vertical: 12),
+      ),
+    );
+
+    if (!canShareAverages || item.teamWorkloadSummary == null) {
+      return SizedBox(width: double.infinity, child: pdfButton);
+    }
+
+    return Row(
+      children: [
+        Expanded(child: pdfButton),
+        const SizedBox(width: 10),
+        Expanded(
+          child: SessionAveragesShareButton(
+            summary: item.teamWorkloadSummary!,
+            isMatch: item.match != null,
+            heading: item.title,
+            filled: true,
+            style: FilledButton.styleFrom(
+              backgroundColor: colors.card.withValues(alpha: 0.92),
+              foregroundColor: colors.textPrimary,
+              side: BorderSide(color: colors.border),
+              padding: const EdgeInsets.symmetric(vertical: 12),
+            ),
+            matchContext: item.match == null
+                ? null
+                : SessionShareMatchContext.fromMatch(item.match!),
+          ),
+        ),
+      ],
     );
   }
 }

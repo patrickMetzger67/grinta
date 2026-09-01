@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:grinta/core/extensions/l10n_extension.dart';
 import 'package:grinta/model/player.dart';
+import 'package:grinta/services/session_player_synthesis_share_service.dart';
 import 'package:grinta/util/session_tracker_kit.dart';
 import 'package:grinta/widget/polar_analysis/polar_player_analysis_widget.dart';
 import 'package:grinta/widget/tracker_player_analysis_widget.dart';
@@ -20,6 +21,7 @@ class SessionPlayerAnalysisView extends StatelessWidget {
     this.isMatch = true,
     this.showHeader = true,
     this.showDistanceTimeline = true,
+    this.shareMatchContext,
   });
 
   final String eventId;
@@ -33,6 +35,7 @@ class SessionPlayerAnalysisView extends StatelessWidget {
   final bool isMatch;
   final bool showHeader;
   final bool showDistanceTimeline;
+  final SessionShareMatchContext? shareMatchContext;
 
   @override
   Widget build(BuildContext context) {
@@ -76,6 +79,7 @@ class SessionPlayerAnalysisView extends StatelessWidget {
           isMatch: isMatch,
           showHeader: showHeader,
           showDistanceTimeline: showDistanceTimeline,
+          shareMatchContext: shareMatchContext,
         );
       },
     );

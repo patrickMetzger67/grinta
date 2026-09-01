@@ -49,6 +49,7 @@ dependencies:
   purchases_flutter: ^10.3.0
   webview_flutter: ^4.10.0
   url_launcher: ^6.3.1
+  share_plus: ^11.0.0
   shared_preferences: ^2.5.3
   # Face ID / Touch ID / Android biometrics for optional app unlock + login.
   local_auth: ^2.3.0
@@ -116,6 +117,7 @@ flutter:
     - assets/images/apple_forme_logo.svg
     - assets/images/google_fit_logo.svg
     - assets/images/ask_gio_avatar.png
+    - assets/images/share_trame_fallback.jpg
     - assets/images/login_slide1_mobile.png
     - assets/images/login_slide2_mobile.png
     - assets/images/login_slide3_mobile.png

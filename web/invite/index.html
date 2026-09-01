@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Grinta — Invitation</title>
+  <meta name="description" content="Rejoins ton équipe sur Grinta Performance avec ton code d'invitation." />
+  <meta property="og:title" content="Grinta Performance — Invitation" />
+  <meta property="og:description" content="Ouvre l'app et saisis ton code d'invitation pour rejoindre ton équipe." />
+  <style>
+    :root {
+      --bg: #111214;
+      --surface: #1a1b1e;
+      --text: #f5f5f7;
+      --muted: #aeaeb2;
+      --primary: #f95c1b;
+      --border: #34363c;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      min-height: 100vh;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      background: radial-gradient(1200px 600px at 50% -10%, #2a1a12 0%, var(--bg) 55%);
+      color: var(--text);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 24px;
+    }
+    main {
+      width: 100%;
+      max-width: 420px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      padding: 32px 28px;
+      text-align: center;
+    }
+    h1 {
+      margin: 0 0 8px;
+      font-size: 1.5rem;
+      font-weight: 700;
+    }
+    p { margin: 0 0 16px; color: var(--muted); line-height: 1.5; }
+    .code {
+      margin: 20px 0 28px;
+      font-size: 2rem;
+      letter-spacing: 0.18em;
+      font-weight: 700;
+      color: var(--primary);
+    }
+    .actions { display: grid; gap: 12px; }
+    a.btn {
+      display: block;
+      text-decoration: none;
+      color: #fff;
+      background: var(--primary);
+      padding: 14px 18px;
+      border-radius: 999px;
+      font-weight: 600;
+    }
+    a.btn.secondary {
+      background: transparent;
+      border: 1px solid var(--border);
+      color: var(--text);
+    }
+    .hint { margin-top: 20px; font-size: 0.85rem; }
+  </style>
+</head>
+<body>
+  <main>
+    <h1>Grinta Performance</h1>
+    <p id="intro">Ton coach t'invite à rejoindre l'équipe.</p>
+    <div class="code" id="code">————</div>
+    <div class="actions">
+      <a class="btn" id="ios" href="https://grinta.io">Télécharger sur iPhone</a>
+      <a class="btn secondary" id="android"
+         href="https://play.google.com/store/apps/details?id=io.grinta.app">
+        Télécharger sur Android
+      </a>
+      <a class="btn secondary" id="app" href="#">Ouvrir dans l'app</a>
+    </div>
+    <p class="hint">Après installation, ouvre Grinta et saisis le code ci-dessus.</p>
+  </main>
+  <script>
+    (function () {
+      var params = new URLSearchParams(window.location.search);
+      var code = (params.get('code') || '').trim().toUpperCase();
+      var codeEl = document.getElementById('code');
+      var appLink = document.getElementById('app');
+      if (code) {
+        codeEl.textContent = code;
+        appLink.href = 'grinta://invite?code=' + encodeURIComponent(code);
+      } else {
+        codeEl.textContent = '—';
+        document.getElementById('intro').textContent =
+          'Demande le code d\'invitation à ton coach, puis ouvre Grinta.';
+        appLink.style.display = 'none';
+      }
+    })();
+  </script>
+</body>
+</html>

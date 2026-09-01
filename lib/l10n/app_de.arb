@@ -98,6 +98,7 @@
   "invitationEmailCodeLabel": "Dein Einladungscode",
   "invitationEmailDownloadIos": "Für iPhone herunterladen",
   "invitationEmailDownloadAndroid": "Für Android herunterladen",
+  "invitationEmailOpenInvite": "Einladung öffnen",
   "invitationEmailFooter": "Du hast diese E-Mail erhalten, weil ein Coach dich auf {appName} hinzugefügt hat. Wenn du diese Nachricht nicht erwartet hast, kannst du sie ignorieren.",
   "@invitationEmailFooter": {
     "placeholders": {
@@ -106,13 +107,16 @@
       }
     }
   },
-  "invitationSmsMessage": "Dein Coach lädt dich ein, {appName} beizutreten. Dein Code: {code}.\niPhone: {appleStoreUrl}\nAndroid: {googlePlayUrl}",
+  "invitationSmsMessage": "Dein Coach lädt dich ein, {appName} beizutreten. Dein Code: {code}.\nLink: {inviteUrl}\niPhone: {appleStoreUrl}\nAndroid: {googlePlayUrl}",
   "@invitationSmsMessage": {
     "placeholders": {
       "appName": {
         "type": "String"
       },
       "code": {
+        "type": "String"
+      },
+      "inviteUrl": {
         "type": "String"
       },
       "appleStoreUrl": {
@@ -244,6 +248,9 @@
   "sessionReportEmailInvalid": "Ungültige E-Mail-Adresse.",
   "memberInvitationEmailFailed": "Mitglied hinzugefügt, aber die Einladungs-E-Mail konnte nicht gesendet werden.",
   "memberInvitationEmailSent": "Einladungs-E-Mail gesendet",
+  "memberInvitationWhatsAppSent": "WhatsApp-Einladung gesendet",
+  "memberInvitationChannelsSent": "Einladung gesendet (E-Mail und WhatsApp)",
+  "memberInvitationSendFailed": "Mitglied hinzugefügt, aber die Einladung konnte nicht gesendet werden.",
   "memberAddedToTeamNotificationTitle": "Team-Update",
   "memberAddedToTeamNotificationBody": "Dein Coach hat dich zu {teamName} hinzugefügt.",
   "@memberAddedToTeamNotificationBody": {
@@ -256,11 +263,11 @@
   "invitationAccepted": "Einladung angenommen",
   "invitationPending": "Einladung ausstehend",
   "memberAppAccountLinked": "App-Konto verknüpft",
-  "resendInvitationTooltip": "Einladungs-E-Mail erneut senden",
+  "resendInvitationTooltip": "Einladung erneut senden",
   "resendInvitationAction": "Einladung erneut senden",
-  "resendInvitationNoEmailTooltip": "E-Mail-Adresse hinzufügen, um eine Einladung zu senden",
-  "resendInvitationSuccess": "Einladungs-E-Mail gesendet",
-  "resendInvitationFailed": "Einladungs-E-Mail konnte nicht gesendet werden",
+  "resendInvitationNoEmailTooltip": "E-Mail oder Telefon hinzufügen, um eine Einladung zu senden",
+  "resendInvitationSuccess": "Einladung erneut gesendet",
+  "resendInvitationFailed": "Einladung konnte nicht gesendet werden",
   "memberBirthDate": "Geburtsdatum",
   "memberBirthDateOptional": "Geburtsdatum (optional)",
   "memberBirthDateRequired": "Geburtsdatum ist erforderlich",
@@ -1114,6 +1121,18 @@
   "asiAnalysisFailed": "Analyse nicht möglich",
   "playerSynthesisTitle": "Spielerzusammenfassung",
   "playerSynthesisTabTitle": "Zusammenfassung",
+  "sessionSynthesisShareTooltip": "Meine Zusammenfassung teilen",
+  "sessionSynthesisShareFailed": "Zusammenfassung konnte nicht geteilt werden",
+  "metaSettingsTitle": "Instagram / Facebook",
+  "metaSettingsSubtitle": "Optional — zum Veröffentlichen per API und für Aufrufe.",
+  "metaConnectButton": "Instagram / Facebook verbinden",
+  "metaConnectSuccess": "Instagram- / Facebook-Konto verbunden.",
+  "metaConnectFailed": "Meta-Verbindung fehlgeschlagen. META_APP_ID / META_APP_SECRET prüfen.",
+  "metaPublishInstagram": "Auf Instagram veröffentlichen",
+  "metaPublishFacebook": "Auf Facebook veröffentlichen",
+  "metaPublishShareSheet": "Andere Apps (WhatsApp…)",
+  "metaPublishSuccess": "Veröffentlicht.",
+  "metaPublishFailed": "Veröffentlichen über Instagram / Facebook fehlgeschlagen.",
   "teamsListCount": "{count} Team(s)",
   "teamsListCountFiltered": "{filtered} / {total}",
   "teamsListNoResults": "Keine Teams gefunden",
@@ -3143,6 +3162,27 @@
   "preferredFootRight": "Rechts",
   "preferredFootBoth": "Beide",
   "playerSeasonSummaryPreferredFootSaved": "Starker Fuß aktualisiert.",
+  "playerSeasonSummaryShareAction": "Teilen",
+  "playerSeasonSummaryShareTooltip": "Leistungsblatt teilen",
+  "playerSeasonSummaryShareFailed": "Leistungsblatt konnte nicht geteilt werden",
+  "playerSeasonSummaryShareText": "{playerName} · {teamName} · {seasonLabel}\nEinberufungen: {convocations}\nStartelf: {starts}\nMinuten: {minutes}\nTraining anwesend: {present}\nAnwesenheit: {attendance}\n#GrintaPerformance",
+  "@playerSeasonSummaryShareText": {
+    "placeholders": {
+      "playerName": { "type": "String" },
+      "teamName": { "type": "String" },
+      "seasonLabel": { "type": "String" },
+      "convocations": { "type": "int" },
+      "starts": { "type": "int" },
+      "minutes": { "type": "int" },
+      "present": { "type": "int" },
+      "attendance": { "type": "String" }
+    }
+  },
+  "playerSeasonSummaryShareStatConvocations": "Einberufungen",
+  "playerSeasonSummaryShareStatStarts": "Startelf",
+  "playerSeasonSummaryShareStatMinutes": "Gespielte Minuten",
+  "playerSeasonSummaryShareStatPresent": "Anwesend",
+  "playerSeasonSummaryShareStatAttendance": "Anwesenheit",
   "teamEditNameTitle": "Team bearbeiten",
   "teamEditNameSuccess": "Team aktualisiert.",
   "settingsDevicesSection": "Geräte/Anwendungen",

@@ -198,7 +198,7 @@ This mirrors the Trigger Email extension `delivery` shape so existing monitoring
 ## 6. Flutter integration
 
 - [`InvitationEmailService`](../lib/services/invitation_email_service.dart) writes to `mail` with `from`, `replyTo`, and `clubId` from [`InvitationConfig.resolve()`](../lib/config/invitation_config.dart).
-- [`MemberInvitationService`](../lib/services/member_invitation_service.dart) uses `InvitationEmailService` unchanged (sender fields are resolved inside `send()`).
+- [`MemberInvitationService`](../lib/services/member_invitation_service.dart) uses `InvitationEmailService` unchanged (sender fields are resolved inside `send()`). Member invites may also queue WhatsApp — see [`docs/whatsapp-invitations.md`](whatsapp-invitations.md).
 
 ### Session / match PDF stats reports
 

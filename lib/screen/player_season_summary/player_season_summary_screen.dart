@@ -14,13 +14,18 @@ import 'package:grinta/provider/appSession.dart';
 import 'package:grinta/services/effectivesService.dart';
 import 'package:grinta/services/player_positions_service.dart';
 import 'package:grinta/services/player_season_summary_service.dart';
+import 'package:grinta/services/meta_share_coordinator.dart';
+import 'package:grinta/services/player_season_summary_share_service.dart';
+import 'package:grinta/services/share_record_service.dart';
 import 'package:grinta/services/teamService.dart';
 import 'package:grinta/util/app_snackbar.dart';
+import 'package:grinta/util/share_sheet.dart';
 import 'package:grinta/util/app_theme.dart';
 import 'package:grinta/util/playerDisplayName.dart';
 import 'package:grinta/util/player_activity_report_aggregator.dart';
 import 'package:grinta/util/player_age.dart';
 import 'package:grinta/util/player_photo_resolver.dart';
+import 'package:grinta/util/share_player_access.dart';
 import 'package:grinta/util/player_positions.dart';
 import 'package:grinta/util/preferred_foot.dart';
 import 'package:grinta/widget/manage_unavailabilities_sheet.dart';
@@ -168,6 +173,70 @@ class _PlayerSeasonSummaryScreenState extends State<PlayerSeasonSummaryScreen> {
     }
   }
 
+  Future<void> _shareSummary(BuildContext context) async {
+    final summary = _summary;
+    if (summary == null) return;
+
+    final l10n = context.l10n;
+    final playerName = playerDisplayName(
+      widget.identity.player,
+      unknownLabel: l10n.entityPlayerUnknown,
+    );
+    final teamName = (widget.team.name?.trim().isNotEmpty ?? false)
+        ? widget.team.name!.trim()
+        : l10n.entityTeam;
+
+    final session = context.read<AppSession>();
+    final seasons = _seasonOptions(session);
+    String seasonLabel = _selectedSeasonId;
+    for (final season in seasons) {
+      final id = season.ref?.id?.trim() ?? '';
+      if (id == _selectedSeasonId) {
+        seasonLabel = _seasonLabel(context, season);
+        break;
+      }
+    }
+
+    final origin = shareSheetOrigin(context);
+
+    try {
+      final png = await const PlayerSeasonSummaryShareService()
+          .renderShareCardPng(
+        l10n: l10n,
+        playerName: playerName,
+        teamName: teamName,
+        seasonLabel: seasonLabel,
+        summary: summary,
+      );
+      if (png == null || png.isEmpty) {
+        throw StateError('Season summary PNG render failed');
+      }
+      if (!context.mounted) return;
+      final memberId =
+          effectiveMemberId(widget.identity.player)?.trim() ?? '';
+      final statId = [
+        if (memberId.isNotEmpty) memberId,
+        if (_selectedSeasonId.trim().isNotEmpty) _selectedSeasonId.trim(),
+      ].join('_');
+      await MetaShareCoordinator().shareOrPublish(
+        context: context,
+        pngBytes: png,
+        fileName: 'grinta_season_summary.png',
+        statId: statId,
+        statType: ShareStatType.seasonSummary,
+        sharePositionOrigin: origin,
+      );
+    } catch (e) {
+      if (!context.mounted) return;
+      AppSnackbar.show(
+        context,
+        l10n.playerSeasonSummaryShareFailed,
+        isError: true,
+      );
+      debugPrint('PlayerSeasonSummary share failed: $e');
+    }
+  }
+
   List<Season> _seasonOptions(AppSession session) {
     final seasons = session.getSeasonsForPlayer(
       session.selectedPlayerId ?? '',
@@ -251,6 +320,25 @@ class _PlayerSeasonSummaryScreenState extends State<PlayerSeasonSummaryScreen> {
             fontWeight: FontWeight.w700,
           ),
         ),
+        actions: [
+          if (_summary != null &&
+              !_loading &&
+              canSharePlayerCardFromSession(
+                session: context.watch<AppSession>(),
+                teamId: widget.team.keyTeam,
+                viewedPlayer: widget.identity.player,
+                isManager: widget.isManager,
+              ))
+            Builder(
+              builder: (buttonContext) {
+                return IconButton(
+                  tooltip: l10n.playerSeasonSummaryShareTooltip,
+                  onPressed: () => _shareSummary(buttonContext),
+                  icon: const Icon(Icons.ios_share_outlined),
+                );
+              },
+            ),
+        ],
       ),
       body: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -1011,7 +1099,7 @@ class _TrackerAveragesGrid extends StatelessWidget {
       physics: const NeverScrollableScrollPhysics(),
       crossAxisSpacing: 10,
       mainAxisSpacing: 10,
-      childAspectRatio: width >= 720 ? 1.25 : 1.15,
+      childAspectRatio: width >= 720 ? 1.25 : 1.05,
       children: [
         for (final metric in metrics)
           _PerformanceMetricTile(
@@ -1153,64 +1241,75 @@ class _PerformanceMetricTile extends StatelessWidget {
         borderRadius: BorderRadius.circular(18),
         border: Border.all(color: colors.border),
       ),
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        crossAxisAlignment: CrossAxisAlignment.center,
-        children: [
-          Icon(
-            icon,
-            color: color,
-            size: 32,
-          ),
-          const SizedBox(height: 10),
-          FittedBox(
-            alignment: Alignment.center,
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          return FittedBox(
             fit: BoxFit.scaleDown,
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.end,
-              children: [
-                Text(
-                  value,
-                  style: TextStyle(
-                    color: colors.textPrimary,
-                    fontSize: 28,
-                    fontWeight: FontWeight.w900,
-                    height: 1.05,
+            child: ConstrainedBox(
+              constraints: BoxConstraints(maxWidth: constraints.maxWidth),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                mainAxisAlignment: MainAxisAlignment.center,
+                crossAxisAlignment: CrossAxisAlignment.center,
+                children: [
+                  Icon(
+                    icon,
+                    color: color,
+                    size: 32,
                   ),
-                ),
-                if (unit.isNotEmpty) ...[
-                  const SizedBox(width: 5),
-                  Padding(
-                    padding: const EdgeInsets.only(bottom: 3),
-                    child: Text(
-                      unit,
-                      style: TextStyle(
-                        color: colors.textSecondary,
-                        fontSize: 14,
-                        fontWeight: FontWeight.w800,
-                      ),
+                  const SizedBox(height: 10),
+                  FittedBox(
+                    alignment: Alignment.center,
+                    fit: BoxFit.scaleDown,
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      mainAxisSize: MainAxisSize.min,
+                      crossAxisAlignment: CrossAxisAlignment.end,
+                      children: [
+                        Text(
+                          value,
+                          style: TextStyle(
+                            color: colors.textPrimary,
+                            fontSize: 28,
+                            fontWeight: FontWeight.w900,
+                            height: 1.05,
+                          ),
+                        ),
+                        if (unit.isNotEmpty) ...[
+                          const SizedBox(width: 5),
+                          Padding(
+                            padding: const EdgeInsets.only(bottom: 3),
+                            child: Text(
+                              unit,
+                              style: TextStyle(
+                                color: colors.textSecondary,
+                                fontSize: 14,
+                                fontWeight: FontWeight.w800,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 6),
+                  Text(
+                    label,
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                    textAlign: TextAlign.center,
+                    style: TextStyle(
+                      color: colors.textSecondary,
+                      fontSize: 13,
+                      fontWeight: FontWeight.w700,
+                      height: 1.15,
                     ),
                   ),
                 ],
-              ],
+              ),
             ),
-          ),
-          const SizedBox(height: 6),
-          Text(
-            label,
-            maxLines: 2,
-            overflow: TextOverflow.ellipsis,
-            textAlign: TextAlign.center,
-            style: TextStyle(
-              color: colors.textSecondary,
-              fontSize: 13,
-              fontWeight: FontWeight.w700,
-              height: 1.15,
-            ),
-          ),
-        ],
+          );
+        },
       ),
     );
   }

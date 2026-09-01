@@ -11,6 +11,8 @@ import 'package:grinta/model/player.dart';
 import 'package:grinta/services/invitationService.dart';
 import 'package:grinta/services/invitation_email_builder.dart';
 import 'package:grinta/services/invitation_email_service.dart';
+import 'package:grinta/services/invitation_link_builder.dart';
+import 'package:grinta/services/invitation_whatsapp_service.dart';
 import 'package:grinta/services/notificationService.dart';
 import 'package:grinta/services/notification_fcm_service.dart';
 import 'package:grinta/services/playerService.dart';
@@ -30,6 +32,7 @@ class MemberInvitationResult {
     this.invitationId,
     this.invitationCreated = false,
     this.emailSent = false,
+    this.whatsappSent = false,
     this.notificationSent = false,
     this.error,
   });
@@ -37,10 +40,10 @@ class MemberInvitationResult {
   /// `true` when the flow finished without error (including intentional skips).
   final bool success;
 
-  /// `true` when no invitation, email, or push was attempted.
+  /// `true` when no invitation, email, WhatsApp, or push was attempted.
   final bool skipped;
 
-  /// Machine-readable skip reason, e.g. `noEmail`, `linkedAccount`.
+  /// Machine-readable skip reason, e.g. `noContact`, `linkedAccount`.
   final String? skipReason;
 
   /// Full invitation code (`contactPrefixCode` + 4 digits) when created.
@@ -51,6 +54,7 @@ class MemberInvitationResult {
 
   final bool invitationCreated;
   final bool emailSent;
+  final bool whatsappSent;
   final bool notificationSent;
   final String? error;
 
@@ -65,13 +69,16 @@ class MemberInvitationResult {
   factory MemberInvitationResult.sent({
     required String invitationCode,
     required String invitationId,
+    bool emailSent = false,
+    bool whatsappSent = false,
   }) {
     return MemberInvitationResult(
       success: true,
       invitationCode: invitationCode,
       invitationId: invitationId,
       invitationCreated: true,
-      emailSent: true,
+      emailSent: emailSent,
+      whatsappSent: whatsappSent,
     );
   }
 
@@ -87,13 +94,16 @@ class MemberInvitationResult {
     required bool invitationCreated,
     required String error,
     String? invitationId,
+    bool emailSent = false,
+    bool whatsappSent = false,
   }) {
     return MemberInvitationResult(
       success: false,
       invitationCode: invitationCode,
       invitationId: invitationId,
       invitationCreated: invitationCreated,
-      emailSent: false,
+      emailSent: emailSent,
+      whatsappSent: whatsappSent,
       error: error,
     );
   }
@@ -103,12 +113,13 @@ class MemberInvitationResult {
     return 'MemberInvitationResult(success=$success skipped=$skipped '
         'skipReason=$skipReason invitationCode=$invitationCode '
         'invitationId=$invitationId invitationCreated=$invitationCreated '
-        'emailSent=$emailSent notificationSent=$notificationSent error=$error)';
+        'emailSent=$emailSent whatsappSent=$whatsappSent '
+        'notificationSent=$notificationSent error=$error)';
   }
 }
 
-/// Creates Firestore member invitations, sends onboarding email, or notifies linked
-/// app users when they are added to a team.
+/// Creates Firestore member invitations, sends onboarding email / WhatsApp,
+/// or notifies linked app users when they are added to a team.
 ///
 /// Usage after adding or updating a roster member:
 /// ```dart
@@ -117,32 +128,53 @@ class MemberInvitationResult {
 ///   member: selected,
 ///   memberId: member.keyMember!,
 ///   email: details.email ?? '',
+///   phoneE164: details.phoneE164,
 ///   teamId: team.keyTeam,
 ///   seasonId: seasonId,
 ///   teamName: team.name ?? '',
 /// );
-/// if (!result.success && result.invitationCreated && !result.emailSent) {
-///   AppSnackbar.show(context, l10n.memberInvitationEmailFailed, isError: true);
-/// }
 /// ```
 class MemberInvitationService {
   MemberInvitationService._({
     InvitationService? invitationService,
     InvitationEmailService? invitationEmailService,
+    InvitationWhatsAppService? invitationWhatsAppService,
     NotificationService? notificationService,
     UserService? userService,
     PlayerService? playerService,
   })  : _invitationService = invitationService ?? InvitationService(),
         _invitationEmailService =
             invitationEmailService ?? InvitationEmailService(),
+        _invitationWhatsAppService =
+            invitationWhatsAppService ?? InvitationWhatsAppService(),
         _notificationService = notificationService ?? NotificationService(),
         _userService = userService ?? UserService(),
         _playerService = playerService ?? PlayerService();
 
   static final MemberInvitationService instance = MemberInvitationService._();
 
+  @visibleForTesting
+  factory MemberInvitationService.forTest({
+    InvitationService? invitationService,
+    InvitationEmailService? invitationEmailService,
+    InvitationWhatsAppService? invitationWhatsAppService,
+    NotificationService? notificationService,
+    UserService? userService,
+    PlayerService? playerService,
+  }) {
+    return MemberInvitationService._(
+      invitationService: invitationService,
+      invitationEmailService: invitationEmailService,
+      invitationWhatsAppService: invitationWhatsAppService,
+      notificationService: notificationService,
+      userService: userService,
+      playerService: playerService,
+    );
+  }
+
   final InvitationService _invitationService;
   final InvitationEmailService _invitationEmailService;
+  final InvitationWhatsAppService _invitationWhatsAppService;
   final NotificationService _notificationService;
   final UserService _userService;
   final PlayerService _playerService;
@@ -161,7 +193,7 @@ class MemberInvitationService {
     return '${config.contactPrefixCode}${generate4DigitCode()}';
   }
 
-  /// Linked app account → push notification only; otherwise invitation + email.
+  /// Linked app account → push notification only; otherwise invitation + channels.
   ///
   /// When [notifyIfLinked] is `false` and the member is linked, the flow is
   /// skipped (e.g. email update on an onboarded member).
@@ -170,6 +202,7 @@ class MemberInvitationService {
     required Player member,
     required String memberId,
     required String email,
+    String phoneE164 = '',
     required String teamId,
     String? seasonId,
     required String teamName,
@@ -198,6 +231,7 @@ class MemberInvitationService {
       l10n: l10n,
       memberId: memberId,
       email: email,
+      phoneE164: phoneE164,
       type: type,
       teamId: teamId,
       seasonId: seasonId,
@@ -276,16 +310,18 @@ class MemberInvitationService {
     return MemberInvitationResult.notified();
   }
 
-  /// Creates a Firestore invitation and queues the onboarding email.
+  /// Creates a Firestore invitation and queues email and/or WhatsApp.
   ///
   /// When [email] already matches an existing Grinta user account, also creates
   /// in-app [NotifType.pendingInvitation] notifications on that user's profiles.
   ///
-  /// Skips when [email] is empty or invalid. Fails when the current user is not signed in.
+  /// Skips when both [email] and [phoneE164] are empty/invalid.
+  /// Fails when the current user is not signed in.
   Future<MemberInvitationResult> inviteMember({
     required AppLocalizations l10n,
     required String memberId,
     required String email,
+    String phoneE164 = '',
     int type = invitationTypeMember,
     String? teamId,
     String? seasonId,
@@ -293,23 +329,33 @@ class MemberInvitationService {
   }) async {
     debugPrint(
       'MemberInvitationService.inviteMember start memberId=$memberId '
-      'email=$email teamId=$teamId seasonId=$seasonId',
+      'email=$email phone=$phoneE164 teamId=$teamId seasonId=$seasonId',
     );
 
     final String normalizedEmail = email.trim();
-    if (normalizedEmail.isEmpty) {
+    final String normalizedPhone = phoneE164.trim();
+    final bool hasEmail = normalizedEmail.isNotEmpty &&
+        isValidEmailFormat(normalizedEmail);
+    final bool hasPhone = normalizedPhone.isNotEmpty &&
+        isValidE164Phone(normalizedPhone);
+
+    if (!hasEmail && !hasPhone) {
+      final String reason = normalizedEmail.isEmpty && normalizedPhone.isEmpty
+          ? 'noContact'
+          : 'invalidContact';
       debugPrint(
-        'MemberInvitationService.inviteMember skipped: noEmail memberId=$memberId',
+        'MemberInvitationService.inviteMember skipped: $reason '
+        'memberId=$memberId',
       );
-      return MemberInvitationResult.skipped('noEmail');
+      return MemberInvitationResult.skipped(reason);
     }
 
-    if (!isValidEmailFormat(normalizedEmail)) {
+    if (normalizedEmail.isNotEmpty && !hasEmail) {
       debugPrint(
         'MemberInvitationService.inviteMember skipped: invalidEmail '
         'memberId=$memberId email=$normalizedEmail',
       );
-      return MemberInvitationResult.skipped('invalidEmail');
+      // Continue if phone is valid; otherwise already returned above.
     }
 
     final String? uid = FirebaseAuth.instance.currentUser?.uid;
@@ -329,6 +375,10 @@ class MemberInvitationService {
         '${config.contactPrefixCode}${generate4DigitCode()}';
     final String invitationId = _uuid.v4();
     final String normalizedMemberId = memberId.trim();
+    final String inviteUrl = InvitationLinkBuilder.inviteUrl(
+      config: config,
+      invitationCode: code,
+    );
 
     debugPrint(
       'MemberInvitationService.inviteMember creating invitation '
@@ -358,30 +408,71 @@ class MemberInvitationService {
       );
     }
 
-    final InvitationEmailContent emailContent = InvitationEmailBuilder.build(
-      l10n: l10n,
-      config: config,
-      invitationCode: code,
-    );
+    bool emailSent = false;
+    bool whatsappSent = false;
+    final List<String> channelErrors = <String>[];
 
-    debugPrint(
-      'MemberInvitationService.inviteMember sending email memberId=$memberId '
-      'invitationId=$invitationId',
-    );
-
-    final String? emailError = await _invitationEmailService.send(
-      toEmail: normalizedEmail,
-      subject: emailContent.subject,
-      text: emailContent.text,
-      html: emailContent.html,
-    );
-
-    if (emailError != null) {
-      debugPrint(
-        'MemberInvitationService.inviteMember email failed memberId=$memberId '
-        'invitationId=$invitationId email=$normalizedEmail error=$emailError',
+    if (hasEmail) {
+      final InvitationEmailContent emailContent = InvitationEmailBuilder.build(
+        l10n: l10n,
+        config: config,
+        invitationCode: code,
+        inviteUrl: inviteUrl,
       );
-      // Still try to surface the invite in-app for existing accounts.
+
+      debugPrint(
+        'MemberInvitationService.inviteMember sending email memberId=$memberId '
+        'invitationId=$invitationId',
+      );
+
+      final String? emailError = await _invitationEmailService.send(
+        toEmail: normalizedEmail,
+        subject: emailContent.subject,
+        text: emailContent.text,
+        html: emailContent.html,
+      );
+
+      if (emailError != null) {
+        debugPrint(
+          'MemberInvitationService.inviteMember email failed memberId=$memberId '
+          'invitationId=$invitationId email=$normalizedEmail error=$emailError',
+        );
+        channelErrors.add(emailError);
+      } else {
+        emailSent = true;
+      }
+    }
+
+    if (hasPhone) {
+      debugPrint(
+        'MemberInvitationService.inviteMember sending WhatsApp memberId=$memberId '
+        'invitationId=$invitationId',
+      );
+      final String? whatsappError = await _invitationWhatsAppService.sendTemplate(
+        toPhoneE164: normalizedPhone,
+        templateName: config.whatsappTemplateName,
+        languageCode: config.whatsappTemplateLanguage,
+        bodyParameters: <String>[
+          config.appDisplayName.trim(),
+          code,
+          inviteUrl,
+        ],
+        invitationId: invitationId,
+        invitationCode: code,
+      );
+
+      if (whatsappError != null) {
+        debugPrint(
+          'MemberInvitationService.inviteMember WhatsApp failed memberId=$memberId '
+          'invitationId=$invitationId phone=$normalizedPhone error=$whatsappError',
+        );
+        channelErrors.add(whatsappError);
+      } else {
+        whatsappSent = true;
+      }
+    }
+
+    if (hasEmail) {
       await _createPendingInvitationNotifications(
         l10n: l10n,
         inviteeEmail: normalizedEmail,
@@ -391,40 +482,40 @@ class MemberInvitationService {
         teamName: teamName,
         createdByUid: uid.trim(),
       );
+    }
+
+    if (!emailSent && !whatsappSent) {
       return MemberInvitationResult.failed(
         invitationCode: code,
         invitationCreated: true,
         invitationId: invitationId,
-        error: emailError,
+        emailSent: false,
+        whatsappSent: false,
+        error: channelErrors.isEmpty
+            ? 'noChannelDelivered'
+            : channelErrors.join('; '),
       );
     }
 
-    await _createPendingInvitationNotifications(
-      l10n: l10n,
-      inviteeEmail: normalizedEmail,
-      invitedMemberId: normalizedMemberId,
-      invitationId: invitationId,
-      teamId: teamId?.trim(),
-      teamName: teamName,
-      createdByUid: uid.trim(),
-    );
-
     debugPrint(
       'MemberInvitationService.inviteMember complete memberId=$memberId '
-      'invitationId=$invitationId emailSent=true',
+      'invitationId=$invitationId emailSent=$emailSent whatsappSent=$whatsappSent',
     );
 
     return MemberInvitationResult.sent(
       invitationCode: code,
       invitationId: invitationId,
+      emailSent: emailSent,
+      whatsappSent: whatsappSent,
     );
   }
 
-  /// Re-sends the onboarding invitation email for an unlinked roster member.
+  /// Re-sends the onboarding invitation for an unlinked roster member.
   Future<MemberInvitationResult> resendInvitation({
     required AppLocalizations l10n,
     required String memberId,
     required String email,
+    String phoneE164 = '',
     required String teamId,
     String? seasonId,
     String? teamName,
@@ -434,6 +525,7 @@ class MemberInvitationService {
       l10n: l10n,
       memberId: memberId,
       email: email,
+      phoneE164: phoneE164,
       type: type,
       teamId: teamId,
       seasonId: seasonId,

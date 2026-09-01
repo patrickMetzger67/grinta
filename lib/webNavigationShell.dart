@@ -27,6 +27,7 @@ import 'widget/nav_icon_count_badge.dart';
 import 'widget/calendar_sync_toggle.dart';
 import 'widget/biometric_lock_gate.dart';
 import 'widget/devices_settings_section.dart';
+import 'widget/meta_settings_section.dart';
 import 'widget/notification_preferences_section.dart';
 import 'widget/app_version_label.dart';
 import 'widget/settings_close_button.dart';
@@ -519,6 +520,10 @@ class _WebNavigationShellState extends State<WebNavigationShell> {
           ),
         ),
         const DevicesSettingsSection(
+          contentPadding: EdgeInsets.symmetric(horizontal: 14),
+          webCardStyle: true,
+        ),
+        const MetaSettingsSection(
           contentPadding: EdgeInsets.symmetric(horizontal: 14),
           webCardStyle: true,
         ),
