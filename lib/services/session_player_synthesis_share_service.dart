@@ -6,10 +6,82 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:grinta/l10n/app_localizations.dart';
 import 'package:grinta/model/match.dart' as models;
+import 'package:grinta/model/tracker/team_workload_summary.dart';
 import 'package:grinta/model/tracker/trackerData.dart';
 import 'package:grinta/util/app_theme.dart';
+import 'package:grinta/util/share_sheet.dart';
 import 'package:http/http.dart' as http;
 import 'package:share_plus/share_plus.dart';
+
+/// Competition / journée / tour pill painted on the session share PNG.
+class SessionShareEventPill {
+  const SessionShareEventPill({
+    required this.icon,
+    required this.label,
+  });
+
+  final IconData icon;
+  final String label;
+}
+
+/// Orange pills: competition + day/tour for a match, or a training label.
+List<SessionShareEventPill> sessionShareEventPills({
+  required AppLocalizations l10n,
+  required bool isMatch,
+  SessionShareMatchContext? matchContext,
+}) {
+  if (!isMatch) {
+    return <SessionShareEventPill>[
+      SessionShareEventPill(
+        icon: Icons.fitness_center_rounded,
+        label: l10n.entityTraining,
+      ),
+    ];
+  }
+
+  if (matchContext == null) return const <SessionShareEventPill>[];
+
+  final pills = <SessionShareEventPill>[];
+  final competition = matchContext.competitionLabel;
+  if (competition != null) {
+    pills.add(
+      SessionShareEventPill(
+        icon: Icons.emoji_events_outlined,
+        label: competition,
+      ),
+    );
+  }
+  if ((matchContext.day ?? 0) > 0) {
+    pills.add(
+      SessionShareEventPill(
+        icon: Icons.calendar_view_day_rounded,
+        label: l10n.periodMatchDay(matchContext.day.toString()),
+      ),
+    );
+  }
+  final tour = matchContext.tourLabel;
+  if (tour != null) {
+    pills.add(
+      SessionShareEventPill(
+        icon: Icons.flag_outlined,
+        label: tour,
+      ),
+    );
+  }
+  return pills;
+}
+
+/// Competition + journée / tour painted in white inside the score cartouche.
+List<String> sessionShareCartoucheMetaLines({
+  required AppLocalizations l10n,
+  SessionShareMatchContext? matchContext,
+}) {
+  return sessionShareEventPills(
+    l10n: l10n,
+    isMatch: true,
+    matchContext: matchContext,
+  ).map((pill) => pill.label).toList(growable: false);
+}
 
 /// Optional match header for session share cards (logos / names / score).
 class SessionShareMatchContext {
@@ -21,6 +93,9 @@ class SessionShareMatchContext {
     required this.isStatApplied,
     this.team1LogoUrl,
     this.team2LogoUrl,
+    this.chType,
+    this.day,
+    this.tour,
   });
 
   final String team1Name;
@@ -30,8 +105,21 @@ class SessionShareMatchContext {
   final bool isStatApplied;
   final String? team1LogoUrl;
   final String? team2LogoUrl;
+  final String? chType;
+  final int? day;
+  final String? tour;
 
   bool get showMatchHeader => isStatApplied;
+
+  String? get competitionLabel {
+    final value = (chType ?? '').trim();
+    return value.isEmpty ? null : value;
+  }
+
+  String? get tourLabel {
+    final value = (tour ?? '').trim();
+    return value.isEmpty ? null : value;
+  }
 
   factory SessionShareMatchContext.fromMatch(models.Match match) {
     return SessionShareMatchContext(
@@ -42,6 +130,9 @@ class SessionShareMatchContext {
       isStatApplied: match.isStatApplied == true,
       team1LogoUrl: match.team1UrlLogo?.trim(),
       team2LogoUrl: match.team2UrlLogo?.trim(),
+      chType: match.chType?.trim(),
+      day: match.day,
+      tour: match.tour?.trim(),
     );
   }
 }
@@ -70,6 +161,17 @@ class SessionPlayerSynthesisShareService {
   const SessionPlayerSynthesisShareService();
 
   static const String _grintaLogoAsset = 'assets/images/logoFondBlanc.png';
+  static const String _trameFallbackAsset =
+      'assets/images/share_trame_fallback.jpg';
+
+  /// Soft blur — face unreadable, jersey / silhouette still readable.
+  static const double _trameBlurSigma = 20;
+
+  /// Modest darken only — 0.74 + a dark [BlendMode.modulate] hid the photo.
+  @visibleForTesting
+  static const double trameOverlayOpacity = 0.32;
+
+  static const double _trameHalftoneOpacity = 0.12;
 
   String buildShareText({
     required AppLocalizations l10n,
@@ -108,52 +210,31 @@ class SessionPlayerSynthesisShareService {
     return buffer.toString().trim();
   }
 
-  Future<void> share({
+  Future<ShareResult> share({
     required AppLocalizations l10n,
     required String playerName,
     required TrackerAnalysisResult analysis,
     SessionShareMatchContext? matchContext,
     required bool isMatch,
+    String? playerPhotoUrl,
     Rect? sharePositionOrigin,
   }) async {
-    final text = buildShareText(
-      l10n: l10n,
-      playerName: playerName,
-      analysis: analysis,
-      matchContext: matchContext,
-      isMatch: isMatch,
-    );
-
     final png = await renderShareCardPng(
       l10n: l10n,
       playerName: playerName,
       analysis: analysis,
       matchContext: matchContext,
       isMatch: isMatch,
+      playerPhotoUrl: playerPhotoUrl,
     );
-
-    if (png != null) {
-      await SharePlus.instance.share(
-        ShareParams(
-          text: text,
-          files: <XFile>[
-            XFile.fromData(
-              png,
-              mimeType: 'image/png',
-              name: 'grinta_session_synthesis.png',
-            ),
-          ],
-          sharePositionOrigin: sharePositionOrigin,
-        ),
-      );
-      return;
+    if (png == null || png.isEmpty) {
+      throw StateError('Session synthesis PNG render failed');
     }
 
-    await SharePlus.instance.share(
-      ShareParams(
-        text: text,
-        sharePositionOrigin: sharePositionOrigin,
-      ),
+    return sharePng(
+      pngBytes: png,
+      fileName: 'grinta_session_synthesis.png',
+      sharePositionOrigin: sharePositionOrigin,
     );
   }
 
@@ -163,6 +244,49 @@ class SessionPlayerSynthesisShareService {
     required TrackerAnalysisResult analysis,
     SessionShareMatchContext? matchContext,
     required bool isMatch,
+    String? playerPhotoUrl,
+  }) async {
+    const colors = AppColors.dark;
+    return _renderShareCard(
+      l10n: l10n,
+      heading: playerName,
+      sectionTitle: l10n.playerSynthesisTitle,
+      metrics: _metrics(l10n, analysis, colors),
+      matchContext: matchContext,
+      isMatch: isMatch,
+      playerPhotoUrl: playerPhotoUrl,
+    );
+  }
+
+  /// Team / session averages card (same tramé + cartouche as synthèse).
+  Future<Uint8List?> renderAveragesShareCardPng({
+    required AppLocalizations l10n,
+    required String heading,
+    required TeamWorkloadSummary summary,
+    SessionShareMatchContext? matchContext,
+    required bool isMatch,
+    String? playerPhotoUrl,
+  }) async {
+    const colors = AppColors.dark;
+    return _renderShareCard(
+      l10n: l10n,
+      heading: heading,
+      sectionTitle: l10n.playerSeasonSummaryTrackerAverages,
+      metrics: _averageMetrics(l10n, summary, colors),
+      matchContext: matchContext,
+      isMatch: isMatch,
+      playerPhotoUrl: playerPhotoUrl,
+    );
+  }
+
+  Future<Uint8List?> _renderShareCard({
+    required AppLocalizations l10n,
+    required String heading,
+    required String sectionTitle,
+    required List<_ShareMetric> metrics,
+    SessionShareMatchContext? matchContext,
+    required bool isMatch,
+    String? playerPhotoUrl,
   }) async {
     try {
       const double width = 1080;
@@ -171,9 +295,12 @@ class SessionPlayerSynthesisShareService {
       final canvas = Canvas(recorder);
       const colors = AppColors.dark;
 
-      canvas.drawRect(
-        const Rect.fromLTWH(0, 0, width, height),
-        Paint()..color = colors.background,
+      await _paintTrameBackground(
+        canvas,
+        width: width,
+        height: height,
+        colors: colors,
+        playerPhotoUrl: playerPhotoUrl,
       );
 
       double y = 48;
@@ -206,6 +333,10 @@ class SessionPlayerSynthesisShareService {
 
       final showMatchHeader =
           isMatch && matchContext != null && matchContext.showMatchHeader;
+      final metaLines = sessionShareCartoucheMetaLines(
+        l10n: l10n,
+        matchContext: matchContext,
+      );
 
       if (showMatchHeader) {
         y = await _paintMatchHeader(
@@ -214,13 +345,33 @@ class SessionPlayerSynthesisShareService {
           width: width,
           colors: colors,
           match: matchContext,
+          metaLines: metaLines,
         );
         y += 28;
+      } else if (!isMatch) {
+        _paintText(
+          canvas,
+          l10n.entityTraining,
+          offset: Offset(64, y),
+          color: Colors.white,
+          fontSize: 26,
+          fontWeight: FontWeight.w700,
+          maxWidth: width - 128,
+        );
+        y += 48;
+      } else if (metaLines.isNotEmpty) {
+        y = _paintWhiteMetaLines(
+          canvas,
+          lines: metaLines,
+          y: y,
+          width: width,
+        );
+        y += 20;
       }
 
       _paintText(
         canvas,
-        playerName,
+        heading,
         offset: Offset(64, y),
         color: colors.textPrimary,
         fontSize: 52,
@@ -238,7 +389,7 @@ class SessionPlayerSynthesisShareService {
       );
       _paintText(
         canvas,
-        l10n.playerSynthesisTitle,
+        sectionTitle,
         offset: Offset(88, y),
         color: colors.textPrimary,
         fontSize: 30,
@@ -247,7 +398,6 @@ class SessionPlayerSynthesisShareService {
       );
       y += 56;
 
-      final metrics = _metrics(l10n, analysis, colors);
       const cols = 2;
       const gap = 20.0;
       const left = 64.0;
@@ -343,20 +493,223 @@ class SessionPlayerSynthesisShareService {
     ];
   }
 
+  List<_ShareMetric> _averageMetrics(
+    AppLocalizations l10n,
+    TeamWorkloadSummary summary,
+    AppColors colors,
+  ) {
+    double mean(String key) => summary.metricStats[key]?.mean ?? 0;
+    return <_ShareMetric>[
+      _ShareMetric(
+        icon: Icons.route_rounded,
+        label: l10n.statsDistance,
+        value: mean(TeamWorkloadMetricKeys.distanceKm).toStringAsFixed(2),
+        unit: l10n.statsUnitKm,
+        color: colors.primary,
+      ),
+      _ShareMetric(
+        icon: Icons.bolt_rounded,
+        label: l10n.statsMaxSpeed,
+        value: mean(TeamWorkloadMetricKeys.maxValidatedSpeedKmh)
+            .toStringAsFixed(1),
+        unit: l10n.statsUnitKmh,
+        color: colors.success,
+      ),
+      _ShareMetric(
+        icon: Icons.trending_up_rounded,
+        label: l10n.statsMaxAccel,
+        value: mean(TeamWorkloadMetricKeys.maxAccelerationMps2)
+            .toStringAsFixed(2),
+        unit: l10n.statsUnitMps2,
+        color: colors.warning,
+      ),
+      _ShareMetric(
+        icon: Icons.directions_run_rounded,
+        label: l10n.statsSprints,
+        value: mean(TeamWorkloadMetricKeys.sprintCount).toStringAsFixed(0),
+        unit: l10n.statsUnitCount,
+        color: colors.primary,
+      ),
+      _ShareMetric(
+        icon: Icons.flash_on_rounded,
+        label: l10n.statsHighAccel,
+        value: mean(TeamWorkloadMetricKeys.highAccelerationCount)
+            .toStringAsFixed(0),
+        unit: l10n.statsUnitCount,
+        color: colors.warning,
+      ),
+      _ShareMetric(
+        icon: Icons.timer_rounded,
+        label: l10n.statsHighSpeedTime,
+        value: _formatDurationShort(
+          Duration(
+            milliseconds:
+                (mean(TeamWorkloadMetricKeys.highSpeedDuration) * 1000)
+                    .round(),
+          ),
+        ),
+        unit: '',
+        color: colors.secondary,
+      ),
+      _ShareMetric(
+        icon: Icons.fitness_center_rounded,
+        label: l10n.statsWorkload,
+        value: mean(TeamWorkloadMetricKeys.workloadScore).toStringAsFixed(0),
+        unit: 'pts',
+        color: colors.success,
+      ),
+    ];
+  }
+
+  Future<void> _paintTrameBackground(
+    Canvas canvas, {
+    required double width,
+    required double height,
+    required AppColors colors,
+    String? playerPhotoUrl,
+  }) async {
+    final bounds = Rect.fromLTWH(0, 0, width, height);
+    canvas.drawRect(bounds, Paint()..color = colors.background);
+
+    // Wait for the decoded photo (cache / network / fallback) *before* raster.
+    final photo = await _resolveTrameImage(
+      playerPhotoUrl,
+      targetWidth: (width / 4).round(),
+    );
+    if (photo != null) {
+      canvas.saveLayer(
+        bounds,
+        Paint()
+          ..imageFilter = ui.ImageFilter.blur(
+            sigmaX: _trameBlurSigma,
+            sigmaY: _trameBlurSigma,
+            tileMode: TileMode.clamp,
+          ),
+      );
+      paintImage(
+        canvas: canvas,
+        rect: bounds,
+        image: photo,
+        fit: BoxFit.cover,
+        filterQuality: FilterQuality.medium,
+      );
+      canvas.restore();
+      photo.dispose();
+
+      canvas.drawRect(
+        bounds,
+        Paint()..color = colors.background.withValues(alpha: trameOverlayOpacity),
+      );
+    }
+
+    _paintHalftone(
+      canvas,
+      bounds,
+      colors.primary.withValues(alpha: _trameHalftoneOpacity),
+    );
+  }
+
+  /// Player photo if it finishes loading; otherwise the bundled tramé fallback.
+  Future<ui.Image?> _resolveTrameImage(
+    String? playerPhotoUrl, {
+    int? targetWidth,
+  }) async {
+    final url = playerPhotoUrl?.trim() ?? '';
+    if (url.isNotEmpty) {
+      final cached = await _loadCachedProviderImage(NetworkImage(url));
+      if (cached != null) return cached;
+      final downloaded = await _loadNetworkImage(url, targetWidth: targetWidth);
+      if (downloaded != null) return downloaded;
+    }
+
+    return _loadAssetImage(_trameFallbackAsset, targetWidth: targetWidth);
+  }
+
+  /// Flutter image cache only — never starts a new decode / network fetch.
+  Future<ui.Image?> _loadCachedProviderImage(ImageProvider provider) async {
+    final config = ImageConfiguration(
+      bundle: rootBundle,
+      devicePixelRatio: 1,
+    );
+    final key = await provider.obtainKey(config);
+    if (!PaintingBinding.instance.imageCache.containsKey(key)) {
+      return null;
+    }
+
+    final stream = provider.resolve(config);
+    ui.Image? cached;
+    late final ImageStreamListener listener;
+    listener = ImageStreamListener(
+      (ImageInfo info, bool _) {
+        cached = info.image.clone();
+        stream.removeListener(listener);
+      },
+      onError: (Object error, StackTrace? stackTrace) {
+        stream.removeListener(listener);
+      },
+    );
+    stream.addListener(listener);
+    if (cached == null) {
+      stream.removeListener(listener);
+    }
+    return cached;
+  }
+
+  void _paintHalftone(Canvas canvas, Rect rect, Color color) {
+    const spacing = 16.0;
+    const radius = 1.5;
+    final paint = Paint()..color = color;
+    var row = 0;
+    for (var y = rect.top; y < rect.bottom; y += spacing) {
+      final stagger = row.isOdd ? spacing / 2 : 0.0;
+      for (var x = rect.left + stagger; x < rect.right; x += spacing) {
+        canvas.drawCircle(Offset(x, y), radius, paint);
+      }
+      row += 1;
+    }
+  }
+
+  double _paintWhiteMetaLines(
+    Canvas canvas, {
+    required List<String> lines,
+    required double y,
+    required double width,
+  }) {
+    var cursor = y;
+    for (final line in lines) {
+      _paintText(
+        canvas,
+        line,
+        offset: Offset(64, cursor),
+        color: Colors.white,
+        fontSize: 26,
+        fontWeight: FontWeight.w700,
+        maxWidth: width - 128,
+      );
+      cursor += 34;
+    }
+    return cursor;
+  }
+
   Future<double> _paintMatchHeader(
     Canvas canvas, {
     required double y,
     required double width,
     required AppColors colors,
     required SessionShareMatchContext match,
+    List<String> metaLines = const <String>[],
   }) async {
+    const cartoucheWhite = Color(0xFFFFFFFF);
     final team1 = match.team1Name.isEmpty ? '—' : match.team1Name;
     final team2 = match.team2Name.isEmpty ? '—' : match.team2Name;
     final score = '${match.homeScore}  -  ${match.awayScore}';
+    final metaH = metaLines.isEmpty ? 0.0 : 8 + metaLines.length * 32.0;
+    final boxH = 220 + metaH;
+    final teamsY = y + 140 + metaH;
 
     canvas.drawRRect(
       RRect.fromRectAndRadius(
-        Rect.fromLTWH(48, y, width - 96, 220),
+        Rect.fromLTWH(48, y, width - 96, boxH),
         const Radius.circular(28),
       ),
       Paint()..color = colors.surface,
@@ -387,18 +740,33 @@ class SessionPlayerSynthesisShareService {
       canvas,
       score,
       offset: Offset(0, y + 52),
-      color: colors.textPrimary,
+      color: cartoucheWhite,
       fontSize: 56,
       fontWeight: FontWeight.w700,
       maxWidth: width,
       alignCenter: true,
     );
 
+    var metaY = y + 118;
+    for (final line in metaLines) {
+      _paintText(
+        canvas,
+        line,
+        offset: Offset(0, metaY),
+        color: cartoucheWhite,
+        fontSize: 24,
+        fontWeight: FontWeight.w700,
+        maxWidth: width,
+        alignCenter: true,
+      );
+      metaY += 32;
+    }
+
     _paintText(
       canvas,
       team1,
-      offset: Offset(64, y + 140),
-      color: colors.textSecondary,
+      offset: Offset(64, teamsY),
+      color: cartoucheWhite,
       fontSize: 26,
       fontWeight: FontWeight.w600,
       maxWidth: width / 2 - 80,
@@ -410,8 +778,8 @@ class SessionPlayerSynthesisShareService {
     _paintText(
       canvas,
       team2,
-      offset: Offset(width / 2 + 16, y + 140),
-      color: colors.textSecondary,
+      offset: Offset(width / 2 + 16, teamsY),
+      color: cartoucheWhite,
       fontSize: 26,
       fontWeight: FontWeight.w600,
       maxWidth: width / 2 - 80,
@@ -420,7 +788,7 @@ class SessionPlayerSynthesisShareService {
       centerOriginX: width / 2 + 16,
     );
 
-    return y + 220;
+    return y + boxH;
   }
 
   void _paintMetricTile(
@@ -604,10 +972,13 @@ class SessionPlayerSynthesisShareService {
     );
   }
 
-  Future<ui.Image?> _loadAssetImage(String assetPath) async {
+  Future<ui.Image?> _loadAssetImage(String assetPath, {int? targetWidth}) async {
     try {
       final data = await rootBundle.load(assetPath);
-      final codec = await ui.instantiateImageCodec(data.buffer.asUint8List());
+      final codec = await ui.instantiateImageCodec(
+        data.buffer.asUint8List(),
+        targetWidth: targetWidth,
+      );
       final frame = await codec.getNextFrame();
       return frame.image;
     } catch (e) {
@@ -616,7 +987,7 @@ class SessionPlayerSynthesisShareService {
     }
   }
 
-  Future<ui.Image?> _loadNetworkImage(String? url) async {
+  Future<ui.Image?> _loadNetworkImage(String? url, {int? targetWidth}) async {
     final trimmed = url?.trim() ?? '';
     if (trimmed.isEmpty) return null;
     try {
@@ -626,7 +997,10 @@ class SessionPlayerSynthesisShareService {
       if (response.statusCode < 200 || response.statusCode >= 300) {
         return null;
       }
-      final codec = await ui.instantiateImageCodec(response.bodyBytes);
+      final codec = await ui.instantiateImageCodec(
+        response.bodyBytes,
+        targetWidth: targetWidth,
+      );
       final frame = await codec.getNextFrame();
       return frame.image;
     } catch (e) {

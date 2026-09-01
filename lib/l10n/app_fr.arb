@@ -1293,6 +1293,16 @@
   "playerSynthesisTabTitle": "Synthèse",
   "sessionSynthesisShareTooltip": "Partager ma synthèse",
   "sessionSynthesisShareFailed": "Impossible de partager la synthèse",
+  "metaSettingsTitle": "Instagram / Facebook",
+  "metaSettingsSubtitle": "Optionnel — pour publier via l’API et voir les vues.",
+  "metaConnectButton": "Connecter Instagram / Facebook",
+  "metaConnectSuccess": "Compte Instagram / Facebook connecté.",
+  "metaConnectFailed": "La connexion Meta a échoué. Vérifie META_APP_ID / META_APP_SECRET.",
+  "metaPublishInstagram": "Publier sur Instagram",
+  "metaPublishFacebook": "Publier sur Facebook",
+  "metaPublishShareSheet": "Autres apps (WhatsApp…)",
+  "metaPublishSuccess": "Publication réussie.",
+  "metaPublishFailed": "Impossible de publier via Instagram / Facebook.",
   "teamsListCount": "{count} équipe(s)",
   "@teamsListCount": {
     "placeholders": {

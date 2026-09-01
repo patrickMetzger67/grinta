@@ -767,6 +767,30 @@ exports.ouraListActivities = createOuraListActivities();
 exports.ouraImportActivity = createOuraImportActivity();
 
 /**
+ * Instagram + Facebook Page OAuth + Graph publish (optional).
+ * Share sheet stays the default when Meta is not connected.
+ *
+ * Secrets:
+ *   firebase functions:secrets:set META_APP_ID
+ *   firebase functions:secrets:set META_APP_SECRET
+ * Register redirect:
+ *   https://europe-west1-aserstein-2453e.cloudfunctions.net/metaOAuthCallback
+ *
+ * Deploy:
+ *   firebase deploy --only functions:metaOAuthStart,functions:metaOAuthCallback,functions:metaDisconnect,functions:publishShareToMeta
+ */
+const {
+  createMetaOAuthStart,
+  createMetaOAuthCallback,
+  createMetaDisconnect,
+} = require('./meta_oauth');
+const { createPublishShareToMeta } = require('./meta_publish');
+exports.metaOAuthStart = createMetaOAuthStart();
+exports.metaOAuthCallback = createMetaOAuthCallback();
+exports.metaDisconnect = createMetaDisconnect();
+exports.publishShareToMeta = createPublishShareToMeta();
+
+/**
  * Firestore trigger: send queued mail documents via SendGrid.
  *
  * Deploy:
@@ -828,3 +852,12 @@ exports.deleteChatGroup = createDeleteChatGroup();
  */
 const { insidersScheduledIntenseSync } = require('./intenseScheduledSync');
 exports.insidersScheduledIntenseSync = insidersScheduledIntenseSync;
+
+/**
+ * Daily stub: fill share.views / share.interactions when social APIs exist.
+ *
+ * Deploy:
+ *   firebase deploy --only functions:syncShareInsights
+ */
+const { createSyncShareInsights } = require('./sync_share_insights');
+exports.syncShareInsights = createSyncShareInsights();

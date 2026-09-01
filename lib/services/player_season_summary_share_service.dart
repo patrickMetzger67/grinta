@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:grinta/l10n/app_localizations.dart';
 import 'package:grinta/services/player_season_summary_service.dart';
 import 'package:grinta/util/app_theme.dart';
+import 'package:grinta/util/share_sheet.dart';
 import 'package:share_plus/share_plus.dart';
 
 /// Builds share text / image for a player season summary card.
@@ -33,8 +34,8 @@ class PlayerSeasonSummaryShareService {
     );
   }
 
-  /// Shares text + a generated PNG card via the system share sheet.
-  Future<void> share({
+  /// Shares a generated PNG card only (iOS share sheet: 1 image).
+  Future<ShareResult> share({
     required AppLocalizations l10n,
     required String playerName,
     required String teamName,
@@ -42,14 +43,6 @@ class PlayerSeasonSummaryShareService {
     required PlayerSeasonSummary summary,
     Rect? sharePositionOrigin,
   }) async {
-    final text = buildShareText(
-      l10n: l10n,
-      playerName: playerName,
-      teamName: teamName,
-      seasonLabel: seasonLabel,
-      summary: summary,
-    );
-
     final Uint8List? pngBytes = await renderShareCardPng(
       l10n: l10n,
       playerName: playerName,
@@ -57,29 +50,14 @@ class PlayerSeasonSummaryShareService {
       seasonLabel: seasonLabel,
       summary: summary,
     );
-
-    if (pngBytes != null) {
-      await SharePlus.instance.share(
-        ShareParams(
-          text: text,
-          files: <XFile>[
-            XFile.fromData(
-              pngBytes,
-              mimeType: 'image/png',
-              name: 'grinta_season_summary.png',
-            ),
-          ],
-          sharePositionOrigin: sharePositionOrigin,
-        ),
-      );
-      return;
+    if (pngBytes == null || pngBytes.isEmpty) {
+      throw StateError('Season summary PNG render failed');
     }
 
-    await SharePlus.instance.share(
-      ShareParams(
-        text: text,
-        sharePositionOrigin: sharePositionOrigin,
-      ),
+    return sharePng(
+      pngBytes: pngBytes,
+      fileName: 'grinta_season_summary.png',
+      sharePositionOrigin: sharePositionOrigin,
     );
   }
 

@@ -68,6 +68,13 @@ service firebase.storage {
         && request.resource.contentType.matches('application/pdf.*');
     }
 
+    // Temporary PNG for Instagram Content Publishing (Graph fetches image_url).
+    // Writes are Admin SDK only; public read so Meta can download the file.
+    match /share_publish/{userId}/{fileName} {
+      allow read: if true;
+      allow write: if false;
+    }
+
     // Analyze-video uploads (web/tablet). Path: video/{uid}/{timestamp}_{name}.mp4
     // plus the 2D tactics sidecar: video/{uid}/{timestamp}_{name}.tactics.json
     match /video/{userId}/{fileName} {

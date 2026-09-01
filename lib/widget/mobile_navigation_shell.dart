@@ -34,6 +34,7 @@ import 'package:grinta/widget/stream_chat_nav_unread_badge.dart';
 import 'package:grinta/widget/calendar_sync_toggle.dart';
 import 'package:grinta/widget/biometric_lock_gate.dart';
 import 'package:grinta/widget/devices_settings_section.dart';
+import 'package:grinta/widget/meta_settings_section.dart';
 import 'package:grinta/widget/notification_preferences_section.dart';
 import 'package:grinta/widget/subscription_details_sheet.dart';
 import 'package:grinta/widget/notifications_sheet.dart';
@@ -391,6 +392,9 @@ class _MobileNavigationShellState extends State<MobileNavigationShell> {
                   child: BiometricUnlockSettingsTile(),
                 ),
                 const DevicesSettingsSection(
+                  contentPadding: EdgeInsets.symmetric(horizontal: 16),
+                ),
+                const MetaSettingsSection(
                   contentPadding: EdgeInsets.symmetric(horizontal: 16),
                 ),
                 const NotificationPreferencesSection(),

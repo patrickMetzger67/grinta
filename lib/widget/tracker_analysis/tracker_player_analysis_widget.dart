@@ -6,9 +6,16 @@ import 'package:grinta/analytics/analytics_interactions.dart';
 import 'package:grinta/analytics/analytics_screen_names.dart';
 import 'package:grinta/core/extensions/l10n_extension.dart';
 import 'package:grinta/l10n/app_localizations.dart';
+import 'package:grinta/provider/appSession.dart';
+import 'package:grinta/services/meta_share_coordinator.dart';
 import 'package:grinta/services/session_player_synthesis_share_service.dart';
+import 'package:grinta/services/share_record_service.dart';
 import 'package:grinta/util/app_snackbar.dart';
+import 'package:grinta/util/player_photo_resolver.dart';
+import 'package:grinta/util/share_player_access.dart';
+import 'package:grinta/util/share_sheet.dart';
 import 'package:grinta/widget/playerPhoto.dart';
+import 'package:provider/provider.dart';
 
 import '../../model/player.dart';
 import '../../model/teamParam.dart';
@@ -141,6 +148,7 @@ class _TrackerPlayerAnalysisWidgetState
           );
         }
 
+        final session = context.watch<AppSession>();
         return _TrackerPlayerAnalysisContent(
           analysis: payload.analysis,
           teamParam: payload.teamParam,
@@ -150,6 +158,12 @@ class _TrackerPlayerAnalysisWidgetState
           isMatch: widget.isMatch,
           player: widget.player,
           shareMatchContext: widget.shareMatchContext,
+          showShare: canSharePlayerCardFromSession(
+            session: session,
+            teamId: widget.teamId,
+            viewedPlayer: widget.player,
+            viewedPlayerId: payload.analysis.playerId,
+          ),
         );
       },
     );
@@ -165,6 +179,7 @@ class _TrackerPlayerAnalysisContent extends StatefulWidget {
   final bool isMatch;
   final Player? player;
   final SessionShareMatchContext? shareMatchContext;
+  final bool showShare;
 
   const _TrackerPlayerAnalysisContent({
     required this.analysis,
@@ -175,6 +190,7 @@ class _TrackerPlayerAnalysisContent extends StatefulWidget {
     required this.isMatch,
     required this.player,
     this.shareMatchContext,
+    this.showShare = false,
   });
 
   @override
@@ -205,19 +221,32 @@ class _TrackerPlayerAnalysisContentState
         ? widget.playerName!.trim()
         : l10n.entityPlayer;
 
-    final box = context.findRenderObject() as RenderBox?;
-    final origin = box == null
-        ? null
-        : box.localToGlobal(Offset.zero) & box.size;
+    final origin = shareSheetOrigin(context);
 
     setState(() => _sharing = true);
     try {
-      await const SessionPlayerSynthesisShareService().share(
+      final player = widget.player;
+      final playerPhotoUrl =
+          player == null ? null : await resolvePlayerPhotoDownloadUrl(player);
+      final png = await const SessionPlayerSynthesisShareService()
+          .renderShareCardPng(
         l10n: l10n,
         playerName: playerName,
         analysis: widget.analysis,
         matchContext: widget.shareMatchContext,
         isMatch: widget.isMatch,
+        playerPhotoUrl: playerPhotoUrl,
+      );
+      if (png == null || png.isEmpty) {
+        throw StateError('Session synthesis PNG render failed');
+      }
+      if (!context.mounted) return;
+      await MetaShareCoordinator().shareOrPublish(
+        context: context,
+        pngBytes: png,
+        fileName: 'grinta_session_synthesis.png',
+        statId: _sessionShareStatId(widget.analysis),
+        statType: ShareStatType.sessionSynthesis,
         sharePositionOrigin: origin,
       );
     } catch (e) {
@@ -232,6 +261,17 @@ class _TrackerPlayerAnalysisContentState
     } finally {
       if (mounted) setState(() => _sharing = false);
     }
+  }
+
+  String _sessionShareStatId(TrackerAnalysisResult analysis) {
+    final eventId = analysis.eventId.trim();
+    final playerId = analysis.playerId.trim();
+    if (eventId.isNotEmpty && playerId.isNotEmpty) {
+      return '${eventId}_$playerId';
+    }
+    if (eventId.isNotEmpty) return eventId;
+    if (playerId.isNotEmpty) return playerId;
+    return analysis.trackerId.trim();
   }
 
   @override
@@ -418,20 +458,27 @@ class _TrackerPlayerAnalysisContentState
     return _SectionCard(
       title: l10n.playerSynthesisTitle,
       icon: Icons.query_stats_rounded,
-      trailing: IconButton(
-        tooltip: l10n.sessionSynthesisShareTooltip,
-        onPressed: _sharing ? null : () => _shareSynthesis(context),
-        icon: _sharing
-            ? SizedBox(
-                width: 18,
-                height: 18,
-                child: CircularProgressIndicator(
-                  strokeWidth: 2,
-                  color: colors.primary,
-                ),
-              )
-            : Icon(Icons.ios_share_outlined, color: colors.primary),
-      ),
+      trailing: widget.showShare
+          ? Builder(
+              builder: (buttonContext) {
+                return IconButton(
+                  tooltip: l10n.sessionSynthesisShareTooltip,
+                  onPressed:
+                      _sharing ? null : () => _shareSynthesis(buttonContext),
+                  icon: _sharing
+                      ? SizedBox(
+                          width: 18,
+                          height: 18,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2,
+                            color: colors.primary,
+                          ),
+                        )
+                      : Icon(Icons.ios_share_outlined, color: colors.primary),
+                );
+              },
+            )
+          : null,
       child: GridView.count(
         crossAxisCount: metricColumns,
         shrinkWrap: true,

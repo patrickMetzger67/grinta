@@ -50,6 +50,17 @@ bool hasPlayerPhoto(Player player) {
   return photo.isNotEmpty && !_invalidPlayerPhotoValues.contains(photo);
 }
 
+/// Download URL for the member profile photo, or null when missing.
+Future<String?> resolvePlayerPhotoDownloadUrl(Player player) async {
+  if (!hasPlayerPhoto(player)) return null;
+  try {
+    final url = await _sourceToDownloadUrl(player.photo!.trim());
+    return url.isEmpty ? null : url;
+  } catch (_) {
+    return null;
+  }
+}
+
 /// Identifiant membre stable pour les maps session (keyMember ou id document).
 String? effectiveMemberId(Player player) {
   final fromField = player.keyMember?.trim();
