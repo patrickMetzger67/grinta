@@ -47,8 +47,25 @@ import FirebaseMessaging
   ) {
     #if canImport(FirebaseMessaging)
     Messaging.messaging().apnsToken = deviceToken
+    // Force FCM token generation as soon as APNs arrives (UIScene often
+    // delivers the APNs token after Flutter's first getToken() attempt).
+    Messaging.messaging().token { token, error in
+      if let error {
+        NSLog("Grinta: FCM token after APNs failed: \(error.localizedDescription)")
+      } else if token != nil {
+        NSLog("Grinta: FCM token ready after APNs")
+      }
+    }
     #endif
     super.application(application, didRegisterForRemoteNotificationsWithDeviceToken: deviceToken)
+  }
+
+  override func application(
+    _ application: UIApplication,
+    didFailToRegisterForRemoteNotificationsWithError error: Error
+  ) {
+    NSLog("Grinta: APNs registration failed: \(error.localizedDescription)")
+    super.application(application, didFailToRegisterForRemoteNotificationsWithError: error)
   }
 
   // Show every remote notification (convocation, RPE, invite, chat…) while the

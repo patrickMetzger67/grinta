@@ -13,6 +13,12 @@ const BRAND_ASERSTEIN = 'aserstein';
 
 const DEFAULT_TIMEZONE = 'Europe/Paris';
 
+/** Must match iOS `PRODUCT_BUNDLE_IDENTIFIER` / GoogleService-Info BUNDLE_ID. */
+const IOS_APNS_TOPIC = 'io.grinta.app';
+
+/** Raw APNs device tokens are 32 bytes hex-encoded. FCM tokens are longer. */
+const APNS_DEVICE_TOKEN_PATTERN = /^[0-9a-fA-F]{64}$/;
+
 /** Dart DateTime.monday=1 … sunday=7 */
 const WEEKDAY_SHORT_TO_DART = {
   Mon: 1,
@@ -29,13 +35,31 @@ function readNonEmptyString(value) {
   return trimmed.length > 0 ? trimmed : null;
 }
 
+function isLikelyApnsDeviceToken(token) {
+  return APNS_DEVICE_TOKEN_PATTERN.test((token ?? '').toString().trim());
+}
+
+function isSendableFcmRegistrationToken(token) {
+  const trimmed = (token ?? '').toString().trim();
+  if (!trimmed) return false;
+  return !isLikelyApnsDeviceToken(trimmed);
+}
+
+function tokenFromDoc(doc) {
+  const data =
+    typeof doc?.data === 'function' ? doc.data() : (doc?.data ?? {});
+  const fromField = readNonEmptyString(data?.token);
+  const fromId = (doc?.id ?? '').toString().trim();
+  return fromField || fromId || null;
+}
+
 function normalizeTokenList(raw) {
   if (!Array.isArray(raw)) return [];
   return [
     ...new Set(
       raw
         .map((token) => (token ?? '').toString().trim())
-        .filter((token) => token.length > 0),
+        .filter((token) => isSendableFcmRegistrationToken(token)),
     ),
   ];
 }
@@ -338,10 +362,12 @@ function buildMulticastMessage({
   const icon = readNonEmptyString(assets?.icon) ?? GRINTA_ICON_192;
   return {
     tokens,
+    // No top-level imageUrl: FCM would copy it onto APNs as mutable-content,
+    // which requires a Notification Service Extension Grinta does not ship.
+    // Android / web keep the logo via their platform-specific blocks.
     notification: {
       title: title || 'Grinta',
       body: body || '',
-      imageUrl: logo,
     },
     data: dataPayload,
     android: {
@@ -360,14 +386,13 @@ function buildMulticastMessage({
     },
     // Visible APNs alert for every Grinta push (convocation, RPE, invite,
     // chat…). A silent content-available wake is dropped when iOS is killed.
+    // No mutable-content / fcmOptions.imageUrl: those need an NSE.
     apns: {
       headers: {
         'apns-priority': '10',
         'apns-push-type': 'alert',
+        'apns-topic': IOS_APNS_TOPIC,
         ...(collapse ? { 'apns-collapse-id': collapse } : {}),
-      },
-      fcmOptions: {
-        imageUrl: logo,
       },
       payload: {
         aps: {
@@ -377,7 +402,6 @@ function buildMulticastMessage({
           },
           sound: 'default',
           badge: 1,
-          'mutable-content': 1,
           'interruption-level': 'active',
         },
       },
@@ -447,30 +471,25 @@ function computeSendAfter(prefs, now = new Date()) {
   return null;
 }
 
-async function loadUserFcmTokens(db, userId, brand, requestedTokens) {
+async function loadUserFcmTokens(db, userId, brand, _requestedTokens) {
   const tokensRef = db.collection('users').doc(userId).collection('fcmTokens');
-  let tokenDocs;
+  const all = await tokensRef.get();
+  let tokenDocs = all.docs;
   if (brand === BRAND_GRINTA) {
-    const branded = await tokensRef.where('app', '==', BRAND_GRINTA).get();
-    if (!branded.empty) {
-      tokenDocs = branded.docs;
-    } else {
-      const all = await tokensRef.get();
-      tokenDocs = all.docs.filter((doc) => {
-        const app = (doc.data()?.app ?? '').toString().trim();
-        return app.length === 0 || app === BRAND_GRINTA;
-      });
-    }
-  } else {
-    const all = await tokensRef.get();
-    tokenDocs = all.docs;
+    tokenDocs = all.docs.filter((doc) => {
+      const data = typeof doc.data === 'function' ? doc.data() : doc.data;
+      const app = (data?.app ?? '').toString().trim();
+      return app.length === 0 || app === BRAND_GRINTA;
+    });
   }
 
   const tokens = [];
   for (const doc of tokenDocs) {
-    const token = doc.id.trim();
-    if (!token) continue;
-    if (requestedTokens.size > 0 && !requestedTokens.has(token)) continue;
+    const token = tokenFromDoc(doc);
+    if (!token || !isSendableFcmRegistrationToken(token)) continue;
+    // Do not intersect with the client-supplied list. A partial snapshot
+    // (Android + Chrome only) would drop a valid iOS token that is already
+    // in Firestore.
     tokens.push(token);
   }
   return tokens;
@@ -566,6 +585,9 @@ async function filterTokensByRecipientPreferences({
 module.exports = {
   readNonEmptyString,
   normalizeTokenList,
+  isLikelyApnsDeviceToken,
+  isSendableFcmRegistrationToken,
+  tokenFromDoc,
   normalizeUserIdList,
   normalizeNotifType,
   normalizeLinkedUserId,
@@ -588,6 +610,7 @@ module.exports = {
   buildDataPayload,
   buildMulticastMessage,
   ANDROID_FCM_CHANNEL_ID,
+  IOS_APNS_TOPIC,
   isInvalidTokenError,
   BRAND_GRINTA,
   BRAND_ASERSTEIN,
