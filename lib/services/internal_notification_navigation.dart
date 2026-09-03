@@ -12,6 +12,7 @@ import 'package:grinta/model/team.dart';
 import 'package:grinta/navigation/app_navigator.dart';
 import 'package:grinta/provider/appSession.dart';
 import 'package:grinta/screen/match_detail_screen.dart';
+import 'package:grinta/screen/prediction_game/prediction_game_screen.dart';
 import 'package:grinta/screen/team_stats/team_stats_competition_selector.dart';
 import 'package:grinta/screen/team_stats/team_stats_screen.dart';
 import 'package:grinta/services/calendar_deep_link_service.dart';
@@ -29,7 +30,10 @@ class InternalNotificationNavigation {
     final context = appNavigatorKey.currentContext;
     if (context == null) return;
 
-    final type = data['type']?.toString().trim() ?? '';
+    final rawType = data['type']?.toString().trim() ?? '';
+    final type = rawType.startsWith('NotifType.')
+        ? rawType.substring('NotifType.'.length)
+        : rawType;
     if (!EshopConfigService.instance.commerceNotificationsEnabled &&
         isCommerceNotificationPayloadType(type)) {
       return;
@@ -40,6 +44,9 @@ class InternalNotificationNavigation {
         break;
       case 'matchOpponentStatsReminder':
         await _openOpponentStats(context, data);
+        break;
+      case 'predictionGame':
+        await _openPredictionGame(context, data);
         break;
       default:
         ShellNavigationScope.tryNavigateToTab(
@@ -153,6 +160,25 @@ class InternalNotificationNavigation {
               matchId.isNotEmpty ? matchId : null,
         ),
       ),
+    );
+  }
+
+  static Future<void> _openPredictionGame(
+    BuildContext context,
+    Map<String, dynamic> data,
+  ) async {
+    final contestId = (data['predGameDayId'] ??
+            data['objectId'] ??
+            data['id'] ??
+            '')
+        .toString()
+        .trim();
+    if (contestId.isEmpty) return;
+    if (!context.mounted) return;
+
+    await openPredictionGameScreen(
+      context,
+      predGameDayId: contestId,
     );
   }
 

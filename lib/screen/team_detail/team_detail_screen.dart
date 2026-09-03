@@ -17,7 +17,9 @@ import 'package:grinta/model/grinta_player_hw.dart';
 import 'package:grinta/model/effectives.dart';
 import 'package:grinta/model/invitation.dart';
 import 'package:grinta/model/player.dart';
+import 'package:grinta/model/engagement.dart';
 import 'package:grinta/model/team.dart';
+import 'package:grinta/screen/prediction_game/prediction_game_screen.dart';
 import 'package:grinta/model/tracker/deviceOwner.dart';
 import 'package:grinta/provider/appSession.dart';
 import 'package:grinta/screen/player_season_summary/player_season_summary_screen.dart';
@@ -26,6 +28,7 @@ import 'package:provider/provider.dart';
 import 'package:grinta/services/playerService.dart';
 import 'package:grinta/services/teamService.dart';
 import '../../util/app_snackbar.dart';
+import '../../util/prediction_game_helper.dart';
 import '../../util/app_theme.dart';
 import '../../util/player_positions.dart';
 import '../../util/playerDisplayName.dart';
@@ -39,6 +42,7 @@ import '../../util/player_profile_validator.dart';
 
 import '../../model/tracker/owner.dart';
 import '../../services/effectivesService.dart';
+import '../../services/engagement_service.dart';
 import '../../services/deviceService.dart';
 import '../../services/invitationService.dart';
 import '../../services/member_invitation_service.dart';
@@ -117,6 +121,7 @@ class _TeamDetailScreenState extends State<TeamDetailScreen> {
   bool _isMemberOperationLoading = false;
   String? _resendingInvitationMemberId;
   MemberInvitationResult? _pendingMemberInvitationResult;
+  Future<List<Engagement>>? _predictionEngagementsFuture;
 
   @override
   void dispose() {
@@ -161,6 +166,7 @@ class _TeamDetailScreenState extends State<TeamDetailScreen> {
         _headerStaffCount = 0;
         _userOwnersLoaded = false;
         _userOwnersByEmail = const [];
+        _predictionEngagementsFuture = null;
         _future = _fetchTeamFromFirestore().then((_) async {
           final List<_TeamMemberVm> members = await _loadMembers();
           await _refreshUserOwnersAvailability();
@@ -2214,6 +2220,11 @@ class _TeamDetailScreenState extends State<TeamDetailScreen> {
                     averageAge: averageAge,
                   ),
                   SizedBox(height: isMobileLayout ? 16 : 24),
+                  if (_canManageTeam(context) ||
+                      _team.withPredictionGame == true) ...[
+                    _buildPredictionGameSection(context),
+                    SizedBox(height: isMobileLayout ? 16 : 24),
+                  ],
                   _buildRosterCard(context, playerRows),
                   SizedBox(height: isMobileLayout ? 16 : 24),
                   _buildStaffCard(context, staffRows),
@@ -2575,6 +2586,228 @@ class _TeamDetailScreenState extends State<TeamDetailScreen> {
         },
       ),
     );
+  }
+
+  Widget _buildPredictionGameSection(BuildContext context) {
+    final bool canManage = _canManageTeam(context);
+    final bool enabled = _team.withPredictionGame == true;
+    if (!canManage && !enabled) {
+      return const SizedBox.shrink();
+    }
+
+    return Column(
+      children: [
+        if (canManage) _buildPredictionGameSettingsCard(context),
+        if (canManage && enabled) const SizedBox(height: 12),
+        if (enabled) _buildPredictionGameOpenCard(context),
+      ],
+    );
+  }
+
+  Widget _buildPredictionGameSettingsCard(BuildContext context) {
+    final l10n = context.l10n;
+    final colors = context.appColors;
+    final textTheme = Theme.of(context).textTheme;
+    final teamId = _team.keyTeam?.trim() ?? '';
+    final selectedEngagementId =
+        (_team.predictionGameEngagementd ?? '').trim();
+
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.fromLTRB(20, 16, 20, 20),
+      decoration: BoxDecoration(
+        color: colors.card,
+        borderRadius: BorderRadius.circular(22),
+        border: Border.all(color: colors.border),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(Icons.sports_soccer_rounded, color: colors.primary),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Text(
+                  l10n.predictionGameSettingsTitle,
+                  style: textTheme.titleLarge?.copyWith(
+                    fontWeight: FontWeight.w800,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          SwitchListTile(
+            contentPadding: EdgeInsets.zero,
+            title: Text(l10n.predictionGameEnableLabel),
+            value: _team.withPredictionGame == true,
+            activeThumbColor: colors.primary,
+            onChanged: teamId.isEmpty
+                ? null
+                : (value) => _onPredictionGameEnabledChanged(value),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            l10n.predictionGameCompetitionLabel,
+            style: textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w700),
+          ),
+          const SizedBox(height: 8),
+          FutureBuilder<List<Engagement>>(
+            future: _predictionEngagementsFuture ??=
+                EngagementService().getByTeamIdInTeamIds(teamId),
+            builder: (context, snapshot) {
+              final engagements = snapshot.data ?? const <Engagement>[];
+              if (snapshot.connectionState != ConnectionState.done) {
+                return LinearProgressIndicator(
+                  color: colors.primary,
+                  minHeight: 2,
+                );
+              }
+              if (engagements.isEmpty) {
+                return Text(
+                  l10n.predictionGameNoEngagements,
+                  style: textTheme.bodyMedium?.copyWith(
+                    color: colors.textSecondary,
+                  ),
+                );
+              }
+
+              final ids = engagements
+                  .map((e) => e.ref?.id.trim() ?? '')
+                  .where((id) => id.isNotEmpty)
+                  .toSet();
+              final value = ids.contains(selectedEngagementId)
+                  ? selectedEngagementId
+                  : null;
+
+              return DropdownButtonFormField<String>(
+                // ignore: deprecated_member_use
+                value: value,
+                isExpanded: true,
+                decoration: InputDecoration(
+                  hintText: l10n.predictionGameCompetitionHint,
+                  border: const OutlineInputBorder(),
+                ),
+                items: [
+                  for (final engagement in engagements)
+                    if ((engagement.ref?.id ?? '').trim().isNotEmpty)
+                      DropdownMenuItem<String>(
+                        value: engagement.ref!.id,
+                        child: Text(
+                          predictionGameEngagementLabel(engagement),
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                ],
+                onChanged: (engagementId) {
+                  if (engagementId == null) return;
+                  _onPredictionGameEngagementChanged(engagementId);
+                },
+              );
+            },
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildPredictionGameOpenCard(BuildContext context) {
+    final l10n = context.l10n;
+    final colors = context.appColors;
+    final textTheme = Theme.of(context).textTheme;
+
+    return Material(
+      color: colors.card,
+      borderRadius: BorderRadius.circular(22),
+      child: InkWell(
+        borderRadius: BorderRadius.circular(22),
+        onTap: () {
+          AnalyticsInteractions.logFeature(
+            AnalyticsFeatures.openPredictionGame,
+            parameters: <String, Object>{
+              'team_id': _team.keyTeam ?? '',
+            },
+          );
+          openPredictionGameScreen(context, team: _team);
+        },
+        child: Container(
+          width: double.infinity,
+          padding: const EdgeInsets.fromLTRB(20, 16, 20, 16),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(22),
+            border: Border.all(color: colors.border),
+          ),
+          child: Row(
+            children: [
+              Icon(Icons.emoji_events_outlined, color: colors.primary),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Text(
+                  l10n.predictionGameOpenCta,
+                  style: textTheme.titleMedium?.copyWith(
+                    fontWeight: FontWeight.w800,
+                  ),
+                ),
+              ),
+              Icon(Icons.chevron_right_rounded, color: colors.textSecondary),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Future<void> _onPredictionGameEnabledChanged(bool enabled) async {
+    final l10n = context.l10n;
+    final teamId = _team.keyTeam?.trim() ?? '';
+    if (teamId.isEmpty) return;
+
+    final engagementId = (_team.predictionGameEngagementd ?? '').trim();
+    if (enabled && engagementId.isEmpty) {
+      AppSnackbar.show(context, l10n.predictionGameSelectCompetitionFirst);
+      return;
+    }
+
+    try {
+      await TeamService().updatePredictionGameSettings(
+        teamId: teamId,
+        withPredictionGame: enabled,
+        predictionGameEngagementd: engagementId,
+      );
+      if (!mounted) return;
+      setState(() {
+        _team.withPredictionGame = enabled;
+        _serverTeam?.withPredictionGame = enabled;
+      });
+      AppSnackbar.show(context, l10n.predictionGameSettingsSaved, isError: false);
+    } catch (_) {
+      if (!mounted) return;
+      AppSnackbar.show(context, l10n.predictionGameSettingsSaveError);
+    }
+  }
+
+  Future<void> _onPredictionGameEngagementChanged(String engagementId) async {
+    final l10n = context.l10n;
+    final teamId = _team.keyTeam?.trim() ?? '';
+    if (teamId.isEmpty) return;
+
+    try {
+      await TeamService().updatePredictionGameSettings(
+        teamId: teamId,
+        withPredictionGame: _team.withPredictionGame == true,
+        predictionGameEngagementd: engagementId,
+      );
+      if (!mounted) return;
+      setState(() {
+        _team.predictionGameEngagementd = engagementId;
+        _serverTeam?.predictionGameEngagementd = engagementId;
+      });
+      AppSnackbar.show(context, l10n.predictionGameSettingsSaved, isError: false);
+    } catch (_) {
+      if (!mounted) return;
+      AppSnackbar.show(context, l10n.predictionGameSettingsSaveError);
+    }
   }
 
   Widget _buildRosterCard(BuildContext context, List<_TeamMemberVm> rows) {

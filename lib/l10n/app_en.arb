@@ -3856,5 +3856,45 @@
   },
   "adminAdsCurrentBadge": "Current",
   "adminAdsExpiredBadge": "Ended",
-  "adminAdsUpcomingBadge": "Upcoming"
+  "adminAdsUpcomingBadge": "Upcoming",
+  "predictionGameTitle": "Predictions",
+  "predictionGameSettingsTitle": "Prediction contest",
+  "predictionGameEnableLabel": "Enable the prediction contest",
+  "predictionGameCompetitionLabel": "Competition",
+  "predictionGameCompetitionHint": "Choose a competition",
+  "predictionGameNoEngagements": "No competition found for this team.",
+  "predictionGameOpenCta": "Make predictions",
+  "predictionGameMatchdayTitle": "Matchday {day}",
+  "@predictionGameMatchdayTitle": {
+    "placeholders": {
+      "day": {
+        "type": "String"
+      }
+    }
+  },
+  "predictionGameDeadline": "Predictions stay open until {datetime}",
+  "@predictionGameDeadline": {
+    "placeholders": {
+      "datetime": {
+        "type": "String"
+      }
+    }
+  },
+  "predictionGameClosed": "Predictions are closed for this matchday.",
+  "predictionGameEmpty": "No prediction contest yet.",
+  "predictionGameEmptyHint": "The next matchday contest will be created automatically.",
+  "predictionGamePickHome": "1",
+  "predictionGamePickDraw": "X",
+  "predictionGamePickAway": "2",
+  "predictionGameSubmit": "Submit my predictions",
+  "predictionGameSubmitted": "Predictions saved.",
+  "predictionGameSubmitError": "Could not save predictions.",
+  "predictionGameDeadlinePassed": "The prediction deadline has passed.",
+  "predictionGameIncompletePicks": "Pick a result for every match.",
+  "predictionGameLoadError": "Could not load the contest.",
+  "predictionGameVs": "vs",
+  "predictionGameSelectCompetitionFirst": "Choose a competition to enable the contest.",
+  "predictionGameSettingsSaved": "Prediction settings saved.",
+  "predictionGameSettingsSaveError": "Could not save prediction settings.",
+  "predictionGameAlreadySubmitted": "Your predictions have been saved."
 }

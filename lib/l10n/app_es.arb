@@ -3812,5 +3812,45 @@
   },
   "adminAdsCurrentBadge": "En curso",
   "adminAdsExpiredBadge": "Finalizado",
-  "adminAdsUpcomingBadge": "Próximo"
+  "adminAdsUpcomingBadge": "Próximo",
+  "predictionGameTitle": "Pronósticos",
+  "predictionGameSettingsTitle": "Concurso de pronósticos",
+  "predictionGameEnableLabel": "Activar el concurso de pronósticos",
+  "predictionGameCompetitionLabel": "Competición",
+  "predictionGameCompetitionHint": "Elegir una competición",
+  "predictionGameNoEngagements": "No se encontró ninguna competición para este equipo.",
+  "predictionGameOpenCta": "Pronosticar",
+  "predictionGameMatchdayTitle": "Jornada {day}",
+  "@predictionGameMatchdayTitle": {
+    "placeholders": {
+      "day": {
+        "type": "String"
+      }
+    }
+  },
+  "predictionGameDeadline": "Pronósticos abiertos hasta el {datetime}",
+  "@predictionGameDeadline": {
+    "placeholders": {
+      "datetime": {
+        "type": "String"
+      }
+    }
+  },
+  "predictionGameClosed": "Los pronósticos de esta jornada están cerrados.",
+  "predictionGameEmpty": "Aún no hay concurso de pronósticos.",
+  "predictionGameEmptyHint": "El concurso de la próxima jornada se creará automáticamente.",
+  "predictionGamePickHome": "1",
+  "predictionGamePickDraw": "X",
+  "predictionGamePickAway": "2",
+  "predictionGameSubmit": "Validar mis pronósticos",
+  "predictionGameSubmitted": "Pronósticos guardados.",
+  "predictionGameSubmitError": "No se pudieron guardar los pronósticos.",
+  "predictionGameDeadlinePassed": "El plazo para pronosticar ha terminado.",
+  "predictionGameIncompletePicks": "Indica un pronóstico para cada partido.",
+  "predictionGameLoadError": "No se pudo cargar el concurso.",
+  "predictionGameVs": "vs",
+  "predictionGameSelectCompetitionFirst": "Elige una competición para activar el concurso.",
+  "predictionGameSettingsSaved": "Ajustes de pronósticos guardados.",
+  "predictionGameSettingsSaveError": "No se pudieron guardar los ajustes.",
+  "predictionGameAlreadySubmitted": "Tus pronósticos se han guardado."
 }

@@ -216,7 +216,9 @@ class NotificationFCMService {
               return;
             }
             if (type == 'trainingReminder' ||
-                type == 'matchOpponentStatsReminder') {
+                type == 'matchOpponentStatsReminder' ||
+                type == 'predictionGame' ||
+                type == 'NotifType.predictionGame') {
               unawaited(InternalNotificationNavigation.handlePayload(data));
             } else {
               unawaited(_handleOpenFromData(data));
@@ -609,6 +611,8 @@ class NotificationFCMService {
 
         case 'trainingReminder':
         case 'matchOpponentStatsReminder':
+        case 'predictionGame':
+        case 'NotifType.predictionGame':
           await InternalNotificationNavigation.handlePayload(data);
           break;
 

@@ -494,7 +494,8 @@ class _NotificationListTileState extends State<_NotificationListTile> {
 
   bool get _isTappableReminder =>
       widget.notification.type == NotifType.trainingReminder ||
-      widget.notification.type == NotifType.matchOpponentStatsReminder;
+      widget.notification.type == NotifType.matchOpponentStatsReminder ||
+      widget.notification.type == NotifType.predictionGame;
 
   bool get _isTappableFeeling =>
       widget.notification.type == NotifType.RPEAfter;
@@ -508,17 +509,23 @@ class _NotificationListTileState extends State<_NotificationListTile> {
     final objectId = widget.notification.objectId?.trim() ?? '';
     if (objectId.isEmpty) return;
 
-    final typeName = widget.notification.type == NotifType.trainingReminder
-        ? 'trainingReminder'
-        : 'matchOpponentStatsReminder';
+    final typeName = switch (widget.notification.type) {
+      NotifType.trainingReminder => 'trainingReminder',
+      NotifType.matchOpponentStatsReminder => 'matchOpponentStatsReminder',
+      NotifType.predictionGame => 'predictionGame',
+      _ => '',
+    };
 
     setState(() => _isConvocationActionInProgress = true);
     try {
       await InternalNotificationNavigation.handlePayload(<String, dynamic>{
         'type': typeName,
         'id': objectId,
+        'objectId': objectId,
         if (widget.notification.type == NotifType.trainingReminder)
           'trainingId': objectId
+        else if (widget.notification.type == NotifType.predictionGame)
+          'predGameDayId': objectId
         else
           'matchId': objectId,
         if (widget.notification.playerId != null)

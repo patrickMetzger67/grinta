@@ -30,6 +30,7 @@ abstract final class AnalyticsScreenNames {
   static const teamParam = 'team_param';
   static const teamPlayers = 'team_players';
   static const teamStats = 'team_stats';
+  static const predictionGame = 'prediction_game';
   static const playerSeasonSummary = 'player_season_summary';
   static const coachWorkloadAnalysis = 'coach_workload_analysis';
   static const coachWorkloadAnalysisTeaser = 'coach_workload_analysis_teaser';

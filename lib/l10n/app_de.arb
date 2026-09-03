@@ -3812,5 +3812,45 @@
   },
   "adminAdsCurrentBadge": "Aktiv",
   "adminAdsExpiredBadge": "Beendet",
-  "adminAdsUpcomingBadge": "Geplant"
+  "adminAdsUpcomingBadge": "Geplant",
+  "predictionGameTitle": "Tippspiel",
+  "predictionGameSettingsTitle": "Tippspiel",
+  "predictionGameEnableLabel": "Tippspiel aktivieren",
+  "predictionGameCompetitionLabel": "Wettbewerb",
+  "predictionGameCompetitionHint": "Wettbewerb wählen",
+  "predictionGameNoEngagements": "Kein Wettbewerb für dieses Team gefunden.",
+  "predictionGameOpenCta": "Tippen",
+  "predictionGameMatchdayTitle": "Spieltag {day}",
+  "@predictionGameMatchdayTitle": {
+    "placeholders": {
+      "day": {
+        "type": "String"
+      }
+    }
+  },
+  "predictionGameDeadline": "Tipps möglich bis {datetime}",
+  "@predictionGameDeadline": {
+    "placeholders": {
+      "datetime": {
+        "type": "String"
+      }
+    }
+  },
+  "predictionGameClosed": "Die Tipps für diesen Spieltag sind geschlossen.",
+  "predictionGameEmpty": "Noch kein Tippspiel vorhanden.",
+  "predictionGameEmptyHint": "Das Tippspiel des nächsten Spieltags wird automatisch erstellt.",
+  "predictionGamePickHome": "1",
+  "predictionGamePickDraw": "X",
+  "predictionGamePickAway": "2",
+  "predictionGameSubmit": "Tipps bestätigen",
+  "predictionGameSubmitted": "Tipps gespeichert.",
+  "predictionGameSubmitError": "Tipps konnten nicht gespeichert werden.",
+  "predictionGameDeadlinePassed": "Die Tippfrist ist abgelaufen.",
+  "predictionGameIncompletePicks": "Tippe jedes Spiel.",
+  "predictionGameLoadError": "Tippspiel konnte nicht geladen werden.",
+  "predictionGameVs": "vs",
+  "predictionGameSelectCompetitionFirst": "Wähle einen Wettbewerb, um das Tippspiel zu aktivieren.",
+  "predictionGameSettingsSaved": "Tippspiel-Einstellungen gespeichert.",
+  "predictionGameSettingsSaveError": "Einstellungen konnten nicht gespeichert werden.",
+  "predictionGameAlreadySubmitted": "Deine Tipps wurden gespeichert."
 }

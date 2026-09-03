@@ -3812,5 +3812,45 @@
   },
   "adminAdsCurrentBadge": "In corso",
   "adminAdsExpiredBadge": "Terminato",
-  "adminAdsUpcomingBadge": "In arrivo"
+  "adminAdsUpcomingBadge": "In arrivo",
+  "predictionGameTitle": "Pronostici",
+  "predictionGameSettingsTitle": "Concorso pronostici",
+  "predictionGameEnableLabel": "Attiva il concorso pronostici",
+  "predictionGameCompetitionLabel": "Competizione",
+  "predictionGameCompetitionHint": "Scegli una competizione",
+  "predictionGameNoEngagements": "Nessuna competizione trovata per questa squadra.",
+  "predictionGameOpenCta": "Pronostica",
+  "predictionGameMatchdayTitle": "Giornata {day}",
+  "@predictionGameMatchdayTitle": {
+    "placeholders": {
+      "day": {
+        "type": "String"
+      }
+    }
+  },
+  "predictionGameDeadline": "Pronostici aperti fino al {datetime}",
+  "@predictionGameDeadline": {
+    "placeholders": {
+      "datetime": {
+        "type": "String"
+      }
+    }
+  },
+  "predictionGameClosed": "I pronostici di questa giornata sono chiusi.",
+  "predictionGameEmpty": "Nessun concorso pronostici al momento.",
+  "predictionGameEmptyHint": "Il concorso della prossima giornata verrà creato automaticamente.",
+  "predictionGamePickHome": "1",
+  "predictionGamePickDraw": "X",
+  "predictionGamePickAway": "2",
+  "predictionGameSubmit": "Conferma i miei pronostici",
+  "predictionGameSubmitted": "Pronostici salvati.",
+  "predictionGameSubmitError": "Impossibile salvare i pronostici.",
+  "predictionGameDeadlinePassed": "Il termine per pronosticare è scaduto.",
+  "predictionGameIncompletePicks": "Indica un pronostico per ogni partita.",
+  "predictionGameLoadError": "Impossibile caricare il concorso.",
+  "predictionGameVs": "vs",
+  "predictionGameSelectCompetitionFirst": "Scegli una competizione per attivare il concorso.",
+  "predictionGameSettingsSaved": "Impostazioni pronostici salvate.",
+  "predictionGameSettingsSaveError": "Impossibile salvare le impostazioni.",
+  "predictionGameAlreadySubmitted": "I tuoi pronostici sono stati salvati."
 }

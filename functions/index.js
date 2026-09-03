@@ -990,3 +990,13 @@ exports.insidersScheduledIntenseSync = insidersScheduledIntenseSync;
  */
 const { createSyncShareInsights } = require('./sync_share_insights');
 exports.syncShareInsights = createSyncShareInsights();
+
+/**
+ * Wednesday morning (Europe/Paris): create the next-journée prediction contest
+ * for teams with withPredictionGame=true.
+ *
+ * Deploy:
+ *   firebase deploy --only functions:createPredictionGameContests
+ */
+const { createCreatePredictionGameContests } = require('./prediction_game_contest');
+exports.createPredictionGameContests = createCreatePredictionGameContests();

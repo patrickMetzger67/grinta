@@ -1456,6 +1456,18 @@ class TeamService {
     }
   }
 
+  Future<void> updatePredictionGameSettings({
+    required String teamId,
+    required bool withPredictionGame,
+    String? predictionGameEngagementd,
+  }) async {
+    await _collection.doc(teamId).update(<String, dynamic>{
+      keyTeamWithPredictionGame: withPredictionGame,
+      keyTeamPredictionGameEngagementd:
+          (predictionGameEngagementd ?? '').trim(),
+    });
+  }
+
   /// UPDATE PLAYERS
   Future<void> updatePlayers({
     required String teamId,
