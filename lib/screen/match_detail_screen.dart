@@ -163,6 +163,7 @@ class MatchDetailScreen extends StatefulWidget {
 class _MatchDetailScreenState extends State<MatchDetailScreen> {
   bool _scoreEdited = false;
   bool _exitBusy = false;
+  final GlobalKey _convocationsTabKey = GlobalKey();
 
   models.Match get match => widget.match;
   bool get isManager => widget.isManager;
@@ -329,13 +330,10 @@ class _MatchDetailScreenState extends State<MatchDetailScreen> {
                                 stream: MatchStatsService()
                                     .streamMatchStatsByMatchId(match.id ?? ''),
                                 builder: (context, snapshot) {
-                                  if (snapshot.connectionState ==
-                                      ConnectionState.waiting) {
-                                    return const Center(
-                                      child: CircularProgressIndicator(),
-                                    );
-                                  }
-
+                                  // Keep tabs mounted while the stats stream
+                                  // reconnects. A full-screen spinner was
+                                  // disposing the convocations filter on
+                                  // mobile (keyboard / network blips).
                                   final bool showCompo = snapshot.data != null;
                                   final l10n = context.l10n;
 
@@ -414,6 +412,7 @@ class _MatchDetailScreenState extends State<MatchDetailScreen> {
                                                     context, match) ??
                                                   _CompoTab(match: match),
                                             MatchConvocationsTab(
+                                              key: _convocationsTabKey,
                                               match: match,
                                               isManager: isManager,
                                             ),
@@ -646,6 +645,22 @@ class _MatchDetailTabShellState extends State<_MatchDetailTabShell>
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _recordTabVisit(_tabController.index);
     });
+  }
+
+  @override
+  void didUpdateWidget(covariant _MatchDetailTabShell oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.tabs.length == widget.tabs.length) return;
+
+    final int oldIndex = _tabController.index;
+    _tabController.removeListener(_onTabControllerChanged);
+    _tabController.dispose();
+    _tabController = TabController(
+      length: widget.tabs.length,
+      vsync: this,
+      initialIndex: oldIndex.clamp(0, widget.tabs.length - 1),
+    );
+    _tabController.addListener(_onTabControllerChanged);
   }
 
   @override
@@ -933,6 +948,7 @@ class _MatchHeaderState extends State<_MatchHeader> {
       match: match,
       isManager: isManager,
       destination: destination,
+      tappedSide: side,
     );
   }
 

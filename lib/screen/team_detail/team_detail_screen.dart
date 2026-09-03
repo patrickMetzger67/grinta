@@ -51,6 +51,7 @@ import '../../widget/team_tracker_owners_sheet.dart';
 import '../../widget/add_grinta_staff_sheet.dart';
 import '../../widget/manage_unavailabilities_sheet.dart';
 import '../../widget/member_search_sheet.dart';
+import '../../widget/player_name_filter_field.dart';
 import '../../widget/playerPhoto.dart';
 import '../../widget/player_contact_lines.dart';
 import '../../widget/coach_wearable_device_connect_section.dart';
@@ -105,6 +106,7 @@ class _TeamDetailScreenState extends State<TeamDetailScreen> {
   _RosterSortColumn? _sortColumn;
   bool _sortAscending = true;
   final TextEditingController _playerNameFilterCtrl = TextEditingController();
+  final FocusNode _playerNameFilterFocus = FocusNode();
 
   List<dynamic> rawPlayers = [];
   bool _usesGrintaRoster = false;
@@ -121,6 +123,7 @@ class _TeamDetailScreenState extends State<TeamDetailScreen> {
   @override
   void dispose() {
     _playerNameFilterCtrl.dispose();
+    _playerNameFilterFocus.dispose();
     super.dispose();
   }
 
@@ -1698,22 +1701,12 @@ class _TeamDetailScreenState extends State<TeamDetailScreen> {
   }
 
   bool _playerNameMatchesFilter(_TeamMemberVm row, AppLocalizations l10n) {
-    final String query = _playerNameFilterCtrl.text.trim().toLowerCase();
-    if (query.isEmpty) return true;
-
-    final Player player = row.player;
-    final List<String> candidates = <String>[
-      _displayName(player, l10n),
-      playerDisplayName(player, unknownLabel: ''),
-      player.firstName ?? '',
-      player.lastName ?? '',
-      '${player.firstName ?? ''} ${player.lastName ?? ''}',
-      '${player.lastName ?? ''} ${player.firstName ?? ''}',
-    ];
-    for (final String candidate in candidates) {
-      if (candidate.toLowerCase().contains(query)) return true;
+    if (playerMatchesNameQuery(row.player, _playerNameFilterCtrl.text)) {
+      return true;
     }
-    return false;
+    final String shortName = _displayName(row.player, l10n);
+    return normalizePlayerNameQuery(shortName)
+        .contains(normalizePlayerNameQuery(_playerNameFilterCtrl.text));
   }
 
   List<_TeamMemberVm> _sortedRosterRows(
@@ -2581,7 +2574,6 @@ class _TeamDetailScreenState extends State<TeamDetailScreen> {
     final l10n = context.l10n;
     final colors = context.appColors;
     final textTheme = Theme.of(context).textTheme;
-    final List<_TeamMemberVm> visibleRows = _sortedRosterRows(rows, l10n);
     final bool isMobileLayout = _isMobileTeamDetailLayout(context);
     final bool canAddPlayers = _canAddPlayers(context);
 
@@ -2672,35 +2664,43 @@ class _TeamDetailScreenState extends State<TeamDetailScreen> {
                     trailingFlex: trailingFlex,
                     horizontalPadding: mobileRoster ? 4 : 12,
                   ),
-                  if (visibleRows.isEmpty)
-                    Padding(
-                      padding: const EdgeInsets.all(24),
-                      child: Text(
-                        l10n.emptyNoPlayerForTeam,
-                        style: textTheme.titleMedium?.copyWith(
-                          color: colors.textSecondary,
-                        ),
-                      ),
-                    )
-                  else if (mobileRoster)
-                    ...List.generate(
-                      visibleRows.length,
-                      (index) => _buildMobileRow(
-                        context,
-                        layout: rosterLayout,
-                        row: visibleRows[index],
-                        odd: index.isOdd,
-                      ),
-                    )
-                  else
-                    ...List.generate(
-                      visibleRows.length,
-                      (index) => _buildRow(
-                        context,
-                        row: visibleRows[index],
-                        odd: index.isOdd,
-                      ),
-                    ),
+                  ValueListenableBuilder<TextEditingValue>(
+                    valueListenable: _playerNameFilterCtrl,
+                    builder: (context, _, __) {
+                      final List<_TeamMemberVm> visibleRows =
+                          _sortedRosterRows(rows, l10n);
+                      if (visibleRows.isEmpty) {
+                        return Padding(
+                          padding: const EdgeInsets.all(24),
+                          child: Text(
+                            l10n.emptyNoPlayerForTeam,
+                            style: textTheme.titleMedium?.copyWith(
+                              color: colors.textSecondary,
+                            ),
+                          ),
+                        );
+                      }
+                      return Column(
+                        children: [
+                          for (var index = 0;
+                              index < visibleRows.length;
+                              index++)
+                            mobileRoster
+                                ? _buildMobileRow(
+                                    context,
+                                    layout: rosterLayout,
+                                    row: visibleRows[index],
+                                    odd: index.isOdd,
+                                  )
+                                : _buildRow(
+                                    context,
+                                    row: visibleRows[index],
+                                    odd: index.isOdd,
+                                  ),
+                        ],
+                      );
+                    },
+                  ),
                 ],
               );
             },
@@ -4379,8 +4379,6 @@ class _TeamDetailScreenState extends State<TeamDetailScreen> {
     required double horizontalPadding,
   }) {
     final colors = context.appColors;
-    final l10n = context.l10n;
-    final bool hasQuery = _playerNameFilterCtrl.text.trim().isNotEmpty;
 
     return Container(
       padding: EdgeInsets.fromLTRB(
@@ -4399,41 +4397,10 @@ class _TeamDetailScreenState extends State<TeamDetailScreen> {
         children: [
           Expanded(
             flex: playerFlex,
-            child: TextField(
+            child: PlayerNameFilterField(
               controller: _playerNameFilterCtrl,
-              textInputAction: TextInputAction.search,
-              style: Theme.of(context).textTheme.bodyMedium,
-              decoration: InputDecoration(
-                isDense: true,
-                hintText: l10n.teamDetailFilterPlayerHint,
-                prefixIcon: Icon(
-                  Icons.search_rounded,
-                  size: 20,
-                  color: colors.textSecondary,
-                ),
-                suffixIcon: hasQuery
-                    ? IconButton(
-                        tooltip: l10n.actionCancel,
-                        onPressed: () {
-                          _playerNameFilterCtrl.clear();
-                          setState(() {});
-                        },
-                        icon: Icon(
-                          Icons.clear_rounded,
-                          size: 18,
-                          color: colors.textSecondary,
-                        ),
-                      )
-                    : null,
-                contentPadding: const EdgeInsets.symmetric(
-                  horizontal: 12,
-                  vertical: 10,
-                ),
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(10),
-                ),
-              ),
-              onChanged: (_) => setState(() {}),
+              focusNode: _playerNameFilterFocus,
+              padding: EdgeInsets.zero,
             ),
           ),
           if (trailingFlex > 0)

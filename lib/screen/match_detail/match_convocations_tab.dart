@@ -27,6 +27,7 @@ import '../../util/player_photo_resolver.dart';
 import '../../widget/account_create_profile_entry.dart';
 import '../../widget/add_grinta_player_sheet.dart';
 import '../../widget/member_search_sheet.dart';
+import '../../widget/player_name_filter_field.dart';
 import '../../widget/playerPhoto.dart';
 import '../../widget/send_match_convocations_sheet.dart';
 import '../../widget/subscription_paywall.dart';
@@ -608,9 +609,23 @@ class _MatchConvocationsTabState extends State<MatchConvocationsTab>
       );
     }
 
-    return StreamBuilder<MatchCompo?>(
-      stream: _matchCompoStream ?? Stream<MatchCompo?>.value(null),
-      builder: (context, snapshot) {
+    // Keep the name filter outside StreamBuilder: Firestore / hydrate
+    // rebuilds were remounting the TextField and dropping mobile focus.
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Padding(
+          padding: const EdgeInsets.fromLTRB(12, 8, 12, 0),
+          child: PlayerNameFilterField(
+            key: const ValueKey('match-convocations-name-filter'),
+            controller: _nameFilterCtrl,
+            focusNode: _nameFilterFocus,
+          ),
+        ),
+        Expanded(
+          child: StreamBuilder<MatchCompo?>(
+            stream: _matchCompoStream ?? Stream<MatchCompo?>.value(null),
+            builder: (context, snapshot) {
         if (snapshot.hasData) {
           final streamCompo = snapshot.data;
           _cachedMatchCompo = streamCompo;
@@ -674,11 +689,13 @@ class _MatchConvocationsTabState extends State<MatchConvocationsTab>
               widget.isManager && _convocationsByPlayerId.isNotEmpty,
           saving: _saving,
           nameFilterCtrl: _nameFilterCtrl,
-          nameFilterFocus: _nameFilterFocus,
           onPlayerToggled: _onPlayerToggled,
           onAddPlayer: _onAddPlayerPressed,
         );
-      },
+            },
+          ),
+        ),
+      ],
     );
   }
 }
@@ -696,7 +713,6 @@ class _ConvocationsBody extends StatefulWidget {
     required this.canSendConvocations,
     required this.saving,
     required this.nameFilterCtrl,
-    required this.nameFilterFocus,
     required this.onPlayerToggled,
     required this.onAddPlayer,
   });
@@ -711,7 +727,6 @@ class _ConvocationsBody extends StatefulWidget {
   final bool canSendConvocations;
   final bool saving;
   final TextEditingController nameFilterCtrl;
-  final FocusNode nameFilterFocus;
   final Future<void> Function(String playerId, bool selected) onPlayerToggled;
   final Future<void> Function() onAddPlayer;
 
@@ -733,23 +748,12 @@ class _ConvocationsBodyState extends State<_ConvocationsBody> {
   }
 
   List<Player> get _filteredPlayers {
-    final String query = widget.nameFilterCtrl.text.trim().toLowerCase();
-    if (query.isEmpty) return widget.players;
-
-    return widget.players.where((Player player) {
-      final List<String> candidates = <String>[
-        playerDisplayName(player, unknownLabel: ''),
-        formatPlayerShortName(player, unknownLabel: ''),
-        player.firstName ?? '',
-        player.lastName ?? '',
-        '${player.firstName ?? ''} ${player.lastName ?? ''}',
-        '${player.lastName ?? ''} ${player.firstName ?? ''}',
-      ];
-      for (final String candidate in candidates) {
-        if (candidate.toLowerCase().contains(query)) return true;
-      }
-      return false;
-    }).toList();
+    return widget.players
+        .where(
+          (Player player) =>
+              playerMatchesNameQuery(player, widget.nameFilterCtrl.text),
+        )
+        .toList();
   }
 
   bool _isPlayerUnavailable(Player player) {
@@ -786,65 +790,6 @@ class _ConvocationsBodyState extends State<_ConvocationsBody> {
       context,
       match: widget.match,
       convokedPlayers: _convokedPlayers,
-    );
-  }
-
-  Widget _buildNameFilterField(BuildContext context) {
-    final colors = context.appColors;
-    final l10n = context.l10n;
-
-    // Keep the TextField itself stable across keystrokes. Rebuilding it inside
-    // a ValueListenableBuilder (especially when suffixIcon appears/disappears)
-    // drops focus on mobile and makes the filter unusable again.
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 12),
-      child: TextField(
-        key: const ValueKey('match-convocations-name-filter'),
-        controller: widget.nameFilterCtrl,
-        focusNode: widget.nameFilterFocus,
-        textInputAction: TextInputAction.search,
-        style: Theme.of(context).textTheme.bodyMedium,
-        decoration: InputDecoration(
-          isDense: true,
-          hintText: l10n.teamDetailFilterPlayerHint,
-          prefixIcon: Icon(
-            Icons.search_rounded,
-            size: 20,
-            color: colors.textSecondary,
-          ),
-          // Always reserve the suffix slot so the first typed character does
-          // not change the InputDecorator layout and steal focus.
-          suffixIcon: ValueListenableBuilder<TextEditingValue>(
-            valueListenable: widget.nameFilterCtrl,
-            builder: (context, value, _) {
-              final bool hasQuery = value.text.trim().isNotEmpty;
-              return IconButton(
-                tooltip: l10n.actionCancel,
-                onPressed: hasQuery
-                    ? () {
-                        widget.nameFilterCtrl.clear();
-                        widget.nameFilterFocus.requestFocus();
-                      }
-                    : null,
-                icon: Icon(
-                  Icons.clear_rounded,
-                  size: 18,
-                  color: hasQuery
-                      ? colors.textSecondary
-                      : colors.textSecondary.withValues(alpha: 0),
-                ),
-              );
-            },
-          ),
-          contentPadding: const EdgeInsets.symmetric(
-            horizontal: 12,
-            vertical: 10,
-          ),
-          border: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(10),
-          ),
-        ),
-      ),
     );
   }
 
@@ -1030,26 +975,17 @@ class _ConvocationsBodyState extends State<_ConvocationsBody> {
       body: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          Padding(
-            padding: const EdgeInsets.fromLTRB(12, 8, 12, 0),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                if (widget.canSendConvocations)
-                  Padding(
-                    padding: const EdgeInsets.only(bottom: 12),
-                    child: FilledButton.icon(
-                      onPressed: widget.saving
-                          ? null
-                          : () => _onSendConvocations(context),
-                      icon: const Icon(Icons.send_rounded),
-                      label: Text(l10n.matchConvocationsSendAction),
-                    ),
-                  ),
-                _buildNameFilterField(context),
-              ],
+          if (widget.canSendConvocations)
+            Padding(
+              padding: const EdgeInsets.fromLTRB(12, 0, 12, 12),
+              child: FilledButton.icon(
+                onPressed: widget.saving
+                    ? null
+                    : () => _onSendConvocations(context),
+                icon: const Icon(Icons.send_rounded),
+                label: Text(l10n.matchConvocationsSendAction),
+              ),
             ),
-          ),
           Expanded(
             child: ValueListenableBuilder<TextEditingValue>(
               valueListenable: widget.nameFilterCtrl,
