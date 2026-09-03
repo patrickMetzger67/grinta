@@ -1,5 +1,4 @@
-const { onSchedule } = require('firebase-functions/v2/scheduler');
-const { FieldValue, getFirestore } = require('firebase-admin/firestore');
+const { FieldValue } = require('firebase-admin/firestore');
 
 const REGION = 'europe-west1';
 const PRED_GAME_DAY_COLLECTION = 'predGameDay';
@@ -346,6 +345,8 @@ async function createPredictionContestsForDate({ db, now }) {
 }
 
 function createCreatePredictionGameContests() {
+  const { onSchedule } = require('firebase-functions/v2/scheduler');
+  const { getFirestore } = require('firebase-admin/firestore');
   return onSchedule(
     {
       schedule: '0 8 * * 3',
