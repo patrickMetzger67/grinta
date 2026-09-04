@@ -74,7 +74,8 @@ Aserstein). `app: "aserstein"` and Aserstein package names are never targeted.
 - **`brand`**: always `"grinta"` from the Flutter client.
 - **`recipientUserIds`**: Auth uids. The CF loads `users/{uid}/fcmTokens` when
   `fcmTokens` is empty.
-- Tokens live in `users/{uid}/fcmTokens/{token}` with `app: "grinta"`.
+- Tokens live in `users/{uid}/fcmTokens/{token}` with `app: "grinta"` and
+  `packageName: "io.grinta.app"` (current builds).
 
 `pushDispatch` on the `notification` document:
 `sending` / `sent` / `skipped` / `deferred` / `failed`, plus `sendAfter` when deferred.
