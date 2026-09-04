@@ -5,6 +5,7 @@ import 'package:stream_chat_flutter/stream_chat_flutter.dart';
 
 import '../services/notification_fcm_service.dart';
 import '../util/chat_fcm_notification.dart';
+import '../util/fcm_token.dart';
 
 /// Registers the FCM token with Stream and delivers Android/iOS chat alerts.
 ///
@@ -127,12 +128,11 @@ class StreamChatPushService {
           .whereType<String>(),
     };
     memberIds.remove(currentUserId);
-    if (memberIds.isEmpty) return;
+    if (!shouldCallChatPushCloudFunction(peerUserIds: memberIds)) return;
 
     final tokens = await NotificationFCMService.fetchFcmTokensForUsers(
       memberIds,
     );
-    if (tokens.isEmpty) return;
 
     final senderName = message.user?.name.trim() ?? '';
     final text = message.text?.trim() ?? '';

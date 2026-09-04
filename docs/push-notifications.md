@@ -34,8 +34,24 @@ does not FCM them.
 Every FCM payload includes the Grinta icons:
 
 - Small / web: `https://grinta.web.app/icons/Icon-192.png`
-- Large / Android + iOS image: `https://grinta.web.app/icons/Icon-512.png`
+- Large / Android + web image: `https://grinta.web.app/icons/Icon-512.png`
 - Android status-bar: `@drawable/ic_notification` (white silhouette required by the OS)
+- iOS lock-screen: text alert only (no `mutable-content` / image). Grinta has no
+  Notification Service Extension; attaching an image on APNs dropped banners
+  when the app was killed. APNs topic is always `io.grinta.app` (shared Firebase
+  project with Aserstein).
+
+## Dual-app tokens (Grinta + Aserstein)
+
+Both apps share Firebase project `aserstein-2453e` and `users/{uid}/fcmTokens`.
+Grinta sends only to:
+
+- docs with `app: "grinta"` (and `packageName: "io.grinta.app"` on current builds)
+- legacy iOS/web docs without `app`
+- docs whose `packageName` is `io.grinta.app`
+
+Naked unbranded **Android** docs are skipped (shared project bleed into
+Aserstein). `app: "aserstein"` and Aserstein package names are never targeted.
 
 ## Contract (callable)
 

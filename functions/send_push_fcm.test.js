@@ -16,7 +16,11 @@ const {
   isLocalReminderNotificationType,
   collectLinkedUserIdsFromMemberData,
   filterTokensByRecipientPreferences,
+  loadUserFcmTokens,
+  isLikelyApnsDeviceToken,
+  tokenFromDoc,
   ANDROID_FCM_CHANNEL_ID,
+  IOS_APNS_TOPIC,
   BRAND_GRINTA,
   BRAND_ASERSTEIN,
   GRINTA_ICON_192,
@@ -83,6 +87,28 @@ describe('normalizeTokenList', () => {
 
   it('rejects non-arrays', () => {
     assert.deepEqual(normalizeTokenList('token'), []);
+  });
+
+  it('drops raw APNs device tokens that cannot be sent via FCM', () => {
+    const apns = 'a'.repeat(64);
+    assert.equal(isLikelyApnsDeviceToken(apns), true);
+    assert.deepEqual(normalizeTokenList([apns, 'fcm-tok']), ['fcm-tok']);
+  });
+});
+
+describe('tokenFromDoc', () => {
+  it('prefers data.token over the document id', () => {
+    assert.equal(
+      tokenFromDoc({
+        id: 'legacy-id',
+        data: () => ({ token: ' real-fcm-token ' }),
+      }),
+      'real-fcm-token',
+    );
+  });
+
+  it('falls back to the document id', () => {
+    assert.equal(tokenFromDoc({ id: ' doc-token ', data: () => ({}) }), 'doc-token');
   });
 });
 
@@ -206,10 +232,11 @@ describe('buildMulticastMessage', () => {
     assert.equal(message.android.notification.icon, 'ic_notification');
     assert.equal(message.android.notification.imageUrl, GRINTA_ICON_512);
     assert.equal(message.android.notification.color, '#F95C1B');
-    assert.equal(message.notification.imageUrl, GRINTA_ICON_512);
+    assert.equal(message.notification.imageUrl, undefined);
     assert.equal(message.notification.title, 'Alice');
     assert.equal(message.webpush.notification.icon, GRINTA_ICON_192);
-    assert.equal(message.apns.fcmOptions.imageUrl, GRINTA_ICON_512);
+    assert.equal(message.webpush.notification.image, GRINTA_ICON_512);
+    assert.equal(message.apns.fcmOptions, undefined);
   });
 
   it('sends an iOS alert push for every type, not a silent content-available', () => {
@@ -225,13 +252,15 @@ describe('buildMulticastMessage', () => {
 
       assert.equal(message.apns.headers['apns-priority'], '10');
       assert.equal(message.apns.headers['apns-push-type'], 'alert');
+      assert.equal(message.apns.headers['apns-topic'], IOS_APNS_TOPIC);
       assert.equal(message.apns.payload.aps.alert.title, 'Titre');
       assert.equal(message.apns.payload.aps.alert.body, 'Corps');
       assert.equal(message.apns.payload.aps.sound, 'default');
       assert.equal(message.apns.payload.aps['interruption-level'], 'active');
       assert.equal(message.apns.payload.aps['content-available'], undefined);
-      assert.equal(message.apns.fcmOptions.imageUrl, GRINTA_ICON_512);
-      assert.equal(message.apns.payload.aps['mutable-content'], 1);
+      assert.equal(message.apns.fcmOptions, undefined);
+      assert.equal(message.apns.payload.aps['mutable-content'], undefined);
+      assert.equal(message.notification.imageUrl, undefined);
     }
   });
 
@@ -430,5 +459,52 @@ describe('filterTokensByRecipientPreferences', () => {
       now: new Date('2026-08-03T10:00:00Z'),
     });
     assert.deepEqual(result.tokens.sort(), ['tok-a', 'tok-b']);
+  });
+
+  it('keeps an unbranded iOS token even when another device is branded', async () => {
+    const db = fakeDb({
+      tokensByUser: {
+        u1: [
+          { id: 'android-tok', data: { app: 'grinta', platform: 'android' } },
+          { id: 'ios-legacy-tok', data: { platform: 'ios' } },
+          { id: 'aser-tok', data: { app: 'aserstein' } },
+        ],
+      },
+    });
+    const result = await filterTokensByRecipientPreferences({
+      db,
+      recipientUserIds: ['u1'],
+      fcmTokens: ['android-tok'],
+      type: 'chat',
+      now: new Date('2026-08-03T10:00:00Z'),
+    });
+    assert.deepEqual(result.tokens.sort(), ['android-tok', 'ios-legacy-tok']);
+  });
+
+  it('drops naked unbranded Android tokens that cause Aserstein bleed', async () => {
+    const db = fakeDb({
+      tokensByUser: {
+        u1: [
+          { id: 'android-legacy', data: { platform: 'android' } },
+          { id: 'grinta-tok', data: { app: 'grinta' } },
+        ],
+      },
+    });
+    const tokens = await loadUserFcmTokens(db, 'u1', BRAND_GRINTA, new Set());
+    assert.deepEqual(tokens, ['grinta-tok']);
+  });
+
+  it('reads token from the document field and skips raw APNs tokens', async () => {
+    const apns = 'b'.repeat(64);
+    const db = fakeDb({
+      tokensByUser: {
+        u1: [
+          { id: 'hashed-id', data: { app: 'grinta', token: 'ios-fcm-tok' } },
+          { id: apns, data: { app: 'grinta', platform: 'ios' } },
+        ],
+      },
+    });
+    const tokens = await loadUserFcmTokens(db, 'u1', BRAND_GRINTA, new Set());
+    assert.deepEqual(tokens, ['ios-fcm-tok']);
   });
 });

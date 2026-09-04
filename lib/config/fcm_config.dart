@@ -16,9 +16,13 @@
 ///
 /// Grinta and Aserstein share the same Firebase project and `users/{uid}/fcmTokens`
 /// collection. Each token document must include `app: "grinta"` or `app: "aserstein"`
-/// so sends only target the correct app (see [NotificationFCMService.saveTokenToFirestore]).
-/// Grinta reads tokens with a strict `app == grinta` filter; legacy documents without
-/// `app` are ignored until the user opens Grinta again and the token is re-registered.
+/// (and ideally `packageName`) so sends only target the correct app
+/// (see [NotificationFCMService.saveTokenToFirestore]).
+/// Grinta collects `app == grinta` tokens, Grinta `packageName` docs, and safe
+/// legacy iOS/web documents without `app`. Naked unbranded Android tokens are
+/// skipped (they often belong to Aserstein on the shared project — wrong tray
+/// colors / wrong app on tap). `app: aserstein` and Aserstein packages are
+/// always excluded.
 ///
 /// Push icons must be chosen per app. The Cloud Function `sendPushFCMNotification`
 /// (region `europe-west1`, not in this repo) should accept a `brand` field:
@@ -62,6 +66,13 @@ bool get fcmWebVapidKeyConfigured => kFcmWebVapidKey.isNotEmpty;
 /// Grinta FCM constants (this app always sends [FcmConfig.brandGrinta]).
 abstract final class FcmConfig {
   static const String brandGrinta = 'grinta';
+  static const String brandAserstein = 'aserstein';
+
+  /// Android / iOS application id for this app (APNs topic + token docs).
+  static const String grintaPackageName = 'io.grinta.app';
+
+  /// Legacy Aserstein Android package on the shared Firebase project.
+  static const String asersteinAndroidPackage = 'com.tome4.asersteinv2';
 
   /// Absolute Grinta PWA icons used by the push Cloud Function / web SW.
   static const String icon192Url = 'https://grinta.web.app/icons/Icon-192.png';
