@@ -54,5 +54,75 @@ void main() {
       expect(result, DateTime(2026, 8, 24));
       expect(result.weekday, DateTime.monday);
     });
+
+    test('calendar arithmetic keeps Monday across EU DST fallback', () {
+      // Last Sunday of Oct 2026 is the 25th (clocks go back).
+      expect(
+        addWeeksKeepingWeekday(DateTime(2026, 10, 19), 1),
+        DateTime(2026, 10, 26),
+      );
+    });
+  });
+
+  group('agendaHeaderChevronDate', () {
+    test('week view chevron steps by 7 days, not 1', () {
+      final focused = DateTime(2026, 9, 2); // Wednesday
+      final next = agendaHeaderChevronDate(
+        focusedDate: focused,
+        period: AgendaHeaderPeriod.week,
+        direction: 1,
+      );
+      final previous = agendaHeaderChevronDate(
+        focusedDate: focused,
+        period: AgendaHeaderPeriod.week,
+        direction: -1,
+      );
+
+      expect(next, DateTime(2026, 9, 9));
+      expect(previous, DateTime(2026, 8, 26));
+      expect(next.weekday, DateTime.wednesday);
+      expect(previous.weekday, DateTime.wednesday);
+      expect(next.difference(focused).inDays, 7);
+      expect(focused.difference(previous).inDays, 7);
+    });
+
+    test('day view chevron still steps by 1 day', () {
+      final focused = DateTime(2026, 9, 2);
+      expect(
+        agendaHeaderChevronDate(
+          focusedDate: focused,
+          period: AgendaHeaderPeriod.day,
+          direction: 1,
+        ),
+        DateTime(2026, 9, 3),
+      );
+      expect(
+        agendaHeaderChevronDate(
+          focusedDate: focused,
+          period: AgendaHeaderPeriod.day,
+          direction: -1,
+        ),
+        DateTime(2026, 9, 1),
+      );
+    });
+
+    test('month view chevron keeps day-of-month when possible', () {
+      expect(
+        agendaHeaderChevronDate(
+          focusedDate: DateTime(2026, 8, 15),
+          period: AgendaHeaderPeriod.month,
+          direction: 1,
+        ),
+        DateTime(2026, 9, 15),
+      );
+      expect(
+        agendaHeaderChevronDate(
+          focusedDate: DateTime(2026, 8, 31),
+          period: AgendaHeaderPeriod.month,
+          direction: 1,
+        ),
+        DateTime(2026, 9, 30),
+      );
+    });
   });
 }

@@ -879,18 +879,32 @@ class _AgendaScreenState extends State<AgendaScreen> {
     );
   }
 
+  AgendaHeaderPeriod get _headerPeriod {
+    switch (_calendarMode) {
+      case AgendaCalendarMode.day:
+        return AgendaHeaderPeriod.day;
+      case AgendaCalendarMode.week:
+        return AgendaHeaderPeriod.week;
+      case AgendaCalendarMode.month:
+        return AgendaHeaderPeriod.month;
+    }
+  }
+
+  DateTime _chevronFocusedDate(int direction) {
+    return agendaHeaderChevronDate(
+      focusedDate: _selectedDate,
+      period: _headerPeriod,
+      direction: direction,
+    );
+  }
+
   /// Horizontal swipe on the events area (calendar header has its own handler).
   /// Never awaits — a second swipe must win immediately.
   void _handleHorizontalPeriodSwipe({required bool goNext}) {
     switch (_calendarMode) {
       case AgendaCalendarMode.day:
       case AgendaCalendarMode.week:
-        // Full-week jump (same weekday): Mon 31 Aug → Mon 7 Sep.
-        if (goNext) {
-          unawaited(_goToNextWeek());
-        } else {
-          unawaited(_goToPreviousWeek());
-        }
+        unawaited(_selectDate(_chevronFocusedDate(goNext ? 1 : -1)));
       case AgendaCalendarMode.month:
         if (goNext) {
           unawaited(_goToNextMonthFromHeader());
@@ -1007,45 +1021,23 @@ class _AgendaScreenState extends State<AgendaScreen> {
     );
   }
 
-  Future<void> _goToPreviousWeek() async {
-    final previousWeek = _selectedWeekStart.subtract(const Duration(days: 7));
-    final nextSelectedDate = _dateInWeekWithSameWeekday(previousWeek);
-    final LatestWinsToken token = _hydrationGate.begin();
-
-    _selectedWeekStart = previousWeek;
-    _selectedDate = nextSelectedDate;
-    _preferredDayOfMonth = nextSelectedDate.day;
-    _displayedMonth =
-        DateTime(nextSelectedDate.year, nextSelectedDate.month, 1);
-    _bumpAgendaPaint();
-
-    _jumpMonthPagerToDisplayedMonth();
-
-    _scheduleWindowHydration(
-      _displayedMonth,
-      scrollToSelection: _calendarMode == AgendaCalendarMode.month,
-      token: token,
+  Future<void> _goToPreviousWeek() {
+    return _selectDate(
+      agendaHeaderChevronDate(
+        focusedDate: _selectedDate,
+        period: AgendaHeaderPeriod.week,
+        direction: -1,
+      ),
     );
   }
 
-  Future<void> _goToNextWeek() async {
-    final nextWeek = _selectedWeekStart.add(const Duration(days: 7));
-    final nextSelectedDate = _dateInWeekWithSameWeekday(nextWeek);
-    final LatestWinsToken token = _hydrationGate.begin();
-
-    _selectedWeekStart = nextWeek;
-    _selectedDate = nextSelectedDate;
-    _preferredDayOfMonth = nextSelectedDate.day;
-    _displayedMonth =
-        DateTime(nextSelectedDate.year, nextSelectedDate.month, 1);
-    _bumpAgendaPaint();
-
-    _jumpMonthPagerToDisplayedMonth();
-
-    _scheduleWindowHydration(
-      _displayedMonth,
-      scrollToSelection: _calendarMode == AgendaCalendarMode.month,
-      token: token,
+  Future<void> _goToNextWeek() {
+    return _selectDate(
+      agendaHeaderChevronDate(
+        focusedDate: _selectedDate,
+        period: AgendaHeaderPeriod.week,
+        direction: 1,
+      ),
     );
   }
 
@@ -1528,14 +1520,10 @@ class _AgendaScreenState extends State<AgendaScreen> {
                               await _goToNextWeek();
                             },
                             onPreviousDay: () async {
-                              await _selectDate(
-                                _selectedDate.subtract(const Duration(days: 1)),
-                              );
+                              await _selectDate(_chevronFocusedDate(-1));
                             },
                             onNextDay: () async {
-                              await _selectDate(
-                                _selectedDate.add(const Duration(days: 1)),
-                              );
+                              await _selectDate(_chevronFocusedDate(1));
                             },
                             onTodayTap: () {
                               unawaited(_jumpToToday());
