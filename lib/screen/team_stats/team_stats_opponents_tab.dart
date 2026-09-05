@@ -20,6 +20,7 @@ import 'package:grinta/services/user_trial_service.dart';
 import 'package:grinta/util/app_theme.dart';
 import 'package:grinta/util/match_outcome_helper.dart';
 import 'package:grinta/util/team_player_match_stats_helper.dart';
+import 'package:grinta/util/team_stats_competition_filter.dart';
 import 'package:grinta/util/team_stats_opponent_helper.dart';
 import 'package:grinta/widget/account_create_profile_entry.dart';
 import 'package:grinta/widget/opponent_analysis_report_email_dialog.dart';
@@ -39,6 +40,9 @@ class TeamStatsOpponentsTab extends StatefulWidget {
     required this.isManager,
     this.fallbackSeasonId,
     this.initialCompetitionUrl,
+    this.initialCompetitionId,
+    this.initialCompetitionPoule,
+    this.initialCompetitionStage,
     this.initialOpponentKey,
     this.initialOpponentName,
     this.initialMatchIdForViewTracking,
@@ -55,6 +59,9 @@ class TeamStatsOpponentsTab extends StatefulWidget {
   final bool isManager;
   final String? fallbackSeasonId;
   final String? initialCompetitionUrl;
+  final String? initialCompetitionId;
+  final String? initialCompetitionPoule;
+  final String? initialCompetitionStage;
   final String? initialOpponentKey;
   final String? initialOpponentName;
   final String? initialMatchIdForViewTracking;
@@ -174,15 +181,27 @@ class _TeamStatsOpponentsTabState extends State<TeamStatsOpponentsTab>
   }
 
   String? _resolveCompetitionValue(List<TeamStatsCompetitionOption> options) {
-    final initialUrl = widget.initialCompetitionUrl?.trim() ?? '';
-    if (initialUrl.isNotEmpty) {
-      for (final option in options) {
-        if (option.value == initialUrl || option.url == initialUrl) {
-          return option.value;
-        }
-      }
+    if (options.isEmpty) {
+      return null;
     }
-    return options.isNotEmpty ? options.first.value : null;
+    final competitionId = widget.initialCompetitionId?.trim() ?? '';
+    final resolved = resolveTeamStatsSelectedCompetitionValue(
+      options: options,
+      initialUrl: widget.initialCompetitionUrl,
+      matchIdentity: competitionId.isEmpty
+          ? null
+          : TeamStatsCompetitionIdentity(
+              competitionId: competitionId,
+              poule: widget.initialCompetitionPoule?.trim() ?? '',
+              stage: widget.initialCompetitionStage?.trim() ?? '',
+            ),
+      fallback: '',
+      fallbackToFirst: competitionId.isEmpty,
+    );
+    if (resolved.isEmpty) {
+      return competitionId.isEmpty ? options.first.value : null;
+    }
+    return resolved;
   }
 
   Future<void> _loadCompetitions() async {

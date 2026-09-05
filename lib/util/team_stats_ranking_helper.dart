@@ -29,7 +29,7 @@ TeamStatsRankingCompetitionFilter? teamStatsRankingFilterFromSelection(
   }
 
   final competitionId = info.engagementId?.trim() ?? '';
-  if (competitionId.isEmpty) {
+  if (competitionId.isEmpty || info.groupe <= 0) {
     return null;
   }
 

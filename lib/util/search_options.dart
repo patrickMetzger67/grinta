@@ -1,16 +1,25 @@
+import 'package:grinta/model/team.dart' show removeDiacritics;
+
+/// Lowercase + strip accents so `Raëd` / `Jérou` hit ASCII `searchOptions`.
+String normalizeSearchToken(String token) {
+  return removeDiacritics(token.trim().toLowerCase());
+}
+
 /// Case variants used for Firestore prefix / array-contains lookups.
 ///
 /// Firestore string comparisons are case-sensitive; legacy member documents may
 /// store uppercase names or search tokens (e.g. `ETIENNE`).
+///
+/// [token] should already be passed through [normalizeSearchToken] so accented
+/// input (`Raëd`) still queries `raed` / `Raed`.
 Iterable<String> searchTokenCaseVariants(String token) sync* {
-  final trimmed = token.trim();
+  final trimmed = normalizeSearchToken(token);
   if (trimmed.isEmpty) {
     return;
   }
 
   final variants = <String>{
     trimmed,
-    trimmed.toLowerCase(),
     trimmed.toUpperCase(),
   };
 
@@ -19,16 +28,42 @@ Iterable<String> searchTokenCaseVariants(String token) sync* {
     return;
   }
 
-  final lower = trimmed.toLowerCase();
-  variants.add('${lower[0].toUpperCase()}${lower.substring(1)}');
+  variants.add('${trimmed[0].toUpperCase()}${trimmed.substring(1)}');
 
   yield* variants;
 }
 
+/// E.164 values to probe on `member.phoneE164` for a typed phone query.
+///
+/// Covers `06…`, `+33…`, and the legacy `+3306…` form stored on some docs.
+Iterable<String> phoneSearchE164Variants(String query) {
+  final digits = query.replaceAll(RegExp(r'\D'), '');
+  if (digits.length < 6) {
+    return const <String>[];
+  }
+
+  final variants = <String>{
+    '+$digits',
+    digits,
+  };
+
+  if (digits.startsWith('0')) {
+    variants.add('+33${digits.substring(1)}');
+    variants.add('+330${digits.substring(1)}');
+  }
+  if (digits.startsWith('33') && digits.length > 2) {
+    variants.add('+33${digits.substring(2)}');
+    variants.add('+330${digits.substring(2)}');
+    variants.add('+$digits');
+  }
+
+  return variants;
+}
+
 List<String> generateSearchOptions(String? value) {
-  final searchOptions = <String>[];
+  final searchOptions = <String>{};
   if (value == null || value.trim().isEmpty) {
-    return searchOptions;
+    return const <String>[];
   }
 
   final parts = value
@@ -38,13 +73,19 @@ List<String> generateSearchOptions(String? value) {
       .where((part) => part.isNotEmpty);
 
   for (final part in parts) {
-    for (var y = 1; y < part.length; y++) {
-      searchOptions.add(part.substring(0, y).toLowerCase());
+    for (final normalized in <String>{
+      part.toLowerCase(),
+      normalizeSearchToken(part),
+    }) {
+      if (normalized.isEmpty) continue;
+      for (var y = 1; y < normalized.length; y++) {
+        searchOptions.add(normalized.substring(0, y));
+      }
+      searchOptions.add(normalized);
     }
-    searchOptions.add(part.toLowerCase());
   }
 
-  return searchOptions;
+  return searchOptions.toList(growable: false);
 }
 
 /// Builds Firestore `searchOptions` tokens for member lookup.

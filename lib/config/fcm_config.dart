@@ -19,10 +19,11 @@
 /// (and ideally `packageName`) so sends only target the correct app
 /// (see [NotificationFCMService.saveTokenToFirestore]).
 /// Grinta collects `app == grinta` tokens, Grinta `packageName` docs, and safe
-/// legacy iOS/web documents without `app`. Naked unbranded Android tokens are
-/// skipped (they often belong to Aserstein on the shared project — wrong tray
-/// colors / wrong app on tap). `app: aserstein` and Aserstein packages are
-/// always excluded.
+/// legacy iOS/web documents without `app`. Unbranded iOS tokens stay collectable
+/// even when another device already has a branded doc. Naked unbranded Android
+/// tokens are skipped (they often belong to Aserstein on the shared project —
+/// wrong tray colors / wrong app on tap). `app: aserstein` and Aserstein
+/// packages are always excluded.
 ///
 /// Push icons must be chosen per app. The Cloud Function `sendPushFCMNotification`
 /// (region `europe-west1`, not in this repo) should accept a `brand` field:

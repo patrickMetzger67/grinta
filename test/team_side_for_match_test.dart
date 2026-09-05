@@ -1,5 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:grinta/model/match.dart';
+import 'package:grinta/util/match_goal_helper.dart';
 import 'package:grinta/util/match_outcome_helper.dart';
 import 'package:grinta/util/team_stats_opponent_helper.dart';
 
@@ -64,5 +65,39 @@ void main() {
         'Home FC',
       );
     });
+
+    test(
+      '56174440: affiliation 500554 is away even if teamId is the home Grinta id',
+      () {
+        final match = Match(
+          id: '56174440',
+          team1: 'ROSHEIM F.C',
+          team2: 'ERSTEIN A.S 2',
+          affiliationTeam1: '504006',
+          affiliationTeam2: '500554',
+          clubs: const ['504006', '500554'],
+          teams: const ['vvh0lhAstYbgZFeCTrsN', 'LXLDol20qmaJzeAoh4Ha'],
+          teamID: 'LXLDol20qmaJzeAoh4Ha',
+          isOwnClub: false,
+        );
+
+        expect(
+          teamSideForMatch(
+            match: match,
+            teamId: 'vvh0lhAstYbgZFeCTrsN',
+            clubId: '500554',
+          ),
+          MatchSide.team2,
+        );
+        expect(
+          teamSideForMatch(
+            match: match,
+            teamId: 'LXLDol20qmaJzeAoh4Ha',
+            clubId: '500554',
+          ),
+          MatchSide.team2,
+        );
+      },
+    );
   });
 }

@@ -402,6 +402,37 @@ MatchSide? teamSideForMatch({
   String? displayName,
 }) {
   final String trimmedTeamId = teamId.trim();
+  final String trimmedClubId = clubId?.trim() ?? '';
+  final String trimmedAffiliation = clubAffiliation?.trim() ?? '';
+
+  bool matchesIdentifier(String? value) {
+    final normalized = value?.trim() ?? '';
+    if (normalized.isEmpty) return false;
+    return normalized == trimmedClubId || normalized == trimmedAffiliation;
+  }
+
+  // Affiliation / clubs win over [Match.teams] index. Shared matches store
+  // home then away Grinta ids, but the session team we open stats for must
+  // follow the FFF club under the logo (500554 away ≠ teams[0] home).
+  if (trimmedClubId.isNotEmpty || trimmedAffiliation.isNotEmpty) {
+    if (matchesIdentifier(match.affiliationTeam1)) {
+      return MatchSide.team1;
+    }
+    if (matchesIdentifier(match.affiliationTeam2)) {
+      return MatchSide.team2;
+    }
+
+    final List<dynamic> clubs = match.clubs ?? const <dynamic>[];
+    for (var i = 0; i < clubs.length && i < 2; i++) {
+      final club = clubs[i]?.toString().trim() ?? '';
+      if (club.isEmpty) {
+        continue;
+      }
+      if (club == trimmedClubId || club == trimmedAffiliation) {
+        return i == 0 ? MatchSide.team1 : MatchSide.team2;
+      }
+    }
+  }
 
   if (trimmedTeamId.isNotEmpty) {
     final List<String> linkedTeamIds =
@@ -429,35 +460,6 @@ MatchSide? teamSideForMatch({
       }
       if (match.isOwnClub == false) {
         return MatchSide.team2;
-      }
-    }
-  }
-
-  final String trimmedClubId = clubId?.trim() ?? '';
-  final String trimmedAffiliation = clubAffiliation?.trim() ?? '';
-
-  bool matchesIdentifier(String? value) {
-    final normalized = value?.trim() ?? '';
-    if (normalized.isEmpty) return false;
-    return normalized == trimmedClubId || normalized == trimmedAffiliation;
-  }
-
-  if (trimmedClubId.isNotEmpty || trimmedAffiliation.isNotEmpty) {
-    if (matchesIdentifier(match.affiliationTeam1)) {
-      return MatchSide.team1;
-    }
-    if (matchesIdentifier(match.affiliationTeam2)) {
-      return MatchSide.team2;
-    }
-
-    final List<dynamic> clubs = match.clubs ?? const <dynamic>[];
-    for (var i = 0; i < clubs.length && i < 2; i++) {
-      final club = clubs[i]?.toString().trim() ?? '';
-      if (club.isEmpty) {
-        continue;
-      }
-      if (club == trimmedClubId || club == trimmedAffiliation) {
-        return i == 0 ? MatchSide.team1 : MatchSide.team2;
       }
     }
   }
