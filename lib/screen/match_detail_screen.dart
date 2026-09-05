@@ -35,6 +35,7 @@ import '../widget/match_highlights_timeline.dart';
 import '../widget/match_opponent_stats_button.dart';
 import '../util/match_team_stats_navigation.dart';
 import '../util/session_tracker_kit.dart';
+import '../util/soft_keyboard.dart';
 import '../widget/session_player_analysis_view.dart';
 import '../services/session_player_synthesis_share_service.dart';
 import '../widget/session_tracker_stats_view.dart';
@@ -160,9 +161,67 @@ class MatchDetailScreen extends StatefulWidget {
   State<MatchDetailScreen> createState() => _MatchDetailScreenState();
 }
 
-class _MatchDetailScreenState extends State<MatchDetailScreen> {
+class _MatchDetailScreenState extends State<MatchDetailScreen>
+    with WidgetsBindingObserver {
   bool _scoreEdited = false;
   bool _exitBusy = false;
+  final GlobalKey _convocationsTabKey = GlobalKey();
+
+  /// Stable Firestore streams / futures. Recreating them on every rebuild
+  /// (keyboard inset, MediaQuery) remounted the tab shell and disposed the
+  /// convocations name filter on mobile.
+  Stream<TeamWorkloadSummary?>? _workloadStream;
+  Stream<MatchStats?>? _statsStream;
+  Stream<List<Highlights>>? _highlightsStream;
+  Future<bool>? _intenseOwnerFuture;
+  String? _detailStreamsEventId;
+  String? _intenseOwnerId;
+  bool _seenCompoTab = false;
+  bool _seenStatsTab = false;
+  bool? _cachedShowLiveTab;
+
+  void _ensureDetailStreams() {
+    final String eventId = match.id?.trim() ?? '';
+    if (_detailStreamsEventId == eventId &&
+        _workloadStream != null &&
+        _statsStream != null &&
+        _highlightsStream != null) {
+      return;
+    }
+    _detailStreamsEventId = eventId;
+    _workloadStream = eventId.isEmpty
+        ? Stream<TeamWorkloadSummary?>.value(null)
+        : TeamWorkloadSummaryService().watchByEventId(eventId);
+    _statsStream = MatchStatsService().streamMatchStatsByMatchId(eventId);
+    _highlightsStream =
+        HighlightsService().streamHighlightsByMatchCalendarId(eventId);
+  }
+
+  void _ensureIntenseOwnerFuture() {
+    final String ownerId = match.ownerId?.trim() ?? '';
+    if (_intenseOwnerId == ownerId && _intenseOwnerFuture != null) {
+      return;
+    }
+    _intenseOwnerId = ownerId;
+    _intenseOwnerFuture = isIntenseTrackerOwner(match.ownerId);
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addObserver(this);
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    super.dispose();
+  }
+
+  @override
+  void didChangeMetrics() {
+    if (mounted) setState(() {});
+  }
 
   models.Match get match => widget.match;
   bool get isManager => widget.isManager;
@@ -245,7 +304,9 @@ class _MatchDetailScreenState extends State<MatchDetailScreen> {
   @override
   Widget build(BuildContext context) {
     final colors = context.appColors;
-    final eventId = match.id?.trim() ?? '';
+    _ensureDetailStreams();
+    _ensureIntenseOwnerFuture();
+    final bool compactForKeyboard = isSoftKeyboardOpen(context);
 
     return PopScope(
       canPop: !_shouldAskMatchFinished,
@@ -288,79 +349,90 @@ class _MatchDetailScreenState extends State<MatchDetailScreen> {
                     ),
                     child: Column(
                       children: [
-                        _MatchHeader(
-                          match: match,
-                          isManager: isManager,
-                          dense: denseChrome,
-                          onScoreChanged: () {
-                            if (!_scoreEdited) {
-                              setState(() => _scoreEdited = true);
-                            }
-                          },
-                        ),
-                        // Live / Re-sync for noSync kits — visible without
-                        // opening Temps forts (and without kick-off highlight).
-                        Padding(
-                          padding: EdgeInsets.fromLTRB(
-                            8,
-                            denseChrome ? 4 : 8,
-                            8,
-                            0,
-                          ),
-                          child: MatchIntenseHighlightsActions(
+                        if (!compactForKeyboard) ...[
+                          _MatchHeader(
                             match: match,
                             isManager: isManager,
+                            dense: denseChrome,
+                            onScoreChanged: () {
+                              if (!_scoreEdited) {
+                                setState(() => _scoreEdited = true);
+                              }
+                            },
                           ),
-                        ),
+                          // Live / Re-sync for noSync kits — visible without
+                          // opening Temps forts (and without kick-off highlight).
+                          Padding(
+                            padding: EdgeInsets.fromLTRB(
+                              8,
+                              denseChrome ? 4 : 8,
+                              8,
+                              0,
+                            ),
+                            child: MatchIntenseHighlightsActions(
+                              match: match,
+                              isManager: isManager,
+                            ),
+                          ),
+                        ],
                         Expanded(
                           child: StreamBuilder<TeamWorkloadSummary?>(
-                            stream: eventId.isEmpty
-                                ? Stream<TeamWorkloadSummary?>.value(null)
-                                : TeamWorkloadSummaryService()
-                                    .watchByEventId(eventId),
+                            stream: _workloadStream,
                             builder: (context, workloadSnapshot) {
                               final summary = workloadSnapshot.data;
                               // Team kit OR personal GPS / apps attached to this match.
-                              final bool showStats = match.withTracker == true ||
-                                  (summary != null &&
-                                      summary.playerScores.isNotEmpty);
+                              final bool showStatsNow =
+                                  match.withTracker == true ||
+                                      (summary != null &&
+                                          summary.playerScores.isNotEmpty);
+                              if (showStatsNow) {
+                                _seenStatsTab = true;
+                              }
+                              final bool showStats =
+                                  showStatsNow || _seenStatsTab;
 
                               return StreamBuilder<MatchStats?>(
-                                stream: MatchStatsService()
-                                    .streamMatchStatsByMatchId(match.id ?? ''),
+                                stream: _statsStream,
                                 builder: (context, snapshot) {
-                                  if (snapshot.connectionState ==
-                                      ConnectionState.waiting) {
-                                    return const Center(
-                                      child: CircularProgressIndicator(),
-                                    );
+                                  // Keep tabs mounted while the stats stream
+                                  // reconnects. A full-screen spinner was
+                                  // disposing the convocations filter on
+                                  // mobile (keyboard / network blips).
+                                  final bool showCompoNow =
+                                      snapshot.data != null;
+                                  if (showCompoNow) {
+                                    _seenCompoTab = true;
                                   }
-
-                                  final bool showCompo = snapshot.data != null;
+                                  final bool showCompo =
+                                      showCompoNow || _seenCompoTab;
                                   final l10n = context.l10n;
 
                                   return FutureBuilder<bool>(
-                                    future:
-                                        isIntenseTrackerOwner(match.ownerId),
+                                    future: _intenseOwnerFuture,
                                     builder: (context, intenseSnapshot) {
                                       final isIntenseOwner =
                                           intenseSnapshot.data == true;
 
                                       return StreamBuilder<List<Highlights>>(
-                                        stream: HighlightsService()
-                                            .streamHighlightsByMatchCalendarId(
-                                          match.id ?? '',
-                                        ),
+                                        stream: _highlightsStream,
                                         builder:
                                             (context, highlightsSnapshot) {
                                           final highlights =
                                               highlightsSnapshot.data ??
                                                   const <Highlights>[];
-                                          final showLiveTab = isIntenseOwner &&
+                                          final bool liveNow = isIntenseOwner &&
                                               isMatchSessionLive(
                                                 match: match,
                                                 highlights: highlights,
                                               );
+                                          final bool showLiveTab =
+                                              intenseSnapshot.hasData
+                                                  ? liveNow
+                                                  : (_cachedShowLiveTab ??
+                                                      false);
+                                          if (intenseSnapshot.hasData) {
+                                            _cachedShowLiveTab = liveNow;
+                                          }
                                           final liveSessionStart =
                                               intenseLiveMatchStartUtc(
                                             highlights,
@@ -414,6 +486,7 @@ class _MatchDetailScreenState extends State<MatchDetailScreen> {
                                                     context, match) ??
                                                   _CompoTab(match: match),
                                             MatchConvocationsTab(
+                                              key: _convocationsTabKey,
                                               match: match,
                                               isManager: isManager,
                                             ),
@@ -474,6 +547,8 @@ class _MatchDetailScreenState extends State<MatchDetailScreen> {
                                             initialIndex: safeInitialIndex,
                                             matchHasTracker: showStats,
                                             dense: denseChrome,
+                                            compactForKeyboard:
+                                                compactForKeyboard,
                                           );
                                         },
                                       );
@@ -614,6 +689,7 @@ class _MatchDetailTabShell extends StatefulWidget {
   final int initialIndex;
   final bool matchHasTracker;
   final bool dense;
+  final bool compactForKeyboard;
 
   const _MatchDetailTabShell({
     required this.tabs,
@@ -623,6 +699,7 @@ class _MatchDetailTabShell extends StatefulWidget {
     required this.initialIndex,
     required this.matchHasTracker,
     this.dense = false,
+    this.compactForKeyboard = false,
   });
 
   @override
@@ -646,6 +723,22 @@ class _MatchDetailTabShellState extends State<_MatchDetailTabShell>
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _recordTabVisit(_tabController.index);
     });
+  }
+
+  @override
+  void didUpdateWidget(covariant _MatchDetailTabShell oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.tabs.length == widget.tabs.length) return;
+
+    final int oldIndex = _tabController.index;
+    _tabController.removeListener(_onTabControllerChanged);
+    _tabController.dispose();
+    _tabController = TabController(
+      length: widget.tabs.length,
+      vsync: this,
+      initialIndex: oldIndex.clamp(0, widget.tabs.length - 1),
+    );
+    _tabController.addListener(_onTabControllerChanged);
   }
 
   @override
@@ -693,12 +786,13 @@ class _MatchDetailTabShellState extends State<_MatchDetailTabShell>
       onNavigateToTabIndex: _goToTabIndex,
       child: Column(
         children: [
-          FeatureDiscoveryRandomBanner(
-            parentScreenId: FeatureDiscoveryIds.screenMatchDetail,
-            includeBaseScreens: false,
-            matchHasTracker: widget.matchHasTracker,
-          ),
-          SizedBox(height: widget.dense ? 2 : 6),
+          if (!widget.compactForKeyboard)
+            FeatureDiscoveryRandomBanner(
+              parentScreenId: FeatureDiscoveryIds.screenMatchDetail,
+              includeBaseScreens: false,
+              matchHasTracker: widget.matchHasTracker,
+            ),
+          SizedBox(height: widget.dense || widget.compactForKeyboard ? 2 : 6),
           _TabsContainer(
             tabs: widget.tabs,
             controller: _tabController,
@@ -918,13 +1012,18 @@ class _MatchHeaderState extends State<_MatchHeader> {
 
   Future<void> _onTeamLogoTap(MatchSide side) async {
     final session = context.read<AppSession>();
-    final team = teamForMatchStats(session, match);
+    final ownClub = ownClubIdOnMatch(
+      candidates: session.teamsForAgendaSelectedSeason,
+      match: match,
+    );
+    final team = teamForMatchStats(session, match, preferClubId: ownClub);
     if (team == null) return;
 
     final destination = destinationForMatchSide(
       match: match,
       team: team,
       side: side,
+      ownClubId: ownClub,
     );
     if (destination == null) return;
 
@@ -933,6 +1032,7 @@ class _MatchHeaderState extends State<_MatchHeader> {
       match: match,
       isManager: isManager,
       destination: destination,
+      tappedSide: side,
     );
   }
 

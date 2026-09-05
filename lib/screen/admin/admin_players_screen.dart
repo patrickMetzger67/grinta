@@ -46,37 +46,11 @@ class _AdminPlayersScreenState extends State<AdminPlayersScreen> {
     });
   }
 
-  List<String> _queryTokens(String query) {
-    return query
-        .trim()
-        .toLowerCase()
-        .split(RegExp(r'\s+'))
-        .where((token) => token.isNotEmpty)
-        .toList();
-  }
+  List<String> _queryTokens(String query) => playerSearchQueryTokens(query);
 
   bool _matchesPlayer(Player player, List<String> tokens) {
     if (tokens.isEmpty) return true;
-
-    final displayName =
-        playerDisplayName(player, unknownLabel: '').toLowerCase();
-    final firstName = (player.firstName ?? '').trim().toLowerCase();
-    final lastName = (player.lastName ?? '').trim().toLowerCase();
-    final email = (player.email ?? '').trim().toLowerCase();
-    final searchOptions = (player.searchOptions ?? const [])
-        .map((value) => value.toString().toLowerCase());
-
-    final haystacks = <String>[
-      displayName,
-      firstName,
-      lastName,
-      email,
-      ...searchOptions,
-    ].where((value) => value.isNotEmpty);
-
-    return tokens.every(
-      (token) => haystacks.any((value) => value.contains(token)),
-    );
+    return tokens.every((token) => playerMatchesNameQuery(player, token));
   }
 
   Future<void> _openPlayerUsers(Player player) {

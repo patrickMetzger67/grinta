@@ -16,6 +16,28 @@ void main() {
         containsAll(<String>['e', 'E']),
       );
     });
+
+    test('strips accents so Raëd queries raed', () {
+      expect(
+        searchTokenCaseVariants('Raëd').toList(),
+        containsAll(<String>['raed', 'RAED', 'Raed']),
+      );
+    });
+  });
+
+  group('normalizeSearchToken', () {
+    test('lowercases and strips accents', () {
+      expect(normalizeSearchToken('Jérou'), 'jerou');
+      expect(normalizeSearchToken('  Raëd '), 'raed');
+    });
+  });
+
+  group('phoneSearchE164Variants', () {
+    test('covers 06 and legacy +3306 forms', () {
+      final variants = phoneSearchE164Variants('06 41 26 57 56');
+      expect(variants, contains('+33641265756'));
+      expect(variants, contains('+330641265756'));
+    });
   });
 
   group('buildPlayerSearchOptions', () {
@@ -51,6 +73,15 @@ void main() {
 
       expect(options.any((token) => token.contains('@')), isFalse);
       expect(options, containsAll(<String>['anna', 'martin']));
+    });
+
+    test('indexes accent-stripped prefixes for mobile keyboards', () {
+      final options = buildPlayerSearchOptions(
+        firstName: 'Raëd',
+        lastName: 'Jérou',
+      );
+
+      expect(options, containsAll(<String>['raed', 'jerou', 'rae', 'jero']));
     });
   });
 }

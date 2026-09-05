@@ -34,8 +34,11 @@ does not FCM them.
 Every FCM payload includes the Grinta icons:
 
 - Small / web: `https://grinta.web.app/icons/Icon-192.png`
-- Large / Android + iOS image: `https://grinta.web.app/icons/Icon-512.png`
+- Large / Android + web image: `https://grinta.web.app/icons/Icon-512.png`
 - Android status-bar: `@drawable/ic_notification` (white silhouette required by the OS)
+- iOS lock-screen: text alert only (no `mutable-content` / image). Grinta has no
+  Notification Service Extension; attaching an image on APNs dropped banners
+  when the app was killed.
 
 ## Contract (callable)
 

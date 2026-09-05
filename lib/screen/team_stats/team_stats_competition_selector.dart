@@ -159,17 +159,29 @@ Future<List<String>> loadTeamStatsCompetitionUrls({
 }
 
 /// Resolves the team-stats competition URL that matches [match] fields.
+///
+/// Uses [Match.competitionID] / [Match.poule] / [Match.stage], never the poule
+/// in [Match.url] (home-club poule on FFF match pages).
 Future<String?> resolveTeamStatsCompetitionUrlForMatch({
   required Team team,
   required Match match,
   String? fallbackSeasonId,
   TeamsPerClubService? teamsPerClubService,
 }) async {
+  final identity = competitionIdentityFromMatch(match);
   final urls = await loadTeamStatsCompetitionUrls(
     team: team,
     fallbackSeasonId: fallbackSeasonId,
     teamsPerClubService: teamsPerClubService,
   );
+
+  if (identity != null) {
+    for (final url in urls) {
+      if (urlMatchesCompetitionIdentity(url, identity)) {
+        return url;
+      }
+    }
+  }
 
   for (final url in urls) {
     final filter = competitionFilterFromUrl(url);
@@ -178,6 +190,50 @@ Future<String?> resolveTeamStatsCompetitionUrlForMatch({
     }
   }
   return null;
+}
+
+/// Picks the dropdown value for team stats from match identity, then URL.
+///
+/// A URL whose poule differs from [matchIdentity] (e.g. FFF `poule=1` on an
+/// away match whose [Match.poule] is `3`) is never selected.
+String resolveTeamStatsSelectedCompetitionValue({
+  required List<TeamStatsCompetitionOption> options,
+  String? initialUrl,
+  TeamStatsCompetitionIdentity? matchIdentity,
+  String fallback = kTeamStatsAllCompetitionsValue,
+  bool fallbackToFirst = false,
+}) {
+  final identity = matchIdentity ?? competitionIdentityFromUrl(initialUrl);
+
+  if (identity != null) {
+    for (final option in options) {
+      final optionUrl = (option.url ?? option.value).trim();
+      if (urlMatchesCompetitionIdentity(optionUrl, identity) ||
+          urlMatchesCompetitionIdentity(option.value, identity)) {
+        return option.value;
+      }
+    }
+  }
+
+  final initial = initialUrl?.trim() ?? '';
+  if (initial.isNotEmpty) {
+    final initialIdentity = competitionIdentityFromUrl(initial);
+    final contradictsMatch = matchIdentity != null &&
+        initialIdentity != null &&
+        !competitionIdentitiesMatch(matchIdentity, initialIdentity);
+    if (!contradictsMatch) {
+      for (final option in options) {
+        if (option.value == initial || option.url == initial) {
+          return option.value;
+        }
+      }
+    }
+  }
+
+  if (fallbackToFirst && options.isNotEmpty) {
+    return options.first.value;
+  }
+  return fallback;
 }
 
 String? teamStatsSelectedCompetitionUrl(String selectedValue) {

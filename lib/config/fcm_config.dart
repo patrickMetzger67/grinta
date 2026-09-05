@@ -17,8 +17,9 @@
 /// Grinta and Aserstein share the same Firebase project and `users/{uid}/fcmTokens`
 /// collection. Each token document must include `app: "grinta"` or `app: "aserstein"`
 /// so sends only target the correct app (see [NotificationFCMService.saveTokenToFirestore]).
-/// Grinta reads tokens with a strict `app == grinta` filter; legacy documents without
-/// `app` are ignored until the user opens Grinta again and the token is re-registered.
+/// Grinta reads `app == grinta` tokens and legacy documents without `app`.
+/// Unbranded iOS tokens are kept even when other devices already have branded
+/// docs. `app: aserstein` is excluded.
 ///
 /// Push icons must be chosen per app. The Cloud Function `sendPushFCMNotification`
 /// (region `europe-west1`, not in this repo) should accept a `brand` field:

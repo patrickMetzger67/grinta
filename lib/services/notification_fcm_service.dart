@@ -34,6 +34,7 @@ import 'package:provider/provider.dart';
 import 'package:grinta/screen/chat/stream_channel_ui_helpers.dart';
 import 'package:grinta/util/app_theme.dart';
 import 'package:grinta/util/chat_fcm_notification.dart';
+import 'package:grinta/util/fcm_token.dart';
 import 'package:grinta/util/staff_session_access.dart';
 import 'package:grinta/widget/grinta_stream_message_input.dart';
 import 'package:stream_chat_flutter/stream_chat_flutter.dart';
@@ -374,22 +375,36 @@ class NotificationFCMService {
         text.contains('apns token has not been received');
   }
 
-  /// iOS may not have an APNS token at cold start (simulator/device timing).
+  /// iOS may not have an APNS token at cold start (UIScene / APNs timing).
+  ///
+  /// Do not call [FirebaseMessaging.getToken] until APNs is present — otherwise
+  /// FlutterFire throws `apns-token-not-set` and the iOS device is never
+  /// written to `users/{uid}/fcmTokens`, so closed-app chat push is skipped.
   static Future<String?> _getFcmTokenWithIosApnsRetry() async {
-    const attempts = 5;
-    const delay = Duration(milliseconds: 800);
+    const attempts = 12;
+    var delay = const Duration(milliseconds: 400);
 
     for (var attempt = 0; attempt < attempts; attempt++) {
       try {
         final apnsToken = await _messaging.getAPNSToken();
-        if (apnsToken == null && attempt < attempts - 1) {
-          await Future<void>.delayed(delay);
-          continue;
+        if (apnsToken == null || apnsToken.isEmpty) {
+          if (attempt < attempts - 1) {
+            await Future<void>.delayed(delay);
+            if (delay.inMilliseconds < 2000) {
+              delay = Duration(milliseconds: delay.inMilliseconds * 2);
+            }
+            continue;
+          }
+          _scheduleIosFcmTokenRetry();
+          return null;
         }
         return await _messaging.getToken();
       } catch (e) {
         if (_isApnsTokenNotSetError(e) && attempt < attempts - 1) {
           await Future<void>.delayed(delay);
+          if (delay.inMilliseconds < 2000) {
+            delay = Duration(milliseconds: delay.inMilliseconds * 2);
+          }
           continue;
         }
         if (_isApnsTokenNotSetError(e)) {
@@ -407,7 +422,7 @@ class NotificationFCMService {
   static void _scheduleIosFcmTokenRetry() {
     if (kIsWeb || !NotificationFcmPlatform.isIOS) return;
     _iosFcmTokenRetryTimer?.cancel();
-    _iosFcmTokenRetryTimer = Timer(const Duration(seconds: 5), () {
+    _iosFcmTokenRetryTimer = Timer(const Duration(seconds: 8), () {
       unawaited(_registerFCMToken());
     });
   }
@@ -423,6 +438,7 @@ class NotificationFCMService {
       if (uid != null) {
         await saveTokenToFirestore(uid);
       }
+      unawaited(registerTokenWithStream());
     } catch (e, st) {
       if (_isApnsTokenNotSetError(e)) {
         _scheduleIosFcmTokenRetry();
@@ -833,10 +849,11 @@ class NotificationFCMService {
     return channel;
   }
 
-  /// Reads Grinta FCM device tokens from `users/{uid}/fcmTokens` (document ids).
+  /// Reads Grinta FCM device tokens from `users/{uid}/fcmTokens`.
   ///
-  /// Prefers tokens with `app: [FcmConfig.brandGrinta]`. When none match, falls
-  /// back to legacy documents without `app`, excluding `app: aserstein`.
+  /// Includes `app: [FcmConfig.brandGrinta]` and legacy documents without
+  /// `app`. Unbranded iOS tokens are kept even when other devices already
+  /// have branded documents. See [collectGrintaFcmTokens].
   static Future<List<String>> fetchFcmTokensForUser(String uid) async {
     final trimmedUid = uid.trim();
     if (trimmedUid.isEmpty) return const [];
@@ -847,34 +864,14 @@ class NotificationFCMService {
           .doc(trimmedUid)
           .collection('fcmTokens');
 
-      final brandedSnapshot = await tokensRef
-          .where('app', isEqualTo: FcmConfig.brandGrinta)
-          .get();
-
-      if (brandedSnapshot.docs.isNotEmpty) {
-        return _tokenIdsFromSnapshotDocs(brandedSnapshot.docs);
-      }
-
       final allSnapshot = await tokensRef.get();
-      return _tokenIdsFromSnapshotDocs(
-        allSnapshot.docs.where((doc) {
-          final app = doc.data()['app']?.toString().trim() ?? '';
-          return app.isEmpty || app == FcmConfig.brandGrinta;
-        }),
+      return collectGrintaFcmTokens(
+        allSnapshot.docs.map((doc) => (id: doc.id, data: doc.data())),
       );
     } catch (e, st) {
       debugPrint('fetchFcmTokensForUser error uid=$trimmedUid: $e\n$st');
       return const [];
     }
-  }
-
-  static List<String> _tokenIdsFromSnapshotDocs(
-    Iterable<QueryDocumentSnapshot<Map<String, dynamic>>> docs,
-  ) {
-    return docs
-        .map((doc) => doc.id.trim())
-        .where((token) => token.isNotEmpty)
-        .toList();
   }
 
   /// Reads FCM tokens for each uid in [uids] and returns a deduplicated list.
@@ -919,15 +916,17 @@ class NotificationFCMService {
 
       final snapshot = await tokensRef.get();
 
+      final platform =
+          kIsWeb ? 'web' : NotificationFcmPlatform.platformLabel;
+
       if (snapshot.exists) {
         await tokensRef.update({
           'updatedAt': FieldValue.serverTimestamp(),
           'app': FcmConfig.brandGrinta,
+          'token': token,
+          'platform': platform,
         });
       } else {
-        final platform =
-            kIsWeb ? 'web' : NotificationFcmPlatform.platformLabel;
-
         var deviceName = 'unknown';
         final deviceInfo = DeviceInfoPlugin();
         if (kIsWeb) {
@@ -938,6 +937,7 @@ class NotificationFCMService {
         }
 
         await tokensRef.set({
+          'token': token,
           'createdAt': FieldValue.serverTimestamp(),
           'platform': platform,
           'device': deviceName,

@@ -298,26 +298,34 @@ class PlayerService {
       return const <Player>[];
     }
 
-    final String firstToken = normalizedQuery
-        .split(RegExp(r'\s+'))
-        .firstWhere((token) => token.isNotEmpty, orElse: () => '');
+    final String firstToken = normalizeSearchToken(
+      normalizedQuery
+          .split(RegExp(r'\s+'))
+          .firstWhere((token) => token.isNotEmpty, orElse: () => ''),
+    );
     if (firstToken.isEmpty) {
       return const <Player>[];
     }
 
     final byOptions = await _searchMembersBySearchOptionsToken(firstToken);
     final byName = await _searchMembersByNamePrefix(firstToken);
-    final merged = _mergePlayersByDocId(byOptions, byName);
+    var merged = _mergePlayersByDocId(byOptions, byName);
 
-    if (!normalizedQuery.contains('@')) {
-      return merged;
+    if (normalizedQuery.contains('@')) {
+      final byEmail = await _getActiveMembersByEmailQuery(
+        normalizedEmail: normalizedQuery,
+        rawEmail: trimmedQuery,
+      );
+      merged = _mergePlayersByDocId(merged, byEmail);
     }
 
-    final byEmail = await _getActiveMembersByEmailQuery(
-      normalizedEmail: normalizedQuery,
-      rawEmail: trimmedQuery,
-    );
-    return _mergePlayersByDocId(merged, byEmail);
+    final phoneVariants = phoneSearchE164Variants(trimmedQuery);
+    if (phoneVariants.isNotEmpty) {
+      final byPhone = await _searchMembersByPhoneVariants(phoneVariants);
+      merged = _mergePlayersByDocId(merged, byPhone);
+    }
+
+    return merged;
   }
 
   /// Stream variant of [searchMembersBySearchOptions].
@@ -329,15 +337,23 @@ class PlayerService {
     final Map<String, Player> byId = <String, Player>{};
 
     for (final variant in searchTokenCaseVariants(token)) {
-      final QuerySnapshot<Map<String, dynamic>> snapshot = await _collection
-          .where(keyPlayerSearchOptions, arrayContains: variant)
-          .limit(50)
-          .get();
+      try {
+        final QuerySnapshot<Map<String, dynamic>> snapshot = await _collection
+            .where(keyPlayerSearchOptions, arrayContains: variant)
+            .limit(100)
+            .get();
 
-      for (final player in _mapActivePlayers(snapshot)) {
-        final id = effectiveMemberId(player) ?? player.keyMember?.trim();
-        if (id != null && id.isNotEmpty) {
-          byId[id] = player;
+        for (final player in _mapActivePlayers(snapshot)) {
+          final id = effectiveMemberId(player) ?? player.keyMember?.trim();
+          if (id != null && id.isNotEmpty) {
+            byId[id] = player;
+          }
+        }
+      } catch (e, st) {
+        if (kDebugMode) {
+          debugPrint(
+            '[MemberSearch] searchOptions token=$variant failed: $e\n$st',
+          );
         }
       }
     }
@@ -350,10 +366,43 @@ class PlayerService {
 
     for (final variant in searchTokenCaseVariants(token)) {
       for (final field in <String>[keyPlayerFirstName, keyPlayerLastName]) {
+        try {
+          final QuerySnapshot<Map<String, dynamic>> snapshot = await _collection
+              .where(field, isGreaterThanOrEqualTo: variant)
+              .where(field, isLessThanOrEqualTo: '$variant\uf8ff')
+              .limit(50)
+              .get();
+
+          for (final player in _mapActivePlayers(snapshot)) {
+            final id = effectiveMemberId(player) ?? player.keyMember?.trim();
+            if (id != null && id.isNotEmpty) {
+              byId[id] = player;
+            }
+          }
+        } catch (e, st) {
+          if (kDebugMode) {
+            debugPrint(
+              '[MemberSearch] name prefix field=$field token=$variant '
+              'failed: $e\n$st',
+            );
+          }
+        }
+      }
+    }
+
+    return byId.values.toList(growable: false);
+  }
+
+  Future<List<Player>> _searchMembersByPhoneVariants(
+    Iterable<String> variants,
+  ) async {
+    final Map<String, Player> byId = <String, Player>{};
+
+    for (final variant in variants) {
+      try {
         final QuerySnapshot<Map<String, dynamic>> snapshot = await _collection
-            .where(field, isGreaterThanOrEqualTo: variant)
-            .where(field, isLessThanOrEqualTo: '$variant\uf8ff')
-            .limit(25)
+            .where(keyPlayerPhoneE164, isEqualTo: variant)
+            .limit(20)
             .get();
 
         for (final player in _mapActivePlayers(snapshot)) {
@@ -361,6 +410,12 @@ class PlayerService {
           if (id != null && id.isNotEmpty) {
             byId[id] = player;
           }
+        }
+      } catch (e, st) {
+        if (kDebugMode) {
+          debugPrint(
+            '[MemberSearch] phone variant=$variant failed: $e\n$st',
+          );
         }
       }
     }
