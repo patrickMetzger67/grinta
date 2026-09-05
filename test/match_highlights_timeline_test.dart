@@ -42,7 +42,7 @@ MatchStatHighLight _longSubstitution() {
 void main() {
   testWidgets('wide timeline grows for a wrapping substitution without overflow',
       (tester) async {
-    final FlutterExceptionHandler? oldOnError = FlutterError.onError;
+    final void Function(FlutterErrorDetails)? oldOnError = FlutterError.onError;
     final errors = <FlutterErrorDetails>[];
     FlutterError.onError = errors.add;
 
@@ -70,7 +70,7 @@ void main() {
 
   testWidgets('narrow timeline grows for a wrapping substitution without overflow',
       (tester) async {
-    final FlutterExceptionHandler? oldOnError = FlutterError.onError;
+    final void Function(FlutterErrorDetails)? oldOnError = FlutterError.onError;
     final errors = <FlutterErrorDetails>[];
     FlutterError.onError = errors.add;
 
@@ -97,7 +97,7 @@ void main() {
 
   testWidgets('card-type tap chevron plus wrapping names does not overflow',
       (tester) async {
-    final FlutterExceptionHandler? oldOnError = FlutterError.onError;
+    final void Function(FlutterErrorDetails)? oldOnError = FlutterError.onError;
     final errors = <FlutterErrorDetails>[];
     FlutterError.onError = errors.add;
 
