@@ -5,7 +5,6 @@ import androidx.health.connect.client.HealthConnectClient
 import androidx.health.connect.client.permission.HealthPermission
 import androidx.health.connect.client.records.DistanceRecord
 import androidx.health.connect.client.records.ExerciseSessionRecord
-import androidx.health.connect.client.records.TotalCaloriesBurnedRecord
 import androidx.health.connect.client.request.ReadRecordsRequest
 import androidx.health.connect.client.time.TimeRangeFilter
 import io.flutter.embedding.engine.FlutterEngine
@@ -19,12 +18,13 @@ import java.time.Instant
 /**
  * Direct Health Connect exercise reader.
  *
- * The Flutter [health] plugin may enrich WORKOUT with Distance / TotalCalories.
+ * The Flutter [health] plugin may enrich WORKOUT with extra record types.
  * If any of those reads throws SecurityException, the plugin can return an
  * empty list for the whole query — even when Exercise sessions exist.
  *
- * This channel reads [ExerciseSessionRecord] first, then best-effort enriches each
- * session so missing Distance/Calories permissions never wipe workouts.
+ * This channel reads [ExerciseSessionRecord] first, then best-effort enriches
+ * with Distance only. Heart rate / calories / sleep / steps are not read
+ * (Play Health Connect minimal-scope policy).
  */
 object GrintaHealthConnectChannel {
     const val CHANNEL_NAME = "io.grinta.app/health_connect"
@@ -188,9 +188,6 @@ object GrintaHealthConnectChannel {
             "hasDistance" to granted.contains(
                 HealthPermission.getReadPermission(DistanceRecord::class),
             ),
-            "hasTotalCalories" to granted.contains(
-                HealthPermission.getReadPermission(TotalCaloriesBurnedRecord::class),
-            ),
         )
     }
 
@@ -219,24 +216,6 @@ object GrintaHealthConnectChannel {
             Log.w(TAG, "Distance enrich failed for ${session.metadata.id}", e)
         }
 
-        var totalEnergy: Double? = null
-        try {
-            val energy = client.readRecords(
-                ReadRecordsRequest(
-                    recordType = TotalCaloriesBurnedRecord::class,
-                    timeRangeFilter = range,
-                ),
-            )
-            val kcal = energy.records.sumOf { it.energy.inKilocalories }
-            if (kcal > 0.0) totalEnergy = kcal
-        } catch (e: SecurityException) {
-            warnings.add("calories_denied")
-            Log.w(TAG, "Calories enrich denied for ${session.metadata.id}: ${e.message}")
-        } catch (e: Exception) {
-            warnings.add("calories_error")
-            Log.w(TAG, "Calories enrich failed for ${session.metadata.id}", e)
-        }
-
         val activityType =
             exerciseTypeNames[session.exerciseType] ?: "OTHER"
         val title = session.title?.trim().orEmpty()
@@ -247,8 +226,6 @@ object GrintaHealthConnectChannel {
             "title" to title.ifEmpty { null },
             "totalDistance" to totalDistance,
             "totalDistanceUnit" to "METER",
-            "totalEnergyBurned" to totalEnergy,
-            "totalEnergyBurnedUnit" to "KILOCALORIE",
             "dateFromMs" to session.startTime.toEpochMilli(),
             "dateToMs" to session.endTime.toEpochMilli(),
             "sourceName" to session.metadata.dataOrigin.packageName,

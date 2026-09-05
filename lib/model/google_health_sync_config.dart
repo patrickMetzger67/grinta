@@ -65,8 +65,10 @@ class GoogleHealthSyncConfig {
 
 /// Per-metric coach visibility toggles (player-controlled).
 ///
-/// Only metrics that Google Health Connect actually imports today.
-/// Sleep is intentionally omitted — we do not request READ_SLEEP.
+/// Coach visibility for imported Google Health workouts.
+/// Sleep is omitted — we do not request READ_SLEEP. Heart rate / calories
+/// from Health Connect are also not requested (Play minimal scope); those
+/// toggles still apply if a workout record carries the values.
 class GoogleHealthCoachVisibility {
   const GoogleHealthCoachVisibility({
     this.activity = false,

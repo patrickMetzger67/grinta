@@ -6,8 +6,9 @@ import 'package:grinta/model/google_health_importable_activity.dart';
 
 /// Native Health Connect exercise reader (Android).
 ///
-/// Bypasses the Flutter `health` plugin's workout enrichment path, which returns
-/// an empty list when Distance / Total calories / Steps reads throw.
+/// Bypasses the Flutter `health` plugin's workout enrichment path, which
+/// returns an empty list when extra-type reads throw. Distance is optional
+/// enrichment only — calories / HR / steps are not requested from HC.
 class GrintaHealthConnectListResult {
   const GrintaHealthConnectListResult({
     required this.ok,
@@ -86,9 +87,7 @@ class GrintaHealthConnectPlatform {
         'GrintaHealthConnect native sessions=${map['sessionCount']} '
         'mapped=${workouts.length} ok=${map['ok']} reason=${map['reason']} '
         'warnings=$warnings '
-        'hasDistance=${map['hasDistance']} '
-        'hasTotalCalories=${map['hasTotalCalories']} '
-        'hasSteps=${map['hasSteps']}',
+        'hasDistance=${map['hasDistance']}',
       );
 
       return GrintaHealthConnectListResult(

@@ -66,23 +66,66 @@
         android:required="false" />
 
     <!--
-      Health Connect — minimum scope for declared features only:
-      - READ_EXERCISE / DISTANCE / TOTAL_CALORIES / HEART_RATE: import workouts
-        (Créer → activité sportive personnelle) + optional avg HR
-      - WRITE_EXERCISE / WRITE_DISTANCE: export session distance after bilan
+      Health Connect — minimum scope for declared Play features only:
+      - READ_EXERCISE / READ_DISTANCE: import workouts (Créer → activité
+        sportive personnelle) + optional distance
+      - WRITE_EXERCISE / WRITE_DISTANCE: export session workout after bilan
       - READ_HEALTH_DATA_HISTORY: import lookback beyond ~30 days
-      Do NOT declare SLEEP / STEPS / ACTIVE_CALORIES / WRITE_CALORIES until a
-      user-facing feature actually uses them (Play "excessive access" policy).
+      Heart rate, calories, sleep, and steps are NOT requested from Health
+      Connect (Play "excessive access" / minimal-scope policy). HR/calories
+      still come from Polar / Whoop / etc. Force-remove flagged types so
+      plugins or older merge rules cannot reintroduce them into the AAB.
     -->
     <uses-permission android:name="android.permission.ACTIVITY_RECOGNITION" />
     <uses-permission android:name="android.permission.health.READ_EXERCISE" />
-    <uses-permission android:name="android.permission.health.READ_HEART_RATE" />
     <uses-permission android:name="android.permission.health.READ_DISTANCE" />
-    <uses-permission android:name="android.permission.health.READ_TOTAL_CALORIES_BURNED" />
     <uses-permission android:name="android.permission.health.WRITE_EXERCISE" />
     <uses-permission android:name="android.permission.health.WRITE_DISTANCE" />
     <!-- Needed to read workouts older than ~30 days after first grant -->
     <uses-permission android:name="android.permission.health.READ_HEALTH_DATA_HISTORY" />
+
+    <!--
+      Play flagged ActiveCaloriesBurned, HeartRate, SleepSession,
+      StepsCadence/Steps, TotalCaloriesBurned as unused. Official names:
+      READ/WRITE_SLEEP (SleepSession), READ/WRITE_STEPS (Steps + StepsCadence).
+      STEPS_CADENCE variants are removed too if a plugin ever declares them.
+    -->
+    <uses-permission
+        android:name="android.permission.health.READ_HEART_RATE"
+        tools:node="remove" />
+    <uses-permission
+        android:name="android.permission.health.WRITE_HEART_RATE"
+        tools:node="remove" />
+    <uses-permission
+        android:name="android.permission.health.READ_TOTAL_CALORIES_BURNED"
+        tools:node="remove" />
+    <uses-permission
+        android:name="android.permission.health.WRITE_TOTAL_CALORIES_BURNED"
+        tools:node="remove" />
+    <uses-permission
+        android:name="android.permission.health.READ_ACTIVE_CALORIES_BURNED"
+        tools:node="remove" />
+    <uses-permission
+        android:name="android.permission.health.WRITE_ACTIVE_CALORIES_BURNED"
+        tools:node="remove" />
+    <uses-permission
+        android:name="android.permission.health.READ_SLEEP"
+        tools:node="remove" />
+    <uses-permission
+        android:name="android.permission.health.WRITE_SLEEP"
+        tools:node="remove" />
+    <uses-permission
+        android:name="android.permission.health.READ_STEPS"
+        tools:node="remove" />
+    <uses-permission
+        android:name="android.permission.health.WRITE_STEPS"
+        tools:node="remove" />
+    <uses-permission
+        android:name="android.permission.health.READ_STEPS_CADENCE"
+        tools:node="remove" />
+    <uses-permission
+        android:name="android.permission.health.WRITE_STEPS_CADENCE"
+        tools:node="remove" />
 
     <uses-feature
         android:name="android.hardware.usb.host"
