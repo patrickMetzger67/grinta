@@ -32,6 +32,7 @@ import '../model/match.dart' as models;
 import '../util/playerDisplayName.dart';
 import '../widget/last_results_form_guide.dart';
 import '../widget/match_compo_widget.dart';
+import '../widget/assign_fmi_card_player_sheet.dart';
 import '../widget/match_highlights_timeline.dart';
 import '../widget/match_opponent_stats_button.dart';
 import '../util/match_team_stats_navigation.dart';
@@ -707,8 +708,10 @@ class _MatchDetailTabShell extends StatefulWidget {
   State<_MatchDetailTabShell> createState() => _MatchDetailTabShellState();
 }
 
+/// Hosts two TabControllers briefly when Compo / Live / Stats streams change
+/// the tab count (`didUpdateWidget` disposes then recreates).
 class _MatchDetailTabShellState extends State<_MatchDetailTabShell>
-    with SingleTickerProviderStateMixin {
+    with TickerProviderStateMixin {
   late TabController _tabController;
   int _lastLoggedIndex = -1;
 
@@ -2139,6 +2142,13 @@ class _HighlightsTabState extends State<_HighlightsTab> {
                           matchStats: matchStats,
                           team1: widget.match.team1,
                           team2: widget.match.team2,
+                          onCardHighlightTap: widget.isManager
+                              ? (highlight) => assignFmiCardHighlightToPlayer(
+                                    context,
+                                    match: widget.match,
+                                    highlight: highlight,
+                                  )
+                              : null,
                         ),
                       )
                     : MatchGrintaHighlightsTab(

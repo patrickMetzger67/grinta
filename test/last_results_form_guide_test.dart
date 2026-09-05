@@ -152,8 +152,7 @@ void main() {
     expect(find.byType(LastResultsFormRow), findsNothing);
   });
 
-  testWidgets('shows 5 empty slots while the lastResults stream is loading',
-      (tester) async {
+  testWidgets('hides while the lastResults stream is loading', (tester) async {
     final controller = StreamController<LastResults?>();
     addTearDown(controller.close);
 
@@ -173,12 +172,49 @@ void main() {
     );
     await tester.pump();
 
-    expect(find.byKey(LastResultsFormRow.guideKey), findsOneWidget);
-    for (var i = 0; i < 5; i++) {
-      expect(find.byKey(LastResultsFormRow.slotKey(i)), findsOneWidget);
-      expect(_innerDecoration(tester, i).color, isNull);
+    expect(find.byKey(LastResultsFormRow.guideKey), findsNothing);
+    expect(find.byType(LastResultsFormRow), findsNothing);
+  });
+
+  testWidgets('keeps filled slots when the parent rebuilds before a new emit',
+      (tester) async {
+    final controller = StreamController<LastResults?>();
+    addTearDown(controller.close);
+
+    Widget guide() {
+      return LastResultsFormGuide(
+        match: Match(
+          id: 'm2',
+          affiliationTeam1: '500554',
+          competitionID: '450652',
+          clubs: ['club-a', 'club-b'],
+        ),
+        side: MatchSide.team1,
+        resultsStream: controller.stream,
+      );
     }
-    expect(find.byKey(LastResultsFormRow.highlightKey(0)), findsNothing);
+
+    await tester.pumpWidget(_wrap(guide()));
+    controller.add(
+      const LastResults(
+        clubId: 'club-a',
+        competitionId: '450652',
+        results: <LastResultEntry>[
+          LastResultEntry(outcome: MatchOutcome.win, matchId: 'm1'),
+          LastResultEntry(outcome: MatchOutcome.loss, matchId: 'm2'),
+        ],
+      ),
+    );
+    await tester.pump();
+
+    expect(_innerDecoration(tester, 0).color, colors.success);
+    expect(_innerDecoration(tester, 1).color, lastResultsLossColor);
+
+    await tester.pumpWidget(_wrap(guide()));
+    await tester.pump();
+
+    expect(_innerDecoration(tester, 0).color, colors.success);
+    expect(_innerDecoration(tester, 1).color, lastResultsLossColor);
   });
 
   testWidgets('hides when the lastResults document is missing', (tester) async {

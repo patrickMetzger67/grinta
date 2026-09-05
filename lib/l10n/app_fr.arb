@@ -1566,6 +1566,35 @@
   "matchCardPlayerRequired": "Sélectionnez un joueur.",
   "matchCardOpponentJerseyTitle": "Numéro du joueur (optionnel)",
   "matchCardOpponentJerseyHint": "ex. 10",
+  "fmiCardPickPlayerTitle": "Quel joueur a reçu ce carton ?",
+  "fmiCardPickPlayerSubtitle": "{type} · {minute}'",
+  "@fmiCardPickPlayerSubtitle": {
+    "placeholders": {
+      "type": {
+        "type": "String"
+      },
+      "minute": {
+        "type": "int"
+      }
+    }
+  },
+  "fmiCardNoConvokedPlayers": "Aucun joueur convoqué pour ce match.",
+  "fmiCardAssigned": "Carton associé à {player}",
+  "@fmiCardAssigned": {
+    "placeholders": {
+      "player": {
+        "type": "String"
+      }
+    }
+  },
+  "fmiCardAssignError": "Impossible d'enregistrer le carton : {error}",
+  "@fmiCardAssignError": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
   "matchSubstitutionAddTitle": "Enregistrer un changement",
   "matchSubstitutionPickTeamTitle": "Quelle équipe effectue le changement ?",
   "matchSubstitutionPickOutgoingTitle": "Joueur sortant",

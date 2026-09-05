@@ -152,12 +152,19 @@ class LastResultsService {
     return streamById(key.documentId);
   }
 
+  /// One broadcast stream per document so rebuilds do not resubscribe
+  /// (a new `snapshots()` each build keeps StreamBuilder in `waiting`).
+  final Map<String, Stream<LastResults?>> _docStreams = {};
+
   Stream<LastResults?> streamById(String documentId) {
-    return docRefForId(documentId).snapshots().map((snapshot) {
-      if (!snapshot.exists || snapshot.data() == null) {
-        return null;
-      }
-      return fromFirestore(snapshot);
+    final id = documentId.trim();
+    return _docStreams.putIfAbsent(id, () {
+      return docRefForId(id).snapshots().map((snapshot) {
+        if (!snapshot.exists || snapshot.data() == null) {
+          return null;
+        }
+        return fromFirestore(snapshot);
+      }).asBroadcastStream();
     });
   }
 

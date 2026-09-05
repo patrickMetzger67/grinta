@@ -4,6 +4,7 @@ import 'package:grinta/l10n/app_localizations.dart';
 
 import '../util/app_theme.dart';
 import '../model/matchStats.dart';
+import '../util/player_cards_helper.dart';
 
 class MatchHighlightsTimeline extends StatelessWidget {
   final MatchStats? matchStats;
@@ -17,6 +18,9 @@ class MatchHighlightsTimeline extends StatelessWidget {
 
   final bool showStartAndEnd;
 
+  /// Manager-only: tap a card-type FMI highlight to assign a convoked player.
+  final ValueChanged<MatchStatHighLight>? onCardHighlightTap;
+
   const MatchHighlightsTimeline({
     super.key,
     this.matchStats,
@@ -24,6 +28,7 @@ class MatchHighlightsTimeline extends StatelessWidget {
     this.team1,
     this.team2,
     this.showStartAndEnd = true,
+    this.onCardHighlightTap,
   });
 
   @override
@@ -72,6 +77,10 @@ class MatchHighlightsTimeline extends StatelessWidget {
                   isFirst: index == 0,
                   isLast: index == items.length - 1,
                   compact: compact,
+                  onCardTap: onCardHighlightTap != null &&
+                          isFmiCardHighlight(items[index])
+                      ? () => onCardHighlightTap!(items[index])
+                      : null,
                 ),
 
               if (showStartAndEnd) ...[
@@ -97,6 +106,7 @@ class _FootballTimelineItem extends StatelessWidget {
   final bool isFirst;
   final bool isLast;
   final bool compact;
+  final VoidCallback? onCardTap;
 
   const _FootballTimelineItem({
     required this.highlight,
@@ -105,12 +115,11 @@ class _FootballTimelineItem extends StatelessWidget {
     required this.isFirst,
     required this.isLast,
     required this.compact,
+    this.onCardTap,
   });
 
   @override
   Widget build(BuildContext context) {
-    final colors = context.appColors;
-
     final eventStyle = _HighlightStyle.fromType(
       context,
       highlight.type,
@@ -139,6 +148,7 @@ class _FootballTimelineItem extends StatelessWidget {
                 highlight: highlight,
                 style: eventStyle,
                 alignRight: false,
+                onTap: onCardTap,
               ),
             ),
           ],
@@ -146,47 +156,47 @@ class _FootballTimelineItem extends StatelessWidget {
       );
     }
 
-    return IntrinsicHeight(
-      child: Padding(
-        padding: const EdgeInsets.symmetric(vertical: 6),
-        child: Row(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            Expanded(
-              child: isLeft
-                  ? Align(
-                alignment: Alignment.centerRight,
-                child: _HighlightCard(
-                  highlight: highlight,
-                  style: eventStyle,
-                  alignRight: true,
-                ),
-              )
-                  : const SizedBox.shrink(),
-            ),
-            const SizedBox(width: 12),
-            _TimelineAxis(
-              minute: highlight.time ?? 0,
-              icon: eventStyle.icon,
-              color: eventStyle.color,
-              showTopLine: !isFirst,
-              showBottomLine: !isLast,
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: !isLeft
-                  ? Align(
-                alignment: Alignment.centerLeft,
-                child: _HighlightCard(
-                  highlight: highlight,
-                  style: eventStyle,
-                  alignRight: false,
-                ),
-              )
-                  : const SizedBox.shrink(),
-            ),
-          ],
-        ),
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 6),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Expanded(
+            child: isLeft
+                ? Align(
+                    alignment: Alignment.topRight,
+                    child: _HighlightCard(
+                      highlight: highlight,
+                      style: eventStyle,
+                      alignRight: true,
+                      onTap: onCardTap,
+                    ),
+                  )
+                : const SizedBox.shrink(),
+          ),
+          const SizedBox(width: 12),
+          _TimelineAxis(
+            minute: highlight.time ?? 0,
+            icon: eventStyle.icon,
+            color: eventStyle.color,
+            showTopLine: !isFirst,
+            showBottomLine: !isLast,
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: !isLeft
+                ? Align(
+                    alignment: Alignment.topLeft,
+                    child: _HighlightCard(
+                      highlight: highlight,
+                      style: eventStyle,
+                      alignRight: false,
+                      onTap: onCardTap,
+                    ),
+                  )
+                : const SizedBox.shrink(),
+          ),
+        ],
       ),
     );
   }
@@ -208,11 +218,13 @@ class _HighlightCard extends StatelessWidget {
   final MatchStatHighLight highlight;
   final _HighlightStyle style;
   final bool alignRight;
+  final VoidCallback? onTap;
 
   const _HighlightCard({
     required this.highlight,
     required this.style,
     required this.alignRight,
+    this.onTap,
   });
 
   @override
@@ -223,86 +235,106 @@ class _HighlightCard extends StatelessWidget {
     final description = _descriptionForHighlight(context.l10n, highlight);
     final team = _clean(highlight.team);
 
-    return ConstrainedBox(
-      constraints: const BoxConstraints(
-        maxWidth: 330,
-      ),
-      child: Container(
-        width: double.infinity,
-        padding: const EdgeInsets.all(12),
-        decoration: BoxDecoration(
-          color: colors.surface,
-          borderRadius: BorderRadius.circular(18),
-          border: Border.all(
-            color: style.color.withValues(alpha: 0.25),
-          ),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withValues(alpha: 0.04),
-              blurRadius: 12,
-              offset: const Offset(0, 6),
-            ),
-          ],
+    final content = Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: colors.surface,
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(
+          color: style.color.withValues(alpha: 0.25),
         ),
-        child: Column(
-          crossAxisAlignment:
-          alignRight ? CrossAxisAlignment.end : CrossAxisAlignment.start,
-          children: [
-            Row(
-              mainAxisAlignment:
-              alignRight ? MainAxisAlignment.end : MainAxisAlignment.start,
-              children: [
-                if (!alignRight) ...[
-                  _EventIcon(
-                    icon: style.icon,
-                    color: style.color,
-                  ),
-                  const SizedBox(width: 8),
-                ],
-                Flexible(
-                  child: Text(
-                    title,
-                    textAlign: alignRight ? TextAlign.right : TextAlign.left,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: TextStyle(
-                      color: colors.textPrimary,
-                      fontSize: 14,
-                      fontWeight: FontWeight.w900,
-                    ),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.04),
+            blurRadius: 12,
+            offset: const Offset(0, 6),
+          ),
+        ],
+      ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Row(
+            children: [
+              if (!alignRight) ...[
+                _EventIcon(
+                  icon: style.icon,
+                  color: style.color,
+                ),
+                const SizedBox(width: 8),
+              ],
+              Expanded(
+                child: Text(
+                  title,
+                  textAlign: alignRight ? TextAlign.right : TextAlign.left,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    color: colors.textPrimary,
+                    fontSize: 14,
+                    fontWeight: FontWeight.w900,
                   ),
                 ),
-                if (alignRight) ...[
-                  const SizedBox(width: 8),
-                  _EventIcon(
-                    icon: style.icon,
-                    color: style.color,
-                  ),
-                ],
-              ],
-            ),
-            const SizedBox(height: 8),
-            Text(
-              description,
-              textAlign: alignRight ? TextAlign.right : TextAlign.left,
-              style: TextStyle(
-                color: colors.textPrimary,
-                fontSize: 13,
-                fontWeight: FontWeight.w700,
-                height: 1.25,
               ),
+              if (onTap != null) ...[
+                const SizedBox(width: 4),
+                Icon(
+                  Icons.chevron_right_rounded,
+                  size: 18,
+                  color: colors.textSecondary,
+                ),
+              ],
+              if (alignRight) ...[
+                const SizedBox(width: 8),
+                _EventIcon(
+                  icon: style.icon,
+                  color: style.color,
+                ),
+              ],
+            ],
+          ),
+          const SizedBox(height: 8),
+          Text(
+            description,
+            textAlign: alignRight ? TextAlign.right : TextAlign.left,
+            softWrap: true,
+            style: TextStyle(
+              color: colors.textPrimary,
+              fontSize: 13,
+              fontWeight: FontWeight.w700,
+              height: 1.25,
             ),
-            if (team.isNotEmpty) ...[
-              const SizedBox(height: 8),
-              _TeamChip(
+          ),
+          if (team.isNotEmpty) ...[
+            const SizedBox(height: 8),
+            Align(
+              alignment:
+                  alignRight ? Alignment.centerRight : Alignment.centerLeft,
+              heightFactor: 1,
+              child: _TeamChip(
                 team: team,
                 color: style.color,
-                alignRight: alignRight,
               ),
-            ],
+            ),
           ],
-        ),
+        ],
       ),
+    );
+
+    return ConstrainedBox(
+      constraints: const BoxConstraints(maxWidth: 330),
+      child: onTap == null
+          ? content
+          : Material(
+              color: Colors.transparent,
+              child: InkWell(
+                onTap: onTap,
+                borderRadius: BorderRadius.circular(18),
+                child: content,
+              ),
+            ),
     );
   }
 
@@ -409,15 +441,16 @@ class _TimelineAxis extends StatelessWidget {
     return SizedBox(
       width: 54,
       child: Column(
+        mainAxisSize: MainAxisSize.min,
         children: [
-          Expanded(
-            child: showTopLine
-                ? Container(
+          if (showTopLine)
+            Container(
               width: 2,
+              height: 12,
               color: colors.border,
             )
-                : const SizedBox.shrink(),
-          ),
+          else
+            const SizedBox(height: 12),
           Container(
             width: 38,
             height: 38,
@@ -454,14 +487,14 @@ class _TimelineAxis extends StatelessWidget {
               ),
             ),
           ),
-          Expanded(
-            child: showBottomLine
-                ? Container(
+          if (showBottomLine)
+            Container(
               width: 2,
+              height: 12,
               color: colors.border,
             )
-                : const SizedBox.shrink(),
-          ),
+          else
+            const SizedBox(height: 12),
         ],
       ),
     );
@@ -484,6 +517,7 @@ class _CompactTimelineAxis extends StatelessWidget {
     final colors = context.appColors;
 
     return Column(
+      mainAxisSize: MainAxisSize.min,
       children: [
         Container(
           width: 38,
@@ -606,36 +640,31 @@ class _EventIcon extends StatelessWidget {
 class _TeamChip extends StatelessWidget {
   final String team;
   final Color color;
-  final bool alignRight;
 
   const _TeamChip({
     required this.team,
     required this.color,
-    required this.alignRight,
   });
 
   @override
   Widget build(BuildContext context) {
-    return Align(
-      alignment: alignRight ? Alignment.centerRight : Alignment.centerLeft,
-      child: Container(
-        padding: const EdgeInsets.symmetric(
-          horizontal: 9,
-          vertical: 5,
-        ),
-        decoration: BoxDecoration(
-          color: color.withValues(alpha: 0.10),
-          borderRadius: BorderRadius.circular(999),
-        ),
-        child: Text(
-          team,
-          maxLines: 1,
-          overflow: TextOverflow.ellipsis,
-          style: TextStyle(
-            color: color,
-            fontSize: 11,
-            fontWeight: FontWeight.w800,
-          ),
+    return Container(
+      padding: const EdgeInsets.symmetric(
+        horizontal: 9,
+        vertical: 5,
+      ),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.10),
+        borderRadius: BorderRadius.circular(999),
+      ),
+      child: Text(
+        team,
+        maxLines: 1,
+        overflow: TextOverflow.ellipsis,
+        style: TextStyle(
+          color: color,
+          fontSize: 11,
+          fontWeight: FontWeight.w800,
         ),
       ),
     );

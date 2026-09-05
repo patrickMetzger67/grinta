@@ -2,9 +2,11 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:grinta/model/highlights.dart';
 import 'package:grinta/model/match.dart' as models;
 import 'package:grinta/model/matchCompo.dart';
+import 'package:grinta/services/cards_service.dart';
 import 'package:grinta/services/highlightsService.dart';
 import 'package:grinta/services/matchService.dart';
 import 'package:grinta/util/match_goal_helper.dart';
+import 'package:grinta/util/player_cards_helper.dart';
 
 CardType cardTypeForAction(ActionType actionType) {
   switch (actionType) {
@@ -70,6 +72,7 @@ Future<void> saveCardHighlight({
   required String? teamId,
   int minute = 1,
   int extraTime = 0,
+  CardsService? cardsService,
 }) async {
   if (actionType != ActionType.yellowCard &&
       actionType != ActionType.redCard) {
@@ -101,4 +104,43 @@ Future<void> saveCardHighlight({
       isInHighLight: true,
     );
   }
+
+  await persistDisciplinaryCardFromGrintaHighlight(
+    matchId: matchId,
+    actionType: actionType,
+    card: card,
+    minute: minute,
+    extraTime: extraTime,
+    cardsService: cardsService,
+  );
+}
+
+/// Writes `cards/{playerID}` when the Grinta highlight has a member id.
+///
+/// Opponent jersey-only cards are skipped. Duplicate match+time+type is a
+/// no-op. Highlight delete does not purge the entry (no restitution yet).
+Future<void> persistDisciplinaryCardFromGrintaHighlight({
+  required String matchId,
+  required ActionType actionType,
+  required YellowRedCard card,
+  int minute = 1,
+  int extraTime = 0,
+  CardsService? cardsService,
+}) async {
+  final entry = playerCardEntryFromGrintaHighlight(
+    matchId: matchId,
+    actionType: actionType,
+    playerId: card.playerId,
+    minute: minute,
+    extraTime: extraTime,
+    cardType: card.cardType,
+  );
+  if (entry == null) {
+    return;
+  }
+
+  await (cardsService ?? CardsService.instance).addEntry(
+    memberId: card.playerId!.trim(),
+    entry: entry,
+  );
 }

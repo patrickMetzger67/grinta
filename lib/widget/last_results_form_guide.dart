@@ -73,7 +73,7 @@ class LastResultsFormRow extends StatelessWidget {
 }
 
 /// Reads Firestore `lastResults` for one club on [match] (no recompute).
-class LastResultsFormGuide extends StatelessWidget {
+class LastResultsFormGuide extends StatefulWidget {
   const LastResultsFormGuide({
     super.key,
     required this.match,
@@ -96,45 +96,110 @@ class LastResultsFormGuide extends StatelessWidget {
   final Stream<LastResults?>? resultsStream;
 
   @override
-  Widget build(BuildContext context) {
-    final resultsKey = lastResultsKeyForMatchSide(match, side);
+  State<LastResultsFormGuide> createState() => _LastResultsFormGuideState();
+}
+
+class _LastResultsFormGuideState extends State<LastResultsFormGuide> {
+  Stream<LastResults?>? _stream;
+  String? _boundDocId;
+  LastResults? _cached;
+
+  @override
+  void initState() {
+    super.initState();
+    _bindSource();
+  }
+
+  @override
+  void didUpdateWidget(covariant LastResultsFormGuide oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    final keyChanged = lastResultsKeyForMatchSide(widget.match, widget.side)
+            ?.documentId !=
+        lastResultsKeyForMatchSide(oldWidget.match, oldWidget.side)?.documentId;
+    final streamOverrideChanged =
+        !identical(widget.resultsStream, oldWidget.resultsStream);
+    if (keyChanged || streamOverrideChanged) {
+      _bindSource();
+    }
+  }
+
+  void _bindSource() {
+    final resultsKey = lastResultsKeyForMatchSide(widget.match, widget.side);
+    _boundDocId = resultsKey?.documentId;
+    _cached = null;
     if (resultsKey == null) {
+      _stream = null;
+      return;
+    }
+
+    if (widget.resultsStream != null) {
+      _stream = widget.resultsStream;
+      return;
+    }
+
+    final service = widget.service ?? LastResultsService.instance;
+    _stream = service.streamLastResults(
+      clubId: resultsKey.clubId,
+      competitionId: resultsKey.competitionId,
+    );
+    _primeFromGet(resultsKey, service);
+  }
+
+  Future<void> _primeFromGet(
+    LastResultsKey resultsKey,
+    LastResultsService service,
+  ) async {
+    try {
+      final data = await service.getLastResults(
+        clubId: resultsKey.clubId,
+        competitionId: resultsKey.competitionId,
+      );
+      if (!mounted || _boundDocId != resultsKey.documentId) {
+        return;
+      }
+      if (data == null) {
+        return;
+      }
+      setState(() => _cached = data);
+    } catch (_) {
+      // StreamBuilder still owns errors; a failed get must not hide a later emit.
+    }
+  }
+
+  double get _slotSize => widget.compact ? 8 : 10;
+
+  @override
+  Widget build(BuildContext context) {
+    final resultsKey = lastResultsKeyForMatchSide(widget.match, widget.side);
+    if (resultsKey == null || _stream == null) {
       return const SizedBox.shrink();
     }
 
-    final stream = resultsStream ??
-        (service ?? LastResultsService.instance).streamLastResults(
-          clubId: resultsKey.clubId,
-          competitionId: resultsKey.competitionId,
-        );
-
     return StreamBuilder<LastResults?>(
       key: ValueKey<String>(resultsKey.documentId),
-      stream: stream,
+      stream: _stream,
       builder: (context, snapshot) {
         if (snapshot.hasError) {
           return const SizedBox.shrink();
         }
 
-        final waiting = snapshot.connectionState == ConnectionState.waiting &&
-            !snapshot.hasData;
-        if (waiting) {
-          return LastResultsFormRow(
-            slots: const <MatchOutcome?>[null, null, null, null, null],
-            slotSize: _slotSize,
-            emptyRingColor: emptyRingColor,
-          );
+        if (snapshot.hasData ||
+            snapshot.connectionState == ConnectionState.active ||
+            snapshot.connectionState == ConnectionState.done) {
+          _cached = snapshot.data;
         }
 
-        final lastResults = snapshot.data;
+        final lastResults = snapshot.data ?? _cached;
         if (lastResults == null) {
+          // Hide while waiting or when the document is missing — do not paint
+          // 5 hollow rings (that looks like an empty form, not a loader).
           return const SizedBox.shrink();
         }
 
         final slots = lastResultsDisplaySlots(lastResults.results);
         final rawHighlight = lastResultsHighlightIndex(
           results: lastResults.results,
-          highlightMatchId: match.id,
+          highlightMatchId: widget.match.id,
         );
         final highlightIndex = (rawHighlight != null &&
                 rawHighlight >= 0 &&
@@ -146,13 +211,11 @@ class LastResultsFormGuide extends StatelessWidget {
           slots: slots,
           highlightIndex: highlightIndex,
           slotSize: _slotSize,
-          emptyRingColor: emptyRingColor,
+          emptyRingColor: widget.emptyRingColor,
         );
       },
     );
   }
-
-  double get _slotSize => compact ? 8 : 10;
 }
 
 /// Hollow ring for empty slots — black so it stays visible on coral cards.

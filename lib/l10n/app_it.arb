@@ -1368,6 +1368,35 @@
   "matchCardPlayerRequired": "Seleziona un giocatore.",
   "matchCardOpponentJerseyTitle": "Numero di maglia del giocatore (opzionale)",
   "matchCardOpponentJerseyHint": "es. 10",
+  "fmiCardPickPlayerTitle": "Quale giocatore ha ricevuto questo cartellino?",
+  "fmiCardPickPlayerSubtitle": "{type} · {minute}'",
+  "@fmiCardPickPlayerSubtitle": {
+    "placeholders": {
+      "type": {
+        "type": "String"
+      },
+      "minute": {
+        "type": "int"
+      }
+    }
+  },
+  "fmiCardNoConvokedPlayers": "Nessun giocatore convocato per questa partita.",
+  "fmiCardAssigned": "Cartellino associato a {player}",
+  "@fmiCardAssigned": {
+    "placeholders": {
+      "player": {
+        "type": "String"
+      }
+    }
+  },
+  "fmiCardAssignError": "Impossibile salvare il cartellino: {error}",
+  "@fmiCardAssignError": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
   "matchSubstitutionAddTitle": "Registra un cambio",
   "matchSubstitutionPickTeamTitle": "Quale squadra effettua il cambio?",
   "matchSubstitutionPickOutgoingTitle": "Giocatore uscente",
