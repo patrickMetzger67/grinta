@@ -156,49 +156,47 @@ class _FootballTimelineItem extends StatelessWidget {
       );
     }
 
-    return IntrinsicHeight(
-      child: Padding(
-        padding: const EdgeInsets.symmetric(vertical: 6),
-        child: Row(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            Expanded(
-              child: isLeft
-                  ? Align(
-                alignment: Alignment.centerRight,
-                child: _HighlightCard(
-                  highlight: highlight,
-                  style: eventStyle,
-                  alignRight: true,
-                  onTap: onCardTap,
-                ),
-              )
-                  : const SizedBox.shrink(),
-            ),
-            const SizedBox(width: 12),
-            _TimelineAxis(
-              minute: highlight.time ?? 0,
-              icon: eventStyle.icon,
-              color: eventStyle.color,
-              showTopLine: !isFirst,
-              showBottomLine: !isLast,
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: !isLeft
-                  ? Align(
-                alignment: Alignment.centerLeft,
-                child: _HighlightCard(
-                  highlight: highlight,
-                  style: eventStyle,
-                  alignRight: false,
-                  onTap: onCardTap,
-                ),
-              )
-                  : const SizedBox.shrink(),
-            ),
-          ],
-        ),
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 6),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Expanded(
+            child: isLeft
+                ? Align(
+                    alignment: Alignment.topRight,
+                    child: _HighlightCard(
+                      highlight: highlight,
+                      style: eventStyle,
+                      alignRight: true,
+                      onTap: onCardTap,
+                    ),
+                  )
+                : const SizedBox.shrink(),
+          ),
+          const SizedBox(width: 12),
+          _TimelineAxis(
+            minute: highlight.time ?? 0,
+            icon: eventStyle.icon,
+            color: eventStyle.color,
+            showTopLine: !isFirst,
+            showBottomLine: !isLast,
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: !isLeft
+                ? Align(
+                    alignment: Alignment.topLeft,
+                    child: _HighlightCard(
+                      highlight: highlight,
+                      style: eventStyle,
+                      alignRight: false,
+                      onTap: onCardTap,
+                    ),
+                  )
+                : const SizedBox.shrink(),
+          ),
+        ],
       ),
     );
   }
@@ -238,7 +236,6 @@ class _HighlightCard extends StatelessWidget {
     final team = _clean(highlight.team);
 
     final content = Container(
-      width: double.infinity,
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
         color: colors.surface,
@@ -260,6 +257,7 @@ class _HighlightCard extends StatelessWidget {
             alignRight ? CrossAxisAlignment.end : CrossAxisAlignment.start,
         children: [
           Row(
+            mainAxisSize: MainAxisSize.min,
             mainAxisAlignment:
                 alignRight ? MainAxisAlignment.end : MainAxisAlignment.start,
             children: [
@@ -304,6 +302,7 @@ class _HighlightCard extends StatelessWidget {
           Text(
             description,
             textAlign: alignRight ? TextAlign.right : TextAlign.left,
+            softWrap: true,
             style: TextStyle(
               color: colors.textPrimary,
               fontSize: 13,
@@ -324,9 +323,7 @@ class _HighlightCard extends StatelessWidget {
     );
 
     return ConstrainedBox(
-      constraints: const BoxConstraints(
-        maxWidth: 330,
-      ),
+      constraints: const BoxConstraints(maxWidth: 330),
       child: onTap == null
           ? content
           : Material(
@@ -443,15 +440,16 @@ class _TimelineAxis extends StatelessWidget {
     return SizedBox(
       width: 54,
       child: Column(
+        mainAxisSize: MainAxisSize.min,
         children: [
-          Expanded(
-            child: showTopLine
-                ? Container(
+          if (showTopLine)
+            Container(
               width: 2,
+              height: 12,
               color: colors.border,
             )
-                : const SizedBox.shrink(),
-          ),
+          else
+            const SizedBox(height: 12),
           Container(
             width: 38,
             height: 38,
@@ -488,14 +486,14 @@ class _TimelineAxis extends StatelessWidget {
               ),
             ),
           ),
-          Expanded(
-            child: showBottomLine
-                ? Container(
+          if (showBottomLine)
+            Container(
               width: 2,
+              height: 12,
               color: colors.border,
             )
-                : const SizedBox.shrink(),
-          ),
+          else
+            const SizedBox(height: 12),
         ],
       ),
     );
