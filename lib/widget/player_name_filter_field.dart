@@ -36,6 +36,7 @@ class PlayerNameFilterField extends StatelessWidget {
         smartDashesType: SmartDashesType.disabled,
         smartQuotesType: SmartQuotesType.disabled,
         keyboardType: TextInputType.text,
+        scrollPadding: const EdgeInsets.fromLTRB(20, 20, 20, 120),
         style: Theme.of(context).textTheme.bodyMedium,
         decoration: InputDecoration(
           isDense: true,

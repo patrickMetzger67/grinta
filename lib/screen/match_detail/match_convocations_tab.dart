@@ -24,6 +24,7 @@ import '../../util/match_compo_pitch_mapper.dart';
 import '../../util/match_convocation_helper.dart';
 import '../../util/playerDisplayName.dart';
 import '../../util/player_photo_resolver.dart';
+import '../../util/soft_keyboard.dart';
 import '../../widget/account_create_profile_entry.dart';
 import '../../widget/add_grinta_player_sheet.dart';
 import '../../widget/member_search_sheet.dart';
@@ -949,7 +950,9 @@ class _ConvocationsBodyState extends State<_ConvocationsBody> {
 
     return Scaffold(
       backgroundColor: Colors.transparent,
-      floatingActionButton: widget.canEdit
+      resizeToAvoidBottomInset: false,
+      floatingActionButton:
+          widget.canEdit && !isSoftKeyboardOpen(context)
           ? ListenableBuilder(
               listenable: Listenable.merge([
                 SubscriptionService.instance,
@@ -975,7 +978,7 @@ class _ConvocationsBodyState extends State<_ConvocationsBody> {
       body: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          if (widget.canSendConvocations)
+          if (widget.canSendConvocations && !isSoftKeyboardOpen(context))
             Padding(
               padding: const EdgeInsets.fromLTRB(12, 0, 12, 12),
               child: FilledButton.icon(
