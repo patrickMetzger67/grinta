@@ -880,20 +880,11 @@ class _AgendaScreenState extends State<AgendaScreen> {
     );
   }
 
-  AgendaHeaderPeriod get _headerPeriod {
-    return agendaChevronPeriodForView(
-      listWithWeekStrip: _calendarMode == AgendaCalendarMode.day,
-      weekView: _calendarMode == AgendaCalendarMode.week,
-      monthView: _calendarMode == AgendaCalendarMode.month,
-    );
-  }
-
-  DateTime _chevronFocusedDate(int direction) {
-    return agendaHeaderChevronDate(
-      focusedDate: _selectedDate,
-      period: _headerPeriod,
-      direction: direction,
-    );
+  /// List icon (3 bars) and week icon both show the LUN–DIM strip.
+  Future<void> _applyWeekStripChevron(int direction) async {
+    final DateTime next = agendaWeekStripChevronDate(_selectedDate, direction);
+    if (_isSameDay(next, _selectedDate)) return;
+    await _selectDate(next);
   }
 
   /// Horizontal swipe on the events area (calendar header has its own handler).
@@ -921,17 +912,28 @@ class _AgendaScreenState extends State<AgendaScreen> {
     final targetWeek = _startOfWeek(normalizedDate);
     final targetMonth = DateTime(normalizedDate.year, normalizedDate.month, 1);
 
+    if (_isSameDay(normalizedDate, _selectedDate) &&
+        _selectedWeekStart == targetWeek &&
+        _displayedMonth == targetMonth) {
+      return;
+    }
+
     final LatestWinsToken token = _hydrationGate.begin();
 
-    _selectedDate = normalizedDate;
-    _preferredDayOfMonth = normalizedDate.day;
-    _selectedWeekStart = targetWeek;
-    _displayedMonth = targetMonth;
+    if (!mounted) return;
+    setState(() {
+      _selectedDate = normalizedDate;
+      _preferredDayOfMonth = normalizedDate.day;
+      _selectedWeekStart = targetWeek;
+      _displayedMonth = targetMonth;
+    });
     _bumpAgendaPaint();
 
-    // After a far jump, force a post-frame pager sync so week→month does not
-    // keep painting the initial today month.
-    _jumpMonthPagerToDisplayedMonth(forceAfterFrame: true);
+    // Day mode has no month PageView — jumping it can dispose/recreate the
+    // controller and fight the new selection. Sync only when the pager exists.
+    if (_calendarMode != AgendaCalendarMode.day) {
+      _jumpMonthPagerToDisplayedMonth(forceAfterFrame: true);
+    }
 
     _scheduleWindowHydration(
       targetMonth,
@@ -1023,25 +1025,9 @@ class _AgendaScreenState extends State<AgendaScreen> {
     );
   }
 
-  Future<void> _goToPreviousWeek() {
-    return _selectDate(
-      agendaHeaderChevronDate(
-        focusedDate: _selectedDate,
-        period: AgendaHeaderPeriod.week,
-        direction: -1,
-      ),
-    );
-  }
+  Future<void> _goToPreviousWeek() => _applyWeekStripChevron(-1);
 
-  Future<void> _goToNextWeek() {
-    return _selectDate(
-      agendaHeaderChevronDate(
-        focusedDate: _selectedDate,
-        period: AgendaHeaderPeriod.week,
-        direction: 1,
-      ),
-    );
-  }
+  Future<void> _goToNextWeek() => _applyWeekStripChevron(1);
 
   Future<void> _goToPreviousMonthFromHeader() async {
     // Drive from focused/displayed month — never PageController.previousPage
@@ -1521,12 +1507,8 @@ class _AgendaScreenState extends State<AgendaScreen> {
                             onNextWeek: () async {
                               await _goToNextWeek();
                             },
-                            onPreviousDay: () async {
-                              await _selectDate(_chevronFocusedDate(-1));
-                            },
-                            onNextDay: () async {
-                              await _selectDate(_chevronFocusedDate(1));
-                            },
+                            onPreviousDay: () => _applyWeekStripChevron(-1),
+                            onNextDay: () => _applyWeekStripChevron(1),
                             onTodayTap: () {
                               unawaited(_jumpToToday());
                             },

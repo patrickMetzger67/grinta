@@ -121,6 +121,22 @@ DateTime addWeeksKeepingWeekday(DateTime date, int weeks) {
   return addDaysKeepingDate(date, 7 * weeks);
 }
 
+/// Monday of the week containing [date] (calendar fields, DST-safe).
+DateTime agendaWeekStart(DateTime date) {
+  final DateTime d = DateUtils.dateOnly(date);
+  return DateTime(d.year, d.month, d.day - (d.weekday - DateTime.monday));
+}
+
+/// Sunday of the week containing [date].
+DateTime agendaWeekEnd(DateTime date) => addDaysKeepingDate(agendaWeekStart(date), 6);
+
+/// Header `<` / `>` target when the LUN–DIM strip is visible.
+///
+/// Always a different calendar day than [focusedDate] (`direction` is ±1).
+DateTime agendaWeekStripChevronDate(DateTime focusedDate, int direction) {
+  return addWeeksKeepingWeekday(focusedDate, direction);
+}
+
 /// Period used by the agenda header chevrons (and matching swipes).
 enum AgendaHeaderPeriod {
   /// No 7-day strip (unused by the current 3 icons).

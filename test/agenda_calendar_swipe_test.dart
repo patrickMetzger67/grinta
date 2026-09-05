@@ -78,22 +78,17 @@ void main() {
         expect(period, AgendaHeaderPeriod.week);
 
         final focused = DateTime(2026, 9, 2); // mercredi
-        expect(
-          agendaHeaderChevronDate(
-            focusedDate: focused,
-            period: period,
-            direction: 1,
-          ),
-          DateTime(2026, 9, 9),
-        );
-        expect(
-          agendaHeaderChevronDate(
-            focusedDate: focused,
-            period: period,
-            direction: -1,
-          ),
-          DateTime(2026, 8, 26),
-        );
+        final next = agendaWeekStripChevronDate(focused, 1);
+        final previous = agendaWeekStripChevronDate(focused, -1);
+
+        expect(next, DateTime(2026, 9, 9));
+        expect(previous, DateTime(2026, 8, 26));
+        expect(next, isNot(focused), reason: 'next chevron must not be a no-op');
+        expect(previous, isNot(focused), reason: 'prev chevron must not be a no-op');
+        expect(agendaWeekStart(next), DateTime(2026, 9, 7));
+        expect(agendaWeekEnd(next), DateTime(2026, 9, 13));
+        expect(agendaWeekStart(previous), DateTime(2026, 8, 24));
+        expect(agendaWeekEnd(previous), DateTime(2026, 8, 30));
       },
     );
 
@@ -138,6 +133,12 @@ void main() {
         ),
         DateTime(2026, 9, 30),
       );
+    });
+
+    test('week-strip chevron never returns the same date', () {
+      final focused = DateTime(2026, 9, 2);
+      expect(agendaWeekStripChevronDate(focused, 1), isNot(focused));
+      expect(agendaWeekStripChevronDate(focused, -1), isNot(focused));
     });
 
     test('day period without a week strip still steps by 1 day', () {
