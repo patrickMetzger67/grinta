@@ -4,6 +4,7 @@ import 'package:grinta/l10n/app_localizations.dart';
 
 import '../util/app_theme.dart';
 import '../model/matchStats.dart';
+import '../util/player_cards_helper.dart';
 
 class MatchHighlightsTimeline extends StatelessWidget {
   final MatchStats? matchStats;
@@ -17,6 +18,9 @@ class MatchHighlightsTimeline extends StatelessWidget {
 
   final bool showStartAndEnd;
 
+  /// Manager-only: tap a card-type FMI highlight to assign a convoked player.
+  final ValueChanged<MatchStatHighLight>? onCardHighlightTap;
+
   const MatchHighlightsTimeline({
     super.key,
     this.matchStats,
@@ -24,6 +28,7 @@ class MatchHighlightsTimeline extends StatelessWidget {
     this.team1,
     this.team2,
     this.showStartAndEnd = true,
+    this.onCardHighlightTap,
   });
 
   @override
@@ -72,6 +77,10 @@ class MatchHighlightsTimeline extends StatelessWidget {
                   isFirst: index == 0,
                   isLast: index == items.length - 1,
                   compact: compact,
+                  onCardTap: onCardHighlightTap != null &&
+                          isFmiCardHighlight(items[index])
+                      ? () => onCardHighlightTap!(items[index])
+                      : null,
                 ),
 
               if (showStartAndEnd) ...[
@@ -97,6 +106,7 @@ class _FootballTimelineItem extends StatelessWidget {
   final bool isFirst;
   final bool isLast;
   final bool compact;
+  final VoidCallback? onCardTap;
 
   const _FootballTimelineItem({
     required this.highlight,
@@ -105,12 +115,11 @@ class _FootballTimelineItem extends StatelessWidget {
     required this.isFirst,
     required this.isLast,
     required this.compact,
+    this.onCardTap,
   });
 
   @override
   Widget build(BuildContext context) {
-    final colors = context.appColors;
-
     final eventStyle = _HighlightStyle.fromType(
       context,
       highlight.type,
@@ -139,6 +148,7 @@ class _FootballTimelineItem extends StatelessWidget {
                 highlight: highlight,
                 style: eventStyle,
                 alignRight: false,
+                onTap: onCardTap,
               ),
             ),
           ],
@@ -160,6 +170,7 @@ class _FootballTimelineItem extends StatelessWidget {
                   highlight: highlight,
                   style: eventStyle,
                   alignRight: true,
+                  onTap: onCardTap,
                 ),
               )
                   : const SizedBox.shrink(),
@@ -181,6 +192,7 @@ class _FootballTimelineItem extends StatelessWidget {
                   highlight: highlight,
                   style: eventStyle,
                   alignRight: false,
+                  onTap: onCardTap,
                 ),
               )
                   : const SizedBox.shrink(),
@@ -208,11 +220,13 @@ class _HighlightCard extends StatelessWidget {
   final MatchStatHighLight highlight;
   final _HighlightStyle style;
   final bool alignRight;
+  final VoidCallback? onTap;
 
   const _HighlightCard({
     required this.highlight,
     required this.style,
     required this.alignRight,
+    this.onTap,
   });
 
   @override
@@ -227,11 +241,16 @@ class _HighlightCard extends StatelessWidget {
       constraints: const BoxConstraints(
         maxWidth: 330,
       ),
-      child: Container(
+      child: Material(
+        color: colors.surface,
+        borderRadius: BorderRadius.circular(18),
+        child: InkWell(
+          onTap: onTap,
+          borderRadius: BorderRadius.circular(18),
+          child: Container(
         width: double.infinity,
         padding: const EdgeInsets.all(12),
         decoration: BoxDecoration(
-          color: colors.surface,
           borderRadius: BorderRadius.circular(18),
           border: Border.all(
             color: style.color.withValues(alpha: 0.25),
@@ -300,7 +319,17 @@ class _HighlightCard extends StatelessWidget {
                 alignRight: alignRight,
               ),
             ],
+            if (onTap != null) ...[
+              const SizedBox(height: 6),
+              Icon(
+                Icons.chevron_right_rounded,
+                size: 18,
+                color: colors.textSecondary,
+              ),
+            ],
           ],
+        ),
+          ),
         ),
       ),
     );

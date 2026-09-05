@@ -1368,6 +1368,35 @@
   "matchCardPlayerRequired": "Wählen Sie einen Spieler.",
   "matchCardOpponentJerseyTitle": "Trikotnummer des Spielers (optional)",
   "matchCardOpponentJerseyHint": "z. B. 10",
+  "fmiCardPickPlayerTitle": "Welcher Spieler hat diese Karte erhalten?",
+  "fmiCardPickPlayerSubtitle": "{type} · {minute}'",
+  "@fmiCardPickPlayerSubtitle": {
+    "placeholders": {
+      "type": {
+        "type": "String"
+      },
+      "minute": {
+        "type": "int"
+      }
+    }
+  },
+  "fmiCardNoConvokedPlayers": "Für dieses Spiel wurde kein Spieler nominiert.",
+  "fmiCardAssigned": "Karte {player} zugeordnet",
+  "@fmiCardAssigned": {
+    "placeholders": {
+      "player": {
+        "type": "String"
+      }
+    }
+  },
+  "fmiCardAssignError": "Karte konnte nicht gespeichert werden: {error}",
+  "@fmiCardAssignError": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
   "matchSubstitutionAddTitle": "Wechsel erfassen",
   "matchSubstitutionPickTeamTitle": "Welches Team wechselt?",
   "matchSubstitutionPickOutgoingTitle": "Spieler raus",

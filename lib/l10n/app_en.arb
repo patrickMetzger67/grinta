@@ -1368,6 +1368,35 @@
   "matchCardPlayerRequired": "Select a player.",
   "matchCardOpponentJerseyTitle": "Player jersey number (optional)",
   "matchCardOpponentJerseyHint": "e.g. 10",
+  "fmiCardPickPlayerTitle": "Which player received this card?",
+  "fmiCardPickPlayerSubtitle": "{type} · {minute}'",
+  "@fmiCardPickPlayerSubtitle": {
+    "placeholders": {
+      "type": {
+        "type": "String"
+      },
+      "minute": {
+        "type": "int"
+      }
+    }
+  },
+  "fmiCardNoConvokedPlayers": "No players were convoked for this match.",
+  "fmiCardAssigned": "Card assigned to {player}",
+  "@fmiCardAssigned": {
+    "placeholders": {
+      "player": {
+        "type": "String"
+      }
+    }
+  },
+  "fmiCardAssignError": "Could not save the card: {error}",
+  "@fmiCardAssignError": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
   "matchSubstitutionAddTitle": "Record a substitution",
   "matchSubstitutionPickTeamTitle": "Which team made the change?",
   "matchSubstitutionPickOutgoingTitle": "Player off",
