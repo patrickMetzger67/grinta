@@ -1,6 +1,9 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:grinta/model/last_results.dart';
+import 'package:grinta/model/match.dart';
+import 'package:grinta/util/last_results_helper.dart';
+import 'package:grinta/util/match_goal_helper.dart';
 import 'package:grinta/util/match_outcome_helper.dart';
 
 void main() {
@@ -51,6 +54,129 @@ void main() {
       expect(parsed.results[2].outcome, MatchOutcome.win);
       expect(parsed.results[0].matchId, 'm1');
       expect(parsed.hasSameResultsAs(original), isTrue);
+    });
+  });
+
+  group('clubIdForLastResults', () {
+    test('prefers affiliation over clubs[]', () {
+      final match = Match(
+        affiliationTeam1: '500554',
+        affiliationTeam2: '500123',
+        competitionID: '450652',
+        clubs: ['club-a', 'club-b'],
+      );
+
+      expect(clubIdForLastResults(match, MatchSide.team1), '500554');
+      expect(clubIdForLastResults(match, MatchSide.team2), '500123');
+    });
+
+    test('falls back to clubs[] when affiliation is missing', () {
+      final match = Match(
+        competitionID: '450652',
+        clubs: ['club-a', 'club-b'],
+      );
+
+      expect(clubIdForLastResults(match, MatchSide.team1), 'club-a');
+      expect(clubIdForLastResults(match, MatchSide.team2), 'club-b');
+    });
+  });
+
+  group('lastResultsKeyForMatchSide', () {
+    test('builds clubId_competitionId', () {
+      final match = Match(
+        affiliationTeam1: '500554',
+        competitionID: '450652',
+      );
+
+      final key = lastResultsKeyForMatchSide(match, MatchSide.team1);
+      expect(key?.documentId, '500554_450652');
+    });
+
+    test('returns null when club or competition is missing', () {
+      expect(
+        lastResultsKeyForMatchSide(
+          Match(affiliationTeam1: '500554'),
+          MatchSide.team1,
+        ),
+        isNull,
+      );
+      expect(
+        lastResultsKeyForMatchSide(
+          Match(competitionID: '450652'),
+          MatchSide.team1,
+        ),
+        isNull,
+      );
+    });
+  });
+
+  group('lastResultsDisplaySlots', () {
+    test('pads empties on the right up to 5', () {
+      final slots = lastResultsDisplaySlots([
+        const LastResultEntry(outcome: MatchOutcome.win),
+        const LastResultEntry(outcome: MatchOutcome.draw),
+        const LastResultEntry(outcome: MatchOutcome.loss),
+      ]);
+
+      expect(slots, hasLength(5));
+      expect(slots[0], MatchOutcome.win);
+      expect(slots[1], MatchOutcome.draw);
+      expect(slots[2], MatchOutcome.loss);
+      expect(slots[3], isNull);
+      expect(slots[4], isNull);
+    });
+
+    test('keeps oldest to newest for a full form', () {
+      final slots = lastResultsDisplaySlots([
+        const LastResultEntry(outcome: MatchOutcome.win),
+        const LastResultEntry(outcome: MatchOutcome.win),
+        const LastResultEntry(outcome: MatchOutcome.draw),
+        const LastResultEntry(outcome: MatchOutcome.loss),
+        const LastResultEntry(outcome: MatchOutcome.win),
+      ]);
+
+      expect(slots, [
+        MatchOutcome.win,
+        MatchOutcome.win,
+        MatchOutcome.draw,
+        MatchOutcome.loss,
+        MatchOutcome.win,
+      ]);
+    });
+  });
+
+  group('lastResultsHighlightIndex', () {
+    test('rings the current match when it is in the results', () {
+      final index = lastResultsHighlightIndex(
+        results: const [
+          LastResultEntry(outcome: MatchOutcome.draw, matchId: 'm1'),
+          LastResultEntry(outcome: MatchOutcome.loss, matchId: 'm2'),
+          LastResultEntry(outcome: MatchOutcome.win, matchId: 'm3'),
+        ],
+        highlightMatchId: 'm2',
+      );
+
+      expect(index, 1);
+    });
+
+    test('rings the most recent slot when the match is not in results', () {
+      final index = lastResultsHighlightIndex(
+        results: const [
+          LastResultEntry(outcome: MatchOutcome.win, matchId: 'm1'),
+          LastResultEntry(outcome: MatchOutcome.win, matchId: 'm2'),
+          LastResultEntry(outcome: MatchOutcome.win, matchId: 'm3'),
+        ],
+        highlightMatchId: 'upcoming',
+      );
+
+      expect(index, 2);
+    });
+
+    test('returns null when there are no results', () {
+      expect(
+        lastResultsHighlightIndex(results: const [], highlightMatchId: 'm1'),
+        isNull,
+      );
     });
   });
 }

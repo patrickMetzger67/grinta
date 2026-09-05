@@ -3812,5 +3812,8 @@
   },
   "adminAdsCurrentBadge": "En curso",
   "adminAdsExpiredBadge": "Finalizado",
-  "adminAdsUpcomingBadge": "Próximo"
+  "adminAdsUpcomingBadge": "Próximo",
+  "lastResultsFormGuide": "Forma reciente",
+  "lastResultsSlotEmpty": "Aún no jugado",
+  "lastResultsSlotHighlighted": "Partido actual"
 }

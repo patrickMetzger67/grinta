@@ -2,6 +2,8 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/painting.dart' show WebHtmlElementStrategy;
 import 'package:grinta/model/match.dart' as grinta_match;
+import 'package:grinta/util/match_goal_helper.dart';
+import 'package:grinta/widget/last_results_form_guide.dart';
 import 'package:intl/intl.dart';
 
 import '../util/app_theme.dart';
@@ -96,6 +98,7 @@ class AgendaMatchRow extends StatelessWidget {
                     Expanded(
                       child: _teamBlock(
                         context: context,
+                        side: MatchSide.team1,
                         logoUrl: match.team1UrlLogo ?? '',
                         teamName: team1,
                         isPlayed: showScore,
@@ -136,6 +139,7 @@ class AgendaMatchRow extends StatelessWidget {
                     Expanded(
                       child: _teamBlock(
                         context: context,
+                        side: MatchSide.team2,
                         logoUrl: match.team2UrlLogo ?? '',
                         teamName: team2,
                         isPlayed: showScore,
@@ -170,6 +174,7 @@ class AgendaMatchRow extends StatelessWidget {
 
   Widget _teamBlock({
     required BuildContext context,
+    required MatchSide side,
     required String logoUrl,
     required String teamName,
     required bool isPlayed,
@@ -186,19 +191,35 @@ class AgendaMatchRow extends StatelessWidget {
         Row(
           mainAxisAlignment: MainAxisAlignment.center,
           mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             if (scoreFirst && isPlayed) ...[
-              _scoreBox(context: context, score: score),
+              SizedBox(
+                height: 42,
+                child: Center(child: _scoreBox(context: context, score: score)),
+              ),
               const SizedBox(width: 6),
             ],
-            _matchLogo(context, logoUrl),
+            Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                _matchLogo(context, logoUrl),
+                LastResultsFormGuide(
+                  match: match,
+                  side: side,
+                ),
+              ],
+            ),
             if (!scoreFirst && isPlayed) ...[
               const SizedBox(width: 6),
-              _scoreBox(context: context, score: score),
+              SizedBox(
+                height: 42,
+                child: Center(child: _scoreBox(context: context, score: score)),
+              ),
             ],
           ],
         ),
-        const SizedBox(height: 6),
+        const SizedBox(height: 4),
         Text(
           teamName,
           maxLines: 2,

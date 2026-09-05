@@ -16,6 +16,14 @@ String? clubIdForLastResults(Match match, MatchSide side) {
   return clubIdForMatchSide(match: match, side: side);
 }
 
+/// Lookup key for one club on [match], or null when club/competition is missing.
+LastResultsKey? lastResultsKeyForMatchSide(Match match, MatchSide side) {
+  return lastResultsKeyFromIds(
+    clubId: clubIdForLastResults(match, side),
+    competitionId: match.competitionID,
+  );
+}
+
 /// Keys to read for both clubs on [match].
 List<LastResultsKey> lastResultsKeysForMatch(Match match) {
   final competitionId = match.competitionID?.trim() ?? '';

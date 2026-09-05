@@ -30,6 +30,7 @@ import 'package:provider/provider.dart';
 import '../provider/appSession.dart';
 import '../model/match.dart' as models;
 import '../util/playerDisplayName.dart';
+import '../widget/last_results_form_guide.dart';
 import '../widget/match_compo_widget.dart';
 import '../widget/match_highlights_timeline.dart';
 import '../widget/match_opponent_stats_button.dart';
@@ -1217,6 +1218,8 @@ class _MatchHeaderState extends State<_MatchHeader> {
                 return Column(
                   children: [
                     _TeamBlock(
+                      match: match,
+                      side: MatchSide.team1,
                       name: team1,
                       logoUrl: match.team1UrlLogo,
                       affiliation: dense ? null : match.affiliationTeam1,
@@ -1227,6 +1230,8 @@ class _MatchHeaderState extends State<_MatchHeader> {
                     scoreBlock,
                     SizedBox(height: dense ? 4 : 6),
                     _TeamBlock(
+                      match: match,
+                      side: MatchSide.team2,
                       name: team2,
                       logoUrl: match.team2UrlLogo,
                       affiliation: dense ? null : match.affiliationTeam2,
@@ -1242,6 +1247,8 @@ class _MatchHeaderState extends State<_MatchHeader> {
                 children: [
                   Expanded(
                     child: _TeamBlock(
+                      match: match,
+                      side: MatchSide.team1,
                       name: team1,
                       logoUrl: match.team1UrlLogo,
                       affiliation: dense ? null : match.affiliationTeam1,
@@ -1255,6 +1262,8 @@ class _MatchHeaderState extends State<_MatchHeader> {
                   ),
                   Expanded(
                     child: _TeamBlock(
+                      match: match,
+                      side: MatchSide.team2,
                       name: team2,
                       logoUrl: match.team2UrlLogo,
                       affiliation: dense ? null : match.affiliationTeam2,
@@ -1550,6 +1559,8 @@ class _MatchVenueSheetState extends State<_MatchVenueSheet> {
 }
 
 class _TeamBlock extends StatelessWidget {
+  final models.Match match;
+  final MatchSide side;
   final String name;
   final String? logoUrl;
   final String? affiliation;
@@ -1557,6 +1568,8 @@ class _TeamBlock extends StatelessWidget {
   final VoidCallback? onLogoTap;
 
   const _TeamBlock({
+    required this.match,
+    required this.side,
     required this.name,
     required this.logoUrl,
     required this.affiliation,
@@ -1586,6 +1599,11 @@ class _TeamBlock extends StatelessWidget {
               child: logo,
             ),
           ),
+        LastResultsFormGuide(
+          match: match,
+          side: side,
+          compact: compact,
+        ),
         const SizedBox(height: 4),
         Text(
           name,
