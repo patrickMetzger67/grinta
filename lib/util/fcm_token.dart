@@ -47,6 +47,19 @@ bool _isGrintaPackage(String packageName) {
   return lower == FcmConfig.grintaPackageName.toLowerCase();
 }
 
+bool _docLooksLikeAserstein(Map<String, dynamic> data) {
+  final app = data['app']?.toString().trim().toLowerCase() ?? '';
+  if (app == FcmConfig.brandAserstein) return true;
+  return _isAsersteinPackage(data['packageName']?.toString() ?? '');
+}
+
+bool _isExplicitGrintaDoc(Map<String, dynamic> data) {
+  if (_docLooksLikeAserstein(data)) return false;
+  final app = data['app']?.toString().trim().toLowerCase() ?? '';
+  if (app == FcmConfig.brandGrinta) return true;
+  return _isGrintaPackage(data['packageName']?.toString() ?? '');
+}
+
 bool _isGrintaEligibleDoc(Map<String, dynamic> data) {
   final app = data['app']?.toString().trim().toLowerCase() ?? '';
   if (app == FcmConfig.brandAserstein) return false;
@@ -65,21 +78,30 @@ bool _isGrintaEligibleDoc(Map<String, dynamic> data) {
   final platform = data['platform']?.toString().trim().toLowerCase() ?? '';
   if (platform == 'android') return false;
 
-  // Legacy iOS / web / unknown-platform docs stay collectable.
+  // Legacy iOS / web / unknown-platform docs stay collectable on
+  // Grinta-only accounts (no Aserstein token on the same uid).
   return true;
 }
 
 /// Collects Grinta FCM registration tokens from `fcmTokens` documents.
 ///
-/// Includes `app: grinta`, Grinta `packageName`, and safe legacy iOS/web docs.
+/// Includes `app: grinta`, Grinta `packageName`, and safe legacy iOS/web docs
+/// on Grinta-only accounts. Dual-app users (any Aserstein-tagged token on the
+/// same uid) only keep explicitly Grinta-tagged devices — unbranded leftovers
+/// would otherwise surface in the AS Erstein app.
 /// Excludes `app: aserstein`, Aserstein packages, and naked unbranded Android
 /// tokens (cross-app bleed on the shared Firebase project).
 List<String> collectGrintaFcmTokens(
   Iterable<({String id, Map<String, dynamic> data})> docs,
 ) {
+  final list = docs.toList();
+  final hasAserstein = list.any((doc) => _docLooksLikeAserstein(doc.data));
   final tokens = <String>{};
-  for (final doc in docs) {
-    if (!_isGrintaEligibleDoc(doc.data)) continue;
+  for (final doc in list) {
+    final eligible = hasAserstein
+        ? _isExplicitGrintaDoc(doc.data)
+        : _isGrintaEligibleDoc(doc.data);
+    if (!eligible) continue;
     final token = fcmTokenFromFirestoreDoc(id: doc.id, data: doc.data);
     if (token == null || !isSendableFcmRegistrationToken(token)) continue;
     tokens.add(token);

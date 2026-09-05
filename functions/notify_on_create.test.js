@@ -8,6 +8,27 @@ const {
   resolveRecipientUserIds,
   persistQuietDeferral,
 } = require('./notify_on_create');
+const {
+  resolveNotificationPushBrand,
+  BRAND_GRINTA,
+  BRAND_ASERSTEIN,
+} = require('./send_push_fcm_helpers');
+
+describe('resolveNotificationPushBrand', () => {
+  it('never maps a Grinta event clubId to aserstein', () => {
+    assert.equal(
+      resolveNotificationPushBrand({ clubId: '500554', type: 'convocation' }),
+      BRAND_GRINTA,
+    );
+  });
+
+  it('honours an explicit aserstein brand on the notification doc', () => {
+    assert.equal(
+      resolveNotificationPushBrand({ brand: 'aserstein' }),
+      BRAND_ASERSTEIN,
+    );
+  });
+});
 
 describe('isPushChannel', () => {
   it('treats missing and SendBy.notification as push', () => {

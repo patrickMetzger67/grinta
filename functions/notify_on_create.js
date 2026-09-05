@@ -7,9 +7,8 @@ const {
   filterTokensByRecipientPreferences,
   isLocalReminderNotificationType,
   computeSendAfter,
-  resolveBrand,
   resolveBrandAssets,
-  BRAND_GRINTA,
+  resolveNotificationPushBrand,
 } = require('./send_push_fcm_helpers');
 const { sendFcmToTokens } = require('./pending_push');
 
@@ -123,7 +122,7 @@ async function dispatchNotificationPush({ db, snap }) {
   const body = readNonEmptyString(data.body) ?? '';
   const clubId = readNonEmptyString(data.clubId) || '0';
   const objectId = readNonEmptyString(data.objectId) ?? snap.id;
-  const brand = resolveBrand(BRAND_GRINTA, clubId);
+  const brand = resolveNotificationPushBrand(data);
   const assets = resolveBrandAssets(brand);
 
   const recipientUserIds = await resolveRecipientUserIds({
@@ -313,7 +312,7 @@ async function processDeferredNotificationDoc(db, snap, now = new Date()) {
   const body = readNonEmptyString(data.body) ?? '';
   const clubId = readNonEmptyString(data.clubId) || '0';
   const objectId = readNonEmptyString(data.objectId) ?? snap.id;
-  const brand = resolveBrand(BRAND_GRINTA, clubId);
+  const brand = resolveNotificationPushBrand(data);
   const assets = resolveBrandAssets(brand, {
     icon: data.pushDispatch?.icon,
     image: data.pushDispatch?.image,

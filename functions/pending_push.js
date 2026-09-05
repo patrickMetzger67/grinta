@@ -212,11 +212,7 @@ async function processPendingPushDoc(db, doc) {
   const brand = resolveBrand(data.brand, data.clubId);
   const storedTokens = normalizeTokenList(data.fcmTokens);
   const requested = new Set(storedTokens);
-  let tokens = await loadUserFcmTokens(db, userId, brand, requested);
-  if (tokens.length === 0) {
-    // Fall back to stored tokens if live lookup is empty (e.g. race).
-    tokens = storedTokens;
-  }
+  const tokens = await loadUserFcmTokens(db, userId, brand, requested);
   if (tokens.length === 0) {
     await doc.ref.update({
       status: 'cancelled',

@@ -44,14 +44,35 @@ Every FCM payload includes the Grinta icons:
 ## Dual-app tokens (Grinta + Aserstein)
 
 Both apps share Firebase project `aserstein-2453e` and `users/{uid}/fcmTokens`.
+The same person can have both apps installed (two FCM tokens on one uid).
+A Grinta event must never surface in the **AS Erstein** tray.
+
 Grinta sends only to:
 
 - docs with `app: "grinta"` (and `packageName: "io.grinta.app"` on current builds)
-- legacy iOS/web docs without `app`
 - docs whose `packageName` is `io.grinta.app`
+- legacy iOS/web docs without `app` **only if that uid has no Aserstein token**
 
-Naked unbranded **Android** docs are skipped (shared project bleed into
-Aserstein). `app: "aserstein"` and Aserstein package names are never targeted.
+If the uid also has `app: "aserstein"` (or an Aserstein `packageName`), unbranded
+iOS/web leftovers are skipped — they are often the Aserstein device.
+
+Naked unbranded **Android** docs are always skipped. `app: "aserstein"` and
+Aserstein package names are never targeted by a Grinta send.
+
+FCM delivery is also pinned to the Grinta apps:
+
+- Android `restrictedPackageName`: `io.grinta.app`
+- APNs `apns-topic`: `io.grinta.app`
+
+In-app `notification/{id}` documents written by Grinta always include
+`brand: "grinta"`. `sendPushOnNotificationCreated` uses that field (missing
+brand = Grinta). A club id such as AS Erstein’s FFF id must **not** switch the
+push to Aserstein.
+
+An Aserstein Cloud Function or client that also listens to `notification` must
+ignore `brand == "grinta"`. Aserstein-only users still receive Aserstein
+pushes when the document (or callable) sets `brand: "aserstein"` — those sends
+target only Aserstein tokens / `com.tome4.asersteinv2`.
 
 ## Contract (callable)
 

@@ -49,15 +49,23 @@ void main() {
   });
 
   group('collectGrintaFcmTokens', () {
-    test('keeps unbranded iOS next to branded Android and drops aserstein', () {
+    test('on dual-app accounts keeps only explicit Grinta tokens', () {
       final tokens = collectGrintaFcmTokens([
         (id: 'android-tok', data: {'app': 'grinta', 'platform': 'android'}),
         (id: 'ios-legacy-tok', data: {'platform': 'ios'}),
         (id: 'aser-tok', data: {'app': 'aserstein'}),
         (id: 'a' * 64, data: {'app': 'grinta', 'platform': 'ios'}),
       ]);
+      expect(tokens, ['android-tok']);
+    });
+
+    test('keeps unbranded iOS on Grinta-only accounts', () {
+      final tokens = collectGrintaFcmTokens([
+        (id: 'android-tok', data: {'app': 'grinta', 'platform': 'android'}),
+        (id: 'ios-legacy-tok', data: {'platform': 'ios'}),
+        (id: 'a' * 64, data: {'app': 'grinta', 'platform': 'ios'}),
+      ]);
       expect(tokens, containsAll(['android-tok', 'ios-legacy-tok']));
-      expect(tokens, isNot(contains('aser-tok')));
       expect(tokens, isNot(contains('a' * 64)));
     });
 
