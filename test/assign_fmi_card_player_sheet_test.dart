@@ -93,5 +93,76 @@ void main() {
 
     expect(find.text(l10n.fmiCardNoConvokedPlayers), findsOneWidget);
     expect(find.byType(ListTile), findsNothing);
+    expect(find.byType(TextField), findsNothing);
+  });
+
+  testWidgets('filters convoked players as the user types', (tester) async {
+    final l10n = await AppLocalizations.delegate.load(const Locale('fr'));
+
+    await tester.pumpWidget(
+      MaterialApp(
+        theme: ThemeData(
+          useMaterial3: true,
+          extensions: const <ThemeExtension<dynamic>>[AppColors.light],
+        ),
+        locale: const Locale('fr'),
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
+        home: const Scaffold(
+          body: AssignFmiCardPlayerSheet(
+            cardType: playerCardTypeYellow,
+            minute: 47,
+            players: [
+              AssignFmiCardPlayerOption(
+                memberId: 'm-achille',
+                label: 'Achille SCHMITT',
+              ),
+              AssignFmiCardPlayerOption(
+                memberId: 'm-erwan',
+                label: 'Erwan Baruthio',
+              ),
+              AssignFmiCardPlayerOption(
+                memberId: 'm-lucas',
+                label: 'Lucas Burg',
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+
+    expect(find.text(l10n.teamDetailFilterPlayerHint), findsOneWidget);
+    expect(find.text('Achille SCHMITT'), findsOneWidget);
+    expect(find.text('Erwan Baruthio'), findsOneWidget);
+    expect(find.text('Lucas Burg'), findsOneWidget);
+
+    await tester.enterText(
+      find.byKey(const ValueKey('player-name-filter-field')),
+      'baruth',
+    );
+    await tester.pump();
+
+    expect(find.text('Erwan Baruthio'), findsOneWidget);
+    expect(find.text('Achille SCHMITT'), findsNothing);
+    expect(find.text('Lucas Burg'), findsNothing);
+
+    await tester.enterText(
+      find.byKey(const ValueKey('player-name-filter-field')),
+      'zzz',
+    );
+    await tester.pump();
+
+    expect(find.text(l10n.emptyNoPlayerForTeam), findsOneWidget);
+    expect(find.byType(ListTile), findsNothing);
+
+    await tester.enterText(
+      find.byKey(const ValueKey('player-name-filter-field')),
+      '',
+    );
+    await tester.pump();
+
+    expect(find.text('Achille SCHMITT'), findsOneWidget);
+    expect(find.text('Erwan Baruthio'), findsOneWidget);
+    expect(find.text('Lucas Burg'), findsOneWidget);
   });
 }

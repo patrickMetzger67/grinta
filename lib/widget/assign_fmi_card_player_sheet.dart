@@ -11,6 +11,8 @@ import 'package:grinta/util/app_snackbar.dart';
 import 'package:grinta/util/app_theme.dart';
 import 'package:grinta/util/match_creation_helper.dart';
 import 'package:grinta/util/player_cards_helper.dart';
+import 'package:grinta/util/playerDisplayName.dart';
+import 'package:grinta/widget/player_name_filter_field.dart';
 import 'package:provider/provider.dart';
 
 /// Manager-only: pick a convoked player for an FMI card highlight.
@@ -181,6 +183,8 @@ class AssignFmiCardPlayerSheet extends StatefulWidget {
 }
 
 class _AssignFmiCardPlayerSheetState extends State<AssignFmiCardPlayerSheet> {
+  final TextEditingController _nameFilterCtrl = TextEditingController();
+  final FocusNode _nameFilterFocus = FocusNode();
   List<AssignFmiCardPlayerOption>? _players;
   Object? _error;
   bool _loading = false;
@@ -193,6 +197,13 @@ class _AssignFmiCardPlayerSheetState extends State<AssignFmiCardPlayerSheet> {
       return;
     }
     _load();
+  }
+
+  @override
+  void dispose() {
+    _nameFilterCtrl.dispose();
+    _nameFilterFocus.dispose();
+    super.dispose();
   }
 
   Future<void> _load() async {
@@ -271,7 +282,7 @@ class _AssignFmiCardPlayerSheetState extends State<AssignFmiCardPlayerSheet> {
                 fontSize: 13,
               ),
             ),
-            const SizedBox(height: 16),
+            const SizedBox(height: 12),
             if (_loading)
               const Padding(
                 padding: EdgeInsets.symmetric(vertical: 24),
@@ -294,30 +305,66 @@ class _AssignFmiCardPlayerSheetState extends State<AssignFmiCardPlayerSheet> {
                   ),
                 ),
               )
-            else
-              ConstrainedBox(
-                constraints: const BoxConstraints(maxHeight: 360),
-                child: ListView.separated(
-                  shrinkWrap: true,
-                  itemCount: players.length,
-                  separatorBuilder: (_, __) => const SizedBox(height: 4),
-                  itemBuilder: (context, index) {
-                    final player = players[index];
-                    return ListTile(
-                      key: AssignFmiCardPlayerSheet.playerKey(player.memberId),
-                      contentPadding: EdgeInsets.zero,
-                      title: Text(
-                        player.label,
+            else ...[
+              PlayerNameFilterField(
+                controller: _nameFilterCtrl,
+                focusNode: _nameFilterFocus,
+              ),
+              ValueListenableBuilder<TextEditingValue>(
+                valueListenable: _nameFilterCtrl,
+                builder: (context, value, _) {
+                  final filtered = players
+                      .where(
+                        (player) => playerLabelMatchesNameQuery(
+                          player.label,
+                          value.text,
+                        ),
+                      )
+                      .toList(growable: false);
+
+                  if (filtered.isEmpty) {
+                    return Padding(
+                      padding: const EdgeInsets.symmetric(vertical: 12),
+                      child: Text(
+                        l10n.emptyNoPlayerForTeam,
                         style: TextStyle(
-                          color: colors.textPrimary,
-                          fontWeight: FontWeight.w700,
+                          color: colors.textSecondary,
+                          fontWeight: FontWeight.w500,
+                          fontSize: 13,
                         ),
                       ),
-                      onTap: () => Navigator.of(context).pop(player.memberId),
                     );
-                  },
-                ),
+                  }
+
+                  return ConstrainedBox(
+                    constraints: const BoxConstraints(maxHeight: 360),
+                    child: ListView.separated(
+                      shrinkWrap: true,
+                      itemCount: filtered.length,
+                      separatorBuilder: (_, __) => const SizedBox(height: 4),
+                      itemBuilder: (context, index) {
+                        final player = filtered[index];
+                        return ListTile(
+                          key: AssignFmiCardPlayerSheet.playerKey(
+                            player.memberId,
+                          ),
+                          contentPadding: EdgeInsets.zero,
+                          title: Text(
+                            player.label,
+                            style: TextStyle(
+                              color: colors.textPrimary,
+                              fontWeight: FontWeight.w700,
+                            ),
+                          ),
+                          onTap: () =>
+                              Navigator.of(context).pop(player.memberId),
+                        );
+                      },
+                    ),
+                  );
+                },
               ),
+            ],
           ],
         ),
       ),

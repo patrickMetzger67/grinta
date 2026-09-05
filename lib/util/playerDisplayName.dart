@@ -57,6 +57,29 @@ List<String> playerSearchQueryTokens(String query) {
       .toList(growable: false);
 }
 
+/// Whether a roster / convocation display [label] matches a name filter.
+///
+/// Same normalization as [playerMatchesNameQuery] (trim, case, accents).
+/// An empty query matches everyone. Multi-word queries require every token
+/// (first / last name) to appear in the label, in any order.
+bool playerLabelMatchesNameQuery(String label, String query) {
+  final String normalizedQuery = normalizePlayerNameQuery(query);
+  if (normalizedQuery.isEmpty) {
+    return true;
+  }
+
+  final String normalizedLabel = normalizePlayerNameQuery(label);
+  if (normalizedLabel.contains(normalizedQuery)) {
+    return true;
+  }
+
+  final List<String> tokens = playerSearchQueryTokens(query);
+  if (tokens.isEmpty) {
+    return true;
+  }
+  return tokens.every(normalizedLabel.contains);
+}
+
 /// Whether [player] matches a "Filtrer par nom" / "Ajouter un joueur" query.
 ///
 /// Compares first/last/display/short names, e-mail, `searchOptions` and phone

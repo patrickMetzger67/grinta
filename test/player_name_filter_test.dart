@@ -74,6 +74,26 @@ void main() {
     });
   });
 
+  group('playerLabelMatchesNameQuery', () {
+    test('matches first name, last name and reversed tokens', () {
+      const label = 'Achille SCHMITT';
+
+      expect(playerLabelMatchesNameQuery(label, ''), isTrue);
+      expect(playerLabelMatchesNameQuery(label, '  '), isTrue);
+      expect(playerLabelMatchesNameQuery(label, 'ach'), isTrue);
+      expect(playerLabelMatchesNameQuery(label, 'SCHMITT'), isTrue);
+      expect(playerLabelMatchesNameQuery(label, 'schmitt achille'), isTrue);
+      expect(playerLabelMatchesNameQuery(label, 'xyz'), isFalse);
+    });
+
+    test('is accent-insensitive', () {
+      expect(
+        playerLabelMatchesNameQuery('Stéphane Müller', 'stephane muller'),
+        isTrue,
+      );
+    });
+  });
+
   testWidgets(
     'name filter keeps focus when the clear suffix becomes visible',
     (tester) async {
