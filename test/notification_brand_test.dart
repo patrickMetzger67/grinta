@@ -15,6 +15,7 @@ void main() {
     );
 
     expect(notification.toMap()[keyNotifBrand], kNotificationBrandGrinta);
+    expect(notification.toMap()[keyNotifApp], kNotificationBrandGrinta);
   });
 
   test('explicit brand is preserved when set', () {

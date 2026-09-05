@@ -99,7 +99,9 @@ target only Aserstein tokens / `com.tome4.asersteinv2`.
 }
 ```
 
-- **`clubId`**: always `"0"` for the Grinta platform club (required by the CF).
+- **`clubId`**: the Flutter client always sends `"0"` (Grinta platform). A
+  real club id such as AS Erstein (`500554`) is stored on the in-app
+  `notification` document only — never on the FCM callable.
 - **`brand`**: always `"grinta"` from the Flutter client.
 - **`recipientUserIds`**: Auth uids. The CF loads `users/{uid}/fcmTokens` when
   `fcmTokens` is empty.

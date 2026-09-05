@@ -109,6 +109,21 @@ List<String> collectGrintaFcmTokens(
   return tokens.toList();
 }
 
+/// Aserstein tokens on the shared project (never register these with Stream
+/// for a Grinta user — Stream would show the banner as AS Erstein).
+List<String> collectAsersteinFcmTokens(
+  Iterable<({String id, Map<String, dynamic> data})> docs,
+) {
+  final tokens = <String>{};
+  for (final doc in docs) {
+    if (!_docLooksLikeAserstein(doc.data)) continue;
+    final token = fcmTokenFromFirestoreDoc(id: doc.id, data: doc.data);
+    if (token == null || !isSendableFcmRegistrationToken(token)) continue;
+    tokens.add(token);
+  }
+  return tokens.toList();
+}
+
 /// Outgoing chat FCM should run whenever there are peer user ids.
 ///
 /// The Cloud Function loads `users/{uid}/fcmTokens` with admin rights, so an

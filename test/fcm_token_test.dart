@@ -113,6 +113,20 @@ void main() {
       expect(tokens, ['grinta-tok']);
     });
 
+    test('collectAsersteinFcmTokens keeps only AS Erstein devices', () {
+      expect(
+        collectAsersteinFcmTokens([
+          (id: 'g', data: {'app': 'grinta'}),
+          (id: 'a', data: {'app': 'aserstein'}),
+          (
+            id: 'pkg',
+            data: {'packageName': 'com.tome4.asersteinv2'},
+          ),
+        ]),
+        ['a', 'pkg'],
+      );
+    });
+
     test('prefers data.token and skips raw APNs device tokens', () {
       final apns = 'b' * 64;
       final tokens = collectGrintaFcmTokens([

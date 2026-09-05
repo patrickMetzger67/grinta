@@ -38,9 +38,10 @@ String keyNotifCreatedUserId = 'createdUserId';
 String keyNotifClubId = 'clubId';
 String keyNotifPlayerId = 'playerId';
 String keyNotifBrand = 'brand';
+String keyNotifApp = 'app';
 
 /// Grinta in-app / push docs on the shared Firebase project.
-/// Aserstein listeners must ignore `brand == grinta`.
+/// Aserstein listeners must ignore `brand == grinta` / `app == grinta`.
 const String kNotificationBrandGrinta = 'grinta';
 
 class NotificationApp {
@@ -200,6 +201,9 @@ class NotificationApp {
   }
 
   Map<String, dynamic> toMap() {
+    final resolvedBrand = (brand ?? '').trim().isEmpty
+        ? kNotificationBrandGrinta
+        : brand!.trim();
     Map<String, dynamic> map = {
       keyNotifUserId: userId,
       keyNotifType: type.toString(),
@@ -213,9 +217,8 @@ class NotificationApp {
       keyNotifCreatedUserId: createdUserId,
       keyNotifClubId: clubId,
       keyNotifPlayerId: playerId,
-      keyNotifBrand: (brand ?? '').trim().isEmpty
-          ? kNotificationBrandGrinta
-          : brand!.trim(),
+      keyNotifBrand: resolvedBrand,
+      keyNotifApp: resolvedBrand,
     };
     return map;
   }

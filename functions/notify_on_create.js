@@ -9,6 +9,8 @@ const {
   computeSendAfter,
   resolveBrandAssets,
   resolveNotificationPushBrand,
+  BRAND_ASERSTEIN,
+  BRAND_GRINTA,
 } = require('./send_push_fcm_helpers');
 const { sendFcmToTokens } = require('./pending_push');
 
@@ -45,6 +47,11 @@ function createSendPushOnNotificationCreated() {
 function isPushChannel(sendBy) {
   const value = (sendBy ?? 'SendBy.notification').toString().trim();
   return value === '' || value === 'SendBy.notification';
+}
+
+/** Shared-collection docs tagged for Aserstein must not FCM from this CF. */
+function isAsersteinNotificationBrand(data) {
+  return resolveNotificationPushBrand(data) === BRAND_ASERSTEIN;
 }
 
 async function loadMemberData(db, playerId) {
@@ -113,6 +120,12 @@ async function dispatchNotificationPush({ db, snap }) {
     return { skipped: true, reason: 'local_reminder' };
   }
 
+  // This trigger is Grinta-owned. Never fan out an AS Erstein banner.
+  if (isAsersteinNotificationBrand(data)) {
+    await markDispatch(snap, { status: 'skipped', reason: 'aserstein_brand' });
+    return { skipped: true, reason: 'aserstein_brand' };
+  }
+
   const claimed = await claimDispatch(snap);
   if (!claimed) {
     return { skipped: true, reason: 'lost_claim' };
@@ -122,7 +135,7 @@ async function dispatchNotificationPush({ db, snap }) {
   const body = readNonEmptyString(data.body) ?? '';
   const clubId = readNonEmptyString(data.clubId) || '0';
   const objectId = readNonEmptyString(data.objectId) ?? snap.id;
-  const brand = resolveNotificationPushBrand(data);
+  const brand = BRAND_GRINTA;
   const assets = resolveBrandAssets(brand);
 
   const recipientUserIds = await resolveRecipientUserIds({
@@ -293,6 +306,10 @@ async function processDeferredNotificationDoc(db, snap, now = new Date()) {
     await markDispatch(snap, { status: 'skipped', reason: 'local_reminder' });
     return 'skipped';
   }
+  if (isAsersteinNotificationBrand(data)) {
+    await markDispatch(snap, { status: 'skipped', reason: 'aserstein_brand' });
+    return 'skipped';
+  }
 
   const storedRecipient = readNonEmptyString(data.pushDispatch?.recipientUserId);
   const recipientUserIds = storedRecipient
@@ -312,7 +329,7 @@ async function processDeferredNotificationDoc(db, snap, now = new Date()) {
   const body = readNonEmptyString(data.body) ?? '';
   const clubId = readNonEmptyString(data.clubId) || '0';
   const objectId = readNonEmptyString(data.objectId) ?? snap.id;
-  const brand = resolveNotificationPushBrand(data);
+  const brand = BRAND_GRINTA;
   const assets = resolveBrandAssets(brand, {
     icon: data.pushDispatch?.icon,
     image: data.pushDispatch?.image,
@@ -398,5 +415,6 @@ module.exports = {
   resolveRecipientUserIds,
   collectLinkedUserIdsFromMemberData,
   isPushChannel,
+  isAsersteinNotificationBrand,
   loadMemberData,
 };

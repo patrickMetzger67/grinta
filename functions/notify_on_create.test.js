@@ -5,6 +5,7 @@ const { Timestamp } = require('firebase-admin/firestore');
 
 const {
   isPushChannel,
+  isAsersteinNotificationBrand,
   resolveRecipientUserIds,
   persistQuietDeferral,
 } = require('./notify_on_create');
@@ -27,6 +28,14 @@ describe('resolveNotificationPushBrand', () => {
       resolveNotificationPushBrand({ brand: 'aserstein' }),
       BRAND_ASERSTEIN,
     );
+  });
+});
+
+describe('isAsersteinNotificationBrand', () => {
+  it('skips only an explicit aserstein brand', () => {
+    assert.equal(isAsersteinNotificationBrand({ clubId: '500554' }), false);
+    assert.equal(isAsersteinNotificationBrand({ brand: 'grinta' }), false);
+    assert.equal(isAsersteinNotificationBrand({ brand: 'aserstein' }), true);
   });
 });
 
