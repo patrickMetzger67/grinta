@@ -38,7 +38,20 @@ Every FCM payload includes the Grinta icons:
 - Android status-bar: `@drawable/ic_notification` (white silhouette required by the OS)
 - iOS lock-screen: text alert only (no `mutable-content` / image). Grinta has no
   Notification Service Extension; attaching an image on APNs dropped banners
-  when the app was killed.
+  when the app was killed. APNs topic is always `io.grinta.app` (shared Firebase
+  project with Aserstein).
+
+## Dual-app tokens (Grinta + Aserstein)
+
+Both apps share Firebase project `aserstein-2453e` and `users/{uid}/fcmTokens`.
+Grinta sends only to:
+
+- docs with `app: "grinta"` (and `packageName: "io.grinta.app"` on current builds)
+- legacy iOS/web docs without `app`
+- docs whose `packageName` is `io.grinta.app`
+
+Naked unbranded **Android** docs are skipped (shared project bleed into
+Aserstein). `app: "aserstein"` and Aserstein package names are never targeted.
 
 ## Contract (callable)
 
@@ -61,7 +74,8 @@ Every FCM payload includes the Grinta icons:
 - **`brand`**: always `"grinta"` from the Flutter client.
 - **`recipientUserIds`**: Auth uids. The CF loads `users/{uid}/fcmTokens` when
   `fcmTokens` is empty.
-- Tokens live in `users/{uid}/fcmTokens/{token}` with `app: "grinta"`.
+- Tokens live in `users/{uid}/fcmTokens/{token}` with `app: "grinta"` and
+  `packageName: "io.grinta.app"` (current builds).
 
 `pushDispatch` on the `notification` document:
 `sending` / `sent` / `skipped` / `deferred` / `failed`, plus `sendAfter` when deferred.

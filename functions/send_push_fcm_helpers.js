@@ -11,13 +11,15 @@ const ASERSTEIN_ICON = 'https://aserstein-2453e.web.app/favicon.png';
 const BRAND_GRINTA = 'grinta';
 const BRAND_ASERSTEIN = 'aserstein';
 
-const DEFAULT_TIMEZONE = 'Europe/Paris';
-
 /** Must match iOS `PRODUCT_BUNDLE_IDENTIFIER` / GoogleService-Info BUNDLE_ID. */
 const IOS_APNS_TOPIC = 'io.grinta.app';
+const GRINTA_PACKAGE_NAME = 'io.grinta.app';
+const ASERSTEIN_ANDROID_PACKAGE = 'com.tome4.asersteinv2';
 
 /** Raw APNs device tokens are 32 bytes hex-encoded. FCM tokens are longer. */
 const APNS_DEVICE_TOKEN_PATTERN = /^[0-9a-fA-F]{64}$/;
+
+const DEFAULT_TIMEZONE = 'Europe/Paris';
 
 /** Dart DateTime.monday=1 … sunday=7 */
 const WEEKDAY_SHORT_TO_DART = {
@@ -62,6 +64,48 @@ function normalizeTokenList(raw) {
         .filter((token) => isSendableFcmRegistrationToken(token)),
     ),
   ];
+}
+
+function docData(doc) {
+  return typeof doc?.data === 'function' ? doc.data() : (doc?.data ?? {});
+}
+
+function isAsersteinPackage(packageName) {
+  const lower = (packageName ?? '').toString().trim().toLowerCase();
+  if (!lower) return false;
+  if (lower === ASERSTEIN_ANDROID_PACKAGE.toLowerCase()) return true;
+  return lower.includes('aserstein');
+}
+
+function isGrintaPackage(packageName) {
+  const lower = (packageName ?? '').toString().trim().toLowerCase();
+  if (!lower) return false;
+  return lower === GRINTA_PACKAGE_NAME.toLowerCase();
+}
+
+function docLooksLikeAserstein(data) {
+  const app = (data?.app ?? '').toString().trim().toLowerCase();
+  if (app === BRAND_ASERSTEIN) return true;
+  return isAsersteinPackage(data?.packageName);
+}
+
+/**
+ * Whether a token doc may receive a Grinta push on the shared Firebase project.
+ * Never targets Aserstein-tagged / Aserstein-package tokens. Naked unbranded
+ * Android docs are skipped (common cross-app bleed); legacy iOS/web stay OK.
+ */
+function isGrintaEligibleTokenDoc(data) {
+  const app = (data?.app ?? '').toString().trim().toLowerCase();
+  if (app === BRAND_ASERSTEIN) return false;
+  if (isAsersteinPackage(data?.packageName)) return false;
+  if (app === BRAND_GRINTA) return true;
+  if (app.length > 0) return false;
+
+  if (isGrintaPackage(data?.packageName)) return true;
+
+  const platform = (data?.platform ?? '').toString().trim().toLowerCase();
+  if (platform === 'android') return false;
+  return true;
 }
 
 function normalizeUserIdList(raw) {
@@ -386,6 +430,8 @@ function buildMulticastMessage({
     },
     // Visible APNs alert for every Grinta push (convocation, RPE, invite,
     // chat…). A silent content-available wake is dropped when iOS is killed.
+    // apns-topic must be Grinta's bundle id — shared Firebase project also
+    // hosts Aserstein; without it, iOS can attribute the push to the wrong app.
     // No mutable-content / fcmOptions.imageUrl: those need an NSE.
     apns: {
       headers: {
@@ -474,12 +520,24 @@ function computeSendAfter(prefs, now = new Date()) {
 async function loadUserFcmTokens(db, userId, brand, _requestedTokens) {
   const tokensRef = db.collection('users').doc(userId).collection('fcmTokens');
   const all = await tokensRef.get();
-  let tokenDocs = all.docs;
+  const allDocs = all.docs;
+  let tokenDocs = allDocs;
+
   if (brand === BRAND_GRINTA) {
-    tokenDocs = all.docs.filter((doc) => {
-      const data = typeof doc.data === 'function' ? doc.data() : doc.data;
-      const app = (data?.app ?? '').toString().trim();
-      return app.length === 0 || app === BRAND_GRINTA;
+    tokenDocs = allDocs.filter((doc) => isGrintaEligibleTokenDoc(docData(doc)));
+  } else if (brand === BRAND_ASERSTEIN) {
+    // Never fan out Aserstein-branded pushes to Grinta tokens.
+    tokenDocs = allDocs.filter((doc) => {
+      const data = docData(doc);
+      const app = (data?.app ?? '').toString().trim().toLowerCase();
+      if (app === BRAND_GRINTA || isGrintaPackage(data?.packageName)) {
+        return false;
+      }
+      return (
+        app === BRAND_ASERSTEIN ||
+        isAsersteinPackage(data?.packageName) ||
+        app.length === 0
+      );
     });
   }
 
@@ -488,8 +546,7 @@ async function loadUserFcmTokens(db, userId, brand, _requestedTokens) {
     const token = tokenFromDoc(doc);
     if (!token || !isSendableFcmRegistrationToken(token)) continue;
     // Do not intersect with the client-supplied list. A partial snapshot
-    // (Android + Chrome only) would drop a valid iOS token that is already
-    // in Firestore.
+    // (Android + Chrome only) would drop a valid iOS token already in Firestore.
     tokens.push(token);
   }
   return tokens;
@@ -588,6 +645,8 @@ module.exports = {
   isLikelyApnsDeviceToken,
   isSendableFcmRegistrationToken,
   tokenFromDoc,
+  isGrintaEligibleTokenDoc,
+  docLooksLikeAserstein,
   normalizeUserIdList,
   normalizeNotifType,
   normalizeLinkedUserId,
@@ -611,6 +670,8 @@ module.exports = {
   buildMulticastMessage,
   ANDROID_FCM_CHANNEL_ID,
   IOS_APNS_TOPIC,
+  GRINTA_PACKAGE_NAME,
+  ASERSTEIN_ANDROID_PACKAGE,
   isInvalidTokenError,
   BRAND_GRINTA,
   BRAND_ASERSTEIN,

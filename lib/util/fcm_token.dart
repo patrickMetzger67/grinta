@@ -34,18 +34,52 @@ String? fcmTokenFromFirestoreDoc({
   ]);
 }
 
+bool _isAsersteinPackage(String packageName) {
+  final lower = packageName.trim().toLowerCase();
+  if (lower.isEmpty) return false;
+  if (lower == FcmConfig.asersteinAndroidPackage.toLowerCase()) return true;
+  return lower.contains('aserstein');
+}
+
+bool _isGrintaPackage(String packageName) {
+  final lower = packageName.trim().toLowerCase();
+  if (lower.isEmpty) return false;
+  return lower == FcmConfig.grintaPackageName.toLowerCase();
+}
+
+bool _isGrintaEligibleDoc(Map<String, dynamic> data) {
+  final app = data['app']?.toString().trim().toLowerCase() ?? '';
+  if (app == FcmConfig.brandAserstein) return false;
+  if (_isAsersteinPackage(data['packageName']?.toString() ?? '')) {
+    return false;
+  }
+  if (app == FcmConfig.brandGrinta) return true;
+  if (app.isNotEmpty) return false;
+
+  final packageName = data['packageName']?.toString() ?? '';
+  if (_isGrintaPackage(packageName)) return true;
+
+  // Naked unbranded Android tokens on the shared Firebase project are too
+  // often Aserstein devices (wrong tray colors / opens Aserstein). Current
+  // Grinta Android builds always write `app: grinta` + packageName.
+  final platform = data['platform']?.toString().trim().toLowerCase() ?? '';
+  if (platform == 'android') return false;
+
+  // Legacy iOS / web / unknown-platform docs stay collectable.
+  return true;
+}
+
 /// Collects Grinta FCM registration tokens from `fcmTokens` documents.
 ///
-/// Includes `app: grinta` and legacy docs with no `app`. Excludes
-/// `app: aserstein`. Unbranded iOS tokens are kept even when other devices
-/// already have branded documents — a branded-only query would drop them.
+/// Includes `app: grinta`, Grinta `packageName`, and safe legacy iOS/web docs.
+/// Excludes `app: aserstein`, Aserstein packages, and naked unbranded Android
+/// tokens (cross-app bleed on the shared Firebase project).
 List<String> collectGrintaFcmTokens(
   Iterable<({String id, Map<String, dynamic> data})> docs,
 ) {
   final tokens = <String>{};
   for (final doc in docs) {
-    final app = doc.data['app']?.toString().trim() ?? '';
-    if (app.isNotEmpty && app != FcmConfig.brandGrinta) continue;
+    if (!_isGrintaEligibleDoc(doc.data)) continue;
     final token = fcmTokenFromFirestoreDoc(id: doc.id, data: doc.data);
     if (token == null || !isSendableFcmRegistrationToken(token)) continue;
     tokens.add(token);

@@ -481,6 +481,19 @@ describe('filterTokensByRecipientPreferences', () => {
     assert.deepEqual(result.tokens.sort(), ['android-tok', 'ios-legacy-tok']);
   });
 
+  it('drops naked unbranded Android tokens that cause Aserstein bleed', async () => {
+    const db = fakeDb({
+      tokensByUser: {
+        u1: [
+          { id: 'android-legacy', data: { platform: 'android' } },
+          { id: 'grinta-tok', data: { app: 'grinta' } },
+        ],
+      },
+    });
+    const tokens = await loadUserFcmTokens(db, 'u1', BRAND_GRINTA, new Set());
+    assert.deepEqual(tokens, ['grinta-tok']);
+  });
+
   it('reads token from the document field and skips raw APNs tokens', async () => {
     const apns = 'b'.repeat(64);
     const db = fakeDb({

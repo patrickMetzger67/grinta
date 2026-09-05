@@ -851,9 +851,10 @@ class NotificationFCMService {
 
   /// Reads Grinta FCM device tokens from `users/{uid}/fcmTokens`.
   ///
-  /// Includes `app: [FcmConfig.brandGrinta]` and legacy documents without
-  /// `app`. Unbranded iOS tokens are kept even when other devices already
-  /// have branded documents. See [collectGrintaFcmTokens].
+  /// Includes `app: [FcmConfig.brandGrinta]`, Grinta `packageName`, and safe
+  /// legacy iOS/web documents without `app`. Naked unbranded Android tokens are
+  /// skipped (Aserstein bleed on the shared Firebase project). See
+  /// [collectGrintaFcmTokens].
   static Future<List<String>> fetchFcmTokensForUser(String uid) async {
     final trimmedUid = uid.trim();
     if (trimmedUid.isEmpty) return const [];
@@ -898,8 +899,8 @@ class NotificationFCMService {
 
   /// Persists the device FCM token under `users/{uid}/fcmTokens/{token}`.
   ///
-  /// Sets `app: [FcmConfig.brandGrinta]` so Grinta sends do not target Aserstein
-  /// tokens in the shared Firebase project.
+  /// Sets `app: [FcmConfig.brandGrinta]` and `packageName` so Grinta sends do
+  /// not target Aserstein tokens in the shared Firebase project.
   static Future<bool> saveTokenToFirestore(String uid) async {
     if (uid.isEmpty) return false;
     if (kIsWeb && !fcmWebVapidKeyConfigured) return false;
@@ -925,6 +926,7 @@ class NotificationFCMService {
           'app': FcmConfig.brandGrinta,
           'token': token,
           'platform': platform,
+          'packageName': FcmConfig.grintaPackageName,
         });
       } else {
         var deviceName = 'unknown';
@@ -942,6 +944,7 @@ class NotificationFCMService {
           'platform': platform,
           'device': deviceName,
           'app': FcmConfig.brandGrinta,
+          'packageName': FcmConfig.grintaPackageName,
         });
       }
 
