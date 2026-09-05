@@ -4262,5 +4262,45 @@
   },
   "adminAdsCurrentBadge": "En cours",
   "adminAdsExpiredBadge": "Terminée",
-  "adminAdsUpcomingBadge": "À venir"
+  "adminAdsUpcomingBadge": "À venir",
+  "predictionGameTitle": "Pronostics",
+  "predictionGameSettingsTitle": "Concours de pronostics",
+  "predictionGameEnableLabel": "Activer le concours de pronostics",
+  "predictionGameCompetitionLabel": "Compétition",
+  "predictionGameCompetitionHint": "Choisir une compétition",
+  "predictionGameNoEngagements": "Aucune compétition trouvée pour cette équipe.",
+  "predictionGameOpenCta": "Pronostiquer",
+  "predictionGameMatchdayTitle": "Journée {day}",
+  "@predictionGameMatchdayTitle": {
+    "placeholders": {
+      "day": {
+        "type": "String"
+      }
+    }
+  },
+  "predictionGameDeadline": "Pronostics ouverts jusqu'au {datetime}",
+  "@predictionGameDeadline": {
+    "placeholders": {
+      "datetime": {
+        "type": "String"
+      }
+    }
+  },
+  "predictionGameClosed": "Les pronostics sont clos pour cette journée.",
+  "predictionGameEmpty": "Aucun concours de pronostics pour le moment.",
+  "predictionGameEmptyHint": "Le concours de la prochaine journée sera créé automatiquement.",
+  "predictionGamePickHome": "1",
+  "predictionGamePickDraw": "N",
+  "predictionGamePickAway": "2",
+  "predictionGameSubmit": "Valider mes pronostics",
+  "predictionGameSubmitted": "Pronostics enregistrés.",
+  "predictionGameSubmitError": "Impossible d'enregistrer les pronostics.",
+  "predictionGameDeadlinePassed": "Le délai pour pronostiquer est dépassé.",
+  "predictionGameIncompletePicks": "Indique un pronostic pour chaque rencontre.",
+  "predictionGameLoadError": "Impossible de charger le concours.",
+  "predictionGameVs": "vs",
+  "predictionGameSelectCompetitionFirst": "Choisis une compétition pour activer le concours.",
+  "predictionGameSettingsSaved": "Paramètres de pronostics enregistrés.",
+  "predictionGameSettingsSaveError": "Impossible d'enregistrer les paramètres.",
+  "predictionGameAlreadySubmitted": "Tes pronostics ont été enregistrés."
 }

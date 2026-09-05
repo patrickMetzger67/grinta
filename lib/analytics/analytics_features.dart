@@ -13,6 +13,7 @@ abstract final class AnalyticsFeatures {
   static const openTeamDetail = 'open_team_detail';
   static const openTeamPlayers = 'open_team_players';
   static const openTeamParam = 'open_team_param';
+  static const openPredictionGame = 'open_prediction_game';
   static const openTrackerStats = 'open_tracker_stats';
   static const openPlayerAnalysis = 'open_player_analysis';
   static const openCoachWorkloadAnalysis = 'open_coach_workload_analysis';

@@ -64,6 +64,23 @@
         { "fieldPath": "ownerId", "order": "ASCENDING" },
         { "fieldPath": "withTracker", "order": "ASCENDING" }
       ]
+    },
+    {
+      "collectionGroup": "predGameDay",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "teamId", "order": "ASCENDING" },
+        { "fieldPath": "day", "order": "DESCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "predGameDay",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "teamId", "order": "ASCENDING" },
+        { "fieldPath": "engagementId", "order": "ASCENDING" },
+        { "fieldPath": "day", "order": "DESCENDING" }
+      ]
     }
   ],
   "fieldOverrides": []

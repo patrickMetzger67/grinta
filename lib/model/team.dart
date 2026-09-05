@@ -39,6 +39,8 @@ String keyCompetitionUrlRanking = "urlRanking";
 String keyCompetitionCompetitionID = "competitionID";
 String keyCompetitionPoule = "poule";
 String keyCompetitionIsDefault = "isDefault";
+String keyTeamWithPredictionGame = 'withPredictionGame';
+String keyTeamPredictionGameEngagementd = 'predictionGameEngagementd';
 
 
 class Competition {
@@ -131,6 +133,8 @@ class Team {
   String? streamChannelType;
   String? streamChannelId;
   DateTime? streamChannelSyncedAt;
+  bool? withPredictionGame = false;
+  String? predictionGameEngagementd = '';
 
   DocumentReference? ref;
 
@@ -160,6 +164,8 @@ class Team {
         this.streamChannelType,
         this.streamChannelId,
         this.streamChannelSyncedAt,
+        this.withPredictionGame,
+        this.predictionGameEngagementd,
       });
 
   Team.fromDocumentSnapshot(DocumentSnapshot snapshot) {
@@ -262,6 +268,9 @@ class Team {
     streamChannelId = map[keyTeamStreamChannelId]?.toString();
     streamChannelSyncedAt =
         _parseStreamChannelSyncedAt(map[keyTeamStreamChannelSyncedAt]);
+    withPredictionGame = map[keyTeamWithPredictionGame] == true;
+    predictionGameEngagementd =
+        map[keyTeamPredictionGameEngagementd]?.toString() ?? '';
 
   }
 
@@ -326,6 +335,8 @@ class Team {
         'users=$users ' +
         'managers=${managers.toString()} ' +
         'withTracker=$withTracker  ' +
+        'withPredictionGame=$withPredictionGame ' +
+        'predictionGameEngagementd=$predictionGameEngagementd ' +
         'isGrinta=$isGrinta ' +
         'owners=${owners.toString()} ' +
         'uid=$uid';
@@ -380,6 +391,8 @@ class Team {
       keyTeamGrintaPlayerMemberIds: memberIds,
       keyTeamUsers:users,
       'withTracker':withTracker,
+      keyTeamWithPredictionGame: withPredictionGame ?? false,
+      keyTeamPredictionGameEngagementd: predictionGameEngagementd ?? '',
       keyTeamIsGrinta:isGrinta,
       'owners':owners,
       keyTeamUid: uid,
