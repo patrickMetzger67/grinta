@@ -708,8 +708,10 @@ class _MatchDetailTabShell extends StatefulWidget {
   State<_MatchDetailTabShell> createState() => _MatchDetailTabShellState();
 }
 
+/// Hosts two TabControllers briefly when Compo / Live / Stats streams change
+/// the tab count (`didUpdateWidget` disposes then recreates).
 class _MatchDetailTabShellState extends State<_MatchDetailTabShell>
-    with SingleTickerProviderStateMixin {
+    with TickerProviderStateMixin {
   late TabController _tabController;
   int _lastLoggedIndex = -1;
 
