@@ -44,8 +44,6 @@ BoxDecoration _outerDecoration(WidgetTester tester, int index) {
 }
 
 void main() {
-  const colors = AppColors.light;
-
   testWidgets('renders 5 slots with win, draw, loss, empties and highlight',
       (tester) async {
     await tester.pumpWidget(
@@ -70,17 +68,16 @@ void main() {
     expect(find.byKey(LastResultsFormRow.highlightKey(2)), findsOneWidget);
     expect(find.byKey(LastResultsFormRow.highlightKey(0)), findsNothing);
 
-    expect(_innerDecoration(tester, 0).color, colors.success);
-    expect(_innerDecoration(tester, 1).color, colors.success);
-    expect(_innerDecoration(tester, 2).color, colors.success);
+    expect(_innerDecoration(tester, 0).color, lastResultsCircleColor);
+    expect(_innerDecoration(tester, 1).color, lastResultsCircleColor);
+    expect(_innerDecoration(tester, 2).color, lastResultsCircleColor);
     expect(_innerDecoration(tester, 3).color, isNull);
     expect(_innerDecoration(tester, 4).color, isNull);
-    expect(_innerDecoration(tester, 3).border, isNotNull);
-    expect(_outerDecoration(tester, 2).border?.top.color, colors.success);
+    expect(_innerDecoration(tester, 3).border?.top.color, lastResultsCircleColor);
+    expect(_outerDecoration(tester, 2).border?.top.color, lastResultsCircleColor);
   });
 
-  testWidgets('draw is grey with a dash, loss is red with a ring',
-      (tester) async {
+  testWidgets('draw, loss and empty slots are black circles', (tester) async {
     await tester.pumpWidget(
       _wrap(
         const LastResultsFormRow(
@@ -96,25 +93,27 @@ void main() {
       ),
     );
 
-    expect(_innerDecoration(tester, 0).color, colors.textSecondary);
-    expect(_innerDecoration(tester, 1).color, colors.textSecondary);
-    expect(
-      _innerDecoration(tester, 2).color,
-      lastResultsSlotFillColor(colors, MatchOutcome.loss),
-    );
+    expect(_innerDecoration(tester, 0).color, lastResultsCircleColor);
+    expect(_innerDecoration(tester, 1).color, lastResultsCircleColor);
+    expect(_innerDecoration(tester, 2).color, lastResultsCircleColor);
     expect(_innerDecoration(tester, 3).color, isNull);
+    expect(_innerDecoration(tester, 3).border?.top.color, lastResultsCircleColor);
     expect(find.byKey(LastResultsFormRow.highlightKey(2)), findsOneWidget);
     expect(
       _outerDecoration(tester, 2).border?.top.color,
-      lastResultsSlotFillColor(colors, MatchOutcome.loss),
+      lastResultsCircleColor,
     );
   });
 
-  testWidgets('hides when clubId or competitionId is missing', (tester) async {
+  testWidgets('hides when clubs[] is missing even if affiliation is set',
+      (tester) async {
     await tester.pumpWidget(
       _wrap(
         LastResultsFormGuide(
-          match: Match(affiliationTeam1: '500554'),
+          match: Match(
+            affiliationTeam1: '500554',
+            competitionID: '450652',
+          ),
           side: MatchSide.team1,
           resultsStream: Stream<LastResults?>.value(null),
         ),
@@ -138,6 +137,7 @@ void main() {
             id: '56174440',
             affiliationTeam1: '500554',
             competitionID: '450652',
+            clubs: ['club-a', 'club-b'],
           ),
           side: MatchSide.team1,
           resultsStream: controller.stream,
@@ -159,8 +159,8 @@ void main() {
       _wrap(
         LastResultsFormGuide(
           match: Match(
-            affiliationTeam1: '500554',
             competitionID: '450652',
+            clubs: ['club-a', 'club-b'],
           ),
           side: MatchSide.team1,
           resultsStream: Stream<LastResults?>.value(null),
@@ -181,11 +181,12 @@ void main() {
             id: 'm2',
             affiliationTeam1: '500554',
             competitionID: '450652',
+            clubs: ['club-a', 'club-b'],
           ),
           side: MatchSide.team1,
           resultsStream: Stream<LastResults?>.value(
             const LastResults(
-              clubId: '500554',
+              clubId: 'club-a',
               competitionId: '450652',
               results: <LastResultEntry>[
                 LastResultEntry(outcome: MatchOutcome.draw, matchId: 'm1'),
@@ -200,12 +201,9 @@ void main() {
     await tester.pump();
 
     expect(find.byKey(LastResultsFormRow.guideKey), findsOneWidget);
-    expect(_innerDecoration(tester, 0).color, colors.textSecondary);
-    expect(
-      _innerDecoration(tester, 1).color,
-      lastResultsSlotFillColor(colors, MatchOutcome.loss),
-    );
-    expect(_innerDecoration(tester, 2).color, colors.success);
+    expect(_innerDecoration(tester, 0).color, lastResultsCircleColor);
+    expect(_innerDecoration(tester, 1).color, lastResultsCircleColor);
+    expect(_innerDecoration(tester, 2).color, lastResultsCircleColor);
     expect(_innerDecoration(tester, 3).color, isNull);
     expect(_innerDecoration(tester, 4).color, isNull);
     expect(find.byKey(LastResultsFormRow.highlightKey(1)), findsOneWidget);
@@ -220,11 +218,12 @@ void main() {
             id: 'upcoming',
             affiliationTeam1: '500554',
             competitionID: '450652',
+            clubs: ['club-a', 'club-b'],
           ),
           side: MatchSide.team1,
           resultsStream: Stream<LastResults?>.value(
             const LastResults(
-              clubId: '500554',
+              clubId: 'club-a',
               competitionId: '450652',
               results: <LastResultEntry>[
                 LastResultEntry(outcome: MatchOutcome.win, matchId: 'm1'),
@@ -239,7 +238,7 @@ void main() {
     await tester.pump();
 
     expect(find.byKey(LastResultsFormRow.highlightKey(2)), findsOneWidget);
-    expect(_innerDecoration(tester, 0).color, colors.success);
+    expect(_innerDecoration(tester, 0).color, lastResultsCircleColor);
     expect(_innerDecoration(tester, 4).color, isNull);
   });
 }

@@ -58,7 +58,7 @@ void main() {
   });
 
   group('clubIdForLastResults', () {
-    test('prefers affiliation over clubs[]', () {
+    test('uses match.clubs[0/1] and ignores affiliation', () {
       final match = Match(
         affiliationTeam1: '500554',
         affiliationTeam2: '500123',
@@ -66,43 +66,45 @@ void main() {
         clubs: ['club-a', 'club-b'],
       );
 
-      expect(clubIdForLastResults(match, MatchSide.team1), '500554');
-      expect(clubIdForLastResults(match, MatchSide.team2), '500123');
-    });
-
-    test('falls back to clubs[] when affiliation is missing', () {
-      final match = Match(
-        competitionID: '450652',
-        clubs: ['club-a', 'club-b'],
-      );
-
       expect(clubIdForLastResults(match, MatchSide.team1), 'club-a');
       expect(clubIdForLastResults(match, MatchSide.team2), 'club-b');
+    });
+
+    test('returns null when clubs[i] is missing, even with affiliation', () {
+      final match = Match(
+        affiliationTeam1: '500554',
+        affiliationTeam2: '500123',
+        competitionID: '450652',
+      );
+
+      expect(clubIdForLastResults(match, MatchSide.team1), isNull);
+      expect(clubIdForLastResults(match, MatchSide.team2), isNull);
     });
   });
 
   group('lastResultsKeyForMatchSide', () {
-    test('builds clubId_competitionId', () {
+    test('builds clubId_competitionId from clubs[]', () {
       final match = Match(
         affiliationTeam1: '500554',
         competitionID: '450652',
+        clubs: ['club-a', 'club-b'],
       );
 
       final key = lastResultsKeyForMatchSide(match, MatchSide.team1);
-      expect(key?.documentId, '500554_450652');
+      expect(key?.documentId, 'club-a_450652');
     });
 
     test('returns null when club or competition is missing', () {
       expect(
         lastResultsKeyForMatchSide(
-          Match(affiliationTeam1: '500554'),
+          Match(affiliationTeam1: '500554', clubs: ['club-a']),
           MatchSide.team1,
         ),
         isNull,
       );
       expect(
         lastResultsKeyForMatchSide(
-          Match(competitionID: '450652'),
+          Match(competitionID: '450652', affiliationTeam1: '500554'),
           MatchSide.team1,
         ),
         isNull,

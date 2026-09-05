@@ -7,12 +7,11 @@ import 'package:grinta/util/team_stats_opponent_helper.dart';
 
 const int lastResultsSlotCount = 5;
 
-/// Club id used as `lastResults` key for [side] (affiliation, then clubs[]).
+/// Club id used as `lastResults` key for [side]: `match.clubs[0/1]` only.
+///
+/// Do not use `affiliationTeam1` / `affiliationTeam2` — those FFF ids do not
+/// match `lastResults/{clubId}_{competitionId}` written from `clubs[]`.
 String? clubIdForLastResults(Match match, MatchSide side) {
-  final affiliation = affiliationTeamForSide(match, side);
-  if (affiliation.isNotEmpty) {
-    return affiliation;
-  }
   return clubIdForMatchSide(match: match, side: side);
 }
 
