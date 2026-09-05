@@ -8,6 +8,8 @@ const {
   isAsersteinNotificationBrand,
   resolveRecipientUserIds,
   persistQuietDeferral,
+  GRINTA_NOTIFICATION_COLLECTION,
+  LEGACY_NOTIFICATION_COLLECTION,
 } = require('./notify_on_create');
 const {
   resolveNotificationPushBrand,
@@ -27,6 +29,17 @@ describe('resolveNotificationPushBrand', () => {
     assert.equal(
       resolveNotificationPushBrand({ brand: 'aserstein' }),
       BRAND_ASERSTEIN,
+    );
+  });
+});
+
+describe('grinta notification isolation', () => {
+  it('uses a dedicated collection so AS Erstein cannot listen in', () => {
+    assert.equal(GRINTA_NOTIFICATION_COLLECTION, 'grinta_notification');
+    assert.equal(LEGACY_NOTIFICATION_COLLECTION, 'notification');
+    assert.notEqual(
+      GRINTA_NOTIFICATION_COLLECTION,
+      LEGACY_NOTIFICATION_COLLECTION,
     );
   });
 });

@@ -18,18 +18,20 @@ const REGION = 'europe-west1';
 const MEMBER_COLLECTION = 'member';
 const DONE_DISPATCH_STATUSES = new Set(['sent', 'skipped', 'deferred']);
 
+const GRINTA_NOTIFICATION_COLLECTION = 'grinta_notification';
+const LEGACY_NOTIFICATION_COLLECTION = 'notification';
+
 /**
- * In-app docs (`notification/{id}`) are the source of truth. Creating one
- * must also deliver an OS/web push — the Flutter client can fail to read
- * other users' tokens or skip the callable after hours calmes.
+ * In-app docs are the source of truth. Grinta writes `grinta_notification`
+ * so the shared `notification` collection (AS Erstein) does not fire.
  *
  * Deploy:
- *   firebase deploy --only functions:sendPushOnNotificationCreated
+ *   firebase deploy --only functions:sendGrintaPushOnNotificationCreated,functions:sendPushOnNotificationCreated
  */
-function createSendPushOnNotificationCreated() {
+function createSendPushOnCollection(collectionName) {
   return onDocumentCreated(
     {
-      document: 'notification/{notificationId}',
+      document: `${collectionName}/{notificationId}`,
       region: REGION,
       timeoutSeconds: 60,
     },
@@ -42,6 +44,14 @@ function createSendPushOnNotificationCreated() {
       });
     },
   );
+}
+
+function createSendPushOnNotificationCreated() {
+  return createSendPushOnCollection(LEGACY_NOTIFICATION_COLLECTION);
+}
+
+function createSendGrintaPushOnNotificationCreated() {
+  return createSendPushOnCollection(GRINTA_NOTIFICATION_COLLECTION);
 }
 
 function isPushChannel(sendBy) {
@@ -409,6 +419,9 @@ async function processDeferredNotificationDoc(db, snap, now = new Date()) {
 
 module.exports = {
   createSendPushOnNotificationCreated,
+  createSendGrintaPushOnNotificationCreated,
+  GRINTA_NOTIFICATION_COLLECTION,
+  LEGACY_NOTIFICATION_COLLECTION,
   dispatchNotificationPush,
   processDeferredNotificationDoc,
   persistQuietDeferral,

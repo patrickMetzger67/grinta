@@ -78,6 +78,13 @@ abstract final class FcmConfig {
   /// Absolute Grinta PWA icons used by the push Cloud Function / web SW.
   static const String icon192Url = 'https://grinta.web.app/icons/Icon-192.png';
   static const String icon512Url = 'https://grinta.web.app/icons/Icon-512.png';
+
+  /// Isolated from the shared Aserstein `notification` collection.
+  static const String notificationCollection = 'grinta_notification';
+  static const String legacyNotificationCollection = 'notification';
+
+  static const String pushCallable = 'sendGrintaPushFCMNotification';
+  static const String legacyPushCallable = 'sendPushFCMNotification';
 }
 
 /// Default push brand for Grinta clients calling `sendPushFCMNotification`.

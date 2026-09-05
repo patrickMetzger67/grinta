@@ -8,12 +8,20 @@
   "client": [
     {
       "client_info": {
-        "mobilesdk_app_id": "1:626293600533:android:85812718c2da4a6ea8791c",
+        "mobilesdk_app_id": "1:626293600533:android:e2d12e06bd907a92a8791c",
         "android_client_info": {
-          "package_name": "com.tome4.asersteinv2"
+          "package_name": "io.grinta.app"
         }
       },
       "oauth_client": [
+        {
+          "client_id": "626293600533-aj3l6j74bq6moociqsb4vlb7mgk73i35.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "io.grinta.app",
+            "certificate_hash": "a5386a5a59d2fa9e01eb8c6013babc04362ba5b3"
+          }
+        },
         {
           "client_id": "626293600533-f0b98hpalojmvalqgjuam24jjbsa43o4.apps.googleusercontent.com",
           "client_type": 3
@@ -44,20 +52,12 @@
     },
     {
       "client_info": {
-        "mobilesdk_app_id": "1:626293600533:android:e2d12e06bd907a92a8791c",
+        "mobilesdk_app_id": "1:626293600533:android:85812718c2da4a6ea8791c",
         "android_client_info": {
-          "package_name": "io.grinta.app"
+          "package_name": "com.tome4.asersteinv2"
         }
       },
       "oauth_client": [
-        {
-          "client_id": "626293600533-aj3l6j74bq6moociqsb4vlb7mgk73i35.apps.googleusercontent.com",
-          "client_type": 1,
-          "android_info": {
-            "package_name": "io.grinta.app",
-            "certificate_hash": "a5386a5a59d2fa9e01eb8c6013babc04362ba5b3"
-          }
-        },
         {
           "client_id": "626293600533-f0b98hpalojmvalqgjuam24jjbsa43o4.apps.googleusercontent.com",
           "client_type": 3

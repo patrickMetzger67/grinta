@@ -50,6 +50,14 @@
       ]
     },
     {
+      "collectionGroup": "grinta_notification",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "pushDispatch.status", "order": "ASCENDING" },
+        { "fieldPath": "pushDispatch.sendAfter", "order": "ASCENDING" }
+      ]
+    },
+    {
       "collectionGroup": "training",
       "queryScope": "COLLECTION",
       "fields": [

@@ -252,18 +252,12 @@ class NotificationFCMService {
       return;
     }
     try {
-      final token = await _getFcmToken();
-      if (token == null || token.isEmpty) return;
-      await streamClient.addDevice(
-        token,
-        PushProvider.firebase,
-        pushProviderName: FcmConfig.brandGrinta,
-      );
-      // Same Stream user can also have the AS Erstein FCM token registered
-      // (shared Stream app). Remove it so chat does not land in that app.
+      // Do not addDevice on Stream Firebase. The shared Stream app already
+      // has AS Erstein devices; Stream would show those banners as AS Erstein.
+      // Chat lock-screen delivery uses sendGrintaPushFCMNotification instead.
       unawaited(_detachAsersteinStreamDevices(streamClient));
     } catch (e, st) {
-      debugPrint('NotificationFCMService: Stream addDevice failed: $e\n$st');
+      debugPrint('NotificationFCMService: Stream detach failed: $e\n$st');
     }
   }
 
@@ -1081,11 +1075,9 @@ class NotificationFCMService {
 
     try {
       final functions = FirebaseFunctions.instanceFor(region: 'europe-west1');
-      final result =
-          await functions.httpsCallable('sendPushFCMNotification').call({
+      final request = <String, dynamic>{
         'clubId': resolvedClubId,
         'brand': FcmConfig.brandGrinta,
-        // Explicit Grinta icons (CF also resolves from brand; belt-and-suspenders).
         'icon': FcmConfig.icon192Url,
         'image': FcmConfig.icon512Url,
         'title': title,
@@ -1094,7 +1086,18 @@ class NotificationFCMService {
         'type': type,
         'payload': payload,
         if (recipients.isNotEmpty) 'recipientUserIds': recipients,
-      });
+      };
+      HttpsCallableResult<dynamic> result;
+      try {
+        result = await functions
+            .httpsCallable(FcmConfig.pushCallable)
+            .call(request);
+      } on FirebaseFunctionsException catch (e) {
+        if (e.code != 'not-found' && e.code != 'unimplemented') rethrow;
+        result = await functions
+            .httpsCallable(FcmConfig.legacyPushCallable)
+            .call(request);
+      }
 
       debugPrint(
         'postNotification success: type=$type clubId=$resolvedClubId '

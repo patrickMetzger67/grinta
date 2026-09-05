@@ -56,7 +56,10 @@ const {
 const { createSendPasswordResetMail } = require('./password_reset');
 const { createSendPushFCMNotification } = require('./send_push_fcm');
 const { createDrainPendingPushNotifications } = require('./pending_push');
-const { createSendPushOnNotificationCreated } = require('./notify_on_create');
+const {
+  createSendPushOnNotificationCreated,
+  createSendGrintaPushOnNotificationCreated,
+} = require('./notify_on_create');
 const {
   normalizePromoCode,
   compactPromoCode,
@@ -943,11 +946,14 @@ exports.approveParentalConsent = createApproveParentalConsent();
  * `drainPendingPushNotifications`.
  *
  * Deploy:
- *   firebase deploy --only functions:sendPushFCMNotification,functions:drainPendingPushNotifications,functions:sendPushOnNotificationCreated
+ *   firebase deploy --only functions:sendPushFCMNotification,functions:sendGrintaPushFCMNotification,functions:drainPendingPushNotifications,functions:sendPushOnNotificationCreated,functions:sendGrintaPushOnNotificationCreated
  */
 exports.sendPushFCMNotification = createSendPushFCMNotification();
+exports.sendGrintaPushFCMNotification = createSendPushFCMNotification();
 exports.drainPendingPushNotifications = createDrainPendingPushNotifications();
 exports.sendPushOnNotificationCreated = createSendPushOnNotificationCreated();
+exports.sendGrintaPushOnNotificationCreated =
+  createSendGrintaPushOnNotificationCreated();
 
 /**
  * User-created Messagerie groups (Stream Chat, server-side).

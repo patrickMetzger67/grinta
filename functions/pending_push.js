@@ -15,6 +15,7 @@ const {
   buildCollapseId,
   isInvalidTokenError,
   BRAND_GRINTA,
+  BRAND_ASERSTEIN,
   PENDING_PUSH_COLLECTION,
   PENDING_PUSH_MAX_DEFER_MS,
 } = require('./send_push_fcm_helpers');
@@ -210,6 +211,14 @@ async function processPendingPushDoc(db, doc) {
   }
 
   const brand = resolveBrand(data.brand, data.clubId);
+  if (brand === BRAND_ASERSTEIN) {
+    await doc.ref.update({
+      status: 'cancelled',
+      cancelReason: 'aserstein_brand',
+      updatedAt: FieldValue.serverTimestamp(),
+    });
+    return 'cancelled';
+  }
   const storedTokens = normalizeTokenList(data.fcmTokens);
   const requested = new Set(storedTokens);
   const tokens = await loadUserFcmTokens(db, userId, brand, requested);
@@ -307,21 +316,31 @@ function createDrainPendingPushNotifications() {
         counts[outcome] = (counts[outcome] ?? 0) + 1;
       }
 
-      const { processDeferredNotificationDoc } = require('./notify_on_create');
-      const deferredSnap = await db
-        .collection('notification')
-        .where('pushDispatch.status', '==', 'deferred')
-        .where('pushDispatch.sendAfter', '<=', now)
-        .orderBy('pushDispatch.sendAfter', 'asc')
-        .limit(DRAIN_BATCH_SIZE)
-        .get();
-
-      for (const doc of deferredSnap.docs) {
-        const outcome = await processDeferredNotificationDoc(db, doc);
-        counts[outcome] = (counts[outcome] ?? 0) + 1;
+      const {
+        processDeferredNotificationDoc,
+        GRINTA_NOTIFICATION_COLLECTION,
+        LEGACY_NOTIFICATION_COLLECTION,
+      } = require('./notify_on_create');
+      let deferredEmpty = true;
+      for (const collectionName of [
+        GRINTA_NOTIFICATION_COLLECTION,
+        LEGACY_NOTIFICATION_COLLECTION,
+      ]) {
+        const deferredSnap = await db
+          .collection(collectionName)
+          .where('pushDispatch.status', '==', 'deferred')
+          .where('pushDispatch.sendAfter', '<=', now)
+          .orderBy('pushDispatch.sendAfter', 'asc')
+          .limit(DRAIN_BATCH_SIZE)
+          .get();
+        if (!deferredSnap.empty) deferredEmpty = false;
+        for (const doc of deferredSnap.docs) {
+          const outcome = await processDeferredNotificationDoc(db, doc);
+          counts[outcome] = (counts[outcome] ?? 0) + 1;
+        }
       }
 
-      if (pendingSnap.empty && deferredSnap.empty) {
+      if (pendingSnap.empty && deferredEmpty) {
         console.log('[drainPendingPush] nothing due');
         return;
       }

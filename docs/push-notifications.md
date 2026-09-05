@@ -2,12 +2,14 @@
 
 Grinta delivers phone/web pushes in two ways (`europe-west1`):
 
-1. **Firestore trigger** `sendPushOnNotificationCreated` — fires when a document
-   is created in `notification`. If the user can receive push now, FCM is sent
+1. **Firestore trigger** `sendGrintaPushOnNotificationCreated` — fires when a
+   document is created in `grinta_notification` (not the shared `notification`
+   collection used by AS Erstein). If the user can receive push now, FCM is sent
    immediately (with the Grinta logo). If not, the same document is kept with
    `pushDispatch.sendAfter`.
-2. **Callable** `sendPushFCMNotification` — fallback for chat / member-added
-   (no `notification` doc). Quiet recipients go to `pending_push`.
+2. **Callable** `sendGrintaPushFCMNotification` (fallback
+   `sendPushFCMNotification`) — chat / member-added. Quiet recipients go to
+   `pending_push`. Both callables always send brand `grinta`.
 
 ## User preferences
 
@@ -114,7 +116,7 @@ target only Aserstein tokens / `com.tome4.asersteinv2`.
 ## Deploy
 
 ```bash
-firebase deploy --only functions:sendPushFCMNotification,functions:drainPendingPushNotifications,functions:sendPushOnNotificationCreated,firestore:indexes
+firebase deploy --only functions:sendPushFCMNotification,functions:sendGrintaPushFCMNotification,functions:drainPendingPushNotifications,functions:sendPushOnNotificationCreated,functions:sendGrintaPushOnNotificationCreated,firestore:indexes
 ```
 
 Stream Chat registers the FCM token with `pushProviderName: "grinta"` so a

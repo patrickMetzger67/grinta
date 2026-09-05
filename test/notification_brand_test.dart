@@ -1,5 +1,7 @@
 import 'package:flutter_test/flutter_test.dart';
+import 'package:grinta/config/fcm_config.dart';
 import 'package:grinta/model/notification.dart';
+import 'package:grinta/services/notificationService.dart';
 
 void main() {
   test('Grinta notification writes always stamp brand=grinta', () {
@@ -27,5 +29,11 @@ void main() {
     );
 
     expect(notification.toMap()[keyNotifBrand], 'aserstein');
+  });
+
+  test('Grinta writes go to grinta_notification, not the shared collection', () {
+    expect(NotificationService.collectionName, 'grinta_notification');
+    expect(NotificationService.legacyCollectionName, 'notification');
+    expect(FcmConfig.pushCallable, 'sendGrintaPushFCMNotification');
   });
 }
