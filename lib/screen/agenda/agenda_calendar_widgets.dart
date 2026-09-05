@@ -74,14 +74,13 @@ class _GrintaStyleCalendarHeader extends StatelessWidget {
         return;
       }
 
-      if (isWeek) {
-        await onPreviousWeek();
-        return;
-      }
-
+      // List icon (3 bars): use the day callbacks (they now step ±7).
+      // Week icon: week callbacks (same ±7).
       if (isDay) {
         await onPreviousDay();
+        return;
       }
+      await onPreviousWeek();
     }
 
     Future<void> goToNextHeaderPeriod() async {
@@ -90,14 +89,11 @@ class _GrintaStyleCalendarHeader extends StatelessWidget {
         return;
       }
 
-      if (isWeek) {
-        await onNextWeek();
-        return;
-      }
-
       if (isDay) {
         await onNextDay();
+        return;
       }
+      await onNextWeek();
     }
 
     Widget headerArrow({
@@ -107,9 +103,10 @@ class _GrintaStyleCalendarHeader extends StatelessWidget {
     }) {
       return Tooltip(
         message: tooltip,
-        child: InkWell(
-          borderRadius: BorderRadius.circular(10),
-          // Fire-and-forget: a second tap must not wait on the previous nav.
+        child: GestureDetector(
+          behavior: HitTestBehavior.opaque,
+          // Own recognizer so the header swipe detector cannot swallow the tap
+          // (zero-velocity drag → neither swipe nor InkWell onTap = no-op).
           onTap: () {
             unawaited(onTap());
           },
@@ -141,19 +138,6 @@ class _GrintaStyleCalendarHeader extends StatelessWidget {
           onModeChanged(AgendaCalendarMode.week);
         }
       },
-      // Month uses PageView horizontal scroll. Day/week: swipe by full week.
-      onHorizontalDragEnd: isMonth
-          ? null
-          : (details) {
-              final velocity = details.primaryVelocity ?? 0;
-              if (velocity < -180) {
-                // Right → left: next period.
-                onNextWeek();
-              } else if (velocity > 180) {
-                // Left → right: previous period.
-                onPreviousWeek();
-              }
-            },
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 220),
         curve: Curves.easeOut,
@@ -176,11 +160,9 @@ class _GrintaStyleCalendarHeader extends StatelessWidget {
                       children: [
                         headerArrow(
                           label: '<',
-                          tooltip: isDay
-                              ? l10n.actionDayPrevious
-                              : isWeek
-                              ? l10n.actionWeekPreviousLong
-                              : l10n.actionMonthPrevious,
+                          tooltip: isMonth
+                              ? l10n.actionMonthPrevious
+                              : l10n.actionWeekPreviousLong,
                           onTap: goToPreviousHeaderPeriod,
                         ),
                         Expanded(
@@ -213,11 +195,9 @@ class _GrintaStyleCalendarHeader extends StatelessWidget {
                         ),
                         headerArrow(
                           label: '>',
-                          tooltip: isDay
-                              ? l10n.actionDayNext
-                              : isWeek
-                              ? l10n.actionWeekNextLong
-                              : l10n.actionMonthNext,
+                          tooltip: isMonth
+                              ? l10n.actionMonthNext
+                              : l10n.actionWeekNextLong,
                           onTap: goToNextHeaderPeriod,
                         ),
                       ],
@@ -280,9 +260,21 @@ class _GrintaStyleCalendarHeader extends StatelessWidget {
                 ),
                 const SizedBox(height: 8),
               ],
-              // Week↔month must jump height instantly. Animating size reveals the
-              // clipped month grid row-by-row (an "expanded week" flash).
-              AnimatedSize(
+              // Swipe lives on the strip only — not on the `<` `>` row —
+              // so a chevron tap cannot lose the gesture arena to a drag.
+              GestureDetector(
+                behavior: HitTestBehavior.opaque,
+                onHorizontalDragEnd: isMonth
+                    ? null
+                    : (details) {
+                        final velocity = details.primaryVelocity ?? 0;
+                        if (velocity < -180) {
+                          onNextWeek();
+                        } else if (velocity > 180) {
+                          onPreviousWeek();
+                        }
+                      },
+                child: AnimatedSize(
                 duration: (isMonth || isWeek)
                     ? Duration.zero
                     : const Duration(milliseconds: 220),
@@ -323,6 +315,7 @@ class _GrintaStyleCalendarHeader extends StatelessWidget {
                     },
                   ),
                 ),
+              ),
               ),
             ],
           ),

@@ -110,9 +110,75 @@ bool weekOverlapsMonth(DateTime weekStart, DateTime month) {
   return !weekEnd.isBefore(monthStart) && !start.isAfter(monthEnd);
 }
 
+/// Calendar-day shift that uses date fields, not [Duration] (DST-safe).
+DateTime addDaysKeepingDate(DateTime date, int days) {
+  final DateTime normalized = DateUtils.dateOnly(date);
+  return DateTime(normalized.year, normalized.month, normalized.day + days);
+}
+
 /// Advances [date] by full weeks, preserving the weekday.
 DateTime addWeeksKeepingWeekday(DateTime date, int weeks) {
-  return DateUtils.dateOnly(date).add(Duration(days: 7 * weeks));
+  return addDaysKeepingDate(date, 7 * weeks);
+}
+
+/// Monday of the week containing [date] (calendar fields, DST-safe).
+DateTime agendaWeekStart(DateTime date) {
+  final DateTime d = DateUtils.dateOnly(date);
+  return DateTime(d.year, d.month, d.day - (d.weekday - DateTime.monday));
+}
+
+/// Sunday of the week containing [date].
+DateTime agendaWeekEnd(DateTime date) => addDaysKeepingDate(agendaWeekStart(date), 6);
+
+/// Header `<` / `>` target when the LUN–DIM strip is visible.
+///
+/// Always a different calendar day than [focusedDate] (`direction` is ±1).
+DateTime agendaWeekStripChevronDate(DateTime focusedDate, int direction) {
+  return addWeeksKeepingWeekday(focusedDate, direction);
+}
+
+/// Period used by the agenda header chevrons (and matching swipes).
+enum AgendaHeaderPeriod {
+  /// No 7-day strip (unused by the current 3 icons).
+  day,
+  /// 7-day strip is visible — list/3-bar icon or week icon.
+  week,
+  month,
+}
+
+/// Maps the 3 header view icons to a chevron step.
+///
+/// The first icon (list / 3 horizontal bars) still paints a LUN–DIM week
+/// strip under the date — same strip as the week icon. Chevrons must move
+/// by a full week there, not by one day. Only the month grid steps by month.
+AgendaHeaderPeriod agendaChevronPeriodForView({
+  required bool listWithWeekStrip,
+  required bool weekView,
+  required bool monthView,
+}) {
+  if (monthView) return AgendaHeaderPeriod.month;
+  if (listWithWeekStrip || weekView) return AgendaHeaderPeriod.week;
+  return AgendaHeaderPeriod.day;
+}
+
+/// Focused date after one header chevron (or equivalent swipe).
+///
+/// * [AgendaHeaderPeriod.day] — ±1 calendar day (no week strip)
+/// * [AgendaHeaderPeriod.week] — ±7 days (same weekday), never ±1
+/// * [AgendaHeaderPeriod.month] — ±1 month, keeping day-of-month when possible
+DateTime agendaHeaderChevronDate({
+  required DateTime focusedDate,
+  required AgendaHeaderPeriod period,
+  required int direction,
+}) {
+  switch (period) {
+    case AgendaHeaderPeriod.day:
+      return addDaysKeepingDate(focusedDate, direction);
+    case AgendaHeaderPeriod.week:
+      return addWeeksKeepingWeekday(focusedDate, direction);
+    case AgendaHeaderPeriod.month:
+      return addMonthsKeepingDay(focusedDate, direction);
+  }
 }
 
 /// SwitchMap-style gate: only the latest [LatestWinsToken] stays current.
