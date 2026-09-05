@@ -141,25 +141,17 @@ class _GrintaStyleCalendarHeader extends StatelessWidget {
           onModeChanged(AgendaCalendarMode.week);
         }
       },
-      // Month uses PageView horizontal scroll. Week: ±7 days. Day: ±1 day.
+      // Month uses PageView horizontal scroll. Day/week swipe: full week.
       onHorizontalDragEnd: isMonth
           ? null
           : (details) {
               final velocity = details.primaryVelocity ?? 0;
               if (velocity < -180) {
                 // Right → left: next period.
-                if (isWeek) {
-                  onNextWeek();
-                } else {
-                  onNextDay();
-                }
+                onNextWeek();
               } else if (velocity > 180) {
                 // Left → right: previous period.
-                if (isWeek) {
-                  onPreviousWeek();
-                } else {
-                  onPreviousDay();
-                }
+                onPreviousWeek();
               }
             },
       child: AnimatedContainer(

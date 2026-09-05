@@ -904,7 +904,11 @@ class _AgendaScreenState extends State<AgendaScreen> {
     switch (_calendarMode) {
       case AgendaCalendarMode.day:
       case AgendaCalendarMode.week:
-        unawaited(_selectDate(_chevronFocusedDate(goNext ? 1 : -1)));
+        if (goNext) {
+          unawaited(_goToNextWeek());
+        } else {
+          unawaited(_goToPreviousWeek());
+        }
       case AgendaCalendarMode.month:
         if (goNext) {
           unawaited(_goToNextMonthFromHeader());
