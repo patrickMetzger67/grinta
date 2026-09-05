@@ -65,52 +65,67 @@ void main() {
   });
 
   group('agendaHeaderChevronDate', () {
-    test('week view chevron steps by 7 days, not 1', () {
-      final focused = DateTime(2026, 9, 2); // Wednesday
-      final next = agendaHeaderChevronDate(
-        focusedDate: focused,
-        period: AgendaHeaderPeriod.week,
-        direction: 1,
-      );
-      final previous = agendaHeaderChevronDate(
-        focusedDate: focused,
-        period: AgendaHeaderPeriod.week,
-        direction: -1,
-      );
+    test(
+      'list icon (3 bars) + week strip: chevron is ±7, not ±1',
+      () {
+        // Screenshot: first icon selected, title "2 septembre 2026",
+        // strip LUN.31 … MER.2 … DIM.6. That is AgendaCalendarMode.day.
+        final period = agendaChevronPeriodForView(
+          listWithWeekStrip: true,
+          weekView: false,
+          monthView: false,
+        );
+        expect(period, AgendaHeaderPeriod.week);
 
-      expect(next, DateTime(2026, 9, 9));
-      expect(previous, DateTime(2026, 8, 26));
-      expect(next.weekday, DateTime.wednesday);
-      expect(previous.weekday, DateTime.wednesday);
-      expect(next.difference(focused).inDays, 7);
-      expect(focused.difference(previous).inDays, 7);
-    });
+        final focused = DateTime(2026, 9, 2); // mercredi
+        expect(
+          agendaHeaderChevronDate(
+            focusedDate: focused,
+            period: period,
+            direction: 1,
+          ),
+          DateTime(2026, 9, 9),
+        );
+        expect(
+          agendaHeaderChevronDate(
+            focusedDate: focused,
+            period: period,
+            direction: -1,
+          ),
+          DateTime(2026, 8, 26),
+        );
+      },
+    );
 
-    test('day view chevron still steps by 1 day', () {
+    test('week-icon view chevron also steps by 7 days', () {
       final focused = DateTime(2026, 9, 2);
+      final period = agendaChevronPeriodForView(
+        listWithWeekStrip: false,
+        weekView: true,
+        monthView: false,
+      );
+      expect(period, AgendaHeaderPeriod.week);
       expect(
         agendaHeaderChevronDate(
           focusedDate: focused,
-          period: AgendaHeaderPeriod.day,
+          period: period,
           direction: 1,
         ),
-        DateTime(2026, 9, 3),
-      );
-      expect(
-        agendaHeaderChevronDate(
-          focusedDate: focused,
-          period: AgendaHeaderPeriod.day,
-          direction: -1,
-        ),
-        DateTime(2026, 9, 1),
+        DateTime(2026, 9, 9),
       );
     });
 
-    test('month view chevron keeps day-of-month when possible', () {
+    test('month grid chevron keeps day-of-month when possible', () {
+      final period = agendaChevronPeriodForView(
+        listWithWeekStrip: false,
+        weekView: false,
+        monthView: true,
+      );
+      expect(period, AgendaHeaderPeriod.month);
       expect(
         agendaHeaderChevronDate(
           focusedDate: DateTime(2026, 8, 15),
-          period: AgendaHeaderPeriod.month,
+          period: period,
           direction: 1,
         ),
         DateTime(2026, 9, 15),
@@ -118,10 +133,29 @@ void main() {
       expect(
         agendaHeaderChevronDate(
           focusedDate: DateTime(2026, 8, 31),
-          period: AgendaHeaderPeriod.month,
+          period: period,
           direction: 1,
         ),
         DateTime(2026, 9, 30),
+      );
+    });
+
+    test('day period without a week strip still steps by 1 day', () {
+      expect(
+        agendaChevronPeriodForView(
+          listWithWeekStrip: false,
+          weekView: false,
+          monthView: false,
+        ),
+        AgendaHeaderPeriod.day,
+      );
+      expect(
+        agendaHeaderChevronDate(
+          focusedDate: DateTime(2026, 9, 2),
+          period: AgendaHeaderPeriod.day,
+          direction: 1,
+        ),
+        DateTime(2026, 9, 3),
       );
     });
   });

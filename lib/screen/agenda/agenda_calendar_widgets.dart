@@ -74,14 +74,8 @@ class _GrintaStyleCalendarHeader extends StatelessWidget {
         return;
       }
 
-      if (isWeek) {
-        await onPreviousWeek();
-        return;
-      }
-
-      if (isDay) {
-        await onPreviousDay();
-      }
+      // List icon (3 bars) and week icon both show the 7-day strip.
+      await onPreviousWeek();
     }
 
     Future<void> goToNextHeaderPeriod() async {
@@ -90,14 +84,8 @@ class _GrintaStyleCalendarHeader extends StatelessWidget {
         return;
       }
 
-      if (isWeek) {
-        await onNextWeek();
-        return;
-      }
-
-      if (isDay) {
-        await onNextDay();
-      }
+      // List icon (3 bars) and week icon both show the 7-day strip.
+      await onNextWeek();
     }
 
     Widget headerArrow({
@@ -176,11 +164,9 @@ class _GrintaStyleCalendarHeader extends StatelessWidget {
                       children: [
                         headerArrow(
                           label: '<',
-                          tooltip: isDay
-                              ? l10n.actionDayPrevious
-                              : isWeek
-                              ? l10n.actionWeekPreviousLong
-                              : l10n.actionMonthPrevious,
+                          tooltip: isMonth
+                              ? l10n.actionMonthPrevious
+                              : l10n.actionWeekPreviousLong,
                           onTap: goToPreviousHeaderPeriod,
                         ),
                         Expanded(
@@ -213,11 +199,9 @@ class _GrintaStyleCalendarHeader extends StatelessWidget {
                         ),
                         headerArrow(
                           label: '>',
-                          tooltip: isDay
-                              ? l10n.actionDayNext
-                              : isWeek
-                              ? l10n.actionWeekNextLong
-                              : l10n.actionMonthNext,
+                          tooltip: isMonth
+                              ? l10n.actionMonthNext
+                              : l10n.actionWeekNextLong,
                           onTap: goToNextHeaderPeriod,
                         ),
                       ],

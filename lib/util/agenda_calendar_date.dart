@@ -123,14 +123,31 @@ DateTime addWeeksKeepingWeekday(DateTime date, int weeks) {
 
 /// Period used by the agenda header chevrons (and matching swipes).
 enum AgendaHeaderPeriod {
+  /// No 7-day strip (unused by the current 3 icons).
   day,
+  /// 7-day strip is visible — list/3-bar icon or week icon.
   week,
   month,
 }
 
+/// Maps the 3 header view icons to a chevron step.
+///
+/// The first icon (list / 3 horizontal bars) still paints a LUN–DIM week
+/// strip under the date — same strip as the week icon. Chevrons must move
+/// by a full week there, not by one day. Only the month grid steps by month.
+AgendaHeaderPeriod agendaChevronPeriodForView({
+  required bool listWithWeekStrip,
+  required bool weekView,
+  required bool monthView,
+}) {
+  if (monthView) return AgendaHeaderPeriod.month;
+  if (listWithWeekStrip || weekView) return AgendaHeaderPeriod.week;
+  return AgendaHeaderPeriod.day;
+}
+
 /// Focused date after one header chevron (or equivalent swipe).
 ///
-/// * [AgendaHeaderPeriod.day] — ±1 calendar day
+/// * [AgendaHeaderPeriod.day] — ±1 calendar day (no week strip)
 /// * [AgendaHeaderPeriod.week] — ±7 days (same weekday), never ±1
 /// * [AgendaHeaderPeriod.month] — ±1 month, keeping day-of-month when possible
 DateTime agendaHeaderChevronDate({

@@ -81,6 +81,7 @@ part 'agenda_list_widgets.dart';
 part 'agenda_status_views.dart';
 
 enum AgendaCalendarMode {
+  /// First header icon (3 bars). Still shows the LUN–DIM week strip.
   day,
   week,
   month,
@@ -880,14 +881,11 @@ class _AgendaScreenState extends State<AgendaScreen> {
   }
 
   AgendaHeaderPeriod get _headerPeriod {
-    switch (_calendarMode) {
-      case AgendaCalendarMode.day:
-        return AgendaHeaderPeriod.day;
-      case AgendaCalendarMode.week:
-        return AgendaHeaderPeriod.week;
-      case AgendaCalendarMode.month:
-        return AgendaHeaderPeriod.month;
-    }
+    return agendaChevronPeriodForView(
+      listWithWeekStrip: _calendarMode == AgendaCalendarMode.day,
+      weekView: _calendarMode == AgendaCalendarMode.week,
+      monthView: _calendarMode == AgendaCalendarMode.month,
+    );
   }
 
   DateTime _chevronFocusedDate(int direction) {
