@@ -15,6 +15,7 @@ class LastResultsFormRow extends StatelessWidget {
     required this.slots,
     this.highlightIndex,
     this.slotSize = 8,
+    this.emptyRingColor = lastResultsEmptyStrokeColor,
   });
 
   static const Key guideKey = Key('lastResultsFormGuide');
@@ -26,6 +27,7 @@ class LastResultsFormRow extends StatelessWidget {
   final List<MatchOutcome?> slots;
   final int? highlightIndex;
   final double slotSize;
+  final Color emptyRingColor;
 
   @override
   Widget build(BuildContext context) {
@@ -54,6 +56,7 @@ class LastResultsFormRow extends StatelessWidget {
                 highlighted: highlightIndex == i,
                 size: slotSize,
                 colors: colors,
+                emptyRingColor: emptyRingColor,
                 index: i,
                 semanticLabel: _slotSemanticLabel(
                   l10n: l10n,
@@ -76,6 +79,7 @@ class LastResultsFormGuide extends StatelessWidget {
     required this.match,
     required this.side,
     this.compact = true,
+    this.emptyRingColor = lastResultsEmptyStrokeColor,
     this.service,
     this.resultsStream,
   });
@@ -83,6 +87,9 @@ class LastResultsFormGuide extends StatelessWidget {
   final Match match;
   final MatchSide side;
   final bool compact;
+
+  /// Hollow-slot stroke. White on the dark match-detail header; black on coral agenda cards.
+  final Color emptyRingColor;
   final LastResultsService? service;
 
   /// Injected stream for tests. Production uses [LastResultsService].
@@ -115,6 +122,7 @@ class LastResultsFormGuide extends StatelessWidget {
           return LastResultsFormRow(
             slots: const <MatchOutcome?>[null, null, null, null, null],
             slotSize: _slotSize,
+            emptyRingColor: emptyRingColor,
           );
         }
 
@@ -138,6 +146,7 @@ class LastResultsFormGuide extends StatelessWidget {
           slots: slots,
           highlightIndex: highlightIndex,
           slotSize: _slotSize,
+          emptyRingColor: emptyRingColor,
         );
       },
     );
@@ -191,6 +200,7 @@ class _LastResultsSlot extends StatelessWidget {
     required this.highlighted,
     required this.size,
     required this.colors,
+    required this.emptyRingColor,
     required this.index,
     this.semanticLabel,
   });
@@ -199,6 +209,7 @@ class _LastResultsSlot extends StatelessWidget {
   final bool highlighted;
   final double size;
   final AppColors colors;
+  final Color emptyRingColor;
   final int index;
   final String? semanticLabel;
 
@@ -210,7 +221,7 @@ class _LastResultsSlot extends StatelessWidget {
     final fillColor = outcome == null
         ? null
         : lastResultsSlotFillColor(colors, outcome!);
-    final ringColor = fillColor ?? lastResultsEmptyStrokeColor;
+    final ringColor = fillColor ?? emptyRingColor;
 
     return Semantics(
       label: semanticLabel,
@@ -235,7 +246,7 @@ class _LastResultsSlot extends StatelessWidget {
                   color: fillColor,
                   border: outcome == null
                       ? Border.all(
-                          color: lastResultsEmptyStrokeColor,
+                          color: emptyRingColor,
                           width: size * 0.18,
                         )
                       : null,

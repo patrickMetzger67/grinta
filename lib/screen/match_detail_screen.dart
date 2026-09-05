@@ -1603,6 +1603,7 @@ class _TeamBlock extends StatelessWidget {
           match: match,
           side: side,
           compact: compact,
+          emptyRingColor: Colors.white,
         ),
         const SizedBox(height: 4),
         Text(

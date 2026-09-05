@@ -116,6 +116,28 @@ void main() {
     );
   });
 
+  testWidgets('empty rings use the outline color passed for dark headers',
+      (tester) async {
+    await tester.pumpWidget(
+      _wrap(
+        const LastResultsFormRow(
+          slots: <MatchOutcome?>[
+            MatchOutcome.win,
+            null,
+            null,
+            null,
+            null,
+          ],
+          emptyRingColor: Colors.white,
+        ),
+      ),
+    );
+
+    expect(_innerDecoration(tester, 0).color, colors.success);
+    expect(_innerDecoration(tester, 1).color, isNull);
+    expect(_innerDecoration(tester, 1).border?.top.color, Colors.white);
+  });
+
   testWidgets('hides when clubs[] is missing even if affiliation is set',
       (tester) async {
     await tester.pumpWidget(
