@@ -90,9 +90,28 @@ function docLooksLikeAserstein(data) {
 }
 
 /**
+ * Token is explicitly tagged as Grinta (never Aserstein, never unbranded).
+ * Dual-app users on the shared project must only receive these.
+ */
+function isExplicitGrintaTokenDoc(data) {
+  if (docLooksLikeAserstein(data)) return false;
+  const app = (data?.app ?? '').toString().trim().toLowerCase();
+  if (app === BRAND_GRINTA) return true;
+  return isGrintaPackage(data?.packageName);
+}
+
+function isExplicitAsersteinTokenDoc(data) {
+  if (isExplicitGrintaTokenDoc(data)) return false;
+  const app = (data?.app ?? '').toString().trim().toLowerCase();
+  if (app === BRAND_ASERSTEIN) return true;
+  return isAsersteinPackage(data?.packageName);
+}
+
+/**
  * Whether a token doc may receive a Grinta push on the shared Firebase project.
  * Never targets Aserstein-tagged / Aserstein-package tokens. Naked unbranded
- * Android docs are skipped (common cross-app bleed); legacy iOS/web stay OK.
+ * Android docs are skipped (common cross-app bleed); legacy iOS/web stay OK
+ * only when the user has no Aserstein token (see selectGrintaEligibleTokenDocs).
  */
 function isGrintaEligibleTokenDoc(data) {
   const app = (data?.app ?? '').toString().trim().toLowerCase();
@@ -106,6 +125,74 @@ function isGrintaEligibleTokenDoc(data) {
   const platform = (data?.platform ?? '').toString().trim().toLowerCase();
   if (platform === 'android') return false;
   return true;
+}
+
+/**
+ * Pick token docs for a Grinta send.
+ *
+ * Dual-app users (any Aserstein-tagged token on the same uid) must only
+ * receive explicitly Grinta-tagged devices. Unbranded iOS/web leftovers on
+ * those accounts are often the Aserstein app and would surface as
+ * "AS Erstein" in the system tray.
+ *
+ * Grinta-only accounts keep the legacy unbranded iOS/web exception.
+ */
+function selectGrintaEligibleTokenDocs(docs) {
+  const list = Array.isArray(docs) ? docs : [];
+  const entries = list.map((doc) => ({ doc, data: docData(doc) }));
+  const hasAserstein = entries.some((entry) =>
+    docLooksLikeAserstein(entry.data),
+  );
+  return entries
+    .filter((entry) =>
+      hasAserstein
+        ? isExplicitGrintaTokenDoc(entry.data)
+        : isGrintaEligibleTokenDoc(entry.data),
+    )
+    .map((entry) => entry.doc);
+}
+
+/**
+ * Pick token docs for an Aserstein send. Never includes explicit Grinta
+ * tokens. Dual-app / branded accounts only get explicit Aserstein devices.
+ */
+function selectAsersteinEligibleTokenDocs(docs) {
+  const list = Array.isArray(docs) ? docs : [];
+  const entries = list.map((doc) => ({ doc, data: docData(doc) }));
+  const hasExplicitGrinta = entries.some((entry) =>
+    isExplicitGrintaTokenDoc(entry.data),
+  );
+  const explicitAserstein = entries.filter((entry) =>
+    isExplicitAsersteinTokenDoc(entry.data),
+  );
+  if (hasExplicitGrinta || explicitAserstein.length > 0) {
+    return explicitAserstein.map((entry) => entry.doc);
+  }
+  return entries
+    .filter((entry) => {
+      const data = entry.data;
+      const app = (data?.app ?? '').toString().trim().toLowerCase();
+      if (app === BRAND_GRINTA || isGrintaPackage(data?.packageName)) {
+        return false;
+      }
+      return (
+        app === BRAND_ASERSTEIN ||
+        isAsersteinPackage(data?.packageName) ||
+        app.length === 0
+      );
+    })
+    .map((entry) => entry.doc);
+}
+
+/**
+ * Brand for a `notification/{id}` document. Missing brand is always Grinta
+ * (this CF is Grinta-owned). clubId must never imply Aserstein — Grinta
+ * events use real club ids (e.g. AS Erstein) and must stay in Grinta.
+ */
+function resolveNotificationPushBrand(data) {
+  const explicit = (data?.brand ?? '').toString().trim().toLowerCase();
+  if (explicit === BRAND_ASERSTEIN) return BRAND_ASERSTEIN;
+  return BRAND_GRINTA;
 }
 
 function normalizeUserIdList(raw) {
@@ -402,20 +489,28 @@ function buildMulticastMessage({
   collapseId,
 }) {
   const collapse = readNonEmptyString(collapseId);
+  const isAserstein = brand === BRAND_ASERSTEIN;
+  const fallbackTitle = isAserstein ? 'AS Erstein' : 'Grinta';
   const logo = readNonEmptyString(assets?.image) ?? GRINTA_ICON_512;
   const icon = readNonEmptyString(assets?.icon) ?? GRINTA_ICON_192;
+  const androidPackage = isAserstein
+    ? ASERSTEIN_ANDROID_PACKAGE
+    : GRINTA_PACKAGE_NAME;
   return {
     tokens,
     // No top-level imageUrl: FCM would copy it onto APNs as mutable-content,
     // which requires a Notification Service Extension Grinta does not ship.
     // Android / web keep the logo via their platform-specific blocks.
     notification: {
-      title: title || 'Grinta',
+      title: title || fallbackTitle,
       body: body || '',
     },
     data: dataPayload,
     android: {
       priority: 'high',
+      // FCM must not deliver a Grinta payload to the Aserstein Android app
+      // (or the reverse) even if a leftover token slipped through.
+      restrictedPackageName: androidPackage,
       ...(collapse ? { collapseKey: collapse } : {}),
       notification: {
         channelId: ANDROID_FCM_CHANNEL_ID,
@@ -433,17 +528,19 @@ function buildMulticastMessage({
     // apns-topic must be Grinta's bundle id — shared Firebase project also
     // hosts Aserstein; without it, iOS can attribute the push to the wrong app.
     // No mutable-content / fcmOptions.imageUrl: those need an NSE.
+    // Aserstein-branded sends omit apns-topic so FCM uses the token's app
+    // (never io.grinta.app).
     apns: {
       headers: {
         'apns-priority': '10',
         'apns-push-type': 'alert',
-        'apns-topic': IOS_APNS_TOPIC,
+        ...(isAserstein ? {} : { 'apns-topic': IOS_APNS_TOPIC }),
         ...(collapse ? { 'apns-collapse-id': collapse } : {}),
       },
       payload: {
         aps: {
           alert: {
-            title: title || 'Grinta',
+            title: title || fallbackTitle,
             body: body || '',
           },
           sound: 'default',
@@ -457,7 +554,7 @@ function buildMulticastMessage({
         Urgency: 'high',
       },
       notification: {
-        title: title || 'Grinta',
+        title: title || fallbackTitle,
         body: body || '',
         icon,
         image: logo,
@@ -524,21 +621,9 @@ async function loadUserFcmTokens(db, userId, brand, _requestedTokens) {
   let tokenDocs = allDocs;
 
   if (brand === BRAND_GRINTA) {
-    tokenDocs = allDocs.filter((doc) => isGrintaEligibleTokenDoc(docData(doc)));
+    tokenDocs = selectGrintaEligibleTokenDocs(allDocs);
   } else if (brand === BRAND_ASERSTEIN) {
-    // Never fan out Aserstein-branded pushes to Grinta tokens.
-    tokenDocs = allDocs.filter((doc) => {
-      const data = docData(doc);
-      const app = (data?.app ?? '').toString().trim().toLowerCase();
-      if (app === BRAND_GRINTA || isGrintaPackage(data?.packageName)) {
-        return false;
-      }
-      return (
-        app === BRAND_ASERSTEIN ||
-        isAsersteinPackage(data?.packageName) ||
-        app.length === 0
-      );
-    });
+    tokenDocs = selectAsersteinEligibleTokenDocs(allDocs);
   }
 
   const tokens = [];
@@ -568,9 +653,11 @@ async function filterTokensByRecipientPreferences({
   const requestedTokens = new Set(normalizeTokenList(fcmTokens));
 
   if (userIds.length === 0) {
-    // Legacy callers without recipientUserIds: keep previous behaviour.
+    // Legacy callers without recipientUserIds: cannot look up package/app
+    // tags. Refuse the raw list for Grinta — those tokens often include
+    // Aserstein devices on the shared project.
     return {
-      tokens: [...requestedTokens],
+      tokens: brand === BRAND_GRINTA ? [] : [...requestedTokens],
       skippedDisabled: 0,
       skippedQuiet: 0,
       allowedUserIds: [],
@@ -646,6 +733,11 @@ module.exports = {
   isSendableFcmRegistrationToken,
   tokenFromDoc,
   isGrintaEligibleTokenDoc,
+  isExplicitGrintaTokenDoc,
+  isExplicitAsersteinTokenDoc,
+  selectGrintaEligibleTokenDocs,
+  selectAsersteinEligibleTokenDocs,
+  resolveNotificationPushBrand,
   docLooksLikeAserstein,
   normalizeUserIdList,
   normalizeNotifType,

@@ -252,11 +252,33 @@ class NotificationFCMService {
       return;
     }
     try {
-      final token = await _getFcmToken();
-      if (token == null || token.isEmpty) return;
-      await streamClient.addDevice(token, PushProvider.firebase);
+      // Do not addDevice on Stream Firebase. The shared Stream app already
+      // has AS Erstein devices; Stream would show those banners as AS Erstein.
+      // Chat lock-screen delivery uses sendGrintaPushFCMNotification instead.
+      unawaited(_detachAsersteinStreamDevices(streamClient));
     } catch (e, st) {
-      debugPrint('NotificationFCMService: Stream addDevice failed: $e\n$st');
+      debugPrint('NotificationFCMService: Stream detach failed: $e\n$st');
+    }
+  }
+
+  static Future<void> _detachAsersteinStreamDevices(
+    StreamChatClient client,
+  ) async {
+    final uid = FirebaseAuth.instance.currentUser?.uid?.trim() ?? '';
+    if (uid.isEmpty) return;
+    try {
+      final aserstein = await fetchAsersteinFcmTokensForUser(uid);
+      if (aserstein.isEmpty) return;
+      final listed = await client.getDevices();
+      for (final device in listed.devices) {
+        if (aserstein.contains(device.id)) {
+          await client.removeDevice(device.id);
+        }
+      }
+    } catch (e, st) {
+      debugPrint(
+        'NotificationFCMService: Stream detach Aserstein failed: $e\n$st',
+      );
     }
   }
 
@@ -875,6 +897,28 @@ class NotificationFCMService {
     }
   }
 
+  /// Aserstein FCM tokens stored on the same uid (shared Firebase project).
+  static Future<List<String>> fetchAsersteinFcmTokensForUser(String uid) async {
+    final trimmedUid = uid.trim();
+    if (trimmedUid.isEmpty) return const [];
+
+    try {
+      final tokensRef = FirebaseFirestore.instance
+          .collection('users')
+          .doc(trimmedUid)
+          .collection('fcmTokens');
+      final allSnapshot = await tokensRef.get();
+      return collectAsersteinFcmTokens(
+        allSnapshot.docs.map((doc) => (id: doc.id, data: doc.data())),
+      );
+    } catch (e, st) {
+      debugPrint(
+        'fetchAsersteinFcmTokensForUser error uid=$trimmedUid: $e\n$st',
+      );
+      return const [];
+    }
+  }
+
   /// Reads FCM tokens for each uid in [uids] and returns a deduplicated list.
   static Future<List<String>> fetchFcmTokensForUsers(
     Iterable<String> uids,
@@ -1019,17 +1063,21 @@ class NotificationFCMService {
       return false;
     }
 
-    final resolvedClubId = (clubId ?? '').trim().isNotEmpty
-        ? clubId!.trim()
-        : '0';
+    // Always the Grinta platform club. A real FFF clubId (e.g. AS Erstein)
+    // must never reach the shared CF — older builds mapped that to the
+    // Aserstein brand and the banner opened AS Erstein only.
+    const resolvedClubId = '0';
+    if ((clubId ?? '').trim().isNotEmpty && clubId!.trim() != '0') {
+      debugPrint(
+        'postNotification: ignoring clubId=$clubId for FCM (forced 0)',
+      );
+    }
 
     try {
       final functions = FirebaseFunctions.instanceFor(region: 'europe-west1');
-      final result =
-          await functions.httpsCallable('sendPushFCMNotification').call({
+      final request = <String, dynamic>{
         'clubId': resolvedClubId,
         'brand': FcmConfig.brandGrinta,
-        // Explicit Grinta icons (CF also resolves from brand; belt-and-suspenders).
         'icon': FcmConfig.icon192Url,
         'image': FcmConfig.icon512Url,
         'title': title,
@@ -1038,7 +1086,18 @@ class NotificationFCMService {
         'type': type,
         'payload': payload,
         if (recipients.isNotEmpty) 'recipientUserIds': recipients,
-      });
+      };
+      HttpsCallableResult<dynamic> result;
+      try {
+        result = await functions
+            .httpsCallable(FcmConfig.pushCallable)
+            .call(request);
+      } on FirebaseFunctionsException catch (e) {
+        if (e.code != 'not-found' && e.code != 'unimplemented') rethrow;
+        result = await functions
+            .httpsCallable(FcmConfig.legacyPushCallable)
+            .call(request);
+      }
 
       debugPrint(
         'postNotification success: type=$type clubId=$resolvedClubId '

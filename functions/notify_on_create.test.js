@@ -5,9 +5,52 @@ const { Timestamp } = require('firebase-admin/firestore');
 
 const {
   isPushChannel,
+  isAsersteinNotificationBrand,
   resolveRecipientUserIds,
   persistQuietDeferral,
+  GRINTA_NOTIFICATION_COLLECTION,
+  LEGACY_NOTIFICATION_COLLECTION,
 } = require('./notify_on_create');
+const {
+  resolveNotificationPushBrand,
+  BRAND_GRINTA,
+  BRAND_ASERSTEIN,
+} = require('./send_push_fcm_helpers');
+
+describe('resolveNotificationPushBrand', () => {
+  it('never maps a Grinta event clubId to aserstein', () => {
+    assert.equal(
+      resolveNotificationPushBrand({ clubId: '500554', type: 'convocation' }),
+      BRAND_GRINTA,
+    );
+  });
+
+  it('honours an explicit aserstein brand on the notification doc', () => {
+    assert.equal(
+      resolveNotificationPushBrand({ brand: 'aserstein' }),
+      BRAND_ASERSTEIN,
+    );
+  });
+});
+
+describe('grinta notification isolation', () => {
+  it('uses a dedicated collection so AS Erstein cannot listen in', () => {
+    assert.equal(GRINTA_NOTIFICATION_COLLECTION, 'grinta_notification');
+    assert.equal(LEGACY_NOTIFICATION_COLLECTION, 'notification');
+    assert.notEqual(
+      GRINTA_NOTIFICATION_COLLECTION,
+      LEGACY_NOTIFICATION_COLLECTION,
+    );
+  });
+});
+
+describe('isAsersteinNotificationBrand', () => {
+  it('skips only an explicit aserstein brand', () => {
+    assert.equal(isAsersteinNotificationBrand({ clubId: '500554' }), false);
+    assert.equal(isAsersteinNotificationBrand({ brand: 'grinta' }), false);
+    assert.equal(isAsersteinNotificationBrand({ brand: 'aserstein' }), true);
+  });
+});
 
 describe('isPushChannel', () => {
   it('treats missing and SendBy.notification as push', () => {

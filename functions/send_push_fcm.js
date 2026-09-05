@@ -44,15 +44,13 @@ function createSendPushFCMNotification() {
       );
     }
 
-    const clubId = readNonEmptyString(data.clubId);
-    if (!clubId) {
-      throw new HttpsError('invalid-argument', 'clubId requis');
-    }
-
+    const clubId = readNonEmptyString(data.clubId) || '0';
     const title = readNonEmptyString(data.title) ?? '';
     const body = readNonEmptyString(data.body) ?? '';
     const type = readNonEmptyString(data.type) ?? '';
-    const brand = resolveBrand(data.brand, clubId);
+    // This callable is Grinta-owned on the shared project. Never honour an
+    // incoming aserstein brand — that is what made banners open AS Erstein.
+    const brand = BRAND_GRINTA;
     const assets = resolveBrandAssets(brand, {
       icon: data.icon,
       image: data.image,

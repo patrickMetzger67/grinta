@@ -132,6 +132,8 @@ bool shouldDisplayRemoteFcm({
   required Map<String, dynamic> data,
   String? activeChatChannelCid,
 }) {
+  final brand = data['brand']?.toString().trim().toLowerCase() ?? '';
+  if (brand == 'aserstein') return false;
   if (!isChatFcmData(data)) return true;
   final cid = firstNonEmptyText([
     data['cid']?.toString(),

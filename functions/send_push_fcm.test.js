@@ -19,8 +19,14 @@ const {
   loadUserFcmTokens,
   isLikelyApnsDeviceToken,
   tokenFromDoc,
+  isExplicitGrintaTokenDoc,
+  selectGrintaEligibleTokenDocs,
+  selectAsersteinEligibleTokenDocs,
+  resolveNotificationPushBrand,
   ANDROID_FCM_CHANNEL_ID,
   IOS_APNS_TOPIC,
+  GRINTA_PACKAGE_NAME,
+  ASERSTEIN_ANDROID_PACKAGE,
   BRAND_GRINTA,
   BRAND_ASERSTEIN,
   GRINTA_ICON_192,
@@ -230,6 +236,7 @@ describe('buildMulticastMessage', () => {
     assert.equal(message.android.priority, 'high');
     assert.equal(message.android.notification.channelId, ANDROID_FCM_CHANNEL_ID);
     assert.equal(message.android.notification.icon, 'ic_notification');
+    assert.equal(message.android.restrictedPackageName, GRINTA_PACKAGE_NAME);
     assert.equal(message.android.notification.imageUrl, GRINTA_ICON_512);
     assert.equal(message.android.notification.color, '#F95C1B');
     assert.equal(message.notification.imageUrl, undefined);
@@ -253,6 +260,7 @@ describe('buildMulticastMessage', () => {
       assert.equal(message.apns.headers['apns-priority'], '10');
       assert.equal(message.apns.headers['apns-push-type'], 'alert');
       assert.equal(message.apns.headers['apns-topic'], IOS_APNS_TOPIC);
+      assert.equal(message.android.restrictedPackageName, GRINTA_PACKAGE_NAME);
       assert.equal(message.apns.payload.aps.alert.title, 'Titre');
       assert.equal(message.apns.payload.aps.alert.body, 'Corps');
       assert.equal(message.apns.payload.aps.sound, 'default');
@@ -461,7 +469,7 @@ describe('filterTokensByRecipientPreferences', () => {
     assert.deepEqual(result.tokens.sort(), ['tok-a', 'tok-b']);
   });
 
-  it('keeps an unbranded iOS token even when another device is branded', async () => {
+  it('on dual-app accounts keeps only explicit Grinta tokens', async () => {
     const db = fakeDb({
       tokensByUser: {
         u1: [
@@ -478,7 +486,52 @@ describe('filterTokensByRecipientPreferences', () => {
       type: 'chat',
       now: new Date('2026-08-03T10:00:00Z'),
     });
+    assert.deepEqual(result.tokens, ['android-tok']);
+  });
+
+  it('keeps unbranded iOS on Grinta-only accounts', async () => {
+    const db = fakeDb({
+      tokensByUser: {
+        u1: [
+          { id: 'android-tok', data: { app: 'grinta', platform: 'android' } },
+          { id: 'ios-legacy-tok', data: { platform: 'ios' } },
+        ],
+      },
+    });
+    const result = await filterTokensByRecipientPreferences({
+      db,
+      recipientUserIds: ['u1'],
+      fcmTokens: [],
+      type: 'chat',
+      now: new Date('2026-08-03T10:00:00Z'),
+    });
     assert.deepEqual(result.tokens.sort(), ['android-tok', 'ios-legacy-tok']);
+  });
+
+  it('does not send Grinta tokens when brand is aserstein on a dual-app user', async () => {
+    const db = fakeDb({
+      tokensByUser: {
+        u1: [
+          { id: 'grinta-tok', data: { app: 'grinta', packageName: 'io.grinta.app' } },
+          { id: 'aser-tok', data: { app: 'aserstein', packageName: 'com.tome4.asersteinv2' } },
+          { id: 'ios-legacy-tok', data: { platform: 'ios' } },
+        ],
+      },
+    });
+    const tokens = await loadUserFcmTokens(db, 'u1', BRAND_ASERSTEIN, new Set());
+    assert.deepEqual(tokens, ['aser-tok']);
+  });
+
+  it('refuses a raw token list without recipientUserIds for Grinta brand', async () => {
+    const result = await filterTokensByRecipientPreferences({
+      db: fakeDb({}),
+      recipientUserIds: [],
+      fcmTokens: ['maybe-aserstein-tok'],
+      brand: BRAND_GRINTA,
+      type: 'convocation',
+      now: new Date('2026-08-03T10:00:00Z'),
+    });
+    assert.deepEqual(result.tokens, []);
   });
 
   it('drops naked unbranded Android tokens that cause Aserstein bleed', async () => {
@@ -506,5 +559,66 @@ describe('filterTokensByRecipientPreferences', () => {
     });
     const tokens = await loadUserFcmTokens(db, 'u1', BRAND_GRINTA, new Set());
     assert.deepEqual(tokens, ['ios-fcm-tok']);
+  });
+});
+
+describe('resolveNotificationPushBrand', () => {
+  it('treats missing brand as Grinta even for an Erstein clubId', () => {
+    assert.equal(resolveNotificationPushBrand({}), BRAND_GRINTA);
+    assert.equal(resolveNotificationPushBrand({ clubId: '500554' }), BRAND_GRINTA);
+    assert.equal(resolveNotificationPushBrand({ brand: 'grinta' }), BRAND_GRINTA);
+  });
+
+  it('keeps an explicit aserstein brand so Aserstein-only sends still work', () => {
+    assert.equal(
+      resolveNotificationPushBrand({ brand: 'aserstein', clubId: '0' }),
+      BRAND_ASERSTEIN,
+    );
+  });
+});
+
+describe('selectGrintaEligibleTokenDocs / selectAsersteinEligibleTokenDocs', () => {
+  it('drops unbranded leftovers when the uid also has an Aserstein token', () => {
+    const docs = [
+      { id: 'g', data: () => ({ app: 'grinta', packageName: 'io.grinta.app' }) },
+      { id: 'a', data: () => ({ app: 'aserstein' }) },
+      { id: 'legacy-ios', data: () => ({ platform: 'ios' }) },
+    ];
+    assert.deepEqual(
+      selectGrintaEligibleTokenDocs(docs).map((doc) => doc.id),
+      ['g'],
+    );
+    assert.deepEqual(
+      selectAsersteinEligibleTokenDocs(docs).map((doc) => doc.id),
+      ['a'],
+    );
+    assert.equal(isExplicitGrintaTokenDoc({ app: 'grinta' }), true);
+    assert.equal(isExplicitGrintaTokenDoc({ platform: 'ios' }), false);
+  });
+
+  it('sends nothing rather than only AS Erstein when the Grinta token is missing', () => {
+    const docs = [
+      { id: 'a', data: () => ({ app: 'aserstein' }) },
+      { id: 'legacy-ios', data: () => ({ platform: 'ios' }) },
+    ];
+    assert.deepEqual(selectGrintaEligibleTokenDocs(docs).map((doc) => doc.id), []);
+  });
+});
+
+describe('buildMulticastMessage aserstein isolation', () => {
+  it('restricts Aserstein Android package and omits the Grinta APNs topic', () => {
+    const message = buildMulticastMessage({
+      tokens: ['tok'],
+      title: 'Titre',
+      body: 'Corps',
+      brand: BRAND_ASERSTEIN,
+      assets: { icon: 'https://aserstein-2453e.web.app/favicon.png' },
+      dataPayload: { type: 'convocation', brand: 'aserstein' },
+    });
+    assert.equal(
+      message.android.restrictedPackageName,
+      ASERSTEIN_ANDROID_PACKAGE,
+    );
+    assert.equal(message.apns.headers['apns-topic'], undefined);
   });
 });

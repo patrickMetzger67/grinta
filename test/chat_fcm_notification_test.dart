@@ -85,6 +85,19 @@ void main() {
       );
     });
 
+    test('suppresses Aserstein-branded payloads in the Grinta app', () {
+      expect(
+        shouldDisplayRemoteFcm(
+          data: {
+            'type': 'convocation',
+            'id': 'match-1',
+            'brand': 'aserstein',
+          },
+        ),
+        isFalse,
+      );
+    });
+
     test('suppresses chat only when that conversation is open', () {
       expect(
         shouldDisplayRemoteFcm(

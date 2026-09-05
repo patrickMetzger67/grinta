@@ -1,15 +1,23 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/foundation.dart';
 
+import '../config/fcm_config.dart';
 import '../model/notification.dart';
 
 class NotificationService {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
 
-  static const String collectionName = 'notification';
+  /// Grinta-only collection. The shared `notification` collection is also
+  /// watched by AS Erstein — new writes must not go there.
+  static const String collectionName = FcmConfig.notificationCollection;
+  static const String legacyCollectionName =
+      FcmConfig.legacyNotificationCollection;
 
   CollectionReference<Map<String, dynamic>> get _collection =>
       _firestore.collection(collectionName);
+
+  CollectionReference<Map<String, dynamic>> get _legacyCollection =>
+      _firestore.collection(legacyCollectionName);
 
   static bool isNotificationUnviewed(NotificationApp notification) {
     return notification.isViewed != true;
@@ -31,6 +39,11 @@ class NotificationService {
     return sorted;
   }
 
+  static bool _isAsersteinNotification(NotificationApp notification) {
+    final brand = notification.brand?.trim().toLowerCase() ?? '';
+    return brand == FcmConfig.brandAserstein;
+  }
+
   List<NotificationApp> _parseUnviewedNotifications(
     QuerySnapshot<Map<String, dynamic>> snapshot,
   ) {
@@ -38,8 +51,22 @@ class NotificationService {
       snapshot.docs
           .map((doc) => NotificationApp.fromSnapshot(doc))
           .where(isNotificationUnviewed)
+          .where((notification) => !_isAsersteinNotification(notification))
           .toList(),
     );
+  }
+
+  Future<List<NotificationApp>> _unviewedFromBothCollections(
+    String playerId,
+  ) async {
+    final results = await Future.wait([
+      _collection.where(keyNotifPlayerId, isEqualTo: playerId).get(),
+      _legacyCollection.where(keyNotifPlayerId, isEqualTo: playerId).get(),
+    ]);
+    return sortNotificationsNewestFirst([
+      ..._parseUnviewedNotifications(results[0]),
+      ..._parseUnviewedNotifications(results[1]),
+    ]);
   }
 
   void _logFirestoreReadError({
@@ -118,12 +145,14 @@ class NotificationService {
   Future<NotificationApp?> getNotificationById(String notificationId) async {
     try {
       final doc = await _collection.doc(notificationId).get();
-
-      if (!doc.exists || doc.data() == null) {
+      if (doc.exists && doc.data() != null) {
+        return NotificationApp.fromSnapshot(doc);
+      }
+      final legacy = await _legacyCollection.doc(notificationId).get();
+      if (!legacy.exists || legacy.data() == null) {
         return null;
       }
-
-      return NotificationApp.fromSnapshot(doc);
+      return NotificationApp.fromSnapshot(legacy);
     } catch (e) {
       rethrow;
     }
@@ -250,11 +279,7 @@ class NotificationService {
     const method = 'getUnviewedNotificationsByPlayerId';
     final queryContext = '$keyNotifPlayerId==$playerId';
     try {
-      final query = await _collection
-          .where(keyNotifPlayerId, isEqualTo: playerId)
-          .get();
-
-      return _parseUnviewedNotifications(query);
+      return await _unviewedFromBothCollections(playerId);
     } catch (e) {
       _logFirestoreReadError(
         method: method,
@@ -273,10 +298,37 @@ class NotificationService {
     return _withReadErrorLogging(
       method: method,
       queryContext: queryContext,
-      stream: _collection
-          .where(keyNotifPlayerId, isEqualTo: playerId)
-          .snapshots()
-          .map(_parseUnviewedNotifications),
+      stream: Stream<List<NotificationApp>>.multi((controller) {
+        List<NotificationApp>? primary;
+        List<NotificationApp>? legacy;
+        void emit() {
+          if (primary == null || legacy == null) return;
+          controller.add(
+            sortNotificationsNewestFirst([...primary!, ...legacy!]),
+          );
+        }
+
+        final primarySub = _collection
+            .where(keyNotifPlayerId, isEqualTo: playerId)
+            .snapshots()
+            .listen((snapshot) {
+          primary = _parseUnviewedNotifications(snapshot);
+          emit();
+        });
+        final legacySub = _legacyCollection
+            .where(keyNotifPlayerId, isEqualTo: playerId)
+            .snapshots()
+            .listen((snapshot) {
+          legacy = _parseUnviewedNotifications(snapshot);
+          emit();
+        });
+
+        controller
+          ..onCancel = () async {
+            await primarySub.cancel();
+            await legacySub.cancel();
+          };
+      }),
     );
   }
 
@@ -333,11 +385,13 @@ class NotificationService {
       return 0;
     }
 
-    final QuerySnapshot<Map<String, dynamic>> query = await _collection
-        .where(keyNotifObjectId, isEqualTo: trimmed)
-        .get();
+    final queries = await Future.wait([
+      _collection.where(keyNotifObjectId, isEqualTo: trimmed).get(),
+      _legacyCollection.where(keyNotifObjectId, isEqualTo: trimmed).get(),
+    ]);
+    final docs = [...queries[0].docs, ...queries[1].docs];
 
-    if (query.docs.isEmpty) {
+    if (docs.isEmpty) {
       return 0;
     }
 
@@ -346,7 +400,7 @@ class NotificationService {
     WriteBatch batch = _firestore.batch();
     var opsInBatch = 0;
 
-    for (final QueryDocumentSnapshot<Map<String, dynamic>> doc in query.docs) {
+    for (final QueryDocumentSnapshot<Map<String, dynamic>> doc in docs) {
       batch.delete(doc.reference);
       opsInBatch++;
       deleted++;
@@ -406,13 +460,14 @@ class NotificationService {
 
   /// MARK AS VIEWED
   Future<void> markNotificationAsViewed(String notificationId) async {
+    final payload = {
+      keyNotifIsViewed: true,
+      keyNotifDateTimeViewed: Timestamp.now(),
+    };
     try {
-      await _collection.doc(notificationId).update({
-        keyNotifIsViewed: true,
-        keyNotifDateTimeViewed: Timestamp.now(),
-      });
-    } catch (e) {
-      rethrow;
+      await _collection.doc(notificationId).update(payload);
+    } catch (_) {
+      await _legacyCollection.doc(notificationId).update(payload);
     }
   }
 
@@ -420,11 +475,11 @@ class NotificationService {
     const method = 'markAllNotificationsAsViewedForPlayer';
     final queryContext = '$keyNotifPlayerId==$playerId';
     try {
-      final query = await _collection
-          .where(keyNotifPlayerId, isEqualTo: playerId)
-          .get();
-
-      final unviewedDocs = query.docs.where(
+      final queries = await Future.wait([
+        _collection.where(keyNotifPlayerId, isEqualTo: playerId).get(),
+        _legacyCollection.where(keyNotifPlayerId, isEqualTo: playerId).get(),
+      ]);
+      final unviewedDocs = [...queries[0].docs, ...queries[1].docs].where(
         (doc) => isNotificationUnviewedData(doc.data()),
       );
       if (unviewedDocs.isEmpty) return;

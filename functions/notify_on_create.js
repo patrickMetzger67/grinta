@@ -7,8 +7,9 @@ const {
   filterTokensByRecipientPreferences,
   isLocalReminderNotificationType,
   computeSendAfter,
-  resolveBrand,
   resolveBrandAssets,
+  resolveNotificationPushBrand,
+  BRAND_ASERSTEIN,
   BRAND_GRINTA,
 } = require('./send_push_fcm_helpers');
 const { sendFcmToTokens } = require('./pending_push');
@@ -17,18 +18,20 @@ const REGION = 'europe-west1';
 const MEMBER_COLLECTION = 'member';
 const DONE_DISPATCH_STATUSES = new Set(['sent', 'skipped', 'deferred']);
 
+const GRINTA_NOTIFICATION_COLLECTION = 'grinta_notification';
+const LEGACY_NOTIFICATION_COLLECTION = 'notification';
+
 /**
- * In-app docs (`notification/{id}`) are the source of truth. Creating one
- * must also deliver an OS/web push — the Flutter client can fail to read
- * other users' tokens or skip the callable after hours calmes.
+ * In-app docs are the source of truth. Grinta writes `grinta_notification`
+ * so the shared `notification` collection (AS Erstein) does not fire.
  *
  * Deploy:
- *   firebase deploy --only functions:sendPushOnNotificationCreated
+ *   firebase deploy --only functions:sendGrintaPushOnNotificationCreated,functions:sendPushOnNotificationCreated
  */
-function createSendPushOnNotificationCreated() {
+function createSendPushOnCollection(collectionName) {
   return onDocumentCreated(
     {
-      document: 'notification/{notificationId}',
+      document: `${collectionName}/{notificationId}`,
       region: REGION,
       timeoutSeconds: 60,
     },
@@ -43,9 +46,22 @@ function createSendPushOnNotificationCreated() {
   );
 }
 
+function createSendPushOnNotificationCreated() {
+  return createSendPushOnCollection(LEGACY_NOTIFICATION_COLLECTION);
+}
+
+function createSendGrintaPushOnNotificationCreated() {
+  return createSendPushOnCollection(GRINTA_NOTIFICATION_COLLECTION);
+}
+
 function isPushChannel(sendBy) {
   const value = (sendBy ?? 'SendBy.notification').toString().trim();
   return value === '' || value === 'SendBy.notification';
+}
+
+/** Shared-collection docs tagged for Aserstein must not FCM from this CF. */
+function isAsersteinNotificationBrand(data) {
+  return resolveNotificationPushBrand(data) === BRAND_ASERSTEIN;
 }
 
 async function loadMemberData(db, playerId) {
@@ -114,6 +130,12 @@ async function dispatchNotificationPush({ db, snap }) {
     return { skipped: true, reason: 'local_reminder' };
   }
 
+  // This trigger is Grinta-owned. Never fan out an AS Erstein banner.
+  if (isAsersteinNotificationBrand(data)) {
+    await markDispatch(snap, { status: 'skipped', reason: 'aserstein_brand' });
+    return { skipped: true, reason: 'aserstein_brand' };
+  }
+
   const claimed = await claimDispatch(snap);
   if (!claimed) {
     return { skipped: true, reason: 'lost_claim' };
@@ -123,7 +145,7 @@ async function dispatchNotificationPush({ db, snap }) {
   const body = readNonEmptyString(data.body) ?? '';
   const clubId = readNonEmptyString(data.clubId) || '0';
   const objectId = readNonEmptyString(data.objectId) ?? snap.id;
-  const brand = resolveBrand(BRAND_GRINTA, clubId);
+  const brand = BRAND_GRINTA;
   const assets = resolveBrandAssets(brand);
 
   const recipientUserIds = await resolveRecipientUserIds({
@@ -294,6 +316,10 @@ async function processDeferredNotificationDoc(db, snap, now = new Date()) {
     await markDispatch(snap, { status: 'skipped', reason: 'local_reminder' });
     return 'skipped';
   }
+  if (isAsersteinNotificationBrand(data)) {
+    await markDispatch(snap, { status: 'skipped', reason: 'aserstein_brand' });
+    return 'skipped';
+  }
 
   const storedRecipient = readNonEmptyString(data.pushDispatch?.recipientUserId);
   const recipientUserIds = storedRecipient
@@ -313,7 +339,7 @@ async function processDeferredNotificationDoc(db, snap, now = new Date()) {
   const body = readNonEmptyString(data.body) ?? '';
   const clubId = readNonEmptyString(data.clubId) || '0';
   const objectId = readNonEmptyString(data.objectId) ?? snap.id;
-  const brand = resolveBrand(BRAND_GRINTA, clubId);
+  const brand = BRAND_GRINTA;
   const assets = resolveBrandAssets(brand, {
     icon: data.pushDispatch?.icon,
     image: data.pushDispatch?.image,
@@ -393,11 +419,15 @@ async function processDeferredNotificationDoc(db, snap, now = new Date()) {
 
 module.exports = {
   createSendPushOnNotificationCreated,
+  createSendGrintaPushOnNotificationCreated,
+  GRINTA_NOTIFICATION_COLLECTION,
+  LEGACY_NOTIFICATION_COLLECTION,
   dispatchNotificationPush,
   processDeferredNotificationDoc,
   persistQuietDeferral,
   resolveRecipientUserIds,
   collectLinkedUserIdsFromMemberData,
   isPushChannel,
+  isAsersteinNotificationBrand,
   loadMemberData,
 };
