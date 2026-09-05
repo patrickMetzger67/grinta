@@ -37,6 +37,41 @@ void main() {
         isTrue,
       );
     });
+
+    test('matches email and searchOptions prefixes', () {
+      final raed = Player.fromMap(<String, dynamic>{
+        'firstName': 'Raed',
+        'lastName': 'Jerou',
+        'email': 'jerou10@yahoo.com',
+        'keyMember': 'XFh395VVAwRRvnAX6m9s',
+        'phoneE164': '+330641265756',
+        'statut': 1,
+        'searchOptions': <String>[
+          'r',
+          'ra',
+          'rae',
+          'raed',
+          'j',
+          'je',
+          'jer',
+          'jero',
+          'jerou',
+          'jerou1',
+          'jerou10',
+          'jerou10@',
+          'jerou10@yahoo.com',
+        ],
+      });
+
+      expect(playerMatchesMemberSearchQuery(raed, 'Raed'), isTrue);
+      expect(playerMatchesMemberSearchQuery(raed, 'Raëd'), isTrue);
+      expect(playerMatchesMemberSearchQuery(raed, 'Jérou'), isTrue);
+      expect(playerMatchesMemberSearchQuery(raed, 'Raed Jerou'), isTrue);
+      expect(playerMatchesMemberSearchQuery(raed, 'jerou10'), isTrue);
+      expect(playerMatchesMemberSearchQuery(raed, 'jerou10@yahoo.com'), isTrue);
+      expect(playerMatchesMemberSearchQuery(raed, '0641265756'), isTrue);
+      expect(playerMatchesMemberSearchQuery(raed, 'xyz'), isFalse);
+    });
   });
 
   testWidgets(

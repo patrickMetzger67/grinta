@@ -45,10 +45,23 @@ String normalizePlayerNameQuery(String? value) {
   return removeDiacritics((value ?? '').trim().toLowerCase());
 }
 
-/// Whether [player] matches a "Filtrer par nom" query.
+String playerSearchDigits(String? value) {
+  return (value ?? '').replaceAll(RegExp(r'\D'), '');
+}
+
+/// Tokens for member / roster search (trim, lowercase, accents stripped).
+List<String> playerSearchQueryTokens(String query) {
+  return normalizePlayerNameQuery(query)
+      .split(RegExp(r'\s+'))
+      .where((token) => token.isNotEmpty)
+      .toList(growable: false);
+}
+
+/// Whether [player] matches a "Filtrer par nom" / "Ajouter un joueur" query.
 ///
-/// Compares first/last/display names after lowercasing and stripping accents
-/// so mobile keyboards (autocorrect, no-accent input) still hit the roster.
+/// Compares first/last/display/short names, e-mail, `searchOptions` and phone
+/// digits after lowercasing and stripping accents so mobile keyboards
+/// (autocorrect, Raëd/Jérou, no-accent input) still hit the member.
 bool playerMatchesNameQuery(Player player, String query) {
   final String normalizedQuery = normalizePlayerNameQuery(query);
   if (normalizedQuery.isEmpty) return true;
@@ -60,11 +73,31 @@ bool playerMatchesNameQuery(Player player, String query) {
     player.lastName ?? '',
     '${player.firstName ?? ''} ${player.lastName ?? ''}',
     '${player.lastName ?? ''} ${player.firstName ?? ''}',
+    player.email ?? '',
+    for (final dynamic option in player.searchOptions ?? const <dynamic>[])
+      option.toString(),
   ];
   for (final String candidate in candidates) {
     if (normalizePlayerNameQuery(candidate).contains(normalizedQuery)) {
       return true;
     }
   }
+
+  final String queryDigits = playerSearchDigits(query);
+  if (queryDigits.length >= 6) {
+    final String phoneDigits = playerSearchDigits(player.phoneE164);
+    if (phoneDigits.isNotEmpty &&
+        (phoneDigits.contains(queryDigits) ||
+            queryDigits.contains(phoneDigits))) {
+      return true;
+    }
+  }
   return false;
+}
+
+/// True when every query token matches [player] (add-player sheet).
+bool playerMatchesMemberSearchQuery(Player player, String query) {
+  final List<String> tokens = playerSearchQueryTokens(query);
+  if (tokens.isEmpty) return false;
+  return tokens.every((token) => playerMatchesNameQuery(player, token));
 }

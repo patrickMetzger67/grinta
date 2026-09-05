@@ -74,40 +74,7 @@ class _MemberSearchSheetState extends State<MemberSearchSheet> {
     });
   }
 
-  List<String> _queryTokens(String query) {
-    return query
-        .trim()
-        .toLowerCase()
-        .split(RegExp(r'\s+'))
-        .where((token) => token.isNotEmpty)
-        .toList();
-  }
-
-  bool _matchesAllTokens(Player player, List<String> tokens) {
-    if (tokens.isEmpty) {
-      return false;
-    }
-
-    final String displayName =
-        playerDisplayName(player, unknownLabel: '').toLowerCase();
-    final String firstName = (player.firstName ?? '').trim().toLowerCase();
-    final String lastName = (player.lastName ?? '').trim().toLowerCase();
-    final String email = (player.email ?? '').trim().toLowerCase();
-    final Iterable<String> searchOptions = (player.searchOptions ?? const [])
-        .map((value) => value.toString().toLowerCase());
-
-    final haystacks = <String>[
-      displayName,
-      firstName,
-      lastName,
-      email,
-      ...searchOptions,
-    ].where((value) => value.isNotEmpty);
-
-    return tokens.every(
-      (token) => haystacks.any((value) => value.contains(token)),
-    );
-  }
+  List<String> _queryTokens(String query) => playerSearchQueryTokens(query);
 
   bool _isExcluded(Player player) {
     final String? memberId = effectiveMemberId(player);
@@ -137,19 +104,23 @@ class _MemberSearchSheetState extends State<MemberSearchSheet> {
     }
 
     final results = players
-        .where((player) => !_isExcluded(player))
-        .where((player) => _matchesAllTokens(player, tokens))
+        .where((player) => playerMatchesMemberSearchQuery(player, _query))
         .toList();
 
     for (final player in results) {
       normalizePlayerMemberId(player);
     }
 
-    results.sort(
-      (a, b) => playerDisplayName(a).toLowerCase().compareTo(
+    results.sort((a, b) {
+      final bool aExcluded = _isExcluded(a);
+      final bool bExcluded = _isExcluded(b);
+      if (aExcluded != bExcluded) {
+        return aExcluded ? 1 : -1;
+      }
+      return playerDisplayName(a).toLowerCase().compareTo(
             playerDisplayName(b).toLowerCase(),
-          ),
-    );
+          );
+    });
     return results;
   }
 
@@ -205,6 +176,12 @@ class _MemberSearchSheetState extends State<MemberSearchSheet> {
               child: TextField(
                 controller: _searchController,
                 autofocus: true,
+                textInputAction: TextInputAction.search,
+                autocorrect: false,
+                enableSuggestions: false,
+                smartDashesType: SmartDashesType.disabled,
+                smartQuotesType: SmartQuotesType.disabled,
+                keyboardType: TextInputType.text,
                 decoration: InputDecoration(
                   labelText: l10n.hintSearchMember,
                   hintText: l10n.hintSearchMember,
@@ -267,41 +244,61 @@ class _MemberSearchSheetState extends State<MemberSearchSheet> {
                             member,
                             unknownLabel: l10n.entityPlayerUnknown,
                           );
+                          final bool alreadyOnRoster = _isExcluded(member);
 
                           return Material(
                             color: Colors.transparent,
                             child: InkWell(
-                              onTap: () => Navigator.pop(context, member),
-                              child: Padding(
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: 16,
-                                  vertical: 8,
-                                ),
-                                child: Row(
-                                  children: [
-                                    PlayerPhoto(player: member),
-                                    const SizedBox(width: 12),
-                                    Expanded(
-                                      child: Column(
-                                        crossAxisAlignment:
-                                            CrossAxisAlignment.start,
-                                        children: [
-                                          Text(
-                                            name,
-                                            maxLines: 1,
-                                            overflow: TextOverflow.ellipsis,
-                                            style: Theme.of(context)
-                                                .textTheme
-                                                .bodyLarge
-                                                ?.copyWith(
-                                                  fontWeight: FontWeight.w700,
-                                                ),
-                                          ),
-                                          PlayerContactLines(player: member),
-                                        ],
+                              onTap: alreadyOnRoster
+                                  ? null
+                                  : () => Navigator.pop(context, member),
+                              child: Opacity(
+                                opacity: alreadyOnRoster ? 0.55 : 1,
+                                child: Padding(
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 16,
+                                    vertical: 8,
+                                  ),
+                                  child: Row(
+                                    children: [
+                                      PlayerPhoto(player: member),
+                                      const SizedBox(width: 12),
+                                      Expanded(
+                                        child: Column(
+                                          crossAxisAlignment:
+                                              CrossAxisAlignment.start,
+                                          children: [
+                                            Text(
+                                              name,
+                                              maxLines: 1,
+                                              overflow: TextOverflow.ellipsis,
+                                              style: Theme.of(context)
+                                                  .textTheme
+                                                  .bodyLarge
+                                                  ?.copyWith(
+                                                    fontWeight: FontWeight.w700,
+                                                  ),
+                                            ),
+                                            if (alreadyOnRoster)
+                                              Text(
+                                                l10n.memberAlreadyOnTeamRoster,
+                                                style: Theme.of(context)
+                                                    .textTheme
+                                                    .bodySmall
+                                                    ?.copyWith(
+                                                      color:
+                                                          colors.textSecondary,
+                                                    ),
+                                              )
+                                            else
+                                              PlayerContactLines(
+                                                player: member,
+                                              ),
+                                          ],
+                                        ),
                                       ),
-                                    ),
-                                  ],
+                                    ],
+                                  ),
                                 ),
                               ),
                             ),
