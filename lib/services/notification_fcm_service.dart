@@ -254,7 +254,11 @@ class NotificationFCMService {
     try {
       final token = await _getFcmToken();
       if (token == null || token.isEmpty) return;
-      await streamClient.addDevice(token, PushProvider.firebase);
+      await streamClient.addDevice(
+        token,
+        PushProvider.firebase,
+        pushProviderName: FcmConfig.brandGrinta,
+      );
     } catch (e, st) {
       debugPrint('NotificationFCMService: Stream addDevice failed: $e\n$st');
     }

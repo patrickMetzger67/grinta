@@ -49,6 +49,14 @@ void main() {
   });
 
   group('collectGrintaFcmTokens', () {
+    test('on dual-app accounts sends nothing if the Grinta token is missing', () {
+      final tokens = collectGrintaFcmTokens([
+        (id: 'aser-tok', data: {'app': 'aserstein'}),
+        (id: 'ios-legacy-tok', data: {'platform': 'ios'}),
+      ]);
+      expect(tokens, isEmpty);
+    });
+
     test('on dual-app accounts keeps only explicit Grinta tokens', () {
       final tokens = collectGrintaFcmTokens([
         (id: 'android-tok', data: {'app': 'grinta', 'platform': 'android'}),

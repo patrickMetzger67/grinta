@@ -47,6 +47,14 @@ Both apps share Firebase project `aserstein-2453e` and `users/{uid}/fcmTokens`.
 The same person can have both apps installed (two FCM tokens on one uid).
 A Grinta event must never surface in the **AS Erstein** tray.
 
+Typical dual-app failures:
+
+1. First event: Grinta token **and** an unbranded leftover (AS Erstein) → two banners.
+2. Next event: Grinta token missing/invalid, leftover still targeted → **only** AS Erstein.
+
+If the uid has any Aserstein-tagged token and **no** explicit Grinta token, Grinta
+sends **nothing** rather than falling back to that leftover.
+
 Grinta sends only to:
 
 - docs with `app: "grinta"` (and `packageName: "io.grinta.app"` on current builds)
@@ -106,6 +114,11 @@ target only Aserstein tokens / `com.tome4.asersteinv2`.
 ```bash
 firebase deploy --only functions:sendPushFCMNotification,functions:drainPendingPushNotifications,functions:sendPushOnNotificationCreated,firestore:indexes
 ```
+
+Stream Chat registers the FCM token with `pushProviderName: "grinta"` so a
+Stream dashboard Firebase config named `grinta` can target only `io.grinta.app`.
+Disable or split the default Stream Firebase provider if it still fans out to
+Aserstein devices on the same Stream user.
 
 Source: [`functions/send_push_fcm.js`](../functions/send_push_fcm.js),
 [`functions/pending_push.js`](../functions/pending_push.js),

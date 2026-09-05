@@ -595,6 +595,14 @@ describe('selectGrintaEligibleTokenDocs / selectAsersteinEligibleTokenDocs', () 
     assert.equal(isExplicitGrintaTokenDoc({ app: 'grinta' }), true);
     assert.equal(isExplicitGrintaTokenDoc({ platform: 'ios' }), false);
   });
+
+  it('sends nothing rather than only AS Erstein when the Grinta token is missing', () => {
+    const docs = [
+      { id: 'a', data: () => ({ app: 'aserstein' }) },
+      { id: 'legacy-ios', data: () => ({ platform: 'ios' }) },
+    ];
+    assert.deepEqual(selectGrintaEligibleTokenDocs(docs).map((doc) => doc.id), []);
+  });
 });
 
 describe('buildMulticastMessage aserstein isolation', () => {
