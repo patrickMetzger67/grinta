@@ -150,7 +150,12 @@ Color lastResultsSlotFillColor(AppColors colors, MatchOutcome outcome) {
   return switch (outcome) {
     MatchOutcome.win => colors.success,
     MatchOutcome.draw => colors.textSecondary,
-    MatchOutcome.loss => colors.danger,
+    // Darken danger so a loss stays visible on agenda match cards,
+    // which already use `colors.danger` as the card background.
+    MatchOutcome.loss => Color.alphaBlend(
+        const Color(0x66000000),
+        colors.danger,
+      ),
   };
 }
 

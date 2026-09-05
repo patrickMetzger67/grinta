@@ -98,10 +98,16 @@ void main() {
 
     expect(_innerDecoration(tester, 0).color, colors.textSecondary);
     expect(_innerDecoration(tester, 1).color, colors.textSecondary);
-    expect(_innerDecoration(tester, 2).color, colors.danger);
+    expect(
+      _innerDecoration(tester, 2).color,
+      lastResultsSlotFillColor(colors, MatchOutcome.loss),
+    );
     expect(_innerDecoration(tester, 3).color, isNull);
     expect(find.byKey(LastResultsFormRow.highlightKey(2)), findsOneWidget);
-    expect(_outerDecoration(tester, 2).border?.top.color, colors.danger);
+    expect(
+      _outerDecoration(tester, 2).border?.top.color,
+      lastResultsSlotFillColor(colors, MatchOutcome.loss),
+    );
   });
 
   testWidgets('hides when clubId or competitionId is missing', (tester) async {
@@ -195,7 +201,10 @@ void main() {
 
     expect(find.byKey(LastResultsFormRow.guideKey), findsOneWidget);
     expect(_innerDecoration(tester, 0).color, colors.textSecondary);
-    expect(_innerDecoration(tester, 1).color, colors.danger);
+    expect(
+      _innerDecoration(tester, 1).color,
+      lastResultsSlotFillColor(colors, MatchOutcome.loss),
+    );
     expect(_innerDecoration(tester, 2).color, colors.success);
     expect(_innerDecoration(tester, 3).color, isNull);
     expect(_innerDecoration(tester, 4).color, isNull);
