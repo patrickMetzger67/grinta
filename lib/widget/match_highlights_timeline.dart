@@ -236,6 +236,7 @@ class _HighlightCard extends StatelessWidget {
     final team = _clean(highlight.team);
 
     final content = Container(
+      width: double.infinity,
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
         color: colors.surface,
@@ -253,13 +254,9 @@ class _HighlightCard extends StatelessWidget {
       ),
       child: Column(
         mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment:
-            alignRight ? CrossAxisAlignment.end : CrossAxisAlignment.start,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           Row(
-            mainAxisSize: MainAxisSize.min,
-            mainAxisAlignment:
-                alignRight ? MainAxisAlignment.end : MainAxisAlignment.start,
             children: [
               if (!alignRight) ...[
                 _EventIcon(
@@ -268,7 +265,7 @@ class _HighlightCard extends StatelessWidget {
                 ),
                 const SizedBox(width: 8),
               ],
-              Flexible(
+              Expanded(
                 child: Text(
                   title,
                   textAlign: alignRight ? TextAlign.right : TextAlign.left,
@@ -312,10 +309,14 @@ class _HighlightCard extends StatelessWidget {
           ),
           if (team.isNotEmpty) ...[
             const SizedBox(height: 8),
-            _TeamChip(
-              team: team,
-              color: style.color,
-              alignRight: alignRight,
+            Align(
+              alignment:
+                  alignRight ? Alignment.centerRight : Alignment.centerLeft,
+              heightFactor: 1,
+              child: _TeamChip(
+                team: team,
+                color: style.color,
+              ),
             ),
           ],
         ],
@@ -516,6 +517,7 @@ class _CompactTimelineAxis extends StatelessWidget {
     final colors = context.appColors;
 
     return Column(
+      mainAxisSize: MainAxisSize.min,
       children: [
         Container(
           width: 38,
@@ -638,36 +640,31 @@ class _EventIcon extends StatelessWidget {
 class _TeamChip extends StatelessWidget {
   final String team;
   final Color color;
-  final bool alignRight;
 
   const _TeamChip({
     required this.team,
     required this.color,
-    required this.alignRight,
   });
 
   @override
   Widget build(BuildContext context) {
-    return Align(
-      alignment: alignRight ? Alignment.centerRight : Alignment.centerLeft,
-      child: Container(
-        padding: const EdgeInsets.symmetric(
-          horizontal: 9,
-          vertical: 5,
-        ),
-        decoration: BoxDecoration(
-          color: color.withValues(alpha: 0.10),
-          borderRadius: BorderRadius.circular(999),
-        ),
-        child: Text(
-          team,
-          maxLines: 1,
-          overflow: TextOverflow.ellipsis,
-          style: TextStyle(
-            color: color,
-            fontSize: 11,
-            fontWeight: FontWeight.w800,
-          ),
+    return Container(
+      padding: const EdgeInsets.symmetric(
+        horizontal: 9,
+        vertical: 5,
+      ),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.10),
+        borderRadius: BorderRadius.circular(999),
+      ),
+      child: Text(
+        team,
+        maxLines: 1,
+        overflow: TextOverflow.ellipsis,
+        style: TextStyle(
+          color: color,
+          fontSize: 11,
+          fontWeight: FontWeight.w800,
         ),
       ),
     );
