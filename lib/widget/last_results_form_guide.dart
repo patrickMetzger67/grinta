@@ -3,6 +3,7 @@ import 'package:grinta/l10n/app_localizations.dart';
 import 'package:grinta/model/last_results.dart';
 import 'package:grinta/model/match.dart';
 import 'package:grinta/services/last_results_service.dart';
+import 'package:grinta/util/app_theme.dart';
 import 'package:grinta/util/last_results_helper.dart';
 import 'package:grinta/util/match_goal_helper.dart';
 import 'package:grinta/util/match_outcome_helper.dart';
@@ -28,6 +29,7 @@ class LastResultsFormRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colors = context.appColors;
     final l10n = AppLocalizations.of(context);
     final visible = slots.length >= lastResultsSlotCount
         ? slots.sublist(0, lastResultsSlotCount)
@@ -51,6 +53,7 @@ class LastResultsFormRow extends StatelessWidget {
                 outcome: visible[i],
                 highlighted: highlightIndex == i,
                 size: slotSize,
+                colors: colors,
                 index: i,
                 semanticLabel: _slotSemanticLabel(
                   l10n: l10n,
@@ -143,8 +146,24 @@ class LastResultsFormGuide extends StatelessWidget {
   double get _slotSize => compact ? 8 : 10;
 }
 
-/// Solid / stroke color for every form-guide circle (coral cards + dark header).
-const Color lastResultsCircleColor = Color(0xFF111111);
+/// Hollow ring for empty slots — black so it stays visible on coral cards.
+const Color lastResultsEmptyStrokeColor = Color(0xFF111111);
+
+/// Medium grey for draws (readable on coral cards and dark headers).
+const Color lastResultsDrawColor = Color(0xFF6E6E73);
+
+Color lastResultsSlotFillColor(AppColors colors, MatchOutcome outcome) {
+  return switch (outcome) {
+    MatchOutcome.win => colors.success,
+    MatchOutcome.draw => lastResultsDrawColor,
+    // Darken danger so a loss does not vanish on coral agenda cards
+    // (those cards already use `colors.danger` as the background).
+    MatchOutcome.loss => Color.alphaBlend(
+        const Color(0x66000000),
+        colors.danger,
+      ),
+  };
+}
 
 String? _slotSemanticLabel({
   required AppLocalizations? l10n,
@@ -171,6 +190,7 @@ class _LastResultsSlot extends StatelessWidget {
     required this.outcome,
     required this.highlighted,
     required this.size,
+    required this.colors,
     required this.index,
     this.semanticLabel,
   });
@@ -178,6 +198,7 @@ class _LastResultsSlot extends StatelessWidget {
   final MatchOutcome? outcome;
   final bool highlighted;
   final double size;
+  final AppColors colors;
   final int index;
   final String? semanticLabel;
 
@@ -186,7 +207,10 @@ class _LastResultsSlot extends StatelessWidget {
     final ringGap = size * 0.22;
     final ringWidth = size * 0.16;
     final outer = size + (ringGap + ringWidth) * 2;
-    final fillColor = outcome == null ? null : lastResultsCircleColor;
+    final fillColor = outcome == null
+        ? null
+        : lastResultsSlotFillColor(colors, outcome!);
+    final ringColor = fillColor ?? lastResultsEmptyStrokeColor;
 
     return Semantics(
       label: semanticLabel,
@@ -200,7 +224,7 @@ class _LastResultsSlot extends StatelessWidget {
             decoration: BoxDecoration(
               shape: BoxShape.circle,
               border: highlighted
-                  ? Border.all(color: lastResultsCircleColor, width: ringWidth)
+                  ? Border.all(color: ringColor, width: ringWidth)
                   : Border.all(color: Colors.transparent, width: ringWidth),
             ),
             child: Padding(
@@ -211,7 +235,7 @@ class _LastResultsSlot extends StatelessWidget {
                   color: fillColor,
                   border: outcome == null
                       ? Border.all(
-                          color: lastResultsCircleColor,
+                          color: lastResultsEmptyStrokeColor,
                           width: size * 0.18,
                         )
                       : null,

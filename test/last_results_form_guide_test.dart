@@ -44,6 +44,8 @@ BoxDecoration _outerDecoration(WidgetTester tester, int index) {
 }
 
 void main() {
+  const colors = AppColors.light;
+
   testWidgets('renders 5 slots with win, draw, loss, empties and highlight',
       (tester) async {
     await tester.pumpWidget(
@@ -68,16 +70,19 @@ void main() {
     expect(find.byKey(LastResultsFormRow.highlightKey(2)), findsOneWidget);
     expect(find.byKey(LastResultsFormRow.highlightKey(0)), findsNothing);
 
-    expect(_innerDecoration(tester, 0).color, lastResultsCircleColor);
-    expect(_innerDecoration(tester, 1).color, lastResultsCircleColor);
-    expect(_innerDecoration(tester, 2).color, lastResultsCircleColor);
+    expect(_innerDecoration(tester, 0).color, colors.success);
+    expect(_innerDecoration(tester, 1).color, colors.success);
+    expect(_innerDecoration(tester, 2).color, colors.success);
     expect(_innerDecoration(tester, 3).color, isNull);
     expect(_innerDecoration(tester, 4).color, isNull);
-    expect(_innerDecoration(tester, 3).border?.top.color, lastResultsCircleColor);
-    expect(_outerDecoration(tester, 2).border?.top.color, lastResultsCircleColor);
+    expect(
+      _innerDecoration(tester, 3).border?.top.color,
+      lastResultsEmptyStrokeColor,
+    );
+    expect(_outerDecoration(tester, 2).border?.top.color, colors.success);
   });
 
-  testWidgets('draw, loss and empty slots are black circles', (tester) async {
+  testWidgets('draw is grey, loss is red, empty is a black ring', (tester) async {
     await tester.pumpWidget(
       _wrap(
         const LastResultsFormRow(
@@ -93,15 +98,21 @@ void main() {
       ),
     );
 
-    expect(_innerDecoration(tester, 0).color, lastResultsCircleColor);
-    expect(_innerDecoration(tester, 1).color, lastResultsCircleColor);
-    expect(_innerDecoration(tester, 2).color, lastResultsCircleColor);
+    expect(_innerDecoration(tester, 0).color, lastResultsDrawColor);
+    expect(_innerDecoration(tester, 1).color, lastResultsDrawColor);
+    expect(
+      _innerDecoration(tester, 2).color,
+      lastResultsSlotFillColor(colors, MatchOutcome.loss),
+    );
     expect(_innerDecoration(tester, 3).color, isNull);
-    expect(_innerDecoration(tester, 3).border?.top.color, lastResultsCircleColor);
+    expect(
+      _innerDecoration(tester, 3).border?.top.color,
+      lastResultsEmptyStrokeColor,
+    );
     expect(find.byKey(LastResultsFormRow.highlightKey(2)), findsOneWidget);
     expect(
       _outerDecoration(tester, 2).border?.top.color,
-      lastResultsCircleColor,
+      lastResultsSlotFillColor(colors, MatchOutcome.loss),
     );
   });
 
@@ -201,9 +212,12 @@ void main() {
     await tester.pump();
 
     expect(find.byKey(LastResultsFormRow.guideKey), findsOneWidget);
-    expect(_innerDecoration(tester, 0).color, lastResultsCircleColor);
-    expect(_innerDecoration(tester, 1).color, lastResultsCircleColor);
-    expect(_innerDecoration(tester, 2).color, lastResultsCircleColor);
+    expect(_innerDecoration(tester, 0).color, lastResultsDrawColor);
+    expect(
+      _innerDecoration(tester, 1).color,
+      lastResultsSlotFillColor(colors, MatchOutcome.loss),
+    );
+    expect(_innerDecoration(tester, 2).color, colors.success);
     expect(_innerDecoration(tester, 3).color, isNull);
     expect(_innerDecoration(tester, 4).color, isNull);
     expect(find.byKey(LastResultsFormRow.highlightKey(1)), findsOneWidget);
@@ -238,7 +252,7 @@ void main() {
     await tester.pump();
 
     expect(find.byKey(LastResultsFormRow.highlightKey(2)), findsOneWidget);
-    expect(_innerDecoration(tester, 0).color, lastResultsCircleColor);
+    expect(_innerDecoration(tester, 0).color, colors.success);
     expect(_innerDecoration(tester, 4).color, isNull);
   });
 }
