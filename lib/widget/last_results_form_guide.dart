@@ -161,16 +161,14 @@ const Color lastResultsEmptyStrokeColor = Color(0xFF111111);
 /// Medium grey for draws (readable on coral cards and dark headers).
 const Color lastResultsDrawColor = Color(0xFF6E6E73);
 
+/// Vivid loss red (not a darkened danger).
+const Color lastResultsLossColor = Color(0xFFFF3B30);
+
 Color lastResultsSlotFillColor(AppColors colors, MatchOutcome outcome) {
   return switch (outcome) {
     MatchOutcome.win => colors.success,
     MatchOutcome.draw => lastResultsDrawColor,
-    // Darken danger so a loss does not vanish on coral agenda cards
-    // (those cards already use `colors.danger` as the background).
-    MatchOutcome.loss => Color.alphaBlend(
-        const Color(0x66000000),
-        colors.danger,
-      ),
+    MatchOutcome.loss => lastResultsLossColor,
   };
 }
 
