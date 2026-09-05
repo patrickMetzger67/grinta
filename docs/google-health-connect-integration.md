@@ -36,13 +36,11 @@ Ensure the athlete has **Google Fit** (or another source app) writing workouts i
 On connect (and when listing importable workouts), Grinta requests **only** the Health Connect scopes required by shipped features (Play policy — no unused types):
 
 - **Workouts** (`WORKOUT` → Health Connect **Exercise**)
-- **Heart rate** (`HEART_RATE`) — average HR on import when available
 - **Distance** (`DISTANCE_DELTA`) — distance on imported / exported sessions
-- **Total calories** (`TOTAL_CALORIES_BURNED`) — calories on imported workouts
 
-**Not requested:** Sleep, Steps, Active calories burned, write calories (no user-facing feature yet).
+**Not requested (Play minimal scope):** Heart rate, Total calories, Active calories, Sleep, Steps / Steps cadence. Imported Google Health workouts may have null HR / calories; Polar / Whoop / etc. remain the source for those metrics.
 
-**Mitigation for plugin quirks:** Grinta also reads Exercise sessions through a native channel (`io.grinta.app/health_connect`) that never drops workouts when enrichment permissions are missing. Distance / calories remain best-effort.
+**Mitigation for plugin quirks:** Grinta also reads Exercise sessions through a native channel (`io.grinta.app/health_connect`) that never drops workouts when enrichment permissions are missing. Distance remains best-effort.
 
 Play Console resubmission notes: [`docs/play-health-connect-rejection.md`](./play-health-connect-rejection.md).
 
@@ -59,8 +57,8 @@ Same UX as Strava / Polar / Whoop / Apple Forme, but **entirely on the client** 
 |-------|--------|
 | `externalSource` | `googleHealth` |
 | `externalId` | Health Connect workout UUID (fallback: start epoch + activity type) |
-| Duration / distance / pace / calories | Health Connect `WorkoutHealthValue` |
-| Average HR | Mean of `HEART_RATE` samples in the workout window |
+| Duration / distance / pace | Health Connect `WorkoutHealthValue` (calories/HR from HC are not requested) |
+| Average HR | Not read from Health Connect (Play policy); may be null |
 | `typeId` | Mapped from `HealthWorkoutActivityType` (course, velo, natation, …) |
 
 Dedup uses `PersonalSportActivityService.importedExternalIds` / `hasExternalActivity` with `externalSource: 'googleHealth'`.
@@ -82,9 +80,10 @@ Manifest needs `WRITE_EXERCISE` / `WRITE_DISTANCE`. Dedup uses `TRACKER_Sync/{ev
 
 The repo includes Health Connect setup in `android/app/src/main/AndroidManifest.xml`:
 
-- Read permissions: `READ_EXERCISE`, `READ_HEART_RATE`, `READ_DISTANCE`, `READ_TOTAL_CALORIES_BURNED`, `READ_HEALTH_DATA_HISTORY`
+- Read permissions: `READ_EXERCISE`, `READ_DISTANCE`, `READ_HEALTH_DATA_HISTORY`
 - Write permissions (session export V1): `WRITE_EXERCISE`, `WRITE_DISTANCE`
 - `ACTIVITY_RECOGNITION` (required for fitness data)
+- Force-removed: heart rate, total/active calories, sleep, steps / steps cadence
 - `<queries>` for `com.google.android.apps.healthdata`
 - Permissions rationale intent-filter and `ViewPermissionUsageActivity` activity-alias
 
@@ -125,7 +124,7 @@ flutter pub get
 3. Tap **+**, select **Google Health**.
 4. Tap **Sync**.
 5. Android may ask for **Activity recognition** / **Location** first (needed for workouts).
-6. Then the **Health Connect** permission sheet should open — enable **Exercise**, **Distance**, **Total calories**, and **Heart rate**.
+6. Then the **Health Connect** permission sheet should open — enable **Exercise** and **Distance**.
 7. Confirm **Grinta** appears under the **Health Connect** app → **App permissions** (not under Google Fit’s “connected apps” list).
 8. Toggle **Coach visibility** (workouts, heart rate, calories from imported sessions).
 9. Tap **Disconnect** — clears Grinta state only. To fully revoke: **Health Connect → App permissions → Grinta**.

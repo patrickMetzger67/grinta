@@ -225,12 +225,6 @@ class GoogleHealthSyncService {
       );
       if (already) return null;
 
-      final avgHr = workout.averageHeartRateBpm ??
-          await averageHeartRateForWorkout(
-            start: workout.startDate,
-            end: workout.endDate,
-          );
-
       final visibilityEnum = PersonalSportVisibilityX.fromFirestore(visibility);
       final activity = PersonalSportActivity(
         memberId: playerId,
@@ -249,7 +243,9 @@ class GoogleHealthSyncService {
         distanceMeters: workout.distanceMeters,
         paceSecondsPerKm: workout.paceSecondsPerKm,
         caloriesKcal: workout.caloriesKcal,
-        averageHeartRateBpm: avgHr,
+        // Health Connect HR is not requested (Play minimal scope). Wearables
+        // remain the source for heart rate; imported HC workouts stay null.
+        averageHeartRateBpm: workout.averageHeartRateBpm,
         distanceUnit: 'km',
         paceUnit: '/km',
         externalSource: externalSource,

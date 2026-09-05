@@ -60,20 +60,19 @@ class GoogleHealthPlatformConnectResult {
 
 /// Minimum Health Connect read types for declared Android features.
 ///
-/// Keep aligned with `AndroidManifest.xml` health permissions. Do not request
-/// SLEEP / STEPS / ACTIVE_ENERGY here unless a shipped feature uses them —
-/// Play rejects "excessive access" for unused Health Connect scopes.
+/// Keep aligned with `AndroidManifest.xml` health permissions. Play rejects
+/// "excessive access" for unused scopes — do not request HEART_RATE,
+/// TOTAL_CALORIES_BURNED, ACTIVE_ENERGY, SLEEP, or STEPS here. Imported
+/// Google Health workouts may have null HR / calories; wearables remain
+/// the source for those metrics.
 const List<HealthDataType> _kGoogleHealthReadTypes = [
   HealthDataType.WORKOUT,
-  HealthDataType.HEART_RATE,
   HealthDataType.DISTANCE_DELTA,
-  HealthDataType.TOTAL_CALORIES_BURNED,
 ];
 
 const List<HealthDataType> _kGoogleHealthWorkoutEnrichmentTypes = [
   HealthDataType.WORKOUT,
   HealthDataType.DISTANCE_DELTA,
-  HealthDataType.TOTAL_CALORIES_BURNED,
 ];
 
 bool get isGoogleHealthConnectSupported => Platform.isAndroid;
@@ -152,12 +151,12 @@ Future<bool> _ensureAuthorized(Health health) async {
         ),
       );
       debugPrint(
-        'Google Health Connect hasPermissions(WORKOUT+DISTANCE+CALORIES)='
+        'Google Health Connect hasPermissions(WORKOUT+DISTANCE)='
         '$workoutOk',
       );
       if (workoutOk == false) {
         debugPrint(
-          'Google Health Connect: Exercise/Distance/Calories may be '
+          'Google Health Connect: Exercise/Distance may be '
           'incomplete — enable them in Health Connect → App permissions → Grinta',
         );
       }
@@ -321,8 +320,8 @@ Future<List<GoogleHealthImportableActivity>> listGoogleHealthWorkouts({
     if (!granted) return const [];
   }
 
-  // Prefer the native reader: the health plugin's WORKOUT path enriches with
-  // Distance/Calories/Steps and returns [] on any SecurityException.
+  // Prefer the native reader: the health plugin's WORKOUT path may enrich
+  // with extra types and return [] on any SecurityException.
   final native = await GrintaHealthConnectPlatform.listExerciseSessions(
     lookbackDays: lookbackDays,
   );
@@ -382,41 +381,14 @@ Future<List<GoogleHealthImportableActivity>> listGoogleHealthWorkouts({
   }
 }
 
-/// Average heart rate (bpm) across HEART_RATE samples in [start, end].
+/// Health Connect HEART_RATE is not requested (Play minimal-scope policy).
+/// Imported Google Health workouts therefore have no HC-derived HR.
+/// Wearables (Polar / Whoop / …) remain the source for heart rate.
 Future<int?> averageHeartRateForWorkout({
   required DateTime start,
   required DateTime end,
 }) async {
-  if (!Platform.isAndroid) return null;
-  if (!end.isAfter(start)) return null;
-
-  final health = Health();
-  await health.configure();
-
-  try {
-    final samples = await health.getHealthDataFromTypes(
-      startTime: start,
-      endTime: end,
-      types: const [HealthDataType.HEART_RATE],
-    );
-    var sum = 0.0;
-    var count = 0;
-    for (final sample in samples) {
-      final value = sample.value;
-      if (value is NumericHealthValue) {
-        final numeric = value.numericValue;
-        if (numeric > 0) {
-          sum += numeric;
-          count += 1;
-        }
-      }
-    }
-    if (count == 0) return null;
-    return (sum / count).round();
-  } catch (e, st) {
-    debugPrint('Google Health Connect average HR failed: $e\n$st');
-    return null;
-  }
+  return null;
 }
 
 /// Requests Health Connect write access for workouts.
@@ -429,19 +401,14 @@ Future<bool> ensureGoogleWorkoutWriteAuthorized() async {
 
   await _requestRuntimePermissions();
 
-  // Write only what session export uses: Exercise (+ Distance when present).
-  // DISTANCE is already in read types; request READ_WRITE for workout + distance.
+  // Write only what session export uses: Exercise + Distance.
   final types = <HealthDataType>[
     HealthDataType.WORKOUT,
-    HealthDataType.HEART_RATE,
     HealthDataType.DISTANCE_DELTA,
-    HealthDataType.TOTAL_CALORIES_BURNED,
   ];
   final permissions = <HealthDataAccess>[
     HealthDataAccess.READ_WRITE, // WORKOUT
-    HealthDataAccess.READ, // HEART_RATE
     HealthDataAccess.READ_WRITE, // DISTANCE_DELTA
-    HealthDataAccess.READ, // TOTAL_CALORIES_BURNED
   ];
 
   try {

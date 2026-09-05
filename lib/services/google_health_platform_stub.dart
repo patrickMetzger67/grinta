@@ -67,7 +67,7 @@ Future<List<GoogleHealthImportableActivity>> listGoogleHealthWorkouts({
   return const [];
 }
 
-/// Average heart rate (bpm) for a workout window — unsupported off Android.
+/// Health Connect HEART_RATE is not requested on Android (Play policy).
 Future<int?> averageHeartRateForWorkout({
   required DateTime start,
   required DateTime end,

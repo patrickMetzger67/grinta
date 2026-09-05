@@ -16,12 +16,10 @@ Le manifeste et le client ne demandent plus que le **minimum** aligné sur les f
 |---------------------------|---------------|
 | `READ_EXERCISE` | Importer les séances Google Fit / Health Connect |
 | `READ_DISTANCE` | Distance sur les séances importées |
-| `READ_TOTAL_CALORIES_BURNED` | Calories sur les séances importées |
-| `READ_HEART_RATE` | FC moyenne optionnelle à l’import |
 | `WRITE_EXERCISE` / `WRITE_DISTANCE` | Export distance+durée après bilan de séance |
 | `READ_HEALTH_DATA_HISTORY` | Lookback d’import au-delà de ~30 jours |
 
-**Retiré** (non utilisé par une feature user-facing) : `READ_SLEEP`, `READ_STEPS`, `READ_ACTIVE_CALORIES_BURNED`, `WRITE_TOTAL_CALORIES_BURNED`.
+**Retiré / force-remove** (Play « accès excessif ») : `HEART_RATE`, `TOTAL_CALORIES_BURNED`, `ACTIVE_CALORIES_BURNED`, `SLEEP`, `STEPS` / `STEPS_CADENCE` (lecture et écriture). La FC et les calories restent fournies par Polar / Whoop / etc. ; un import Google Health peut avoir HR/calories vides.
 
 Fichiers : `android/app/src/main/AndroidManifest.xml`, `lib/services/google_health_platform_io.dart`.
 
@@ -34,7 +32,7 @@ Fichiers : `android/app/src/main/AndroidManifest.xml`, `lib/services/google_heal
 
 Utiliser **exactement** cette URL privacy dans la fiche Play Store.
 
-> Recommandation : dans la section appareils / services connectés de la politique, nommer explicitement **Android Health Connect / Google Fit** (lecture Exercise, Distance, Calories, FC ; écriture Exercise / Distance pour l’export de séance). Play vérifie souvent que la politique cite Health Connect.
+> Recommandation : dans la section appareils / services connectés de la politique, nommer explicitement **Android Health Connect / Google Fit** (lecture Exercise + Distance ; écriture Exercise / Distance pour l’export de séance). Play vérifie souvent que la politique cite Health Connect.
 
 Des copies HTML de secours restent dans `web/privacy/` et `web/terms/` (déployables via Firebase si besoin).
 
@@ -57,7 +55,7 @@ Play Console → **Contenu de l’appli** → **Applications de santé** (Health
 **Fonctionnalités à décrire (FR, à coller / adapter) :**
 
 > Grinta Performance aide les joueurs et coaches de football à suivre la charge d’entraînement. Sur Android, l’utilisateur peut connecter Google Fit via Health Connect pour :
-> 1) importer ses séances d’exercice dans l’agenda Grinta (activité sportive personnelle) avec distance, durée, calories et fréquence cardiaque moyenne si disponible ;
+> 1) importer ses séances d’exercice dans l’agenda Grinta (activité sportive personnelle) avec durée et distance si disponible ;
 > 2) exporter vers Health Connect la distance et la durée d’une séance d’entraînement ou de match mesurée par les trackers Grinta (après le bilan de séance).
 > L’accès est demandé uniquement lorsque l’utilisateur lance la connexion dans Appareils/Applications ou accepte l’export. Les données ne sont pas utilisées pour la publicité. L’utilisateur contrôle la visibilité coach par type de métrique et peut révoquer Health Connect à tout moment.
 
@@ -69,17 +67,15 @@ Play Console → **Contenu de l’appli** → **Applications de santé** (Health
 | Exercise | Write | Write training/match sessions (duration) from Grinta tracker recap into Health Connect |
 | Distance | Read | Attach distance to imported exercise sessions |
 | Distance | Write | Write session distance from Grinta tracker recap |
-| Total calories | Read | Attach energy burned to imported exercise sessions |
-| Heart rate | Read | Compute average heart rate during an imported workout window |
 | Health data history | Read | Allow importing workouts older than the default ~30-day window (up to ~90 days in-app) |
 
-Ne **pas** déclarer Sleep, Steps, Active calories, etc.
+Ne **pas** déclarer Heart rate, Total calories, Active calories, Sleep, Steps / Steps cadence.
 
 ### C. Vidéo / preuves pour « renseignements insuffisants »
 
 Joindre une **courte vidéo** (ou captures) montrant :
 
-1. Réglages → Appareils/Applications → + → Google Health → Sync → feuille d’autorisations Health Connect (Exercise, Distance, Calories, Heart rate).
+1. Réglages → Appareils/Applications → + → Google Health → Sync → feuille d’autorisations Health Connect (Exercise, Distance).
 2. Agenda → Créer → activité sportive personnelle → import d’une séance depuis Google Fit / Health Connect.
 3. (Optionnel) Bilan de séance → export vers Google Fit.
 4. Lien politique de confidentialité ouvert depuis Réglages → Infos.
@@ -88,14 +84,14 @@ Joindre une **courte vidéo** (ou captures) montrant :
 
 Aligner le formulaire **Sécurité des données** avec la politique :
 
-- Données de santé / fitness collectées : oui (exercices, FC, etc. si l’utilisateur connecte une source)
+- Données de santé / fitness collectées : oui (exercices / distance via Health Connect ; FC / calories via Polar, Whoop, etc. si l’utilisateur connecte une source)
 - Finalité : fonctionnalités de l’app (pas pub)
 - Partage : selon club/coach / prestataires techniques (Firebase), pas de vente
 - Lien politique = `https://www.grinta.io/politiquedeconfidentialite`
 
 ### E. Nouveau build Android
 
-Publier un **nouvel AAB** (`1.0.0+6`) qui contient le manifeste réduit. Sans nouveau binaire, Play continue d’évaluer l’ancien paquet avec Sleep/Steps/etc.
+Publier un **nouvel AAB** qui contient le manifeste réduit. Sans nouveau binaire, Play continue d’évaluer l’ancien paquet. Ne pas joindre d’anciens AAB (même publication) qui déclaraient encore Heart rate / Calories / Sleep / Steps.
 
 ```bash
 flutter build appbundle --release --dart-define-from-file=dart_defines.json
@@ -103,7 +99,8 @@ flutter build appbundle --release --dart-define-from-file=dart_defines.json
 
 ## Vérifications rapides
 
-- [ ] `aapt dump permissions` / APK Analyzer : plus de `READ_SLEEP`, `READ_STEPS`, `READ_ACTIVE_CALORIES_BURNED`, `WRITE_TOTAL_CALORIES_BURNED`
+- [ ] `aapt dump permissions` / APK Analyzer : plus de `READ_HEART_RATE`, `READ_TOTAL_CALORIES_BURNED`, `READ_SLEEP`, `READ_STEPS`, `READ_ACTIVE_CALORIES_BURNED`
+- [ ] La publication Play ne contient **aucun** ancien AAB qui déclarait encore ces scopes
 - [ ] https://www.grinta.io/politiquedeconfidentialite charge et couvre santé / appareils connectés
 - [ ] URL privacy dans la fiche Play = URL ci-dessus
 - [ ] Déclaration Health Connect = mêmes types que le manifeste
