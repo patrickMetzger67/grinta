@@ -3812,5 +3812,8 @@
   },
   "adminAdsCurrentBadge": "Aktiv",
   "adminAdsExpiredBadge": "Beendet",
-  "adminAdsUpcomingBadge": "Geplant"
+  "adminAdsUpcomingBadge": "Geplant",
+  "lastResultsFormGuide": "Aktuelle Form",
+  "lastResultsSlotEmpty": "Noch nicht gespielt",
+  "lastResultsSlotHighlighted": "Aktuelles Spiel"
 }
