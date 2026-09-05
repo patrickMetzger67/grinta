@@ -5,6 +5,7 @@ import 'package:grinta/provider/appSession.dart';
 import 'package:grinta/screen/team_stats/team_stats_competition_selector.dart';
 import 'package:grinta/screen/team_stats/team_stats_screen.dart';
 import 'package:grinta/services/user_trial_service.dart';
+import 'package:grinta/util/match_compo_pitch_mapper.dart';
 import 'package:grinta/util/match_goal_helper.dart';
 import 'package:grinta/util/match_outcome_helper.dart';
 import 'package:grinta/util/team_stats_opponent_helper.dart';
@@ -19,14 +20,163 @@ enum MatchTeamStatsDestination {
   opponents,
 }
 
-Team? teamForMatchStats(AppSession session, models.Match match) {
-  final teamId = match.teamID?.trim() ?? '';
-  if (teamId.isEmpty) return null;
-  for (final candidate in session.teamsForAgendaSelectedSeason) {
-    if (candidate.keyTeam == teamId) {
-      return candidate;
+Team? teamForMatchStats(
+  AppSession session,
+  models.Match match, {
+  String? preferClubId,
+}) {
+  return resolveTeamForMatchStats(
+    candidates: session.teamsForAgendaSelectedSeason,
+    match: match,
+    preferClubId: preferClubId,
+  );
+}
+
+/// FFF club ids printed on [match] (affiliations + `clubs[]`).
+Set<String> clubIdsOnMatch(models.Match match) {
+  final ids = <String>{};
+  void add(String? raw) {
+    final value = raw?.trim() ?? '';
+    if (value.isNotEmpty) {
+      ids.add(value);
     }
   }
+
+  add(match.affiliationTeam1);
+  add(match.affiliationTeam2);
+  for (final club in match.clubs ?? const <dynamic>[]) {
+    add(club?.toString());
+  }
+  return ids;
+}
+
+/// Club printed under [side] (affiliation, then `clubs[]`).
+String? clubIdForTappedMatchSide(models.Match match, MatchSide side) {
+  final affiliation = affiliationTeamForSide(match, side);
+  if (affiliation.isNotEmpty) {
+    return affiliation;
+  }
+  return clubIdForMatchSide(match: match, side: side);
+}
+
+/// Session club that owns stats for [match] (the user's team, not the opponent).
+///
+/// When several session teams sit on both sides of a shared match, prefer the
+/// unique session club on the sheet; if both clubs are in the session, prefer
+/// [Match.teamID]'s club then a linked `teams[]` id.
+String? ownClubIdOnMatch({
+  required List<Team> candidates,
+  required models.Match match,
+}) {
+  final onMatch = clubIdsOnMatch(match);
+  final sessionClubs = <String>{};
+  for (final team in candidates) {
+    final clubId = team.clubId?.trim() ?? '';
+    if (clubId.isNotEmpty && onMatch.contains(clubId)) {
+      sessionClubs.add(clubId);
+    }
+  }
+
+  if (sessionClubs.length == 1) {
+    return sessionClubs.first;
+  }
+
+  if (sessionClubs.length > 1) {
+    final teamId = match.teamID?.trim() ?? '';
+    if (teamId.isNotEmpty) {
+      for (final team in candidates) {
+        if (team.keyTeam?.trim() != teamId) {
+          continue;
+        }
+        final clubId = team.clubId?.trim() ?? '';
+        if (sessionClubs.contains(clubId)) {
+          return clubId;
+        }
+      }
+    }
+    for (final linkedId
+        in normalizeTeamIdList(match.teams ?? const <dynamic>[])) {
+      for (final team in candidates) {
+        if (team.keyTeam?.trim() != linkedId) {
+          continue;
+        }
+        final clubId = team.clubId?.trim() ?? '';
+        if (sessionClubs.contains(clubId)) {
+          return clubId;
+        }
+      }
+    }
+  }
+
+  return sessionClubs.isEmpty ? null : sessionClubs.first;
+}
+
+/// Session team used for Analyse / Adversaires of [match].
+///
+/// Prefers [preferClubId] (the user's club, e.g. 500554) over [Match.teamID],
+/// which on shared matches may be the home Grinta team (504006).
+Team? resolveTeamForMatchStats({
+  required List<Team> candidates,
+  required models.Match match,
+  String? preferClubId,
+}) {
+  if (candidates.isEmpty) {
+    return null;
+  }
+
+  final preferred = (preferClubId?.trim() ?? '').isNotEmpty
+      ? preferClubId!.trim()
+      : ownClubIdOnMatch(candidates: candidates, match: match);
+
+  final linkedIds = <String>{
+    ...normalizeTeamIdList(match.teams ?? const <dynamic>[]),
+    if ((match.teamID?.trim() ?? '').isNotEmpty) match.teamID!.trim(),
+  };
+
+  Team? pickByClub(String clubId) {
+    Team? linkedWithTeamId;
+    Team? linked;
+    Team? any;
+    for (final team in candidates) {
+      if (!_sameClubId(team.clubId, clubId)) {
+        continue;
+      }
+      any ??= team;
+      final key = team.keyTeam?.trim() ?? '';
+      if (key.isEmpty || !linkedIds.contains(key)) {
+        continue;
+      }
+      if (key == (match.teamID?.trim() ?? '')) {
+        linkedWithTeamId = team;
+      }
+      linked ??= team;
+    }
+    return linkedWithTeamId ?? linked ?? any;
+  }
+
+  if (preferred != null && preferred.isNotEmpty) {
+    final byClub = pickByClub(preferred);
+    if (byClub != null) {
+      return byClub;
+    }
+  }
+
+  final teamId = match.teamID?.trim() ?? '';
+  if (teamId.isNotEmpty) {
+    for (final team in candidates) {
+      if (team.keyTeam?.trim() != teamId) {
+        continue;
+      }
+      if (preferred != null &&
+          preferred.isNotEmpty &&
+          (team.clubId?.trim() ?? '').isNotEmpty &&
+          !_sameClubId(team.clubId, preferred)) {
+        break;
+      }
+      return team;
+    }
+  }
+
   return null;
 }
 
@@ -86,7 +236,22 @@ MatchTeamStatsDestination? destinationForMatchSide({
   required models.Match match,
   required Team team,
   required MatchSide side,
+  String? ownClubId,
 }) {
+  final ownClub = (ownClubId?.trim() ?? '').isNotEmpty
+      ? ownClubId!.trim()
+      : (team.clubId?.trim() ?? '');
+  if (ownClub.isNotEmpty) {
+    final tappedClub = clubIdForTappedMatchSide(match, side);
+    if (_sameClubId(tappedClub, ownClub)) {
+      return MatchTeamStatsDestination.analysis;
+    }
+    final otherClub = clubIdForTappedMatchSide(match, _otherMatchSide(side));
+    if (_sameClubId(otherClub, ownClub)) {
+      return MatchTeamStatsDestination.opponents;
+    }
+  }
+
   if (isUsersClubMatchSide(match: match, team: team, side: side)) {
     return MatchTeamStatsDestination.analysis;
   }
@@ -120,7 +285,19 @@ Future<void> openTeamStatsFromMatch({
   MatchSide? tappedSide,
 }) async {
   final session = context.read<AppSession>();
-  final team = teamForMatchStats(session, match);
+  final inferredOwnClub = ownClubIdOnMatch(
+    candidates: session.teamsForAgendaSelectedSeason,
+    match: match,
+  );
+  final tappedOwnClub = preferClubIdForDestination(
+    match: match,
+    destination: destination,
+    tappedSide: tappedSide,
+  );
+  final ownClub = destination == MatchTeamStatsDestination.analysis
+      ? (tappedOwnClub ?? inferredOwnClub)
+      : (inferredOwnClub ?? tappedOwnClub);
+  final team = teamForMatchStats(session, match, preferClubId: ownClub);
   if (team == null) return;
 
   if (destination == MatchTeamStatsDestination.opponents) {
@@ -144,6 +321,9 @@ Future<void> openTeamStatsFromMatch({
       isManager: isManager,
       initialTabIndex: 0,
       initialCompetitionUrl: competitionUrl,
+      initialCompetitionId: match.competitionID,
+      initialCompetitionPoule: match.poule,
+      initialCompetitionStage: match.stage,
     );
     return;
   }
@@ -164,8 +344,25 @@ Future<void> openTeamStatsFromMatch({
     isManager: isManager,
     initialTabIndex: 2,
     initialCompetitionUrl: competitionUrl,
+    initialCompetitionId: match.competitionID,
+    initialCompetitionPoule: match.poule,
+    initialCompetitionStage: match.stage,
     initialOpponentKey: opponent?.key,
     initialOpponentName: opponentName,
     initialMatchIdForViewTracking: match.id,
   );
+}
+
+String? preferClubIdForDestination({
+  required models.Match match,
+  required MatchTeamStatsDestination destination,
+  MatchSide? tappedSide,
+}) {
+  if (tappedSide == null) {
+    return null;
+  }
+  if (destination == MatchTeamStatsDestination.analysis) {
+    return clubIdForTappedMatchSide(match, tappedSide);
+  }
+  return clubIdForTappedMatchSide(match, _otherMatchSide(tappedSide));
 }

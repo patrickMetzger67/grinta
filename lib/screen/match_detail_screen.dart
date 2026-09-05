@@ -1012,13 +1012,18 @@ class _MatchHeaderState extends State<_MatchHeader> {
 
   Future<void> _onTeamLogoTap(MatchSide side) async {
     final session = context.read<AppSession>();
-    final team = teamForMatchStats(session, match);
+    final ownClub = ownClubIdOnMatch(
+      candidates: session.teamsForAgendaSelectedSeason,
+      match: match,
+    );
+    final team = teamForMatchStats(session, match, preferClubId: ownClub);
     if (team == null) return;
 
     final destination = destinationForMatchSide(
       match: match,
       team: team,
       side: side,
+      ownClubId: ownClub,
     );
     if (destination == null) return;
 

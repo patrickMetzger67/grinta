@@ -79,29 +79,68 @@ String buildEngagementDocumentId({
 }
 
 /// Parses a single FFF competition engagement URL.
+///
+/// Also accepts district calendar query URLs:
+/// `https://alsace.fff.fr/competitions?competition_id=450652&poule=3`
+///
+/// [FffCompetitionInfo.groupe] / [FffCompetitionInfo.phase] are `0` when the
+/// query URL omits that parameter (do not treat `0` as poule 1).
 FffCompetitionInfo? parseFffCompetitionUrl(String url) {
   final trimmed = url.trim();
   if (trimmed.isEmpty) return null;
 
   final match = _fffCompetitionUrlPattern.firstMatch(trimmed);
-  if (match == null) return null;
+  if (match != null) {
+    final engagementId = match.group(1);
+    final slug = match.group(2)?.trim();
+    final phase = int.tryParse(match.group(3) ?? '');
+    final groupe = int.tryParse(match.group(4) ?? '');
 
-  final engagementId = match.group(1);
-  final slug = match.group(2)?.trim();
-  final phase = int.tryParse(match.group(3) ?? '');
-  final groupe = int.tryParse(match.group(4) ?? '');
+    if (slug != null && slug.isNotEmpty && phase != null && groupe != null) {
+      return FffCompetitionInfo(
+        rawUrl: trimmed,
+        engagementId: engagementId,
+        slug: slug,
+        name: slugToCompetitionName(slug),
+        phase: phase,
+        groupe: groupe,
+      );
+    }
+  }
 
-  if (slug == null || slug.isEmpty || phase == null || groupe == null) {
+  return _parseFffCompetitionQueryUrl(trimmed);
+}
+
+FffCompetitionInfo? _parseFffCompetitionQueryUrl(String url) {
+  final uri = Uri.tryParse(url);
+  if (uri == null || uri.queryParameters.isEmpty) {
     return null;
   }
 
+  final engagementId = (uri.queryParameters['competition_id'] ??
+          uri.queryParameters['competitionId'] ??
+          '')
+      .trim();
+  if (engagementId.isEmpty || int.tryParse(engagementId) == null) {
+    return null;
+  }
+
+  final pouleRaw = (uri.queryParameters['poule'] ??
+          uri.queryParameters['groupe'] ??
+          '')
+      .trim();
+  final phaseRaw = (uri.queryParameters['phase'] ??
+          uri.queryParameters['stage'] ??
+          '')
+      .trim();
+
   return FffCompetitionInfo(
-    rawUrl: trimmed,
+    rawUrl: url,
     engagementId: engagementId,
-    slug: slug,
-    name: slugToCompetitionName(slug),
-    phase: phase,
-    groupe: groupe,
+    slug: null,
+    name: engagementId,
+    phase: int.tryParse(phaseRaw) ?? 0,
+    groupe: int.tryParse(pouleRaw) ?? 0,
   );
 }
 

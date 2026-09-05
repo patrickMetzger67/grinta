@@ -20,6 +20,9 @@ Future<void> openTeamStatsScreen(
   required bool isManager,
   int initialTabIndex = 0,
   String? initialCompetitionUrl,
+  String? initialCompetitionId,
+  String? initialCompetitionPoule,
+  String? initialCompetitionStage,
   String? initialOpponentKey,
   String? initialOpponentName,
   String? initialMatchIdForViewTracking,
@@ -35,6 +38,9 @@ Future<void> openTeamStatsScreen(
         fallbackSeasonId: seasonId,
         initialTabIndex: initialTabIndex,
         initialCompetitionUrl: initialCompetitionUrl,
+        initialCompetitionId: initialCompetitionId,
+        initialCompetitionPoule: initialCompetitionPoule,
+        initialCompetitionStage: initialCompetitionStage,
         initialOpponentKey: initialOpponentKey,
         initialOpponentName: initialOpponentName,
         initialMatchIdForViewTracking: initialMatchIdForViewTracking,
@@ -51,6 +57,9 @@ class TeamStatsScreen extends StatefulWidget {
     this.fallbackSeasonId,
     this.initialTabIndex = 0,
     this.initialCompetitionUrl,
+    this.initialCompetitionId,
+    this.initialCompetitionPoule,
+    this.initialCompetitionStage,
     this.initialOpponentKey,
     this.initialOpponentName,
     this.initialMatchIdForViewTracking,
@@ -61,6 +70,9 @@ class TeamStatsScreen extends StatefulWidget {
   final String? fallbackSeasonId;
   final int initialTabIndex;
   final String? initialCompetitionUrl;
+  final String? initialCompetitionId;
+  final String? initialCompetitionPoule;
+  final String? initialCompetitionStage;
   final String? initialOpponentKey;
   final String? initialOpponentName;
   final String? initialMatchIdForViewTracking;
@@ -156,6 +168,9 @@ class _TeamStatsScreenState extends State<TeamStatsScreen>
                 isManager: widget.isManager,
                 fallbackSeasonId: widget.fallbackSeasonId,
                 initialCompetitionUrl: widget.initialCompetitionUrl,
+                initialCompetitionId: widget.initialCompetitionId,
+                initialCompetitionPoule: widget.initialCompetitionPoule,
+                initialCompetitionStage: widget.initialCompetitionStage,
               ),
               TeamStatsTrainingsTab(
                 team: widget.team,
@@ -168,6 +183,9 @@ class _TeamStatsScreenState extends State<TeamStatsScreen>
                   isManager: widget.isManager,
                   fallbackSeasonId: widget.fallbackSeasonId,
                   initialCompetitionUrl: widget.initialCompetitionUrl,
+                  initialCompetitionId: widget.initialCompetitionId,
+                  initialCompetitionPoule: widget.initialCompetitionPoule,
+                  initialCompetitionStage: widget.initialCompetitionStage,
                   initialOpponentKey: widget.initialOpponentKey,
                   initialOpponentName: widget.initialOpponentName,
                   initialMatchIdForViewTracking:
