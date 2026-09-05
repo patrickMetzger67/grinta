@@ -237,101 +237,106 @@ class _HighlightCard extends StatelessWidget {
     final description = _descriptionForHighlight(context.l10n, highlight);
     final team = _clean(highlight.team);
 
+    final content = Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: colors.surface,
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(
+          color: style.color.withValues(alpha: 0.25),
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.04),
+            blurRadius: 12,
+            offset: const Offset(0, 6),
+          ),
+        ],
+      ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment:
+            alignRight ? CrossAxisAlignment.end : CrossAxisAlignment.start,
+        children: [
+          Row(
+            mainAxisAlignment:
+                alignRight ? MainAxisAlignment.end : MainAxisAlignment.start,
+            children: [
+              if (!alignRight) ...[
+                _EventIcon(
+                  icon: style.icon,
+                  color: style.color,
+                ),
+                const SizedBox(width: 8),
+              ],
+              Flexible(
+                child: Text(
+                  title,
+                  textAlign: alignRight ? TextAlign.right : TextAlign.left,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    color: colors.textPrimary,
+                    fontSize: 14,
+                    fontWeight: FontWeight.w900,
+                  ),
+                ),
+              ),
+              if (onTap != null) ...[
+                const SizedBox(width: 4),
+                Icon(
+                  Icons.chevron_right_rounded,
+                  size: 18,
+                  color: colors.textSecondary,
+                ),
+              ],
+              if (alignRight) ...[
+                const SizedBox(width: 8),
+                _EventIcon(
+                  icon: style.icon,
+                  color: style.color,
+                ),
+              ],
+            ],
+          ),
+          const SizedBox(height: 8),
+          Text(
+            description,
+            textAlign: alignRight ? TextAlign.right : TextAlign.left,
+            style: TextStyle(
+              color: colors.textPrimary,
+              fontSize: 13,
+              fontWeight: FontWeight.w700,
+              height: 1.25,
+            ),
+          ),
+          if (team.isNotEmpty) ...[
+            const SizedBox(height: 8),
+            _TeamChip(
+              team: team,
+              color: style.color,
+              alignRight: alignRight,
+            ),
+          ],
+        ],
+      ),
+    );
+
     return ConstrainedBox(
       constraints: const BoxConstraints(
         maxWidth: 330,
       ),
-      child: Material(
-        color: colors.surface,
-        borderRadius: BorderRadius.circular(18),
-        child: InkWell(
-          onTap: onTap,
-          borderRadius: BorderRadius.circular(18),
-          child: Container(
-        width: double.infinity,
-        padding: const EdgeInsets.all(12),
-        decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(18),
-          border: Border.all(
-            color: style.color.withValues(alpha: 0.25),
-          ),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withValues(alpha: 0.04),
-              blurRadius: 12,
-              offset: const Offset(0, 6),
-            ),
-          ],
-        ),
-        child: Column(
-          crossAxisAlignment:
-          alignRight ? CrossAxisAlignment.end : CrossAxisAlignment.start,
-          children: [
-            Row(
-              mainAxisAlignment:
-              alignRight ? MainAxisAlignment.end : MainAxisAlignment.start,
-              children: [
-                if (!alignRight) ...[
-                  _EventIcon(
-                    icon: style.icon,
-                    color: style.color,
-                  ),
-                  const SizedBox(width: 8),
-                ],
-                Flexible(
-                  child: Text(
-                    title,
-                    textAlign: alignRight ? TextAlign.right : TextAlign.left,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: TextStyle(
-                      color: colors.textPrimary,
-                      fontSize: 14,
-                      fontWeight: FontWeight.w900,
-                    ),
-                  ),
-                ),
-                if (alignRight) ...[
-                  const SizedBox(width: 8),
-                  _EventIcon(
-                    icon: style.icon,
-                    color: style.color,
-                  ),
-                ],
-              ],
-            ),
-            const SizedBox(height: 8),
-            Text(
-              description,
-              textAlign: alignRight ? TextAlign.right : TextAlign.left,
-              style: TextStyle(
-                color: colors.textPrimary,
-                fontSize: 13,
-                fontWeight: FontWeight.w700,
-                height: 1.25,
+      child: onTap == null
+          ? content
+          : Material(
+              color: Colors.transparent,
+              child: InkWell(
+                onTap: onTap,
+                borderRadius: BorderRadius.circular(18),
+                child: content,
               ),
             ),
-            if (team.isNotEmpty) ...[
-              const SizedBox(height: 8),
-              _TeamChip(
-                team: team,
-                color: style.color,
-                alignRight: alignRight,
-              ),
-            ],
-            if (onTap != null) ...[
-              const SizedBox(height: 6),
-              Icon(
-                Icons.chevron_right_rounded,
-                size: 18,
-                color: colors.textSecondary,
-              ),
-            ],
-          ],
-        ),
-          ),
-        ),
-      ),
     );
   }
 
