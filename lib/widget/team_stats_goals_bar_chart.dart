@@ -1,8 +1,10 @@
 import 'package:fl_chart/fl_chart.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:grinta/core/extensions/l10n_extension.dart';
 import 'package:grinta/util/app_theme.dart';
 import 'package:grinta/util/match_outcome_helper.dart';
+import 'package:grinta/util/team_stats_goals_detail_helper.dart';
 
 /// Grouped bar chart for goals scored vs conceded in a period.
 class TeamStatsGoalsBarChart extends StatelessWidget {
@@ -10,10 +12,12 @@ class TeamStatsGoalsBarChart extends StatelessWidget {
     super.key,
     required this.title,
     required this.counts,
+    this.onBarTap,
   });
 
   final String title;
   final TeamGoalsCounts counts;
+  final ValueChanged<TeamStatsGoalBarKind>? onBarTap;
 
   @override
   Widget build(BuildContext context) {
@@ -152,8 +156,35 @@ class TeamStatsGoalsBarChart extends StatelessWidget {
                       ],
                     ),
                   ],
-                  barTouchData: const BarTouchData(
-                    enabled: false,
+                  barTouchData: BarTouchData(
+                    enabled: onBarTap != null,
+                    handleBuiltInTouches: false,
+                    touchCallback: (event, response) {
+                      if (onBarTap == null ||
+                          !event.isInterestedForInteractions ||
+                          !_isBarChartTapCommitEvent(event)) {
+                        return;
+                      }
+                      final spot = response?.spot;
+                      if (spot == null) {
+                        return;
+                      }
+                      final kind = switch (spot.touchedBarGroupIndex) {
+                        0 => TeamStatsGoalBarKind.scored,
+                        1 => TeamStatsGoalBarKind.conceded,
+                        _ => null,
+                      };
+                      if (kind == null) {
+                        return;
+                      }
+                      final value = kind == TeamStatsGoalBarKind.scored
+                          ? counts.scored
+                          : counts.conceded;
+                      if (value <= 0) {
+                        return;
+                      }
+                      onBarTap!(kind);
+                    },
                   ),
                 ),
                 duration: const Duration(milliseconds: 350),
@@ -166,6 +197,9 @@ class TeamStatsGoalsBarChart extends StatelessWidget {
               value: counts.scored,
               avgPerMatch: counts.avgScoredPerMatch,
               color: goalColors.scored,
+              onTap: counts.scored > 0 && onBarTap != null
+                  ? () => onBarTap!(TeamStatsGoalBarKind.scored)
+                  : null,
             ),
             const SizedBox(height: 10),
             _LegendRow(
@@ -173,6 +207,9 @@ class TeamStatsGoalsBarChart extends StatelessWidget {
               value: counts.conceded,
               avgPerMatch: counts.avgConcededPerMatch,
               color: goalColors.conceded,
+              onTap: counts.conceded > 0 && onBarTap != null
+                  ? () => onBarTap!(TeamStatsGoalBarKind.conceded)
+                  : null,
             ),
             const SizedBox(height: 6),
             Text(
@@ -204,6 +241,20 @@ class TeamStatsGoalsBarChart extends StatelessWidget {
   }
 }
 
+/// Desktop/web fire both tap-down and tap-up; mobile only tap-down is interactive.
+bool _isBarChartTapCommitEvent(FlTouchEvent event) {
+  final isDesktopOrWeb = kIsWeb ||
+      defaultTargetPlatform == TargetPlatform.linux ||
+      defaultTargetPlatform == TargetPlatform.macOS ||
+      defaultTargetPlatform == TargetPlatform.windows;
+
+  if (isDesktopOrWeb) {
+    return event is FlTapUpEvent;
+  }
+
+  return event is FlTapDownEvent;
+}
+
 ({Color scored, Color conceded}) _goalColors(AppColors colors) {
   return (
     scored: colors.success,
@@ -217,12 +268,14 @@ class _LegendRow extends StatelessWidget {
     required this.value,
     required this.avgPerMatch,
     required this.color,
+    this.onTap,
   });
 
   final String label;
   final int value;
   final double? avgPerMatch;
   final Color color;
+  final VoidCallback? onTap;
 
   @override
   Widget build(BuildContext context) {
@@ -233,7 +286,7 @@ class _LegendRow extends StatelessWidget {
         ? '—'
         : l10n.teamStatsGoalsAvgPerMatch(avgPerMatch!);
 
-    return Row(
+    final row = Row(
       children: [
         Container(
           width: 10,
@@ -264,6 +317,19 @@ class _LegendRow extends StatelessWidget {
           ),
         ),
       ],
+    );
+
+    if (onTap == null) {
+      return row;
+    }
+
+    return InkWell(
+      borderRadius: BorderRadius.circular(8),
+      onTap: onTap,
+      child: Padding(
+        padding: const EdgeInsets.symmetric(vertical: 2),
+        child: row,
+      ),
     );
   }
 }

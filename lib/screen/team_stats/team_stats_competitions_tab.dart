@@ -11,7 +11,9 @@ import 'package:grinta/services/teams_per_club_service.dart';
 import 'package:grinta/util/app_theme.dart';
 import 'package:grinta/util/match_outcome_helper.dart';
 import 'package:grinta/util/team_stats_competition_filter.dart';
+import 'package:grinta/util/team_stats_goals_detail_helper.dart';
 import 'package:grinta/widget/team_stats_goals_bar_chart.dart';
+import 'package:grinta/widget/team_stats_goals_detail_dialog.dart';
 import 'package:grinta/widget/team_stats_goals_trend_indicator.dart';
 import 'package:grinta/widget/team_stats_players_table.dart';
 import 'package:grinta/widget/team_stats_wdl_matches_dialog.dart';
@@ -364,26 +366,69 @@ class _TeamStatsCompetitionsTabState extends State<TeamStatsCompetitionsTab>
     return [
       TeamStatsGoalsTrendIndicator(
         trends: TeamGoalsHalfTrends.compare(
-          firstHalf: stats.firstHalf,
-          secondHalf: stats.secondHalf,
+          firstHalf: stats.firstHalf.counts,
+          secondHalf: stats.secondHalf.counts,
         ),
       ),
       const SizedBox(height: 16),
       TeamStatsGoalsBarChart(
         title: l10n.teamStatsPeriodFullSeason,
-        counts: stats.fullSeason,
+        counts: stats.fullSeason.counts,
+        onBarTap: (kind) => _openGoalsDetailDialog(
+          periodTitle: l10n.teamStatsPeriodFullSeason,
+          periodData: stats.fullSeason,
+          kind: kind,
+          stats: stats,
+        ),
       ),
       const SizedBox(height: 16),
       TeamStatsGoalsBarChart(
         title: l10n.teamStatsPeriodFirstHalf,
-        counts: stats.firstHalf,
+        counts: stats.firstHalf.counts,
+        onBarTap: (kind) => _openGoalsDetailDialog(
+          periodTitle: l10n.teamStatsPeriodFirstHalf,
+          periodData: stats.firstHalf,
+          kind: kind,
+          stats: stats,
+        ),
       ),
       const SizedBox(height: 16),
       TeamStatsGoalsBarChart(
         title: l10n.teamStatsPeriodSecondHalf,
-        counts: stats.secondHalf,
+        counts: stats.secondHalf.counts,
+        onBarTap: (kind) => _openGoalsDetailDialog(
+          periodTitle: l10n.teamStatsPeriodSecondHalf,
+          periodData: stats.secondHalf,
+          kind: kind,
+          stats: stats,
+        ),
       ),
     ];
+  }
+
+  void _openGoalsDetailDialog({
+    required String periodTitle,
+    required TeamGoalsPeriodData periodData,
+    required TeamStatsGoalBarKind kind,
+    required TeamGoalsStatsByPeriod stats,
+  }) {
+    final value = kind == TeamStatsGoalBarKind.scored
+        ? periodData.counts.scored
+        : periodData.counts.conceded;
+    if (value <= 0 || periodData.matches.isEmpty) {
+      return;
+    }
+
+    showTeamStatsGoalsDetailDialog(
+      context: context,
+      periodTitle: periodTitle,
+      kind: kind,
+      matches: periodData.matches,
+      teamId: stats.teamId,
+      clubId: stats.clubId,
+      clubAffiliation: stats.clubAffiliation,
+      perspectiveDisplayName: stats.perspectiveDisplayName,
+    );
   }
 
   List<Widget> _buildMatchesContent(AppLocalizations l10n) {

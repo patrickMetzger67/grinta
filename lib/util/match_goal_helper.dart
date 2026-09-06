@@ -28,15 +28,32 @@ String affiliationTeamForSide(models.Match match, MatchSide side) {
 }
 
 /// Grinta team id linked to [side], when present in [match.teams].
+///
+/// FFF / calendar imports often store only our team id in [Match.teams].
+/// Index 0 is then our club, **not** necessarily home — [Match.isOwnClub]
+/// places it on team1 (home) or team2 (away). Returning [linked.first] for
+/// every team1 selection wrongly shows our roster under the opponent name
+/// when we play away (jersey-only on our side if [Match.teamID] is missing).
 String? teamIdForSide(models.Match match, MatchSide side) {
   final List<String> linked =
       normalizeTeamIdList(match.teams ?? const <dynamic>[]);
 
-  if (side == MatchSide.team1 && linked.isNotEmpty) {
-    return linked.first;
+  // Two linked teams: array order is home then away.
+  if (linked.length >= 2) {
+    if (side == MatchSide.team1) return linked[0];
+    if (side == MatchSide.team2) return linked[1];
   }
-  if (side == MatchSide.team2 && linked.length > 1) {
-    return linked[1];
+
+  // Single linked id = our team only. Place it with isOwnClub, not index 0.
+  if (linked.length == 1) {
+    final String onlyId = linked.first;
+    if (match.isOwnClub == true && side == MatchSide.team1) {
+      return onlyId;
+    }
+    if (match.isOwnClub == false && side == MatchSide.team2) {
+      return onlyId;
+    }
+    // isOwnClub unknown: do not guess home from index 0.
   }
 
   final String? primaryId = match.teamID?.trim();
@@ -44,17 +61,10 @@ String? teamIdForSide(models.Match match, MatchSide side) {
     return null;
   }
 
-  if (linked.length == 1) {
-    final bool ownTeamIsHome = match.isOwnClub == true;
-    if (side == MatchSide.team1 && ownTeamIsHome) return linked.first;
-    if (side == MatchSide.team2 && !ownTeamIsHome) return linked.first;
-    return null;
-  }
-
   if (side == MatchSide.team1 && match.isOwnClub == true) {
     return primaryId;
   }
-  if (side == MatchSide.team2 && match.isOwnClub != true) {
+  if (side == MatchSide.team2 && match.isOwnClub == false) {
     return primaryId;
   }
 
