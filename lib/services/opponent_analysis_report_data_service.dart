@@ -232,9 +232,19 @@ class OpponentAnalysisReportDataService {
     } catch (e, st) {
       debugPrint('OpponentAnalysisReportDataService goals failed: $e\n$st');
       goals = const TeamGoalsStatsByPeriod(
-        fullSeason: TeamGoalsCounts(),
-        firstHalf: TeamGoalsCounts(),
-        secondHalf: TeamGoalsCounts(),
+        fullSeason: TeamGoalsPeriodData(
+          counts: TeamGoalsCounts(),
+          matches: [],
+        ),
+        firstHalf: TeamGoalsPeriodData(
+          counts: TeamGoalsCounts(),
+          matches: [],
+        ),
+        secondHalf: TeamGoalsPeriodData(
+          counts: TeamGoalsCounts(),
+          matches: [],
+        ),
+        teamId: '',
       );
     }
 
@@ -249,8 +259,8 @@ class OpponentAnalysisReportDataService {
       secondHalf: wdl.secondHalf.counts,
     );
     final goalsTrend = TeamGoalsHalfTrends.compare(
-      firstHalf: goals.firstHalf,
-      secondHalf: goals.secondHalf,
+      firstHalf: goals.firstHalf.counts,
+      secondHalf: goals.secondHalf.counts,
     );
 
     return OpponentAnalysisReportData(
