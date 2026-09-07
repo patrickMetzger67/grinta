@@ -14,8 +14,11 @@ import 'package:grinta/util/player_photo_resolver.dart';
 import 'package:grinta/widget/manager_team_cards_sheet.dart';
 import 'package:provider/provider.dart';
 
-/// Coach/manager disciplinary cards entry (badge = non-purged across managed
-/// teams). Same placement as [PlayerCardsEntryButton] on Agenda / Dashboard.
+/// Coach/manager disciplinary cards entry on Agenda / Dashboard.
+///
+/// Shown whenever the user manages ≥1 team for the selected season (including
+/// when the non-purged count is 0). Badge = non-purged total across managed
+/// team rosters when that total is > 0.
 ///
 /// Tap: one managed team → team Cartons list; several → pick team then list.
 class ManagerCardsEntryButton extends StatefulWidget {
@@ -150,67 +153,96 @@ class _ManagerCardsEntryButtonState extends State<ManagerCardsEntryButton> {
       future: _badgeFuture,
       builder: (context, snapshot) {
         final nonPurgedCount = snapshot.data?.nonPurgedCount ?? 0;
-        if (nonPurgedCount <= 0) {
-          return const SizedBox.shrink();
-        }
-
-        final colors = context.appColors;
-        final l10n = context.l10n;
-        final icon = _ManagerCardsCountBadge(
-          count: nonPurgedCount,
-          iconColor: colors.warning,
-        );
-
-        if (widget.compact) {
-          return IconButton(
-            tooltip: l10n.managerCardsTooltip,
-            onPressed: () => unawaited(_open(context, managedTeams)),
-            icon: icon,
-          );
-        }
-
-        return Padding(
-          padding: EdgeInsets.only(bottom: widget.bottomSpacing),
-          child: Material(
-            color: Colors.transparent,
-            child: InkWell(
-              borderRadius: BorderRadius.circular(14),
-              onTap: () => unawaited(_open(context, managedTeams)),
-              child: Container(
-                width: double.infinity,
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-                decoration: BoxDecoration(
-                  color: colors.warning.withValues(alpha: 0.10),
-                  borderRadius: BorderRadius.circular(14),
-                  border: Border.all(
-                    color: colors.warning.withValues(alpha: 0.28),
-                  ),
-                ),
-                child: Row(
-                  children: [
-                    icon,
-                    const SizedBox(width: 10),
-                    Expanded(
-                      child: Text(
-                        l10n.managerCardsTitle,
-                        style: TextStyle(
-                          color: colors.textPrimary,
-                          fontWeight: FontWeight.w800,
-                        ),
-                      ),
-                    ),
-                    Icon(
-                      Icons.chevron_right_rounded,
-                      color: colors.textSecondary,
-                    ),
-                  ],
-                ),
-              ),
-            ),
-          ),
+        return ManagerCardsEntryContent(
+          compact: widget.compact,
+          bottomSpacing: widget.bottomSpacing,
+          nonPurgedCount: nonPurgedCount,
+          onPressed: () => unawaited(_open(context, managedTeams)),
         );
       },
+    );
+  }
+}
+
+/// Presentational chrome for [ManagerCardsEntryButton].
+///
+/// Always renders the entry; [nonPurgedCount] only drives the badge.
+@visibleForTesting
+class ManagerCardsEntryContent extends StatelessWidget {
+  const ManagerCardsEntryContent({
+    super.key,
+    required this.nonPurgedCount,
+    required this.onPressed,
+    this.compact = false,
+    this.bottomSpacing = 0,
+  });
+
+  final int nonPurgedCount;
+  final VoidCallback onPressed;
+  final bool compact;
+  final double bottomSpacing;
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = context.appColors;
+    final l10n = context.l10n;
+    final showBadge = shouldShowManagerCardsBadge(
+      nonPurgedCount: nonPurgedCount,
+    );
+    final icon = _ManagerCardsCountBadge(
+      count: showBadge ? nonPurgedCount : 0,
+      iconColor: colors.warning,
+    );
+
+    if (compact) {
+      return IconButton(
+        key: const Key('manager-cards-entry-compact'),
+        tooltip: l10n.managerCardsTooltip,
+        onPressed: onPressed,
+        icon: icon,
+      );
+    }
+
+    return Padding(
+      key: const Key('manager-cards-entry'),
+      padding: EdgeInsets.only(bottom: bottomSpacing),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          borderRadius: BorderRadius.circular(14),
+          onTap: onPressed,
+          child: Container(
+            width: double.infinity,
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+            decoration: BoxDecoration(
+              color: colors.warning.withValues(alpha: 0.10),
+              borderRadius: BorderRadius.circular(14),
+              border: Border.all(
+                color: colors.warning.withValues(alpha: 0.28),
+              ),
+            ),
+            child: Row(
+              children: [
+                icon,
+                const SizedBox(width: 10),
+                Expanded(
+                  child: Text(
+                    l10n.managerCardsTitle,
+                    style: TextStyle(
+                      color: colors.textPrimary,
+                      fontWeight: FontWeight.w800,
+                    ),
+                  ),
+                ),
+                Icon(
+                  Icons.chevron_right_rounded,
+                  color: colors.textSecondary,
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
     );
   }
 }

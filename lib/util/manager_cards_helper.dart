@@ -26,11 +26,22 @@ bool shouldShowPlayerCardsEntry({
 }
 
 /// Manager/coach cartons entry is relevant when there is at least one managed
-/// team for the selected season (badge still requires non-purged count > 0).
+/// team for the selected season.
+///
+/// The entry itself must stay visible even when the non-purged count is 0 so
+/// coaches can open Cartons; only the numeric badge depends on that count.
 bool shouldShowManagerCardsEntry({
   required Iterable<String> managedTeamIds,
 }) {
   return managedTeamIds.any((id) => id.trim().isNotEmpty);
+}
+
+/// Whether the manager Cartons entry shows a numeric badge.
+///
+/// Separate from [shouldShowManagerCardsEntry]: zero cards still shows the
+/// control, just without a badge.
+bool shouldShowManagerCardsBadge({required int nonPurgedCount}) {
+  return nonPurgedCount > 0;
 }
 
 /// Total non-purged cards across a map of member → cards docs.

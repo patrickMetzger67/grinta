@@ -62,6 +62,26 @@ void main() {
         isTrue,
       );
     });
+
+    test('shows for multi-team managers regardless of card count', () {
+      expect(
+        shouldShowManagerCardsEntry(
+          managedTeamIds: const ['team-a', 'team-b', 'team-c'],
+        ),
+        isTrue,
+      );
+      // Entry visibility is independent of non-purged count (badge only).
+      expect(shouldShowManagerCardsBadge(nonPurgedCount: 0), isFalse);
+      expect(shouldShowManagerCardsBadge(nonPurgedCount: 4), isTrue);
+    });
+  });
+
+  group('shouldShowManagerCardsBadge', () {
+    test('only when non-purged count is positive', () {
+      expect(shouldShowManagerCardsBadge(nonPurgedCount: 0), isFalse);
+      expect(shouldShowManagerCardsBadge(nonPurgedCount: -1), isFalse);
+      expect(shouldShowManagerCardsBadge(nonPurgedCount: 1), isTrue);
+    });
   });
 
   group('countNonPurgedCardsAcrossMembers', () {
