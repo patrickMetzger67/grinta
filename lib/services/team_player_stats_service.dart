@@ -23,6 +23,7 @@ class TeamPlayerSeasonStats {
     required this.starts,
     required this.minutesPlayed,
     required this.goals,
+    required this.assists,
     required this.yellowCards,
     required this.redCards,
     required this.trends,
@@ -35,6 +36,7 @@ class TeamPlayerSeasonStats {
   final int starts;
   final int minutesPlayed;
   final int goals;
+  final int assists;
   final int yellowCards;
   final int redCards;
   final TeamPlayerStatTrends trends;
@@ -146,6 +148,7 @@ class TeamPlayerStatsService {
             ..starts = entry.value.starts
             ..minutesPlayed = entry.value.minutesPlayed
             ..goals = entry.value.goals
+            ..assists = entry.value.assists
             ..yellowCards = entry.value.yellowCards
             ..redCards = entry.value.redCards;
         } else {
@@ -238,6 +241,7 @@ class TeamPlayerStatsService {
         starts: accumulator?.starts ?? 0,
         minutesPlayed: accumulator?.minutesPlayed ?? 0,
         goals: accumulator?.goals ?? 0,
+        assists: accumulator?.assists ?? 0,
         yellowCards: accumulator?.yellowCards ?? 0,
         redCards: accumulator?.redCards ?? 0,
         trends: trends,

@@ -2442,6 +2442,7 @@
   "teamStatsPlayersColumnStarts": "Start",
   "teamStatsPlayersColumnPlayTime": "Spielz.",
   "teamStatsPlayersColumnGoals": "Tore",
+  "teamStatsPlayersColumnAssists": "Vorl.",
   "teamStatsPlayersNoData": "Keine Spielerdaten für diesen Zeitraum",
   "teamStatsPlayersPlayTimeMinutes": "{minutes} Min.",
   "@teamStatsPlayersPlayTimeMinutes": {

@@ -2720,6 +2720,7 @@
   "teamStatsPlayersColumnStarts": "Starts",
   "teamStatsPlayersColumnPlayTime": "Mins",
   "teamStatsPlayersColumnGoals": "Goals",
+  "teamStatsPlayersColumnAssists": "Ast.",
   "teamStatsPlayersNoData": "No player data for this period",
   "teamStatsPlayersPlayTimeMinutes": "{minutes} min",
   "@teamStatsPlayersPlayTimeMinutes": {

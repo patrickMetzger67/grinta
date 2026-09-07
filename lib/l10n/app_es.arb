@@ -2442,6 +2442,7 @@
   "teamStatsPlayersColumnStarts": "Titu.",
   "teamStatsPlayersColumnPlayTime": "T. juego",
   "teamStatsPlayersColumnGoals": "Goles",
+  "teamStatsPlayersColumnAssists": "Asis.",
   "teamStatsPlayersNoData": "Sin datos de jugadores para este periodo",
   "teamStatsPlayersPlayTimeMinutes": "{minutes} min",
   "@teamStatsPlayersPlayTimeMinutes": {

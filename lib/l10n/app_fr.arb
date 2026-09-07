@@ -3126,6 +3126,7 @@
   "teamStatsPlayersColumnStarts": "Titu.",
   "teamStatsPlayersColumnPlayTime": "Tps jeu",
   "teamStatsPlayersColumnGoals": "Buts",
+  "teamStatsPlayersColumnAssists": "Passe Dé.",
   "teamStatsPlayersNoData": "Aucune donnée joueur sur cette période",
   "teamStatsPlayersPlayTimeMinutes": "{minutes} min",
   "@teamStatsPlayersPlayTimeMinutes": {
