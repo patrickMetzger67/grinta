@@ -1,3 +1,5 @@
+import 'dart:math' as math;
+
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:grinta/core/extensions/l10n_extension.dart';
@@ -51,19 +53,24 @@ Future<AssignFmiGoalPlayerSelection?> showAssignFmiGoalPlayerSheet(
     return showDialog<AssignFmiGoalPlayerSelection>(
       context: context,
       useRootNavigator: true,
-      builder: (dialogContext) => Dialog(
-        backgroundColor: context.appColors.card,
-        surfaceTintColor: Colors.transparent,
-        insetPadding: const EdgeInsets.symmetric(horizontal: 24, vertical: 24),
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(18),
-          side: BorderSide(color: context.appColors.border),
-        ),
-        child: ConstrainedBox(
-          constraints: const BoxConstraints(maxWidth: 520, maxHeight: 720),
-          child: buildSheet(),
-        ),
-      ),
+      builder: (dialogContext) {
+        final media = MediaQuery.sizeOf(dialogContext);
+        final dialogHeight = math.min(720.0, media.height - 48);
+        return Dialog(
+          backgroundColor: context.appColors.card,
+          surfaceTintColor: Colors.transparent,
+          insetPadding: const EdgeInsets.symmetric(horizontal: 24, vertical: 24),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(18),
+            side: BorderSide(color: context.appColors.border),
+          ),
+          child: SizedBox(
+            width: math.min(520.0, media.width - 48),
+            height: dialogHeight,
+            child: buildSheet(),
+          ),
+        );
+      },
     );
   }
 
@@ -73,7 +80,13 @@ Future<AssignFmiGoalPlayerSelection?> showAssignFmiGoalPlayerSheet(
     showDragHandle: true,
     useRootNavigator: true,
     backgroundColor: context.appColors.card,
-    builder: (_) => buildSheet(),
+    builder: (sheetContext) {
+      final height = MediaQuery.sizeOf(sheetContext).height * 0.85;
+      return SizedBox(
+        height: height,
+        child: buildSheet(),
+      );
+    },
   );
 }
 
@@ -246,6 +259,8 @@ class _AssignFmiGoalPlayerSheetState extends State<AssignFmiGoalPlayerSheet> {
   _AssignFmiGoalStep _step = _AssignFmiGoalStep.scorer;
   String? _scorerMemberId;
   String? _assisterMemberId;
+  /// Default on the assister step: "Pas de passeur décisif".
+  bool _noAssisterSelected = true;
 
   @override
   void initState() {
@@ -308,6 +323,7 @@ class _AssignFmiGoalPlayerSheetState extends State<AssignFmiGoalPlayerSheet> {
     setState(() {
       _scorerMemberId = memberId;
       _assisterMemberId = null;
+      _noAssisterSelected = true;
       _step = _AssignFmiGoalStep.assister;
       _nameFilterCtrl.clear();
     });
@@ -315,7 +331,18 @@ class _AssignFmiGoalPlayerSheetState extends State<AssignFmiGoalPlayerSheet> {
 
   void _selectAssister(String memberId) {
     _nameFilterFocus.unfocus();
-    setState(() => _assisterMemberId = memberId);
+    setState(() {
+      _assisterMemberId = memberId;
+      _noAssisterSelected = false;
+    });
+  }
+
+  void _selectNoAssister() {
+    _nameFilterFocus.unfocus();
+    setState(() {
+      _assisterMemberId = null;
+      _noAssisterSelected = true;
+    });
   }
 
   void _backToScorer() {
@@ -323,6 +350,7 @@ class _AssignFmiGoalPlayerSheetState extends State<AssignFmiGoalPlayerSheet> {
       _step = _AssignFmiGoalStep.scorer;
       _scorerMemberId = null;
       _assisterMemberId = null;
+      _noAssisterSelected = true;
       _nameFilterCtrl.clear();
     });
   }
@@ -341,6 +369,10 @@ class _AssignFmiGoalPlayerSheetState extends State<AssignFmiGoalPlayerSheet> {
   }
 
   void _confirmAssister() {
+    if (_noAssisterSelected) {
+      _finish();
+      return;
+    }
     final assisterId = _assisterMemberId?.trim() ?? '';
     if (assisterId.isEmpty) {
       return;
@@ -365,7 +397,6 @@ class _AssignFmiGoalPlayerSheetState extends State<AssignFmiGoalPlayerSheet> {
           bottom: MediaQuery.viewInsetsOf(context).bottom + 20,
         ),
         child: Column(
-          mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             if (pickingAssister) ...[
@@ -411,24 +442,27 @@ class _AssignFmiGoalPlayerSheetState extends State<AssignFmiGoalPlayerSheet> {
             ),
             const SizedBox(height: 12),
             if (_loading)
-              const Padding(
-                padding: EdgeInsets.symmetric(vertical: 24),
+              const Expanded(
                 child: Center(child: CircularProgressIndicator()),
               )
             else if (_error != null)
-              Text(
-                _error.toString(),
-                style: TextStyle(color: colors.danger, fontSize: 13),
+              Expanded(
+                child: Text(
+                  _error.toString(),
+                  style: TextStyle(color: colors.danger, fontSize: 13),
+                ),
               )
             else if (players == null || players.isEmpty)
-              Padding(
-                padding: const EdgeInsets.symmetric(vertical: 12),
-                child: Text(
-                  l10n.fmiGoalNoConvokedPlayers,
-                  style: TextStyle(
-                    color: colors.textSecondary,
-                    fontWeight: FontWeight.w500,
-                    fontSize: 13,
+              Expanded(
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 12),
+                  child: Text(
+                    l10n.fmiGoalNoConvokedPlayers,
+                    style: TextStyle(
+                      color: colors.textSecondary,
+                      fontWeight: FontWeight.w500,
+                      fontSize: 13,
+                    ),
                   ),
                 ),
               )
@@ -436,7 +470,12 @@ class _AssignFmiGoalPlayerSheetState extends State<AssignFmiGoalPlayerSheet> {
               if (pickingAssister) ...[
                 ListTile(
                   key: AssignFmiGoalPlayerSheet.noAssisterKey,
-                  contentPadding: EdgeInsets.zero,
+                  contentPadding: const EdgeInsets.symmetric(horizontal: 12),
+                  selected: _noAssisterSelected,
+                  selectedTileColor: colors.border.withValues(alpha: 0.45),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(10),
+                  ),
                   title: Text(
                     l10n.fmiGoalNoAssister,
                     style: TextStyle(
@@ -444,7 +483,7 @@ class _AssignFmiGoalPlayerSheetState extends State<AssignFmiGoalPlayerSheet> {
                       fontWeight: FontWeight.w700,
                     ),
                   ),
-                  onTap: () => _finish(),
+                  onTap: _selectNoAssister,
                 ),
                 const SizedBox(height: 4),
               ],
@@ -452,47 +491,46 @@ class _AssignFmiGoalPlayerSheetState extends State<AssignFmiGoalPlayerSheet> {
                 controller: _nameFilterCtrl,
                 focusNode: _nameFilterFocus,
               ),
-              ValueListenableBuilder<TextEditingValue>(
-                valueListenable: _nameFilterCtrl,
-                builder: (context, value, _) {
-                  final scorerId = _scorerMemberId;
-                  final filtered = players
-                      .where((player) {
-                        if (pickingAssister &&
-                            scorerId != null &&
-                            player.memberId == scorerId) {
-                          return false;
-                        }
-                        return playerLabelMatchesNameQuery(
-                          player.label,
-                          value.text,
-                        );
-                      })
-                      .toList(growable: false);
+              Expanded(
+                child: ValueListenableBuilder<TextEditingValue>(
+                  valueListenable: _nameFilterCtrl,
+                  builder: (context, value, _) {
+                    final scorerId = _scorerMemberId;
+                    final filtered = players
+                        .where((player) {
+                          if (pickingAssister &&
+                              scorerId != null &&
+                              player.memberId == scorerId) {
+                            return false;
+                          }
+                          return playerLabelMatchesNameQuery(
+                            player.label,
+                            value.text,
+                          );
+                        })
+                        .toList(growable: false);
 
-                  if (filtered.isEmpty) {
-                    return Padding(
-                      padding: const EdgeInsets.symmetric(vertical: 12),
-                      child: Text(
-                        l10n.emptyNoPlayerForTeam,
-                        style: TextStyle(
-                          color: colors.textSecondary,
-                          fontWeight: FontWeight.w500,
-                          fontSize: 13,
+                    if (filtered.isEmpty) {
+                      return Padding(
+                        padding: const EdgeInsets.symmetric(vertical: 12),
+                        child: Text(
+                          l10n.emptyNoPlayerForTeam,
+                          style: TextStyle(
+                            color: colors.textSecondary,
+                            fontWeight: FontWeight.w500,
+                            fontSize: 13,
+                          ),
                         ),
-                      ),
-                    );
-                  }
+                      );
+                    }
 
-                  return ConstrainedBox(
-                    constraints: const BoxConstraints(maxHeight: 360),
-                    child: ListView.separated(
-                      shrinkWrap: true,
+                    return ListView.separated(
                       itemCount: filtered.length,
                       separatorBuilder: (_, __) => const SizedBox(height: 4),
                       itemBuilder: (context, index) {
                         final player = filtered[index];
                         final isSelectedAssister = pickingAssister &&
+                            !_noAssisterSelected &&
                             _assisterMemberId == player.memberId;
                         return ListTile(
                           key: pickingAssister
@@ -527,12 +565,11 @@ class _AssignFmiGoalPlayerSheetState extends State<AssignFmiGoalPlayerSheet> {
                           },
                         );
                       },
-                    ),
-                  );
-                },
+                    );
+                  },
+                ),
               ),
-              if (pickingAssister &&
-                  (_assisterMemberId?.trim().isNotEmpty ?? false)) ...[
+              if (pickingAssister) ...[
                 const SizedBox(height: 12),
                 FilledButton(
                   key: AssignFmiGoalPlayerSheet.validateAssisterKey,

@@ -78,16 +78,18 @@ void main() {
     );
     expect(find.text('Bruno Durand'), findsNothing);
 
+    // Sticky Valider is visible before any player tap.
+    expect(
+      find.byKey(AssignFmiGoalPlayerSheet.validateAssisterKey),
+      findsOneWidget,
+    );
+
     await tester.tap(
       find.byKey(AssignFmiGoalPlayerSheet.assisterKey('m-claire')),
     );
     await tester.pumpAndSettle();
 
     expect(find.byKey(AssignFmiGoalPlayerSheet.sheetKey), findsOneWidget);
-    expect(
-      find.byKey(AssignFmiGoalPlayerSheet.validateAssisterKey),
-      findsOneWidget,
-    );
     expect(find.text(l10n.actionValidate), findsOneWidget);
 
     await tester.tap(find.byKey(AssignFmiGoalPlayerSheet.validateAssisterKey));
@@ -98,7 +100,9 @@ void main() {
     expect(find.byKey(AssignFmiGoalPlayerSheet.sheetKey), findsNothing);
   });
 
-  testWidgets('allows finishing without an assister', (tester) async {
+  testWidgets(
+      'sticky Valider confirms default no-assister without selecting a player',
+      (tester) async {
     final l10n = await AppLocalizations.delegate.load(const Locale('fr'));
     AssignFmiGoalPlayerSelection? selected;
 
@@ -153,16 +157,23 @@ void main() {
     await tester.tap(find.byKey(AssignFmiGoalPlayerSheet.scorerKey('m-alice')));
     await tester.pumpAndSettle();
 
-    await tester.tap(find.byKey(AssignFmiGoalPlayerSheet.noAssisterKey));
+    expect(
+      find.byKey(AssignFmiGoalPlayerSheet.validateAssisterKey),
+      findsOneWidget,
+    );
+
+    await tester.tap(find.byKey(AssignFmiGoalPlayerSheet.validateAssisterKey));
     await tester.pumpAndSettle();
 
     expect(selected?.scorerMemberId, 'm-alice');
     expect(selected?.assisterMemberId, isNull);
   });
 
-  testWidgets('does not show Valider until an assister is selected',
+  testWidgets(
+      'shows sticky Valider immediately on assister step and after no-assister',
       (tester) async {
     final l10n = await AppLocalizations.delegate.load(const Locale('fr'));
+    AssignFmiGoalPlayerSelection? selected;
 
     await tester.pumpWidget(
       MaterialApp(
@@ -178,7 +189,7 @@ void main() {
             builder: (context) {
               return TextButton(
                 onPressed: () async {
-                  await showAssignFmiGoalPlayerSheet(
+                  selected = await showAssignFmiGoalPlayerSheet(
                     context,
                     goalType: GoalType.normal,
                     minute: 15,
@@ -211,16 +222,29 @@ void main() {
     expect(find.text(l10n.fmiGoalPickAssisterTitle), findsOneWidget);
     expect(
       find.byKey(AssignFmiGoalPlayerSheet.validateAssisterKey),
-      findsNothing,
+      findsOneWidget,
     );
 
     await tester.tap(find.byKey(AssignFmiGoalPlayerSheet.assisterKey('m-bruno')));
     await tester.pumpAndSettle();
-
     expect(
       find.byKey(AssignFmiGoalPlayerSheet.validateAssisterKey),
       findsOneWidget,
     );
+
+    // Switching back to "Pas de passeur" keeps Valider visible.
+    await tester.tap(find.byKey(AssignFmiGoalPlayerSheet.noAssisterKey));
+    await tester.pumpAndSettle();
+    expect(
+      find.byKey(AssignFmiGoalPlayerSheet.validateAssisterKey),
+      findsOneWidget,
+    );
+
+    await tester.tap(find.byKey(AssignFmiGoalPlayerSheet.validateAssisterKey));
+    await tester.pumpAndSettle();
+
+    expect(selected?.scorerMemberId, 'm-alice');
+    expect(selected?.assisterMemberId, isNull);
   });
 
   testWidgets('shows an empty state when no convoked players', (tester) async {
