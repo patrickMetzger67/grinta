@@ -188,6 +188,15 @@ class _PlayerCardsSheetState extends State<PlayerCardsSheet> {
               ),
               const SizedBox(height: 16),
               Expanded(child: _buildBody(context, l10n, colors)),
+              const SizedBox(height: 12),
+              SizedBox(
+                width: double.infinity,
+                child: OutlinedButton(
+                  key: const Key('playerCardsSheetClose'),
+                  onPressed: () => Navigator.of(context).pop(),
+                  child: Text(l10n.actionClose),
+                ),
+              ),
             ],
           ),
         ),
