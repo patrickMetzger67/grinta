@@ -1397,6 +1397,37 @@
       }
     }
   },
+  "playerCardsTitle": "I miei cartellini",
+  "playerCardsSubtitle": "Cartellini disciplinari ricevuti in partita.",
+  "playerCardsTooltip": "I miei cartellini",
+  "playerCardsTypeYellow": "Giallo",
+  "playerCardsTypeRed": "Rosso",
+  "playerCardsPurged": "Annullato",
+  "playerCardsNotPurged": "Non annullato",
+  "playerCardsUnknownMatch": "Partita sconosciuta",
+  "playerCardsEmpty": "Nessun cartellino registrato.",
+  "playerCardsEntryMeta": "{type} · {minute} · {status}",
+  "@playerCardsEntryMeta": {
+    "placeholders": {
+      "type": {
+        "type": "String"
+      },
+      "minute": {
+        "type": "String"
+      },
+      "status": {
+        "type": "String"
+      }
+    }
+  },
+  "playerCardsLoadError": "Impossibile caricare i cartellini: {error}",
+  "@playerCardsLoadError": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
   "fmiGoalPickScorerTitle": "Quale giocatore ha segnato?",
   "fmiGoalPickScorerSubtitle": "{type} · {minute}'",
   "@fmiGoalPickScorerSubtitle": {

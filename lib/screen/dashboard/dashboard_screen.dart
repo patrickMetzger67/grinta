@@ -41,6 +41,7 @@ import '../../widget/app_shell_scope.dart';
 import '../../widget/ask_diego/ask_diego_speed_dial.dart';
 import '../../widget/agendaMatchRow.dart';
 import '../../widget/coach_workload_analysis_entry_button.dart';
+import '../../widget/player_cards_entry_button.dart';
 import '../../widget/metrics_panel.dart';
 import '../../widget/personal_sport_activity_summary.dart';
 import '../match_detail_screen.dart';
@@ -504,6 +505,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
             ),
             SizedBox(height: isPhone ? 12 : 14),
           ],
+          PlayerCardsEntryButton(bottomSpacing: isPhone ? 12 : 14),
           _buildPeriodSelector(
             context: context,
             colors: colors,

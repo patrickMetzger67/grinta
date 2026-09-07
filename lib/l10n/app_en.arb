@@ -1397,6 +1397,37 @@
       }
     }
   },
+  "playerCardsTitle": "My cards",
+  "playerCardsSubtitle": "Disciplinary cards received in matches.",
+  "playerCardsTooltip": "My cards",
+  "playerCardsTypeYellow": "Yellow",
+  "playerCardsTypeRed": "Red",
+  "playerCardsPurged": "Purged",
+  "playerCardsNotPurged": "Not purged",
+  "playerCardsUnknownMatch": "Unknown match",
+  "playerCardsEmpty": "No cards recorded.",
+  "playerCardsEntryMeta": "{type} · {minute} · {status}",
+  "@playerCardsEntryMeta": {
+    "placeholders": {
+      "type": {
+        "type": "String"
+      },
+      "minute": {
+        "type": "String"
+      },
+      "status": {
+        "type": "String"
+      }
+    }
+  },
+  "playerCardsLoadError": "Could not load cards: {error}",
+  "@playerCardsLoadError": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
   "fmiGoalPickScorerTitle": "Which player scored?",
   "fmiGoalPickScorerSubtitle": "{type} · {minute}'",
   "@fmiGoalPickScorerSubtitle": {

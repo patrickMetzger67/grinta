@@ -1397,6 +1397,37 @@
       }
     }
   },
+  "playerCardsTitle": "Meine Karten",
+  "playerCardsSubtitle": "Disziplinarkarten aus Spielen.",
+  "playerCardsTooltip": "Meine Karten",
+  "playerCardsTypeYellow": "Gelb",
+  "playerCardsTypeRed": "Rot",
+  "playerCardsPurged": "Getilgt",
+  "playerCardsNotPurged": "Nicht getilgt",
+  "playerCardsUnknownMatch": "Unbekanntes Spiel",
+  "playerCardsEmpty": "Keine Karten gespeichert.",
+  "playerCardsEntryMeta": "{type} · {minute} · {status}",
+  "@playerCardsEntryMeta": {
+    "placeholders": {
+      "type": {
+        "type": "String"
+      },
+      "minute": {
+        "type": "String"
+      },
+      "status": {
+        "type": "String"
+      }
+    }
+  },
+  "playerCardsLoadError": "Karten konnten nicht geladen werden: {error}",
+  "@playerCardsLoadError": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
   "fmiGoalPickScorerTitle": "Welcher Spieler hat getroffen?",
   "fmiGoalPickScorerSubtitle": "{type} · {minute}'",
   "@fmiGoalPickScorerSubtitle": {

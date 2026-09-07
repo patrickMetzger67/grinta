@@ -172,6 +172,58 @@ bool playerCardEntryExists(
   return existing.any((entry) => entry.hasSameIdentityAs(incoming));
 }
 
+/// Entries that still count toward the disciplinary badge (`isPurged != true`).
+List<PlayerCardEntry> nonPurgedPlayerCardEntries(
+  Iterable<PlayerCardEntry> entries,
+) {
+  return entries.where((entry) => entry.isPurged != true).toList(growable: false);
+}
+
+/// Count of non-purged cards for the player-side badge indicator.
+int countNonPurgedPlayerCards(Iterable<PlayerCardEntry> entries) {
+  return nonPurgedPlayerCardEntries(entries).length;
+}
+
+/// Minute label matching Grinta highlights UI (`12'` / `45'+2`).
+String playerCardMinuteLabel(PlayerCardEntry entry) {
+  if (entry.extraTime > 0) {
+    return "${entry.time}'+${entry.extraTime}";
+  }
+  return "${entry.time}'";
+}
+
+/// Match title for restitution lists (`Home - Away`, or a single side / fallback).
+String playerCardMatchTitle({
+  required String? team1,
+  required String? team2,
+  required String fallback,
+}) {
+  final home = team1?.trim() ?? '';
+  final away = team2?.trim() ?? '';
+  if (home.isNotEmpty && away.isNotEmpty) {
+    return '$home - $away';
+  }
+  if (home.isNotEmpty) {
+    return home;
+  }
+  if (away.isNotEmpty) {
+    return away;
+  }
+  return fallback;
+}
+
+ActionType? actionTypeForPlayerCardType(String type) {
+  final parsed = parsePlayerCardType(type) ?? type.trim().toLowerCase();
+  switch (parsed) {
+    case playerCardTypeYellow:
+      return ActionType.yellowCard;
+    case playerCardTypeRed:
+      return ActionType.redCard;
+    default:
+      return null;
+  }
+}
+
 /// Convoked players for the FMI card picker (`MatchCompo.convocation.playerID`).
 Future<List<AssignFmiCardPlayerOption>> loadConvokedPlayersForCardAssignment({
   required models.Match match,

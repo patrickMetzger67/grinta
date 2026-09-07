@@ -236,4 +236,89 @@ void main() {
       expect(entry?.isPurged, isFalse);
     });
   });
+
+  group('non-purged card helpers', () {
+    test('countNonPurgedPlayerCards ignores purged entries', () {
+      const entries = <PlayerCardEntry>[
+        PlayerCardEntry(
+          matchId: 'm1',
+          time: 10,
+          type: playerCardTypeYellow,
+        ),
+        PlayerCardEntry(
+          matchId: 'm2',
+          time: 20,
+          type: playerCardTypeRed,
+          isPurged: true,
+        ),
+        PlayerCardEntry(
+          matchId: 'm3',
+          time: 30,
+          type: playerCardTypeYellow,
+          isPurged: false,
+        ),
+      ];
+
+      expect(countNonPurgedPlayerCards(entries), 2);
+      expect(nonPurgedPlayerCardEntries(entries), [
+        entries[0],
+        entries[2],
+      ]);
+    });
+
+    test('playerCardMinuteLabel includes extra time when present', () {
+      expect(
+        playerCardMinuteLabel(
+          const PlayerCardEntry(
+            matchId: 'm1',
+            time: 45,
+            extraTime: 2,
+            type: playerCardTypeYellow,
+          ),
+        ),
+        "45'+2",
+      );
+      expect(
+        playerCardMinuteLabel(
+          const PlayerCardEntry(
+            matchId: 'm1',
+            time: 12,
+            type: playerCardTypeRed,
+          ),
+        ),
+        "12'",
+      );
+    });
+
+    test('playerCardMatchTitle builds home-away label', () {
+      expect(
+        playerCardMatchTitle(
+          team1: 'Grinta FC',
+          team2: 'Rivaux',
+          fallback: 'Match',
+        ),
+        'Grinta FC - Rivaux',
+      );
+      expect(
+        playerCardMatchTitle(
+          team1: null,
+          team2: null,
+          fallback: 'Unknown match',
+        ),
+        'Unknown match',
+      );
+    });
+
+    test('actionTypeForPlayerCardType maps yellow and red', () {
+      expect(
+        actionTypeForPlayerCardType(playerCardTypeYellow),
+        ActionType.yellowCard,
+      );
+      expect(
+        actionTypeForPlayerCardType(playerCardTypeRed),
+        ActionType.redCard,
+      );
+      expect(actionTypeForPlayerCardType('unknown'), isNull);
+    });
+  });
 }

@@ -9,8 +9,9 @@ import '../util/player_cards_helper.dart';
 /// `playerID`, convocation `playerID`).
 ///
 /// Written when a Grinta card highlight is saved, or when a manager assigns
-/// a convoked player to an FMI card highlight. The app does not yet render
-/// these cards on player / coach surfaces.
+/// a convoked player to an FMI card highlight. Player surfaces show a badge
+/// and restitution list for non-purged entries; coach restitution is not yet
+/// implemented.
 class CardsService {
   CardsService({
     FirebaseFirestore? firestore,

@@ -1397,6 +1397,37 @@
       }
     }
   },
+  "playerCardsTitle": "Mis tarjetas",
+  "playerCardsSubtitle": "Tarjetas disciplinarias recibidas en partidos.",
+  "playerCardsTooltip": "Mis tarjetas",
+  "playerCardsTypeYellow": "Amarilla",
+  "playerCardsTypeRed": "Roja",
+  "playerCardsPurged": "Purgada",
+  "playerCardsNotPurged": "No purgada",
+  "playerCardsUnknownMatch": "Partido desconocido",
+  "playerCardsEmpty": "No hay tarjetas registradas.",
+  "playerCardsEntryMeta": "{type} · {minute} · {status}",
+  "@playerCardsEntryMeta": {
+    "placeholders": {
+      "type": {
+        "type": "String"
+      },
+      "minute": {
+        "type": "String"
+      },
+      "status": {
+        "type": "String"
+      }
+    }
+  },
+  "playerCardsLoadError": "No se pudieron cargar las tarjetas: {error}",
+  "@playerCardsLoadError": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
   "fmiGoalPickScorerTitle": "¿Qué jugador marcó?",
   "fmiGoalPickScorerSubtitle": "{type} · {minute}'",
   "@fmiGoalPickScorerSubtitle": {
