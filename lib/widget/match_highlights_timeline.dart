@@ -4,6 +4,7 @@ import 'package:grinta/l10n/app_localizations.dart';
 
 import '../util/app_theme.dart';
 import '../model/matchStats.dart';
+import '../util/match_goal_helper.dart';
 import '../util/player_cards_helper.dart';
 
 class MatchHighlightsTimeline extends StatelessWidget {
@@ -21,6 +22,13 @@ class MatchHighlightsTimeline extends StatelessWidget {
   /// Manager-only: tap a card-type FMI highlight to assign a convoked player.
   final ValueChanged<MatchStatHighLight>? onCardHighlightTap;
 
+  /// Manager-only: tap a managed-team FMI goal to assign scorer / assister.
+  final ValueChanged<MatchStatHighLight>? onGoalHighlightTap;
+
+  /// When set with [onGoalHighlightTap], only goals for which this returns
+  /// true are tappable (typically [isManagedTeamFmiGoal]).
+  final bool Function(MatchStatHighLight highlight)? isAssignableGoalHighlight;
+
   const MatchHighlightsTimeline({
     super.key,
     this.matchStats,
@@ -29,6 +37,8 @@ class MatchHighlightsTimeline extends StatelessWidget {
     this.team2,
     this.showStartAndEnd = true,
     this.onCardHighlightTap,
+    this.onGoalHighlightTap,
+    this.isAssignableGoalHighlight,
   });
 
   @override
@@ -77,10 +87,7 @@ class MatchHighlightsTimeline extends StatelessWidget {
                   isFirst: index == 0,
                   isLast: index == items.length - 1,
                   compact: compact,
-                  onCardTap: onCardHighlightTap != null &&
-                          isFmiCardHighlight(items[index])
-                      ? () => onCardHighlightTap!(items[index])
-                      : null,
+                  onHighlightTap: _tapHandlerFor(items[index]),
                 ),
 
               if (showStartAndEnd) ...[
@@ -97,6 +104,18 @@ class MatchHighlightsTimeline extends StatelessWidget {
       },
     );
   }
+
+  VoidCallback? _tapHandlerFor(MatchStatHighLight highlight) {
+    if (onCardHighlightTap != null && isFmiCardHighlight(highlight)) {
+      return () => onCardHighlightTap!(highlight);
+    }
+    if (onGoalHighlightTap != null &&
+        isFmiGoalHighlight(highlight) &&
+        (isAssignableGoalHighlight?.call(highlight) ?? false)) {
+      return () => onGoalHighlightTap!(highlight);
+    }
+    return null;
+  }
 }
 
 class _FootballTimelineItem extends StatelessWidget {
@@ -106,7 +125,7 @@ class _FootballTimelineItem extends StatelessWidget {
   final bool isFirst;
   final bool isLast;
   final bool compact;
-  final VoidCallback? onCardTap;
+  final VoidCallback? onHighlightTap;
 
   const _FootballTimelineItem({
     required this.highlight,
@@ -115,7 +134,7 @@ class _FootballTimelineItem extends StatelessWidget {
     required this.isFirst,
     required this.isLast,
     required this.compact,
-    this.onCardTap,
+    this.onHighlightTap,
   });
 
   @override
@@ -148,7 +167,7 @@ class _FootballTimelineItem extends StatelessWidget {
                 highlight: highlight,
                 style: eventStyle,
                 alignRight: false,
-                onTap: onCardTap,
+                onTap: onHighlightTap,
               ),
             ),
           ],
@@ -169,7 +188,7 @@ class _FootballTimelineItem extends StatelessWidget {
                       highlight: highlight,
                       style: eventStyle,
                       alignRight: true,
-                      onTap: onCardTap,
+                      onTap: onHighlightTap,
                     ),
                   )
                 : const SizedBox.shrink(),
@@ -191,7 +210,7 @@ class _FootballTimelineItem extends StatelessWidget {
                       highlight: highlight,
                       style: eventStyle,
                       alignRight: false,
-                      onTap: onCardTap,
+                      onTap: onHighlightTap,
                     ),
                   )
                 : const SizedBox.shrink(),

@@ -1397,6 +1397,48 @@
       }
     }
   },
+  "fmiGoalPickScorerTitle": "Which player scored?",
+  "fmiGoalPickScorerSubtitle": "{type} · {minute}'",
+  "@fmiGoalPickScorerSubtitle": {
+    "placeholders": {
+      "type": {
+        "type": "String"
+      },
+      "minute": {
+        "type": "int"
+      }
+    }
+  },
+  "fmiGoalPickAssisterTitle": "Decisive passer (optional)",
+  "fmiGoalPickAssisterSubtitle": "Scorer: {scorer} · {minute}'",
+  "@fmiGoalPickAssisterSubtitle": {
+    "placeholders": {
+      "scorer": {
+        "type": "String"
+      },
+      "minute": {
+        "type": "int"
+      }
+    }
+  },
+  "fmiGoalNoAssister": "No decisive passer",
+  "fmiGoalNoConvokedPlayers": "No players were convoked for this match.",
+  "fmiGoalAssigned": "Goal assigned to {player}",
+  "@fmiGoalAssigned": {
+    "placeholders": {
+      "player": {
+        "type": "String"
+      }
+    }
+  },
+  "fmiGoalAssignError": "Could not save the goal: {error}",
+  "@fmiGoalAssignError": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
   "matchSubstitutionAddTitle": "Record a substitution",
   "matchSubstitutionPickTeamTitle": "Which team made the change?",
   "matchSubstitutionPickOutgoingTitle": "Player off",

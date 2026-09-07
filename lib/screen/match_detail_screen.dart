@@ -33,6 +33,7 @@ import '../util/playerDisplayName.dart';
 import '../widget/last_results_form_guide.dart';
 import '../widget/match_compo_widget.dart';
 import '../widget/assign_fmi_card_player_sheet.dart';
+import '../widget/assign_fmi_goal_player_sheet.dart';
 import '../widget/match_highlights_timeline.dart';
 import '../widget/match_opponent_stats_button.dart';
 import '../util/match_team_stats_navigation.dart';
@@ -2148,6 +2149,26 @@ class _HighlightsTabState extends State<_HighlightsTab> {
                                     match: widget.match,
                                     highlight: highlight,
                                   )
+                              : null,
+                          onGoalHighlightTap: widget.isManager
+                              ? (highlight) => assignFmiGoalHighlightToPlayer(
+                                    context,
+                                    match: widget.match,
+                                    highlight: highlight,
+                                  )
+                              : null,
+                          isAssignableGoalHighlight: widget.isManager
+                              ? (highlight) {
+                                  final session = context.read<AppSession>();
+                                  return isManagedTeamFmiGoal(
+                                    widget.match,
+                                    highlight,
+                                    managedMatchTeamIds(
+                                      widget.match,
+                                      session,
+                                    ),
+                                  );
+                                }
                               : null,
                         ),
                       )

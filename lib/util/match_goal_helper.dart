@@ -4,6 +4,7 @@ import 'package:grinta/core/extensions/l10n_extension.dart';
 import 'package:grinta/model/highlights.dart';
 import 'package:grinta/model/match.dart' as models;
 import 'package:grinta/model/matchCompo.dart';
+import 'package:grinta/model/matchStats.dart';
 import 'package:grinta/services/highlightsService.dart';
 import 'package:grinta/services/matchService.dart';
 import 'package:grinta/util/app_theme.dart';
@@ -441,6 +442,117 @@ Future<void> saveGoalHighlightAndUpdateScore({
     matchService: matchService,
     isInHighLight: markInHighlight ? true : null,
   );
+}
+
+String _normalizeFmiTeamOrType(String? value) {
+  return (value ?? '')
+      .trim()
+      .toLowerCase()
+      .replaceAll(' ', '')
+      .replaceAll('-', '_');
+}
+
+/// FMI goal / but / penalty (not own-goal).
+bool isFmiGoalHighlight(MatchStatHighLight highlight) {
+  switch (_normalizeFmiTeamOrType(highlight.type)) {
+    case 'goal':
+    case 'but':
+    case 'penalty':
+      return true;
+    default:
+      return false;
+  }
+}
+
+/// Alias used by unit tests / call sites.
+bool isFmiGoal(MatchStatHighLight highlight) => isFmiGoalHighlight(highlight);
+
+/// [GoalType] for an FMI goal highlight (`penalty` → penalty, else normal).
+GoalType goalTypeFromFmiHighlight(MatchStatHighLight highlight) {
+  if (_normalizeFmiTeamOrType(highlight.type) == 'penalty') {
+    return GoalType.penalty;
+  }
+  return GoalType.normal;
+}
+
+/// Maps FMI `highlight.team` to home/away by matching [Match.team1]/[Match.team2].
+MatchSide? sideForFmiHighlightTeam(
+  models.Match match,
+  MatchStatHighLight highlight,
+) {
+  final event = _normalizeFmiTeamOrType(highlight.team);
+  if (event.isEmpty) {
+    return null;
+  }
+
+  final team1 = _normalizeFmiTeamOrType(match.team1);
+  if (team1.isNotEmpty && event == team1) {
+    return MatchSide.team1;
+  }
+
+  final team2 = _normalizeFmiTeamOrType(match.team2);
+  if (team2.isNotEmpty && event == team2) {
+    return MatchSide.team2;
+  }
+
+  return null;
+}
+
+/// True when [highlight] is an FMI goal for a side the manager manages.
+bool isManagedTeamFmiGoal(
+  models.Match match,
+  MatchStatHighLight highlight,
+  List<String> managedTeamIds,
+) {
+  if (!isFmiGoalHighlight(highlight)) {
+    return false;
+  }
+  final MatchSide? side = sideForFmiHighlightTeam(match, highlight);
+  if (side == null) {
+    return false;
+  }
+  return isManagedSide(match, side, managedTeamIds);
+}
+
+/// Persists a Grinta goal from an FMI assignment **without** recomputing the
+/// match score — FMI already owns the scoreboard.
+Future<void> saveFmiAssignedGoalHighlight({
+  required models.Match match,
+  required MatchSide side,
+  required Goal goal,
+  String? teamId,
+  int minute = 0,
+  int extraTime = 0,
+  HighlightsService? highlightsService,
+  bool updateScore = false,
+}) async {
+  final String? matchId = match.id?.trim();
+  if (matchId == null || matchId.isEmpty) {
+    throw Exception('Match id is missing');
+  }
+
+  goal.affiliationTeam = affiliationTeamForSide(match, side);
+
+  final highlight = Highlights(
+    matchCalendarId: matchId,
+    teamId: teamId,
+    minute: minute,
+    extraTime: extraTime,
+    actionType: ActionType.goal,
+    value: goal,
+    dateTime: Timestamp.now(),
+  );
+
+  await (highlightsService ?? HighlightsService()).addHighlight(highlight);
+
+  // FMI scoreboard is authoritative — never sync Grinta goal totals by default.
+  if (updateScore) {
+    final bool markInHighlight = match.isInHighLight != true;
+    await syncMatchScoreFromGoalHighlights(
+      match,
+      isInHighLight: markInHighlight ? true : null,
+    );
+  }
 }
 
 /// Shows a confirmation dialog before deleting a Grinta highlight.

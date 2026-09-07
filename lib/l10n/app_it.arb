@@ -1397,6 +1397,48 @@
       }
     }
   },
+  "fmiGoalPickScorerTitle": "Quale giocatore ha segnato?",
+  "fmiGoalPickScorerSubtitle": "{type} · {minute}'",
+  "@fmiGoalPickScorerSubtitle": {
+    "placeholders": {
+      "type": {
+        "type": "String"
+      },
+      "minute": {
+        "type": "int"
+      }
+    }
+  },
+  "fmiGoalPickAssisterTitle": "Assistman (facoltativo)",
+  "fmiGoalPickAssisterSubtitle": "Marcatore: {scorer} · {minute}'",
+  "@fmiGoalPickAssisterSubtitle": {
+    "placeholders": {
+      "scorer": {
+        "type": "String"
+      },
+      "minute": {
+        "type": "int"
+      }
+    }
+  },
+  "fmiGoalNoAssister": "Nessun assist",
+  "fmiGoalNoConvokedPlayers": "Nessun giocatore convocato per questa partita.",
+  "fmiGoalAssigned": "Gol associato a {player}",
+  "@fmiGoalAssigned": {
+    "placeholders": {
+      "player": {
+        "type": "String"
+      }
+    }
+  },
+  "fmiGoalAssignError": "Impossibile salvare il gol: {error}",
+  "@fmiGoalAssignError": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
   "matchSubstitutionAddTitle": "Registra un cambio",
   "matchSubstitutionPickTeamTitle": "Quale squadra effettua il cambio?",
   "matchSubstitutionPickOutgoingTitle": "Giocatore uscente",

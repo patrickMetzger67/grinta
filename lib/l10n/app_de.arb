@@ -1397,6 +1397,48 @@
       }
     }
   },
+  "fmiGoalPickScorerTitle": "Welcher Spieler hat getroffen?",
+  "fmiGoalPickScorerSubtitle": "{type} · {minute}'",
+  "@fmiGoalPickScorerSubtitle": {
+    "placeholders": {
+      "type": {
+        "type": "String"
+      },
+      "minute": {
+        "type": "int"
+      }
+    }
+  },
+  "fmiGoalPickAssisterTitle": "Vorlagengeber (optional)",
+  "fmiGoalPickAssisterSubtitle": "Torschütze: {scorer} · {minute}'",
+  "@fmiGoalPickAssisterSubtitle": {
+    "placeholders": {
+      "scorer": {
+        "type": "String"
+      },
+      "minute": {
+        "type": "int"
+      }
+    }
+  },
+  "fmiGoalNoAssister": "Kein Vorlagengeber",
+  "fmiGoalNoConvokedPlayers": "Für dieses Spiel wurde kein Spieler nominiert.",
+  "fmiGoalAssigned": "Tor {player} zugeordnet",
+  "@fmiGoalAssigned": {
+    "placeholders": {
+      "player": {
+        "type": "String"
+      }
+    }
+  },
+  "fmiGoalAssignError": "Tor konnte nicht gespeichert werden: {error}",
+  "@fmiGoalAssignError": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
   "matchSubstitutionAddTitle": "Wechsel erfassen",
   "matchSubstitutionPickTeamTitle": "Welches Team wechselt?",
   "matchSubstitutionPickOutgoingTitle": "Spieler raus",

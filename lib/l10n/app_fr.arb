@@ -1595,6 +1595,48 @@
       }
     }
   },
+  "fmiGoalPickScorerTitle": "Quel joueur a marqué ?",
+  "fmiGoalPickScorerSubtitle": "{type} · {minute}'",
+  "@fmiGoalPickScorerSubtitle": {
+    "placeholders": {
+      "type": {
+        "type": "String"
+      },
+      "minute": {
+        "type": "int"
+      }
+    }
+  },
+  "fmiGoalPickAssisterTitle": "Passeur décisif (facultatif)",
+  "fmiGoalPickAssisterSubtitle": "Buteur : {scorer} · {minute}'",
+  "@fmiGoalPickAssisterSubtitle": {
+    "placeholders": {
+      "scorer": {
+        "type": "String"
+      },
+      "minute": {
+        "type": "int"
+      }
+    }
+  },
+  "fmiGoalNoAssister": "Pas de passeur décisif",
+  "fmiGoalNoConvokedPlayers": "Aucun joueur convoqué pour ce match.",
+  "fmiGoalAssigned": "But associé à {player}",
+  "@fmiGoalAssigned": {
+    "placeholders": {
+      "player": {
+        "type": "String"
+      }
+    }
+  },
+  "fmiGoalAssignError": "Impossible d'enregistrer le but : {error}",
+  "@fmiGoalAssignError": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
   "matchSubstitutionAddTitle": "Enregistrer un changement",
   "matchSubstitutionPickTeamTitle": "Quelle équipe effectue le changement ?",
   "matchSubstitutionPickOutgoingTitle": "Joueur sortant",
