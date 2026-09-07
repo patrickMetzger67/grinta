@@ -189,6 +189,10 @@ class _MatchGrintaHighlightsTabState extends State<MatchGrintaHighlightsTab> {
     return profileTeamIds.first;
   }
 
+  Map<String, String?> _clubIdByTeamId(AppSession session) {
+    return clubIdByTeamIdFromTeams(session.teamsForAgendaSelectedSeason);
+  }
+
   Future<void> _showGoalEntryFlow(List<Highlights> existing) async {
     if (_saving || _matchCalendarId.isEmpty) {
       return;
@@ -202,6 +206,7 @@ class _MatchGrintaHighlightsTabState extends State<MatchGrintaHighlightsTab> {
       match: widget.match,
       managedTeamIds: managedTeamIds,
       existingHighlights: existing,
+      clubIdByTeamId: _clubIdByTeamId(session),
     );
   }
 
@@ -218,6 +223,7 @@ class _MatchGrintaHighlightsTabState extends State<MatchGrintaHighlightsTab> {
       match: widget.match,
       managedTeamIds: managedTeamIds,
       existingHighlights: existing,
+      clubIdByTeamId: _clubIdByTeamId(session),
     );
   }
 
@@ -238,6 +244,7 @@ class _MatchGrintaHighlightsTabState extends State<MatchGrintaHighlightsTab> {
       actionType: actionType,
       managedTeamIds: managedTeamIds,
       existingHighlights: existing,
+      clubIdByTeamId: _clubIdByTeamId(session),
     );
   }
 

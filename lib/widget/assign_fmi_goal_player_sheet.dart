@@ -101,7 +101,14 @@ Future<void> assignFmiGoalHighlightToPlayer(
 
   final session = context.read<AppSession>();
   final managedTeamIds = managedMatchTeamIds(match, session);
-  if (!isManagedTeamFmiGoal(match, highlight, managedTeamIds)) {
+  final clubIdByTeamId =
+      clubIdByTeamIdFromTeams(session.teamsForAgendaSelectedSeason);
+  if (!isManagedTeamFmiGoal(
+    match,
+    highlight,
+    managedTeamIds,
+    clubIdByTeamId: clubIdByTeamId,
+  )) {
     return;
   }
 
@@ -146,7 +153,7 @@ Future<void> assignFmiGoalHighlightToPlayer(
           ? null
           : assisterId;
 
-  final teamId = teamIdForSide(match, side) ??
+  final teamId = teamIdForSide(match, side, clubIdByTeamId: clubIdByTeamId) ??
       resolveTeamIdForMatch(match, managedTeamIds: managedTeamIds);
 
   final goal = Goal(

@@ -2167,6 +2167,9 @@ class _HighlightsTabState extends State<_HighlightsTab> {
                                       widget.match,
                                       session,
                                     ),
+                                    clubIdByTeamId: clubIdByTeamIdFromTeams(
+                                      session.teamsForAgendaSelectedSeason,
+                                    ),
                                   );
                                 }
                               : null,

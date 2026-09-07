@@ -5,6 +5,7 @@ import 'package:grinta/model/highlights.dart';
 import 'package:grinta/model/match.dart' as models;
 import 'package:grinta/model/matchCompo.dart';
 import 'package:grinta/model/matchStats.dart';
+import 'package:grinta/model/team.dart';
 import 'package:grinta/services/highlightsService.dart';
 import 'package:grinta/services/matchService.dart';
 import 'package:grinta/util/app_theme.dart';
@@ -28,45 +29,107 @@ String affiliationTeamForSide(models.Match match, MatchSide side) {
       : (match.affiliationTeam2?.trim() ?? '');
 }
 
-/// Grinta team id linked to [side], when present in [match.teams].
+/// Builds `teamId → clubId` from Grinta [Team] docs (e.g. session teams).
 ///
-/// FFF / calendar imports often store only our team id in [Match.teams].
-/// Index 0 is then our club, **not** necessarily home — [Match.isOwnClub]
-/// places it on team1 (home) or team2 (away). Returning [linked.first] for
-/// every team1 selection wrongly shows our roster under the opponent name
-/// when we play away (jersey-only on our side if [Match.teamID] is missing).
-String? teamIdForSide(models.Match match, MatchSide side) {
-  final List<String> linked =
-      normalizeTeamIdList(match.teams ?? const <dynamic>[]);
-
-  // Two linked teams: array order is home then away.
-  if (linked.length >= 2) {
-    if (side == MatchSide.team1) return linked[0];
-    if (side == MatchSide.team2) return linked[1];
-  }
-
-  // Single linked id = our team only. Place it with isOwnClub, not index 0.
-  if (linked.length == 1) {
-    final String onlyId = linked.first;
-    if (match.isOwnClub == true && side == MatchSide.team1) {
-      return onlyId;
+/// Used to place a team from [Match.teams] on home/away via FFF club ids,
+/// not [Match.isOwnClub].
+Map<String, String?> clubIdByTeamIdFromTeams(Iterable<Team> teams) {
+  final map = <String, String?>{};
+  for (final team in teams) {
+    final id = team.keyTeam?.trim() ?? '';
+    if (id.isEmpty) {
+      continue;
     }
-    if (match.isOwnClub == false && side == MatchSide.team2) {
-      return onlyId;
-    }
-    // isOwnClub unknown: do not guess home from index 0.
+    final clubId = team.clubId?.trim();
+    map[id] = (clubId == null || clubId.isEmpty) ? null : clubId;
   }
+  return map;
+}
 
-  final String? primaryId = match.teamID?.trim();
-  if (primaryId == null || primaryId.isEmpty) {
+/// Side of [teamId] on [match] using the team's [clubId] against
+/// [Match.affiliationTeam1] / [Match.affiliationTeam2] then [Match.clubs].
+///
+/// Does **not** use [Match.isOwnClub] — that flag is unreliable for FFF imports.
+MatchSide? sideForTeamClubId(
+  models.Match match, {
+  required String teamId,
+  String? clubId,
+}) {
+  final String club = clubId?.trim() ?? '';
+  if (club.isEmpty) {
     return null;
   }
 
-  if (side == MatchSide.team1 && match.isOwnClub == true) {
-    return primaryId;
+  final String homeAffiliation = affiliationTeamForSide(match, MatchSide.team1);
+  if (homeAffiliation.isNotEmpty && homeAffiliation == club) {
+    return MatchSide.team1;
   }
-  if (side == MatchSide.team2 && match.isOwnClub == false) {
-    return primaryId;
+  final String awayAffiliation = affiliationTeamForSide(match, MatchSide.team2);
+  if (awayAffiliation.isNotEmpty && awayAffiliation == club) {
+    return MatchSide.team2;
+  }
+
+  final List<dynamic> clubs = match.clubs ?? const <dynamic>[];
+  for (var i = 0; i < clubs.length && i < 2; i++) {
+    final sideClub = clubs[i]?.toString().trim() ?? '';
+    if (sideClub.isNotEmpty && sideClub == club) {
+      return i == 0 ? MatchSide.team1 : MatchSide.team2;
+    }
+  }
+
+  return null;
+}
+
+/// Grinta team id linked to [side], when present in [match.teams].
+///
+/// FFF / calendar imports often store only our team id in [Match.teams].
+/// Index 0 is then our club, **not** necessarily home. Place each linked id
+/// with its [clubId] against match affiliations / `clubs[]`.
+///
+/// Pass [clubIdByTeamId] from the Team documents of those ids (session /
+/// matchCalendar teams). Without club ids, falls back to home/away array
+/// index only when two ids are linked.
+String? teamIdForSide(
+  models.Match match,
+  MatchSide side, {
+  Map<String, String?> clubIdByTeamId = const <String, String?>{},
+}) {
+  final List<String> linked =
+      normalizeTeamIdList(match.teams ?? const <dynamic>[]);
+
+  final candidates = <String>[
+    ...linked,
+    if (linked.isEmpty) ...[
+      if ((match.teamID?.trim() ?? '').isNotEmpty) match.teamID!.trim(),
+    ],
+  ];
+
+  var hadClubId = false;
+  for (final teamId in candidates) {
+    final String? clubId = clubIdByTeamId[teamId];
+    if ((clubId?.trim() ?? '').isEmpty) {
+      continue;
+    }
+    hadClubId = true;
+    final MatchSide? placed = sideForTeamClubId(
+      match,
+      teamId: teamId,
+      clubId: clubId,
+    );
+    if (placed == side) {
+      return teamId;
+    }
+  }
+
+  // Club ids were available: do not guess with isOwnClub / index 0.
+  if (hadClubId) {
+    return null;
+  }
+
+  // No clubId available — two linked ids: conventional home then away order.
+  if (linked.length >= 2) {
+    if (side == MatchSide.team1) return linked[0];
+    if (side == MatchSide.team2) return linked[1];
   }
 
   return null;
@@ -75,9 +138,14 @@ String? teamIdForSide(models.Match match, MatchSide side) {
 bool isManagedSide(
   models.Match match,
   MatchSide side,
-  List<String> managedTeamIds,
-) {
-  final String? teamId = teamIdForSide(match, side);
+  List<String> managedTeamIds, {
+  Map<String, String?> clubIdByTeamId = const <String, String?>{},
+}) {
+  final String? teamId = teamIdForSide(
+    match,
+    side,
+    clubIdByTeamId: clubIdByTeamId,
+  );
   if (teamId == null || teamId.isEmpty) {
     return false;
   }
@@ -502,8 +570,9 @@ MatchSide? sideForFmiHighlightTeam(
 bool isManagedTeamFmiGoal(
   models.Match match,
   MatchStatHighLight highlight,
-  List<String> managedTeamIds,
-) {
+  List<String> managedTeamIds, {
+  Map<String, String?> clubIdByTeamId = const <String, String?>{},
+}) {
   if (!isFmiGoalHighlight(highlight)) {
     return false;
   }
@@ -511,7 +580,12 @@ bool isManagedTeamFmiGoal(
   if (side == null) {
     return false;
   }
-  return isManagedSide(match, side, managedTeamIds);
+  return isManagedSide(
+    match,
+    side,
+    managedTeamIds,
+    clubIdByTeamId: clubIdByTeamId,
+  );
 }
 
 /// Persists a Grinta goal from an FMI assignment **without** recomputing the
