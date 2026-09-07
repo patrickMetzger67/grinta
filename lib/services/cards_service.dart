@@ -12,7 +12,7 @@ import '../util/team_stats_cards_helper.dart';
 /// Written when a Grinta card highlight is saved, or when a manager assigns
 /// a convoked player to an FMI card highlight. Player surfaces show a badge
 /// and restitution list for non-purged entries; coach restitution is available
-/// on Team Stats → Analyse → Cartons.
+/// on Agenda / Dashboard entry points and on Team Stats → Analyse → Cartons.
 class CardsService {
   CardsService({
     FirebaseFirestore? firestore,

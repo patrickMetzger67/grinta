@@ -1428,6 +1428,18 @@
       }
     }
   },
+  "managerCardsTitle": "Team cards",
+  "managerCardsTooltip": "Team cards",
+  "managerCardsPickTeamTitle": "Choose a team",
+  "managerCardsPickTeamSubtitle": "Show disciplinary cards for the team.",
+  "managerCardsTeamTitle": "Cards — {team}",
+  "@managerCardsTeamTitle": {
+    "placeholders": {
+      "team": {
+        "type": "String"
+      }
+    }
+  },
   "fmiGoalPickScorerTitle": "Which player scored?",
   "fmiGoalPickScorerSubtitle": "{type} · {minute}'",
   "@fmiGoalPickScorerSubtitle": {

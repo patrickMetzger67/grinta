@@ -6,6 +6,7 @@ import 'package:grinta/model/player_cards.dart';
 import 'package:grinta/provider/appSession.dart';
 import 'package:grinta/services/cards_service.dart';
 import 'package:grinta/util/app_theme.dart';
+import 'package:grinta/util/manager_cards_helper.dart';
 import 'package:grinta/util/player_cards_helper.dart';
 import 'package:grinta/util/player_photo_resolver.dart';
 import 'package:grinta/widget/player_cards_sheet.dart';
@@ -13,8 +14,9 @@ import 'package:provider/provider.dart';
 
 /// Player-side disciplinary cards indicator (badge = non-purged count).
 ///
-/// Hidden when the selected player has no non-purged cards. Coach restitution
-/// is intentionally not implemented yet.
+/// Hidden when the selected player has no non-purged cards, or when the user
+/// is a pure manager/coach (no non-managed member teams). Dual-role users keep
+/// this entry; coaches use [ManagerCardsEntryButton] for team restitution.
 class PlayerCardsEntryButton extends StatelessWidget {
   const PlayerCardsEntryButton({
     super.key,
@@ -44,6 +46,17 @@ class PlayerCardsEntryButton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final session = context.watch<AppSession>();
+    final managedIds = session.managedTeamsIdsForSelectedSeason;
+    final memberIds = session.memberTeamsForSelectedSeason
+        .map((team) => team.keyTeam?.trim() ?? '')
+        .where((id) => id.isNotEmpty);
+    if (!shouldShowPlayerCardsEntry(
+      managedTeamIds: managedIds,
+      memberTeamIds: memberIds,
+    )) {
+      return const SizedBox.shrink();
+    }
+
     final memberId = _memberId(session);
     if (memberId == null) {
       return const SizedBox.shrink();

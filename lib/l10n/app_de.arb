@@ -1428,6 +1428,18 @@
       }
     }
   },
+  "managerCardsTitle": "Teamkarten",
+  "managerCardsTooltip": "Teamkarten",
+  "managerCardsPickTeamTitle": "Team wählen",
+  "managerCardsPickTeamSubtitle": "Disziplinarkarten des Teams anzeigen.",
+  "managerCardsTeamTitle": "Karten — {team}",
+  "@managerCardsTeamTitle": {
+    "placeholders": {
+      "team": {
+        "type": "String"
+      }
+    }
+  },
   "fmiGoalPickScorerTitle": "Welcher Spieler hat getroffen?",
   "fmiGoalPickScorerSubtitle": "{type} · {minute}'",
   "@fmiGoalPickScorerSubtitle": {
