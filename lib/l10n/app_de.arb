@@ -2371,8 +2371,37 @@
   "teamStatsSubTabMatches": "Spiele",
   "teamStatsSubTabRanking": "Tabelle",
   "teamStatsSubTabGoals": "Tore",
+  "teamStatsSubTabCards": "Karten",
   "teamStatsSubTabPlayers": "Spieler",
   "teamStatsSubTabTypicalTeam": "Typisches Team",
+  "teamStatsCardsIncludePurged": "Getilgte einbeziehen",
+  "teamStatsCardsEmpty": "Keine Karten für dieses Team.",
+  "teamStatsCardsCount": "{count} Karte(n)",
+  "@teamStatsCardsCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "teamStatsCardsLoadError": "Karten konnten nicht geladen werden: {error}",
+  "@teamStatsCardsLoadError": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "teamStatsCardsPlayerTitle": "Karten — {name}",
+  "@teamStatsCardsPlayerTitle": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "teamStatsCardsPurgedSwitch": "Getilgt",
+  "teamStatsCardsPurgeError": "Tilgungsstatus konnte nicht aktualisiert werden.",
   "teamStatsTypicalTeamStartersSection": "Wahrscheinliche Startelf",
   "teamStatsTypicalTeamSubstitutesSection": "Wahrscheinliche Ersatzspieler",
   "teamStatsTypicalTeamStartsLabel": "{starts}/{total} Starts",

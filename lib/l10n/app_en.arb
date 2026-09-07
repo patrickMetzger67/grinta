@@ -2649,8 +2649,37 @@
   "teamStatsSubTabMatches": "Matches",
   "teamStatsSubTabRanking": "Standings",
   "teamStatsSubTabGoals": "Goals",
+  "teamStatsSubTabCards": "Cards",
   "teamStatsSubTabPlayers": "Players",
   "teamStatsSubTabTypicalTeam": "Typical team",
+  "teamStatsCardsIncludePurged": "Include purged",
+  "teamStatsCardsEmpty": "No cards for this team.",
+  "teamStatsCardsCount": "{count} card(s)",
+  "@teamStatsCardsCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "teamStatsCardsLoadError": "Could not load cards: {error}",
+  "@teamStatsCardsLoadError": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "teamStatsCardsPlayerTitle": "Cards — {name}",
+  "@teamStatsCardsPlayerTitle": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "teamStatsCardsPurgedSwitch": "Purged",
+  "teamStatsCardsPurgeError": "Could not update purged status.",
   "teamStatsTypicalTeamStartersSection": "Probable starters",
   "teamStatsTypicalTeamSubstitutesSection": "Probable substitutes",
   "teamStatsTypicalTeamStartsLabel": "{starts}/{total} starts",

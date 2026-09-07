@@ -2371,8 +2371,37 @@
   "teamStatsSubTabMatches": "Partidos",
   "teamStatsSubTabRanking": "Clasificación",
   "teamStatsSubTabGoals": "Goles",
+  "teamStatsSubTabCards": "Tarjetas",
   "teamStatsSubTabPlayers": "Jugadores",
   "teamStatsSubTabTypicalTeam": "Equipo tipo",
+  "teamStatsCardsIncludePurged": "Incluir purgadas",
+  "teamStatsCardsEmpty": "No hay tarjetas para este equipo.",
+  "teamStatsCardsCount": "{count} tarjeta(s)",
+  "@teamStatsCardsCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "teamStatsCardsLoadError": "No se pudieron cargar las tarjetas: {error}",
+  "@teamStatsCardsLoadError": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "teamStatsCardsPlayerTitle": "Tarjetas — {name}",
+  "@teamStatsCardsPlayerTitle": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "teamStatsCardsPurgedSwitch": "Purgada",
+  "teamStatsCardsPurgeError": "No se pudo actualizar el estado de purga.",
   "teamStatsTypicalTeamStartersSection": "Titulares probables",
   "teamStatsTypicalTeamSubstitutesSection": "Suplentes probables",
   "teamStatsTypicalTeamStartsLabel": "{starts}/{total} titularidades",

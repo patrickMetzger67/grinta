@@ -2371,8 +2371,37 @@
   "teamStatsSubTabMatches": "Partite",
   "teamStatsSubTabRanking": "Classifica",
   "teamStatsSubTabGoals": "Gol",
+  "teamStatsSubTabCards": "Cartellini",
   "teamStatsSubTabPlayers": "Giocatori",
   "teamStatsSubTabTypicalTeam": "Formazione tipo",
+  "teamStatsCardsIncludePurged": "Includi annullati",
+  "teamStatsCardsEmpty": "Nessun cartellino per questa squadra.",
+  "teamStatsCardsCount": "{count} cartellino/i",
+  "@teamStatsCardsCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "teamStatsCardsLoadError": "Impossibile caricare i cartellini: {error}",
+  "@teamStatsCardsLoadError": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "teamStatsCardsPlayerTitle": "Cartellini — {name}",
+  "@teamStatsCardsPlayerTitle": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "teamStatsCardsPurgedSwitch": "Annullato",
+  "teamStatsCardsPurgeError": "Impossibile aggiornare lo stato di annullamento.",
   "teamStatsTypicalTeamStartersSection": "Titolari probabili",
   "teamStatsTypicalTeamSubstitutesSection": "Sostituti probabili",
   "teamStatsTypicalTeamStartsLabel": "{starts}/{total} titolarizzazioni",

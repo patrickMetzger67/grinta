@@ -3055,8 +3055,37 @@
   "teamStatsSubTabMatches": "Rencontres",
   "teamStatsSubTabRanking": "Classement",
   "teamStatsSubTabGoals": "Buts",
+  "teamStatsSubTabCards": "Cartons",
   "teamStatsSubTabPlayers": "Joueurs",
   "teamStatsSubTabTypicalTeam": "Equipe type",
+  "teamStatsCardsIncludePurged": "Inclure les purgés",
+  "teamStatsCardsEmpty": "Aucun carton pour cette équipe.",
+  "teamStatsCardsCount": "{count} carton(s)",
+  "@teamStatsCardsCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "teamStatsCardsLoadError": "Impossible de charger les cartons : {error}",
+  "@teamStatsCardsLoadError": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "teamStatsCardsPlayerTitle": "Cartons — {name}",
+  "@teamStatsCardsPlayerTitle": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "teamStatsCardsPurgedSwitch": "Purge",
+  "teamStatsCardsPurgeError": "Impossible de mettre à jour le statut de purge.",
   "teamStatsTypicalTeamStartersSection": "Titulaires probables",
   "teamStatsTypicalTeamSubstitutesSection": "Remplaçants probables",
   "teamStatsTypicalTeamStartsLabel": "{starts}/{total} titularisations",
