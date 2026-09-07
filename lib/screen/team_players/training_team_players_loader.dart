@@ -1,6 +1,7 @@
 import '../../model/answer.dart';
 import '../../model/effectives.dart';
 import '../../model/player.dart';
+import '../../model/team.dart';
 import '../../model/training.dart';
 import '../../services/answerService.dart';
 import '../../services/effectivesService.dart';
@@ -20,6 +21,16 @@ class TrainingPlayerRowVm {
   final PlayerTraining playerTraining;
   final Effectives? effectives;
   final Answer? answer;
+}
+
+class TrainingTeamPlayersLoadResult {
+  const TrainingTeamPlayersLoadResult({
+    required this.rows,
+    this.team,
+  });
+
+  final List<TrainingPlayerRowVm> rows;
+  final Team? team;
 }
 
 class TrainingPresenceCounts {
@@ -56,18 +67,22 @@ class TrainingTeamPlayersLoader {
   final EffectivesService _effectivesService;
   final AnswerService _answerService;
 
-  Future<List<TrainingPlayerRowVm>> load({
+  Future<TrainingTeamPlayersLoadResult> load({
     required Training training,
     String? seasonId,
   }) async {
     final teamId = training.teamId?.trim();
     if (teamId == null || teamId.isEmpty) {
-      return <TrainingPlayerRowVm>[];
+      return const TrainingTeamPlayersLoadResult(rows: <TrainingPlayerRowVm>[]);
     }
 
     final team = await _teamService.getTeamById(teamId);
     if (team?.players == null || team!.players!.isEmpty) {
-      return _fallbackFromTrainingOnly(training, seasonId: seasonId);
+      final rows = await _fallbackFromTrainingOnly(
+        training,
+        seasonId: seasonId,
+      );
+      return TrainingTeamPlayersLoadResult(rows: rows, team: team);
     }
 
     final trainingDate = training.dateTime?.toDate();
@@ -153,7 +168,7 @@ class TrainingTeamPlayersLoader {
       );
     });
 
-    return rows;
+    return TrainingTeamPlayersLoadResult(rows: rows, team: team);
   }
 
   /// Joueurs de l'équipe pas encore dans [training.playerTraining].
