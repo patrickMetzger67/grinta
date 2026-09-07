@@ -2752,6 +2752,8 @@
   "teamStatsTrainingsNoSeasonMonths": "No months available for this season",
   "teamStatsTrainingsColumnPresent": "Pres.",
   "teamStatsTrainingsColumnAbsent": "Abs.",
+  "teamStatsTrainingsColumnExcused": "Exc.",
+  "teamStatsTrainingsColumnLate": "Late",
   "teamStatsTrainingsColumnAttendanceRate": "Rate",
   "teamStatsTrainingsPlayersNoData": "No player data for this period",
   "teamStatsTrainingsGlobalSection": "Team",

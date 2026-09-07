@@ -39,16 +39,22 @@ class TeamTrainingGlobalStats {
   final TeamTrainingAttendanceTrend trend;
 }
 
-/// Per-player attendance rate from marked sessions only (present + absent).
+/// Per-player attendance rate from marked sessions.
+///
+/// Late counts as attended; excused counts as absent. Injured is omitted.
+/// Rate = (present + late) / (present + late + absent + excused) * 100.
 double? playerTrainingAttendanceRate({
   required int presentCount,
   required int absentCount,
+  int excusedCount = 0,
+  int lateCount = 0,
 }) {
-  final marked = presentCount + absentCount;
+  final attended = presentCount + lateCount;
+  final marked = attended + absentCount + excusedCount;
   if (marked <= 0) {
     return null;
   }
-  return (presentCount / marked) * 100;
+  return (attended / marked) * 100;
 }
 
 /// Per-player training presence stats.
@@ -58,6 +64,8 @@ class TeamTrainingPlayerStats {
     required this.player,
     required this.presentCount,
     required this.absentCount,
+    required this.excusedCount,
+    required this.lateCount,
     required this.attendanceRate,
     required this.trends,
   });
@@ -66,6 +74,8 @@ class TeamTrainingPlayerStats {
   final Player? player;
   final int presentCount;
   final int absentCount;
+  final int excusedCount;
+  final int lateCount;
   final double? attendanceRate;
   final TeamTrainingPlayerTrends trends;
 }
@@ -74,18 +84,26 @@ class TeamTrainingPlayerTrends {
   const TeamTrainingPlayerTrends({
     this.present = TeamWdlTrendDirection.insufficientData,
     this.absent = TeamWdlTrendDirection.insufficientData,
+    this.excused = TeamWdlTrendDirection.insufficientData,
+    this.late = TeamWdlTrendDirection.insufficientData,
     this.attendanceRate = TeamWdlTrendDirection.insufficientData,
   });
 
   final TeamWdlTrendDirection present;
   final TeamWdlTrendDirection absent;
+  final TeamWdlTrendDirection excused;
+  final TeamWdlTrendDirection late;
   final TeamWdlTrendDirection attendanceRate;
 
   static TeamTrainingPlayerTrends compare({
     required int firstHalfPresent,
     required int firstHalfAbsent,
+    required int firstHalfExcused,
+    required int firstHalfLate,
     required int secondHalfPresent,
     required int secondHalfAbsent,
+    required int secondHalfExcused,
+    required int secondHalfLate,
   }) {
     return TeamTrainingPlayerTrends(
       present: _compareCounts(
@@ -98,14 +116,28 @@ class TeamTrainingPlayerTrends {
         secondHalf: secondHalfAbsent,
         higherIsBetter: false,
       ),
+      excused: _compareCounts(
+        firstHalf: firstHalfExcused,
+        secondHalf: secondHalfExcused,
+        higherIsBetter: false,
+      ),
+      late: _compareCounts(
+        firstHalf: firstHalfLate,
+        secondHalf: secondHalfLate,
+        higherIsBetter: false,
+      ),
       attendanceRate: TeamTrainingAttendanceTrend.compare(
         firstHalfRate: playerTrainingAttendanceRate(
           presentCount: firstHalfPresent,
           absentCount: firstHalfAbsent,
+          excusedCount: firstHalfExcused,
+          lateCount: firstHalfLate,
         ),
         secondHalfRate: playerTrainingAttendanceRate(
           presentCount: secondHalfPresent,
           absentCount: secondHalfAbsent,
+          excusedCount: secondHalfExcused,
+          lateCount: secondHalfLate,
         ),
       ).direction,
     );
@@ -192,10 +224,16 @@ class _TrainingAttendanceAccumulator {
   final String playerId;
   int presentCount = 0;
   int absentCount = 0;
+  int excusedCount = 0;
+  int lateCount = 0;
   int firstHalfPresent = 0;
   int firstHalfAbsent = 0;
+  int firstHalfExcused = 0;
+  int firstHalfLate = 0;
   int secondHalfPresent = 0;
   int secondHalfAbsent = 0;
+  int secondHalfExcused = 0;
+  int secondHalfLate = 0;
 }
 
 class _GlobalAttendanceAccumulator {
@@ -303,28 +341,33 @@ class TeamTrainingStatsService {
           continue;
         }
 
-        final isPresent = _isPresent(playerTraining.presenceType);
-        final isAbsent = _isAbsent(playerTraining.presenceType);
+        final presenceType = playerTraining.presenceType;
+        final isAttended = _isAttended(presenceType);
+        final isAbsent = presenceType == PresenceType.absent;
+        final isExcused = presenceType == PresenceType.excuse;
         final countsForTeamRate =
-            isPresent || isAbsent || playerTraining.presenceType == null;
+            isAttended || isAbsent || presenceType == null;
 
+        // Global team rate: present/late/(null) as attended; absent, excused,
+        // and other non-present marked types (e.g. injured) lower the rate.
         if (countsForTeamRate) {
           globalAccumulator.markedSlots++;
-          if (isPresent || playerTraining.presenceType == null) {
+          if (isAttended || presenceType == null) {
             globalAccumulator.markedPresent++;
           }
           if (isFirstHalf) {
             globalAccumulator.firstHalfSlots++;
-            if (isPresent || playerTraining.presenceType == null) {
+            if (isAttended || presenceType == null) {
               globalAccumulator.firstHalfPresent++;
             }
           } else if (isSecondHalf) {
             globalAccumulator.secondHalfSlots++;
-            if (isPresent || playerTraining.presenceType == null) {
+            if (isAttended || presenceType == null) {
               globalAccumulator.secondHalfPresent++;
             }
           }
-        } else if (playerTraining.presenceType != null) {
+        } else {
+          // Non-attended marked types (excuse, injured): lower global rate.
           globalAccumulator.markedSlots++;
           if (isFirstHalf) {
             globalAccumulator.firstHalfSlots++;
@@ -338,12 +381,19 @@ class TeamTrainingStatsService {
           () => _TrainingAttendanceAccumulator(playerId: playerId),
         );
 
-        if (isPresent) {
+        if (presenceType == PresenceType.present) {
           accumulator.presentCount++;
           if (isFirstHalf) {
             accumulator.firstHalfPresent++;
           } else if (isSecondHalf) {
             accumulator.secondHalfPresent++;
+          }
+        } else if (presenceType == PresenceType.late) {
+          accumulator.lateCount++;
+          if (isFirstHalf) {
+            accumulator.firstHalfLate++;
+          } else if (isSecondHalf) {
+            accumulator.secondHalfLate++;
           }
         } else if (isAbsent) {
           accumulator.absentCount++;
@@ -352,7 +402,15 @@ class TeamTrainingStatsService {
           } else if (isSecondHalf) {
             accumulator.secondHalfAbsent++;
           }
+        } else if (isExcused) {
+          accumulator.excusedCount++;
+          if (isFirstHalf) {
+            accumulator.firstHalfExcused++;
+          } else if (isSecondHalf) {
+            accumulator.secondHalfExcused++;
+          }
         }
+        // PresenceType.blesse intentionally omitted from player rate counts.
       }
     }
 
@@ -393,9 +451,13 @@ class TeamTrainingStatsService {
       final accumulator = playerAccumulators[normalizedId];
       final presentCount = accumulator?.presentCount ?? 0;
       final absentCount = accumulator?.absentCount ?? 0;
+      final excusedCount = accumulator?.excusedCount ?? 0;
+      final lateCount = accumulator?.lateCount ?? 0;
       final personalRate = playerTrainingAttendanceRate(
         presentCount: presentCount,
         absentCount: absentCount,
+        excusedCount: excusedCount,
+        lateCount: lateCount,
       );
 
       statsByPlayerId[normalizedId] = TeamTrainingPlayerStats(
@@ -403,12 +465,18 @@ class TeamTrainingStatsService {
         player: player ?? playersById[normalizedId],
         presentCount: presentCount,
         absentCount: absentCount,
+        excusedCount: excusedCount,
+        lateCount: lateCount,
         attendanceRate: personalRate,
         trends: TeamTrainingPlayerTrends.compare(
           firstHalfPresent: accumulator?.firstHalfPresent ?? 0,
           firstHalfAbsent: accumulator?.firstHalfAbsent ?? 0,
+          firstHalfExcused: accumulator?.firstHalfExcused ?? 0,
+          firstHalfLate: accumulator?.firstHalfLate ?? 0,
           secondHalfPresent: accumulator?.secondHalfPresent ?? 0,
           secondHalfAbsent: accumulator?.secondHalfAbsent ?? 0,
+          secondHalfExcused: accumulator?.secondHalfExcused ?? 0,
+          secondHalfLate: accumulator?.secondHalfLate ?? 0,
         ),
       );
     }
@@ -543,12 +611,9 @@ class TeamTrainingStatsService {
     return '$year-${month.toString().padLeft(2, '0')}';
   }
 
-  bool _isPresent(PresenceType? type) {
+  /// Attended for the global team rate (on time or late).
+  bool _isAttended(PresenceType? type) {
     return type == PresenceType.present || type == PresenceType.late;
-  }
-
-  bool _isAbsent(PresenceType? type) {
-    return type == PresenceType.absent;
   }
 
   double? _attendanceRate({required int present, required int total}) {

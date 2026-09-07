@@ -2474,6 +2474,8 @@
   "teamStatsTrainingsNoSeasonMonths": "Nessun mese disponibile per questa stagione",
   "teamStatsTrainingsColumnPresent": "Pres.",
   "teamStatsTrainingsColumnAbsent": "Ass.",
+  "teamStatsTrainingsColumnExcused": "Giust.",
+  "teamStatsTrainingsColumnLate": "Rit.",
   "teamStatsTrainingsColumnAttendanceRate": "Tasso",
   "teamStatsTrainingsPlayersNoData": "Nessun dato giocatore per questo periodo",
   "teamStatsTrainingsGlobalSection": "Squadra",
