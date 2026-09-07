@@ -7,7 +7,7 @@ import 'package:grinta/util/player_cards_helper.dart';
 import 'package:grinta/widget/assign_fmi_goal_player_sheet.dart';
 
 void main() {
-  testWidgets('picks scorer then assister and pops the selection',
+  testWidgets('picks scorer then assister via Valider and pops the selection',
       (tester) async {
     final l10n = await AppLocalizations.delegate.load(const Locale('fr'));
     AssignFmiGoalPlayerSelection? selected;
@@ -83,6 +83,16 @@ void main() {
     );
     await tester.pumpAndSettle();
 
+    expect(find.byKey(AssignFmiGoalPlayerSheet.sheetKey), findsOneWidget);
+    expect(
+      find.byKey(AssignFmiGoalPlayerSheet.validateAssisterKey),
+      findsOneWidget,
+    );
+    expect(find.text(l10n.actionValidate), findsOneWidget);
+
+    await tester.tap(find.byKey(AssignFmiGoalPlayerSheet.validateAssisterKey));
+    await tester.pumpAndSettle();
+
     expect(selected?.scorerMemberId, 'm-bruno');
     expect(selected?.assisterMemberId, 'm-claire');
     expect(find.byKey(AssignFmiGoalPlayerSheet.sheetKey), findsNothing);
@@ -148,6 +158,69 @@ void main() {
 
     expect(selected?.scorerMemberId, 'm-alice');
     expect(selected?.assisterMemberId, isNull);
+  });
+
+  testWidgets('does not show Valider until an assister is selected',
+      (tester) async {
+    final l10n = await AppLocalizations.delegate.load(const Locale('fr'));
+
+    await tester.pumpWidget(
+      MaterialApp(
+        theme: ThemeData(
+          useMaterial3: true,
+          extensions: const <ThemeExtension<dynamic>>[AppColors.light],
+        ),
+        locale: const Locale('fr'),
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
+        home: Scaffold(
+          body: Builder(
+            builder: (context) {
+              return TextButton(
+                onPressed: () async {
+                  await showAssignFmiGoalPlayerSheet(
+                    context,
+                    goalType: GoalType.normal,
+                    minute: 15,
+                    players: const [
+                      AssignFmiCardPlayerOption(
+                        memberId: 'm-alice',
+                        label: 'Alice Martin',
+                      ),
+                      AssignFmiCardPlayerOption(
+                        memberId: 'm-bruno',
+                        label: 'Bruno Durand',
+                      ),
+                    ],
+                  );
+                },
+                child: const Text('open-picker'),
+              );
+            },
+          ),
+        ),
+      ),
+    );
+
+    await tester.tap(find.text('open-picker'));
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.byKey(AssignFmiGoalPlayerSheet.scorerKey('m-alice')));
+    await tester.pumpAndSettle();
+
+    expect(find.text(l10n.fmiGoalPickAssisterTitle), findsOneWidget);
+    expect(
+      find.byKey(AssignFmiGoalPlayerSheet.validateAssisterKey),
+      findsNothing,
+    );
+
+    await tester.tap(find.byKey(AssignFmiGoalPlayerSheet.assisterKey('m-bruno')));
+    await tester.pumpAndSettle();
+
+    expect(
+      find.byKey(AssignFmiGoalPlayerSheet.validateAssisterKey),
+      findsOneWidget,
+    );
   });
 
   testWidgets('shows an empty state when no convoked players', (tester) async {

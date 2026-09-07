@@ -217,6 +217,7 @@ class AssignFmiGoalPlayerSheet extends StatefulWidget {
   static const Key sheetKey = Key('assignFmiGoalPlayerSheet');
   static const Key noAssisterKey = Key('assignFmiGoalNoAssister');
   static const Key backToScorerKey = Key('assignFmiGoalBackToScorer');
+  static const Key validateAssisterKey = Key('assignFmiGoalValidateAssister');
 
   static Key scorerKey(String memberId) =>
       Key('assignFmiGoalScorer-$memberId');
@@ -244,6 +245,7 @@ class _AssignFmiGoalPlayerSheetState extends State<AssignFmiGoalPlayerSheet> {
   bool _loading = false;
   _AssignFmiGoalStep _step = _AssignFmiGoalStep.scorer;
   String? _scorerMemberId;
+  String? _assisterMemberId;
 
   @override
   void initState() {
@@ -305,15 +307,22 @@ class _AssignFmiGoalPlayerSheetState extends State<AssignFmiGoalPlayerSheet> {
   void _selectScorer(String memberId) {
     setState(() {
       _scorerMemberId = memberId;
+      _assisterMemberId = null;
       _step = _AssignFmiGoalStep.assister;
       _nameFilterCtrl.clear();
     });
+  }
+
+  void _selectAssister(String memberId) {
+    _nameFilterFocus.unfocus();
+    setState(() => _assisterMemberId = memberId);
   }
 
   void _backToScorer() {
     setState(() {
       _step = _AssignFmiGoalStep.scorer;
       _scorerMemberId = null;
+      _assisterMemberId = null;
       _nameFilterCtrl.clear();
     });
   }
@@ -329,6 +338,14 @@ class _AssignFmiGoalPlayerSheetState extends State<AssignFmiGoalPlayerSheet> {
         assisterMemberId: assisterMemberId,
       ),
     );
+  }
+
+  void _confirmAssister() {
+    final assisterId = _assisterMemberId?.trim() ?? '';
+    if (assisterId.isEmpty) {
+      return;
+    }
+    _finish(assisterMemberId: assisterId);
   }
 
   @override
@@ -475,6 +492,8 @@ class _AssignFmiGoalPlayerSheetState extends State<AssignFmiGoalPlayerSheet> {
                       separatorBuilder: (_, __) => const SizedBox(height: 4),
                       itemBuilder: (context, index) {
                         final player = filtered[index];
+                        final isSelectedAssister = pickingAssister &&
+                            _assisterMemberId == player.memberId;
                         return ListTile(
                           key: pickingAssister
                               ? AssignFmiGoalPlayerSheet.assisterKey(
@@ -483,7 +502,15 @@ class _AssignFmiGoalPlayerSheetState extends State<AssignFmiGoalPlayerSheet> {
                               : AssignFmiGoalPlayerSheet.scorerKey(
                                   player.memberId,
                                 ),
-                          contentPadding: EdgeInsets.zero,
+                          contentPadding: const EdgeInsets.symmetric(
+                            horizontal: 12,
+                          ),
+                          selected: isSelectedAssister,
+                          selectedTileColor:
+                              colors.border.withValues(alpha: 0.45),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(10),
+                          ),
                           title: Text(
                             player.label,
                             style: TextStyle(
@@ -493,7 +520,7 @@ class _AssignFmiGoalPlayerSheetState extends State<AssignFmiGoalPlayerSheet> {
                           ),
                           onTap: () {
                             if (pickingAssister) {
-                              _finish(assisterMemberId: player.memberId);
+                              _selectAssister(player.memberId);
                             } else {
                               _selectScorer(player.memberId);
                             }
@@ -504,6 +531,15 @@ class _AssignFmiGoalPlayerSheetState extends State<AssignFmiGoalPlayerSheet> {
                   );
                 },
               ),
+              if (pickingAssister &&
+                  (_assisterMemberId?.trim().isNotEmpty ?? false)) ...[
+                const SizedBox(height: 12),
+                FilledButton(
+                  key: AssignFmiGoalPlayerSheet.validateAssisterKey,
+                  onPressed: _confirmAssister,
+                  child: Text(l10n.actionValidate),
+                ),
+              ],
             ],
           ],
         ),
