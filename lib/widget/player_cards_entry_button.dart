@@ -14,9 +14,14 @@ import 'package:provider/provider.dart';
 
 /// Player-side disciplinary cards indicator (badge = non-purged count).
 ///
-/// Hidden when the selected player has no non-purged cards, or when the user
-/// is a pure manager/coach (no non-managed member teams). Dual-role users keep
-/// this entry; coaches use [ManagerCardsEntryButton] for team restitution.
+/// Shown as soon as the selected player's member id is known (does not wait
+/// for the first Firestore stream event). While the count is loading the
+/// entry appears without a badge; once the stream delivers data, a badge is
+/// shown if non-purged > 0, otherwise the entry is hidden.
+///
+/// Hidden for pure managers/coaches (no non-managed member teams). Dual-role
+/// users keep this entry; coaches use [ManagerCardsEntryButton] for team
+/// restitution.
 class PlayerCardsEntryButton extends StatelessWidget {
   const PlayerCardsEntryButton({
     super.key,
@@ -67,69 +72,116 @@ class PlayerCardsEntryButton extends StatelessWidget {
     return StreamBuilder<PlayerCards?>(
       stream: service.streamByMemberId(memberId),
       builder: (context, snapshot) {
+        final waitingForFirstEvent =
+            snapshot.connectionState == ConnectionState.waiting &&
+                !snapshot.hasData &&
+                !snapshot.hasError;
+
+        // Instant chrome while the stream has not delivered yet.
+        if (waitingForFirstEvent) {
+          return PlayerCardsEntryContent(
+            compact: compact,
+            bottomSpacing: bottomSpacing,
+            nonPurgedCount: 0,
+            isBadgeLoading: true,
+            onPressed: () {},
+          );
+        }
+
         final entries = snapshot.data?.entries ?? const <PlayerCardEntry>[];
         final nonPurgedCount = countNonPurgedPlayerCards(entries);
         if (nonPurgedCount <= 0) {
           return const SizedBox.shrink();
         }
 
-        final colors = context.appColors;
-        final l10n = context.l10n;
-        final icon = _CardsCountBadge(
-          count: nonPurgedCount,
-          iconColor: colors.warning,
-        );
-
-        if (compact) {
-          return IconButton(
-            tooltip: l10n.playerCardsTooltip,
-            onPressed: () => unawaited(_open(context, entries)),
-            icon: icon,
-          );
-        }
-
-        return Padding(
-          padding: EdgeInsets.only(bottom: bottomSpacing),
-          child: Material(
-            color: Colors.transparent,
-            child: InkWell(
-              borderRadius: BorderRadius.circular(14),
-              onTap: () => unawaited(_open(context, entries)),
-              child: Container(
-                width: double.infinity,
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-                decoration: BoxDecoration(
-                  color: colors.warning.withValues(alpha: 0.10),
-                  borderRadius: BorderRadius.circular(14),
-                  border: Border.all(
-                    color: colors.warning.withValues(alpha: 0.28),
-                  ),
-                ),
-                child: Row(
-                  children: [
-                    icon,
-                    const SizedBox(width: 10),
-                    Expanded(
-                      child: Text(
-                        l10n.playerCardsTitle,
-                        style: TextStyle(
-                          color: colors.textPrimary,
-                          fontWeight: FontWeight.w800,
-                        ),
-                      ),
-                    ),
-                    Icon(
-                      Icons.chevron_right_rounded,
-                      color: colors.textSecondary,
-                    ),
-                  ],
-                ),
-              ),
-            ),
-          ),
+        return PlayerCardsEntryContent(
+          compact: compact,
+          bottomSpacing: bottomSpacing,
+          nonPurgedCount: nonPurgedCount,
+          onPressed: () => unawaited(_open(context, entries)),
         );
       },
+    );
+  }
+}
+
+/// Presentational chrome for [PlayerCardsEntryButton].
+@visibleForTesting
+class PlayerCardsEntryContent extends StatelessWidget {
+  const PlayerCardsEntryContent({
+    super.key,
+    required this.nonPurgedCount,
+    required this.onPressed,
+    this.compact = false,
+    this.bottomSpacing = 0,
+    this.isBadgeLoading = false,
+  });
+
+  final int nonPurgedCount;
+  final VoidCallback onPressed;
+  final bool compact;
+  final double bottomSpacing;
+  final bool isBadgeLoading;
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = context.appColors;
+    final l10n = context.l10n;
+    final icon = _CardsCountBadge(
+      count: nonPurgedCount,
+      iconColor: colors.warning,
+      isLoading: isBadgeLoading,
+    );
+
+    if (compact) {
+      return IconButton(
+        key: const Key('player-cards-entry-compact'),
+        tooltip: l10n.playerCardsTooltip,
+        onPressed: onPressed,
+        icon: icon,
+      );
+    }
+
+    return Padding(
+      key: const Key('player-cards-entry'),
+      padding: EdgeInsets.only(bottom: bottomSpacing),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          borderRadius: BorderRadius.circular(14),
+          onTap: onPressed,
+          child: Container(
+            width: double.infinity,
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+            decoration: BoxDecoration(
+              color: colors.warning.withValues(alpha: 0.10),
+              borderRadius: BorderRadius.circular(14),
+              border: Border.all(
+                color: colors.warning.withValues(alpha: 0.28),
+              ),
+            ),
+            child: Row(
+              children: [
+                icon,
+                const SizedBox(width: 10),
+                Expanded(
+                  child: Text(
+                    l10n.playerCardsTitle,
+                    style: TextStyle(
+                      color: colors.textPrimary,
+                      fontWeight: FontWeight.w800,
+                    ),
+                  ),
+                ),
+                Icon(
+                  Icons.chevron_right_rounded,
+                  color: colors.textSecondary,
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
     );
   }
 }
@@ -138,19 +190,46 @@ class _CardsCountBadge extends StatelessWidget {
   const _CardsCountBadge({
     required this.count,
     required this.iconColor,
+    this.isLoading = false,
   });
 
   final int count;
   final Color iconColor;
+  final bool isLoading;
 
   @override
   Widget build(BuildContext context) {
-    // Same layout as [NavIconCountBadge], but warning-colored for cards.
     final iconWidget = Icon(
       Icons.style_rounded,
       color: iconColor,
       size: 24,
     );
+
+    if (isLoading) {
+      return SizedBox(
+        key: const Key('player-cards-badge-loading'),
+        width: 24,
+        height: 24,
+        child: Stack(
+          alignment: Alignment.center,
+          children: [
+            iconWidget,
+            Positioned(
+              right: 0,
+              top: 0,
+              child: SizedBox(
+                width: 8,
+                height: 8,
+                child: CircularProgressIndicator(
+                  strokeWidth: 1.5,
+                  color: iconColor.withValues(alpha: 0.7),
+                ),
+              ),
+            ),
+          ],
+        ),
+      );
+    }
 
     if (count <= 0) {
       return iconWidget;

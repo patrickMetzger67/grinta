@@ -48,7 +48,7 @@ void main() {
   });
 
   group('shouldShowManagerCardsEntry', () {
-    test('requires at least one managed team id', () {
+    test('requires at least one managed team id (sync AppSession check)', () {
       expect(
         shouldShowManagerCardsEntry(managedTeamIds: const []),
         isFalse,
@@ -73,6 +73,15 @@ void main() {
       // Entry visibility is independent of non-purged count (badge only).
       expect(shouldShowManagerCardsBadge(nonPurgedCount: 0), isFalse);
       expect(shouldShowManagerCardsBadge(nonPurgedCount: 4), isTrue);
+    });
+
+    test('visibility must not depend on roster or Firestore card fetches', () {
+      // Managed ids alone are enough — badge count is loaded asynchronously.
+      expect(
+        shouldShowManagerCardsEntry(managedTeamIds: const ['managed-x']),
+        isTrue,
+      );
+      expect(shouldShowManagerCardsBadge(nonPurgedCount: 0), isFalse);
     });
   });
 

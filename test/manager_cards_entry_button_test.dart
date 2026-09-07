@@ -38,9 +38,33 @@ void main() {
       expect(find.byTooltip(l10n.managerCardsTooltip), findsOneWidget);
       expect(find.byIcon(Icons.style_rounded), findsOneWidget);
       expect(find.byType(Badge), findsNothing);
+      expect(find.byKey(const Key('manager-cards-badge-loading')), findsNothing);
 
       await tester.tap(find.byKey(const Key('manager-cards-entry-compact')));
       expect(taps, 1);
+    },
+  );
+
+  testWidgets(
+    'entry shows immediately while badge is loading (no numeric badge yet)',
+    (tester) async {
+      final l10n = await AppLocalizations.delegate.load(const Locale('fr'));
+
+      await tester.pumpWidget(
+        _harness(
+          child: ManagerCardsEntryContent(
+            compact: true,
+            nonPurgedCount: 0,
+            isBadgeLoading: true,
+            onPressed: () {},
+          ),
+        ),
+      );
+
+      expect(find.byKey(const Key('manager-cards-entry-compact')), findsOneWidget);
+      expect(find.byTooltip(l10n.managerCardsTooltip), findsOneWidget);
+      expect(find.byKey(const Key('manager-cards-badge-loading')), findsOneWidget);
+      expect(find.byType(Badge), findsNothing);
     },
   );
 

@@ -16,9 +16,11 @@ import 'package:provider/provider.dart';
 
 /// Coach/manager disciplinary cards entry on Agenda / Dashboard.
 ///
-/// Shown whenever the user manages ≥1 team for the selected season (including
-/// when the non-purged count is 0). Badge = non-purged total across managed
-/// team rosters when that total is > 0.
+/// Shown **immediately** whenever the user manages ≥1 team for the selected
+/// season (sync [AppSession] check) — does **not** wait for roster or Firestore
+/// cards. Badge count loads asynchronously; until it arrives the entry renders
+/// without a numeric badge (optional subtle loading). Zero cards keep the
+/// entry visible (badge only).
 ///
 /// Tap: one managed team → team Cartons list; several → pick team then list.
 class ManagerCardsEntryButton extends StatefulWidget {
@@ -45,51 +47,94 @@ class ManagerCardsEntryButton extends StatefulWidget {
 
 class _ManagerCardsEntryButtonState extends State<ManagerCardsEntryButton> {
   String _teamsSignature = '';
-  Future<_ManagerCardsBadgeData>? _badgeFuture;
+  int _loadGeneration = 0;
 
-  Future<_ManagerCardsBadgeData> _loadBadge(List<Team> managedTeams) async {
+  /// Null while the first badge load for the current teams signature is
+  /// in flight; then the non-purged total (may be 0).
+  int? _nonPurgedCount;
+  bool _badgeLoading = false;
+
+  Future<int> _loadNonPurgedCount(List<Team> managedTeams) async {
     final playersService =
         widget.teamPlayersService ?? TeamPlayersService();
     final cardsService = widget.cardsService ?? CardsService.instance;
 
-    final memberIds = <String>{};
-    for (final team in managedTeams) {
-      final teamId = team.keyTeam?.trim() ?? '';
-      if (teamId.isEmpty) continue;
-      try {
-        final players = await playersService.loadPlayers(teamId: teamId);
-        for (final Player player in players) {
-          final id = effectiveMemberId(player)?.trim() ?? '';
-          if (id.isNotEmpty) memberIds.add(id);
+    final teamIds = managedTeams
+        .map((t) => t.keyTeam?.trim() ?? '')
+        .where((id) => id.isNotEmpty)
+        .toList(growable: false);
+
+    if (teamIds.isEmpty) {
+      return 0;
+    }
+
+    // Parallel roster loads — sequential awaits were the main badge delay.
+    final rosterResults = await Future.wait(
+      teamIds.map((teamId) async {
+        try {
+          return await playersService.loadPlayers(teamId: teamId);
+        } catch (_) {
+          return const <Player>[];
         }
-      } catch (_) {
-        // Skip team on load failure; others still contribute to the badge.
+      }),
+    );
+
+    final memberIds = <String>{};
+    for (final players in rosterResults) {
+      for (final Player player in players) {
+        final id = effectiveMemberId(player)?.trim() ?? '';
+        if (id.isNotEmpty) memberIds.add(id);
       }
     }
 
     if (memberIds.isEmpty) {
-      return const _ManagerCardsBadgeData(nonPurgedCount: 0);
+      return 0;
     }
 
     final cards = await cardsService.getByMemberIds(memberIds);
     final cardsByMemberId = <String, PlayerCards?>{
       for (final id in memberIds) id: cards[id],
     };
-    return _ManagerCardsBadgeData(
-      nonPurgedCount: countNonPurgedCardsAcrossMembers(cardsByMemberId),
-    );
+    return countNonPurgedCardsAcrossMembers(cardsByMemberId);
   }
 
-  void _ensureBadgeFuture(List<Team> managedTeams) {
+  void _syncBadgeLoad(List<Team> managedTeams) {
     final signature = managedTeams
         .map((t) => t.keyTeam?.trim() ?? '')
         .where((id) => id.isNotEmpty)
         .join('|');
-    if (_badgeFuture != null && signature == _teamsSignature) {
+    if (signature == _teamsSignature) {
       return;
     }
+
+    final previousSignature = _teamsSignature;
     _teamsSignature = signature;
-    _badgeFuture = _loadBadge(managedTeams);
+    final generation = ++_loadGeneration;
+
+    // After sheet close we clear the signature only ([_invalidateBadge]) so the
+    // next sync can refresh while keeping the last badge (no flicker). A real
+    // teams change clears the badge until the new count arrives.
+    final keepPreviousCount =
+        previousSignature.isEmpty && _nonPurgedCount != null;
+    _badgeLoading = true;
+    if (!keepPreviousCount) {
+      _nonPurgedCount = null;
+    }
+
+    unawaited(() async {
+      final count = await _loadNonPurgedCount(managedTeams);
+      if (!mounted || generation != _loadGeneration) return;
+      setState(() {
+        _nonPurgedCount = count;
+        _badgeLoading = false;
+      });
+    }());
+  }
+
+  void _invalidateBadge() {
+    _teamsSignature = '';
+    // Keep last known count visible until the next load completes.
+    _badgeLoading = true;
   }
 
   Future<void> _open(BuildContext context, List<Team> managedTeams) async {
@@ -108,10 +153,7 @@ class _ManagerCardsEntryButtonState extends State<ManagerCardsEntryButton> {
           teamPlayersService: widget.teamPlayersService,
         );
         if (mounted) {
-          setState(() {
-            _teamsSignature = '';
-            _badgeFuture = null;
-          });
+          setState(_invalidateBadge);
         }
         return;
       case ManagerCardsOpenMode.pickTeam:
@@ -128,10 +170,7 @@ class _ManagerCardsEntryButtonState extends State<ManagerCardsEntryButton> {
           teamPlayersService: widget.teamPlayersService,
         );
         if (mounted) {
-          setState(() {
-            _teamsSignature = '';
-            _badgeFuture = null;
-          });
+          setState(_invalidateBadge);
         }
     }
   }
@@ -142,31 +181,32 @@ class _ManagerCardsEntryButtonState extends State<ManagerCardsEntryButton> {
     final managedTeams = session.managerTeamsForSelectedSeason;
     final managedIds = session.managedTeamsIdsForSelectedSeason;
 
-    if (!shouldShowManagerCardsEntry(managedTeamIds: managedIds) ||
-        managedTeams.isEmpty) {
+    // Visibility is sync-only from AppSession — never gated on cards/roster.
+    if (!shouldShowManagerCardsEntry(managedTeamIds: managedIds)) {
       return const SizedBox.shrink();
     }
 
-    _ensureBadgeFuture(managedTeams);
+    // Teams list may still be catching up; still show the entry chrome.
+    if (managedTeams.isNotEmpty) {
+      _syncBadgeLoad(managedTeams);
+    }
 
-    return FutureBuilder<_ManagerCardsBadgeData>(
-      future: _badgeFuture,
-      builder: (context, snapshot) {
-        final nonPurgedCount = snapshot.data?.nonPurgedCount ?? 0;
-        return ManagerCardsEntryContent(
-          compact: widget.compact,
-          bottomSpacing: widget.bottomSpacing,
-          nonPurgedCount: nonPurgedCount,
-          onPressed: () => unawaited(_open(context, managedTeams)),
-        );
-      },
+    return ManagerCardsEntryContent(
+      compact: widget.compact,
+      bottomSpacing: widget.bottomSpacing,
+      nonPurgedCount: _nonPurgedCount ?? 0,
+      isBadgeLoading: _badgeLoading && _nonPurgedCount == null,
+      onPressed: managedTeams.isEmpty
+          ? () {}
+          : () => unawaited(_open(context, managedTeams)),
     );
   }
 }
 
 /// Presentational chrome for [ManagerCardsEntryButton].
 ///
-/// Always renders the entry; [nonPurgedCount] only drives the badge.
+/// Always renders the entry; [nonPurgedCount] / [isBadgeLoading] only drive
+/// the badge affordance.
 @visibleForTesting
 class ManagerCardsEntryContent extends StatelessWidget {
   const ManagerCardsEntryContent({
@@ -175,12 +215,16 @@ class ManagerCardsEntryContent extends StatelessWidget {
     required this.onPressed,
     this.compact = false,
     this.bottomSpacing = 0,
+    this.isBadgeLoading = false,
   });
 
   final int nonPurgedCount;
   final VoidCallback onPressed;
   final bool compact;
   final double bottomSpacing;
+
+  /// True while the first badge count is still loading (no number yet).
+  final bool isBadgeLoading;
 
   @override
   Widget build(BuildContext context) {
@@ -192,6 +236,7 @@ class ManagerCardsEntryContent extends StatelessWidget {
     final icon = _ManagerCardsCountBadge(
       count: showBadge ? nonPurgedCount : 0,
       iconColor: colors.warning,
+      isLoading: isBadgeLoading,
     );
 
     if (compact) {
@@ -247,20 +292,16 @@ class ManagerCardsEntryContent extends StatelessWidget {
   }
 }
 
-class _ManagerCardsBadgeData {
-  const _ManagerCardsBadgeData({required this.nonPurgedCount});
-
-  final int nonPurgedCount;
-}
-
 class _ManagerCardsCountBadge extends StatelessWidget {
   const _ManagerCardsCountBadge({
     required this.count,
     required this.iconColor,
+    this.isLoading = false,
   });
 
   final int count;
   final Color iconColor;
+  final bool isLoading;
 
   @override
   Widget build(BuildContext context) {
@@ -269,6 +310,32 @@ class _ManagerCardsCountBadge extends StatelessWidget {
       color: iconColor,
       size: 24,
     );
+
+    if (isLoading) {
+      return SizedBox(
+        key: const Key('manager-cards-badge-loading'),
+        width: 24,
+        height: 24,
+        child: Stack(
+          alignment: Alignment.center,
+          children: [
+            iconWidget,
+            Positioned(
+              right: 0,
+              top: 0,
+              child: SizedBox(
+                width: 8,
+                height: 8,
+                child: CircularProgressIndicator(
+                  strokeWidth: 1.5,
+                  color: iconColor.withValues(alpha: 0.7),
+                ),
+              ),
+            ),
+          ],
+        ),
+      );
+    }
 
     if (count <= 0) {
       return iconWidget;
