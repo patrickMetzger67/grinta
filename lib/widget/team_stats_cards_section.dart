@@ -118,12 +118,14 @@ class _TeamStatsCardsSectionState extends State<TeamStatsCardsSection> {
   }
 
   void _openPlayer(TeamStatsPlayerCardsRow row) {
+    final allEntries =
+        _cardsByMemberId[row.memberId]?.entries ?? row.entries;
     unawaited(
       showTeamStatsPlayerCardsSheet(
         context,
         memberId: row.memberId,
         playerName: row.displayName,
-        entries: row.entries,
+        entries: allEntries,
         isManager: widget.isManager,
         cardsService: widget.cardsService,
         onChanged: () => unawaited(_load()),
