@@ -13,6 +13,8 @@ enum TeamStatsTrainingsSortColumn {
   player,
   present,
   absent,
+  excused,
+  late,
   attendanceRate,
 }
 
@@ -38,6 +40,8 @@ class _TeamStatsTrainingsPlayersTableState
   static const double _dataRowHeight = 56;
   static const double _presentColumnWidth = 72;
   static const double _absentColumnWidth = 72;
+  static const double _excusedColumnWidth = 72;
+  static const double _lateColumnWidth = 72;
   static const double _attendanceRateColumnWidth = 80;
 
   TeamStatsTrainingsSortColumn _sortColumn =
@@ -83,6 +87,12 @@ class _TeamStatsTrainingsPlayersTableState
           break;
         case TeamStatsTrainingsSortColumn.absent:
           result = a.absentCount.compareTo(b.absentCount);
+          break;
+        case TeamStatsTrainingsSortColumn.excused:
+          result = a.excusedCount.compareTo(b.excusedCount);
+          break;
+        case TeamStatsTrainingsSortColumn.late:
+          result = a.lateCount.compareTo(b.lateCount);
           break;
         case TeamStatsTrainingsSortColumn.attendanceRate:
           result = _compareNullableDouble(a.attendanceRate, b.attendanceRate);
@@ -259,6 +269,32 @@ class _TeamStatsTrainingsPlayersTableState
                         colors: colors,
                       ),
                       _SortableHeaderCell(
+                        width: _excusedColumnWidth,
+                        height: _headingRowHeight,
+                        label: l10n.teamStatsTrainingsColumnExcused,
+                        labelStyle: headerStyle,
+                        sortColumn: TeamStatsTrainingsSortColumn.excused,
+                        activeSortColumn: _sortColumn,
+                        sortAscending: _sortAscending,
+                        onSort: _onSortColumn,
+                        alignRight: true,
+                        showBottomBorder: true,
+                        colors: colors,
+                      ),
+                      _SortableHeaderCell(
+                        width: _lateColumnWidth,
+                        height: _headingRowHeight,
+                        label: l10n.teamStatsTrainingsColumnLate,
+                        labelStyle: headerStyle,
+                        sortColumn: TeamStatsTrainingsSortColumn.late,
+                        activeSortColumn: _sortColumn,
+                        sortAscending: _sortAscending,
+                        onSort: _onSortColumn,
+                        alignRight: true,
+                        showBottomBorder: true,
+                        colors: colors,
+                      ),
+                      _SortableHeaderCell(
                         width: _attendanceRateColumnWidth,
                         height: _headingRowHeight,
                         label: l10n.teamStatsTrainingsColumnAttendanceRate,
@@ -297,6 +333,20 @@ class _TeamStatsTrainingsPlayersTableState
                             child: _StatTrendPill(
                               text: '${row.absentCount}',
                               trend: row.trends.absent,
+                            ),
+                          ),
+                          SizedBox(
+                            width: _excusedColumnWidth,
+                            child: _StatTrendPill(
+                              text: '${row.excusedCount}',
+                              trend: row.trends.excused,
+                            ),
+                          ),
+                          SizedBox(
+                            width: _lateColumnWidth,
+                            child: _StatTrendPill(
+                              text: '${row.lateCount}',
+                              trend: row.trends.late,
                             ),
                           ),
                           SizedBox(
@@ -556,6 +606,22 @@ class _TrainingPlayerStatsCard extends StatelessWidget {
                 attendanceRateLabel,
                 row.trends.attendanceRate,
               ),
+            ],
+          ),
+          const SizedBox(height: 16),
+          Row(
+            children: [
+              statTile(
+                l10n.teamStatsTrainingsColumnExcused,
+                '${row.excusedCount}',
+                row.trends.excused,
+              ),
+              statTile(
+                l10n.teamStatsTrainingsColumnLate,
+                '${row.lateCount}',
+                row.trends.late,
+              ),
+              const Expanded(child: SizedBox.shrink()),
             ],
           ),
         ],

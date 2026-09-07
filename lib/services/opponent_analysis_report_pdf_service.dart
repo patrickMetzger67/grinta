@@ -258,11 +258,20 @@ class OpponentAnalysisReportPdfService {
     return [
       _goalsTrendBlock(data.goalsTrend),
       pw.SizedBox(height: 10),
-      _goalsPeriodBlock(title: 'Saison complete', counts: data.goals.fullSeason),
+      _goalsPeriodBlock(
+        title: 'Saison complete',
+        counts: data.goals.fullSeason.counts,
+      ),
       pw.SizedBox(height: 10),
-      _goalsPeriodBlock(title: '1ere partie', counts: data.goals.firstHalf),
+      _goalsPeriodBlock(
+        title: '1ere partie',
+        counts: data.goals.firstHalf.counts,
+      ),
       pw.SizedBox(height: 10),
-      _goalsPeriodBlock(title: '2eme partie', counts: data.goals.secondHalf),
+      _goalsPeriodBlock(
+        title: '2eme partie',
+        counts: data.goals.secondHalf.counts,
+      ),
     ];
   }
 

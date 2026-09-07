@@ -1397,6 +1397,91 @@
       }
     }
   },
+  "playerCardsTitle": "My cards",
+  "playerCardsSubtitle": "Disciplinary cards received in matches.",
+  "playerCardsTooltip": "My cards",
+  "playerCardsTypeYellow": "Yellow",
+  "playerCardsTypeRed": "Red",
+  "playerCardsPurged": "Purged",
+  "playerCardsNotPurged": "Not purged",
+  "playerCardsUnknownMatch": "Unknown match",
+  "playerCardsEmpty": "No cards recorded.",
+  "playerCardsEntryMeta": "{type} · {minute} · {status}",
+  "@playerCardsEntryMeta": {
+    "placeholders": {
+      "type": {
+        "type": "String"
+      },
+      "minute": {
+        "type": "String"
+      },
+      "status": {
+        "type": "String"
+      }
+    }
+  },
+  "playerCardsLoadError": "Could not load cards: {error}",
+  "@playerCardsLoadError": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "managerCardsTitle": "Team cards",
+  "managerCardsTooltip": "Team cards",
+  "managerCardsPickTeamTitle": "Choose a team",
+  "managerCardsPickTeamSubtitle": "Show disciplinary cards for the team.",
+  "managerCardsTeamTitle": "Cards — {team}",
+  "@managerCardsTeamTitle": {
+    "placeholders": {
+      "team": {
+        "type": "String"
+      }
+    }
+  },
+  "fmiGoalPickScorerTitle": "Which player scored?",
+  "fmiGoalPickScorerSubtitle": "{type} · {minute}'",
+  "@fmiGoalPickScorerSubtitle": {
+    "placeholders": {
+      "type": {
+        "type": "String"
+      },
+      "minute": {
+        "type": "int"
+      }
+    }
+  },
+  "fmiGoalPickAssisterTitle": "Decisive passer (optional)",
+  "fmiGoalPickAssisterSubtitle": "Scorer: {scorer} · {minute}'",
+  "@fmiGoalPickAssisterSubtitle": {
+    "placeholders": {
+      "scorer": {
+        "type": "String"
+      },
+      "minute": {
+        "type": "int"
+      }
+    }
+  },
+  "fmiGoalNoAssister": "No decisive passer",
+  "fmiGoalNoConvokedPlayers": "No players were convoked for this match.",
+  "fmiGoalAssigned": "Goal assigned to {player}",
+  "@fmiGoalAssigned": {
+    "placeholders": {
+      "player": {
+        "type": "String"
+      }
+    }
+  },
+  "fmiGoalAssignError": "Could not save the goal: {error}",
+  "@fmiGoalAssignError": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
   "matchSubstitutionAddTitle": "Record a substitution",
   "matchSubstitutionPickTeamTitle": "Which team made the change?",
   "matchSubstitutionPickOutgoingTitle": "Player off",
@@ -2576,8 +2661,37 @@
   "teamStatsSubTabMatches": "Matches",
   "teamStatsSubTabRanking": "Standings",
   "teamStatsSubTabGoals": "Goals",
+  "teamStatsSubTabCards": "Cards",
   "teamStatsSubTabPlayers": "Players",
   "teamStatsSubTabTypicalTeam": "Typical team",
+  "teamStatsCardsIncludePurged": "Include purged",
+  "teamStatsCardsEmpty": "No cards for this team.",
+  "teamStatsCardsCount": "{count} card(s)",
+  "@teamStatsCardsCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "teamStatsCardsLoadError": "Could not load cards: {error}",
+  "@teamStatsCardsLoadError": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "teamStatsCardsPlayerTitle": "Cards — {name}",
+  "@teamStatsCardsPlayerTitle": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "teamStatsCardsPurgedSwitch": "Purged",
+  "teamStatsCardsPurgeError": "Could not update purged status.",
   "teamStatsTypicalTeamStartersSection": "Probable starters",
   "teamStatsTypicalTeamSubstitutesSection": "Probable substitutes",
   "teamStatsTypicalTeamStartsLabel": "{starts}/{total} starts",
@@ -2690,6 +2804,29 @@
       }
     }
   },
+  "teamStatsGoalsDetailDialogTitle": "{kind} — {period}",
+  "@teamStatsGoalsDetailDialogTitle": {
+    "placeholders": {
+      "kind": {
+        "type": "String"
+      },
+      "period": {
+        "type": "String"
+      }
+    }
+  },
+  "teamStatsGoalsDetailEmpty": "No goal details available for this period",
+  "teamStatsGoalsDetailUnknownScorer": "Unknown scorer",
+  "teamStatsGoalsDetailTabChronology": "Chronology",
+  "teamStatsGoalsDetailTabScorersRanking": "Top scorers",
+  "teamStatsGoalsDetailScorerGoalCount": "{count, plural, =1{1 goal} other{{count} goals}}",
+  "@teamStatsGoalsDetailScorerGoalCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "teamStatsAvgPointsPerMatch": "{avg}",
   "@teamStatsAvgPointsPerMatch": {
     "placeholders": {
@@ -2707,6 +2844,7 @@
   "teamStatsPlayersColumnStarts": "Starts",
   "teamStatsPlayersColumnPlayTime": "Mins",
   "teamStatsPlayersColumnGoals": "Goals",
+  "teamStatsPlayersColumnAssists": "Ast.",
   "teamStatsPlayersNoData": "No player data for this period",
   "teamStatsPlayersPlayTimeMinutes": "{minutes} min",
   "@teamStatsPlayersPlayTimeMinutes": {
@@ -2738,6 +2876,8 @@
   "teamStatsTrainingsNoSeasonMonths": "No months available for this season",
   "teamStatsTrainingsColumnPresent": "Pres.",
   "teamStatsTrainingsColumnAbsent": "Abs.",
+  "teamStatsTrainingsColumnExcused": "Exc.",
+  "teamStatsTrainingsColumnLate": "Late",
   "teamStatsTrainingsColumnAttendanceRate": "Rate",
   "teamStatsTrainingsPlayersNoData": "No player data for this period",
   "teamStatsTrainingsGlobalSection": "Team",

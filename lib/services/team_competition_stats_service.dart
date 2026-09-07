@@ -47,17 +47,36 @@ class TeamWdlStatsByPeriod {
   final String? perspectiveDisplayName;
 }
 
+/// Goals counts and played matches for a single period.
+class TeamGoalsPeriodData {
+  const TeamGoalsPeriodData({
+    required this.counts,
+    required this.matches,
+  });
+
+  final TeamGoalsCounts counts;
+  final List<Match> matches;
+}
+
 /// Goals scored/conceded split across full season and both halves.
 class TeamGoalsStatsByPeriod {
   const TeamGoalsStatsByPeriod({
     required this.fullSeason,
     required this.firstHalf,
     required this.secondHalf,
+    required this.teamId,
+    this.clubId,
+    this.clubAffiliation,
+    this.perspectiveDisplayName,
   });
 
-  final TeamGoalsCounts fullSeason;
-  final TeamGoalsCounts firstHalf;
-  final TeamGoalsCounts secondHalf;
+  final TeamGoalsPeriodData fullSeason;
+  final TeamGoalsPeriodData firstHalf;
+  final TeamGoalsPeriodData secondHalf;
+  final String teamId;
+  final String? clubId;
+  final String? clubAffiliation;
+  final String? perspectiveDisplayName;
 }
 
 class _TeamMatchStatsContext {
@@ -358,30 +377,47 @@ class TeamCompetitionStatsService {
     );
     if (context == null) {
       return const TeamGoalsStatsByPeriod(
-        fullSeason: TeamGoalsCounts(),
-        firstHalf: TeamGoalsCounts(),
-        secondHalf: TeamGoalsCounts(),
+        fullSeason: TeamGoalsPeriodData(
+          counts: TeamGoalsCounts(),
+          matches: [],
+        ),
+        firstHalf: TeamGoalsPeriodData(
+          counts: TeamGoalsCounts(),
+          matches: [],
+        ),
+        secondHalf: TeamGoalsPeriodData(
+          counts: TeamGoalsCounts(),
+          matches: [],
+        ),
+        teamId: '',
       );
     }
 
-    TeamGoalsCounts countsForPeriod(SeasonPeriodRange period) {
+    TeamGoalsPeriodData dataForPeriod(SeasonPeriodRange period) {
       final filtered = context.matches.where((match) {
         final date = matchDateForTeamStats(match);
         return date != null && period.contains(date);
-      });
-      return TeamGoalsCounts.fromMatches(
+      }).toList();
+      return TeamGoalsPeriodData(
+        counts: TeamGoalsCounts.fromMatches(
+          matches: filtered,
+          teamId: context.teamId,
+          clubId: context.clubId.isEmpty ? null : context.clubId,
+          clubAffiliation: context.clubAffiliation,
+          displayName: context.perspectiveDisplayName,
+        ),
         matches: filtered,
-        teamId: context.teamId,
-        clubId: context.clubId.isEmpty ? null : context.clubId,
-        clubAffiliation: context.clubAffiliation,
-        displayName: context.perspectiveDisplayName,
       );
     }
 
     return TeamGoalsStatsByPeriod(
-      fullSeason: countsForPeriod(context.periods.fullSeason),
-      firstHalf: countsForPeriod(context.periods.firstHalf),
-      secondHalf: countsForPeriod(context.periods.secondHalf),
+      fullSeason: dataForPeriod(context.periods.fullSeason),
+      firstHalf: dataForPeriod(context.periods.firstHalf),
+      secondHalf: dataForPeriod(context.periods.secondHalf),
+      teamId: context.teamId,
+      clubId: context.clubId.isEmpty ? null : context.clubId,
+      clubAffiliation: context.clubAffiliation,
+      perspectiveDisplayName: context.perspectiveDisplayName,
     );
   }
 

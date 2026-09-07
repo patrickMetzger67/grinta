@@ -1595,6 +1595,91 @@
       }
     }
   },
+  "playerCardsTitle": "Mes cartons",
+  "playerCardsSubtitle": "Cartons disciplinaires reçus en match.",
+  "playerCardsTooltip": "Mes cartons",
+  "playerCardsTypeYellow": "Jaune",
+  "playerCardsTypeRed": "Rouge",
+  "playerCardsPurged": "Purge",
+  "playerCardsNotPurged": "Non purgé",
+  "playerCardsUnknownMatch": "Match inconnu",
+  "playerCardsEmpty": "Aucun carton enregistré.",
+  "playerCardsEntryMeta": "{type} · {minute} · {status}",
+  "@playerCardsEntryMeta": {
+    "placeholders": {
+      "type": {
+        "type": "String"
+      },
+      "minute": {
+        "type": "String"
+      },
+      "status": {
+        "type": "String"
+      }
+    }
+  },
+  "playerCardsLoadError": "Impossible de charger les cartons : {error}",
+  "@playerCardsLoadError": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "managerCardsTitle": "Cartons de l'équipe",
+  "managerCardsTooltip": "Cartons de l'équipe",
+  "managerCardsPickTeamTitle": "Choisir une équipe",
+  "managerCardsPickTeamSubtitle": "Afficher les cartons disciplinaires de l'équipe.",
+  "managerCardsTeamTitle": "Cartons — {team}",
+  "@managerCardsTeamTitle": {
+    "placeholders": {
+      "team": {
+        "type": "String"
+      }
+    }
+  },
+  "fmiGoalPickScorerTitle": "Quel joueur a marqué ?",
+  "fmiGoalPickScorerSubtitle": "{type} · {minute}'",
+  "@fmiGoalPickScorerSubtitle": {
+    "placeholders": {
+      "type": {
+        "type": "String"
+      },
+      "minute": {
+        "type": "int"
+      }
+    }
+  },
+  "fmiGoalPickAssisterTitle": "Passeur décisif (facultatif)",
+  "fmiGoalPickAssisterSubtitle": "Buteur : {scorer} · {minute}'",
+  "@fmiGoalPickAssisterSubtitle": {
+    "placeholders": {
+      "scorer": {
+        "type": "String"
+      },
+      "minute": {
+        "type": "int"
+      }
+    }
+  },
+  "fmiGoalNoAssister": "Pas de passeur décisif",
+  "fmiGoalNoConvokedPlayers": "Aucun joueur convoqué pour ce match.",
+  "fmiGoalAssigned": "But associé à {player}",
+  "@fmiGoalAssigned": {
+    "placeholders": {
+      "player": {
+        "type": "String"
+      }
+    }
+  },
+  "fmiGoalAssignError": "Impossible d'enregistrer le but : {error}",
+  "@fmiGoalAssignError": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
   "matchSubstitutionAddTitle": "Enregistrer un changement",
   "matchSubstitutionPickTeamTitle": "Quelle équipe effectue le changement ?",
   "matchSubstitutionPickOutgoingTitle": "Joueur sortant",
@@ -2982,8 +3067,37 @@
   "teamStatsSubTabMatches": "Rencontres",
   "teamStatsSubTabRanking": "Classement",
   "teamStatsSubTabGoals": "Buts",
+  "teamStatsSubTabCards": "Cartons",
   "teamStatsSubTabPlayers": "Joueurs",
   "teamStatsSubTabTypicalTeam": "Equipe type",
+  "teamStatsCardsIncludePurged": "Inclure les purgés",
+  "teamStatsCardsEmpty": "Aucun carton pour cette équipe.",
+  "teamStatsCardsCount": "{count} carton(s)",
+  "@teamStatsCardsCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "teamStatsCardsLoadError": "Impossible de charger les cartons : {error}",
+  "@teamStatsCardsLoadError": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "teamStatsCardsPlayerTitle": "Cartons — {name}",
+  "@teamStatsCardsPlayerTitle": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "teamStatsCardsPurgedSwitch": "Purge",
+  "teamStatsCardsPurgeError": "Impossible de mettre à jour le statut de purge.",
   "teamStatsTypicalTeamStartersSection": "Titulaires probables",
   "teamStatsTypicalTeamSubstitutesSection": "Remplaçants probables",
   "teamStatsTypicalTeamStartsLabel": "{starts}/{total} titularisations",
@@ -3096,6 +3210,29 @@
       }
     }
   },
+  "teamStatsGoalsDetailDialogTitle": "{kind} — {period}",
+  "@teamStatsGoalsDetailDialogTitle": {
+    "placeholders": {
+      "kind": {
+        "type": "String"
+      },
+      "period": {
+        "type": "String"
+      }
+    }
+  },
+  "teamStatsGoalsDetailEmpty": "Aucun détail de but disponible pour cette période",
+  "teamStatsGoalsDetailUnknownScorer": "Buteur inconnu",
+  "teamStatsGoalsDetailTabChronology": "Chronologie",
+  "teamStatsGoalsDetailTabScorersRanking": "Classement des buteurs",
+  "teamStatsGoalsDetailScorerGoalCount": "{count, plural, =1{1 but} other{{count} buts}}",
+  "@teamStatsGoalsDetailScorerGoalCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "teamStatsAvgPointsPerMatch": "{avg}",
   "@teamStatsAvgPointsPerMatch": {
     "placeholders": {
@@ -3113,6 +3250,7 @@
   "teamStatsPlayersColumnStarts": "Titu.",
   "teamStatsPlayersColumnPlayTime": "Tps jeu",
   "teamStatsPlayersColumnGoals": "Buts",
+  "teamStatsPlayersColumnAssists": "Passe Dé.",
   "teamStatsPlayersNoData": "Aucune donnée joueur sur cette période",
   "teamStatsPlayersPlayTimeMinutes": "{minutes} min",
   "@teamStatsPlayersPlayTimeMinutes": {
@@ -3144,6 +3282,8 @@
   "teamStatsTrainingsNoSeasonMonths": "Aucun mois disponible pour cette saison",
   "teamStatsTrainingsColumnPresent": "Prés.",
   "teamStatsTrainingsColumnAbsent": "Abs.",
+  "teamStatsTrainingsColumnExcused": "Exc.",
+  "teamStatsTrainingsColumnLate": "Ret.",
   "teamStatsTrainingsColumnAttendanceRate": "Taux",
   "teamStatsTrainingsPlayersNoData": "Aucune donnée joueur sur cette période",
   "teamStatsTrainingsGlobalSection": "Équipe",

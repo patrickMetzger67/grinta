@@ -16,6 +16,7 @@ enum TeamStatsPlayersSortColumn {
   starts,
   playTime,
   goals,
+  assists,
   yellowCards,
   redCards,
 }
@@ -42,6 +43,7 @@ class _TeamStatsPlayersTableState extends State<TeamStatsPlayersTable> {
   static const double _startsColumnWidth = 64;
   static const double _playTimeColumnWidth = 88;
   static const double _goalsColumnWidth = 64;
+  static const double _assistsColumnWidth = 72;
   static const double _cardsColumnWidth = 64;
 
   TeamStatsPlayersSortColumn _sortColumn = TeamStatsPlayersSortColumn.player;
@@ -92,6 +94,9 @@ class _TeamStatsPlayersTableState extends State<TeamStatsPlayersTable> {
           break;
         case TeamStatsPlayersSortColumn.goals:
           result = a.goals.compareTo(b.goals);
+          break;
+        case TeamStatsPlayersSortColumn.assists:
+          result = a.assists.compareTo(b.assists);
           break;
         case TeamStatsPlayersSortColumn.yellowCards:
           result = a.yellowCards.compareTo(b.yellowCards);
@@ -311,6 +316,19 @@ class _TeamStatsPlayersTableState extends State<TeamStatsPlayersTable> {
                         colors: colors,
                       ),
                       _SortableHeaderCell(
+                        width: _assistsColumnWidth,
+                        height: _headingRowHeight,
+                        label: l10n.teamStatsPlayersColumnAssists,
+                        labelStyle: headerStyle,
+                        sortColumn: TeamStatsPlayersSortColumn.assists,
+                        activeSortColumn: _sortColumn,
+                        sortAscending: _sortAscending,
+                        onSort: _onSortColumn,
+                        alignRight: true,
+                        showBottomBorder: true,
+                        colors: colors,
+                      ),
+                      _SortableHeaderCell(
                         width: _cardsColumnWidth,
                         height: _headingRowHeight,
                         tooltip: l10n.highlightTypeYellowCard,
@@ -376,6 +394,13 @@ class _TeamStatsPlayersTableState extends State<TeamStatsPlayersTable> {
                             child: _StatTrendPill(
                               text: '${row.goals}',
                               trend: row.trends.goals,
+                            ),
+                          ),
+                          SizedBox(
+                            width: _assistsColumnWidth,
+                            child: _StatTrendPill(
+                              text: '${row.assists}',
+                              trend: row.trends.assists,
                             ),
                           ),
                           SizedBox(
@@ -674,10 +699,21 @@ class _PlayerStatsCard extends StatelessWidget {
                 playTimeLabel,
                 row.trends.playTime,
               ),
+              const Expanded(child: SizedBox.shrink()),
+            ],
+          ),
+          const SizedBox(height: 16),
+          Row(
+            children: [
               statTile(
                 l10n.teamStatsPlayersColumnGoals,
                 '${row.goals}',
                 row.trends.goals,
+              ),
+              statTile(
+                l10n.teamStatsPlayersColumnAssists,
+                '${row.assists}',
+                row.trends.assists,
               ),
             ],
           ),

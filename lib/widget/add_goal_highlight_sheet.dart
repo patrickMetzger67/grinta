@@ -17,6 +17,7 @@ Future<bool?> showAddGoalHighlightSheet(
   required models.Match match,
   required List<String> managedTeamIds,
   required List<Highlights> existingHighlights,
+  Map<String, String?> clubIdByTeamId = const <String, String?>{},
 }) {
   if (kIsWeb) {
     return showDialog<bool>(
@@ -36,6 +37,7 @@ Future<bool?> showAddGoalHighlightSheet(
             match: match,
             managedTeamIds: managedTeamIds,
             existingHighlights: existingHighlights,
+            clubIdByTeamId: clubIdByTeamId,
           ),
         ),
       ),
@@ -52,6 +54,7 @@ Future<bool?> showAddGoalHighlightSheet(
       match: match,
       managedTeamIds: managedTeamIds,
       existingHighlights: existingHighlights,
+      clubIdByTeamId: clubIdByTeamId,
     ),
   );
 }
@@ -62,11 +65,13 @@ class AddGoalHighlightSheet extends StatefulWidget {
     required this.match,
     required this.managedTeamIds,
     required this.existingHighlights,
+    this.clubIdByTeamId = const <String, String?>{},
   });
 
   final models.Match match;
   final List<String> managedTeamIds;
   final List<Highlights> existingHighlights;
+  final Map<String, String?> clubIdByTeamId;
 
   @override
   State<AddGoalHighlightSheet> createState() => _AddGoalHighlightSheetState();
@@ -105,7 +110,7 @@ class _AddGoalHighlightSheetState extends State<AddGoalHighlightSheet> {
 
   bool get _isManagedSelected =>
       _selectedSide != null &&
-      isManagedSide(widget.match, _selectedSide!, widget.managedTeamIds);
+      isManagedSide(widget.match, _selectedSide!, widget.managedTeamIds, clubIdByTeamId: widget.clubIdByTeamId);
 
   bool get _usePlayerPicker =>
       _isManagedSelected && compoHasPlayers(_matchCompo);
@@ -121,11 +126,11 @@ class _AddGoalHighlightSheetState extends State<AddGoalHighlightSheet> {
       _jerseyController.clear();
     });
 
-    if (!isManagedSide(widget.match, side, widget.managedTeamIds)) {
+    if (!isManagedSide(widget.match, side, widget.managedTeamIds, clubIdByTeamId: widget.clubIdByTeamId)) {
       return;
     }
 
-    final String? teamId = teamIdForSide(widget.match, side);
+    final String? teamId = teamIdForSide(widget.match, side, clubIdByTeamId: widget.clubIdByTeamId);
     final String? matchId = widget.match.id?.trim();
     if (teamId == null || matchId == null || matchId.isEmpty) {
       return;

@@ -11,7 +11,10 @@ import 'package:grinta/services/teams_per_club_service.dart';
 import 'package:grinta/util/app_theme.dart';
 import 'package:grinta/util/match_outcome_helper.dart';
 import 'package:grinta/util/team_stats_competition_filter.dart';
+import 'package:grinta/util/team_stats_goals_detail_helper.dart';
+import 'package:grinta/widget/team_stats_cards_section.dart';
 import 'package:grinta/widget/team_stats_goals_bar_chart.dart';
+import 'package:grinta/widget/team_stats_goals_detail_dialog.dart';
 import 'package:grinta/widget/team_stats_goals_trend_indicator.dart';
 import 'package:grinta/widget/team_stats_players_table.dart';
 import 'package:grinta/widget/team_stats_wdl_matches_dialog.dart';
@@ -72,12 +75,14 @@ class _TeamStatsCompetitionsTabState extends State<TeamStatsCompetitionsTab>
 
   int get _goalsSubTabIndex => 2;
 
-  int get _playersSubTabIndex => widget.isManager ? 3 : 0;
+  int get _cardsSubTabIndex => 3;
+
+  int get _playersSubTabIndex => widget.isManager ? 4 : 0;
 
   @override
   void initState() {
     super.initState();
-    final subTabCount = widget.isManager ? 4 : 1;
+    final subTabCount = widget.isManager ? 5 : 1;
     final initialIndex = widget.isManager
         ? widget.initialSubTabIndex.clamp(0, subTabCount - 1)
         : 0;
@@ -317,6 +322,7 @@ class _TeamStatsCompetitionsTabState extends State<TeamStatsCompetitionsTab>
                 Tab(text: l10n.teamStatsSubTabMatches),
                 Tab(text: l10n.teamStatsSubTabRanking),
                 Tab(text: l10n.teamStatsSubTabGoals),
+                Tab(text: l10n.teamStatsSubTabCards),
                 Tab(text: l10n.teamStatsSubTabPlayers),
               ],
             ),
@@ -331,6 +337,11 @@ class _TeamStatsCompetitionsTabState extends State<TeamStatsCompetitionsTab>
               )
             else if (_subTabController.index == _goalsSubTabIndex)
               ..._buildGoalsContent(l10n)
+            else if (_subTabController.index == _cardsSubTabIndex)
+              TeamStatsCardsSection(
+                team: widget.team,
+                isManager: widget.isManager,
+              )
             else
               _buildPlayersContent(context, l10n),
           ] else ...[
@@ -364,26 +375,69 @@ class _TeamStatsCompetitionsTabState extends State<TeamStatsCompetitionsTab>
     return [
       TeamStatsGoalsTrendIndicator(
         trends: TeamGoalsHalfTrends.compare(
-          firstHalf: stats.firstHalf,
-          secondHalf: stats.secondHalf,
+          firstHalf: stats.firstHalf.counts,
+          secondHalf: stats.secondHalf.counts,
         ),
       ),
       const SizedBox(height: 16),
       TeamStatsGoalsBarChart(
         title: l10n.teamStatsPeriodFullSeason,
-        counts: stats.fullSeason,
+        counts: stats.fullSeason.counts,
+        onBarTap: (kind) => _openGoalsDetailDialog(
+          periodTitle: l10n.teamStatsPeriodFullSeason,
+          periodData: stats.fullSeason,
+          kind: kind,
+          stats: stats,
+        ),
       ),
       const SizedBox(height: 16),
       TeamStatsGoalsBarChart(
         title: l10n.teamStatsPeriodFirstHalf,
-        counts: stats.firstHalf,
+        counts: stats.firstHalf.counts,
+        onBarTap: (kind) => _openGoalsDetailDialog(
+          periodTitle: l10n.teamStatsPeriodFirstHalf,
+          periodData: stats.firstHalf,
+          kind: kind,
+          stats: stats,
+        ),
       ),
       const SizedBox(height: 16),
       TeamStatsGoalsBarChart(
         title: l10n.teamStatsPeriodSecondHalf,
-        counts: stats.secondHalf,
+        counts: stats.secondHalf.counts,
+        onBarTap: (kind) => _openGoalsDetailDialog(
+          periodTitle: l10n.teamStatsPeriodSecondHalf,
+          periodData: stats.secondHalf,
+          kind: kind,
+          stats: stats,
+        ),
       ),
     ];
+  }
+
+  void _openGoalsDetailDialog({
+    required String periodTitle,
+    required TeamGoalsPeriodData periodData,
+    required TeamStatsGoalBarKind kind,
+    required TeamGoalsStatsByPeriod stats,
+  }) {
+    final value = kind == TeamStatsGoalBarKind.scored
+        ? periodData.counts.scored
+        : periodData.counts.conceded;
+    if (value <= 0 || periodData.matches.isEmpty) {
+      return;
+    }
+
+    showTeamStatsGoalsDetailDialog(
+      context: context,
+      periodTitle: periodTitle,
+      kind: kind,
+      matches: periodData.matches,
+      teamId: stats.teamId,
+      clubId: stats.clubId,
+      clubAffiliation: stats.clubAffiliation,
+      perspectiveDisplayName: stats.perspectiveDisplayName,
+    );
   }
 
   List<Widget> _buildMatchesContent(AppLocalizations l10n) {

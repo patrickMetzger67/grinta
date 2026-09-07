@@ -43,8 +43,11 @@ class _MatchGrintaHighlightsTabState extends State<MatchGrintaHighlightsTab> {
 
   String get _matchCalendarId => (widget.match.id ?? '').trim();
 
-  bool get _canEdit =>
-      widget.isManager && widget.match.isMatchPlayed != true;
+  /// Managers may add/edit Grinta highlights after the match is marked played
+  /// (same as FMI goal assignment and score +/-). Intense sync / end events
+  /// set [Match.isMatchPlayed] early; locking the FAB behind that flag left only
+  /// the leftover "À détailler ensemble après" stub.
+  bool get _canEdit => widget.isManager;
 
   /// Repairs match.homeScore/outSideScore when they drifted from goal highlights.
   void _maybeHealScoreFromHighlights(List<Highlights> highlights) {
@@ -167,26 +170,18 @@ class _MatchGrintaHighlightsTabState extends State<MatchGrintaHighlightsTab> {
   }
 
   String? _highlightTeamId(AppSession session) {
-    final profileTeamIds = profileTeamIdsForMatch(
-      profileTeamIds: session.teamIdsForSelectedSeason,
+    return resolveGrintaHighlightTeamId(
       match: widget.match,
+      isManager: widget.isManager,
+      profileTeamIds: session.teamIdsForSelectedSeason,
+      managedMatchTeamIds: managedMatchTeamIds(widget.match, session),
+      preferredManagedTeamId:
+          preferredManagedMatchTeamId(widget.match, session),
     );
+  }
 
-    if (widget.isManager) {
-      final resolved = resolveTeamIdForMatch(
-        widget.match,
-        managedTeamIds: managedMatchTeamIds(widget.match, session),
-      );
-      if (resolved != null && resolved.isNotEmpty) {
-        return resolved;
-      }
-    }
-
-    if (profileTeamIds.isEmpty) {
-      return null;
-    }
-
-    return profileTeamIds.first;
+  Map<String, String?> _clubIdByTeamId(AppSession session) {
+    return clubIdByTeamIdFromTeams(session.teamsForAgendaSelectedSeason);
   }
 
   Future<void> _showGoalEntryFlow(List<Highlights> existing) async {
@@ -202,6 +197,7 @@ class _MatchGrintaHighlightsTabState extends State<MatchGrintaHighlightsTab> {
       match: widget.match,
       managedTeamIds: managedTeamIds,
       existingHighlights: existing,
+      clubIdByTeamId: _clubIdByTeamId(session),
     );
   }
 
@@ -218,6 +214,7 @@ class _MatchGrintaHighlightsTabState extends State<MatchGrintaHighlightsTab> {
       match: widget.match,
       managedTeamIds: managedTeamIds,
       existingHighlights: existing,
+      clubIdByTeamId: _clubIdByTeamId(session),
     );
   }
 
@@ -238,6 +235,7 @@ class _MatchGrintaHighlightsTabState extends State<MatchGrintaHighlightsTab> {
       actionType: actionType,
       managedTeamIds: managedTeamIds,
       existingHighlights: existing,
+      clubIdByTeamId: _clubIdByTeamId(session),
     );
   }
 
@@ -453,13 +451,8 @@ class _MatchGrintaHighlightsTabState extends State<MatchGrintaHighlightsTab> {
       );
     }
 
-    if (highlightTeamId == null || highlightTeamId.isEmpty) {
-      return _GrintaHighlightsEmptyState(
-        title: l10n.matchHighlightsSourceGrinta,
-        message: l10n.matchHighlightsGrintaPlaceholderMessage,
-      );
-    }
-
+    // teamId may be null for edge cases: stream unscoped so existing highlights
+    // still appear; create flows already guard on a resolved team id.
     return StreamBuilder<List<Highlights>>(
       stream: HighlightsService().streamHighlightsByMatchCalendarId(
         matchCalendarId,
@@ -489,9 +482,13 @@ class _MatchGrintaHighlightsTabState extends State<MatchGrintaHighlightsTab> {
           _maybeHealScoreFromHighlights(highlights);
         });
 
+        final bool canAdd = _canEdit &&
+            highlightTeamId != null &&
+            highlightTeamId.isNotEmpty;
+
         return Scaffold(
           backgroundColor: Colors.transparent,
-          floatingActionButton: _canEdit
+          floatingActionButton: canAdd
               ? FloatingActionButton(
                   tooltip: l10n.matchGrintaHighlightsAddAction,
                   onPressed:
@@ -511,9 +508,9 @@ class _MatchGrintaHighlightsTabState extends State<MatchGrintaHighlightsTab> {
           body: highlights.isEmpty
               ? _GrintaHighlightsEmptyState(
                   title: l10n.matchHighlightsSourceGrinta,
-                  message: _canEdit
+                  message: canAdd
                       ? l10n.matchGrintaHighlightsEmptyMessage
-                      : l10n.matchHighlightsGrintaPlaceholderMessage,
+                      : l10n.emptyNoHighlightsMessage,
                 )
               : ListView.separated(
                   padding: const EdgeInsets.fromLTRB(0, 0, 0, 88),
@@ -533,6 +530,45 @@ class _MatchGrintaHighlightsTabState extends State<MatchGrintaHighlightsTab> {
       },
     );
   }
+}
+
+/// Resolves the Grinta [Highlights.teamId] scope for a match detail tab.
+///
+/// Scraped FFF calendars often have empty `teams` / `teamID`. Managers still
+/// match via club affiliation ([preferredManagedTeamId]); using only
+/// [resolveTeamIdForMatch] then falling back to an arbitrary profile team
+/// filtered the stream to the wrong id and showed an empty stub.
+@visibleForTesting
+String? resolveGrintaHighlightTeamId({
+  required models.Match match,
+  required bool isManager,
+  required List<String> profileTeamIds,
+  required List<String> managedMatchTeamIds,
+  String? preferredManagedTeamId,
+}) {
+  if (isManager) {
+    final preferred = preferredManagedTeamId?.trim() ?? '';
+    if (preferred.isNotEmpty) {
+      return preferred;
+    }
+
+    final resolved = resolveTeamIdForMatch(
+      match,
+      managedTeamIds: managedMatchTeamIds,
+    );
+    if (resolved != null && resolved.isNotEmpty) {
+      return resolved;
+    }
+  }
+
+  final relevantProfileIds = profileTeamIdsForMatch(
+    profileTeamIds: profileTeamIds,
+    match: match,
+  );
+  if (relevantProfileIds.isEmpty) {
+    return null;
+  }
+  return relevantProfileIds.first;
 }
 
 class _ActionTypeTile extends StatelessWidget {

@@ -440,7 +440,8 @@ MatchSide? teamSideForMatch({
     final int linkedIndex = linkedTeamIds.indexOf(trimmedTeamId);
 
     // Matches often store only our team id in [teams]. Index 0 then does NOT
-    // mean home — use isOwnClub (home=team1 / away=team2), same as teamIdForSide.
+    // mean home — fall back to isOwnClub when club/affiliation ids did not
+    // place the team earlier. Goal entry uses Team.clubId via teamIdForSide.
     if (linkedIndex >= 0) {
       if (linkedTeamIds.length == 1 && match.isOwnClub != null) {
         return match.isOwnClub == true ? MatchSide.team1 : MatchSide.team2;

@@ -3,6 +3,13 @@ import 'package:flutter/material.dart';
 import 'package:grinta/analytics/analytics_routes.dart';
 import 'package:grinta/analytics/analytics_screen_names.dart';
 import 'package:grinta/core/extensions/l10n_extension.dart';
+import 'package:grinta/model/effectives.dart';
+import 'package:grinta/model/grinta_player.dart';
+import 'package:grinta/model/grinta_player_hw.dart';
+import 'package:grinta/model/team.dart';
+import 'package:grinta/screen/player_season_summary/player_season_summary_screen.dart';
+import 'package:grinta/services/teamService.dart';
+import 'package:grinta/util/player_photo_resolver.dart';
 import 'package:provider/provider.dart';
 
 import '../../model/answer.dart';
@@ -66,10 +73,12 @@ class TeamPlayersScreen extends StatefulWidget {
 
 class _TeamPlayersScreenState extends State<TeamPlayersScreen> {
   late final TrainingTeamPlayersLoader _loader;
+  late final TeamService _teamService;
 
   bool _loading = true;
   Object? _loadError;
   List<TrainingPlayerRowVm> _rows = [];
+  Team? _team;
   bool _saving = false;
   TrainingTrackerContext? _trackerContext;
   Set<String> _devicesAffected = {};
@@ -85,6 +94,7 @@ class _TeamPlayersScreenState extends State<TeamPlayersScreen> {
   void initState() {
     super.initState();
     _loader = TrainingTeamPlayersLoader();
+    _teamService = TeamService();
     _initTrackerAndReload();
   }
 
@@ -95,16 +105,17 @@ class _TeamPlayersScreenState extends State<TeamPlayersScreen> {
 
   Future<void> _reload() async {
     try {
-      final rows = await _loader.load(
+      final result = await _loader.load(
         training: widget.training,
         seasonId: widget.seasonId,
       );
 
-      _applyTrackerDefaults(rows);
+      _applyTrackerDefaults(result.rows);
 
       if (mounted) {
         setState(() {
-          _rows = rows;
+          _rows = result.rows;
+          _team = result.team ?? _team;
           _loading = false;
           _loadError = null;
         });
@@ -117,6 +128,84 @@ class _TeamPlayersScreenState extends State<TeamPlayersScreen> {
         });
       }
     }
+  }
+
+  GrintaPlayer? _grintaPlayerFor(Player player) {
+    final Set<String> lookupIds = playerMemberLookupIds(player);
+    for (final GrintaPlayer entry
+        in _team?.grintaPlayers ?? const <GrintaPlayer>[]) {
+      final String id = entry.playerId.trim();
+      if (id.isNotEmpty && lookupIds.contains(id)) {
+        return entry;
+      }
+    }
+    return null;
+  }
+
+  Future<Team?> _ensureTeam() async {
+    if (_team != null) return _team;
+    final teamId = widget.training.teamId?.trim();
+    if (teamId == null || teamId.isEmpty) return null;
+    final team = await _teamService.getTeamById(teamId);
+    if (mounted && team != null) {
+      setState(() => _team = team);
+    }
+    return team;
+  }
+
+  Future<void> _openPlayerStatistics(TrainingPlayerRowVm row) async {
+    final String seasonId = widget.seasonId?.trim() ?? '';
+    if (seasonId.isEmpty || !mounted) return;
+
+    final Team? team = await _ensureTeam();
+    if (team == null || !mounted) return;
+
+    final GrintaPlayer? grintaPlayer = _grintaPlayerFor(row.player);
+    final Effectives? effectives = row.effectives;
+    final GrintaPlayerHW? latestHw = grintaPlayer?.latestHw;
+    final bool isGrintaRoster = grintaPlayer != null;
+
+    final double? weightKg = isGrintaRoster
+        ? (latestHw != null && latestHw.weight > 0
+            ? latestHw.weight.toDouble()
+            : null)
+        : effectives?.poids?.toDouble();
+    final int? heightCm = isGrintaRoster
+        ? (latestHw != null && latestHw.height > 0 ? latestHw.height : null)
+        : (effectives?.taille != null && effectives!.taille! > 0
+            ? effectives.taille
+            : null);
+    final DateTime? hwMeasuredAt =
+        latestHw?.dateTime ?? effectives?.modificationDate?.toDate();
+    final String? preferredFoot =
+        grintaPlayer?.preferredFoot ?? effectives?.piedFort;
+    final List<String> positionLabels = !isGrintaRoster &&
+            effectives?.position != null &&
+            effectives!.position! > 0
+        ? <String>[getStrPosition(effectives.position!, context.l10n)]
+        : const <String>[];
+
+    await openPlayerSeasonSummaryScreen(
+      context,
+      team: team,
+      initialSeasonId: seasonId,
+      isManager: _canEdit,
+      identity: PlayerSeasonSummaryIdentity(
+        player: row.player,
+        positionCodes: isGrintaRoster
+            ? List<int>.from(grintaPlayer.positions)
+            : const <int>[],
+        positionLabels: positionLabels,
+        birthday:
+            grintaPlayer?.birthday ?? Player.parseBirthDay(row.player.birthDay),
+        heightCm: heightCm,
+        weightKg: weightKg != null && weightKg > 0 ? weightKg : null,
+        hwMeasuredAt: hwMeasuredAt,
+        preferredFoot: preferredFoot,
+        isGrintaRoster: isGrintaRoster,
+        effectivesDocId: effectives?.ref?.id,
+      ),
+    );
   }
 
   void _applyTrackerDefaults(List<TrainingPlayerRowVm> rows) {
@@ -322,6 +411,10 @@ class _TeamPlayersScreenState extends State<TeamPlayersScreen> {
                             onPresenceTap: _canEdit
                                 ? () => _showPresencePicker(row)
                                 : null,
+                            onPlayerTap:
+                                widget.seasonId?.trim().isNotEmpty == true
+                                    ? () => _openPlayerStatistics(row)
+                                    : null,
                           ),
                         ),
                       ),
@@ -869,6 +962,7 @@ class _PlayerPresenceTile extends StatelessWidget {
     this.onAssignTracker,
     this.onRemoveTracker,
     this.onPresenceTap,
+    this.onPlayerTap,
   });
 
   final Player player;
@@ -882,6 +976,7 @@ class _PlayerPresenceTile extends StatelessWidget {
   final VoidCallback? onAssignTracker;
   final VoidCallback? onRemoveTracker;
   final VoidCallback? onPresenceTap;
+  final VoidCallback? onPlayerTap;
 
   @override
   Widget build(BuildContext context) {
@@ -891,20 +986,51 @@ class _PlayerPresenceTile extends StatelessWidget {
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
       child: Row(
         children: [
-          PlayerPhoto(player: player, radius: 24),
-          const SizedBox(width: 12),
           Expanded(
-            child: Text(
-              playerDisplayName(player, unknownLabel: l10n.entityPlayer),
-              maxLines: 2,
-              overflow: TextOverflow.ellipsis,
-              style: TextStyle(
-                color: colors.textPrimary,
-                fontWeight: FontWeight.w600,
-                fontSize: 15,
+            child: InkWell(
+              onTap: onPlayerTap,
+              borderRadius: BorderRadius.circular(8),
+              child: Row(
+                children: [
+                  PlayerPhoto(player: player, radius: 24),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Text(
+                      playerDisplayName(
+                        player,
+                        unknownLabel: l10n.entityPlayer,
+                      ),
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(
+                        color: colors.textPrimary,
+                        fontWeight: FontWeight.w600,
+                        fontSize: 15,
+                      ),
+                    ),
+                  ),
+                ],
               ),
             ),
           ),
+          if (onPlayerTap != null) ...[
+            const SizedBox(width: 4),
+            IconButton(
+              tooltip: l10n.playerSeasonSummaryTitle,
+              padding: EdgeInsets.zero,
+              visualDensity: VisualDensity.compact,
+              constraints: const BoxConstraints(
+                minWidth: 36,
+                minHeight: 36,
+              ),
+              onPressed: onPlayerTap,
+              icon: Icon(
+                Icons.bar_chart_rounded,
+                size: 20,
+                color: colors.textSecondary,
+              ),
+            ),
+          ],
           if (showTracker) ...[
             const SizedBox(width: 8),
             SizedBox(

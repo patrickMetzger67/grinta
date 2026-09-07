@@ -58,6 +58,8 @@ import '../../widget/ask_diego/ask_diego_speed_dial.dart';
 import '../../widget/agenda_coach_players_dialog.dart';
 import '../../widget/agenda_training_presence_actions.dart';
 import '../../widget/coach_workload_analysis_entry_button.dart';
+import '../../widget/manager_cards_entry_button.dart';
+import '../../widget/player_cards_entry_button.dart';
 import '../../widget/create_non_sport_event_sheet.dart';
 import '../../widget/create_personal_sport_activity_sheet.dart';
 import '../../widget/session_personal_data_dialog.dart';
@@ -1432,6 +1434,8 @@ class _AgendaScreenState extends State<AgendaScreen> {
           : AppBar(
               title: Text(l10n.navAgenda),
               actions: [
+                const PlayerCardsEntryButton(compact: true),
+                const ManagerCardsEntryButton(compact: true),
                 if (context.watch<AppSession>().hasManagedTeamsInSelectedSeason)
                   const CoachWorkloadAnalysisEntryButton(compact: true),
                 IconButton(
@@ -1457,6 +1461,8 @@ class _AgendaScreenState extends State<AgendaScreen> {
                   child: Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
+                      const PlayerCardsEntryButton(compact: true),
+                      const ManagerCardsEntryButton(compact: true),
                       if (context
                           .watch<AppSession>()
                           .hasManagedTeamsInSelectedSeason)

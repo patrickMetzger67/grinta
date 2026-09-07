@@ -4,6 +4,8 @@ import 'package:grinta/core/extensions/l10n_extension.dart';
 import 'package:grinta/model/highlights.dart';
 import 'package:grinta/model/match.dart' as models;
 import 'package:grinta/model/matchCompo.dart';
+import 'package:grinta/model/matchStats.dart';
+import 'package:grinta/model/team.dart';
 import 'package:grinta/services/highlightsService.dart';
 import 'package:grinta/services/matchService.dart';
 import 'package:grinta/util/app_theme.dart';
@@ -27,35 +29,107 @@ String affiliationTeamForSide(models.Match match, MatchSide side) {
       : (match.affiliationTeam2?.trim() ?? '');
 }
 
+/// Builds `teamId → clubId` from Grinta [Team] docs (e.g. session teams).
+///
+/// Used to place a team from [Match.teams] on home/away via FFF club ids,
+/// not [Match.isOwnClub].
+Map<String, String?> clubIdByTeamIdFromTeams(Iterable<Team> teams) {
+  final map = <String, String?>{};
+  for (final team in teams) {
+    final id = team.keyTeam?.trim() ?? '';
+    if (id.isEmpty) {
+      continue;
+    }
+    final clubId = team.clubId?.trim();
+    map[id] = (clubId == null || clubId.isEmpty) ? null : clubId;
+  }
+  return map;
+}
+
+/// Side of [teamId] on [match] using the team's [clubId] against
+/// [Match.affiliationTeam1] / [Match.affiliationTeam2] then [Match.clubs].
+///
+/// Does **not** use [Match.isOwnClub] — that flag is unreliable for FFF imports.
+MatchSide? sideForTeamClubId(
+  models.Match match, {
+  required String teamId,
+  String? clubId,
+}) {
+  final String club = clubId?.trim() ?? '';
+  if (club.isEmpty) {
+    return null;
+  }
+
+  final String homeAffiliation = affiliationTeamForSide(match, MatchSide.team1);
+  if (homeAffiliation.isNotEmpty && homeAffiliation == club) {
+    return MatchSide.team1;
+  }
+  final String awayAffiliation = affiliationTeamForSide(match, MatchSide.team2);
+  if (awayAffiliation.isNotEmpty && awayAffiliation == club) {
+    return MatchSide.team2;
+  }
+
+  final List<dynamic> clubs = match.clubs ?? const <dynamic>[];
+  for (var i = 0; i < clubs.length && i < 2; i++) {
+    final sideClub = clubs[i]?.toString().trim() ?? '';
+    if (sideClub.isNotEmpty && sideClub == club) {
+      return i == 0 ? MatchSide.team1 : MatchSide.team2;
+    }
+  }
+
+  return null;
+}
+
 /// Grinta team id linked to [side], when present in [match.teams].
-String? teamIdForSide(models.Match match, MatchSide side) {
+///
+/// FFF / calendar imports often store only our team id in [Match.teams].
+/// Index 0 is then our club, **not** necessarily home. Place each linked id
+/// with its [clubId] against match affiliations / `clubs[]`.
+///
+/// Pass [clubIdByTeamId] from the Team documents of those ids (session /
+/// matchCalendar teams). Without club ids, falls back to home/away array
+/// index only when two ids are linked.
+String? teamIdForSide(
+  models.Match match,
+  MatchSide side, {
+  Map<String, String?> clubIdByTeamId = const <String, String?>{},
+}) {
   final List<String> linked =
       normalizeTeamIdList(match.teams ?? const <dynamic>[]);
 
-  if (side == MatchSide.team1 && linked.isNotEmpty) {
-    return linked.first;
-  }
-  if (side == MatchSide.team2 && linked.length > 1) {
-    return linked[1];
+  final candidates = <String>[
+    ...linked,
+    if (linked.isEmpty) ...[
+      if ((match.teamID?.trim() ?? '').isNotEmpty) match.teamID!.trim(),
+    ],
+  ];
+
+  var hadClubId = false;
+  for (final teamId in candidates) {
+    final String? clubId = clubIdByTeamId[teamId];
+    if ((clubId?.trim() ?? '').isEmpty) {
+      continue;
+    }
+    hadClubId = true;
+    final MatchSide? placed = sideForTeamClubId(
+      match,
+      teamId: teamId,
+      clubId: clubId,
+    );
+    if (placed == side) {
+      return teamId;
+    }
   }
 
-  final String? primaryId = match.teamID?.trim();
-  if (primaryId == null || primaryId.isEmpty) {
+  // Club ids were available: do not guess with isOwnClub / index 0.
+  if (hadClubId) {
     return null;
   }
 
-  if (linked.length == 1) {
-    final bool ownTeamIsHome = match.isOwnClub == true;
-    if (side == MatchSide.team1 && ownTeamIsHome) return linked.first;
-    if (side == MatchSide.team2 && !ownTeamIsHome) return linked.first;
-    return null;
-  }
-
-  if (side == MatchSide.team1 && match.isOwnClub == true) {
-    return primaryId;
-  }
-  if (side == MatchSide.team2 && match.isOwnClub != true) {
-    return primaryId;
+  // No clubId available — two linked ids: conventional home then away order.
+  if (linked.length >= 2) {
+    if (side == MatchSide.team1) return linked[0];
+    if (side == MatchSide.team2) return linked[1];
   }
 
   return null;
@@ -64,9 +138,14 @@ String? teamIdForSide(models.Match match, MatchSide side) {
 bool isManagedSide(
   models.Match match,
   MatchSide side,
-  List<String> managedTeamIds,
-) {
-  final String? teamId = teamIdForSide(match, side);
+  List<String> managedTeamIds, {
+  Map<String, String?> clubIdByTeamId = const <String, String?>{},
+}) {
+  final String? teamId = teamIdForSide(
+    match,
+    side,
+    clubIdByTeamId: clubIdByTeamId,
+  );
   if (teamId == null || teamId.isEmpty) {
     return false;
   }
@@ -431,6 +510,123 @@ Future<void> saveGoalHighlightAndUpdateScore({
     matchService: matchService,
     isInHighLight: markInHighlight ? true : null,
   );
+}
+
+String _normalizeFmiTeamOrType(String? value) {
+  return (value ?? '')
+      .trim()
+      .toLowerCase()
+      .replaceAll(' ', '')
+      .replaceAll('-', '_');
+}
+
+/// FMI goal / but / penalty (not own-goal).
+bool isFmiGoalHighlight(MatchStatHighLight highlight) {
+  switch (_normalizeFmiTeamOrType(highlight.type)) {
+    case 'goal':
+    case 'but':
+    case 'penalty':
+      return true;
+    default:
+      return false;
+  }
+}
+
+/// Alias used by unit tests / call sites.
+bool isFmiGoal(MatchStatHighLight highlight) => isFmiGoalHighlight(highlight);
+
+/// [GoalType] for an FMI goal highlight (`penalty` → penalty, else normal).
+GoalType goalTypeFromFmiHighlight(MatchStatHighLight highlight) {
+  if (_normalizeFmiTeamOrType(highlight.type) == 'penalty') {
+    return GoalType.penalty;
+  }
+  return GoalType.normal;
+}
+
+/// Maps FMI `highlight.team` to home/away by matching [Match.team1]/[Match.team2].
+MatchSide? sideForFmiHighlightTeam(
+  models.Match match,
+  MatchStatHighLight highlight,
+) {
+  final event = _normalizeFmiTeamOrType(highlight.team);
+  if (event.isEmpty) {
+    return null;
+  }
+
+  final team1 = _normalizeFmiTeamOrType(match.team1);
+  if (team1.isNotEmpty && event == team1) {
+    return MatchSide.team1;
+  }
+
+  final team2 = _normalizeFmiTeamOrType(match.team2);
+  if (team2.isNotEmpty && event == team2) {
+    return MatchSide.team2;
+  }
+
+  return null;
+}
+
+/// True when [highlight] is an FMI goal for a side the manager manages.
+bool isManagedTeamFmiGoal(
+  models.Match match,
+  MatchStatHighLight highlight,
+  List<String> managedTeamIds, {
+  Map<String, String?> clubIdByTeamId = const <String, String?>{},
+}) {
+  if (!isFmiGoalHighlight(highlight)) {
+    return false;
+  }
+  final MatchSide? side = sideForFmiHighlightTeam(match, highlight);
+  if (side == null) {
+    return false;
+  }
+  return isManagedSide(
+    match,
+    side,
+    managedTeamIds,
+    clubIdByTeamId: clubIdByTeamId,
+  );
+}
+
+/// Persists a Grinta goal from an FMI assignment **without** recomputing the
+/// match score — FMI already owns the scoreboard.
+Future<void> saveFmiAssignedGoalHighlight({
+  required models.Match match,
+  required MatchSide side,
+  required Goal goal,
+  String? teamId,
+  int minute = 0,
+  int extraTime = 0,
+  HighlightsService? highlightsService,
+  bool updateScore = false,
+}) async {
+  final String? matchId = match.id?.trim();
+  if (matchId == null || matchId.isEmpty) {
+    throw Exception('Match id is missing');
+  }
+
+  goal.affiliationTeam = affiliationTeamForSide(match, side);
+
+  final highlight = Highlights(
+    matchCalendarId: matchId,
+    teamId: teamId,
+    minute: minute,
+    extraTime: extraTime,
+    actionType: ActionType.goal,
+    value: goal,
+    dateTime: Timestamp.now(),
+  );
+
+  await (highlightsService ?? HighlightsService()).addHighlight(highlight);
+
+  // FMI scoreboard is authoritative — never sync Grinta goal totals by default.
+  if (updateScore) {
+    final bool markInHighlight = match.isInHighLight != true;
+    await syncMatchScoreFromGoalHighlights(
+      match,
+      isInHighLight: markInHighlight ? true : null,
+    );
+  }
 }
 
 /// Shows a confirmation dialog before deleting a Grinta highlight.
