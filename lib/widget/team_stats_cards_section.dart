@@ -168,13 +168,13 @@ class _TeamStatsCardsSectionState extends State<TeamStatsCardsSection> {
             label: Text(l10n.teamStatsCardsIncludePurged),
             selected: _includePurged,
             showCheckmark: true,
-            checkmarkColor: colors.primary,
-            selectedColor: colors.primary.withValues(alpha: 0.18),
+            checkmarkColor: colors.success,
+            selectedColor: colors.success.withValues(alpha: 0.18),
             side: BorderSide(
-              color: _includePurged ? colors.primary : colors.border,
+              color: _includePurged ? colors.success : colors.border,
             ),
             labelStyle: TextStyle(
-              color: _includePurged ? colors.primary : colors.textPrimary,
+              color: _includePurged ? colors.success : colors.textPrimary,
             ),
             onSelected: (selected) {
               setState(() => _includePurged = selected);
