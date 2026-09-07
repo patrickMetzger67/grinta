@@ -3182,6 +3182,16 @@
   },
   "teamStatsGoalsDetailEmpty": "Aucun détail de but disponible pour cette période",
   "teamStatsGoalsDetailUnknownScorer": "Buteur inconnu",
+  "teamStatsGoalsDetailTabChronology": "Chronologie",
+  "teamStatsGoalsDetailTabScorersRanking": "Classement des buteurs",
+  "teamStatsGoalsDetailScorerGoalCount": "{count, plural, =1{1 but} other{{count} buts}}",
+  "@teamStatsGoalsDetailScorerGoalCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "teamStatsAvgPointsPerMatch": "{avg}",
   "@teamStatsAvgPointsPerMatch": {
     "placeholders": {

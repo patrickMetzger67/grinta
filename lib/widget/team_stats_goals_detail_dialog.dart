@@ -69,15 +69,32 @@ class TeamStatsGoalsDetailDialog extends StatefulWidget {
       _TeamStatsGoalsDetailDialogState();
 }
 
-class _TeamStatsGoalsDetailDialogState
-    extends State<TeamStatsGoalsDetailDialog> {
+class _TeamStatsGoalsDetailDialogState extends State<TeamStatsGoalsDetailDialog>
+    with SingleTickerProviderStateMixin {
   bool _loading = true;
   List<TeamStatsGoalDetail> _goals = const [];
+  TabController? _tabController;
+
+  bool get _showScorersRanking => widget.kind == TeamStatsGoalBarKind.scored;
 
   @override
   void initState() {
     super.initState();
+    if (_showScorersRanking) {
+      _tabController = TabController(length: 2, vsync: this);
+      _tabController!.addListener(() {
+        if (!_tabController!.indexIsChanging) {
+          setState(() {});
+        }
+      });
+    }
     _loadGoals();
+  }
+
+  @override
+  void dispose() {
+    _tabController?.dispose();
+    super.dispose();
   }
 
   Future<void> _loadGoals() async {
@@ -125,7 +142,8 @@ class _TeamStatsGoalsDetailDialogState
     final colors = context.appColors;
     final textTheme = Theme.of(context).textTheme;
     final locale = l10n.localeName;
-    final listEntries = _buildListEntries(_goals);
+    final tabController = _tabController;
+    final showTabs = _showScorersRanking && tabController != null;
 
     return Dialog(
       insetPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 24),
@@ -166,6 +184,19 @@ class _TeamStatsGoalsDetailDialogState
                 ],
               ),
             ),
+            if (showTabs) ...[
+              Padding(
+                padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
+                child: _GoalsDetailTabBar(
+                  controller: tabController,
+                  tabs: [
+                    Tab(text: l10n.teamStatsGoalsDetailTabChronology),
+                    Tab(text: l10n.teamStatsGoalsDetailTabScorersRanking),
+                  ],
+                  onTap: (_) => setState(() {}),
+                ),
+              ),
+            ],
             Divider(height: 1, color: colors.border),
             Flexible(
               child: _loading
@@ -187,32 +218,35 @@ class _TeamStatsGoalsDetailDialogState
                             ),
                           ),
                         )
-                      : ListView.separated(
-                          padding: const EdgeInsets.fromLTRB(16, 16, 16, 20),
-                          itemCount: listEntries.length,
-                          separatorBuilder: (context, index) {
-                            final next = listEntries[index + 1];
-                            if (listEntries[index] is _GoalsDayHeaderEntry) {
-                              return const SizedBox(height: 8);
-                            }
-                            if (next is _GoalsDayHeaderEntry) {
-                              return const SizedBox(height: 14);
-                            }
-                            return const SizedBox(height: 10);
-                          },
-                          itemBuilder: (context, index) {
-                            final entry = listEntries[index];
-                            return switch (entry) {
-                              _GoalsDayHeaderEntry(:final date) =>
-                                _MatchDayHeader(date: date, locale: locale),
-                              _GoalsCardEntry(:final goal) => _GoalDetailCard(
-                                  goal: goal,
+                      : showTabs
+                          ? IndexedStack(
+                              index: tabController.index,
+                              children: [
+                                _ChronologyGoalsList(
+                                  goals: _goals,
+                                  locale: locale,
                                   unknownScorer:
                                       l10n.teamStatsGoalsDetailUnknownScorer,
                                 ),
-                            };
-                          },
-                        ),
+                                _ScorersRankingList(
+                                  ranks: aggregateTeamGoalScorers(
+                                    _goals,
+                                    unknownLabel:
+                                        l10n.teamStatsGoalsDetailUnknownScorer,
+                                  ),
+                                  goalCountLabel: (count) =>
+                                      l10n.teamStatsGoalsDetailScorerGoalCount(
+                                        count,
+                                      ),
+                                ),
+                              ],
+                            )
+                          : _ChronologyGoalsList(
+                              goals: _goals,
+                              locale: locale,
+                              unknownScorer:
+                                  l10n.teamStatsGoalsDetailUnknownScorer,
+                            ),
             ),
           ],
         ),
@@ -225,6 +259,100 @@ class _TeamStatsGoalsDetailDialogState
       TeamStatsGoalBarKind.scored => l10n.teamStatsGoalsScored,
       TeamStatsGoalBarKind.conceded => l10n.teamStatsGoalsConceded,
     };
+  }
+}
+
+class _GoalsDetailTabBar extends StatelessWidget {
+  const _GoalsDetailTabBar({
+    required this.controller,
+    required this.tabs,
+    required this.onTap,
+  });
+
+  final TabController controller;
+  final List<Widget> tabs;
+  final ValueChanged<int> onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = context.appColors;
+
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(4),
+      decoration: BoxDecoration(
+        color: colors.surface,
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(color: colors.border),
+      ),
+      child: TabBar(
+        controller: controller,
+        onTap: onTap,
+        tabs: tabs,
+        isScrollable: false,
+        tabAlignment: TabAlignment.fill,
+        labelPadding: EdgeInsets.zero,
+        dividerColor: Colors.transparent,
+        indicatorSize: TabBarIndicatorSize.tab,
+        labelColor: Colors.white,
+        unselectedLabelColor: colors.textSecondary,
+        labelStyle: const TextStyle(
+          fontWeight: FontWeight.w800,
+          fontSize: 13,
+        ),
+        unselectedLabelStyle: const TextStyle(
+          fontWeight: FontWeight.w700,
+          fontSize: 13,
+        ),
+        indicator: BoxDecoration(
+          color: colors.primary,
+          borderRadius: BorderRadius.circular(14),
+        ),
+      ),
+    );
+  }
+}
+
+class _ChronologyGoalsList extends StatelessWidget {
+  const _ChronologyGoalsList({
+    required this.goals,
+    required this.locale,
+    required this.unknownScorer,
+  });
+
+  final List<TeamStatsGoalDetail> goals;
+  final String locale;
+  final String unknownScorer;
+
+  @override
+  Widget build(BuildContext context) {
+    final listEntries = _buildListEntries(goals);
+
+    return ListView.separated(
+      padding: const EdgeInsets.fromLTRB(16, 16, 16, 20),
+      itemCount: listEntries.length,
+      separatorBuilder: (context, index) {
+        final next = listEntries[index + 1];
+        if (listEntries[index] is _GoalsDayHeaderEntry) {
+          return const SizedBox(height: 8);
+        }
+        if (next is _GoalsDayHeaderEntry) {
+          return const SizedBox(height: 14);
+        }
+        return const SizedBox(height: 10);
+      },
+      itemBuilder: (context, index) {
+        final entry = listEntries[index];
+        return switch (entry) {
+          _GoalsDayHeaderEntry(:final date) =>
+            _MatchDayHeader(date: date, locale: locale),
+          _GoalsCardEntry(:final goal) => _GoalDetailCard(
+              goal: goal,
+              unknownScorer: unknownScorer,
+            ),
+        };
+      },
+    );
   }
 
   static List<_GoalsListEntry> _buildListEntries(
@@ -246,6 +374,32 @@ class _TeamStatsGoalsDetailDialogState
     }
 
     return entries;
+  }
+}
+
+class _ScorersRankingList extends StatelessWidget {
+  const _ScorersRankingList({
+    required this.ranks,
+    required this.goalCountLabel,
+  });
+
+  final List<TeamStatsGoalScorerRank> ranks;
+  final String Function(int count) goalCountLabel;
+
+  @override
+  Widget build(BuildContext context) {
+    return ListView.separated(
+      padding: const EdgeInsets.fromLTRB(16, 16, 16, 20),
+      itemCount: ranks.length,
+      separatorBuilder: (context, index) => const SizedBox(height: 10),
+      itemBuilder: (context, index) {
+        final rank = ranks[index];
+        return _ScorerRankCard(
+          rank: rank,
+          goalCountLabel: goalCountLabel(rank.goalCount),
+        );
+      },
+    );
   }
 }
 
@@ -349,6 +503,53 @@ class _GoalDetailCard extends StatelessWidget {
                   ),
                 ),
               ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _ScorerRankCard extends StatelessWidget {
+  const _ScorerRankCard({
+    required this.rank,
+    required this.goalCountLabel,
+  });
+
+  final TeamStatsGoalScorerRank rank;
+  final String goalCountLabel;
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = context.appColors;
+    final textTheme = Theme.of(context).textTheme;
+
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+      decoration: BoxDecoration(
+        color: colors.card,
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: colors.border),
+      ),
+      child: Row(
+        children: [
+          Expanded(
+            child: Text(
+              rank.displayName,
+              style: textTheme.bodyMedium?.copyWith(
+                color: colors.textPrimary,
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+          ),
+          const SizedBox(width: 12),
+          Text(
+            goalCountLabel,
+            style: textTheme.titleSmall?.copyWith(
+              color: colors.primary,
+              fontWeight: FontWeight.w800,
             ),
           ),
         ],

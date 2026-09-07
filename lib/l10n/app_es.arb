@@ -2498,6 +2498,16 @@
   },
   "teamStatsGoalsDetailEmpty": "No hay detalles de goles para este periodo",
   "teamStatsGoalsDetailUnknownScorer": "Goleador desconocido",
+  "teamStatsGoalsDetailTabChronology": "Cronología",
+  "teamStatsGoalsDetailTabScorersRanking": "Clasificación de goleadores",
+  "teamStatsGoalsDetailScorerGoalCount": "{count, plural, =1{1 gol} other{{count} goles}}",
+  "@teamStatsGoalsDetailScorerGoalCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "teamStatsAvgPointsPerMatch": "{avg}",
   "@teamStatsAvgPointsPerMatch": {
     "placeholders": {

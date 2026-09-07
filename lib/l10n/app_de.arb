@@ -2498,6 +2498,16 @@
   },
   "teamStatsGoalsDetailEmpty": "Keine Tordetails für diesen Zeitraum verfügbar",
   "teamStatsGoalsDetailUnknownScorer": "Unbekannter Torschütze",
+  "teamStatsGoalsDetailTabChronology": "Chronologie",
+  "teamStatsGoalsDetailTabScorersRanking": "Torschützenliste",
+  "teamStatsGoalsDetailScorerGoalCount": "{count, plural, =1{1 Tor} other{{count} Tore}}",
+  "@teamStatsGoalsDetailScorerGoalCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "teamStatsAvgPointsPerMatch": "{avg}",
   "@teamStatsAvgPointsPerMatch": {
     "placeholders": {

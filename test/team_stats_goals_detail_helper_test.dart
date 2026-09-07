@@ -175,4 +175,79 @@ void main() {
       expect(sorted.map((g) => g.minute).toList(), [12, 80, 5]);
     });
   });
+
+  group('aggregateTeamGoalScorers', () {
+    TeamStatsGoalDetail detail({
+      String? playerId,
+      String? playerName,
+      int? playerNumber,
+    }) {
+      return TeamStatsGoalDetail(
+        match: homeMatch(),
+        kind: TeamStatsGoalBarKind.scored,
+        minute: 10,
+        extraTime: 0,
+        goal: Goal(
+          affiliationTeam: 'aff-erstein',
+          playerId: playerId,
+          playerName: playerName,
+        )..playerNumber = playerNumber,
+      );
+    }
+
+    test('aggregates by playerId and sorts by goal count descending', () {
+      final ranks = aggregateTeamGoalScorers(
+        [
+          detail(playerId: 'p1', playerName: 'Alexandre DELEAU'),
+          detail(playerId: 'p2', playerName: 'Vincent DESTENAY'),
+          detail(playerId: 'p1', playerName: 'Alexandre DELEAU'),
+          detail(playerId: 'p1', playerName: 'A. DELEAU'),
+          detail(playerId: 'p3', playerName: 'Ludovic ZINCK'),
+          detail(playerId: 'p2', playerName: 'Vincent DESTENAY'),
+        ],
+        unknownLabel: 'Unknown',
+      );
+
+      expect(ranks.map((r) => r.goalCount).toList(), [3, 2, 1]);
+      expect(ranks[0].displayName, 'Alexandre DELEAU');
+      expect(ranks[0].identityKey, 'id:p1');
+      expect(ranks[1].displayName, 'Vincent DESTENAY');
+      expect(ranks[2].displayName, 'Ludovic ZINCK');
+    });
+
+    test('falls back to display name when playerId is missing', () {
+      final ranks = aggregateTeamGoalScorers(
+        [
+          detail(playerName: 'Dupont'),
+          detail(playerName: 'dupont'),
+          detail(playerName: 'Martin'),
+          detail(playerNumber: 9),
+        ],
+        unknownLabel: 'Unknown',
+      );
+
+      expect(ranks, hasLength(3));
+      expect(ranks[0].goalCount, 2);
+      expect(ranks[0].displayName.toLowerCase(), 'dupont');
+      expect(ranks[0].identityKey, 'name:dupont');
+      expect(ranks.map((r) => r.goalCount).toList(), [2, 1, 1]);
+    });
+
+    test('merges unknown scorers under the unknown label', () {
+      final ranks = aggregateTeamGoalScorers(
+        [
+          detail(),
+          detail(),
+          detail(playerName: 'Only Name'),
+        ],
+        unknownLabel: 'Unknown scorer',
+      );
+
+      expect(ranks, hasLength(2));
+      expect(ranks[0].displayName, 'Unknown scorer');
+      expect(ranks[0].goalCount, 2);
+      expect(ranks[1].displayName, 'Only Name');
+      expect(ranks[1].goalCount, 1);
+    });
+  });
 }

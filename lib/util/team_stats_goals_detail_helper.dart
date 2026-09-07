@@ -151,3 +151,90 @@ List<TeamStatsGoalDetail> sortTeamGoalDetails(
   });
   return sorted;
 }
+
+/// Aggregated goal count for one scorer in the goals detail ranking tab.
+class TeamStatsGoalScorerRank {
+  const TeamStatsGoalScorerRank({
+    required this.identityKey,
+    required this.displayName,
+    required this.goalCount,
+  });
+
+  /// Stable identity used for grouping (`id:…` or `name:…`).
+  final String identityKey;
+
+  /// Best available label for UI (name / `#N` / unknown).
+  final String displayName;
+
+  final int goalCount;
+}
+
+/// Groups [details] by player identity and sorts by goal count descending.
+///
+/// Identity prefers non-empty [Goal.playerId]; otherwise the display label
+/// (case-insensitive) so duplicate names without ids stay merged.
+List<TeamStatsGoalScorerRank> aggregateTeamGoalScorers(
+  Iterable<TeamStatsGoalDetail> details, {
+  required String unknownLabel,
+}) {
+  final byKey = <String, _ScorerAgg>{};
+
+  for (final detail in details) {
+    final playerId = detail.goal.playerId?.trim() ?? '';
+    final label = detail.scorerLabel(unknownLabel: unknownLabel);
+    final key = playerId.isNotEmpty
+        ? 'id:${playerId.toLowerCase()}'
+        : 'name:${label.toLowerCase()}';
+
+    final existing = byKey[key];
+    if (existing == null) {
+      byKey[key] = _ScorerAgg(displayName: label, goalCount: 1);
+      continue;
+    }
+    existing.goalCount += 1;
+    // Prefer a richer label if a later entry has a real name over `#N`.
+    if (_scorerLabelRank(label) > _scorerLabelRank(existing.displayName)) {
+      existing.displayName = label;
+    }
+  }
+
+  final ranks = byKey.entries
+      .map(
+        (entry) => TeamStatsGoalScorerRank(
+          identityKey: entry.key,
+          displayName: entry.value.displayName,
+          goalCount: entry.value.goalCount,
+        ),
+      )
+      .toList();
+
+  ranks.sort((a, b) {
+    final countCmp = b.goalCount.compareTo(a.goalCount);
+    if (countCmp != 0) {
+      return countCmp;
+    }
+    return a.displayName.toLowerCase().compareTo(b.displayName.toLowerCase());
+  });
+  return ranks;
+}
+
+class _ScorerAgg {
+  _ScorerAgg({
+    required this.displayName,
+    required this.goalCount,
+  });
+
+  String displayName;
+  int goalCount;
+}
+
+int _scorerLabelRank(String label) {
+  final trimmed = label.trim();
+  if (trimmed.isEmpty) {
+    return 0;
+  }
+  if (trimmed.startsWith('#')) {
+    return 1;
+  }
+  return 2;
+}

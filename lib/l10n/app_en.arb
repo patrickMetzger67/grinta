@@ -2776,6 +2776,16 @@
   },
   "teamStatsGoalsDetailEmpty": "No goal details available for this period",
   "teamStatsGoalsDetailUnknownScorer": "Unknown scorer",
+  "teamStatsGoalsDetailTabChronology": "Chronology",
+  "teamStatsGoalsDetailTabScorersRanking": "Top scorers",
+  "teamStatsGoalsDetailScorerGoalCount": "{count, plural, =1{1 goal} other{{count} goals}}",
+  "@teamStatsGoalsDetailScorerGoalCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "teamStatsAvgPointsPerMatch": "{avg}",
   "@teamStatsAvgPointsPerMatch": {
     "placeholders": {
