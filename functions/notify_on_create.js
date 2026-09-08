@@ -41,9 +41,22 @@ function createSendPushOnCollection(collectionName) {
       await dispatchNotificationPush({
         db: getFirestore(),
         snap,
+        collectionName,
       });
     },
   );
+}
+
+/**
+ * Shared `notification` collection is also watched by AS Erstein.
+ * Only fan out when the doc is explicitly tagged Grinta — missing brand
+ * used to default to Grinta and still woke the Aserstein listener for
+ * untagged / dual-app writes. New Grinta clients write `grinta_notification`.
+ */
+function isExplicitGrintaNotificationDoc(data) {
+  const brand = (data?.brand ?? '').toString().trim().toLowerCase();
+  const app = (data?.app ?? '').toString().trim().toLowerCase();
+  return brand === BRAND_GRINTA || app === BRAND_GRINTA;
 }
 
 function createSendPushOnNotificationCreated() {
@@ -111,7 +124,11 @@ async function markDispatch(snap, fields) {
   await snap.ref.update(update);
 }
 
-async function dispatchNotificationPush({ db, snap }) {
+async function dispatchNotificationPush({
+  db,
+  snap,
+  collectionName = GRINTA_NOTIFICATION_COLLECTION,
+}) {
   const data = snap.data() ?? {};
   if (DONE_DISPATCH_STATUSES.has(data.pushDispatch?.status)) {
     return { skipped: true, reason: 'already_dispatched' };
@@ -134,6 +151,19 @@ async function dispatchNotificationPush({ db, snap }) {
   if (isAsersteinNotificationBrand(data)) {
     await markDispatch(snap, { status: 'skipped', reason: 'aserstein_brand' });
     return { skipped: true, reason: 'aserstein_brand' };
+  }
+
+  // Legacy shared collection: require an explicit Grinta tag so untagged
+  // AS Erstein docs are not FCM'd from this project either.
+  if (
+    collectionName === LEGACY_NOTIFICATION_COLLECTION &&
+    !isExplicitGrintaNotificationDoc(data)
+  ) {
+    await markDispatch(snap, {
+      status: 'skipped',
+      reason: 'legacy_not_grinta_brand',
+    });
+    return { skipped: true, reason: 'legacy_not_grinta_brand' };
   }
 
   const claimed = await claimDispatch(snap);
@@ -429,5 +459,6 @@ module.exports = {
   collectLinkedUserIdsFromMemberData,
   isPushChannel,
   isAsersteinNotificationBrand,
+  isExplicitGrintaNotificationDoc,
   loadMemberData,
 };

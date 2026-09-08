@@ -98,6 +98,29 @@ void main() {
       );
     });
 
+    test('suppresses raw Stream Firebase pushes (shared AS Erstein path)', () {
+      expect(
+        shouldDisplayRemoteFcm(
+          data: {
+            'sender': 'stream.chat',
+            'type': 'message.new',
+            'cid': 'messaging:abc',
+          },
+        ),
+        isFalse,
+      );
+    });
+
+    test('still displays Grinta chat CF payloads when conversation is closed', () {
+      expect(
+        shouldDisplayRemoteFcm(
+          data: {'type': 'chat', 'cid': 'messaging:abc'},
+          activeChatChannelCid: 'messaging:other',
+        ),
+        isTrue,
+      );
+    });
+
     test('suppresses chat only when that conversation is open', () {
       expect(
         shouldDisplayRemoteFcm(
