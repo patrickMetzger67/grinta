@@ -126,14 +126,18 @@ ChatFcmNotification? parseChatFcmNotification({
 
 /// Whether a remote FCM should raise a local banner.
 ///
-/// Non-chat types always display. Chat is suppressed only when that
-/// conversation is already on screen.
+/// - Aserstein-branded payloads are never shown in Grinta.
+/// - Raw Stream Chat Firebase pushes are ignored: on the shared Stream /
+///   Firebase project they are the path that surfaces AS Erstein. Grinta
+///   chat banners come from [sendGrintaPushFCMNotification] (`type: chat`).
+/// - Other chat types are suppressed only when that conversation is open.
 bool shouldDisplayRemoteFcm({
   required Map<String, dynamic> data,
   String? activeChatChannelCid,
 }) {
   final brand = data['brand']?.toString().trim().toLowerCase() ?? '';
   if (brand == 'aserstein') return false;
+  if (looksLikeStreamChatPush(data)) return false;
   if (!isChatFcmData(data)) return true;
   final cid = firstNonEmptyText([
     data['cid']?.toString(),

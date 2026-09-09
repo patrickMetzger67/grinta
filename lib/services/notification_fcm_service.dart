@@ -242,8 +242,16 @@ class NotificationFCMService {
     _streamClient = client;
   }
 
-  /// Registers the current FCM token with Stream Chat for offline/background
-  /// delivery when the Stream dashboard has Firebase push configured.
+  /// Keeps Stream Chat free of FCM devices for Grinta users.
+  ///
+  /// Do **not** call `addDevice`: Grinta and AS Erstein share the same Stream
+  /// app + Firebase project, so Stream Firebase push lands on AS Erstein
+  /// devices registered for the same uid. Chat lock-screen delivery uses
+  /// [sendGrintaPushFCMNotification] instead.
+  ///
+  /// On every login / token refresh, remove **every** Stream device for this
+  /// user (including unbranded leftovers). Filtering only `app: aserstein`
+  /// was not enough — AS Erstein kept receiving Stream banners.
   static Future<void> registerTokenWithStream([
     StreamChatClient? client,
   ]) async {
@@ -252,32 +260,25 @@ class NotificationFCMService {
       return;
     }
     try {
-      // Do not addDevice on Stream Firebase. The shared Stream app already
-      // has AS Erstein devices; Stream would show those banners as AS Erstein.
-      // Chat lock-screen delivery uses sendGrintaPushFCMNotification instead.
-      unawaited(_detachAsersteinStreamDevices(streamClient));
+      unawaited(_detachAllStreamDevices(streamClient));
     } catch (e, st) {
       debugPrint('NotificationFCMService: Stream detach failed: $e\n$st');
     }
   }
 
-  static Future<void> _detachAsersteinStreamDevices(
+  static Future<void> _detachAllStreamDevices(
     StreamChatClient client,
   ) async {
-    final uid = FirebaseAuth.instance.currentUser?.uid?.trim() ?? '';
-    if (uid.isEmpty) return;
     try {
-      final aserstein = await fetchAsersteinFcmTokensForUser(uid);
-      if (aserstein.isEmpty) return;
       final listed = await client.getDevices();
       for (final device in listed.devices) {
-        if (aserstein.contains(device.id)) {
-          await client.removeDevice(device.id);
-        }
+        final id = device.id.trim();
+        if (id.isEmpty) continue;
+        await client.removeDevice(id);
       }
     } catch (e, st) {
       debugPrint(
-        'NotificationFCMService: Stream detach Aserstein failed: $e\n$st',
+        'NotificationFCMService: Stream detach all devices failed: $e\n$st',
       );
     }
   }

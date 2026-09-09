@@ -113,16 +113,33 @@ target only Aserstein tokens / `com.tome4.asersteinv2`.
 `pushDispatch` on the `notification` document:
 `sending` / `sent` / `skipped` / `deferred` / `failed`, plus `sendAfter` when deferred.
 
-## Deploy
+Grinta **does not** register FCM devices with Stream (`addDevice`). The shared
+Stream app already has AS Erstein devices for the same uid; Stream Firebase
+push would show those banners as AS Erstein. On login Grinta removes **all**
+Stream devices for the user. Chat lock-screen delivery uses
+`sendGrintaPushFCMNotification` only.
+
+Disable or split the default Stream Firebase provider in the Stream dashboard
+if AS Erstein still fans out chat to the shared project.
+
+## Deploy (required for prod)
+
+Code on `main` does nothing until Cloud Functions are redeployed. Prefer the
+push-only script (avoids WhatsApp / OAuth secret blockers that blocked earlier
+deploys — leaving production on the old dual-app FCM code):
+
+```bash
+./scripts/deploy_push_functions.sh
+```
+
+Equivalent:
 
 ```bash
 firebase deploy --only functions:sendPushFCMNotification,functions:sendGrintaPushFCMNotification,functions:drainPendingPushNotifications,functions:sendPushOnNotificationCreated,functions:sendGrintaPushOnNotificationCreated,firestore:indexes
 ```
 
-Stream Chat registers the FCM token with `pushProviderName: "grinta"` so a
-Stream dashboard Firebase config named `grinta` can target only `io.grinta.app`.
-Disable or split the default Stream Firebase provider if it still fans out to
-Aserstein devices on the same Stream user.
+Then install a Grinta build that writes `grinta_notification` and open the app
+once on each affected device.
 
 Source: [`functions/send_push_fcm.js`](../functions/send_push_fcm.js),
 [`functions/pending_push.js`](../functions/pending_push.js),

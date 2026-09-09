@@ -6,6 +6,7 @@ const { Timestamp } = require('firebase-admin/firestore');
 const {
   isPushChannel,
   isAsersteinNotificationBrand,
+  isExplicitGrintaNotificationDoc,
   resolveRecipientUserIds,
   persistQuietDeferral,
   GRINTA_NOTIFICATION_COLLECTION,
@@ -49,6 +50,19 @@ describe('isAsersteinNotificationBrand', () => {
     assert.equal(isAsersteinNotificationBrand({ clubId: '500554' }), false);
     assert.equal(isAsersteinNotificationBrand({ brand: 'grinta' }), false);
     assert.equal(isAsersteinNotificationBrand({ brand: 'aserstein' }), true);
+  });
+});
+
+describe('isExplicitGrintaNotificationDoc', () => {
+  it('requires brand or app grinta on the shared legacy collection', () => {
+    assert.equal(isExplicitGrintaNotificationDoc({}), false);
+    assert.equal(isExplicitGrintaNotificationDoc({ clubId: '500554' }), false);
+    assert.equal(isExplicitGrintaNotificationDoc({ brand: 'grinta' }), true);
+    assert.equal(isExplicitGrintaNotificationDoc({ app: 'grinta' }), true);
+    assert.equal(
+      isExplicitGrintaNotificationDoc({ brand: 'aserstein' }),
+      false,
+    );
   });
 });
 
