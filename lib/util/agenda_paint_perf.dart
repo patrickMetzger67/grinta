@@ -239,6 +239,10 @@ class AgendaPaintCoalescer<T> {
 }
 
 /// Cheap fingerprint so identical progressive emits skip a full list rebuild.
+///
+/// Must include workload / tracker stats: [AgendaService] first emits cards
+/// without [AgendaItem.teamWorkloadSummary], then re-emits after enrichment.
+/// Omitting that field drops the second emit (no `_bumpAgendaPaint` / setState).
 String agendaItemsPaintFingerprint(List<AgendaItem> items) {
   if (items.isEmpty) return '0';
   final StringBuffer buffer = StringBuffer(items.length)
@@ -251,6 +255,18 @@ String agendaItemsPaintFingerprint(List<AgendaItem> items) {
     hash = 0x1fffffff & (hash + item.id.hashCode);
     hash = 0x1fffffff & (hash + item.type.index * 31);
     hash = 0x1fffffff & (hash + item.startAt.millisecondsSinceEpoch);
+    hash = 0x1fffffff & (hash + (item.isDone ? 1 : 0));
+    hash = 0x1fffffff & (hash + (item.withTracker == true ? 2 : 0));
+    hash = 0x1fffffff & (hash + (item.areTrackersSynchronized ? 4 : 0));
+    final summary = item.teamWorkloadSummary;
+    if (summary != null) {
+      hash = 0x1fffffff & (hash + 17);
+      hash = 0x1fffffff & (hash + summary.playersCount * 13);
+      hash = 0x1fffffff & (hash + summary.playerScores.length * 19);
+      hash = 0x1fffffff & (hash + summary.averageWorkloadScore.hashCode);
+      hash = 0x1fffffff &
+          (hash + (summary.updatedAt?.millisecondsSinceEpoch ?? 0));
+    }
   }
   buffer.write(':$hash');
   return buffer.toString();

@@ -44,6 +44,7 @@ import '../../util/intense_live_eligibility.dart';
 import '../../util/match_intense_finish_helper.dart';
 import '../../services/agenda_filter_prefs.dart';
 import '../../services/highlightsService.dart';
+import '../../services/teamWorkloadSummaryService.dart';
 import '../../services/training_intense_sync_service.dart';
 import '../../util/polar_import_navigation.dart';
 import '../../util/training_finish_helper.dart';
@@ -414,6 +415,9 @@ class _AgendaScreenState extends State<AgendaScreen> {
       _itemsPaintCoalescer.setPaused(true);
     } else {
       _itemsPaintCoalescer.setPaused(false);
+      // Enrichment may have landed in the paint cache while busy (UI skipped).
+      // Force-apply so workload résumés appear without a manual reload.
+      _reapplyPaintCacheAfterBusy();
       // Keep list sync suppressed one frame after settle so ensureVisible /
       // layout from hydrate cannot re-drive preferred day.
       WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -422,6 +426,19 @@ class _AgendaScreenState extends State<AgendaScreen> {
         _suppressScrollSelectionSync = false;
       });
     }
+  }
+
+  /// Pushes the latest SWR paint (often post-enrichment) onto the list after
+  /// a month-pager settle. Without this, stats can sit in [_paintCache] until
+  /// the user pull-to-refreshes.
+  void _reapplyPaintCacheAfterBusy() {
+    if (!mounted) return;
+    final List<AgendaItem>? cached = _paintCache.tryPaintRange(
+      rangeStart: _rangeStart,
+      rangeEnd: _rangeEnd,
+    );
+    if (cached == null) return;
+    _applyPaintedItems(cached, isRefreshing: false, force: true);
   }
 
   /// Drops queued mid-fling paints / prefetch so a superseded slide cannot
@@ -974,10 +991,16 @@ class _AgendaScreenState extends State<AgendaScreen> {
         if (!mounted || generation != _subscriptionGeneration) {
           return;
         }
-        // Mid-fling: queue silently; discardPending on the next landing drops
-        // stale emits so they never rebuild the pager.
-        if (_monthPagerBusy &&
-            (navigationToken == null || !navigationToken.isCurrent)) {
+        // Mid-fling / busy: never drop enrichment — warm the paint cache and
+        // keep the coalescer pending so settle (_reapplyPaintCacheAfterBusy)
+        // can show workload résumés without a manual reload.
+        if (_monthPagerBusy) {
+          _paintCache.storeRange(
+            rangeStart: _rangeStart,
+            rangeEnd: _rangeEnd,
+            items: loadedItems,
+          );
+          _itemsPaintCoalescer.submit(List<AgendaItem>.from(loadedItems));
           return;
         }
 
