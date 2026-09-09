@@ -1590,54 +1590,57 @@ class _TeamBlock extends StatelessWidget {
       imageSize: compact ? 26 : 32,
     );
 
-    return Column(
-      children: [
-        if (onLogoTap == null)
-          logo
-        else
-          Material(
-            color: Colors.transparent,
-            child: InkWell(
-              onTap: onLogoTap,
-              customBorder: const CircleBorder(),
-              child: logo,
+    return SizedBox(
+      width: double.infinity,
+      child: Column(
+        children: [
+          if (onLogoTap == null)
+            logo
+          else
+            Material(
+              color: Colors.transparent,
+              child: InkWell(
+                onTap: onLogoTap,
+                customBorder: const CircleBorder(),
+                child: logo,
+              ),
             ),
+          LastResultsFormGuide(
+            match: match,
+            side: side,
+            compact: compact,
+            emptyRingColor: Colors.white,
           ),
-        LastResultsFormGuide(
-          match: match,
-          side: side,
-          compact: compact,
-          emptyRingColor: Colors.white,
-        ),
-        const SizedBox(height: 4),
-        Text(
-          name,
-          maxLines: compact ? 1 : 2,
-          overflow: TextOverflow.ellipsis,
-          textAlign: TextAlign.center,
-          style: TextStyle(
-            color: colors.textPrimary,
-            fontSize: compact ? 13 : 14,
-            fontWeight: FontWeight.w800,
-            height: 1.15,
-          ),
-        ),
-        if (_clean(affiliation).isNotEmpty) ...[
-          const SizedBox(height: 2),
+          const SizedBox(height: 4),
           Text(
-            affiliation!,
-            maxLines: 1,
+            name,
+            maxLines: compact ? 1 : 2,
             overflow: TextOverflow.ellipsis,
             textAlign: TextAlign.center,
             style: TextStyle(
-              color: colors.textSecondary,
-              fontSize: 11,
-              fontWeight: FontWeight.w500,
-              height: 1.1,
+              color: colors.textPrimary,
+              fontSize: compact ? 13 : 14,
+              fontWeight: FontWeight.w800,
+              height: 1.15,
             ),
           ),
+          if (_clean(affiliation).isNotEmpty) ...[
+            const SizedBox(height: 2),
+            Text(
+              affiliation!,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                color: colors.textSecondary,
+                fontSize: 11,
+                fontWeight: FontWeight.w500,
+                height: 1.1,
+              ),
+            ),
+          ],
         ],
-      ],
+      ),
     );
   }
 }
@@ -1857,13 +1860,13 @@ class _ScoreSideControls extends StatelessWidget {
           onPressed: onMinus,
         ),
         ConstrainedBox(
-          constraints: const BoxConstraints(minWidth: 28),
+          constraints: const BoxConstraints(minWidth: 24),
           child: Text(
             '$score',
             textAlign: TextAlign.center,
             style: TextStyle(
               color: colors.textPrimary,
-              fontSize: 26,
+              fontSize: 24,
               fontWeight: FontWeight.w900,
               height: 1,
             ),
@@ -1898,16 +1901,16 @@ class _ScoreIconButton extends StatelessWidget {
     final colors = context.appColors;
 
     return SizedBox(
-      width: 32,
-      height: 32,
+      width: 28,
+      height: 28,
       child: IconButton(
         padding: EdgeInsets.zero,
-        constraints: const BoxConstraints.tightFor(width: 32, height: 32),
+        constraints: const BoxConstraints.tightFor(width: 28, height: 28),
         tooltip: tooltip,
         onPressed: enabled ? onPressed : null,
         icon: Icon(
           icon,
-          size: 18,
+          size: 16,
           color: enabled ? colors.primary : colors.textSecondary,
         ),
         style: IconButton.styleFrom(
