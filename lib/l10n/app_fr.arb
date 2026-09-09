@@ -970,6 +970,7 @@
   "presenceExcused": "Excusé(e)",
   "presenceAbsent": "Absent(e)",
   "presenceLate": "En retard",
+  "presenceOfWhichLate": "Dont en retard",
   "presenceUnknown": "—",
   "trainingPlayersAddPlayer": "Ajouter un joueur",
   "trainingPlayersAddPlayerTitle": "Choisir un joueur",

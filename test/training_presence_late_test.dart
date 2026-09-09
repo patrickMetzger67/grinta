@@ -13,7 +13,9 @@ void main() {
         excused: 2,
         absent: 0,
       );
+      // Summary strip: Présent = attended (18), Dont en retard = late (1).
       expect(counts.attended, 18);
+      expect(counts.late, 1);
       expect(counts.total, 20);
     });
   });

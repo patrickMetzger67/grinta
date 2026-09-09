@@ -949,6 +949,7 @@
   "presenceExcused": "Excused",
   "presenceAbsent": "Absent",
   "presenceLate": "Late",
+  "presenceOfWhichLate": "Of which late",
   "presenceUnknown": "—",
   "trainingPlayersAddPlayer": "Add player",
   "trainingPlayersAddPlayerTitle": "Choose a player",

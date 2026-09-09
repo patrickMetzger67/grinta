@@ -889,16 +889,14 @@ class _PresenceSummaryStrip extends StatelessWidget {
         alignment: WrapAlignment.center,
         children: [
           _SummaryChip(
-            // On-time only here; late has its own chip. Attendance rate
-            // (stats / finish flows) still treats late as present via
-            // [TrainingPresenceCounts.attended].
+            // Late counts as present; "Dont en retard" is a subset detail.
             label: l10n.presencePresent,
-            count: counts.present,
+            count: counts.attended,
             background: presenceTint(colors, PresenceType.present),
             foreground: presenceAccent(colors, PresenceType.present),
           ),
           _SummaryChip(
-            label: l10n.presenceLate,
+            label: l10n.presenceOfWhichLate,
             count: counts.late,
             background: presenceTint(colors, PresenceType.late),
             foreground: presenceAccent(colors, PresenceType.late),

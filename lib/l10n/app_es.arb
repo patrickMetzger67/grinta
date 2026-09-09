@@ -949,6 +949,7 @@
   "presenceExcused": "Justificado/a",
   "presenceAbsent": "Ausente",
   "presenceLate": "Retraso",
+  "presenceOfWhichLate": "De los cuales tarde",
   "presenceUnknown": "—",
   "trainingPlayersAddPlayer": "Añadir jugador",
   "trainingPlayersAddPlayerTitle": "Elegir jugador",
