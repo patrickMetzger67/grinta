@@ -1860,13 +1860,13 @@ class _ScoreSideControls extends StatelessWidget {
           onPressed: onMinus,
         ),
         ConstrainedBox(
-          constraints: const BoxConstraints(minWidth: 28),
+          constraints: const BoxConstraints(minWidth: 24),
           child: Text(
             '$score',
             textAlign: TextAlign.center,
             style: TextStyle(
               color: colors.textPrimary,
-              fontSize: 26,
+              fontSize: 24,
               fontWeight: FontWeight.w900,
               height: 1,
             ),
@@ -1901,16 +1901,16 @@ class _ScoreIconButton extends StatelessWidget {
     final colors = context.appColors;
 
     return SizedBox(
-      width: 32,
-      height: 32,
+      width: 28,
+      height: 28,
       child: IconButton(
         padding: EdgeInsets.zero,
-        constraints: const BoxConstraints.tightFor(width: 32, height: 32),
+        constraints: const BoxConstraints.tightFor(width: 28, height: 28),
         tooltip: tooltip,
         onPressed: enabled ? onPressed : null,
         icon: Icon(
           icon,
-          size: 18,
+          size: 16,
           color: enabled ? colors.primary : colors.textSecondary,
         ),
         style: IconButton.styleFrom(
