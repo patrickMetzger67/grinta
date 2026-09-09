@@ -46,26 +46,31 @@ class LastResultsFormRow extends StatelessWidget {
       child: Padding(
         key: guideKey,
         padding: const EdgeInsets.only(top: 3),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            for (var i = 0; i < visible.length; i++) ...[
-              if (i > 0) SizedBox(width: slotSize * 0.22),
-              _LastResultsSlot(
-                outcome: visible[i],
-                highlighted: highlightIndex == i,
-                size: slotSize,
-                colors: colors,
-                emptyRingColor: emptyRingColor,
-                index: i,
-                semanticLabel: _slotSemanticLabel(
-                  l10n: l10n,
+        // Scale down on narrow team columns (match detail + editable score).
+        child: FittedBox(
+          fit: BoxFit.scaleDown,
+          alignment: Alignment.center,
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              for (var i = 0; i < visible.length; i++) ...[
+                if (i > 0) SizedBox(width: slotSize * 0.22),
+                _LastResultsSlot(
                   outcome: visible[i],
                   highlighted: highlightIndex == i,
+                  size: slotSize,
+                  colors: colors,
+                  emptyRingColor: emptyRingColor,
+                  index: i,
+                  semanticLabel: _slotSemanticLabel(
+                    l10n: l10n,
+                    outcome: visible[i],
+                    highlighted: highlightIndex == i,
+                  ),
                 ),
-              ),
+              ],
             ],
-          ],
+          ),
         ),
       ),
     );

@@ -304,4 +304,26 @@ void main() {
     expect(_innerDecoration(tester, 0).color, colors.success);
     expect(_innerDecoration(tester, 4).color, isNull);
   });
+
+  testWidgets('does not overflow in a narrow team column', (tester) async {
+    await tester.pumpWidget(
+      _wrap(
+        const SizedBox(
+          width: 70,
+          child: LastResultsFormRow(
+            slots: <MatchOutcome?>[
+              MatchOutcome.win,
+              MatchOutcome.win,
+              null,
+              null,
+              null,
+            ],
+          ),
+        ),
+      ),
+    );
+
+    expect(tester.takeException(), isNull);
+    expect(find.byKey(LastResultsFormRow.guideKey), findsOneWidget);
+  });
 }

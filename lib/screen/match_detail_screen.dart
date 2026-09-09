@@ -1590,54 +1590,57 @@ class _TeamBlock extends StatelessWidget {
       imageSize: compact ? 26 : 32,
     );
 
-    return Column(
-      children: [
-        if (onLogoTap == null)
-          logo
-        else
-          Material(
-            color: Colors.transparent,
-            child: InkWell(
-              onTap: onLogoTap,
-              customBorder: const CircleBorder(),
-              child: logo,
+    return SizedBox(
+      width: double.infinity,
+      child: Column(
+        children: [
+          if (onLogoTap == null)
+            logo
+          else
+            Material(
+              color: Colors.transparent,
+              child: InkWell(
+                onTap: onLogoTap,
+                customBorder: const CircleBorder(),
+                child: logo,
+              ),
             ),
+          LastResultsFormGuide(
+            match: match,
+            side: side,
+            compact: compact,
+            emptyRingColor: Colors.white,
           ),
-        LastResultsFormGuide(
-          match: match,
-          side: side,
-          compact: compact,
-          emptyRingColor: Colors.white,
-        ),
-        const SizedBox(height: 4),
-        Text(
-          name,
-          maxLines: compact ? 1 : 2,
-          overflow: TextOverflow.ellipsis,
-          textAlign: TextAlign.center,
-          style: TextStyle(
-            color: colors.textPrimary,
-            fontSize: compact ? 13 : 14,
-            fontWeight: FontWeight.w800,
-            height: 1.15,
-          ),
-        ),
-        if (_clean(affiliation).isNotEmpty) ...[
-          const SizedBox(height: 2),
+          const SizedBox(height: 4),
           Text(
-            affiliation!,
-            maxLines: 1,
+            name,
+            maxLines: compact ? 1 : 2,
             overflow: TextOverflow.ellipsis,
             textAlign: TextAlign.center,
             style: TextStyle(
-              color: colors.textSecondary,
-              fontSize: 11,
-              fontWeight: FontWeight.w500,
-              height: 1.1,
+              color: colors.textPrimary,
+              fontSize: compact ? 13 : 14,
+              fontWeight: FontWeight.w800,
+              height: 1.15,
             ),
           ),
+          if (_clean(affiliation).isNotEmpty) ...[
+            const SizedBox(height: 2),
+            Text(
+              affiliation!,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                color: colors.textSecondary,
+                fontSize: 11,
+                fontWeight: FontWeight.w500,
+                height: 1.1,
+              ),
+            ),
+          ],
         ],
-      ],
+      ),
     );
   }
 }
