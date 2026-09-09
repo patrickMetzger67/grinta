@@ -815,9 +815,16 @@ class _TeamPlayersScreenState extends State<TeamPlayersScreen> {
               const SizedBox(height: 20),
               _RecapRow(
                 label: l10n.presencePresent,
-                count: counts.present,
+                count: counts.attended,
                 tint: presenceTint(colors, PresenceType.present),
                 accent: presenceAccent(colors, PresenceType.present),
+                textColor: colors.textPrimary,
+              ),
+              _RecapRow(
+                label: l10n.presenceOfWhichLate,
+                count: counts.late,
+                tint: presenceTint(colors, PresenceType.late),
+                accent: presenceAccent(colors, PresenceType.late),
                 textColor: colors.textPrimary,
               ),
               _RecapRow(
@@ -839,13 +846,6 @@ class _TeamPlayersScreenState extends State<TeamPlayersScreen> {
                 count: counts.absent,
                 tint: presenceTint(colors, PresenceType.absent),
                 accent: presenceAccent(colors, PresenceType.absent),
-                textColor: colors.textPrimary,
-              ),
-              _RecapRow(
-                label: l10n.presenceLate,
-                count: counts.late,
-                tint: presenceTint(colors, PresenceType.late),
-                accent: presenceAccent(colors, PresenceType.late),
                 textColor: colors.textPrimary,
               ),
               const SizedBox(height: 16),
