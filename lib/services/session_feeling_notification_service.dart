@@ -19,8 +19,11 @@ import 'package:grinta/util/player_photo_resolver.dart';
 
 enum SessionFeelingEventType { training, match }
 
+/// Late players attended the session — they get the same post-session prompts.
 bool _isPresentOrDefaultPresence(PresenceType? presenceType) {
-  return presenceType == null || presenceType == PresenceType.present;
+  return presenceType == null ||
+      presenceType == PresenceType.present ||
+      presenceType == PresenceType.late;
 }
 
 bool _isTrainingFinished(Training training) {

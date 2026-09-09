@@ -48,6 +48,11 @@ class TrainingPresenceCounts {
   final int absent;
   final int late;
 
+  /// Players who attended the session (on time or late).
+  ///
+  /// Late always counts as present for attendance rate / “présence”.
+  int get attended => present + late;
+
   int get total => present + injured + excused + absent + late;
 }
 
