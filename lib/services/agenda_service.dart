@@ -101,12 +101,24 @@ class AgendaService {
 
         final int generation = ++enrichmentGeneration;
         unawaited(() async {
-          final List<AgendaItem> enriched =
-              await _enrichWithTeamWorkloadSummaries(merged);
-          if (isCancelled || generation != enrichmentGeneration) {
-            return;
+          try {
+            final List<AgendaItem> enriched =
+                await _enrichWithTeamWorkloadSummaries(merged);
+            if (isCancelled || generation != enrichmentGeneration) {
+              return;
+            }
+            controller.add(enriched);
+          } catch (error, stackTrace) {
+            // Never swallow enrichment failures silently — the first paint
+            // without summaries would otherwise stick until pull-to-refresh.
+            if (isCancelled || generation != enrichmentGeneration) {
+              return;
+            }
+            if (kDebugMode) {
+              debugPrint('Agenda workload enrichment failed: $error\n$stackTrace');
+            }
+            controller.addError(error, stackTrace);
           }
-          controller.add(enriched);
         }());
       }
 

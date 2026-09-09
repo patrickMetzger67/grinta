@@ -806,7 +806,7 @@ class _MatchEditActionsState extends State<_MatchEditActions> {
   }
 }
 
-class AgendaItemCard extends StatelessWidget {
+class AgendaItemCard extends StatefulWidget {
   final AgendaItem item;
 
   const AgendaItemCard({
@@ -815,7 +815,80 @@ class AgendaItemCard extends StatelessWidget {
   });
 
   @override
+  State<AgendaItemCard> createState() => _AgendaItemCardState();
+}
+
+class _AgendaItemCardState extends State<AgendaItemCard> {
+  /// Filled when the parent list still has a null summary but Firestore already
+  /// has TRACKER_TeamAnalysis — triggers the missing setState for the résumé.
+  TeamWorkloadSummary? _fetchedSummary;
+  int _summaryFetchGeneration = 0;
+
+  @override
+  void initState() {
+    super.initState();
+    unawaited(_fetchWorkloadSummaryIfNeeded());
+  }
+
+  @override
+  void didUpdateWidget(covariant AgendaItemCard oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.item.id != widget.item.id) {
+      _fetchedSummary = null;
+      unawaited(_fetchWorkloadSummaryIfNeeded());
+      return;
+    }
+    if (widget.item.teamWorkloadSummary != null) {
+      // Parent enrichment won — drop the local copy.
+      if (_fetchedSummary != null) {
+        _fetchedSummary = null;
+      }
+      return;
+    }
+    if (oldWidget.item.areTrackersSynchronized !=
+            widget.item.areTrackersSynchronized ||
+        oldWidget.item.isDone != widget.item.isDone ||
+        oldWidget.item.withTracker != widget.item.withTracker) {
+      unawaited(_fetchWorkloadSummaryIfNeeded());
+    }
+  }
+
+  bool _shouldFetchWorkloadSummary(AgendaItem item) {
+    if (item.id.isEmpty) return false;
+    if (item.match == null && item.training == null) return false;
+    return item.withTracker == true ||
+        item.areTrackersSynchronized ||
+        item.isDone ||
+        item.training?.isFinish == true ||
+        item.training?.isTrackerDataUploaded == true ||
+        item.match?.isTrackerDataUploaded == true;
+  }
+
+  Future<void> _fetchWorkloadSummaryIfNeeded() async {
+    final AgendaItem item = widget.item;
+    if (item.teamWorkloadSummary != null) return;
+    if (_fetchedSummary != null) return;
+    if (!_shouldFetchWorkloadSummary(item)) return;
+
+    final int generation = ++_summaryFetchGeneration;
+    try {
+      final TeamWorkloadSummary? summary =
+          await TeamWorkloadSummaryService().getByEventId(item.id);
+      if (!mounted || generation != _summaryFetchGeneration) return;
+      if (widget.item.id != item.id) return;
+      if (widget.item.teamWorkloadSummary != null) return;
+      if (summary == null) return;
+      setState(() => _fetchedSummary = summary);
+    } catch (_) {
+      // Keep the card usable; parent enrichment / pull-to-refresh can retry.
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
+    final AgendaItem item = widget.item;
+    final TeamWorkloadSummary? teamWorkloadSummary =
+        item.teamWorkloadSummary ?? _fetchedSummary;
     final colors = context.appColors;
     final accent = _typeColor(context, item.type);
     final icon = _typeIcon(item.type);
@@ -889,9 +962,9 @@ class AgendaItemCard extends StatelessWidget {
     }
 
     TeamPlayerMetricScores? teamPlayerMetricScores;
-    if(item.teamWorkloadSummary != null ) {
-      for(var pm in item.teamWorkloadSummary!.playerScores) {
-        if(pm.playerId == currentPlayerId) {
+    if (teamWorkloadSummary != null) {
+      for (var pm in teamWorkloadSummary.playerScores) {
+        if (pm.playerId == currentPlayerId) {
           teamPlayerMetricScores = pm;
         }
       }
@@ -1456,14 +1529,14 @@ class AgendaItemCard extends StatelessWidget {
                 child: activityRing(
                   context: context,
                   teamPlayerMetricScores: teamPlayerMetricScores,
-                  teamWorkloadSummary: item.teamWorkloadSummary!,
+                  teamWorkloadSummary: teamWorkloadSummary!,
                 ),
               ),
             ],
             // Team rings: managers and roster staff (team averages).
             // Also when personal GPS / apps produced a workload summary.
             if (canAccessSessionDetails &&
-                item.teamWorkloadSummary != null) ...[
+                teamWorkloadSummary != null) ...[
               const SizedBox(height: 10),
               InkWell(
                 borderRadius: BorderRadius.circular(16),
@@ -1631,7 +1704,7 @@ class AgendaItemCard extends StatelessWidget {
                 child: activityRing(
                   context: context,
                   teamPlayerMetricScores: teamPlayerMetricScores,
-                  teamWorkloadSummary: item.teamWorkloadSummary!,
+                  teamWorkloadSummary: teamWorkloadSummary!,
                 ),
               ),
             ],
@@ -1670,7 +1743,7 @@ class AgendaItemCard extends StatelessWidget {
                 scheduledEnd: item.endAt,
                 title: item.title,
               ),
-            if (item.teamWorkloadSummary != null &&
+            if (teamWorkloadSummary != null &&
                 canSendSessionPdfReport(
                   session: context.read<AppSession>(),
                   teamId: teamId,
@@ -1680,6 +1753,7 @@ class AgendaItemCard extends StatelessWidget {
               const SizedBox(height: 10),
               _AgendaPdfAndShareRow(
                 item: item,
+                summary: teamWorkloadSummary,
                 teamId: teamId,
                 canShareAverages: isShareManagerOfTeam(
                   managedTeamIds: managedTeamsIds,
@@ -1930,7 +2004,7 @@ class AgendaItemCard extends StatelessWidget {
           ActivityRingItem(
             label: l10n.statsDistance,
             value: distance,
-            goal: item.teamWorkloadSummary!.metricStats["distanceKm"]!.max,
+            goal: teamWorkloadSummary!.metricStats["distanceKm"]!.max,
             unit: l10n.statsUnitKm,
             color: colors.success,
             trackColor: Colors.greenAccent.withOpacity(0.18),
@@ -1939,7 +2013,7 @@ class AgendaItemCard extends StatelessWidget {
           ActivityRingItem(
             label: l10n.statsHighSpeedTimeShort,
             value: tpsHauteVitesse,
-            goal: item.teamWorkloadSummary!.metricStats["highSpeedDuration"]!.max,
+            goal: teamWorkloadSummary.metricStats["highSpeedDuration"]!.max,
             unit: l10n.statsUnitSeconds,
             color: colors.primary,
             trackColor: Colors.blueAccent.withOpacity(0.18),
@@ -1948,7 +2022,7 @@ class AgendaItemCard extends StatelessWidget {
           ActivityRingItem(
             label: l10n.statsSprints,
             value: sprints,
-            goal: item.teamWorkloadSummary!.metricStats["sprintCount"]!.max,
+            goal: teamWorkloadSummary.metricStats["sprintCount"]!.max,
             unit: l10n.statsUnitCount,
             color: colors.warning,
             trackColor: Colors.redAccent.withOpacity(0.18),
@@ -1957,7 +2031,7 @@ class AgendaItemCard extends StatelessWidget {
           ActivityRingItem(
             label: l10n.statsMaxAccelSample,
             value: ms2,
-            goal: item.teamWorkloadSummary!.metricStats["maxAccelerationMps2"]!.max,
+            goal: teamWorkloadSummary.metricStats["maxAccelerationMps2"]!.max,
             unit: l10n.statsUnitMps2,
             color: colors.danger,
             trackColor: Colors.redAccent.withOpacity(0.18),
@@ -1974,11 +2048,15 @@ class _AgendaPdfAndShareRow extends StatelessWidget {
     required this.item,
     required this.teamId,
     required this.canShareAverages,
+    this.summary,
   });
 
   final AgendaItem item;
   final String teamId;
   final bool canShareAverages;
+  final TeamWorkloadSummary? summary;
+
+  TeamWorkloadSummary? get _summary => summary ?? item.teamWorkloadSummary;
 
   @override
   Widget build(BuildContext context) {
@@ -1989,7 +2067,7 @@ class _AgendaPdfAndShareRow extends StatelessWidget {
           context: context,
           eventId: item.id,
           isMatch: item.match != null,
-          summary: item.teamWorkloadSummary,
+          summary: _summary,
           title: item.title,
           subtitle: item.subtitle,
           teamId: teamId.isEmpty ? null : teamId,
@@ -2007,7 +2085,7 @@ class _AgendaPdfAndShareRow extends StatelessWidget {
       ),
     );
 
-    if (!canShareAverages || item.teamWorkloadSummary == null) {
+    if (!canShareAverages || _summary == null) {
       return SizedBox(width: double.infinity, child: pdfButton);
     }
 
@@ -2017,7 +2095,7 @@ class _AgendaPdfAndShareRow extends StatelessWidget {
         const SizedBox(width: 10),
         Expanded(
           child: SessionAveragesShareButton(
-            summary: item.teamWorkloadSummary!,
+            summary: _summary!,
             isMatch: item.match != null,
             heading: item.title,
             filled: true,
