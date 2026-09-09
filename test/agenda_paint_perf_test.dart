@@ -1,6 +1,7 @@
 import 'package:flutter/scheduler.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:grinta/model/agendaItem.dart';
+import 'package:grinta/model/tracker/team_workload_summary.dart';
 import 'package:grinta/util/agenda_calendar_date.dart';
 import 'package:grinta/util/agenda_paint_perf.dart';
 
@@ -9,6 +10,9 @@ AgendaItem _item({
   required DateTime start,
   DateTime? end,
   AgendaItemType type = AgendaItemType.entrainement,
+  TeamWorkloadSummary? teamWorkloadSummary,
+  bool isDone = false,
+  bool? withTracker,
 }) {
   return AgendaItem(
     id: id,
@@ -17,6 +21,27 @@ AgendaItem _item({
     startAt: start,
     endAt: end ?? start,
     allDay: false,
+    isDone: isDone,
+    withTracker: withTracker,
+    teamWorkloadSummary: teamWorkloadSummary,
+  );
+}
+
+TeamWorkloadSummary _summary({
+  required String eventId,
+  double averageWorkloadScore = 42,
+  int playersCount = 3,
+}) {
+  return TeamWorkloadSummary(
+    eventId: eventId,
+    totalWorkloadScore: averageWorkloadScore * playersCount,
+    averageWorkloadScore: averageWorkloadScore,
+    teamWorkloadPerMinute: 1,
+    averagePlayerWorkloadPerMinute: 1,
+    playersCount: playersCount,
+    sessionDuration: const Duration(minutes: 90),
+    metricStats: const <String, TeamMetricStat>{},
+    playerScores: const <TeamPlayerMetricScores>[],
   );
 }
 
@@ -233,6 +258,57 @@ void main() {
       expect(
         agendaItemsPaintFingerprint(a),
         isNot(agendaItemsPaintFingerprint(c)),
+      );
+    });
+
+    test('workload enrichment changes fingerprint (stats rebuild)', () {
+      final withoutStats = [
+        _item(
+          id: 'match-1',
+          start: DateTime(2026, 9, 6, 15),
+          type: AgendaItemType.match,
+          withTracker: true,
+        ),
+      ];
+      final withStats = [
+        _item(
+          id: 'match-1',
+          start: DateTime(2026, 9, 6, 15),
+          type: AgendaItemType.match,
+          withTracker: true,
+          teamWorkloadSummary: _summary(eventId: 'match-1'),
+        ),
+      ];
+      expect(
+        agendaItemsPaintFingerprint(withoutStats),
+        isNot(agendaItemsPaintFingerprint(withStats)),
+      );
+    });
+
+    test('updated workload values change fingerprint', () {
+      final first = [
+        _item(
+          id: 't1',
+          start: DateTime(2026, 9, 6, 18),
+          teamWorkloadSummary: _summary(
+            eventId: 't1',
+            averageWorkloadScore: 10,
+          ),
+        ),
+      ];
+      final second = [
+        _item(
+          id: 't1',
+          start: DateTime(2026, 9, 6, 18),
+          teamWorkloadSummary: _summary(
+            eventId: 't1',
+            averageWorkloadScore: 55,
+          ),
+        ),
+      ];
+      expect(
+        agendaItemsPaintFingerprint(first),
+        isNot(agendaItemsPaintFingerprint(second)),
       );
     });
   });
