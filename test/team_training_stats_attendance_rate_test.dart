@@ -82,4 +82,20 @@ void main() {
       );
     });
   });
+
+  group('TeamTrainingPlayerStats.attendedCount', () {
+    test('includes late as present', () {
+      const stats = TeamTrainingPlayerStats(
+        playerId: 'p1',
+        player: null,
+        presentCount: 1,
+        absentCount: 0,
+        excusedCount: 0,
+        lateCount: 2,
+        attendanceRate: 100,
+        trends: TeamTrainingPlayerTrends(),
+      );
+      expect(stats.attendedCount, 3);
+    });
+  });
 }

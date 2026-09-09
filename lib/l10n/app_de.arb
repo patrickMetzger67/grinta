@@ -2600,7 +2600,7 @@
   "teamStatsTrainingsColumnPresent": "Anw.",
   "teamStatsTrainingsColumnAbsent": "Fehl.",
   "teamStatsTrainingsColumnExcused": "Ent.",
-  "teamStatsTrainingsColumnLate": "Vers.",
+  "teamStatsTrainingsColumnLate": "Davon versp.",
   "teamStatsTrainingsColumnAttendanceRate": "Quote",
   "teamStatsTrainingsPlayersNoData": "Keine Spielerdaten für diesen Zeitraum",
   "teamStatsTrainingsGlobalSection": "Team",

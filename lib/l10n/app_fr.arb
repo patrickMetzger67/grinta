@@ -3284,7 +3284,7 @@
   "teamStatsTrainingsColumnPresent": "Prés.",
   "teamStatsTrainingsColumnAbsent": "Abs.",
   "teamStatsTrainingsColumnExcused": "Exc.",
-  "teamStatsTrainingsColumnLate": "Ret.",
+  "teamStatsTrainingsColumnLate": "Dont ret.",
   "teamStatsTrainingsColumnAttendanceRate": "Taux",
   "teamStatsTrainingsPlayersNoData": "Aucune donnée joueur sur cette période",
   "teamStatsTrainingsGlobalSection": "Équipe",

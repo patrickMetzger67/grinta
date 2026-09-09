@@ -2600,7 +2600,7 @@
   "teamStatsTrainingsColumnPresent": "Pres.",
   "teamStatsTrainingsColumnAbsent": "Aus.",
   "teamStatsTrainingsColumnExcused": "Just.",
-  "teamStatsTrainingsColumnLate": "Retr.",
+  "teamStatsTrainingsColumnLate": "De los cuales",
   "teamStatsTrainingsColumnAttendanceRate": "Tasa",
   "teamStatsTrainingsPlayersNoData": "Sin datos de jugadores para este periodo",
   "teamStatsTrainingsGlobalSection": "Equipo",
