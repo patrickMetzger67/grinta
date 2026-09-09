@@ -18,6 +18,14 @@ enum TeamStatsTrainingsSortColumn {
   attendanceRate,
 }
 
+/// Present chip color: green at 100% attendance, red otherwise.
+Color? presentAttendanceColor(AppColors colors, double? rate) {
+  if (rate == null) {
+    return null;
+  }
+  return rate >= 100 ? colors.success : colors.danger;
+}
+
 class TeamStatsTrainingsPlayersTable extends StatefulWidget {
   const TeamStatsTrainingsPlayersTable({
     super.key,
@@ -41,7 +49,7 @@ class _TeamStatsTrainingsPlayersTableState
   static const double _presentColumnWidth = 72;
   static const double _absentColumnWidth = 72;
   static const double _excusedColumnWidth = 72;
-  static const double _lateColumnWidth = 72;
+  static const double _lateColumnWidth = 88;
   static const double _attendanceRateColumnWidth = 80;
 
   TeamStatsTrainingsSortColumn _sortColumn =
@@ -83,7 +91,7 @@ class _TeamStatsTrainingsPlayersTableState
           );
           break;
         case TeamStatsTrainingsSortColumn.present:
-          result = a.presentCount.compareTo(b.presentCount);
+          result = a.attendedCount.compareTo(b.attendedCount);
           break;
         case TeamStatsTrainingsSortColumn.absent:
           result = a.absentCount.compareTo(b.absentCount);
@@ -155,6 +163,11 @@ class _TeamStatsTrainingsPlayersTableState
       decimalDigits: 0,
     ).format(rate);
     return l10n.teamStatsTrainingsAttendanceRateValue(formatted);
+  }
+
+  /// Present column: green at 100% attendance, red otherwise.
+  Color? _presentAttendanceColor(AppColors colors, double? rate) {
+    return presentAttendanceColor(colors, rate);
   }
 
   @override
@@ -324,8 +337,12 @@ class _TeamStatsTrainingsPlayersTableState
                           SizedBox(
                             width: _presentColumnWidth,
                             child: _StatTrendPill(
-                              text: '${row.presentCount}',
+                              text: '${row.attendedCount}',
                               trend: row.trends.present,
+                              colorOverride: _presentAttendanceColor(
+                                colors,
+                                row.attendanceRate,
+                              ),
                             ),
                           ),
                           SizedBox(
@@ -530,7 +547,12 @@ class _TrainingPlayerStatsCard extends StatelessWidget {
     final textTheme = Theme.of(context).textTheme;
     final player = row.player;
 
-    Widget statTile(String label, String value, TeamWdlTrendDirection trend) {
+    Widget statTile(
+      String label,
+      String value,
+      TeamWdlTrendDirection trend, {
+      Color? colorOverride,
+    }) {
       return Expanded(
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -547,6 +569,7 @@ class _TrainingPlayerStatsCard extends StatelessWidget {
               text: value,
               trend: trend,
               compact: false,
+              colorOverride: colorOverride,
             ),
           ],
         ),
@@ -593,8 +616,12 @@ class _TrainingPlayerStatsCard extends StatelessWidget {
             children: [
               statTile(
                 l10n.teamStatsTrainingsColumnPresent,
-                '${row.presentCount}',
+                '${row.attendedCount}',
                 row.trends.present,
+                colorOverride: presentAttendanceColor(
+                  colors,
+                  row.attendanceRate,
+                ),
               ),
               statTile(
                 l10n.teamStatsTrainingsColumnAbsent,
@@ -635,24 +662,27 @@ class _StatTrendPill extends StatelessWidget {
     required this.text,
     required this.trend,
     this.compact = true,
+    this.colorOverride,
   });
 
   final String text;
   final TeamWdlTrendDirection trend;
   final bool compact;
+  final Color? colorOverride;
 
   @override
   Widget build(BuildContext context) {
     final colors = context.appColors;
     final textTheme = Theme.of(context).textTheme;
 
-    final Color color = switch (trend) {
-      TeamWdlTrendDirection.up => colors.success,
-      TeamWdlTrendDirection.down => colors.danger,
-      TeamWdlTrendDirection.flat ||
-      TeamWdlTrendDirection.insufficientData =>
-        colors.textSecondary,
-    };
+    final Color color = colorOverride ??
+        switch (trend) {
+          TeamWdlTrendDirection.up => colors.success,
+          TeamWdlTrendDirection.down => colors.danger,
+          TeamWdlTrendDirection.flat ||
+          TeamWdlTrendDirection.insufficientData =>
+            colors.textSecondary,
+        };
 
     final pill = Container(
       constraints: BoxConstraints(minWidth: compact ? 48 : 56),

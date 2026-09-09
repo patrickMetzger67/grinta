@@ -17,8 +17,11 @@ import 'package:grinta/widget/training_intense_finish_dialog.dart';
 
 import '../model/training.dart';
 
+/// On-time and late both count as attended for finish / sync flows.
 bool isPresentOrDefaultPresence(PresenceType? presenceType) {
-  return presenceType == null || presenceType == PresenceType.present;
+  return presenceType == null ||
+      presenceType == PresenceType.present ||
+      presenceType == PresenceType.late;
 }
 
 bool isTrainingFinished(Training training) {

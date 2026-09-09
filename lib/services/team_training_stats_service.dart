@@ -78,6 +78,9 @@ class TeamTrainingPlayerStats {
   final int lateCount;
   final double? attendanceRate;
   final TeamTrainingPlayerTrends trends;
+
+  /// On-time + late — late always counts as present for display and rate.
+  int get attendedCount => presentCount + lateCount;
 }
 
 class TeamTrainingPlayerTrends {
@@ -107,8 +110,8 @@ class TeamTrainingPlayerTrends {
   }) {
     return TeamTrainingPlayerTrends(
       present: _compareCounts(
-        firstHalf: firstHalfPresent,
-        secondHalf: secondHalfPresent,
+        firstHalf: firstHalfPresent + firstHalfLate,
+        secondHalf: secondHalfPresent + secondHalfLate,
         higherIsBetter: true,
       ),
       absent: _compareCounts(

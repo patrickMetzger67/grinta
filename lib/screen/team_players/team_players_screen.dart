@@ -815,9 +815,16 @@ class _TeamPlayersScreenState extends State<TeamPlayersScreen> {
               const SizedBox(height: 20),
               _RecapRow(
                 label: l10n.presencePresent,
-                count: counts.present,
+                count: counts.attended,
                 tint: presenceTint(colors, PresenceType.present),
                 accent: presenceAccent(colors, PresenceType.present),
+                textColor: colors.textPrimary,
+              ),
+              _RecapRow(
+                label: l10n.presenceOfWhichLate,
+                count: counts.late,
+                tint: presenceTint(colors, PresenceType.late),
+                accent: presenceAccent(colors, PresenceType.late),
                 textColor: colors.textPrimary,
               ),
               _RecapRow(
@@ -839,13 +846,6 @@ class _TeamPlayersScreenState extends State<TeamPlayersScreen> {
                 count: counts.absent,
                 tint: presenceTint(colors, PresenceType.absent),
                 accent: presenceAccent(colors, PresenceType.absent),
-                textColor: colors.textPrimary,
-              ),
-              _RecapRow(
-                label: l10n.presenceLate,
-                count: counts.late,
-                tint: presenceTint(colors, PresenceType.late),
-                accent: presenceAccent(colors, PresenceType.late),
                 textColor: colors.textPrimary,
               ),
               const SizedBox(height: 16),
@@ -889,10 +889,17 @@ class _PresenceSummaryStrip extends StatelessWidget {
         alignment: WrapAlignment.center,
         children: [
           _SummaryChip(
+            // Late counts as present; "Dont en retard" is a subset detail.
             label: l10n.presencePresent,
-            count: counts.present,
+            count: counts.attended,
             background: presenceTint(colors, PresenceType.present),
             foreground: presenceAccent(colors, PresenceType.present),
+          ),
+          _SummaryChip(
+            label: l10n.presenceOfWhichLate,
+            count: counts.late,
+            background: presenceTint(colors, PresenceType.late),
+            foreground: presenceAccent(colors, PresenceType.late),
           ),
           _SummaryChip(
             label: l10n.presenceAbsent,
