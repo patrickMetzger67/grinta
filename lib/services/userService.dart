@@ -144,8 +144,9 @@ class UserProfile {
       email.trim().toLowerCase(),
       firstName.trim().toLowerCase(),
       lastName.trim().toLowerCase(),
+      personName.toLowerCase(),
       displayName.toLowerCase(),
-      uid.toLowerCase(),
+      '$firstName $lastName'.trim().toLowerCase(),
     ].where((value) => value.isNotEmpty);
 
     return tokens.every(
@@ -159,15 +160,14 @@ class UserProfile {
     return trimmed;
   }
 
-  /// Firebase Anonymous Auth, or a stub `users/{uid}` doc with no identity.
+  /// Firebase Anonymous Auth only (`isAnonymous` or `anonymous` provider).
   ///
-  /// The admin lock icon is password-reset, not an anonymous marker. Detection
-  /// uses [isAnonymous], `anonymous` in [providerIds], then “no email and no
-  /// name” (the Auth anonymous / FCM-stub shape from the Utilisateurs list).
+  /// Never hides a named account (e.g. Mohamed-Amine ABDESSAMAD). Missing
+  /// email/name is not enough — that heuristic dropped real users from Admin.
   bool get isAnonymousAccount {
+    if (personName.isNotEmpty) return false;
     if (isAnonymous) return true;
-    if (providerIds.any(_isAnonymousProviderId)) return true;
-    return usableEmail.isEmpty && personName.isEmpty;
+    return providerIds.any(_isAnonymousProviderId);
   }
 }
 

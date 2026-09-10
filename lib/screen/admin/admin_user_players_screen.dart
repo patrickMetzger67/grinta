@@ -1,8 +1,5 @@
-import 'dart:async';
-
 import 'package:flutter/material.dart';
 import 'package:grinta/core/extensions/l10n_extension.dart';
-import 'package:grinta/model/admin_player_sensor_flags.dart';
 import 'package:grinta/model/player.dart';
 import 'package:grinta/screen/admin/admin_player_hub_screen.dart';
 import 'package:grinta/services/admin_player_sensor_service.dart';
@@ -11,7 +8,6 @@ import 'package:grinta/services/userService.dart';
 import 'package:grinta/util/app_theme.dart';
 import 'package:grinta/util/playerDisplayName.dart';
 import 'package:grinta/util/player_photo_resolver.dart';
-import 'package:grinta/widget/admin_player_sensor_icons.dart';
 import 'package:grinta/widget/admin_user_avatar.dart';
 import 'package:grinta/widget/member_search_sheet.dart';
 import 'package:grinta/widget/playerPhoto.dart';
@@ -255,7 +251,6 @@ class _AdminUserPlayersScreenState extends State<AdminUserPlayersScreen> {
                         final player = sorted[index];
                         return _AdminLinkedPlayerCard(
                           player: player,
-                          sensorService: _effectiveSensorService,
                           photo: widget.playerPhotoBuilder?.call(player, 24) ??
                               PlayerPhoto(player: player, radius: 24),
                           onOpenHub: () => AdminPlayerHubScreen.open(
@@ -278,55 +273,28 @@ class _AdminUserPlayersScreenState extends State<AdminUserPlayersScreen> {
   }
 }
 
-class _AdminLinkedPlayerCard extends StatefulWidget {
+class _AdminLinkedPlayerCard extends StatelessWidget {
   const _AdminLinkedPlayerCard({
     required this.player,
-    required this.sensorService,
     required this.photo,
     required this.onOpenHub,
   });
 
   final Player player;
-  final AdminPlayerSensorService sensorService;
   final Widget photo;
   final VoidCallback onOpenHub;
-
-  @override
-  State<_AdminLinkedPlayerCard> createState() => _AdminLinkedPlayerCardState();
-}
-
-class _AdminLinkedPlayerCardState extends State<_AdminLinkedPlayerCard> {
-  AdminPlayerSensorFlags _flags = AdminPlayerSensorFlags.none;
-
-  @override
-  void initState() {
-    super.initState();
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (mounted) unawaited(_loadFlags());
-    });
-  }
-
-  Future<void> _loadFlags() async {
-    try {
-      final flags = await widget.sensorService.loadFlags(widget.player);
-      if (!mounted) return;
-      setState(() => _flags = flags);
-    } catch (_) {
-      // Player row stays tappable even if indicators fail.
-    }
-  }
 
   @override
   Widget build(BuildContext context) {
     final colors = context.appColors;
     final textTheme = Theme.of(context).textTheme;
-    final firstName = (widget.player.firstName ?? '').trim();
-    final lastName = (widget.player.lastName ?? '').trim();
+    final firstName = (player.firstName ?? '').trim();
+    final lastName = (player.lastName ?? '').trim();
     final name = [
       if (firstName.isNotEmpty) firstName,
       if (lastName.isNotEmpty) lastName,
     ].join(' ');
-    final key = effectiveMemberId(widget.player)?.trim() ?? '';
+    final key = effectiveMemberId(player)?.trim() ?? '';
 
     return Material(
       color: colors.card,
@@ -336,18 +304,18 @@ class _AdminLinkedPlayerCardState extends State<_AdminLinkedPlayerCard> {
       ),
       child: InkWell(
         key: ValueKey<String>('admin-linked-player-${key.isEmpty ? name : key}'),
-        onTap: widget.onOpenHub,
+        onTap: onOpenHub,
         borderRadius: BorderRadius.circular(16),
         child: Padding(
           padding: const EdgeInsets.all(16),
           child: Row(
             children: [
-              widget.photo,
+              photo,
               const SizedBox(width: 14),
               Expanded(
                 child: Text(
                   name.isEmpty
-                      ? playerDisplayName(widget.player, unknownLabel: '—')
+                      ? playerDisplayName(player, unknownLabel: '—')
                       : name,
                   maxLines: 2,
                   overflow: TextOverflow.ellipsis,
@@ -357,7 +325,6 @@ class _AdminLinkedPlayerCardState extends State<_AdminLinkedPlayerCard> {
                   ),
                 ),
               ),
-              AdminPlayerSensorIcons(flags: _flags),
               Icon(Icons.chevron_right_rounded, color: colors.textSecondary),
             ],
           ),

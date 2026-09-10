@@ -40,8 +40,12 @@ void main() {
       expect(profile.displayName, 'ghost@example.com');
     });
 
-    test('treats no-email no-name stubs as anonymous directory accounts', () {
-      expect(user().isAnonymousAccount, isTrue);
+    test('never hides a named account as anonymous', () {
+      expect(
+        user(firstName: 'Mohamed-Amine', lastName: 'ABDESSAMAD')
+            .isAnonymousAccount,
+        isFalse,
+      );
       expect(
         user(email: 'ghost@example.com').isAnonymousAccount,
         isFalse,
@@ -50,15 +54,25 @@ void main() {
         user(firstName: 'Ada', lastName: 'Lovelace').isAnonymousAccount,
         isFalse,
       );
+      expect(
+        const UserProfile(
+          uid: uid,
+          firstName: 'Mohamed-Amine',
+          lastName: 'ABDESSAMAD',
+          email: '',
+          isAnonymous: true,
+        ).isAnonymousAccount,
+        isFalse,
+      );
     });
 
     test('treats isAnonymous and anonymous providerIds as anonymous', () {
       expect(
         const UserProfile(
           uid: uid,
-          firstName: 'Ada',
-          lastName: 'Lovelace',
-          email: 'ada@example.com',
+          firstName: '',
+          lastName: '',
+          email: '',
           isAnonymous: true,
         ).isAnonymousAccount,
         isTrue,
@@ -83,6 +97,20 @@ void main() {
         ).isAnonymousAccount,
         isFalse,
       );
+      expect(user().isAnonymousAccount, isFalse);
+    });
+
+    test('matches firstName, lastName, displayName and email', () {
+      final profile = user(
+        firstName: 'Mohamed-Amine',
+        lastName: 'ABDESSAMAD',
+        email: 'mohamed@example.com',
+      );
+      expect(profile.matchesSearch('Mohamed'), isTrue);
+      expect(profile.matchesSearch('abdess'), isTrue);
+      expect(profile.matchesSearch('mohamed-amine abdessamad'), isTrue);
+      expect(profile.matchesSearch('mohamed@example.com'), isTrue);
+      expect(profile.matchesSearch('zzz-no-match'), isFalse);
     });
 
     test('never uses the raw uid as the title', () {

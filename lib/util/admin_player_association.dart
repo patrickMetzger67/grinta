@@ -33,6 +33,15 @@ Map<String, int> adminPlayerCountsByUserId(Iterable<Player> members) {
   return counts;
 }
 
+/// Members already linked to [uid], from an in-memory [members] snapshot.
+List<Player> adminPlayersLinkedToUser(Iterable<Player> members, String uid) {
+  final trimmed = uid.trim();
+  if (trimmed.isEmpty) return const <Player>[];
+  return members
+      .where((player) => collectMemberLinkedUserIds(player).contains(trimmed))
+      .toList(growable: false);
+}
+
 /// Count shown on Admin → Utilisateurs.
 ///
 /// `null` means the association query has not emitted yet — never treat that

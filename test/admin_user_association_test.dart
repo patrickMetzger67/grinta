@@ -20,6 +20,18 @@ class _HangingSensorService extends AdminPlayerSensorService {
   }
 }
 
+class _CountingHangingSensorService extends AdminPlayerSensorService {
+  _CountingHangingSensorService(this.calls);
+
+  final List<int> calls;
+
+  @override
+  Future<AdminPlayerSensorFlags> loadFlags(Player player) {
+    calls[0]++;
+    return Completer<AdminPlayerSensorFlags>().future;
+  }
+}
+
 Widget _placeholderPhoto(Player player, double radius) {
   return SizedBox(
     width: radius * 2,
@@ -83,7 +95,7 @@ void main() {
 
   group('AdminUsersScreen association', () {
     testWidgets(
-      'user with 1 player shows 1 immediately from the association stream',
+      'user with 1 player shows 1 from the members snapshot (not per-row queries)',
       (tester) async {
         final l10n = await AppLocalizations.delegate.load(const Locale('fr'));
         const uid = 'mohamed-uid';
@@ -109,9 +121,7 @@ void main() {
             supportedLocales: AppLocalizations.supportedLocales,
             home: AdminUsersScreen(
               usersStream: Stream<List<UserProfile>>.value([user]),
-              playersForUser: (userId) => Stream<List<Player>>.value(
-                userId == uid ? [player] : const <Player>[],
-              ),
+              membersStream: Stream<List<Player>>.value([player]),
               sensorService: _HangingSensorService(),
               playerPhotoBuilder: _placeholderPhoto,
             ),
@@ -127,9 +137,8 @@ void main() {
     );
 
     testWidgets(
-      'does not flash Aucun joueur while the association stream has not emitted',
+      'shows Mohamed immediately even if the members stream has not emitted',
       (tester) async {
-        final l10n = await AppLocalizations.delegate.load(const Locale('fr'));
         final pending = StreamController<List<Player>>();
         addTearDown(pending.close);
 
@@ -148,7 +157,8 @@ void main() {
             supportedLocales: AppLocalizations.supportedLocales,
             home: AdminUsersScreen(
               usersStream: Stream<List<UserProfile>>.value([user]),
-              playersForUser: (_) => pending.stream,
+              membersStream: pending.stream,
+              sensorService: _HangingSensorService(),
             ),
           ),
         );
@@ -156,20 +166,82 @@ void main() {
         await tester.pump();
 
         expect(find.text('Mohamed-Amine ABDESSAMAD'), findsOneWidget);
-        expect(find.text(l10n.adminUsersPlayerCount(0)), findsNothing);
-        expect(find.text(l10n.adminUsersPlayersEmpty), findsNothing);
       },
     );
 
-    testWidgets('hides anonymous users from the list', (tester) async {
-      final named = const UserProfile(
+    testWidgets('search abdess / Mohamed finds the named user immediately',
+        (tester) async {
+      final l10n = await AppLocalizations.delegate.load(const Locale('fr'));
+      const mohamed = UserProfile(
         uid: 'mohamed-uid',
         firstName: 'Mohamed-Amine',
         lastName: 'ABDESSAMAD',
         email: 'mohamed@example.com',
       );
-      final anonymous = const UserProfile(
+      const other = UserProfile(
+        uid: 'other-uid',
+        firstName: 'Hugo',
+        lastName: 'Danguel',
+        email: 'hugo@example.com',
+      );
+      final calls = <int>[0];
+      final hanging = _CountingHangingSensorService(calls);
+
+      await tester.pumpWidget(
+        MaterialApp(
+          theme: AppTheme.darkTheme,
+          locale: const Locale('fr'),
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          home: AdminUsersScreen(
+            usersStream: Stream<List<UserProfile>>.value([mohamed, other]),
+            membersStream: Stream<List<Player>>.value(const []),
+            sensorService: hanging,
+          ),
+        ),
+      );
+      await tester.pump();
+      await tester.pump();
+
+      await tester.enterText(
+        find.byKey(AdminUsersScreen.searchFieldKey),
+        'abdess',
+      );
+      await tester.pump(const Duration(milliseconds: 300));
+
+      expect(find.text('Mohamed-Amine ABDESSAMAD'), findsOneWidget);
+      expect(find.text('Hugo Danguel'), findsNothing);
+      expect(find.text(l10n.adminUsersSearchEmpty), findsNothing);
+      expect(calls[0], 0);
+
+      await tester.enterText(
+        find.byKey(AdminUsersScreen.searchFieldKey),
+        'Mohamed',
+      );
+      await tester.pump(const Duration(milliseconds: 300));
+
+      expect(find.text('Mohamed-Amine ABDESSAMAD'), findsOneWidget);
+      expect(find.text('Hugo Danguel'), findsNothing);
+      expect(calls[0], 0);
+    });
+
+    testWidgets('hides anonymous-with-provider, keeps named users',
+        (tester) async {
+      final namedNoEmail = const UserProfile(
+        uid: 'mohamed-uid',
+        firstName: 'Mohamed-Amine',
+        lastName: 'ABDESSAMAD',
+        email: '',
+      );
+      final anonymousProvider = const UserProfile(
         uid: 'anon-uid',
+        firstName: '',
+        lastName: '',
+        email: '',
+        providerIds: ['anonymous'],
+      );
+      final anonymousFlag = const UserProfile(
+        uid: 'anon-flag-uid',
         firstName: '',
         lastName: '',
         email: '',
@@ -183,8 +255,12 @@ void main() {
           localizationsDelegates: AppLocalizations.localizationsDelegates,
           supportedLocales: AppLocalizations.supportedLocales,
           home: AdminUsersScreen(
-            usersStream: Stream<List<UserProfile>>.value([named, anonymous]),
-            playersForUser: (_) => Stream<List<Player>>.value(const []),
+            usersStream: Stream<List<UserProfile>>.value([
+              namedNoEmail,
+              anonymousProvider,
+              anonymousFlag,
+            ]),
+            membersStream: Stream<List<Player>>.value(const []),
           ),
         ),
       );
@@ -193,6 +269,7 @@ void main() {
 
       expect(find.text('Mohamed-Amine ABDESSAMAD'), findsOneWidget);
       expect(find.text('anon-uid'), findsNothing);
+      expect(find.text('anon-flag-uid'), findsNothing);
     });
   });
 

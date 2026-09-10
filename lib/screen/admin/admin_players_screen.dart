@@ -2,7 +2,6 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:grinta/core/extensions/l10n_extension.dart';
-import 'package:grinta/model/admin_player_sensor_flags.dart';
 import 'package:grinta/model/player.dart';
 import 'package:grinta/screen/admin/admin_player_hub_screen.dart';
 import 'package:grinta/services/admin_player_sensor_service.dart';
@@ -10,7 +9,6 @@ import 'package:grinta/services/playerService.dart';
 import 'package:grinta/util/app_theme.dart';
 import 'package:grinta/util/playerDisplayName.dart';
 import 'package:grinta/util/player_photo_resolver.dart';
-import 'package:grinta/widget/admin_player_sensor_icons.dart';
 import 'package:grinta/widget/playerPhoto.dart';
 
 class AdminPlayersScreen extends StatefulWidget {
@@ -24,7 +22,7 @@ class AdminPlayersScreen extends StatefulWidget {
   /// Overrides [PlayerService.streamAllMembers] (widget tests).
   final Stream<List<Player>>? membersStream;
 
-  /// Overrides the default sensor-flag loader (widget tests).
+  /// Passed to the hub after tap. Never queried from the list/search path.
   final AdminPlayerSensorService? sensorService;
 
   /// Replaces [PlayerPhoto] so widget tests can avoid Firebase.
@@ -43,13 +41,13 @@ class _AdminPlayersScreenState extends State<AdminPlayersScreen> {
   PlayerService? _playerService;
   AdminPlayerSensorService? _sensorService;
   Timer? _debounce;
-  String _query = '';
+  final ValueNotifier<String> _query = ValueNotifier<String>('');
 
   Stream<List<Player>> get _membersStream =>
       widget.membersStream ??
       (_playerService ??= PlayerService()).streamAllMembers();
 
-  AdminPlayerSensorService get _effectiveSensorService =>
+  AdminPlayerSensorService _sensorForHub() =>
       widget.sensorService ??
       (_sensorService ??= AdminPlayerSensorService());
 
@@ -65,6 +63,7 @@ class _AdminPlayersScreenState extends State<AdminPlayersScreen> {
     _searchController.removeListener(_onSearchChanged);
     _searchController.dispose();
     _searchFocusNode.dispose();
+    _query.dispose();
     super.dispose();
   }
 
@@ -72,7 +71,7 @@ class _AdminPlayersScreenState extends State<AdminPlayersScreen> {
     _debounce?.cancel();
     _debounce = Timer(const Duration(milliseconds: 250), () {
       if (!mounted) return;
-      setState(() => _query = _searchController.text);
+      _query.value = _searchController.text;
     });
   }
 
@@ -83,12 +82,23 @@ class _AdminPlayersScreenState extends State<AdminPlayersScreen> {
     return tokens.every((token) => playerMatchesNameQuery(player, token));
   }
 
+  /// Opens the hub immediately. Sensor flags / sessions stay off the list path.
+  void _openPlayer(Player player) {
+    unawaited(
+      AdminPlayerHubScreen.open(
+        context,
+        player: player,
+        sensorService: _sensorForHub(),
+        playerPhotoBuilder: widget.playerPhotoBuilder,
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final l10n = context.l10n;
     final colors = context.appColors;
     final textTheme = Theme.of(context).textTheme;
-    final tokens = _queryTokens(_query);
 
     return Scaffold(
       backgroundColor: colors.background,
@@ -105,49 +115,14 @@ class _AdminPlayersScreenState extends State<AdminPlayersScreen> {
         children: [
           Padding(
             padding: const EdgeInsets.fromLTRB(16, 8, 16, 12),
-            child: TextField(
-              key: AdminPlayersScreen.searchFieldKey,
+            child: _AdminPlayersSearchField(
               controller: _searchController,
               focusNode: _searchFocusNode,
-              enabled: true,
-              readOnly: false,
-              autocorrect: false,
-              enableSuggestions: false,
-              keyboardType: TextInputType.text,
-              textInputAction: TextInputAction.search,
-              style: textTheme.bodyLarge?.copyWith(
-                color: colors.textPrimary,
-              ),
-              decoration: InputDecoration(
-                hintText: l10n.adminPlayersSearchHint,
-                prefixIcon: Icon(
-                  Icons.search,
-                  color: colors.textSecondary,
-                ),
-                suffixIcon: _query.trim().isEmpty
-                    ? null
-                    : IconButton(
-                        onPressed: () {
-                          _searchController.clear();
-                          setState(() => _query = '');
-                        },
-                        icon: const Icon(Icons.clear),
-                      ),
-                filled: true,
-                fillColor: colors.surface,
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(14),
-                  borderSide: BorderSide(color: colors.border),
-                ),
-                enabledBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(14),
-                  borderSide: BorderSide(color: colors.border),
-                ),
-                focusedBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(14),
-                  borderSide: BorderSide(color: colors.primary, width: 1.5),
-                ),
-              ),
+              hintText: l10n.adminPlayersSearchHint,
+              onClear: () {
+                _searchController.clear();
+                _query.value = '';
+              },
             ),
           ),
           Expanded(
@@ -174,36 +149,58 @@ class _AdminPlayersScreenState extends State<AdminPlayersScreen> {
                   return const Center(child: CircularProgressIndicator());
                 }
 
-                final players = (snapshot.data ?? const <Player>[])
-                    .where((player) => _matchesPlayer(player, tokens))
-                    .toList(growable: false)
-                  ..sort(
-                    (a, b) => playerDisplayName(a).toLowerCase().compareTo(
-                          playerDisplayName(b).toLowerCase(),
-                        ),
-                  );
+                return ValueListenableBuilder<String>(
+                  valueListenable: _query,
+                  builder: (context, query, _) {
+                    final tokens = _queryTokens(query);
+                    final players = (snapshot.data ?? const <Player>[])
+                        .where((player) => _matchesPlayer(player, tokens))
+                        .toList(growable: false)
+                      ..sort(
+                        (a, b) => playerDisplayName(a).toLowerCase().compareTo(
+                              playerDisplayName(b).toLowerCase(),
+                            ),
+                      );
 
-                if (players.isEmpty) {
-                  return Center(
-                    child: Padding(
-                      padding: const EdgeInsets.all(24),
-                      child: Text(
-                        tokens.isEmpty
-                            ? l10n.adminPlayersEmpty
-                            : l10n.adminPlayersSearchEmpty,
-                        textAlign: TextAlign.center,
-                        style: textTheme.bodyLarge?.copyWith(
-                          color: colors.textSecondary,
+                    if (players.isEmpty) {
+                      return Center(
+                        child: Padding(
+                          padding: const EdgeInsets.all(24),
+                          child: Text(
+                            tokens.isEmpty
+                                ? l10n.adminPlayersEmpty
+                                : l10n.adminPlayersSearchEmpty,
+                            textAlign: TextAlign.center,
+                            style: textTheme.bodyLarge?.copyWith(
+                              color: colors.textSecondary,
+                            ),
+                          ),
                         ),
-                      ),
-                    ),
-                  );
-                }
+                      );
+                    }
 
-                return _AdminPlayersResults(
-                  players: players,
-                  sensorService: _effectiveSensorService,
-                  playerPhotoBuilder: widget.playerPhotoBuilder,
+                    return ListView.separated(
+                      padding: const EdgeInsets.fromLTRB(16, 0, 16, 24),
+                      itemCount: players.length,
+                      separatorBuilder: (_, __) => const SizedBox(height: 10),
+                      itemBuilder: (context, index) {
+                        final player = players[index];
+                        final userCount =
+                            collectMemberLinkedUserIds(player).length;
+                        final key = effectiveMemberId(player)?.trim();
+                        return _AdminPlayerCard(
+                          key: ValueKey<String>(
+                            'admin-player-card-${key ?? index}',
+                          ),
+                          player: player,
+                          userCount: userCount,
+                          photo: widget.playerPhotoBuilder?.call(player, 24) ??
+                              PlayerPhoto(player: player, radius: 24),
+                          onTap: () => _openPlayer(player),
+                        );
+                      },
+                    );
+                  },
                 );
               },
             ),
@@ -214,117 +211,88 @@ class _AdminPlayersScreenState extends State<AdminPlayersScreen> {
   }
 }
 
-/// Owns sensor-flag loading so flag `setState` cannot rebuild the search field.
-class _AdminPlayersResults extends StatefulWidget {
-  const _AdminPlayersResults({
-    required this.players,
-    required this.sensorService,
-    this.playerPhotoBuilder,
+/// Owns its own [setState] for the clear suffix so list rebuilds cannot
+/// recreate the search [TextField] or steal focus while typing.
+class _AdminPlayersSearchField extends StatefulWidget {
+  const _AdminPlayersSearchField({
+    required this.controller,
+    required this.focusNode,
+    required this.hintText,
+    required this.onClear,
   });
 
-  final List<Player> players;
-  final AdminPlayerSensorService sensorService;
-  final Widget Function(Player player, double radius)? playerPhotoBuilder;
+  final TextEditingController controller;
+  final FocusNode focusNode;
+  final String hintText;
+  final VoidCallback onClear;
 
   @override
-  State<_AdminPlayersResults> createState() => _AdminPlayersResultsState();
+  State<_AdminPlayersSearchField> createState() =>
+      _AdminPlayersSearchFieldState();
 }
 
-class _AdminPlayersResultsState extends State<_AdminPlayersResults> {
-  final Map<String, AdminPlayerSensorFlags> _flagsByPlayerId = {};
-  final Set<String> _flagsLoading = {};
-  static const _maxConcurrentFlagLoads = 3;
-  int _inflightFlagLoads = 0;
-  final List<Player> _flagQueue = [];
-
-  String? _playerCacheKey(Player player) => effectiveMemberId(player)?.trim();
-
-  /// Loads flags for visible rows only (called from [itemBuilder]).
-  void _enqueueFlagLoad(Player player) {
-    final key = _playerCacheKey(player);
-    if (key == null || key.isEmpty) return;
-    if (_flagsByPlayerId.containsKey(key) || _flagsLoading.contains(key)) {
-      return;
-    }
-    _flagsLoading.add(key);
-    _flagQueue.add(player);
-    _drainFlagQueue();
+class _AdminPlayersSearchFieldState extends State<_AdminPlayersSearchField> {
+  @override
+  void initState() {
+    super.initState();
+    widget.controller.addListener(_onText);
   }
 
-  void _drainFlagQueue() {
-    while (_inflightFlagLoads < _maxConcurrentFlagLoads &&
-        _flagQueue.isNotEmpty) {
-      final player = _flagQueue.removeAt(0);
-      _inflightFlagLoads++;
-      unawaited(() async {
-        final key = _playerCacheKey(player);
-        try {
-          final flags = await widget.sensorService.loadFlags(player);
-          if (!mounted) return;
-          setState(() {
-            if (key != null) _flagsByPlayerId[key] = flags;
-            if (key != null) _flagsLoading.remove(key);
-          });
-        } catch (_) {
-          if (!mounted) return;
-          setState(() {
-            if (key != null) {
-              _flagsByPlayerId[key] = AdminPlayerSensorFlags.none;
-              _flagsLoading.remove(key);
-            }
-          });
-        } finally {
-          _inflightFlagLoads--;
-          if (mounted) _drainFlagQueue();
-        }
-      }());
-    }
+  @override
+  void dispose() {
+    widget.controller.removeListener(_onText);
+    super.dispose();
   }
 
-  /// Opens the hub immediately. Sensor flags decorate the card / hub and
-  /// must never gate navigation — `loadFlags` can hang on Firestore.
-  void _openPlayer(Player player) {
-    final key = _playerCacheKey(player);
-    final flags = key == null
-        ? AdminPlayerSensorFlags.none
-        : (_flagsByPlayerId[key] ?? AdminPlayerSensorFlags.none);
-    unawaited(
-      AdminPlayerHubScreen.open(
-        context,
-        player: player,
-        flags: flags,
-        sensorService: widget.sensorService,
-        playerPhotoBuilder: widget.playerPhotoBuilder,
-      ),
-    );
+  void _onText() {
+    if (mounted) setState(() {});
   }
 
   @override
   Widget build(BuildContext context) {
-    return ListView.separated(
-      padding: const EdgeInsets.fromLTRB(16, 0, 16, 24),
-      itemCount: widget.players.length,
-      separatorBuilder: (_, __) => const SizedBox(height: 10),
-      itemBuilder: (context, index) {
-        final player = widget.players[index];
-        final userCount = collectMemberLinkedUserIds(player).length;
-        final key = _playerCacheKey(player);
-        final flags = key == null
-            ? AdminPlayerSensorFlags.none
-            : (_flagsByPlayerId[key] ?? AdminPlayerSensorFlags.none);
-        WidgetsBinding.instance.addPostFrameCallback((_) {
-          if (mounted) _enqueueFlagLoad(player);
-        });
-        return _AdminPlayerCard(
-          key: ValueKey<String>('admin-player-card-${key ?? index}'),
-          player: player,
-          userCount: userCount,
-          flags: flags,
-          photo: widget.playerPhotoBuilder?.call(player, 24) ??
-              PlayerPhoto(player: player, radius: 24),
-          onTap: () => _openPlayer(player),
-        );
-      },
+    final colors = context.appColors;
+    final textTheme = Theme.of(context).textTheme;
+    final hasQuery = widget.controller.text.trim().isNotEmpty;
+    return TextField(
+      key: AdminPlayersScreen.searchFieldKey,
+      controller: widget.controller,
+      focusNode: widget.focusNode,
+      enabled: true,
+      readOnly: false,
+      autocorrect: false,
+      enableSuggestions: false,
+      keyboardType: TextInputType.text,
+      textInputAction: TextInputAction.search,
+      style: textTheme.bodyLarge?.copyWith(
+        color: colors.textPrimary,
+      ),
+      decoration: InputDecoration(
+        hintText: widget.hintText,
+        prefixIcon: Icon(
+          Icons.search,
+          color: colors.textSecondary,
+        ),
+        suffixIcon: hasQuery
+            ? IconButton(
+                onPressed: widget.onClear,
+                icon: const Icon(Icons.clear),
+              )
+            : null,
+        filled: true,
+        fillColor: colors.surface,
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(14),
+          borderSide: BorderSide(color: colors.border),
+        ),
+        enabledBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(14),
+          borderSide: BorderSide(color: colors.border),
+        ),
+        focusedBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(14),
+          borderSide: BorderSide(color: colors.primary, width: 1.5),
+        ),
+      ),
     );
   }
 }
@@ -334,14 +302,12 @@ class _AdminPlayerCard extends StatelessWidget {
     super.key,
     required this.player,
     required this.userCount,
-    required this.flags,
     required this.photo,
     required this.onTap,
   });
 
   final Player player;
   final int userCount;
-  final AdminPlayerSensorFlags flags;
   final Widget photo;
   final VoidCallback onTap;
 
@@ -408,7 +374,6 @@ class _AdminPlayerCard extends StatelessWidget {
                   ],
                 ),
               ),
-              AdminPlayerSensorIcons(flags: flags),
               Icon(Icons.chevron_right_rounded, color: colors.textSecondary),
             ],
           ),

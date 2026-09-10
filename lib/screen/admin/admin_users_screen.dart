@@ -18,7 +18,7 @@ class AdminUsersScreen extends StatefulWidget {
   const AdminUsersScreen({
     super.key,
     this.usersStream,
-    this.playersForUser,
+    this.membersStream,
     this.sensorService,
     this.playerPhotoBuilder,
   });
@@ -26,11 +26,15 @@ class AdminUsersScreen extends StatefulWidget {
   /// Overrides [UserService.streamUsers] (widget tests).
   final Stream<List<UserProfile>>? usersStream;
 
-  /// Per-user association stream. Defaults to [PlayerService.streamPlayersByUserId].
-  final Stream<List<Player>> Function(String userId)? playersForUser;
+  /// Overrides [PlayerService.streamAllMembers] for list counts (widget tests).
+  ///
+  /// Counts come from this single snapshot — never per-row player queries.
+  final Stream<List<Player>>? membersStream;
 
   final AdminPlayerSensorService? sensorService;
   final Widget Function(Player player, double radius)? playerPhotoBuilder;
+
+  static const searchFieldKey = ValueKey<String>('admin-users-search');
 
   @override
   State<AdminUsersScreen> createState() => _AdminUsersScreenState();
@@ -41,8 +45,9 @@ class _AdminUsersScreenState extends State<AdminUsersScreen> {
   PlayerService? _playerService;
   PasswordResetService? _passwordResetService;
   final TextEditingController _searchController = TextEditingController();
+  final FocusNode _searchFocusNode = FocusNode();
   Timer? _debounce;
-  String _query = '';
+  final ValueNotifier<String> _query = ValueNotifier<String>('');
   String? _resettingUid;
 
   @override
@@ -54,7 +59,10 @@ class _AdminUsersScreenState extends State<AdminUsersScreen> {
   @override
   void dispose() {
     _debounce?.cancel();
+    _searchController.removeListener(_onSearchChanged);
     _searchController.dispose();
+    _searchFocusNode.dispose();
+    _query.dispose();
     super.dispose();
   }
 
@@ -62,7 +70,7 @@ class _AdminUsersScreenState extends State<AdminUsersScreen> {
     _debounce?.cancel();
     _debounce = Timer(const Duration(milliseconds: 250), () {
       if (!mounted) return;
-      setState(() => _query = _searchController.text);
+      _query.value = _searchController.text;
     });
   }
 
@@ -70,9 +78,9 @@ class _AdminUsersScreenState extends State<AdminUsersScreen> {
       widget.usersStream ??
       (_userService ??= UserService()).streamUsers();
 
-  Stream<List<Player>> _playersForUser(String uid) =>
-      widget.playersForUser?.call(uid) ??
-      (_playerService ??= PlayerService()).streamPlayersByUserId(uid);
+  Stream<List<Player>> get _membersStream =>
+      widget.membersStream ??
+      (_playerService ??= PlayerService()).streamAllMembers();
 
   Future<void> _openUserPlayers(
     UserProfile user, {
@@ -84,7 +92,6 @@ class _AdminUsersScreenState extends State<AdminUsersScreen> {
         builder: (_) => AdminUserPlayersScreen(
           user: user,
           initialPlayers: initialPlayers,
-          playersStream: widget.playersForUser?.call(user.uid),
           sensorService: widget.sensorService,
           playerPhotoBuilder: widget.playerPhotoBuilder,
         ),
@@ -173,27 +180,15 @@ class _AdminUsersScreenState extends State<AdminUsersScreen> {
         children: [
           Padding(
             padding: const EdgeInsets.fromLTRB(16, 8, 16, 12),
-            child: TextField(
+            child: _AdminUsersSearchField(
               controller: _searchController,
-              textInputAction: TextInputAction.search,
-              decoration: InputDecoration(
-                labelText: l10n.adminUsersSearchHint,
-                hintText: l10n.adminUsersSearchHint,
-                prefixIcon: const Icon(Icons.search),
-                suffixIcon: _query.trim().isEmpty
-                    ? null
-                    : IconButton(
-                        onPressed: () {
-                          _searchController.clear();
-                          setState(() => _query = '');
-                        },
-                        icon: const Icon(Icons.clear),
-                      ),
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(14),
-                  borderSide: BorderSide(color: colors.border),
-                ),
-              ),
+              focusNode: _searchFocusNode,
+              hintText: l10n.adminUsersSearchHint,
+              labelText: l10n.adminUsersSearchHint,
+              onClear: () {
+                _searchController.clear();
+                _query.value = '';
+              },
             ),
           ),
           Expanded(
@@ -220,50 +215,60 @@ class _AdminUsersScreenState extends State<AdminUsersScreen> {
                   return const Center(child: CircularProgressIndicator());
                 }
 
-                final users = (usersSnapshot.data ?? const <UserProfile>[])
-                    .where((user) => !user.isAnonymousAccount)
-                    .where((user) => user.matchesSearch(_query))
-                    .toList(growable: false);
+                return StreamBuilder<List<Player>>(
+                  stream: _membersStream,
+                  builder: (context, membersSnapshot) {
+                    final members =
+                        membersSnapshot.data ?? const <Player>[];
+                    final counts = adminPlayerCountsByUserId(members);
 
-                if (users.isEmpty) {
-                  return Center(
-                    child: Padding(
-                      padding: const EdgeInsets.all(24),
-                      child: Text(
-                        _query.trim().isEmpty
-                            ? l10n.adminUsersEmpty
-                            : l10n.adminUsersSearchEmpty,
-                        textAlign: TextAlign.center,
-                        style: textTheme.bodyLarge?.copyWith(
-                          color: colors.textSecondary,
-                        ),
-                      ),
-                    ),
-                  );
-                }
+                    return ValueListenableBuilder<String>(
+                      valueListenable: _query,
+                      builder: (context, query, _) {
+                        final users =
+                            (usersSnapshot.data ?? const <UserProfile>[])
+                                .where((user) => !user.isAnonymousAccount)
+                                .where((user) => user.matchesSearch(query))
+                                .toList(growable: false);
 
-                return ListView.separated(
-                  padding: const EdgeInsets.fromLTRB(16, 0, 16, 24),
-                  itemCount: users.length,
-                  separatorBuilder: (_, __) => const SizedBox(height: 10),
-                  itemBuilder: (context, index) {
-                    final user = users[index];
-                    return StreamBuilder<List<Player>>(
-                      stream: _playersForUser(user.uid),
-                      builder: (context, linkedSnap) {
-                        final count = adminAssociationPlayerCount(
-                          hasData: linkedSnap.hasData,
-                          players: linkedSnap.data,
-                        );
-                        return _AdminUserCard(
-                          user: user,
-                          playerCount: count,
-                          isResetting: _resettingUid == user.uid,
-                          onTap: () => _openUserPlayers(
-                            user,
-                            initialPlayers: linkedSnap.data,
-                          ),
-                          onRenewPassword: () => _renewPassword(user),
+                        if (users.isEmpty) {
+                          return Center(
+                            child: Padding(
+                              padding: const EdgeInsets.all(24),
+                              child: Text(
+                                query.trim().isEmpty
+                                    ? l10n.adminUsersEmpty
+                                    : l10n.adminUsersSearchEmpty,
+                                textAlign: TextAlign.center,
+                                style: textTheme.bodyLarge?.copyWith(
+                                  color: colors.textSecondary,
+                                ),
+                              ),
+                            ),
+                          );
+                        }
+
+                        return ListView.separated(
+                          padding: const EdgeInsets.fromLTRB(16, 0, 16, 24),
+                          itemCount: users.length,
+                          separatorBuilder: (_, __) =>
+                              const SizedBox(height: 10),
+                          itemBuilder: (context, index) {
+                            final user = users[index];
+                            return _AdminUserCard(
+                              user: user,
+                              playerCount: counts[user.uid] ?? 0,
+                              isResetting: _resettingUid == user.uid,
+                              onTap: () => _openUserPlayers(
+                                user,
+                                initialPlayers: adminPlayersLinkedToUser(
+                                  members,
+                                  user.uid,
+                                ),
+                              ),
+                              onRenewPassword: () => _renewPassword(user),
+                            );
+                          },
                         );
                       },
                     );
@@ -273,6 +278,75 @@ class _AdminUsersScreenState extends State<AdminUsersScreen> {
             ),
           ),
         ],
+      ),
+    );
+  }
+}
+
+/// Owns its own [setState] for the clear suffix so list rebuilds cannot
+/// recreate the search [TextField] or steal focus while typing.
+class _AdminUsersSearchField extends StatefulWidget {
+  const _AdminUsersSearchField({
+    required this.controller,
+    required this.focusNode,
+    required this.hintText,
+    required this.labelText,
+    required this.onClear,
+  });
+
+  final TextEditingController controller;
+  final FocusNode focusNode;
+  final String hintText;
+  final String labelText;
+  final VoidCallback onClear;
+
+  @override
+  State<_AdminUsersSearchField> createState() =>
+      _AdminUsersSearchFieldState();
+}
+
+class _AdminUsersSearchFieldState extends State<_AdminUsersSearchField> {
+  @override
+  void initState() {
+    super.initState();
+    widget.controller.addListener(_onText);
+  }
+
+  @override
+  void dispose() {
+    widget.controller.removeListener(_onText);
+    super.dispose();
+  }
+
+  void _onText() {
+    if (mounted) setState(() {});
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = context.appColors;
+    final hasQuery = widget.controller.text.trim().isNotEmpty;
+    return TextField(
+      key: AdminUsersScreen.searchFieldKey,
+      controller: widget.controller,
+      focusNode: widget.focusNode,
+      enabled: true,
+      readOnly: false,
+      textInputAction: TextInputAction.search,
+      decoration: InputDecoration(
+        labelText: widget.labelText,
+        hintText: widget.hintText,
+        prefixIcon: const Icon(Icons.search),
+        suffixIcon: hasQuery
+            ? IconButton(
+                onPressed: widget.onClear,
+                icon: const Icon(Icons.clear),
+              )
+            : null,
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(14),
+          borderSide: BorderSide(color: colors.border),
+        ),
       ),
     );
   }
@@ -288,7 +362,7 @@ class _AdminUserCard extends StatelessWidget {
   });
 
   final UserProfile user;
-  final int? playerCount;
+  final int playerCount;
   final bool isResetting;
   final VoidCallback onTap;
   final VoidCallback onRenewPassword;
@@ -339,23 +413,13 @@ class _AdminUserCard extends StatelessWidget {
                       ),
                     ],
                     const SizedBox(height: 6),
-                    if (playerCount == null)
-                      SizedBox(
-                        width: 16,
-                        height: 16,
-                        child: CircularProgressIndicator(
-                          strokeWidth: 2,
-                          color: colors.primary,
-                        ),
-                      )
-                    else
-                      Text(
-                        l10n.adminUsersPlayerCount(playerCount!),
-                        style: textTheme.labelMedium?.copyWith(
-                          color: colors.primary,
-                          fontWeight: FontWeight.w600,
-                        ),
+                    Text(
+                      l10n.adminUsersPlayerCount(playerCount),
+                      style: textTheme.labelMedium?.copyWith(
+                        color: colors.primary,
+                        fontWeight: FontWeight.w600,
                       ),
+                    ),
                   ],
                 ),
               ),
