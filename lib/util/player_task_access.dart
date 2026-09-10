@@ -5,7 +5,7 @@ import 'package:grinta/util/team_deletion_access.dart';
 /// True when the signed-in manager/owner created [task] or still manages
 /// its team, so they may edit or delete it.
 bool canManagePlayerTask(PlayerTask task, AppSession session) {
-  final String uid = session.user?.uid?.trim() ?? '';
+  final String uid = session.user?.uid.trim() ?? '';
   final String createdBy = task.createdByUserId.trim();
   if (uid.isNotEmpty && createdBy.isNotEmpty && uid == createdBy) {
     return true;

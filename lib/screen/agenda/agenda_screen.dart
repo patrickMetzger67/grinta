@@ -974,6 +974,8 @@ class _AgendaScreenState extends State<AgendaScreen> {
     LatestWinsToken? navigationToken,
   }) async {
     final int generation = ++_subscriptionGeneration;
+    final String? memberId =
+        mounted ? context.read<AppSession>().selectedPlayerId?.trim() : null;
     await _itemsSub?.cancel();
     _itemsSub = null;
     await _tasksSub?.cancel();
@@ -1059,8 +1061,6 @@ class _AgendaScreenState extends State<AgendaScreen> {
       },
     );
 
-    final String? memberId =
-        context.read<AppSession>().selectedPlayerId?.trim();
     if (memberId != null && memberId.isNotEmpty) {
       _tasksSub = PlayerTaskService()
           .watchTasksForMemberBetweenDates(
