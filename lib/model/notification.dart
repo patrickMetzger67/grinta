@@ -20,6 +20,8 @@ enum NotifType {
   payment,
   trainingReminder,
   matchOpponentStatsReminder,
+  playerTask,
+  playerTaskReminder,
   pendingInvitation,
 }
 
@@ -137,6 +139,12 @@ class NotificationApp {
           break;
         case 'NotifType.matchOpponentStatsReminder':
           type = NotifType.matchOpponentStatsReminder;
+          break;
+        case 'NotifType.playerTask':
+          type = NotifType.playerTask;
+          break;
+        case 'NotifType.playerTaskReminder':
+          type = NotifType.playerTaskReminder;
           break;
         case 'NotifType.pendingInvitation':
           type = NotifType.pendingInvitation;

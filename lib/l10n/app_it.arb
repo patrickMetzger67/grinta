@@ -3985,5 +3985,81 @@
   "adminAdsUpcomingBadge": "In arrivo",
   "lastResultsFormGuide": "Forma recente",
   "lastResultsSlotEmpty": "Non ancora giocato",
-  "lastResultsSlotHighlighted": "Partita attuale"
+  "lastResultsSlotHighlighted": "Partita attuale",
+  "agendaAddEventPlayerTask": "Un compito di squadra",
+  "agendaAddEventPlayerTaskHint": "Materiale, maglie, …",
+  "createPlayerTaskTitle": "Assegna un compito",
+  "editPlayerTaskTitle": "Modifica il compito",
+  "createPlayerTaskType": "Tipo",
+  "createPlayerTaskTypeRequired": "Scegli un tipo.",
+  "createPlayerTaskNewType": "Crea un nuovo tipo…",
+  "createPlayerTaskNewTypeTitle": "Nuovo tipo di compito",
+  "createPlayerTaskTypeName": "Nome del tipo",
+  "createPlayerTaskTypeColor": "Colore",
+  "createPlayerTaskTeam": "Squadra",
+  "createPlayerTaskTeamRequired": "Scegli una squadra.",
+  "createPlayerTaskPlayers": "Giocatori",
+  "createPlayerTaskPlayersHint": "Tocca per scegliere uno o più giocatori",
+  "createPlayerTaskPlayersRequired": "Scegli almeno un giocatore.",
+  "createPlayerTaskSelectPlayers": "Scegli i giocatori",
+  "createPlayerTaskSelectAll": "Tutti",
+  "createPlayerTaskNoPlayers": "Nessun giocatore in questa squadra.",
+  "createPlayerTaskStartDate": "Inizio",
+  "createPlayerTaskEndDate": "Fine",
+  "createPlayerTaskThisWeek": "Questa settimana",
+  "createPlayerTaskToday": "Oggi",
+  "createPlayerTaskNote": "Nota (opzionale)",
+  "createPlayerTaskNoteHint": "Es. raccogliere i coni",
+  "createPlayerTaskSaved": "Compito assegnato.",
+  "editPlayerTaskSaved": "Compito aggiornato.",
+  "createPlayerTaskError": "Impossibile salvare il compito.",
+  "editPlayerTaskError": "Impossibile aggiornare il compito.",
+  "createPlayerTaskInvalidRange": "La data di fine deve essere successiva a quella di inizio.",
+  "createPlayerTaskNoManagedTeams": "Non gestisci nessuna squadra in questa stagione.",
+  "playerTaskDetailTitle": "Compito",
+  "playerTaskAssignees": "Giocatori",
+  "playerTaskPeriod": "Periodo",
+  "playerTaskEdit": "Modifica",
+  "deletePlayerTaskConfirmTitle": "Eliminare il compito?",
+  "deletePlayerTaskConfirmMessage": "Eliminare « {label} »?",
+  "@deletePlayerTaskConfirmMessage": {
+    "placeholders": {
+      "label": {
+        "type": "String"
+      }
+    }
+  },
+  "deletePlayerTaskDeleted": "Compito eliminato.",
+  "deletePlayerTaskError": "Impossibile eliminare il compito.",
+  "playerTaskDefaultTypeEquipment": "Materiale",
+  "playerTaskDefaultTypeJerseys": "Maglie",
+  "playerTaskManagerBarLabel": "{teamName} - {taskName} - {count}",
+  "@playerTaskManagerBarLabel": {
+    "placeholders": {
+      "teamName": {
+        "type": "String"
+      },
+      "taskName": {
+        "type": "String"
+      },
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "createPlayerTaskNotificationTitle": "Nuovo compito",
+  "createPlayerTaskNotificationBody": "Sei di {typeName} dal {start} al {end}",
+  "@createPlayerTaskNotificationBody": {
+    "placeholders": {
+      "typeName": {
+        "type": "String"
+      },
+      "start": {
+        "type": "String"
+      },
+      "end": {
+        "type": "String"
+      }
+    }
+  }
 }

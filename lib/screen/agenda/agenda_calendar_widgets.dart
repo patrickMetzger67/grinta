@@ -20,6 +20,8 @@ class _GrintaStyleCalendarHeader extends StatelessWidget {
   final VoidCallback onHeaderDateTap;
   final ValueChanged<int> onPageChanged;
   final ValueChanged<DateTime> onDateTap;
+  final List<PlayerTask> playerTasks;
+  final ValueChanged<PlayerTask> onPlayerTaskTap;
 
   const _GrintaStyleCalendarHeader({
     required this.pageController,
@@ -41,12 +43,15 @@ class _GrintaStyleCalendarHeader extends StatelessWidget {
     required this.onHeaderDateTap,
     required this.onPageChanged,
     required this.onDateTap,
+    required this.playerTasks,
+    required this.onPlayerTaskTap,
   });
 
   @override
   Widget build(BuildContext context) {
     final l10n = context.l10n;
     final colors = context.appColors;
+    final AppSession session = context.watch<AppSession>();
     final locale = Localizations.localeOf(context).toString();
     final isMonth = mode == AgendaCalendarMode.month;
     final isWeek = mode == AgendaCalendarMode.week;
@@ -316,6 +321,19 @@ class _GrintaStyleCalendarHeader extends StatelessWidget {
                   ),
                 ),
               ),
+              ),
+              AgendaPlayerTaskBars(
+                tasks: playerTasks,
+                weekStart: _startOfWeek(selectedDate),
+                onTaskTap: onPlayerTaskTap,
+                labelFor: (PlayerTask task) => playerTaskAgendaBarLabel(
+                  task,
+                  isManager: canManagePlayerTask(task, session),
+                  teamName: playerTaskTeamDisplayName(task, session),
+                  managerFormat: l10n.playerTaskManagerBarLabel,
+                ),
+                showAssigneeIcon: (PlayerTask task) =>
+                    canManagePlayerTask(task, session),
               ),
             ],
           ),

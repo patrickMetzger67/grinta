@@ -598,7 +598,8 @@ class NotificationFCMService {
           break;
 
         case 'event':
-          // TODO: partner event detail screen when available in Grinta.
+        case 'playerTask':
+        case 'playerTaskReminder':
           debugPrint('[FCM navigation] event notification stub (eventId=$id)');
           _navigateToShellTab(context, FeatureDiscoveryIds.tabAgenda);
           break;
@@ -872,22 +873,35 @@ class NotificationFCMService {
     return channel;
   }
 
-  /// Reads Grinta FCM device tokens from `users/{uid}/fcmTokens`.
+  /// Reads Grinta FCM device tokens for [uid].
   ///
-  /// Includes `app: [FcmConfig.brandGrinta]`, Grinta `packageName`, and safe
-  /// legacy iOS/web documents without `app`. Naked unbranded Android tokens are
-  /// skipped (Aserstein bleed on the shared Firebase project). See
-  /// [collectGrintaFcmTokens].
+  /// Prefers `users/{uid}.grintaTokens` (source of truth). If that field is
+  /// missing/empty, falls back to tagged Grinta docs in
+  /// `users/{uid}/fcmTokens`. Never returns Aserstein-tagged tokens.
   static Future<List<String>> fetchFcmTokensForUser(String uid) async {
     final trimmedUid = uid.trim();
     if (trimmedUid.isEmpty) return const [];
 
     try {
-      final tokensRef = FirebaseFirestore.instance
-          .collection('users')
-          .doc(trimmedUid)
-          .collection('fcmTokens');
+      final userRef =
+          FirebaseFirestore.instance.collection('users').doc(trimmedUid);
 
+      List<dynamic>? userGrintaTokens;
+      try {
+        final userSnap = await userRef.get();
+        final raw = userSnap.data()?[kUserGrintaTokensField];
+        userGrintaTokens = raw is List ? raw : null;
+      } catch (e) {
+        // Other uids cannot always read `users/{uid}` (owner-only). Fall back.
+        debugPrint(
+          'fetchFcmTokensForUser grintaTokens uid=$trimmedUid: $e',
+        );
+      }
+
+      final fromUser = resolveGrintaSendTokens(grintaTokens: userGrintaTokens);
+      if (fromUser.isNotEmpty) return fromUser;
+
+      final tokensRef = userRef.collection('fcmTokens');
       final allSnapshot = await tokensRef.get();
       return collectGrintaFcmTokens(
         allSnapshot.docs.map((doc) => (id: doc.id, data: doc.data())),

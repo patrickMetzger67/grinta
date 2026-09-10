@@ -4029,5 +4029,81 @@
   "adminAdsUpcomingBadge": "Upcoming",
   "lastResultsFormGuide": "Recent form",
   "lastResultsSlotEmpty": "Not played yet",
-  "lastResultsSlotHighlighted": "Current match"
+  "lastResultsSlotHighlighted": "Current match",
+  "agendaAddEventPlayerTask": "A team task",
+  "agendaAddEventPlayerTaskHint": "Equipment, jerseys, …",
+  "createPlayerTaskTitle": "Assign a task",
+  "editPlayerTaskTitle": "Edit task",
+  "createPlayerTaskType": "Type",
+  "createPlayerTaskTypeRequired": "Choose a type.",
+  "createPlayerTaskNewType": "Create a new type…",
+  "createPlayerTaskNewTypeTitle": "New task type",
+  "createPlayerTaskTypeName": "Type name",
+  "createPlayerTaskTypeColor": "Color",
+  "createPlayerTaskTeam": "Team",
+  "createPlayerTaskTeamRequired": "Choose a team.",
+  "createPlayerTaskPlayers": "Players",
+  "createPlayerTaskPlayersHint": "Tap to choose one or more players",
+  "createPlayerTaskPlayersRequired": "Choose at least one player.",
+  "createPlayerTaskSelectPlayers": "Choose players",
+  "createPlayerTaskSelectAll": "All",
+  "createPlayerTaskNoPlayers": "No players on this team.",
+  "createPlayerTaskStartDate": "Start",
+  "createPlayerTaskEndDate": "End",
+  "createPlayerTaskThisWeek": "This week",
+  "createPlayerTaskToday": "Today",
+  "createPlayerTaskNote": "Note (optional)",
+  "createPlayerTaskNoteHint": "E.g. collect the cones",
+  "createPlayerTaskSaved": "Task assigned.",
+  "editPlayerTaskSaved": "Task updated.",
+  "createPlayerTaskError": "Could not save the task.",
+  "editPlayerTaskError": "Could not update the task.",
+  "createPlayerTaskInvalidRange": "End date must be after the start date.",
+  "createPlayerTaskNoManagedTeams": "You don't manage any team this season.",
+  "playerTaskDetailTitle": "Task",
+  "playerTaskAssignees": "Players",
+  "playerTaskPeriod": "Period",
+  "playerTaskEdit": "Edit",
+  "deletePlayerTaskConfirmTitle": "Delete this task?",
+  "deletePlayerTaskConfirmMessage": "Delete “{label}”?",
+  "@deletePlayerTaskConfirmMessage": {
+    "placeholders": {
+      "label": {
+        "type": "String"
+      }
+    }
+  },
+  "deletePlayerTaskDeleted": "Task deleted.",
+  "deletePlayerTaskError": "Could not delete the task.",
+  "playerTaskDefaultTypeEquipment": "Equipment",
+  "playerTaskDefaultTypeJerseys": "Jerseys",
+  "playerTaskManagerBarLabel": "{teamName} - {taskName} - {count}",
+  "@playerTaskManagerBarLabel": {
+    "placeholders": {
+      "teamName": {
+        "type": "String"
+      },
+      "taskName": {
+        "type": "String"
+      },
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "createPlayerTaskNotificationTitle": "New task",
+  "createPlayerTaskNotificationBody": "You are on {typeName} from {start} to {end}",
+  "@createPlayerTaskNotificationBody": {
+    "placeholders": {
+      "typeName": {
+        "type": "String"
+      },
+      "start": {
+        "type": "String"
+      },
+      "end": {
+        "type": "String"
+      }
+    }
+  }
 }

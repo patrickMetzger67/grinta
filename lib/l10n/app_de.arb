@@ -3985,5 +3985,81 @@
   "adminAdsUpcomingBadge": "Geplant",
   "lastResultsFormGuide": "Aktuelle Form",
   "lastResultsSlotEmpty": "Noch nicht gespielt",
-  "lastResultsSlotHighlighted": "Aktuelles Spiel"
+  "lastResultsSlotHighlighted": "Aktuelles Spiel",
+  "agendaAddEventPlayerTask": "Eine Teamaufgabe",
+  "agendaAddEventPlayerTaskHint": "Material, Trikots, …",
+  "createPlayerTaskTitle": "Aufgabe zuweisen",
+  "editPlayerTaskTitle": "Aufgabe bearbeiten",
+  "createPlayerTaskType": "Typ",
+  "createPlayerTaskTypeRequired": "Bitte einen Typ wählen.",
+  "createPlayerTaskNewType": "Neuen Typ erstellen…",
+  "createPlayerTaskNewTypeTitle": "Neuer Aufgabentyp",
+  "createPlayerTaskTypeName": "Name des Typs",
+  "createPlayerTaskTypeColor": "Farbe",
+  "createPlayerTaskTeam": "Team",
+  "createPlayerTaskTeamRequired": "Bitte ein Team wählen.",
+  "createPlayerTaskPlayers": "Spieler",
+  "createPlayerTaskPlayersHint": "Tippen, um einen oder mehrere Spieler zu wählen",
+  "createPlayerTaskPlayersRequired": "Bitte mindestens einen Spieler wählen.",
+  "createPlayerTaskSelectPlayers": "Spieler wählen",
+  "createPlayerTaskSelectAll": "Alle",
+  "createPlayerTaskNoPlayers": "Keine Spieler in diesem Team.",
+  "createPlayerTaskStartDate": "Beginn",
+  "createPlayerTaskEndDate": "Ende",
+  "createPlayerTaskThisWeek": "Diese Woche",
+  "createPlayerTaskToday": "Heute",
+  "createPlayerTaskNote": "Notiz (optional)",
+  "createPlayerTaskNoteHint": "z. B. Hütchen einsammeln",
+  "createPlayerTaskSaved": "Aufgabe zugewiesen.",
+  "editPlayerTaskSaved": "Aufgabe aktualisiert.",
+  "createPlayerTaskError": "Aufgabe konnte nicht gespeichert werden.",
+  "editPlayerTaskError": "Aufgabe konnte nicht geändert werden.",
+  "createPlayerTaskInvalidRange": "Das Enddatum muss nach dem Startdatum liegen.",
+  "createPlayerTaskNoManagedTeams": "Du verwaltest in dieser Saison kein Team.",
+  "playerTaskDetailTitle": "Aufgabe",
+  "playerTaskAssignees": "Spieler",
+  "playerTaskPeriod": "Zeitraum",
+  "playerTaskEdit": "Bearbeiten",
+  "deletePlayerTaskConfirmTitle": "Aufgabe löschen?",
+  "deletePlayerTaskConfirmMessage": "„{label}“ löschen?",
+  "@deletePlayerTaskConfirmMessage": {
+    "placeholders": {
+      "label": {
+        "type": "String"
+      }
+    }
+  },
+  "deletePlayerTaskDeleted": "Aufgabe gelöscht.",
+  "deletePlayerTaskError": "Aufgabe konnte nicht gelöscht werden.",
+  "playerTaskDefaultTypeEquipment": "Material",
+  "playerTaskDefaultTypeJerseys": "Trikots",
+  "playerTaskManagerBarLabel": "{teamName} - {taskName} - {count}",
+  "@playerTaskManagerBarLabel": {
+    "placeholders": {
+      "teamName": {
+        "type": "String"
+      },
+      "taskName": {
+        "type": "String"
+      },
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "createPlayerTaskNotificationTitle": "Neue Aufgabe",
+  "createPlayerTaskNotificationBody": "Du bist für {typeName} vom {start} bis {end} eingeteilt",
+  "@createPlayerTaskNotificationBody": {
+    "placeholders": {
+      "typeName": {
+        "type": "String"
+      },
+      "start": {
+        "type": "String"
+      },
+      "end": {
+        "type": "String"
+      }
+    }
+  }
 }

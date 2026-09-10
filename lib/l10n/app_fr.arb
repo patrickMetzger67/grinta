@@ -4435,5 +4435,81 @@
   "adminAdsUpcomingBadge": "À venir",
   "lastResultsFormGuide": "Forme récente",
   "lastResultsSlotEmpty": "Pas encore joué",
-  "lastResultsSlotHighlighted": "Match actuel"
+  "lastResultsSlotHighlighted": "Match actuel",
+  "agendaAddEventPlayerTask": "Une tâche d'équipe",
+  "agendaAddEventPlayerTaskHint": "Matériel, maillots, …",
+  "createPlayerTaskTitle": "Affecter une tâche",
+  "editPlayerTaskTitle": "Modifier la tâche",
+  "createPlayerTaskType": "Type",
+  "createPlayerTaskTypeRequired": "Choisissez un type.",
+  "createPlayerTaskNewType": "Créer un nouveau type…",
+  "createPlayerTaskNewTypeTitle": "Nouveau type de tâche",
+  "createPlayerTaskTypeName": "Nom du type",
+  "createPlayerTaskTypeColor": "Couleur",
+  "createPlayerTaskTeam": "Équipe",
+  "createPlayerTaskTeamRequired": "Choisissez une équipe.",
+  "createPlayerTaskPlayers": "Joueurs",
+  "createPlayerTaskPlayersHint": "Touchez pour choisir un ou plusieurs joueurs",
+  "createPlayerTaskPlayersRequired": "Choisissez au moins un joueur.",
+  "createPlayerTaskSelectPlayers": "Choisir les joueurs",
+  "createPlayerTaskSelectAll": "Tous",
+  "createPlayerTaskNoPlayers": "Aucun joueur dans cette équipe.",
+  "createPlayerTaskStartDate": "Début",
+  "createPlayerTaskEndDate": "Fin",
+  "createPlayerTaskThisWeek": "Cette semaine",
+  "createPlayerTaskToday": "Aujourd'hui",
+  "createPlayerTaskNote": "Note (optionnel)",
+  "createPlayerTaskNoteHint": "Ex. ramasser les plots",
+  "createPlayerTaskSaved": "Tâche affectée.",
+  "editPlayerTaskSaved": "Tâche mise à jour.",
+  "createPlayerTaskError": "Impossible d'enregistrer la tâche.",
+  "editPlayerTaskError": "Impossible de modifier la tâche.",
+  "createPlayerTaskInvalidRange": "La date de fin doit être après la date de début.",
+  "createPlayerTaskNoManagedTeams": "Vous ne gérez aucune équipe pour cette saison.",
+  "playerTaskDetailTitle": "Tâche",
+  "playerTaskAssignees": "Joueurs",
+  "playerTaskPeriod": "Période",
+  "playerTaskEdit": "Modifier",
+  "deletePlayerTaskConfirmTitle": "Supprimer la tâche ?",
+  "deletePlayerTaskConfirmMessage": "Supprimer « {label} » ?",
+  "@deletePlayerTaskConfirmMessage": {
+    "placeholders": {
+      "label": {
+        "type": "String"
+      }
+    }
+  },
+  "deletePlayerTaskDeleted": "Tâche supprimée.",
+  "deletePlayerTaskError": "Impossible de supprimer la tâche.",
+  "playerTaskDefaultTypeEquipment": "Matériel",
+  "playerTaskDefaultTypeJerseys": "Maillots",
+  "playerTaskManagerBarLabel": "{teamName} - {taskName} - {count}",
+  "@playerTaskManagerBarLabel": {
+    "placeholders": {
+      "teamName": {
+        "type": "String"
+      },
+      "taskName": {
+        "type": "String"
+      },
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "createPlayerTaskNotificationTitle": "Nouvelle tâche",
+  "createPlayerTaskNotificationBody": "Tu es de {typeName} de {start} à {end}",
+  "@createPlayerTaskNotificationBody": {
+    "placeholders": {
+      "typeName": {
+        "type": "String"
+      },
+      "start": {
+        "type": "String"
+      },
+      "end": {
+        "type": "String"
+      }
+    }
+  }
 }
