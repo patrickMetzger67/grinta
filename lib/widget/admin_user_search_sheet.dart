@@ -138,6 +138,7 @@ class _AdminUserSearchSheetState extends State<AdminUserSearchSheet> {
                 }
 
                 final users = (snapshot.data ?? const <UserProfile>[])
+                    .where((user) => !user.isAnonymousAccount)
                     .where(
                       (user) => !widget.excludeUserIds.contains(user.uid),
                     )

@@ -40,6 +40,51 @@ void main() {
       expect(profile.displayName, 'ghost@example.com');
     });
 
+    test('treats no-email no-name stubs as anonymous directory accounts', () {
+      expect(user().isAnonymousAccount, isTrue);
+      expect(
+        user(email: 'ghost@example.com').isAnonymousAccount,
+        isFalse,
+      );
+      expect(
+        user(firstName: 'Ada', lastName: 'Lovelace').isAnonymousAccount,
+        isFalse,
+      );
+    });
+
+    test('treats isAnonymous and anonymous providerIds as anonymous', () {
+      expect(
+        const UserProfile(
+          uid: uid,
+          firstName: 'Ada',
+          lastName: 'Lovelace',
+          email: 'ada@example.com',
+          isAnonymous: true,
+        ).isAnonymousAccount,
+        isTrue,
+      );
+      expect(
+        const UserProfile(
+          uid: uid,
+          firstName: '',
+          lastName: '',
+          email: 'ghost@example.com',
+          providerIds: ['password', 'anonymous'],
+        ).isAnonymousAccount,
+        isTrue,
+      );
+      expect(
+        const UserProfile(
+          uid: uid,
+          firstName: 'Ada',
+          lastName: '',
+          email: 'ada@example.com',
+          providerIds: ['google.com'],
+        ).isAnonymousAccount,
+        isFalse,
+      );
+    });
+
     test('never uses the raw uid as the title', () {
       final empty = user();
       expect(empty.adminListLabel(noEmailLabel: noEmail), noEmail);

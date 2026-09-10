@@ -8,6 +8,8 @@ abstract final class UserDocumentFields {
   static const createdAt = 'createdAt';
   static const trialEndsAt = 'trialEndsAt';
   static const isRoot = 'isRoot';
+  static const isAnonymous = 'isAnonymous';
+  static const providerIds = 'providerIds';
   /// Server-written paid access mirror (promo / future webhooks). Clients read only.
   static const subscriptionAccess = 'subscriptionAccess';
 
@@ -55,6 +57,8 @@ class UserProfile {
   final String email;
   final String photoURL;
   final bool isRoot;
+  final bool isAnonymous;
+  final List<String> providerIds;
 
   const UserProfile({
     required this.uid,
@@ -63,6 +67,8 @@ class UserProfile {
     required this.email,
     this.photoURL = '',
     this.isRoot = false,
+    this.isAnonymous = false,
+    this.providerIds = const [],
   });
 
   /// First/last name with uid-shaped placeholders stripped.
@@ -152,6 +158,22 @@ class UserProfile {
     if (trimmed.isEmpty || trimmed == uid) return '';
     return trimmed;
   }
+
+  /// Firebase Anonymous Auth, or a stub `users/{uid}` doc with no identity.
+  ///
+  /// The admin lock icon is password-reset, not an anonymous marker. Detection
+  /// uses [isAnonymous], `anonymous` in [providerIds], then “no email and no
+  /// name” (the Auth anonymous / FCM-stub shape from the Utilisateurs list).
+  bool get isAnonymousAccount {
+    if (isAnonymous) return true;
+    if (providerIds.any(_isAnonymousProviderId)) return true;
+    return usableEmail.isEmpty && personName.isEmpty;
+  }
+}
+
+bool _isAnonymousProviderId(String value) {
+  final id = value.trim().toLowerCase();
+  return id == 'anonymous';
 }
 
 class UserService {
@@ -226,7 +248,38 @@ class UserService {
       email: _readEmail(data),
       photoURL: _readPhotoUrl(data),
       isRoot: data[UserDocumentFields.isRoot] == true,
+      isAnonymous: _readAnonymousFlag(data),
+      providerIds: _readProviderIds(data),
     );
+  }
+
+  bool _readAnonymousFlag(Map<String, dynamic> data) {
+    final raw = data[UserDocumentFields.isAnonymous] ?? data['anonymous'];
+    if (raw == true) return true;
+    if (raw is String && raw.trim().toLowerCase() == 'true') return true;
+    return false;
+  }
+
+  List<String> _readProviderIds(Map<String, dynamic> data) {
+    final ids = <String>[];
+    void add(dynamic raw) {
+      if (raw == null) return;
+      if (raw is Iterable) {
+        for (final item in raw) {
+          final value = item.toString().trim();
+          if (value.isNotEmpty) ids.add(value);
+        }
+        return;
+      }
+      final value = raw.toString().trim();
+      if (value.isNotEmpty) ids.add(value);
+    }
+
+    add(data[UserDocumentFields.providerIds]);
+    add(data['providers']);
+    add(data['providerId']);
+    add(data['signInProvider']);
+    return List<String>.unmodifiable(ids);
   }
 
   String _readEmail(Map<String, dynamic> data) {

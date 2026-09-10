@@ -197,6 +197,7 @@ class _AdminUsersScreenState extends State<AdminUsersScreen> {
                 }
 
                 final users = (usersSnapshot.data ?? const <UserProfile>[])
+                    .where((user) => !user.isAnonymousAccount)
                     .where((user) => user.matchesSearch(_query))
                     .toList(growable: false);
 
