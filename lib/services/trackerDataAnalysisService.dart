@@ -1,4 +1,5 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:flutter/foundation.dart';
 
 import '../model/tracker/trackerData.dart';
 
@@ -17,11 +18,11 @@ class TrackerAnalysisService {
   /// - si fourni -> set avec cet id
   /// - sinon -> id auto
   static Future<String> saveAnalysis(
-      TrackerAnalysisResult analysis, {
-        String? docId,
-        String? eventId,
-        bool? isMatch,
-      }) async {
+    TrackerAnalysisResult analysis, {
+    String? docId,
+    String? eventId,
+    bool? isMatch,
+  }) async {
     final data = analysis.toMap(
       eventId: eventId,
       createdAt: DateTime.now(),
@@ -38,10 +39,10 @@ class TrackerAnalysisService {
 
   /// Sauvegarde plusieurs analyses en batch.
   static Future<void> saveManyAnalyses(
-      List<TrackerAnalysisResult> analyses, {
-        String? matchId,
-        String? eventId,
-      }) async {
+    List<TrackerAnalysisResult> analyses, {
+    String? matchId,
+    String? eventId,
+  }) async {
     if (analyses.isEmpty) return;
 
     final batch = _firestore.batch();
@@ -69,9 +70,9 @@ class TrackerAnalysisService {
 
   /// Analyses d’un joueur.
   static Stream<List<TrackerAnalysisResult>> getAnalysesByPlayer(
-      String playerId, {
-        int? limit,
-      }) {
+    String playerId, {
+    int? limit,
+  }) {
     Query<Map<String, dynamic>> query = _collection
         .where('playerId', isEqualTo: playerId)
         .orderBy('createdAt', descending: true);
@@ -82,16 +83,16 @@ class TrackerAnalysisService {
 
     return query.snapshots().map(
           (snapshot) => snapshot.docs
-          .map((doc) => TrackerAnalysisResult.fromMap(doc.data()))
-          .toList(),
-    );
+              .map((doc) => TrackerAnalysisResult.fromMap(doc.data()))
+              .toList(),
+        );
   }
 
   /// Analyses d’un tracker.
   static Stream<List<TrackerAnalysisResult>> getAnalysesByTracker(
-      String trackerId, {
-        int? limit,
-      }) {
+    String trackerId, {
+    int? limit,
+  }) {
     Query<Map<String, dynamic>> query = _collection
         .where('trackerId', isEqualTo: trackerId)
         .orderBy('createdAt', descending: true);
@@ -102,16 +103,16 @@ class TrackerAnalysisService {
 
     return query.snapshots().map(
           (snapshot) => snapshot.docs
-          .map((doc) => TrackerAnalysisResult.fromMap(doc.data()))
-          .toList(),
-    );
+              .map((doc) => TrackerAnalysisResult.fromMap(doc.data()))
+              .toList(),
+        );
   }
 
   /// Optionnel : filtre par match sans Stream
   static Future<List<TrackerAnalysisResult>> getAnalysesByEvent(
-      String eventId, {
-        int? limit,
-      }) async {
+    String eventId, {
+    int? limit,
+  }) async {
     Query<Map<String, dynamic>> query = _collection
         .where('eventId', isEqualTo: eventId)
         .orderBy('createdAt', descending: true);
@@ -129,10 +130,10 @@ class TrackerAnalysisService {
 
   /// Optionnel : filtre par match sans Stream
   static Future<TrackerAnalysisResult?> getAnalysisByEventAndPlayerId(
-      String eventId,
-      String playerId, {
-        int limit = 1,
-      }) async {
+    String eventId,
+    String playerId, {
+    int limit = 1,
+  }) async {
     Query<Map<String, dynamic>> query = _collection
         .where('eventId', isEqualTo: eventId)
         .where('playerId', isEqualTo: playerId)
@@ -149,10 +150,11 @@ class TrackerAnalysisService {
       snapshot.docs.first.data(),
     );
   }
+
   static Future<String?> getAnalysisDocIdByEventAndPlayerId(
-      String eventId,
-      String playerId,
-      ) async {
+    String eventId,
+    String playerId,
+  ) async {
     final snapshot = await _collection
         .where('eventId', isEqualTo: eventId)
         .where('playerId', isEqualTo: playerId)
@@ -173,7 +175,10 @@ class TrackerAnalysisService {
 
   /// Player analyses with Firestore doc id + `createdAt`, newest first.
   ///
-  /// Optional [start]/[end] filter on `createdAt` (inclusive calendar days).
+  /// Queries `playerId ==` only (automatic single-field index — same shape as
+  /// the working session-analysis screens). Optional [start]/[end] are applied
+  /// in memory so production does not need `playerId`+`createdAt` composite
+  /// indexes.
   static Future<List<TrackerAnalysisDoc>> getAnalysisDocsByPlayer(
     String playerId, {
     DateTime? start,
@@ -183,40 +188,58 @@ class TrackerAnalysisService {
     final pid = playerId.trim();
     if (pid.isEmpty) return const <TrackerAnalysisDoc>[];
 
-    Query<Map<String, dynamic>> query = _collection
-        .where('playerId', isEqualTo: pid)
-        .orderBy('createdAt', descending: true);
+    final snapshot = await _collection.where('playerId', isEqualTo: pid).get();
 
-    if (start != null) {
-      query = query.where(
-        'createdAt',
-        isGreaterThanOrEqualTo: Timestamp.fromDate(
-          DateTime(start.year, start.month, start.day),
-        ),
-      );
-    }
-    if (end != null) {
-      final endExclusive = DateTime(end.year, end.month, end.day)
-          .add(const Duration(days: 1));
-      query = query.where(
-        'createdAt',
-        isLessThan: Timestamp.fromDate(endExclusive),
-      );
-    }
-    if (limit != null) {
-      query = query.limit(limit);
-    }
-
-    final snapshot = await query.get();
-    return snapshot.docs
-        .map(
-          (doc) => TrackerAnalysisDoc(
+    final items = <TrackerAnalysisDoc>[];
+    for (final doc in snapshot.docs) {
+      try {
+        final createdAt = _readTimestamp(doc.data()['createdAt']);
+        if (!_createdAtInRange(createdAt, start: start, end: end)) {
+          continue;
+        }
+        items.add(
+          TrackerAnalysisDoc(
             docId: doc.id,
-            createdAt: _readTimestamp(doc.data()['createdAt']),
+            createdAt: createdAt,
             analysis: TrackerAnalysisResult.fromMap(doc.data()),
           ),
-        )
-        .toList(growable: false);
+        );
+      } catch (e, st) {
+        debugPrint(
+          'TRACKER_Analysis skip doc=${doc.id} playerId=$pid: $e\n$st',
+        );
+      }
+    }
+
+    items.sort((a, b) {
+      final aDate = a.createdAt ?? DateTime.fromMillisecondsSinceEpoch(0);
+      final bDate = b.createdAt ?? DateTime.fromMillisecondsSinceEpoch(0);
+      return bDate.compareTo(aDate);
+    });
+    if (limit != null && items.length > limit) {
+      return items.sublist(0, limit);
+    }
+    return items;
+  }
+
+  /// Inclusive calendar-day filter. Docs with no [createdAt] are kept so a
+  /// missing timestamp does not hide a real session.
+  static bool _createdAtInRange(
+    DateTime? createdAt, {
+    DateTime? start,
+    DateTime? end,
+  }) {
+    if (createdAt == null) return true;
+    final day = DateTime(createdAt.year, createdAt.month, createdAt.day);
+    if (start != null) {
+      final startDay = DateTime(start.year, start.month, start.day);
+      if (day.isBefore(startDay)) return false;
+    }
+    if (end != null) {
+      final endDay = DateTime(end.year, end.month, end.day);
+      if (day.isAfter(endDay)) return false;
+    }
+    return true;
   }
 
   static DateTime? _readTimestamp(dynamic value) {

@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:grinta/analytics/analytics_routes.dart';
 import 'package:grinta/analytics/analytics_screen_names.dart';
@@ -21,10 +22,12 @@ class AdminPlayerSessionsScreen extends StatefulWidget {
     super.key,
     required this.player,
     this.flags = AdminPlayerSensorFlags.none,
+    this.sessionsService,
   });
 
   final Player player;
   final AdminPlayerSensorFlags flags;
+  final AdminPlayerSessionsService? sessionsService;
 
   @override
   State<AdminPlayerSessionsScreen> createState() =>
@@ -32,7 +35,8 @@ class AdminPlayerSessionsScreen extends StatefulWidget {
 }
 
 class _AdminPlayerSessionsScreenState extends State<AdminPlayerSessionsScreen> {
-  final AdminPlayerSessionsService _service = AdminPlayerSessionsService();
+  late final AdminPlayerSessionsService _service =
+      widget.sessionsService ?? AdminPlayerSessionsService();
 
   DateTimeRange? _range;
   bool _loading = true;
@@ -80,7 +84,8 @@ class _AdminPlayerSessionsScreenState extends State<AdminPlayerSessionsScreen> {
         _items = items;
         _loading = false;
       });
-    } catch (_) {
+    } catch (e, st) {
+      debugPrint('AdminPlayerSessionsScreen load failed: $e\n$st');
       if (!mounted) return;
       setState(() {
         _loading = false;
