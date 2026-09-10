@@ -89,7 +89,9 @@ class _AdminUserPlayersScreenState extends State<AdminUserPlayersScreen> {
           backgroundColor: colors.background,
           appBar: AppBar(
             title: Text(
-              l10n.adminUsersPlayersTitle(user.displayName),
+              l10n.adminUsersPlayersTitle(
+                user.adminListLabel(noEmailLabel: l10n.adminNoEmail),
+              ),
               style: textTheme.titleLarge?.copyWith(
                 color: colors.textPrimary,
                 fontWeight: FontWeight.w700,
@@ -140,7 +142,9 @@ class _AdminUserPlayersScreenState extends State<AdminUserPlayersScreen> {
                               ),
                               const SizedBox(height: 2),
                               Text(
-                                user.displayName,
+                                user.adminListLabel(
+                                  noEmailLabel: l10n.adminNoEmail,
+                                ),
                                 maxLines: 1,
                                 overflow: TextOverflow.ellipsis,
                                 style: textTheme.titleMedium?.copyWith(
@@ -148,10 +152,10 @@ class _AdminUserPlayersScreenState extends State<AdminUserPlayersScreen> {
                                   fontWeight: FontWeight.w700,
                                 ),
                               ),
-                              if (user.email.trim().isNotEmpty) ...[
+                              if (user.adminEmailSubtitle != null) ...[
                                 const SizedBox(height: 4),
                                 Text(
-                                  user.email.trim(),
+                                  user.adminEmailSubtitle!,
                                   maxLines: 1,
                                   overflow: TextOverflow.ellipsis,
                                   style: textTheme.bodySmall?.copyWith(

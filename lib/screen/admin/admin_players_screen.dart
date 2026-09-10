@@ -355,13 +355,13 @@ class _AdminPlayerCard extends StatelessWidget {
     final l10n = context.l10n;
     final colors = context.appColors;
     final textTheme = Theme.of(context).textTheme;
-    final firstName = (player.firstName ?? '').trim();
-    final lastName = (player.lastName ?? '').trim();
-    final name = [
-      if (firstName.isNotEmpty) firstName,
-      if (lastName.isNotEmpty) lastName,
-    ].join(' ');
+    final title = adminPlayerListLabel(
+      player,
+      noEmailLabel: l10n.adminNoEmail,
+    );
     final email = (player.email ?? '').trim();
+    final showEmail =
+        email.isNotEmpty && email.toLowerCase() != title.toLowerCase();
 
     return Material(
       color: colors.card,
@@ -383,9 +383,7 @@ class _AdminPlayerCard extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      name.isEmpty
-                          ? playerDisplayName(player, unknownLabel: '—')
-                          : name,
+                      title,
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                       style: textTheme.titleMedium?.copyWith(
@@ -393,7 +391,7 @@ class _AdminPlayerCard extends StatelessWidget {
                         fontWeight: FontWeight.w700,
                       ),
                     ),
-                    if (email.isNotEmpty) ...[
+                    if (showEmail) ...[
                       const SizedBox(height: 4),
                       Text(
                         email,

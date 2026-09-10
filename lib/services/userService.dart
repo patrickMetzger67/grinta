@@ -65,26 +65,57 @@ class UserProfile {
     this.isRoot = false,
   });
 
-  String get displayFirstName {
-    if (firstName.trim().isNotEmpty) return firstName.trim();
-    if (lastName.trim().isNotEmpty) return lastName.trim();
-    if (email.trim().isNotEmpty) return email.trim();
-    return uid;
-  }
-
-  String get displayName {
-    final first = firstName.trim();
-    final last = lastName.trim();
+  /// First/last name with uid-shaped placeholders stripped.
+  String get personName {
+    final first = _usableGivenName(firstName);
+    final last = _usableGivenName(lastName);
     if (first.isNotEmpty && last.isNotEmpty) return '$first $last';
     if (first.isNotEmpty) return first;
     if (last.isNotEmpty) return last;
-    if (email.trim().isNotEmpty) return email.trim();
-    return uid;
+    return '';
+  }
+
+  /// Email suitable for display (never the raw uid).
+  String get usableEmail {
+    final mail = email.trim();
+    if (mail.isEmpty || mail == uid) return '';
+    if (!mail.contains('@')) return '';
+    return mail;
+  }
+
+  String get displayFirstName {
+    if (personName.isNotEmpty) {
+      final first = _usableGivenName(firstName);
+      return first.isNotEmpty ? first : personName;
+    }
+    return usableEmail;
+  }
+
+  /// Person name, else email. Empty when neither is available (never the uid).
+  String get displayName {
+    if (personName.isNotEmpty) return personName;
+    return usableEmail;
+  }
+
+  /// Admin list/detail title: name, else email, else [noEmailLabel]. Never uid.
+  String adminListLabel({required String noEmailLabel}) {
+    final label = displayName;
+    if (label.isNotEmpty) return label;
+    return noEmailLabel;
+  }
+
+  /// Email under the title, omitted when it would duplicate [adminListLabel].
+  String? get adminEmailSubtitle {
+    final mail = usableEmail;
+    if (mail.isEmpty) return null;
+    if (personName.isEmpty) return null;
+    if (personName.toLowerCase() == mail.toLowerCase()) return null;
+    return mail;
   }
 
   String get initials {
-    final first = firstName.trim();
-    final last = lastName.trim();
+    final first = _usableGivenName(firstName);
+    final last = _usableGivenName(lastName);
     if (first.isNotEmpty && last.isNotEmpty) {
       return '${first[0]}${last[0]}'.toUpperCase();
     }
@@ -103,15 +134,23 @@ class UserProfile {
     if (tokens.isEmpty) return true;
 
     final haystacks = <String>[
+      usableEmail.toLowerCase(),
       email.trim().toLowerCase(),
       firstName.trim().toLowerCase(),
       lastName.trim().toLowerCase(),
       displayName.toLowerCase(),
+      uid.toLowerCase(),
     ].where((value) => value.isNotEmpty);
 
     return tokens.every(
       (token) => haystacks.any((value) => value.contains(token)),
     );
+  }
+
+  String _usableGivenName(String value) {
+    final trimmed = value.trim();
+    if (trimmed.isEmpty || trimmed == uid) return '';
+    return trimmed;
   }
 }
 
@@ -184,10 +223,26 @@ class UserService {
       uid: doc.id,
       firstName: _readNameField(data, 'firstName', 'firstname'),
       lastName: _readNameField(data, 'lastName', 'lastname'),
-      email: data[UserDocumentFields.email]?.toString() ?? '',
+      email: _readEmail(data),
       photoURL: _readPhotoUrl(data),
       isRoot: data[UserDocumentFields.isRoot] == true,
     );
+  }
+
+  String _readEmail(Map<String, dynamic> data) {
+    for (final key in [
+      UserDocumentFields.email,
+      'Email',
+      'mail',
+      'userEmail',
+    ]) {
+      final raw = data[key];
+      if (raw == null) continue;
+      final value = raw.toString().trim();
+      if (value.isEmpty) continue;
+      if (value.contains('@')) return value;
+    }
+    return '';
   }
 
   String _readPhotoUrl(Map<String, dynamic> data) {

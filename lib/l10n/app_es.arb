@@ -2692,6 +2692,7 @@
   "adminUsersSectionDesc": "Listar cuentas, ver y asociar jugadores.",
   "adminUsersTitle": "Usuarios",
   "adminUsersSearchHint": "Buscar (email, nombre, apellido)",
+  "adminNoEmail": "Sin correo",
   "adminUsersLoadError": "No se pudieron cargar los usuarios.",
   "adminUsersEmpty": "Aún no hay usuarios.",
   "adminUsersSearchEmpty": "Ningún usuario coincide con la búsqueda.",

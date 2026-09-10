@@ -187,7 +187,9 @@ class _AdminUserSearchSheetState extends State<AdminUserSearchSheet> {
                                   crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
                                     Text(
-                                      user.displayName,
+                                      user.adminListLabel(
+                                        noEmailLabel: l10n.adminNoEmail,
+                                      ),
                                       maxLines: 1,
                                       overflow: TextOverflow.ellipsis,
                                       style: textTheme.titleSmall?.copyWith(
@@ -195,10 +197,10 @@ class _AdminUserSearchSheetState extends State<AdminUserSearchSheet> {
                                         fontWeight: FontWeight.w700,
                                       ),
                                     ),
-                                    if (user.email.trim().isNotEmpty) ...[
+                                    if (user.adminEmailSubtitle != null) ...[
                                       const SizedBox(height: 2),
                                       Text(
-                                        user.email.trim(),
+                                        user.adminEmailSubtitle!,
                                         maxLines: 1,
                                         overflow: TextOverflow.ellipsis,
                                         style: textTheme.bodySmall?.copyWith(

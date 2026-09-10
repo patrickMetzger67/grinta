@@ -291,7 +291,7 @@ class _AdminUserCard extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      user.displayName,
+                      user.adminListLabel(noEmailLabel: l10n.adminNoEmail),
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                       style: textTheme.titleMedium?.copyWith(
@@ -299,10 +299,10 @@ class _AdminUserCard extends StatelessWidget {
                         fontWeight: FontWeight.w700,
                       ),
                     ),
-                    if (user.email.trim().isNotEmpty) ...[
+                    if (user.adminEmailSubtitle != null) ...[
                       const SizedBox(height: 4),
                       Text(
-                        user.email.trim(),
+                        user.adminEmailSubtitle!,
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                         style: textTheme.bodySmall?.copyWith(

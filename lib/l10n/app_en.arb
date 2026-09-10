@@ -2970,6 +2970,7 @@
   "adminUsersSectionDesc": "List accounts, view and associate players.",
   "adminUsersTitle": "Users",
   "adminUsersSearchHint": "Search (email, first name, last name)",
+  "adminNoEmail": "No email",
   "adminUsersLoadError": "Unable to load users.",
   "adminUsersEmpty": "No users yet.",
   "adminUsersSearchEmpty": "No users match this search.",
