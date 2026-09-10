@@ -30,13 +30,15 @@ class AdminUsersScreen extends StatefulWidget {
 
   /// Overrides [PlayerService.streamAllMembers] for list counts (widget tests).
   ///
-  /// Counts come from this single snapshot — never per-row player queries.
+  /// Counts come from this single in-memory snapshot — never per-row queries.
+  /// The users list and search never wait on this stream.
   final Stream<List<Player>>? membersStream;
 
   final AdminPlayerSensorService? sensorService;
   final Widget Function(Player player, double radius)? playerPhotoBuilder;
 
   static const searchFieldKey = ValueKey<String>('admin-users-search');
+  static const searchDebounce = Duration(milliseconds: 180);
 
   static Key googleSignInKeyFor(String uid) =>
       ValueKey<String>('admin-user-signin-google-$uid');
@@ -59,28 +61,42 @@ class _AdminUsersScreenState extends State<AdminUsersScreen> {
   final ValueNotifier<String> _query = ValueNotifier<String>('');
   String? _resettingUid;
 
+  StreamSubscription<List<UserProfile>>? _usersSub;
+  StreamSubscription<List<Player>>? _membersSub;
+  bool _membersListenScheduled = false;
+
+  bool _usersReady = false;
+  Object? _usersError;
+  List<UserProfile> _listedUsers = const <UserProfile>[];
+  List<Player> _members = const <Player>[];
+  Map<String, int>? _playerCounts;
+
   @override
   void initState() {
     super.initState();
     _searchController.addListener(_onSearchChanged);
+    _usersSub = _usersStream.listen(
+      _onUsers,
+      onError: (Object error) {
+        if (!mounted) return;
+        setState(() {
+          _usersError = error;
+          _usersReady = true;
+        });
+      },
+    );
   }
 
   @override
   void dispose() {
     _debounce?.cancel();
+    _usersSub?.cancel();
+    _membersSub?.cancel();
     _searchController.removeListener(_onSearchChanged);
     _searchController.dispose();
     _searchFocusNode.dispose();
     _query.dispose();
     super.dispose();
-  }
-
-  void _onSearchChanged() {
-    _debounce?.cancel();
-    _debounce = Timer(const Duration(milliseconds: 250), () {
-      if (!mounted) return;
-      _query.value = _searchController.text;
-    });
   }
 
   Stream<List<UserProfile>> get _usersStream =>
@@ -90,16 +106,62 @@ class _AdminUsersScreenState extends State<AdminUsersScreen> {
       widget.membersStream ??
       (_playerService ??= PlayerService()).streamAllMembers();
 
-  Future<void> _openUserPlayers(
-    UserProfile user, {
-    List<Player>? initialPlayers,
-  }) {
+  void _onSearchChanged() {
+    _debounce?.cancel();
+    _debounce = Timer(AdminUsersScreen.searchDebounce, () {
+      if (!mounted) return;
+      _query.value = _searchController.text;
+    });
+  }
+
+  void _onUsers(List<UserProfile> users) {
+    if (!mounted) return;
+    setState(() {
+      _listedUsers = users
+          .where((user) => user.isListedInAdminUsers)
+          .toList(growable: false);
+      _usersError = null;
+      _usersReady = true;
+    });
+    _scheduleMembersListen();
+  }
+
+  /// Join members only after the users list has painted so search is usable
+  /// while association counts catch up.
+  void _scheduleMembersListen() {
+    if (_membersListenScheduled) return;
+    _membersListenScheduled = true;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted || _membersSub != null) return;
+      _membersSub = _membersStream.listen(
+        (members) {
+          if (!mounted) return;
+          setState(() {
+            _members = members;
+            _playerCounts = adminPlayerCountsByUserId(members);
+          });
+        },
+        onError: (_) {
+          if (!mounted) return;
+          setState(() {
+            _members = const <Player>[];
+            _playerCounts = const <String, int>{};
+          });
+        },
+      );
+    });
+  }
+
+  Future<void> _openUserPlayers(UserProfile user) {
+    final membersReady = _playerCounts != null;
     return Navigator.of(context).push(
       analyticsMaterialRoute<void>(
         screenName: AnalyticsScreenNames.adminUserPlayers,
         builder: (_) => AdminUserPlayersScreen(
           user: user,
-          initialPlayers: initialPlayers,
+          initialPlayers: membersReady
+              ? adminPlayersLinkedToUser(_members, user.uid)
+              : null,
           sensorService: widget.sensorService,
           playerPhotoBuilder: widget.playerPhotoBuilder,
         ),
@@ -200,11 +262,8 @@ class _AdminUsersScreenState extends State<AdminUsersScreen> {
             ),
           ),
           Expanded(
-            child: StreamBuilder<List<UserProfile>>(
-              stream: _usersStream,
-              builder: (context, usersSnapshot) {
-                if (usersSnapshot.hasError) {
-                  return Center(
+            child: _usersError != null
+                ? Center(
                     child: Padding(
                       padding: const EdgeInsets.all(24),
                       child: Text(
@@ -215,74 +274,54 @@ class _AdminUsersScreenState extends State<AdminUsersScreen> {
                         ),
                       ),
                     ),
-                  );
-                }
+                  )
+                : !_usersReady
+                    ? const Center(child: CircularProgressIndicator())
+                    : ValueListenableBuilder<String>(
+                        valueListenable: _query,
+                        builder: (context, query, _) {
+                          final users = _listedUsers
+                              .where((user) => user.matchesSearch(query))
+                              .toList(growable: false);
+                          final counts = _playerCounts;
 
-                if (usersSnapshot.connectionState == ConnectionState.waiting &&
-                    !usersSnapshot.hasData) {
-                  return const Center(child: CircularProgressIndicator());
-                }
-
-                return StreamBuilder<List<Player>>(
-                  stream: _membersStream,
-                  builder: (context, membersSnapshot) {
-                    final members = membersSnapshot.data ?? const <Player>[];
-                    final counts = adminPlayerCountsByUserId(members);
-
-                    return ValueListenableBuilder<String>(
-                      valueListenable: _query,
-                      builder: (context, query, _) {
-                        final users =
-                            (usersSnapshot.data ?? const <UserProfile>[])
-                                .where((user) => user.isListedInAdminUsers)
-                                .where((user) => user.matchesSearch(query))
-                                .toList(growable: false);
-
-                        if (users.isEmpty) {
-                          return Center(
-                            child: Padding(
-                              padding: const EdgeInsets.all(24),
-                              child: Text(
-                                query.trim().isEmpty
-                                    ? l10n.adminUsersEmpty
-                                    : l10n.adminUsersSearchEmpty,
-                                textAlign: TextAlign.center,
-                                style: textTheme.bodyLarge?.copyWith(
-                                  color: colors.textSecondary,
+                          if (users.isEmpty) {
+                            return Center(
+                              child: Padding(
+                                padding: const EdgeInsets.all(24),
+                                child: Text(
+                                  query.trim().isEmpty
+                                      ? l10n.adminUsersEmpty
+                                      : l10n.adminUsersSearchEmpty,
+                                  textAlign: TextAlign.center,
+                                  style: textTheme.bodyLarge?.copyWith(
+                                    color: colors.textSecondary,
+                                  ),
                                 ),
                               ),
-                            ),
-                          );
-                        }
-
-                        return ListView.separated(
-                          padding: const EdgeInsets.fromLTRB(16, 0, 16, 24),
-                          itemCount: users.length,
-                          separatorBuilder: (_, __) =>
-                              const SizedBox(height: 10),
-                          itemBuilder: (context, index) {
-                            final user = users[index];
-                            return _AdminUserCard(
-                              user: user,
-                              playerCount: counts[user.uid] ?? 0,
-                              isResetting: _resettingUid == user.uid,
-                              onTap: () => _openUserPlayers(
-                                user,
-                                initialPlayers: adminPlayersLinkedToUser(
-                                  members,
-                                  user.uid,
-                                ),
-                              ),
-                              onRenewPassword: () => _renewPassword(user),
                             );
-                          },
-                        );
-                      },
-                    );
-                  },
-                );
-              },
-            ),
+                          }
+
+                          return ListView.separated(
+                            padding: const EdgeInsets.fromLTRB(16, 0, 16, 24),
+                            itemCount: users.length,
+                            separatorBuilder: (_, __) =>
+                                const SizedBox(height: 10),
+                            itemBuilder: (context, index) {
+                              final user = users[index];
+                              return _AdminUserCard(
+                                user: user,
+                                playerCount: counts == null
+                                    ? null
+                                    : (counts[user.uid] ?? 0),
+                                isResetting: _resettingUid == user.uid,
+                                onTap: () => _openUserPlayers(user),
+                                onRenewPassword: () => _renewPassword(user),
+                              );
+                            },
+                          );
+                        },
+                      ),
           ),
         ],
       ),
@@ -368,7 +407,7 @@ class _AdminUserCard extends StatelessWidget {
   });
 
   final UserProfile user;
-  final int playerCount;
+  final int? playerCount;
   final bool isResetting;
   final VoidCallback onTap;
   final VoidCallback onRenewPassword;
@@ -431,14 +470,16 @@ class _AdminUserCard extends StatelessWidget {
                         ),
                       ),
                     ],
-                    const SizedBox(height: 6),
-                    Text(
-                      l10n.adminUsersPlayerCount(playerCount),
-                      style: textTheme.labelMedium?.copyWith(
-                        color: colors.primary,
-                        fontWeight: FontWeight.w600,
+                    if (playerCount != null) ...[
+                      const SizedBox(height: 6),
+                      Text(
+                        l10n.adminUsersPlayerCount(playerCount!),
+                        style: textTheme.labelMedium?.copyWith(
+                          color: colors.primary,
+                          fontWeight: FontWeight.w600,
+                        ),
                       ),
-                    ),
+                    ],
                   ],
                 ),
               ),

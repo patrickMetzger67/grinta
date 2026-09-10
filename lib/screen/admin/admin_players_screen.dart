@@ -9,7 +9,6 @@ import 'package:grinta/services/playerService.dart';
 import 'package:grinta/util/app_theme.dart';
 import 'package:grinta/util/playerDisplayName.dart';
 import 'package:grinta/util/player_photo_resolver.dart';
-import 'package:grinta/widget/playerPhoto.dart';
 
 class AdminPlayersScreen extends StatefulWidget {
   const AdminPlayersScreen({
@@ -25,14 +24,25 @@ class AdminPlayersScreen extends StatefulWidget {
   /// Passed to the hub after tap. Never queried from the list/search path.
   final AdminPlayerSensorService? sensorService;
 
-  /// Replaces [PlayerPhoto] so widget tests can avoid Firebase.
+  /// Replaces the list avatar so widget tests can avoid Firebase.
   @visibleForTesting
   final Widget Function(Player player, double radius)? playerPhotoBuilder;
 
   static const searchFieldKey = ValueKey<String>('admin-players-search');
+  static const searchDebounce = Duration(milliseconds: 180);
 
   @override
   State<AdminPlayersScreen> createState() => _AdminPlayersScreenState();
+}
+
+class _IndexedAdminPlayer {
+  const _IndexedAdminPlayer({
+    required this.player,
+    required this.userCount,
+  });
+
+  final Player player;
+  final int userCount;
 }
 
 class _AdminPlayersScreenState extends State<AdminPlayersScreen> {
@@ -43,23 +53,38 @@ class _AdminPlayersScreenState extends State<AdminPlayersScreen> {
   Timer? _debounce;
   final ValueNotifier<String> _query = ValueNotifier<String>('');
 
+  StreamSubscription<List<Player>>? _membersSub;
+  bool _membersReady = false;
+  Object? _membersError;
+  List<_IndexedAdminPlayer> _indexedPlayers = const <_IndexedAdminPlayer>[];
+
   Stream<List<Player>> get _membersStream =>
       widget.membersStream ??
       (_playerService ??= PlayerService()).streamAllMembers();
 
   AdminPlayerSensorService _sensorForHub() =>
-      widget.sensorService ??
-      (_sensorService ??= AdminPlayerSensorService());
+      widget.sensorService ?? (_sensorService ??= AdminPlayerSensorService());
 
   @override
   void initState() {
     super.initState();
     _searchController.addListener(_onSearchChanged);
+    _membersSub = _membersStream.listen(
+      _onMembers,
+      onError: (Object error) {
+        if (!mounted) return;
+        setState(() {
+          _membersError = error;
+          _membersReady = true;
+        });
+      },
+    );
   }
 
   @override
   void dispose() {
     _debounce?.cancel();
+    _membersSub?.cancel();
     _searchController.removeListener(_onSearchChanged);
     _searchController.dispose();
     _searchFocusNode.dispose();
@@ -69,9 +94,31 @@ class _AdminPlayersScreenState extends State<AdminPlayersScreen> {
 
   void _onSearchChanged() {
     _debounce?.cancel();
-    _debounce = Timer(const Duration(milliseconds: 250), () {
+    _debounce = Timer(AdminPlayersScreen.searchDebounce, () {
       if (!mounted) return;
       _query.value = _searchController.text;
+    });
+  }
+
+  void _onMembers(List<Player> members) {
+    if (!mounted) return;
+    final indexed = members
+        .map(
+          (player) => _IndexedAdminPlayer(
+            player: player,
+            userCount: collectMemberLinkedUserIds(player).length,
+          ),
+        )
+        .toList(growable: true)
+      ..sort(
+        (a, b) => playerDisplayName(a.player).toLowerCase().compareTo(
+              playerDisplayName(b.player).toLowerCase(),
+            ),
+      );
+    setState(() {
+      _indexedPlayers = List<_IndexedAdminPlayer>.unmodifiable(indexed);
+      _membersError = null;
+      _membersReady = true;
     });
   }
 
@@ -126,11 +173,8 @@ class _AdminPlayersScreenState extends State<AdminPlayersScreen> {
             ),
           ),
           Expanded(
-            child: StreamBuilder<List<Player>>(
-              stream: _membersStream,
-              builder: (context, snapshot) {
-                if (snapshot.hasError) {
-                  return Center(
+            child: _membersError != null
+                ? Center(
                     child: Padding(
                       padding: const EdgeInsets.all(24),
                       child: Text(
@@ -141,69 +185,62 @@ class _AdminPlayersScreenState extends State<AdminPlayersScreen> {
                         ),
                       ),
                     ),
-                  );
-                }
+                  )
+                : !_membersReady
+                    ? const Center(child: CircularProgressIndicator())
+                    : ValueListenableBuilder<String>(
+                        valueListenable: _query,
+                        builder: (context, query, _) {
+                          final tokens = _queryTokens(query);
+                          final players = _indexedPlayers
+                              .where(
+                                (row) => _matchesPlayer(row.player, tokens),
+                              )
+                              .toList(growable: false);
 
-                if (snapshot.connectionState == ConnectionState.waiting &&
-                    !snapshot.hasData) {
-                  return const Center(child: CircularProgressIndicator());
-                }
+                          if (players.isEmpty) {
+                            return Center(
+                              child: Padding(
+                                padding: const EdgeInsets.all(24),
+                                child: Text(
+                                  tokens.isEmpty
+                                      ? l10n.adminPlayersEmpty
+                                      : l10n.adminPlayersSearchEmpty,
+                                  textAlign: TextAlign.center,
+                                  style: textTheme.bodyLarge?.copyWith(
+                                    color: colors.textSecondary,
+                                  ),
+                                ),
+                              ),
+                            );
+                          }
 
-                return ValueListenableBuilder<String>(
-                  valueListenable: _query,
-                  builder: (context, query, _) {
-                    final tokens = _queryTokens(query);
-                    final players = (snapshot.data ?? const <Player>[])
-                        .where((player) => _matchesPlayer(player, tokens))
-                        .toList(growable: false)
-                      ..sort(
-                        (a, b) => playerDisplayName(a).toLowerCase().compareTo(
-                              playerDisplayName(b).toLowerCase(),
-                            ),
-                      );
-
-                    if (players.isEmpty) {
-                      return Center(
-                        child: Padding(
-                          padding: const EdgeInsets.all(24),
-                          child: Text(
-                            tokens.isEmpty
-                                ? l10n.adminPlayersEmpty
-                                : l10n.adminPlayersSearchEmpty,
-                            textAlign: TextAlign.center,
-                            style: textTheme.bodyLarge?.copyWith(
-                              color: colors.textSecondary,
-                            ),
-                          ),
-                        ),
-                      );
-                    }
-
-                    return ListView.separated(
-                      padding: const EdgeInsets.fromLTRB(16, 0, 16, 24),
-                      itemCount: players.length,
-                      separatorBuilder: (_, __) => const SizedBox(height: 10),
-                      itemBuilder: (context, index) {
-                        final player = players[index];
-                        final userCount =
-                            collectMemberLinkedUserIds(player).length;
-                        final key = effectiveMemberId(player)?.trim();
-                        return _AdminPlayerCard(
-                          key: ValueKey<String>(
-                            'admin-player-card-${key ?? index}',
-                          ),
-                          player: player,
-                          userCount: userCount,
-                          photo: widget.playerPhotoBuilder?.call(player, 24) ??
-                              PlayerPhoto(player: player, radius: 24),
-                          onTap: () => _openPlayer(player),
-                        );
-                      },
-                    );
-                  },
-                );
-              },
-            ),
+                          return ListView.separated(
+                            padding: const EdgeInsets.fromLTRB(16, 0, 16, 24),
+                            itemCount: players.length,
+                            separatorBuilder: (_, __) =>
+                                const SizedBox(height: 10),
+                            itemBuilder: (context, index) {
+                              final row = players[index];
+                              final key = effectiveMemberId(row.player)?.trim();
+                              return _AdminPlayerCard(
+                                key: ValueKey<String>(
+                                  'admin-player-card-${key ?? index}',
+                                ),
+                                player: row.player,
+                                userCount: row.userCount,
+                                photo: widget.playerPhotoBuilder
+                                        ?.call(row.player, 24) ??
+                                    _AdminPlayerListPhoto(
+                                      player: row.player,
+                                      radius: 24,
+                                    ),
+                                onTap: () => _openPlayer(row.player),
+                              );
+                            },
+                          );
+                        },
+                      ),
           ),
         ],
       ),
@@ -291,6 +328,61 @@ class _AdminPlayersSearchFieldState extends State<_AdminPlayersSearchField> {
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(14),
           borderSide: BorderSide(color: colors.primary, width: 1.5),
+        ),
+      ),
+    );
+  }
+}
+
+/// Initials / already-http photo only. No Storage, Auth, or session work.
+class _AdminPlayerListPhoto extends StatelessWidget {
+  const _AdminPlayerListPhoto({
+    required this.player,
+    required this.radius,
+  });
+
+  final Player player;
+  final double radius;
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = context.appColors;
+    final photo = (player.photo ?? '').trim();
+    final isNetwork =
+        photo.startsWith('http://') || photo.startsWith('https://');
+    final size = radius * 2;
+
+    if (isNetwork) {
+      return ClipOval(
+        child: Image.network(
+          photo,
+          width: size,
+          height: size,
+          fit: BoxFit.cover,
+          errorBuilder: (_, __, ___) => _initials(colors),
+        ),
+      );
+    }
+
+    return _initials(colors);
+  }
+
+  Widget _initials(AppColors colors) {
+    final first = (player.firstName ?? '').trim();
+    final last = (player.lastName ?? '').trim();
+    final f = first.isNotEmpty ? first[0].toUpperCase() : '';
+    final l = last.isNotEmpty ? last[0].toUpperCase() : '';
+    final initials = '$f$l'.isNotEmpty ? '$f$l' : '?';
+
+    return CircleAvatar(
+      radius: radius,
+      backgroundColor: colors.primary.withValues(alpha: 0.14),
+      child: Text(
+        initials,
+        style: TextStyle(
+          color: colors.primary,
+          fontWeight: FontWeight.w700,
+          fontSize: radius * 0.75,
         ),
       ),
     );

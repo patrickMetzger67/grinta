@@ -171,61 +171,70 @@ void main() {
       },
     );
 
-    testWidgets('search abdess / Mohamed finds the named user immediately',
-        (tester) async {
-      final l10n = await AppLocalizations.delegate.load(const Locale('fr'));
-      const mohamed = UserProfile(
-        uid: 'mohamed-uid',
-        firstName: 'Mohamed-Amine',
-        lastName: 'ABDESSAMAD',
-        email: 'mohamed@example.com',
-      );
-      const other = UserProfile(
-        uid: 'other-uid',
-        firstName: 'Hugo',
-        lastName: 'Danguel',
-        email: 'hugo@example.com',
-      );
-      final calls = <int>[0];
-      final hanging = _CountingHangingSensorService(calls);
+    testWidgets(
+      'search filters in memory before members arrive and never calls loadFlags',
+      (tester) async {
+        final l10n = await AppLocalizations.delegate.load(const Locale('fr'));
+        const mohamed = UserProfile(
+          uid: 'mohamed-uid',
+          firstName: 'Mohamed-Amine',
+          lastName: 'ABDESSAMAD',
+          email: 'mohamed@example.com',
+        );
+        const other = UserProfile(
+          uid: 'other-uid',
+          firstName: 'Hugo',
+          lastName: 'Danguel',
+          email: 'hugo@example.com',
+        );
+        final calls = <int>[0];
+        final hanging = _CountingHangingSensorService(calls);
+        final pendingMembers = StreamController<List<Player>>();
+        addTearDown(pendingMembers.close);
 
-      await tester.pumpWidget(
-        MaterialApp(
-          theme: AppTheme.darkTheme,
-          locale: const Locale('fr'),
-          localizationsDelegates: AppLocalizations.localizationsDelegates,
-          supportedLocales: AppLocalizations.supportedLocales,
-          home: AdminUsersScreen(
-            usersStream: Stream<List<UserProfile>>.value([mohamed, other]),
-            membersStream: Stream<List<Player>>.value(const []),
-            sensorService: hanging,
+        await tester.pumpWidget(
+          MaterialApp(
+            theme: AppTheme.darkTheme,
+            locale: const Locale('fr'),
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
+            home: AdminUsersScreen(
+              usersStream: Stream<List<UserProfile>>.value([mohamed, other]),
+              membersStream: pendingMembers.stream,
+              sensorService: hanging,
+            ),
           ),
-        ),
-      );
-      await tester.pump();
-      await tester.pump();
+        );
+        await tester.pump();
+        await tester.pump();
 
-      await tester.enterText(
-        find.byKey(AdminUsersScreen.searchFieldKey),
-        'abdess',
-      );
-      await tester.pump(const Duration(milliseconds: 300));
+        expect(find.text('Mohamed-Amine ABDESSAMAD'), findsOneWidget);
+        expect(find.text('Hugo Danguel'), findsOneWidget);
+        expect(find.text(l10n.adminUsersPlayerCount(1)), findsNothing);
+        expect(calls[0], 0);
 
-      expect(find.text('Mohamed-Amine ABDESSAMAD'), findsOneWidget);
-      expect(find.text('Hugo Danguel'), findsNothing);
-      expect(find.text(l10n.adminUsersSearchEmpty), findsNothing);
-      expect(calls[0], 0);
+        await tester.enterText(
+          find.byKey(AdminUsersScreen.searchFieldKey),
+          'abdess',
+        );
+        await tester.pump(AdminUsersScreen.searchDebounce);
 
-      await tester.enterText(
-        find.byKey(AdminUsersScreen.searchFieldKey),
-        'Mohamed',
-      );
-      await tester.pump(const Duration(milliseconds: 300));
+        expect(find.text('Mohamed-Amine ABDESSAMAD'), findsOneWidget);
+        expect(find.text('Hugo Danguel'), findsNothing);
+        expect(find.text(l10n.adminUsersSearchEmpty), findsNothing);
+        expect(calls[0], 0);
 
-      expect(find.text('Mohamed-Amine ABDESSAMAD'), findsOneWidget);
-      expect(find.text('Hugo Danguel'), findsNothing);
-      expect(calls[0], 0);
-    });
+        await tester.enterText(
+          find.byKey(AdminUsersScreen.searchFieldKey),
+          'Mohamed',
+        );
+        await tester.pump(AdminUsersScreen.searchDebounce);
+
+        expect(find.text('Mohamed-Amine ABDESSAMAD'), findsOneWidget);
+        expect(find.text('Hugo Danguel'), findsNothing);
+        expect(calls[0], 0);
+      },
+    );
 
     testWidgets('hides anonymous-with-provider, keeps named users',
         (tester) async {

@@ -8,6 +8,7 @@ import 'package:grinta/model/player.dart';
 import 'package:grinta/screen/admin/admin_players_screen.dart';
 import 'package:grinta/services/admin_player_sensor_service.dart';
 import 'package:grinta/util/app_theme.dart';
+import 'package:grinta/widget/playerPhoto.dart';
 
 class _CountingHangingSensorService extends AdminPlayerSensorService {
   int calls = 0;
@@ -104,7 +105,7 @@ void main() {
       find.byKey(AdminPlayersScreen.searchFieldKey),
       'zzz-no-match',
     );
-    await tester.pump(const Duration(milliseconds: 300));
+    await tester.pump(AdminPlayersScreen.searchDebounce);
 
     members.add([
       Player(
@@ -153,26 +154,30 @@ void main() {
     expect(find.text('Mohamed-Amine ABDESSAMAD'), findsOneWidget);
     expect(sensor.calls, 0);
 
+    expect(find.byType(PlayerPhoto), findsNothing);
+
     await tester.enterText(
       find.byKey(AdminPlayersScreen.searchFieldKey),
       'abdess',
     );
-    await tester.pump(const Duration(milliseconds: 300));
+    await tester.pump(AdminPlayersScreen.searchDebounce);
 
     expect(find.text('Mohamed-Amine ABDESSAMAD'), findsOneWidget);
     expect(find.text('Hugo Danguel'), findsNothing);
     expect(find.text(l10n.adminPlayersSearchEmpty), findsNothing);
     expect(sensor.calls, 0);
+    expect(find.byType(PlayerPhoto), findsNothing);
 
     await tester.enterText(
       find.byKey(AdminPlayersScreen.searchFieldKey),
       'Mohamed',
     );
-    await tester.pump(const Duration(milliseconds: 300));
+    await tester.pump(AdminPlayersScreen.searchDebounce);
 
     expect(find.text('Mohamed-Amine ABDESSAMAD'), findsOneWidget);
     expect(find.text('Hugo Danguel'), findsNothing);
     expect(sensor.calls, 0);
+    expect(find.byType(PlayerPhoto), findsNothing);
   });
 
   testWidgets('keeps typed search text when the member stream rebuilds',
