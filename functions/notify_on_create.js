@@ -250,6 +250,8 @@ async function dispatchNotificationPush({
       clubId,
       icon: assets.icon,
       image: assets.image,
+      db,
+      recipientUserIds: filtered.allowedUserIds ?? recipientUserIds,
     });
 
     await markDispatch(snap, {
@@ -421,6 +423,8 @@ async function processDeferredNotificationDoc(db, snap, now = new Date()) {
       clubId,
       icon: assets.icon,
       image: assets.image,
+      db,
+      recipientUserIds: filtered.allowedUserIds ?? recipientUserIds,
     });
 
     await markDispatch(snap, {

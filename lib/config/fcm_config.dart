@@ -14,16 +14,13 @@
 ///
 /// ## Dual branding (Grinta + Aserstein, shared `aserstein-2453e` project)
 ///
-/// Grinta and Aserstein share the same Firebase project and `users/{uid}/fcmTokens`
-/// collection. Each token document must include `app: "grinta"` or `app: "aserstein"`
-/// (and ideally `packageName`) so sends only target the correct app
-/// (see [NotificationFCMService.saveTokenToFirestore]).
-/// Grinta collects `app == grinta` tokens and Grinta `packageName` docs.
-/// Unbranded iOS/web tokens stay collectable only on Grinta-only accounts.
-/// If the same uid also has an Aserstein-tagged token, unbranded leftovers
-/// are skipped (they would show as AS Erstein). Naked unbranded Android
-/// tokens are always skipped. `app: aserstein` and Aserstein packages are
-/// always excluded.
+/// Grinta and Aserstein share the same Firebase project.
+/// Grinta FCM tokens live on `users/{uid}.grintaTokens` (source of truth).
+/// The client also writes `users/{uid}/fcmTokens` with `app: "grinta"` and
+/// `packageName` (see [NotificationFCMService.saveTokenToFirestore]).
+/// Sends prefer `grintaTokens`, then explicit Grinta subcollection docs.
+/// Untagged leftovers are never targeted: FCM would deliver them to AS Erstein
+/// and the OS would show that app's name and launcher icon.
 ///
 /// Push icons must be chosen per app. The Cloud Function `sendPushFCMNotification`
 /// (region `europe-west1`, not in this repo) should accept a `brand` field:

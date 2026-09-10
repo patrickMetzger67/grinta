@@ -1,10 +1,14 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:grinta/model/user.dart' show keyUserGrintaTokens;
+import 'package:grinta/util/fcm_token.dart';
 
 /// Firestore field names on `users/{uid}`.
 abstract final class UserDocumentFields {
   static const email = 'email';
   static const firstName = 'firstName';
   static const lastName = 'lastName';
+  /// Grinta FCM registration tokens. Source of truth for Grinta FCM sends.
+  static const grintaTokens = keyUserGrintaTokens;
   static const createdAt = 'createdAt';
   static const trialEndsAt = 'trialEndsAt';
   static const isRoot = 'isRoot';
@@ -406,5 +410,28 @@ class UserService {
     }
 
     await _collection.doc(uid).set(updates, SetOptions(merge: true));
+  }
+
+  /// Upserts a sendable Grinta FCM token onto `users/{uid}.grintaTokens`.
+  ///
+  /// Uses [FieldValue.arrayUnion] so other user fields are not overwritten.
+  /// Merge-set so a missing user document still receives the field.
+  Future<void> addGrintaFcmToken({
+    required String uid,
+    required String token,
+  }) async {
+    final trimmedUid = uid.trim();
+    final trimmedToken = token.trim();
+    if (trimmedUid.isEmpty) return;
+    if (!isSendableFcmRegistrationToken(trimmedToken)) return;
+
+    await _collection.doc(trimmedUid).set(
+      <String, dynamic>{
+        UserDocumentFields.grintaTokens: FieldValue.arrayUnion(
+          <String>[trimmedToken],
+        ),
+      },
+      SetOptions(merge: true),
+    );
   }
 }

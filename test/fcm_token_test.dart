@@ -1,4 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
+import 'package:grinta/model/user.dart';
 import 'package:grinta/util/fcm_token.dart';
 
 void main() {
@@ -67,14 +68,13 @@ void main() {
       expect(tokens, ['android-tok']);
     });
 
-    test('keeps unbranded iOS on Grinta-only accounts', () {
+    test('drops unbranded iOS even on Grinta-only accounts', () {
       final tokens = collectGrintaFcmTokens([
         (id: 'android-tok', data: {'app': 'grinta', 'platform': 'android'}),
         (id: 'ios-legacy-tok', data: {'platform': 'ios'}),
         (id: 'a' * 64, data: {'app': 'grinta', 'platform': 'ios'}),
       ]);
-      expect(tokens, containsAll(['android-tok', 'ios-legacy-tok']));
-      expect(tokens, isNot(contains('a' * 64)));
+      expect(tokens, ['android-tok']);
     });
 
     test('drops naked unbranded Android tokens (Aserstein bleed)', () {
@@ -148,6 +148,64 @@ void main() {
       );
       expect(shouldCallChatPushCloudFunction(peerUserIds: const []), isFalse);
       expect(shouldCallChatPushCloudFunction(peerUserIds: ['  ']), isFalse);
+    });
+  });
+
+  group('User.grintaTokens', () {
+    test('round-trips a token list through fromMap / toMap', () {
+      const fcm = 'dXyZtoken:APA91bFakeFcmRegistrationTokenValueForTests';
+      final user = User(
+        uid: 'uid-1',
+        grintaTokens: <dynamic>[fcm, '  $fcm  '],
+      );
+      final encoded = user.toMap();
+      expect(encoded[keyUserGrintaTokens], [fcm, '  $fcm  ']);
+
+      final parsed = User.fromMap(encoded, uid: 'uid-1');
+      expect(parsed.uid, 'uid-1');
+      expect(parsed.grintaTokens, [fcm, '  $fcm  ']);
+      expect(User.fromMap(const {}).grintaTokens, isNull);
+      expect(User(uid: 'x').toMap()[keyUserGrintaTokens], <dynamic>[]);
+    });
+  });
+
+  group('grintaTokensFromUserMap / resolveGrintaSendTokens', () {
+    test('parses sendable tokens and drops APNs hex', () {
+      const fcm = 'dXyZtoken:APA91bFakeFcmRegistrationTokenValueForTests';
+      expect(
+        grintaTokensFromUserMap({
+          keyUserGrintaTokens: <dynamic>[fcm, fcm, 'a' * 64, ''],
+        }),
+        [fcm],
+      );
+      expect(grintaTokensFromUserMap(const {}), isEmpty);
+    });
+
+    test('prefers user.grintaTokens over the subcollection fallback', () {
+      expect(
+        resolveGrintaSendTokens(
+          grintaTokens: <dynamic>[' user-tok ', 'user-tok'],
+          subcollectionTokens: const ['sub-tok'],
+        ),
+        ['user-tok'],
+      );
+    });
+
+    test('falls back to subcollection tokens when the field is empty', () {
+      expect(
+        resolveGrintaSendTokens(
+          grintaTokens: null,
+          subcollectionTokens: const ['grinta-sub'],
+        ),
+        ['grinta-sub'],
+      );
+      expect(
+        resolveGrintaSendTokens(
+          grintaTokens: const <dynamic>[],
+          subcollectionTokens: const ['grinta-sub'],
+        ),
+        ['grinta-sub'],
+      );
     });
   });
 }
