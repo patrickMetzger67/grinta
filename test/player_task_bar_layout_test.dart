@@ -318,6 +318,38 @@ void main() {
 
     expect(find.text('Maillots'), findsOneWidget);
     expect(find.byIcon(AgendaPlayerTaskBars.assigneeCountIcon), findsNothing);
+    expect(_barChipColor(tester), AppColors.light.primary);
+  });
+
+  testWidgets('agenda task bar uses Créer primary, not type/success green', (
+    WidgetTester tester,
+  ) async {
+    final task = _task(
+      id: 'week',
+      start: DateTime(2026, 9, 7),
+      end: DateTime(2026, 9, 13),
+      typeName: 'Maillots',
+    ).copyWith(typeColor: AppColors.light.success.toARGB32());
+
+    await tester.pumpWidget(
+      MaterialApp(
+        theme: ThemeData(
+          useMaterial3: true,
+          extensions: const <ThemeExtension<dynamic>>[AppColors.light],
+        ),
+        home: Scaffold(
+          body: AgendaPlayerTaskBars(
+            tasks: [task],
+            weekStart: DateTime(2026, 9, 7),
+            onTaskTap: (_) {},
+          ),
+        ),
+      ),
+    );
+
+    expect(find.text('Maillots'), findsOneWidget);
+    expect(_barChipColor(tester), AppColors.light.primary);
+    expect(_barChipColor(tester), isNot(AppColors.light.success));
   });
 
   testWidgets('manager week bar shows team, task, count and people icon', (
@@ -355,5 +387,14 @@ void main() {
     expect(find.text('Séniors 2 - Matériel - 3'), findsOneWidget);
     expect(find.text('Matériel'), findsNothing);
     expect(find.byIcon(AgendaPlayerTaskBars.assigneeCountIcon), findsOneWidget);
+    expect(_barChipColor(tester), AppColors.light.primary);
   });
+}
+
+Color _barChipColor(WidgetTester tester) {
+  final Finder chip = find.ancestor(
+    of: find.byType(InkWell),
+    matching: find.byType(Material),
+  );
+  return tester.widget<Material>(chip.first).color ?? const Color(0x00000000);
 }

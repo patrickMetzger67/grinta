@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:grinta/model/player_task.dart';
+import 'package:grinta/util/app_theme.dart';
 import 'package:grinta/util/player_task_bar_layout.dart';
 
 /// Week-aligned bars painted under the agenda date strip.
@@ -104,7 +105,6 @@ class _LaneRow extends StatelessWidget {
           child: Padding(
             padding: const EdgeInsets.symmetric(horizontal: 2),
             child: _TaskBarChip(
-              task: span.task,
               label: labelFor?.call(span.task) ?? span.task.barLabel,
               showAssigneeIcon: showAssigneeIcon?.call(span.task) ?? false,
               onTap: () => onTaskTap(span.task),
@@ -124,13 +124,11 @@ class _LaneRow extends StatelessWidget {
 
 class _TaskBarChip extends StatelessWidget {
   const _TaskBarChip({
-    required this.task,
     required this.label,
     required this.showAssigneeIcon,
     required this.onTap,
   });
 
-  final PlayerTask task;
   final String label;
   final bool showAssigneeIcon;
   final VoidCallback onTap;
@@ -141,8 +139,10 @@ class _TaskBarChip extends StatelessWidget {
           color: Colors.white,
           fontWeight: FontWeight.w700,
         );
+    // Match the agenda Créer FAB / player-task menu (`colors.primary`), not
+    // per-type palette colors (Maillots defaults to success green).
     return Material(
-      color: task.colorValue,
+      color: context.appColors.primary,
       borderRadius: BorderRadius.circular(8),
       child: InkWell(
         borderRadius: BorderRadius.circular(8),
