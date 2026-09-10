@@ -332,6 +332,8 @@ class _GrintaStyleCalendarHeader extends StatelessWidget {
                   teamName: playerTaskTeamDisplayName(task, session),
                   managerFormat: l10n.playerTaskManagerBarLabel,
                 ),
+                showAssigneeIcon: (PlayerTask task) =>
+                    canManagePlayerTask(task, session),
               ),
             ],
           ),

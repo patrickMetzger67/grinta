@@ -317,9 +317,10 @@ void main() {
     );
 
     expect(find.text('Maillots'), findsOneWidget);
+    expect(find.byIcon(AgendaPlayerTaskBars.assigneeCountIcon), findsNothing);
   });
 
-  testWidgets('manager week bar shows team, task and assignee count', (
+  testWidgets('manager week bar shows team, task, count and people icon', (
     WidgetTester tester,
   ) async {
     final task = _task(
@@ -345,6 +346,7 @@ void main() {
               isManager: true,
               teamName: 'Séniors 2',
             ),
+            showAssigneeIcon: (_) => true,
           ),
         ),
       ),
@@ -352,5 +354,6 @@ void main() {
 
     expect(find.text('Séniors 2 - Matériel - 3'), findsOneWidget);
     expect(find.text('Matériel'), findsNothing);
+    expect(find.byIcon(AgendaPlayerTaskBars.assigneeCountIcon), findsOneWidget);
   });
 }
