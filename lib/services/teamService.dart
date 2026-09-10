@@ -828,6 +828,46 @@ class TeamService {
     return _mergeTeamsByKey(<Team>[...indexedTeams, ...rosterTeams]);
   }
 
+  /// Indexed `grintaPlayerMemberIds` lookup only — no visible-team roster scan.
+  ///
+  /// Used by admin sensor indicators so the directory is not blocked on a
+  /// full collection download. Single-field `arrayContains` (no composite
+  /// index). `isGrinta` / `isVisible` are filtered client-side.
+  Future<List<Team>> getIndexedGrintaTeamsForPlayer(Player player) async {
+    final Set<String> lookupIds = playerMemberLookupIds(player);
+    if (lookupIds.isEmpty) {
+      return const <Team>[];
+    }
+
+    final List<Team> teams = _mergeTeamsByKey(
+      await Future.wait(
+        lookupIds.map(_queryTeamsByGrintaPlayerMemberIdsOnly),
+      ).then(
+        (List<List<Team>> results) =>
+            results.expand((List<Team> teams) => teams),
+      ),
+    );
+
+    return teams
+        .where(
+          (Team team) => team.isVisible != false && team.isGrinta == true,
+        )
+        .toList(growable: false);
+  }
+
+  Future<List<Team>> _queryTeamsByGrintaPlayerMemberIdsOnly(
+    String memberId,
+  ) async {
+    final String trimmed = memberId.trim();
+    if (trimmed.isEmpty) {
+      return const <Team>[];
+    }
+    final query = await _collection
+        .where(keyTeamGrintaPlayerMemberIds, arrayContains: trimmed)
+        .get();
+    return query.docs.map((doc) => Team.fromDocumentSnapshot(doc)).toList();
+  }
+
   Future<List<Team>> _rosterScanTeamsForMemberIds({
     required String cacheKey,
     required Set<String> memberIds,

@@ -1,4 +1,5 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 
 /// Firestore field names on `users/{uid}`.
 abstract final class UserDocumentFields {
@@ -8,6 +9,9 @@ abstract final class UserDocumentFields {
   static const createdAt = 'createdAt';
   static const trialEndsAt = 'trialEndsAt';
   static const isRoot = 'isRoot';
+  static const isAnonymous = 'isAnonymous';
+  static const providerIds = 'providerIds';
+
   /// Server-written paid access mirror (promo / future webhooks). Clients read only.
   static const subscriptionAccess = 'subscriptionAccess';
 
@@ -25,6 +29,7 @@ abstract final class UserDocumentFields {
   static const physiologicalDataConsentAt = 'physiologicalDataConsentAt';
   static const physiologicalDataConsentVersion =
       'physiologicalDataConsentVersion';
+
   /// `self` | `parent` — see [PhysiologicalDataConsentSource].
   static const physiologicalDataConsentSource =
       'physiologicalDataConsentSource';
@@ -58,6 +63,8 @@ class UserProfile {
   final String email;
   final String photoURL;
   final bool isRoot;
+  final bool isAnonymous;
+  final List<String> providerIds;
 
   const UserProfile({
     required this.uid,
@@ -66,28 +73,69 @@ class UserProfile {
     required this.email,
     this.photoURL = '',
     this.isRoot = false,
+    this.isAnonymous = false,
+    this.providerIds = const [],
   });
 
-  String get displayFirstName {
-    if (firstName.trim().isNotEmpty) return firstName.trim();
-    if (lastName.trim().isNotEmpty) return lastName.trim();
-    if (email.trim().isNotEmpty) return email.trim();
-    return uid;
-  }
-
-  String get displayName {
-    final first = firstName.trim();
-    final last = lastName.trim();
+  /// First/last name with uid-shaped placeholders stripped.
+  String get personName {
+    final first = _usableGivenName(firstName);
+    final last = _usableGivenName(lastName);
     if (first.isNotEmpty && last.isNotEmpty) return '$first $last';
     if (first.isNotEmpty) return first;
     if (last.isNotEmpty) return last;
-    if (email.trim().isNotEmpty) return email.trim();
-    return uid;
+    return '';
+  }
+
+  /// Email suitable for display (never the raw uid).
+  String get usableEmail {
+    final mail = email.trim();
+    if (mail.isEmpty || mail == uid) return '';
+    if (!mail.contains('@')) return '';
+    return mail;
+  }
+
+  String get displayFirstName {
+    if (personName.isNotEmpty) {
+      final first = _usableGivenName(firstName);
+      return first.isNotEmpty ? first : personName;
+    }
+    return usableEmail;
+  }
+
+  /// Person name, else email. Empty when neither is available (never the uid).
+  String get displayName {
+    if (personName.isNotEmpty) return personName;
+    return usableEmail;
+  }
+
+  /// Admin list/detail title: person name, else [noNameLabel].
+  ///
+  /// Never uses the email or uid as the title — email belongs on
+  /// [adminEmailSubtitle].
+  String adminListLabel({required String noNameLabel}) {
+    if (personName.isNotEmpty) return personName;
+    return noNameLabel;
+  }
+
+  /// Email on the line below the title, when the account has one.
+  String? get adminEmailSubtitle {
+    final mail = usableEmail;
+    if (mail.isEmpty) return null;
+    return mail;
+  }
+
+  /// Shown in Admin → Utilisateurs: not anonymous, and has a name or email.
+  ///
+  /// Empty nameless/email-less docs are the « Sans email » / « ? » stub row.
+  bool get isListedInAdminUsers {
+    if (isAnonymousAccount) return false;
+    return personName.isNotEmpty || usableEmail.isNotEmpty;
   }
 
   String get initials {
-    final first = firstName.trim();
-    final last = lastName.trim();
+    final first = _usableGivenName(firstName);
+    final last = _usableGivenName(lastName);
     if (first.isNotEmpty && last.isNotEmpty) {
       return '${first[0]}${last[0]}'.toUpperCase();
     }
@@ -106,16 +154,211 @@ class UserProfile {
     if (tokens.isEmpty) return true;
 
     final haystacks = <String>[
+      usableEmail.toLowerCase(),
       email.trim().toLowerCase(),
       firstName.trim().toLowerCase(),
       lastName.trim().toLowerCase(),
+      personName.toLowerCase(),
       displayName.toLowerCase(),
+      '$firstName $lastName'.trim().toLowerCase(),
     ].where((value) => value.isNotEmpty);
 
     return tokens.every(
       (token) => haystacks.any((value) => value.contains(token)),
     );
   }
+
+  String _usableGivenName(String value) {
+    final trimmed = value.trim();
+    if (trimmed.isEmpty || trimmed == uid) return '';
+    return trimmed;
+  }
+
+  /// Firebase Anonymous Auth only (`isAnonymous` or `anonymous` provider).
+  ///
+  /// Never hides a named account (e.g. Mohamed-Amine ABDESSAMAD). Missing
+  /// email/name is not enough — that heuristic dropped real users from Admin.
+  bool get isAnonymousAccount {
+    if (personName.isNotEmpty) return false;
+    if (isAnonymous) return true;
+    return providerIds.any(isAnonymousSignInProviderId);
+  }
+
+  /// Signed in with Google (`google.com`, or a Google Auth photo URL).
+  bool get signedInWithGoogle =>
+      providerIds.any(isGoogleSignInProviderId) ||
+      isGoogleAuthPhotoUrl(photoURL);
+
+  /// Signed in with Apple (`apple.com`, or Hide My Email).
+  bool get signedInWithApple =>
+      providerIds.any(isAppleSignInProviderId) ||
+      isApplePrivateRelayEmail(usableEmail);
+
+  /// Email / password (or email-link) Auth — useful when neither Google nor Apple.
+  bool get signedInWithPassword => providerIds.any(isPasswordSignInProviderId);
+
+  /// Always-visible Admin list chip: Google, Apple, else E-mail.
+  ///
+  /// When Firestore has no provider field we still show **E-mail** rather
+  /// than hiding the chip — that was why the badge looked "not done".
+  bool get showPasswordSignInBadge =>
+      !signedInWithGoogle && !signedInWithApple;
+}
+
+bool isAnonymousSignInProviderId(String value) {
+  return _normalizedProviderId(value) == 'anonymous';
+}
+
+bool isGoogleSignInProviderId(String value) {
+  final id = _normalizedProviderId(value);
+  return id == 'google.com' || id == 'google';
+}
+
+bool isAppleSignInProviderId(String value) {
+  final id = _normalizedProviderId(value);
+  return id == 'apple.com' || id == 'apple';
+}
+
+bool isPasswordSignInProviderId(String value) {
+  final id = _normalizedProviderId(value);
+  return id == 'password' ||
+      id == 'email' ||
+      id == 'emaillink' ||
+      id == 'email_link';
+}
+
+String _normalizedProviderId(String value) => value.trim().toLowerCase();
+
+/// Provider ids already stored on `users/{uid}` (`providerIds`, `providers`,
+/// `providerId`, `signInProvider`, `authProvider`, …). No extra queries.
+List<String> readUserProviderIds(Map<String, dynamic> data) {
+  final ids = <String>[];
+  final seen = <String>{};
+
+  void addId(String value) {
+    final trimmed = value.trim();
+    if (trimmed.isEmpty) return;
+    final key = trimmed.toLowerCase();
+    if (seen.add(key)) ids.add(trimmed);
+  }
+
+  void addRaw(dynamic raw, {int depth = 0}) {
+    if (raw == null || depth > 3) return;
+    if (raw is String) {
+      addId(raw);
+      return;
+    }
+    if (raw is Iterable) {
+      for (final item in raw) {
+        addRaw(item, depth: depth + 1);
+      }
+      return;
+    }
+    if (raw is Map) {
+      for (final key in const [
+        'providerId',
+        'provider',
+        'signInProvider',
+        'authProvider',
+        'loginProvider',
+        'signInMethod',
+      ]) {
+        if (raw.containsKey(key)) {
+          addRaw(raw[key], depth: depth + 1);
+        }
+      }
+      final nestedId = raw['id']?.toString().trim() ?? '';
+      if (_looksLikeStandaloneProviderId(nestedId)) addId(nestedId);
+      for (final key in raw.keys) {
+        final text = key.toString().trim();
+        if (_looksLikeStandaloneProviderId(text)) addId(text);
+      }
+      return;
+    }
+    addId(raw.toString());
+  }
+
+  addRaw(data[UserDocumentFields.providerIds]);
+  addRaw(data['providers']);
+  addRaw(data['providerId']);
+  addRaw(data['signInProvider']);
+  addRaw(data['authProvider']);
+  addRaw(data['loginProvider']);
+  addRaw(data['signInMethod']);
+  addRaw(data['provider']);
+  return List<String>.unmodifiable(ids);
+}
+
+/// Explicit Firestore provider fields, then email / photo heuristics.
+///
+/// Signup historically did **not** write `providerIds`. Apple Hide My Email
+/// and leftover Google photo URLs are the signals already on the user doc.
+List<String> resolveListedSignInProviderIds({
+  required Map<String, dynamic> data,
+  String email = '',
+  String photoURL = '',
+}) {
+  final ids = List<String>.from(readUserProviderIds(data));
+  final seen = {for (final id in ids) _normalizedProviderId(id)};
+
+  void add(String id) {
+    if (seen.add(_normalizedProviderId(id))) ids.add(id);
+  }
+
+  if (isApplePrivateRelayEmail(email)) add('apple.com');
+  if (isGoogleAuthPhotoUrl(photoURL)) add('google.com');
+  return List<String>.unmodifiable(ids);
+}
+
+bool isApplePrivateRelayEmail(String email) {
+  final value = email.trim().toLowerCase();
+  if (!value.contains('@')) return false;
+  final host = value.split('@').last;
+  return host == 'privaterelay.appleid.com' || host.endsWith('.privaterelay.appleid.com');
+}
+
+bool isGoogleAuthPhotoUrl(String url) {
+  final value = url.trim().toLowerCase();
+  if (value.isEmpty) return false;
+  return value.contains('googleusercontent.com') ||
+      value.contains('lh3.google.com') ||
+      value.contains('google.com/a/');
+}
+
+/// Firebase Auth `providerData.providerId` values (`google.com`, `apple.com`,
+/// `password`, …).
+List<String> providerIdsFromAuthUser(User? user) {
+  if (user == null) return const [];
+  final ids = <String>[];
+  final seen = <String>{};
+  for (final info in user.providerData) {
+    final trimmed = info.providerId.trim();
+    if (trimmed.isEmpty) continue;
+    if (seen.add(trimmed.toLowerCase())) ids.add(trimmed);
+  }
+  return List<String>.unmodifiable(ids);
+}
+
+List<String> _currentAuthProviderIds() {
+  try {
+    return providerIdsFromAuthUser(FirebaseAuth.instance.currentUser);
+  } catch (_) {
+    return const [];
+  }
+}
+
+bool _looksLikeStandaloneProviderId(String value) {
+  final id = _normalizedProviderId(value);
+  if (id.isEmpty) return false;
+  if (id.contains('.')) return true;
+  return const {
+    'google',
+    'apple',
+    'password',
+    'anonymous',
+    'emaillink',
+    'phone',
+  }.contains(id);
 }
 
 class UserService {
@@ -161,17 +404,16 @@ class UserService {
   /// Live list of all app accounts (`users/{uid}`).
   Stream<List<UserProfile>> streamUsers() {
     return _collection.snapshots().map((snapshot) {
-      final users = snapshot.docs
-          .map(userProfileFromSnapshot)
-          .toList(growable: false);
+      final users =
+          snapshot.docs.map(userProfileFromSnapshot).toList(growable: false);
       users.sort((a, b) {
         final byLast = a.lastName.toLowerCase().compareTo(
-          b.lastName.toLowerCase(),
-        );
+              b.lastName.toLowerCase(),
+            );
         if (byLast != 0) return byLast;
         final byFirst = a.firstName.toLowerCase().compareTo(
-          b.firstName.toLowerCase(),
-        );
+              b.firstName.toLowerCase(),
+            );
         if (byFirst != 0) return byFirst;
         return a.email.toLowerCase().compareTo(b.email.toLowerCase());
       });
@@ -187,10 +429,39 @@ class UserService {
       uid: doc.id,
       firstName: _readNameField(data, 'firstName', 'firstname'),
       lastName: _readNameField(data, 'lastName', 'lastname'),
-      email: data[UserDocumentFields.email]?.toString() ?? '',
+      email: _readEmail(data),
       photoURL: _readPhotoUrl(data),
       isRoot: data[UserDocumentFields.isRoot] == true,
+      isAnonymous: _readAnonymousFlag(data),
+      providerIds: resolveListedSignInProviderIds(
+        data: data,
+        email: _readEmail(data),
+        photoURL: _readPhotoUrl(data),
+      ),
     );
+  }
+
+  bool _readAnonymousFlag(Map<String, dynamic> data) {
+    final raw = data[UserDocumentFields.isAnonymous] ?? data['anonymous'];
+    if (raw == true) return true;
+    if (raw is String && raw.trim().toLowerCase() == 'true') return true;
+    return false;
+  }
+
+  String _readEmail(Map<String, dynamic> data) {
+    for (final key in [
+      UserDocumentFields.email,
+      'Email',
+      'mail',
+      'userEmail',
+    ]) {
+      final raw = data[key];
+      if (raw == null) continue;
+      final value = raw.toString().trim();
+      if (value.isEmpty) continue;
+      if (value.contains('@')) return value;
+    }
+    return '';
   }
 
   String _readPhotoUrl(Map<String, dynamic> data) {
@@ -226,6 +497,7 @@ class UserService {
     String? birthDay,
     String? parentEmail,
     String? parentalConsentToken,
+    List<String> providerIds = const [],
   }) async {
     final ref = _collection.doc(uid);
     final existing = await ref.get();
@@ -236,6 +508,7 @@ class UserService {
     final trimmedBirthDay = birthDay?.trim();
     final trimmedParentEmail = parentEmail?.trim();
     final trimmedToken = parentalConsentToken?.trim();
+    final storedProviders = _mergedProviderIds(providerIds);
 
     if (!existing.exists) {
       final trialEndsAt = DateTime.now().add(kUserTrialDuration);
@@ -246,6 +519,8 @@ class UserService {
         UserDocumentFields.createdAt: FieldValue.serverTimestamp(),
         UserDocumentFields.trialEndsAt: Timestamp.fromDate(trialEndsAt),
         UserDocumentFields.accountStatus: accountStatus,
+        if (storedProviders.isNotEmpty)
+          UserDocumentFields.providerIds: storedProviders,
         if (trimmedBirthDay != null && trimmedBirthDay.isNotEmpty)
           UserDocumentFields.birthDay: trimmedBirthDay,
         if (trimmedParentEmail != null && trimmedParentEmail.isNotEmpty)
@@ -266,6 +541,9 @@ class UserService {
       firstName: trimmedFirst,
       lastName: trimmedLast,
     );
+    if (storedProviders.isNotEmpty && readUserProviderIds(data).isEmpty) {
+      updates[UserDocumentFields.providerIds] = storedProviders;
+    }
     if (accountStatus == UserAccountStatus.pendingParentalConsent &&
         data[UserDocumentFields.accountStatus] != UserAccountStatus.active) {
       updates[UserDocumentFields.accountStatus] = accountStatus;
@@ -290,7 +568,8 @@ class UserService {
   Future<String> getAccountStatus(String uid) async {
     final snap = await _collection.doc(uid).get();
     if (!snap.exists) return UserAccountStatus.active;
-    final raw = snap.data()?[UserDocumentFields.accountStatus]?.toString().trim();
+    final raw =
+        snap.data()?[UserDocumentFields.accountStatus]?.toString().trim();
     if (raw == null || raw.isEmpty) return UserAccountStatus.active;
     return raw;
   }
@@ -354,6 +633,45 @@ class UserService {
 
     await ref.set(updates, SetOptions(merge: true));
     return trialEndsAt;
+  }
+
+  /// Writes Auth provider ids onto `users/{uid}` when the field is still empty.
+  ///
+  /// One merge for the signed-in account — never a per-row Admin list query.
+  Future<void> syncProviderIdsIfMissing({
+    required String uid,
+    required List<String> providerIds,
+  }) async {
+    final stored = _dedupedProviderIds(providerIds);
+    if (stored.isEmpty) return;
+    final trimmedUid = uid.trim();
+    if (trimmedUid.isEmpty) return;
+
+    final ref = _collection.doc(trimmedUid);
+    final snap = await ref.get();
+    if (!snap.exists) return;
+    final data = snap.data() ?? {};
+    if (readUserProviderIds(data).isNotEmpty) return;
+
+    await ref.set(
+      <String, dynamic>{UserDocumentFields.providerIds: stored},
+      SetOptions(merge: true),
+    );
+  }
+
+  List<String> _mergedProviderIds(List<String> explicit) {
+    return _dedupedProviderIds([...explicit, ..._currentAuthProviderIds()]);
+  }
+
+  List<String> _dedupedProviderIds(Iterable<String> raw) {
+    final ids = <String>[];
+    final seen = <String>{};
+    for (final value in raw) {
+      final trimmed = value.trim();
+      if (trimmed.isEmpty) continue;
+      if (seen.add(trimmed.toLowerCase())) ids.add(trimmed);
+    }
+    return ids;
   }
 
   Map<String, dynamic> _missingTrialAndProfileUpdates({

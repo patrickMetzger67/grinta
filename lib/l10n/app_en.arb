@@ -2970,6 +2970,11 @@
   "adminUsersSectionDesc": "List accounts, view and associate players.",
   "adminUsersTitle": "Users",
   "adminUsersSearchHint": "Search (email, first name, last name)",
+  "adminNoEmail": "No email",
+  "adminNoName": "No name",
+  "adminUsersSignInGoogle": "Google",
+  "adminUsersSignInApple": "Apple",
+  "adminUsersSignInPassword": "Email",
   "adminUsersLoadError": "Unable to load users.",
   "adminUsersEmpty": "No users yet.",
   "adminUsersSearchEmpty": "No users match this search.",
@@ -3042,6 +3047,41 @@
   "adminPlayersAddUserTitle": "Add a user",
   "adminPlayersAssociateSuccess": "User associated.",
   "adminPlayersAssociateFailed": "Unable to associate the user.",
+  "adminPlayerTeamKitSensorLabel": "Team kit sensor",
+  "adminPlayerConnectedDevicesLabel": "Connected devices / apps",
+  "adminPlayerTeamKitSensorTooltip": "Team kit sensor",
+  "adminPlayerConnectedDevicesTooltip": "Connected devices or apps",
+  "adminPlayerHubUsersTitle": "Linked users",
+  "adminPlayerHubUsersSubtitle": "View and link user accounts.",
+  "adminPlayerHubSessionsTitle": "Sessions",
+  "adminPlayerHubSessionsSubtitle": "GPS, Polar and personal activities.",
+  "adminPlayerSessionsTitle": "Sessions · {name}",
+  "@adminPlayerSessionsTitle": {
+    "placeholders": {
+      "name": { "type": "String" }
+    }
+  },
+  "adminPlayerSessionsPickPeriodTooltip": "Choose a period",
+  "adminPlayerSessionsPeriodLabel": "Period",
+  "adminPlayerSessionsSeasonPeriodLabel": "Season {seasonName}",
+  "@adminPlayerSessionsSeasonPeriodLabel": {
+    "placeholders": {
+      "seasonName": { "type": "String" }
+    }
+  },
+  "adminPlayerSessionsEmpty": "No sessions in this period.",
+  "adminPlayerSessionsLoadError": "Unable to load sessions.",
+  "adminPlayerSessionKindGps": "GPS",
+  "adminPlayerSessionKindPolar": "Polar",
+  "adminPlayerSessionKindPersonal": "Personal",
+  "adminPlayerSessionMatch": "Match",
+  "adminPlayerSessionTraining": "Training",
+  "adminPlayerSessionDetailTitle": "Performance · {name}",
+  "@adminPlayerSessionDetailTitle": {
+    "placeholders": {
+      "name": { "type": "String" }
+    }
+  },
   "adminPromoCodesSection": "Promo codes",
   "adminPromoCodesSectionDesc": "Create and manage subscription promo codes.",
   "adminPromoCodesTitle": "Promo codes",

@@ -3376,6 +3376,11 @@
   "adminUsersSectionDesc": "Lister les comptes, consulter et associer des joueurs.",
   "adminUsersTitle": "Utilisateurs",
   "adminUsersSearchHint": "Rechercher (email, prénom, nom)",
+  "adminNoEmail": "Sans email",
+  "adminNoName": "Sans nom",
+  "adminUsersSignInGoogle": "Google",
+  "adminUsersSignInApple": "Apple",
+  "adminUsersSignInPassword": "E-mail",
   "adminUsersLoadError": "Impossible de charger les utilisateurs.",
   "adminUsersEmpty": "Aucun utilisateur pour le moment.",
   "adminUsersSearchEmpty": "Aucun utilisateur ne correspond à la recherche.",
@@ -3448,6 +3453,41 @@
   "adminPlayersAddUserTitle": "Ajouter un utilisateur",
   "adminPlayersAssociateSuccess": "Utilisateur associé.",
   "adminPlayersAssociateFailed": "Impossible d'associer l'utilisateur.",
+  "adminPlayerTeamKitSensorLabel": "Capteur d’équipe",
+  "adminPlayerConnectedDevicesLabel": "Appareils / apps connectés",
+  "adminPlayerTeamKitSensorTooltip": "Capteur d’équipe",
+  "adminPlayerConnectedDevicesTooltip": "Appareils ou applications connectés",
+  "adminPlayerHubUsersTitle": "Utilisateurs associés",
+  "adminPlayerHubUsersSubtitle": "Consulter et associer des comptes utilisateurs.",
+  "adminPlayerHubSessionsTitle": "Sessions",
+  "adminPlayerHubSessionsSubtitle": "GPS, Polar et activités personnelles.",
+  "adminPlayerSessionsTitle": "Sessions · {name}",
+  "@adminPlayerSessionsTitle": {
+    "placeholders": {
+      "name": { "type": "String" }
+    }
+  },
+  "adminPlayerSessionsPickPeriodTooltip": "Choisir une période",
+  "adminPlayerSessionsPeriodLabel": "Période",
+  "adminPlayerSessionsSeasonPeriodLabel": "Saison {seasonName}",
+  "@adminPlayerSessionsSeasonPeriodLabel": {
+    "placeholders": {
+      "seasonName": { "type": "String" }
+    }
+  },
+  "adminPlayerSessionsEmpty": "Aucune session sur cette période.",
+  "adminPlayerSessionsLoadError": "Impossible de charger les sessions.",
+  "adminPlayerSessionKindGps": "GPS",
+  "adminPlayerSessionKindPolar": "Polar",
+  "adminPlayerSessionKindPersonal": "Personnel",
+  "adminPlayerSessionMatch": "Match",
+  "adminPlayerSessionTraining": "Entraînement",
+  "adminPlayerSessionDetailTitle": "Performance · {name}",
+  "@adminPlayerSessionDetailTitle": {
+    "placeholders": {
+      "name": { "type": "String" }
+    }
+  },
   "adminPromoCodesSection": "Codes promo",
   "adminPromoCodesSectionDesc": "Créer et gérer les codes promo d'abonnement.",
   "adminPromoCodesTitle": "Codes promo",

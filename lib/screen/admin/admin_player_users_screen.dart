@@ -229,7 +229,7 @@ class _AdminPlayerUsersScreenState extends State<AdminPlayerUsersScreen> {
                                       uid: uid,
                                       firstName: '',
                                       lastName: '',
-                                      email: uid,
+                                      email: '',
                                     ),
                               )
                               .toList(growable: false)
@@ -267,6 +267,7 @@ class _AdminLinkedUserCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = context.l10n;
     final colors = context.appColors;
     final textTheme = Theme.of(context).textTheme;
 
@@ -287,7 +288,7 @@ class _AdminLinkedUserCard extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    user.displayName,
+                    user.adminListLabel(noNameLabel: l10n.adminNoName),
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                     style: textTheme.titleMedium?.copyWith(
@@ -295,10 +296,10 @@ class _AdminLinkedUserCard extends StatelessWidget {
                       fontWeight: FontWeight.w600,
                     ),
                   ),
-                  if (user.email.trim().isNotEmpty) ...[
+                  if (user.adminEmailSubtitle != null) ...[
                     const SizedBox(height: 4),
                     Text(
-                      user.email.trim(),
+                      user.adminEmailSubtitle!,
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                       style: textTheme.bodySmall?.copyWith(

@@ -138,6 +138,7 @@ class _AdminUserSearchSheetState extends State<AdminUserSearchSheet> {
                 }
 
                 final users = (snapshot.data ?? const <UserProfile>[])
+                    .where((user) => user.isListedInAdminUsers)
                     .where(
                       (user) => !widget.excludeUserIds.contains(user.uid),
                     )
@@ -187,7 +188,9 @@ class _AdminUserSearchSheetState extends State<AdminUserSearchSheet> {
                                   crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
                                     Text(
-                                      user.displayName,
+                                      user.adminListLabel(
+                                        noNameLabel: l10n.adminNoName,
+                                      ),
                                       maxLines: 1,
                                       overflow: TextOverflow.ellipsis,
                                       style: textTheme.titleSmall?.copyWith(
@@ -195,10 +198,10 @@ class _AdminUserSearchSheetState extends State<AdminUserSearchSheet> {
                                         fontWeight: FontWeight.w700,
                                       ),
                                     ),
-                                    if (user.email.trim().isNotEmpty) ...[
+                                    if (user.adminEmailSubtitle != null) ...[
                                       const SizedBox(height: 2),
                                       Text(
-                                        user.email.trim(),
+                                        user.adminEmailSubtitle!,
                                         maxLines: 1,
                                         overflow: TextOverflow.ellipsis,
                                         style: textTheme.bodySmall?.copyWith(

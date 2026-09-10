@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:grinta/core/extensions/l10n_extension.dart';
 import 'package:grinta/model/player.dart';
+import 'package:grinta/screen/admin/admin_player_hub_screen.dart';
+import 'package:grinta/services/admin_player_sensor_service.dart';
 import 'package:grinta/services/playerService.dart';
 import 'package:grinta/services/userService.dart';
 import 'package:grinta/util/app_theme.dart';
@@ -14,17 +16,42 @@ class AdminUserPlayersScreen extends StatefulWidget {
   const AdminUserPlayersScreen({
     super.key,
     required this.user,
+    this.initialPlayers,
+    this.playersStream,
+    this.sensorService,
+    this.playerPhotoBuilder,
   });
 
   final UserProfile user;
+
+  /// Association list already known from the Utilisateurs row (no spinner).
+  final List<Player>? initialPlayers;
+
+  /// Overrides [PlayerService.streamPlayersByUserId] (widget tests).
+  final Stream<List<Player>>? playersStream;
+
+  final AdminPlayerSensorService? sensorService;
+
+  @visibleForTesting
+  final Widget Function(Player player, double radius)? playerPhotoBuilder;
 
   @override
   State<AdminUserPlayersScreen> createState() => _AdminUserPlayersScreenState();
 }
 
 class _AdminUserPlayersScreenState extends State<AdminUserPlayersScreen> {
-  final PlayerService _playerService = PlayerService();
+  PlayerService? _playerService;
+  AdminPlayerSensorService? _sensorService;
   bool _associating = false;
+
+  Stream<List<Player>> get _playersStream =>
+      widget.playersStream ??
+      (_playerService ??= PlayerService())
+          .streamPlayersByUserId(widget.user.uid);
+
+  AdminPlayerSensorService get _effectiveSensorService =>
+      widget.sensorService ??
+      (_sensorService ??= AdminPlayerSensorService());
 
   Future<void> _associatePlayer(List<Player> linkedPlayers) async {
     if (_associating) return;
@@ -53,7 +80,7 @@ class _AdminUserPlayersScreenState extends State<AdminUserPlayersScreen> {
 
     setState(() => _associating = true);
     try {
-      await _playerService.adminAssociateUserToMember(
+      await (_playerService ??= PlayerService()).adminAssociateUserToMember(
         memberId: memberId,
         uid: widget.user.uid,
       );
@@ -81,7 +108,8 @@ class _AdminUserPlayersScreenState extends State<AdminUserPlayersScreen> {
     final user = widget.user;
 
     return StreamBuilder<List<Player>>(
-      stream: _playerService.streamPlayersByUserId(user.uid),
+      stream: _playersStream,
+      initialData: widget.initialPlayers,
       builder: (context, snapshot) {
         final players = snapshot.data ?? const <Player>[];
 
@@ -89,7 +117,9 @@ class _AdminUserPlayersScreenState extends State<AdminUserPlayersScreen> {
           backgroundColor: colors.background,
           appBar: AppBar(
             title: Text(
-              l10n.adminUsersPlayersTitle(user.displayName),
+              l10n.adminUsersPlayersTitle(
+                user.adminListLabel(noNameLabel: l10n.adminNoName),
+              ),
               style: textTheme.titleLarge?.copyWith(
                 color: colors.textPrimary,
                 fontWeight: FontWeight.w700,
@@ -140,7 +170,9 @@ class _AdminUserPlayersScreenState extends State<AdminUserPlayersScreen> {
                               ),
                               const SizedBox(height: 2),
                               Text(
-                                user.displayName,
+                                user.adminListLabel(
+                                  noNameLabel: l10n.adminNoName,
+                                ),
                                 maxLines: 1,
                                 overflow: TextOverflow.ellipsis,
                                 style: textTheme.titleMedium?.copyWith(
@@ -148,10 +180,10 @@ class _AdminUserPlayersScreenState extends State<AdminUserPlayersScreen> {
                                   fontWeight: FontWeight.w700,
                                 ),
                               ),
-                              if (user.email.trim().isNotEmpty) ...[
+                              if (user.adminEmailSubtitle != null) ...[
                                 const SizedBox(height: 4),
                                 Text(
-                                  user.email.trim(),
+                                  user.adminEmailSubtitle!,
                                   maxLines: 1,
                                   overflow: TextOverflow.ellipsis,
                                   style: textTheme.bodySmall?.copyWith(
@@ -217,7 +249,17 @@ class _AdminUserPlayersScreenState extends State<AdminUserPlayersScreen> {
                       separatorBuilder: (_, __) => const SizedBox(height: 10),
                       itemBuilder: (context, index) {
                         final player = sorted[index];
-                        return _AdminLinkedPlayerCard(player: player);
+                        return _AdminLinkedPlayerCard(
+                          player: player,
+                          photo: widget.playerPhotoBuilder?.call(player, 24) ??
+                              PlayerPhoto(player: player, radius: 24),
+                          onOpenHub: () => AdminPlayerHubScreen.open(
+                            context,
+                            player: player,
+                            sensorService: _effectiveSensorService,
+                            playerPhotoBuilder: widget.playerPhotoBuilder,
+                          ),
+                        );
                       },
                     );
                   },
@@ -232,9 +274,15 @@ class _AdminUserPlayersScreenState extends State<AdminUserPlayersScreen> {
 }
 
 class _AdminLinkedPlayerCard extends StatelessWidget {
-  const _AdminLinkedPlayerCard({required this.player});
+  const _AdminLinkedPlayerCard({
+    required this.player,
+    required this.photo,
+    required this.onOpenHub,
+  });
 
   final Player player;
+  final Widget photo;
+  final VoidCallback onOpenHub;
 
   @override
   Widget build(BuildContext context) {
@@ -246,6 +294,7 @@ class _AdminLinkedPlayerCard extends StatelessWidget {
       if (firstName.isNotEmpty) firstName,
       if (lastName.isNotEmpty) lastName,
     ].join(' ');
+    final key = effectiveMemberId(player)?.trim() ?? '';
 
     return Material(
       color: colors.card,
@@ -253,26 +302,32 @@ class _AdminLinkedPlayerCard extends StatelessWidget {
         borderRadius: BorderRadius.circular(16),
         side: BorderSide(color: colors.border),
       ),
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Row(
-          children: [
-            PlayerPhoto(player: player, radius: 24),
-            const SizedBox(width: 14),
-            Expanded(
-              child: Text(
-                name.isEmpty
-                    ? playerDisplayName(player, unknownLabel: '—')
-                    : name,
-                maxLines: 2,
-                overflow: TextOverflow.ellipsis,
-                style: textTheme.titleMedium?.copyWith(
-                  color: colors.textPrimary,
-                  fontWeight: FontWeight.w600,
+      child: InkWell(
+        key: ValueKey<String>('admin-linked-player-${key.isEmpty ? name : key}'),
+        onTap: onOpenHub,
+        borderRadius: BorderRadius.circular(16),
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: Row(
+            children: [
+              photo,
+              const SizedBox(width: 14),
+              Expanded(
+                child: Text(
+                  name.isEmpty
+                      ? playerDisplayName(player, unknownLabel: '—')
+                      : name,
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                  style: textTheme.titleMedium?.copyWith(
+                    color: colors.textPrimary,
+                    fontWeight: FontWeight.w600,
+                  ),
                 ),
               ),
-            ),
-          ],
+              Icon(Icons.chevron_right_rounded, color: colors.textSecondary),
+            ],
+          ),
         ),
       ),
     );

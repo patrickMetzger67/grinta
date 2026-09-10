@@ -4,73 +4,158 @@
       "collectionGroup": "personalSportActivities",
       "queryScope": "COLLECTION",
       "fields": [
-        { "fieldPath": "accessMemberIds", "arrayConfig": "CONTAINS" },
-        { "fieldPath": "startAt", "order": "ASCENDING" }
+        {
+          "fieldPath": "accessMemberIds",
+          "arrayConfig": "CONTAINS"
+        },
+        {
+          "fieldPath": "startAt",
+          "order": "ASCENDING"
+        }
       ]
     },
     {
       "collectionGroup": "personalSportActivities",
       "queryScope": "COLLECTION",
       "fields": [
-        { "fieldPath": "memberId", "order": "ASCENDING" },
-        { "fieldPath": "externalSource", "order": "ASCENDING" },
-        { "fieldPath": "externalId", "order": "ASCENDING" }
+        {
+          "fieldPath": "memberId",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "externalSource",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "externalId",
+          "order": "ASCENDING"
+        }
       ]
     },
     {
       "collectionGroup": "personalSportActivities",
       "queryScope": "COLLECTION",
       "fields": [
-        { "fieldPath": "memberId", "order": "ASCENDING" },
-        { "fieldPath": "externalSource", "order": "ASCENDING" }
+        {
+          "fieldPath": "memberId",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "externalSource",
+          "order": "ASCENDING"
+        }
       ]
     },
     {
       "collectionGroup": "personalSportActivities",
       "queryScope": "COLLECTION",
       "fields": [
-        { "fieldPath": "memberId", "order": "ASCENDING" },
-        { "fieldPath": "startAt", "order": "ASCENDING" }
+        {
+          "fieldPath": "memberId",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "startAt",
+          "order": "ASCENDING"
+        }
       ]
     },
     {
       "collectionGroup": "pending_push",
       "queryScope": "COLLECTION",
       "fields": [
-        { "fieldPath": "status", "order": "ASCENDING" },
-        { "fieldPath": "sendAfter", "order": "ASCENDING" }
+        {
+          "fieldPath": "status",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "sendAfter",
+          "order": "ASCENDING"
+        }
       ]
     },
     {
       "collectionGroup": "notification",
       "queryScope": "COLLECTION",
       "fields": [
-        { "fieldPath": "pushDispatch.status", "order": "ASCENDING" },
-        { "fieldPath": "pushDispatch.sendAfter", "order": "ASCENDING" }
+        {
+          "fieldPath": "pushDispatch.status",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "pushDispatch.sendAfter",
+          "order": "ASCENDING"
+        }
       ]
     },
     {
       "collectionGroup": "grinta_notification",
       "queryScope": "COLLECTION",
       "fields": [
-        { "fieldPath": "pushDispatch.status", "order": "ASCENDING" },
-        { "fieldPath": "pushDispatch.sendAfter", "order": "ASCENDING" }
+        {
+          "fieldPath": "pushDispatch.status",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "pushDispatch.sendAfter",
+          "order": "ASCENDING"
+        }
       ]
     },
     {
       "collectionGroup": "training",
       "queryScope": "COLLECTION",
       "fields": [
-        { "fieldPath": "ownerId", "order": "ASCENDING" },
-        { "fieldPath": "withTracker", "order": "ASCENDING" }
+        {
+          "fieldPath": "ownerId",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "withTracker",
+          "order": "ASCENDING"
+        }
       ]
     },
     {
       "collectionGroup": "matchCalendar",
       "queryScope": "COLLECTION",
       "fields": [
-        { "fieldPath": "ownerId", "order": "ASCENDING" },
-        { "fieldPath": "withTracker", "order": "ASCENDING" }
+        {
+          "fieldPath": "ownerId",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "withTracker",
+          "order": "ASCENDING"
+        }
+      ]
+    },
+    {
+      "collectionGroup": "TRACKER_Analysis",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {
+          "fieldPath": "playerId",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "createdAt",
+          "order": "DESCENDING"
+        }
+      ]
+    },
+    {
+      "collectionGroup": "TRACKER_PolarAnalysis",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {
+          "fieldPath": "playerId",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "createdAt",
+          "order": "DESCENDING"
+        }
       ]
     }
   ],
