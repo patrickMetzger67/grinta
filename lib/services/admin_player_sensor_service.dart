@@ -10,12 +10,16 @@ class AdminPlayerSensorService {
   AdminPlayerSensorService({
     TeamService? teamService,
     WearableDevicesRepository? wearableRepository,
-  })  : _teamService = teamService ?? TeamService(),
-        _wearableRepository =
-            wearableRepository ?? WearableDevicesRepository();
+  })  : _teamService = teamService,
+        _wearableRepository = wearableRepository;
 
-  final TeamService _teamService;
-  final WearableDevicesRepository _wearableRepository;
+  TeamService? _teamService;
+  WearableDevicesRepository? _wearableRepository;
+
+  TeamService get _effectiveTeamService => _teamService ??= TeamService();
+
+  WearableDevicesRepository get _effectiveWearableRepository =>
+      _wearableRepository ??= WearableDevicesRepository();
 
   Future<AdminPlayerSensorFlags> loadFlags(Player player) async {
     final memberId = effectiveMemberId(player)?.trim() ?? '';
@@ -31,8 +35,8 @@ class AdminPlayerSensorService {
 
   Future<bool> _hasTeamKitSensor(Player player) async {
     try {
-      final teams =
-          await _teamService.getTeamsForPlayerGrintaMembership(player);
+      final teams = await _effectiveTeamService
+          .getTeamsForPlayerGrintaMembership(player);
       if (teams.isEmpty) return false;
 
       final lookupIds = playerMemberLookupIds(player);
@@ -61,7 +65,10 @@ class AdminPlayerSensorService {
     ).trim();
     if (ownerUid.isEmpty) return false;
     try {
-      return await _wearableRepository.hasAnyConnected(ownerUid, memberId);
+      return await _effectiveWearableRepository.hasAnyConnected(
+        ownerUid,
+        memberId,
+      );
     } catch (_) {
       return false;
     }

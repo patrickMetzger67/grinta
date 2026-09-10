@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:grinta/analytics/analytics_routes.dart';
 import 'package:grinta/analytics/analytics_screen_names.dart';
@@ -19,6 +20,7 @@ class AdminPlayersScreen extends StatefulWidget {
     super.key,
     this.membersStream,
     this.sensorService,
+    this.playerPhotoBuilder,
   });
 
   /// Overrides [PlayerService.streamAllMembers] (widget tests).
@@ -26,6 +28,10 @@ class AdminPlayersScreen extends StatefulWidget {
 
   /// Overrides the default sensor-flag loader (widget tests).
   final AdminPlayerSensorService? sensorService;
+
+  /// Replaces [PlayerPhoto] so widget tests can avoid Firebase.
+  @visibleForTesting
+  final Widget Function(Player player, double radius)? playerPhotoBuilder;
 
   static const searchFieldKey = ValueKey<String>('admin-players-search');
 
@@ -199,6 +205,7 @@ class _AdminPlayersScreenState extends State<AdminPlayersScreen> {
                 return _AdminPlayersResults(
                   players: players,
                   sensorService: _effectiveSensorService,
+                  playerPhotoBuilder: widget.playerPhotoBuilder,
                 );
               },
             ),
@@ -214,10 +221,12 @@ class _AdminPlayersResults extends StatefulWidget {
   const _AdminPlayersResults({
     required this.players,
     required this.sensorService,
+    this.playerPhotoBuilder,
   });
 
   final List<Player> players;
   final AdminPlayerSensorService sensorService;
+  final Widget Function(Player player, double radius)? playerPhotoBuilder;
 
   @override
   State<_AdminPlayersResults> createState() => _AdminPlayersResultsState();
@@ -261,34 +270,38 @@ class _AdminPlayersResultsState extends State<_AdminPlayersResults> {
     }
     _flagsLoading.add(key);
     unawaited(() async {
-      final flags = await widget.sensorService.loadFlags(player);
-      if (!mounted) return;
-      setState(() {
-        _flagsByPlayerId[key] = flags;
-        _flagsLoading.remove(key);
-      });
+      try {
+        final flags = await widget.sensorService.loadFlags(player);
+        if (!mounted) return;
+        setState(() {
+          _flagsByPlayerId[key] = flags;
+          _flagsLoading.remove(key);
+        });
+      } catch (_) {
+        if (!mounted) return;
+        setState(() {
+          _flagsByPlayerId[key] = AdminPlayerSensorFlags.none;
+          _flagsLoading.remove(key);
+        });
+      }
     }());
   }
 
-  Future<void> _openPlayer(Player player) async {
+  /// Opens the hub immediately. Sensor flags decorate the card / hub and
+  /// must never gate navigation — `loadFlags` can hang on Firestore.
+  void _openPlayer(Player player) {
     final key = _playerCacheKey(player);
-    var flags =
-        key == null ? AdminPlayerSensorFlags.none : _flagsByPlayerId[key];
-    if (flags == null) {
-      flags = await widget.sensorService.loadFlags(player);
-      if (!mounted) return;
-      if (key != null && key.isNotEmpty) {
-        setState(() => _flagsByPlayerId[key] = flags!);
-      }
-    }
-
-    if (!mounted) return;
-    await Navigator.of(context).push(
+    final flags = key == null
+        ? AdminPlayerSensorFlags.none
+        : (_flagsByPlayerId[key] ?? AdminPlayerSensorFlags.none);
+    Navigator.of(context).push(
       analyticsMaterialRoute<void>(
         screenName: AnalyticsScreenNames.adminPlayerHub,
         builder: (_) => AdminPlayerHubScreen(
           player: player,
-          flags: flags ?? AdminPlayerSensorFlags.none,
+          flags: flags,
+          sensorService: widget.sensorService,
+          playerPhotoBuilder: widget.playerPhotoBuilder,
         ),
       ),
     );
@@ -308,9 +321,12 @@ class _AdminPlayersResultsState extends State<_AdminPlayersResults> {
             ? AdminPlayerSensorFlags.none
             : (_flagsByPlayerId[key] ?? AdminPlayerSensorFlags.none);
         return _AdminPlayerCard(
+          key: ValueKey<String>('admin-player-card-${key ?? index}'),
           player: player,
           userCount: userCount,
           flags: flags,
+          photo: widget.playerPhotoBuilder?.call(player, 24) ??
+              PlayerPhoto(player: player, radius: 24),
           onTap: () => _openPlayer(player),
         );
       },
@@ -320,15 +336,18 @@ class _AdminPlayersResultsState extends State<_AdminPlayersResults> {
 
 class _AdminPlayerCard extends StatelessWidget {
   const _AdminPlayerCard({
+    super.key,
     required this.player,
     required this.userCount,
     required this.flags,
+    required this.photo,
     required this.onTap,
   });
 
   final Player player;
   final int userCount;
   final AdminPlayerSensorFlags flags;
+  final Widget photo;
   final VoidCallback onTap;
 
   @override
@@ -357,7 +376,7 @@ class _AdminPlayerCard extends StatelessWidget {
           padding: const EdgeInsets.all(16),
           child: Row(
             children: [
-              PlayerPhoto(player: player, radius: 24),
+              photo,
               const SizedBox(width: 14),
               Expanded(
                 child: Column(

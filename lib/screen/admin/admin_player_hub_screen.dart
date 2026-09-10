@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:grinta/analytics/analytics_routes.dart';
 import 'package:grinta/analytics/analytics_screen_names.dart';
@@ -6,26 +8,65 @@ import 'package:grinta/model/admin_player_sensor_flags.dart';
 import 'package:grinta/model/player.dart';
 import 'package:grinta/screen/admin/admin_player_sessions_screen.dart';
 import 'package:grinta/screen/admin/admin_player_users_screen.dart';
+import 'package:grinta/services/admin_player_sensor_service.dart';
 import 'package:grinta/util/app_theme.dart';
 import 'package:grinta/util/playerDisplayName.dart';
 import 'package:grinta/widget/playerPhoto.dart';
 
 /// Admin hub for one player: linked users + optional session history.
-class AdminPlayerHubScreen extends StatelessWidget {
+class AdminPlayerHubScreen extends StatefulWidget {
   const AdminPlayerHubScreen({
     super.key,
     required this.player,
     this.flags = AdminPlayerSensorFlags.none,
+    this.sensorService,
+    this.playerPhotoBuilder,
   });
 
   final Player player;
   final AdminPlayerSensorFlags flags;
+  final AdminPlayerSensorService? sensorService;
+  final Widget Function(Player player, double radius)? playerPhotoBuilder;
+
+  static const usersTileKey = ValueKey<String>('admin-player-hub-users');
+  static const sessionsTileKey = ValueKey<String>('admin-player-hub-sessions');
+
+  @override
+  State<AdminPlayerHubScreen> createState() => _AdminPlayerHubScreenState();
+}
+
+class _AdminPlayerHubScreenState extends State<AdminPlayerHubScreen> {
+  late AdminPlayerSensorFlags _flags;
+
+  @override
+  void initState() {
+    super.initState();
+    _flags = widget.flags;
+    if (!_flags.hasAny && widget.sensorService != null) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) unawaited(_refreshFlags());
+      });
+    }
+  }
+
+  Future<void> _refreshFlags() async {
+    final service = widget.sensorService;
+    if (service == null) return;
+    try {
+      final flags = await service.loadFlags(widget.player);
+      if (!mounted) return;
+      setState(() => _flags = flags);
+    } catch (_) {
+      // Keep the hub usable even if indicators fail to load.
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
     final l10n = context.l10n;
     final colors = context.appColors;
     final textTheme = Theme.of(context).textTheme;
+    final player = widget.player;
     final name = playerDisplayName(player, unknownLabel: '—');
 
     return Scaffold(
@@ -44,7 +85,8 @@ class AdminPlayerHubScreen extends StatelessWidget {
         children: [
           Row(
             children: [
-              PlayerPhoto(player: player, radius: 28),
+              widget.playerPhotoBuilder?.call(player, 28) ??
+                  PlayerPhoto(player: player, radius: 28),
               const SizedBox(width: 14),
               Expanded(
                 child: Column(
@@ -57,18 +99,18 @@ class AdminPlayerHubScreen extends StatelessWidget {
                         fontWeight: FontWeight.w700,
                       ),
                     ),
-                    if (flags.hasAny) ...[
+                    if (_flags.hasAny) ...[
                       const SizedBox(height: 8),
                       Wrap(
                         spacing: 8,
                         runSpacing: 8,
                         children: [
-                          if (flags.hasTeamKitSensor)
+                          if (_flags.hasTeamKitSensor)
                             _FlagChip(
                               icon: Icons.sensors_rounded,
                               label: l10n.adminPlayerTeamKitSensorLabel,
                             ),
-                          if (flags.hasConnectedDevices)
+                          if (_flags.hasConnectedDevices)
                             _FlagChip(
                               icon: Icons.watch_outlined,
                               label: l10n.adminPlayerConnectedDevicesLabel,
@@ -83,6 +125,7 @@ class AdminPlayerHubScreen extends StatelessWidget {
           ),
           const SizedBox(height: 20),
           _HubTile(
+            key: AdminPlayerHubScreen.usersTileKey,
             icon: Icons.group_outlined,
             title: l10n.adminPlayerHubUsersTitle,
             subtitle: l10n.adminPlayerHubUsersSubtitle,
@@ -95,9 +138,10 @@ class AdminPlayerHubScreen extends StatelessWidget {
               );
             },
           ),
-          if (flags.hasAny) ...[
+          if (_flags.hasAny) ...[
             const SizedBox(height: 10),
             _HubTile(
+              key: AdminPlayerHubScreen.sessionsTileKey,
               icon: Icons.timeline_outlined,
               title: l10n.adminPlayerHubSessionsTitle,
               subtitle: l10n.adminPlayerHubSessionsSubtitle,
@@ -107,7 +151,7 @@ class AdminPlayerHubScreen extends StatelessWidget {
                     screenName: AnalyticsScreenNames.adminPlayerSessions,
                     builder: (_) => AdminPlayerSessionsScreen(
                       player: player,
-                      flags: flags,
+                      flags: _flags,
                     ),
                   ),
                 );
@@ -159,6 +203,7 @@ class _FlagChip extends StatelessWidget {
 
 class _HubTile extends StatelessWidget {
   const _HubTile({
+    super.key,
     required this.icon,
     required this.title,
     required this.subtitle,
