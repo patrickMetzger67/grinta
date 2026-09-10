@@ -147,6 +147,47 @@ void main() {
       );
       expect(user(email: 'ghost@example.com').signedInWithGoogle, isFalse);
       expect(user(email: 'ghost@example.com').signedInWithApple, isFalse);
+      expect(user(email: 'ghost@example.com').showPasswordSignInBadge, isTrue);
+    });
+
+    test('infers Apple from Hide My Email and Google from Auth photo URL', () {
+      expect(
+        const UserProfile(
+          uid: uid,
+          firstName: '',
+          lastName: '',
+          email: 'hidden@privaterelay.appleid.com',
+        ).signedInWithApple,
+        isTrue,
+      );
+      expect(
+        const UserProfile(
+          uid: uid,
+          firstName: '',
+          lastName: '',
+          email: 'ada@example.com',
+          photoURL: 'https://lh3.googleusercontent.com/a/photo',
+        ).signedInWithGoogle,
+        isTrue,
+      );
+      expect(
+        resolveListedSignInProviderIds(
+          data: const {},
+          email: 'hidden@privaterelay.appleid.com',
+        ),
+        ['apple.com'],
+      );
+      expect(
+        resolveListedSignInProviderIds(
+          data: const {},
+          photoURL: 'https://lh3.googleusercontent.com/a/photo',
+        ),
+        ['google.com'],
+      );
+      expect(
+        readUserProviderIds({'authProvider': 'google.com'}),
+        ['google.com'],
+      );
     });
 
     test('readUserProviderIds uses fields already on the user document', () {

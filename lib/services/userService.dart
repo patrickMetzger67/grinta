@@ -1,4 +1,5 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 
 /// Firestore field names on `users/{uid}`.
 abstract final class UserDocumentFields {
@@ -180,14 +181,25 @@ class UserProfile {
     return providerIds.any(isAnonymousSignInProviderId);
   }
 
-  /// Signed in with Google (`google.com` on the user document).
-  bool get signedInWithGoogle => providerIds.any(isGoogleSignInProviderId);
+  /// Signed in with Google (`google.com`, or a Google Auth photo URL).
+  bool get signedInWithGoogle =>
+      providerIds.any(isGoogleSignInProviderId) ||
+      isGoogleAuthPhotoUrl(photoURL);
 
-  /// Signed in with Apple (`apple.com` on the user document).
-  bool get signedInWithApple => providerIds.any(isAppleSignInProviderId);
+  /// Signed in with Apple (`apple.com`, or Hide My Email).
+  bool get signedInWithApple =>
+      providerIds.any(isAppleSignInProviderId) ||
+      isApplePrivateRelayEmail(usableEmail);
 
   /// Email / password (or email-link) Auth — useful when neither Google nor Apple.
   bool get signedInWithPassword => providerIds.any(isPasswordSignInProviderId);
+
+  /// Always-visible Admin list chip: Google, Apple, else E-mail.
+  ///
+  /// When Firestore has no provider field we still show **E-mail** rather
+  /// than hiding the chip — that was why the badge looked "not done".
+  bool get showPasswordSignInBadge =>
+      !signedInWithGoogle && !signedInWithApple;
 }
 
 bool isAnonymousSignInProviderId(String value) {
@@ -215,7 +227,7 @@ bool isPasswordSignInProviderId(String value) {
 String _normalizedProviderId(String value) => value.trim().toLowerCase();
 
 /// Provider ids already stored on `users/{uid}` (`providerIds`, `providers`,
-/// `providerId`, `signInProvider`). No extra queries.
+/// `providerId`, `signInProvider`, `authProvider`, …). No extra queries.
 List<String> readUserProviderIds(Map<String, dynamic> data) {
   final ids = <String>[];
   final seen = <String>{};
@@ -240,7 +252,14 @@ List<String> readUserProviderIds(Map<String, dynamic> data) {
       return;
     }
     if (raw is Map) {
-      for (final key in const ['providerId', 'provider', 'signInProvider']) {
+      for (final key in const [
+        'providerId',
+        'provider',
+        'signInProvider',
+        'authProvider',
+        'loginProvider',
+        'signInMethod',
+      ]) {
         if (raw.containsKey(key)) {
           addRaw(raw[key], depth: depth + 1);
         }
@@ -260,7 +279,69 @@ List<String> readUserProviderIds(Map<String, dynamic> data) {
   addRaw(data['providers']);
   addRaw(data['providerId']);
   addRaw(data['signInProvider']);
+  addRaw(data['authProvider']);
+  addRaw(data['loginProvider']);
+  addRaw(data['signInMethod']);
+  addRaw(data['provider']);
   return List<String>.unmodifiable(ids);
+}
+
+/// Explicit Firestore provider fields, then email / photo heuristics.
+///
+/// Signup historically did **not** write `providerIds`. Apple Hide My Email
+/// and leftover Google photo URLs are the signals already on the user doc.
+List<String> resolveListedSignInProviderIds({
+  required Map<String, dynamic> data,
+  String email = '',
+  String photoURL = '',
+}) {
+  final ids = List<String>.from(readUserProviderIds(data));
+  final seen = {for (final id in ids) _normalizedProviderId(id)};
+
+  void add(String id) {
+    if (seen.add(_normalizedProviderId(id))) ids.add(id);
+  }
+
+  if (isApplePrivateRelayEmail(email)) add('apple.com');
+  if (isGoogleAuthPhotoUrl(photoURL)) add('google.com');
+  return List<String>.unmodifiable(ids);
+}
+
+bool isApplePrivateRelayEmail(String email) {
+  final value = email.trim().toLowerCase();
+  if (!value.contains('@')) return false;
+  final host = value.split('@').last;
+  return host == 'privaterelay.appleid.com' || host.endsWith('.privaterelay.appleid.com');
+}
+
+bool isGoogleAuthPhotoUrl(String url) {
+  final value = url.trim().toLowerCase();
+  if (value.isEmpty) return false;
+  return value.contains('googleusercontent.com') ||
+      value.contains('lh3.google.com') ||
+      value.contains('google.com/a/');
+}
+
+/// Firebase Auth `providerData.providerId` values (`google.com`, `apple.com`,
+/// `password`, …).
+List<String> providerIdsFromAuthUser(User? user) {
+  if (user == null) return const [];
+  final ids = <String>[];
+  final seen = <String>{};
+  for (final info in user.providerData) {
+    final trimmed = info.providerId.trim();
+    if (trimmed.isEmpty) continue;
+    if (seen.add(trimmed.toLowerCase())) ids.add(trimmed);
+  }
+  return List<String>.unmodifiable(ids);
+}
+
+List<String> _currentAuthProviderIds() {
+  try {
+    return providerIdsFromAuthUser(FirebaseAuth.instance.currentUser);
+  } catch (_) {
+    return const [];
+  }
 }
 
 bool _looksLikeStandaloneProviderId(String value) {
@@ -349,7 +430,11 @@ class UserService {
       photoURL: _readPhotoUrl(data),
       isRoot: data[UserDocumentFields.isRoot] == true,
       isAnonymous: _readAnonymousFlag(data),
-      providerIds: readUserProviderIds(data),
+      providerIds: resolveListedSignInProviderIds(
+        data: data,
+        email: _readEmail(data),
+        photoURL: _readPhotoUrl(data),
+      ),
     );
   }
 
@@ -409,6 +494,7 @@ class UserService {
     String? birthDay,
     String? parentEmail,
     String? parentalConsentToken,
+    List<String> providerIds = const [],
   }) async {
     final ref = _collection.doc(uid);
     final existing = await ref.get();
@@ -419,6 +505,7 @@ class UserService {
     final trimmedBirthDay = birthDay?.trim();
     final trimmedParentEmail = parentEmail?.trim();
     final trimmedToken = parentalConsentToken?.trim();
+    final storedProviders = _mergedProviderIds(providerIds);
 
     if (!existing.exists) {
       final trialEndsAt = DateTime.now().add(kUserTrialDuration);
@@ -429,6 +516,8 @@ class UserService {
         UserDocumentFields.createdAt: FieldValue.serverTimestamp(),
         UserDocumentFields.trialEndsAt: Timestamp.fromDate(trialEndsAt),
         UserDocumentFields.accountStatus: accountStatus,
+        if (storedProviders.isNotEmpty)
+          UserDocumentFields.providerIds: storedProviders,
         if (trimmedBirthDay != null && trimmedBirthDay.isNotEmpty)
           UserDocumentFields.birthDay: trimmedBirthDay,
         if (trimmedParentEmail != null && trimmedParentEmail.isNotEmpty)
@@ -449,6 +538,9 @@ class UserService {
       firstName: trimmedFirst,
       lastName: trimmedLast,
     );
+    if (storedProviders.isNotEmpty && readUserProviderIds(data).isEmpty) {
+      updates[UserDocumentFields.providerIds] = storedProviders;
+    }
     if (accountStatus == UserAccountStatus.pendingParentalConsent &&
         data[UserDocumentFields.accountStatus] != UserAccountStatus.active) {
       updates[UserDocumentFields.accountStatus] = accountStatus;
@@ -538,6 +630,45 @@ class UserService {
 
     await ref.set(updates, SetOptions(merge: true));
     return trialEndsAt;
+  }
+
+  /// Writes Auth provider ids onto `users/{uid}` when the field is still empty.
+  ///
+  /// One merge for the signed-in account — never a per-row Admin list query.
+  Future<void> syncProviderIdsIfMissing({
+    required String uid,
+    required List<String> providerIds,
+  }) async {
+    final stored = _dedupedProviderIds(providerIds);
+    if (stored.isEmpty) return;
+    final trimmedUid = uid.trim();
+    if (trimmedUid.isEmpty) return;
+
+    final ref = _collection.doc(trimmedUid);
+    final snap = await ref.get();
+    if (!snap.exists) return;
+    final data = snap.data() ?? {};
+    if (readUserProviderIds(data).isNotEmpty) return;
+
+    await ref.set(
+      <String, dynamic>{UserDocumentFields.providerIds: stored},
+      SetOptions(merge: true),
+    );
+  }
+
+  List<String> _mergedProviderIds(List<String> explicit) {
+    return _dedupedProviderIds([...explicit, ..._currentAuthProviderIds()]);
+  }
+
+  List<String> _dedupedProviderIds(Iterable<String> raw) {
+    final ids = <String>[];
+    final seen = <String>{};
+    for (final value in raw) {
+      final trimmed = value.trim();
+      if (trimmed.isEmpty) continue;
+      if (seen.add(trimmed.toLowerCase())) ids.add(trimmed);
+    }
+    return ids;
   }
 
   Map<String, dynamic> _missingTrialAndProfileUpdates({

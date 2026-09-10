@@ -323,6 +323,7 @@ void main() {
 
         expect(find.text(l10n.adminNoName), findsOneWidget);
         expect(find.text('achillesschmitt2105@gmail.com'), findsOneWidget);
+        expect(find.text(l10n.adminUsersSignInPassword), findsOneWidget);
         expect(find.text(l10n.adminUsersPlayerCount(1)), findsOneWidget);
         expect(find.text(l10n.adminNoEmail), findsNothing);
       },
@@ -380,13 +381,83 @@ void main() {
           findsOneWidget,
         );
         expect(find.text('Ada Lovelace'), findsOneWidget);
-        expect(find.byKey(AdminUsersScreen.googleSignInKey), findsOneWidget);
-        expect(find.byKey(AdminUsersScreen.appleSignInKey), findsOneWidget);
-        expect(find.byKey(AdminUsersScreen.passwordSignInKey), findsOneWidget);
+        expect(
+          find.byKey(AdminUsersScreen.googleSignInKeyFor('google-uid')),
+          findsOneWidget,
+        );
+        expect(
+          find.byKey(AdminUsersScreen.appleSignInKeyFor('apple-uid')),
+          findsOneWidget,
+        );
+        expect(
+          find.byKey(AdminUsersScreen.passwordSignInKeyFor('password-uid')),
+          findsOneWidget,
+        );
         expect(find.text(l10n.adminUsersSignInGoogle), findsOneWidget);
         expect(find.text(l10n.adminUsersSignInApple), findsOneWidget);
         expect(find.text(l10n.adminUsersSignInPassword), findsOneWidget);
         expect(find.text(l10n.adminUsersPlayerCount(0)), findsNWidgets(3));
+      },
+    );
+
+    testWidgets(
+      'shows Google/Apple/E-mail on the list row even without providerIds',
+      (tester) async {
+        final l10n = await AppLocalizations.delegate.load(const Locale('fr'));
+        const googlePhotoUser = UserProfile(
+          uid: 'google-photo-uid',
+          firstName: '',
+          lastName: '',
+          email: 'ghost.google@gmail.com',
+          photoURL: 'https://lh3.googleusercontent.com/a/photo',
+        );
+        const appleRelayUser = UserProfile(
+          uid: 'apple-relay-uid',
+          firstName: '',
+          lastName: '',
+          email: 'ghost.apple@privaterelay.appleid.com',
+        );
+        const passwordUser = UserProfile(
+          uid: 'password-uid',
+          firstName: 'Ada',
+          lastName: 'Lovelace',
+          email: 'ada@example.com',
+        );
+
+        await tester.pumpWidget(
+          MaterialApp(
+            theme: AppTheme.darkTheme,
+            locale: const Locale('fr'),
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
+            home: AdminUsersScreen(
+              usersStream: Stream<List<UserProfile>>.value([
+                googlePhotoUser,
+                appleRelayUser,
+                passwordUser,
+              ]),
+              membersStream: Stream<List<Player>>.value(const []),
+            ),
+          ),
+        );
+        await tester.pump();
+        await tester.pump();
+
+        expect(find.text(l10n.adminUsersSignInGoogle), findsOneWidget);
+        expect(find.text(l10n.adminUsersSignInApple), findsOneWidget);
+        expect(find.text(l10n.adminUsersSignInPassword), findsOneWidget);
+        expect(
+          find.byKey(AdminUsersScreen.googleSignInKeyFor('google-photo-uid')),
+          findsOneWidget,
+        );
+        expect(
+          find.byKey(AdminUsersScreen.appleSignInKeyFor('apple-relay-uid')),
+          findsOneWidget,
+        );
+        expect(
+          find.byKey(AdminUsersScreen.passwordSignInKeyFor('password-uid')),
+          findsOneWidget,
+        );
       },
     );
   });

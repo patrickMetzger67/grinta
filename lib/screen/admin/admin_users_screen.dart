@@ -5,6 +5,7 @@ import 'package:flutter_svg/flutter_svg.dart';
 import 'package:grinta/analytics/analytics_routes.dart';
 import 'package:grinta/analytics/analytics_screen_names.dart';
 import 'package:grinta/core/extensions/l10n_extension.dart';
+import 'package:grinta/l10n/app_localizations.dart';
 import 'package:grinta/model/player.dart';
 import 'package:grinta/screen/admin/admin_user_players_screen.dart';
 import 'package:grinta/services/admin_player_sensor_service.dart';
@@ -36,10 +37,13 @@ class AdminUsersScreen extends StatefulWidget {
   final Widget Function(Player player, double radius)? playerPhotoBuilder;
 
   static const searchFieldKey = ValueKey<String>('admin-users-search');
-  static const googleSignInKey = ValueKey<String>('admin-user-signin-google');
-  static const appleSignInKey = ValueKey<String>('admin-user-signin-apple');
-  static const passwordSignInKey =
-      ValueKey<String>('admin-user-signin-password');
+
+  static Key googleSignInKeyFor(String uid) =>
+      ValueKey<String>('admin-user-signin-google-$uid');
+  static Key appleSignInKeyFor(String uid) =>
+      ValueKey<String>('admin-user-signin-apple-$uid');
+  static Key passwordSignInKeyFor(String uid) =>
+      ValueKey<String>('admin-user-signin-password-$uid');
 
   @override
   State<AdminUsersScreen> createState() => _AdminUsersScreenState();
@@ -394,14 +398,27 @@ class _AdminUserCard extends StatelessWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(
-                      user.adminListLabel(noNameLabel: l10n.adminNoName),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: textTheme.titleMedium?.copyWith(
-                        color: colors.textPrimary,
-                        fontWeight: FontWeight.w700,
-                      ),
+                    Row(
+                      crossAxisAlignment: CrossAxisAlignment.center,
+                      children: [
+                        Flexible(
+                          child: Text(
+                            user.adminListLabel(noNameLabel: l10n.adminNoName),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: textTheme.titleMedium?.copyWith(
+                              color: colors.textPrimary,
+                              fontWeight: FontWeight.w700,
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        Wrap(
+                          spacing: 6,
+                          runSpacing: 6,
+                          children: _signInBadges(user, l10n),
+                        ),
+                      ],
                     ),
                     if (user.adminEmailSubtitle != null) ...[
                       const SizedBox(height: 4),
@@ -412,39 +429,6 @@ class _AdminUserCard extends StatelessWidget {
                         style: textTheme.bodySmall?.copyWith(
                           color: colors.textSecondary,
                         ),
-                      ),
-                    ],
-                    if (user.signedInWithGoogle ||
-                        user.signedInWithApple ||
-                        user.signedInWithPassword) ...[
-                      const SizedBox(height: 8),
-                      Wrap(
-                        spacing: 6,
-                        runSpacing: 6,
-                        children: [
-                          if (user.signedInWithGoogle)
-                            _SignInProviderBadge(
-                              badgeKey: AdminUsersScreen.googleSignInKey,
-                              label: l10n.adminUsersSignInGoogle,
-                              assetPath: 'assets/images/google_logo.svg',
-                              tintAsset: false,
-                            ),
-                          if (user.signedInWithApple)
-                            _SignInProviderBadge(
-                              badgeKey: AdminUsersScreen.appleSignInKey,
-                              label: l10n.adminUsersSignInApple,
-                              assetPath: 'assets/images/apple_logo.svg',
-                              tintAsset: true,
-                            ),
-                          if (user.signedInWithPassword &&
-                              !user.signedInWithGoogle &&
-                              !user.signedInWithApple)
-                            _SignInProviderBadge(
-                              badgeKey: AdminUsersScreen.passwordSignInKey,
-                              label: l10n.adminUsersSignInPassword,
-                              icon: Icons.mail_outline_rounded,
-                            ),
-                        ],
                       ),
                     ],
                     const SizedBox(height: 6),
@@ -482,6 +466,31 @@ class _AdminUserCard extends StatelessWidget {
       ),
     );
   }
+
+  List<Widget> _signInBadges(UserProfile user, AppLocalizations l10n) {
+    return [
+      if (user.signedInWithGoogle)
+        _SignInProviderBadge(
+          badgeKey: AdminUsersScreen.googleSignInKeyFor(user.uid),
+          label: l10n.adminUsersSignInGoogle,
+          assetPath: 'assets/images/google_logo.svg',
+          tintAsset: false,
+        ),
+      if (user.signedInWithApple)
+        _SignInProviderBadge(
+          badgeKey: AdminUsersScreen.appleSignInKeyFor(user.uid),
+          label: l10n.adminUsersSignInApple,
+          assetPath: 'assets/images/apple_logo.svg',
+          tintAsset: true,
+        ),
+      if (user.showPasswordSignInBadge)
+        _SignInProviderBadge(
+          badgeKey: AdminUsersScreen.passwordSignInKeyFor(user.uid),
+          label: l10n.adminUsersSignInPassword,
+          icon: Icons.mail_outline_rounded,
+        ),
+    ];
+  }
 }
 
 class _SignInProviderBadge extends StatelessWidget {
@@ -509,22 +518,22 @@ class _SignInProviderBadge extends StatelessWidget {
     if (assetPath != null) {
       leading = SvgPicture.asset(
         assetPath!,
-        width: 14,
-        height: 14,
+        width: 16,
+        height: 16,
         colorFilter:
             tintAsset ? ColorFilter.mode(iconColor, BlendMode.srcIn) : null,
       );
     } else {
-      leading = Icon(icon, size: 14, color: iconColor);
+      leading = Icon(icon, size: 16, color: iconColor);
     }
 
     return Container(
       key: badgeKey,
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
       decoration: BoxDecoration(
-        color: colors.primary.withValues(alpha: 0.1),
+        color: colors.primary.withValues(alpha: 0.16),
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: colors.border),
+        border: Border.all(color: colors.primary.withValues(alpha: 0.45)),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
@@ -533,9 +542,9 @@ class _SignInProviderBadge extends StatelessWidget {
           const SizedBox(width: 6),
           Text(
             label,
-            style: textTheme.labelSmall?.copyWith(
+            style: textTheme.labelMedium?.copyWith(
               color: colors.textPrimary,
-              fontWeight: FontWeight.w600,
+              fontWeight: FontWeight.w700,
             ),
           ),
         ],
