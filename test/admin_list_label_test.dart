@@ -104,6 +104,89 @@ void main() {
       expect(user(email: 'ghost@example.com').isListedInAdminUsers, isTrue);
     });
 
+    test('detects Google, Apple and password from providerIds', () {
+      expect(
+        const UserProfile(
+          uid: uid,
+          firstName: '',
+          lastName: '',
+          email: 'ghost@example.com',
+          providerIds: ['google.com'],
+        ).signedInWithGoogle,
+        isTrue,
+      );
+      expect(
+        const UserProfile(
+          uid: uid,
+          firstName: '',
+          lastName: '',
+          email: 'ghost@example.com',
+          providerIds: ['apple.com'],
+        ).signedInWithApple,
+        isTrue,
+      );
+      expect(
+        const UserProfile(
+          uid: uid,
+          firstName: 'Ada',
+          lastName: 'Lovelace',
+          email: 'ada@example.com',
+          providerIds: ['password'],
+        ).signedInWithPassword,
+        isTrue,
+      );
+      expect(
+        const UserProfile(
+          uid: uid,
+          firstName: '',
+          lastName: '',
+          email: 'ghost@example.com',
+          providerIds: ['google.com', 'password'],
+        ).signedInWithGoogle,
+        isTrue,
+      );
+      expect(user(email: 'ghost@example.com').signedInWithGoogle, isFalse);
+      expect(user(email: 'ghost@example.com').signedInWithApple, isFalse);
+    });
+
+    test('readUserProviderIds uses fields already on the user document', () {
+      expect(
+        readUserProviderIds({
+          UserDocumentFields.providerIds: ['google.com'],
+        }),
+        ['google.com'],
+      );
+      expect(
+        readUserProviderIds({'signInProvider': 'apple.com'}),
+        ['apple.com'],
+      );
+      expect(
+        readUserProviderIds({'providerId': 'password'}),
+        ['password'],
+      );
+      expect(
+        readUserProviderIds({
+          'providers': [
+            {'providerId': 'google.com', 'email': 'ada@example.com'},
+          ],
+        }),
+        ['google.com'],
+      );
+      expect(
+        readUserProviderIds({
+          'providers': {'apple.com': true, 'password': true},
+        }),
+        ['apple.com', 'password'],
+      );
+      expect(
+        readUserProviderIds({
+          UserDocumentFields.providerIds: ['Google.com'],
+          'signInProvider': 'google.com',
+        }),
+        ['Google.com'],
+      );
+    });
+
     test('matches firstName, lastName, displayName and email', () {
       final profile = user(
         firstName: 'Mohamed-Amine',

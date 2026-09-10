@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 import 'package:grinta/analytics/analytics_routes.dart';
 import 'package:grinta/analytics/analytics_screen_names.dart';
 import 'package:grinta/core/extensions/l10n_extension.dart';
@@ -35,6 +36,10 @@ class AdminUsersScreen extends StatefulWidget {
   final Widget Function(Player player, double radius)? playerPhotoBuilder;
 
   static const searchFieldKey = ValueKey<String>('admin-users-search');
+  static const googleSignInKey = ValueKey<String>('admin-user-signin-google');
+  static const appleSignInKey = ValueKey<String>('admin-user-signin-apple');
+  static const passwordSignInKey =
+      ValueKey<String>('admin-user-signin-password');
 
   @override
   State<AdminUsersScreen> createState() => _AdminUsersScreenState();
@@ -75,8 +80,7 @@ class _AdminUsersScreenState extends State<AdminUsersScreen> {
   }
 
   Stream<List<UserProfile>> get _usersStream =>
-      widget.usersStream ??
-      (_userService ??= UserService()).streamUsers();
+      widget.usersStream ?? (_userService ??= UserService()).streamUsers();
 
   Stream<List<Player>> get _membersStream =>
       widget.membersStream ??
@@ -218,8 +222,7 @@ class _AdminUsersScreenState extends State<AdminUsersScreen> {
                 return StreamBuilder<List<Player>>(
                   stream: _membersStream,
                   builder: (context, membersSnapshot) {
-                    final members =
-                        membersSnapshot.data ?? const <Player>[];
+                    final members = membersSnapshot.data ?? const <Player>[];
                     final counts = adminPlayerCountsByUserId(members);
 
                     return ValueListenableBuilder<String>(
@@ -301,8 +304,7 @@ class _AdminUsersSearchField extends StatefulWidget {
   final VoidCallback onClear;
 
   @override
-  State<_AdminUsersSearchField> createState() =>
-      _AdminUsersSearchFieldState();
+  State<_AdminUsersSearchField> createState() => _AdminUsersSearchFieldState();
 }
 
 class _AdminUsersSearchFieldState extends State<_AdminUsersSearchField> {
@@ -412,6 +414,39 @@ class _AdminUserCard extends StatelessWidget {
                         ),
                       ),
                     ],
+                    if (user.signedInWithGoogle ||
+                        user.signedInWithApple ||
+                        user.signedInWithPassword) ...[
+                      const SizedBox(height: 8),
+                      Wrap(
+                        spacing: 6,
+                        runSpacing: 6,
+                        children: [
+                          if (user.signedInWithGoogle)
+                            _SignInProviderBadge(
+                              badgeKey: AdminUsersScreen.googleSignInKey,
+                              label: l10n.adminUsersSignInGoogle,
+                              assetPath: 'assets/images/google_logo.svg',
+                              tintAsset: false,
+                            ),
+                          if (user.signedInWithApple)
+                            _SignInProviderBadge(
+                              badgeKey: AdminUsersScreen.appleSignInKey,
+                              label: l10n.adminUsersSignInApple,
+                              assetPath: 'assets/images/apple_logo.svg',
+                              tintAsset: true,
+                            ),
+                          if (user.signedInWithPassword &&
+                              !user.signedInWithGoogle &&
+                              !user.signedInWithApple)
+                            _SignInProviderBadge(
+                              badgeKey: AdminUsersScreen.passwordSignInKey,
+                              label: l10n.adminUsersSignInPassword,
+                              icon: Icons.mail_outline_rounded,
+                            ),
+                        ],
+                      ),
+                    ],
                     const SizedBox(height: 6),
                     Text(
                       l10n.adminUsersPlayerCount(playerCount),
@@ -444,6 +479,66 @@ class _AdminUserCard extends StatelessWidget {
             ],
           ),
         ),
+      ),
+    );
+  }
+}
+
+class _SignInProviderBadge extends StatelessWidget {
+  const _SignInProviderBadge({
+    required this.badgeKey,
+    required this.label,
+    this.assetPath,
+    this.tintAsset = false,
+    this.icon,
+  });
+
+  final Key badgeKey;
+  final String label;
+  final String? assetPath;
+  final bool tintAsset;
+  final IconData? icon;
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = context.appColors;
+    final textTheme = Theme.of(context).textTheme;
+    final iconColor = colors.textPrimary;
+
+    Widget leading;
+    if (assetPath != null) {
+      leading = SvgPicture.asset(
+        assetPath!,
+        width: 14,
+        height: 14,
+        colorFilter:
+            tintAsset ? ColorFilter.mode(iconColor, BlendMode.srcIn) : null,
+      );
+    } else {
+      leading = Icon(icon, size: 14, color: iconColor);
+    }
+
+    return Container(
+      key: badgeKey,
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      decoration: BoxDecoration(
+        color: colors.primary.withValues(alpha: 0.1),
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: colors.border),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          leading,
+          const SizedBox(width: 6),
+          Text(
+            label,
+            style: textTheme.labelSmall?.copyWith(
+              color: colors.textPrimary,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+        ],
       ),
     );
   }

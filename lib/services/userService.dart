@@ -10,6 +10,7 @@ abstract final class UserDocumentFields {
   static const isRoot = 'isRoot';
   static const isAnonymous = 'isAnonymous';
   static const providerIds = 'providerIds';
+
   /// Server-written paid access mirror (promo / future webhooks). Clients read only.
   static const subscriptionAccess = 'subscriptionAccess';
 
@@ -27,6 +28,7 @@ abstract final class UserDocumentFields {
   static const physiologicalDataConsentAt = 'physiologicalDataConsentAt';
   static const physiologicalDataConsentVersion =
       'physiologicalDataConsentVersion';
+
   /// `self` | `parent` — see [PhysiologicalDataConsentSource].
   static const physiologicalDataConsentSource =
       'physiologicalDataConsentSource';
@@ -175,13 +177,108 @@ class UserProfile {
   bool get isAnonymousAccount {
     if (personName.isNotEmpty) return false;
     if (isAnonymous) return true;
-    return providerIds.any(_isAnonymousProviderId);
+    return providerIds.any(isAnonymousSignInProviderId);
   }
+
+  /// Signed in with Google (`google.com` on the user document).
+  bool get signedInWithGoogle => providerIds.any(isGoogleSignInProviderId);
+
+  /// Signed in with Apple (`apple.com` on the user document).
+  bool get signedInWithApple => providerIds.any(isAppleSignInProviderId);
+
+  /// Email / password (or email-link) Auth — useful when neither Google nor Apple.
+  bool get signedInWithPassword => providerIds.any(isPasswordSignInProviderId);
 }
 
-bool _isAnonymousProviderId(String value) {
-  final id = value.trim().toLowerCase();
-  return id == 'anonymous';
+bool isAnonymousSignInProviderId(String value) {
+  return _normalizedProviderId(value) == 'anonymous';
+}
+
+bool isGoogleSignInProviderId(String value) {
+  final id = _normalizedProviderId(value);
+  return id == 'google.com' || id == 'google';
+}
+
+bool isAppleSignInProviderId(String value) {
+  final id = _normalizedProviderId(value);
+  return id == 'apple.com' || id == 'apple';
+}
+
+bool isPasswordSignInProviderId(String value) {
+  final id = _normalizedProviderId(value);
+  return id == 'password' ||
+      id == 'email' ||
+      id == 'emaillink' ||
+      id == 'email_link';
+}
+
+String _normalizedProviderId(String value) => value.trim().toLowerCase();
+
+/// Provider ids already stored on `users/{uid}` (`providerIds`, `providers`,
+/// `providerId`, `signInProvider`). No extra queries.
+List<String> readUserProviderIds(Map<String, dynamic> data) {
+  final ids = <String>[];
+  final seen = <String>{};
+
+  void addId(String value) {
+    final trimmed = value.trim();
+    if (trimmed.isEmpty) return;
+    final key = trimmed.toLowerCase();
+    if (seen.add(key)) ids.add(trimmed);
+  }
+
+  void addRaw(dynamic raw, {int depth = 0}) {
+    if (raw == null || depth > 3) return;
+    if (raw is String) {
+      addId(raw);
+      return;
+    }
+    if (raw is Iterable) {
+      for (final item in raw) {
+        addRaw(item, depth: depth + 1);
+      }
+      return;
+    }
+    if (raw is Map) {
+      for (final key in const [
+        'providerId',
+        'provider',
+        'signInProvider',
+        'id',
+      ]) {
+        if (raw.containsKey(key)) {
+          addRaw(raw[key], depth: depth + 1);
+        }
+      }
+      for (final key in raw.keys) {
+        final text = key.toString().trim();
+        if (_looksLikeStandaloneProviderId(text)) addId(text);
+      }
+      return;
+    }
+    addId(raw.toString());
+  }
+
+  addRaw(data[UserDocumentFields.providerIds]);
+  addRaw(data['providers']);
+  addRaw(data['providerId']);
+  addRaw(data['signInProvider']);
+  return List<String>.unmodifiable(ids);
+}
+
+bool _looksLikeStandaloneProviderId(String value) {
+  final id = _normalizedProviderId(value);
+  if (id.isEmpty) return false;
+  if (id.contains('.')) return true;
+  return const {
+    'google',
+    'apple',
+    'password',
+    'anonymous',
+    'email',
+    'emaillink',
+    'phone',
+  }.contains(id);
 }
 
 class UserService {
@@ -227,17 +324,16 @@ class UserService {
   /// Live list of all app accounts (`users/{uid}`).
   Stream<List<UserProfile>> streamUsers() {
     return _collection.snapshots().map((snapshot) {
-      final users = snapshot.docs
-          .map(userProfileFromSnapshot)
-          .toList(growable: false);
+      final users =
+          snapshot.docs.map(userProfileFromSnapshot).toList(growable: false);
       users.sort((a, b) {
         final byLast = a.lastName.toLowerCase().compareTo(
-          b.lastName.toLowerCase(),
-        );
+              b.lastName.toLowerCase(),
+            );
         if (byLast != 0) return byLast;
         final byFirst = a.firstName.toLowerCase().compareTo(
-          b.firstName.toLowerCase(),
-        );
+              b.firstName.toLowerCase(),
+            );
         if (byFirst != 0) return byFirst;
         return a.email.toLowerCase().compareTo(b.email.toLowerCase());
       });
@@ -257,7 +353,7 @@ class UserService {
       photoURL: _readPhotoUrl(data),
       isRoot: data[UserDocumentFields.isRoot] == true,
       isAnonymous: _readAnonymousFlag(data),
-      providerIds: _readProviderIds(data),
+      providerIds: readUserProviderIds(data),
     );
   }
 
@@ -266,28 +362,6 @@ class UserService {
     if (raw == true) return true;
     if (raw is String && raw.trim().toLowerCase() == 'true') return true;
     return false;
-  }
-
-  List<String> _readProviderIds(Map<String, dynamic> data) {
-    final ids = <String>[];
-    void add(dynamic raw) {
-      if (raw == null) return;
-      if (raw is Iterable) {
-        for (final item in raw) {
-          final value = item.toString().trim();
-          if (value.isNotEmpty) ids.add(value);
-        }
-        return;
-      }
-      final value = raw.toString().trim();
-      if (value.isNotEmpty) ids.add(value);
-    }
-
-    add(data[UserDocumentFields.providerIds]);
-    add(data['providers']);
-    add(data['providerId']);
-    add(data['signInProvider']);
-    return List<String>.unmodifiable(ids);
   }
 
   String _readEmail(Map<String, dynamic> data) {
@@ -403,7 +477,8 @@ class UserService {
   Future<String> getAccountStatus(String uid) async {
     final snap = await _collection.doc(uid).get();
     if (!snap.exists) return UserAccountStatus.active;
-    final raw = snap.data()?[UserDocumentFields.accountStatus]?.toString().trim();
+    final raw =
+        snap.data()?[UserDocumentFields.accountStatus]?.toString().trim();
     if (raw == null || raw.isEmpty) return UserAccountStatus.active;
     return raw;
   }

@@ -327,6 +327,68 @@ void main() {
         expect(find.text(l10n.adminNoEmail), findsNothing);
       },
     );
+
+    testWidgets(
+      'Google and Apple badges come from the user document, not extra queries',
+      (tester) async {
+        final l10n = await AppLocalizations.delegate.load(const Locale('fr'));
+        const googleUser = UserProfile(
+          uid: 'google-uid',
+          firstName: '',
+          lastName: '',
+          email: 'ghost.google@gmail.com',
+          providerIds: ['google.com'],
+        );
+        const appleUser = UserProfile(
+          uid: 'apple-uid',
+          firstName: '',
+          lastName: '',
+          email: 'ghost.apple@privaterelay.appleid.com',
+          providerIds: ['apple.com'],
+        );
+        const passwordUser = UserProfile(
+          uid: 'password-uid',
+          firstName: 'Ada',
+          lastName: 'Lovelace',
+          email: 'ada@example.com',
+          providerIds: ['password'],
+        );
+
+        await tester.pumpWidget(
+          MaterialApp(
+            theme: AppTheme.darkTheme,
+            locale: const Locale('fr'),
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
+            home: AdminUsersScreen(
+              usersStream: Stream<List<UserProfile>>.value([
+                googleUser,
+                appleUser,
+                passwordUser,
+              ]),
+              membersStream: Stream<List<Player>>.value(const []),
+            ),
+          ),
+        );
+        await tester.pump();
+        await tester.pump();
+
+        expect(find.text(l10n.adminNoName), findsNWidgets(2));
+        expect(find.text('ghost.google@gmail.com'), findsOneWidget);
+        expect(
+          find.text('ghost.apple@privaterelay.appleid.com'),
+          findsOneWidget,
+        );
+        expect(find.text('Ada Lovelace'), findsOneWidget);
+        expect(find.byKey(AdminUsersScreen.googleSignInKey), findsOneWidget);
+        expect(find.byKey(AdminUsersScreen.appleSignInKey), findsOneWidget);
+        expect(find.byKey(AdminUsersScreen.passwordSignInKey), findsOneWidget);
+        expect(find.text(l10n.adminUsersSignInGoogle), findsOneWidget);
+        expect(find.text(l10n.adminUsersSignInApple), findsOneWidget);
+        expect(find.text(l10n.adminUsersSignInPassword), findsOneWidget);
+        expect(find.text(l10n.adminUsersPlayerCount(0)), findsNWidgets(3));
+      },
+    );
   });
 
   group('AdminUserPlayersScreen', () {
@@ -409,13 +471,15 @@ void main() {
         await tester.pump();
 
         await tester.tap(
-          find.byKey(const ValueKey<String>('admin-linked-player-mohamed-player')),
+          find.byKey(
+              const ValueKey<String>('admin-linked-player-mohamed-player')),
         );
         await tester.pump();
         await tester.pump(const Duration(milliseconds: 400));
 
         expect(find.byType(AdminPlayerHubScreen), findsOneWidget);
-        expect(find.byKey(AdminPlayerHubScreen.sessionsTileKey), findsOneWidget);
+        expect(
+            find.byKey(AdminPlayerHubScreen.sessionsTileKey), findsOneWidget);
       },
     );
   });
