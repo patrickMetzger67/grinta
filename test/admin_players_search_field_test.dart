@@ -19,6 +19,14 @@ class _CountingHangingSensorService extends AdminPlayerSensorService {
   }
 }
 
+Widget _placeholderPhoto(Player player, double radius) {
+  return SizedBox(
+    width: radius * 2,
+    height: radius * 2,
+    child: const ColoredBox(color: Colors.grey),
+  );
+}
+
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
@@ -46,6 +54,7 @@ void main() {
         home: AdminPlayersScreen(
           membersStream: members.stream,
           sensorService: sensorService,
+          playerPhotoBuilder: _placeholderPhoto,
         ),
       ),
     );
