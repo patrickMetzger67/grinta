@@ -71,10 +71,18 @@ class UserAvatarService {
       );
       final downloadUrl = await ref.getDownloadURL();
 
-      await FirebaseFirestore.instance
+      final userRef = FirebaseFirestore.instance
           .collection(UserService.collectionName)
-          .doc(uid)
-          .set({'photoURL': downloadUrl}, SetOptions(merge: true));
+          .doc(uid);
+      final userSnap = await userRef.get();
+      // Never create a nameless `users/{uid}` stub — only attach photoURL
+      // once the account document already exists.
+      if (userSnap.exists) {
+        await userRef.set(
+          {'photoURL': downloadUrl},
+          SetOptions(merge: true),
+        );
+      }
 
       PlayerService.clearPlayerPhotoUrlCache();
       return downloadUrl;

@@ -1,5 +1,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 
+import '../util/player_profile_validator.dart';
+
 /// Firestore field names on `users/{uid}`.
 abstract final class UserDocumentFields {
   static const email = 'email';
@@ -233,6 +235,11 @@ class UserService {
     final trimmedEmail = email.trim();
     final trimmedFirst = firstName.trim();
     final trimmedLast = lastName.trim();
+    if (!hasRequiredGivenNames(trimmedFirst, trimmedLast)) {
+      throw ArgumentError(
+        'firstName and lastName are required to create users/$uid',
+      );
+    }
     final trimmedBirthDay = birthDay?.trim();
     final trimmedParentEmail = parentEmail?.trim();
     final trimmedToken = parentalConsentToken?.trim();
