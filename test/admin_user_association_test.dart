@@ -327,11 +327,6 @@ void main() {
         expect(find.text(l10n.adminNoEmail), findsNothing);
       },
     );
-
-      expect(find.text('Mohamed-Amine ABDESSAMAD'), findsOneWidget);
-      expect(find.text('anon-uid'), findsNothing);
-      expect(find.text('anon-flag-uid'), findsNothing);
-    });
   });
 
   group('AdminUserPlayersScreen', () {
