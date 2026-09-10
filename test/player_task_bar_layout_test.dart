@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:grinta/model/player_task.dart';
+import 'package:grinta/model/team.dart';
 import 'package:grinta/util/app_theme.dart';
 import 'package:grinta/util/player_task_access.dart';
 import 'package:grinta/util/player_task_bar_layout.dart';
@@ -57,6 +58,69 @@ void main() {
         end: DateTime(2026, 9, 7),
       ).copyWith(title: 'Plots');
       expect(task.barLabel, 'Matériel · Plots');
+    });
+
+    test('player bar keeps type and optional note', () {
+      final task = _task(
+        id: 't1',
+        start: DateTime(2026, 9, 7),
+        end: DateTime(2026, 9, 7),
+        assignees: const <String>['p1', 'p2', 'p3'],
+      ).copyWith(title: 'Plots');
+      expect(
+        playerTaskAgendaBarLabel(
+          task,
+          isManager: false,
+          teamName: 'Séniors 2',
+        ),
+        'Matériel · Plots',
+      );
+    });
+
+    test('manager bar is team, task and assignee count', () {
+      final task = _task(
+        id: 't1',
+        start: DateTime(2026, 9, 7),
+        end: DateTime(2026, 9, 7),
+        assignees: const <String>['p1', 'p2', 'p3'],
+      );
+      expect(
+        playerTaskAgendaBarLabel(
+          task,
+          isManager: true,
+          teamName: 'Séniors 2',
+        ),
+        'Séniors 2 - Matériel - 3',
+      );
+    });
+
+    test('manager bar includes note in the task name', () {
+      final task = _task(
+        id: 't1',
+        start: DateTime(2026, 9, 7),
+        end: DateTime(2026, 9, 7),
+        assignees: const <String>['p1', 'p2'],
+      ).copyWith(title: 'Plots');
+      expect(
+        playerTaskAgendaBarLabel(
+          task,
+          isManager: true,
+          teamName: 'Séniors 2',
+        ),
+        'Séniors 2 - Matériel · Plots - 2',
+      );
+    });
+
+    test('manager bar omits blank team name', () {
+      final task = _task(
+        id: 't1',
+        start: DateTime(2026, 9, 7),
+        end: DateTime(2026, 9, 7),
+      );
+      expect(
+        playerTaskAgendaBarLabel(task, isManager: true, teamName: '  '),
+        'Matériel - 1',
+      );
     });
 
     test('occursOnDay covers inclusive multi-day range', () {
@@ -161,6 +225,17 @@ void main() {
     });
   });
 
+  group('playerTaskTeamNameFromTeams', () {
+    test('resolves display name from keyTeam', () {
+      final team = Team(keyTeam: 'team-1', name: 'Séniors 2');
+      expect(
+        playerTaskTeamNameFromTeams('team-1', [team]),
+        'Séniors 2',
+      );
+      expect(playerTaskTeamNameFromTeams('other', [team]), '');
+    });
+  });
+
   group('applyPlayerTaskTeamFilter', () {
     test('keeps unscoped and matching team tasks', () {
       final a = _task(
@@ -242,5 +317,40 @@ void main() {
     );
 
     expect(find.text('Maillots'), findsOneWidget);
+  });
+
+  testWidgets('manager week bar shows team, task and assignee count', (
+    WidgetTester tester,
+  ) async {
+    final task = _task(
+      id: 'week',
+      start: DateTime(2026, 9, 7),
+      end: DateTime(2026, 9, 13),
+      assignees: const <String>['p1', 'p2', 'p3'],
+    );
+
+    await tester.pumpWidget(
+      MaterialApp(
+        theme: ThemeData(
+          useMaterial3: true,
+          extensions: const <ThemeExtension<dynamic>>[AppColors.light],
+        ),
+        home: Scaffold(
+          body: AgendaPlayerTaskBars(
+            tasks: [task],
+            weekStart: DateTime(2026, 9, 7),
+            onTaskTap: (_) {},
+            labelFor: (PlayerTask t) => playerTaskAgendaBarLabel(
+              t,
+              isManager: true,
+              teamName: 'Séniors 2',
+            ),
+          ),
+        ),
+      ),
+    );
+
+    expect(find.text('Séniors 2 - Matériel - 3'), findsOneWidget);
+    expect(find.text('Matériel'), findsNothing);
   });
 }

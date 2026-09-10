@@ -4033,6 +4033,20 @@
   "deletePlayerTaskError": "Aufgabe konnte nicht gelöscht werden.",
   "playerTaskDefaultTypeEquipment": "Material",
   "playerTaskDefaultTypeJerseys": "Trikots",
+  "playerTaskManagerBarLabel": "{teamName} - {taskName} - {count}",
+  "@playerTaskManagerBarLabel": {
+    "placeholders": {
+      "teamName": {
+        "type": "String"
+      },
+      "taskName": {
+        "type": "String"
+      },
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "createPlayerTaskNotificationTitle": "Neue Aufgabe",
   "createPlayerTaskNotificationBody": "{label} · {period}",
   "@createPlayerTaskNotificationBody": {

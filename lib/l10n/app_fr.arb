@@ -4483,6 +4483,20 @@
   "deletePlayerTaskError": "Impossible de supprimer la tâche.",
   "playerTaskDefaultTypeEquipment": "Matériel",
   "playerTaskDefaultTypeJerseys": "Maillots",
+  "playerTaskManagerBarLabel": "{teamName} - {taskName} - {count}",
+  "@playerTaskManagerBarLabel": {
+    "placeholders": {
+      "teamName": {
+        "type": "String"
+      },
+      "taskName": {
+        "type": "String"
+      },
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "createPlayerTaskNotificationTitle": "Nouvelle tâche",
   "createPlayerTaskNotificationBody": "{label} · {period}",
   "@createPlayerTaskNotificationBody": {

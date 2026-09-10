@@ -4077,6 +4077,20 @@
   "deletePlayerTaskError": "Could not delete the task.",
   "playerTaskDefaultTypeEquipment": "Equipment",
   "playerTaskDefaultTypeJerseys": "Jerseys",
+  "playerTaskManagerBarLabel": "{teamName} - {taskName} - {count}",
+  "@playerTaskManagerBarLabel": {
+    "placeholders": {
+      "teamName": {
+        "type": "String"
+      },
+      "taskName": {
+        "type": "String"
+      },
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "createPlayerTaskNotificationTitle": "New task",
   "createPlayerTaskNotificationBody": "{label} · {period}",
   "@createPlayerTaskNotificationBody": {

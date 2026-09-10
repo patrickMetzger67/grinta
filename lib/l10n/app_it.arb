@@ -4033,6 +4033,20 @@
   "deletePlayerTaskError": "Impossibile eliminare il compito.",
   "playerTaskDefaultTypeEquipment": "Materiale",
   "playerTaskDefaultTypeJerseys": "Maglie",
+  "playerTaskManagerBarLabel": "{teamName} - {taskName} - {count}",
+  "@playerTaskManagerBarLabel": {
+    "placeholders": {
+      "teamName": {
+        "type": "String"
+      },
+      "taskName": {
+        "type": "String"
+      },
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "createPlayerTaskNotificationTitle": "Nuovo compito",
   "createPlayerTaskNotificationBody": "{label} · {period}",
   "@createPlayerTaskNotificationBody": {

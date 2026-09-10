@@ -2,6 +2,31 @@ import 'package:flutter/material.dart';
 import 'package:grinta/model/player_task.dart';
 import 'package:grinta/util/agenda_calendar_date.dart';
 
+/// Agenda chip text.
+///
+/// Assigned players keep [PlayerTask.barLabel] (type, plus optional note).
+/// Managers see `team name - task name - assignee count`.
+String playerTaskAgendaBarLabel(
+  PlayerTask task, {
+  required bool isManager,
+  String teamName = '',
+  String Function(String teamName, String taskName, int count)? managerFormat,
+}) {
+  if (!isManager) {
+    return task.barLabel;
+  }
+  final String taskName = task.barLabel;
+  final int count = task.assigneeMemberIds.length;
+  final String team = teamName.trim();
+  if (team.isEmpty) {
+    return '$taskName - $count';
+  }
+  if (managerFormat != null) {
+    return managerFormat(team, taskName, count);
+  }
+  return '$team - $taskName - $count';
+}
+
 /// One painted span of a [PlayerTask] on a Monday–Sunday strip.
 class PlayerTaskBarSpan {
   const PlayerTaskBarSpan({

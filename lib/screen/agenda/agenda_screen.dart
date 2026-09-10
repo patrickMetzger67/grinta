@@ -75,6 +75,7 @@ import '../../model/player_task.dart';
 import '../../util/non_sport_event_helper.dart';
 import '../../util/personal_sport_activity_helper.dart';
 import '../../util/player_task_access.dart';
+import '../../util/player_task_bar_layout.dart';
 import '../../util/session_report_access.dart';
 import '../../util/share_player_access.dart';
 import '../../util/staff_session_access.dart';

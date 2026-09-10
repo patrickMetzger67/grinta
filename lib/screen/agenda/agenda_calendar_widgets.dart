@@ -51,6 +51,7 @@ class _GrintaStyleCalendarHeader extends StatelessWidget {
   Widget build(BuildContext context) {
     final l10n = context.l10n;
     final colors = context.appColors;
+    final AppSession session = context.watch<AppSession>();
     final locale = Localizations.localeOf(context).toString();
     final isMonth = mode == AgendaCalendarMode.month;
     final isWeek = mode == AgendaCalendarMode.week;
@@ -325,6 +326,12 @@ class _GrintaStyleCalendarHeader extends StatelessWidget {
                 tasks: playerTasks,
                 weekStart: _startOfWeek(selectedDate),
                 onTaskTap: onPlayerTaskTap,
+                labelFor: (PlayerTask task) => playerTaskAgendaBarLabel(
+                  task,
+                  isManager: canManagePlayerTask(task, session),
+                  teamName: playerTaskTeamDisplayName(task, session),
+                  managerFormat: l10n.playerTaskManagerBarLabel,
+                ),
               ),
             ],
           ),

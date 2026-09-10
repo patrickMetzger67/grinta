@@ -4033,6 +4033,20 @@
   "deletePlayerTaskError": "No se pudo eliminar la tarea.",
   "playerTaskDefaultTypeEquipment": "Material",
   "playerTaskDefaultTypeJerseys": "Camisetas",
+  "playerTaskManagerBarLabel": "{teamName} - {taskName} - {count}",
+  "@playerTaskManagerBarLabel": {
+    "placeholders": {
+      "teamName": {
+        "type": "String"
+      },
+      "taskName": {
+        "type": "String"
+      },
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "createPlayerTaskNotificationTitle": "Nueva tarea",
   "createPlayerTaskNotificationBody": "{label} · {period}",
   "@createPlayerTaskNotificationBody": {

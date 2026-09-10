@@ -1,4 +1,5 @@
 import 'package:grinta/model/player_task.dart';
+import 'package:grinta/model/team.dart';
 import 'package:grinta/provider/appSession.dart';
 import 'package:grinta/util/team_deletion_access.dart';
 
@@ -34,6 +35,28 @@ bool canManagePlayerTask(PlayerTask task, AppSession session) {
     }
   }
   return false;
+}
+
+/// Display name of [task]'s team from the session cache, or empty if unknown.
+String playerTaskTeamDisplayName(PlayerTask task, AppSession session) {
+  return playerTaskTeamNameFromTeams(
+    task.teamId,
+    session.teamsForAgendaSelectedSeason,
+  );
+}
+
+/// Resolves [teamId] against [teams] via [Team.keyTeam].
+String playerTaskTeamNameFromTeams(String teamId, Iterable<Team> teams) {
+  final String id = teamId.trim();
+  if (id.isEmpty) {
+    return '';
+  }
+  for (final Team team in teams) {
+    if ((team.keyTeam?.trim() ?? '') == id) {
+      return (team.name ?? '').trim();
+    }
+  }
+  return '';
 }
 
 /// Filters [tasks] to those assigned to [memberId] or created by them.

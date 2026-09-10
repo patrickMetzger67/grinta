@@ -9,11 +9,16 @@ class AgendaPlayerTaskBars extends StatelessWidget {
     required this.tasks,
     required this.weekStart,
     required this.onTaskTap,
+    this.labelFor,
   });
 
   final List<PlayerTask> tasks;
   final DateTime weekStart;
   final ValueChanged<PlayerTask> onTaskTap;
+
+  /// When set, used instead of [PlayerTask.barLabel] (managers get a richer
+  /// `team - task - count` chip).
+  final String Function(PlayerTask task)? labelFor;
 
   static const double _laneHeight = 22.0;
   static const double _laneGap = 4.0;
@@ -54,6 +59,7 @@ class AgendaPlayerTaskBars extends StatelessWidget {
                           a.startColumn.compareTo(b.startColumn),
                     ),
                   onTaskTap: onTaskTap,
+                  labelFor: labelFor,
                 ),
               ),
             ),
@@ -67,10 +73,12 @@ class _LaneRow extends StatelessWidget {
   const _LaneRow({
     required this.spans,
     required this.onTaskTap,
+    this.labelFor,
   });
 
   final List<PlayerTaskBarSpan> spans;
   final ValueChanged<PlayerTask> onTaskTap;
+  final String Function(PlayerTask task)? labelFor;
 
   @override
   Widget build(BuildContext context) {
@@ -87,6 +95,7 @@ class _LaneRow extends StatelessWidget {
             padding: const EdgeInsets.symmetric(horizontal: 2),
             child: _TaskBarChip(
               task: span.task,
+              label: labelFor?.call(span.task) ?? span.task.barLabel,
               onTap: () => onTaskTap(span.task),
             ),
           ),
@@ -105,10 +114,12 @@ class _LaneRow extends StatelessWidget {
 class _TaskBarChip extends StatelessWidget {
   const _TaskBarChip({
     required this.task,
+    required this.label,
     required this.onTap,
   });
 
   final PlayerTask task;
+  final String label;
   final VoidCallback onTap;
 
   @override
@@ -124,7 +135,7 @@ class _TaskBarChip extends StatelessWidget {
           child: Align(
             alignment: Alignment.centerLeft,
             child: Text(
-              task.barLabel,
+              label,
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
               style: Theme.of(context).textTheme.labelMedium?.copyWith(
