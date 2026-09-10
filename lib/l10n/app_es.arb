@@ -2764,6 +2764,41 @@
   "adminPlayersAddUserTitle": "Añadir un usuario",
   "adminPlayersAssociateSuccess": "Usuario asociado.",
   "adminPlayersAssociateFailed": "No se pudo asociar el usuario.",
+  "adminPlayerTeamKitSensorLabel": "Sensor de equipo",
+  "adminPlayerConnectedDevicesLabel": "Dispositivos / apps conectados",
+  "adminPlayerTeamKitSensorTooltip": "Sensor de equipo",
+  "adminPlayerConnectedDevicesTooltip": "Dispositivos o aplicaciones conectados",
+  "adminPlayerHubUsersTitle": "Usuarios asociados",
+  "adminPlayerHubUsersSubtitle": "Consultar y asociar cuentas de usuario.",
+  "adminPlayerHubSessionsTitle": "Sesiones",
+  "adminPlayerHubSessionsSubtitle": "GPS, Polar y actividades personales.",
+  "adminPlayerSessionsTitle": "Sesiones · {name}",
+  "@adminPlayerSessionsTitle": {
+    "placeholders": {
+      "name": { "type": "String" }
+    }
+  },
+  "adminPlayerSessionsPickPeriodTooltip": "Elegir un periodo",
+  "adminPlayerSessionsPeriodLabel": "Periodo",
+  "adminPlayerSessionsSeasonPeriodLabel": "Temporada {seasonName}",
+  "@adminPlayerSessionsSeasonPeriodLabel": {
+    "placeholders": {
+      "seasonName": { "type": "String" }
+    }
+  },
+  "adminPlayerSessionsEmpty": "No hay sesiones en este periodo.",
+  "adminPlayerSessionsLoadError": "No se pudieron cargar las sesiones.",
+  "adminPlayerSessionKindGps": "GPS",
+  "adminPlayerSessionKindPolar": "Polar",
+  "adminPlayerSessionKindPersonal": "Personal",
+  "adminPlayerSessionMatch": "Partido",
+  "adminPlayerSessionTraining": "Entrenamiento",
+  "adminPlayerSessionDetailTitle": "Rendimiento · {name}",
+  "@adminPlayerSessionDetailTitle": {
+    "placeholders": {
+      "name": { "type": "String" }
+    }
+  },
   "adminPromoCodesSection": "Códigos promo",
   "adminPromoCodesSectionDesc": "Crear y gestionar códigos promo de suscripción.",
   "adminPromoCodesTitle": "Códigos promo",

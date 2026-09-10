@@ -99,4 +99,45 @@ class PolarSessionAnalysisService {
   Future<void> deleteByDocId(String docId) async {
     await _collection.doc(docId).delete();
   }
+
+  /// Analyses for [playerId], newest first, optionally limited to [start]–[end]
+  /// (inclusive calendar bounds on `createdAt`).
+  Future<List<PolarSessionAnalysis>> listByPlayerId(
+    String playerId, {
+    DateTime? start,
+    DateTime? end,
+    int? limit,
+  }) async {
+    final pid = playerId.trim();
+    if (pid.isEmpty) return const <PolarSessionAnalysis>[];
+
+    Query<Map<String, dynamic>> query = _collection
+        .where('playerId', isEqualTo: pid)
+        .orderBy('createdAt', descending: true);
+
+    if (start != null) {
+      query = query.where(
+        'createdAt',
+        isGreaterThanOrEqualTo: Timestamp.fromDate(
+          DateTime(start.year, start.month, start.day),
+        ),
+      );
+    }
+    if (end != null) {
+      final endExclusive = DateTime(end.year, end.month, end.day)
+          .add(const Duration(days: 1));
+      query = query.where(
+        'createdAt',
+        isLessThan: Timestamp.fromDate(endExclusive),
+      );
+    }
+    if (limit != null) {
+      query = query.limit(limit);
+    }
+
+    final snap = await query.get();
+    return snap.docs
+        .map(PolarSessionAnalysis.fromDoc)
+        .toList(growable: false);
+  }
 }

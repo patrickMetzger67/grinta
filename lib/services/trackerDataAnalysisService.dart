@@ -170,4 +170,71 @@ class TrackerAnalysisService {
   static Future<void> deleteAnalysis(String docId) async {
     await _collection.doc(docId).delete();
   }
+
+  /// Player analyses with Firestore doc id + `createdAt`, newest first.
+  ///
+  /// Optional [start]/[end] filter on `createdAt` (inclusive calendar days).
+  static Future<List<TrackerAnalysisDoc>> getAnalysisDocsByPlayer(
+    String playerId, {
+    DateTime? start,
+    DateTime? end,
+    int? limit,
+  }) async {
+    final pid = playerId.trim();
+    if (pid.isEmpty) return const <TrackerAnalysisDoc>[];
+
+    Query<Map<String, dynamic>> query = _collection
+        .where('playerId', isEqualTo: pid)
+        .orderBy('createdAt', descending: true);
+
+    if (start != null) {
+      query = query.where(
+        'createdAt',
+        isGreaterThanOrEqualTo: Timestamp.fromDate(
+          DateTime(start.year, start.month, start.day),
+        ),
+      );
+    }
+    if (end != null) {
+      final endExclusive = DateTime(end.year, end.month, end.day)
+          .add(const Duration(days: 1));
+      query = query.where(
+        'createdAt',
+        isLessThan: Timestamp.fromDate(endExclusive),
+      );
+    }
+    if (limit != null) {
+      query = query.limit(limit);
+    }
+
+    final snapshot = await query.get();
+    return snapshot.docs
+        .map(
+          (doc) => TrackerAnalysisDoc(
+            docId: doc.id,
+            createdAt: _readTimestamp(doc.data()['createdAt']),
+            analysis: TrackerAnalysisResult.fromMap(doc.data()),
+          ),
+        )
+        .toList(growable: false);
+  }
+
+  static DateTime? _readTimestamp(dynamic value) {
+    if (value is Timestamp) return value.toDate();
+    if (value is DateTime) return value;
+    return null;
+  }
+}
+
+/// Firestore document wrapper for [TrackerAnalysisResult].
+class TrackerAnalysisDoc {
+  const TrackerAnalysisDoc({
+    required this.docId,
+    required this.analysis,
+    this.createdAt,
+  });
+
+  final String docId;
+  final TrackerAnalysisResult analysis;
+  final DateTime? createdAt;
 }

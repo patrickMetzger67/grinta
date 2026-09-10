@@ -2764,6 +2764,41 @@
   "adminPlayersAddUserTitle": "Benutzer hinzufügen",
   "adminPlayersAssociateSuccess": "Benutzer zugeordnet.",
   "adminPlayersAssociateFailed": "Benutzer konnte nicht zugeordnet werden.",
+  "adminPlayerTeamKitSensorLabel": "Team-Sensor",
+  "adminPlayerConnectedDevicesLabel": "Verbundene Geräte / Apps",
+  "adminPlayerTeamKitSensorTooltip": "Team-Sensor",
+  "adminPlayerConnectedDevicesTooltip": "Verbundene Geräte oder Apps",
+  "adminPlayerHubUsersTitle": "Verknüpfte Benutzer",
+  "adminPlayerHubUsersSubtitle": "Benutzerkonten anzeigen und verknüpfen.",
+  "adminPlayerHubSessionsTitle": "Sessions",
+  "adminPlayerHubSessionsSubtitle": "GPS, Polar und persönliche Aktivitäten.",
+  "adminPlayerSessionsTitle": "Sessions · {name}",
+  "@adminPlayerSessionsTitle": {
+    "placeholders": {
+      "name": { "type": "String" }
+    }
+  },
+  "adminPlayerSessionsPickPeriodTooltip": "Zeitraum wählen",
+  "adminPlayerSessionsPeriodLabel": "Zeitraum",
+  "adminPlayerSessionsSeasonPeriodLabel": "Saison {seasonName}",
+  "@adminPlayerSessionsSeasonPeriodLabel": {
+    "placeholders": {
+      "seasonName": { "type": "String" }
+    }
+  },
+  "adminPlayerSessionsEmpty": "Keine Sessions in diesem Zeitraum.",
+  "adminPlayerSessionsLoadError": "Sessions konnten nicht geladen werden.",
+  "adminPlayerSessionKindGps": "GPS",
+  "adminPlayerSessionKindPolar": "Polar",
+  "adminPlayerSessionKindPersonal": "Persönlich",
+  "adminPlayerSessionMatch": "Spiel",
+  "adminPlayerSessionTraining": "Training",
+  "adminPlayerSessionDetailTitle": "Leistung · {name}",
+  "@adminPlayerSessionDetailTitle": {
+    "placeholders": {
+      "name": { "type": "String" }
+    }
+  },
   "adminPromoCodesSection": "Promo-Codes",
   "adminPromoCodesSectionDesc": "Abonnement-Promo-Codes erstellen und verwalten.",
   "adminPromoCodesTitle": "Promo-Codes",

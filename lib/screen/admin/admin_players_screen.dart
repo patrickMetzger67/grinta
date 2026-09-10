@@ -4,8 +4,10 @@ import 'package:flutter/material.dart';
 import 'package:grinta/analytics/analytics_routes.dart';
 import 'package:grinta/analytics/analytics_screen_names.dart';
 import 'package:grinta/core/extensions/l10n_extension.dart';
+import 'package:grinta/model/admin_player_sensor_flags.dart';
 import 'package:grinta/model/player.dart';
-import 'package:grinta/screen/admin/admin_player_users_screen.dart';
+import 'package:grinta/screen/admin/admin_player_hub_screen.dart';
+import 'package:grinta/services/admin_player_sensor_service.dart';
 import 'package:grinta/services/playerService.dart';
 import 'package:grinta/util/app_theme.dart';
 import 'package:grinta/util/playerDisplayName.dart';
@@ -21,7 +23,10 @@ class AdminPlayersScreen extends StatefulWidget {
 
 class _AdminPlayersScreenState extends State<AdminPlayersScreen> {
   final PlayerService _playerService = PlayerService();
+  final AdminPlayerSensorService _sensorService = AdminPlayerSensorService();
   final TextEditingController _searchController = TextEditingController();
+  final Map<String, AdminPlayerSensorFlags> _flagsByPlayerId = {};
+  final Set<String> _flagsLoading = {};
   Timer? _debounce;
   String _query = '';
 
@@ -53,11 +58,44 @@ class _AdminPlayersScreenState extends State<AdminPlayersScreen> {
     return tokens.every((token) => playerMatchesNameQuery(player, token));
   }
 
-  Future<void> _openPlayerUsers(Player player) {
-    return Navigator.of(context).push(
+  String? _playerCacheKey(Player player) => effectiveMemberId(player)?.trim();
+
+  void _ensureFlags(Player player) {
+    final key = _playerCacheKey(player);
+    if (key == null || key.isEmpty) return;
+    if (_flagsByPlayerId.containsKey(key) || _flagsLoading.contains(key)) {
+      return;
+    }
+    _flagsLoading.add(key);
+    unawaited(() async {
+      final flags = await _sensorService.loadFlags(player);
+      if (!mounted) return;
+      setState(() {
+        _flagsByPlayerId[key] = flags;
+        _flagsLoading.remove(key);
+      });
+    }());
+  }
+
+  Future<void> _openPlayer(Player player) async {
+    final key = _playerCacheKey(player);
+    var flags = key == null ? AdminPlayerSensorFlags.none : _flagsByPlayerId[key];
+    if (flags == null) {
+      flags = await _sensorService.loadFlags(player);
+      if (!mounted) return;
+      if (key != null && key.isNotEmpty) {
+        setState(() => _flagsByPlayerId[key] = flags!);
+      }
+    }
+
+    if (!mounted) return;
+    await Navigator.of(context).push(
       analyticsMaterialRoute<void>(
-        screenName: AnalyticsScreenNames.adminPlayerUsers,
-        builder: (_) => AdminPlayerUsersScreen(player: player),
+        screenName: AnalyticsScreenNames.adminPlayerHub,
+        builder: (_) => AdminPlayerHubScreen(
+          player: player,
+          flags: flags ?? AdminPlayerSensorFlags.none,
+        ),
       ),
     );
   }
@@ -165,10 +203,17 @@ class _AdminPlayersScreenState extends State<AdminPlayersScreen> {
                     final player = players[index];
                     final userCount =
                         collectMemberLinkedUserIds(player).length;
+                    final key = _playerCacheKey(player);
+                    _ensureFlags(player);
+                    final flags = key == null
+                        ? AdminPlayerSensorFlags.none
+                        : (_flagsByPlayerId[key] ??
+                            AdminPlayerSensorFlags.none);
                     return _AdminPlayerCard(
                       player: player,
                       userCount: userCount,
-                      onTap: () => _openPlayerUsers(player),
+                      flags: flags,
+                      onTap: () => _openPlayer(player),
                     );
                   },
                 );
@@ -185,11 +230,13 @@ class _AdminPlayerCard extends StatelessWidget {
   const _AdminPlayerCard({
     required this.player,
     required this.userCount,
+    required this.flags,
     required this.onTap,
   });
 
   final Player player;
   final int userCount;
+  final AdminPlayerSensorFlags flags;
   final VoidCallback onTap;
 
   @override
@@ -257,6 +304,30 @@ class _AdminPlayerCard extends StatelessWidget {
                   ],
                 ),
               ),
+              if (flags.hasTeamKitSensor)
+                Padding(
+                  padding: const EdgeInsets.only(right: 6),
+                  child: Tooltip(
+                    message: l10n.adminPlayerTeamKitSensorTooltip,
+                    child: Icon(
+                      Icons.sensors_rounded,
+                      color: colors.primary,
+                      size: 22,
+                    ),
+                  ),
+                ),
+              if (flags.hasConnectedDevices)
+                Padding(
+                  padding: const EdgeInsets.only(right: 6),
+                  child: Tooltip(
+                    message: l10n.adminPlayerConnectedDevicesTooltip,
+                    child: Icon(
+                      Icons.watch_outlined,
+                      color: colors.primary,
+                      size: 22,
+                    ),
+                  ),
+                ),
               Icon(Icons.chevron_right_rounded, color: colors.textSecondary),
             ],
           ),
