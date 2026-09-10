@@ -49,6 +49,7 @@ import '../../widget/add_grinta_player_sheet.dart';
 import '../../widget/confirm_delete_dialog.dart';
 import '../../widget/team_tracker_owners_sheet.dart';
 import '../../widget/add_grinta_staff_sheet.dart';
+import '../../widget/fines_manager_picker_sheet.dart';
 import '../../widget/manage_unavailabilities_sheet.dart';
 import '../../widget/member_search_sheet.dart';
 import '../../widget/player_name_filter_field.dart';
@@ -2677,73 +2678,15 @@ class _TeamDetailScreenState extends State<TeamDetailScreen> {
       return;
     }
 
-    final colors = context.appColors;
     final l10n = context.l10n;
     final String? currentId = _team.finesManagerMemberId?.trim();
 
-    final String? selected = await showModalBottomSheet<String>(
-      context: context,
-      backgroundColor: colors.card,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-      ),
-      builder: (BuildContext sheetContext) {
-        return SafeArea(
-          child: ListView(
-            shrinkWrap: true,
-            children: [
-              Padding(
-                padding: const EdgeInsets.fromLTRB(20, 16, 20, 8),
-                child: Text(
-                  l10n.teamFinesManagerTitle,
-                  style: Theme.of(sheetContext).textTheme.titleLarge?.copyWith(
-                        fontWeight: FontWeight.w700,
-                      ),
-                ),
-              ),
-              ListTile(
-                leading: Icon(
-                  Icons.person_off_outlined,
-                  color: colors.textSecondary,
-                ),
-                title: Text(l10n.teamFinesManagerNone),
-                selected: currentId == null || currentId.isEmpty,
-                onTap: () => Navigator.of(sheetContext).pop(''),
-              ),
-              if (playerRows.isEmpty)
-                Padding(
-                  padding: const EdgeInsets.fromLTRB(20, 8, 20, 24),
-                  child: Text(
-                    l10n.emptyNoPlayerForTeam,
-                    style: Theme.of(sheetContext).textTheme.bodyMedium?.copyWith(
-                          color: colors.textSecondary,
-                        ),
-                  ),
-                )
-              else
-                for (final _TeamMemberVm row in playerRows)
-                  ListTile(
-                    leading: Icon(
-                      Icons.person_outline_rounded,
-                      color: colors.primary,
-                    ),
-                    title: Text(
-                      playerDisplayName(
-                        row.player,
-                        unknownLabel: l10n.entityPlayer,
-                      ),
-                    ),
-                    selected: currentId != null &&
-                        currentId.isNotEmpty &&
-                        playerMemberLookupIds(row.player).contains(currentId),
-                    onTap: () => Navigator.of(sheetContext).pop(
-                      effectiveMemberId(row.player) ?? '',
-                    ),
-                  ),
-            ],
-          ),
-        );
-      },
+    final String? selected = await showFinesManagerPickerSheet(
+      context,
+      players: playerRows
+          .map((_TeamMemberVm row) => row.player)
+          .toList(growable: false),
+      currentId: currentId,
     );
 
     if (selected == null || !context.mounted) {
