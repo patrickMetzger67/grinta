@@ -2693,6 +2693,7 @@
   "adminUsersTitle": "Benutzer",
   "adminUsersSearchHint": "Suchen (E-Mail, Vorname, Nachname)",
   "adminNoEmail": "Ohne E-Mail",
+  "adminNoName": "Ohne Namen",
   "adminUsersLoadError": "Benutzer konnten nicht geladen werden.",
   "adminUsersEmpty": "Noch keine Benutzer.",
   "adminUsersSearchEmpty": "Keine Benutzer entsprechen der Suche.",

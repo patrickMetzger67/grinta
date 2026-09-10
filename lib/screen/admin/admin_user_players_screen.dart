@@ -118,7 +118,7 @@ class _AdminUserPlayersScreenState extends State<AdminUserPlayersScreen> {
           appBar: AppBar(
             title: Text(
               l10n.adminUsersPlayersTitle(
-                user.adminListLabel(noEmailLabel: l10n.adminNoEmail),
+                user.adminListLabel(noNameLabel: l10n.adminNoName),
               ),
               style: textTheme.titleLarge?.copyWith(
                 color: colors.textPrimary,
@@ -171,7 +171,7 @@ class _AdminUserPlayersScreenState extends State<AdminUserPlayersScreen> {
                               const SizedBox(height: 2),
                               Text(
                                 user.adminListLabel(
-                                  noEmailLabel: l10n.adminNoEmail,
+                                  noNameLabel: l10n.adminNoName,
                                 ),
                                 maxLines: 1,
                                 overflow: TextOverflow.ellipsis,

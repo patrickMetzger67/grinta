@@ -131,6 +131,7 @@ void main() {
         await tester.pump();
 
         expect(find.text('Mohamed-Amine ABDESSAMAD'), findsOneWidget);
+        expect(find.text('mohamed@example.com'), findsOneWidget);
         expect(find.text(l10n.adminUsersPlayerCount(1)), findsOneWidget);
         expect(find.text(l10n.adminUsersPlayerCount(0)), findsNothing);
       },
@@ -166,6 +167,7 @@ void main() {
         await tester.pump();
 
         expect(find.text('Mohamed-Amine ABDESSAMAD'), findsOneWidget);
+        expect(find.text('mohamed@example.com'), findsOneWidget);
       },
     );
 
@@ -227,6 +229,7 @@ void main() {
 
     testWidgets('hides anonymous-with-provider, keeps named users',
         (tester) async {
+      final l10n = await AppLocalizations.delegate.load(const Locale('fr'));
       final namedNoEmail = const UserProfile(
         uid: 'mohamed-uid',
         firstName: 'Mohamed-Amine',
@@ -247,6 +250,12 @@ void main() {
         email: '',
         isAnonymous: true,
       );
+      final unidentifiedStub = const UserProfile(
+        uid: 'stub-uid',
+        firstName: '',
+        lastName: '',
+        email: '',
+      );
 
       await tester.pumpWidget(
         MaterialApp(
@@ -256,6 +265,7 @@ void main() {
           supportedLocales: AppLocalizations.supportedLocales,
           home: AdminUsersScreen(
             usersStream: Stream<List<UserProfile>>.value([
+              unidentifiedStub,
               namedNoEmail,
               anonymousProvider,
               anonymousFlag,
@@ -266,6 +276,57 @@ void main() {
       );
       await tester.pump();
       await tester.pump();
+
+      expect(find.text('Mohamed-Amine ABDESSAMAD'), findsOneWidget);
+      expect(find.text('anon-uid'), findsNothing);
+      expect(find.text('anon-flag-uid'), findsNothing);
+      expect(find.text(l10n.adminNoEmail), findsNothing);
+      expect(find.text(l10n.adminNoName), findsNothing);
+      expect(find.text('?'), findsNothing);
+    });
+
+    testWidgets(
+      'email-only row is Sans nom, then email, then player count',
+      (tester) async {
+        final l10n = await AppLocalizations.delegate.load(const Locale('fr'));
+        const uid = 'email-only-uid';
+        const user = UserProfile(
+          uid: uid,
+          firstName: '',
+          lastName: '',
+          email: 'achillesschmitt2105@gmail.com',
+        );
+        final player = Player(
+          firstName: 'Achilles',
+          lastName: 'Schmitt',
+          keyMember: 'achilles-player',
+          userID: uid,
+          users: const [uid],
+        );
+
+        await tester.pumpWidget(
+          MaterialApp(
+            theme: AppTheme.darkTheme,
+            locale: const Locale('fr'),
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
+            home: AdminUsersScreen(
+              usersStream: Stream<List<UserProfile>>.value([user]),
+              membersStream: Stream<List<Player>>.value([player]),
+              sensorService: _HangingSensorService(),
+              playerPhotoBuilder: _placeholderPhoto,
+            ),
+          ),
+        );
+        await tester.pump();
+        await tester.pump();
+
+        expect(find.text(l10n.adminNoName), findsOneWidget);
+        expect(find.text('achillesschmitt2105@gmail.com'), findsOneWidget);
+        expect(find.text(l10n.adminUsersPlayerCount(1)), findsOneWidget);
+        expect(find.text(l10n.adminNoEmail), findsNothing);
+      },
+    );
 
       expect(find.text('Mohamed-Amine ABDESSAMAD'), findsOneWidget);
       expect(find.text('anon-uid'), findsNothing);

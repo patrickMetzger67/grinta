@@ -3377,6 +3377,7 @@
   "adminUsersTitle": "Utilisateurs",
   "adminUsersSearchHint": "Rechercher (email, prénom, nom)",
   "adminNoEmail": "Sans email",
+  "adminNoName": "Sans nom",
   "adminUsersLoadError": "Impossible de charger les utilisateurs.",
   "adminUsersEmpty": "Aucun utilisateur pour le moment.",
   "adminUsersSearchEmpty": "Aucun utilisateur ne correspond à la recherche.",

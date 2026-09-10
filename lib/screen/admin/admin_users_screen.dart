@@ -227,7 +227,7 @@ class _AdminUsersScreenState extends State<AdminUsersScreen> {
                       builder: (context, query, _) {
                         final users =
                             (usersSnapshot.data ?? const <UserProfile>[])
-                                .where((user) => !user.isAnonymousAccount)
+                                .where((user) => user.isListedInAdminUsers)
                                 .where((user) => user.matchesSearch(query))
                                 .toList(growable: false);
 
@@ -393,7 +393,7 @@ class _AdminUserCard extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      user.adminListLabel(noEmailLabel: l10n.adminNoEmail),
+                      user.adminListLabel(noNameLabel: l10n.adminNoName),
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                       style: textTheme.titleMedium?.copyWith(

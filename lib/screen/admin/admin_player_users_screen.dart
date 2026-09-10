@@ -288,7 +288,7 @@ class _AdminLinkedUserCard extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    user.adminListLabel(noEmailLabel: l10n.adminNoEmail),
+                    user.adminListLabel(noNameLabel: l10n.adminNoName),
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                     style: textTheme.titleMedium?.copyWith(

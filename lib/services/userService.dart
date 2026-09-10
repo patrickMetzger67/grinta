@@ -103,20 +103,28 @@ class UserProfile {
     return usableEmail;
   }
 
-  /// Admin list/detail title: name, else email, else [noEmailLabel]. Never uid.
-  String adminListLabel({required String noEmailLabel}) {
-    final label = displayName;
-    if (label.isNotEmpty) return label;
-    return noEmailLabel;
+  /// Admin list/detail title: person name, else [noNameLabel].
+  ///
+  /// Never uses the email or uid as the title — email belongs on
+  /// [adminEmailSubtitle].
+  String adminListLabel({required String noNameLabel}) {
+    if (personName.isNotEmpty) return personName;
+    return noNameLabel;
   }
 
-  /// Email under the title, omitted when it would duplicate [adminListLabel].
+  /// Email on the line below the title, when the account has one.
   String? get adminEmailSubtitle {
     final mail = usableEmail;
     if (mail.isEmpty) return null;
-    if (personName.isEmpty) return null;
-    if (personName.toLowerCase() == mail.toLowerCase()) return null;
     return mail;
+  }
+
+  /// Shown in Admin → Utilisateurs: not anonymous, and has a name or email.
+  ///
+  /// Empty nameless/email-less docs are the « Sans email » / « ? » stub row.
+  bool get isListedInAdminUsers {
+    if (isAnonymousAccount) return false;
+    return personName.isNotEmpty || usableEmail.isNotEmpty;
   }
 
   String get initials {

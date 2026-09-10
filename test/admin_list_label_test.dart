@@ -7,7 +7,7 @@ import 'package:grinta/util/player_photo_resolver.dart';
 void main() {
   group('UserProfile admin list label', () {
     const uid = 'mQ208H8YnfWK5IQCJg3nAls2';
-    const noEmail = 'Sans email';
+    const noName = 'Sans nom';
 
     UserProfile user({
       String firstName = '',
@@ -22,22 +22,24 @@ void main() {
       );
     }
 
-    test('prefers person name over email', () {
+    test('title is person name and email stays on the subtitle', () {
       final profile = user(
         firstName: 'Ada',
         lastName: 'Lovelace',
         email: 'ada@example.com',
       );
-      expect(profile.adminListLabel(noEmailLabel: noEmail), 'Ada Lovelace');
+      expect(profile.adminListLabel(noNameLabel: noName), 'Ada Lovelace');
       expect(profile.adminEmailSubtitle, 'ada@example.com');
       expect(profile.displayName, 'Ada Lovelace');
+      expect(profile.isListedInAdminUsers, isTrue);
     });
 
-    test('falls back to email when there is no name', () {
+    test('never uses email as the title when there is no name', () {
       final profile = user(email: 'ghost@example.com');
-      expect(profile.adminListLabel(noEmailLabel: noEmail), 'ghost@example.com');
-      expect(profile.adminEmailSubtitle, isNull);
+      expect(profile.adminListLabel(noNameLabel: noName), noName);
+      expect(profile.adminEmailSubtitle, 'ghost@example.com');
       expect(profile.displayName, 'ghost@example.com');
+      expect(profile.isListedInAdminUsers, isTrue);
     });
 
     test('never hides a named account as anonymous', () {
@@ -98,6 +100,8 @@ void main() {
         isFalse,
       );
       expect(user().isAnonymousAccount, isFalse);
+      expect(user().isListedInAdminUsers, isFalse);
+      expect(user(email: 'ghost@example.com').isListedInAdminUsers, isTrue);
     });
 
     test('matches firstName, lastName, displayName and email', () {
@@ -113,23 +117,23 @@ void main() {
       expect(profile.matchesSearch('zzz-no-match'), isFalse);
     });
 
-    test('never uses the raw uid as the title', () {
+    test('never uses the raw uid or email as the title', () {
       final empty = user();
-      expect(empty.adminListLabel(noEmailLabel: noEmail), noEmail);
+      expect(empty.adminListLabel(noNameLabel: noName), noName);
       expect(empty.displayName, isEmpty);
       expect(empty.adminEmailSubtitle, isNull);
       expect(empty.initials, '?');
+      expect(empty.isListedInAdminUsers, isFalse);
 
       final uidAsName = user(firstName: uid, email: 'real@example.com');
-      expect(
-        uidAsName.adminListLabel(noEmailLabel: noEmail),
-        'real@example.com',
-      );
+      expect(uidAsName.adminListLabel(noNameLabel: noName), noName);
+      expect(uidAsName.adminEmailSubtitle, 'real@example.com');
       expect(uidAsName.displayName, isNot(uid));
 
       final uidAsEmail = user(email: uid);
-      expect(uidAsEmail.adminListLabel(noEmailLabel: noEmail), noEmail);
+      expect(uidAsEmail.adminListLabel(noNameLabel: noName), noName);
       expect(uidAsEmail.usableEmail, isEmpty);
+      expect(uidAsEmail.isListedInAdminUsers, isFalse);
     });
   });
 

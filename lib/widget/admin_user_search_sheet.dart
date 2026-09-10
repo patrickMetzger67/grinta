@@ -138,7 +138,7 @@ class _AdminUserSearchSheetState extends State<AdminUserSearchSheet> {
                 }
 
                 final users = (snapshot.data ?? const <UserProfile>[])
-                    .where((user) => !user.isAnonymousAccount)
+                    .where((user) => user.isListedInAdminUsers)
                     .where(
                       (user) => !widget.excludeUserIds.contains(user.uid),
                     )
@@ -189,7 +189,7 @@ class _AdminUserSearchSheetState extends State<AdminUserSearchSheet> {
                                   children: [
                                     Text(
                                       user.adminListLabel(
-                                        noEmailLabel: l10n.adminNoEmail,
+                                        noNameLabel: l10n.adminNoName,
                                       ),
                                       maxLines: 1,
                                       overflow: TextOverflow.ellipsis,

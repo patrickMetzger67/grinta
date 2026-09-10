@@ -2971,6 +2971,7 @@
   "adminUsersTitle": "Users",
   "adminUsersSearchHint": "Search (email, first name, last name)",
   "adminNoEmail": "No email",
+  "adminNoName": "No name",
   "adminUsersLoadError": "Unable to load users.",
   "adminUsersEmpty": "No users yet.",
   "adminUsersSearchEmpty": "No users match this search.",
