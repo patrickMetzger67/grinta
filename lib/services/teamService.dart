@@ -351,6 +351,23 @@ class TeamService {
     });
   }
 
+  /// Sets or clears the player responsible for team fines.
+  Future<void> updateFinesManager({
+    required String teamId,
+    String? memberId,
+  }) async {
+    final String trimmedTeamId = teamId.trim();
+    if (trimmedTeamId.isEmpty) {
+      throw Exception('keyTeam null ou vide');
+    }
+    final String trimmedMemberId = memberId?.trim() ?? '';
+    await _collection.doc(trimmedTeamId).update(<String, dynamic>{
+      keyTeamFinesManagerMemberId: trimmedMemberId.isEmpty
+          ? FieldValue.delete()
+          : trimmedMemberId,
+    });
+  }
+
   /// Appends a [GrintaPlayer] to [keyTeamGrintaPlayers] (read-modify-write).
   ///
   /// Uses a targeted Firestore update so roster writes are not lost when the

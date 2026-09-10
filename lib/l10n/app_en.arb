@@ -4029,5 +4029,37 @@
   "adminAdsUpcomingBadge": "Upcoming",
   "lastResultsFormGuide": "Recent form",
   "lastResultsSlotEmpty": "Not played yet",
-  "lastResultsSlotHighlighted": "Current match"
+  "lastResultsSlotHighlighted": "Current match",
+  "settingsTeamFines": "Fines",
+  "teamFinesNoTeams": "No team available for fine management.",
+  "teamFinesEmptyScales": "No fine schedule for this team. Use + to create one.",
+  "teamFinesLoadError": "Could not load fine schedules.",
+  "createTeamFineScaleTitle": "New fine schedule",
+  "createTeamFineScaleTeam": "Team",
+  "createTeamFineScaleTeamRequired": "Choose a team.",
+  "createTeamFineScaleType": "Type",
+  "createTeamFineScaleTypeRequired": "Choose a type.",
+  "createTeamFineScaleNewType": "Create a new type…",
+  "createTeamFineScaleNewTypeTitle": "New fine type",
+  "createTeamFineScaleTypeName": "Type name",
+  "createTeamFineScaleAmount": "Amount",
+  "createTeamFineScaleAmountRequired": "Enter a valid amount.",
+  "createTeamFineScaleSaved": "Fine schedule saved.",
+  "createTeamFineScaleError": "Could not save the fine schedule.",
+  "teamFineDefaultTypeLate": "Late",
+  "teamFineDefaultTypeUnjustifiedAbsence": "Unexcused absence",
+  "teamFinesManagerTitle": "Fines manager",
+  "teamFinesManagerNone": "Not assigned",
+  "teamFinesManagerSaved": "Fines manager saved.",
+  "deleteTeamFineScaleTooltip": "Delete schedule",
+  "deleteTeamFineScaleConfirmTitle": "Delete this schedule?",
+  "deleteTeamFineScaleConfirmMessage": "Delete the “{typeName}” schedule?",
+  "@deleteTeamFineScaleConfirmMessage": {
+    "placeholders": {
+      "typeName": {
+        "type": "String"
+      }
+    }
+  },
+  "deleteTeamFineScaleDeleted": "Fine schedule deleted."
 }

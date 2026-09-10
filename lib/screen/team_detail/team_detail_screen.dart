@@ -2206,6 +2206,14 @@ class _TeamDetailScreenState extends State<TeamDetailScreen> {
                     staffsCount: staffsCount,
                     averageAge: averageAge,
                   ),
+                  if (_canManageTeam(context)) ...[
+                    SizedBox(height: isMobileLayout ? 16 : 24),
+                    _buildFinesManagerCard(
+                      context,
+                      playerRows: playerRows,
+                      allRows: rows,
+                    ),
+                  ],
                   SizedBox(height: isMobileLayout ? 16 : 24),
                   _buildRosterCard(context, playerRows),
                   SizedBox(height: isMobileLayout ? 16 : 24),
@@ -2568,6 +2576,208 @@ class _TeamDetailScreenState extends State<TeamDetailScreen> {
         },
       ),
     );
+  }
+
+  Widget _buildFinesManagerCard(
+    BuildContext context, {
+    required List<_TeamMemberVm> playerRows,
+    required List<_TeamMemberVm> allRows,
+  }) {
+    final l10n = context.l10n;
+    final colors = context.appColors;
+    final textTheme = Theme.of(context).textTheme;
+    final bool isMobileLayout = _isMobileTeamDetailLayout(context);
+    final _TeamMemberVm? managerRow = _finesManagerRow(allRows);
+    final String subtitle = managerRow == null
+        ? l10n.teamFinesManagerNone
+        : playerDisplayName(
+            managerRow.player,
+            unknownLabel: l10n.entityPlayer,
+          );
+
+    return Material(
+      color: colors.card,
+      borderRadius: BorderRadius.circular(22),
+      child: InkWell(
+        borderRadius: BorderRadius.circular(22),
+        onTap: () => _onEditFinesManager(context, playerRows),
+        child: Container(
+          width: double.infinity,
+          padding: EdgeInsets.fromLTRB(
+            isMobileLayout ? 16 : 24,
+            isMobileLayout ? 14 : 18,
+            isMobileLayout ? 16 : 24,
+            isMobileLayout ? 14 : 18,
+          ),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(22),
+            border: Border.all(color: colors.border),
+          ),
+          child: Row(
+            children: [
+              Icon(
+                Icons.payments_outlined,
+                color: colors.primary,
+                size: isMobileLayout ? 24 : 28,
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      l10n.teamFinesManagerTitle,
+                      style: textTheme.titleMedium?.copyWith(
+                        fontWeight: FontWeight.w800,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      subtitle,
+                      style: textTheme.bodyMedium?.copyWith(
+                        color: colors.textSecondary,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              Icon(
+                Icons.chevron_right_rounded,
+                color: colors.textSecondary,
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  _TeamMemberVm? _finesManagerRow(List<_TeamMemberVm> rows) {
+    final String finesId = _team.finesManagerMemberId?.trim() ?? '';
+    if (finesId.isEmpty) {
+      return null;
+    }
+    for (final _TeamMemberVm row in rows) {
+      if (playerMemberLookupIds(row.player).contains(finesId)) {
+        return row;
+      }
+    }
+    return null;
+  }
+
+  Future<void> _onEditFinesManager(
+    BuildContext context,
+    List<_TeamMemberVm> playerRows,
+  ) async {
+    if (!_canManageTeam(context)) {
+      return;
+    }
+    final String? teamId = _team.keyTeam?.trim();
+    if (teamId == null || teamId.isEmpty) {
+      return;
+    }
+
+    final colors = context.appColors;
+    final l10n = context.l10n;
+    final String? currentId = _team.finesManagerMemberId?.trim();
+
+    final String? selected = await showModalBottomSheet<String>(
+      context: context,
+      backgroundColor: colors.card,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (BuildContext sheetContext) {
+        return SafeArea(
+          child: ListView(
+            shrinkWrap: true,
+            children: [
+              Padding(
+                padding: const EdgeInsets.fromLTRB(20, 16, 20, 8),
+                child: Text(
+                  l10n.teamFinesManagerTitle,
+                  style: Theme.of(sheetContext).textTheme.titleLarge?.copyWith(
+                        fontWeight: FontWeight.w700,
+                      ),
+                ),
+              ),
+              ListTile(
+                leading: Icon(
+                  Icons.person_off_outlined,
+                  color: colors.textSecondary,
+                ),
+                title: Text(l10n.teamFinesManagerNone),
+                selected: currentId == null || currentId.isEmpty,
+                onTap: () => Navigator.of(sheetContext).pop(''),
+              ),
+              if (playerRows.isEmpty)
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(20, 8, 20, 24),
+                  child: Text(
+                    l10n.emptyNoPlayerForTeam,
+                    style: Theme.of(sheetContext).textTheme.bodyMedium?.copyWith(
+                          color: colors.textSecondary,
+                        ),
+                  ),
+                )
+              else
+                for (final _TeamMemberVm row in playerRows)
+                  ListTile(
+                    leading: Icon(
+                      Icons.person_outline_rounded,
+                      color: colors.primary,
+                    ),
+                    title: Text(
+                      playerDisplayName(
+                        row.player,
+                        unknownLabel: l10n.entityPlayer,
+                      ),
+                    ),
+                    selected: currentId != null &&
+                        currentId.isNotEmpty &&
+                        playerMemberLookupIds(row.player).contains(currentId),
+                    onTap: () => Navigator.of(sheetContext).pop(
+                      effectiveMemberId(row.player) ?? '',
+                    ),
+                  ),
+            ],
+          ),
+        );
+      },
+    );
+
+    if (selected == null || !context.mounted) {
+      return;
+    }
+    final String? nextId = selected.trim().isEmpty ? null : selected.trim();
+    final String? previousId =
+        currentId == null || currentId.isEmpty ? null : currentId;
+    if (nextId == previousId) {
+      return;
+    }
+
+    try {
+      await TeamService().updateFinesManager(
+        teamId: teamId,
+        memberId: nextId,
+      );
+      if (!context.mounted) {
+        return;
+      }
+      setState(() {
+        _team.finesManagerMemberId = nextId;
+      });
+      AppSnackbar.show(context, l10n.teamFinesManagerSaved);
+    } catch (e) {
+      if (!context.mounted) {
+        return;
+      }
+      AppSnackbar.show(
+        context,
+        l10n.errorGeneric(e.toString()),
+        isError: true,
+      );
+    }
   }
 
   Widget _buildRosterCard(BuildContext context, List<_TeamMemberVm> rows) {

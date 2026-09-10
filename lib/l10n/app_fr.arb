@@ -4435,5 +4435,37 @@
   "adminAdsUpcomingBadge": "À venir",
   "lastResultsFormGuide": "Forme récente",
   "lastResultsSlotEmpty": "Pas encore joué",
-  "lastResultsSlotHighlighted": "Match actuel"
+  "lastResultsSlotHighlighted": "Match actuel",
+  "settingsTeamFines": "Amendes",
+  "teamFinesNoTeams": "Aucune équipe à gérer pour les amendes.",
+  "teamFinesEmptyScales": "Aucun barème pour cette équipe. Utilisez + pour en créer un.",
+  "teamFinesLoadError": "Impossible de charger les barèmes.",
+  "createTeamFineScaleTitle": "Nouveau barème",
+  "createTeamFineScaleTeam": "Équipe",
+  "createTeamFineScaleTeamRequired": "Choisissez une équipe.",
+  "createTeamFineScaleType": "Type",
+  "createTeamFineScaleTypeRequired": "Choisissez un type.",
+  "createTeamFineScaleNewType": "Créer un nouveau type…",
+  "createTeamFineScaleNewTypeTitle": "Nouveau type d'amende",
+  "createTeamFineScaleTypeName": "Nom du type",
+  "createTeamFineScaleAmount": "Montant",
+  "createTeamFineScaleAmountRequired": "Indiquez un montant valide.",
+  "createTeamFineScaleSaved": "Barème enregistré.",
+  "createTeamFineScaleError": "Impossible d'enregistrer le barème.",
+  "teamFineDefaultTypeLate": "Retard",
+  "teamFineDefaultTypeUnjustifiedAbsence": "Absence non justifiée",
+  "teamFinesManagerTitle": "Responsable des amendes",
+  "teamFinesManagerNone": "Non désigné",
+  "teamFinesManagerSaved": "Responsable des amendes enregistré.",
+  "deleteTeamFineScaleTooltip": "Supprimer le barème",
+  "deleteTeamFineScaleConfirmTitle": "Supprimer le barème ?",
+  "deleteTeamFineScaleConfirmMessage": "Supprimer le barème « {typeName} » ?",
+  "@deleteTeamFineScaleConfirmMessage": {
+    "placeholders": {
+      "typeName": {
+        "type": "String"
+      }
+    }
+  },
+  "deleteTeamFineScaleDeleted": "Barème supprimé."
 }

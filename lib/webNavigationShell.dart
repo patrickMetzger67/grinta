@@ -14,14 +14,18 @@ import 'package:grinta/services/user_root_service.dart';
 import 'package:grinta/services/user_trial_service.dart';
 import 'package:grinta/screen/admin/admin_screen.dart';
 import 'package:grinta/widget/promo_code_redeem_section.dart';
+import 'package:provider/provider.dart';
 import 'core/extensions/l10n_extension.dart';
+import 'provider/appSession.dart';
 import 'util/app_theme.dart';
+import 'util/team_fine_access.dart';
 import 'widget/app_language_dropdown.dart';
 import 'widget/app_logo.dart';
 import 'widget/account_create_profile_entry.dart';
 import 'widget/edit_member_profile.dart';
 import 'widget/manage_profiles_settings_entry.dart';
 import 'screen/my_unavailabilities_screen.dart';
+import 'screen/team_fines/team_fines_screen.dart';
 import 'screen/tips_screen.dart';
 import 'widget/nav_icon_count_badge.dart';
 import 'widget/calendar_sync_toggle.dart';
@@ -558,6 +562,7 @@ class _WebNavigationShellState extends State<WebNavigationShell> {
         _buildEditProfileButton(context),
         _buildTipsButton(context),
         _buildMyUnavailabilitiesButton(context),
+        _buildTeamFinesButton(context),
         AccountCreateProfileSidebarButton(
           collapsed: _settingsContentCollapsed,
           onTap: () => openAccountCreateProfileFlow(context),
@@ -1187,6 +1192,74 @@ class _WebNavigationShellState extends State<WebNavigationShell> {
               Expanded(
                 child: Text(
                   context.l10n.settingsMyUnavailabilities,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: settingsMenuTitleStyle(context),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildTeamFinesButton(BuildContext context) {
+    if (!hasTeamFinesAccess(context.watch<AppSession>())) {
+      return const SizedBox.shrink();
+    }
+
+    final colors = context.appColors;
+    if (_settingsContentCollapsed) {
+      return Padding(
+        padding: const EdgeInsets.fromLTRB(12, 0, 12, 12),
+        child: Tooltip(
+          message: context.l10n.settingsTeamFines,
+          child: InkWell(
+            borderRadius: BorderRadius.circular(16),
+            onTap: () => openTeamFinesScreen(context),
+            child: Container(
+              width: double.infinity,
+              height: 52,
+              decoration: BoxDecoration(
+                color: colors.card,
+                borderRadius: BorderRadius.circular(16),
+                border: Border.all(color: colors.border),
+              ),
+              child: Icon(
+                Icons.payments_outlined,
+                color: colors.primary,
+                size: kWebMenuIconSize,
+              ),
+            ),
+          ),
+        ),
+      );
+    }
+
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(12, 0, 12, 12),
+      child: InkWell(
+        borderRadius: BorderRadius.circular(18),
+        onTap: () => openTeamFinesScreen(context),
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+          decoration: BoxDecoration(
+            color: colors.card,
+            borderRadius: BorderRadius.circular(18),
+            border: Border.all(color: colors.border),
+          ),
+          child: Row(
+            children: [
+              Icon(
+                Icons.payments_outlined,
+                color: colors.primary,
+                size: kWebMenuIconSize,
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Text(
+                  context.l10n.settingsTeamFines,
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                   style: settingsMenuTitleStyle(context),

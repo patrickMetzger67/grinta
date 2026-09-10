@@ -3985,5 +3985,37 @@
   "adminAdsUpcomingBadge": "Próximo",
   "lastResultsFormGuide": "Forma reciente",
   "lastResultsSlotEmpty": "Aún no jugado",
-  "lastResultsSlotHighlighted": "Partido actual"
+  "lastResultsSlotHighlighted": "Partido actual",
+  "settingsTeamFines": "Multas",
+  "teamFinesNoTeams": "Ningún equipo disponible para gestionar las multas.",
+  "teamFinesEmptyScales": "No hay baremo para este equipo. Usa + para crear uno.",
+  "teamFinesLoadError": "No se pudieron cargar los baremos.",
+  "createTeamFineScaleTitle": "Nuevo baremo",
+  "createTeamFineScaleTeam": "Equipo",
+  "createTeamFineScaleTeamRequired": "Elige un equipo.",
+  "createTeamFineScaleType": "Tipo",
+  "createTeamFineScaleTypeRequired": "Elige un tipo.",
+  "createTeamFineScaleNewType": "Crear un tipo nuevo…",
+  "createTeamFineScaleNewTypeTitle": "Nuevo tipo de multa",
+  "createTeamFineScaleTypeName": "Nombre del tipo",
+  "createTeamFineScaleAmount": "Importe",
+  "createTeamFineScaleAmountRequired": "Indica un importe válido.",
+  "createTeamFineScaleSaved": "Baremo guardado.",
+  "createTeamFineScaleError": "No se pudo guardar el baremo.",
+  "teamFineDefaultTypeLate": "Retraso",
+  "teamFineDefaultTypeUnjustifiedAbsence": "Ausencia no justificada",
+  "teamFinesManagerTitle": "Responsable de las multas",
+  "teamFinesManagerNone": "No asignado",
+  "teamFinesManagerSaved": "Responsable de las multas guardado.",
+  "deleteTeamFineScaleTooltip": "Eliminar el baremo",
+  "deleteTeamFineScaleConfirmTitle": "¿Eliminar el baremo?",
+  "deleteTeamFineScaleConfirmMessage": "¿Eliminar el baremo « {typeName} »?",
+  "@deleteTeamFineScaleConfirmMessage": {
+    "placeholders": {
+      "typeName": {
+        "type": "String"
+      }
+    }
+  },
+  "deleteTeamFineScaleDeleted": "Baremo eliminado."
 }
