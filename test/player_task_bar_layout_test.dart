@@ -265,6 +265,28 @@ void main() {
     });
   });
 
+  group('playerTaskAccessMemberIds', () {
+    test('stores assignees and creator, not other team managers', () {
+      expect(
+        playerTaskAccessMemberIds(
+          assigneeMemberIds: const <String>['p1', 'p2', ''],
+          createdByMemberId: 'manager-a',
+        ),
+        {'p1', 'p2', 'manager-a'},
+      );
+    });
+
+    test('keeps creator when they are also an assignee', () {
+      expect(
+        playerTaskAccessMemberIds(
+          assigneeMemberIds: const <String>['manager-a', 'p1'],
+          createdByMemberId: 'manager-a',
+        ),
+        {'manager-a', 'p1'},
+      );
+    });
+  });
+
   group('playerTasksVisibleToMember', () {
     test('shows assigned and created tasks only', () {
       final assigned = _task(
@@ -287,6 +309,146 @@ void main() {
         'player-a',
       );
       expect(visible.map((t) => t.id), ['assigned']);
+    });
+
+    test('creator still sees the task when not assigned', () {
+      final task = _task(
+        id: 'created',
+        start: DateTime(2026, 9, 7),
+        end: DateTime(2026, 9, 7),
+        assignees: const <String>['player-a'],
+        access: const <String>['player-a', 'creator'],
+      ).copyWith(createdByMemberId: 'creator');
+
+      expect(
+        playerTasksVisibleToMember([task], 'creator').map((t) => t.id),
+        ['created'],
+      );
+    });
+
+    test('unassigned player on the same team does not see the task', () {
+      final task = _task(
+        id: 'kit',
+        start: DateTime(2026, 9, 7),
+        end: DateTime(2026, 9, 7),
+        assignees: const <String>['player-a'],
+        access: const <String>['player-a', 'creator'],
+      );
+
+      expect(
+        playerTasksVisibleToMember(
+          [task],
+          'player-b',
+          managedTeamIds: const <String>[],
+        ),
+        isEmpty,
+      );
+    });
+
+    test('every manager of the task team sees it, even if not in accessMemberIds',
+        () {
+      final task = _task(
+        id: 'kit',
+        start: DateTime(2026, 9, 7),
+        end: DateTime(2026, 9, 7),
+        teamId: 'team-seniors',
+        assignees: const <String>['player-a'],
+        access: const <String>['player-a', 'creator'],
+      ).copyWith(createdByMemberId: 'creator');
+
+      final visible = playerTasksVisibleToMember(
+        [task],
+        'co-manager',
+        managedTeamIds: const <String>['team-seniors'],
+      );
+      expect(visible.map((t) => t.id), ['kit']);
+    });
+
+    test('manager of another team does not see the task', () {
+      final task = _task(
+        id: 'kit',
+        start: DateTime(2026, 9, 7),
+        end: DateTime(2026, 9, 7),
+        teamId: 'team-seniors',
+        assignees: const <String>['player-a'],
+        access: const <String>['player-a', 'creator'],
+      );
+
+      expect(
+        playerTasksVisibleToMember(
+          [task],
+          'other-manager',
+          managedTeamIds: const <String>['team-u18'],
+        ),
+        isEmpty,
+      );
+    });
+
+    test('manager added later sees existing tasks via managedTeamIds', () {
+      final existing = _task(
+        id: 'old',
+        start: DateTime(2026, 9, 7),
+        end: DateTime(2026, 9, 7),
+        teamId: 'team-seniors',
+        assignees: const <String>['player-a'],
+        access: const <String>['player-a', 'original-manager'],
+      ).copyWith(createdByMemberId: 'original-manager');
+
+      final visible = playerTasksVisibleToMember(
+        [existing],
+        'new-manager',
+        managedTeamIds: const <String>['team-seniors'],
+      );
+      expect(visible.map((t) => t.id), ['old']);
+      expect(existing.accessMemberIds.contains('new-manager'), isFalse);
+    });
+  });
+
+  group('mergePlayerTasksById', () {
+    test('dedupes the same task from access and team queries', () {
+      final viaAccess = _task(
+        id: 'kit',
+        start: DateTime(2026, 9, 7),
+        end: DateTime(2026, 9, 7),
+        assignees: const <String>['player-a'],
+        access: const <String>['player-a', 'creator'],
+      );
+      final viaTeam = _task(
+        id: 'kit',
+        start: DateTime(2026, 9, 7),
+        end: DateTime(2026, 9, 7),
+        teamId: 'team-seniors',
+        assignees: const <String>['player-a'],
+        access: const <String>['player-a', 'creator'],
+      );
+      final onlyTeam = _task(
+        id: 'other',
+        start: DateTime(2026, 9, 8),
+        end: DateTime(2026, 9, 8),
+        teamId: 'team-seniors',
+        assignees: const <String>['player-b'],
+        access: const <String>['player-b', 'creator'],
+      );
+
+      final merged = mergePlayerTasksById([
+        [viaAccess],
+        [viaTeam, onlyTeam],
+      ]);
+      expect(merged.map((t) => t.id), ['kit', 'other']);
+    });
+  });
+
+  group('playerTasksAgendaQueryKey', () {
+    test('changes when a managed team is added', () {
+      expect(
+        playerTasksAgendaQueryKey('manager-a', const <String>['team-1']),
+        isNot(
+          playerTasksAgendaQueryKey(
+            'manager-a',
+            const <String>['team-1', 'team-2'],
+          ),
+        ),
+      );
     });
   });
 

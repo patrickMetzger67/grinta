@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart' show DateUtils;
@@ -11,6 +13,7 @@ import 'package:grinta/services/notification_fcm_service.dart';
 import 'package:grinta/services/playerService.dart';
 import 'package:grinta/util/playerDisplayName.dart';
 import 'package:grinta/util/player_photo_resolver.dart';
+import 'package:grinta/util/player_task_access.dart';
 import 'package:intl/intl.dart';
 
 class PlayerTaskService {
@@ -31,13 +34,23 @@ class PlayerTaskService {
   CollectionReference<Map<String, dynamic>> get _collection =>
       _firestore.collection(collectionName);
 
+  /// Agenda visibility for player tasks.
+  ///
+  /// Dual query (preferred over stuffing manager ids into [accessMemberIds]):
+  /// 1. `accessMemberIds` arrayContains [memberId] — assignees and creator
+  /// 2. `teamId` whereIn the caller's currently managed teams
+  ///
+  /// (2) covers existing documents that never listed co-managers, and a
+  /// manager added to the team later, without going stale when staff changes.
   Stream<List<PlayerTask>> watchTasksForMemberBetweenDates({
     required String memberId,
     required DateTime start,
     required DateTime end,
+    Iterable<String> managedTeamIds = const <String>[],
   }) {
     final String trimmed = memberId.trim();
-    if (trimmed.isEmpty) {
+    final List<String> teamIds = normalizedPlayerTaskTeamIds(managedTeamIds);
+    if (trimmed.isEmpty && teamIds.isEmpty) {
       return Stream<List<PlayerTask>>.value(const <PlayerTask>[]);
     }
 
@@ -52,31 +65,87 @@ class PlayerTaskService {
       999,
     );
 
-    return _collection
-        .where(keyPlayerTaskAccessMemberIds, arrayContains: trimmed)
-        .snapshots()
-        .map((QuerySnapshot<Map<String, dynamic>> snapshot) {
-      final List<PlayerTask> tasks = snapshot.docs
-          .map(PlayerTask.fromSnapshot)
-          .where(
-            (PlayerTask task) =>
-                !task.endAt.isBefore(rangeStart) &&
-                !task.startAt.isAfter(rangeEnd),
-          )
-          .toList()
-        ..sort((PlayerTask a, PlayerTask b) {
-          final int startCmp = a.startAt.compareTo(b.startAt);
-          if (startCmp != 0) {
-            return startCmp;
-          }
-          return a.barLabel.toLowerCase().compareTo(b.barLabel.toLowerCase());
-        });
-      return tasks;
-    }).handleError((Object error, StackTrace stackTrace) {
-      debugPrint(
-        'PlayerTaskService.watchTasksForMemberBetweenDates failed: $error',
-      );
-      Error.throwWithStackTrace(error, stackTrace);
+    return Stream<List<PlayerTask>>.multi((
+      MultiStreamController<List<PlayerTask>> controller,
+    ) {
+      final Map<String, List<PlayerTask>> buckets = <String, List<PlayerTask>>{};
+      final List<StreamSubscription<QuerySnapshot<Map<String, dynamic>>>>
+          subscriptions =
+          <StreamSubscription<QuerySnapshot<Map<String, dynamic>>>>[];
+
+      void emitMerged() {
+        final List<PlayerTask> merged = mergePlayerTasksById(buckets.values);
+        final List<PlayerTask> inRange = <PlayerTask>[
+          for (final PlayerTask task in merged)
+            if (!task.endAt.isBefore(rangeStart) &&
+                !task.startAt.isAfter(rangeEnd))
+              task,
+        ];
+        controller.add(
+          playerTasksVisibleToMember(
+            inRange,
+            trimmed,
+            managedTeamIds: teamIds,
+          ),
+        );
+      }
+
+      void listenQuery(String key, Query<Map<String, dynamic>> query) {
+        subscriptions.add(
+          query.snapshots().listen(
+            (QuerySnapshot<Map<String, dynamic>> snapshot) {
+              buckets[key] = <PlayerTask>[
+                for (final QueryDocumentSnapshot<Map<String, dynamic>> doc
+                    in snapshot.docs)
+                  PlayerTask.fromSnapshot(doc),
+              ];
+              emitMerged();
+            },
+            onError: (Object error, StackTrace stackTrace) {
+              debugPrint(
+                'PlayerTaskService.watchTasksForMemberBetweenDates failed: $error',
+              );
+              if (!controller.isClosed) {
+                controller.addError(error, stackTrace);
+              }
+            },
+          ),
+        );
+      }
+
+      if (trimmed.isNotEmpty) {
+        listenQuery(
+          'access',
+          _collection.where(
+            keyPlayerTaskAccessMemberIds,
+            arrayContains: trimmed,
+          ),
+        );
+      }
+
+      const int whereInLimit = 30;
+      for (int offset = 0; offset < teamIds.length; offset += whereInLimit) {
+        final int endIndex = offset + whereInLimit > teamIds.length
+            ? teamIds.length
+            : offset + whereInLimit;
+        final List<String> batch = teamIds.sublist(offset, endIndex);
+        listenQuery(
+          'team_$offset',
+          batch.length == 1
+              ? _collection.where(
+                  keyPlayerTaskTeamId,
+                  isEqualTo: batch.single,
+                )
+              : _collection.where(keyPlayerTaskTeamId, whereIn: batch),
+        );
+      }
+
+      controller.onCancel = () {
+        for (final StreamSubscription<QuerySnapshot<Map<String, dynamic>>>
+            subscription in subscriptions) {
+          unawaited(subscription.cancel());
+        }
+      };
     });
   }
 
@@ -125,11 +194,10 @@ class PlayerTaskService {
       throw StateError('missingAssignees');
     }
 
-    final Set<String> accessMemberIds = <String>{
-      ...assigneeMemberIds,
-      if ((createdByMemberId ?? '').trim().isNotEmpty)
-        createdByMemberId!.trim(),
-    };
+    final Set<String> accessMemberIds = playerTaskAccessMemberIds(
+      assigneeMemberIds: assigneeMemberIds,
+      createdByMemberId: createdByMemberId,
+    );
 
     final DateTime start = DateUtils.dateOnly(startAt);
     final DateTime endDay = DateUtils.dateOnly(endAt);
@@ -210,11 +278,10 @@ class PlayerTaskService {
       assigneeNames.add(playerDisplayName(player));
     }
 
-    final Set<String> accessMemberIds = <String>{
-      ...assigneeMemberIds,
-      if ((existing.createdByMemberId ?? '').trim().isNotEmpty)
-        existing.createdByMemberId!.trim(),
-    };
+    final Set<String> accessMemberIds = playerTaskAccessMemberIds(
+      assigneeMemberIds: assigneeMemberIds,
+      createdByMemberId: existing.createdByMemberId,
+    );
 
     final DateTime start = DateUtils.dateOnly(startAt);
     final DateTime endDay = DateUtils.dateOnly(endAt);

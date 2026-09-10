@@ -213,6 +213,9 @@ class _AgendaScreenState extends State<AgendaScreen> {
   StreamSubscription<List<AgendaItem>>? _itemsSub;
   StreamSubscription<List<AgendaItem>>? _prefetchSub;
   StreamSubscription<List<PlayerTask>>? _tasksSub;
+  /// Member id + managed team ids used by the current player-task watch.
+  String _playerTasksQueryKey = '';
+  int _tasksWatchGeneration = 0;
   int _subscriptionGeneration = 0;
   int _prefetchGeneration = 0;
   /// Latest-wins gate: a newer week/month slide supersedes in-flight hydrations.
@@ -975,8 +978,6 @@ class _AgendaScreenState extends State<AgendaScreen> {
     LatestWinsToken? navigationToken,
   }) async {
     final int generation = ++_subscriptionGeneration;
-    final String? memberId =
-        mounted ? context.read<AppSession>().selectedPlayerId?.trim() : null;
     await _itemsSub?.cancel();
     _itemsSub = null;
     await _tasksSub?.cancel();
@@ -1062,28 +1063,76 @@ class _AgendaScreenState extends State<AgendaScreen> {
       },
     );
 
-    if (memberId != null && memberId.isNotEmpty) {
-      _tasksSub = PlayerTaskService()
-          .watchTasksForMemberBetweenDates(
-            memberId: memberId,
-            start: DateUtils.dateOnly(_rangeStart),
-            end: _endOfDay(_rangeEnd),
-          )
-          .listen(
-        (List<PlayerTask> tasks) {
-          if (!mounted || generation != _subscriptionGeneration) {
-            return;
-          }
-          _playerTasks = tasks;
-          _bumpAgendaPaint();
-        },
-        onError: (Object error) {
-          debugPrint('Agenda player tasks failed: $error');
-        },
-      );
-    } else {
-      _playerTasks = const <PlayerTask>[];
+    if (!mounted || generation != _subscriptionGeneration) {
+      return;
     }
+    final AppSession current = context.read<AppSession>();
+    _startPlayerTasksWatch(
+      memberId: current.selectedPlayerId?.trim(),
+      managedTeamIds: current.managedTeamsIdsForSelectedSeason,
+    );
+  }
+
+  /// Subscribes to assigned/created tasks plus every task on teams this
+  /// profile currently manages. Restarts when [memberId] or managed teams
+  /// change so a newly added manager sees existing tasks.
+  void _startPlayerTasksWatch({
+    required String? memberId,
+    required Iterable<String> managedTeamIds,
+  }) {
+    _playerTasksQueryKey = playerTasksAgendaQueryKey(memberId, managedTeamIds);
+    final int generation = ++_tasksWatchGeneration;
+    unawaited(_tasksSub?.cancel());
+    _tasksSub = null;
+
+    final String trimmed = memberId?.trim() ?? '';
+    final List<String> teamIds = normalizedPlayerTaskTeamIds(managedTeamIds);
+    if (trimmed.isEmpty && teamIds.isEmpty) {
+      _playerTasks = const <PlayerTask>[];
+      _bumpAgendaPaint();
+      return;
+    }
+
+    _tasksSub = PlayerTaskService()
+        .watchTasksForMemberBetweenDates(
+          memberId: trimmed,
+          start: DateUtils.dateOnly(_rangeStart),
+          end: _endOfDay(_rangeEnd),
+          managedTeamIds: teamIds,
+        )
+        .listen(
+      (List<PlayerTask> tasks) {
+        if (!mounted || generation != _tasksWatchGeneration) {
+          return;
+        }
+        _playerTasks = tasks;
+        _bumpAgendaPaint();
+      },
+      onError: (Object error) {
+        debugPrint('Agenda player tasks failed: $error');
+      },
+    );
+  }
+
+  void _ensurePlayerTasksWatch(AppSession session) {
+    final String key = playerTasksAgendaQueryKey(
+      session.selectedPlayerId,
+      session.managedTeamsIdsForSelectedSeason,
+    );
+    if (key == _playerTasksQueryKey) {
+      return;
+    }
+    _playerTasksQueryKey = key;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) {
+        return;
+      }
+      final AppSession latest = context.read<AppSession>();
+      _startPlayerTasksWatch(
+        memberId: latest.selectedPlayerId?.trim(),
+        managedTeamIds: latest.managedTeamsIdsForSelectedSeason,
+      );
+    });
   }
 
   Future<void> _goToPreviousWeek() => _applyWeekStripChevron(-1);
@@ -1479,6 +1528,8 @@ class _AgendaScreenState extends State<AgendaScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final AppSession session = context.watch<AppSession>();
+    _ensurePlayerTasksWatch(session);
     final colors = context.appColors;
     final compact = MediaQuery.of(context).size.width < 700;
 
@@ -1585,7 +1636,12 @@ class _AgendaScreenState extends State<AgendaScreen> {
                               unawaited(_selectDate(date));
                             },
                             playerTasks: applyPlayerTaskTeamFilter(
-                              _playerTasks,
+                              playerTasksVisibleToMember(
+                                _playerTasks,
+                                session.selectedPlayerId,
+                                managedTeamIds:
+                                    session.managedTeamsIdsForSelectedSeason,
+                              ),
                               _filter.teamIds,
                             ),
                             onPlayerTaskTap: (task) {
