@@ -3985,5 +3985,37 @@
   "adminAdsUpcomingBadge": "In arrivo",
   "lastResultsFormGuide": "Forma recente",
   "lastResultsSlotEmpty": "Non ancora giocato",
-  "lastResultsSlotHighlighted": "Partita attuale"
+  "lastResultsSlotHighlighted": "Partita attuale",
+  "settingsTeamFines": "Multe",
+  "teamFinesNoTeams": "Nessuna squadra disponibile per la gestione delle multe.",
+  "teamFinesEmptyScales": "Nessun tariffario per questa squadra. Usa + per crearne uno.",
+  "teamFinesLoadError": "Impossibile caricare i tariffari.",
+  "createTeamFineScaleTitle": "Nuovo tariffario",
+  "createTeamFineScaleTeam": "Squadra",
+  "createTeamFineScaleTeamRequired": "Scegli una squadra.",
+  "createTeamFineScaleType": "Tipo",
+  "createTeamFineScaleTypeRequired": "Scegli un tipo.",
+  "createTeamFineScaleNewType": "Crea un nuovo tipo…",
+  "createTeamFineScaleNewTypeTitle": "Nuovo tipo di multa",
+  "createTeamFineScaleTypeName": "Nome del tipo",
+  "createTeamFineScaleAmount": "Importo",
+  "createTeamFineScaleAmountRequired": "Inserisci un importo valido.",
+  "createTeamFineScaleSaved": "Tariffario salvato.",
+  "createTeamFineScaleError": "Impossibile salvare il tariffario.",
+  "teamFineDefaultTypeLate": "Ritardo",
+  "teamFineDefaultTypeUnjustifiedAbsence": "Assenza non giustificata",
+  "teamFinesManagerTitle": "Responsabile delle multe",
+  "teamFinesManagerNone": "Non assegnato",
+  "teamFinesManagerSaved": "Responsabile delle multe salvato.",
+  "deleteTeamFineScaleTooltip": "Elimina il tariffario",
+  "deleteTeamFineScaleConfirmTitle": "Eliminare il tariffario?",
+  "deleteTeamFineScaleConfirmMessage": "Eliminare il tariffario « {typeName} »?",
+  "@deleteTeamFineScaleConfirmMessage": {
+    "placeholders": {
+      "typeName": {
+        "type": "String"
+      }
+    }
+  },
+  "deleteTeamFineScaleDeleted": "Tariffario eliminato."
 }

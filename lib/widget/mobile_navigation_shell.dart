@@ -7,6 +7,7 @@ import 'package:grinta/main.dart';
 import 'package:grinta/model/player.dart';
 import 'package:grinta/provider/appSession.dart';
 import 'package:grinta/util/app_theme.dart';
+import 'package:grinta/util/team_fine_access.dart';
 import 'package:grinta/widget/app_language_dropdown.dart';
 import 'package:grinta/widget/app_session_player_avatar.dart';
 import 'package:grinta/widget/app_session_player_season_selector.dart';
@@ -28,6 +29,7 @@ import 'package:grinta/widget/account_create_profile_entry.dart';
 import 'package:grinta/widget/edit_member_profile.dart';
 import 'package:grinta/widget/manage_profiles_settings_entry.dart';
 import 'package:grinta/screen/my_unavailabilities_screen.dart';
+import 'package:grinta/screen/team_fines/team_fines_screen.dart';
 import 'package:grinta/screen/tips_screen.dart';
 import 'package:grinta/widget/nav_icon_count_badge.dart';
 import 'package:grinta/widget/stream_chat_nav_unread_badge.dart';
@@ -482,6 +484,29 @@ class _MobileNavigationShellState extends State<MobileNavigationShell> {
                     closeSheetThen(
                       () => openMyUnavailabilitiesScreen(context),
                       sheetContext,
+                    );
+                  },
+                ),
+                Consumer<AppSession>(
+                  builder: (_, session, __) {
+                    if (!hasTeamFinesAccess(session)) {
+                      return const SizedBox.shrink();
+                    }
+                    return ListTile(
+                      leading: Icon(
+                        Icons.payments_outlined,
+                        color: colors.primary,
+                      ),
+                      title: Text(
+                        l10n.settingsTeamFines,
+                        style: settingsMenuTitleStyle(sheetContext),
+                      ),
+                      onTap: () {
+                        closeSheetThen(
+                          () => openTeamFinesScreen(context),
+                          sheetContext,
+                        );
+                      },
                     );
                   },
                 ),

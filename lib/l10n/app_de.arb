@@ -3985,5 +3985,37 @@
   "adminAdsUpcomingBadge": "Geplant",
   "lastResultsFormGuide": "Aktuelle Form",
   "lastResultsSlotEmpty": "Noch nicht gespielt",
-  "lastResultsSlotHighlighted": "Aktuelles Spiel"
+  "lastResultsSlotHighlighted": "Aktuelles Spiel",
+  "settingsTeamFines": "Strafen",
+  "teamFinesNoTeams": "Kein Team für die Strafenverwaltung verfügbar.",
+  "teamFinesEmptyScales": "Kein Strafenkatalog für dieses Team. Mit + einen erstellen.",
+  "teamFinesLoadError": "Strafenkatalog konnte nicht geladen werden.",
+  "createTeamFineScaleTitle": "Neuer Strafenkatalog",
+  "createTeamFineScaleTeam": "Team",
+  "createTeamFineScaleTeamRequired": "Wähle ein Team.",
+  "createTeamFineScaleType": "Art",
+  "createTeamFineScaleTypeRequired": "Wähle eine Art.",
+  "createTeamFineScaleNewType": "Neue Art erstellen…",
+  "createTeamFineScaleNewTypeTitle": "Neue Strafenart",
+  "createTeamFineScaleTypeName": "Name der Art",
+  "createTeamFineScaleAmount": "Betrag",
+  "createTeamFineScaleAmountRequired": "Gib einen gültigen Betrag ein.",
+  "createTeamFineScaleSaved": "Strafenkatalog gespeichert.",
+  "createTeamFineScaleError": "Strafenkatalog konnte nicht gespeichert werden.",
+  "teamFineDefaultTypeLate": "Verspätung",
+  "teamFineDefaultTypeUnjustifiedAbsence": "Unentschuldigtes Fehlen",
+  "teamFinesManagerTitle": "Verantwortlich für Strafen",
+  "teamFinesManagerNone": "Nicht festgelegt",
+  "teamFinesManagerSaved": "Verantwortlich für Strafen gespeichert.",
+  "deleteTeamFineScaleTooltip": "Katalogeintrag löschen",
+  "deleteTeamFineScaleConfirmTitle": "Katalogeintrag löschen?",
+  "deleteTeamFineScaleConfirmMessage": "Eintrag „{typeName}“ löschen?",
+  "@deleteTeamFineScaleConfirmMessage": {
+    "placeholders": {
+      "typeName": {
+        "type": "String"
+      }
+    }
+  },
+  "deleteTeamFineScaleDeleted": "Strafenkatalogeintrag gelöscht."
 }
