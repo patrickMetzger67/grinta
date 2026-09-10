@@ -240,16 +240,13 @@ List<String> readUserProviderIds(Map<String, dynamic> data) {
       return;
     }
     if (raw is Map) {
-      for (final key in const [
-        'providerId',
-        'provider',
-        'signInProvider',
-        'id',
-      ]) {
+      for (final key in const ['providerId', 'provider', 'signInProvider']) {
         if (raw.containsKey(key)) {
           addRaw(raw[key], depth: depth + 1);
         }
       }
+      final nestedId = raw['id']?.toString().trim() ?? '';
+      if (_looksLikeStandaloneProviderId(nestedId)) addId(nestedId);
       for (final key in raw.keys) {
         final text = key.toString().trim();
         if (_looksLikeStandaloneProviderId(text)) addId(text);
@@ -275,7 +272,6 @@ bool _looksLikeStandaloneProviderId(String value) {
     'apple',
     'password',
     'anonymous',
-    'email',
     'emaillink',
     'phone',
   }.contains(id);
