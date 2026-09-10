@@ -60,7 +60,7 @@
   "memberLastName": "Apellido",
   "memberEmail": "Correo electrónico",
   "memberEmailOptional": "Correo electrónico (opcional)",
-  "memberIdentityFromAuthHint": "Tu nombre y correo de Iniciar sesión con Apple o Google se usarán para tu cuenta. Podrás modificarlos más tarde en tu perfil.",
+  "memberIdentityFromAuthHint": "El nombre y el correo ya facilitados por Iniciar sesión con Apple o Google se usan automáticamente. Si falta el nombre o el apellido, debes introducirlos para terminar el registro.",
   "memberPhone": "Teléfono",
   "memberPhoneOptional": "Teléfono (opcional)",
   "memberEmailInvalid": "Introduce una dirección de correo electrónico válida",
