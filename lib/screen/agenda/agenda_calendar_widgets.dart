@@ -20,6 +20,8 @@ class _GrintaStyleCalendarHeader extends StatelessWidget {
   final VoidCallback onHeaderDateTap;
   final ValueChanged<int> onPageChanged;
   final ValueChanged<DateTime> onDateTap;
+  final List<PlayerTask> playerTasks;
+  final ValueChanged<PlayerTask> onPlayerTaskTap;
 
   const _GrintaStyleCalendarHeader({
     required this.pageController,
@@ -41,6 +43,8 @@ class _GrintaStyleCalendarHeader extends StatelessWidget {
     required this.onHeaderDateTap,
     required this.onPageChanged,
     required this.onDateTap,
+    required this.playerTasks,
+    required this.onPlayerTaskTap,
   });
 
   @override
@@ -316,6 +320,11 @@ class _GrintaStyleCalendarHeader extends StatelessWidget {
                   ),
                 ),
               ),
+              ),
+              AgendaPlayerTaskBars(
+                tasks: playerTasks,
+                weekStart: _startOfWeek(selectedDate),
+                onTaskTap: onPlayerTaskTap,
               ),
             ],
           ),

@@ -70,15 +70,19 @@ import '../../widget/player_feeling_faces.dart';
 import '../../widget/playerPhoto.dart';
 import '../../widget/sport_metric_pickers.dart';
 import '../../model/personal_sport_activity.dart';
-import '../../model/player.dart';
 import '../../model/player_feeling.dart';
+import '../../model/player_task.dart';
 import '../../util/non_sport_event_helper.dart';
 import '../../util/personal_sport_activity_helper.dart';
+import '../../util/player_task_access.dart';
 import '../../util/session_report_access.dart';
 import '../../util/share_player_access.dart';
 import '../../util/staff_session_access.dart';
 import '../../widget/session_averages_share_button.dart';
+import '../../widget/agenda_player_task_bars.dart';
+import '../../widget/player_task_detail_sheet.dart';
 import '../../services/session_player_synthesis_share_service.dart';
+import '../../services/player_task_service.dart';
 part 'agenda_calendar_widgets.dart';
 part 'agenda_list_widgets.dart';
 part 'agenda_status_views.dart';
@@ -201,11 +205,13 @@ class _AgendaScreenState extends State<AgendaScreen> {
   final Map<int, GlobalKey> _weekKeys = <int, GlobalKey>{};
 
   List<AgendaItem> _items = <AgendaItem>[];
+  List<PlayerTask> _playerTasks = const <PlayerTask>[];
   bool _isLoading = false;
   bool _isRefreshing = false;
   String? _error;
   StreamSubscription<List<AgendaItem>>? _itemsSub;
   StreamSubscription<List<AgendaItem>>? _prefetchSub;
+  StreamSubscription<List<PlayerTask>>? _tasksSub;
   int _subscriptionGeneration = 0;
   int _prefetchGeneration = 0;
   /// Latest-wins gate: a newer week/month slide supersedes in-flight hydrations.
@@ -376,6 +382,8 @@ class _AgendaScreenState extends State<AgendaScreen> {
     _prefetchSub = null;
     unawaited(_itemsSub?.cancel());
     _itemsSub = null;
+    unawaited(_tasksSub?.cancel());
+    _tasksSub = null;
     _scrollController.removeListener(_handleScroll);
     _scrollController.dispose();
     _monthPageController.removeListener(_onMonthPagerScrollActivity);
@@ -968,6 +976,8 @@ class _AgendaScreenState extends State<AgendaScreen> {
     final int generation = ++_subscriptionGeneration;
     await _itemsSub?.cancel();
     _itemsSub = null;
+    await _tasksSub?.cancel();
+    _tasksSub = null;
 
     if (mounted) {
       // Keep previous items visible while the new window loads.
@@ -1048,6 +1058,31 @@ class _AgendaScreenState extends State<AgendaScreen> {
         _bumpAgendaPaint();
       },
     );
+
+    final String? memberId =
+        context.read<AppSession>().selectedPlayerId?.trim();
+    if (memberId != null && memberId.isNotEmpty) {
+      _tasksSub = PlayerTaskService()
+          .watchTasksForMemberBetweenDates(
+            memberId: memberId,
+            start: DateUtils.dateOnly(_rangeStart),
+            end: _endOfDay(_rangeEnd),
+          )
+          .listen(
+        (List<PlayerTask> tasks) {
+          if (!mounted || generation != _subscriptionGeneration) {
+            return;
+          }
+          _playerTasks = tasks;
+          _bumpAgendaPaint();
+        },
+        onError: (Object error) {
+          debugPrint('Agenda player tasks failed: $error');
+        },
+      );
+    } else {
+      _playerTasks = const <PlayerTask>[];
+    }
   }
 
   Future<void> _goToPreviousWeek() => _applyWeekStripChevron(-1);
@@ -1547,6 +1582,19 @@ class _AgendaScreenState extends State<AgendaScreen> {
                             onPageChanged: _onMonthPageChanged,
                             onDateTap: (date) {
                               unawaited(_selectDate(date));
+                            },
+                            playerTasks: applyPlayerTaskTeamFilter(
+                              _playerTasks,
+                              _filter.teamIds,
+                            ),
+                            onPlayerTaskTap: (task) {
+                              unawaited(
+                                showPlayerTaskDetailSheet(
+                                  context,
+                                  task: task,
+                                  onChanged: () => _subscribeItems(),
+                                ),
+                              );
                             },
                           ),
                         ),

@@ -3985,5 +3985,64 @@
   "adminAdsUpcomingBadge": "Próximo",
   "lastResultsFormGuide": "Forma reciente",
   "lastResultsSlotEmpty": "Aún no jugado",
-  "lastResultsSlotHighlighted": "Partido actual"
+  "lastResultsSlotHighlighted": "Partido actual",
+  "agendaAddEventPlayerTask": "Una tarea de equipo",
+  "agendaAddEventPlayerTaskHint": "Material, camisetas, …",
+  "createPlayerTaskTitle": "Asignar una tarea",
+  "editPlayerTaskTitle": "Editar la tarea",
+  "createPlayerTaskType": "Tipo",
+  "createPlayerTaskTypeRequired": "Elige un tipo.",
+  "createPlayerTaskNewType": "Crear un tipo nuevo…",
+  "createPlayerTaskNewTypeTitle": "Nuevo tipo de tarea",
+  "createPlayerTaskTypeName": "Nombre del tipo",
+  "createPlayerTaskTypeColor": "Color",
+  "createPlayerTaskTeam": "Equipo",
+  "createPlayerTaskTeamRequired": "Elige un equipo.",
+  "createPlayerTaskPlayers": "Jugadores",
+  "createPlayerTaskPlayersHint": "Toca para elegir uno o varios jugadores",
+  "createPlayerTaskPlayersRequired": "Elige al menos un jugador.",
+  "createPlayerTaskSelectPlayers": "Elegir jugadores",
+  "createPlayerTaskSelectAll": "Todos",
+  "createPlayerTaskNoPlayers": "No hay jugadores en este equipo.",
+  "createPlayerTaskStartDate": "Inicio",
+  "createPlayerTaskEndDate": "Fin",
+  "createPlayerTaskThisWeek": "Esta semana",
+  "createPlayerTaskToday": "Hoy",
+  "createPlayerTaskNote": "Nota (opcional)",
+  "createPlayerTaskNoteHint": "Ej. recoger los conos",
+  "createPlayerTaskSaved": "Tarea asignada.",
+  "editPlayerTaskSaved": "Tarea actualizada.",
+  "createPlayerTaskError": "No se pudo guardar la tarea.",
+  "editPlayerTaskError": "No se pudo actualizar la tarea.",
+  "createPlayerTaskInvalidRange": "La fecha de fin debe ser posterior a la de inicio.",
+  "createPlayerTaskNoManagedTeams": "No gestionas ningún equipo esta temporada.",
+  "playerTaskDetailTitle": "Tarea",
+  "playerTaskAssignees": "Jugadores",
+  "playerTaskPeriod": "Periodo",
+  "playerTaskEdit": "Editar",
+  "deletePlayerTaskConfirmTitle": "¿Eliminar la tarea?",
+  "deletePlayerTaskConfirmMessage": "¿Eliminar « {label} »?",
+  "@deletePlayerTaskConfirmMessage": {
+    "placeholders": {
+      "label": {
+        "type": "String"
+      }
+    }
+  },
+  "deletePlayerTaskDeleted": "Tarea eliminada.",
+  "deletePlayerTaskError": "No se pudo eliminar la tarea.",
+  "playerTaskDefaultTypeEquipment": "Material",
+  "playerTaskDefaultTypeJerseys": "Camisetas",
+  "createPlayerTaskNotificationTitle": "Nueva tarea",
+  "createPlayerTaskNotificationBody": "{label} · {period}",
+  "@createPlayerTaskNotificationBody": {
+    "placeholders": {
+      "label": {
+        "type": "String"
+      },
+      "period": {
+        "type": "String"
+      }
+    }
+  }
 }
