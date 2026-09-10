@@ -23,6 +23,7 @@ const {
   selectGrintaEligibleTokenDocs,
   selectAsersteinEligibleTokenDocs,
   resolveNotificationPushBrand,
+  isGrintaEligibleTokenDoc,
   ANDROID_FCM_CHANNEL_ID,
   IOS_APNS_TOPIC,
   GRINTA_PACKAGE_NAME,
@@ -489,7 +490,7 @@ describe('filterTokensByRecipientPreferences', () => {
     assert.deepEqual(result.tokens, ['android-tok']);
   });
 
-  it('keeps unbranded iOS on Grinta-only accounts', async () => {
+  it('drops unbranded iOS even on Grinta-only accounts', async () => {
     const db = fakeDb({
       tokensByUser: {
         u1: [
@@ -505,7 +506,7 @@ describe('filterTokensByRecipientPreferences', () => {
       type: 'chat',
       now: new Date('2026-08-03T10:00:00Z'),
     });
-    assert.deepEqual(result.tokens.sort(), ['android-tok', 'ios-legacy-tok']);
+    assert.deepEqual(result.tokens, ['android-tok']);
   });
 
   it('does not send Grinta tokens when brand is aserstein on a dual-app user', async () => {
@@ -602,6 +603,19 @@ describe('selectGrintaEligibleTokenDocs / selectAsersteinEligibleTokenDocs', () 
       { id: 'legacy-ios', data: () => ({ platform: 'ios' }) },
     ];
     assert.deepEqual(selectGrintaEligibleTokenDocs(docs).map((doc) => doc.id), []);
+  });
+
+  it('never treats an untagged iOS leftover as Grinta', () => {
+    assert.equal(isGrintaEligibleTokenDoc({ platform: 'ios' }), false);
+    assert.equal(isGrintaEligibleTokenDoc({ app: 'grinta' }), true);
+    const docs = [
+      { id: 'g', data: () => ({ app: 'grinta' }) },
+      { id: 'legacy-ios', data: () => ({ platform: 'ios' }) },
+    ];
+    assert.deepEqual(
+      selectGrintaEligibleTokenDocs(docs).map((doc) => doc.id),
+      ['g'],
+    );
   });
 });
 

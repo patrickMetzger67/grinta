@@ -245,13 +245,12 @@ class NotificationFCMService {
   /// Keeps Stream Chat free of FCM devices for Grinta users.
   ///
   /// Do **not** call `addDevice`: Grinta and AS Erstein share the same Stream
-  /// app + Firebase project, so Stream Firebase push lands on AS Erstein
-  /// devices registered for the same uid. Chat lock-screen delivery uses
-  /// [sendGrintaPushFCMNotification] instead.
+  /// app + Firebase project, so Stream Firebase push is delivered to the
+  /// AS Erstein **app** (system tray name + launcher icon). Chat lock-screen
+  /// delivery uses [sendGrintaPushFCMNotification] instead.
   ///
-  /// On every login / token refresh, remove **every** Stream device for this
-  /// user (including unbranded leftovers). Filtering only `app: aserstein`
-  /// was not enough — AS Erstein kept receiving Stream banners.
+  /// On every login / token refresh: remove every Stream device and disable
+  /// Stream chat push for this user so leftovers cannot be re-targeted.
   static Future<void> registerTokenWithStream([
     StreamChatClient? client,
   ]) async {
@@ -260,9 +259,22 @@ class NotificationFCMService {
       return;
     }
     try {
-      unawaited(_detachAllStreamDevices(streamClient));
+      unawaited(_detachStreamPush(streamClient));
     } catch (e, st) {
       debugPrint('NotificationFCMService: Stream detach failed: $e\n$st');
+    }
+  }
+
+  static Future<void> _detachStreamPush(StreamChatClient client) async {
+    await _detachAllStreamDevices(client);
+    try {
+      await client.setPushPreferences(const [
+        PushPreferenceInput(chatLevel: ChatLevel.none),
+      ]);
+    } catch (e, st) {
+      debugPrint(
+        'NotificationFCMService: Stream push preference failed: $e\n$st',
+      );
     }
   }
 
@@ -874,9 +886,8 @@ class NotificationFCMService {
 
   /// Reads Grinta FCM device tokens from `users/{uid}/fcmTokens`.
   ///
-  /// Includes `app: [FcmConfig.brandGrinta]`, Grinta `packageName`, and safe
-  /// legacy iOS/web documents without `app`. Naked unbranded Android tokens are
-  /// skipped (Aserstein bleed on the shared Firebase project). See
+  /// Only `app: [FcmConfig.brandGrinta]` or Grinta `packageName`. Untagged
+  /// leftovers are skipped so FCM cannot land on the AS Erstein app.
   /// [collectGrintaFcmTokens].
   static Future<List<String>> fetchFcmTokensForUser(String uid) async {
     final trimmedUid = uid.trim();
