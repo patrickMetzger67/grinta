@@ -61,13 +61,11 @@ Grinta sends only to:
 
 - docs with `app: "grinta"` (and `packageName: "io.grinta.app"` on current builds)
 - docs whose `packageName` is `io.grinta.app`
-- legacy iOS/web docs without `app` **only if that uid has no Aserstein token**
 
-If the uid also has `app: "aserstein"` (or an Aserstein `packageName`), unbranded
-iOS/web leftovers are skipped — they are often the Aserstein device.
-
-Naked unbranded **Android** docs are always skipped. `app: "aserstein"` and
-Aserstein package names are never targeted by a Grinta send.
+Never to untagged iOS/web leftovers. Those tokens often belong to the **AS Erstein
+app**; FCM then displays AS Erstein's name **and launcher icon** (not a title
+string in our payload). `app: "aserstein"` and Aserstein package names are
+never targeted by a Grinta send.
 
 FCM delivery is also pinned to the Grinta apps:
 
@@ -115,9 +113,9 @@ target only Aserstein tokens / `com.tome4.asersteinv2`.
 
 Grinta **does not** register FCM devices with Stream (`addDevice`). The shared
 Stream app already has AS Erstein devices for the same uid; Stream Firebase
-push would show those banners as AS Erstein. On login Grinta removes **all**
-Stream devices for the user. Chat lock-screen delivery uses
-`sendGrintaPushFCMNotification` only.
+push would show those banners as AS Erstein (app name + icon). On login Grinta
+removes **all** Stream devices and sets Stream chat push to `none`. Chat
+lock-screen delivery uses `sendGrintaPushFCMNotification` only.
 
 Disable or split the default Stream Firebase provider in the Stream dashboard
 if AS Erstein still fans out chat to the shared project.

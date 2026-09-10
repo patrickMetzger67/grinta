@@ -109,47 +109,23 @@ function isExplicitAsersteinTokenDoc(data) {
 
 /**
  * Whether a token doc may receive a Grinta push on the shared Firebase project.
- * Never targets Aserstein-tagged / Aserstein-package tokens. Naked unbranded
- * Android docs are skipped (common cross-app bleed); legacy iOS/web stay OK
- * only when the user has no Aserstein token (see selectGrintaEligibleTokenDocs).
+ * Untagged leftovers are the AS Erstein app often enough that the OS shows
+ * that app's name and launcher icon — never send to them.
  */
 function isGrintaEligibleTokenDoc(data) {
-  const app = (data?.app ?? '').toString().trim().toLowerCase();
-  if (app === BRAND_ASERSTEIN) return false;
-  if (isAsersteinPackage(data?.packageName)) return false;
-  if (app === BRAND_GRINTA) return true;
-  if (app.length > 0) return false;
-
-  if (isGrintaPackage(data?.packageName)) return true;
-
-  const platform = (data?.platform ?? '').toString().trim().toLowerCase();
-  if (platform === 'android') return false;
-  return true;
+  return isExplicitGrintaTokenDoc(data);
 }
 
 /**
  * Pick token docs for a Grinta send.
  *
- * Dual-app users (any Aserstein-tagged token on the same uid) must only
- * receive explicitly Grinta-tagged devices. Unbranded iOS/web leftovers on
- * those accounts are often the Aserstein app and would surface as
- * "AS Erstein" in the system tray.
- *
- * Grinta-only accounts keep the legacy unbranded iOS/web exception.
+ * Only explicitly Grinta-tagged devices (`app: grinta` or package
+ * `io.grinta.app`). Unbranded iOS/web leftovers on the shared project are
+ * frequently the AS Erstein app; FCM then displays that app's identity.
  */
 function selectGrintaEligibleTokenDocs(docs) {
   const list = Array.isArray(docs) ? docs : [];
-  const entries = list.map((doc) => ({ doc, data: docData(doc) }));
-  const hasAserstein = entries.some((entry) =>
-    docLooksLikeAserstein(entry.data),
-  );
-  return entries
-    .filter((entry) =>
-      hasAserstein
-        ? isExplicitGrintaTokenDoc(entry.data)
-        : isGrintaEligibleTokenDoc(entry.data),
-    )
-    .map((entry) => entry.doc);
+  return list.filter((doc) => isExplicitGrintaTokenDoc(docData(doc)));
 }
 
 /**
