@@ -37,9 +37,9 @@ class AdminUsersScreen extends StatefulWidget {
 }
 
 class _AdminUsersScreenState extends State<AdminUsersScreen> {
-  final UserService _userService = UserService();
-  final PlayerService _playerService = PlayerService();
-  final PasswordResetService _passwordResetService = PasswordResetService();
+  UserService? _userService;
+  PlayerService? _playerService;
+  PasswordResetService? _passwordResetService;
   final TextEditingController _searchController = TextEditingController();
   Timer? _debounce;
   String _query = '';
@@ -67,11 +67,12 @@ class _AdminUsersScreenState extends State<AdminUsersScreen> {
   }
 
   Stream<List<UserProfile>> get _usersStream =>
-      widget.usersStream ?? _userService.streamUsers();
+      widget.usersStream ??
+      (_userService ??= UserService()).streamUsers();
 
   Stream<List<Player>> _playersForUser(String uid) =>
       widget.playersForUser?.call(uid) ??
-      _playerService.streamPlayersByUserId(uid);
+      (_playerService ??= PlayerService()).streamPlayersByUserId(uid);
 
   Future<void> _openUserPlayers(
     UserProfile user, {
@@ -125,7 +126,8 @@ class _AdminUsersScreenState extends State<AdminUsersScreen> {
     setState(() => _resettingUid = user.uid);
     try {
       final locale = Localizations.localeOf(context).languageCode;
-      final result = await _passwordResetService.sendResetEmail(
+      final result = await (_passwordResetService ??= PasswordResetService())
+          .sendResetEmail(
         email: email,
         locale: locale,
       );

@@ -7,14 +7,6 @@ import 'package:grinta/model/grinta_player.dart';
 import 'package:grinta/model/player.dart';
 import 'package:grinta/model/team.dart';
 import 'package:grinta/services/admin_player_sensor_service.dart';
-import 'package:grinta/services/wearable_devices_repository.dart';
-
-class _HangingWearable extends WearableDevicesRepository {
-  @override
-  Future<bool> hasAnyConnected(String uid, String playerId) {
-    return Completer<bool>().future;
-  }
-}
 
 void main() {
   group('AdminPlayerSensorFlags', () {
@@ -103,7 +95,7 @@ void main() {
             ],
           ),
         ],
-        wearableRepository: _HangingWearable(),
+        hasConnectedDevices: (_, __) => Completer<bool>().future,
       );
 
       final flags = await service.loadFlags(player).timeout(
@@ -117,7 +109,7 @@ void main() {
       final service = AdminPlayerSensorService(
         timeout: const Duration(milliseconds: 30),
         loadGrintaTeams: (_) => Completer<List<Team>>().future,
-        wearableRepository: _HangingWearable(),
+        hasConnectedDevices: (_, __) => Completer<bool>().future,
       );
       final flags = await service.loadFlags(
         Player(keyMember: 'p1', userID: 'u1'),

@@ -17,14 +17,18 @@ class AdminPlayerSensorService {
     TeamService? teamService,
     WearableDevicesRepository? wearableRepository,
     Future<List<Team>> Function(Player player)? loadGrintaTeams,
+    Future<bool> Function(Player player, String memberId)? hasConnectedDevices,
     this.timeout = const Duration(seconds: 4),
   })  : _teamService = teamService,
         _wearableRepository = wearableRepository,
-        _loadGrintaTeams = loadGrintaTeams;
+        _loadGrintaTeams = loadGrintaTeams,
+        _hasConnectedDevicesOverride = hasConnectedDevices;
 
   TeamService? _teamService;
   WearableDevicesRepository? _wearableRepository;
   final Future<List<Team>> Function(Player player)? _loadGrintaTeams;
+  final Future<bool> Function(Player player, String memberId)?
+      _hasConnectedDevicesOverride;
 
   /// Caps each indicator lookup so a hung Firestore read cannot freeze Admin.
   final Duration timeout;
@@ -64,6 +68,9 @@ class AdminPlayerSensorService {
   }
 
   Future<bool> _hasConnectedDevices(Player player, String memberId) async {
+    if (_hasConnectedDevicesOverride != null) {
+      return _hasConnectedDevicesOverride(player, memberId);
+    }
     // Empty callerUid avoids treating the admin account as the sync owner.
     final ownerUid = resolveWearableSyncOwnerUid(
       callerUid: '',

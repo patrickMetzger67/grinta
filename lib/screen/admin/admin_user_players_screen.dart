@@ -1,6 +1,5 @@
 import 'dart:async';
 
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:grinta/core/extensions/l10n_extension.dart';
 import 'package:grinta/model/admin_player_sensor_flags.dart';
@@ -45,13 +44,14 @@ class AdminUserPlayersScreen extends StatefulWidget {
 }
 
 class _AdminUserPlayersScreenState extends State<AdminUserPlayersScreen> {
-  final PlayerService _playerService = PlayerService();
+  PlayerService? _playerService;
   AdminPlayerSensorService? _sensorService;
   bool _associating = false;
 
   Stream<List<Player>> get _playersStream =>
       widget.playersStream ??
-      _playerService.streamPlayersByUserId(widget.user.uid);
+      (_playerService ??= PlayerService())
+          .streamPlayersByUserId(widget.user.uid);
 
   AdminPlayerSensorService get _effectiveSensorService =>
       widget.sensorService ??
@@ -84,7 +84,7 @@ class _AdminUserPlayersScreenState extends State<AdminUserPlayersScreen> {
 
     setState(() => _associating = true);
     try {
-      await _playerService.adminAssociateUserToMember(
+      await (_playerService ??= PlayerService()).adminAssociateUserToMember(
         memberId: memberId,
         uid: widget.user.uid,
       );
