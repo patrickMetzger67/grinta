@@ -66,6 +66,29 @@ function normalizeTokenList(raw) {
   ];
 }
 
+const USER_GRINTA_TOKENS_FIELD = 'grintaTokens';
+
+/** Parses `users/{uid}.grintaTokens` (list of FCM registration token strings). */
+function grintaTokensFromUserData(data) {
+  if (!data || typeof data !== 'object') return [];
+  return normalizeTokenList(data[USER_GRINTA_TOKENS_FIELD]);
+}
+
+/**
+ * Grinta send list: prefer the user document field, else tagged subcollection.
+ *
+ * Fallback is for old clients that have not opened Grinta since
+ * `grintaTokens` was added. Aserstein-tagged subcollection tokens are never used.
+ */
+function resolveGrintaSendTokens({
+  grintaTokens,
+  subcollectionTokens = [],
+} = {}) {
+  const fromUser = normalizeTokenList(grintaTokens);
+  if (fromUser.length > 0) return fromUser;
+  return normalizeTokenList(subcollectionTokens);
+}
+
 function docData(doc) {
   return typeof doc?.data === 'function' ? doc.data() : (doc?.data ?? {});
 }
@@ -223,6 +246,7 @@ function normalizeNotifType(raw) {
 const LOCAL_REMINDER_PUSH_TYPES = new Set([
   'trainingReminder',
   'matchOpponentStatsReminder',
+  'playerTaskReminder',
   'RPEBefore',
 ]);
 
@@ -615,14 +639,44 @@ function computeSendAfter(prefs, now = new Date()) {
 }
 
 async function loadUserFcmTokens(db, userId, brand, _requestedTokens) {
-  const tokensRef = db.collection('users').doc(userId).collection('fcmTokens');
+  const userRef = db.collection('users').doc(userId);
+
+  if (brand === BRAND_GRINTA) {
+    let userSnap;
+    try {
+      userSnap = await userRef.get();
+    } catch (_) {
+      userSnap = null;
+    }
+    const fromUser = grintaTokensFromUserData(
+      userSnap && userSnap.exists
+        ? typeof userSnap.data === 'function'
+          ? userSnap.data()
+          : userSnap.data
+        : null,
+    );
+    if (fromUser.length > 0) {
+      return fromUser;
+    }
+
+    const tokensRef = userRef.collection('fcmTokens');
+    const all = await tokensRef.get();
+    const tokenDocs = selectGrintaEligibleTokenDocs(all.docs);
+    const tokens = [];
+    for (const doc of tokenDocs) {
+      const token = tokenFromDoc(doc);
+      if (!token || !isSendableFcmRegistrationToken(token)) continue;
+      tokens.push(token);
+    }
+    return tokens;
+  }
+
+  const tokensRef = userRef.collection('fcmTokens');
   const all = await tokensRef.get();
   const allDocs = all.docs;
   let tokenDocs = allDocs;
 
-  if (brand === BRAND_GRINTA) {
-    tokenDocs = selectGrintaEligibleTokenDocs(allDocs);
-  } else if (brand === BRAND_ASERSTEIN) {
+  if (brand === BRAND_ASERSTEIN) {
     tokenDocs = selectAsersteinEligibleTokenDocs(allDocs);
   }
 
@@ -630,8 +684,6 @@ async function loadUserFcmTokens(db, userId, brand, _requestedTokens) {
   for (const doc of tokenDocs) {
     const token = tokenFromDoc(doc);
     if (!token || !isSendableFcmRegistrationToken(token)) continue;
-    // Do not intersect with the client-supplied list. A partial snapshot
-    // (Android + Chrome only) would drop a valid iOS token already in Firestore.
     tokens.push(token);
   }
   return tokens;
@@ -737,6 +789,9 @@ module.exports = {
   isExplicitAsersteinTokenDoc,
   selectGrintaEligibleTokenDocs,
   selectAsersteinEligibleTokenDocs,
+  grintaTokensFromUserData,
+  resolveGrintaSendTokens,
+  USER_GRINTA_TOKENS_FIELD,
   resolveNotificationPushBrand,
   docLooksLikeAserstein,
   normalizeUserIdList,

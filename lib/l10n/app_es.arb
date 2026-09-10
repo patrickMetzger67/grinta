@@ -4048,13 +4048,16 @@
     }
   },
   "createPlayerTaskNotificationTitle": "Nueva tarea",
-  "createPlayerTaskNotificationBody": "{label} · {period}",
+  "createPlayerTaskNotificationBody": "Estás de {typeName} del {start} al {end}",
   "@createPlayerTaskNotificationBody": {
     "placeholders": {
-      "label": {
+      "typeName": {
         "type": "String"
       },
-      "period": {
+      "start": {
+        "type": "String"
+      },
+      "end": {
         "type": "String"
       }
     }

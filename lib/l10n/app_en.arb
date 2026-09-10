@@ -4092,13 +4092,16 @@
     }
   },
   "createPlayerTaskNotificationTitle": "New task",
-  "createPlayerTaskNotificationBody": "{label} · {period}",
+  "createPlayerTaskNotificationBody": "You are on {typeName} from {start} to {end}",
   "@createPlayerTaskNotificationBody": {
     "placeholders": {
-      "label": {
+      "typeName": {
         "type": "String"
       },
-      "period": {
+      "start": {
+        "type": "String"
+      },
+      "end": {
         "type": "String"
       }
     }

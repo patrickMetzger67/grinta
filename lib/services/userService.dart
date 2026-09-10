@@ -37,6 +37,9 @@ abstract final class UserDocumentFields {
 
   /// Local calendar day (`YYYY-MM-DD`) of the last shop ad impression.
   static const eshopAdsLastShownDate = 'eshopAdsLastShownDate';
+
+  /// Grinta FCM registration tokens (`io.grinta.app`). Preferred send list.
+  static const grintaTokens = 'grintaTokens';
 }
 
 /// Account lifecycle for age / parental consent.

@@ -9,6 +9,7 @@ import 'package:grinta/model/player_task.dart';
 import 'package:grinta/model/player_task_type.dart';
 import 'package:grinta/model/team.dart';
 import 'package:grinta/provider/appSession.dart';
+import 'package:grinta/services/internal_reminder_service.dart';
 import 'package:grinta/services/playerService.dart';
 import 'package:grinta/services/player_task_service.dart';
 import 'package:grinta/services/player_task_type_service.dart';
@@ -472,6 +473,7 @@ class _CreatePlayerTaskSheetState extends State<CreatePlayerTaskSheet> {
         );
       }
       if (!mounted) return;
+      InternalReminderService.instance.onAgendaChanged();
       widget.onSaved?.call();
       Navigator.of(context).pop(saved);
     } catch (error, stackTrace) {

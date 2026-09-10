@@ -494,7 +494,8 @@ class _NotificationListTileState extends State<_NotificationListTile> {
 
   bool get _isTappableReminder =>
       widget.notification.type == NotifType.trainingReminder ||
-      widget.notification.type == NotifType.matchOpponentStatsReminder;
+      widget.notification.type == NotifType.matchOpponentStatsReminder ||
+      widget.notification.type == NotifType.playerTaskReminder;
 
   bool get _isTappableFeeling =>
       widget.notification.type == NotifType.RPEAfter;
@@ -510,7 +511,9 @@ class _NotificationListTileState extends State<_NotificationListTile> {
 
     final typeName = widget.notification.type == NotifType.trainingReminder
         ? 'trainingReminder'
-        : 'matchOpponentStatsReminder';
+        : widget.notification.type == NotifType.playerTaskReminder
+            ? 'playerTaskReminder'
+            : 'matchOpponentStatsReminder';
 
     setState(() => _isConvocationActionInProgress = true);
     try {
@@ -519,6 +522,8 @@ class _NotificationListTileState extends State<_NotificationListTile> {
         'id': objectId,
         if (widget.notification.type == NotifType.trainingReminder)
           'trainingId': objectId
+        else if (widget.notification.type == NotifType.playerTaskReminder)
+          'taskId': objectId
         else
           'matchId': objectId,
         if (widget.notification.playerId != null)

@@ -41,6 +41,10 @@ class InternalNotificationNavigation {
       case 'matchOpponentStatsReminder':
         await _openOpponentStats(context, data);
         break;
+      case 'playerTask':
+      case 'playerTaskReminder':
+        await _openPlayerTaskAgenda(context, data);
+        break;
       default:
         ShellNavigationScope.tryNavigateToTab(
           context,
@@ -72,6 +76,27 @@ class InternalNotificationNavigation {
     if (trainingDate != null) {
       CalendarDeepLinkService.instance.pendingAgendaDate.value =
           DateUtils.dateOnly(trainingDate);
+    }
+
+    if (!context.mounted) return;
+    ShellNavigationScope.tryNavigateToTab(
+      context,
+      FeatureDiscoveryIds.tabAgenda,
+    );
+  }
+
+  static Future<void> _openPlayerTaskAgenda(
+    BuildContext context,
+    Map<String, dynamic> data,
+  ) async {
+    DateTime? agendaDate;
+    final rawDate = (data['date'] ?? data['startAt'] ?? '').toString().trim();
+    if (rawDate.isNotEmpty) {
+      agendaDate = DateTime.tryParse(rawDate);
+    }
+    if (agendaDate != null) {
+      CalendarDeepLinkService.instance.pendingAgendaDate.value =
+          DateUtils.dateOnly(agendaDate);
     }
 
     if (!context.mounted) return;

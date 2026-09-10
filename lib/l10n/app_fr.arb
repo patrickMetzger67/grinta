@@ -4498,13 +4498,16 @@
     }
   },
   "createPlayerTaskNotificationTitle": "Nouvelle tâche",
-  "createPlayerTaskNotificationBody": "{label} · {period}",
+  "createPlayerTaskNotificationBody": "Tu es de {typeName} de {start} à {end}",
   "@createPlayerTaskNotificationBody": {
     "placeholders": {
-      "label": {
+      "typeName": {
         "type": "String"
       },
-      "period": {
+      "start": {
+        "type": "String"
+      },
+      "end": {
         "type": "String"
       }
     }

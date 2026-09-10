@@ -4048,13 +4048,16 @@
     }
   },
   "createPlayerTaskNotificationTitle": "Neue Aufgabe",
-  "createPlayerTaskNotificationBody": "{label} · {period}",
+  "createPlayerTaskNotificationBody": "Du bist für {typeName} vom {start} bis {end} eingeteilt",
   "@createPlayerTaskNotificationBody": {
     "placeholders": {
-      "label": {
+      "typeName": {
         "type": "String"
       },
-      "period": {
+      "start": {
+        "type": "String"
+      },
+      "end": {
         "type": "String"
       }
     }

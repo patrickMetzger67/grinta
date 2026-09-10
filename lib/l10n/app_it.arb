@@ -4048,13 +4048,16 @@
     }
   },
   "createPlayerTaskNotificationTitle": "Nuovo compito",
-  "createPlayerTaskNotificationBody": "{label} · {period}",
+  "createPlayerTaskNotificationBody": "Sei di {typeName} dal {start} al {end}",
   "@createPlayerTaskNotificationBody": {
     "placeholders": {
-      "label": {
+      "typeName": {
         "type": "String"
       },
-      "period": {
+      "start": {
+        "type": "String"
+      },
+      "end": {
         "type": "String"
       }
     }

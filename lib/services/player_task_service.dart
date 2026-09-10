@@ -14,7 +14,7 @@ import 'package:grinta/services/playerService.dart';
 import 'package:grinta/util/playerDisplayName.dart';
 import 'package:grinta/util/player_photo_resolver.dart';
 import 'package:grinta/util/player_task_access.dart';
-import 'package:intl/intl.dart';
+import 'package:grinta/util/player_task_reminder.dart';
 
 class PlayerTaskService {
   static const String collectionName = 'playerTasks';
@@ -147,6 +147,43 @@ class PlayerTaskService {
         }
       };
     });
+  }
+
+  /// Tasks where [memberId] is an assignee (managers who are not assigned
+  /// are excluded — used for player-task reminders).
+  Future<List<PlayerTask>> loadAssignedTasksBetweenDates({
+    required String memberId,
+    required DateTime start,
+    required DateTime end,
+  }) async {
+    final String trimmed = memberId.trim();
+    if (trimmed.isEmpty) {
+      return const <PlayerTask>[];
+    }
+
+    final DateTime rangeStart = DateUtils.dateOnly(start);
+    final DateTime rangeEnd = DateUtils.dateOnly(end);
+
+    try {
+      final QuerySnapshot<Map<String, dynamic>> snapshot = await _collection
+          .where(keyPlayerTaskAssigneeMemberIds, arrayContains: trimmed)
+          .get();
+      final List<PlayerTask> tasks = <PlayerTask>[];
+      for (final QueryDocumentSnapshot<Map<String, dynamic>> doc
+          in snapshot.docs) {
+        final PlayerTask task = PlayerTask.fromSnapshot(doc);
+        if (task.overlapsRange(rangeStart, rangeEnd)) {
+          tasks.add(task);
+        }
+      }
+      return tasks;
+    } catch (error, stackTrace) {
+      debugPrint(
+        'PlayerTaskService.loadAssignedTasksBetweenDates failed: $error',
+      );
+      debugPrintStack(stackTrace: stackTrace);
+      return const <PlayerTask>[];
+    }
   }
 
   Future<PlayerTask> createTask({
@@ -309,7 +346,27 @@ class PlayerTaskService {
 
     final DocumentReference target = existingRef ?? _collection.doc(existingId);
     await target.set(updated.toMap(), SetOptions(merge: true));
-    return updated.copyWith(id: target.id, ref: target);
+    final PlayerTask saved = updated.copyWith(id: target.id, ref: target);
+
+    final Set<String> previousAssigneeIds = existing.assigneeMemberIds.toSet();
+    final List<Player> newlyAdded = <Player>[];
+    for (final Player player in uniqueAssignees) {
+      final String? memberId = effectiveMemberId(player);
+      if (memberId == null || previousAssigneeIds.contains(memberId)) {
+        continue;
+      }
+      newlyAdded.add(player);
+    }
+    if (newlyAdded.isNotEmpty) {
+      await _notifyAssignees(
+        l10n: l10n,
+        task: saved,
+        assignees: newlyAdded,
+        managerUserId: existing.createdByUserId,
+      );
+    }
+
+    return saved;
   }
 
   Future<void> deleteTask(PlayerTask task) async {
@@ -336,11 +393,13 @@ class PlayerTaskService {
       return;
     }
 
-    final String period = _periodLabel(task);
+    final String startLabel = formatPlayerTaskNotificationDate(task.startDay);
+    final String endLabel = formatPlayerTaskNotificationDate(task.endDay);
     final String pushTitle = l10n.createPlayerTaskNotificationTitle;
     final String pushBody = l10n.createPlayerTaskNotificationBody(
-      task.barLabel,
-      period,
+      task.typeName,
+      startLabel,
+      endLabel,
     );
 
     for (final Player player in assignees) {
@@ -361,7 +420,7 @@ class PlayerTaskService {
           await _notificationService.createNotification(
             NotificationApp(
               userId: uid,
-              type: NotifType.event,
+              type: NotifType.playerTask,
               sendBy: SendBy.notification,
               title: pushTitle,
               body: pushBody,
@@ -380,7 +439,7 @@ class PlayerTaskService {
           ),
           title: pushTitle,
           body: pushBody,
-          type: 'event',
+          type: 'playerTask',
           payload: <String, dynamic>{
             'id': taskId,
             'type': 'playerTask',
@@ -396,15 +455,6 @@ class PlayerTaskService {
         debugPrintStack(stackTrace: stackTrace);
       }
     }
-  }
-
-  String _periodLabel(PlayerTask task) {
-    final DateTime start = task.startDay;
-    final DateTime end = task.endDay;
-    if (start == end) {
-      return DateFormat('dd/MM/yyyy').format(start);
-    }
-    return '${DateFormat('dd/MM/yyyy').format(start)} → ${DateFormat('dd/MM/yyyy').format(end)}';
   }
 
   List<Player> _dedupePlayers(List<Player> players) {

@@ -23,9 +23,11 @@ import 'package:grinta/services/local_reminder_scheduler.dart';
 import 'package:grinta/services/notification_preferences_service.dart';
 import 'package:grinta/services/notificationService.dart';
 import 'package:grinta/services/opponent_stats_view_tracker.dart';
+import 'package:grinta/services/player_task_service.dart';
 import 'package:grinta/services/user_trial_service.dart';
 import 'package:grinta/screen/team_players/training_team_players_presence.dart';
 import 'package:grinta/screen/team_stats/team_stats_competition_selector.dart';
+import 'package:grinta/util/player_task_reminder.dart';
 import 'package:grinta/util/team_stats_opponent_helper.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
@@ -39,6 +41,7 @@ class InternalReminderService with WidgetsBindingObserver {
   final AgendaService _agendaService = AgendaService();
   final AnswerService _answerService = AnswerService();
   final NotificationService _notificationService = NotificationService();
+  final PlayerTaskService _playerTaskService = PlayerTaskService();
 
   Timer? _agendaDebounceTimer;
   bool _initialized = false;
@@ -148,6 +151,17 @@ class InternalReminderService with WidgetsBindingObserver {
           );
         }
       }
+
+      await _schedulePlayerTaskReminders(
+        items: items,
+        preferences: preferences,
+        memberId: session.selectedPlayerId,
+        uid: uid,
+        l10n: l10n,
+        now: now,
+        start: start,
+        end: end,
+      );
     } catch (e, st) {
       debugPrint('InternalReminderService.reschedule error: $e\n$st');
     } finally {
@@ -314,6 +328,75 @@ class InternalReminderService with WidgetsBindingObserver {
       body: body,
       payload: payload,
     );
+  }
+
+  Future<void> _schedulePlayerTaskReminders({
+    required List<AgendaItem> items,
+    required NotificationPreferences preferences,
+    required String? memberId,
+    required String uid,
+    required AppLocalizations l10n,
+    required DateTime now,
+    required DateTime start,
+    required DateTime end,
+  }) async {
+    final String trimmedMemberId = memberId?.trim() ?? '';
+    if (trimmedMemberId.isEmpty) {
+      return;
+    }
+
+    final assignedTasks = await _playerTaskService.loadAssignedTasksBetweenDates(
+      memberId: trimmedMemberId,
+      start: start,
+      end: end,
+    );
+    if (assignedTasks.isEmpty) {
+      return;
+    }
+
+    final plans = planPlayerTaskReminders(
+      assignedTasks: assignedTasks,
+      agendaItems: items,
+      preferences: preferences,
+      now: now,
+    );
+
+    for (final plan in plans) {
+      final title = plan.task.typeName;
+      final body = l10n.createPlayerTaskNotificationBody(
+        plan.task.typeName,
+        formatPlayerTaskNotificationDate(plan.task.startDay),
+        formatPlayerTaskNotificationDate(plan.task.endDay),
+      );
+      final payload = <String, dynamic>{
+        'type': 'playerTaskReminder',
+        'id': plan.task.id ?? '',
+        'taskId': plan.task.id ?? '',
+        'teamId': plan.task.teamId,
+        'eventId': plan.event.id,
+        'date': DateFormat('yyyy-MM-dd').format(plan.event.startAt),
+      };
+
+      if (DateUtils.isSameDay(plan.scheduledAt, now)) {
+        await _createInAppNotificationIfNeeded(
+          uid: uid,
+          type: NotifType.playerTaskReminder,
+          objectId: plan.task.id ?? plan.event.id,
+          title: title,
+          body: body,
+          playerId: trimmedMemberId,
+        );
+      }
+
+      await LocalReminderScheduler.instance.scheduleReminder(
+        reminderKey: plan.reminderKey,
+        scheduledAtLocal: plan.scheduledAt,
+        timezoneName: preferences.timezone,
+        title: title,
+        body: body,
+        payload: payload,
+      );
+    }
   }
 
   Future<void> _createInAppNotificationIfNeeded({
