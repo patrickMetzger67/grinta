@@ -100,4 +100,30 @@ void main() {
     expect(find.text('Aaron ANTHONY'), findsNothing);
     expect(find.text('Hugo Danguel'), findsNothing);
   });
+
+  testWidgets('keeps typed search text when the member stream rebuilds',
+      (tester) async {
+    await pumpScreen(tester);
+    members.add(<Player>[]);
+    await tester.pump();
+
+    await tester.enterText(
+      find.byKey(AdminPlayersScreen.searchFieldKey),
+      'Aaron',
+    );
+    await tester.pump();
+
+    members.add(<Player>[]);
+    await tester.pump();
+
+    expect(find.byType(TextField), findsOneWidget);
+    expect(
+      tester
+          .widget<TextField>(find.byKey(AdminPlayersScreen.searchFieldKey))
+          .controller
+          ?.text,
+      'Aaron',
+    );
+    expect(find.text('Aaron'), findsOneWidget);
+  });
 }
