@@ -45,29 +45,29 @@ Every FCM payload includes the Grinta icons:
 
 ## Dual-app tokens (Grinta + Aserstein)
 
-Both apps share Firebase project `aserstein-2453e` and `users/{uid}/fcmTokens`.
-The same person can have both apps installed (two FCM tokens on one uid).
-A Grinta event must never surface in the **AS Erstein** tray.
+Both apps share Firebase project `aserstein-2453e`. The same person can have
+both apps installed. A Grinta event must never surface in the **AS Erstein**
+tray: FCM shows the **receiving app's name and launcher icon**.
 
-Typical dual-app failures:
+### Source of truth: `users/{uid}.grintaTokens`
 
-1. First event: Grinta token **and** an unbranded leftover (AS Erstein) → two banners.
-2. Next event: Grinta token missing/invalid, leftover still targeted → **only** AS Erstein.
+Grinta FCM registration tokens live on the user document as
+`users/{uid}.grintaTokens` (array of sendable FCM token strings). Cloud
+Functions and the Flutter client use this list for all Grinta FCM sends.
 
-If the uid has any Aserstein-tagged token and **no** explicit Grinta token, Grinta
-sends **nothing** rather than falling back to that leftover.
+The Grinta client still writes a tagged doc under `users/{uid}/fcmTokens/{token}`
+(`app: "grinta"`, `packageName: "io.grinta.app"`) so other readers keep working.
+It also `arrayUnion`s the token into `grintaTokens`.
 
-Grinta sends only to:
+**Fallback:** if `grintaTokens` is missing or empty (old client that has not
+opened the app since this field was added), Grinta falls back to explicitly
+Grinta-tagged docs in `users/{uid}/fcmTokens` (`app: "grinta"` or
+`packageName: "io.grinta.app"`). Untagged leftovers and `app: "aserstein"`
+docs are never targeted.
 
-- docs with `app: "grinta"` (and `packageName: "io.grinta.app"` on current builds)
-- docs whose `packageName` is `io.grinta.app`
-- legacy iOS/web docs without `app` **only if that uid has no Aserstein token**
-
-If the uid also has `app: "aserstein"` (or an Aserstein `packageName`), unbranded
-iOS/web leftovers are skipped — they are often the Aserstein device.
-
-Naked unbranded **Android** docs are always skipped. `app: "aserstein"` and
-Aserstein package names are never targeted by a Grinta send.
+If the uid has any Aserstein-tagged token and **no** Grinta token (field or
+explicit subcollection), Grinta sends **nothing** rather than falling back to
+that leftover.
 
 FCM delivery is also pinned to the Grinta apps:
 
@@ -105,9 +105,11 @@ target only Aserstein tokens / `com.tome4.asersteinv2`.
   real club id such as AS Erstein (`500554`) is stored on the in-app
   `notification` document only — never on the FCM callable.
 - **`brand`**: always `"grinta"` from the Flutter client.
-- **`recipientUserIds`**: Auth uids. The CF loads `users/{uid}/fcmTokens` when
-  `fcmTokens` is empty.
-- Tokens live in `users/{uid}/fcmTokens/{token}` with `app: "grinta"` and
+- **`recipientUserIds`**: Auth uids. The CF loads `users/{uid}.grintaTokens`
+  (then explicit `fcmTokens` as fallback) when the callable `fcmTokens` list is
+  empty.
+- Tokens live in `users/{uid}.grintaTokens` (source of truth) and are also
+  mirrored in `users/{uid}/fcmTokens/{token}` with `app: "grinta"` and
   `packageName: "io.grinta.app"` (current builds).
 
 `pushDispatch` on the `notification` document:

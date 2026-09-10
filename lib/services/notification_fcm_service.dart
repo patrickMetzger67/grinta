@@ -26,6 +26,7 @@ import 'package:grinta/screen/session_player_feeling_screen.dart';
 import 'package:grinta/screen/teamDetailScreen.dart';
 import 'package:grinta/services/matchService.dart';
 import 'package:grinta/services/teamService.dart';
+import 'package:grinta/services/userService.dart';
 import 'package:grinta/services/internal_notification_navigation.dart';
 import 'package:grinta/services/notification_fcm_platform.dart';
 import 'package:grinta/services/notification_fcm_web_notify.dart';
@@ -872,22 +873,37 @@ class NotificationFCMService {
     return channel;
   }
 
-  /// Reads Grinta FCM device tokens from `users/{uid}/fcmTokens`.
+  /// Reads Grinta FCM device tokens for [uid].
   ///
-  /// Includes `app: [FcmConfig.brandGrinta]`, Grinta `packageName`, and safe
-  /// legacy iOS/web documents without `app`. Naked unbranded Android tokens are
-  /// skipped (Aserstein bleed on the shared Firebase project). See
-  /// [collectGrintaFcmTokens].
+  /// Prefers `users/{uid}.grintaTokens` (source of truth). If that field is
+  /// missing/empty, falls back to explicitly Grinta-tagged docs in
+  /// `users/{uid}/fcmTokens` so old clients still work until they open the app.
+  /// Never returns Aserstein-tagged subcollection tokens. See
+  /// [resolveGrintaSendTokens] / [collectGrintaFcmTokens].
   static Future<List<String>> fetchFcmTokensForUser(String uid) async {
     final trimmedUid = uid.trim();
     if (trimmedUid.isEmpty) return const [];
 
     try {
-      final tokensRef = FirebaseFirestore.instance
-          .collection('users')
-          .doc(trimmedUid)
-          .collection('fcmTokens');
+      final userRef =
+          FirebaseFirestore.instance.collection('users').doc(trimmedUid);
 
+      List<dynamic>? userGrintaTokens;
+      try {
+        final userSnap = await userRef.get();
+        final raw = userSnap.data()?[UserDocumentFields.grintaTokens];
+        userGrintaTokens = raw is List ? raw : null;
+      } catch (e) {
+        // Other uids cannot always read `users/{uid}` (owner-only). Fall back.
+        debugPrint(
+          'fetchFcmTokensForUser grintaTokens uid=$trimmedUid: $e',
+        );
+      }
+
+      final fromUser = resolveGrintaSendTokens(grintaTokens: userGrintaTokens);
+      if (fromUser.isNotEmpty) return fromUser;
+
+      final tokensRef = userRef.collection('fcmTokens');
       final allSnapshot = await tokensRef.get();
       return collectGrintaFcmTokens(
         allSnapshot.docs.map((doc) => (id: doc.id, data: doc.data())),
@@ -942,10 +958,12 @@ class NotificationFCMService {
         .toList();
   }
 
-  /// Persists the device FCM token under `users/{uid}/fcmTokens/{token}`.
+  /// Persists the device FCM token under `users/{uid}/fcmTokens/{token}`
+  /// and upserts it into `users/{uid}.grintaTokens`.
   ///
-  /// Sets `app: [FcmConfig.brandGrinta]` and `packageName` so Grinta sends do
-  /// not target Aserstein tokens in the shared Firebase project.
+  /// Sets `app: [FcmConfig.brandGrinta]` and `packageName` so leftover
+  /// subcollection readers still see a tagged Grinta doc. Sendable tokens
+  /// are also stored on the user document (source of truth for Grinta FCM).
   static Future<bool> saveTokenToFirestore(String uid) async {
     if (uid.isEmpty) return false;
     if (kIsWeb && !fcmWebVapidKeyConfigured) return false;
@@ -992,6 +1010,8 @@ class NotificationFCMService {
           'packageName': FcmConfig.grintaPackageName,
         });
       }
+
+      await UserService().addGrintaFcmToken(uid: uid, token: token);
 
       return true;
     } on FirebaseException catch (e) {
