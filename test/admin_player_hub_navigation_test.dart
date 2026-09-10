@@ -98,7 +98,52 @@ void main() {
       expect(find.byType(AdminPlayerHubScreen), findsOneWidget);
       expect(find.text(l10n.adminPlayerHubUsersTitle), findsOneWidget);
       expect(find.byKey(AdminPlayerHubScreen.usersTileKey), findsOneWidget);
-      expect(find.byKey(AdminPlayerHubScreen.sessionsTileKey), findsNothing);
+      expect(find.byKey(AdminPlayerHubScreen.sessionsTileKey), findsOneWidget);
+      expect(find.text(l10n.adminPlayerHubSessionsTitle), findsOneWidget);
+
+      final sessionsInk = tester.widget<InkWell>(
+        find.descendant(
+          of: find.byKey(AdminPlayerHubScreen.sessionsTileKey),
+          matching: find.byType(InkWell),
+        ),
+      );
+      expect(sessionsInk.onTap, isNotNull);
+    },
+  );
+
+  testWidgets(
+    'Sessions stays tappable on the hub while sensor flags never load',
+    (tester) async {
+      final l10n = await AppLocalizations.delegate.load(const Locale('fr'));
+      await tester.pumpWidget(
+        MaterialApp(
+          theme: AppTheme.darkTheme,
+          locale: const Locale('fr'),
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          home: AdminPlayerHubScreen(
+            player: Player(
+              firstName: 'Mohamed-Amine',
+              lastName: 'ABDESSAMAD',
+              keyMember: 'mohamed',
+            ),
+            flags: AdminPlayerSensorFlags.none,
+            sensorService: _HangingSensorService(),
+            playerPhotoBuilder: _placeholderPhoto,
+          ),
+        ),
+      );
+      await tester.pump();
+
+      expect(find.byKey(AdminPlayerHubScreen.sessionsTileKey), findsOneWidget);
+      expect(find.text(l10n.adminPlayerHubSessionsTitle), findsOneWidget);
+      final sessionsInk = tester.widget<InkWell>(
+        find.descendant(
+          of: find.byKey(AdminPlayerHubScreen.sessionsTileKey),
+          matching: find.byType(InkWell),
+        ),
+      );
+      expect(sessionsInk.onTap, isNotNull);
     },
   );
 

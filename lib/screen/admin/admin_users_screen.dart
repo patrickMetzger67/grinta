@@ -6,15 +6,31 @@ import 'package:grinta/analytics/analytics_screen_names.dart';
 import 'package:grinta/core/extensions/l10n_extension.dart';
 import 'package:grinta/model/player.dart';
 import 'package:grinta/screen/admin/admin_user_players_screen.dart';
+import 'package:grinta/services/admin_player_sensor_service.dart';
 import 'package:grinta/services/password_reset_service.dart';
 import 'package:grinta/services/playerService.dart';
 import 'package:grinta/services/userService.dart';
+import 'package:grinta/util/admin_player_association.dart';
 import 'package:grinta/util/app_theme.dart';
-import 'package:grinta/util/player_photo_resolver.dart';
 import 'package:grinta/widget/admin_user_avatar.dart';
 
 class AdminUsersScreen extends StatefulWidget {
-  const AdminUsersScreen({super.key});
+  const AdminUsersScreen({
+    super.key,
+    this.usersStream,
+    this.playersForUser,
+    this.sensorService,
+    this.playerPhotoBuilder,
+  });
+
+  /// Overrides [UserService.streamUsers] (widget tests).
+  final Stream<List<UserProfile>>? usersStream;
+
+  /// Per-user association stream. Defaults to [PlayerService.streamPlayersByUserId].
+  final Stream<List<Player>> Function(String userId)? playersForUser;
+
+  final AdminPlayerSensorService? sensorService;
+  final Widget Function(Player player, double radius)? playerPhotoBuilder;
 
   @override
   State<AdminUsersScreen> createState() => _AdminUsersScreenState();
@@ -50,21 +66,27 @@ class _AdminUsersScreenState extends State<AdminUsersScreen> {
     });
   }
 
-  Map<String, int> _playerCountsByUserId(List<Player> members) {
-    final counts = <String, int>{};
-    for (final player in members) {
-      for (final uid in collectMemberLinkedUserIds(player)) {
-        counts[uid] = (counts[uid] ?? 0) + 1;
-      }
-    }
-    return counts;
-  }
+  Stream<List<UserProfile>> get _usersStream =>
+      widget.usersStream ?? _userService.streamUsers();
 
-  Future<void> _openUserPlayers(UserProfile user) {
+  Stream<List<Player>> _playersForUser(String uid) =>
+      widget.playersForUser?.call(uid) ??
+      _playerService.streamPlayersByUserId(uid);
+
+  Future<void> _openUserPlayers(
+    UserProfile user, {
+    List<Player>? initialPlayers,
+  }) {
     return Navigator.of(context).push(
       analyticsMaterialRoute<void>(
         screenName: AnalyticsScreenNames.adminUserPlayers,
-        builder: (_) => AdminUserPlayersScreen(user: user),
+        builder: (_) => AdminUserPlayersScreen(
+          user: user,
+          initialPlayers: initialPlayers,
+          playersStream: widget.playersForUser?.call(user.uid),
+          sensorService: widget.sensorService,
+          playerPhotoBuilder: widget.playerPhotoBuilder,
+        ),
       ),
     );
   }
@@ -174,7 +196,7 @@ class _AdminUsersScreenState extends State<AdminUsersScreen> {
           ),
           Expanded(
             child: StreamBuilder<List<UserProfile>>(
-              stream: _userService.streamUsers(),
+              stream: _usersStream,
               builder: (context, usersSnapshot) {
                 if (usersSnapshot.hasError) {
                   return Center(
@@ -218,24 +240,27 @@ class _AdminUsersScreenState extends State<AdminUsersScreen> {
                   );
                 }
 
-                return StreamBuilder<List<Player>>(
-                  stream: _playerService.streamAllMembers(),
-                  builder: (context, membersSnapshot) {
-                    final counts = _playerCountsByUserId(
-                      membersSnapshot.data ?? const <Player>[],
-                    );
-
-                    return ListView.separated(
-                      padding: const EdgeInsets.fromLTRB(16, 0, 16, 24),
-                      itemCount: users.length,
-                      separatorBuilder: (_, __) => const SizedBox(height: 10),
-                      itemBuilder: (context, index) {
-                        final user = users[index];
+                return ListView.separated(
+                  padding: const EdgeInsets.fromLTRB(16, 0, 16, 24),
+                  itemCount: users.length,
+                  separatorBuilder: (_, __) => const SizedBox(height: 10),
+                  itemBuilder: (context, index) {
+                    final user = users[index];
+                    return StreamBuilder<List<Player>>(
+                      stream: _playersForUser(user.uid),
+                      builder: (context, linkedSnap) {
+                        final count = adminAssociationPlayerCount(
+                          hasData: linkedSnap.hasData,
+                          players: linkedSnap.data,
+                        );
                         return _AdminUserCard(
                           user: user,
-                          playerCount: counts[user.uid] ?? 0,
+                          playerCount: count,
                           isResetting: _resettingUid == user.uid,
-                          onTap: () => _openUserPlayers(user),
+                          onTap: () => _openUserPlayers(
+                            user,
+                            initialPlayers: linkedSnap.data,
+                          ),
                           onRenewPassword: () => _renewPassword(user),
                         );
                       },
@@ -261,7 +286,7 @@ class _AdminUserCard extends StatelessWidget {
   });
 
   final UserProfile user;
-  final int playerCount;
+  final int? playerCount;
   final bool isResetting;
   final VoidCallback onTap;
   final VoidCallback onRenewPassword;
@@ -312,13 +337,23 @@ class _AdminUserCard extends StatelessWidget {
                       ),
                     ],
                     const SizedBox(height: 6),
-                    Text(
-                      l10n.adminUsersPlayerCount(playerCount),
-                      style: textTheme.labelMedium?.copyWith(
-                        color: colors.primary,
-                        fontWeight: FontWeight.w600,
+                    if (playerCount == null)
+                      SizedBox(
+                        width: 16,
+                        height: 16,
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2,
+                          color: colors.primary,
+                        ),
+                      )
+                    else
+                      Text(
+                        l10n.adminUsersPlayerCount(playerCount!),
+                        style: textTheme.labelMedium?.copyWith(
+                          color: colors.primary,
+                          fontWeight: FontWeight.w600,
+                        ),
                       ),
-                    ),
                   ],
                 ),
               ),

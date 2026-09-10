@@ -2,8 +2,6 @@ import 'dart:async';
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
-import 'package:grinta/analytics/analytics_routes.dart';
-import 'package:grinta/analytics/analytics_screen_names.dart';
 import 'package:grinta/core/extensions/l10n_extension.dart';
 import 'package:grinta/model/admin_player_sensor_flags.dart';
 import 'package:grinta/model/player.dart';
@@ -13,6 +11,7 @@ import 'package:grinta/services/playerService.dart';
 import 'package:grinta/util/app_theme.dart';
 import 'package:grinta/util/playerDisplayName.dart';
 import 'package:grinta/util/player_photo_resolver.dart';
+import 'package:grinta/widget/admin_player_sensor_icons.dart';
 import 'package:grinta/widget/playerPhoto.dart';
 
 class AdminPlayersScreen extends StatefulWidget {
@@ -235,56 +234,52 @@ class _AdminPlayersResults extends StatefulWidget {
 class _AdminPlayersResultsState extends State<_AdminPlayersResults> {
   final Map<String, AdminPlayerSensorFlags> _flagsByPlayerId = {};
   final Set<String> _flagsLoading = {};
-
-  @override
-  void initState() {
-    super.initState();
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (mounted) _prefetchFlags(widget.players);
-    });
-  }
-
-  @override
-  void didUpdateWidget(covariant _AdminPlayersResults oldWidget) {
-    super.didUpdateWidget(oldWidget);
-    if (!identical(oldWidget.players, widget.players)) {
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        if (mounted) _prefetchFlags(widget.players);
-      });
-    }
-  }
+  static const _maxConcurrentFlagLoads = 3;
+  int _inflightFlagLoads = 0;
+  final List<Player> _flagQueue = [];
 
   String? _playerCacheKey(Player player) => effectiveMemberId(player)?.trim();
 
-  void _prefetchFlags(List<Player> players) {
-    for (final player in players) {
-      _loadFlagsIfNeeded(player);
-    }
-  }
-
-  void _loadFlagsIfNeeded(Player player) {
+  /// Loads flags for visible rows only (called from [itemBuilder]).
+  void _enqueueFlagLoad(Player player) {
     final key = _playerCacheKey(player);
     if (key == null || key.isEmpty) return;
     if (_flagsByPlayerId.containsKey(key) || _flagsLoading.contains(key)) {
       return;
     }
     _flagsLoading.add(key);
-    unawaited(() async {
-      try {
-        final flags = await widget.sensorService.loadFlags(player);
-        if (!mounted) return;
-        setState(() {
-          _flagsByPlayerId[key] = flags;
-          _flagsLoading.remove(key);
-        });
-      } catch (_) {
-        if (!mounted) return;
-        setState(() {
-          _flagsByPlayerId[key] = AdminPlayerSensorFlags.none;
-          _flagsLoading.remove(key);
-        });
-      }
-    }());
+    _flagQueue.add(player);
+    _drainFlagQueue();
+  }
+
+  void _drainFlagQueue() {
+    while (_inflightFlagLoads < _maxConcurrentFlagLoads &&
+        _flagQueue.isNotEmpty) {
+      final player = _flagQueue.removeAt(0);
+      _inflightFlagLoads++;
+      unawaited(() async {
+        final key = _playerCacheKey(player);
+        try {
+          final flags = await widget.sensorService.loadFlags(player);
+          if (!mounted) return;
+          setState(() {
+            if (key != null) _flagsByPlayerId[key] = flags;
+            if (key != null) _flagsLoading.remove(key);
+          });
+        } catch (_) {
+          if (!mounted) return;
+          setState(() {
+            if (key != null) {
+              _flagsByPlayerId[key] = AdminPlayerSensorFlags.none;
+              _flagsLoading.remove(key);
+            }
+          });
+        } finally {
+          _inflightFlagLoads--;
+          if (mounted) _drainFlagQueue();
+        }
+      }());
+    }
   }
 
   /// Opens the hub immediately. Sensor flags decorate the card / hub and
@@ -294,15 +289,13 @@ class _AdminPlayersResultsState extends State<_AdminPlayersResults> {
     final flags = key == null
         ? AdminPlayerSensorFlags.none
         : (_flagsByPlayerId[key] ?? AdminPlayerSensorFlags.none);
-    Navigator.of(context).push(
-      analyticsMaterialRoute<void>(
-        screenName: AnalyticsScreenNames.adminPlayerHub,
-        builder: (_) => AdminPlayerHubScreen(
-          player: player,
-          flags: flags,
-          sensorService: widget.sensorService,
-          playerPhotoBuilder: widget.playerPhotoBuilder,
-        ),
+    unawaited(
+      AdminPlayerHubScreen.open(
+        context,
+        player: player,
+        flags: flags,
+        sensorService: widget.sensorService,
+        playerPhotoBuilder: widget.playerPhotoBuilder,
       ),
     );
   }
@@ -320,6 +313,9 @@ class _AdminPlayersResultsState extends State<_AdminPlayersResults> {
         final flags = key == null
             ? AdminPlayerSensorFlags.none
             : (_flagsByPlayerId[key] ?? AdminPlayerSensorFlags.none);
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (mounted) _enqueueFlagLoad(player);
+        });
         return _AdminPlayerCard(
           key: ValueKey<String>('admin-player-card-${key ?? index}'),
           player: player,
@@ -413,30 +409,7 @@ class _AdminPlayerCard extends StatelessWidget {
                   ],
                 ),
               ),
-              if (flags.hasTeamKitSensor)
-                Padding(
-                  padding: const EdgeInsets.only(right: 6),
-                  child: Tooltip(
-                    message: l10n.adminPlayerTeamKitSensorTooltip,
-                    child: Icon(
-                      Icons.sensors_rounded,
-                      color: colors.primary,
-                      size: 22,
-                    ),
-                  ),
-                ),
-              if (flags.hasConnectedDevices)
-                Padding(
-                  padding: const EdgeInsets.only(right: 6),
-                  child: Tooltip(
-                    message: l10n.adminPlayerConnectedDevicesTooltip,
-                    child: Icon(
-                      Icons.watch_outlined,
-                      color: colors.primary,
-                      size: 22,
-                    ),
-                  ),
-                ),
+              AdminPlayerSensorIcons(flags: flags),
               Icon(Icons.chevron_right_rounded, color: colors.textSecondary),
             ],
           ),

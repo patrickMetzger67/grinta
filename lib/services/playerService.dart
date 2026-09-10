@@ -1,8 +1,11 @@
+import 'dart:async';
+
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/foundation.dart';
 
 import '../model/player.dart';
+import '../util/admin_player_association.dart';
 import '../util/member_unsubscribe.dart';
 import '../util/player_photo_resolver.dart';
 import '../util/search_options.dart';
@@ -259,24 +262,91 @@ class PlayerService {
       streamActivePlayersByClubId(clubId);
 
   /// Chercher les joueurs par userID
+  ///
+  /// Indexed equality / array-contains only — never a full members scan.
   Future<List<Player>> getPlayersByUserId(String userId) async {
-    final QuerySnapshot<Map<String, dynamic>> query = await _collection
-        .where(keyPlayerUsers, arrayContains: userId)
-        .get();
+    final trimmed = userId.trim();
+    if (trimmed.isEmpty) return const <Player>[];
 
-    return query.docs.map((doc) => Player.fromDocumentsnapshot(doc)).toList();
+    final results = await Future.wait<QuerySnapshot<Map<String, dynamic>>>([
+      _collection.where(keyPlayerUsers, arrayContains: trimmed).get(),
+      _collection.where(keyPlayerUserID, isEqualTo: trimmed).get(),
+    ]);
+
+    return mergePlayersByMemberId(
+      results[0].docs.map(Player.fromDocumentsnapshot),
+      results[1].docs.map(Player.fromDocumentsnapshot),
+    );
   }
 
-  /// Stream des joueurs par userID
+  /// Stream des joueurs par userID (`users` array + primary `userID`).
+  ///
+  /// Emits as soon as either indexed query returns a non-empty list (the
+  /// production-era association path). An empty result waits for both so a
+  /// userID-only or users-array-only link is not flashed as « Aucun joueur ».
   Stream<List<Player>> streamPlayersByUserId(String userId) {
-    return _collection
-        .where(keyPlayerUsers, arrayContains: userId)
+    final trimmed = userId.trim();
+    if (trimmed.isEmpty) {
+      return Stream<List<Player>>.value(const <Player>[]);
+    }
+
+    final controller = StreamController<List<Player>>();
+    List<Player>? fromUsersArray;
+    List<Player>? fromPrimaryUserId;
+
+    void emitIfReady() {
+      if (controller.isClosed) return;
+      final users = fromUsersArray;
+      final primary = fromPrimaryUserId;
+      if (users != null && users.isNotEmpty) {
+        controller.add(
+          mergePlayersByMemberId(users, primary ?? const <Player>[]),
+        );
+        return;
+      }
+      if (primary != null && primary.isNotEmpty) {
+        controller.add(
+          mergePlayersByMemberId(users ?? const <Player>[], primary),
+        );
+        return;
+      }
+      if (users != null && primary != null) {
+        controller.add(mergePlayersByMemberId(users, primary));
+      }
+    }
+
+    final usersSub = _collection
+        .where(keyPlayerUsers, arrayContains: trimmed)
         .snapshots()
-        .map((snapshot) {
-      return snapshot.docs
-          .map((doc) => Player.fromDocumentsnapshot(doc))
-          .toList();
-    });
+        .listen(
+      (snapshot) {
+        fromUsersArray = snapshot.docs
+            .map(Player.fromDocumentsnapshot)
+            .toList(growable: false);
+        emitIfReady();
+      },
+      onError: controller.addError,
+    );
+
+    final primarySub = _collection
+        .where(keyPlayerUserID, isEqualTo: trimmed)
+        .snapshots()
+        .listen(
+      (snapshot) {
+        fromPrimaryUserId = snapshot.docs
+            .map(Player.fromDocumentsnapshot)
+            .toList(growable: false);
+        emitIfReady();
+      },
+      onError: controller.addError,
+    );
+
+    controller.onCancel = () async {
+      await usersSub.cancel();
+      await primarySub.cancel();
+    };
+
+    return controller.stream;
   }
 
   /// Alias watch des joueurs par userID
@@ -469,20 +539,7 @@ class PlayerService {
     List<Player> primary,
     List<Player> secondary,
   ) {
-    final Map<String, Player> byId = <String, Player>{};
-    for (final player in primary) {
-      final id = effectiveMemberId(player) ?? player.keyMember?.trim();
-      if (id != null && id.isNotEmpty) {
-        byId[id] = player;
-      }
-    }
-    for (final player in secondary) {
-      final id = effectiveMemberId(player) ?? player.keyMember?.trim();
-      if (id != null && id.isNotEmpty) {
-        byId.putIfAbsent(id, () => player);
-      }
-    }
-    return byId.values.toList(growable: false);
+    return mergePlayersByMemberId(primary, secondary);
   }
 
   /// Chercher un joueur par userID

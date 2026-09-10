@@ -31,6 +31,28 @@ class AdminPlayerHubScreen extends StatefulWidget {
   static const usersTileKey = ValueKey<String>('admin-player-hub-users');
   static const sessionsTileKey = ValueKey<String>('admin-player-hub-sessions');
 
+  /// Pushes the hub immediately. Sensor flags are decorative and must never
+  /// gate this navigation — [AdminPlayerSensorService.loadFlags] can hang.
+  static Future<T?> open<T extends Object?>(
+    BuildContext context, {
+    required Player player,
+    AdminPlayerSensorFlags flags = AdminPlayerSensorFlags.none,
+    AdminPlayerSensorService? sensorService,
+    Widget Function(Player player, double radius)? playerPhotoBuilder,
+  }) {
+    return Navigator.of(context).push(
+      analyticsMaterialRoute<T>(
+        screenName: AnalyticsScreenNames.adminPlayerHub,
+        builder: (_) => AdminPlayerHubScreen(
+          player: player,
+          flags: flags,
+          sensorService: sensorService,
+          playerPhotoBuilder: playerPhotoBuilder,
+        ),
+      ),
+    );
+  }
+
   @override
   State<AdminPlayerHubScreen> createState() => _AdminPlayerHubScreenState();
 }
@@ -138,26 +160,24 @@ class _AdminPlayerHubScreenState extends State<AdminPlayerHubScreen> {
               );
             },
           ),
-          if (_flags.hasAny) ...[
-            const SizedBox(height: 10),
-            _HubTile(
-              key: AdminPlayerHubScreen.sessionsTileKey,
-              icon: Icons.timeline_outlined,
-              title: l10n.adminPlayerHubSessionsTitle,
-              subtitle: l10n.adminPlayerHubSessionsSubtitle,
-              onTap: () {
-                Navigator.of(context).push(
-                  analyticsMaterialRoute<void>(
-                    screenName: AnalyticsScreenNames.adminPlayerSessions,
-                    builder: (_) => AdminPlayerSessionsScreen(
-                      player: player,
-                      flags: _flags,
-                    ),
+          const SizedBox(height: 10),
+          _HubTile(
+            key: AdminPlayerHubScreen.sessionsTileKey,
+            icon: Icons.timeline_outlined,
+            title: l10n.adminPlayerHubSessionsTitle,
+            subtitle: l10n.adminPlayerHubSessionsSubtitle,
+            onTap: () {
+              Navigator.of(context).push(
+                analyticsMaterialRoute<void>(
+                  screenName: AnalyticsScreenNames.adminPlayerSessions,
+                  builder: (_) => AdminPlayerSessionsScreen(
+                    player: player,
+                    flags: _flags,
                   ),
-                );
-              },
-            ),
-          ],
+                ),
+              );
+            },
+          ),
         ],
       ),
     );
