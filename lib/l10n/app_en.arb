@@ -4046,6 +4046,7 @@
   "createTeamFineScaleAmountRequired": "Enter a valid amount.",
   "createTeamFineScaleSaved": "Fine schedule saved.",
   "createTeamFineScaleError": "Could not save the fine schedule.",
+  "createTeamFineScaleDuplicate": "This type already has a schedule for this team.",
   "teamFineDefaultTypeLate": "Late",
   "teamFineDefaultTypeUnjustifiedAbsence": "Unexcused absence",
   "teamFinesManagerTitle": "Fines manager",

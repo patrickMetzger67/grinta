@@ -4002,6 +4002,7 @@
   "createTeamFineScaleAmountRequired": "Inserisci un importo valido.",
   "createTeamFineScaleSaved": "Tariffario salvato.",
   "createTeamFineScaleError": "Impossibile salvare il tariffario.",
+  "createTeamFineScaleDuplicate": "Questo tipo ha già un tariffario per questa squadra.",
   "teamFineDefaultTypeLate": "Ritardo",
   "teamFineDefaultTypeUnjustifiedAbsence": "Assenza non giustificata",
   "teamFinesManagerTitle": "Responsabile delle multe",

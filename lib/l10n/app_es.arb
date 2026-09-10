@@ -4002,6 +4002,7 @@
   "createTeamFineScaleAmountRequired": "Indica un importe válido.",
   "createTeamFineScaleSaved": "Baremo guardado.",
   "createTeamFineScaleError": "No se pudo guardar el baremo.",
+  "createTeamFineScaleDuplicate": "Este tipo ya tiene un baremo para este equipo.",
   "teamFineDefaultTypeLate": "Retraso",
   "teamFineDefaultTypeUnjustifiedAbsence": "Ausencia no justificada",
   "teamFinesManagerTitle": "Responsable de las multas",

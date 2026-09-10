@@ -255,8 +255,9 @@ class _CreateTeamFineScaleSheetState extends State<CreateTeamFineScaleSheet> {
       return;
     }
 
-    setState(() => _isSubmitting = true);
+    final NavigatorState navigator = Navigator.of(context, rootNavigator: true);
     final AppSession session = context.read<AppSession>();
+    setState(() => _isSubmitting = true);
     try {
       final TeamFineScale saved = await _scaleService.createScale(
         teamId: _selectedTeamId!,
@@ -268,19 +269,26 @@ class _CreateTeamFineScaleSheetState extends State<CreateTeamFineScaleSheet> {
       if (!mounted) {
         return;
       }
-      Navigator.of(context).pop(saved);
+      navigator.pop(saved);
     } catch (error, stackTrace) {
       debugPrint('CreateTeamFineScaleSheet submit failed: $error');
       debugPrintStack(stackTrace: stackTrace);
       if (!mounted) {
         return;
       }
-      setState(() => _isSubmitting = false);
+      final bool duplicate = error is StateError &&
+          error.message == TeamFineScaleService.duplicateTypeError;
       AppSnackbar.show(
         context,
-        context.l10n.createTeamFineScaleError,
+        duplicate
+            ? context.l10n.createTeamFineScaleDuplicate
+            : context.l10n.createTeamFineScaleError,
         isError: true,
       );
+    } finally {
+      if (mounted) {
+        setState(() => _isSubmitting = false);
+      }
     }
   }
 
@@ -314,7 +322,7 @@ class _CreateTeamFineScaleSheetState extends State<CreateTeamFineScaleSheet> {
                   tooltip: l10n.actionClose,
                   onPressed: _isSubmitting
                       ? null
-                      : () => Navigator.of(context).pop(),
+                      : () => Navigator.of(context, rootNavigator: true).pop(),
                   icon: const Icon(Icons.close_rounded),
                 ),
               ],

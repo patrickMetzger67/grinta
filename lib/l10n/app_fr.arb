@@ -4452,6 +4452,7 @@
   "createTeamFineScaleAmountRequired": "Indiquez un montant valide.",
   "createTeamFineScaleSaved": "Barème enregistré.",
   "createTeamFineScaleError": "Impossible d'enregistrer le barème.",
+  "createTeamFineScaleDuplicate": "Ce type a déjà un barème pour cette équipe.",
   "teamFineDefaultTypeLate": "Retard",
   "teamFineDefaultTypeUnjustifiedAbsence": "Absence non justifiée",
   "teamFinesManagerTitle": "Responsable des amendes",

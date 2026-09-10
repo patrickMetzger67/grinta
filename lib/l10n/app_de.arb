@@ -4002,6 +4002,7 @@
   "createTeamFineScaleAmountRequired": "Gib einen gültigen Betrag ein.",
   "createTeamFineScaleSaved": "Strafenkatalog gespeichert.",
   "createTeamFineScaleError": "Strafenkatalog konnte nicht gespeichert werden.",
+  "createTeamFineScaleDuplicate": "Für diese Art gibt es in diesem Team bereits einen Strafenkatalog.",
   "teamFineDefaultTypeLate": "Verspätung",
   "teamFineDefaultTypeUnjustifiedAbsence": "Unentschuldigtes Fehlen",
   "teamFinesManagerTitle": "Verantwortlich für Strafen",

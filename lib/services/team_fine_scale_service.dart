@@ -4,6 +4,7 @@ import 'package:grinta/model/team_fine_type.dart';
 
 class TeamFineScaleService {
   static const String collectionName = 'teamFineScales';
+  static const String duplicateTypeError = 'duplicateType';
 
   final FirebaseFirestore _firestore;
 
@@ -46,6 +47,17 @@ class TeamFineScaleService {
     }
     if (amount < 0) {
       throw StateError('invalidAmount');
+    }
+
+    final QuerySnapshot<Map<String, dynamic>> existing = await _collection
+        .where(keyTeamFineScaleTeamId, isEqualTo: trimmedTeam)
+        .get();
+    final bool duplicateType = existing.docs.any((doc) {
+      final Object? rawType = doc.data()[keyTeamFineScaleTypeId];
+      return (rawType ?? '').toString().trim() == typeId;
+    });
+    if (duplicateType) {
+      throw StateError(duplicateTypeError);
     }
 
     final String? memberId = createdByMemberId?.trim();
