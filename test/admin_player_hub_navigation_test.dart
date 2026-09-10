@@ -91,8 +91,9 @@ void main() {
       expect(find.text('Aaron ANTHONY'), findsOneWidget);
       expect(find.byType(AdminPlayerHubScreen), findsNothing);
 
-      await tester.tap(find.text('Aaron ANTHONY'));
+      await tester.tap(find.byKey(const ValueKey<String>('admin-player-card-p1')));
       await tester.pump();
+      await tester.pump(const Duration(milliseconds: 400));
 
       expect(find.byType(AdminPlayerHubScreen), findsOneWidget);
       expect(find.text(l10n.adminPlayerHubUsersTitle), findsOneWidget);
@@ -125,9 +126,9 @@ void main() {
       await tester.pump();
       await tester.pump();
 
-      await tester.tap(find.text('Sofiane ABDESSALEM'));
+      await tester.tap(find.byKey(const ValueKey<String>('admin-player-card-p-sensor')));
       await tester.pump();
-      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 400));
 
       expect(find.byType(AdminPlayerHubScreen), findsOneWidget);
       expect(find.text(l10n.adminPlayerHubUsersTitle), findsOneWidget);
