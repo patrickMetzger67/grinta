@@ -1,11 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:grinta/core/extensions/l10n_extension.dart';
-import 'package:grinta/l10n/app_localizations.dart';
 import 'package:grinta/model/player.dart';
 import 'package:grinta/util/app_theme.dart';
 import 'package:grinta/util/playerDisplayName.dart';
 import 'package:grinta/util/player_photo_resolver.dart';
-import 'package:grinta/util/team_fines_manager_filter.dart';
 import 'package:grinta/widget/player_name_filter_field.dart';
 
 /// Picks the team fines manager from the already-loaded roster.
@@ -21,7 +19,6 @@ Future<String?> showFinesManagerPickerSheet(
   return showModalBottomSheet<String>(
     context: context,
     isScrollControlled: true,
-    showDragHandle: true,
     backgroundColor: colors.card,
     shape: const RoundedRectangleBorder(
       borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
@@ -65,25 +62,6 @@ class _FinesManagerPickerSheetState extends State<FinesManagerPickerSheet> {
     super.dispose();
   }
 
-  TeamFinesManagerCandidate _candidateFor(
-    Player player,
-    AppLocalizations l10n,
-  ) {
-    return TeamFinesManagerCandidate(
-      memberId: effectiveMemberId(player) ?? '',
-      firstName: player.firstName ?? '',
-      lastName: player.lastName ?? '',
-      displayName: playerDisplayName(
-        player,
-        unknownLabel: l10n.entityPlayer,
-      ),
-    );
-  }
-
-  bool _playerMatches(Player player, String query, AppLocalizations l10n) {
-    return finesManagerCandidateMatches(_candidateFor(player, l10n), query);
-  }
-
   @override
   Widget build(BuildContext context) {
     final colors = context.appColors;
@@ -119,6 +97,16 @@ class _FinesManagerPickerSheetState extends State<FinesManagerPickerSheet> {
                   padding: const EdgeInsets.only(bottom: 8),
                 ),
               ),
+              ListTile(
+                key: FinesManagerPickerSheet.noneKey,
+                leading: Icon(
+                  Icons.person_off_outlined,
+                  color: colors.textSecondary,
+                ),
+                title: Text(l10n.teamFinesManagerNone),
+                selected: noneSelected,
+                onTap: () => Navigator.of(context).pop(''),
+              ),
               Expanded(
                 child: ValueListenableBuilder<TextEditingValue>(
                   valueListenable: _searchController,
@@ -126,71 +114,57 @@ class _FinesManagerPickerSheetState extends State<FinesManagerPickerSheet> {
                     final String query = value.text;
                     final List<Player> filtered = widget.players
                         .where(
-                          (player) => _playerMatches(player, query, l10n),
+                          (player) => playerMatchesNameQuery(player, query),
                         )
                         .toList(growable: false);
-                    final bool showEmptyRosterHint =
-                        widget.players.isEmpty && query.trim().isEmpty;
-                    final bool showNoMatchHint =
-                        widget.players.isNotEmpty && filtered.isEmpty;
-
+                    if (widget.players.isEmpty) {
+                      return Padding(
+                        padding: const EdgeInsets.fromLTRB(20, 8, 20, 24),
+                        child: Text(
+                          l10n.emptyNoPlayerForTeam,
+                          style:
+                              Theme.of(context).textTheme.bodyMedium?.copyWith(
+                                    color: colors.textSecondary,
+                                  ),
+                        ),
+                      );
+                    }
+                    if (filtered.isEmpty) {
+                      return Padding(
+                        padding: const EdgeInsets.fromLTRB(20, 8, 20, 24),
+                        child: Text(
+                          l10n.adminPlayersSearchEmpty,
+                          style:
+                              Theme.of(context).textTheme.bodyMedium?.copyWith(
+                                    color: colors.textSecondary,
+                                  ),
+                        ),
+                      );
+                    }
                     return ListView.builder(
-                      itemCount: 1 +
-                          filtered.length +
-                          (showEmptyRosterHint || showNoMatchHint ? 1 : 0),
+                      itemCount: filtered.length,
                       itemBuilder: (context, index) {
-                        if (index == 0) {
-                          return ListTile(
-                            key: FinesManagerPickerSheet.noneKey,
-                            leading: Icon(
-                              Icons.person_off_outlined,
-                              color: colors.textSecondary,
-                            ),
-                            title: Text(l10n.teamFinesManagerNone),
-                            selected: noneSelected,
-                            onTap: () => Navigator.of(context).pop(''),
-                          );
-                        }
-
-                        final int playerIndex = index - 1;
-                        if (playerIndex < filtered.length) {
-                          final Player player = filtered[playerIndex];
-                          final String memberId =
-                              effectiveMemberId(player) ?? '';
-                          return ListTile(
-                            key: FinesManagerPickerSheet.playerKey(
-                              memberId.isEmpty ? '$playerIndex' : memberId,
-                            ),
-                            leading: Icon(
-                              Icons.person_outline_rounded,
-                              color: colors.primary,
-                            ),
-                            title: Text(
-                              playerDisplayName(
-                                player,
-                                unknownLabel: l10n.entityPlayer,
-                              ),
-                            ),
-                            selected: !noneSelected &&
-                                playerMemberLookupIds(player)
-                                    .contains(currentId),
-                            onTap: () => Navigator.of(context).pop(memberId),
-                          );
-                        }
-
-                        return Padding(
-                          padding: const EdgeInsets.fromLTRB(20, 8, 20, 24),
-                          child: Text(
-                            showEmptyRosterHint
-                                ? l10n.emptyNoPlayerForTeam
-                                : l10n.adminPlayersSearchEmpty,
-                            style: Theme.of(context)
-                                .textTheme
-                                .bodyMedium
-                                ?.copyWith(
-                                  color: colors.textSecondary,
-                                ),
+                        final Player player = filtered[index];
+                        final String memberId =
+                            effectiveMemberId(player) ?? '';
+                        return ListTile(
+                          key: FinesManagerPickerSheet.playerKey(
+                            memberId.isEmpty ? '$index' : memberId,
                           ),
+                          leading: Icon(
+                            Icons.person_outline_rounded,
+                            color: colors.primary,
+                          ),
+                          title: Text(
+                            playerDisplayName(
+                              player,
+                              unknownLabel: l10n.entityPlayer,
+                            ),
+                          ),
+                          selected: !noneSelected &&
+                              playerMemberLookupIds(player)
+                                  .contains(currentId),
+                          onTap: () => Navigator.of(context).pop(memberId),
                         );
                       },
                     );
