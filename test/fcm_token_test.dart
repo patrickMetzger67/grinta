@@ -67,14 +67,13 @@ void main() {
       expect(tokens, ['android-tok']);
     });
 
-    test('keeps unbranded iOS on Grinta-only accounts', () {
+    test('drops unbranded iOS even on Grinta-only accounts', () {
       final tokens = collectGrintaFcmTokens([
         (id: 'android-tok', data: {'app': 'grinta', 'platform': 'android'}),
         (id: 'ios-legacy-tok', data: {'platform': 'ios'}),
         (id: 'a' * 64, data: {'app': 'grinta', 'platform': 'ios'}),
       ]);
-      expect(tokens, containsAll(['android-tok', 'ios-legacy-tok']));
-      expect(tokens, isNot(contains('a' * 64)));
+      expect(tokens, ['android-tok']);
     });
 
     test('drops naked unbranded Android tokens (Aserstein bleed)', () {
