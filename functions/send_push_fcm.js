@@ -119,6 +119,8 @@ function createSendPushFCMNotification() {
         clubId,
         icon: assets.icon,
         image: assets.image,
+        db,
+        recipientUserIds: filtered.allowedUserIds,
       });
 
       console.log(

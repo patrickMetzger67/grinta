@@ -26,6 +26,7 @@ import 'package:grinta/screen/session_player_feeling_screen.dart';
 import 'package:grinta/screen/teamDetailScreen.dart';
 import 'package:grinta/services/matchService.dart';
 import 'package:grinta/services/teamService.dart';
+import 'package:grinta/services/userService.dart';
 import 'package:grinta/services/internal_notification_navigation.dart';
 import 'package:grinta/services/notification_fcm_platform.dart';
 import 'package:grinta/services/notification_fcm_web_notify.dart';
@@ -969,10 +970,12 @@ class NotificationFCMService {
         .toList();
   }
 
-  /// Persists the device FCM token under `users/{uid}/fcmTokens/{token}`.
+  /// Persists the device FCM token under `users/{uid}/fcmTokens/{token}`
+  /// and upserts it into `users/{uid}.grintaTokens`.
   ///
-  /// Sets `app: [FcmConfig.brandGrinta]` and `packageName` so Grinta sends do
-  /// not target Aserstein tokens in the shared Firebase project.
+  /// Sets `app: [FcmConfig.brandGrinta]` and `packageName` so leftover
+  /// subcollection readers still see a tagged Grinta doc. Sendable tokens
+  /// are also stored on the user document (source of truth for Grinta FCM).
   static Future<bool> saveTokenToFirestore(String uid) async {
     if (uid.isEmpty) return false;
     if (kIsWeb && !fcmWebVapidKeyConfigured) return false;
@@ -1019,6 +1022,8 @@ class NotificationFCMService {
           'packageName': FcmConfig.grintaPackageName,
         });
       }
+
+      await UserService().addGrintaFcmToken(uid: uid, token: token);
 
       return true;
     } on FirebaseException catch (e) {

@@ -148,6 +148,30 @@ describe('tokenFromDoc', () => {
   });
 });
 
+describe('resolveGrintaSendTokens / grintaTokensFromUserData', () => {
+  it('prefers the user field when it has sendable tokens', () => {
+    assert.deepEqual(
+      resolveGrintaSendTokens({
+        grintaTokens: [' user-tok ', 'user-tok'],
+        subcollectionTokens: ['sub-tok'],
+      }),
+      ['user-tok'],
+    );
+  });
+
+  it('falls back to the subcollection when the user field is empty', () => {
+    assert.deepEqual(
+      resolveGrintaSendTokens({
+        grintaTokens: [],
+        subcollectionTokens: [' sub-tok ', 'aser-tok'],
+      }),
+      ['sub-tok', 'aser-tok'],
+    );
+    assert.deepEqual(grintaTokensFromUserData({ grintaTokens: ['a', 'a'] }), ['a']);
+    assert.deepEqual(grintaTokensFromUserData({}), []);
+  });
+});
+
 describe('buildDataPayload', () => {
   it('forces Grinta brand icons and flattens payload', () => {
     const data = buildDataPayload({
@@ -377,9 +401,11 @@ function fakeDb({ prefsByUser = {}, tokensByUser = {}, usersById = {} }) {
               const data = usersById[userId];
               return {
                 exists: data != null,
+                id: userId,
                 data: () => data,
               };
             },
+            async set() {},
             collection(sub) {
               if (sub === 'app_state') {
                 return {
@@ -545,6 +571,62 @@ describe('filterTokensByRecipientPreferences', () => {
       now: new Date('2026-08-03T10:00:00Z'),
     });
     assert.deepEqual(result.tokens, ['android-tok']);
+  });
+
+  it('prefers users.grintaTokens over the fcmTokens subcollection', async () => {
+    const db = fakeDb({
+      usersById: {
+        u1: { grintaTokens: [' user-grinta-tok ', 'user-grinta-tok'] },
+      },
+      tokensByUser: {
+        u1: [
+          { id: 'android-tok', data: { app: 'grinta' } },
+          { id: 'aser-tok', data: { app: 'aserstein' } },
+        ],
+      },
+    });
+    const tokens = await loadUserFcmTokens(db, 'u1', BRAND_GRINTA, new Set());
+    assert.deepEqual(tokens, ['user-grinta-tok']);
+  });
+
+  it('falls back to explicit Grinta subcollection when grintaTokens is empty', async () => {
+    const db = fakeDb({
+      usersById: {
+        u1: { grintaTokens: [] },
+      },
+      tokensByUser: {
+        u1: [
+          { id: 'grinta-tok', data: { app: 'grinta' } },
+          { id: 'aser-tok', data: { app: 'aserstein' } },
+          { id: 'ios-legacy-tok', data: { platform: 'ios' } },
+        ],
+      },
+    });
+    const tokens = await loadUserFcmTokens(db, 'u1', BRAND_GRINTA, new Set());
+    assert.deepEqual(tokens, ['grinta-tok']);
+  });
+
+  it('ignores aserstein subcollection tokens when falling back', async () => {
+    const db = fakeDb({
+      tokensByUser: {
+        u1: [
+          { id: 'aser-tok', data: { app: 'aserstein' } },
+          { id: 'ios-legacy-tok', data: { platform: 'ios' } },
+        ],
+      },
+    });
+    const tokens = await loadUserFcmTokens(db, 'u1', BRAND_GRINTA, new Set());
+    assert.deepEqual(tokens, []);
+  });
+
+  it('drops raw APNs hex from users.grintaTokens', async () => {
+    const db = fakeDb({
+      usersById: {
+        u1: { grintaTokens: ['a'.repeat(64), 'fcm-tok'] },
+      },
+    });
+    const tokens = await loadUserFcmTokens(db, 'u1', BRAND_GRINTA, new Set());
+    assert.deepEqual(tokens, ['fcm-tok']);
   });
 
   it('does not send Grinta tokens when brand is aserstein on a dual-app user', async () => {

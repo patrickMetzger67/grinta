@@ -97,9 +97,10 @@ bool _isExplicitGrintaDoc(Map<String, dynamic> data) {
 
 /// Collects Grinta FCM registration tokens from `fcmTokens` documents.
 ///
-/// Only `app: grinta` or `packageName: io.grinta.app`. Untagged iOS/web
-/// leftovers on the shared Firebase project are often the AS Erstein app:
-/// sending to them makes the OS show AS Erstein's **name and launcher icon**.
+/// Only `app: grinta` or `packageName: io.grinta.app`. Untagged leftovers on
+/// the shared Firebase project are often the AS Erstein app: sending to them
+/// makes the OS show AS Erstein's **name and launcher icon**. Used as fallback
+/// when `users/{uid}.grintaTokens` is missing or empty.
 List<String> collectGrintaFcmTokens(
   Iterable<({String id, Map<String, dynamic> data})> docs,
 ) {
@@ -130,9 +131,10 @@ List<String> collectAsersteinFcmTokens(
 
 /// Outgoing chat FCM should run whenever there are peer user ids.
 ///
-/// The Cloud Function loads `users/{uid}/fcmTokens` with admin rights, so an
-/// empty client-side token list must not skip the send (typical when the
-/// recipient's iOS token was registered after the sender's last read).
+/// The Cloud Function loads `users/{uid}.grintaTokens` (then explicit
+/// `fcmTokens`) with admin rights, so an empty client-side token list must not
+/// skip the send (typical when the recipient's iOS token was registered after
+/// the sender's last read).
 bool shouldCallChatPushCloudFunction({
   required Iterable<String> peerUserIds,
 }) {

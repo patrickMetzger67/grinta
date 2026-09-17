@@ -14,11 +14,11 @@
 ///
 /// ## Dual branding (Grinta + Aserstein, shared `aserstein-2453e` project)
 ///
-/// Grinta and Aserstein share the same Firebase project and `users/{uid}/fcmTokens`
-/// collection. Each token document must include `app: "grinta"` or `app: "aserstein"`
-/// (and ideally `packageName`) so sends only target the correct app
-/// (see [NotificationFCMService.saveTokenToFirestore]).
-/// Grinta collects only `app == grinta` tokens and Grinta `packageName` docs.
+/// Grinta and Aserstein share the same Firebase project.
+/// Grinta FCM tokens live on `users/{uid}.grintaTokens` (source of truth).
+/// The client also writes `users/{uid}/fcmTokens` with `app: "grinta"` and
+/// `packageName` (see [NotificationFCMService.saveTokenToFirestore]).
+/// Sends prefer `grintaTokens`, then explicit Grinta subcollection docs.
 /// Untagged leftovers are never targeted: FCM would deliver them to AS Erstein
 /// and the OS would show that app's name and launcher icon.
 ///

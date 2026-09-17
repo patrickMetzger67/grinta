@@ -14,6 +14,7 @@ const {
   buildMulticastMessage,
   buildCollapseId,
   isInvalidTokenError,
+  USER_GRINTA_TOKENS_FIELD,
   BRAND_GRINTA,
   BRAND_ASERSTEIN,
   PENDING_PUSH_COLLECTION,
@@ -33,6 +34,8 @@ async function sendFcmToTokens({
   clubId,
   icon,
   image,
+  db,
+  recipientUserIds,
 }) {
   const fcmTokens = normalizeTokenList(tokens);
   if (fcmTokens.length === 0) {
@@ -79,12 +82,37 @@ async function sendFcmToTokens({
     }
   });
 
+  if (db && invalidTokens.length > 0) {
+    await pruneInvalidGrintaTokens(db, recipientUserIds, invalidTokens);
+  }
+
   return {
     total: fcmTokens.length,
     successCount: response.successCount,
     failureCount: response.failureCount,
     invalidTokens,
   };
+}
+
+/**
+ * Removes FCM tokens that FCM reported as invalid from `users.grintaTokens`.
+ * Does not delete the `fcmTokens` subcollection.
+ */
+async function pruneInvalidGrintaTokens(db, userIds, invalidTokens) {
+  const tokens = normalizeTokenList(invalidTokens);
+  const ids = (Array.isArray(userIds) ? userIds : [])
+    .map((id) => (id ?? '').toString().trim())
+    .filter((id) => id.length > 0);
+  if (!db || tokens.length === 0 || ids.length === 0) return;
+
+  for (const userId of ids) {
+    await db.collection('users').doc(userId).set(
+      {
+        [USER_GRINTA_TOKENS_FIELD]: FieldValue.arrayRemove(...tokens),
+      },
+      { merge: true },
+    );
+  }
 }
 
 /**
@@ -237,17 +265,19 @@ async function processPendingPushDoc(db, doc) {
   const type = readNonEmptyString(data.type) ?? '';
 
   try {
-    const result = await sendFcmToTokens({
-      tokens,
-      title,
-      body,
-      type,
-      payload: data.payload,
-      brand,
-      clubId,
-      icon: data.icon,
-      image: data.image,
-    });
+      const result = await sendFcmToTokens({
+        tokens,
+        title,
+        body,
+        type,
+        payload: data.payload,
+        brand,
+        clubId,
+        icon: data.icon,
+        image: data.image,
+        db,
+        recipientUserIds: [userId],
+      });
 
     await doc.ref.update({
       status: 'sent',
@@ -356,4 +386,5 @@ module.exports = {
   sendFcmToTokens,
   buildMulticastMessage,
   processPendingPushDoc,
+  pruneInvalidGrintaTokens,
 };

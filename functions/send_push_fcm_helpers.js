@@ -15,6 +15,7 @@ const BRAND_ASERSTEIN = 'aserstein';
 const IOS_APNS_TOPIC = 'io.grinta.app';
 const GRINTA_PACKAGE_NAME = 'io.grinta.app';
 const ASERSTEIN_ANDROID_PACKAGE = 'com.tome4.asersteinv2';
+const USER_GRINTA_TOKENS_FIELD = 'grintaTokens';
 
 /** Raw APNs device tokens are 32 bytes hex-encoded. FCM tokens are longer. */
 const APNS_DEVICE_TOKEN_PATTERN = /^[0-9a-fA-F]{64}$/;
@@ -66,8 +67,6 @@ function normalizeTokenList(raw) {
   ];
 }
 
-const USER_GRINTA_TOKENS_FIELD = 'grintaTokens';
-
 /** Parses `users/{uid}.grintaTokens` (list of FCM registration token strings). */
 function grintaTokensFromUserData(data) {
   if (!data || typeof data !== 'object') return [];
@@ -75,7 +74,7 @@ function grintaTokensFromUserData(data) {
 }
 
 /**
- * Grinta send list: prefer the user document field, else tagged subcollection.
+ * Grinta send list: prefer the user document field, else explicit subcollection.
  *
  * Fallback is for old clients that have not opened Grinta since
  * `grintaTokens` was added. Aserstein-tagged subcollection tokens are never used.
@@ -140,11 +139,10 @@ function isGrintaEligibleTokenDoc(data) {
 }
 
 /**
- * Pick token docs for a Grinta send.
+ * Pick token docs for a Grinta send (subcollection fallback).
  *
  * Only explicitly Grinta-tagged devices (`app: grinta` or package
- * `io.grinta.app`). Unbranded iOS/web leftovers on the shared project are
- * frequently the AS Erstein app; FCM then displays that app's identity.
+ * `io.grinta.app`). Used when `users/{uid}.grintaTokens` is missing/empty.
  */
 function selectGrintaEligibleTokenDocs(docs) {
   const list = Array.isArray(docs) ? docs : [];
@@ -618,6 +616,7 @@ async function loadUserFcmTokens(db, userId, brand, _requestedTokens) {
   const userRef = db.collection('users').doc(userId);
 
   if (brand === BRAND_GRINTA) {
+    // Source of truth: users/{uid}.grintaTokens (Grinta-owned field).
     let userSnap;
     try {
       userSnap = await userRef.get();
@@ -635,6 +634,8 @@ async function loadUserFcmTokens(db, userId, brand, _requestedTokens) {
       return fromUser;
     }
 
+    // Fallback: old clients that have not opened Grinta since grintaTokens.
+    // Explicit Grinta-tagged fcmTokens only — never Aserstein leftovers.
     const tokensRef = userRef.collection('fcmTokens');
     const all = await tokensRef.get();
     const tokenDocs = selectGrintaEligibleTokenDocs(all.docs);
@@ -728,7 +729,7 @@ async function filterTokensByRecipientPreferences({
       }
       if (decision.reason === 'quiet') {
         skippedQuiet += 1;
-        // Queue even without tokens — the hourly drain reloads fcmTokens.
+        // Queue even without tokens — the hourly drain reloads tokens.
         quietDeferred.push({
           userId,
           prefs,
@@ -757,6 +758,9 @@ async function filterTokensByRecipientPreferences({
 module.exports = {
   readNonEmptyString,
   normalizeTokenList,
+  grintaTokensFromUserData,
+  resolveGrintaSendTokens,
+  USER_GRINTA_TOKENS_FIELD,
   isLikelyApnsDeviceToken,
   isSendableFcmRegistrationToken,
   tokenFromDoc,
@@ -765,9 +769,6 @@ module.exports = {
   isExplicitAsersteinTokenDoc,
   selectGrintaEligibleTokenDocs,
   selectAsersteinEligibleTokenDocs,
-  grintaTokensFromUserData,
-  resolveGrintaSendTokens,
-  USER_GRINTA_TOKENS_FIELD,
   resolveNotificationPushBrand,
   docLooksLikeAserstein,
   normalizeUserIdList,
