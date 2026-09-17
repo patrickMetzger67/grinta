@@ -67,9 +67,7 @@ function normalizeTokenList(raw) {
   ];
 }
 
-/**
- * Parses `users/{uid}.grintaTokens` (list of FCM registration token strings).
- */
+/** Parses `users/{uid}.grintaTokens` (list of FCM registration token strings). */
 function grintaTokensFromUserData(data) {
   if (!data || typeof data !== 'object') return [];
   return normalizeTokenList(data[USER_GRINTA_TOKENS_FIELD]);
@@ -222,6 +220,7 @@ function normalizeNotifType(raw) {
 const LOCAL_REMINDER_PUSH_TYPES = new Set([
   'trainingReminder',
   'matchOpponentStatsReminder',
+  'playerTaskReminder',
   'RPEBefore',
 ]);
 
@@ -621,7 +620,7 @@ async function loadUserFcmTokens(db, userId, brand, _requestedTokens) {
     let userSnap;
     try {
       userSnap = await userRef.get();
-    } catch (error) {
+    } catch (_) {
       userSnap = null;
     }
     const fromUser = grintaTokensFromUserData(
@@ -662,8 +661,6 @@ async function loadUserFcmTokens(db, userId, brand, _requestedTokens) {
   for (const doc of tokenDocs) {
     const token = tokenFromDoc(doc);
     if (!token || !isSendableFcmRegistrationToken(token)) continue;
-    // Do not intersect with the client-supplied list. A partial snapshot
-    // (Android + Chrome only) would drop a valid iOS token already in Firestore.
     tokens.push(token);
   }
   return tokens;

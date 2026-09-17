@@ -117,9 +117,9 @@ target only Aserstein tokens / `com.tome4.asersteinv2`.
 
 Grinta **does not** register FCM devices with Stream (`addDevice`). The shared
 Stream app already has AS Erstein devices for the same uid; Stream Firebase
-push would show those banners as AS Erstein. On login Grinta removes **all**
-Stream devices for the user. Chat lock-screen delivery uses
-`sendGrintaPushFCMNotification` only.
+push would show those banners as AS Erstein (app name + icon). On login Grinta
+removes **all** Stream devices and sets Stream chat push to `none`. Chat
+lock-screen delivery uses `sendGrintaPushFCMNotification` only.
 
 Disable or split the default Stream Firebase provider in the Stream dashboard
 if AS Erstein still fans out chat to the shared project.

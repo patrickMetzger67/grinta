@@ -45,8 +45,8 @@ class SignupInvitationOnboarding {
     /// Prefill from Firebase Auth (Apple/Google) so Review Guideline 4
     /// is satisfied — name/email already provided by the IdP.
     Player? authSeedProfile,
-    /// When true (social signup), never re-ask name/email even if the seed
-    /// is incomplete — Apple only sends those fields on first authorization.
+    /// When true (social signup), fields already supplied by Apple/Google are
+    /// not re-asked. Missing first/last name stay required on the profile form.
     bool lockIdentityFromAuth = false,
   }) async {
     final rootContext = appNavigatorKey.currentContext;
@@ -98,8 +98,8 @@ class SignupInvitationOnboarding {
         case _InvitationLookupKind.found:
           final invitation = lookup.invitation!;
           final member = lookup.member!;
-          // Guideline 4: even when linking an invitation after SIWA/Google,
-          // never re-ask name/email — keep IdP identity locked.
+          // Guideline 4: lock IdP name/email when present. Missing names
+          // stay on the form (required) even after SIWA/Google.
           final profile = await _promptMemberProfile(
             rootContext,
             initialProfile: mergeAuthIdentityOntoMemberProfile(

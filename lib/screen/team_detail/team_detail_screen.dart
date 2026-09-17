@@ -49,6 +49,7 @@ import '../../widget/add_grinta_player_sheet.dart';
 import '../../widget/confirm_delete_dialog.dart';
 import '../../widget/team_tracker_owners_sheet.dart';
 import '../../widget/add_grinta_staff_sheet.dart';
+import '../../widget/fines_manager_picker_sheet.dart';
 import '../../widget/manage_unavailabilities_sheet.dart';
 import '../../widget/member_search_sheet.dart';
 import '../../widget/player_name_filter_field.dart';
@@ -2206,6 +2207,14 @@ class _TeamDetailScreenState extends State<TeamDetailScreen> {
                     staffsCount: staffsCount,
                     averageAge: averageAge,
                   ),
+                  if (_canManageTeam(context)) ...[
+                    SizedBox(height: isMobileLayout ? 16 : 24),
+                    _buildFinesManagerCard(
+                      context,
+                      playerRows: playerRows,
+                      allRows: rows,
+                    ),
+                  ],
                   SizedBox(height: isMobileLayout ? 16 : 24),
                   _buildRosterCard(context, playerRows),
                   SizedBox(height: isMobileLayout ? 16 : 24),
@@ -2568,6 +2577,150 @@ class _TeamDetailScreenState extends State<TeamDetailScreen> {
         },
       ),
     );
+  }
+
+  Widget _buildFinesManagerCard(
+    BuildContext context, {
+    required List<_TeamMemberVm> playerRows,
+    required List<_TeamMemberVm> allRows,
+  }) {
+    final l10n = context.l10n;
+    final colors = context.appColors;
+    final textTheme = Theme.of(context).textTheme;
+    final bool isMobileLayout = _isMobileTeamDetailLayout(context);
+    final _TeamMemberVm? managerRow = _finesManagerRow(allRows);
+    final String subtitle = managerRow == null
+        ? l10n.teamFinesManagerNone
+        : playerDisplayName(
+            managerRow.player,
+            unknownLabel: l10n.entityPlayer,
+          );
+
+    return Material(
+      color: colors.card,
+      borderRadius: BorderRadius.circular(22),
+      child: InkWell(
+        borderRadius: BorderRadius.circular(22),
+        onTap: () => _onEditFinesManager(context, playerRows),
+        child: Container(
+          width: double.infinity,
+          padding: EdgeInsets.fromLTRB(
+            isMobileLayout ? 16 : 24,
+            isMobileLayout ? 14 : 18,
+            isMobileLayout ? 16 : 24,
+            isMobileLayout ? 14 : 18,
+          ),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(22),
+            border: Border.all(color: colors.border),
+          ),
+          child: Row(
+            children: [
+              Icon(
+                Icons.payments_outlined,
+                color: colors.primary,
+                size: isMobileLayout ? 24 : 28,
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      l10n.teamFinesManagerTitle,
+                      style: textTheme.titleMedium?.copyWith(
+                        fontWeight: FontWeight.w800,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      subtitle,
+                      style: textTheme.bodyMedium?.copyWith(
+                        color: colors.textSecondary,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              Icon(
+                Icons.chevron_right_rounded,
+                color: colors.textSecondary,
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  _TeamMemberVm? _finesManagerRow(List<_TeamMemberVm> rows) {
+    final String finesId = _team.finesManagerMemberId?.trim() ?? '';
+    if (finesId.isEmpty) {
+      return null;
+    }
+    for (final _TeamMemberVm row in rows) {
+      if (playerMemberLookupIds(row.player).contains(finesId)) {
+        return row;
+      }
+    }
+    return null;
+  }
+
+  Future<void> _onEditFinesManager(
+    BuildContext context,
+    List<_TeamMemberVm> playerRows,
+  ) async {
+    if (!_canManageTeam(context)) {
+      return;
+    }
+    final String? teamId = _team.keyTeam?.trim();
+    if (teamId == null || teamId.isEmpty) {
+      return;
+    }
+
+    final l10n = context.l10n;
+    final String? currentId = _team.finesManagerMemberId?.trim();
+
+    final String? selected = await showFinesManagerPickerSheet(
+      context,
+      players: playerRows
+          .map((_TeamMemberVm row) => row.player)
+          .toList(growable: false),
+      currentId: currentId,
+    );
+
+    if (selected == null || !context.mounted) {
+      return;
+    }
+    final String? nextId = selected.trim().isEmpty ? null : selected.trim();
+    final String? previousId =
+        currentId == null || currentId.isEmpty ? null : currentId;
+    if (nextId == previousId) {
+      return;
+    }
+
+    try {
+      await TeamService().updateFinesManager(
+        teamId: teamId,
+        memberId: nextId,
+      );
+      if (!context.mounted) {
+        return;
+      }
+      setState(() {
+        _team.finesManagerMemberId = nextId;
+      });
+      AppSnackbar.show(context, l10n.teamFinesManagerSaved);
+    } catch (e) {
+      if (!context.mounted) {
+        return;
+      }
+      AppSnackbar.show(
+        context,
+        l10n.errorGeneric(e.toString()),
+        isError: true,
+      );
+    }
   }
 
   Widget _buildRosterCard(BuildContext context, List<_TeamMemberVm> rows) {

@@ -140,6 +140,37 @@ void main() {
     });
   });
 
+  group('resolveGrintaSendTokens', () {
+    test('prefers users.grintaTokens when present', () {
+      expect(
+        resolveGrintaSendTokens(
+          grintaTokens: [' user-tok ', 'user-tok'],
+          subcollectionTokens: ['sub-tok'],
+        ),
+        ['user-tok'],
+      );
+    });
+
+    test('falls back to subcollection tokens when the user field is empty', () {
+      expect(
+        resolveGrintaSendTokens(
+          grintaTokens: const [],
+          subcollectionTokens: ['tagged-grinta'],
+        ),
+        ['tagged-grinta'],
+      );
+    });
+
+    test('drops raw APNs values from users.grintaTokens', () {
+      expect(
+        grintaTokensFromUserMap({
+          kUserGrintaTokensField: ['a' * 64, 'fcm-tok'],
+        }),
+        ['fcm-tok'],
+      );
+    });
+  });
+
   group('shouldCallChatPushCloudFunction', () {
     test('sends when peers exist even if the client has no tokens yet', () {
       expect(

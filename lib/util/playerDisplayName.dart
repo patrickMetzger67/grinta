@@ -40,6 +40,15 @@ String playerDisplayName(Player player, {String unknownLabel = 'Joueur'}) {
   return unknownLabel;
 }
 
+/// Admin Joueurs / hub title: person name, else the player document email.
+String adminPlayerListLabel(Player player, {required String noEmailLabel}) {
+  final name = playerDisplayName(player, unknownLabel: '');
+  if (name.isNotEmpty) return name;
+  final email = (player.email ?? '').trim();
+  if (email.isNotEmpty) return email;
+  return noEmailLabel;
+}
+
 /// Normalizes a player-name query (trim, case, accents) for contains-matching.
 String normalizePlayerNameQuery(String? value) {
   return removeDiacritics((value ?? '').trim().toLowerCase());
