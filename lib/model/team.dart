@@ -29,6 +29,7 @@ String keyTeamGrintaPlayers = 'grintaPlayers';
 String keyTeamGrintaPlayerMemberIds = 'grintaPlayerMemberIds';
 String keyTeamUsers = 'users';
 String keyTeamUid = 'uid';
+String keyTeamFinesManagerMemberId = 'finesManagerMemberId';
 String keyTeamStreamChannelType = 'streamChannelType';
 String keyTeamStreamChannelId = 'streamChannelId';
 String keyTeamStreamChannelSyncedAt = 'streamChannelSyncedAt';
@@ -128,6 +129,8 @@ class Team {
   bool? isGrinta=false;
   List<dynamic> owners=[];
   String? uid;
+  /// Roster member id of the player responsible for team fines / penalties.
+  String? finesManagerMemberId;
   String? streamChannelType;
   String? streamChannelId;
   DateTime? streamChannelSyncedAt;
@@ -157,6 +160,7 @@ class Team {
         this.withTracker,
         this.isGrinta,
         this.uid,
+        this.finesManagerMemberId,
         this.streamChannelType,
         this.streamChannelId,
         this.streamChannelSyncedAt,
@@ -258,6 +262,8 @@ class Team {
       (map['owners'] as List<dynamic>?) ?? const <dynamic>[],
     );
     uid = map[keyTeamUid]?.toString();
+    final String finesManager = map[keyTeamFinesManagerMemberId]?.toString().trim() ?? '';
+    finesManagerMemberId = finesManager.isEmpty ? null : finesManager;
     streamChannelType = map[keyTeamStreamChannelType]?.toString();
     streamChannelId = map[keyTeamStreamChannelId]?.toString();
     streamChannelSyncedAt =
@@ -327,6 +333,7 @@ class Team {
         'managers=${managers.toString()} ' +
         'withTracker=$withTracker  ' +
         'isGrinta=$isGrinta ' +
+        'finesManagerMemberId=$finesManagerMemberId ' +
         'owners=${owners.toString()} ' +
         'uid=$uid';
   }
@@ -384,6 +391,10 @@ class Team {
       'owners':owners,
       keyTeamUid: uid,
     };
+    final String? finesManager = finesManagerMemberId?.trim();
+    if (finesManager != null && finesManager.isNotEmpty) {
+      map[keyTeamFinesManagerMemberId] = finesManager;
+    }
     return map;
   }
 

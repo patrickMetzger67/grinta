@@ -52,6 +52,8 @@ abstract final class AnalyticsScreenNames {
 
   // Settings
   static const myUnavailabilities = 'my_unavailabilities';
+  static const teamFines = 'team_fines';
+  static const teamFinesScales = 'team_fines_scales';
   static const manageProfiles = 'manage_profiles';
   static const tips = 'tips';
   static const notifications = 'notifications';
