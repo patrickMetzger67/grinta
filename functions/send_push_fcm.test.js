@@ -23,6 +23,8 @@ const {
   selectGrintaEligibleTokenDocs,
   selectAsersteinEligibleTokenDocs,
   resolveNotificationPushBrand,
+  grintaTokensFromUserData,
+  resolveGrintaSendTokens,
   ANDROID_FCM_CHANNEL_ID,
   IOS_APNS_TOPIC,
   GRINTA_PACKAGE_NAME,
@@ -32,6 +34,33 @@ const {
   GRINTA_ICON_192,
   GRINTA_ICON_512,
 } = require('./send_push_fcm_helpers');
+
+describe('resolveGrintaSendTokens / grintaTokensFromUserData', () => {
+  it('prefers users.grintaTokens when present', () => {
+    assert.deepEqual(
+      resolveGrintaSendTokens({
+        grintaTokens: [' user-tok ', 'user-tok'],
+        subcollectionTokens: ['sub-tok'],
+      }),
+      ['user-tok'],
+    );
+  });
+
+  it('falls back to subcollection tokens when the user field is empty', () => {
+    assert.deepEqual(
+      resolveGrintaSendTokens({
+        grintaTokens: [],
+        subcollectionTokens: ['tagged-grinta'],
+      }),
+      ['tagged-grinta'],
+    );
+  });
+
+  it('parses the user document field', () => {
+    assert.deepEqual(grintaTokensFromUserData({ grintaTokens: ['a', 'a'] }), ['a']);
+    assert.deepEqual(grintaTokensFromUserData({}), []);
+  });
+});
 
 describe('resolveBrand', () => {
   it('prefers explicit grinta brand', () => {
@@ -298,6 +327,8 @@ describe('normalizeNotifType / reminder prefs', () => {
   it('marks only agenda types as local reminders (no FCM from trigger)', () => {
     assert.equal(isLocalReminderNotificationType('trainingReminder'), true);
     assert.equal(shouldHonorReminderPreferences('NotifType.RPEBefore'), true);
+    assert.equal(isLocalReminderNotificationType('playerTaskReminder'), true);
+    assert.equal(isLocalReminderNotificationType('playerTask'), false);
     assert.equal(isLocalReminderNotificationType('RPEAfter'), false);
     assert.equal(isLocalReminderNotificationType('convocation'), false);
     assert.equal(isLocalReminderNotificationType('event'), false);
@@ -332,7 +363,7 @@ describe('collectLinkedUserIdsFromMemberData', () => {
   });
 });
 
-function fakeDb({ prefsByUser = {}, tokensByUser = {} }) {
+function fakeDb({ prefsByUser = {}, tokensByUser = {}, usersById = {} }) {
   return {
     collection(name) {
       if (name !== 'users') {
@@ -341,6 +372,13 @@ function fakeDb({ prefsByUser = {}, tokensByUser = {} }) {
       return {
         doc(userId) {
           return {
+            async get() {
+              const data = usersById[userId];
+              return {
+                exists: data != null,
+                data: () => data,
+              };
+            },
             collection(sub) {
               if (sub === 'app_state') {
                 return {
@@ -559,6 +597,48 @@ describe('filterTokensByRecipientPreferences', () => {
     });
     const tokens = await loadUserFcmTokens(db, 'u1', BRAND_GRINTA, new Set());
     assert.deepEqual(tokens, ['ios-fcm-tok']);
+  });
+
+  it('prefers users.grintaTokens over the fcmTokens subcollection', async () => {
+    const db = fakeDb({
+      usersById: {
+        u1: { grintaTokens: [' user-grinta-tok ', 'user-grinta-tok'] },
+      },
+      tokensByUser: {
+        u1: [
+          { id: 'sub-tok', data: { app: 'grinta' } },
+          { id: 'aser-tok', data: { app: 'aserstein' } },
+        ],
+      },
+    });
+    const tokens = await loadUserFcmTokens(db, 'u1', BRAND_GRINTA, new Set());
+    assert.deepEqual(tokens, ['user-grinta-tok']);
+  });
+
+  it('falls back to tagged Grinta subcollection when grintaTokens is empty', async () => {
+    const db = fakeDb({
+      usersById: {
+        u1: { grintaTokens: [] },
+      },
+      tokensByUser: {
+        u1: [
+          { id: 'grinta-tok', data: { app: 'grinta' } },
+          { id: 'aser-tok', data: { app: 'aserstein' } },
+        ],
+      },
+    });
+    const tokens = await loadUserFcmTokens(db, 'u1', BRAND_GRINTA, new Set());
+    assert.deepEqual(tokens, ['grinta-tok']);
+  });
+
+  it('drops raw APNs hex from users.grintaTokens', async () => {
+    const db = fakeDb({
+      usersById: {
+        u1: { grintaTokens: ['a'.repeat(64), 'fcm-tok'] },
+      },
+    });
+    const tokens = await loadUserFcmTokens(db, 'u1', BRAND_GRINTA, new Set());
+    assert.deepEqual(tokens, ['fcm-tok']);
   });
 });
 

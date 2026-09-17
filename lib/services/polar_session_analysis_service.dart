@@ -1,4 +1,5 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:flutter/foundation.dart';
 import 'package:grinta/model/tracker/polar_session_analysis.dart';
 
 /// CRUD for Polar cardio session imports (`TRACKER_PolarAnalysis`).
@@ -79,9 +80,8 @@ class PolarSessionAnalysisService {
   }
 
   Future<List<PolarSessionAnalysis>> listByEventId(String eventId) async {
-    final snap = await _collection
-        .where('eventId', isEqualTo: eventId.trim())
-        .get();
+    final snap =
+        await _collection.where('eventId', isEqualTo: eventId.trim()).get();
     return snap.docs.map(PolarSessionAnalysis.fromDoc).toList(growable: false);
   }
 
@@ -98,5 +98,65 @@ class PolarSessionAnalysisService {
 
   Future<void> deleteByDocId(String docId) async {
     await _collection.doc(docId).delete();
+  }
+
+  /// Analyses for [playerId], newest first, optionally limited to [start]–[end]
+  /// (inclusive calendar bounds on `startedAt` / `createdAt`).
+  ///
+  /// Queries `playerId ==` only (automatic single-field index). Date bounds are
+  /// applied in memory so production does not need a composite index.
+  Future<List<PolarSessionAnalysis>> listByPlayerId(
+    String playerId, {
+    DateTime? start,
+    DateTime? end,
+    int? limit,
+  }) async {
+    final pid = playerId.trim();
+    if (pid.isEmpty) return const <PolarSessionAnalysis>[];
+
+    final snap = await _collection.where('playerId', isEqualTo: pid).get();
+    final items = <PolarSessionAnalysis>[];
+    for (final doc in snap.docs) {
+      try {
+        final analysis = PolarSessionAnalysis.fromDoc(doc);
+        final date = analysis.startedAt ?? analysis.createdAt;
+        if (!_sessionDateInRange(date, start: start, end: end)) continue;
+        items.add(analysis);
+      } catch (e, st) {
+        debugPrint(
+          'TRACKER_PolarAnalysis skip doc=${doc.id} playerId=$pid: $e\n$st',
+        );
+      }
+    }
+
+    items.sort((a, b) {
+      final aDate =
+          a.startedAt ?? a.createdAt ?? DateTime.fromMillisecondsSinceEpoch(0);
+      final bDate =
+          b.startedAt ?? b.createdAt ?? DateTime.fromMillisecondsSinceEpoch(0);
+      return bDate.compareTo(aDate);
+    });
+    if (limit != null && items.length > limit) {
+      return items.sublist(0, limit);
+    }
+    return items;
+  }
+
+  static bool _sessionDateInRange(
+    DateTime? date, {
+    DateTime? start,
+    DateTime? end,
+  }) {
+    if (date == null) return true;
+    final day = DateTime(date.year, date.month, date.day);
+    if (start != null) {
+      final startDay = DateTime(start.year, start.month, start.day);
+      if (day.isBefore(startDay)) return false;
+    }
+    if (end != null) {
+      final endDay = DateTime(end.year, end.month, end.day);
+      if (day.isAfter(endDay)) return false;
+    }
+    return true;
   }
 }

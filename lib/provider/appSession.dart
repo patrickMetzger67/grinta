@@ -11,6 +11,7 @@ import 'package:grinta/services/playerService.dart';
 import 'package:grinta/services/seasonService.dart';
 import 'package:grinta/services/teamService.dart';
 import 'package:grinta/services/user_avatar_service.dart';
+import 'package:grinta/services/userService.dart';
 import 'package:grinta/util/coach_filter_period.dart';
 import 'package:grinta/util/player_photo_resolver.dart';
 import 'package:grinta/util/team_deletion_access.dart';
@@ -209,6 +210,7 @@ class AppSession extends ChangeNotifier {
         _safeNotify();
       }
       unawaited(_refreshAvatarsIfLinkedAuthPhotoMissing());
+      unawaited(_syncSignInProviderIds(current ?? firebaseUser));
       return;
     }
 
@@ -228,6 +230,17 @@ class AppSession extends ChangeNotifier {
     }
   }
 
+  Future<void> _syncSignInProviderIds(User firebaseUser) async {
+    try {
+      await UserService().syncProviderIdsIfMissing(
+        uid: firebaseUser.uid,
+        providerIds: providerIdsFromAuthUser(firebaseUser),
+      );
+    } catch (e) {
+      debugPrint('AppSession: providerIds sync failed: $e');
+    }
+  }
+
   Future<void> _initFromUserBody(User firebaseUser) async {
     final int generation = ++_listenerGeneration;
 
@@ -240,6 +253,7 @@ class AppSession extends ChangeNotifier {
           ? liveUser
           : firebaseUser;
       cacheOAuthPhotoUrl(readAuthUserPhotoUrl(user));
+      unawaited(_syncSignInProviderIds(firebaseUser));
 
       players.clear();
       teams.clear();

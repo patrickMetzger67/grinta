@@ -34,6 +34,41 @@ String? fcmTokenFromFirestoreDoc({
   ]);
 }
 
+/// Firestore key for Grinta FCM registration tokens on `users/{uid}`.
+const String kUserGrintaTokensField = 'grintaTokens';
+
+List<String> sendableFcmTokensFromList(List<dynamic>? raw) {
+  if (raw == null) return const [];
+  final tokens = <String>{};
+  for (final entry in raw) {
+    final token = entry?.toString().trim() ?? '';
+    if (isSendableFcmRegistrationToken(token)) {
+      tokens.add(token);
+    }
+  }
+  return tokens.toList();
+}
+
+/// Parses `users/{uid}.grintaTokens` from a user document map.
+List<String> grintaTokensFromUserMap(Map<String, dynamic>? map) {
+  if (map == null) return const [];
+  final raw = map[kUserGrintaTokensField];
+  return sendableFcmTokensFromList(raw is List ? raw : null);
+}
+
+/// Grinta FCM send list: prefer `users.grintaTokens`, else tagged subcollection.
+///
+/// Fallback is for old clients that have not opened Grinta since the field
+/// was added. Aserstein-tagged subcollection tokens are never used.
+List<String> resolveGrintaSendTokens({
+  List<dynamic>? grintaTokens,
+  List<String> subcollectionTokens = const [],
+}) {
+  final fromUser = sendableFcmTokensFromList(grintaTokens);
+  if (fromUser.isNotEmpty) return fromUser;
+  return sendableFcmTokensFromList(subcollectionTokens);
+}
+
 bool _isAsersteinPackage(String packageName) {
   final lower = packageName.trim().toLowerCase();
   if (lower.isEmpty) return false;

@@ -104,28 +104,17 @@ class WearableDevicesRepository {
       }
     }
 
-    if (await connected(() => _whoopRepository.getConfig(uid, playerId))) {
-      return true;
-    }
-    if (await connected(() => _stravaRepository.getConfig(uid, playerId))) {
-      return true;
-    }
-    if (await connected(() => _polarRepository.getConfig(uid, playerId))) {
-      return true;
-    }
-    if (await connected(() => _fitbitRepository.getConfig(uid, playerId))) {
-      return true;
-    }
-    if (await connected(() => _ouraRepository.getConfig(uid, playerId))) {
-      return true;
-    }
-    if (await connected(() => _appleHealthRepository.getConfig(uid, playerId))) {
-      return true;
-    }
-    if (await connected(() => _googleHealthRepository.getConfig(uid, playerId))) {
-      return true;
-    }
-    return connected(() => _intenseGpsRepository.getConfig(uid, playerId));
+    final results = await Future.wait<bool>([
+      connected(() => _whoopRepository.getConfig(uid, playerId)),
+      connected(() => _stravaRepository.getConfig(uid, playerId)),
+      connected(() => _polarRepository.getConfig(uid, playerId)),
+      connected(() => _fitbitRepository.getConfig(uid, playerId)),
+      connected(() => _ouraRepository.getConfig(uid, playerId)),
+      connected(() => _appleHealthRepository.getConfig(uid, playerId)),
+      connected(() => _googleHealthRepository.getConfig(uid, playerId)),
+      connected(() => _intenseGpsRepository.getConfig(uid, playerId)),
+    ]);
+    return results.any((connectedNow) => connectedNow);
   }
 
   bool isTypeConnected({

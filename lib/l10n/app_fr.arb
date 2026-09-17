@@ -60,7 +60,7 @@
   "memberLastName": "Nom",
   "memberEmail": "E-mail",
   "memberEmailOptional": "E-mail (facultatif)",
-  "memberIdentityFromAuthHint": "Votre nom et votre e-mail fournis par Sign in with Apple ou Google seront utilisés pour votre compte. Vous pourrez les modifier plus tard dans votre profil.",
+  "memberIdentityFromAuthHint": "Les informations déjà fournies par Sign in with Apple ou Google sont utilisées automatiquement. S'il manque un prénom ou un nom, tu dois les renseigner pour terminer l'inscription.",
   "memberPhone": "Téléphone",
   "memberPhoneOptional": "Téléphone (facultatif)",
   "memberEmailInvalid": "Veuillez saisir une adresse e-mail valide",
@@ -3376,6 +3376,11 @@
   "adminUsersSectionDesc": "Lister les comptes, consulter et associer des joueurs.",
   "adminUsersTitle": "Utilisateurs",
   "adminUsersSearchHint": "Rechercher (email, prénom, nom)",
+  "adminNoEmail": "Sans email",
+  "adminNoName": "Sans nom",
+  "adminUsersSignInGoogle": "Google",
+  "adminUsersSignInApple": "Apple",
+  "adminUsersSignInPassword": "E-mail",
   "adminUsersLoadError": "Impossible de charger les utilisateurs.",
   "adminUsersEmpty": "Aucun utilisateur pour le moment.",
   "adminUsersSearchEmpty": "Aucun utilisateur ne correspond à la recherche.",
@@ -3448,6 +3453,41 @@
   "adminPlayersAddUserTitle": "Ajouter un utilisateur",
   "adminPlayersAssociateSuccess": "Utilisateur associé.",
   "adminPlayersAssociateFailed": "Impossible d'associer l'utilisateur.",
+  "adminPlayerTeamKitSensorLabel": "Capteur d’équipe",
+  "adminPlayerConnectedDevicesLabel": "Appareils / apps connectés",
+  "adminPlayerTeamKitSensorTooltip": "Capteur d’équipe",
+  "adminPlayerConnectedDevicesTooltip": "Appareils ou applications connectés",
+  "adminPlayerHubUsersTitle": "Utilisateurs associés",
+  "adminPlayerHubUsersSubtitle": "Consulter et associer des comptes utilisateurs.",
+  "adminPlayerHubSessionsTitle": "Sessions",
+  "adminPlayerHubSessionsSubtitle": "GPS, Polar et activités personnelles.",
+  "adminPlayerSessionsTitle": "Sessions · {name}",
+  "@adminPlayerSessionsTitle": {
+    "placeholders": {
+      "name": { "type": "String" }
+    }
+  },
+  "adminPlayerSessionsPickPeriodTooltip": "Choisir une période",
+  "adminPlayerSessionsPeriodLabel": "Période",
+  "adminPlayerSessionsSeasonPeriodLabel": "Saison {seasonName}",
+  "@adminPlayerSessionsSeasonPeriodLabel": {
+    "placeholders": {
+      "seasonName": { "type": "String" }
+    }
+  },
+  "adminPlayerSessionsEmpty": "Aucune session sur cette période.",
+  "adminPlayerSessionsLoadError": "Impossible de charger les sessions.",
+  "adminPlayerSessionKindGps": "GPS",
+  "adminPlayerSessionKindPolar": "Polar",
+  "adminPlayerSessionKindPersonal": "Personnel",
+  "adminPlayerSessionMatch": "Match",
+  "adminPlayerSessionTraining": "Entraînement",
+  "adminPlayerSessionDetailTitle": "Performance · {name}",
+  "@adminPlayerSessionDetailTitle": {
+    "placeholders": {
+      "name": { "type": "String" }
+    }
+  },
   "adminPromoCodesSection": "Codes promo",
   "adminPromoCodesSectionDesc": "Créer et gérer les codes promo d'abonnement.",
   "adminPromoCodesTitle": "Codes promo",
@@ -4436,6 +4476,82 @@
   "lastResultsFormGuide": "Forme récente",
   "lastResultsSlotEmpty": "Pas encore joué",
   "lastResultsSlotHighlighted": "Match actuel",
+  "agendaAddEventPlayerTask": "Une tâche d'équipe",
+  "agendaAddEventPlayerTaskHint": "Matériel, maillots, …",
+  "createPlayerTaskTitle": "Affecter une tâche",
+  "editPlayerTaskTitle": "Modifier la tâche",
+  "createPlayerTaskType": "Type",
+  "createPlayerTaskTypeRequired": "Choisissez un type.",
+  "createPlayerTaskNewType": "Créer un nouveau type…",
+  "createPlayerTaskNewTypeTitle": "Nouveau type de tâche",
+  "createPlayerTaskTypeName": "Nom du type",
+  "createPlayerTaskTypeColor": "Couleur",
+  "createPlayerTaskTeam": "Équipe",
+  "createPlayerTaskTeamRequired": "Choisissez une équipe.",
+  "createPlayerTaskPlayers": "Joueurs",
+  "createPlayerTaskPlayersHint": "Touchez pour choisir un ou plusieurs joueurs",
+  "createPlayerTaskPlayersRequired": "Choisissez au moins un joueur.",
+  "createPlayerTaskSelectPlayers": "Choisir les joueurs",
+  "createPlayerTaskSelectAll": "Tous",
+  "createPlayerTaskNoPlayers": "Aucun joueur dans cette équipe.",
+  "createPlayerTaskStartDate": "Début",
+  "createPlayerTaskEndDate": "Fin",
+  "createPlayerTaskThisWeek": "Cette semaine",
+  "createPlayerTaskToday": "Aujourd'hui",
+  "createPlayerTaskNote": "Note (optionnel)",
+  "createPlayerTaskNoteHint": "Ex. ramasser les plots",
+  "createPlayerTaskSaved": "Tâche affectée.",
+  "editPlayerTaskSaved": "Tâche mise à jour.",
+  "createPlayerTaskError": "Impossible d'enregistrer la tâche.",
+  "editPlayerTaskError": "Impossible de modifier la tâche.",
+  "createPlayerTaskInvalidRange": "La date de fin doit être après la date de début.",
+  "createPlayerTaskNoManagedTeams": "Vous ne gérez aucune équipe pour cette saison.",
+  "playerTaskDetailTitle": "Tâche",
+  "playerTaskAssignees": "Joueurs",
+  "playerTaskPeriod": "Période",
+  "playerTaskEdit": "Modifier",
+  "deletePlayerTaskConfirmTitle": "Supprimer la tâche ?",
+  "deletePlayerTaskConfirmMessage": "Supprimer « {label} » ?",
+  "@deletePlayerTaskConfirmMessage": {
+    "placeholders": {
+      "label": {
+        "type": "String"
+      }
+    }
+  },
+  "deletePlayerTaskDeleted": "Tâche supprimée.",
+  "deletePlayerTaskError": "Impossible de supprimer la tâche.",
+  "playerTaskDefaultTypeEquipment": "Matériel",
+  "playerTaskDefaultTypeJerseys": "Maillots",
+  "playerTaskManagerBarLabel": "{teamName} - {taskName} - {count}",
+  "@playerTaskManagerBarLabel": {
+    "placeholders": {
+      "teamName": {
+        "type": "String"
+      },
+      "taskName": {
+        "type": "String"
+      },
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "createPlayerTaskNotificationTitle": "Nouvelle tâche",
+  "createPlayerTaskNotificationBody": "Tu es de {typeName} de {start} à {end}",
+  "@createPlayerTaskNotificationBody": {
+    "placeholders": {
+      "typeName": {
+        "type": "String"
+      },
+      "start": {
+        "type": "String"
+      },
+      "end": {
+        "type": "String"
+      }
+    }
+  },
   "settingsTeamFines": "Amendes",
   "teamFinesNoTeams": "Aucune équipe à gérer pour les amendes.",
   "teamFinesEmptyScales": "Aucun barème pour cette équipe. Utilisez + pour en créer un.",

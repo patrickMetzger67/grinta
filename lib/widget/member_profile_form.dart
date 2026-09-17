@@ -7,6 +7,7 @@ import '../model/player.dart';
 import '../util/account_age_gate.dart';
 import '../util/nationalities.dart';
 import '../util/player_positions.dart';
+import '../util/auth_profile_seed.dart';
 import '../util/player_profile_validator.dart';
 import '../util/app_theme.dart';
 import 'international_phone_field.dart';
@@ -28,9 +29,9 @@ class MemberProfileForm extends StatefulWidget {
   /// When true (email signup), email is mandatory for Firebase Auth.
   final bool requireEmail;
 
-  /// When true, first/last name and email from Sign in with Apple / Google
-  /// are not shown or requested (App Store Guideline 4). They are taken from
-  /// [initialProfile] instead.
+  /// When true, first/last name and email already supplied by Sign in with
+  /// Apple / Google (or an invitation prefill) are not re-asked (Guideline 4).
+  /// Empty name fields stay visible and required.
   final bool lockIdentityFromAuth;
 
   const MemberProfileForm({
@@ -105,7 +106,23 @@ class MemberProfileFormState extends State<MemberProfileForm> {
   String _profileMemberId(Player? profile) =>
       profile?.keyMember?.trim() ?? '';
 
-  bool get _hideIdentityFields => widget.lockIdentityFromAuth;
+  bool get _lockFirstName => shouldLockAuthIdentityField(
+        lockIdentityFromAuth: widget.lockIdentityFromAuth,
+        value: widget.initialProfile?.firstName,
+      );
+
+  bool get _lockLastName => shouldLockAuthIdentityField(
+        lockIdentityFromAuth: widget.lockIdentityFromAuth,
+        value: widget.initialProfile?.lastName,
+      );
+
+  bool get _lockEmail => shouldLockAuthIdentityField(
+        lockIdentityFromAuth: widget.lockIdentityFromAuth,
+        value: widget.initialProfile?.email,
+      );
+
+  bool get _hasLockedIdentityFields =>
+      _lockFirstName || _lockLastName || _lockEmail;
 
   String get _identityFirstName {
     final typed = _firstNameCtrl.text.trim();
@@ -199,9 +216,9 @@ class MemberProfileFormState extends State<MemberProfileForm> {
       phoneCountryCode: _phoneCountryCode,
     );
 
-    if (_hideIdentityFields) {
-      // Guideline 4: identity comes from the IdP. Only app-specific fields
-      // (birth date, nationality) are required to continue.
+    if (widget.lockIdentityFromAuth) {
+      // Guideline 4: do not re-ask IdP fields that were supplied. First and
+      // last name are still required — missing names stay on the form.
       if (_isLockedIdentityFormValid) {
         return profile;
       }
@@ -211,25 +228,26 @@ class MemberProfileFormState extends State<MemberProfileForm> {
   }
 
   bool get _isLockedIdentityFormValid {
-    final hasIdentity =
-        _identityFirstName.isNotEmpty && _identityLastName.isNotEmpty;
     final hasBirth = _birthDate != null;
     final hasNationality = _nationalityCountryCode?.trim().isNotEmpty ?? false;
-    return hasIdentity &&
+    final draftContact = Player(
+      email: _identityEmail,
+      phoneE164: _phoneE164,
+    );
+    return hasRequiredGivenNames(_identityFirstName, _identityLastName) &&
         hasBirth &&
         hasNationality &&
         isValidEmailFormat(_identityEmail) &&
-        isValidE164Phone(_phoneE164);
+        isValidE164Phone(_phoneE164) &&
+        hasContactInfo(draftContact);
   }
 
   String? validateAndGetError() {
-    if (!_hideIdentityFields) {
-      if (_identityFirstName.isEmpty) {
-        return context.l10n.memberFirstNameRequired;
-      }
-      if (_identityLastName.isEmpty) {
-        return context.l10n.memberLastNameRequired;
-      }
+    if (_identityFirstName.isEmpty) {
+      return context.l10n.memberFirstNameRequired;
+    }
+    if (_identityLastName.isEmpty) {
+      return context.l10n.memberLastNameRequired;
     }
     if (_birthDate == null) {
       return context.l10n.memberBirthDateRequired;
@@ -243,7 +261,7 @@ class MemberProfileFormState extends State<MemberProfileForm> {
       return context.l10n.memberNationalityRequired;
     }
     final email = _identityEmail ?? '';
-    if (widget.requireEmail && !_hideIdentityFields) {
+    if (widget.requireEmail) {
       if (email.isEmpty) {
         return context.l10n.signupEmailRequired;
       }
@@ -255,14 +273,10 @@ class MemberProfileFormState extends State<MemberProfileForm> {
       email: _identityEmail,
       phoneE164: _phoneE164,
     );
-    if (!widget.requireEmail &&
-        !_hideIdentityFields &&
-        !hasContactInfo(draftProfile)) {
+    if (!widget.requireEmail && !hasContactInfo(draftProfile)) {
       return context.l10n.memberContactRequired;
     }
-    if (!_hideIdentityFields &&
-        !widget.requireEmail &&
-        !isValidEmailFormat(_identityEmail)) {
+    if (!widget.requireEmail && !isValidEmailFormat(_identityEmail)) {
       return context.l10n.memberEmailInvalid;
     }
     if (!isValidE164Phone(_phoneE164)) {
@@ -276,7 +290,7 @@ class MemberProfileFormState extends State<MemberProfileForm> {
     _notifyDebounce = Timer(const Duration(milliseconds: 120), () {
       if (!mounted) return;
       final profile = buildProfile();
-      final isValid = _hideIdentityFields
+      final isValid = widget.lockIdentityFromAuth
           ? _isLockedIdentityFormValid
           : profile?.isProfileAndContactValid == true;
       widget.onValidityChanged?.call(isValid);
@@ -389,7 +403,7 @@ class MemberProfileFormState extends State<MemberProfileForm> {
           ),
           const SizedBox(height: 12),
         ],
-        if (_hideIdentityFields) ...[
+        if (_hasLockedIdentityFields) ...[
           Text(
             l10n.memberIdentityFromAuthHint,
             style: Theme.of(context).textTheme.bodyMedium?.copyWith(
@@ -397,7 +411,8 @@ class MemberProfileFormState extends State<MemberProfileForm> {
                 ),
           ),
           const SizedBox(height: 12),
-        ] else ...[
+        ],
+        if (!_lockFirstName) ...[
           TextField(
             controller: _firstNameCtrl,
             enabled: widget.enabled,
@@ -409,6 +424,8 @@ class MemberProfileFormState extends State<MemberProfileForm> {
             onChanged: (_) => _notifyChanged(),
           ),
           const SizedBox(height: 12),
+        ],
+        if (!_lockLastName) ...[
           TextField(
             controller: _lastNameCtrl,
             enabled: widget.enabled,
@@ -420,6 +437,8 @@ class MemberProfileFormState extends State<MemberProfileForm> {
             onChanged: (_) => _notifyChanged(),
           ),
           const SizedBox(height: 12),
+        ],
+        if (!_lockEmail) ...[
           TextField(
             controller: _emailCtrl,
             enabled: widget.enabled,
