@@ -8,6 +8,7 @@ import 'package:grinta/services/invitation_email_service.dart';
 import 'package:grinta/services/physiological_data_consent_service.dart';
 import 'package:grinta/services/userService.dart';
 import 'package:grinta/util/account_age_gate.dart';
+import 'package:grinta/util/player_profile_validator.dart';
 import 'package:uuid/uuid.dart';
 
 /// Opaque URL-safe token for parental / physio consent links.
@@ -65,6 +66,12 @@ class ParentalConsentService {
     final normalizedParent = parentEmail.trim().toLowerCase();
     if (normalizedParent.isEmpty) return 'emptyParentEmail';
 
+    final firstName = profile.firstName?.trim() ?? '';
+    final lastName = profile.lastName?.trim() ?? '';
+    if (!hasRequiredGivenNames(firstName, lastName)) {
+      return 'incompleteProfile';
+    }
+
     // Send the guardian email *before* writing `users/{uid}`. If the mail
     // provider fails, the caller can delete Auth without leaving an orphan
     // account document (PII + pending token) in Firestore.
@@ -98,8 +105,8 @@ class ParentalConsentService {
     await _userService.createAccountIfNeeded(
       uid: uid,
       email: accountEmail,
-      firstName: profile.firstName?.trim() ?? '',
-      lastName: profile.lastName?.trim() ?? '',
+      firstName: firstName,
+      lastName: lastName,
       accountStatus: UserAccountStatus.pendingParentalConsent,
       birthDay: profile.birthDay,
       parentEmail: normalizedParent,

@@ -1,5 +1,14 @@
 import 'package:grinta/model/player.dart';
 
+/// Guideline 4: lock a field only when Apple/Google already supplied it.
+/// Missing first/last name must stay editable and required.
+bool shouldLockAuthIdentityField({
+  required bool lockIdentityFromAuth,
+  required String? value,
+}) {
+  return lockIdentityFromAuth && (value?.trim().isNotEmpty ?? false);
+}
+
 /// After Sign in with Apple / Google, prefer IdP name/email on an invitation
 /// member profile so the signup form can lock those fields (Guideline 4).
 Player mergeAuthIdentityOntoMemberProfile({
@@ -23,8 +32,9 @@ Player mergeAuthIdentityOntoMemberProfile({
 /// signup profile form does not re-ask for name/email (App Store Guideline 4).
 ///
 /// Prefer [givenName] / [familyName] from Authentication Services over splitting
-/// [displayName]. When [applyFallbacks] is true, missing names are filled from
-/// email / a generic label so the user is never required to type them.
+/// [displayName]. Missing names stay empty so the signup form can require them.
+/// [applyFallbacks] fills placeholders (email local-part / "Player") and must
+/// not be used on signup — that created accounts without a real person name.
 Player? profileSeedFromAuthIdentity({
   String? givenName,
   String? familyName,
