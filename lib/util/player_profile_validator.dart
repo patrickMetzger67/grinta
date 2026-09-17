@@ -18,9 +18,14 @@ bool isValidE164Phone(String? phoneE164) {
   return _e164Pattern.hasMatch(trimmed);
 }
 
+/// First + last name required on every signup / invite completion path.
+bool hasRequiredGivenNames(String? firstName, String? lastName) {
+  return (firstName?.trim().isNotEmpty ?? false) &&
+      (lastName?.trim().isNotEmpty ?? false);
+}
+
 bool isProfileComplete(Player profile) {
-  return (profile.firstName?.trim().isNotEmpty ?? false) &&
-      (profile.lastName?.trim().isNotEmpty ?? false) &&
+  return hasRequiredGivenNames(profile.firstName, profile.lastName) &&
       (profile.nationality?.trim().isNotEmpty ?? false) &&
       (profile.birthDay?.trim().isNotEmpty ?? false);
 }

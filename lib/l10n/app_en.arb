@@ -60,7 +60,7 @@
   "memberLastName": "Last name",
   "memberEmail": "Email",
   "memberEmailOptional": "Email (optional)",
-  "memberIdentityFromAuthHint": "Your name and email from Sign in with Apple or Google will be used for your account. You can update them later in your profile.",
+  "memberIdentityFromAuthHint": "Name and email already provided by Sign in with Apple or Google are used automatically. If your first or last name is missing, you must enter them to finish signing up.",
   "memberPhone": "Phone",
   "memberPhoneOptional": "Phone (optional)",
   "memberEmailInvalid": "Please enter a valid email address",

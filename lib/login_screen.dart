@@ -24,6 +24,7 @@ import 'util/team_creation_access.dart';
 import 'util/account_age_gate.dart';
 import 'util/auth_profile_seed.dart';
 import 'util/player_photo_resolver.dart';
+import 'util/player_profile_validator.dart';
 import 'services/active_session_service.dart';
 import 'services/analytics_service.dart';
 import 'navigation/app_navigator.dart';
@@ -779,6 +780,9 @@ class _LoginScreenState extends State<LoginScreen> {
     if (gate == AccountAgeGateResult.blockedUnderage) {
       throw StateError('blockedUnderage');
     }
+    if (!hasRequiredGivenNames(profile.firstName, profile.lastName)) {
+      throw StateError('member profile incomplete');
+    }
 
     if (gate == AccountAgeGateResult.parentalConsentRequired) {
       var resolvedParent = parentEmail?.trim() ?? '';
@@ -926,11 +930,16 @@ class _LoginScreenState extends State<LoginScreen> {
     required Player profile,
     String accountStatus = UserAccountStatus.active,
   }) async {
+    final firstName = profile.firstName?.trim() ?? '';
+    final lastName = profile.lastName?.trim() ?? '';
+    if (!hasRequiredGivenNames(firstName, lastName)) {
+      throw StateError('member profile incomplete');
+    }
     await UserService().createAccountIfNeeded(
       uid: uid,
       email: email,
-      firstName: profile.firstName?.trim() ?? '',
-      lastName: profile.lastName?.trim() ?? '',
+      firstName: firstName,
+      lastName: lastName,
       accountStatus: accountStatus,
       birthDay: profile.birthDay,
     );
@@ -1063,7 +1072,6 @@ class _LoginScreenState extends State<LoginScreen> {
         familyName: authResult.familyName,
         displayName: authResult.displayName ?? credential.user?.displayName,
         email: authResult.email ?? credential.user?.email,
-        applyFallbacks: true,
       );
       final onboarding = await SignupInvitationOnboarding.run(
         requireEmail: false,
