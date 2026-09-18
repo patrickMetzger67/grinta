@@ -8,6 +8,14 @@ const {
   filterSamplesToMatchPeriods,
   isEligibleForAutoSync,
 } = require('./intense_match_window');
+const {
+  ownerUsesIntenseCloudSync,
+  shouldMarkIntenseEventUploaded,
+  summarizeDeviceResults,
+} = require('./intense_scheduled_sync_helpers');
+const {
+  loadIntenseScheduledSyncRuntimeDeps,
+} = require('./intense_scheduled_sync_runtime');
 
 const REGION = 'europe-west1';
 
@@ -31,42 +39,7 @@ function getDb() {
 }
 
 function loadRuntimeDeps() {
-  let fetchIntensePreprocessedSamplesCore;
-  let runInsidersSensorAnalysis;
-  let readIntenseAutoSyncConfig;
-  let computeAndSaveTeamWorkloadSummary;
-
-  try {
-    ({
-      fetchIntensePreprocessedSamplesCore,
-      runInsidersSensorAnalysis,
-    } = require('./insidersAnalysis'));
-  } catch (e) {
-    throw new Error(
-      `insidersAnalysis.js is required for insidersScheduledIntenseSync: ${e.message}`,
-    );
-  }
-
-  try {
-    ({ readIntenseAutoSyncConfig } = require('./intenseAutoSyncConfig'));
-  } catch (_) {
-    readIntenseAutoSyncConfig = async () => ({ ...DEFAULT_AUTO_SYNC_CONFIG });
-  }
-
-  try {
-    ({ computeAndSaveTeamWorkloadSummary } = require('./teamWorkloadSummary'));
-  } catch (e) {
-    throw new Error(
-      `teamWorkloadSummary.js is required for insidersScheduledIntenseSync: ${e.message}`,
-    );
-  }
-
-  return {
-    fetchIntensePreprocessedSamplesCore,
-    runInsidersSensorAnalysis,
-    readIntenseAutoSyncConfig,
-    computeAndSaveTeamWorkloadSummary,
-  };
+  return loadIntenseScheduledSyncRuntimeDeps(DEFAULT_AUTO_SYNC_CONFIG);
 }
 
 function resolveTrainingStartAt(data) {
@@ -101,15 +74,26 @@ function resolveSessionDurationMs({ startAt, scheduledEnd, durationMinutes }) {
 }
 
 async function loadIntenseOwnerIds() {
-  const snap = await getDb()
-    .collection(OWNER_COLLECTION)
-    .where('withSyncing', '==', false)
-    .get();
+  const db = getDb();
+  // Two queries: withSyncing=false covers cloud kits; typeTracker=intense
+  // covers older docs where withSyncing was omitted (defaults to true in app).
+  const [bySyncing, byType] = await Promise.all([
+    db.collection(OWNER_COLLECTION).where('withSyncing', '==', false).get(),
+    db.collection(OWNER_COLLECTION).where('typeTracker', '==', 'intense').get(),
+  ]);
+
   const ids = new Set();
-  for (const doc of snap.docs) {
-    ids.add(doc.id);
-    const storedId = String(doc.data()?.id ?? '').trim();
-    if (storedId) ids.add(storedId);
+  const seenDocs = new Set();
+  for (const snap of [bySyncing, byType]) {
+    for (const doc of snap.docs) {
+      if (seenDocs.has(doc.id)) continue;
+      seenDocs.add(doc.id);
+      const data = doc.data() ?? {};
+      if (!ownerUsesIntenseCloudSync(data)) continue;
+      ids.add(doc.id);
+      const storedId = String(data.id ?? '').trim();
+      if (storedId) ids.add(storedId);
+    }
   }
   return ids;
 }
@@ -376,22 +360,42 @@ async function processTrainingDoc(doc, now, config, deps) {
   if (!startAt) return null;
 
   const targets = await collectTrainingDeviceTargets(data);
+  if (targets.length === 0) {
+    console.log(
+      `[intenseScheduledSync] skip training id=${doc.id}: no device targets`,
+    );
+    return null;
+  }
+
   const fieldGps = await loadFieldGps(data.fieldId);
 
-  const deviceResults =
-    targets.length > 0
-      ? await processEventDevices({
-          eventId: doc.id,
-          isMatch: false,
-          startAt,
-          scheduledEnd,
-          targets,
-          fieldGps,
-          config,
-          fetchIntensePreprocessedSamplesCore: deps.fetchIntensePreprocessedSamplesCore,
-          runInsidersSensorAnalysis: deps.runInsidersSensorAnalysis,
-        })
-      : [];
+  const deviceResults = await processEventDevices({
+    eventId: doc.id,
+    isMatch: false,
+    startAt,
+    scheduledEnd,
+    targets,
+    fieldGps,
+    config,
+    fetchIntensePreprocessedSamplesCore: deps.fetchIntensePreprocessedSamplesCore,
+    runInsidersSensorAnalysis: deps.runInsidersSensorAnalysis,
+  });
+
+  const summary = summarizeDeviceResults(deviceResults);
+  if (!shouldMarkIntenseEventUploaded(deviceResults)) {
+    console.warn(
+      `[intenseScheduledSync] defer training id=${doc.id} ` +
+        `ok=${summary.ok} empty=${summary.empty} error=${summary.error} ` +
+        `(isTrackerDataUploaded left false for retry)`,
+    );
+    return {
+      type: 'training',
+      id: doc.id,
+      devices: deviceResults.length,
+      uploaded: false,
+      summary,
+    };
+  }
 
   await deps.computeAndSaveTeamWorkloadSummary({
     eventId: doc.id,
@@ -411,13 +415,16 @@ async function processTrainingDoc(doc, now, config, deps) {
   });
 
   console.log(
-    `[intenseScheduledSync] training finished id=${doc.id} devices=${deviceResults.length}`,
+    `[intenseScheduledSync] training finished id=${doc.id} devices=${deviceResults.length} ` +
+      `ok=${summary.ok} empty=${summary.empty}`,
   );
 
   return {
     type: 'training',
     id: doc.id,
     devices: deviceResults.length,
+    uploaded: true,
+    summary,
   };
 }
 
@@ -441,26 +448,46 @@ async function processMatchDoc(doc, now, config, deps) {
   }
 
   const targets = await collectMatchDeviceTargets(doc.id, data, config);
+  if (targets.length === 0) {
+    console.log(
+      `[intenseScheduledSync] skip match id=${doc.id}: no device targets`,
+    );
+    return null;
+  }
+
   const fieldGps =
     (data.fieldGpsCorners && typeof data.fieldGpsCorners === 'object'
       ? data.fieldGpsCorners
       : null) ?? (await loadFieldGps(data.fieldId));
 
-  const deviceResults =
-    targets.length > 0
-      ? await processEventDevices({
-          eventId: doc.id,
-          isMatch: true,
-          startAt: window.start,
-          scheduledEnd: window.stop,
-          targets,
-          fieldGps,
-          config,
-          playPeriods: window.playPeriods,
-          fetchIntensePreprocessedSamplesCore: deps.fetchIntensePreprocessedSamplesCore,
-          runInsidersSensorAnalysis: deps.runInsidersSensorAnalysis,
-        })
-      : [];
+  const deviceResults = await processEventDevices({
+    eventId: doc.id,
+    isMatch: true,
+    startAt: window.start,
+    scheduledEnd: window.stop,
+    targets,
+    fieldGps,
+    config,
+    playPeriods: window.playPeriods,
+    fetchIntensePreprocessedSamplesCore: deps.fetchIntensePreprocessedSamplesCore,
+    runInsidersSensorAnalysis: deps.runInsidersSensorAnalysis,
+  });
+
+  const summary = summarizeDeviceResults(deviceResults);
+  if (!shouldMarkIntenseEventUploaded(deviceResults)) {
+    console.warn(
+      `[intenseScheduledSync] defer match id=${doc.id} ` +
+        `ok=${summary.ok} empty=${summary.empty} error=${summary.error} ` +
+        `(isTrackerDataUploaded left false for retry)`,
+    );
+    return {
+      type: 'match',
+      id: doc.id,
+      devices: deviceResults.length,
+      uploaded: false,
+      summary,
+    };
+  }
 
   await deps.computeAndSaveTeamWorkloadSummary({
     eventId: doc.id,
@@ -480,6 +507,7 @@ async function processMatchDoc(doc, now, config, deps) {
 
   console.log(
     `[intenseScheduledSync] match finished id=${doc.id} devices=${deviceResults.length} ` +
+      `ok=${summary.ok} empty=${summary.empty} ` +
       `start=${window.start.toISOString()} stop=${window.stop.toISOString()} ` +
       `periods=${window.playPeriods.length}`,
   );
@@ -488,6 +516,8 @@ async function processMatchDoc(doc, now, config, deps) {
     type: 'match',
     id: doc.id,
     devices: deviceResults.length,
+    uploaded: true,
+    summary,
   };
 }
 
@@ -527,7 +557,9 @@ async function runIntenseScheduledSyncCore(injectedDeps) {
   const intenseOwnerIds = await loadIntenseOwnerIds();
 
   if (!intenseOwnerIds.size) {
-    console.log('[intenseScheduledSync] no Intense owners (withSyncing=false)');
+    console.log(
+      '[intenseScheduledSync] no Intense owners (withSyncing=false or typeTracker=intense)',
+    );
     return { processed: [], skippedOwners: 0 };
   }
 
@@ -578,8 +610,18 @@ async function runIntenseScheduledSyncCore(injectedDeps) {
 
 /**
  * Cloud Scheduler (every 30 min): auto-recover Intense tracker data for
- * trainings/matches whose owner has withSyncing=false and that were not
- * uploaded within the configured grace period after the session end.
+ * trainings/matches whose owner uses Intense cloud sync (`withSyncing=false`
+ * or `typeTracker=intense`) and that were not uploaded within the configured
+ * grace period after the session end.
+ *
+ * Important: `isTrackerDataUploaded` is set only after every attempted device
+ * sync ends as `ok` or `empty`. API / analysis errors leave the flag false so
+ * the next run can retry within Insiders retention.
+ *
+ * Runtime: prefers local `insidersAnalysis.js` / `teamWorkloadSummary.js` when
+ * present (grintaclub). Otherwise calls deployed HTTPS callables
+ * `fetchIntensePreprocessedSamples` + `analyzeInsidersSensorData` so a deploy
+ * from this repo does not crash with "Cannot find module './insidersAnalysis'".
  *
  * Match start/stop follow the same rules as the in-app manual sync:
  *   - kick-off = Match.timestamp (never dateCh/timeCh)
@@ -615,4 +657,7 @@ module.exports = {
   runIntenseScheduledSyncCore,
   insidersScheduledIntenseSync,
   DEFAULT_AUTO_SYNC_CONFIG,
+  ownerUsesIntenseCloudSync,
+  shouldMarkIntenseEventUploaded,
+  summarizeDeviceResults,
 };
