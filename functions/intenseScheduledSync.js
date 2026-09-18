@@ -13,6 +13,9 @@ const {
   shouldMarkIntenseEventUploaded,
   summarizeDeviceResults,
 } = require('./intense_scheduled_sync_helpers');
+const {
+  loadIntenseScheduledSyncRuntimeDeps,
+} = require('./intense_scheduled_sync_runtime');
 
 const REGION = 'europe-west1';
 
@@ -36,42 +39,7 @@ function getDb() {
 }
 
 function loadRuntimeDeps() {
-  let fetchIntensePreprocessedSamplesCore;
-  let runInsidersSensorAnalysis;
-  let readIntenseAutoSyncConfig;
-  let computeAndSaveTeamWorkloadSummary;
-
-  try {
-    ({
-      fetchIntensePreprocessedSamplesCore,
-      runInsidersSensorAnalysis,
-    } = require('./insidersAnalysis'));
-  } catch (e) {
-    throw new Error(
-      `insidersAnalysis.js is required for insidersScheduledIntenseSync: ${e.message}`,
-    );
-  }
-
-  try {
-    ({ readIntenseAutoSyncConfig } = require('./intenseAutoSyncConfig'));
-  } catch (_) {
-    readIntenseAutoSyncConfig = async () => ({ ...DEFAULT_AUTO_SYNC_CONFIG });
-  }
-
-  try {
-    ({ computeAndSaveTeamWorkloadSummary } = require('./teamWorkloadSummary'));
-  } catch (e) {
-    throw new Error(
-      `teamWorkloadSummary.js is required for insidersScheduledIntenseSync: ${e.message}`,
-    );
-  }
-
-  return {
-    fetchIntensePreprocessedSamplesCore,
-    runInsidersSensorAnalysis,
-    readIntenseAutoSyncConfig,
-    computeAndSaveTeamWorkloadSummary,
-  };
+  return loadIntenseScheduledSyncRuntimeDeps(DEFAULT_AUTO_SYNC_CONFIG);
 }
 
 function resolveTrainingStartAt(data) {
@@ -649,6 +617,11 @@ async function runIntenseScheduledSyncCore(injectedDeps) {
  * Important: `isTrackerDataUploaded` is set only after every attempted device
  * sync ends as `ok` or `empty`. API / analysis errors leave the flag false so
  * the next run can retry within Insiders retention.
+ *
+ * Runtime: prefers local `insidersAnalysis.js` / `teamWorkloadSummary.js` when
+ * present (grintaclub). Otherwise calls deployed HTTPS callables
+ * `fetchIntensePreprocessedSamples` + `analyzeInsidersSensorData` so a deploy
+ * from this repo does not crash with "Cannot find module './insidersAnalysis'".
  *
  * Match start/stop follow the same rules as the in-app manual sync:
  *   - kick-off = Match.timestamp (never dateCh/timeCh)

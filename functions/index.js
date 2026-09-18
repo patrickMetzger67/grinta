@@ -982,6 +982,7 @@ exports.deleteChatGroup = createDeleteChatGroup();
  * Intense cloud auto-sync (owners with withSyncing=false or typeTracker=intense).
  * Match windows follow the in-app manual sync (timestamp + mi-temps / Temps forts).
  * Marks isTrackerDataUploaded only after successful/empty device syncs (retries on error).
+ * Uses local insidersAnalysis when present; otherwise deployed HTTPS callables.
  *
  * Deploy:
  *   firebase deploy --only functions:insidersScheduledIntenseSync

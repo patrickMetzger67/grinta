@@ -1,12 +1,52 @@
+import { createRequire } from "node:module";
 import { getFirestore, Timestamp, FieldValue } from "firebase-admin/firestore";
 import { onSchedule } from "firebase-functions/v2/scheduler";
 
-import {
+const require = createRequire(import.meta.url);
+
+const DEFAULT_AUTO_SYNC_CONFIG = {
+  graceMinutes: 10,
+  insidersRetentionHours: 48,
+  maxDevicesPerEvent: 30,
+  maxEventsPerRun: 10,
+};
+
+/**
+ * Prefer shared runtime (local modules OR deployed callables). When this file
+ * is copied alone into grintaclub `functions/src/`, fall back to sibling ESM/CJS
+ * modules that live next to it.
+ */
+function loadRuntimeDeps() {
+  try {
+    return require("../intense_scheduled_sync_runtime.js").loadIntenseScheduledSyncRuntimeDeps(
+      DEFAULT_AUTO_SYNC_CONFIG,
+    );
+  } catch (_) {
+    const {
+      fetchIntensePreprocessedSamplesCore,
+      runInsidersSensorAnalysis,
+    } = require("./insidersAnalysis.js");
+    const { readIntenseAutoSyncConfig } = require("./intenseAutoSyncConfig.js");
+    const { computeAndSaveTeamWorkloadSummary } = require(
+      "./teamWorkloadSummary.js",
+    );
+    return {
+      fetchIntensePreprocessedSamplesCore,
+      runInsidersSensorAnalysis,
+      readIntenseAutoSyncConfig,
+      computeAndSaveTeamWorkloadSummary,
+      analysisSource: "local",
+      workloadSource: "local",
+    };
+  }
+}
+
+const {
   fetchIntensePreprocessedSamplesCore,
   runInsidersSensorAnalysis,
-} from "./insidersAnalysis.js";
-import { readIntenseAutoSyncConfig } from "./intenseAutoSyncConfig.js";
-import { computeAndSaveTeamWorkloadSummary } from "./teamWorkloadSummary.js";
+  readIntenseAutoSyncConfig,
+  computeAndSaveTeamWorkloadSummary,
+} = loadRuntimeDeps();
 
 const REGION = "europe-west1";
 
@@ -839,7 +879,10 @@ async function queryOpenMatchesForOwner(ownerId) {
 export async function runIntenseScheduledSyncCore() {
   deviceOwnerCache.clear();
 
-  const config = await readIntenseAutoSyncConfig();
+  const config = {
+    ...DEFAULT_AUTO_SYNC_CONFIG,
+    ...(await readIntenseAutoSyncConfig()),
+  };
   const now = new Date();
   const intenseOwnerIds = await loadIntenseOwnerIds();
 
@@ -904,6 +947,10 @@ export async function runIntenseScheduledSyncCore() {
  * Important: `isTrackerDataUploaded` is set only after every attempted device
  * sync ends as `ok` or `empty`. API / analysis errors leave the flag false so
  * the next run can retry within Insiders retention.
+ *
+ * Runtime: prefers local `insidersAnalysis.js` / `teamWorkloadSummary.js` when
+ * present (grintaclub). Otherwise calls deployed HTTPS callables so a deploy
+ * from this repo does not crash with "Cannot find module './insidersAnalysis'".
  *
  * Match start/stop follow the same rules as the in-app manual sync:
  *   - kick-off = Match.timestamp (never dateCh/timeCh)

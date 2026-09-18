@@ -6,6 +6,10 @@ const {
   shouldMarkIntenseEventUploaded,
   summarizeDeviceResults,
 } = require('./intense_scheduled_sync_helpers');
+const {
+  formatInsidersApiTimestamp,
+  loadIntenseScheduledSyncRuntimeDeps,
+} = require('./intense_scheduled_sync_runtime');
 
 describe('ownerUsesIntenseCloudSync', () => {
   it('treats typeTracker=intense as cloud even when withSyncing is missing/true', () => {
@@ -79,5 +83,34 @@ describe('summarizeDeviceResults', () => {
       ]),
       { ok: 1, empty: 1, error: 1, other: 1 },
     );
+  });
+});
+
+describe('formatInsidersApiTimestamp', () => {
+  it('formats UTC without subseconds using +0000', () => {
+    assert.equal(
+      formatInsidersApiTimestamp('2026-07-09T16:00:00.123Z'),
+      '2026-07-09T16:00:00+0000',
+    );
+    assert.equal(
+      formatInsidersApiTimestamp(new Date(Date.UTC(2026, 6, 9, 16, 0, 0))),
+      '2026-07-09T16:00:00+0000',
+    );
+  });
+});
+
+describe('loadIntenseScheduledSyncRuntimeDeps', () => {
+  it('falls back to callables when local insidersAnalysis.js is absent', () => {
+    const deps = loadIntenseScheduledSyncRuntimeDeps({
+      graceMinutes: 10,
+      insidersRetentionHours: 48,
+      maxDevicesPerEvent: 30,
+      maxEventsPerRun: 10,
+    });
+    assert.equal(deps.analysisSource, 'callable');
+    assert.equal(deps.workloadSource, 'fallback');
+    assert.equal(typeof deps.fetchIntensePreprocessedSamplesCore, 'function');
+    assert.equal(typeof deps.runInsidersSensorAnalysis, 'function');
+    assert.equal(typeof deps.computeAndSaveTeamWorkloadSummary, 'function');
   });
 });
