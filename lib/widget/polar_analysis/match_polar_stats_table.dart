@@ -343,6 +343,8 @@ class _MatchPolarStatsTableState extends State<MatchPolarStatsTable> {
                               analysis: analysis,
                               player: player,
                               playerName: _formatName(player),
+                              isMatch: widget.isMatch,
+                              teamId: widget.teamId,
                             ),
                           ],
                         );

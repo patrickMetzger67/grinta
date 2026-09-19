@@ -2908,6 +2908,9 @@
     }
   },
   "askDiegoEmptyResponse": "I don't have an answer right now.",
+  "gioSessionOpinionButton": "Gio's take",
+  "gioSessionOpinionLoading": "Gio is reviewing your results…",
+  "gioSessionOpinionError": "Gio couldn't review this sheet. Try again.",
   "askDiegoCloseSpeedDial": "Close",
   "askDiegoNavigationUnknown": "Unknown navigation: {route}",
   "@askDiegoNavigationUnknown": {

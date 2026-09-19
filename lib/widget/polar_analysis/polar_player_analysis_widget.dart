@@ -5,8 +5,10 @@ import 'package:grinta/analytics/analytics_screen_names.dart';
 import 'package:grinta/core/extensions/l10n_extension.dart';
 import 'package:grinta/model/player.dart';
 import 'package:grinta/model/tracker/polar_session_analysis.dart';
+import 'package:grinta/services/gio_session_opinion.dart';
 import 'package:grinta/services/polar_session_analysis_service.dart';
 import 'package:grinta/util/app_theme.dart';
+import 'package:grinta/widget/gio_session_opinion_button.dart';
 import 'package:grinta/widget/playerPhoto.dart';
 import 'package:grinta/widget/polar_analysis/polar_hr_zones_chart.dart';
 
@@ -24,6 +26,8 @@ class PolarPlayerAnalysisWidget extends StatefulWidget {
     this.playerName,
     this.player,
     this.showHeader = true,
+    this.isMatch = true,
+    this.teamId,
   });
 
   final PolarSessionAnalysis? analysis;
@@ -34,6 +38,8 @@ class PolarPlayerAnalysisWidget extends StatefulWidget {
   final String? playerName;
   final Player? player;
   final bool showHeader;
+  final bool isMatch;
+  final String? teamId;
 
   @override
   State<PolarPlayerAnalysisWidget> createState() =>
@@ -125,6 +131,8 @@ class _PolarPlayerAnalysisWidgetState extends State<PolarPlayerAnalysisWidget> {
           player: widget.player,
           playerName: widget.playerName,
           showHeader: widget.showHeader,
+          isMatch: widget.isMatch,
+          teamId: widget.teamId,
           selectedIndex: _selectedIndex,
           onTabSelected: (i) {
             setState(() => _selectedIndex = i);
@@ -143,6 +151,8 @@ class _PolarPlayerAnalysisContent extends StatelessWidget {
     required this.player,
     required this.playerName,
     required this.showHeader,
+    required this.isMatch,
+    required this.teamId,
     required this.selectedIndex,
     required this.onTabSelected,
     required this.lastLoggedTab,
@@ -153,6 +163,8 @@ class _PolarPlayerAnalysisContent extends StatelessWidget {
   final Player? player;
   final String? playerName;
   final bool showHeader;
+  final bool isMatch;
+  final String? teamId;
   final int selectedIndex;
   final ValueChanged<int> onTabSelected;
   final int lastLoggedTab;
@@ -203,6 +215,16 @@ class _PolarPlayerAnalysisContent extends StatelessWidget {
                 _header(context, compact: compact),
                 SizedBox(height: compact ? 8 : 12),
               ],
+              GioSessionOpinionButton(
+                eventId: analysis.eventId,
+                playerId: analysis.playerId,
+                isMatch: isMatch,
+                source: GioSessionOpinionSource.polar,
+                currentMetrics: gioMetricsFromPolarAnalysis(analysis),
+                teamId: teamId,
+                player: player,
+                playerName: playerName,
+              ),
               Container(
                 width: double.infinity,
                 padding: const EdgeInsets.all(4),

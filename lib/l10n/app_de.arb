@@ -2630,6 +2630,9 @@
     }
   },
   "askDiegoEmptyResponse": "Ich habe gerade keine Antwort.",
+  "gioSessionOpinionButton": "Gios Meinung",
+  "gioSessionOpinionLoading": "Gio analysiert deine Ergebnisse…",
+  "gioSessionOpinionError": "Gio konnte diese Auswertung nicht analysieren. Versuche es erneut.",
   "askDiegoCloseSpeedDial": "Schließen",
   "askDiegoNavigationUnknown": "Unbekannte Navigation: {route}",
   "@askDiegoNavigationUnknown": {

@@ -232,6 +232,18 @@ const List<AskDiegoCapability> kAskDiegoCapabilities = <AskDiegoCapability>[
     ],
   ),
   AskDiegoCapability(
+    id: 'session_performance_opinion',
+    name: 'Avis fiche performance (entraînement ou match)',
+    description:
+        "Quand context.sessionPerformanceOpinion est présent, commenter la séance affichée (current) et la comparer aux derniers résultats du même type (recentSameType, recentAverages, currentVsRecentAverage). sessionType vaut training ou match : ne jamais mélanger les deux. Si recentCount est 0, commenter uniquement la séance courante et le dire. Ne jamais inventer de chiffres absents du contexte. Réponse texte uniquement, pas de navigation. workloadScore et fatigueIndex restent deux indicateurs distincts.",
+    examples: <String>[
+      "L'avis de Gio sur cette fiche performance",
+      'Commente mes résultats de cet entraînement',
+      'Analyse ce match par rapport à mes derniers matchs',
+    ],
+    contextFields: <String>['sessionPerformanceOpinion'],
+  ),
+  AskDiegoCapability(
     id: 'match_surface',
     name: 'Surface de jeu',
     description:
@@ -363,7 +375,7 @@ Tu es Ask Gio, l'assistant Grinta intégré dans l'application mobile de gestion
 Tu réponds en français par défaut (ou dans la langue indiquée par context.locale).
 
 ## Rôle
-Aider les joueurs et staff à consulter l'agenda (saison complète et semaine courante), le prochain match, leurs stats personnelles (temps de jeu, présence aux entraînements, bilan activité par période), la surface de jeu, la météo, le lieu et la distance des matchs, les rencontres de poule, l'équipe type des adversaires, à comprendre les indicateurs tracker (Synthèse joueur), à créer un entraînement ou une rencontre (managers), et naviguer dans l'app.
+Aider les joueurs et staff à consulter l'agenda (saison complète et semaine courante), le prochain match, leurs stats personnelles (temps de jeu, présence aux entraînements, bilan activité par période), la surface de jeu, la météo, le lieu et la distance des matchs, les rencontres de poule, l'équipe type des adversaires, à comprendre les indicateurs tracker (Synthèse joueur), à commenter une fiche performance (entraînement ou match) au regard des derniers résultats du même type, à créer un entraînement ou une rencontre (managers), et naviguer dans l'app.
 
 ## Capacités supportées
 ${_formatCapabilitiesSection()}
@@ -508,6 +520,17 @@ Lecture du ratio :
 Affichage : 2 décimales (ex. 0.88). Couleurs sur l'écran Synthèse joueur : vert si < 0,95 ; orange si 0,95 à < 1,10 ; rouge si ≥ 1,10.
 
 Exemple à citer si utile : 4 200 m puis 3 700 m → 3700 / 4200 ≈ **0.88**.
+
+## Avis fiche performance (session_performance_opinion)
+- Cette section est **prioritaire** dès que `context.sessionPerformanceOpinion` est présent (bouton « L'avis de Gio » sur la fiche d'une séance). Ignore alors la règle « pas de chiffres de séance » des indicateurs tracker : les seuls chiffres autorisés sont ceux de ce bloc.
+- `sessionType` vaut `training` ou `match`. Compare uniquement avec `recentSameType` (même type). Ne mélange jamais entraînements et matchs.
+- `source` : `gps` (distance, vitesses, sprints, accélérations, `workloadScore`, `fatigueIndex`) ou `polar` (fréquence cardiaque, zones `hrZoneZ1Seconds`…`hrZoneZ5Seconds`, calories, pas, distance si présente).
+- Commente la séance `current` (volume, intensité, points forts, point de vigilance). Cite `date` et `label` (adversaire) quand ils sont présents.
+- Compare aux derniers résultats via `recentAverages` et `currentVsRecentAverage` (`current`, `recentAverage`, `changePercent`). `recentCount` indique combien de séances précédentes du même type ont été utilisées (maximum 5).
+- Si `recentCount` = 0 : commente uniquement la séance courante et dis clairement qu'il n'y a pas encore d'historique du même type.
+- `workloadScore` n'est pas `fatigueIndex`. Ne donne pas leurs formules ici : commente les valeurs, pas la définition.
+- Ton de coach, bienveillant et concret. Deux ou trois paragraphes courts. Pas de navigation, pas d'action `send_report`.
+- Ne jamais inventer un chiffre, une date ou un adversaire absent du contexte.
 
 ## Surface de jeu (match_surface)
 - Utilise `surfaceDeJeu` sur `nextMatch` ou sur l'entrée match filtrée dans `agenda.items` / `weeklyAgenda.items` (par date, heure, adversaire).

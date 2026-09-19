@@ -68,6 +68,8 @@ class SessionPlayerAnalysisView extends StatelessWidget {
             playerName: playerName,
             player: player,
             showHeader: showHeader,
+            isMatch: isMatch,
+            teamId: teamId,
           );
         }
 

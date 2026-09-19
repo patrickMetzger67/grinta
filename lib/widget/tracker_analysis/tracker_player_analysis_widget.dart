@@ -7,6 +7,7 @@ import 'package:grinta/analytics/analytics_screen_names.dart';
 import 'package:grinta/core/extensions/l10n_extension.dart';
 import 'package:grinta/l10n/app_localizations.dart';
 import 'package:grinta/provider/appSession.dart';
+import 'package:grinta/services/gio_session_opinion.dart';
 import 'package:grinta/services/meta_share_coordinator.dart';
 import 'package:grinta/services/session_player_synthesis_share_service.dart';
 import 'package:grinta/services/share_record_service.dart';
@@ -14,6 +15,7 @@ import 'package:grinta/util/app_snackbar.dart';
 import 'package:grinta/util/player_photo_resolver.dart';
 import 'package:grinta/util/share_player_access.dart';
 import 'package:grinta/util/share_sheet.dart';
+import 'package:grinta/widget/gio_session_opinion_button.dart';
 import 'package:grinta/widget/playerPhoto.dart';
 import 'package:provider/provider.dart';
 
@@ -158,6 +160,7 @@ class _TrackerPlayerAnalysisWidgetState
           isMatch: widget.isMatch,
           player: widget.player,
           shareMatchContext: widget.shareMatchContext,
+          teamId: widget.teamId,
           showShare: canSharePlayerCardFromSession(
             session: session,
             teamId: widget.teamId,
@@ -179,6 +182,7 @@ class _TrackerPlayerAnalysisContent extends StatefulWidget {
   final bool isMatch;
   final Player? player;
   final SessionShareMatchContext? shareMatchContext;
+  final String? teamId;
   final bool showShare;
 
   const _TrackerPlayerAnalysisContent({
@@ -190,6 +194,7 @@ class _TrackerPlayerAnalysisContent extends StatefulWidget {
     required this.isMatch,
     required this.player,
     this.shareMatchContext,
+    this.teamId,
     this.showShare = false,
   });
 
@@ -414,6 +419,18 @@ class _TrackerPlayerAnalysisContentState
                     ),
                     SizedBox(height: isPhone ? 8 : 12),
                   ],
+
+                  GioSessionOpinionButton(
+                    eventId: widget.analysis.eventId,
+                    playerId: widget.analysis.playerId,
+                    isMatch: widget.isMatch,
+                    source: GioSessionOpinionSource.gps,
+                    currentMetrics:
+                        gioMetricsFromTrackerAnalysis(widget.analysis),
+                    teamId: widget.teamId,
+                    player: widget.player,
+                    playerName: widget.playerName,
+                  ),
 
                   _PlayerAnalysisTabSelector(
                     tabs: tabs,
