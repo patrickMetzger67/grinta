@@ -3314,6 +3314,9 @@
     }
   },
   "askDiegoEmptyResponse": "Je n'ai pas de réponse pour le moment.",
+  "gioSessionOpinionButton": "L'avis de Gio",
+  "gioSessionOpinionLoading": "Gio analyse tes résultats…",
+  "gioSessionOpinionError": "Gio n'a pas pu analyser cette fiche. Réessaie.",
   "askDiegoCloseSpeedDial": "Fermer",
   "askDiegoNavigationUnknown": "Navigation non reconnue : {route}",
   "@askDiegoNavigationUnknown": {

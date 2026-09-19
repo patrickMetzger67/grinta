@@ -2630,6 +2630,9 @@
     }
   },
   "askDiegoEmptyResponse": "No tengo respuesta por ahora.",
+  "gioSessionOpinionButton": "La opinión de Gio",
+  "gioSessionOpinionLoading": "Gio analiza tus resultados…",
+  "gioSessionOpinionError": "Gio no ha podido analizar esta ficha. Inténtalo de nuevo.",
   "askDiegoCloseSpeedDial": "Cerrar",
   "askDiegoNavigationUnknown": "Navegación desconocida: {route}",
   "@askDiegoNavigationUnknown": {
